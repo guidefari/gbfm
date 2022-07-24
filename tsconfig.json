@@ -1,0 +1,30 @@
+{
+    "compilerOptions": {
+      "target": "es5",
+      "lib": ["dom", "dom.iterable", "esnext"],
+      "allowJs": true,
+      "skipLibCheck": true,
+      "strict": false,
+      "forceConsistentCasingInFileNames": true,
+      "noEmit": true,
+      "esModuleInterop": true,
+      "module": "esnext",
+      "moduleResolution": "node",
+      "resolveJsonModule": true,
+      "isolatedModules": true,
+      "jsx": "preserve",
+      "baseUrl": ".",
+      "paths": {
+        "@/components/*": ["components/*"],
+        "@/data/*": ["data/*"],
+        "@/layouts/*": ["layouts/*"],
+        "@/lib/*": ["lib/*"],
+        "@/css/*": ["css/*"],
+        "@/assets/*": ["public/*"]
+      },
+      "incremental": true
+    },
+    "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "components/Footer.js"],
+    "exclude": ["node_modules"]
+  }
+  
