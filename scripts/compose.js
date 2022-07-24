@@ -107,15 +107,15 @@ inquirer
       .replace(/ /g, '-')
       .replace(/-+/g, '-')
     const frontMatter = genFrontMatter(answers)
-    if (!fs.existsSync('data/blog')) fs.mkdirSync('data/blog', { recursive: true })
-    const filePath = `data/blog/${fileName ? fileName : 'untitled'}.${
+    if (!fs.existsSync('data/curated')) fs.mkdirSync('data/curated', { recursive: true })
+    const filePath = `data/curated/${fileName ? fileName : 'untitled'}.${
       answers.extension ? answers.extension : 'md'
     }`
     fs.writeFile(filePath, frontMatter, { flag: 'wx' }, (err) => {
       if (err) {
         throw err
       } else {
-        console.log(`Blog post generated successfully at ${filePath}`)
+        console.log(`curated post generated successfully at ${filePath}`)
       }
     })
   })

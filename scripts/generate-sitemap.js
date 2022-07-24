@@ -9,8 +9,8 @@ const siteMetadata = require('../data/siteMetadata')
   const pages = await globby([
     'pages/*.js',
     'pages/*.tsx',
-    'data/blog/**/*.mdx',
-    'data/blog/**/*.md',
+    'data/curated/**/*.mdx',
+    'data/curated/**/*.md',
     'public/tags/**/*.xml',
     '!pages/_*.js',
     '!pages/_*.tsx',
@@ -35,7 +35,7 @@ const siteMetadata = require('../data/siteMetadata')
                 }
                 const path = page
                   .replace('pages/', '/')
-                  .replace('data/blog', '/blog')
+                  .replace('data/curated', '/curated')
                   .replace('public/', '/')
                   .replace('.js', '')
                   .replace('.tsx', '')
@@ -44,7 +44,10 @@ const siteMetadata = require('../data/siteMetadata')
                   .replace('/feed.xml', '')
                 const route = path === '/index' ? '' : path
 
-                if (page.search('pages/404.') > -1 || page.search(`pages/blog/[...slug].`) > -1) {
+                if (
+                  page.search('pages/404.') > -1 ||
+                  page.search(`pages/curated/[...slug].`) > -1
+                ) {
                   return
                 }
                 return `
