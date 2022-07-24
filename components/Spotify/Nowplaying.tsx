@@ -71,11 +71,11 @@ export function NowPlaying() {
   console.log(data)
 
   return (
-    <div className="flex w-full flex-row-reverse items-center space-x-0 rounded-md border p-2 sm:flex-row sm:space-x-2">
+    <div className="flex w-full flex-row-reverse items-center space-x-0 rounded-lg border p-2 sm:flex-row sm:space-x-2">
       {data?.albumImageUrl ? (
         <a href={data.songUrl} target="_blank" rel="noopener noreferrer">
           <Image
-            className="rounded-md border border-green-300"
+            className="rounded-lg"
             width={89}
             height={89}
             alt={data.title}
