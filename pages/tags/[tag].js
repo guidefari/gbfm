@@ -49,6 +49,7 @@ export default function Tag({ posts, tag }) {
         title={`${tag} - ${siteMetadata.author}`}
         description={`${tag} tags - ${siteMetadata.author}`}
       />
+      {/* TODO: how tf we gone make this one work? */}
       <ListLayout posts={posts} title={title} />
     </>
   )
