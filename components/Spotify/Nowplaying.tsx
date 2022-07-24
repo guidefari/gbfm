@@ -75,7 +75,7 @@ export function NowPlaying() {
       {data?.albumImageUrl ? (
         <a href={data.songUrl} target="_blank" rel="noopener noreferrer">
           <Image
-            className="rounded-md"
+            className="rounded-md border border-green-300"
             width={89}
             height={89}
             alt={data.title}
