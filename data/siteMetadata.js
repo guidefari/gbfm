@@ -11,11 +11,11 @@ const siteMetadata = {
   image: '/static/images/avatar.png',
   socialBanner: '/static/images/twitter-card.png',
   email: 'goose@guidefari.com',
-  github: 'https://github.com/txndai',
+  github: 'https://github.com/txndai/nextgoose',
   twitter: 'https://twitter.com/guidefari',
   // facebook: 'https://facebook.com',
-  youtube: 'https://youtube.com',
-  // linkedin: 'https://www.linkedin.com',
+  youtube: 'https://www.youtube.com/channel/UCXLiPJsFfPpwJZIF-3QvzXQ',
+  linkedin: 'https://linkedin.com/in/guide-fari-8b0063176',
   locale: 'en-US',
   analytics: {
     // If you want to use an analytics provider you have to add it to the
