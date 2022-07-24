@@ -2,30 +2,20 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { getNowPlaying } from 'lib/spotify'
 
 // export const config = {
-//   runtime: 'experimental-edge',
+//   runtime: 'node',
 // }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const response = await getNowPlaying()
 
   if (response.status === 204 || response.status > 400) {
-    return new Response(JSON.stringify({ isPlaying: false }), {
-      status: 200,
-      headers: {
-        'content-type': 'application/json',
-      },
-    })
+    return res.status(200).json({ isPlaying: false })
   }
 
   const song = await response.json()
 
   if (song.item === null) {
-    return new Response(JSON.stringify({ isPlaying: false }), {
-      status: 200,
-      headers: {
-        'content-type': 'application/json',
-      },
-    })
+    return res.status(200).json({ isPlaying: false })
   }
 
   const isPlaying = song.is_playing
