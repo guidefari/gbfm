@@ -16,7 +16,7 @@ export const FeaturedArtists = ({ artists }) => {
             blurb={artist.meta.description}
             title={artist.meta.title}
             key={artist.slug}
-            slug={`/artist/${artist.slug}`}
+            slug={`/curated/artist/${artist.slug}`}
             imageUrl={
               artist.imageUrl ||
               'https://res.cloudinary.com/hokaspokas/image/upload/v1658044917/goosebumpsfm/generic_xvsrwv.svg'
