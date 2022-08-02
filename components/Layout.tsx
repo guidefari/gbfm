@@ -1,4 +1,3 @@
-// @ts-ignore
 import Nowplaying from '@/components/spotify/Nowplaying'
 
 export default function Layout({ children }) {
