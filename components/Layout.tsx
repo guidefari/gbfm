@@ -1,4 +1,4 @@
-import Nowplaying from '@/components/spotify/Nowplaying'
+import Nowplaying from '@/components/Nowplaying'
 
 export default function Layout({ children }) {
   return (
