@@ -1,4 +1,4 @@
-import { Nowplaying } from './spotify/Nowplaying.tsx'
+import { Nowplaying } from './spotify/Nowplaying'
 
 export default function Layout({ children }) {
   return (
