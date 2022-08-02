@@ -1,4 +1,4 @@
-// @ts-ignore
+// @ts-nocheck
 import fetcher from '@/lib/fetcher'
 import { useEffect, useState } from 'react'
 import useSWR from 'swr'
