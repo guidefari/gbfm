@@ -2,7 +2,7 @@
 import fetcher from '@/lib/fetcher'
 import { useEffect, useState } from 'react'
 import useSWR from 'swr'
-import { MinimalCard } from '../common/MinimalCard'
+import { MinimalCard } from './common/MinimalCard'
 // import { parse } from 'spotify-uri'
 // const { parse } = require('spotify-uri')
 
