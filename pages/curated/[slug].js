@@ -34,8 +34,8 @@ export default function PostPage({ source, frontMatter }) {
           </Link>
         </nav>
       </header>
-      <div className="text-4xl">
-        <h1>{frontMatter.title}</h1>
+      <div>
+        <h1 className="text-4xl">{frontMatter.title}</h1>
         {frontMatter.description && <p>{frontMatter.description}</p>}
       </div>
       <main>
