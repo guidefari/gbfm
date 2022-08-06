@@ -70,7 +70,7 @@ export default function Nowplaying() {
   const { data } = useSWR<NowPlayingSong>('/api/now-playing', fetcher)
 
   return (
-    <div className="flex flex-row items-center w-full max-w-md p-2 mx-auto space-x-2 border border-2 rounded-lg border-highlight">
+    <div className="flex flex-row items-center w-full max-w-md p-2 mx-auto space-x-2 border-2 rounded-lg border-highlight">
       {data?.albumImageUrl ? (
         <a
           className="transition duration-300 ease-in-out hover:scale-110"
