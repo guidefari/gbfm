@@ -25,3 +25,10 @@
     font-weight: 400;
     src: local(''), url('/fonts/JetBrainsMono-BoldItalic.woff2') format('woff2');
   }
+
+@font-face {
+    font-family: 'JetBrainsMono';
+    font-style: italic;
+    font-weight: 900;
+    src: local(''), url('/fonts/JetBrainsMono-ExtraBoldItalic.woff2') format('woff2');
+  }

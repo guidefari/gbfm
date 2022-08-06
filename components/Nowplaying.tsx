@@ -68,10 +68,9 @@ function AnimatedBars() {
 
 export default function Nowplaying() {
   const { data } = useSWR<NowPlayingSong>('/api/now-playing', fetcher)
-  console.log(data)
 
   return (
-    <div className="flex flex-row-reverse items-center w-full p-2 space-x-0 border rounded-lg sm:flex-row sm:space-x-2">
+    <div className="flex flex-row items-center w-full max-w-md p-2 mx-auto space-x-2 border rounded-lg">
       {data?.albumImageUrl ? (
         <a href={data.songUrl} target="_blank" rel="noopener noreferrer">
           <Image
@@ -93,10 +92,10 @@ export default function Nowplaying() {
           />
         </svg>
       )}
-      <div className="inline-flex flex-col w-full max-w-full truncate sm:flex-row">
+      <div className="flex-col w-full max-w-full truncate sm:flex-row">
         {data?.songUrl ? (
           <a
-            className="font-medium text-gray-800 truncate capsize max-w-max dark:text-gray-200"
+            className="font-medium truncate capsize max-w-max "
             href={data.songUrl}
             target="_blank"
             rel="noopener noreferrer"
@@ -104,14 +103,10 @@ export default function Nowplaying() {
             {data.title}
           </a>
         ) : (
-          <p className="font-medium text-gray-800 capsize dark:text-gray-200">Not Playing</p>
+          <p className="font-medium capsize ">Not Playing</p>
         )}
-        <span className="hidden mx-2 text-gray-500 capsize dark:text-gray-300 sm:block">
-          {' – '}
-        </span>
-        <p className="text-gray-500 truncate capsize max-w-max dark:text-gray-300">
-          {data?.artist ?? 'Spotify'}
-        </p>
+        <span className="mx-2 capsize sm:block">{' – '}</span>
+        <p className="truncate capsize max-w-max ">{data?.artist ?? 'Spotify'}</p>
       </div>
     </div>
   )
