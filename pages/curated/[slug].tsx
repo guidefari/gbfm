@@ -34,13 +34,13 @@ export default function PostPage({ source, frontMatter }) {
           </Link>
         </nav>
       </header>
-      <div>
-        <h1 className="text-4xl">{frontMatter.title}</h1>
+      <div className="mt-10 mb-12 lg:mb-24 md:mb-16">
+        <h1 className="title">{frontMatter.title}</h1>
         {frontMatter.description && <p>{frontMatter.description}</p>}
       </div>
-      <main>
+      <article className="max-w-4xl mx-auto prose lg:prose-xl">
         <MDXRemote {...source} components={components} />
-      </main>
+      </article>
     </Layout>
   )
 }

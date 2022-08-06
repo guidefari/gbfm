@@ -16,6 +16,9 @@ module.exports = {
           'monospace',
         ],
       },
+      colors: {
+        highlight: '#9BFD9E',
+      },
     },
   },
   plugins: [],

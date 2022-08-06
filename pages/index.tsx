@@ -10,11 +10,12 @@ export default function Index({ posts }) {
   return (
     <Layout>
       <SuperHero />
-      <ul className="list-disc">
+      <h3 className="title">Words & Sounds</h3>
+      <ul className="ml-5">
         {posts.map((post) => (
           <li key={post.filePath}>
             <Link as={`/curated/${post.filePath.replace(/\.mdx?$/, '')}`} href={`/curated/[slug]`}>
-              <a>{post.data.title}</a>
+              <a className="underline"> - {post.data.title}</a>
             </Link>
           </li>
         ))}

@@ -5,7 +5,7 @@ import React from 'react'
 
 export const SuperHero = () => {
   return (
-    <section className=" body-font">
+    <section className="pb-8 body-font">
       <div className="container flex flex-col mx-auto lg:px-5 lg:py-24">
         <div className="w-full">
           <div className="flex flex-col-reverse lg:flex-row md:mt-10">
@@ -19,7 +19,7 @@ export const SuperHero = () => {
               />
               <div className="flex flex-col items-center justify-center text-center">
                 <h2 className="mt-4 text-lg font-medium title-font">Guide Fari</h2>
-                <div className="w-12 h-1 mt-2 mb-4 bg-indigo-500 rounded" />
+                <div className="w-12 h-1 mt-2 mb-4 rounded bg-highlight" />
                 <p className="max-w-md px-2 mx-auto text-base text-left md:px-6">
                   I love connecting people to new music. One of my favourite ways to spend time is
                   to chat music - say hello, let me know what music you've been enjoying. I may have{' '}
@@ -34,7 +34,7 @@ export const SuperHero = () => {
               <h1 className="mb-0 text-6xl font-bold leading-none text-right md:text-8xl xl:text-9xl">
                 goosebumps.
                 <br />
-                <span style={{ color: '#9BFD9E' }}>fm</span>
+                <span className="text-highlight">fm</span>
               </h1>
             </div>
           </div>
