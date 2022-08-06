@@ -1,6 +1,6 @@
 {
     "compilerOptions": {
-      "target": "es5",
+      "target": "ESNext",
       "lib": ["dom", "dom.iterable", "esnext"],
       "allowJs": true,
       "skipLibCheck": true,
@@ -16,15 +16,15 @@
       "baseUrl": ".",
       "paths": {
         "@/components/*": ["components/*"],
-        "@/data/*": ["data/*"],
-        "@/layouts/*": ["layouts/*"],
+        "@/utils/*": ["utils/*"],
         "@/lib/*": ["lib/*"],
-        "@/css/*": ["css/*"],
+        "@/data/*": ["data/*"],
+        "@/css/*": ["styles/*"],
         "@/assets/*": ["public/*"]
       },
       "incremental": true
     },
-    "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "components/Footer.js"],
+    "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "components/Footer.js", "components/spotify/Album.jsx"],
     "exclude": ["node_modules"]
   }
   
