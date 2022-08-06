@@ -5,7 +5,7 @@ export default function Layout({ children }) {
     <>
       <div className="flex flex-col justify-between min-h-screen overflow-x-hidden font-jetbrains">
         <main>{children}</main>
-        <footer className="px-5 my-3">
+        <footer className="px-5 mt-32 mb-10">
           <Nowplaying />
         </footer>
       </div>

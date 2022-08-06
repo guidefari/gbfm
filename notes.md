@@ -6,3 +6,5 @@
 - find those spotify component URLs I saved. are they in pocket?
 - start bringing more content
 - what could a playlist component look like?
+- tweets page/feature - that could be fun to work on
+- try and do nav around the site without a nav bar. trying to make it feel more like an app and a journey, than a website.
