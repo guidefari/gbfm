@@ -59,9 +59,9 @@ function AnimatedBars() {
 
   return (
     <div className="flex items-end w-auto overflow-hidden">
-      <span id="bar1" className="mr-[3px] h-2 w-1 bg-gray-300 opacity-75 dark:bg-gray-500" />
-      <span id="bar2" className="mr-[3px] h-1 w-1 bg-gray-300 dark:bg-gray-500" />
-      <span id="bar3" className="w-1 h-3 bg-gray-300 opacity-80 dark:bg-gray-500" />
+      <span id="bar1" className="mr-[3px] h-2 w-1 bg-highlight opacity-75 " />
+      <span id="bar2" className="mr-[3px] h-1 w-1 bg-highlight " />
+      <span id="bar3" className="w-1 h-3 bg-highlight opacity-80 " />
     </div>
   )
 }
@@ -70,9 +70,14 @@ export default function Nowplaying() {
   const { data } = useSWR<NowPlayingSong>('/api/now-playing', fetcher)
 
   return (
-    <div className="flex flex-row items-center w-full max-w-md p-2 mx-auto space-x-2 border rounded-lg">
+    <div className="flex flex-row items-center w-full max-w-md p-2 mx-auto space-x-2 border border-2 rounded-lg border-highlight">
       {data?.albumImageUrl ? (
-        <a href={data.songUrl} target="_blank" rel="noopener noreferrer">
+        <a
+          className="transition duration-300 ease-in-out hover:scale-110"
+          href={data.songUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <Image
             className="rounded-lg"
             width={89}
@@ -95,7 +100,7 @@ export default function Nowplaying() {
       <div className="flex-col w-full max-w-full truncate sm:flex-row">
         {data?.songUrl ? (
           <a
-            className="font-medium truncate capsize max-w-max "
+            className="font-extrabold truncate capsize max-w-max hover:text-highlight"
             href={data.songUrl}
             target="_blank"
             rel="noopener noreferrer"
@@ -105,7 +110,6 @@ export default function Nowplaying() {
         ) : (
           <p className="font-medium capsize ">Not Playing</p>
         )}
-        <span className="mx-2 capsize sm:block">{' – '}</span>
         <p className="truncate capsize max-w-max ">{data?.artist ?? 'Spotify'}</p>
       </div>
     </div>

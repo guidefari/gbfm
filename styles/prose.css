@@ -1,0 +1,21 @@
+.prose {
+    @apply px-3;
+}
+
+.prose a {
+    @apply text-highlight
+}
+
+.prose p {
+    @apply mb-3 text-lg;
+}
+
+/* Universal heading styles */
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+    @apply underline font-extrabold
+}
