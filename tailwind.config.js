@@ -4,7 +4,17 @@ module.exports = {
   theme: {
     extend: {
       fontFamily: {
-        jetbrains: ['JetBrainsMono'],
+        jetbrains: [
+          'JetBrainsMono',
+          'ui-monospace',
+          'SFMono-Regular',
+          'Menlo',
+          'Monaco',
+          'Consolas',
+          'Liberation Mono',
+          'Courier New',
+          'monospace',
+        ],
       },
     },
   },
