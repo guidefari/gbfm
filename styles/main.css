@@ -12,3 +12,7 @@ body, .prose {
 .title {
     @apply mb-4 text-6xl font-bold md:text-8xl xl:text-9xl;
 }
+
+a {
+    @apply transition ease-in-out;
+}
