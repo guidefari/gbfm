@@ -6,7 +6,7 @@ import { MinimalCard } from './common/MinimalCard'
 // import { parse } from 'spotify-uri'
 // const { parse } = require('spotify-uri')
 
-export default function Album({ url }) {
+export default function Album({ url, genres }) {
   // const [data, setData] = useState({ artists: 'none', albumImageUrl: 'https://', title: 'hte' })
 
   // useEffect(() => {
@@ -26,10 +26,11 @@ export default function Album({ url }) {
     <div>
       {data ? (
         <MinimalCard
-          slug={'bro'}
+          slug={data.albumUrl}
           blurb={data.artists || ''}
           imageUrl={data.albumImageUrl || ''}
           title={data.title || ''}
+          genres={genres || ''}
         />
       ) : (
         ''
