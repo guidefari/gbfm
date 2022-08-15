@@ -12,7 +12,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   const albumType = response.album_type
-  const albumImageUrl = response.images[0].url
+  const albumImageUrl = response.images[1].url
   const title = response.name
   const artists = response.artists.map((_artist) => _artist.name).join(', ')
   const albumUrl = response.external_urls.spotify
