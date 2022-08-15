@@ -7,6 +7,7 @@
 - [x] spotify album component could use some love
 - [ ] funny animation to use as default when waiting for album art to load?
 - [ ] transitions and animations as you move pages?
+- [ ] use preview url on the track component, have a play/pause button as seen on spotify.design or in apple notes
 - start bringing more content
 - what could a playlist component look like?
 - tweets page/feature - that could be fun to work on
