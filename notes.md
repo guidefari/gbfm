@@ -2,7 +2,9 @@
 - [That Tailwind blog repo](https://github.com/timlrx/tailwind-nextjs-starter-blog) - some good code in there :)
 
 # Up next
-- spotify album component could use some love
+- [ ] can probably make use of that uri lib in the api files. that way I can use components with id, or full url. one less thing I have to do when writing content
+- [ ] multiple author support
+- [x] spotify album component could use some love
 - start bringing more content
 - what could a playlist component look like?
 - tweets page/feature - that could be fun to work on
