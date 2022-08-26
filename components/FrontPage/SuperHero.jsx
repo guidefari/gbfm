@@ -3,15 +3,31 @@ import Link from 'next/link'
 import React from 'react'
 // import avatar from '/static/images/yo.png'
 
+// Pixel GIF code adapted from https://stackoverflow.com/a/33919020/266535
+const keyStr = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='
+
+const triplet = (e1, e2, e3) =>
+  keyStr.charAt(e1 >> 2) +
+  keyStr.charAt(((e1 & 3) << 4) | (e2 >> 4)) +
+  keyStr.charAt(((e2 & 15) << 2) | (e3 >> 6)) +
+  keyStr.charAt(e3 & 63)
+
+const rgbDataURL = (r, g, b) =>
+  `data:image/gif;base64,R0lGODlhAQABAPAA${
+    triplet(0, r, g) + triplet(b, 255, 255)
+  }/yH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==`
+
 export const SuperHero = () => {
   return (
     <section className="pb-8 body-font">
       <div className="container flex flex-col mx-auto lg:px-5 lg:py-24">
         <div className="w-full">
           <div className="flex flex-col-reverse lg:flex-row md:mt-10">
-            <div className="text-center lg:w-1/3 lg:py-8 lg:pr-8 md:-translate-y-20 md:-translate-x-32 lg:translate-x-0 lg:translate-y-0">
+            <div className="text-center lg:w-1/3 lg:py-8 lg:pr-8 md:-translate-y-20 md:-translate-x-32 lg:translate-x-0 lg:translate-y-0 ">
               <Image
                 src={'/images/yo.png'}
+                placeholder="blur"
+                blurDataURL={rgbDataURL(129, 195, 215)}
                 alt="avatar"
                 width="69px"
                 height="69px"
