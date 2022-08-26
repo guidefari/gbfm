@@ -4,22 +4,21 @@ import useSWR from 'swr'
 import { MinimalCard } from './common/MinimalCard'
 
 export default function Album({ url, genres }) {
-  const { data } = useSWR(`/api/track?id=${url}`, fetcher)
+  const { data, error } = useSWR(`/api/track?id=${url}`, fetcher)
+  const loading = !data && !error
+
   console.log(data)
 
   return (
     <div>
-      {data ? (
         <MinimalCard
-          slug={data.trackUrl}
-          blurb={data.artists || ''}
-          imageUrl={data.albumImageUrl || ''}
-          title={data.title || ''}
+          loading={loading}
+          slug={data?.trackUrl || ''}
+          blurb={data?.artists || ''}
+          imageUrl={data?.albumImageUrl || ''}
+          title={data?.title || ''}
           genres={genres || ''}
         />
-      ) : (
-        ''
-      )}
     </div>
   )
 }

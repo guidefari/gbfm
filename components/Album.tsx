@@ -19,22 +19,19 @@ export default function Album({ url, genres }) {
 
   //   // setData(data)
   // }
-  const { data } = useSWR(`/api/album?id=${url}`, fetcher)
-  console.log(data)
+  const { data, error } = useSWR(`/api/album?id=${url}`, fetcher)
+  const loading = !data && !error
 
   return (
     <div>
-      {data ? (
-        <MinimalCard
-          slug={data.albumUrl}
-          blurb={data.artists || ''}
-          imageUrl={data.albumImageUrl || ''}
-          title={data.title || ''}
-          genres={genres || ''}
-        />
-      ) : (
-        ''
-      )}
+      <MinimalCard
+        loading={loading}
+        slug={data?.albumUrl || ''}
+        blurb={data?.artists || ''}
+        imageUrl={data?.albumImageUrl}
+        title={data?.title || ''}
+        genres={genres || ''}
+      />
     </div>
   )
 }
