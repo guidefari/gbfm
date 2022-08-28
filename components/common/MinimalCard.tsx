@@ -5,12 +5,14 @@ import { PauseIcon, PlayIcon } from './icons'
 
 interface Props {
   title: string
+  artists: string
   blurb: string
   imageUrl: string
   slug?: string
   genres?: string[]
   loading?: boolean
   previewUrl?: string
+  children?: React.ReactNode
 }
 
 function cn(...classes: string[]) {
@@ -25,6 +27,8 @@ export const MinimalCard: React.FC<Props> = ({
   genres,
   loading,
   previewUrl,
+  children,
+  artists,
 }) => {
   const audioRef = useRef<HTMLAudioElement>(null)
   const [playPreview, setPlayPreview] = useState(false)
@@ -42,7 +46,7 @@ export const MinimalCard: React.FC<Props> = ({
   }
 
   return (
-    <div className="relative flex-shrink-0 p-3 my-5 rounded-md bg-cyan-900 sm:flex lg:items-start">
+    <div className="relative flex-shrink-0 max-w-6xl p-3 mx-auto my-5 rounded-md bg-cyan-900 sm:flex lg:items-start">
       <div className="flex-shrink-0 mb-4 sm:mb-0 sm:mr-4">
         {previewUrl &&
           (playPreview ? (
@@ -85,16 +89,19 @@ export const MinimalCard: React.FC<Props> = ({
             </span>
           ))}
         <p className="mt-3 text-lg font-medium leading-6">
+          Title:{' '}
           <a
             target="_blank"
             href={(slug as string) || ''}
-            className="text-xl text-indigo-900 hover:transition-all hover:underline"
+            className="mb-0 text-xl leading-tight text-indigo-900 hover:transition-all hover:underline"
           >
             {title || ''}
           </a>
         </p>
-        <p className="mt-2 leading-normal text-blue-100 text">{blurb || ''}</p>
+        <p className="mt-2 text">By: {artists || ''}</p>
+        <p className="mt-2 text-sm leading-snug ">{blurb || ''}</p>
         <audio src={previewUrl || ''} ref={audioRef}></audio>
+        {children}
       </div>
     </div>
   )

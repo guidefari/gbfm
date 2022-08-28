@@ -42,7 +42,7 @@ export default function PostPage({ source, frontMatter }) {
         <h1 className="title">{frontMatter.title}</h1>
         {frontMatter.description && <p>{frontMatter.description}</p>}
       </div>
-      <article className="max-w-4xl mx-auto prose">
+      <article className="prose">
         <MDXRemote {...source} components={components} />
       </article>
     </Layout>
