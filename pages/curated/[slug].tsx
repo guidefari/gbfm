@@ -1,3 +1,4 @@
+import { BackIcon } from '@/components/common/icons'
 import fs from 'fs'
 import matter from 'gray-matter'
 import { MDXRemote } from 'next-mdx-remote'
@@ -31,21 +32,9 @@ export default function PostPage({ source, frontMatter }) {
       <header>
         <nav className="w-8 h-8 m-3">
           <Link href="/">
-            <a className="hover:text-highlight">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M11 15l-3-3m0 0l3-3m-3 3h8M3 12a9 9 0 1118 0 9 9 0 01-18 0z"
-                />
-              </svg>
-            </a>
+            <button className="hover:text-highlight">
+              <BackIcon />
+            </button>
           </Link>
         </nav>
       </header>
@@ -53,7 +42,7 @@ export default function PostPage({ source, frontMatter }) {
         <h1 className="title">{frontMatter.title}</h1>
         {frontMatter.description && <p>{frontMatter.description}</p>}
       </div>
-      <article className="max-w-4xl mx-auto prose lg:prose-xl">
+      <article className="max-w-4xl mx-auto prose">
         <MDXRemote {...source} components={components} />
       </article>
     </Layout>
