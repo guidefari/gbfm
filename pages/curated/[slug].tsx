@@ -32,9 +32,9 @@ export default function PostPage({ source, frontMatter }) {
       <header>
         <nav className="w-8 h-8 m-3">
           <Link href="/">
-            <button className="hover:text-highlight">
+            <a className="hover:text-highlight">
               <BackIcon />
-            </button>
+            </a>
           </Link>
         </nav>
       </header>

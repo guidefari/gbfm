@@ -23,7 +23,7 @@ body, .prose {
 }
 
 a {
-    @apply transition ease-in-out;
+    @apply transition ease-in-out hover:underline;
 }
 
 .clickable-artwork {

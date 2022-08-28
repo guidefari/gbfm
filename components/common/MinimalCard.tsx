@@ -41,12 +41,6 @@ export const MinimalCard: React.FC<Props> = ({
     }
   }
 
-  // useEffect(() => {
-  //   if (previewUrl) {
-  //     audioRef.current.src = previewUrl
-  //   }
-  // }, [previewUrl])
-
   return (
     <div className="flex-shrink-0 my-5 group sm:flex lg:items-start">
       <div className="flex-shrink-0 mb-4 sm:mb-0 sm:mr-4">
@@ -64,23 +58,25 @@ export const MinimalCard: React.FC<Props> = ({
             width={320}
             height={320}
             onClick={handleAudioPreview}
+            loading="lazy"
           />
-          {playPreview ? (
-            <button
-              title="Pause Preview Audio"
-              className="absolute top-0 left-0 p-3 m-4 bg-white rounded-full"
-              onClick={handleAudioPreview}
-            >
-              <PauseIcon />
-            </button>
-          ) : (
-            <button
-              className="absolute top-0 left-0 p-3 m-4 bg-white rounded-full"
-              onClick={handleAudioPreview}
-            >
-              <PlayIcon />
-            </button>
-          )}
+          {previewUrl &&
+            (playPreview ? (
+              <button
+                title="Pause Preview Audio"
+                className="absolute top-0 left-0 p-3 m-4 rounded-full text-highlight bg-cyan-900"
+                onClick={handleAudioPreview}
+              >
+                <PauseIcon />
+              </button>
+            ) : (
+              <button
+                className="absolute top-0 left-0 p-3 m-4 rounded-full text-highlight bg-cyan-900"
+                onClick={handleAudioPreview}
+              >
+                <PlayIcon />
+              </button>
+            ))}
         </span>
       </div>
       <div>

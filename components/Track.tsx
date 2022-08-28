@@ -7,8 +7,6 @@ export default function Album({ url, genres }) {
   const { data, error } = useSWR(`/api/track?id=${url}`, fetcher)
   const loading = !data && !error
 
-  console.log(data)
-
   return (
     <div>
       <MinimalCard
