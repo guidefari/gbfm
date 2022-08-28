@@ -12,6 +12,10 @@
 - what could a playlist component look like?
 - tweets page/feature - that could be fun to work on
 - try and do nav around the site without a nav bar. trying to make it feel more like an app and a journey, than a website.
+- basic seo
+- how to avoid that font flash
+- image blur/image loading for the spotify components
+- Switch up the color palette, this looks a bit too similar to vault colors I think
 - font sizing for articles, try go for that vertical rhythm stuff
 - [ ] Spotify playlist component. What UX do I want from this
   - [ ] also test this to see what it returns. how can it impact my UX?
