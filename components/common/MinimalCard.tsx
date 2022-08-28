@@ -5,8 +5,8 @@ import { PauseIcon, PlayIcon } from './icons'
 
 interface Props {
   title: string
-  artists: string
-  blurb: string
+  artists?: string
+  blurb?: string
   imageUrl: string
   slug?: string
   genres?: string[]
