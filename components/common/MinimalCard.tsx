@@ -42,20 +42,20 @@ export const MinimalCard: React.FC<Props> = ({
   }
 
   return (
-    <div className="relative flex-shrink-0 my-5 sm:flex lg:items-start">
+    <div className="relative flex-shrink-0 p-3 my-5 rounded-md bg-cyan-900 sm:flex lg:items-start">
       <div className="flex-shrink-0 mb-4 sm:mb-0 sm:mr-4">
         {previewUrl &&
           (playPreview ? (
             <button
               title="Pause Preview Audio"
-              className="absolute top-0 left-0 z-10 p-3 m-4 rounded-full text-highlight bg-cyan-900"
+              className="absolute top-0 left-0 z-10 p-3 m-5 bg-teal-900 rounded-full text-highlight"
               onClick={handleAudioPreview}
             >
               <PauseIcon />
             </button>
           ) : (
             <button
-              className="absolute top-0 left-0 z-10 p-3 m-4 rounded-full text-highlight bg-cyan-900"
+              className="absolute top-0 left-0 z-10 p-3 m-5 bg-teal-900 rounded-full text-highlight"
               onClick={handleAudioPreview}
             >
               <PlayIcon />
