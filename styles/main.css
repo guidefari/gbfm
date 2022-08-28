@@ -2,11 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 @import url(fonts.css);
-@import url(prose.css);
+
+
+*{
+    font-size: 100%; /* 16px */
+    line-height: 1.25rem; /* 20px */
+}
 
 body, .prose {
     background-color: #16425b;
     color: #81C3D7;
+}
+
+.prose {
+    @apply px-3;
 }
 
 .title {
@@ -14,9 +23,73 @@ body, .prose {
 }
 
 a {
-    @apply transition ease-in-out;
+    @apply transition ease-in-out hover:underline;
 }
 
 .clickable-artwork {
     @apply transition duration-300 ease-in-out lg:hover:scale-105;
+}
+
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+ol,
+ul,
+table,
+blockquote,
+pre{
+    margin-bottom: 1.25rem; /* 20px */
+}
+
+h1{
+    font-size: 2rem;
+    line-height: 2.5rem;
+}
+ 
+h2{
+    font-size: 1.625rem;
+    line-height: 2.5rem;
+}
+ 
+h3{
+    font-size: 1.375rem;
+    line-height: 2.5rem;
+}
+ 
+h4{
+    font-size: 1.125rem;
+    line-height: 2.5rem;
+}
+ 
+h5{
+    font-size: 1rem;
+    line-height: 1.25rem;
+}
+ 
+h6{
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+}
+
+.prose a {
+    @apply text-highlight
+}
+
+.prose p {
+    @apply mb-3 text-lg;
+}
+
+/* Universal heading styles */
+.prose h1,
+.prose h2,
+.prose h3,
+.prose h4,
+.prose h5,
+.prose h6 {
+    @apply font-extrabold
 }

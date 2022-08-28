@@ -12,10 +12,18 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   }
 
   const albumType = response.album_type
-  const albumImageUrl = response.images[1].url
+  const albumImageUrl = response.images[0].url
   const title = response.name
   const artists = response.artists.map((_artist) => _artist.name).join(', ')
   const albumUrl = response.external_urls.spotify
 
-  return res.status(200).json({ albumType, albumImageUrl, title, artists, albumUrl })
+  const number_of_tracks_in_album = response.tracks.items.length
+  const preview_url_track_number = randomNumberWithinRange(0, number_of_tracks_in_album - 1)
+  const previewUrl = response.tracks.items[preview_url_track_number].preview_url
+
+  return res.status(200).json({ albumType, albumImageUrl, title, artists, albumUrl, previewUrl })
+}
+
+function randomNumberWithinRange(myMin, myMax) {
+  return Math.floor(Math.random() * (myMax - myMin + 1) + myMin)
 }

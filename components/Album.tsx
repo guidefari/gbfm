@@ -31,6 +31,7 @@ export default function Album({ url, genres }) {
         imageUrl={data?.albumImageUrl}
         title={data?.title || ''}
         genres={genres || ''}
+        previewUrl={data?.previewUrl || ''}
       />
     </div>
   )

@@ -7,18 +7,17 @@ export default function Album({ url, genres }) {
   const { data, error } = useSWR(`/api/track?id=${url}`, fetcher)
   const loading = !data && !error
 
-  console.log(data)
-
   return (
     <div>
-        <MinimalCard
-          loading={loading}
-          slug={data?.trackUrl || ''}
-          blurb={data?.artists || ''}
-          imageUrl={data?.albumImageUrl || ''}
-          title={data?.title || ''}
-          genres={genres || ''}
-        />
+      <MinimalCard
+        loading={loading}
+        slug={data?.trackUrl || ''}
+        blurb={data?.artists || ''}
+        imageUrl={data?.albumImageUrl || ''}
+        title={data?.title || ''}
+        genres={genres || ''}
+        previewUrl={data?.previewUrl || ''}
+      />
     </div>
   )
 }
