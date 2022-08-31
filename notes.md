@@ -19,6 +19,8 @@
 # Multi Author support **CURRENT WIP**
 - Author component on post layout
 - when viewing a single author, see all the posts they've done
+- again, https://github.dev/timlrx/tailwind-nextjs-starter-blog is pretty helpful to see how this could be structured
+- try have data fetching being done as close to author components as possible, or however feels most intuitive. whatever encapsulates the code best.
 
 # Playlist component UX
 - iPad has sketches
