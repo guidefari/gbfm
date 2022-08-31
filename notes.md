@@ -13,6 +13,7 @@
 - font sizing for articles, try go for that vertical rhythm stuff
 - [ ] Spotify playlist component. What UX do I want from this
   - [ ] also test this to see what it returns. how can it impact my UX?
+- [ ] I need to set up lint & prettier
 
 ## Some helpful links
 - [React Spotify Embed components](https://github.com/ctjlewis/react-spotify-embed)

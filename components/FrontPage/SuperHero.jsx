@@ -1,6 +1,7 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import React from 'react'
+import CustomLink from '../CustomLink'
 // import avatar from '/static/images/yo.png'
 
 // Pixel GIF code adapted from https://stackoverflow.com/a/33919020/266535
@@ -34,14 +35,19 @@ export const SuperHero = () => {
                 className="w-48 h-48 rounded-full"
               />
               <div className="flex flex-col items-center justify-center text-center">
-                <h2 className="mt-4 text-lg font-medium title-font">Guide Fari</h2>
+                <h2 className="mt-4 text-lg font-medium title-font">
+                  <CustomLink href={'/author/guide'}>
+                    <span>Guide Fari</span>
+                  </CustomLink>
+                </h2>
+
                 <div className="w-12 h-1 mt-2 mb-4 rounded bg-highlight" />
                 <p className="max-w-md px-2 mx-auto text-base text-left md:px-6">
                   I love connecting people to new music. One of my favourite ways to spend time is
                   to chat music - say hello, let me know what music you've been enjoying. I may have{' '}
-                  <Link href="/curated/ifttt">
-                    <span className="italic underline">similar stuff to share</span>
-                  </Link>{' '}
+                  <CustomLink href="/curated/ifttt">
+                    <span>similar stuff to share</span>
+                  </CustomLink>{' '}
                   🙂
                 </p>
               </div>

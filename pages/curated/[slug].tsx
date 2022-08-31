@@ -49,6 +49,19 @@ export default function PostPage({ source, frontMatter }) {
   )
 }
 
+export const getStaticPaths = async () => {
+  const paths = postFilePaths
+    // Remove file extensions for page paths
+    .map((path) => path.replace(/\.mdx?$/, ''))
+    // Map the path into the static paths object required by Next.js
+    .map((slug) => ({ params: { slug } }))
+
+  return {
+    paths,
+    fallback: false,
+  }
+}
+
 export const getStaticProps = async ({ params }) => {
   const postFilePath = path.join(POSTS_PATH, `${params.slug}.mdx`)
   const source = fs.readFileSync(postFilePath)
@@ -69,18 +82,5 @@ export const getStaticProps = async ({ params }) => {
       source: mdxSource,
       frontMatter: data,
     },
-  }
-}
-
-export const getStaticPaths = async () => {
-  const paths = postFilePaths
-    // Remove file extensions for page paths
-    .map((path) => path.replace(/\.mdx?$/, ''))
-    // Map the path into the static paths object required by Next.js
-    .map((slug) => ({ params: { slug } }))
-
-  return {
-    paths,
-    fallback: false,
   }
 }
