@@ -20,7 +20,13 @@ export const Tweet: React.FC<Props> = ({ authorName, children, date, handle, ava
               target="_blank"
               rel="noopener noreferrer"
             >
-              <Image alt={authorName} src={avatarUrl} className="rounded-full" />
+              <Image
+                alt={authorName}
+                src={avatarUrl}
+                width={48}
+                height={48}
+                className="rounded-full"
+              />
             </a>
             <a
               href="https://twitter.com/guidefari"
