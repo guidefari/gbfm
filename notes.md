@@ -3,11 +3,12 @@
 
 # Up next
 - [ ] can probably make use of that uri lib in the api files. that way I can use components with id, or full url. one less thing I have to do when writing content
+- [ ] I need to set up lint & prettier
 - [ ] funny animation to use as default when waiting for album art to load?
 - [ ] transitions and animations as you move pages?
-- basic seo
-- how to avoid that font flash
-- [ ] I need to set up lint & prettier
+- [ ] multiple author support
+- [ ] basic seo
+- [ ] how to avoid that font flash
 
 ## Some helpful links
 - [React Spotify Embed components](https://github.com/ctjlewis/react-spotify-embed)
