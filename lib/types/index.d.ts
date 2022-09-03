@@ -6,3 +6,11 @@ export type NowPlayingSong = {
   songUrl: string
   title: string
 }
+
+export type Tweet = {
+  authorName: string
+  handle: string
+  avatarUrl: string
+  date: string
+  children: React.ReactNode
+}
