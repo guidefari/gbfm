@@ -40,7 +40,9 @@ export default function PostPage({ source, frontMatter }) {
       </header>
       <div className="mt-10 mb-12 text-center md:mb-16 lg:mb-24">
         <h1 className="title">{frontMatter.title}</h1>
-        {frontMatter.description && <p>{frontMatter.description}</p>}
+        {frontMatter.description && (
+          <p className="font-bold text-highlight">{frontMatter.description}</p>
+        )}
       </div>
       <article className="prose">
         <MDXRemote {...source} components={components} />
