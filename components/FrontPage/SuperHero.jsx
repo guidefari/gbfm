@@ -30,8 +30,8 @@ export const SuperHero = () => {
                 placeholder="blur"
                 blurDataURL={rgbDataURL(129, 195, 215)}
                 alt="avatar"
-                width="69px"
-                height="69px"
+                width={69}
+                height={69}
                 className="w-48 h-48 rounded-full"
               />
               <div className="flex flex-col items-center justify-center text-center">
