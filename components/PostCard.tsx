@@ -20,7 +20,7 @@ export const PostCard: React.FC<Props> = ({ date, title, description, thumbnailU
             thumbnailUrl ||
             'https://res.cloudinary.com/hokaspokas/image/upload/v1657259208/here-hugo/fmfm_hyskxj.svg'
           }
-          alt="text"
+          alt={`Thumbnail image for post titled - ${title}`}
           width={320}
           height={320}
           loading="lazy"
