@@ -93,7 +93,7 @@ export const MinimalCard: React.FC<Props> = ({
           <a
             target="_blank"
             href={(slug as string) || ''}
-            className="mb-0 text-xl leading-tight text-indigo-900 hover:transition-all hover:underline"
+            className="mb-0 text-xl leading-tight text-indigo-900 hover:transition-all hover:underline" rel="noreferrer"
           >
             {title || ''}
           </a>

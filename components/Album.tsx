@@ -14,14 +14,15 @@ export default function Album({ url, genres, blurb, children }) {
       <MinimalCard
         blurb={blurb || ''}
         loading={loading}
-        children={children}
         slug={data?.albumUrl || ''}
         artists={data?.artists || ''}
         imageUrl={data?.albumImageUrl}
         title={data?.title || ''}
         genres={genres || ''}
         previewUrl={data?.previewUrl || ''}
-      />
+      >
+        {children}
+      </MinimalCard>
     </div>
   )
 }

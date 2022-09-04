@@ -46,6 +46,6 @@
 //   )
 // }
 
-export default function Genres({}) {
+export default function Genres() {
   return <div></div>
 }

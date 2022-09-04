@@ -18,8 +18,9 @@ export default function Track({ url, genres, blurb, children }) {
         artists={data?.artists || ''}
         genres={genres || ''}
         previewUrl={data?.previewUrl || ''}
-        children={children}
-      />
+      >
+        {children}
+      </MinimalCard>
     </div>
   )
 }

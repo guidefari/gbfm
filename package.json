@@ -4,6 +4,7 @@
     "dev": "next",
     "dev:watch": "next-remote-watch ./posts",
     "build": "next build",
+    "lint": "next lint",
     "start": "next start"
   },
   "dependencies": {

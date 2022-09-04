@@ -1,4 +1,5 @@
 import { BackIcon } from '@/components/common/icons'
+import { PageSEO } from '@/components/SEO'
 import fs from 'fs'
 import matter from 'gray-matter'
 import { MDXRemote } from 'next-mdx-remote'
@@ -28,26 +29,34 @@ const components = {
 
 export default function PostPage({ source, frontMatter }) {
   return (
-    <Layout>
-      <header>
-        <nav className="w-8 h-8 m-3">
-          <Link href="/">
-            <a className="hover:text-highlight">
-              <BackIcon />
-            </a>
-          </Link>
-        </nav>
-      </header>
-      <div className="mt-10 mb-12 text-center md:mb-16 lg:mb-24">
-        <h1 className="title">{frontMatter.title}</h1>
-        {frontMatter.description && (
-          <p className="font-bold text-highlight">{frontMatter.description}</p>
-        )}
-      </div>
-      <article className="prose">
-        <MDXRemote {...source} components={components} />
-      </article>
-    </Layout>
+    <>
+      <Layout>
+        <PageSEO
+          title={frontMatter.title}
+          description={frontMatter.description || 'Goosebumps.fm curated sounds'}
+          ogImageUrl={frontMatter.thumbnailUrl || null}
+        />
+
+        <header>
+          <nav className="w-8 h-8 m-3">
+            <Link href="/">
+              <a className="hover:text-highlight">
+                <BackIcon />
+              </a>
+            </Link>
+          </nav>
+        </header>
+        <div className="mt-10 mb-12 text-center md:mb-16 lg:mb-24">
+          <h1 className="title">{frontMatter.title}</h1>
+          {frontMatter.description && (
+            <p className="font-bold text-highlight">{frontMatter.description}</p>
+          )}
+        </div>
+        <article className="prose">
+          <MDXRemote {...source} components={components} />
+        </article>
+      </Layout>
+    </>
   )
 }
 
