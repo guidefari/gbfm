@@ -18,7 +18,7 @@ export const PostCard: React.FC<Props> = ({ date, title, description, thumbnailU
           className="object-cover w-full rounded-md sm:h-32 sm:w-32"
           src={
             thumbnailUrl ||
-            'https://res.cloudinary.com/hokaspokas/image/upload/v1657259208/here-hugo/fmfm_hyskxj.svg'
+            'https://res.cloudinary.com/hokaspokas/image/upload/v1658044917/goosebumpsfm/generic_xvsrwv.svg'
           }
           alt={`Thumbnail image for post titled - ${title}`}
           width={320}
