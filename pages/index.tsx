@@ -16,7 +16,7 @@ export default function Index({ posts }) {
     <Layout>
       <SuperHero />
       <h3 className="title">Words & Sounds</h3>
-      <section className="grid grid-cols-1 gap-12 mx-auto max-w-7xl lg:gap-24 lg:grid-cols-2">
+      <section className="grid grid-cols-1 gap-12 mx-4 lg:mx-auto max-w-7xl lg:gap-24 lg:grid-cols-2">
         {draftsFilteredOut.map((post) => (
           <PostCard
             slug={`/curated/${post.filePath.replace(/\.mdx?$/, '')}`}

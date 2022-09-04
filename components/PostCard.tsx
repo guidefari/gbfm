@@ -21,19 +21,20 @@ export const PostCard: React.FC<Props> = ({ date, title, description, thumbnailU
             'https://res.cloudinary.com/hokaspokas/image/upload/v1657259208/here-hugo/fmfm_hyskxj.svg'
           }
           alt="text"
-          width={128}
-          height={128}
+          width={320}
+          height={320}
           loading="lazy"
+          quality={100}
         />
       </div>
       <div>
-        <span className="text-sm text-gray-500">{date || ''}</span>
+        <span className="text-sm opacity-80">{date || ''}</span>
         <p className="mt-3 text-lg font-medium leading-6">
-          <CustomLink href={slug} as={slug} className="text-xl text-gray-800 hover:text-gray-500">
+          <CustomLink href={slug} as={slug} className="text-xl ">
             {title}
           </CustomLink>
         </p>
-        <p className="mt-2 leading-normal text-gray-500 text">{description || ''}</p>
+        <p className="mt-2 leading-normal text">{description || ''}</p>
       </div>
     </div>
   )
