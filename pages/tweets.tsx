@@ -12,6 +12,7 @@ import Head from 'next/head'
 import Layout from '../components/Layout'
 import { postFilePaths, POSTS_PATH, tweetFilePaths, TWEETS_PATH } from '../utils/mdxUtils'
 import { MDXRemote } from 'next-mdx-remote'
+import { useEffect, useState } from 'react'
 
 const components = {
   a: CustomLink,
@@ -25,33 +26,51 @@ const components = {
 }
 
 export default function Index({ tweets }) {
+  const [tweetsState, setTweetsState] = useState([null])
+
   const draftsFilteredOut = tweets.filter((tweet) => tweet.data.draft !== true)
-  const fixedItems = draftsFilteredOut.map(
-    async (tweet) => await fixShit(tweet).then((data) => console.log('fixedItemMM:', data))
-  )
+  const fixedItems = draftsFilteredOut.map(async (tweet) => await fixShit(tweet))
+
+  useEffect(() => {
+    // if (fixedItems) setTweetsState([...fixedItems])
+    console.log('====================================')
+    console.log(fixedItems)
+    console.log('====================================')
+  }, [fixedItems])
 
   async function fixShit(post) {
-    const fixedShit = await serialize(post.content)
+    const fixedShit = await Promise.resolve(
+      serialize(post.content, {
+        // Optionally pass remark/rehype plugins
+        mdxOptions: {
+          remarkPlugins: [],
+          rehypePlugins: [],
+        },
+        scope: post.data,
+      })
+    )
 
-    return { data: post.data, content: fixedShit }
+    return { frontMatter: post.data, content: fixedShit }
   }
 
   return (
     <>
-      {draftsFilteredOut.map((tweet, index) => {
-        return (
-          <Tweet
-            authorName="sd"
-            avatarUrl={tweet.data.avatarUrl}
-            date="sds"
-            handle="sdfsd"
-            key={index}
-          >
-            {/* {serialize(tweet.content)} */}
-            {/* <MDXRemote {...tweet.content} components={components} /> */}
-          </Tweet>
-        )
-      })}
+      {fixedItems
+        ? draftsFilteredOut.map((tweet, index) => {
+            return (
+              <Tweet
+                authorName="sd"
+                avatarUrl={tweet.data.avatarUrl}
+                date="sds"
+                handle="sdfsd"
+                key={index}
+              >
+                {/* {serialize(tweet.content)} */}
+                {/* <MDXRemote {...tweet.content} components={components} /> */}
+              </Tweet>
+            )
+          })
+        : ''}
     </>
     // <Layout>
     //   <SuperHero />
