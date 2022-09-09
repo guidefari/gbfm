@@ -35,6 +35,7 @@ export default function PostPage({ source, frontMatter }) {
           title={frontMatter.title}
           description={frontMatter.description || 'Goosebumps.fm curated sounds'}
           ogImageUrl={frontMatter.thumbnailUrl || null}
+          canonicalUrl={frontMatter.canonicalUrl || null}
         />
 
         <header>

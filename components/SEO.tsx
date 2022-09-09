@@ -49,9 +49,15 @@ interface PageSeoProps {
   title: string
   description?: string
   ogImageUrl?: string
+  canonicalUrl?: string
 }
 
-export const PageSEO: React.FC<PageSeoProps> = ({ title, description, ogImageUrl }) => {
+export const PageSEO: React.FC<PageSeoProps> = ({
+  title,
+  description,
+  ogImageUrl,
+  canonicalUrl,
+}) => {
   return (
     <CommonSEO
       title={title}
@@ -59,6 +65,7 @@ export const PageSEO: React.FC<PageSeoProps> = ({ title, description, ogImageUrl
       ogType="website"
       ogImage={ogImageUrl || siteMetadata.socialBanner}
       twImage={ogImageUrl || siteMetadata.socialBanner}
+      canonicalUrl={canonicalUrl}
     />
   )
 }
