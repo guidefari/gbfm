@@ -14,7 +14,7 @@ export default function Index({ posts }) {
 
   return (
     <Layout>
-      <PageSEO title="Goosebumps dot fm" description={'Curated Music & the occasional prose'} />
+      <PageSEO title="goosebumps dot fm" description={'Curated Music & the occasional prose'} />
       <SuperHero />
       <h3 className="title">Prose & Sounds</h3>
       <section className="grid grid-cols-1 gap-12 mx-4 lg:mx-auto max-w-7xl lg:gap-24 lg:grid-cols-2">
