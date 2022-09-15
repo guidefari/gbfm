@@ -72,7 +72,7 @@ export const MinimalCard: React.FC<Props> = ({
           )}
           src={
             imageUrl ||
-            'https://res.cloudinary.com/hokaspokas/image/upload/v1657259208/here-hugo/fmfm_hyskxj.svg'
+            'https://res.cloudinary.com/hokaspokas/image/upload/v1663215495/goosebumpsfm/spotify_filler.svg'
           }
           alt={title}
           width={320}
@@ -93,7 +93,8 @@ export const MinimalCard: React.FC<Props> = ({
           <a
             target="_blank"
             href={(slug as string) || ''}
-            className="mb-0 text-xl leading-tight text-indigo-900 hover:transition-all hover:underline" rel="noreferrer"
+            className="mb-0 text-xl leading-tight text-indigo-900 hover:transition-all hover:underline"
+            rel="noreferrer"
           >
             {title || ''}
           </a>
