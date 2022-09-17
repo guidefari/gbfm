@@ -50,7 +50,7 @@ export const SuperHero = () => {
                   </CustomLink>{' '}
                   🙂
                   <br />
-                  Interested in <CustomLink href="collaborate">collaborative content</CustomLink>?
+                  Interested in <CustomLink href="collaborate">collaborative works</CustomLink>?
                 </p>
               </div>
             </div>
