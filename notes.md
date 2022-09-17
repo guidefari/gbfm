@@ -7,7 +7,6 @@
 - [ ] funny animation to use as default when waiting for album art to load?
 - [ ] transitions and animations as you move pages?
 - [ ] multiple author support
-- [ ] basic seo
 - [ ] how to avoid that font flash
 
 ## Some helpful links
