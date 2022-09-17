@@ -1,6 +1,6 @@
 import Image from 'next/future/image'
-import Link from 'next/link'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useRef, useState } from 'react'
+import CustomLink from '../CustomLink'
 import { PauseIcon, PlayIcon } from './icons'
 
 interface Props {
@@ -90,14 +90,15 @@ export const MinimalCard: React.FC<Props> = ({
           ))}
         <p className="mt-3 text-lg font-medium leading-6">
           Title:{' '}
-          <a
+          <CustomLink
             target="_blank"
             href={(slug as string) || ''}
+            as={(slug as string) || ''}
             className="mb-0 text-xl leading-tight text-indigo-900 hover:transition-all hover:underline"
             rel="noreferrer"
           >
             {title || ''}
-          </a>
+          </CustomLink>
         </p>
         <p className="mt-2 text">By: {artists || ''}</p>
         <p className="mt-2 text-sm leading-snug ">{blurb || ''}</p>

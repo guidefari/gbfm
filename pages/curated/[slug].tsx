@@ -22,7 +22,6 @@ const components = {
   // It also works with dynamically-imported components, which is especially
   // useful for conditionally loading components for certain routes.
   // See the notes in README.md for more details.
-  TestComponent: dynamic(() => import('../../components/TestComponent')),
   Album: dynamic(() => import('../../components/Album')),
   Track: dynamic(() => import('../../components/Track')),
   Head,
@@ -42,7 +41,7 @@ export default function PostPage({ source, frontMatter }) {
         <header>
           <nav className="w-8 h-8 m-3">
             <Link href="/">
-              <a className="hover:text-highlight">
+              <a className="hover:text-gb-tomato">
                 <BackIcon />
               </a>
             </Link>
@@ -51,7 +50,7 @@ export default function PostPage({ source, frontMatter }) {
         <div className="mt-10 mb-12 text-center md:mb-16 lg:mb-24">
           <h1 className="title">{frontMatter.title}</h1>
           {frontMatter.description && (
-            <p className="font-bold text-highlight">{frontMatter.description}</p>
+            <p className="font-bold text-gb-highlight">{frontMatter.description}</p>
           )}
         </div>
         <article className="prose">

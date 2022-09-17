@@ -5,6 +5,7 @@ import { animate } from 'motion'
 import fetcher from 'lib/fetcher'
 import { NowPlayingSong } from 'lib/types'
 import Image from 'next/future/image'
+import CustomLink from './CustomLink'
 
 function AnimatedBars() {
   useEffect(() => {
@@ -58,7 +59,7 @@ function AnimatedBars() {
   }, [])
 
   return (
-    <div className="flex items-end w-auto overflow-hidden">
+    <div className="flex items-end w-auto overflow-hidden animate-bounce">
       <span id="bar1" className="mr-[3px] h-2 w-1 bg-highlight opacity-75 " />
       <span id="bar2" className="mr-[3px] h-1 w-1 bg-highlight " />
       <span id="bar3" className="w-1 h-3 bg-highlight opacity-80 " />
@@ -70,7 +71,7 @@ export default function Nowplaying() {
   const { data } = useSWR<NowPlayingSong>('/api/now-playing', fetcher)
 
   return (
-    <div className="flex flex-row items-center w-full max-w-md p-2 mx-auto space-x-2 border-2 rounded-lg border-highlight">
+    <div className="flex flex-row items-center w-full max-w-md p-2 mx-auto space-x-2 rounded-lg ">
       {data?.albumImageUrl ? (
         <a
           className="clickable-artwork"
@@ -99,18 +100,20 @@ export default function Nowplaying() {
       )}
       <div className="flex-col w-full max-w-full truncate sm:flex-row">
         {data?.songUrl ? (
-          <a
-            className="font-extrabold truncate capsize max-w-max hover:text-highlight"
+          <CustomLink
+            className="font-extrabold truncate capsize max-w-max"
             href={data.songUrl}
+            as={data.songUrl}
             target="_blank"
             rel="noopener noreferrer"
           >
             {data.title}
-          </a>
+          </CustomLink>
         ) : (
           <p className="font-medium capsize ">Not Playing</p>
         )}
         <p className="truncate capsize max-w-max ">{data?.artist ?? 'Spotify'}</p>
+        {data && <p className="mt-4 text-xs truncate capsize max-w-max">Playing 👆 on Spotify</p>}
       </div>
     </div>
   )

@@ -12,6 +12,7 @@
 body, .prose {
     background-color: #16425b;
     color: #81C3D7;
+    @apply font-jetbrains;
 }
 
 .prose {

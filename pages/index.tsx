@@ -9,8 +9,6 @@ import Layout from '../components/Layout'
 import { postFilePaths, POSTS_PATH } from '../utils/mdxUtils'
 
 export default function Index({ posts }) {
-  console.log(posts)
-
   const draftsFilteredOut = posts.filter((post) => post.data.draft !== true)
 
   return (
