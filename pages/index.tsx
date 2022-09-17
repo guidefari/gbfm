@@ -1,3 +1,4 @@
+import { Newsletter } from '@/components/Newsletter'
 import { PostCard } from '@/components/PostCard'
 import { PageSEO } from '@/components/SEO'
 import fs from 'fs'
@@ -29,6 +30,7 @@ export default function Index({ posts }) {
           />
         ))}
       </section>
+      <Newsletter />
     </Layout>
   )
 }

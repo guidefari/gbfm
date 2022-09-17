@@ -1,4 +1,5 @@
 import { BackIcon } from '@/components/common/icons'
+import { Newsletter } from '@/components/Newsletter'
 import { PageSEO } from '@/components/SEO'
 import fs from 'fs'
 import matter from 'gray-matter'
@@ -56,6 +57,7 @@ export default function PostPage({ source, frontMatter }) {
         <article className="prose">
           <MDXRemote {...source} components={components} />
         </article>
+        <Newsletter />
       </Layout>
     </>
   )
