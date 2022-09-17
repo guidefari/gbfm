@@ -49,6 +49,8 @@ export const SuperHero = () => {
                     <span>similar stuff to share</span>
                   </CustomLink>{' '}
                   🙂
+                  <br />
+                  Interested in <CustomLink href="collaborate">collaborative content</CustomLink>?
                 </p>
               </div>
             </div>
