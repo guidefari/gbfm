@@ -113,7 +113,9 @@ export default function Nowplaying() {
           <p className="font-medium capsize ">Not Playing</p>
         )}
         <p className="truncate capsize max-w-max ">{data?.artist ?? 'Spotify'}</p>
-        {data && <p className="mt-4 text-xs truncate capsize max-w-max">Playing 👆 on Spotify</p>}
+        {data?.songUrl && (
+          <p className="mt-4 text-xs truncate capsize max-w-max">Playing 👆 on Spotify</p>
+        )}
       </div>
     </div>
   )
