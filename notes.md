@@ -2,6 +2,10 @@
 - [That Tailwind blog repo](https://github.com/timlrx/tailwind-nextjs-starter-blog) - some good code in there :)
 
 # Up next
+- [ ] Newsletter sign up to keep up to date with new posts, & feature updates.
+  - [ ] No more than one email per week
+  - [ ] use buttondown
+  - [ ] find a tailwind component
 - [ ] can probably make use of that uri lib in the api files. that way I can use components with id, or full url. one less thing I have to do when writing content
 - [ ] how to avoid that font flash
 
