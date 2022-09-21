@@ -2,8 +2,6 @@
 import fetcher from '@/lib/fetcher'
 import useSWR from 'swr'
 import { MinimalCard } from './common/MinimalCard'
-// import { parse } from 'spotify-uri'
-// const { parse } = require('spotify-uri')
 
 export default function Album({ url, genres, blurb, children }) {
   const encoded = encodeURIComponent(url)
