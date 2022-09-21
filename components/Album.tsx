@@ -6,7 +6,9 @@ import { MinimalCard } from './common/MinimalCard'
 // const { parse } = require('spotify-uri')
 
 export default function Album({ url, genres, blurb, children }) {
-  const { data, error } = useSWR(`/api/album?id=${url}`, fetcher)
+  const encoded = encodeURIComponent(url)
+
+  const { data, error } = useSWR(`/api/album?id=${encoded}`, fetcher)
   const loading = !data && !error
 
   return (
