@@ -1,10 +1,19 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getAlbumDetails } from '../../lib/spotify'
+const { parse } = require('spotify-uri')
 
 // eslint-disable-next-line import/no-anonymous-default-export
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { query } = req
-  const id = query?.id
+  let id
+
+  try {
+    const isLink = !!new URL(query?.id as string)
+    const item = parse(query?.id)
+    id = item.id
+  } catch (error) {
+    id = query?.id
+  }
 
   const response = await getAlbumDetails(id)
   if (response.status > 400) {

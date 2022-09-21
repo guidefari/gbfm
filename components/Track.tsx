@@ -4,7 +4,9 @@ import useSWR from 'swr'
 import { MinimalCard } from './common/MinimalCard'
 
 export default function Track({ url, genres, blurb, children }) {
-  const { data, error } = useSWR(`/api/track?id=${url}`, fetcher)
+  const encoded = encodeURIComponent(url)
+
+  const { data, error } = useSWR(`/api/track?id=${encoded}`, fetcher)
   const loading = !data && !error
 
   return (
