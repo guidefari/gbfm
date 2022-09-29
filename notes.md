@@ -3,6 +3,9 @@
 
 ## **UP NEXT!!** Playlist component
 - iPad has UX sketches
+## Tweets page UX
+- iPad has notes
+- [This repo](https://github.com/Vincenius/modest) should be helpful
 
 ## TODO: Remove @ts-nocheck from components
 
@@ -23,8 +26,6 @@
 - try have data fetching being done as close to author components as possible, or however feels most intuitive. whatever encapsulates the code best.
 
 
-## Tweets page UX
-- iPad has notes
 
 ## Wishlist
 - [ ] funny animation to use as default when waiting for album art to load?
