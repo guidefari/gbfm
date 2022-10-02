@@ -1,3 +1,5 @@
+import React from 'react'
+
 export type NowPlayingSong = {
   album: string
   albumImageUrl: string
