@@ -28,7 +28,7 @@ export default function Index({ tweets }) {
       <h1 className="title">Tweets</h1>
       <p>Where short form prose lives</p>
 
-      <div className="container grid gap-8 p-6 mx-auto md:grid-cols-2 ">
+      <div className="max-w-xl mx-auto ">
         {tweets.map((tweet, index) => {
           return (
             <Tweet
