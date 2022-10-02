@@ -25,23 +25,24 @@ export default function Index({ tweets }) {
   console.log('tweets:', tweets)
   return (
     <Layout>
-      <h1 className="title">Short form prose</h1>
+      <h1 className="title">Tweets</h1>
+      <p>Where short form prose lives</p>
 
-      {/* <div className="container grid gap-8 pt-6 mx-auto sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3"> */}
-      {tweets.map((tweet, index) => {
-        return (
-          <Tweet
-            authorName={tweet.scope.authorName}
-            avatarUrl={tweet.scope.avatarUrl}
-            date={tweet.scope.date}
-            handle={tweet.scope.handle}
-            key={index}
-          >
-            <MDXRemote compiledSource={tweet.compiledSource} components={components} />
-          </Tweet>
-        )
-      })}
-      {/* </div> */}
+      <div className="container grid gap-8 p-6 mx-auto md:grid-cols-2 ">
+        {tweets.map((tweet, index) => {
+          return (
+            <Tweet
+              authorName={tweet.scope.authorName}
+              avatarUrl={tweet.scope.avatarUrl}
+              date={tweet.scope.date}
+              handle={tweet.scope.handle}
+              key={index}
+            >
+              <MDXRemote compiledSource={tweet.compiledSource} components={components} />
+            </Tweet>
+          )
+        })}
+      </div>
     </Layout>
   )
 }

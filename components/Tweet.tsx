@@ -11,7 +11,7 @@ interface Props {
 
 export const Tweet: React.FC<Props> = ({ authorName, children, date, handle, avatarUrl }) => {
   return (
-    <div className="relative py-3 sm:max-w-xl sm:mx-auto">
+    <div className="relative py-3">
       <div className="w-full px-6 py-4 my-4 border border-gray-300 rounded-2xl">
         <div className="flex items-center">
           <a
