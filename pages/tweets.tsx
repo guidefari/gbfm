@@ -68,8 +68,10 @@ export const getStaticProps = async () => {
 
   const draftsFilteredOutAndSorted = tweets
     .filter((tweet) => tweet.scope.draft !== true)
-    // @ts-expect-error
-    .sort((a, b) => new Date(b.scope.date).getTime - new Date(a.scope.date).getTime)
+    .sort(
+      (a, b) =>
+        new Date(b.scope.date as string).getTime() - new Date(a.scope.date as string).getTime()
+    )
 
   return { props: { tweets: draftsFilteredOutAndSorted } }
 }
