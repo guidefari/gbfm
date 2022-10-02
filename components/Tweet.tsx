@@ -1,4 +1,5 @@
 import Image from 'next/future/image'
+import React from 'react'
 
 interface Props {
   authorName: string
@@ -10,7 +11,7 @@ interface Props {
 
 export const Tweet: React.FC<Props> = ({ authorName, children, date, handle, avatarUrl }) => {
   return (
-    <div className="flex flex-col justify-center min-h-screen py-6 bg-gray-100 sm:py-12">
+    <div className="">
       <div className="relative py-3 sm:max-w-xl sm:mx-auto">
         <div className="w-full px-6 py-4 my-4 border border-gray-300 rounded-2xl">
           <div className="flex items-center">
@@ -34,21 +35,16 @@ export const Tweet: React.FC<Props> = ({ authorName, children, date, handle, ava
               rel="noopener noreferrer"
               className="flex flex-col ml-4"
             >
-              <span
-                className="flex items-center font-bold leading-5 text-gray-900"
-                title="{author.name}"
-              >
+              <span className="flex items-center font-bold leading-5 " title={authorName}>
                 {authorName}
               </span>
-              <span className="text-gray-500" title="{`@guidefari`}">
+              <span className="" title={`@${handle}`}>
                 {' '}
                 @{handle}{' '}
               </span>
             </a>
           </div>
-          <div className="mt-4 mb-2 text-lg leading-normal text-gray-700 whitespace-pre-wrap">
-            {children}
-          </div>
+          <div className="mt-4 mb-2 text-lg leading-normal whitespace-pre-wrap">{children}</div>
           {date}
         </div>
       </div>
