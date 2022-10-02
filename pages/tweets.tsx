@@ -1,18 +1,15 @@
 import CustomLink from '@/components/CustomLink'
 import { Tweet } from '@/components/Tweet'
-import { Tweet as TweetType } from '@/lib/types'
 import fs from 'fs'
 import matter from 'gray-matter'
 import { serialize } from 'next-mdx-remote/serialize'
 import dynamic from 'next/dynamic'
 import path from 'path'
-import { SuperHero } from '../components/FrontPage/SuperHero'
 import Head from 'next/head'
 
 import Layout from '../components/Layout'
-import { postFilePaths, POSTS_PATH, tweetFilePaths, TWEETS_PATH } from '../utils/mdxUtils'
+import { tweetFilePaths, TWEETS_PATH } from '../utils/mdxUtils'
 import { MDXRemote } from 'next-mdx-remote'
-import { useEffect, useState } from 'react'
 
 const components = {
   a: CustomLink,
@@ -24,14 +21,14 @@ const components = {
   Head,
 }
 
-export default function Index({ draftsFilteredOut }) {
-  console.log('tweets:', draftsFilteredOut)
-
+export default function Index({ tweets }) {
+  console.log('tweets:', tweets)
   return (
     <Layout>
       <h1 className="title">Short form prose</h1>
 
-      {draftsFilteredOut.map((tweet, index) => {
+      {/* <div className="container grid gap-8 pt-6 mx-auto sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3"> */}
+      {tweets.map((tweet, index) => {
         return (
           <Tweet
             authorName={tweet.scope.authorName}
@@ -44,6 +41,7 @@ export default function Index({ draftsFilteredOut }) {
           </Tweet>
         )
       })}
+      {/* </div> */}
     </Layout>
   )
 }
@@ -68,7 +66,10 @@ export const getStaticProps = async () => {
     })
   )
 
-  const draftsFilteredOut = tweets.filter((tweet) => tweet.scope.draft !== true)
+  const draftsFilteredOutAndSorted = tweets
+    .filter((tweet) => tweet.scope.draft !== true)
+    // @ts-expect-error
+    .sort((a, b) => new Date(b.scope.date).getTime - new Date(a.scope.date).getTime)
 
-  return { props: { draftsFilteredOut } }
+  return { props: { tweets: draftsFilteredOutAndSorted } }
 }
