@@ -1,3 +1,5 @@
+import React from 'react'
+
 export type NowPlayingSong = {
   album: string
   albumImageUrl: string
@@ -5,4 +7,12 @@ export type NowPlayingSong = {
   isPlaying: boolean
   songUrl: string
   title: string
+}
+
+export type Tweet = {
+  authorName: string
+  handle: string
+  avatarUrl: string
+  date: string
+  children: React.ReactNode
 }

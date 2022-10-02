@@ -46,7 +46,7 @@ export const MinimalCard: React.FC<Props> = ({
   }
 
   return (
-    <div className="relative flex-shrink-0 max-w-6xl p-3 mx-auto my-5 rounded-md bg-cyan-900 sm:flex lg:items-start">
+    <div className="relative flex-shrink-0 max-w-md p-3 my-5 rounded-md bg-cyan-900 ">
       <div className="flex-shrink-0 mb-4 sm:mb-0 sm:mr-4">
         {previewUrl &&
           (playPreview ? (
@@ -67,7 +67,7 @@ export const MinimalCard: React.FC<Props> = ({
           ))}
         <Image
           className={cn(
-            'duration-700 object-cover sm:max-w-xs rounded-md clickable-artwork aspect-square ease-in-out hover:cursor-pointer',
+            'duration-700 object-cover w-full  rounded-md clickable-artwork aspect-square ease-in-out hover:cursor-pointer mx-auto',
             loading ? 'scale-110 blur-2xl' : 'scale-100 blur-0'
           )}
           src={
@@ -82,12 +82,14 @@ export const MinimalCard: React.FC<Props> = ({
         />
       </div>
       <div>
-        {genres &&
-          genres.map((genre, index) => (
-            <span key={index} className="p-1 px-2 mr-2 text-sm rounded-full bg-cyan-800">
-              {genre}
-            </span>
-          ))}
+        <p className="flex flex-wrap">
+          {genres &&
+            genres.map((genre, index) => (
+              <span key={index} className="p-1 px-2 m-1 mr-2 text-sm rounded-full bg-cyan-800">
+                {genre}
+              </span>
+            ))}
+        </p>
         <p className="mt-3 text-lg font-medium leading-6">
           Title:{' '}
           <CustomLink
