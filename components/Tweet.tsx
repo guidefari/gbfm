@@ -11,8 +11,8 @@ interface Props {
 
 export const Tweet: React.FC<Props> = ({ authorName, children, date, handle, avatarUrl }) => {
   return (
-    <div className="relative py-3">
-      <div className="w-full px-6 py-4 my-4 border border-gray-300 rounded-2xl">
+    <div className="relative ">
+      <div className="w-full px-6 py-4 border border-gb-pastel-green-2">
         <div className="flex items-center">
           <a
             className="flex w-12 h-12 mr-3"
@@ -44,11 +44,11 @@ export const Tweet: React.FC<Props> = ({ authorName, children, date, handle, ava
           </a>
         </div>
         <div className="mt-4 mb-2 text-lg leading-normal whitespace-pre-wrap">{children}</div>
-        {new Date(date).toLocaleString('en-US', {
+        {/* {new Date(date).toLocaleString('en-US', {
           day: '2-digit',
           year: 'numeric',
           month: 'long',
-        })}
+        })} */}
       </div>
     </div>
   )
