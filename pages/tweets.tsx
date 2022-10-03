@@ -26,7 +26,7 @@ export default function Index({ tweets }) {
   return (
     <Layout>
       <h1 className="title">Tweets</h1>
-      <p>Where short form prose lives</p>
+      <p>Archived tweets. Some of these have never actually been on twitter 😉</p>
 
       <div className="max-w-xl mx-auto ">
         {tweets.map((tweet, index) => {
