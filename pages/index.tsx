@@ -6,7 +6,7 @@ import Layout from '../components/Layout'
 export default function Index() {
   return (
     <Layout>
-      <PageSEO title="goosebumps dot fm" description={'Curated Music & the occasional prose'} />
+      <PageSEO title="goosebumps.fm" description={'Curated Music & the occasional prose'} />
       <SuperHero />
       <Link href="curated" as="curated">
         <h3 className="title">-Prose</h3>

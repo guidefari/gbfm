@@ -10,6 +10,7 @@ import Head from 'next/head'
 import Layout from '../components/Layout'
 import { tweetFilePaths, TWEETS_PATH } from '../utils/mdxUtils'
 import { MDXRemote } from 'next-mdx-remote'
+import { PageSEO } from '@/components/SEO'
 
 const components = {
   a: CustomLink,
@@ -25,6 +26,10 @@ export default function Index({ tweets }) {
   console.log('tweets:', tweets)
   return (
     <Layout>
+      <PageSEO
+        title="goosebumps.fm/tweets"
+        description={'Archived tweets. Some of these have never actually been on twitter 😉'}
+      />
       <h1 className="title">Tweets</h1>
       <p>Archived tweets. Some of these have never actually been on twitter 😉</p>
 
