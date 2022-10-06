@@ -1,6 +1,12 @@
 ## Helpful links
 - [That Tailwind blog repo](https://github.com/timlrx/tailwind-nextjs-starter-blog) - some good code in there :)
 
+# Global state management?
+- problem to solve rn is an app wide music player. powered by URL. button clicks change the audio url and that triggers renders accordingly.
+  - useContext effectively? that Kyle Shevlin article
+  - useReducer
+  - what other options do I have? can absolutely over-engineer this one if you want, treat it as enterprise quality of life research
+
 ## **UP NEXT!!** Playlist component
 - iPad has UX sketches
 ## Tweets page UX
