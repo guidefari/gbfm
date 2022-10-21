@@ -1,4 +1,6 @@
+import { useAudio } from '@/components/common/useAudio'
 import '@/css/main.css'
+import { AudioProvider } from 'contexts/AudioPlayer'
 
 // import '@fontsource/inter/variable-full.css'
 
@@ -13,9 +15,9 @@ export default function App({ Component, pageProps }) {
         <meta content="width=device-width, initial-scale=1" name="viewport" />
         <link rel="shortcut icon" href="/favicons/goose.png" type="image/x-icon" />
       </Head>
-      {/* <LayoutWrapper> */}
-      <Component {...pageProps} />
-      {/* </LayoutWrapper> */}
+      <AudioProvider>
+        <Component {...pageProps} />
+      </AudioProvider>
     </>
   )
 }

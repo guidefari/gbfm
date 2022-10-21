@@ -1,6 +1,8 @@
+import { useAudio } from 'contexts/AudioPlayer'
 import Image from 'next/future/image'
 import React, { useRef, useState } from 'react'
 import CustomLink from '../CustomLink'
+// import { useAudio } from './useAudio'
 import { PauseIcon, PlayIcon } from './icons'
 
 interface Props {
@@ -30,41 +32,57 @@ export const MinimalCard: React.FC<Props> = ({
   children,
   artists,
 }) => {
-  const audioRef = useRef<HTMLAudioElement>(null)
-  const [playPreview, setPlayPreview] = useState(false)
+  // const audioRef = useRef<HTMLAudioElement>(null)
+  // const [playPreview, setPlayPreview] = useState(false)
 
-  function handleAudioPreview() {
-    if (previewUrl && audioRef.current) {
-      if (!playPreview) {
-        setPlayPreview(true)
-        audioRef.current.play()
-      } else {
-        setPlayPreview(false)
-        audioRef.current.pause()
-      }
-    }
-  }
+  // const [playPreview, { on, off, toggle }, AudioPlayer] = useAudioPreview(previewUrl)
+
+  // function handleAudioPreview() {
+  //   if (previewUrl && audioRef.current) {
+  //     if (!playPreview) {
+  //       setPlayPreview(true)
+  //       audioRef.current.play()
+  //     } else {
+  //       setPlayPreview(false)
+  //       audioRef.current.pause()
+  //     }
+  //   }
+  // }
+
+  // const { element, state, controls } = useAudio({
+  //   src: previewUrl,
+  // })
+
+  const audio = useAudio()
+
+  const play = React.useCallback(
+    (src) => {
+      audio.src = src
+      audio.play()
+    },
+    [audio]
+  )
 
   return (
     <div className="relative flex-shrink-0 max-w-md p-3 my-5 rounded-md bg-cyan-900 ">
       <div className="flex-shrink-0 mb-4 sm:mb-0 sm:mr-4">
-        {previewUrl &&
+        {/* {previewUrl &&
           (playPreview ? (
             <button
               title="Pause Preview Audio"
               className="absolute top-0 left-0 z-10 p-3 m-5 bg-teal-900 rounded-full text-highlight"
-              onClick={handleAudioPreview}
+              onClick={off}
             >
               <PauseIcon />
             </button>
           ) : (
             <button
               className="absolute top-0 left-0 z-10 p-3 m-5 bg-teal-900 rounded-full text-highlight"
-              onClick={handleAudioPreview}
+              onClick={on}
             >
               <PlayIcon />
             </button>
-          ))}
+          ))} */}
         <Image
           className={cn(
             'duration-700 object-cover w-full  rounded-md clickable-artwork aspect-square ease-in-out hover:cursor-pointer mx-auto',
@@ -77,7 +95,7 @@ export const MinimalCard: React.FC<Props> = ({
           alt={title}
           width={320}
           height={320}
-          onClick={handleAudioPreview}
+          onClick={() => play(previewUrl)}
           loading="lazy"
         />
       </div>
@@ -104,8 +122,9 @@ export const MinimalCard: React.FC<Props> = ({
         </p>
         <p className="mt-2 text">By: {artists || ''}</p>
         <p className="mt-2 text-sm leading-snug ">{blurb || ''}</p>
-        <audio src={previewUrl || ''} ref={audioRef}></audio>
+        {/* <audio src={previewUrl || ''} ref={audioRef}></audio> */}
         {children}
+        {/* <AudioPlayer/> */}
       </div>
     </div>
   )
