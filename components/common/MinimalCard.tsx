@@ -1,8 +1,7 @@
-import { useAudio } from 'contexts/AudioPlayer'
+import { useAudioPlayerContext } from 'contexts/AudioPlayer'
 import Image from 'next/future/image'
 import React, { useRef, useState } from 'react'
 import CustomLink from '../CustomLink'
-// import { useAudio } from './useAudio'
 import { PauseIcon, PlayIcon } from './icons'
 
 interface Props {
@@ -32,9 +31,6 @@ export const MinimalCard: React.FC<Props> = ({
   children,
   artists,
 }) => {
-  // const audioRef = useRef<HTMLAudioElement>(null)
-  // const [playPreview, setPlayPreview] = useState(false)
-
   // const [playPreview, { on, off, toggle }, AudioPlayer] = useAudioPreview(previewUrl)
 
   // function handleAudioPreview() {
@@ -53,36 +49,31 @@ export const MinimalCard: React.FC<Props> = ({
   //   src: previewUrl,
   // })
 
-  const audio = useAudio()
+  // get audio player hanflers handlers from here
+  // const audio = useAudio()
 
-  const play = React.useCallback(
-    (src) => {
-      audio.src = src
-      audio.play()
-    },
-    [audio]
-  )
+  const [_, { play, pause }, playAudio] = useAudioPlayerContext()
 
   return (
     <div className="relative flex-shrink-0 max-w-md p-3 my-5 rounded-md bg-cyan-900 ">
       <div className="flex-shrink-0 mb-4 sm:mb-0 sm:mr-4">
-        {/* {previewUrl &&
-          (playPreview ? (
+        {previewUrl &&
+          (playAudio ? (
             <button
               title="Pause Preview Audio"
               className="absolute top-0 left-0 z-10 p-3 m-5 bg-teal-900 rounded-full text-highlight"
-              onClick={off}
+              onClick={pause}
             >
               <PauseIcon />
             </button>
           ) : (
             <button
               className="absolute top-0 left-0 z-10 p-3 m-5 bg-teal-900 rounded-full text-highlight"
-              onClick={on}
+              onClick={play(previewUrl)}
             >
               <PlayIcon />
             </button>
-          ))} */}
+          ))}
         <Image
           className={cn(
             'duration-700 object-cover w-full  rounded-md clickable-artwork aspect-square ease-in-out hover:cursor-pointer mx-auto',
@@ -122,9 +113,7 @@ export const MinimalCard: React.FC<Props> = ({
         </p>
         <p className="mt-2 text">By: {artists || ''}</p>
         <p className="mt-2 text-sm leading-snug ">{blurb || ''}</p>
-        {/* <audio src={previewUrl || ''} ref={audioRef}></audio> */}
         {children}
-        {/* <AudioPlayer/> */}
       </div>
     </div>
   )

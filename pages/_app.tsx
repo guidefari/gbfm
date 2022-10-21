@@ -1,4 +1,3 @@
-import { useAudio } from '@/components/common/useAudio'
 import '@/css/main.css'
 import { AudioProvider } from 'contexts/AudioPlayer'
 
