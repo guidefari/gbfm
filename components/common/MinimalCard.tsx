@@ -1,8 +1,7 @@
 import { useAudioPlayerContext } from 'contexts/AudioPlayer'
 import Image from 'next/future/image'
-import React, { useRef, useState } from 'react'
+import React from 'react'
 import CustomLink from '../CustomLink'
-import { PauseIcon, PlayIcon } from './icons'
 
 interface Props {
   title: string
@@ -31,50 +30,11 @@ export const MinimalCard: React.FC<Props> = ({
   children,
   artists,
 }) => {
-  // const [playPreview, { on, off, toggle }, AudioPlayer] = useAudioPreview(previewUrl)
-
-  // function handleAudioPreview() {
-  //   if (previewUrl && audioRef.current) {
-  //     if (!playPreview) {
-  //       setPlayPreview(true)
-  //       audioRef.current.play()
-  //     } else {
-  //       setPlayPreview(false)
-  //       audioRef.current.pause()
-  //     }
-  //   }
-  // }
-
-  // const { element, state, controls } = useAudio({
-  //   src: previewUrl,
-  // })
-
-  // get audio player hanflers handlers from here
-  // const audio = useAudio()
-
-  const [_, { play, pause }, playAudio] = useAudioPlayerContext()
-  console.log('playAudio:', playAudio)
+  const [_, { handleAlbumArtClick }] = useAudioPlayerContext()
 
   return (
     <div className="relative flex-shrink-0 max-w-md p-3 my-5 rounded-md bg-cyan-900 ">
       <div className="flex-shrink-0 mb-4 sm:mb-0 sm:mr-4">
-        {previewUrl &&
-          (playAudio ? (
-            <button
-              title="Pause Preview Audio"
-              className="absolute top-0 left-0 z-10 p-3 m-5 bg-teal-900 rounded-full text-highlight"
-              onClick={() => pause}
-            >
-              <PauseIcon />
-            </button>
-          ) : (
-            <button
-              className="absolute top-0 left-0 z-10 p-3 m-5 bg-teal-900 rounded-full text-highlight"
-              onClick={() => play(previewUrl)}
-            >
-              <PlayIcon />
-            </button>
-          ))}
         <Image
           className={cn(
             'duration-700 object-cover w-full  rounded-md clickable-artwork aspect-square ease-in-out hover:cursor-pointer mx-auto',
@@ -87,7 +47,7 @@ export const MinimalCard: React.FC<Props> = ({
           alt={title}
           width={320}
           height={320}
-          onClick={() => play(previewUrl)}
+          onClick={() => handleAlbumArtClick(previewUrl)}
           loading="lazy"
         />
       </div>

@@ -1,3 +1,4 @@
+import { AudioControls } from '@/components/AudioControls'
 import '@/css/main.css'
 import { AudioProvider } from 'contexts/AudioPlayer'
 
@@ -15,6 +16,9 @@ export default function App({ Component, pageProps }) {
         <link rel="shortcut icon" href="/favicons/goose.png" type="image/x-icon" />
       </Head>
       <AudioProvider>
+        <div className="fixed top-0 right-0 ">
+          <AudioControls />
+        </div>
         <Component {...pageProps} />
       </AudioProvider>
     </>

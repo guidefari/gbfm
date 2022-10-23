@@ -1,21 +1,10 @@
-import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
+import React, { createContext, useMemo, useState } from 'react'
 
 // const audio = React.createElement('audio', { src: '' })
 
 const AudioContext = createContext(null)
 
 export const useAudioPlayerContext = () => React.useContext(AudioContext)
-
-// export const useAudio = () => {
-//     const audio = useContext(AudioContext)
-//   console.log('audio:', audio)
-
-//   return audio
-// }
-
-// - if the src is the same, pause audio
-// - need the play pause state of the audio
-// - on, off, & toggle handler
 
 export const AudioProvider = ({ children }) => {
   const audioRef = useMemo(() => (typeof window === 'undefined' ? null : new Audio()), [])
@@ -31,21 +20,29 @@ export const AudioProvider = ({ children }) => {
 
   const handlers = React.useMemo(
     () => ({
-      play: (src: string) => {
-        audioRef.src = src
+      play: () => {
         setPlayAudio(true)
         audioRef.play()
       },
       pause: () => {
         setPlayAudio(false)
         audioRef.pause()
-        // setTheme('dark')
       },
-      toggle: () => {
-        // setTheme(s => (s === 'light' ? 'dark' : 'light'))
+      handleAlbumArtClick: (src: string) => {
+        if (!src) {
+          alert("Yo, there's no preview audio for this one")
+          return
+        } else if (src === audioRef.src && playAudio === false) {
+          handlers.play()
+        } else if (src === audioRef.src) {
+          handlers.pause()
+        } else {
+          audioRef.src = src
+          handlers.play()
+        }
       },
     }),
-    [audioRef]
+    [audioRef, playAudio]
   )
 
   return (
