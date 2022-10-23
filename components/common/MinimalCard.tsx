@@ -53,6 +53,7 @@ export const MinimalCard: React.FC<Props> = ({
   // const audio = useAudio()
 
   const [_, { play, pause }, playAudio] = useAudioPlayerContext()
+  console.log('playAudio:', playAudio)
 
   return (
     <div className="relative flex-shrink-0 max-w-md p-3 my-5 rounded-md bg-cyan-900 ">
@@ -62,14 +63,14 @@ export const MinimalCard: React.FC<Props> = ({
             <button
               title="Pause Preview Audio"
               className="absolute top-0 left-0 z-10 p-3 m-5 bg-teal-900 rounded-full text-highlight"
-              onClick={pause}
+              onClick={() => pause}
             >
               <PauseIcon />
             </button>
           ) : (
             <button
               className="absolute top-0 left-0 z-10 p-3 m-5 bg-teal-900 rounded-full text-highlight"
-              onClick={play(previewUrl)}
+              onClick={() => play(previewUrl)}
             >
               <PlayIcon />
             </button>

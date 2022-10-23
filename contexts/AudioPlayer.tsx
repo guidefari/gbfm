@@ -37,7 +37,7 @@ export const AudioProvider = ({ children }) => {
         audioRef.play()
       },
       pause: () => {
-        setPlayAudio(true)
+        setPlayAudio(false)
         audioRef.pause()
         // setTheme('dark')
       },
