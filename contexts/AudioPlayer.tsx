@@ -9,7 +9,7 @@ type AudioPlayerContext = [
   handlers: {
     play: () => void
     pause: () => void
-    handleAlbumArtClick: () => void
+    handleAlbumArtClick: (src: string) => void
   },
   playAudio: boolean
 ]
