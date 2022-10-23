@@ -40,6 +40,7 @@ export const BackIcon = () => {
       viewBox="0 0 24 24"
       stroke="currentColor"
       strokeWidth={2}
+      className="w-6 h-6"
     >
       <path
         strokeLinecap="round"

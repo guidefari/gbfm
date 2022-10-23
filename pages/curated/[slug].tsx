@@ -37,15 +37,6 @@ export default function PostPage({ source, frontMatter }) {
           canonicalUrl={frontMatter.canonicalUrl || null}
         />
 
-        <header>
-          <nav className="w-8 h-8 m-3">
-            <Link href="/">
-              <a className="hover:text-gb-tomato">
-                <BackIcon />
-              </a>
-            </Link>
-          </nav>
-        </header>
         <div className="mt-10 mb-12 text-center md:mb-16 lg:mb-24">
           <h1 className="title">{frontMatter.title}</h1>
           {frontMatter.description && (
