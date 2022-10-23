@@ -1,18 +1,8 @@
 import { Collablock } from '@/components/Collablock'
-import { BackIcon } from '@/components/common/icons'
-import CustomLink from '@/components/CustomLink'
 
 export default function Collaborate() {
   return (
     <>
-      <header>
-        <nav className="w-8 h-8 m-3">
-          <CustomLink as="/" href="/">
-            <BackIcon />
-          </CustomLink>
-        </nav>
-      </header>
-
       <section className="">
         <div className="max-w-screen-xl px-4 pb-8 mx-auto sm:py-16 lg:px-6">
           <h2 className="mb-8 text-4xl font-extrabold tracking-tight text-gray-900 dark:text-white">

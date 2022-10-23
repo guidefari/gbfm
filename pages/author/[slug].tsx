@@ -4,11 +4,9 @@ import fs from 'fs'
 import matter from 'gray-matter'
 import { serialize } from 'next-mdx-remote/serialize'
 import Layout from '@/components/Layout'
-import { BackIcon } from '@/components/common/icons'
 import { MDXRemote } from 'next-mdx-remote'
 import dynamic from 'next/dynamic'
 import CustomLink from '@/components/CustomLink'
-import { useRouter } from 'next/router'
 
 import { PageSEO } from '@/components/SEO'
 import Image from 'next/future/image'
@@ -27,8 +25,6 @@ const components = {
 }
 
 export default function AuthorPage({ source, frontMatter }) {
-  const router = useRouter()
-
   return (
     <>
       <PageSEO
@@ -37,13 +33,6 @@ export default function AuthorPage({ source, frontMatter }) {
       />
 
       <Layout>
-        <header>
-          <nav className="w-8 h-8 m-3">
-            <a onClick={() => router.back()} className="hover:text-highlight hover:cursor-pointer">
-              <BackIcon />
-            </a>
-          </nav>
-        </header>
         <div className="flex flex-col justify-between mx-5 mt-10 mb-12 lg:flex-row md:mb-16 lg:mb-24">
           <Image
             src={frontMatter.avatar}
