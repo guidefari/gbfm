@@ -1,22 +1,22 @@
 import React, { createContext, useMemo, useState } from 'react'
 
-// const audio = React.createElement('audio', { src: '' })
-
 const AudioContext = createContext(null)
 
-export const useAudioPlayerContext = () => React.useContext(AudioContext)
+export const useAudioPlayerContext = (): AudioPlayerContext => React.useContext(AudioContext)
+
+type AudioPlayerContext = [
+  audioRef: HTMLAudioElement,
+  handlers: {
+    play: () => void
+    pause: () => void
+    handleAlbumArtClick: () => void
+  },
+  playAudio: boolean
+]
 
 export const AudioProvider = ({ children }) => {
   const audioRef = useMemo(() => (typeof window === 'undefined' ? null : new Audio()), [])
   const [playAudio, setPlayAudio] = useState(false)
-
-  //   const play = React.useCallback(
-  //     (src) => {
-  //       audioRef.src = src
-  //       audioRef.play()
-  //     },
-  //     [audioRef]
-  //   )
 
   const handlers = React.useMemo(
     () => ({
