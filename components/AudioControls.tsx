@@ -3,7 +3,9 @@ import React from 'react'
 import { PauseIcon, PlayIcon } from './common/icons'
 
 export const AudioControls = () => {
-  const [_, { play, pause }, playAudio] = useAudioPlayerContext()
+  const [audioRef, { play, pause }, playAudio] = useAudioPlayerContext()
+
+  if (!audioRef?.src) return
 
   return (
     <>
