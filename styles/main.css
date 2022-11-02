@@ -4,10 +4,20 @@
 @import url(fonts.css);
 
 
-*{
-    font-size: 100%; /* 16px */
-    line-height: 1.25rem; /* 20px */
-}
+/* !!Variables */
+:root {
+    --fontSize: 1.2rem;
+    --lineHeight: calc(var(--fontSize) * 1.65);
+    --baseLine: calc(var(--lineHeight) / 2);
+   
+    --typeScale: 1.333;
+    --h5Size:calc(var(--fontSize) * var(--typeScale));
+    --h4Size:calc(var(--h5Size) * var(--typeScale));
+    --h3Size:calc(var(--h4Size) * var(--typeScale));
+    --h2Size:calc(var(--h3Size) * var(--typeScale));
+    --h1Size:calc(var(--h2Size) * var(--typeScale));
+    --small:calc(var(--fontSize) * .75);
+  }
 
 body, .prose {
     background-color: #16425b;
@@ -15,12 +25,9 @@ body, .prose {
     @apply font-jetbrains;
 }
 
-.prose {
-    @apply px-3;
-}
 
 .title {
-    @apply mb-4 text-5xl font-bold sm:text-6xl md:text-8xl xl:text-9xl;
+    @apply mb-4 text-5xl font-bold text-left sm:text-6xl md:text-8xl xl:text-9xl;
 }
 
 a {
@@ -32,59 +39,44 @@ a {
 }
 
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-ol,
-ul,
-table,
-blockquote,
-pre{
-    margin: 3rem 0 1.38rem;
-    line-height: 1.3;
+body {
+  font-size: var(--fontSize);
+  line-height:var(--lineHeight);
 }
 
-h1{
-    font-size: 3.052rem;
-
-}
- 
-h2{
-    font-size: 2.441rem;
-
-}
- 
-h3{
-    font-size: 1.953rem;
-
-}
- 
-h4{
-    font-size: 1.563rem;
-
-}
- 
-h5, h6{
-    font-size: 1.25rem;
-    line-height: 1.25rem;
-}
-.prose a {
-    @apply text-highlight
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 800;
+    margin-top: calc(1ex * 1.65);
+    margin-bottom: calc(0.5ex * 1.65);
+    line-height: 2ex;
+    max-width: 20ch;
+    word-wrap: break-word;
 }
 
-.prose p {
-    @apply max-w-4xl mx-auto mb-3 text-lg xl:ml-16;
+h1 {
+    font-size:var(--h1Size);
+    line-height: calc(var(--h1Size) * calc(var(--typeScale) - .165));
+  }
+  h2 {
+    font-size:var(--h2Size);
+    line-height: calc(var(--h2Size) * calc(var(--typeScale) - .165));
+  }
+  h3 {
+    font-size:var(--h3Size);
+    line-height: calc(var(--h3Size) * calc(var(--typeScale) - .165));
+  }
+  h4 {
+    font-size:var(--h4Size);
+    line-height: calc(var(--h4Size) * calc(var(--typeScale) - .165));
+  }
+  h5 {
+    font-size:var(--h5Size);
+    line-height: calc(var(--h5Size) * calc(var(--typeScale) - .165));
+  }
+
+
+p, ul {
+    font-size: var(--fontSize);
+    max-width:55ch;
 }
 
-/* Universal heading styles */
-.prose h1,
-.prose h2,
-.prose h3,
-.prose h4,
-.prose h5,
-.prose h6 {
-    @apply font-extrabold
-}
