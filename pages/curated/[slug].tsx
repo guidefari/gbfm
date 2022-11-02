@@ -1,4 +1,3 @@
-import { BackIcon } from '@/components/common/icons'
 import { PageSEO } from '@/components/SEO'
 import fs from 'fs'
 import matter from 'gray-matter'
@@ -6,7 +5,6 @@ import { MDXRemote } from 'next-mdx-remote'
 import { serialize } from 'next-mdx-remote/serialize'
 import dynamic from 'next/dynamic'
 import Head from 'next/head'
-import Link from 'next/link'
 import path from 'path'
 import CustomLink from '../../components/CustomLink'
 import Layout from '../../components/Layout'
@@ -37,13 +35,13 @@ export default function PostPage({ source, frontMatter }) {
           canonicalUrl={frontMatter.canonicalUrl || null}
         />
 
-        <div className="mt-10 mb-12 text-center md:mb-16 lg:mb-24">
+        <div className="px-2 mt-10 mb-12 text-center md:mb-16 lg:mb-24">
           <h1 className="title">{frontMatter.title}</h1>
           {frontMatter.description && (
-            <p className="font-bold text-gb-highlight">{frontMatter.description}</p>
+            <p className="font-bold text-left text-gb-highlight">{frontMatter.description}</p>
           )}
         </div>
-        <article className="prose">
+        <article className="px-3">
           <MDXRemote {...source} components={components} />
         </article>
       </Layout>
