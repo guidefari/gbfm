@@ -5,11 +5,11 @@ export const Newsletter = () => {
         <div className="w-full px-3 grow-0 shrink-0 basis-auto lg:w-10/12">
           <div className="grid items-center lg:grid-cols-2 gap-x-6">
             <div className="mb-10 lg:mb-0">
-              <h2 className="text-3xl font-bold">
+              <div className="text-3xl font-bold">
                 Keep up to date with content and stuff
                 <br />
                 <span className="text-cyan-100">No more than one ping a week</span>
-              </h2>
+              </div>
             </div>
 
             <div className="mb-6 md:mb-0">
