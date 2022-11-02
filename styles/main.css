@@ -9,7 +9,6 @@
     --fontSize: 1.2rem;
     --lineHeight: calc(var(--fontSize) * 1.65);
     --baseLine: calc(var(--lineHeight) / 2);
-   
     --typeScale: 1.333;
     --h5Size:calc(var(--fontSize) * var(--typeScale));
     --h4Size:calc(var(--h5Size) * var(--typeScale));
@@ -19,7 +18,20 @@
     --small:calc(var(--fontSize) * .75);
   }
 
-body, .prose {
+  @layer base {
+    li::before {
+        content: "--> ";
+        font-weight: 800;
+        @apply text-blue-100;
+    }
+
+    li{
+        margin-bottom: calc(0.75ex * 1.65);
+    }
+}
+
+  
+body {
     background-color: #16425b;
     color: #81C3D7;
     @apply font-jetbrains;
@@ -27,7 +39,7 @@ body, .prose {
 
 
 .title {
-    @apply mb-4 text-5xl font-bold text-left sm:text-6xl md:text-8xl xl:text-9xl;
+    @apply mt-2 mb-4 text-5xl font-bold text-left sm:text-6xl md:text-8xl xl:text-9xl;
 }
 
 a {

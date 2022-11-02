@@ -41,7 +41,7 @@ export default function PostPage({ source, frontMatter }) {
             <p className="font-bold text-left text-gb-highlight">{frontMatter.description}</p>
           )}
         </div>
-        <article className="px-3">
+        <article className="px-3 list-disc">
           <MDXRemote {...source} components={components} />
         </article>
       </Layout>
