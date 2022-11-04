@@ -28,7 +28,7 @@ export const getStaticPaths = async () => {
 }
 
 export const getStaticProps = async ({ params }) => {
-  const post: Post = allPosts.find((post) => post._raw.flattenedPath === params.slug)
+  const post: Post = allPosts.find((post) => post._raw.flattenedPath === `curated/${params.slug}`)
 
   return {
     props: {

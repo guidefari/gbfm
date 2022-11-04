@@ -1,15 +1,39 @@
+import { useMDXComponent } from 'next-contentlayer/hooks'
+import dynamic from 'next/dynamic'
 import Image from 'next/future/image'
 import React from 'react'
+import CustomLink from './CustomLink'
+import Head from 'next/head'
 
 interface Props {
   authorName: string
   handle: string
   avatarUrl: string
   date: string
-  children: React.ReactNode
+  children?: React.ReactNode
+  content: string
 }
 
-export const Tweet: React.FC<Props> = ({ authorName, children, date, handle, avatarUrl }) => {
+const components = {
+  a: CustomLink,
+  // It also works with dynamically-imported components, which is especially
+  // useful for conditionally loading components for certain routes.
+  // See the notes in README.md for more details.
+  Album: dynamic(() => import('./Album')),
+  Track: dynamic(() => import('./Track')),
+  Head,
+}
+
+export const Tweet: React.FC<Props> = ({
+  authorName,
+  children,
+  date,
+  handle,
+  avatarUrl,
+  content,
+}) => {
+  const MDXContent = useMDXComponent(content)
+
   return (
     <div className="relative ">
       <div className="w-full px-6 py-4 border border-gb-pastel-green-2">
@@ -43,12 +67,11 @@ export const Tweet: React.FC<Props> = ({ authorName, children, date, handle, ava
             </span>
           </a>
         </div>
-        <div className="mt-4 mb-2 text-lg leading-normal whitespace-pre-wrap">{children}</div>
-        {/* {new Date(date).toLocaleString('en-US', {
-          day: '2-digit',
-          year: 'numeric',
-          month: 'long',
-        })} */}
+        <div className="mt-4 mb-2 text-lg leading-normal whitespace-pre-wrap">
+          <MDXContent components={components} />
+
+          {children}
+        </div>
       </div>
     </div>
   )

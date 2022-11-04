@@ -2,7 +2,7 @@ import { defineDocumentType, makeSource } from 'contentlayer/source-files'
 
 export const Post = defineDocumentType(() => ({
   name: 'Post',
-  filePathPattern: `**/*.mdx`,
+  filePathPattern: `curated/**/*.mdx`,
   contentType: 'mdx',
   fields: {
     title: {
@@ -49,16 +49,84 @@ export const Post = defineDocumentType(() => ({
   computedFields: {
     url: {
       type: 'string',
-      resolve: (post) => `/curated/${post._raw.flattenedPath}`,
+      resolve: (post) => `/${post._raw.flattenedPath}`,
     },
-    slug: {
+  },
+}))
+
+export const Tweet = defineDocumentType(() => ({
+  name: 'Tweet',
+  filePathPattern: `tweets/*.mdx`,
+  contentType: 'mdx',
+  fields: {
+    authorName: {
       type: 'string',
-      resolve: (post) => `${post._raw.flattenedPath}`,
+      description: 'The title of the post',
+      required: true,
+    },
+    handle: {
+      type: 'string',
+      description: 'The description of the post',
+    },
+    date: {
+      type: 'date',
+      description: 'The date of the post',
+      required: true,
+    },
+    avatarUrl: {
+      type: 'string',
+      description: 'The last modification date of the post',
+      required: true,
+    },
+  },
+  computedFields: {
+    url: {
+      type: 'string',
+      resolve: (post) => `/${post._raw.flattenedPath}`,
+    },
+  },
+}))
+
+export const Author = defineDocumentType(() => ({
+  name: 'Author',
+  filePathPattern: `authors/**/*.mdx`,
+  contentType: 'mdx',
+  fields: {
+    name: {
+      type: 'string',
+      description: 'The title of the post',
+      required: true,
+    },
+    avatar: {
+      type: 'string',
+      description: 'The description of the post',
+    },
+    title: {
+      type: 'string',
+      description: 'The description of the post',
+    },
+    email: {
+      type: 'string',
+      description: 'The description of the post',
+    },
+    website: {
+      type: 'string',
+      description: 'The description of the post',
+    },
+    draft: {
+      type: 'boolean',
+      description: 'The description of the post',
+    },
+  },
+  computedFields: {
+    url: {
+      type: 'string',
+      resolve: (post) => `/${post._raw.flattenedPath}`,
     },
   },
 }))
 
 export default makeSource({
-  contentDirPath: 'content/curated',
-  documentTypes: [Post],
+  contentDirPath: 'content',
+  documentTypes: [Post, Tweet, Author],
 })
