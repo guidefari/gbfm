@@ -1,25 +1,16 @@
-import CustomLink from '@/components/CustomLink'
 import { Tweet } from '@/components/Tweet'
-import fs from 'fs'
-import matter from 'gray-matter'
-import { serialize } from 'next-mdx-remote/serialize'
-import dynamic from 'next/dynamic'
-import path from 'path'
-import Head from 'next/head'
-
 import Layout from '../components/Layout'
-import { tweetFilePaths, TWEETS_PATH } from '../utils/mdxUtils'
-import { MDXRemote } from 'next-mdx-remote'
 import { PageSEO } from '@/components/SEO'
+import { allTweets, type Tweet as TweetType } from 'contentlayer/generated'
+import { compareDesc } from 'date-fns'
 
-const components = {
-  a: CustomLink,
-  // It also works with dynamically-imported components, which is especially
-  // useful for conditionally loading components for certain routes.
-  // See the notes in README.md for more details.
-  Album: dynamic(() => import('../components/Album')),
-  Track: dynamic(() => import('../components/Track')),
-  Head,
+export const getStaticProps = async () => {
+  const tweets: TweetType[] = allTweets.sort((a, b) => {
+    return compareDesc(new Date(a.date), new Date(b.date))
+  })
+  console.log({ tweets })
+
+  return { props: { tweets } }
 }
 
 export default function Index({ tweets }) {
@@ -34,50 +25,19 @@ export default function Index({ tweets }) {
       <p>Archived tweets. Some of these have never actually been on twitter 😉</p>
 
       <div className="max-w-xl mx-auto my-4">
-        {tweets.map((tweet, index) => {
+        {tweets.map((tweet: TweetType, index) => {
           return (
             <Tweet
-              authorName={tweet.scope.authorName}
-              avatarUrl={tweet.scope.avatarUrl}
-              date={tweet.scope.date}
-              handle={tweet.scope.handle}
+              authorName={tweet.authorName}
+              avatarUrl={tweet.avatarUrl}
+              date={tweet.date}
+              handle={tweet.handle}
               key={index}
-            >
-              <MDXRemote compiledSource={tweet.compiledSource} components={components} />
-            </Tweet>
+              content={tweet.body.code}
+            />
           )
         })}
       </div>
     </Layout>
   )
-}
-
-export const getStaticProps = async () => {
-  const tweets = await Promise.all(
-    tweetFilePaths.map(async (filePath) => {
-      const source = fs.readFileSync(path.join(TWEETS_PATH, filePath))
-      const { content, data } = matter(source)
-
-      const serialized = await serialize(content, {
-        // Optionally pass remark/rehype plugins
-        mdxOptions: {
-          remarkPlugins: [],
-          rehypePlugins: [],
-        },
-        parseFrontmatter: true,
-        scope: data,
-      })
-
-      return serialized
-    })
-  )
-
-  const draftsFilteredOutAndSorted = tweets
-    .filter((tweet) => tweet.scope.draft !== true)
-    .sort(
-      (a, b) =>
-        new Date(b.scope.date as string).getTime() - new Date(a.scope.date as string).getTime()
-    )
-
-  return { props: { tweets: draftsFilteredOutAndSorted } }
 }

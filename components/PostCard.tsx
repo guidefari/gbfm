@@ -1,6 +1,7 @@
 import Image from 'next/future/image'
 import React from 'react'
 import CustomLink from './CustomLink'
+import { format, parseISO } from 'date-fns'
 
 interface Props {
   date?: string
@@ -28,7 +29,9 @@ export const PostCard: React.FC<Props> = ({ date, title, description, thumbnailU
         />
       </div>
       <div>
-        <span className="text-sm opacity-80">{date || ''}</span>
+        <time dateTime={date} className="text-sm opacity-80">
+          {format(parseISO(date), 'LLLL d, yyyy')}
+        </time>
         <p className="mt-3 text-lg font-medium leading-6">
           <CustomLink href={slug} as={slug} className="text-xl ">
             {title}

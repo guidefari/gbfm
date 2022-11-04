@@ -36,7 +36,7 @@ export const SuperHero = () => {
               />
               <div className="flex flex-col items-center justify-center text-center">
                 <h2 className="mt-4 text-lg font-medium title-font">
-                  <CustomLink href={'/author/guide'}>
+                  <CustomLink href={'/authors/guide'}>
                     <span>Guide Fari</span>
                   </CustomLink>
                 </h2>
