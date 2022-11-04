@@ -3,6 +3,7 @@ import { defineDocumentType, makeSource } from 'contentlayer/source-files'
 export const Post = defineDocumentType(() => ({
   name: 'Post',
   filePathPattern: `**/*.mdx`,
+  contentType: 'mdx',
   fields: {
     title: {
       type: 'string',
@@ -24,6 +25,7 @@ export const Post = defineDocumentType(() => ({
     },
     tags: {
       type: 'list',
+      of: { type: 'string' },
       description: 'The tags of the post. Can be genre, or topic.',
     },
     draft: {
@@ -40,13 +42,18 @@ export const Post = defineDocumentType(() => ({
     },
     authors: {
       type: 'list',
+      of: { type: 'string' },
       description: 'Whether the post is a draft or not.',
     },
   },
   computedFields: {
     url: {
       type: 'string',
-      resolve: (post) => `/content/curated/${post._raw.flattenedPath}`,
+      resolve: (post) => `/curated/${post._raw.flattenedPath}`,
+    },
+    slug: {
+      type: 'string',
+      resolve: (post) => `${post._raw.flattenedPath}`,
     },
   },
 }))
