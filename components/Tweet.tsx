@@ -1,6 +1,6 @@
 import { useMDXComponent } from 'next-contentlayer/hooks'
 import dynamic from 'next/dynamic'
-import Image from 'next/future/image'
+import Image from 'next/image'
 import React from 'react'
 import CustomLink from './CustomLink'
 import Head from 'next/head'

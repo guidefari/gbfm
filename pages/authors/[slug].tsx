@@ -2,7 +2,7 @@ import Layout from '@/components/Layout'
 import dynamic from 'next/dynamic'
 import CustomLink from '@/components/CustomLink'
 import { PageSEO } from '@/components/SEO'
-import Image from 'next/future/image'
+import Image from 'next/image'
 import { allAuthors, type Author } from 'contentlayer/generated'
 import { useMDXComponent } from 'next-contentlayer/hooks'
 

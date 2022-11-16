@@ -1,16 +1,11 @@
 import Link from 'next/link'
 
-export default function CustomLink({ as, href, ...otherProps }) {
+export default function CustomLink({ as, href, children, ...otherProps }) {
   return (
     <>
-      <Link as={as} href={href}>
-        <a {...otherProps} />
+      <Link className="text-tomato" as={as} href={href} {...otherProps}>
+        {children}
       </Link>
-      <style jsx>{`
-        a {
-          color: #ff6d1a;
-        }
-      `}</style>
     </>
   )
 }

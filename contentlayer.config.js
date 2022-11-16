@@ -38,12 +38,10 @@ export const Post = defineDocumentType(() => ({
     },
     thumbnailUrl: {
       type: 'string',
-      description: 'Whether the post is a draft or not.',
     },
     authors: {
       type: 'list',
       of: { type: 'string' },
-      description: 'Whether the post is a draft or not.',
     },
   },
   computedFields: {
@@ -77,6 +75,41 @@ export const Tweet = defineDocumentType(() => ({
       type: 'string',
       description: 'The last modification date of the post',
       required: true,
+    },
+  },
+  computedFields: {
+    url: {
+      type: 'string',
+      resolve: (post) => `/${post._raw.flattenedPath}`,
+    },
+  },
+}))
+
+export const Label = defineDocumentType(() => ({
+  name: 'Label',
+  filePathPattern: `labels/*.mdx`,
+  contentType: 'mdx',
+  fields: {
+    name: {
+      type: 'string',
+      required: true,
+    },
+    thumbnailUrl: {
+      type: 'string',
+      required: true,
+    },
+    website: {
+      type: 'string',
+    },
+    discogs: {
+      type: 'string',
+    },
+    bandcamp: {
+      type: 'string',
+    },
+    genres: {
+      type: 'list',
+      of: { type: 'string' },
     },
   },
   computedFields: {
@@ -128,5 +161,5 @@ export const Author = defineDocumentType(() => ({
 
 export default makeSource({
   contentDirPath: 'content',
-  documentTypes: [Post, Tweet, Author],
+  documentTypes: [Post, Tweet, Author, Label],
 })

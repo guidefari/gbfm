@@ -4,7 +4,7 @@ import { animate } from 'motion'
 
 import fetcher from 'lib/fetcher'
 import { NowPlayingSong } from 'lib/types'
-import Image from 'next/future/image'
+import Image from 'next/image'
 import CustomLink from './CustomLink'
 
 function AnimatedBars() {
