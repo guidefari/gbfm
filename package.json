@@ -8,6 +8,8 @@
     "start": "next start"
   },
   "dependencies": {
+    "@radix-ui/colors": "^0.1.8",
+    "@radix-ui/react-scroll-area": "^1.0.2",
     "contentlayer": "^0.2.8",
     "date-fns": "^2.29.3",
     "gray-matter": "4.0.3",

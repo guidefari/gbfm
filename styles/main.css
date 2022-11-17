@@ -2,6 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 @import url(fonts.css);
+@import url(scrollbar.css);
 
 
 /* !!Variables */
@@ -19,6 +20,10 @@
   }
 
   @layer base {
+    a {
+      @apply text-tomato;
+    }
+    
     li::before {
         content: "--> ";
         font-weight: 800;
