@@ -33,7 +33,7 @@ export const MinimalCard: React.FC<Props> = ({
   const [_, { handleAlbumArtClick }] = useAudioPlayerContext()
 
   return (
-    <div className="relative flex-shrink-0 max-w-md p-3 my-5 rounded-md bg-cyan-900 ">
+    <div className="relative flex-shrink-0 max-w-md rounded-md bg-cyan-900 ">
       <div className="flex-shrink-0 mb-4 sm:mb-0 sm:mr-4">
         <Image
           className={cn(
@@ -49,6 +49,7 @@ export const MinimalCard: React.FC<Props> = ({
           height={320}
           onClick={() => handleAlbumArtClick(previewUrl)}
           loading="lazy"
+          title={`Click to play audio preview of ${title}`}
         />
       </div>
       <div>
@@ -61,18 +62,21 @@ export const MinimalCard: React.FC<Props> = ({
             ))}
         </p>
         <p className="mt-3 text-lg font-medium leading-6">
-          Title:{' '}
           <CustomLink
             target="_blank"
             href={(slug as string) || ''}
             as={(slug as string) || ''}
-            className="mb-0 text-xl leading-tight text-indigo-900 hover:transition-all hover:underline"
+            className="mb-0 text-xl leading-tight hover:transition-all hover:underline"
             rel="noreferrer"
+            title={`Stream ${title} on Spotify` || ''}
           >
             {title || ''}
           </CustomLink>
         </p>
-        <p className="mt-2 text">By: {artists || ''}</p>
+        <p className="mt-2 text" title={`Arist(s): ${artists}`}>
+          {artists || ''}
+        </p>
+        <hr className="mx-10 my-4 border-b-2 rounded-full border-gb-pastel-green-2" />
         <p className="mt-2 text-sm leading-snug ">{blurb || ''}</p>
         {children}
       </div>

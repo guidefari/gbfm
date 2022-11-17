@@ -1,9 +1,17 @@
 // @ts-nocheck
 import fetcher from '@/lib/fetcher'
+import React from 'react'
 import useSWR from 'swr'
 import { MinimalCard } from './common/MinimalCard'
 
-export default function Track({ url, genres, blurb, children }) {
+interface Props {
+  url: string
+  genres: string[]
+  blurb: string
+  children: React.ReactNode
+}
+
+export default function Track({ url, genres, blurb, children }: Props) {
   const encoded = encodeURIComponent(url)
 
   const { data, error } = useSWR(`/api/track?id=${encoded}`, fetcher)
