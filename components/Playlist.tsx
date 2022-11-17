@@ -1,14 +1,24 @@
 import React, { useState } from 'react'
 import Track from './Track'
 import * as ScrollArea from '@radix-ui/react-scroll-area'
+import fetcher from '@/lib/fetcher'
+import useSWR from 'swr'
 
 interface Props {
   url: string
+  genres?: string[]
+  blurb?: string
+  children?: React.ReactNode
 }
 
-export const Playlist = () => {
+export const Playlist = ({ url, genres, blurb, children }: Props) => {
   // const [selectedTrack, setselectedTrack] = useState()
   const TAGS = Array.from({ length: 50 }).map((_, i, a) => `v1.2.0-beta.${a.length - i}`)
+
+  const encoded = encodeURIComponent(url)
+
+  const { data, error } = useSWR(`/api/playlist?id=${encoded}`, fetcher)
+  const loading = !data && !error
 
   return (
     <section className="p-3 rounded-md bg-cyan-900 md:p-7">
@@ -40,6 +50,19 @@ export const Playlist = () => {
             </ScrollArea.Scrollbar>
             <ScrollArea.Corner className="ScrollAreaCorner" />
           </ScrollArea.Root>
+          <p className="flex flex-wrap">
+            {genres &&
+              genres.map((genre, index) => (
+                <span key={index} className="p-1 px-2 m-1 mr-2 text-sm rounded-full bg-cyan-800">
+                  {genre}
+                </span>
+              ))}
+          </p>
+          <hr className="mx-10 my-4 border-b-2 rounded-full border-gb-pastel-green-2" />
+          <p className="mt-2 text-sm leading-snug ">
+            {blurb || ''}
+            {children}
+          </p>
         </div>
       </div>
     </section>
