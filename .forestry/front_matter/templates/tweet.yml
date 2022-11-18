@@ -1,0 +1,16 @@
+---
+label: Tweet
+hide_body: false
+fields:
+- type: text
+  name: authorName
+  label: authorName
+- type: text
+  name: handle
+  label: handle
+- type: file
+  name: avatarUrl
+  label: avatarUrl
+- type: text
+  name: date
+  label: date
