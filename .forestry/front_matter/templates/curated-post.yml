@@ -1,0 +1,31 @@
+---
+label: Curated Post
+hide_body: false
+fields:
+- type: text
+  name: title
+  label: title
+- type: text
+  name: date
+  label: date
+- type: text
+  name: lastmod
+  label: lastmod
+- type: list
+  name: tags
+  label: tags
+- type: boolean
+  name: draft
+  label: draft
+- type: text
+  name: description
+  label: description
+- type: text
+  name: canonicalUrl
+  label: canonicalUrl
+- type: text
+  name: thumbnailUrl
+  label: thumbnailUrl
+- type: list
+  name: authors
+  label: authors
