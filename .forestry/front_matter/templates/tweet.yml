@@ -26,3 +26,5 @@ fields:
     time_format: 
     display_utc: false
   default: now
+pages:
+- content/tweets/vision-of-self.mdx
