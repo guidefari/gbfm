@@ -4,13 +4,25 @@ hide_body: false
 fields:
 - type: text
   name: authorName
-  label: authorName
+  label: Author Name
+  default: Guide Fari
 - type: text
   name: handle
   label: handle
-- type: file
-  name: avatarUrl
-  label: avatarUrl
-- type: text
-  name: date
+  default: guidefari
+- name: avatarUrl
+  type: text
+  config:
+    required: false
+  label: Avatar Url
+  default: https://res.cloudinary.com/hokaspokas/image/upload/v1661928720/bar_shpohc.png
+- name: date
+  type: datetime
   label: date
+  description: ''
+  config:
+    required: false
+    date_format: 
+    time_format: 
+    display_utc: false
+  default: now
