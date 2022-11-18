@@ -28,4 +28,5 @@ fields:
   default: now
 pages:
 - content/tweets/ronny-typography.mdx
+- content/tweets/system.mdx
 - content/tweets/vision-of-self.mdx
