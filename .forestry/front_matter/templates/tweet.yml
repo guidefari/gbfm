@@ -27,4 +27,5 @@ fields:
     display_utc: false
   default: now
 pages:
+- content/tweets/ronny-typography.mdx
 - content/tweets/vision-of-self.mdx
