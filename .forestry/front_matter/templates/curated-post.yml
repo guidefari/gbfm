@@ -5,12 +5,6 @@ fields:
 - type: text
   name: title
   label: title
-- type: text
-  name: date
-  label: date
-- type: text
-  name: lastmod
-  label: lastmod
 - type: list
   name: tags
   label: tags
@@ -29,3 +23,23 @@ fields:
 - type: list
   name: authors
   label: authors
+- name: lastmod
+  type: datetime
+  label: lastmod
+  description: ''
+  config:
+    required: false
+    date_format: 
+    time_format: 
+    display_utc: false
+  default: now
+- name: date
+  type: datetime
+  label: date
+  description: ''
+  config:
+    required: false
+    date_format: 
+    time_format: 
+    display_utc: false
+  default: now
