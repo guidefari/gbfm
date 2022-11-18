@@ -5,6 +5,12 @@ admin_path: ''
 webhook_url: 
 sections:
 - type: directory
+  path: content/labels
+  label: Record labels
+  create: all
+  match: "**/*"
+  new_doc_ext: ".mdx"
+- type: directory
   path: content/curated
   label: Curated
   create: all
