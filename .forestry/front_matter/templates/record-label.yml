@@ -5,9 +5,12 @@ fields:
 - type: text
   name: name
   label: name
-- type: file
-  name: thumbnailUrl
+- name: thumbnailUrl
+  type: text
+  config:
+    required: false
   label: thumbnailUrl
+  default: https://res.cloudinary.com/hokaspokas/image/upload/v1663215088/goosebumpsfm/goooooose_blu_eccquc.svg
 - type: text
   name: website
   label: website
