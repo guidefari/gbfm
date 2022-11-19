@@ -19,6 +19,7 @@ module.exports = {
       colors: {
         highlight: '#9BFD9E',
         tomato: '#ff6d1a',
+        'gb-bg': '#16425b',
         'gb-highlight': '#9BFD9E',
         'gb-tomato': '#ff6d1a',
         'gb-pastel-green-1': '#B6FADF',

@@ -18,8 +18,8 @@ export default function App({ Component, pageProps }) {
       <AudioProvider>
         <header className="fixed top-0 flex justify-between w-full">
           <nav>
-            <a onClick={() => router.back()} className="hover:text-highlight hover:cursor-pointer">
-              <button className="z-20 p-3 m-5 bg-teal-900 rounded-full text-highlight">
+            <a onClick={() => router.back()} className="hover:text-tomato hover:cursor-pointer">
+              <button className="z-20 p-3 m-5 transition duration-300 ease-in-out rounded-full hover:bg-gb-bg hover:shadow-md ">
                 <BackIcon />
               </button>
             </a>
