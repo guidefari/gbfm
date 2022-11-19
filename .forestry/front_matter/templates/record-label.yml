@@ -23,3 +23,5 @@ fields:
 - type: list
   name: genres
   label: genres
+pages:
+- content/labels/ostgut.mdx
