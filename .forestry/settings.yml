@@ -9,7 +9,7 @@ sections:
   label: Record labels
   create: all
   match: "**/*"
-  new_doc_ext: ".mdx"
+  new_doc_ext: mdx
 - type: directory
   path: content/curated
   label: Curated

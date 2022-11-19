@@ -1,0 +1,22 @@
+---
+label: Record label
+hide_body: true
+fields:
+- type: text
+  name: name
+  label: name
+- type: file
+  name: thumbnailUrl
+  label: thumbnailUrl
+- type: text
+  name: website
+  label: website
+- type: text
+  name: discogs
+  label: discogs
+- type: text
+  name: bandcamp
+  label: bandcamp
+- type: list
+  name: genres
+  label: genres
