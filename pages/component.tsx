@@ -4,10 +4,10 @@ export default function Collaborate() {
   return (
     <>
       <section className="">
-        <div className="max-w-screen-xl px-4 pb-8 mx-auto sm:py-16 lg:px-6">
+        <div className="max-w-screen-xl px-4 pb-8 mx-auto my-auto sm:py-16 lg:px-6">
           <Playlist
-            genres={['Bass', 'test']}
-            url="https://open.spotify.com/playlist/3k1YTNJ6mbuFMJRvqGvIOn?si=22c421982ac146ed"
+            genres={['ambient', 'dub_techno', 'downtempo']}
+            url="https://open.spotify.com/playlist/5vhNkJdvdPCs7GhLZDJ7R5?si=faa4e69bc6824f6b"
             blurb="Component testing right ehre I wonder what happens when you thingy it"
           />
         </div>

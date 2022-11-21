@@ -3,6 +3,9 @@ import Track from './Track'
 import * as ScrollArea from '@radix-ui/react-scroll-area'
 import fetcher from '@/lib/fetcher'
 import useSWR from 'swr'
+import { MinimalCard } from './common/MinimalCard'
+import { playlist, track } from 'pages/api/playlist'
+import { GB } from './common/icons'
 
 interface Props {
   url: string
@@ -12,32 +15,52 @@ interface Props {
 }
 
 export const Playlist = ({ url, genres, blurb, children }: Props) => {
-  // const [selectedTrack, setselectedTrack] = useState()
+  const [selectedTrack, setselectedTrack] = useState(null)
   const TAGS = Array.from({ length: 50 }).map((_, i, a) => `v1.2.0-beta.${a.length - i}`)
 
   const encoded = encodeURIComponent(url)
 
-  const { data, error } = useSWR(`/api/playlist?id=${encoded}`, fetcher)
+  const { data, error } = useSWR<playlist, Error>(`/api/playlist?id=${encoded}`, fetcher)
   const loading = !data && !error
+
+  if (loading)
+    return (
+      <div className="flex items-center justify-center w-full rounded-md h-80 bg-cyan-900 opacity-60 animate-pulse">
+        <span className="animate-spin-slow">
+          <GB />
+        </span>
+      </div>
+    )
 
   return (
     <section className="p-3 rounded-md bg-cyan-900 md:p-7">
-      <h2>Playlist.name</h2>
+      <h2>{loading ? 'My Name is' : data.title}</h2>
       <div className="w-full grid-cols-3 gap-4 md:grid">
         <div className="col-span-1">
-          {/* @ts-ignore */}
-          <Track
-            url={'https://open.spotify.com/track/0mSuk14kKUiC3Q6qj0u49o?si=fb91d9cc789c45ee'}
-          />
+          {selectedTrack ? (
+            // @ts-ignore
+            <Track url={selectedTrack} />
+          ) : (
+            <MinimalCard
+              imageUrl={data.coverImageUrl}
+              title={data.title}
+              slug={data.playlistUrl}
+              previewUrl={data.tracks[0].previewUrl || null}
+            />
+          )}
         </div>
         <div className="col-span-2">
           <ScrollArea.Root className="w-full shadow-sm ScrollAreaRoot">
             <ScrollArea.Viewport className="h-full">
               <div style={{ padding: '15px 20px' }}>
                 <h6 className="Text">Tracklist</h6>
-                {TAGS.map((tag) => (
-                  <div className="Tag" key={tag}>
-                    {tag}
+                {data.tracks.map((track: track) => (
+                  <div
+                    className="hover:cursor-pointer Tag"
+                    key={track.trackUrl}
+                    onClick={() => setselectedTrack(track.trackUrl)}
+                  >
+                    {track.title} - {track.artists}
                   </div>
                 ))}
               </div>
@@ -60,7 +83,10 @@ export const Playlist = ({ url, genres, blurb, children }: Props) => {
           </p>
           <hr className="mx-10 my-4 border-b-2 rounded-full border-gb-pastel-green-2" />
           <p className="mt-2 text-sm leading-snug ">
+            {data.description || ''}
+            <br />
             {blurb || ''}
+            <br />
             {children}
           </p>
         </div>

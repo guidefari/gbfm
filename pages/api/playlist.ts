@@ -2,6 +2,24 @@ import { NextApiRequest, NextApiResponse } from 'next'
 import { getPlaylistDetails } from '../../lib/spotify'
 const { parse } = require('spotify-uri')
 
+export interface track {
+  albumType: string
+  albumImageUrl: string
+  title: string
+  artists: string
+  trackUrl: string
+  previewUrl: string
+}
+
+export interface playlist {
+  coverImageUrl: string
+  title: string
+  description: string
+  tracks: track[]
+  ownerName: string
+  playlistUrl: string
+}
+
 // eslint-disable-next-line import/no-anonymous-default-export
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const { query } = req
@@ -17,28 +35,26 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
   const response = await getPlaylistDetails(id)
   if (response.status > 400) {
-    return res.status(200).json({ error: 'Album Not Found' })
+    return res.status(200).json({ error: 'Playlist Not Found' })
   }
 
-  console.log('response:', response)
+  const playlistUrl = response.external_urls.spotify
+  const coverImageUrl = response.images[0].url
+  const title = response.name
+  const description = response.description
+  const ownerName = response.owner.display_name
+  const tracks: track[] = response.tracks.items.map(
+    (item): track => ({
+      albumType: item.track.album.album_type,
+      albumImageUrl: item.track.album.images[0].url,
+      artists: item.track.artists.map((_artist) => _artist.name).join(', '),
+      previewUrl: item.track.preview_url,
+      title: item.track.name,
+      trackUrl: item.track.external_urls.spotify,
+    })
+  )
 
-  //   ownerId
-  //playlist cover image
-  // tracks: track[]. track =  Title - Artists, PreviewUrl
-
-  return res.status(200).json({ response })
-
-  //   const albumType = response.album_type
-  //   const albumImageUrl = response.images[0].url
-  //   const title = response.name
-  //   const artists = response.artists.map((_artist) => _artist.name).join(', ')
-  //   const albumUrl = response.external_urls.spotify
-
-  //   const number_of_tracks_in_album = response.tracks.items.length
-  //   const preview_url_track_number = randomNumberWithinRange(0, number_of_tracks_in_album - 1)
-  //   const previewUrl = response.tracks.items[preview_url_track_number].preview_url
-
-  //   return res.status(200).json({ albumType, albumImageUrl, title, artists, albumUrl, previewUrl })
+  return res.status(200).json({ playlistUrl, coverImageUrl, title, description, ownerName, tracks })
 }
 
 function randomNumberWithinRange(myMin, myMax) {

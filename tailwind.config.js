@@ -25,6 +25,9 @@ module.exports = {
         'gb-pastel-green-1': '#B6FADF',
         'gb-pastel-green-2': '#4E8C71',
       },
+      animation: {
+        'spin-slow': 'spin 3s linear infinite',
+      },
     },
   },
   plugins: [],
