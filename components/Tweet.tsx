@@ -21,6 +21,7 @@ const components = {
   // See the notes in README.md for more details.
   Album: dynamic(() => import('./Album')),
   Track: dynamic(() => import('./Track')),
+  Playlist: dynamic(() => import('./Playlist')),
   Head,
 }
 

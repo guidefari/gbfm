@@ -17,6 +17,7 @@ const components = {
   // See the notes in README.md for more details.
   Album: dynamic(() => import('../../components/Album')),
   Track: dynamic(() => import('../../components/Track')),
+  Playlist: dynamic(() => import('../../components/Playlist')),
   Head,
 }
 export const getStaticPaths = async () => {

@@ -30,6 +30,7 @@ const components = {
   a: CustomLink,
   Album: dynamic(() => import('../../components/Album')),
   Track: dynamic(() => import('../../components/Track')),
+  Playlist: dynamic(() => import('../../components/Playlist')),
 }
 
 export default function AuthorPage({ author }: { author: Author }) {

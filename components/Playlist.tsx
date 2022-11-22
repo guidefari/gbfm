@@ -14,9 +14,8 @@ interface Props {
   children?: React.ReactNode
 }
 
-export const Playlist = ({ url, genres, blurb, children }: Props) => {
+export default function Playlist({ url, genres, blurb, children }: Props) {
   const [selectedTrack, setselectedTrack] = useState(null)
-  const TAGS = Array.from({ length: 50 }).map((_, i, a) => `v1.2.0-beta.${a.length - i}`)
 
   const encoded = encodeURIComponent(url)
 
