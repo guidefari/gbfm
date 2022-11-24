@@ -1,4 +1,4 @@
-import { Playlist } from '@/components/Playlist'
+import Playlist from '@/components/Playlist'
 
 export default function Collaborate() {
   return (

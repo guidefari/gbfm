@@ -23,8 +23,9 @@ export default function Index({ tweets }) {
       />
       <h1 className="title">Tweets</h1>
       <p>Archived tweets. Some of these have never actually been on twitter 😉</p>
+      <hr className="border-gb-pastel-green-2" />
 
-      <div className="max-w-xl mx-auto my-4">
+      <div className="max-w-5xl mx-auto mb-4">
         {tweets.map((tweet: TweetType, index) => {
           return (
             <Tweet

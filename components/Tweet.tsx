@@ -37,7 +37,7 @@ export const Tweet: React.FC<Props> = ({
 
   return (
     <div className="relative ">
-      <div className="w-full px-6 py-4 border border-gb-pastel-green-2">
+      <div className="w-full px-6 py-4 border border-t-0 border-gb-pastel-green-2">
         <div className="flex items-center">
           <a
             className="flex w-12 h-12 mr-3"
