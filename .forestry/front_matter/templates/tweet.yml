@@ -27,6 +27,7 @@ fields:
     display_utc: false
   default: now
 pages:
+- content/tweets/ambient-clicks.mdx
 - content/tweets/colin-benders.mdx
 - content/tweets/liquid-folter.mdx
 - content/tweets/ronny-typography.mdx
