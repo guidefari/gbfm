@@ -38,7 +38,7 @@ export const MinimalCard: React.FC<Props> = ({
         <Image
           className={cn(
             'duration-700 object-cover w-full  rounded-md clickable-artwork aspect-square ease-in-out hover:cursor-pointer mx-auto',
-            loading ? 'scale-110 blur-2xl' : 'scale-100 blur-0'
+            loading ? 'scale-102 blur-2xl' : 'scale-100 blur-0'
           )}
           src={
             imageUrl ||
@@ -70,14 +70,14 @@ export const MinimalCard: React.FC<Props> = ({
             rel="noreferrer"
             title={`Stream ${title} on Spotify` || ''}
           >
-            {title || ''}
+            {title || <br />}
           </CustomLink>
         </p>
         <p className="mt-2 text" title={`Arist(s): ${artists}`}>
-          {artists || ''}
+          {artists || <br />}
         </p>
         <hr className="mx-10 my-4 border-b-2 rounded-full border-gb-pastel-green-2" />
-        <p className="mt-2 text-sm leading-snug ">{blurb || ''}</p>
+        <p className="mt-2 text-sm leading-snug ">{blurb || <br />}</p>
         {children}
       </div>
     </div>
