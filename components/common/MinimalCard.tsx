@@ -33,7 +33,7 @@ export const MinimalCard: React.FC<Props> = ({
   const [_, { handleAlbumArtClick }] = useAudioPlayerContext()
 
   return (
-    <div className="relative flex-shrink-0 max-w-md rounded-md bg-cyan-900 ">
+    <div className="relative z-10 flex-shrink-0 max-w-md rounded-md bg-cyan-900 ">
       <div className="flex-shrink-0 mb-4 sm:mb-0 sm:mr-4">
         <Image
           className={cn(
@@ -52,11 +52,11 @@ export const MinimalCard: React.FC<Props> = ({
           title={`Click to play audio preview of ${title}`}
         />
       </div>
-      <div>
-        <p className="flex flex-wrap">
+      <div className="p-3">
+        <p className="flex flex-wrap space-x-2">
           {genres &&
             genres.map((genre, index) => (
-              <span key={index} className="p-1 px-2 m-1 mr-2 text-sm rounded-full bg-cyan-800">
+              <span key={index} className="p-1 px-2 text-sm rounded-full bg-cyan-800">
                 {genre}
               </span>
             ))}

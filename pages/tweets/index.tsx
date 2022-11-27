@@ -1,8 +1,10 @@
 import { Tweet } from '@/components/Tweet'
-import Layout from '../components/Layout'
+import Layout from '../../components/Layout'
 import { PageSEO } from '@/components/SEO'
 import { allTweets, type Tweet as TweetType } from 'contentlayer/generated'
 import { compareDesc } from 'date-fns'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
 
 export const getStaticProps = async () => {
   const tweets: TweetType[] = allTweets.sort((a, b) => {
@@ -14,6 +16,7 @@ export const getStaticProps = async () => {
 }
 
 export default function Index({ tweets }) {
+  const router = useRouter()
   console.log('tweets:', tweets)
   return (
     <Layout>
@@ -23,19 +26,23 @@ export default function Index({ tweets }) {
       />
       <h1 className="title">Tweets</h1>
       <p>Archived tweets. Some of these have never actually been on twitter 😉</p>
-      <hr className="border-gb-pastel-green-2" />
 
-      <div className="max-w-5xl mx-auto mb-4">
+      <div className="max-w-4xl mx-auto mb-4">
         {tweets.map((tweet: TweetType, index) => {
           return (
-            <Tweet
-              authorName={tweet.authorName}
-              avatarUrl={tweet.avatarUrl}
-              date={tweet.date}
-              handle={tweet.handle}
+            <div
+              className="transition duration-300 ease-in-out delay-100 opacity-90 hover:opacity-100 hover:scale-103 "
               key={index}
-              content={tweet.body.code}
-            />
+              // onClick={() => router.push(`${tweet.url}`)}
+            >
+              <Tweet
+                authorName={tweet.authorName}
+                avatarUrl={tweet.avatarUrl}
+                date={tweet.date}
+                handle={tweet.handle}
+                content={tweet.body.code}
+              />
+            </div>
           )
         })}
       </div>

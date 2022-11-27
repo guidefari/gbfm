@@ -1,4 +1,4 @@
-import React, { createContext, useMemo, useState } from 'react'
+import React, { createContext, useEffect, useMemo, useState } from 'react'
 
 const AudioContext = createContext(null)
 
@@ -17,6 +17,12 @@ type AudioPlayerContext = [
 export const AudioProvider = ({ children }) => {
   const audioRef = useMemo(() => (typeof window === 'undefined' ? null : new Audio()), [])
   const [playAudio, setPlayAudio] = useState(false)
+
+  useEffect(() => {
+    audioRef.onended = () => {
+      handlers.pause()
+    }
+  }, [audioRef])
 
   const handlers = React.useMemo(
     () => ({

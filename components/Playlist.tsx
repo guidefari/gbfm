@@ -53,10 +53,10 @@ export default function Playlist({ url, genres, blurb, children }: Props) {
             <ScrollArea.Viewport className="h-full">
               <div style={{ padding: '15px 20px' }}>
                 <h6 className="Text">Tracklist</h6>
-                {data.tracks.map((track: track) => (
+                {data.tracks.map((track: track, index) => (
                   <div
                     className="hover:cursor-pointer Tag"
-                    key={track.trackUrl}
+                    key={`${track.trackUrl} -  ${index}`}
                     onClick={() => setselectedTrack(track.trackUrl)}
                   >
                     {track.title} - {track.artists}

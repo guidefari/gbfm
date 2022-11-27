@@ -4,6 +4,7 @@ import Image from 'next/image'
 import React from 'react'
 import CustomLink from './CustomLink'
 import Head from 'next/head'
+import { format, parseISO } from 'date-fns'
 
 interface Props {
   authorName: string
@@ -36,37 +37,44 @@ export const Tweet: React.FC<Props> = ({
   const MDXContent = useMDXComponent(content)
 
   return (
-    <div className="relative ">
-      <div className="w-full px-6 py-4 border border-t-0 border-gb-pastel-green-2">
-        <div className="flex items-center">
-          <a
-            className="flex w-12 h-12 mr-3"
-            href={`https://twitter.com/${handle}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              alt={authorName}
-              src={avatarUrl}
-              width={48}
-              height={48}
-              className="rounded-full"
-            />
-          </a>
-          <a
-            href="https://twitter.com/guidefari"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex flex-col ml-4"
-          >
-            <span className="flex items-center font-bold leading-5 " title={authorName}>
-              {authorName}
-            </span>
-            <span className="" title={`@${handle}`}>
-              {' '}
-              @{handle}{' '}
-            </span>
-          </a>
+    <div className="relative w-full mb-8 ">
+      <div className="px-6 py-4 ">
+        <div className="flex justify-between">
+          <div className="flex items-center">
+            <a
+              className="flex w-12 h-12 mr-3"
+              href={`https://twitter.com/${handle}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Image
+                alt={authorName}
+                src={avatarUrl}
+                width={48}
+                height={48}
+                className="rounded-full"
+              />
+            </a>
+            <a
+              href="https://twitter.com/guidefari"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-col ml-4"
+            >
+              <span className="flex items-center font-bold leading-5 " title={authorName}>
+                {authorName}
+              </span>
+              <span className="" title={`@${handle}`}>
+                {' '}
+                @{handle}{' '}
+              </span>
+            </a>
+          </div>
+          <div className="mb-8 text-center">
+            <time dateTime={date} className="mb-1 text-xs ">
+              {format(parseISO(date), 'LLLL d, yyyy')}
+            </time>
+          </div>
         </div>
         <div className="mt-4 mb-2 text-lg leading-normal whitespace-pre-wrap">
           <MDXContent components={components} />
@@ -74,6 +82,7 @@ export const Tweet: React.FC<Props> = ({
           {children}
         </div>
       </div>
+      <hr className="mx-10 my-4 border-b-2 rounded-full border-gb-pastel-green-2" />
     </div>
   )
 }

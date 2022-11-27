@@ -8,12 +8,23 @@ export default function Index() {
     <Layout>
       <PageSEO title="goosebumps.fm" description={'Curated Music & the occasional prose'} />
       <SuperHero />
-      <Link href="curated" as="curated">
-        <h3 className="title">-Prose</h3>
-      </Link>
-      <Link href="tweets" as="tweets">
-        <h3 className="title">-Tweets</h3>
-      </Link>
+      <ul className="max-w-full">
+        <li className="title">
+          <Link href="curated" as="curated">
+            Prose & Curated Sounds
+          </Link>
+        </li>
+        <li className="title">
+          <Link href="tweets" as="tweets">
+            Archived Tweets
+          </Link>
+        </li>
+        <li className="title">
+          <Link href="labels" as="labels">
+            Record Labels I like
+          </Link>
+        </li>
+      </ul>
     </Layout>
   )
 }

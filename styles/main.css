@@ -44,7 +44,7 @@ body {
 
 
 .title {
-    @apply mt-2 mb-4 text-5xl font-bold text-left sm:text-6xl md:text-8xl xl:text-9xl;
+    @apply mt-2 mb-4 text-5xl font-bold text-left sm:text-6xl md:text-7xl;
 }
 
 a {
