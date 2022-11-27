@@ -52,7 +52,7 @@ a {
 }
 
 .clickable-artwork {
-    @apply transition duration-300 ease-in-out lg:hover:scale-105;
+    @apply transition duration-300 ease-in-out lg:hover:scale-103;
 }
 
 

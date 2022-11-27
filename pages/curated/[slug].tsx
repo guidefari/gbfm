@@ -5,6 +5,7 @@ import CustomLink from '../../components/CustomLink'
 import Layout from '../../components/Layout'
 import { allPosts, type Post } from 'contentlayer/generated'
 import { useMDXComponent } from 'next-contentlayer/hooks'
+import Image from 'next/image'
 
 // Custom components/renderers to pass to MDX.
 // Since the MDX files aren't loaded by webpack, they have no knowledge of how
@@ -51,11 +52,23 @@ export default function PostPage({ post }: { post: Post }) {
           canonicalUrl={post.canonicalUrl || null}
         />
 
-        <div className="px-2 mt-10 mb-12 text-center md:mb-16 lg:mb-24">
-          <h1 className="title">{post.title}</h1>
-          {post.description && (
-            <p className="font-bold text-left text-gb-highlight">{post.description}</p>
-          )}
+        <div className="grid grid-cols-4 mt-10 mb-12 space-x-5 md:mb-16 lg:mb-24">
+          <Image
+            className="object-cover w-3/4 col-span-4 mx-auto rounded-md md:col-span-1 aspect-square"
+            src={
+              post.thumbnailUrl ||
+              'https://res.cloudinary.com/hokaspokas/image/upload/v1663215741/goosebumpsfm/generic_Thumb.svg'
+            }
+            alt={`Thumbnail image for post titled - ${post.title}`}
+            width={320}
+            height={320}
+            loading="lazy"
+            quality={100}
+          />
+          <div className="col-span-3 text-center ">
+            <h3 className="mt-0 text-left">{post.title}</h3>
+            {post.description && <p className="font-bold text-left ">{post.description}</p>}
+          </div>
         </div>
         <article className="px-3 list-disc">
           <MDXContent components={components} />
