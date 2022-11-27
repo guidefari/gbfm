@@ -32,7 +32,7 @@ export const SuperHero = () => {
                 alt="avatar"
                 width={69}
                 height={69}
-                className="w-48 h-48 rounded-full"
+                className="w-48 h-48 mx-auto rounded-full"
               />
               <div className="flex flex-col items-center justify-center text-center">
                 <h2 className="mt-4 text-lg font-medium title-font">
