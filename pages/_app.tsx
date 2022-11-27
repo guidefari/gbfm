@@ -21,8 +21,8 @@ export default function App({ Component, pageProps }) {
       </Head>
       <AudioProvider>
         <div className="grid h-screen grid-cols-12">
-          <header className="grid col-span-1 ">
-            <nav className="flex flex-col space-y-2 ">
+          <header className="grid bg-transparent col-span-full lg:col-span-1 ">
+            <nav className="flex items-center space-y-2 lg:flex-col ">
               <Link href="/">
                 <button className={buttonStyles}>
                   <GB />
@@ -33,7 +33,7 @@ export default function App({ Component, pageProps }) {
               </button>
             </nav>
           </header>
-          <div className="grid col-span-11 overflow-scroll">
+          <div className="grid overflow-scroll col-span-full lg:col-span-11">
             <Component {...pageProps} />
           </div>
           <nav className="grid col-span-1"></nav>
