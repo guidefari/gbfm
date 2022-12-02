@@ -11,17 +11,17 @@ export default function Index() {
       <ul className="max-w-full">
         <li className="title">
           <Link href="curated" as="curated">
-            Prose & Curated Sounds
-          </Link>
-        </li>
-        <li className="title">
-          <Link href="tweets" as="tweets">
-            Archived Tweets
+            Curated Sounds & Prose
           </Link>
         </li>
         <li className="title">
           <Link href="labels" as="labels">
             Record Labels I like
+          </Link>
+        </li>
+        <li className="title">
+          <Link href="tweets" as="tweets">
+            Archived Tweets
           </Link>
         </li>
       </ul>
