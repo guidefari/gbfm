@@ -10,16 +10,19 @@ export default function Index() {
       <SuperHero />
       <ul className="max-w-full">
         <li className="title">
+          -&gt;
           <Link href="curated" as="curated">
             Curated Sounds & Prose
           </Link>
         </li>
         <li className="title">
+          -&gt;
           <Link href="labels" as="labels">
             Record Labels I like
           </Link>
         </li>
         <li className="title">
+          -&gt;
           <Link href="tweets" as="tweets">
             Archived Tweets
           </Link>
