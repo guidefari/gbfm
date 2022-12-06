@@ -25,13 +25,13 @@
     }
     
     li::before {
-        content: "--> ";
         font-weight: 800;
         @apply text-blue-100;
     }
 
     li{
         margin-bottom: calc(0.75ex * 1.65);
+        @apply ml-2 list-disc;
     }
 }
 
