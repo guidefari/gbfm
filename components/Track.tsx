@@ -28,6 +28,7 @@ export default function Track({ url, genres, blurb, children }: Props) {
         artists={data?.artists || ''}
         genres={genres || ''}
         previewUrl={data?.previewUrl || ''}
+        spotify
       >
         {children}
       </MinimalCard>

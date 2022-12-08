@@ -3,11 +3,8 @@
 @import '@radix-ui/colors/violet.css';
 
 .ScrollAreaRoot {
-  width: 200px;
-  height: 225px;
   border-radius: 4px;
   overflow: hidden;
-  background-color: white;
   --scrollbar-size: 10px;
 }
 
@@ -61,18 +58,10 @@
   background: var(--blackA8);
 }
 
-.Text {
-  color: var(--violet11);
-  font-size: 15px;
-  line-height: 18px;
-  font-weight: 500;
-}
 
 .Tag {
-  color: var(--mauve12);
   font-size: 13px;
   line-height: 18px;
   margin-top: 10px;
-  border-top: 1px solid var(--mauve6);
   padding-top: 10px;
 }

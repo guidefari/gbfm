@@ -6,6 +6,7 @@ import useSWR from 'swr'
 import { MinimalCard } from './common/MinimalCard'
 import { playlist, track } from 'pages/api/playlist'
 import { GB } from './common/icons'
+import Image from 'next/image'
 
 interface Props {
   url: string
@@ -33,7 +34,6 @@ export default function Playlist({ url, genres, blurb, children }: Props) {
 
   return (
     <section className="p-3 rounded-md bg-cyan-900 md:p-7">
-      <h2>{loading ? 'My Name is' : data.title}</h2>
       <div className="w-full grid-cols-3 gap-4 md:grid">
         <div className="col-span-1">
           {selectedTrack ? (
@@ -45,20 +45,31 @@ export default function Playlist({ url, genres, blurb, children }: Props) {
               title={data.title}
               slug={data.playlistUrl}
               previewUrl={data.tracks[0].previewUrl || null}
+              spotify
             />
           )}
         </div>
         <div className="col-span-2">
-          <ScrollArea.Root className="w-full shadow-sm ScrollAreaRoot">
-            <ScrollArea.Viewport className="h-full">
-              <div style={{ padding: '15px 20px' }}>
-                <h6 className="Text">Tracklist</h6>
+          <ScrollArea.Root className="w-full shadow-sm h-72 ScrollAreaRoot">
+            <ScrollArea.Viewport className="h-full ">
+              <div className="bg-transparent">
+                <div className="sticky top-0 py-1 bg-cyan-900">
+                  <h6 className="mx-2 underline max-w-none">Playlist: {data.title}</h6>
+                </div>
                 {data.tracks.map((track: track, index) => (
                   <div
-                    className="hover:cursor-pointer Tag"
+                    className="mx-2 text-white hover:cursor-pointer Tag hover:text-green-300"
                     key={`${track.trackUrl} -  ${index}`}
                     onClick={() => setselectedTrack(track.trackUrl)}
                   >
+                    <Image
+                      className="inline mr-1 rounded-sm"
+                      alt={track.title}
+                      src={track.albumImageUrl}
+                      width={32}
+                      height={32}
+                      loading="lazy"
+                    />
                     {track.title} - {track.artists}
                   </div>
                 ))}
@@ -72,7 +83,7 @@ export default function Playlist({ url, genres, blurb, children }: Props) {
             </ScrollArea.Scrollbar>
             <ScrollArea.Corner className="ScrollAreaCorner" />
           </ScrollArea.Root>
-          <p className="flex flex-wrap">
+          <p className="flex flex-wrap mt-6">
             {genres &&
               genres.map((genre, index) => (
                 <span key={index} className="p-1 px-2 m-1 mr-2 text-sm rounded-full bg-cyan-800">
@@ -80,8 +91,7 @@ export default function Playlist({ url, genres, blurb, children }: Props) {
                 </span>
               ))}
           </p>
-          <hr className="mx-10 my-4 border-b-2 rounded-full border-gb-pastel-green-2" />
-          <p className="mt-2 text-sm leading-snug ">
+          <p className="mt-6 text-sm leading-snug ">
             {data.description || ''}
             <br />
             {blurb || ''}

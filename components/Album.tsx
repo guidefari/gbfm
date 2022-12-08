@@ -20,6 +20,7 @@ export default function Album({ url, genres, blurb, children }) {
         title={data?.title || ''}
         genres={genres || ''}
         previewUrl={data?.previewUrl || ''}
+        spotify
       >
         {children}
       </MinimalCard>
