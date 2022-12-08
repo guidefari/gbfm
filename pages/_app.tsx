@@ -22,7 +22,7 @@ export default function App({ Component, pageProps }) {
       <AudioProvider>
         <div className="grid h-screen grid-cols-12">
           <header className="grid bg-transparent col-span-full lg:col-span-1 ">
-            <nav className="flex items-center space-y-2 lg:flex-col ">
+            <nav className="flex items-center space-x-2 lg:space-y-2 lg:space-x-0 lg:flex-col ">
               <Link href="/">
                 <button className={buttonStyles}>
                   <GB />

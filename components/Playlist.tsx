@@ -33,7 +33,7 @@ export default function Playlist({ url, genres, blurb, children }: Props) {
     )
 
   return (
-    <section className="p-3 rounded-md bg-cyan-900 md:p-7">
+    <section className="p-3 pb-0 my-5 rounded-md shadow-md md:p-7 md:pb-0">
       <div className="w-full grid-cols-3 gap-4 md:grid">
         <div className="col-span-1">
           {selectedTrack ? (
@@ -41,7 +41,7 @@ export default function Playlist({ url, genres, blurb, children }: Props) {
             <Track url={selectedTrack} />
           ) : (
             <MinimalCard
-              imageUrl={data.coverImageUrl}
+              imageUrl={data.coverImageUrl || ''}
               title={data.title}
               slug={data.playlistUrl}
               previewUrl={data.tracks[0].previewUrl || null}
@@ -53,7 +53,7 @@ export default function Playlist({ url, genres, blurb, children }: Props) {
           <ScrollArea.Root className="w-full shadow-sm h-72 ScrollAreaRoot">
             <ScrollArea.Viewport className="h-full ">
               <div className="bg-transparent">
-                <div className="sticky top-0 py-1 bg-cyan-900">
+                <div className="sticky top-0 py-1 bg-gb-bg">
                   <h6 className="mx-2 underline max-w-none">Playlist: {data.title}</h6>
                 </div>
                 {data.tracks.map((track: track, index) => (

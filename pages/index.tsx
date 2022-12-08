@@ -17,6 +17,12 @@ export default function Index() {
         </li>
         <li className="title">
           -&gt;
+          <Link href="curated/how-to" as="curated/how-to">
+            How to use this site
+          </Link>
+        </li>
+        <li className="title">
+          -&gt;
           <Link href="labels" as="labels">
             Record Labels I like
           </Link>
