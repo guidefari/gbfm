@@ -6,7 +6,7 @@ export const Newsletter = () => {
           <div className="grid items-center lg:grid-cols-2 gap-x-6">
             <div className="mb-10 lg:mb-0">
               <div className="text-3xl font-bold">
-                Keep up to date with content and stuff
+                Subscribe to the newsletter
                 <br />
                 <span className="text-cyan-100">No more than one ping a week</span>
               </div>
