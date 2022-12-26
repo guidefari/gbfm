@@ -33,7 +33,7 @@ export default function App({ Component, pageProps }) {
               </button>
             </nav>
           </header>
-          <div className="grid overflow-scroll col-span-full lg:col-span-11">
+          <div className="grid col-span-full lg:col-span-11">
             <Component {...pageProps} />
           </div>
           <nav className="grid col-span-1"></nav>
