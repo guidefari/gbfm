@@ -5,10 +5,11 @@ import { compareDesc } from 'date-fns'
 import { allPosts, type Post } from 'contentlayer/generated'
 
 export function getStaticProps() {
-  const posts: Post[] = allPosts.sort((a, b) => {
-    return compareDesc(new Date(a.lastmod || a.date), new Date(b.lastmod || b.date))
-  })
-  console.log({ posts })
+  const posts: Post[] = allPosts
+    .sort((a, b) => {
+      return compareDesc(new Date(a.lastmod || a.date), new Date(b.lastmod || b.date))
+    })
+    .filter((post) => post.title !== 'Template post')
 
   return { props: { posts } }
 }
