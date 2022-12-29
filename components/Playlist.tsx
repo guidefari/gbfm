@@ -33,7 +33,7 @@ export default function Playlist({ url, genres, blurb, children }: Props) {
     )
 
   return (
-    <section className="p-3 pb-0 my-5 rounded-md shadow-md md:p-7 md:pb-0">
+    <section className="p-3 pb-0 my-5 border-2 rounded-md border-gb-tomato md:p-7 md:pb-0">
       <div className="w-full grid-cols-3 gap-4 md:grid">
         <div className="col-span-1">
           {selectedTrack ? (
