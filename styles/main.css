@@ -103,6 +103,6 @@ h1 {
 
 p, ul {
     font-size: var(--fontSize);
-    max-width:55ch;
+    max-width:75ch;
 }
 
