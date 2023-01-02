@@ -52,9 +52,9 @@ export default function PostPage({ post }: { post: Post }) {
           canonicalUrl={post.canonicalUrl || null}
         />
 
-        <div className="grid grid-cols-4 mt-10 mb-12 space-x-5 md:mb-16 lg:mb-24">
+        <div className="grid grid-cols-4 mt-10 mb-12 space-x-5 md:px-3 md:mb-16 lg:mb-24">
           <Image
-            className="object-cover w-3/4 col-span-4 mx-auto rounded-md md:col-span-1 aspect-square"
+            className="object-cover w-3/4 col-span-4 mx-auto rounded-md md:col-span-1 md:mx-0 aspect-square"
             src={
               post.thumbnailUrl ||
               'https://res.cloudinary.com/hokaspokas/image/upload/v1663215741/goosebumpsfm/generic_Thumb.svg'
