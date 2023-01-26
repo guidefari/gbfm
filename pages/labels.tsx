@@ -18,7 +18,7 @@ export default function Index({ allLabels }) {
 
   return (
     <Layout>
-      <PageSEO title="goosebumps.fm/tweets" description={'Some record labels we have enjoyed'} />
+      <PageSEO title="goosebumps.fm/labels" description={'Some record labels we have enjoyed'} />
       <h1 className="title">Record Labels</h1>
       <p>Some record labels myself & friends have enjoyed over the years</p>
 

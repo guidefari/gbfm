@@ -7,17 +7,16 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 
 export const getStaticProps = async () => {
-  const tweets: TweetType[] = allTweets.sort((a, b) => {
-    return compareDesc(new Date(a.date), new Date(b.date))
-  })
+  const tweets: TweetType[] = allTweets
+    .sort((a, b) => {
+      return compareDesc(new Date(a.date), new Date(b.date))
+    })
+    .filter((tweet: TweetType) => tweet._id !== 'tweets/template-tweet.mdx')
   console.log({ tweets })
-
-  return { props: { tweets } }
 }
 
 export default function Index({ tweets }) {
   const router = useRouter()
-  console.log('tweets:', tweets)
   return (
     <Layout>
       <PageSEO
@@ -42,6 +41,7 @@ export default function Index({ tweets }) {
                 handle={tweet.handle}
                 content={tweet.body.code}
               />
+              <a onClick={() => router.push(`${tweet.url}`)}>view tweet</a>
             </div>
           )
         })}
