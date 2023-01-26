@@ -23,6 +23,7 @@ const components = {
   Album: dynamic(() => import('./Album')),
   Track: dynamic(() => import('./Track')),
   Playlist: dynamic(() => import('./Playlist')),
+  HorizontalScrollCards: dynamic(() => import('./common/HorizontalScrollCards')),
   Head,
 }
 

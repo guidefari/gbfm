@@ -35,7 +35,7 @@ export const MinimalCard: React.FC<Props> = ({
   const [_, { handleAlbumArtClick }] = useAudioPlayerContext()
 
   return (
-    <div className="relative z-10 flex-shrink-0 max-w-md my-8 border-2 border-t-0 border-l-0 rounded-md border-gb-tomato ">
+    <div className="relative z-10 min-w-[320px] flex-shrink-0 max-w-md my-8 border-2 border-t-0 border-l-0 rounded-md border-gb-tomato ">
       <div className="flex-shrink-0 mb-4 sm:mb-0 sm:mr-4">
         <Image
           className={cn(
@@ -84,14 +84,13 @@ export const MinimalCard: React.FC<Props> = ({
             {title || <br />}
           </CustomLink>
         </p>
-        <p className="mt-2 text" title={`Arist(s): ${artists}`}>
+        <p className="mt-2 " title={`Arist(s): ${artists}`}>
           {artists || <br />}
         </p>
         {(blurb || children) && (
           <hr className="mx-10 my-4 border-b-2 rounded-full border-gb-pastel-green-2" />
         )}
-        <p className="mt-2 text-sm leading-snug ">{blurb || <br />}</p>
-        {children}
+        <p className="mt-2 ">{children || blurb || <br />}</p>
       </div>
     </div>
   )
