@@ -1,6 +1,6 @@
 import fetcher from '@/lib/fetcher'
 import { AlbumApiResponse, AlbumSingleTrackApiResponse } from '@/lib/types'
-import { useState } from 'react'
+import React, { useState } from 'react'
 import useSWR from 'swr'
 import { GB } from './common/icons'
 import { MinimalCard } from './common/MinimalCard'
@@ -8,7 +8,14 @@ import Track from './Track'
 import * as ScrollArea from '@radix-ui/react-scroll-area'
 import Image from 'next/image'
 
-export default function Album({ url, genres, blurb, children }) {
+interface Props {
+  url: string
+  genres?: string[]
+  blurb?: string
+  children?: React.ReactNode
+}
+
+export default function Album({ url, genres, blurb, children }: Props) {
   const [selectedTrack, setselectedTrack] = useState(null)
   const encoded = encodeURIComponent(url)
 
