@@ -1,27 +1,13 @@
+import { GenericAndMaybeLegacyError, PlaylistApiResponse, TrackAPIResponse } from '@/lib/types'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getPlaylistDetails } from '../../lib/spotify'
 const { parse } = require('spotify-uri')
 
-export interface track {
-  albumType: string
-  albumImageUrl: string
-  title: string
-  artists: string
-  trackUrl: string
-  previewUrl: string
-}
-
-export interface playlist {
-  coverImageUrl: string
-  title: string
-  description: string
-  tracks: track[]
-  ownerName: string
-  playlistUrl: string
-}
-
 // eslint-disable-next-line import/no-anonymous-default-export
-export default async (req: NextApiRequest, res: NextApiResponse) => {
+export default async (
+  req: NextApiRequest,
+  res: NextApiResponse<PlaylistApiResponse | GenericAndMaybeLegacyError>
+) => {
   const { query } = req
   let id
 
@@ -43,8 +29,8 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   const title = response.name
   const description = response.description
   const ownerName = response.owner.display_name
-  const tracks: track[] = response.tracks.items.map(
-    (item): track => ({
+  const tracks: TrackAPIResponse[] = response.tracks.items.map(
+    (item): TrackAPIResponse => ({
       albumType: item.track.album.album_type,
       albumImageUrl: item.track.album.images[0].url,
       artists: item.track.artists.map((_artist) => _artist.name).join(', '),

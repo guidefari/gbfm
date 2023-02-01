@@ -9,7 +9,7 @@ interface Props {
   blurb?: string
   imageUrl: string
   slug?: string
-  genres?: string[]
+  genres?: string[] | null
   loading?: boolean
   previewUrl?: string
   children?: React.ReactNode

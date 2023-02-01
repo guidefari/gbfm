@@ -4,9 +4,9 @@ import * as ScrollArea from '@radix-ui/react-scroll-area'
 import fetcher from '@/lib/fetcher'
 import useSWR from 'swr'
 import { MinimalCard } from './common/MinimalCard'
-import { playlist, track } from 'pages/api/playlist'
 import { GB } from './common/icons'
 import Image from 'next/image'
+import { PlaylistApiResponse, TrackAPIResponse } from '@/lib/types'
 
 interface Props {
   url: string
@@ -20,7 +20,7 @@ export default function Playlist({ url, genres, blurb, children }: Props) {
 
   const encoded = encodeURIComponent(url)
 
-  const { data, error } = useSWR<playlist, Error>(`/api/playlist?id=${encoded}`, fetcher)
+  const { data, error } = useSWR<PlaylistApiResponse, Error>(`/api/playlist?id=${encoded}`, fetcher)
   const loading = !data && !error
 
   if (loading)
@@ -56,7 +56,7 @@ export default function Playlist({ url, genres, blurb, children }: Props) {
                 <div className="sticky top-0 py-1 bg-gb-bg">
                   <h6 className="mx-2 underline max-w-none">Playlist: {data.title}</h6>
                 </div>
-                {data.tracks.map((track: track, index) => (
+                {data.tracks.map((track: TrackAPIResponse, index) => (
                   <div
                     className="mx-2 text-white hover:cursor-pointer Tag hover:text-green-300"
                     key={`${track.trackUrl} -  ${index}`}

@@ -1,9 +1,13 @@
+import { AlbumApiResponse, GenericAndMaybeLegacyError, TrackAPIResponse } from '@/lib/types'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getAlbumDetails } from '../../lib/spotify'
 const { parse } = require('spotify-uri')
 
 // eslint-disable-next-line import/no-anonymous-default-export
-export default async (req: NextApiRequest, res: NextApiResponse) => {
+export default async (
+  req: NextApiRequest,
+  res: NextApiResponse<AlbumApiResponse | GenericAndMaybeLegacyError>
+) => {
   const { query } = req
   let id
 
@@ -29,8 +33,18 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
   const number_of_tracks_in_album = response.tracks.items.length
   const preview_url_track_number = randomNumberWithinRange(0, number_of_tracks_in_album - 1)
   const previewUrl = response.tracks.items[preview_url_track_number].preview_url
+  const tracks: TrackAPIResponse[] = response.tracks.items.map(
+    (item): TrackAPIResponse => ({
+      artists: item.artists.map((_artist) => _artist.name).join(', '),
+      previewUrl: item.preview_url,
+      title: item.name,
+      trackUrl: item.external_urls.spotify,
+    })
+  )
 
-  return res.status(200).json({ albumType, albumImageUrl, title, artists, albumUrl, previewUrl })
+  return res
+    .status(200)
+    .json({ tracks, albumType, albumImageUrl, title, artists, albumUrl, previewUrl })
 }
 
 function randomNumberWithinRange(myMin, myMax) {

@@ -1,9 +1,13 @@
+import { GenericAndMaybeLegacyError, TrackAPIResponse } from '@/lib/types'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getTrackDetails } from '../../lib/spotify'
 const { parse } = require('spotify-uri')
 
 // eslint-disable-next-line import/no-anonymous-default-export
-export default async (req: NextApiRequest, res: NextApiResponse) => {
+export default async (
+  req: NextApiRequest,
+  res: NextApiResponse<TrackAPIResponse | GenericAndMaybeLegacyError>
+) => {
   const { query } = req
   let id
 

@@ -13,6 +13,8 @@ export const getStaticProps = async () => {
     })
     .filter((tweet: TweetType) => tweet._id !== 'tweets/template-tweet.mdx')
   console.log({ tweets })
+
+  return { props: { tweets } }
 }
 
 export default function Index({ tweets }) {
