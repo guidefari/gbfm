@@ -32,7 +32,7 @@ export default function Index({ tweets }) {
         {tweets.map((tweet: TweetType, index) => {
           return (
             <div
-              className="transition duration-300 ease-in-out delay-100 opacity-90 hover:opacity-100 hover:scale-103 "
+              className="transition duration-300 ease-in-out delay-100 opacity-90 hover:opacity-100 "
               key={index}
               // onClick={() => router.push(`${tweet.url}`)}
             >

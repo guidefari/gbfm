@@ -1,10 +1,10 @@
 import Layout from '@/components/Layout'
-import dynamic from 'next/dynamic'
 import CustomLink from '@/components/CustomLink'
 import { PageSEO } from '@/components/SEO'
 import Image from 'next/image'
 import { allAuthors, type Author } from 'contentlayer/generated'
 import { useMDXComponent } from 'next-contentlayer/hooks'
+import { MDXcomponents } from '@/lib/mdx'
 
 export const getStaticPaths = async () => {
   const paths: string[] = allAuthors.map((author) => author.url)
@@ -24,13 +24,6 @@ export const getStaticProps = async ({ params }) => {
       author,
     },
   }
-}
-
-const components = {
-  a: CustomLink,
-  Album: dynamic(() => import('../../components/Album')),
-  Track: dynamic(() => import('../../components/Track')),
-  Playlist: dynamic(() => import('../../components/Playlist')),
 }
 
 export default function AuthorPage({ author }: { author: Author }) {
@@ -71,7 +64,7 @@ export default function AuthorPage({ author }: { author: Author }) {
               </p>
             )}
             <article className="my-10 ">
-              <MDXContent components={components} />
+              <MDXContent components={MDXcomponents} />
             </article>
           </div>
         </div>

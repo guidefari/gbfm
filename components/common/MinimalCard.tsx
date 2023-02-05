@@ -90,7 +90,7 @@ export const MinimalCard: React.FC<Props> = ({
         {(blurb || children) && (
           <hr className="mx-10 my-4 border-b-2 rounded-full border-gb-pastel-green-2" />
         )}
-        <p className="mt-2 ">{children || blurb || <br />}</p>
+        <div className="mt-2 ">{children || blurb || <br />}</div>
       </div>
     </div>
   )

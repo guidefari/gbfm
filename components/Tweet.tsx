@@ -1,10 +1,8 @@
 import { useMDXComponent } from 'next-contentlayer/hooks'
-import dynamic from 'next/dynamic'
 import Image from 'next/image'
 import React from 'react'
-import CustomLink from './CustomLink'
-import Head from 'next/head'
 import { format, parseISO } from 'date-fns'
+import { MDXcomponents } from '../lib/mdx'
 
 interface Props {
   authorName: string
@@ -13,18 +11,6 @@ interface Props {
   date: string
   children?: React.ReactNode
   content: string
-}
-
-const components = {
-  a: CustomLink,
-  // It also works with dynamically-imported components, which is especially
-  // useful for conditionally loading components for certain routes.
-  // See the notes in README.md for more details.
-  Album: dynamic(() => import('./Album')),
-  Track: dynamic(() => import('./Track')),
-  Playlist: dynamic(() => import('./Playlist')),
-  HorizontalScrollCards: dynamic(() => import('./common/HorizontalScrollCards')),
-  Head,
 }
 
 export const Tweet: React.FC<Props> = ({
@@ -78,7 +64,7 @@ export const Tweet: React.FC<Props> = ({
           </div>
         </div>
         <div className="mt-4 mb-2 text-lg leading-normal whitespace-pre-wrap">
-          <MDXContent components={components} />
+          <MDXContent components={MDXcomponents} />
 
           {children}
         </div>
