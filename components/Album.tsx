@@ -2,11 +2,11 @@ import fetcher from '@/lib/fetcher'
 import { AlbumApiResponse, AlbumSingleTrackApiResponse } from '@/lib/types'
 import React, { useState } from 'react'
 import useSWR from 'swr'
+import * as ScrollArea from '@radix-ui/react-scroll-area'
+import Image from 'next/image'
 import { GB } from './common/icons'
 import { MinimalCard } from './common/MinimalCard'
 import Track from './Track'
-import * as ScrollArea from '@radix-ui/react-scroll-area'
-import Image from 'next/image'
 
 interface Props {
   url: string

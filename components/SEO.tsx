@@ -37,10 +37,7 @@ const CommonSEO: React.FC<CommonSeoProps> = ({
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={twImage} />
-      <link
-        rel="canonical"
-        href={canonicalUrl ? canonicalUrl : `${siteMetadata.siteUrl}${router.asPath}`}
-      />
+      <link rel="canonical" href={canonicalUrl || `${siteMetadata.siteUrl}${router.asPath}`} />
     </Head>
   )
 }
@@ -57,18 +54,16 @@ export const PageSEO: React.FC<PageSeoProps> = ({
   description,
   ogImageUrl,
   canonicalUrl,
-}) => {
-  return (
-    <CommonSEO
-      title={title}
-      description={description}
-      ogType="website"
-      ogImage={ogImageUrl || siteMetadata.socialBanner}
-      twImage={ogImageUrl || siteMetadata.socialBanner}
-      canonicalUrl={canonicalUrl}
-    />
-  )
-}
+}) => (
+  <CommonSEO
+    title={title}
+    description={description}
+    ogType="website"
+    ogImage={ogImageUrl || siteMetadata.socialBanner}
+    twImage={ogImageUrl || siteMetadata.socialBanner}
+    canonicalUrl={canonicalUrl}
+  />
+)
 
 export const TagSEO = ({ title, description }) => {
   const ogImageUrl = siteMetadata.socialBanner

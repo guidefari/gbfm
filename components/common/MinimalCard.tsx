@@ -66,8 +66,8 @@ export const MinimalCard: React.FC<Props> = ({
         <p className="mt-3 text-lg font-medium leading-6">
           <CustomLink
             target="_blank"
-            href={(slug as string) || ''}
-            as={(slug as string) || ''}
+            href={slug || ''}
+            as={slug || ''}
             className="mb-0 text-xl leading-tight text-green-500 hover:transition-all hover:underline"
             rel="noreferrer"
             title={`Stream ${title} on Spotify` || ''}

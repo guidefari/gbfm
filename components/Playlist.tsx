@@ -1,12 +1,12 @@
 import React, { useState } from 'react'
-import Track from './Track'
 import * as ScrollArea from '@radix-ui/react-scroll-area'
 import fetcher from '@/lib/fetcher'
 import useSWR from 'swr'
-import { MinimalCard } from './common/MinimalCard'
-import { GB } from './common/icons'
 import Image from 'next/image'
 import { PlaylistApiResponse, TrackAPIResponse } from '@/lib/types'
+import { MinimalCard } from './common/MinimalCard'
+import { GB } from './common/icons'
+import Track from './Track'
 
 interface Props {
   url: string

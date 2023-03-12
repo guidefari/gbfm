@@ -26,6 +26,8 @@ export type TrackAPIResponse = {
   previewUrl?: string
 }
 
+export type Track = Pick<TrackAPIResponse, 'albumImageUrl' | 'title' | 'artists' | 'trackUrl'>
+
 export type GenericAndMaybeLegacyError = {
   error: string
 }

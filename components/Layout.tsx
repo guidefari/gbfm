@@ -1,16 +1,23 @@
 import Nowplaying from '@/components/Nowplaying'
+import Link from 'next/link'
+import { AudioControls } from './AudioControls'
+import { GB } from './common/icons'
 import { Newsletter } from './Newsletter'
+import SideBar from './SideBar'
 
 export default function Layout({ children }) {
+  
+
   return (
     <>
-      <div className="flex flex-col justify-between min-h-screen overflow-x-hidden font-jetbrains">
-        <main>{children}</main>
+      <SideBar />
+      <main className="flex flex-col justify-between w-full h-full overflow-hidden md:pl-20 pl-11 lg:pl-20 font-jetbrains">
+        {children}
         <footer className="px-5 mt-32 mb-10">
           <Newsletter />
           <Nowplaying />
         </footer>
-      </div>
+      </main>
     </>
   )
 }

@@ -54,7 +54,7 @@ body {
 
 
 .title {
-    @apply mt-2 mb-4 text-5xl font-bold text-left sm:text-6xl md:text-7xl;
+    @apply mt-2 mb-4 text-3xl font-bold text-left sm:text-6xl md:text-7xl;
 }
 
 a {
@@ -106,3 +106,6 @@ p, ul {
     max-width:75ch;
 }
 
+.nav-button {
+  @apply ring-2 hover:ring-4 z-20 text-[#54BCF7] p-3 md:m-5 transition duration-300 ease-in-out rounded-full w-12 md:w-14 aspect-square hover:bg-gb-bg hover:text-tomato hover:cursor-pointer
+}
