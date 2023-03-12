@@ -7,16 +7,14 @@ export const AudioControls = () => {
 
   if (!audioRef?.src) return
 
-  const buttonStyles = 'z-10 w-14 h-14 p-3 m-5 bg-teal-900 rounded-full text-highlight'
-
   return (
     <>
       {playAudio ? (
-        <button title="Pause Preview Audio" onClick={() => pause()}>
+        <button className='nav-button' title="Pause Preview Audio" onClick={() => pause()}>
           <PauseIcon />
         </button>
       ) : (
-        <button onClick={() => play()}>
+        <button className='nav-button' onClick={() => play()}>
           <PlayIcon />
         </button>
       )}

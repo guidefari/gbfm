@@ -30,9 +30,7 @@ export default function Index() {
           </Link>
         </li>
         <li className="title">
-          <Link href="tweets" as="tweets">
-            Archived Tweets
-          </Link>
+          <Link href="inspo" as="inspo">Inspired By</Link>
         </li>
       </ul>
     </Layout>
