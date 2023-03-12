@@ -39,9 +39,9 @@ export default function Album({ url, genres, blurb, children }: Props) {
             <Track url={selectedTrack} />
           ) : (
             <MinimalCard
-              imageUrl={data.albumImageUrl || ''}
-              title={data.title}
-              slug={data.albumUrl}
+              imageUrl={data?.albumImageUrl || ''}
+              title={data?.title || ''}
+              slug={data?.albumUrl || ''}
               previewUrl={data.tracks[0].previewUrl || null}
               spotify
             />
