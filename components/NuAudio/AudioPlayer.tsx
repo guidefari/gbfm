@@ -1,7 +1,7 @@
-import { Track } from "@/lib/types";
-import { useAudioPlayerContext } from "contexts/AudioPlayer";
-import { useEffect, useState, useRef, useCallback } from "react";
-import { BsMusicNoteBeamed } from 'react-icons/bs';
+import { Track } from '@/lib/types'
+import { useAudioPlayerContext } from 'contexts/AudioPlayer'
+import { useEffect, useState, useRef, useCallback } from 'react'
+import { BsMusicNoteBeamed } from 'react-icons/bs'
 // icons
 import {
   IoPlayBackSharp,
@@ -10,34 +10,28 @@ import {
   IoPlaySkipForwardSharp,
   IoPlaySharp,
   IoPauseSharp,
-} from 'react-icons/io5';
+} from 'react-icons/io5'
 
-import {
-  IoMdVolumeHigh,
-  IoMdVolumeOff,
-  IoMdVolumeLow,
-} from 'react-icons/io';
+import { IoMdVolumeHigh, IoMdVolumeOff, IoMdVolumeLow } from 'react-icons/io'
 
-const AudioPlayer = ({albumImageUrl, artists, title,trackUrl}: Track) => {
+const AudioPlayer = ({ albumImageUrl, artists, title, trackUrl }: Track) => {
   const [audioRef, { handleAlbumArtClick, play }, isPlaying] = useAudioPlayerContext()
   const [trackDetails, setTrackDetails] = useState<Track>(null)
-  const [timeProgress, setTimeProgress] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [volume, setVolume] = useState(60);
-  const [muteVolume, setMuteVolume] = useState(false);
-  const playAnimationRef = useRef();
+  const [timeProgress, setTimeProgress] = useState(0)
+  const [duration, setDuration] = useState(0)
+  const [volume, setVolume] = useState(60)
+  const [muteVolume, setMuteVolume] = useState(false)
+  const playAnimationRef = useRef()
   // useEffect(() => {
   //   handlers.handleAlbumArtClick(trackDetails.trackUrl)
   // }, [trackDetails])
 
-
   useEffect(() => {
-  // setTrackDetails({albumImageUrl, artists, title, trackUrl})
+    // setTrackDetails({albumImageUrl, artists, title, trackUrl})
   }, [])
-  
-  
+
   return (
-    <div >
+    <div>
       <section className="audio-info">
         <div className="audio-image">
           {albumImageUrl ? (
@@ -55,10 +49,8 @@ const AudioPlayer = ({albumImageUrl, artists, title,trackUrl}: Track) => {
           <p>{artists}</p>
         </div>
       </section>
-      <section>
-        
-      </section>
+      <section />
     </div>
-  );
-};
-export default AudioPlayer;
+  )
+}
+export default AudioPlayer

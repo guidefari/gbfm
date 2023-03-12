@@ -22,23 +22,21 @@ export async function getStaticProps({ params }) {
   }
 }
 
-const PostLayout = ({ tweet }: { tweet: Tweet }) => {
-  return (
-    <>
-      {/* <Head>
+const PostLayout = ({ tweet }: { tweet: Tweet }) => (
+  <>
+    {/* <Head>
         <title>{tweeti}</title>
       </Head> */}
-      <article className="max-w-4xl py-8 mx-auto ">
-        <SingleTweet
-          authorName={tweet.authorName}
-          avatarUrl={tweet.avatarUrl}
-          date={tweet.date}
-          handle={tweet.handle}
-          content={tweet.body.code}
-        />
-      </article>
-    </>
-  )
-}
+    <article className="max-w-4xl py-8 mx-auto ">
+      <SingleTweet
+        authorName={tweet.authorName}
+        avatarUrl={tweet.avatarUrl}
+        date={tweet.date}
+        handle={tweet.handle}
+        content={tweet.body.code}
+      />
+    </article>
+  </>
+)
 
 export default PostLayout

@@ -1,6 +1,7 @@
 import { GenericAndMaybeLegacyError, PlaylistApiResponse, TrackAPIResponse } from '@/lib/types'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getPlaylistDetails } from '../../lib/spotify'
+
 const { parse } = require('spotify-uri')
 
 // eslint-disable-next-line import/no-anonymous-default-export
@@ -27,7 +28,7 @@ export default async (
   const playlistUrl = response.external_urls.spotify
   const coverImageUrl = response.images[0].url
   const title = response.name
-  const description = response.description
+  const { description } = response
   const ownerName = response.owner.display_name
   const tracks: TrackAPIResponse[] = response.tracks.items.map(
     (item): TrackAPIResponse => ({

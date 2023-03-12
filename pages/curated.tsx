@@ -1,14 +1,12 @@
 import { PostCard } from '@/components/PostCard'
 import { PageSEO } from '@/components/SEO'
-import Layout from '../components/Layout'
 import { compareDesc } from 'date-fns'
 import { allPosts, type Post } from 'contentlayer/generated'
+import Layout from '../components/Layout'
 
 export function getStaticProps() {
   const posts: Post[] = allPosts
-    .sort((a, b) => {
-      return compareDesc(new Date(a.lastmod || a.date), new Date(b.lastmod || b.date))
-    })
+    .sort((a, b) => compareDesc(new Date(a.lastmod || a.date), new Date(b.lastmod || b.date)))
     .filter((post) => post.title !== 'Template post')
 
   return { props: { posts } }
@@ -19,7 +17,7 @@ export default function Index({ posts }) {
 
   return (
     <Layout>
-      <PageSEO title="Curated music - Posts" description={'Curated Music & the occasional prose'} />
+      <PageSEO title="Curated music - Posts" description="Curated Music & the occasional prose" />
       <h3 className="title">Prose, Sounds, Research</h3>
       <section className="grid grid-cols-1 gap-12 mx-4 lg:mx-auto max-w-7xl lg:gap-24 lg:grid-cols-2">
         {draftsFilteredOut.map((post: Post) => (

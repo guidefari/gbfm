@@ -1,6 +1,7 @@
 import { AlbumApiResponse, GenericAndMaybeLegacyError, TrackAPIResponse } from '@/lib/types'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getAlbumDetails } from '../../lib/spotify'
+
 const { parse } = require('spotify-uri')
 
 // eslint-disable-next-line import/no-anonymous-default-export

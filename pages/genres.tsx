@@ -47,5 +47,5 @@
 // }
 
 export default function Genres() {
-  return <div></div>
+  return <div />
 }

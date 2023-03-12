@@ -6,7 +6,7 @@ import Layout from '../components/Layout'
 export default function Index() {
   return (
     <Layout>
-      <PageSEO title="goosebumps.fm" description={'Curated Music & the occasional prose'} />
+      <PageSEO title="goosebumps.fm" description="Curated Music & the occasional prose" />
       <SuperHero />
       <ul className="max-w-full mb-20">
         <li className="title">

@@ -25,7 +25,6 @@ export const AudioProvider = ({ children }) => {
     }
   }, [audioRef])
 
-
   const handlers = React.useMemo(
     () => ({
       play: () => {
@@ -41,7 +40,6 @@ export const AudioProvider = ({ children }) => {
       handleAlbumArtClick: (src: string) => {
         if (!src) {
           alert("Yo, there's no preview audio for this one")
-          return
         } else if (src === audioRef.src && playAudio === false) {
           handlers.play()
         } else if (src === audioRef.src) {

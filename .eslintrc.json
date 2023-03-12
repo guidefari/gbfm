@@ -1,5 +1,10 @@
 {
-  "extends": ["next/core-web-vitals", "eslint:recommended", "prettier", "wesbos/typescript"],
+  "extends": [
+    "next/core-web-vitals",
+    "eslint:recommended",
+    "prettier", 
+    // "wesbos/typescript"
+],
 
   "rules": {
     "no-unused-vars": "warn",

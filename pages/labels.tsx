@@ -1,7 +1,7 @@
-import Layout from '../components/Layout'
 import { PageSEO } from '@/components/SEO'
 import { allLabels, Label } from 'contentlayer/generated'
 import Image from 'next/image'
+import Layout from '../components/Layout'
 
 export const getStaticProps = async () => {
   console.log('allLabels:', allLabels)
@@ -18,7 +18,7 @@ export default function Index({ allLabels }) {
 
   return (
     <Layout>
-      <PageSEO title="goosebumps.fm/labels" description={'Some record labels we have enjoyed'} />
+      <PageSEO title="goosebumps.fm/labels" description="Some record labels we have enjoyed" />
       <h1 className="title">Record Labels</h1>
       <p>Some record labels myself & friends have enjoyed over the years</p>
 
