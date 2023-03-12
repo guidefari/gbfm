@@ -8,7 +8,7 @@ const SideBar = () => {
     
     
   return (
-    <div className="fixed top-0 left-0 flex flex-col items-center w-10 h-screen shadow-sm md:px-1 md:w-16">
+    <div className="fixed top-0 left-0 flex flex-col items-center w-10 h-screen shadow-sm md:w-20">
            <Link href="/">
               <button className='nav-button'>
                 <GB />

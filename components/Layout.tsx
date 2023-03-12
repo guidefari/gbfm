@@ -11,7 +11,7 @@ export default function Layout({ children }) {
   return (
     <>
       <SideBar />
-      <main className="flex flex-col justify-between w-full h-full overflow-hidden md:pl-16 pl-11 lg:pl-20 font-jetbrains">
+      <main className="flex flex-col justify-between w-full h-full overflow-hidden md:pl-20 pl-11 lg:pl-20 font-jetbrains">
         {children}
         <footer className="px-5 mt-32 mb-10">
           <Newsletter />
