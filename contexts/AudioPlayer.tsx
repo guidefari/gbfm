@@ -1,3 +1,4 @@
+import { Track } from '@/lib/types'
 import React, { createContext, useEffect, useMemo, useState } from 'react'
 
 const AudioContext = createContext(null)
@@ -24,6 +25,7 @@ export const AudioProvider = ({ children }) => {
     }
   }, [audioRef])
 
+
   const handlers = React.useMemo(
     () => ({
       play: () => {
@@ -34,6 +36,8 @@ export const AudioProvider = ({ children }) => {
         setPlayAudio(false)
         audioRef.pause()
       },
+      togglePlayPause: () => setPlayAudio(!playAudio),
+      // TODO: rename to something more generic & fitting of its purpose
       handleAlbumArtClick: (src: string) => {
         if (!src) {
           alert("Yo, there's no preview audio for this one")
