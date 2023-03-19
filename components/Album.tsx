@@ -16,10 +16,10 @@ interface Props {
 }
 
 export default function Album({ url, genres, blurb, children }: Props) {
-  const [selectedTrack, setselectedTrack] = useState(null)
+  const [selectedTrack, setselectedTrack] = useState<string>(null)
   const encoded = encodeURIComponent(url)
 
-  const { data, error } = useSWR<AlbumApiResponse>(`/api/album?id=${encoded}`, fetcher)
+  const { data, error } = useSWR<AlbumApiResponse, Error>(`/api/album?id=${encoded}`, fetcher)
 
   const loading = !data && !error
   if (loading)
@@ -55,7 +55,8 @@ export default function Album({ url, genres, blurb, children }: Props) {
                   <h6 className="mx-2 underline max-w-none">Album: {data.title}</h6>
                 </div>
                 {data.tracks.map((track: AlbumSingleTrackApiResponse, index) => (
-                  <div
+                  <button
+                    type="button"
                     className="mx-2 text-white hover:cursor-pointer Tag hover:text-green-300"
                     key={`${track.trackUrl} -  ${index}`}
                     onClick={() => setselectedTrack(track.trackUrl)}
@@ -69,7 +70,7 @@ export default function Album({ url, genres, blurb, children }: Props) {
                       loading="lazy"
                     />
                     {track.title} - {track.artists}
-                  </div>
+                  </button>
                 ))}
               </div>
             </ScrollArea.Viewport>
@@ -90,7 +91,9 @@ export default function Album({ url, genres, blurb, children }: Props) {
               ))}
             </p>
           )}
-          {(blurb || children) && <p className="mt-6 text-sm leading-snug ">{blurb || children}</p>}
+          {(blurb || children) && (
+            <div className="mt-6 text-sm leading-snug ">{blurb || children}</div>
+          )}
         </div>
       </div>
     </section>

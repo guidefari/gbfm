@@ -1,11 +1,12 @@
 import Layout from '@/components/Layout'
 import { PageSEO } from '@/components/SEO'
 import { allPosts, type Post } from 'contentlayer/generated'
-import { useMDXComponent } from 'next-contentlayer/hooks'
+import { useMDXComponent } from 'next-contentlayer/hooks' // eslint-disable-line
+import Head from 'next/head'
 import Image from 'next/image'
 import { MDXcomponents } from '../../lib/mdx'
 
-export const getStaticPaths = async () => {
+export const getStaticPaths = () => {
   const paths: string[] = allPosts.map((post) => post.url)
   return {
     paths,
@@ -13,8 +14,10 @@ export const getStaticPaths = async () => {
   }
 }
 
-export const getStaticProps = async ({ params }) => {
-  const post: Post = allPosts.find((post) => post._raw.flattenedPath === `curated/${params.slug}`)
+export const getStaticProps = ({ params }) => {
+  const post: Post = allPosts.find(
+    (singlePost) => singlePost._raw.flattenedPath === `curated/${params.slug}` // eslint-disable-line
+  )
 
   return {
     props: {
@@ -26,12 +29,14 @@ export const getStaticProps = async ({ params }) => {
 export default function PostPage({ post }: { post: Post }) {
   const MDXContent = useMDXComponent(post.body.code)
 
+  const encoded_title = encodeURIComponent(post.title)
+  const full_default_url = `https://goosebumps.fm/api/og?title=${encoded_title}`
   return (
     <Layout>
       <PageSEO
         title={post.title}
         description={post.description || 'Goosebumps.fm curated sounds'}
-        ogImageUrl={post.thumbnailUrl || null}
+        ogImageUrl={post.thumbnailUrl || full_default_url}
         canonicalUrl={post.canonicalUrl || null}
       />
 

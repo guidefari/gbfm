@@ -2,8 +2,9 @@ import Head from 'next/head'
 import { format, parseISO } from 'date-fns'
 import { allTweets, type Tweet } from 'contentlayer/generated'
 import { Tweet as SingleTweet } from '@/components/Tweet'
+import { GetStaticProps } from 'next'
 
-export async function getStaticPaths() {
+export function getStaticPaths() {
   const paths: string[] = allTweets.map((tweet) => tweet.url)
   return {
     paths,
@@ -11,9 +12,9 @@ export async function getStaticPaths() {
   }
 }
 
-export async function getStaticProps({ params }) {
+export const getStaticProps: GetStaticProps<{ tweet: Tweet }> = ({ params }) => {
   const tweet: Tweet = allTweets.find(
-    (tweet) => tweet._raw.flattenedPath === `tweets/${params.slug}`
+    (singleTweet) => singleTweet._raw.flattenedPath === `tweets/${params.slug}` // eslint-disable-line
   )
   return {
     props: {

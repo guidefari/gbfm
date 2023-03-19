@@ -14,7 +14,7 @@ interface Props {
 export default function Track({ url, genres, blurb, children }: Props) {
   const encoded = encodeURIComponent(url)
 
-  const { data, error } = useSWR<TrackAPIResponse>(`/api/track?id=${encoded}`, fetcher)
+  const { data, error } = useSWR<TrackAPIResponse, Error>(`/api/track?id=${encoded}`, fetcher)
   const loading = !data && !error
 
   return (

@@ -65,31 +65,6 @@ export const PageSEO: React.FC<PageSeoProps> = ({
   />
 )
 
-export const TagSEO = ({ title, description }) => {
-  const ogImageUrl = siteMetadata.socialBanner
-  const twImageUrl = siteMetadata.socialBanner
-  const router = useRouter()
-  return (
-    <>
-      <CommonSEO
-        title={title}
-        description={description}
-        ogType="website"
-        ogImage={ogImageUrl}
-        twImage={twImageUrl}
-      />
-      <Head>
-        <link
-          rel="alternate"
-          type="application/rss+xml"
-          title={`${description} - RSS feed`}
-          href={`${siteMetadata.siteUrl}${router.asPath}/feed.xml`}
-        />
-      </Head>
-    </>
-  )
-}
-
 // export const BlogSEO = ({
 //   authorDetails,
 //   title,

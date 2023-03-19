@@ -25,7 +25,7 @@
       },
       "incremental": true
     },
-    "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "components/Footer.js", "components/spotify/Album.jsx", ".contentlayer/generated"],
-    "exclude": ["node_modules"]
+    "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".contentlayer/generated", ".eslintrc.js"],
+    "exclude": ["node_modules", "**/*.js"]
   }
   

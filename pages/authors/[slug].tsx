@@ -3,10 +3,10 @@ import CustomLink from '@/components/CustomLink'
 import { PageSEO } from '@/components/SEO'
 import Image from 'next/image'
 import { allAuthors, type Author } from 'contentlayer/generated'
-import { useMDXComponent } from 'next-contentlayer/hooks'
+import { useMDXComponent } from 'next-contentlayer/hooks' // eslint-disable-line
 import { MDXcomponents } from '@/lib/mdx'
 
-export const getStaticPaths = async () => {
+export const getStaticPaths = () => {
   const paths: string[] = allAuthors.map((author) => author.url)
   return {
     paths,
@@ -14,9 +14,9 @@ export const getStaticPaths = async () => {
   }
 }
 
-export const getStaticProps = async ({ params }) => {
+export const getStaticProps = ({ params }) => {
   const author: Author = allAuthors.find(
-    (author) => author._raw.flattenedPath === `authors/${params.slug}`
+    (singleAuthor) => singleAuthor._raw.flattenedPath === `authors/${params.slug}` // eslint-disable-line
   )
 
   return {

@@ -32,7 +32,7 @@ export const MinimalCard: React.FC<Props> = ({
   artists,
   spotify = false,
 }) => {
-  const [_, { handleAlbumArtClick }] = useAudioPlayerContext()
+  const [, { handleAlbumArtClick }] = useAudioPlayerContext()
 
   return (
     <div className="relative z-10 min-w-[320px] flex-shrink-0 max-w-md my-8 border-2 border-t-0 border-l-0 rounded-md border-gb-tomato ">

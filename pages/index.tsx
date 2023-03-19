@@ -30,7 +30,9 @@ export default function Index() {
           </Link>
         </li>
         <li className="title">
-          <Link href="inspo" as="inspo">Inspired By</Link>
+          <Link href="curated/inspo" as="curated/inspo">
+            Inspired By
+          </Link>
         </li>
       </ul>
     </Layout>

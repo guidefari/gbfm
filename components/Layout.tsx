@@ -5,9 +5,11 @@ import { GB } from './common/icons'
 import { Newsletter } from './Newsletter'
 import SideBar from './SideBar'
 
-export default function Layout({ children }) {
-  
+type Props = {
+  children: React.ReactNode
+}
 
+export default function Layout({ children }: Props) {
   return (
     <>
       <SideBar />

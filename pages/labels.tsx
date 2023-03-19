@@ -3,15 +3,7 @@ import { allLabels, Label } from 'contentlayer/generated'
 import Image from 'next/image'
 import Layout from '../components/Layout'
 
-export const getStaticProps = async () => {
-  console.log('allLabels:', allLabels)
-
-  return { props: { allLabels } }
-}
-
-export default function Index({ allLabels }) {
-  console.log('allLabels:', allLabels)
-
+export default function Index() {
   const noTemplate: Label[] = allLabels.filter(
     (label: Label) => label._id !== 'labels/template-label.mdx'
   )

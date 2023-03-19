@@ -8,16 +8,13 @@ export const AudioControls = () => {
   if (!audioRef?.src) return
 
   return (
-    <>
-      {playAudio ? (
-        <button className='nav-button' title="Pause Preview Audio" onClick={() => pause()}>
-          <PauseIcon />
-        </button>
-      ) : (
-        <button className='nav-button' onClick={() => play()}>
-          <PlayIcon />
-        </button>
-      )}
-    </>
+    <button
+      type="button"
+      className="nav-button"
+      title="Pause Preview Audio"
+      onClick={() => (playAudio ? pause() : play())}
+    >
+      {playAudio ? <PauseIcon /> : <PlayIcon />}
+    </button>
   )
 }

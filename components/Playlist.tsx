@@ -16,7 +16,7 @@ interface Props {
 }
 
 export default function Playlist({ url, genres, blurb, children }: Props) {
-  const [selectedTrack, setselectedTrack] = useState(null)
+  const [selectedTrack, setselectedTrack] = useState<string>(null)
 
   const encoded = encodeURIComponent(url)
 
@@ -34,10 +34,9 @@ export default function Playlist({ url, genres, blurb, children }: Props) {
 
   return (
     <section className="p-3 pb-0 my-5 border-2 rounded-md border-gb-tomato md:p-7 md:pb-0">
-      <div className="w-full grid-cols-3 gap-4 md:grid">
+      <div className="w-full grid-cols-3 gap-4 lg:grid">
         <div className="col-span-1">
           {selectedTrack ? (
-            // @ts-ignore
             <Track url={selectedTrack} />
           ) : (
             <MinimalCard
@@ -50,14 +49,15 @@ export default function Playlist({ url, genres, blurb, children }: Props) {
           )}
         </div>
         <div className="col-span-2">
-          <ScrollArea.Root className="w-full shadow-sm h-72 ScrollAreaRoot">
+          <ScrollArea.Root className="w-full shadow-sm h-72 lg:h-96 ScrollAreaRoot">
             <ScrollArea.Viewport className="h-full ">
               <div className="bg-transparent">
                 <div className="sticky top-0 py-1 bg-gb-bg">
                   <h6 className="mx-2 underline max-w-none">Playlist: {data.title}</h6>
                 </div>
                 {data.tracks.map((track: TrackAPIResponse, index) => (
-                  <div
+                  <button
+                    type="button"
                     className="mx-2 text-white hover:cursor-pointer Tag hover:text-green-300"
                     key={`${track.trackUrl} -  ${index}`}
                     onClick={() => setselectedTrack(track.trackUrl)}
@@ -71,7 +71,7 @@ export default function Playlist({ url, genres, blurb, children }: Props) {
                       loading="lazy"
                     />
                     {track.title} - {track.artists}
-                  </div>
+                  </button>
                 ))}
               </div>
             </ScrollArea.Viewport>
@@ -91,13 +91,9 @@ export default function Playlist({ url, genres, blurb, children }: Props) {
                 </span>
               ))}
           </p>
-          <p className="mt-6 text-sm leading-snug ">
-            {data.description || ''}
-            <br />
-            {blurb || ''}
-            <br />
-            {children}
-          </p>
+          {(blurb || children) && (
+            <div className="mt-6 text-sm leading-snug ">{blurb || children}</div>
+          )}
         </div>
       </div>
     </section>

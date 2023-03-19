@@ -4,16 +4,11 @@ import { compareDesc } from 'date-fns'
 import { allPosts, type Post } from 'contentlayer/generated'
 import Layout from '../components/Layout'
 
-export function getStaticProps() {
+export default function Index() {
   const posts: Post[] = allPosts
     .sort((a, b) => compareDesc(new Date(a.lastmod || a.date), new Date(b.lastmod || b.date)))
     .filter((post) => post.title !== 'Template post')
-
-  return { props: { posts } }
-}
-
-export default function Index({ posts }) {
-  const draftsFilteredOut = posts.filter((post) => post?.data?.draft !== true)
+  const draftsFilteredOut = posts.filter((post) => post?.draft !== true)
 
   return (
     <Layout>

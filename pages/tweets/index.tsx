@@ -6,16 +6,10 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import Layout from '../../components/Layout'
 
-export const getStaticProps = async () => {
+export default function Index() {
   const tweets: TweetType[] = allTweets
     .sort((a, b) => compareDesc(new Date(a.date), new Date(b.date)))
     .filter((tweet: TweetType) => tweet._id !== 'tweets/template-tweet.mdx')
-  console.log({ tweets })
-
-  return { props: { tweets } }
-}
-
-export default function Index({ tweets }) {
   const router = useRouter()
   return (
     <Layout>
@@ -40,7 +34,6 @@ export default function Index({ tweets }) {
               handle={tweet.handle}
               content={tweet.body.code}
             />
-            <a onClick={() => router.push(`${tweet.url}`)}>view tweet</a>
           </div>
         ))}
       </div>

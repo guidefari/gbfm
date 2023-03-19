@@ -1,9 +1,10 @@
 import { Track } from '@/lib/types'
-import React, { createContext, useEffect, useMemo, useState } from 'react'
+import React, { createContext, ReactNode, useEffect, useMemo, useState } from 'react'
 
 const AudioContext = createContext(null)
 
-export const useAudioPlayerContext = (): AudioPlayerContext => React.useContext(AudioContext)
+export const useAudioPlayerContext = (): AudioPlayerContext =>
+  React.useContext<AudioPlayerContext | null>(AudioContext) // eslint-disable-line
 
 type AudioPlayerContext = [
   audioRef: HTMLAudioElement,
@@ -15,7 +16,11 @@ type AudioPlayerContext = [
   playAudio: boolean
 ]
 
-export const AudioProvider = ({ children }) => {
+type Props = {
+  children: ReactNode
+}
+
+export const AudioProvider = ({ children }: Props) => {
   const audioRef = useMemo(() => (typeof window === 'undefined' ? null : new Audio()), [])
   const [playAudio, setPlayAudio] = useState(false)
 
@@ -53,9 +58,10 @@ export const AudioProvider = ({ children }) => {
     [audioRef, playAudio]
   )
 
-  return (
-    <AudioContext.Provider value={[audioRef, handlers, playAudio]}>
-      {children}
-    </AudioContext.Provider>
+  const contextValue = useMemo(
+    () => [audioRef, handlers, playAudio],
+    [audioRef, handlers, playAudio]
   )
+
+  return <AudioContext.Provider value={contextValue}>{children}</AudioContext.Provider>
 }
