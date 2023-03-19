@@ -3,7 +3,7 @@
     "next/core-web-vitals",
     "eslint:recommended",
     "prettier", 
-    // "wesbos/typescript"
+    "wesbos/typescript"
 ],
 
   "rules": {
