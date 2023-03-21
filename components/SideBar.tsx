@@ -11,6 +11,8 @@ const SideBar = () => {
   function handleBackClick() {
     if (router.pathname !== '/') {
       router.back()
+    } else {
+      router.push('/')
     }
   }
 
