@@ -26,7 +26,7 @@ export default function Index() {
         </li>
         <li className="title">
           <Link href="tweets" as="tweets">
-            Archived Tweets
+            Tweets - micro posts
           </Link>
         </li>
         <li className="title">
