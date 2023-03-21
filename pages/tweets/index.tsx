@@ -17,8 +17,8 @@ export default function Index() {
         title="goosebumps.fm/tweets"
         description="Archived tweets. Some of these have never actually been on twitter 😉"
       />
-      <h1 className="title">Tweets</h1>
-      <p>Archived tweets. Some of these have never actually been on twitter 😉</p>
+      <h1 className="title">Bumps</h1>
+      <p>Micro Posts - too small to be an entire post. Kind of like a tweet</p>
 
       <div className="max-w-4xl mx-auto mb-4">
         {tweets.map((tweet: TweetType, index) => (
