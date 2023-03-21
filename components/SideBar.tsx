@@ -9,7 +9,7 @@ const SideBar = () => {
   const router = useRouter()
 
   function handleBackClick() {
-    if (router.pathname !== '/') {
+    if (router.pathname !== '/' && window.history.length > 1) {
       router.back()
     } else {
       router.push('/')
