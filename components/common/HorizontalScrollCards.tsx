@@ -6,9 +6,9 @@ type Props = {
 }
 
 const HorizontalScrollCards = ({ children }: Props) => (
-  <Root className="w-full shadow-sm ScrollAreaRoot">
+  <Root className="w-full shadow-sm shadooo ScrollAreaRoot">
     <Viewport>
-      <div className="flex h-full space-x-8">{children}</div>
+      <div className="flex h-full space-x-8 ">{children}</div>
       <Scrollbar orientation="horizontal">
         <Thumb />
       </Scrollbar>

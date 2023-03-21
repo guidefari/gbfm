@@ -32,7 +32,7 @@ export default function Album({ url, genres, blurb, children }: Props) {
     )
 
   return (
-    <section className="p-3 pb-0 my-5 border-2 rounded-md border-gb-tomato md:p-7 md:pb-0">
+    <section className="p-3 pb-0 my-5 border-2 rounded-md min-w-fit border-gb-tomato md:p-7 md:pb-0">
       <div className="w-full grid-cols-3 gap-4 md:grid">
         <div className="col-span-1">
           {selectedTrack ? (
@@ -51,7 +51,7 @@ export default function Album({ url, genres, blurb, children }: Props) {
           <ScrollArea.Root className="w-full shadow-sm h-96 ScrollAreaRoot">
             <ScrollArea.Viewport className="h-full ">
               <div className="bg-transparent">
-                <div className="sticky top-0 py-1 bg-gb-bg">
+                <div className="sticky top-0 py-1 ">
                   <h6 className="mx-2 underline max-w-none">Album: {data.title}</h6>
                 </div>
                 {data.tracks.map((track: AlbumSingleTrackApiResponse, index) => (
@@ -82,7 +82,7 @@ export default function Album({ url, genres, blurb, children }: Props) {
             </ScrollArea.Scrollbar>
             <ScrollArea.Corner className="ScrollAreaCorner" />
           </ScrollArea.Root>
-          {genres && (
+          {genres && genres[0] !== '' && (
             <p className="flex flex-wrap mt-6">
               {genres.map((genre, index) => (
                 <span key={index} className="p-1 px-2 m-1 mr-2 text-sm rounded-full bg-cyan-800">

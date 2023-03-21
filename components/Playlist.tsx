@@ -83,14 +83,15 @@ export default function Playlist({ url, genres, blurb, children }: Props) {
             </ScrollArea.Scrollbar>
             <ScrollArea.Corner className="ScrollAreaCorner" />
           </ScrollArea.Root>
-          <p className="flex flex-wrap mt-6">
-            {genres &&
-              genres.map((genre, index) => (
+          {genres &&
+            genres[0] !== '' &&
+            genres.map((genre, index) => (
+              <p className="flex flex-wrap mt-6">
                 <span key={index} className="p-1 px-2 m-1 mr-2 text-sm rounded-full bg-cyan-800">
                   {genre}
                 </span>
-              ))}
-          </p>
+              </p>
+            ))}
           {(blurb || children) && (
             <div className="mt-6 text-sm leading-snug ">{blurb || children}</div>
           )}
