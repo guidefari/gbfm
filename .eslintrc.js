@@ -20,9 +20,6 @@ module.exports =
   },
   ignorePatterns: [
     "**/*.js",
-    "lib/fetcher.ts",
-    "components/IsolatedAudio.tsx",
-    "components/FrontPage/FeaturedArtists.tsx",
-    "pages/api/**"
+    "src/pages/api/**"
   ]
 }
