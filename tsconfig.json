@@ -15,11 +15,11 @@
       "jsx": "preserve",
       "baseUrl": ".",
       "paths": {
-        "@/components/*": ["components/*"],
+        "@/components/*": ["src/components/*"],
         "@/utils/*": ["utils/*"],
-        "@/lib/*": ["lib/*"],
-        "@/data/*": ["data/*"],
-        "@/css/*": ["styles/*"],
+        "@/lib/*": ["src/lib/*"],
+        "@/src/*": ["src/*"],
+        "@/css/*": ["src/styles/*"],
         "@/assets/*": ["public/*"],
         "contentlayer/generated": ["./.contentlayer/generated"]
       },
