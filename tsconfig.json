@@ -21,7 +21,7 @@
         "@/src/*": ["src/*"],
         "@/css/*": ["src/styles/*"],
         "@/assets/*": ["public/*"],
-        "contentlayer/generated": ["./.contentlayer/generated"]
+        "contentlayer/generated": [".contentlayer/generated"]
       },
       "incremental": true
     },
