@@ -1,6 +1,6 @@
 import { Tweet } from 'src/components/Tweet'
 import { PageSEO } from 'src/components/SEO'
-import { allTweets, type Tweet as TweetType } from 'contentlayer/generated'
+import { allTweets, type Tweet as TweetType } from '@/contentlayer/generated'
 import { compareDesc } from 'date-fns'
 import Link from 'next/link'
 import { useRouter } from 'next/router'

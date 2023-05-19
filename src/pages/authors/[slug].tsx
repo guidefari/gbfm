@@ -2,7 +2,7 @@ import Layout from 'src/components/Layout'
 import CustomLink from 'src/components/CustomLink'
 import { PageSEO } from 'src/components/SEO'
 import Image from 'next/image'
-import { allAuthors, type Author } from 'contentlayer/generated'
+import { allAuthors, type Author } from '@/contentlayer/generated'
 import { useMDXComponent } from 'next-contentlayer/hooks' // eslint-disable-line
 import { MDXcomponents } from 'src/lib/mdx'
 

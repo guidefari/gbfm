@@ -1,7 +1,7 @@
 import { PostCard } from 'src/components/PostCard'
 import { PageSEO } from 'src/components/SEO'
 import { compareDesc } from 'date-fns'
-import { allPosts, type Post } from 'contentlayer/generated'
+import { allPosts, type Post } from '@/contentlayer/generated'
 import Layout from '../components/Layout'
 
 export default function Index() {

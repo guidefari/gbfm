@@ -1,6 +1,6 @@
 import Layout from 'src/components/Layout'
 import { PageSEO } from 'src/components/SEO'
-import { allPosts, type Post } from 'contentlayer/generated'
+import { allPosts, type Post } from '@/contentlayer/generated'
 import { useMDXComponent } from 'next-contentlayer/hooks' // eslint-disable-line
 import Head from 'next/head'
 import Image from 'next/image'

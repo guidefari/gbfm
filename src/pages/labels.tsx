@@ -1,5 +1,5 @@
 import { PageSEO } from 'src/components/SEO'
-import { allLabels, Label } from 'contentlayer/generated'
+import { allLabels, Label } from '@/contentlayer/generated'
 import Image from 'next/image'
 import Layout from '../components/Layout'
 

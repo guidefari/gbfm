@@ -1,6 +1,6 @@
 import Head from 'next/head'
 import { format, parseISO } from 'date-fns'
-import { allTweets, type Tweet } from 'contentlayer/generated'
+import { allTweets, type Tweet } from '@/contentlayer/generated'
 import { Tweet as SingleTweet } from 'src/components/Tweet'
 import { GetStaticProps } from 'next'
 
