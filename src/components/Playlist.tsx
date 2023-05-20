@@ -86,8 +86,8 @@ export default function Playlist({ url, genres, blurb, children }: Props) {
           {genres &&
             genres[0] !== '' &&
             genres.map((genre, index) => (
-              <p className="flex flex-wrap mt-6">
-                <span key={index} className="p-1 px-2 m-1 mr-2 text-sm rounded-full bg-cyan-800">
+              <p key={index} className="flex flex-wrap mt-6">
+                <span className="p-1 px-2 m-1 mr-2 text-sm rounded-full bg-cyan-800">
                   {genre}
                 </span>
               </p>

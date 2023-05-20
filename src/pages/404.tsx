@@ -5,7 +5,6 @@ import Link from 'next/link'
 export default function FourZeroFour() {
   return (
     <>
-      {/* eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/restrict-template-expressions */}
       <PageSEO title={`Page Not Found - ${siteMetadata.title}`} />
       <div className="flex flex-col items-start justify-start md:mt-24 md:flex-row md:items-center md:justify-center md:space-x-6">
         <div className="pt-6 pb-8 space-x-2 md:space-y-5">

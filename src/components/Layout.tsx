@@ -1,3 +1,4 @@
+import React from 'react'
 import Nowplaying from 'src/components/Nowplaying'
 import Link from 'next/link'
 import { AudioControls } from './AudioControls'
