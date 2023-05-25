@@ -110,6 +110,9 @@ export const Mix = defineDocumentType(() => ({
     thumbnailUrl: {
       type: 'string',
     },
+    author: {
+      type: 'string',
+    },
     genres: {
       type: 'list',
       of: { type: 'string' },

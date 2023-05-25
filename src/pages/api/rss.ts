@@ -23,19 +23,33 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
             Get the tracklist and more a immersive experience over at ${url}
             </description>`
           }
-        </item>`
-      }))
-      ;
-
-    // Add urlSet to entire sitemap string
-    const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-    <rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
-      <channel>
-      <title>${siteMetadata.title}</title>
-      <description>${siteMetadata.description}</description>
-      <link>${siteMetadata.siteUrl}</link>
-      <lastBuildDate>${new Date(allMixes[0].date).toUTCString()}</lastBuildDate>
-      ${mixesRSSified.join('')}
+          <itunes:image href="${mix.thumbnailUrl}"/>
+          <itunes:subtitle>${mix.title}</itunes:subtitle>
+          <itunes:summary>${mix.description}</itunes:summary>
+          <itunes:keywords>${mix.genres.join(', ')}</itunes:keywords>
+          <itunes:author>Guide Fari</itunes:author>
+          <dc:creator>Guide Fari</dc:creator>
+          </item>`
+        }))
+        ;
+        
+        const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+        <rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+        <channel>
+        <title>${siteMetadata.title}</title>
+        <description>${siteMetadata.description}</description>
+        <link>${siteMetadata.siteUrl}</link>
+        <lastBuildDate>${new Date(allMixes[0].date).toUTCString()}</lastBuildDate>
+        ${mixesRSSified.join('')}
+        <image>
+        <url>https://res.cloudinary.com/hokaspokas/image/upload/v1663215495/goosebumpsfm/spotify_filler.svg</url>
+        <title>goosebumps.fm</title>
+        <link>https://res.cloudinary.com/hokaspokas/image/upload/v1663215495/goosebumpsfm/spotify_filler.svg</link>
+        <width>1440</width>
+        <height>1440</height>
+        </image>
+      <itunes:image href="https://res.cloudinary.com/hokaspokas/image/upload/v1663215495/goosebumpsfm/spotify_filler.svg"/>
+      <itunes:category text="Music"/>
       </channel>
       </rss>`;
 
