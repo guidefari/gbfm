@@ -15,10 +15,10 @@ console.log('req:', req.headers.host)
 
         return `<item>
           <title>${mix.title}</title>
-          <link>${mix.mp3Url}</link>
+          <link>${url}</link>
           <guid>${mix.mp3Url}</guid>
           <enclosure url="${mix.mp3Url}" type="audio/mpeg"/>
-          <pubDate>${new Date(mix.date)}</pubDate>
+          <pubDate>${new Date(mix.date).toUTCString()}</pubDate>
           ${
             mix.description &&
             `<description>${mix.description}<br/>
@@ -36,7 +36,7 @@ console.log('req:', req.headers.host)
       <title>${siteMetadata.title}</title>
       <description>${siteMetadata.description}</description>
       <link>${siteMetadata.siteUrl}</link>
-      <lastBuildDate>${new Date(allMixes[0].date)}</lastBuildDate>
+      <lastBuildDate>${new Date(allMixes[0].date).toUTCString()}</lastBuildDate>
       ${mixesRSSified}
       </channel>
       </rss>`;
