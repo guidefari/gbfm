@@ -21,7 +21,8 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
             mix.description &&
             `<description>${mix.description}
             Get the tracklist and more a immersive experience over at ${url}
-            </description>`
+            </description>
+          `
           }
           <itunes:image href="${mix.thumbnailUrl}"/>
           <itunes:subtitle>${mix.title}</itunes:subtitle>
@@ -52,6 +53,8 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         </image>
       <itunes:image href="https://res.cloudinary.com/hokaspokas/image/upload/v1663215495/goosebumpsfm/spotify_filler.png"/>
       <itunes:category text="Music"/>
+      <language>en-gb</language>
+      <itunes:explicit>false</itunes:explicit>
         ${mixesRSSified.join('')}
       </channel>
       </rss>`;
