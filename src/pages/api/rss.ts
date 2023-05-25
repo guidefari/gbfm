@@ -36,13 +36,12 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         ;
         
         const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-        <rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0">
+        <rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
         <channel>
         <title>${siteMetadata.title}</title>
         <description>${siteMetadata.description}</description>
         <link>${siteMetadata.siteUrl}</link>
         <lastBuildDate>${new Date(allMixes[0].date).toUTCString()}</lastBuildDate>
-        ${mixesRSSified.join('')}
         <image>
         <url>https://res.cloudinary.com/hokaspokas/image/upload/v1663215495/goosebumpsfm/spotify_filler.svg</url>
         <title>goosebumps.fm</title>
@@ -52,6 +51,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         </image>
       <itunes:image href="https://res.cloudinary.com/hokaspokas/image/upload/v1663215495/goosebumpsfm/spotify_filler.svg"/>
       <itunes:category text="Music"/>
+        ${mixesRSSified.join('')}
       </channel>
       </rss>`;
 
