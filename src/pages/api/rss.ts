@@ -15,13 +15,14 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
         return `<item>
           <title>${mix.title}</title>
-          <link>${url}</link>
-          <guid>${url}</guid>
-          <pubDate>${mix.date}</pubDate>
+          <link>${mix.mp3Url}</link>
+          <guid>${mix.mp3Url}</guid>
+          <enclosure url="${mix.mp3Url}" type="audio/mpeg"/>
+          <pubDate>${new Date(mix.date)}</pubDate>
           ${
             mix.description &&
             `<description>${mix.description}<br/>
-            Get the tracklist and more a immersive experience over at ${url}
+            Get the tracklist and more a immersive experience over at <a href="${url}">${url}</a>
             </description>`
           }
         </item>`;
@@ -35,7 +36,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
       <title>${siteMetadata.title}</title>
       <description>${siteMetadata.description}</description>
       <link>${siteMetadata.siteUrl}</link>
-      <lastBuildDate>${allMixes[0].date}</lastBuildDate>
+      <lastBuildDate>${new Date(allMixes[0].date)}</lastBuildDate>
       ${mixesRSSified}
       </channel>
       </rss>`;
