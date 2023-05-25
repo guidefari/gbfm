@@ -1,6 +1,13 @@
 const { withContentlayer } = require('next-contentlayer')
 
 module.exports = withContentlayer({
+  rewrites: async () => [
+      {
+        source: '/rss.xml',
+        destination: '/api/rss',
+      },
+    ],
+
   images: {
     domains: [
       'i.scdn.co', // Spotify Album Art
