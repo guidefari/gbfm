@@ -5,12 +5,12 @@ import { useMDXComponent } from 'next-contentlayer/hooks'
 
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
+console.log('req:', req.headers.host)
 
+  
   try {
       const mixesRSSified = allMixes.map((mix) => {
-        const url = `${
-          process.env.NEXT_PUBLIC_ROOT_URL
-        }${mix.url}`;
+        const url = `https://${req.headers.host}${mix.url}`;
 
 
         return `<item>
