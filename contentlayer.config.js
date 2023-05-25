@@ -86,7 +86,7 @@ export const Tweet = defineDocumentType(() => ({
 }))
 
 export const Mix = defineDocumentType(() => ({
-  name: 'Tweet',
+  name: 'Mix',
   filePathPattern: `mixes/*.mdx`,
   contentType: 'mdx',
   fields: {
@@ -199,5 +199,5 @@ export const Author = defineDocumentType(() => ({
 
 export default makeSource({
   contentDirPath: 'src/content',
-  documentTypes: [Post, Tweet, Author, Label],
+  documentTypes: [Post, Tweet, Author, Label, Mix],
 })
