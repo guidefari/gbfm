@@ -85,6 +85,44 @@ export const Tweet = defineDocumentType(() => ({
   },
 }))
 
+export const Mix = defineDocumentType(() => ({
+  name: 'Mix',
+  filePathPattern: `mixes/*.mdx`,
+  contentType: 'mdx',
+  fields: {
+    title: {
+      type: 'string',
+      description: 'Can be creative and fit the mood, or follow Goosebumps mix #123 format',
+      required: true,
+    },
+    description: {
+      type: 'string',
+      description: 'A few words about what to expect',
+    },
+    date: {
+      type: 'date',
+      required: true,
+    },
+    mp3Url: {
+      type: 'string',
+      required: true,
+    },
+    thumbnailUrl: {
+      type: 'string',
+    },
+    genres: {
+      type: 'list',
+      of: { type: 'string' },
+    },
+  },
+  computedFields: {
+    url: {
+      type: 'string',
+      resolve: (post) => `/${post._raw.flattenedPath}`,
+    },
+  },
+}))
+
 export const Label = defineDocumentType(() => ({
   name: 'Label',
   filePathPattern: `labels/*.mdx`,
@@ -161,5 +199,5 @@ export const Author = defineDocumentType(() => ({
 
 export default makeSource({
   contentDirPath: 'src/content',
-  documentTypes: [Post, Tweet, Author, Label],
+  documentTypes: [Post, Tweet, Author, Label, Mix],
 })

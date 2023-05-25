@@ -2,7 +2,7 @@ const siteMetadata = {
   title: 'Goosebumps.fm',
   author: 'Guide Fari',
   headerTitle: 'Goosebumps.fm',
-  description: 'Curated music & such',
+  description: 'Curated music by Guide Fari and friends',
   language: 'en-us',
   theme: 'system', // system, dark or light
   siteUrl: 'https://goosebumps.fm',
