@@ -1,33 +1,31 @@
 import siteMetadata from '@/src/siteMetadata';
 import { NextApiRequest, NextApiResponse } from 'next';
 import {allMixes} from'@/contentlayer/generated'
-import { useMDXComponent } from 'next-contentlayer/hooks'
+import fetch from 'node-fetch';
 
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
-console.log('req:', req.headers.host)
-
-  
   try {
-      const mixesRSSified = allMixes.map((mix) => {
+      const mixesRSSified = await Promise.all(allMixes.map(async (mix) => {
         const url = `https://${req.headers.host}${mix.url}`;
-
-
+        const {headers} = await fetch(mix.mp3Url)
+        const contentLength = headers.get('content-length')
+        
         return `<item>
           <title>${mix.title}</title>
           <link>${url}</link>
           <guid>${mix.mp3Url}</guid>
-          <enclosure url="${mix.mp3Url}" type="audio/mpeg"/>
+          <enclosure url="${mix.mp3Url}" type="audio/mpeg" length="${contentLength}"/>
           <pubDate>${new Date(mix.date).toUTCString()}</pubDate>
           ${
             mix.description &&
-            `<description>${mix.description}<br/>
-            Get the tracklist and more a immersive experience over at <a href="${url}">${url}</a>
+            `<description>${mix.description}
+            Get the tracklist and more a immersive experience over at ${url}
             </description>`
           }
-        </item>`;
-      })
-      .join('');
+        </item>`
+      }))
+      ;
 
     // Add urlSet to entire sitemap string
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
@@ -37,7 +35,7 @@ console.log('req:', req.headers.host)
       <description>${siteMetadata.description}</description>
       <link>${siteMetadata.siteUrl}</link>
       <lastBuildDate>${new Date(allMixes[0].date).toUTCString()}</lastBuildDate>
-      ${mixesRSSified}
+      ${mixesRSSified.join('')}
       </channel>
       </rss>`;
 
