@@ -31,6 +31,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
           `}
           <itunes:author>Guide Fari</itunes:author>
           <dc:creator>Guide Fari</dc:creator>
+          <itunes:explicit>false</itunes:explicit>
           </item>`
         }))
         ;
@@ -43,13 +44,13 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         <link>${siteMetadata.siteUrl}</link>
         <lastBuildDate>${new Date(allMixes[0].date).toUTCString()}</lastBuildDate>
         <image>
-        <url>https://res.cloudinary.com/hokaspokas/image/upload/v1663215495/goosebumpsfm/spotify_filler.svg</url>
+        <url>https://res.cloudinary.com/hokaspokas/image/upload/v1663215495/goosebumpsfm/spotify_filler.png</url>
         <title>goosebumps.fm</title>
-        <link>https://res.cloudinary.com/hokaspokas/image/upload/v1663215495/goosebumpsfm/spotify_filler.svg</link>
+        <link>https://res.cloudinary.com/hokaspokas/image/upload/v1663215495/goosebumpsfm/spotify_filler.png</link>
         <width>1440</width>
         <height>1440</height>
         </image>
-      <itunes:image href="https://res.cloudinary.com/hokaspokas/image/upload/v1663215495/goosebumpsfm/spotify_filler.svg"/>
+      <itunes:image href="https://res.cloudinary.com/hokaspokas/image/upload/v1663215495/goosebumpsfm/spotify_filler.png"/>
       <itunes:category text="Music"/>
         ${mixesRSSified.join('')}
       </channel>
