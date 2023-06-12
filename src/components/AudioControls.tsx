@@ -10,7 +10,7 @@ export const AudioControls = () => {
   return (
     <button
       type="button"
-      className="nav-button"
+      className="inline-flex flex-col items-center justify-center px-5 rounded-full hover:bg-gray-50 dark:hover:bg-gray-800 group"
       title="Pause Preview Audio"
       onClick={() => (playAudio ? pause() : play())}
     >
