@@ -106,10 +106,6 @@ p, ul {
     max-width:75ch;
 }
 
-.nav-button {
-  @apply ring-2 hover:ring-4 z-20 text-[#54BCF7] p-3 md:m-5 transition duration-300 ease-in-out rounded-full w-12 md:w-14 aspect-square hover:bg-gb-bg hover:text-tomato hover:cursor-pointer
-}
-
 .shadooo {
   box-shadow: inset -86px 0px 34px -43px rgba(217,217,217,0.6);
 }
