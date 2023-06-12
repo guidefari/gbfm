@@ -33,7 +33,7 @@ export default function AuthorPage({ author }: { author: Author }) {
     <>
       <PageSEO title={`About - ${author.name}`} description={`About me - ${author.name}`} />
 
-      <Layout>
+      <>
         <div className="flex flex-col justify-between mx-5 mt-10 mb-12 lg:flex-row md:mb-16 lg:mb-24">
           <Image
             src={author.avatar}
@@ -68,7 +68,7 @@ export default function AuthorPage({ author }: { author: Author }) {
             </article>
           </div>
         </div>
-      </Layout>
+      </>
     </>
   )
 }

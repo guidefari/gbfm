@@ -5,7 +5,7 @@ import Layout from '../components/Layout'
 
 export default function Index() {
   return (
-    <Layout>
+    <>
       <PageSEO title="goosebumps.fm" description="Curated Music & the occasional prose" />
       <SuperHero />
       <ul className="max-w-full mb-20">
@@ -35,6 +35,6 @@ export default function Index() {
           </Link>
         </li>
       </ul>
-    </Layout>
+    </>
   )
 }

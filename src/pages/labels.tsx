@@ -9,7 +9,7 @@ export default function Index() {
   )
 
   return (
-    <Layout>
+    <>
       <PageSEO title="goosebumps.fm/labels" description="Some record labels we have enjoyed" />
       <h1 className="title">Record Labels</h1>
       <p>Some record labels myself & friends have enjoyed over the years</p>
@@ -42,6 +42,6 @@ export default function Index() {
           </div>
         ))}
       </div>
-    </Layout>
+    </>
   )
 }

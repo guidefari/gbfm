@@ -11,10 +11,13 @@ export default function Index() {
   const draftsFilteredOut = posts.filter((post) => post?.draft !== true)
 
   return (
-    <Layout>
+    <>
       <PageSEO title="Curated music - Posts" description="Curated Music & the occasional prose" />
+      {/* Add Link to a page with Spotify now playing. move the now playing app here? */}
+      {/* Add mix cards here too */}
+
       <h3 className="title">Prose, Sounds, Research</h3>
-      <section className="grid grid-cols-1 gap-12 mx-4 lg:mx-auto max-w-7xl lg:gap-24 lg:grid-cols-2">
+      <section className="grid grid-cols-2 gap-12 mx-4 lg:mx-auto max-w-7xl lg:gap-24 md:grid-cols-2">
         {draftsFilteredOut.map((post: Post) => (
           <PostCard
             slug={post.url}
@@ -26,6 +29,6 @@ export default function Index() {
           />
         ))}
       </section>
-    </Layout>
+    </>
   )
 }

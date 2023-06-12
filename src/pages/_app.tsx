@@ -4,6 +4,7 @@ import { AppProps } from 'next/app'
 
 import Head from 'next/head'
 import { memo } from 'react'
+import Layout from '@/components/Layout'
 
 const App = memo(({ Component, pageProps }: AppProps) => (
   <>
@@ -12,7 +13,9 @@ const App = memo(({ Component, pageProps }: AppProps) => (
       <link rel="shortcut icon" href="/favicons/goose.png" type="image/x-icon" />
     </Head>
     <AudioProvider>
-      <Component {...pageProps} />
+      <Layout>
+        <Component {...pageProps} />
+      </Layout>
     </AudioProvider>
   </>
 ))

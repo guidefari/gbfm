@@ -12,7 +12,7 @@ export default function Index() {
     .filter((tweet: TweetType) => tweet._id !== 'tweets/template-tweet.mdx')
   const router = useRouter()
   return (
-    <Layout>
+    <>
       <PageSEO
         title="goosebumps.fm/tweets"
         description="Archived tweets. Some of these have never actually been on twitter 😉"
@@ -37,6 +37,6 @@ export default function Index() {
           </div>
         ))}
       </div>
-    </Layout>
+    </>
   )
 }

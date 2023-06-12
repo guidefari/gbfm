@@ -4,24 +4,12 @@ import { useRouter } from 'next/router'
 import { AudioControls } from './AudioControls'
 import { BackIcon, GB } from './common/icons'
 
-type Props = {
-  backButton?: boolean
-}
-
-const SideBar = ({ backButton }: Props) => {
+const SideBar = () => {
   const [audioRef] = useAudioPlayerContext()
   const router = useRouter()
 
   return (
     <>
-      {router.pathname !== '/' && (
-        <nav className="fixed top-0 left-0 flex flex-col items-center w-10 h-screen shadow-sm md:w-20">
-          <button title="Go Back" onClick={router.back} type="button" className="">
-            <GB />
-          </button>
-        </nav>
-      )}
-
       <nav className="fixed z-50 w-full h-16 max-w-lg -translate-x-1/2 bg-white border border-gray-200 rounded-full bottom-4 left-1/2 dark:bg-gray-700 dark:border-gray-600">
         <div className="grid h-full max-w-lg grid-cols-5 mx-auto">
           <button
