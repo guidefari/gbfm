@@ -54,8 +54,8 @@ export default function PostPage({ post }: { post: Post }) {
           quality={100}
         />
         <div className="col-span-4 text-center md:col-span-3">
-          <h3 className="my-0 text-left">{post.title}</h3>
-          {post.description && <p className="font-bold text-left ">{post.description}</p>}
+          <h3 className="my-0 text-left underline">{post.title}</h3>
+          {post.description && <p className="text-left ">{post.description}</p>}
         </div>
       </div>
       <article className="px-3 list-disc">
