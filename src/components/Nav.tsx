@@ -7,7 +7,8 @@ import { BackIcon, GB } from './common/icons'
 const SideBar = () => {
   const [audioRef] = useAudioPlayerContext()
   const router = useRouter()
-
+  // if you want the tooltips to work, gotta install flowbite
+  // https://flowbite.com/docs/getting-started/quickstart/
   return (
     <>
       <nav className="fixed z-50 w-full h-16 max-w-lg -translate-x-1/2 bg-white border border-gray-200 rounded-full bottom-4 left-1/2 dark:bg-gray-700 dark:border-gray-600">
