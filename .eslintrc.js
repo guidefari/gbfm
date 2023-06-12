@@ -14,6 +14,7 @@ module.exports =
       'no-console': 'warn',
       "no-bitwise": "warn",
       "camelcase": "off",
+      "prettier/prettier": "warn",
   },
   ignorePatterns: [
     "**/*.js",
