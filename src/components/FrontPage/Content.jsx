@@ -37,14 +37,15 @@ export const Content = () => {
                 />
               </svg>
             </div>
-            <h6 className="mb-2 font-semibold leading-5">How to use this site</h6>
+            <h6 className="mb-2 font-semibold leading-5">
+              <CustomLink href="curated/how-to" as="curated/how-to">
+                How to use this site
+              </CustomLink>
+            </h6>
             <p className="mb-3 text-sm">
               Firstly, some house keeping. This site has a few experimental components to it.
             </p>
           </div>
-          <CustomLink href="curated/how-to" as="curated/how-to">
-            Learn more
-          </CustomLink>
         </div>
         <div className="flex flex-col justify-between p-5 border rounded shadow-sm">
           <div>
@@ -63,14 +64,15 @@ export const Content = () => {
                 />
               </svg>
             </div>
-            <h6 className="mb-2 font-semibold leading-5">Mixes, Playlists, & Words</h6>
-            <p className="mb-3 text-sm text-gray-900">
-              Rough pomfret lemon shark plownose chimaera southern sandfish kokanee northern sea.
+            <h6 className="mb-2 font-semibold leading-5">
+              <CustomLink href="/curated" as="/curated">
+                Sounds & Words
+              </CustomLink>
+            </h6>
+            <p className="mb-3 text-sm ">
+              DJ mixes, playlists, record labels, and sometimes words to accompany.
             </p>
           </div>
-          <CustomLink href="/curated" as="/curated">
-            Learn more
-          </CustomLink>
         </div>
         <div className="flex flex-col justify-between p-5 border rounded shadow-sm">
           <div>
@@ -89,14 +91,16 @@ export const Content = () => {
                 />
               </svg>
             </div>
-            <h6 className="mb-2 font-semibold leading-5">Micro Posts</h6>
-            <p className="mb-3 text-sm text-gray-900">
-              A slice of heaven. O for awesome, this chocka full cuzzie is as rip-off as a cracker.
+            <h6 className="mb-2 font-semibold leading-5">
+              <CustomLink href="micro" as="micro">
+                Micro Posts
+              </CustomLink>
+            </h6>
+            <p className="mb-3 text-sm ">
+              Capturing byte-sized ephemeral thoughts. These are sometimes the inspiration to full
+              length write ups.
             </p>
           </div>
-          <CustomLink href="micro" as="micro">
-            Learn more
-          </CustomLink>
         </div>
         <div className="flex flex-col justify-between p-5 border rounded shadow-sm">
           <div>
@@ -113,25 +117,15 @@ export const Content = () => {
                 />
               </Link>
             </div>
-            <h6 className="mb-2 font-semibold leading-5">A slice of heaven</h6>
-            <p className="mb-3 text-sm text-gray-900">
-              I love connecting people to new music. One of my favourite ways to spend time is to
-              chat music - say hello, let me know what music you've been enjoying. I may have{' '}
-              <CustomLink href="/curated/ifttt">
-                <span>similar stuff to share</span>
-              </CustomLink>{' '}
-              🙂
-              <br />
-              Interested in <CustomLink href="collaborate">collaborative works</CustomLink>?
+            <h6 className="mb-2 font-semibold leading-5">
+              <CustomLink href="collaborate">Community effort</CustomLink>
+            </h6>
+            <p className="mb-3 text-sm ">
+              The idea behind this site is to build it as a community effort. Pretty open to
+              contribution suggestions - UI/UX feedback, track suggestions, guest mixes,
+              illustrations, you name it.
             </p>
           </div>
-          <a
-            href="/"
-            aria-label=""
-            className="inline-flex items-center font-semibold transition-colors duration-200 text-deep-purple-accent-400 hover:text-deep-purple-800"
-          >
-            Learn more
-          </a>
         </div>
       </div>
     </div>
