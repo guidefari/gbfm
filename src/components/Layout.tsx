@@ -13,7 +13,7 @@ export default function Layout({ children }: Props) {
       <Nav />
       <main className="flex flex-col justify-between w-full h-full overflow-hidden font-jetbrains">
         {children}
-        <footer className="px-5 mt-32 mb-10">
+        <footer className="px-5 mb-24">
           <Newsletter />
           <Nowplaying />
         </footer>

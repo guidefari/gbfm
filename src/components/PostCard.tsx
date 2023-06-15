@@ -13,7 +13,7 @@ interface Props {
 
 export const PostCard: React.FC<Props> = ({ date, title, description, thumbnailUrl, slug }) => (
   <div className="sm:flex lg:items-start group">
-    <CustomLink href={slug} as={slug} className="text-xl md:flex-row md:flex">
+    <CustomLink href={slug} as={slug} className="text-xl ">
       <div className="mb-4 sm:mb-0 sm:mr-4">
         <Image
           className="object-cover w-32 transition ease-in-out rounded-md aspect-square group-hover:ring-4"
