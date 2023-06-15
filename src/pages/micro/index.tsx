@@ -7,7 +7,7 @@ import { useRouter } from 'next/router'
 export default function Index() {
   const tweets: TweetType[] = allTweets
     .sort((a, b) => compareDesc(new Date(a.date), new Date(b.date)))
-    .filter((tweet: TweetType) => tweet._id !== 'tweets/template-tweet.mdx')
+    .filter((tweet: TweetType) => tweet._id !== 'micro/template-tweet.mdx')
   const router = useRouter()
   return (
     <>
