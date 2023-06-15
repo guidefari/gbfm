@@ -1,4 +1,3 @@
-import Layout from 'src/components/Layout'
 import CustomLink from 'src/components/CustomLink'
 import { PageSEO } from 'src/components/SEO'
 import Image from 'next/image'

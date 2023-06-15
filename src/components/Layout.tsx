@@ -1,5 +1,4 @@
 import React from 'react'
-import Nowplaying from 'src/components/Nowplaying'
 import { Newsletter } from './Newsletter'
 import Nav from './Nav'
 
@@ -10,14 +9,14 @@ type Props = {
 export default function Layout({ children }: Props) {
   return (
     <>
-      <Nav />
       <main className="flex flex-col justify-between w-full h-full overflow-hidden font-jetbrains">
         {children}
-        <footer className="px-5 mb-24">
-          <Newsletter />
-          <Nowplaying />
-        </footer>
       </main>
+      <hr className="w-full h-1 my-8 border-2 bg-gb-bg" />
+      <footer className="px-5 mb-24">
+        <Newsletter />
+      </footer>
+      <Nav />
     </>
   )
 }

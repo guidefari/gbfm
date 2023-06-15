@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import CustomLink from '../CustomLink'
+import Link from 'next/link'
 
 // Pixel GIF code adapted from https://stackoverflow.com/a/33919020/266535
 const keyStr = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/='
@@ -100,15 +101,17 @@ export const Content = () => {
         <div className="flex flex-col justify-between p-5 border rounded shadow-sm">
           <div>
             <div className="flex items-center justify-center w-16 h-16 mb-4 rounded-full bg-indigo-50">
-              <Image
-                src="/images/yo.png"
-                placeholder="blur"
-                blurDataURL={rgbDataURL(129, 195, 215)}
-                alt="avatar"
-                width={69}
-                height={69}
-                className="mx-auto rounded-full "
-              />
+              <Link href="authors/guide">
+                <Image
+                  src="/images/yo.png"
+                  placeholder="blur"
+                  blurDataURL={rgbDataURL(129, 195, 215)}
+                  alt="avatar"
+                  width={69}
+                  height={69}
+                  className="mx-auto rounded-full "
+                />
+              </Link>
             </div>
             <h6 className="mb-2 font-semibold leading-5">A slice of heaven</h6>
             <p className="mb-3 text-sm text-gray-900">
