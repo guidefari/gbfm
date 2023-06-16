@@ -109,3 +109,11 @@ p, ul {
 .shadooo {
   box-shadow: inset -86px 0px 34px -43px rgba(217,217,217,0.6);
 }
+
+.floating-nav-icon {
+  @apply mb-1 text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-500;
+}
+
+.floating-nav-button {
+  @apply inline-flex flex-col items-center justify-center px-5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 ;
+}
