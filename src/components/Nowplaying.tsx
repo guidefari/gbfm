@@ -76,7 +76,7 @@ export default function Nowplaying() {
     <div className="flex flex-row items-center w-full max-w-md p-2 mx-auto my-4 space-x-2 rounded-lg ">
       {data?.albumImageUrl ? (
         <a
-          className="clickable-artwork"
+          className="transition duration-300 ease-in-out lg:hover:scale-103"
           href={data.songUrl}
           target="_blank"
           rel="noopener noreferrer"

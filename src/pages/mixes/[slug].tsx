@@ -39,12 +39,20 @@ export default function PostPage({ mix }: { mix: Mix }) {
       />
 
       <article className="px-3 list-disc">
-        <MinimalCard
-          title={mix.title}
-          blurb={mix.description}
-          previewUrl={mix.mp3Url}
-          imageUrl={mix.thumbnailUrl}
-        ></MinimalCard>
+        <div className="flex flex-col md:space-x-5 md:flex-row">
+          <MinimalCard
+            title={mix.title}
+            blurb={mix.description}
+            previewUrl={mix.mp3Url}
+            imageUrl={mix.thumbnailUrl}
+          ></MinimalCard>
+          {/* <p className=" md:my-8">
+            Let's take this offline.{' '}
+            <a href={mix.mp3Url} download={mix.title} rel="noreferrer">
+              Download mix
+            </a>
+          </p> */}
+        </div>
         <MDXContent components={MDXcomponents} />
       </article>
     </>

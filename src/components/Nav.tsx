@@ -1,9 +1,10 @@
 import { useAudioPlayerContext } from 'src/contexts/AudioPlayer'
 import { useRouter } from 'next/router'
 import { RxHome, RxTriangleLeft, RxTriangleRight, RxPause, RxPlay } from 'react-icons/rx'
+import Image from 'next/image'
 
 const SideBar = () => {
-  const [audioRef, handlers, playAudio] = useAudioPlayerContext()
+  const [audioRef, handlers, playAudio, thumbnailUrl] = useAudioPlayerContext()
   const router = useRouter()
   return (
     <>
@@ -13,7 +14,7 @@ const SideBar = () => {
             onClick={() => router.push('/')}
             data-tooltip-target="tooltip-home"
             type="button"
-            className="floating-nav-button"
+            className=" floating-nav-button"
           >
             <RxHome className="floating-nav-icon" />
           </button>
@@ -50,11 +51,13 @@ const SideBar = () => {
                   className="floating-nav-icon"
                 />
               </button>
-              {/* <button
-                data-tooltip-target="tooltip-profile"
-                type="button"
-                className="floating-nav-button"
-              ></button> */}
+              <Image
+                src={thumbnailUrl}
+                className="m-auto mr-1 rounded-md aspect-square w-14"
+                alt=""
+                width={80}
+                height={80}
+              />
             </>
           ) : null}
         </div>

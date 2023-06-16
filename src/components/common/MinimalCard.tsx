@@ -1,6 +1,7 @@
 import { useAudioPlayerContext } from 'src/contexts/AudioPlayer'
 import Image from 'next/image'
 import React from 'react'
+import { RxPlay } from 'react-icons/rx'
 
 // this component needs to support:
 // stream link to spotify
@@ -36,25 +37,30 @@ export const MinimalCard: React.FC<Props> = ({
 }) => {
   const [, { handleAlbumArtClick }] = useAudioPlayerContext()
 
+  const DEFAULT_IMAGE =
+    'https://res.cloudinary.com/hokaspokas/image/upload/v1663215495/goosebumpsfm/spotify_filler.svg'
+
   return (
     <div className="relative z-10 min-w-[320px] flex-shrink-0 max-w-md my-8 border-2 border-t-0 border-l-0 rounded-md border-gb-tomato ">
-      <div className="flex-shrink-0 mb-4 sm:mb-0 sm:mr-4">
+      <div className="relative flex-shrink-0 mb-4 sm:mb-0 sm:mr-4 group">
         <Image
           className={cn(
-            'duration-700 object-cover w-full  rounded-md clickable-artwork aspect-square ease-in-out hover:cursor-pointer mx-auto',
+            'object-cover w-full rounded-md  aspect-square  mx-auto',
             loading ? 'scale-102 blur-2xl' : 'scale-100 blur-0'
           )}
-          src={
-            imageUrl ||
-            'https://res.cloudinary.com/hokaspokas/image/upload/v1663215495/goosebumpsfm/spotify_filler.svg'
-          }
+          src={imageUrl || DEFAULT_IMAGE}
           alt={title}
           width={320}
           height={320}
-          onClick={() => handleAlbumArtClick(previewUrl)}
           loading="lazy"
           title={`Click to play ${title}`}
         />
+        <div
+          onClick={() => handleAlbumArtClick(previewUrl, imageUrl || DEFAULT_IMAGE)}
+          className="absolute top-0 left-0 items-center justify-center hidden w-full h-full transition duration-700 ease-in-out rounded-md opacity-75 hover:cursor-pointer group-hover:flex bg-slate-500"
+        >
+          <RxPlay className="w-20 h-20" />
+        </div>
       </div>
       <div className="p-3">
         {genres && (
