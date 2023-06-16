@@ -4,7 +4,7 @@ import { RxHome, RxTriangleLeft, RxTriangleRight, RxPause, RxPlay } from 'react-
 import Image from 'next/image'
 
 const SideBar = () => {
-  const [audioRef, handlers, playAudio, thumbnailUrl] = useAudioPlayerContext()
+  const [audioRef, handlers, isPlaying, thumbnailUrl] = useAudioPlayerContext()
   const router = useRouter()
   return (
     <>
@@ -36,9 +36,9 @@ const SideBar = () => {
                 type="button"
                 className="floating-nav-button"
                 title="Toggle Audio On/Off"
-                onClick={() => (playAudio ? handlers.pause() : handlers.play())}
+                onClick={() => (isPlaying ? handlers.pause() : handlers.play())}
               >
-                {playAudio ? <RxPause /> : <RxPlay />}
+                {isPlaying ? <RxPause /> : <RxPlay />}
               </button>
               <button
                 data-tooltip-target="tooltip-settings"
