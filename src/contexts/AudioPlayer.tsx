@@ -12,11 +12,12 @@ type AudioPlayerContext = [
     play: () => void
     pause: () => void
     togglePlayPause: () => void
-    handleAlbumArtClick: (src: string) => void
+    handleAlbumArtClick: (src: string, thumbnailUrl: string) => void
     jumpForward: () => void
     jumpBackward: () => void
   },
-  playAudio: boolean
+  playAudio: boolean,
+  thumbnailUrl: string
 ]
 
 type Props = {
@@ -26,6 +27,7 @@ type Props = {
 export const AudioProvider = ({ children }: Props) => {
   const audioRef = useMemo(() => (typeof window === 'undefined' ? null : new Audio()), [])
   const [playAudio, setPlayAudio] = useState(false)
+  const [thumbnailUrl, setThumbnailUrl] = useState('')
 
   useEffect(() => {
     audioRef.onended = () => {
@@ -44,8 +46,7 @@ export const AudioProvider = ({ children }: Props) => {
         audioRef.pause()
       },
       togglePlayPause: () => setPlayAudio(!playAudio),
-      // TODO: rename to something more generic & fitting of its purpose
-      handleAlbumArtClick: (src: string) => {
+      handleAlbumArtClick: (src: string, thumbnailUrl: string) => {
         if (!src) {
           alert("Yo, there's no preview audio for this one")
         } else if (src === audioRef.src && playAudio === false) {
@@ -54,6 +55,7 @@ export const AudioProvider = ({ children }: Props) => {
           handlers.pause()
         } else {
           audioRef.src = src
+          setThumbnailUrl(thumbnailUrl)
           handlers.play()
         }
       },
@@ -70,8 +72,8 @@ export const AudioProvider = ({ children }: Props) => {
   )
 
   const contextValue = useMemo(
-    () => [audioRef, handlers, playAudio],
-    [audioRef, handlers, playAudio]
+    () => [audioRef, handlers, playAudio, thumbnailUrl],
+    [audioRef, handlers, playAudio, thumbnailUrl]
   )
 
   return <AudioContext.Provider value={contextValue}>{children}</AudioContext.Provider>
