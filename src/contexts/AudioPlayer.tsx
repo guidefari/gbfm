@@ -4,14 +4,17 @@ import React, { createContext, ReactNode, useEffect, useMemo, useState } from 'r
 const AudioContext = createContext(null)
 
 export const useAudioPlayerContext = (): AudioPlayerContext =>
-  React.useContext<AudioPlayerContext | null>(AudioContext) // eslint-disable-line
+  React.useContext<AudioPlayerContext | null>(AudioContext)
 
 type AudioPlayerContext = [
   audioRef: HTMLAudioElement,
   handlers: {
     play: () => void
     pause: () => void
+    togglePlayPause: () => void
     handleAlbumArtClick: (src: string) => void
+    jumpForward: () => void
+    jumpBackward: () => void
   },
   playAudio: boolean
 ]
@@ -53,6 +56,14 @@ export const AudioProvider = ({ children }: Props) => {
           audioRef.src = src
           handlers.play()
         }
+      },
+      jumpForward: () => {
+        if (!audioRef.src) return
+        audioRef.currentTime += 10
+      },
+      jumpBackward: () => {
+        if (!audioRef.src) return
+        audioRef.currentTime -= 10
       },
     }),
     [audioRef, playAudio]
