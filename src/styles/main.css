@@ -61,10 +61,6 @@ a {
     @apply transition ease-in-out hover:underline;
 }
 
-.clickable-artwork {
-    @apply transition duration-300 ease-in-out lg:hover:scale-103;
-}
-
 
 body {
   font-size: var(--fontSize);
