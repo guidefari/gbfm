@@ -4,11 +4,11 @@ import { RxHome, RxTriangleLeft, RxTriangleRight, RxPause, RxPlay } from 'react-
 import Image from 'next/image'
 
 const SideBar = () => {
-  const [audioRef, handlers, playAudio, thumbnailUrl] = useAudioPlayerContext()
+  const [audioRef, handlers, isPlaying, thumbnailUrl] = useAudioPlayerContext()
   const router = useRouter()
   return (
     <>
-      <nav className="fixed z-50 h-16 max-w-lg -translate-x-1/2 bg-white border border-gray-200 rounded-lg bottom-4 left-1/2 dark:bg-gray-600 dark:border-gray-600">
+      <nav className="fixed z-50 h-16 max-w-lg pr-1 translate-x-1/2 bg-white border border-gray-200 rounded-lg right-1/2 translate bottom-4 dark:bg-gray-600 dark:border-gray-600">
         <div className="grid h-full max-w-lg grid-flow-col mx-auto">
           <button
             onClick={() => router.push('/')}
@@ -36,9 +36,9 @@ const SideBar = () => {
                 type="button"
                 className="floating-nav-button"
                 title="Toggle Audio On/Off"
-                onClick={() => (playAudio ? handlers.pause() : handlers.play())}
+                onClick={() => (isPlaying ? handlers.pause() : handlers.play())}
               >
-                {playAudio ? <RxPause /> : <RxPlay />}
+                {isPlaying ? <RxPause /> : <RxPlay />}
               </button>
               <button
                 data-tooltip-target="tooltip-settings"
@@ -53,7 +53,7 @@ const SideBar = () => {
               </button>
               <Image
                 src={thumbnailUrl}
-                className="m-auto mr-1 rounded-md aspect-square w-14"
+                className="min-w-[45px] w-12 m-auto rounded-md aspect-square "
                 alt=""
                 width={80}
                 height={80}

@@ -1,7 +1,7 @@
 import { useAudioPlayerContext } from 'src/contexts/AudioPlayer'
 import Image from 'next/image'
 import React from 'react'
-import { RxPlay } from 'react-icons/rx'
+import { RxPause, RxPlay, RxResume } from 'react-icons/rx'
 
 // this component needs to support:
 // stream link to spotify
@@ -35,7 +35,14 @@ export const MinimalCard: React.FC<Props> = ({
   children,
   artists,
 }) => {
-  const [, { handleAlbumArtClick }] = useAudioPlayerContext()
+  const [, { handleAlbumArtClick }, isPlaying, nowPlayingImageUrl] = useAudioPlayerContext()
+
+  function renderIcon(isPlaying: boolean, imageUrl, nowPlayingImageUrl): React.ReactNode {
+    if (nowPlayingImageUrl !== imageUrl) return <RxPlay className="w-20 h-20" />
+    if (!isPlaying && nowPlayingImageUrl == imageUrl) return <RxResume className="w-20 h-20" />
+    if (isPlaying && nowPlayingImageUrl == imageUrl) return <RxPause className="w-20 h-20" />
+    return <RxPlay className="w-20 h-20" />
+  }
 
   const DEFAULT_IMAGE =
     'https://res.cloudinary.com/hokaspokas/image/upload/v1663215495/goosebumpsfm/spotify_filler.svg'
@@ -53,13 +60,13 @@ export const MinimalCard: React.FC<Props> = ({
           width={320}
           height={320}
           loading="lazy"
-          title={`Click to play ${title}`}
         />
         <div
+          title={`Click to play ${title}`}
           onClick={() => handleAlbumArtClick(previewUrl, imageUrl || DEFAULT_IMAGE)}
           className="absolute top-0 left-0 items-center justify-center hidden w-full h-full transition duration-700 ease-in-out rounded-md opacity-75 hover:cursor-pointer group-hover:flex bg-slate-500"
         >
-          <RxPlay className="w-20 h-20" />
+          {renderIcon(isPlaying, imageUrl, nowPlayingImageUrl)}
         </div>
       </div>
       <div className="p-3">
