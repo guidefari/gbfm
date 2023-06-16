@@ -15,7 +15,9 @@ export const MDXcomponents = {
   Playlist: dynamic(() => import('src/components/Playlist')),
   HorizontalScrollCards: dynamic(() => import('src/components/common/HorizontalScrollCards')),
   Tracklist: dynamic(() => import('src/components/Tracklist')),
+  Nowplaying: dynamic(() => import('src/components/Nowplaying')),
   Head,
+
 }
 
 export function dateSortDesc(a, b) {

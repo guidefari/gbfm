@@ -70,8 +70,10 @@ function AnimatedBars() {
 export default function Nowplaying() {
   const { data } = useSWR<NowPlayingSong>('/api/now-playing', fetcher)
 
+  if (!data?.albumImageUrl) return
+
   return (
-    <div className="flex flex-row items-center w-full max-w-md p-2 mx-auto space-x-2 rounded-lg ">
+    <div className="flex flex-row items-center w-full max-w-md p-2 mx-auto my-4 space-x-2 rounded-lg ">
       {data?.albumImageUrl ? (
         <a
           className="clickable-artwork"

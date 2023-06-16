@@ -1,8 +1,6 @@
-import Layout from 'src/components/Layout'
 import { PageSEO } from 'src/components/SEO'
 import { allPosts, type Post } from '@/contentlayer/generated'
 import { useMDXComponent } from 'next-contentlayer/hooks' // eslint-disable-line
-import Head from 'next/head'
 import Image from 'next/image'
 import { MDXcomponents } from '../../lib/mdx'
 
@@ -32,7 +30,7 @@ export default function PostPage({ post }: { post: Post }) {
   const encoded_title = encodeURIComponent(post.title)
   const full_default_url = `https://goosebumps.fm/api/og?title=${encoded_title}`
   return (
-    <Layout>
+    <>
       <PageSEO
         title={post.title}
         description={post.description || 'Goosebumps.fm curated sounds'}
@@ -54,13 +52,13 @@ export default function PostPage({ post }: { post: Post }) {
           quality={100}
         />
         <div className="col-span-4 text-center md:col-span-3">
-          <h3 className="my-0 text-left">{post.title}</h3>
-          {post.description && <p className="font-bold text-left ">{post.description}</p>}
+          <h3 className="my-0 text-left underline">{post.title}</h3>
+          {post.description && <p className="text-left ">{post.description}</p>}
         </div>
       </div>
       <article className="px-3 list-disc">
         <MDXContent components={MDXcomponents} />
       </article>
-    </Layout>
+    </>
   )
 }

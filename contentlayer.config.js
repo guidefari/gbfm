@@ -54,7 +54,7 @@ export const Post = defineDocumentType(() => ({
 
 export const Tweet = defineDocumentType(() => ({
   name: 'Tweet',
-  filePathPattern: `tweets/*.mdx`,
+  filePathPattern: `micro/*.mdx`,
   contentType: 'mdx',
   fields: {
     authorName: {

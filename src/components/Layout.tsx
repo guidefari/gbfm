@@ -1,10 +1,6 @@
 import React from 'react'
-import Nowplaying from 'src/components/Nowplaying'
-import Link from 'next/link'
-import { AudioControls } from './AudioControls'
-import { GB } from './common/icons'
 import { Newsletter } from './Newsletter'
-import SideBar from './SideBar'
+import Nav from './Nav'
 
 type Props = {
   children: React.ReactNode
@@ -13,14 +9,14 @@ type Props = {
 export default function Layout({ children }: Props) {
   return (
     <>
-      <SideBar />
-      <main className="flex flex-col justify-between w-full h-full overflow-hidden md:pl-20 pl-11 lg:pl-20 font-jetbrains">
+      <main className="flex flex-col justify-between w-full h-full overflow-hidden font-jetbrains">
         {children}
-        <footer className="px-5 mt-32 mb-10">
-          <Newsletter />
-          <Nowplaying />
-        </footer>
       </main>
+      <hr className="w-full h-1 my-8 border-2 bg-gb-bg" />
+      <footer className="px-5 mb-24">
+        <Newsletter />
+      </footer>
+      <Nav />
     </>
   )
 }
