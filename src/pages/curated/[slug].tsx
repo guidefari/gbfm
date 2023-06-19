@@ -38,9 +38,9 @@ export default function PostPage({ post }: { post: Post }) {
         canonicalUrl={post.canonicalUrl || null}
       />
 
-      <div className="grid grid-cols-4 p-2 mt-10 mb-12 space-x-5 md:px-3 md:mb-16 lg:mb-24">
+      <div className="relative grid w-screen grid-flow-row mx-auto max-w-7xl md:grid-flow-col md:grid-cols-3 md:space-x-5">
         <Image
-          className="object-cover w-full col-span-4 mx-auto rounded-md md:col-span-1 md:mx-0 aspect-square"
+          className="md:ml-2 mt-6 rounded-md w-fit mx-auto md:max-w-[33%] md:fixed md:top-0 lg:max-w-full self-start md:col-span-1"
           src={
             post.thumbnailUrl ||
             'https://res.cloudinary.com/hokaspokas/image/upload/v1663215741/goosebumpsfm/generic_Thumb.svg'
@@ -51,14 +51,12 @@ export default function PostPage({ post }: { post: Post }) {
           loading="lazy"
           quality={100}
         />
-        <div className="col-span-4 text-center md:col-span-3">
+        <article className="w-screen min-h-screen px-2 mt-6 prose break-words md:w-auto md:px-0 md:col-start-2 md:col-span-2 text-inherit prose-a:text-inherit hover:prose-a:text-gb-tomato lg:prose-xl">
           <h3 className="my-0 text-left underline">{post.title}</h3>
           {post.description && <p className="text-left ">{post.description}</p>}
-        </div>
+          <MDXContent components={MDXcomponents} />
+        </article>
       </div>
-      <article className="px-3 list-disc">
-        <MDXContent components={MDXcomponents} />
-      </article>
     </>
   )
 }
