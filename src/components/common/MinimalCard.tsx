@@ -48,7 +48,7 @@ export const MinimalCard: React.FC<Props> = ({
     'https://res.cloudinary.com/hokaspokas/image/upload/v1663215495/goosebumpsfm/spotify_filler.svg'
 
   return (
-    <div className="relative z-10 min-w-[320px] flex-shrink-0 max-w-md my-8 border-2 border-t-0 border-l-0 rounded-md border-gb-tomato ">
+    <div className="relative z-10 flex-shrink-0 max-w-md my-8 border-2 border-t-0 border-l-0 rounded-md border-gb-tomato ">
       <div className="relative flex-shrink-0 mb-4 sm:mb-0 sm:mr-4 group">
         <Image
           className={cn(

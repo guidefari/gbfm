@@ -99,7 +99,7 @@ h1 {
 
 p, ul {
     font-size: var(--fontSize);
-    max-width:75ch;
+    max-width:65ch;
 }
 
 .shadooo {
