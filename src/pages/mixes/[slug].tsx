@@ -39,7 +39,7 @@ export default function PostPage({ mix }: { mix: Mix }) {
       />
 
       <div className="relative grid w-screen grid-flow-row mx-auto max-w-7xl md:grid-flow-col md:grid-cols-3 md:space-x-5">
-        <div className="md:pl-2 w-fit mx-auto md:max-w-[33%] md:fixed md:top-0 lg:max-w-full self-start md:col-span-1">
+        <div className="md:pl-2 w-fit mx-auto md:max-w-[30%] md:fixed md:top-0 lg:max-w-full self-start md:col-span-1">
           <MinimalCard
             title={mix.title}
             previewUrl={mix.mp3Url}
