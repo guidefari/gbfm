@@ -60,6 +60,7 @@ export const MinimalCard: React.FC<Props> = ({
           width={320}
           height={320}
           loading="lazy"
+          quality={100}
         />
         <div
           title={`Click to play ${title}`}
