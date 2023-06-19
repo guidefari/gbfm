@@ -61,11 +61,11 @@ export const AudioProvider = ({ children }: Props) => {
       },
       jumpForward: () => {
         if (!audioRef.src) return
-        audioRef.currentTime += 10
+        audioRef.currentTime += 30
       },
       jumpBackward: () => {
         if (!audioRef.src) return
-        audioRef.currentTime -= 10
+        audioRef.currentTime -= 15
       },
     }),
     [audioRef, playAudio]
