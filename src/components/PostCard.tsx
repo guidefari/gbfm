@@ -12,8 +12,8 @@ interface Props {
 }
 
 export const PostCard: React.FC<Props> = ({ date, title, description, thumbnailUrl, slug }) => (
-  <div className="sm:flex lg:items-start group">
-    <CustomLink href={slug} as={slug} className="text-xl ">
+  <div className="sm:flex lg:items-start">
+    <CustomLink href={slug} as={slug} className="text-xl group ">
       <div className="mb-4 sm:mb-0 sm:mr-4">
         <Image
           className="object-cover w-32 transition ease-in-out rounded-md aspect-square group-hover:ring-4"
@@ -32,7 +32,7 @@ export const PostCard: React.FC<Props> = ({ date, title, description, thumbnailU
         <time dateTime={date} className="text-xs opacity-80 bg-gb-bg">
           {format(parseISO(date), 'LLLL d, yyyy')}
         </time>
-        <p className="text-lg font-medium leading-6 bg-gb-bg">{title}</p>
+        <h4 className="text-lg font-medium leading-6 group-hover:font-bold bg-gb-bg">{title}</h4>
         <p className="hidden mt-2 text-sm leading-normal sm:block bg-gb-bg">{description || ''}</p>
       </div>
     </CustomLink>

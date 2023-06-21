@@ -5,6 +5,8 @@ import fetch from 'node-fetch';
 
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
+  const DEFAULT_IMAGE_URL = 'https://res.cloudinary.com/hokaspokas/image/upload/v1663215495/goosebumpsfm/spotify_filler.png'
+
   try {
       const mixesRSSified = await Promise.all(allMixes.map(async (mix) => {
         const url = `https://${req.headers.host}${mix.url}`;
@@ -24,7 +26,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
             </description>
           `
           }
-          <itunes:image href="${mix.thumbnailUrl}"/>
+          <itunes:image href="${mix.thumbnailUrl ?? DEFAULT_IMAGE_URL}"/>
           <itunes:subtitle>${mix.title}</itunes:subtitle>
           <itunes:summary>${mix.description}</itunes:summary>
           ${ mix.genres && `
@@ -45,13 +47,13 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         <link>${siteMetadata.siteUrl}</link>
         <lastBuildDate>${new Date(allMixes[0].date).toUTCString()}</lastBuildDate>
         <image>
-        <url>https://res.cloudinary.com/hokaspokas/image/upload/v1663215495/goosebumpsfm/spotify_filler.png</url>
+        <url>${DEFAULT_IMAGE_URL}</url>
         <title>goosebumps.fm</title>
-        <link>https://res.cloudinary.com/hokaspokas/image/upload/v1663215495/goosebumpsfm/spotify_filler.png</link>
+        <link>${DEFAULT_IMAGE_URL}</link>
         <width>1440</width>
         <height>1440</height>
         </image>
-      <itunes:image href="https://res.cloudinary.com/hokaspokas/image/upload/v1663215495/goosebumpsfm/spotify_filler.png"/>
+      <itunes:image href="${DEFAULT_IMAGE_URL}"/>
       <itunes:category text="Music"/>
       <language>en-gb</language>
       <itunes:explicit>false</itunes:explicit>

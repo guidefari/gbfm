@@ -2,6 +2,7 @@ import { PostCard } from 'src/components/PostCard'
 import { PageSEO } from 'src/components/SEO'
 import { compareDesc } from 'date-fns'
 import { allPosts, type Post, allMixes, type Mix } from '@/contentlayer/generated'
+import { DEFAULT_IMAGE_URL } from '../constants'
 
 export default function Index() {
   const posts: Post[] = allPosts
@@ -26,7 +27,7 @@ export default function Index() {
               description={mix.description}
               date={mix.date}
               key={mix._id}
-              thumbnailUrl={mix.thumbnailUrl ? mix.thumbnailUrl : ''}
+              thumbnailUrl={mix.thumbnailUrl ?? DEFAULT_IMAGE_URL}
             />
           ))}
         </div>
@@ -42,7 +43,7 @@ export default function Index() {
               description={post.description}
               date={post.date}
               key={post._id}
-              thumbnailUrl={post.thumbnailUrl ? post.thumbnailUrl : ''}
+              thumbnailUrl={post.thumbnailUrl ?? DEFAULT_IMAGE_URL}
             />
           ))}
         </div>
