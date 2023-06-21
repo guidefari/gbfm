@@ -54,7 +54,7 @@ body {
 
 
 .title {
-    @apply mt-2 mb-4 text-3xl font-bold text-left sm:text-6xl md:text-7xl;
+    @apply mx-4 my-5 text-3xl font-bold text-left sm:text-6xl md:text-7xl;
 }
 
 a {
@@ -112,4 +112,8 @@ p, ul {
 
 .floating-nav-button {
   @apply inline-flex flex-col items-center justify-center px-5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 ;
+}
+
+.curated-posts {
+  @apply grid max-w-4xl grid-cols-2 gap-12 mx-4 lg:mx-10 lg:gap-20;
 }

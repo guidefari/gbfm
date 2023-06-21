@@ -1,9 +1,11 @@
 import { PageSEO } from 'src/components/SEO'
 import { allMixes, type Mix } from '@/contentlayer/generated'
 import { useMDXComponent } from 'next-contentlayer/hooks' // eslint-disable-line
+import { format, parseISO } from 'date-fns'
 import { MDXcomponents } from '../../lib/mdx'
 import { MinimalCard } from '@/components/common/MinimalCard'
 import { DEFAULT_IMAGE_URL } from '@/src/constants'
+import { LilDate } from '@/components/common/LilDate'
 
 export const getStaticPaths = () => {
   const paths: string[] = allMixes.map((mix) => mix.url)
@@ -44,6 +46,7 @@ export default function PostPage({ mix }: { mix: Mix }) {
             previewUrl={mix.mp3Url}
             imageUrl={mix.thumbnailUrl ?? DEFAULT_IMAGE_URL}
           ></MinimalCard>
+          <LilDate date={mix.date} />
         </div>
         <article className="w-screen min-h-screen px-2 mt-6 prose break-words md:w-auto md:px-0 md:col-start-2 md:col-span-2 text-inherit prose-a:text-inherit hover:prose-a:text-gb-tomato lg:prose-xl">
           {/* <p className=" md:my-8">

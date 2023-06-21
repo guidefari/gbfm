@@ -4,7 +4,7 @@ import { compareDesc } from 'date-fns'
 import { allPosts, type Post, allMixes, type Mix } from '@/contentlayer/generated'
 import { DEFAULT_IMAGE_URL } from '../constants'
 
-export default function Index() {
+export default function Curated() {
   const posts: Post[] = allPosts
     .sort((a, b) => compareDesc(new Date(a.lastmod || a.date), new Date(b.lastmod || b.date)))
     .filter((post) => post.title !== 'Template post')
@@ -16,10 +16,9 @@ export default function Index() {
     <>
       <PageSEO title="Curated music - Posts" description="Curated Music & the occasional prose" />
       {/* Add Link to a page with Spotify now playing. move the now playing app here? */}
-
       <section>
         <h3 className="title">Mixes</h3>
-        <div className="grid grid-cols-2 gap-12 mx-4 lg:mx-auto max-w-7xl lg:gap-24 md:grid-cols-2">
+        <div className="curated-posts">
           {mixes.map((mix: Mix) => (
             <PostCard
               slug={mix.url}
@@ -32,10 +31,9 @@ export default function Index() {
           ))}
         </div>
       </section>
-
-      <section>
+      <section className="mt-28">
         <h3 className="title">Playlists & words</h3>
-        <div className="grid grid-cols-2 gap-12 mx-4 lg:mx-auto max-w-7xl lg:gap-24 md:grid-cols-2">
+        <div className="curated-posts">
           {draftsFilteredOut.map((post: Post) => (
             <PostCard
               slug={post.url}

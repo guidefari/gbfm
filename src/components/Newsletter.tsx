@@ -1,5 +1,5 @@
 export const Newsletter = () => (
-  <section className="mt-20 mb-8 text-center lg:text-left">
+  <section className="mt-20 mb-8 text-center lg:text-left group">
     <div className="flex flex-wrap justify-center">
       <div className="w-full px-3 grow-0 shrink-0 basis-auto lg:w-10/12">
         <div className="grid items-center lg:grid-cols-2 gap-x-6">
@@ -41,5 +41,8 @@ export const Newsletter = () => (
         </div>
       </div>
     </div>
+    <p className="mt-5 text-xs text-transparent group-hover:text-inherit">
+      ps: idk why this exists, this site is about a year old and I've never sent an email😂
+    </p>
   </section>
 )

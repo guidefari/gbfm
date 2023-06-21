@@ -3,6 +3,7 @@ import { allPosts, type Post } from '@/contentlayer/generated'
 import { useMDXComponent } from 'next-contentlayer/hooks' // eslint-disable-line
 import Image from 'next/image'
 import { MDXcomponents } from '../../lib/mdx'
+import { LilDate } from '@/components/common/LilDate'
 
 export const getStaticPaths = () => {
   const paths: string[] = allPosts.map((post) => post.url)
@@ -53,6 +54,7 @@ export default function PostPage({ post }: { post: Post }) {
             quality={100}
           />
           <h4 className="mx-2 text-left md:mx-0 ">{post.title}</h4>
+          <LilDate date={post.date} />
         </div>
         <article className="w-screen min-h-screen px-2 mt-6 prose break-words md:w-auto md:px-0 md:col-start-2 md:col-span-2 text-inherit prose-a:text-inherit hover:prose-a:text-gb-tomato lg:prose-xl">
           {post.description && <p className="text-left ">{post.description}</p>}
