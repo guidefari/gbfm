@@ -2,7 +2,7 @@ import Link from 'src/components/CustomLink'
 import { PageSEO } from 'src/components/SEO'
 import { SuperHero } from '../components/FrontPage/SuperHero'
 import { Content } from '../components/FrontPage/Content'
-import Curated from '@/components/curated'
+import Curated from '@/components/Curated'
 import Image from 'next/image'
 import CustomLink from 'src/components/CustomLink'
 
