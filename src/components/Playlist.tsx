@@ -40,10 +40,10 @@ export default function Playlist({ url, genres, blurb, children }: Props) {
             <Track url={selectedTrack} />
           ) : (
             <MinimalCard
-              imageUrl={data.coverImageUrl || ''}
-              title={data.title}
-              slug={data.playlistUrl}
-              previewUrl={data.tracks[0].previewUrl || null}
+              imageUrl={data?.coverImageUrl || ''}
+              title={data?.title}
+              slug={data?.playlistUrl}
+              previewUrl={data?.tracks[0]?.previewUrl || null}
               spotify
             />
           )}
@@ -53,9 +53,9 @@ export default function Playlist({ url, genres, blurb, children }: Props) {
             <ScrollArea.Viewport className="h-full ">
               <div className="bg-transparent">
                 <div className="sticky top-0 py-1 bg-gb-bg">
-                  <h6 className="mx-2 underline max-w-none">Playlist: {data.title}</h6>
+                  <h6 className="mx-2 underline max-w-none">Playlist: {data?.title}</h6>
                 </div>
-                {data.tracks.map((track: TrackAPIResponse, index) => (
+                {data?.tracks.map((track: TrackAPIResponse, index) => (
                   <button
                     type="button"
                     className="mx-2 text-white hover:cursor-pointer Tag hover:text-green-300"
@@ -87,9 +87,7 @@ export default function Playlist({ url, genres, blurb, children }: Props) {
             genres[0] !== '' &&
             genres.map((genre, index) => (
               <p key={index} className="flex flex-wrap mt-6">
-                <span className="p-1 px-2 m-1 mr-2 text-sm rounded-full bg-cyan-800">
-                  {genre}
-                </span>
+                <span className="p-1 px-2 m-1 mr-2 text-sm rounded-full bg-cyan-800">{genre}</span>
               </p>
             ))}
           {(blurb || children) && (
