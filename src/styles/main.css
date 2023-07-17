@@ -102,6 +102,17 @@ p, ul {
     max-width:65ch;
 }
 
+blockquote {
+  @apply p-4 m-4 border-l-8 rounded-md bg-cyan-900 border-gb-pastel-green-2;
+  quotes: "\201C""\201D""\2018""\2019";
+}
+blockquote:before {
+  @apply mr-1 text-5xl text-gb-pastel-green-2;
+  content: open-quote;
+  line-height: 0.1em;
+  vertical-align: -0.4em;
+}
+
 .shadooo {
   box-shadow: inset -86px 0px 34px -43px rgba(217,217,217,0.6);
 }
