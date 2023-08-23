@@ -2,11 +2,11 @@ const { withContentlayer } = require('next-contentlayer')
 
 module.exports = withContentlayer({
   rewrites: async () => [
-      {
-        source: '/rss.xml',
-        destination: '/api/rss',
-      },
-    ],
+    {
+      source: '/rss.xml',
+      destination: '/api/rss',
+    },
+  ],
 
   images: {
     domains: [
@@ -14,6 +14,7 @@ module.exports = withContentlayer({
       'mosaic.scdn.co', // Spofity playlist mosaics
       'pbs.twimg.com', // Twitter Profile Picture
       'res.cloudinary.com', // cloudinary images
+      'images-ak.spotifycdn.com', // New spotify images url?
     ],
   },
 })
