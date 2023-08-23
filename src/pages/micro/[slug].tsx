@@ -23,13 +23,14 @@ export const getStaticProps: GetStaticProps<{ tweet: Tweet }> = ({ params }) => 
 
 const PostLayout = ({ tweet }: { tweet: Tweet }) => (
   <>
-    <article className="max-w-4xl py-8 mx-auto ">
+    <article className="max-w-4xl min-h-screen py-8 mx-auto ">
       <SingleTweet
         authorName={tweet.authorName}
         avatarUrl={tweet.avatarUrl}
         date={tweet.date}
         handle={tweet.handle}
         content={tweet.body.code}
+        underline={false}
       />
     </article>
   </>
