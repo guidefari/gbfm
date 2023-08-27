@@ -1,6 +1,12 @@
 import { useAudioPlayerContext } from 'src/contexts/AudioPlayer'
 import { useRouter } from 'next/router'
-import { RxHome, RxTriangleLeft, RxTriangleRight, RxPause, RxPlay } from 'react-icons/rx'
+import { RxHome } from 'react-icons/rx'
+import {
+  GiAnticlockwiseRotation,
+  GiClockwiseRotation,
+  GiPlayButton,
+  GiPauseButton,
+} from 'react-icons/gi'
 import Image from 'next/image'
 
 const SideBar = () => {
@@ -26,7 +32,7 @@ const SideBar = () => {
                 type="button"
                 className="floating-nav-button"
               >
-                <RxTriangleLeft
+                <GiAnticlockwiseRotation
                   onClick={() => handlers.jumpBackward()}
                   className="floating-nav-icon"
                   title="-15s"
@@ -38,7 +44,7 @@ const SideBar = () => {
                 title="Toggle Audio On/Off"
                 onClick={() => (isPlaying ? handlers.pause() : handlers.play())}
               >
-                {isPlaying ? <RxPause /> : <RxPlay />}
+                {isPlaying ? <GiPauseButton /> : <GiPlayButton />}
               </button>
               <button
                 data-tooltip-target="tooltip-settings"
@@ -46,7 +52,7 @@ const SideBar = () => {
                 className="floating-nav-button"
                 title="+30s"
               >
-                <RxTriangleRight
+                <GiClockwiseRotation
                   onClick={() => handlers.jumpForward()}
                   className="floating-nav-icon"
                 />
