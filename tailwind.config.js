@@ -18,10 +18,10 @@ module.exports = {
       },
       colors: {
         highlight: '#9BFD9E',
-        tomato: '#F5D547',
+        tomato: '#9BFD9E',
         'gb-bg': '#16425b',
         'gb-highlight': '#9BFD9E',
-        'gb-tomato': '#F5D547',
+        'gb-tomato': '#9BFD9E',
         'gb-pastel-green-1': '#B6FADF',
         'gb-pastel-green-2': '#4E8C71',
       },
