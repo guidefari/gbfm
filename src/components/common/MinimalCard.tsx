@@ -38,9 +38,11 @@ export const MinimalCard: React.FC<Props> = ({
   const [, { handleAlbumArtClick }, isPlaying, nowPlayingImageUrl] = useAudioPlayerContext()
 
   function renderIcon(isPlaying: boolean, imageUrl, nowPlayingImageUrl): React.ReactNode {
-    if (nowPlayingImageUrl !== imageUrl) return <RxPlay className="w-20 h-20" />
-    if (!isPlaying && nowPlayingImageUrl == imageUrl) return <RxResume className="w-20 h-20" />
-    if (isPlaying && nowPlayingImageUrl == imageUrl) return <RxPause className="w-20 h-20" />
+    const iconClassNames = 'w-20 h-20 text-gb-tomato'
+
+    if (nowPlayingImageUrl !== imageUrl) return <RxPlay className={iconClassNames} />
+    if (!isPlaying && nowPlayingImageUrl == imageUrl) return <RxResume className={iconClassNames} />
+    if (isPlaying && nowPlayingImageUrl == imageUrl) return <RxPause className={iconClassNames} />
     return <RxPlay className="w-20 h-20" />
   }
 
