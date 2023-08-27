@@ -18,10 +18,10 @@ module.exports = {
       },
       colors: {
         highlight: '#9BFD9E',
-        tomato: '#ff6d1a',
+        tomato: '#F5D547',
         'gb-bg': '#16425b',
         'gb-highlight': '#9BFD9E',
-        'gb-tomato': '#ff6d1a',
+        'gb-tomato': '#F5D547',
         'gb-pastel-green-1': '#B6FADF',
         'gb-pastel-green-2': '#4E8C71',
       },
@@ -36,7 +36,5 @@ module.exports = {
       },
     },
   },
-  plugins: [
-    require('@tailwindcss/typography'),
-  ],
+  plugins: [require('@tailwindcss/typography')],
 }
