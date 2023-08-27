@@ -41,7 +41,7 @@ const SideBar = () => {
               <button
                 type="button"
                 className="floating-nav-button"
-                title="Toggle Audio On/Off"
+                title="Play/Pause"
                 onClick={() => (isPlaying ? handlers.pause() : handlers.play())}
               >
                 {isPlaying ? <GiPauseButton /> : <GiPlayButton />}
