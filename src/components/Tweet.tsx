@@ -13,6 +13,7 @@ interface Props {
   children?: React.ReactNode
   content: string
   underline?: boolean
+  url?: string
 }
 
 export const Tweet: React.FC<Props> = ({
@@ -23,6 +24,7 @@ export const Tweet: React.FC<Props> = ({
   avatarUrl,
   content,
   underline = true,
+  url,
 }) => {
   const MDXContent = useMDXComponent(content)
 
@@ -68,7 +70,6 @@ export const Tweet: React.FC<Props> = ({
         </div>
         <div className="mt-4 mb-2 text-lg leading-normal whitespace-pre-wrap">
           <MDXContent components={MDXcomponents} />
-
           {children}
         </div>
       </div>
