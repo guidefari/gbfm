@@ -6,34 +6,23 @@ const AudioContext = createContext(null)
 export const useAudioPlayerContext = (): AudioPlayerContext =>
   React.useContext<AudioPlayerContext | null>(AudioContext)
 
-type AudioPlayerContext = [
-  audioRef: HTMLAudioElement,
-  handlers: {
-    play: () => void
-    pause: () => void
-    togglePlayPause: () => void
-    handleAlbumArtClick: (src: string, thumbnailUrl: string) => void
-    jumpForward: () => void
-    jumpBackward: () => void
-  },
-  playAudio: boolean,
-  thumbnailUrl: string
-]
-
-type Props = {
-  children: ReactNode
-}
-
 export const AudioProvider = ({ children }: Props) => {
   const audioRef = useMemo(() => (typeof window === 'undefined' ? null : new Audio()), [])
   const [playAudio, setPlayAudio] = useState(false)
   const [thumbnailUrl, setThumbnailUrl] = useState('')
+  const [progress, setProgress] = useState(0)
 
   useEffect(() => {
     audioRef.onended = () => {
       handlers.pause()
     }
+    audioRef.ontimeupdate = handleTimeUpdate
   }, [audioRef])
+
+  const handleTimeUpdate = () => {
+    const progress = (audioRef.currentTime / audioRef.duration) * 100
+    setProgress(progress)
+  }
 
   const handlers = React.useMemo(
     () => ({
@@ -72,9 +61,28 @@ export const AudioProvider = ({ children }: Props) => {
   )
 
   const contextValue = useMemo(
-    () => [audioRef, handlers, playAudio, thumbnailUrl],
-    [audioRef, handlers, playAudio, thumbnailUrl]
+    () => [audioRef, handlers, playAudio, thumbnailUrl, progress],
+    [audioRef, handlers, playAudio, thumbnailUrl, progress]
   )
 
   return <AudioContext.Provider value={contextValue}>{children}</AudioContext.Provider>
+}
+
+type AudioPlayerContext = [
+  audioRef: HTMLAudioElement,
+  handlers: {
+    play: () => void
+    pause: () => void
+    togglePlayPause: () => void
+    handleAlbumArtClick: (src: string, thumbnailUrl: string) => void
+    jumpForward: () => void
+    jumpBackward: () => void
+  },
+  playAudio: boolean,
+  thumbnailUrl: string,
+  progress: number
+]
+
+type Props = {
+  children: ReactNode
 }
