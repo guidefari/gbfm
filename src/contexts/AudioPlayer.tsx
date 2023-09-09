@@ -1,5 +1,5 @@
-import { Track } from 'src/lib/types'
 import React, { createContext, ReactNode, useEffect, useMemo, useState } from 'react'
+import { DEFAULT_IMAGE_URL, LATEST_MIX } from '../constants'
 
 const AudioContext = createContext(null)
 
@@ -7,9 +7,12 @@ export const useAudioPlayerContext = (): AudioPlayerContext =>
   React.useContext<AudioPlayerContext | null>(AudioContext)
 
 export const AudioProvider = ({ children }: Props) => {
-  const audioRef = useMemo(() => (typeof window === 'undefined' ? null : new Audio()), [])
+  const audioRef = useMemo(
+    () => (typeof window === 'undefined' ? null : new Audio(LATEST_MIX.mp3Url)),
+    []
+  )
   const [playAudio, setPlayAudio] = useState(false)
-  const [thumbnailUrl, setThumbnailUrl] = useState('')
+  const [thumbnailUrl, setThumbnailUrl] = useState(LATEST_MIX.thumbnailUrl ?? DEFAULT_IMAGE_URL)
   const [progress, setProgress] = useState(0)
 
   useEffect(() => {

@@ -1,7 +1,6 @@
 import { PageSEO } from 'src/components/SEO'
 import { allMixes, type Mix } from '@/contentlayer/generated'
 import { useMDXComponent } from 'next-contentlayer/hooks' // eslint-disable-line
-import { format, parseISO } from 'date-fns'
 import { MDXcomponents } from '../../lib/mdx'
 import { MinimalCard } from '@/components/common/MinimalCard'
 import { DEFAULT_IMAGE_URL } from '@/src/constants'

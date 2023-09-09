@@ -119,11 +119,11 @@ blockquote:before {
 }
 
 .floating-nav-icon {
-  @apply min-h-[48px] text-gray-500 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-500;
+  @apply min-h-[48px] text-sky-300  hover:text-gb-tomato ;
 }
 
 .floating-nav-button {
-  @apply inline-flex flex-col justify-center px-5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800;
+  @apply inline-flex flex-col justify-center max-w-[24px] px-5;
   @apply transition ease-in-out hover:underline;
 }
 
