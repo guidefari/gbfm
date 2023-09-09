@@ -72,7 +72,7 @@ const Nav = () => {
         </>
       </div>
       <div
-        className="flex max-w-xl mx-auto rounded-full bg-sky-800"
+        className="flex max-w-xl mx-auto rounded-full bg-sky-800 hover:cursor-pointer"
         onClick={() => alert('Congratulations🎉you discovered a work in progress')}
       >
         <div
