@@ -15,8 +15,12 @@ const Nav = () => {
   const router = useRouter()
   const navRef = useRef<HTMLElement>(null)
 
+  const changeRange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target
+    handlers.setTimeUsingPercentage(Number(value))
+  }
   return (
-    <nav ref={navRef} className="fixed bottom-0 z-50 w-full pt-1 space-y-1 bg-sky-900">
+    <nav ref={navRef} className="fixed bottom-0 z-50 w-full py-2 space-y-1 bg-sky-900">
       <div className="relative grid h-full max-w-xs grid-flow-col mx-auto">
         <button
           onClick={() => router.push('/')}
@@ -71,14 +75,14 @@ const Nav = () => {
           />
         </>
       </div>
-      <div
-        className="flex max-w-xl mx-auto rounded-full bg-sky-800 hover:cursor-pointer"
-        onClick={() => alert('Congratulations🎉you discovered a work in progress')}
-      >
-        <div
-          style={{ width: `${progress}%` }}
-          className={`bg-gb-tomato h-1.5 align-start rounded-full`}
-        ></div>
+      <div className="flex max-w-xl mx-auto rounded-full ">
+        <input
+          type="range"
+          value={progress}
+          defaultValue={0}
+          className={`bg-gb-tomato h-1.5 w-full align-start rounded-full hover:cursor-pointer `}
+          onChange={changeRange}
+        />
       </div>
     </nav>
   )

@@ -59,6 +59,9 @@ export const AudioProvider = ({ children }: Props) => {
         if (!audioRef.src) return
         audioRef.currentTime -= 15
       },
+      setTimeUsingPercentage: (percentage: number) => {
+        audioRef.currentTime = (percentage / 100) * audioRef.duration
+      },
     }),
     [audioRef, playAudio]
   )
@@ -80,6 +83,7 @@ type AudioPlayerContext = [
     handleAlbumArtClick: (src: string, thumbnailUrl: string) => void
     jumpForward: () => void
     jumpBackward: () => void
+    setTimeUsingPercentage: (percentage: number) => void
   },
   playAudio: boolean,
   thumbnailUrl: string,
