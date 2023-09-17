@@ -80,7 +80,7 @@ const Nav = () => {
           type="range"
           value={progress}
           defaultValue={0}
-          className={`bg-gb-tomato h-1.5 w-full align-start rounded-full hover:cursor-pointer `}
+          className={`bg-gb-tomato h-2 w-full align-start rounded-full hover:cursor-pointer `}
           onChange={changeRange}
         />
       </div>
