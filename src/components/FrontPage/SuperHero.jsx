@@ -9,6 +9,13 @@ export const SuperHero = () => (
             goosebumps.
             <br />
             <span className="text-highlight">fm</span>
+            <p className="font-normal text-right">
+              Archiving music we have enjoyed over the years🤟🏾 <br />
+              Thus far, material is shared in the form of mixes, <br />
+              tweet-like micro-posts,
+              <em>full-length</em> posts, playlists, <br />
+              and record label round-ups.
+            </p>
           </h1>
         </div>
       </div>
