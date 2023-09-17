@@ -38,7 +38,7 @@ export default function PostPage({ mix }: { mix: Mix }) {
         canonicalUrl={mix.url || null}
       />
 
-      <div className="relative grid w-screen grid-flow-row mx-auto max-w-7xl md:grid-flow-col md:grid-cols-3 md:space-x-5">
+      <div className="relative grid grid-flow-row mx-auto max-w-7xl md:grid-flow-col md:grid-cols-3 md:space-x-5">
         <div className="self-start px-2 mx-auto w-fit md:fixed md:max-w-[30%] md:top-0 md:col-span-1">
           <MinimalCard
             title={mix.title}

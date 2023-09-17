@@ -38,7 +38,7 @@ iframe.bandcamp-widget-wide,
 .bww {
   border: none;
   width: 100%;
-  height: 120px;
+  @apply max-w-xs aspect-square; 
 }
 iframe.bandcamp-widget-wide.tracklist {
   height: 220px;
@@ -112,6 +112,10 @@ blockquote:before {
   content: open-quote;
   line-height: 0.1em;
   vertical-align: -0.4em;
+}
+
+iframe {
+  @apply w-fit;
 }
 
 .shadooo {

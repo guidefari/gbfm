@@ -42,9 +42,11 @@ export const MinimalCard: React.FC<Props> = ({
 
   const iconClassNames = 'min-w-[19px] aspect-square text-sky-300 hover:text-gb-tomato'
   function renderIcon(isPlaying: boolean): React.ReactNode {
-    if (previewUrl !== audioRef.src) return <GiPlayButton className={iconClassNames} />
-    if (!isPlaying && previewUrl == audioRef.src) return <GiPlayButton className={iconClassNames} />
-    if (isPlaying && previewUrl == audioRef.src) return <GiPauseButton className={iconClassNames} />
+    if (previewUrl !== audioRef?.src) return <GiPlayButton className={iconClassNames} />
+    if (!isPlaying && previewUrl == audioRef?.src)
+      return <GiPlayButton className={iconClassNames} />
+    if (isPlaying && previewUrl == audioRef?.src)
+      return <GiPauseButton className={iconClassNames} />
     return <GiPlayButton className={iconClassNames} />
   }
 

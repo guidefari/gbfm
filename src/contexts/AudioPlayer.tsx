@@ -7,7 +7,7 @@ export const useAudioPlayerContext = (): AudioPlayerContext =>
   React.useContext<AudioPlayerContext | null>(AudioContext)
 
 export const AudioProvider = ({ children }: Props) => {
-  const audioRef = useMemo(
+  const audioRef: HTMLAudioElement | null = useMemo(
     () => (typeof window === 'undefined' ? null : new Audio(LATEST_MIX.mp3Url)),
     []
   )

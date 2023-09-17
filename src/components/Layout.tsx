@@ -9,7 +9,7 @@ type Props = {
 export default function Layout({ children }: Props) {
   return (
     <>
-      <main className="flex flex-col justify-between w-full h-full overflow-hidden font-jetbrains">
+      <main className="flex flex-col justify-between h-full overflow-hidden font-jetbrains">
         {children}
       </main>
       <hr className="w-full h-1 my-8 border-2 bg-gb-bg" />
