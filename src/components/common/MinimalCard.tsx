@@ -38,15 +38,13 @@ export const MinimalCard: React.FC<Props> = ({
   artists,
   download = false,
 }) => {
-  const [, { handleAlbumArtClick }, isPlaying, nowPlayingImageUrl] = useAudioPlayerContext()
+  const [audioRef, { handleAlbumArtClick }, isPlaying] = useAudioPlayerContext()
 
   const iconClassNames = 'min-w-[19px] aspect-square text-sky-300 hover:text-gb-tomato'
-  function renderIcon(isPlaying: boolean, imageUrl, nowPlayingImageUrl): React.ReactNode {
-    if (nowPlayingImageUrl !== imageUrl) return <GiPlayButton className={iconClassNames} />
-    if (!isPlaying && nowPlayingImageUrl == imageUrl)
-      return <GiPlayButton className={iconClassNames} />
-    if (isPlaying && nowPlayingImageUrl == imageUrl)
-      return <GiPauseButton className={iconClassNames} />
+  function renderIcon(isPlaying: boolean): React.ReactNode {
+    if (previewUrl !== audioRef.src) return <GiPlayButton className={iconClassNames} />
+    if (!isPlaying && previewUrl == audioRef.src) return <GiPlayButton className={iconClassNames} />
+    if (isPlaying && previewUrl == audioRef.src) return <GiPauseButton className={iconClassNames} />
     return <GiPlayButton className={iconClassNames} />
   }
 
@@ -93,7 +91,7 @@ export const MinimalCard: React.FC<Props> = ({
             title="Play/Pause"
             onClick={() => handleAlbumArtClick(previewUrl, imageUrl || DEFAULT_IMAGE)}
           >
-            {renderIcon(isPlaying, imageUrl, nowPlayingImageUrl)}
+            {renderIcon(isPlaying)}
           </button>
           {download && (
             <a type="button" title="Download" href={constructUrl()}>
