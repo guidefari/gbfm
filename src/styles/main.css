@@ -36,8 +36,6 @@
 
 iframe.bandcamp-widget-wide,
 .bww {
-  border: none;
-  width: 100%;
   @apply max-w-xs aspect-square; 
 }
 iframe.bandcamp-widget-wide.tracklist {
