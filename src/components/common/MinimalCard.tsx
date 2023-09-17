@@ -1,7 +1,8 @@
 import { useAudioPlayerContext } from 'src/contexts/AudioPlayer'
 import Image from 'next/image'
 import React from 'react'
-import { RxPause, RxPlay, RxResume } from 'react-icons/rx'
+import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
+import { FaDownload } from 'react-icons/fa'
 
 // this component needs to support:
 // stream link to spotify
@@ -37,17 +38,24 @@ export const MinimalCard: React.FC<Props> = ({
 }) => {
   const [, { handleAlbumArtClick }, isPlaying, nowPlayingImageUrl] = useAudioPlayerContext()
 
+  const iconClassNames = 'text-sky-300 hover:text-gb-tomato'
   function renderIcon(isPlaying: boolean, imageUrl, nowPlayingImageUrl): React.ReactNode {
-    const iconClassNames = 'w-20 h-20 text-gb-tomato'
-
-    if (nowPlayingImageUrl !== imageUrl) return <RxPlay className={iconClassNames} />
-    if (!isPlaying && nowPlayingImageUrl == imageUrl) return <RxResume className={iconClassNames} />
-    if (isPlaying && nowPlayingImageUrl == imageUrl) return <RxPause className={iconClassNames} />
-    return <RxPlay className="w-20 h-20" />
+    if (nowPlayingImageUrl !== imageUrl) return <GiPlayButton className={iconClassNames} />
+    if (!isPlaying && nowPlayingImageUrl == imageUrl)
+      return <GiPlayButton className={iconClassNames} />
+    if (isPlaying && nowPlayingImageUrl == imageUrl)
+      return <GiPauseButton className={iconClassNames} />
+    return <GiPlayButton className={iconClassNames} />
   }
 
   const DEFAULT_IMAGE =
     'https://res.cloudinary.com/hokaspokas/image/upload/v1663215495/goosebumpsfm/spotify_filler.svg'
+
+  const constructUrl = () => {
+    const safeTitle = encodeURIComponent(title)
+    const safeDlUrl = encodeURIComponent(previewUrl)
+    return `/api/dl?fileUrl=${safeDlUrl}&title=${safeTitle}`
+  }
 
   return (
     <div className="relative z-10 flex-shrink-0 max-w-md my-8 border-2 border-t-0 border-l-0 rounded-md border-gb-tomato ">
@@ -64,13 +72,6 @@ export const MinimalCard: React.FC<Props> = ({
           loading="lazy"
           quality={100}
         />
-        <div
-          title={`Click to play ${title}`}
-          onClick={() => handleAlbumArtClick(previewUrl, imageUrl || DEFAULT_IMAGE)}
-          className="absolute top-0 left-0 items-center justify-center hidden w-full h-full transition duration-700 ease-in-out rounded-md opacity-75 hover:cursor-pointer group-hover:flex bg-slate-500"
-        >
-          {renderIcon(isPlaying, imageUrl, nowPlayingImageUrl)}
-        </div>
       </div>
       <div className="p-3">
         {genres && (
@@ -83,6 +84,21 @@ export const MinimalCard: React.FC<Props> = ({
           </p>
         )}
         <p className="mt-3 text-lg font-medium leading-6">{title || <br />}</p>
+
+        <div className="flex my-2 space-x-3 align-bottom">
+          <button
+            type="button"
+            className=""
+            title="Play/Pause"
+            onClick={() => handleAlbumArtClick(previewUrl, imageUrl || DEFAULT_IMAGE)}
+          >
+            {renderIcon(isPlaying, imageUrl, nowPlayingImageUrl)}
+          </button>
+          <a type="button" title="Download" href={constructUrl()}>
+            <FaDownload className={`${iconClassNames} h-[16px]`} />
+          </a>
+        </div>
+
         {artists && (
           <p className="mt-2 " title={`Arist(s): ${artists}`}>
             {artists || <br />}
