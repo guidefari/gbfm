@@ -128,5 +128,5 @@ blockquote:before {
 }
 
 .curated-posts {
-  @apply grid max-w-5xl grid-cols-2 gap-12 mx-4 lg:mx-20 lg:gap-20;
+  @apply grid grid-cols-1 gap-12 mx-4 lg:grid-cols-2 xl:grid-cols-3 lg:mx-20 lg:gap-20;
 }
