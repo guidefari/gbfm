@@ -40,7 +40,7 @@ export const MinimalCard: React.FC<Props> = ({
 }) => {
   const [audioRef, { handleAlbumArtClick }, isPlaying] = useAudioPlayerContext()
 
-  const iconClassNames = 'min-w-[19px] aspect-square text-sky-300 hover:text-gb-tomato'
+  const iconClassNames = 'w-8 h-8 aspect-square text-sky-300 hover:text-gb-tomato'
   function renderIcon(isPlaying: boolean): React.ReactNode {
     if (previewUrl !== audioRef?.src) return <GiPlayButton className={iconClassNames} />
     if (!isPlaying && previewUrl == audioRef?.src)
@@ -76,7 +76,7 @@ export const MinimalCard: React.FC<Props> = ({
         />
       </div>
       <div className="p-3">
-        {genres && (
+        {genres && genres.length > 0 && (
           <p className="flex flex-wrap space-x-2">
             {genres.map((genre, index) => (
               <span key={index} className="p-1 px-2 text-sm rounded-full bg-cyan-800">
@@ -85,7 +85,6 @@ export const MinimalCard: React.FC<Props> = ({
             ))}
           </p>
         )}
-        <p className="mt-3 text-lg font-medium leading-6">{title || <br />}</p>
 
         <div className="flex my-2 space-x-3 align-bottom ">
           <button
@@ -102,11 +101,11 @@ export const MinimalCard: React.FC<Props> = ({
           )}
         </div>
 
-        {artists && (
-          <p className="mt-2 " title={`Arist(s): ${artists}`}>
-            {artists || <br />}
+        <p className="mt-3 text-lg font-medium leading-6">
+          {artists ?? null}
+          {' - '}
+          {title ?? null}
           </p>
-        )}
         {(blurb || children) && (
           <hr className="mx-10 my-4 border-b-2 rounded-full border-gb-pastel-green-2" />
         )}
