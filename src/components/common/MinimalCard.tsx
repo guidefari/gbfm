@@ -86,7 +86,7 @@ export const MinimalCard: React.FC<Props> = ({
           </p>
         )}
 
-        <div className="flex my-2 space-x-3 align-bottom ">
+        {previewUrl?.length > 0 && <div className="flex my-2 space-x-3 align-bottom ">
           <button
             type="button"
             title="Play/Pause"
@@ -99,7 +99,7 @@ export const MinimalCard: React.FC<Props> = ({
               <FaDownload className={`${iconClassNames} h-[16px]`} />
             </a>
           )}
-        </div>
+        </div>}
 
         <p className="mt-3 text-lg font-medium leading-6">
           {artists ?? null}
