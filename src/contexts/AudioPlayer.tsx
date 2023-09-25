@@ -23,7 +23,7 @@ export const AudioProvider = ({ children }: Props) => {
   }, [audioRef])
 
   const handleTimeUpdate = () => {
-    const progress = (audioRef.currentTime / audioRef.duration) * 100
+    const progress = (audioRef.currentTime / audioRef.duration) * 100 || 0
     setProgress(progress)
   }
 

@@ -12,7 +12,8 @@ const triplet = (e1, e2, e3) =>
   keyStr.charAt(e3 & 63)
 
 const rgbDataURL = (r, g, b) =>
-  `data:image/gif;base64,R0lGODlhAQABAPAA${triplet(0, r, g) + triplet(b, 255, 255)
+  `data:image/gif;base64,R0lGODlhAQABAPAA${
+    triplet(0, r, g) + triplet(b, 255, 255)
   }/yH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==`
 
 export const Content = () => {
@@ -41,6 +42,20 @@ export const Content = () => {
               The idea behind this site is to build it as a community effort. Pretty open to
               contribution suggestions - UI/UX feedback, track suggestions, guest mixes,
               illustrations, you name it.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex flex-col justify-between p-5 border rounded shadow-sm">
+          <div>
+            <h6 className="mb-2 font-semibold leading-5">
+              <CustomLink href="micro" as="micro">
+                Micro Posts
+              </CustomLink>
+            </h6>
+            <p className="mb-3 text-sm ">
+              Capturing byte-sized ephemeral thoughts. These are sometimes the inspiration to full
+              length write ups.
             </p>
           </div>
         </div>
