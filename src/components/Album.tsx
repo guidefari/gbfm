@@ -1,12 +1,11 @@
 import fetcher from 'src/lib/fetcher'
 import { AlbumApiResponse, AlbumSingleTrackApiResponse } from 'src/lib/types'
-import React, { useState } from 'react'
+import React from 'react'
 import useSWR from 'swr'
 import * as ScrollArea from '@radix-ui/react-scroll-area'
-import Image from 'next/image'
 import { GB } from './common/icons'
 import { MinimalCard } from './common/MinimalCard'
-import Track from './Track'
+import { PlayPauseButton } from './PlayPauseButton'
 
 interface Props {
   url: string
@@ -16,7 +15,6 @@ interface Props {
 }
 
 export default function Album({ url, genres, blurb, children }: Props) {
-  const [selectedTrack, setselectedTrack] = useState<string>(null)
   const encoded = encodeURIComponent(url)
 
   const { data, error } = useSWR<AlbumApiResponse, Error>(`/api/album?id=${encoded}`, fetcher)
@@ -35,44 +33,37 @@ export default function Album({ url, genres, blurb, children }: Props) {
     <section className="p-3 pb-0 my-5 border-2 rounded-md min-w-fit border-gb-tomato md:p-7 md:pb-0">
       <div className="w-full grid-cols-3 gap-4 md:grid">
         <div className="col-span-1">
-          {selectedTrack ? (
-            <Track url={selectedTrack} />
-          ) : (
-            <MinimalCard
-              imageUrl={data?.albumImageUrl || ''}
-              title={data?.title || ''}
-              slug={data?.albumUrl || ''}
-              previewUrl={data.tracks[0].previewUrl || null}
-              spotify
-            />
-          )}
+          <MinimalCard
+            imageUrl={data?.albumImageUrl || ''}
+            title={data?.title || ''}
+            slug={data?.albumUrl || ''}
+            artists={data?.artists || ''}
+          />
         </div>
         <div className="col-span-2 pb-10 ">
-          <ScrollArea.Root className="w-full shadow-sm h-96 ScrollAreaRoot">
-            <ScrollArea.Viewport className="h-full ">
-              <div className="bg-transparent">
-                <div className="sticky top-0 py-1 ">
-                  <h6 className="mx-2 underline max-w-none">Album: {data.title}</h6>
-                </div>
-                {data.tracks.map((track: AlbumSingleTrackApiResponse, index) => (
-                  <button
-                    type="button"
-                    className="mx-2 text-white hover:cursor-pointer Tag hover:text-green-300"
-                    key={`${track.trackUrl} -  ${index}`}
-                    onClick={() => setselectedTrack(track.trackUrl)}
-                  >
-                    <Image
-                      className="inline mr-1 rounded-sm"
-                      alt={track.title}
-                      src={data.albumImageUrl}
-                      width={32}
-                      height={32}
-                      loading="lazy"
-                    />
-                    {track.title} - {track.artists}
-                  </button>
+          <ScrollArea.Root className="w-full shadow-sm h-80 lg:h-96 ScrollAreaRoot">
+            <ScrollArea.Viewport className="h-full bg-gb-bg">
+              <ul className="p-0">
+                {data?.tracks.map((track: AlbumSingleTrackApiResponse, index) => (
+                  <li className="m-0 list-none" key={`${track.trackUrl} - ${index}`}>
+                    <div className="flex items-center p-0 space-x-1 text-white group hover:cursor-pointer Tag hover:text-green-300">
+                      {data.previewUrl?.length > 0 && (
+                        <button
+                          className="opacity-50 text-sky-300 group-hover:text-gb-tomato group-hover:opacity-95"
+                          type="button"
+                          title="Play/Pause"
+                        >
+                          <PlayPauseButton
+                            url={track.previewUrl}
+                            thumbnailUrl={data.albumImageUrl}
+                          />
+                        </button>
+                      )}
+                      {track.title} - {track.artists}
+                    </div>
+                  </li>
                 ))}
-              </div>
+              </ul>
             </ScrollArea.Viewport>
             <ScrollArea.Scrollbar className="ScrollAreaScrollbar" orientation="vertical">
               <ScrollArea.Thumb className="ScrollAreaThumb" />

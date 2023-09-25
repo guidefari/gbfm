@@ -132,3 +132,8 @@ iframe {
 .curated-posts {
   @apply grid grid-cols-1 gap-12 mx-4 lg:grid-cols-2 xl:grid-cols-3 lg:mx-20 lg:gap-20;
 }
+
+.default-icon {
+  color: inherit;
+  @apply w-7 h-7 aspect-square hover:text-gb-tomato;
+}

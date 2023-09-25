@@ -16,7 +16,6 @@ interface Props {
 }
 
 export default function Playlist({ url, genres, blurb, children }: Props) {
-  const [selectedTrack, setselectedTrack] = useState<string>(null)
 
   const encoded = encodeURIComponent(url)
 
@@ -35,19 +34,6 @@ export default function Playlist({ url, genres, blurb, children }: Props) {
   return (
     <section className="p-3 pb-0 my-5 border-2 rounded-md border-gb-tomato md:p-7 md:pb-0">
       <div className="w-full grid-cols-3 gap-4 lg:grid">
-        <div className="col-span-1">
-          {selectedTrack ? (
-            <Track url={selectedTrack} />
-          ) : (
-            <MinimalCard
-              imageUrl={data?.coverImageUrl || ''}
-              title={data?.title}
-              slug={data?.playlistUrl}
-              previewUrl={data?.tracks[0]?.previewUrl || null}
-              spotify
-            />
-          )}
-        </div>
         <div className="col-span-2">
           <ScrollArea.Root className="w-full shadow-sm h-72 lg:h-96 ScrollAreaRoot">
             <ScrollArea.Viewport className="h-full ">
@@ -60,7 +46,7 @@ export default function Playlist({ url, genres, blurb, children }: Props) {
                     type="button"
                     className="mx-2 text-white hover:cursor-pointer Tag hover:text-green-300"
                     key={`${track.trackUrl} -  ${index}`}
-                    onClick={() => setselectedTrack(track.trackUrl)}
+                    // onClick={() => setselectedTrack(track.trackUrl)}
                   >
                     <Image
                       className="inline mr-1 rounded-sm"

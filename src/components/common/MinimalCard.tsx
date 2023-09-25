@@ -3,6 +3,8 @@ import Image from 'next/image'
 import React from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
 import { FaDownload } from 'react-icons/fa'
+import { DEFAULT_IMAGE_URL } from '@/src/constants'
+import { PlayPauseButton } from '../PlayPauseButton'
 
 // this component needs to support:
 // stream link to spotify
@@ -40,19 +42,6 @@ export const MinimalCard: React.FC<Props> = ({
 }) => {
   const [audioRef, { handleAlbumArtClick }, isPlaying] = useAudioPlayerContext()
 
-  const iconClassNames = 'w-8 h-8 aspect-square text-sky-300 hover:text-gb-tomato'
-  function renderIcon(isPlaying: boolean): React.ReactNode {
-    if (previewUrl !== audioRef?.src) return <GiPlayButton className={iconClassNames} />
-    if (!isPlaying && previewUrl == audioRef?.src)
-      return <GiPlayButton className={iconClassNames} />
-    if (isPlaying && previewUrl == audioRef?.src)
-      return <GiPauseButton className={iconClassNames} />
-    return <GiPlayButton className={iconClassNames} />
-  }
-
-  const DEFAULT_IMAGE =
-    'https://res.cloudinary.com/hokaspokas/image/upload/v1663215495/goosebumpsfm/spotify_filler.svg'
-
   const constructUrl = () => {
     const safeTitle = encodeURIComponent(title)
     const safeDlUrl = encodeURIComponent(previewUrl)
@@ -67,7 +56,7 @@ export const MinimalCard: React.FC<Props> = ({
             'object-cover w-full rounded-md  aspect-square  mx-auto',
             loading ? 'scale-102 blur-2xl' : 'scale-100 blur-0'
           )}
-          src={imageUrl || DEFAULT_IMAGE}
+          src={imageUrl || DEFAULT_IMAGE_URL}
           alt={title}
           width={300}
           height={300}
@@ -86,26 +75,28 @@ export const MinimalCard: React.FC<Props> = ({
           </p>
         )}
 
-        {previewUrl?.length > 0 && <div className="flex my-2 space-x-3 align-bottom ">
-          <button
-            type="button"
-            title="Play/Pause"
-            onClick={() => handleAlbumArtClick(previewUrl, imageUrl || DEFAULT_IMAGE)}
-          >
-            {renderIcon(isPlaying)}
-          </button>
-          {download && (
-            <a type="button" title="Download" href={constructUrl()}>
-              <FaDownload className={`${iconClassNames} h-[16px]`} />
-            </a>
-          )}
-        </div>}
+        {previewUrl?.length > 0 && (
+          <div className="flex my-2 space-x-3 align-bottom ">
+            <button
+              type="button"
+              title="Play/Pause"
+              onClick={() => handleAlbumArtClick(previewUrl, imageUrl || DEFAULT_IMAGE_URL)}
+            >
+              <PlayPauseButton url={previewUrl} />
+            </button>
+            {download && (
+              <a type="button" title="Download" href={constructUrl()}>
+                <FaDownload className="default-icon h-[16px]" />
+              </a>
+            )}
+          </div>
+        )}
 
-        <p className="mt-3 text-lg font-medium leading-6">
+        <p className="mt-3 text-sm font-medium leading-6">
           {artists ?? null}
           {' - '}
           {title ?? null}
-          </p>
+        </p>
         {(blurb || children) && (
           <hr className="mx-10 my-4 border-b-2 rounded-full border-gb-pastel-green-2" />
         )}

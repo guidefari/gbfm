@@ -48,7 +48,6 @@ export type AlbumApiResponse = {
   albumImageUrl?: string
   title?: string
   artists?: string
-  trackUrl?: string
   previewUrl?: string
   tracks: AlbumSingleTrackApiResponse[]
   albumUrl: string

@@ -47,7 +47,9 @@ export const AudioProvider = ({ children }: Props) => {
           handlers.pause()
         } else {
           audioRef.src = src
-          setThumbnailUrl(thumbnailUrl)
+          if (thumbnailUrl) {
+            setThumbnailUrl(thumbnailUrl)
+          }
           handlers.play()
         }
       },
