@@ -77,13 +77,7 @@ export const MinimalCard: React.FC<Props> = ({
 
         {previewUrl?.length > 0 && (
           <div className="flex my-2 space-x-3 align-bottom ">
-            <button
-              type="button"
-              title="Play/Pause"
-              onClick={() => handleAlbumArtClick(previewUrl, imageUrl || DEFAULT_IMAGE_URL)}
-            >
-              <PlayPauseButton url={previewUrl} />
-            </button>
+            <PlayPauseButton url={previewUrl} thumbnailUrl={imageUrl} />
             {download && (
               <a type="button" title="Download" href={constructUrl()}>
                 <FaDownload className="default-icon h-[16px]" />
