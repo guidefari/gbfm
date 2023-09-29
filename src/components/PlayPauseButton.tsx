@@ -17,6 +17,6 @@ export const PlayPauseButton = ({ url, thumbnailUrl }: PlayPauseButtonProps) => 
   if (!isPlaying && url == audioRef?.src)
     return <GiPlayButton className="default-icon" onClick={handleClick} />
   if (isPlaying && url == audioRef?.src)
-    return <GiPauseButton className="text-green-300  default-icon" onClick={handleClick} />
+    return <GiPauseButton className="text-green-300 default-icon" onClick={handleClick} />
   return <GiPlayButton className="default-icon" onClick={handleClick} />
 }

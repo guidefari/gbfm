@@ -16,7 +16,6 @@ interface Props {
 }
 
 export default function Playlist({ url, genres, blurb, children }: Props) {
-
   const encoded = encodeURIComponent(url)
 
   const { data, error } = useSWR<PlaylistApiResponse, Error>(`/api/playlist?id=${encoded}`, fetcher)
