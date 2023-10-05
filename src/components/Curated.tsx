@@ -1,10 +1,9 @@
 import { PostCard } from 'src/components/PostCard'
 import { PageSEO } from 'src/components/SEO'
 import { compareDesc } from 'date-fns'
-import Image from 'next/image'
-import CustomLink from 'src/components/CustomLink'
 import { allPosts, type Post, allMixes, type Mix } from '@/contentlayer/generated'
 import { DEFAULT_IMAGE_URL } from '../constants'
+import Link from 'next/link'
 
 export default function Curated() {
   const posts: Post[] = allPosts
@@ -19,8 +18,12 @@ export default function Curated() {
       <PageSEO title="Curated music - Posts" description="Curated Music & the occasional prose" />
       {/* Add Link to a page with Spotify now playing. move the now playing app here? */}
       <section>
-        <h3 className="title">Mixes</h3>
-        <p>Stream or download on here. Also distribured via RSS</p>
+        <div className="flex flex-col m-4 md:flex-row md:items-center ">
+          <div className="text-4xl font-bold sm:text-6xl md:text-7xl">Mixes</div>
+          <p className="text-sm font-normal leading-5 md:ml-4 md:mt-3 md:text-base">
+            Stream or download on here. Also distribured via <Link href={'/rss.xml'}>RSS</Link>
+          </p>
+        </div>
         <div className="curated-posts">
           {mixes.map((mix: Mix) => (
             <PostCard
