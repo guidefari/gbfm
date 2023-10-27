@@ -7,6 +7,7 @@ export type NowPlayingSong = {
   isPlaying: boolean
   songUrl: string
   title: string
+  // context: url, also check what the spotify context object is shaped like
 }
 
 export type Tweet = {
