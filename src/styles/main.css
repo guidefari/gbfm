@@ -30,7 +30,11 @@
 
   li {
     margin-bottom: calc(0.75ex * 1.65);
-    @apply ml-2 list-disc;
+    @apply ml-2;
+  }
+
+  ul li {
+    @apply list-disc;
   }
 }
 

@@ -47,6 +47,16 @@ export default function PostPage({ mix }: { mix: Mix }) {
             download
           ></MinimalCard>
           <LilDate date={mix.date} />
+          {mix.youtubeId && (
+            <iframe
+              width="100%"
+              height="auto"
+              src={`https://www.youtube.com/embed/${mix.youtubeId}`}
+              title="YouTube video player"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+          )}
         </div>
         <article className="min-h-screen px-2 mt-6 prose break-words md:w-auto md:px-0 md:col-start-2 md:col-span-2 text-inherit prose-a:text-inherit hover:prose-a:text-gb-tomato lg:prose-xl">
           {/* <p className=" md:my-8">
