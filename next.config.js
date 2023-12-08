@@ -21,6 +21,8 @@ module.exports = withContentlayer({
       'pbs.twimg.com', // Twitter Profile Picture
       'res.cloudinary.com', // cloudinary images
       'images-ak.spotifycdn.com', // New spotify images url?
+      'image-cdn-ak.spotifycdn.com',
+      '*.spotifycdn.com'
     ],
   },
 })
