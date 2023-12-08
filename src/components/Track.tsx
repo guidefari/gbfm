@@ -22,13 +22,11 @@ export default function Track({ url, genres, blurb, children }: Props) {
       <MinimalCard
         loading={loading}
         blurb={blurb || ''}
-        slug={data?.trackUrl || ''}
         imageUrl={data?.albumImageUrl || ''}
         title={data?.title || ''}
         artists={data?.artists || ''}
         genres={genres || null}
         previewUrl={data?.previewUrl || ''}
-        spotify
       >
         {children}
       </MinimalCard>
