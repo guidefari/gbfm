@@ -16,12 +16,10 @@ interface Props {
   artists?: string
   blurb?: string
   imageUrl: string
-  slug?: string
   genres?: string[] | null
   loading?: boolean
   previewUrl?: string
   children?: React.ReactNode
-  spotify?: boolean
   download?: boolean
 }
 
