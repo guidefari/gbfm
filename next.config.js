@@ -15,6 +15,12 @@ module.exports = withContentlayer({
   },
 
   images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**.spotifycdn.com',
+      },
+    ],
     domains: [
       'i.scdn.co', // Spotify Album Art
       'mosaic.scdn.co', // Spofity playlist mosaics
@@ -22,7 +28,6 @@ module.exports = withContentlayer({
       'res.cloudinary.com', // cloudinary images
       'images-ak.spotifycdn.com', // New spotify images url?
       'image-cdn-ak.spotifycdn.com',
-      '*.spotifycdn.com'
     ],
   },
 })
