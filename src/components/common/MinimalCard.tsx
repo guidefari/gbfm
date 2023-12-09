@@ -1,10 +1,10 @@
 import { useAudioPlayerContext } from 'src/contexts/AudioPlayer'
 import Image from 'next/image'
 import React from 'react'
-import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
 import { FaDownload } from 'react-icons/fa'
 import { DEFAULT_IMAGE_URL } from '@/src/constants'
 import { PlayPauseButton } from '../PlayPauseButton'
+import { cn } from '@/lib/util'
 
 // this component needs to support:
 // stream link to spotify
@@ -21,10 +21,7 @@ interface Props {
   previewUrl?: string
   children?: React.ReactNode
   download?: boolean
-}
-
-function cn(...classes: string[]) {
-  return classes.filter(Boolean).join(' ')
+  className?: string
 }
 
 export const MinimalCard: React.FC<Props> = ({
@@ -37,6 +34,7 @@ export const MinimalCard: React.FC<Props> = ({
   children,
   artists,
   download = false,
+  className,
 }) => {
   const [audioRef, { handleAlbumArtClick }, isPlaying] = useAudioPlayerContext()
 
@@ -47,7 +45,9 @@ export const MinimalCard: React.FC<Props> = ({
   }
 
   return (
-    <div className="relative z-10 flex-shrink-0 max-w-md my-8 border-2 border-t-0 border-l-0 rounded-md md:max-w-xs border-gb-tomato ">
+    <div
+      className={`not-prose relative z-10 flex-shrink-0 max-w-md my-8 border-2 border-t-0 border-l-0 rounded-md md:max-w-xs border-gb-tomato ${className}`}
+    >
       <div className="relative flex-shrink-0 mb-4 sm:mb-0 sm:mr-4 group">
         <Image
           className={cn(
