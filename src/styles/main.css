@@ -25,6 +25,11 @@
 .prose {
   --tw-prose-headings: #4E8C71;
   --tw-prose-quotes: inherit;
+  --tw-prose-bold: var(--pastel-green-2);
+
+  a {
+    @apply text-gb-pastel-green-1;
+  }
 }
 
 @layer base {
