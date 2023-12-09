@@ -39,7 +39,7 @@ export function MultiTrack({
   }
 
   return (
-    <section className="p-3 my-5 border-2 rounded-md not-prose min-w-fit border-gb-tomato md:px-7 ">
+    <section className="p-3 my-5 border-2 rounded-lg not-prose min-w-fit border-gb-pastel-green-2 md:px-7 ">
       <h5 className="my-2">
         {artists} - {title}
       </h5>
@@ -101,12 +101,9 @@ export function MultiTrack({
             </ScrollArea.Scrollbar>
             <ScrollArea.Corner className="ScrollAreaCorner" />
           </ScrollArea.Root>
-
-          {(blurb || children) && (
-            <div className="mt-6 text-sm leading-snug ">{blurb || children}</div>
-          )}
         </div>
       </div>
+      {(blurb || children) && <div className="mt-6 text-sm leading-snug ">{blurb || children}</div>}
     </section>
   )
 }

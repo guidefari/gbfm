@@ -42,7 +42,7 @@ export default function PostPage({ post }: { post: Post }) {
       <div className="relative grid grid-flow-row mx-auto max-w-7xl md:grid-flow-col md:grid-cols-3 md:space-x-5">
         <div className="md:ml-2 mt-6 break-words rounded-md w-fit mx-auto md:max-w-[30%] md:fixed md:top-0  self-start md:col-span-1">
           <Image
-            className="mx-auto rounded-md"
+            className="rounded-md "
             src={
               post.thumbnailUrl ||
               'https://res.cloudinary.com/hokaspokas/image/upload/v1663215741/goosebumpsfm/generic_Thumb.svg'
@@ -53,7 +53,7 @@ export default function PostPage({ post }: { post: Post }) {
             loading="lazy"
             quality={100}
           />
-          <h4 className="mx-2 text-left md:mx-0 ">{post.title}</h4>
+          <h4 className="mx-2 text-left md:mx-0 text-gb-pastel-green-2">{post.title}</h4>
           <LilDate date={post.date} />
         </div>
         <article className="min-h-screen px-2 mt-6 prose break-words md:w-auto md:px-0 md:col-start-2 md:col-span-2 text-inherit prose-a:text-inherit hover:prose-a:text-gb-tomato lg:prose-xl">

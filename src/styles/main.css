@@ -16,6 +16,15 @@
   --h2Size: calc(var(--h3Size) * var(--typeScale));
   --h1Size: calc(var(--h2Size) * var(--typeScale));
   --small: calc(var(--fontSize) * 0.75);
+  --highlight: #9BFD9E;
+  --bg: #16425b;
+  --pastel-green-1: #B6FADF;
+  --pastel-green-2: #4E8C71;
+}
+
+.prose {
+  --tw-prose-headings: #4E8C71;
+  --tw-prose-quotes: inherit;
 }
 
 @layer base {
