@@ -9,8 +9,8 @@ type Props = {
   content: string
   thumbnailUrl: string
   title: string
-  date: string
-  description: string
+  date?: string
+  description?: string
   canonicalUrl?: string
   youtubeId?: string
 }
@@ -24,6 +24,7 @@ export const LongPost = ({
   date,
   youtubeId,
 }: Props) => {
+  console.log('date:', date)
   const MDXContent = useMDXComponent(content)
   const encoded_title = encodeURIComponent(title)
   const full_default_url = `https://goosebumps.fm/api/og?title=${encoded_title}`
@@ -52,7 +53,7 @@ export const LongPost = ({
             quality={100}
           />
           <h4 className="mx-2 text-left md:mx-0 text-gb-pastel-green-2">{title}</h4>
-          <LilDate date={date} />
+          {date && <LilDate date={date} />}
           {youtubeId && (
             <iframe
               width="100%"
