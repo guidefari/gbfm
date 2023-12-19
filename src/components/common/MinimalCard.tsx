@@ -22,6 +22,7 @@ interface Props {
   children?: React.ReactNode
   download?: boolean
   className?: string
+  hideTitle: boolean
 }
 
 export const MinimalCard: React.FC<Props> = ({
@@ -35,6 +36,7 @@ export const MinimalCard: React.FC<Props> = ({
   artists,
   download = false,
   className,
+  hideTitle,
 }) => {
   const [audioRef, { handleAlbumArtClick }, isPlaying] = useAudioPlayerContext()
 
@@ -84,11 +86,13 @@ export const MinimalCard: React.FC<Props> = ({
           </div>
         )}
 
-        <p className="mt-3 text-sm font-medium leading-6">
-          {artists ?? null}
-          {' - '}
-          {title ?? null}
-        </p>
+        {!hideTitle && (
+          <p className="mt-3 text-sm font-medium leading-6">
+            {artists ?? null}
+            {' - '}
+            {title ?? null}
+          </p>
+        )}
         {(blurb || children) && (
           <hr className="mx-10 my-4 border-b-2 rounded-full border-gb-pastel-green-2" />
         )}

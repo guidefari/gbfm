@@ -30,6 +30,7 @@ export default function PostPage({ mix }: { mix: Mix }) {
       thumbnailUrl={mix.thumbnailUrl}
       description={mix.description}
       youtubeId={mix.youtubeId}
+      mp3Url={mix.mp3Url}
     />
   )
 }

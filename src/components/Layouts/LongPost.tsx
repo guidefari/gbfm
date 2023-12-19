@@ -4,6 +4,8 @@ import Image from 'next/image'
 import { LilDate } from '../common/LilDate'
 import { MDXcomponents } from '@/lib/mdx'
 import { useMDXComponent } from 'next-contentlayer/hooks'
+import { MinimalCard } from '../common/MinimalCard'
+import { DEFAULT_IMAGE_URL } from '@/src/constants'
 
 type Props = {
   content: string
@@ -13,6 +15,7 @@ type Props = {
   description?: string
   canonicalUrl?: string
   youtubeId?: string
+  mp3Url?: string
 }
 
 export const LongPost = ({
@@ -23,6 +26,7 @@ export const LongPost = ({
   canonicalUrl,
   date,
   youtubeId,
+  mp3Url,
 }: Props) => {
   console.log('date:', date)
   const MDXContent = useMDXComponent(content)
@@ -40,18 +44,28 @@ export const LongPost = ({
 
       <div className="relative grid grid-flow-row md:grid-flow-col md:grid-cols-3 md:space-x-5">
         <div className="md:ml-2 mt-6 break-words rounded-md w-fit mx-auto md:max-w-[30%] md:fixed md:top-0  self-start md:col-span-1">
-          <Image
-            className="rounded-md "
-            src={
-              thumbnailUrl ||
-              'https://res.cloudinary.com/hokaspokas/image/upload/v1663215741/goosebumpsfm/generic_Thumb.svg'
-            }
-            alt={`Thumbnail image for post titled - ${title}`}
-            width={320}
-            height={320}
-            loading="lazy"
-            quality={100}
-          />
+          {mp3Url ? (
+            <MinimalCard
+              title={title}
+              previewUrl={mp3Url}
+              imageUrl={thumbnailUrl ?? DEFAULT_IMAGE_URL}
+              download
+              hideTitle
+            />
+          ) : (
+            <Image
+              className="rounded-md "
+              src={
+                thumbnailUrl ||
+                'https://res.cloudinary.com/hokaspokas/image/upload/v1663215741/goosebumpsfm/generic_Thumb.svg'
+              }
+              alt={`Thumbnail image for post titled - ${title}`}
+              width={320}
+              height={320}
+              loading="lazy"
+              quality={100}
+            />
+          )}
           <h4 className="mx-2 text-left md:mx-0 text-gb-pastel-green-2">{title}</h4>
           {date && <LilDate date={date} />}
           {youtubeId && (
