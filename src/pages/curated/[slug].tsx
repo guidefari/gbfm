@@ -39,7 +39,7 @@ export default function PostPage({ post }: { post: Post }) {
         canonicalUrl={post.canonicalUrl || null}
       />
 
-      <div className="relative grid grid-flow-row mx-auto max-w-7xl md:grid-flow-col md:grid-cols-3 md:space-x-5">
+      <div className="relative grid grid-flow-row md:grid-flow-col md:grid-cols-3 md:space-x-5">
         <div className="md:ml-2 mt-6 break-words rounded-md w-fit mx-auto md:max-w-[30%] md:fixed md:top-0  self-start md:col-span-1">
           <Image
             className="rounded-md "
