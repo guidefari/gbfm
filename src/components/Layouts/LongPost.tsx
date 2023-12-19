@@ -28,7 +28,6 @@ export const LongPost = ({
   youtubeId,
   mp3Url,
 }: Props) => {
-  console.log('date:', date)
   const MDXContent = useMDXComponent(content)
   const encoded_title = encodeURIComponent(title)
   const full_default_url = `https://goosebumps.fm/api/og?title=${encoded_title}`
