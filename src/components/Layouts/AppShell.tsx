@@ -1,12 +1,12 @@
 import React from 'react'
-import { Newsletter } from './Newsletter'
-import Nav from './Nav'
+import { Newsletter } from '../Newsletter'
+import Nav from '../Nav'
 
 type Props = {
   children: React.ReactNode
 }
 
-export default function Layout({ children }: Props) {
+export default function AppShell({ children }: Props) {
   return (
     <>
       <main className="flex flex-col justify-between h-full overflow-hidden font-jetbrains">

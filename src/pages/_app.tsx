@@ -4,7 +4,7 @@ import { AppProps } from 'next/app'
 
 import Head from 'next/head'
 import { memo } from 'react'
-import Layout from '@/components/Layout'
+import AppShell from '@/components/Layouts/AppShell'
 import { ScrollPosition } from '@/components/ScrollPosition'
 
 const App = memo(({ Component, pageProps }: AppProps) => (
@@ -15,9 +15,9 @@ const App = memo(({ Component, pageProps }: AppProps) => (
     </Head>
     <ScrollPosition />
     <AudioProvider>
-      <Layout>
+      <AppShell>
         <Component {...pageProps} />
-      </Layout>
+      </AppShell>
     </AudioProvider>
   </>
 ))

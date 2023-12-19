@@ -1,7 +1,7 @@
 import { PageSEO } from 'src/components/SEO'
 import { allLabels, Label } from '@/contentlayer/generated'
 import Image from 'next/image'
-import Layout from '../components/Layout'
+import CustomLink from '@/components/CustomLink'
 
 export default function Index() {
   const noTemplate: Label[] = allLabels.filter(
@@ -16,7 +16,9 @@ export default function Index() {
 
       <div className="grid grid-cols-1 gap-4 px-4 my-4 md:grid-cols-3 lg:grid-cols-4">
         {noTemplate.map((label: Label) => (
-          <div
+          <CustomLink
+            href={label.url}
+            as={label.url}
             key={label._id}
             className="flex flex-col justify-center bg-white shadow-md rounded-2xl shadow-gray-400/20"
           >
@@ -39,7 +41,7 @@ export default function Index() {
                 : null}
               <h1 className="pb-2 text-2xl font-medium text-gray-700">{label.name}</h1>
             </div>
-          </div>
+          </CustomLink>
         ))}
       </div>
     </>
