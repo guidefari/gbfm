@@ -12,6 +12,7 @@ type Props = {
   date: string
   description: string
   canonicalUrl?: string
+  youtubeId?: string
 }
 
 export const LongPost = ({
@@ -21,6 +22,7 @@ export const LongPost = ({
   content,
   canonicalUrl,
   date,
+  youtubeId,
 }: Props) => {
   const MDXContent = useMDXComponent(content)
   const encoded_title = encodeURIComponent(title)
@@ -51,6 +53,16 @@ export const LongPost = ({
           />
           <h4 className="mx-2 text-left md:mx-0 text-gb-pastel-green-2">{title}</h4>
           <LilDate date={date} />
+          {youtubeId && (
+            <iframe
+              width="100%"
+              height="auto"
+              src={`https://www.youtube.com/embed/${youtubeId}`}
+              title="YouTube video player"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+          )}
         </div>
         <article className="min-h-screen px-2 mt-6 prose break-words md:w-auto md:px-0 md:col-start-2 md:col-span-2 text-inherit prose-a:text-inherit hover:prose-a:text-gb-tomato lg:prose-xl">
           {description && <p className="text-left ">{description}</p>}
