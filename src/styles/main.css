@@ -26,10 +26,11 @@
   --tw-prose-headings: #4E8C71;
   --tw-prose-quotes: inherit;
   --tw-prose-bold: var(--pastel-green-2);
+}
 
-  a {
-    @apply text-gb-pastel-green-1;
-  }
+.prose a {
+  @apply text-gb-pastel-green-1;
+  /* @apply text-yellow-500; this isn't such a bad color for links, should I ever get tired of the green*/
 }
 
 @layer base {
