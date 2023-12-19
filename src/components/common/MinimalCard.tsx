@@ -22,7 +22,7 @@ interface Props {
   children?: React.ReactNode
   download?: boolean
   className?: string
-  hideTitle: boolean
+  hideTitle?: boolean
 }
 
 export const MinimalCard: React.FC<Props> = ({
