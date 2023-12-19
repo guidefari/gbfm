@@ -1,4 +1,3 @@
-import { useAudioPlayerContext } from 'src/contexts/AudioPlayer'
 import Image from 'next/image'
 import React from 'react'
 import { FaDownload } from 'react-icons/fa'
@@ -38,8 +37,6 @@ export const MinimalCard: React.FC<Props> = ({
   className,
   hideTitle,
 }) => {
-  const [audioRef, { handleAlbumArtClick }, isPlaying] = useAudioPlayerContext()
-
   const constructUrl = () => {
     const safeTitle = encodeURIComponent(title)
     const safeDlUrl = encodeURIComponent(previewUrl)
