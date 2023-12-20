@@ -7,8 +7,10 @@ export default function Index() {
   return (
     <>
       <PageSEO title="goosebumps.fm" description="Curated Music & the occasional prose" />
-      <SuperHero />
-      <Content />
+      <div className="min-h-[100dvh]">
+        <SuperHero />
+        <Content />
+      </div>
       <Curated />
     </>
   )

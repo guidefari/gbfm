@@ -17,7 +17,7 @@ export default function Curated() {
     <>
       <PageSEO title="Curated music - Posts" description="Curated Music & the occasional prose" />
       {/* Add Link to a page with Spotify now playing. move the now playing app here? */}
-      <section>
+      <section id="mixes">
         <div className="flex flex-col m-4 md:flex-row md:items-center ">
           <div className="text-4xl font-bold sm:text-6xl md:text-7xl">Mixes</div>
           <p className="text-sm font-normal leading-5 md:ml-4 md:mt-3 md:text-base">
@@ -37,7 +37,7 @@ export default function Curated() {
           ))}
         </div>
       </section>
-      <section className="mt-28">
+      <section className="mt-28" id="words">
         <h3 className="title">Playlists & words</h3>
         <div className="curated-posts">
           {draftsFilteredOut.map((post: Post) => (
