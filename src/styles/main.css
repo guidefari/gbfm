@@ -149,7 +149,7 @@ iframe {
 }
 
 .curated-posts {
-  @apply grid grid-cols-1 gap-12 mx-4 lg:grid-cols-2 xl:grid-cols-3 lg:mx-20 lg:gap-20;
+  @apply grid w-full gap-10 px-4 py-16 mx-auto sm:grid-cols-2 lg:grid-cols-3 md:px-24 lg:px-8 lg:py-20;
 }
 
 .default-icon {
