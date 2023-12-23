@@ -2,6 +2,7 @@ import { PageSEO } from 'src/components/SEO'
 import { allLabels, Label } from '@/contentlayer/generated'
 import Image from 'next/image'
 import CustomLink from '@/components/CustomLink'
+import { PageTitle } from '@/components/common/PageTitle'
 
 export default function Index() {
   const noTemplate: Label[] = allLabels.filter(
@@ -11,8 +12,10 @@ export default function Index() {
   return (
     <>
       <PageSEO title="goosebumps.fm/labels" description="Some record labels we have enjoyed" />
-      <h1 className="title">Record Labels</h1>
-      <p>Some record labels myself & friends have enjoyed over the years</p>
+      <PageTitle
+        title="Record Labels"
+        description="Some record labels we have enjoyed over the years"
+      />
 
       <div className="grid grid-cols-1 gap-4 px-4 my-4 md:grid-cols-3 lg:grid-cols-4">
         {noTemplate.map((label: Label) => (
