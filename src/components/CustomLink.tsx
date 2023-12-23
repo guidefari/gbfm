@@ -1,8 +1,10 @@
 import Link, { LinkProps } from 'next/link'
 
 type Props = {
-  children: React.ReactNode
+  children: React.ReactNode | string
   className?: string
+  as?: string
+  href: string
 } & LinkProps
 
 export default function CustomLink({ as, href, children, className, ...otherProps }: Props) {
