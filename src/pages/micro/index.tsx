@@ -12,8 +12,12 @@ export default function Index() {
   return (
     <>
       <PageSEO title="goosebumps.fm/micro" description="Micro posts and archived tweets." />
-      <h1 className="title">Micro Posts</h1>
-      <p>Too small to be an entire post. Kind of like a tweet</p>
+      <div className="flex flex-col py-5 border-b-2 md:items-center md:flex-row">
+        <h2 className="my-0 ">B-sides</h2>
+        <p className="max-w-xl px-4">
+          Too small to be an entire post. Kind of like a tweet. Sometimes ephemeral thoughts
+        </p>
+      </div>
 
       <div className="max-w-4xl mx-auto mb-4">
         {tweets.map((tweet: TweetType, index) => (
