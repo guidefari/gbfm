@@ -5,6 +5,8 @@ type Props = {
   className?: string
   as?: string
   href: string
+  target?: string
+  rel?: string
 } & LinkProps
 
 export default function CustomLink({ as, href, children, className, ...otherProps }: Props) {
