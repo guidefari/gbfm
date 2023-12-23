@@ -19,9 +19,9 @@ const rgbDataURL = (r, g, b) =>
 export const Content = () => {
   return (
     <section className="curated-posts">
-      <div className="flex flex-col justify-between p-5 border rounded shadow-sm">
+      <div className="flex flex-col justify-between p-5 border-l rounded shadow-sm">
         <div>
-          <h6 className="mb-2 font-semibold leading-5">
+          <h6 className="mt-0 mb-2 font-semibold leading-5">
             <CustomLink href="curated/how-to" as="curated/how-to">
               👀 How to use this site
             </CustomLink>
@@ -32,9 +32,9 @@ export const Content = () => {
         </div>
       </div>
 
-      <div className="flex flex-col justify-between p-5 border rounded shadow-sm">
+      <div className="flex flex-col justify-between p-5 border-l rounded shadow-sm">
         <div>
-          <h6 className="mb-2 font-semibold leading-5">What kind of content is on here?</h6>
+          <h6 className="mt-0 mb-2 font-semibold leading-5">What kind of content is on here?</h6>
           <p className="mb-3 text-sm">
             <CustomLink href="#mixes">Mixes</CustomLink>, tweet-like{' '}
             <CustomLink href="micro">micro-posts</CustomLink>,{' '}
@@ -44,9 +44,9 @@ export const Content = () => {
         </div>
       </div>
 
-      <div className="flex flex-col justify-between p-5 border rounded shadow-sm">
+      <div className="flex flex-col justify-between p-5 border-l rounded shadow-sm">
         <div>
-          <h6 className="mb-2 font-semibold leading-5">Community effort</h6>
+          <h6 className="mt-0 mb-2 font-semibold leading-5">Community effort</h6>
           <p className="mb-3 text-sm">
             The idea behind this site is to build it as a{' '}
             <CustomLink href="collaborate">community effort</CustomLink>. UI/UX feedback, track
