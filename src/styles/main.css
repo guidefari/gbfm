@@ -131,10 +131,6 @@ blockquote:before {
   vertical-align: -0.4em;
 }
 
-iframe {
-  @apply w-fit;
-}
-
 .shadooo {
   box-shadow: inset -86px 0px 34px -43px rgba(217, 217, 217, 0.6);
 }
