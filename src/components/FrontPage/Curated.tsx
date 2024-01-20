@@ -2,7 +2,7 @@ import { PostCard } from 'src/components/PostCard'
 import { PageSEO } from 'src/components/SEO'
 import { compareDesc } from 'date-fns'
 import { allPosts, type Post, allMixes, type Mix } from '@/contentlayer/generated'
-import { DEFAULT_IMAGE_URL } from '../constants'
+import { DEFAULT_IMAGE_URL } from '../../constants'
 import Link from 'next/link'
 
 export default function Curated() {

@@ -4,7 +4,7 @@ import Image from 'next/image'
 import CustomLink from '@/components/CustomLink'
 import { PageTitle } from '@/components/common/PageTitle'
 
-export default function Index() {
+export function Labels() {
   const noTemplate: Label[] = allLabels.filter(
     (label: Label) => label._id !== 'labels/template-label.mdx'
   )

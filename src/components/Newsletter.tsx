@@ -4,10 +4,10 @@ export const Newsletter = () => (
       <div className="w-full px-3 grow-0 shrink-0 basis-auto lg:w-10/12">
         <div className="grid items-center lg:grid-cols-2 gap-x-6">
           <div className="mb-10 lg:mb-0">
-            <div className="text-3xl font-bold">
-              Subscribe to the newsletter
+            <div className="text-2xl font-bold">
+              This would be the newsletter section if I actually sent emails
               <br />
-              <span className="text-cyan-100">No more than one ping a week</span>
+              <span className="text-cyan-100">lol</span>
             </div>
           </div>
 
@@ -41,8 +41,5 @@ export const Newsletter = () => (
         </div>
       </div>
     </div>
-    <p className="mt-5 text-xs text-transparent group-hover:text-inherit">
-      ps: idk why this exists, this site is about a year old and I've never sent an email😂
-    </p>
   </section>
 )
