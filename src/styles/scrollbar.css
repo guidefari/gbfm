@@ -1,4 +1,4 @@
-@import '@radix-ui/colors/blackA.css';
+@import '@radix-ui/colors/black-alpha.css';
 @import '@radix-ui/colors/mauve.css';
 @import '@radix-ui/colors/violet.css';
 
@@ -21,11 +21,11 @@
   /* disable browser handling of all panning and zooming gestures on touch devices */
   touch-action: none;
   padding: 2px;
-  background: var(--blackA6);
+  background: var(--black-a6);
   transition: background 160ms ease-out;
 }
 .ScrollAreaScrollbar:hover {
-  background: var(--blackA8);
+  background: var(--black-a8);
 }
 .ScrollAreaScrollbar[data-orientation='vertical'] {
   width: var(--scrollbar-size);
@@ -37,7 +37,7 @@
 
 .ScrollAreaThumb {
   flex: 1;
-  background: var(--mauve10);
+  background: var(--mauve-10);
   border-radius: var(--scrollbar-size);
   position: relative;
 }
@@ -55,13 +55,21 @@
 }
 
 .ScrollAreaCorner {
-  background: var(--blackA8);
+  background: var(--black-a8);
 }
 
+.Text {
+  color: var(--violet-11);
+  font-size: 15px;
+  line-height: 18px;
+  font-weight: 500;
+}
 
 .Tag {
+  color: var(--mauve-12);
   font-size: 13px;
   line-height: 18px;
   margin-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
   padding-top: 10px;
 }
