@@ -1,5 +1,6 @@
 import Image from 'next/image'
 import React from 'react'
+import { DEFAULT_IMAGE_URL } from '../constants'
 import CustomLink from './CustomLink'
 
 interface Props {
@@ -15,10 +16,7 @@ export const PostCard: React.FC<Props> = ({ date, title, description, thumbnailU
     <CustomLink href={slug} as={slug} className="my-auto text-xl group sm:mr-3 sm:col-span-2">
       <Image
         className="object-cover w-32 transition ease-in-out rounded-md shadow-md sm:w-full sm:col-span-2 aspect-square group-hover:ring-4 ring-gb-highlight"
-        src={
-          thumbnailUrl ||
-          'https://res.cloudinary.com/hokaspokas/image/upload/v1663215741/goosebumpsfm/generic_Thumb.svg'
-        }
+        src={thumbnailUrl || DEFAULT_IMAGE_URL}
         alt={`Thumbnail image for post titled - ${title}`}
         width={320}
         height={320}

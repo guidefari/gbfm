@@ -28,6 +28,7 @@ module.exports = withContentlayer({
       'res.cloudinary.com', // cloudinary images
       'images-ak.spotifycdn.com', // New spotify images url?
       'image-cdn-ak.spotifycdn.com',
+      'd20tmfka7s58bt.cloudfront.net' // img-omg
     ],
   },
 })
