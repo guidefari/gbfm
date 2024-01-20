@@ -40,6 +40,7 @@ export default async (
       previewUrl: item.preview_url,
       title: item.name,
       trackUrl: item.external_urls.spotify,
+      albumImageUrl
     })
   )
 
