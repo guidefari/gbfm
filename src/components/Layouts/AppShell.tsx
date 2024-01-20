@@ -10,14 +10,13 @@ type Props = {
 export default function AppShell({ children }: Props) {
   return (
     <>
-      <main className="flex flex-col justify-between h-full overflow-hidden font-jetbrains">
+      <main className="flex flex-col justify-between h-full overflow-hidden font-jetbrains max-h-dvh overflow-y-auto">
         {children}
+        <footer className="px-5 mb-24">
+          <SuperHero />
+          <Newsletter />
+        </footer>
       </main>
-      <hr className="w-full h-1 my-8 border-2 bg-gb-bg" />
-      <footer className="px-5 mb-24">
-        <SuperHero />
-        <Newsletter />
-      </footer>
       <Nav />
     </>
   )
