@@ -1,11 +1,12 @@
-import { AlbumApiResponse, PlaylistApiResponse, Track } from '@/lib/types'
+import { Track } from '@/lib/types'
 import { GB } from './common/icons'
-import { MinimalCard } from './common/MinimalCard'
 import * as ScrollArea from '@radix-ui/react-scroll-area'
 import { PlayPauseButton } from './PlayPauseButton'
 import Image from 'next/image'
 import { cn } from '@/lib/util'
 import { DEFAULT_IMAGE_URL } from '../constants'
+import Link from 'next/link'
+import clsx from 'clsx'
 
 type Props = {
   loading: boolean
@@ -16,6 +17,7 @@ type Props = {
   genres?: string[]
   blurb?: string
   children?: React.ReactNode
+  url: string
 }
 
 export function MultiTrack({
@@ -27,6 +29,7 @@ export function MultiTrack({
   genres,
   blurb,
   children,
+  url,
 }: Props) {
   if (loading) {
     return (
@@ -40,14 +43,16 @@ export function MultiTrack({
 
   return (
     <section className="p-3 my-5 border-2 rounded-lg not-prose min-w-fit border-gb-pastel-green-2 md:px-7 ">
-      <h5 className="my-2">
-        {artists} - {title}
-      </h5>
+      <Link href={url}>
+        <h5 className="my-2">
+          {artists} - {title}
+        </h5>
+      </Link>
       <div className="w-full grid-cols-3 gap-4 md:grid">
-        <div className="col-span-1">
+        <div className="col-span-1 mb-3 md:mb-0">
           <Image
             className={cn(
-              'object-cover mt-1 mb-0 w-full rounded-md  aspect-square  mx-auto',
+              'object-cover max-w-44 md:max-w-full mt-1 mb-0 rounded-md  aspect-square  mx-auto',
               loading ? 'scale-102 blur-2xl' : 'scale-100 blur-0'
             )}
             src={coverImageUrl || DEFAULT_IMAGE_URL}
@@ -73,11 +78,19 @@ export function MultiTrack({
             <ScrollArea.Viewport className="h-full bg-gb-bg">
               <ul className="p-0">
                 {tracks.map((track, index) => (
-                  <li className="m-0 list-none" key={`${track.trackUrl} - ${index}`}>
-                    <div className="flex items-center p-0 mt-0 mb-2 space-x-1 text-white group hover:cursor-pointer Tag hover:text-green-300">
+                  <li className="" key={`${track.trackUrl} - ${index}`}>
+                    <div
+                      className={clsx(
+                        'flex items-center  mb-2 space-x-1 text-white group Tag'
+                        // track.previewUrl?.length > 0 && ' hover:cursor-pointer'
+                      )}
+                    >
                       {track.previewUrl?.length > 0 && (
                         <button
-                          className="opacity-50 text-sky-300 group-hover:text-gb-tomato group-hover:opacity-95"
+                          className={clsx(
+                            'opacity-50 text-sky-300 hover:text-gb-tomato hover:opacity-95 hover:cursor-pointer',
+                            'mr-2'
+                          )}
                           type="button"
                           title="Play/Pause"
                         >

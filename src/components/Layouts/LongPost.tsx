@@ -42,7 +42,7 @@ export const LongPost = ({
       />
 
       <div className="relative grid grid-flow-row md:grid-flow-col md:grid-cols-3 md:space-x-5">
-        <div className="md:ml-2 mt-6 break-words rounded-md w-fit mx-auto md:max-w-[30%] md:fixed md:top-0 min-h-screen self-start md:col-span-1">
+        <div className="md:ml-2 mt-6 break-words rounded-md w-fit px-2 md:mx-auto md:max-w-[30%] md:fixed md:top-0 md:min-h-screen self-start md:col-span-1">
           {mp3Url ? (
             <MinimalCard
               title={title}
@@ -65,7 +65,7 @@ export const LongPost = ({
               quality={100}
             />
           )}
-          <h4 className="mx-2 text-left md:mx-0 text-gb-pastel-green-2">{title}</h4>
+          <h4 className="text-left md:mx-0 text-gb-pastel-green-2">{title}</h4>
           {date && <LilDate date={date} />}
           {youtubeId && (
             <iframe

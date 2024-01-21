@@ -1,12 +1,7 @@
-import React, { useState } from 'react'
-import * as ScrollArea from '@radix-ui/react-scroll-area'
+import React from 'react'
 import fetcher from 'src/lib/fetcher'
 import useSWR from 'swr'
-import Image from 'next/image'
-import { PlaylistApiResponse, TrackAPIResponse } from 'src/lib/types'
-import { MinimalCard } from './common/MinimalCard'
-import { GB } from './common/icons'
-import Track from './Track'
+import { PlaylistApiResponse } from 'src/lib/types'
 import { MultiTrack } from './MultiTrack'
 
 interface Props {
@@ -31,6 +26,7 @@ export default function Playlist({ url, genres, blurb, children }: Props) {
       tracks={data?.tracks || []}
       genres={genres || null}
       blurb={blurb || ''}
+      url={data?.playlistUrl}
     >
       {children}
     </MultiTrack>
