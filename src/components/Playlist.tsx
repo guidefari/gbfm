@@ -26,7 +26,7 @@ export default function Playlist({ url, genres, blurb, children }: Props) {
       tracks={data?.tracks || []}
       genres={genres || null}
       blurb={blurb || ''}
-      url={data?.playlistUrl}
+      url={data?.playlistUrl || ''}
     >
       {children}
     </MultiTrack>

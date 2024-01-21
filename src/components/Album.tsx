@@ -27,7 +27,7 @@ export default function Album({ url, genres, blurb, children }: Props) {
       tracks={data?.tracks || []}
       genres={genres || null}
       blurb={blurb || ''}
-      url={data?.albumUrl}
+      url={data?.albumUrl || ''}
     >
       {children}
     </MultiTrack>
