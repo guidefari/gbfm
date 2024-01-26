@@ -1,9 +1,9 @@
 import { Post } from '.contentlayer/generated/types'
 import { PostCard } from '@/components/PostCard'
-import { allMixes, allPosts } from '@/contentlayer/generated'
+import { PageTitle } from '@/components/common/PageTitle'
+import { allPosts } from '@/contentlayer/generated'
 import { DEFAULT_IMAGE_URL } from '@/src/constants'
 import { compareDesc } from 'date-fns'
-import Link from 'next/link'
 import React from 'react'
 
 export const Words = () => {
@@ -13,8 +13,8 @@ export const Words = () => {
   const draftsFilteredOut = posts.filter((post) => post?.draft !== true)
 
   return (
-    <section className="mt-28" id="words">
-      <div className="text-4xl font-bold sm:text-6xl md:text-7xl">Playlists & words</div>
+    <section id="words">
+      <PageTitle title="Playlists & words" />
       <div className="curated-posts">
         {draftsFilteredOut.map((post: Post) => (
           <PostCard

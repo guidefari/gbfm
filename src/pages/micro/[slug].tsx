@@ -30,6 +30,7 @@ const PostLayout = ({ tweet }: { tweet: Tweet }) => (
         date={tweet.date}
         handle={tweet.handle}
         content={tweet.body.code}
+        url={tweet.url}
         underline={false}
       />
     </article>

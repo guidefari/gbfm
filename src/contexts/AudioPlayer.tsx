@@ -89,7 +89,7 @@ type AudioPlayerContext = [
   },
   playAudio: boolean,
   thumbnailUrl: string,
-  progress: number
+  progress: number,
 ]
 
 type Props = {

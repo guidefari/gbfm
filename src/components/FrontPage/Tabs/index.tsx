@@ -13,21 +13,21 @@ interface Tab {
 
 const tabs: Tab[] = [
   {
-    title: 'Mixes',
-    value: <Mixes />,
-  },
-  {
     title: 'Words',
     value: <Words />,
+  },
+  {
+    title: 'Less Words',
+    value: <Bsides />,
+  },
+  {
+    title: 'Mixes',
+    value: <Mixes />,
   },
 
   {
     title: 'Labels',
     value: <Labels />,
-  },
-  {
-    title: 'B-sides',
-    value: <Bsides />,
   },
 ]
 
@@ -36,7 +36,7 @@ interface TabsProps {}
 const Tabs = (props: TabsProps) => {
   return (
     <TabsPrimitive.Root defaultValue={tabs[0].title}>
-      <TabsPrimitive.List className="flex w-full rounded-t-lg sticky top-0">
+      <TabsPrimitive.List className="sticky top-0 flex w-full rounded-t-lg">
         {tabs.map(({ title, value }) => (
           <TabsPrimitive.Trigger
             key={`tab-trigger-${title}`}

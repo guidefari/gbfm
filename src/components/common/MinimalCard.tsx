@@ -3,7 +3,7 @@ import React from 'react'
 import { FaDownload } from 'react-icons/fa'
 import { DEFAULT_IMAGE_URL } from '@/src/constants'
 import { PlayPauseButton } from '../PlayPauseButton'
-import { cn } from '@/lib/util'
+import { cn, copyToClipboard } from '@/lib/util'
 
 // this component needs to support:
 // stream link to spotify
@@ -42,6 +42,8 @@ export const MinimalCard: React.FC<Props> = ({
     const safeDlUrl = encodeURIComponent(previewUrl)
     return `/api/dl?fileUrl=${safeDlUrl}&title=${safeTitle}`
   }
+
+  const artistsAndTitle = `${artists ?? null} ${' - '} ${title ?? null}`
 
   return (
     <div
@@ -84,10 +86,11 @@ export const MinimalCard: React.FC<Props> = ({
         )}
 
         {!hideTitle && (
-          <p className="mt-3 text-sm font-medium leading-6">
-            {artists ?? null}
-            {' - '}
-            {title ?? null}
+          <p
+            onClick={() => copyToClipboard(artistsAndTitle)}
+            className="mt-3 text-sm font-medium leading-6"
+          >
+            {artistsAndTitle}
           </p>
         )}
         {(blurb || children) && (
