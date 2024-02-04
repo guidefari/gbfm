@@ -2,10 +2,10 @@ import siteMetadata from '@/src/siteMetadata';
 import { NextApiRequest, NextApiResponse } from 'next';
 import { allMixes } from '@/contentlayer/generated'
 import fetch from 'node-fetch';
+import { DEFAULT_IMAGE_URL } from '@/src/constants';
 
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
-  const DEFAULT_IMAGE_URL = 'https://res.cloudinary.com/hokaspokas/image/upload/v1663215495/goosebumpsfm/spotify_filler.png'
 
   try {
     const mixesRSSified = await Promise.all(allMixes.map(async (mix) => {
