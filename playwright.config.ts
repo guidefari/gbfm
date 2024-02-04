@@ -16,6 +16,8 @@ const PORT = process.env.PORT || 3000
 // Set webServer.url and use.baseURL with the location of the WebServer respecting the correct set port
 const baseURL = `http://localhost:${PORT}`
 
+const command = process.env.CI ? 'yarn build && yarn start' : 'yarn dev'
+
 export default defineConfig({
   testDir: './e2e',
   /* Run tests in files in parallel */
@@ -76,7 +78,7 @@ export default defineConfig({
   ],
 
   webServer: {
-    command: 'npm run dev',
+    command,
     url: baseURL,
     timeout: 120 * 1000,
     reuseExistingServer: !process.env.CI,
