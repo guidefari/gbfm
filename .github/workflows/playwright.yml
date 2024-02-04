@@ -16,7 +16,7 @@ jobs:
         id: waitForVercelPreviewDeployment
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          max_timeout: 600
+          max_timeout: 60
   
   test:
     timeout-minutes: 60
@@ -33,7 +33,7 @@ jobs:
     - name: Run Playwright tests
       run: yarn playwright test
       env:
-        PLAYWRIGHT_TEST_BASE_URL: ${{ github.event.deployment_status.target_url }}
+        PLAYWRIGHT_TEST_BASE_URL: ${{ needs.test_setup.outputs.preview_url }}
     - uses: actions/upload-artifact@v3
       if: always()
       with:
