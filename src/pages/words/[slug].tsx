@@ -11,7 +11,7 @@ export const getStaticPaths = () => {
 
 export const getStaticProps = ({ params }) => {
   const post: Post = allPosts.find(
-    (singlePost) => singlePost._raw.flattenedPath === `curated/${params.slug}`
+    (singlePost) => singlePost._raw.flattenedPath === `words/${params.slug}`
   )
 
   return {

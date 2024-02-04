@@ -12,7 +12,7 @@ export default function Index() {
     <>
       <PageSEO title="goosebumps.fm/micro" description="Micro posts and archived tweets." />
       <PageTitle
-        title="B-sides"
+        title="Less Words"
         description="Too small to be an entire post. Kind of like a tweet. Sometimes ephemeral thoughts"
       />
 

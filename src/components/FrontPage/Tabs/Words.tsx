@@ -14,7 +14,7 @@ export const Words = () => {
 
   return (
     <section id="words">
-      <PageTitle title="Playlists & words" />
+      <PageTitle title="Words" />
       <div className="curated-posts">
         {draftsFilteredOut.map((post: Post) => (
           <PostCard
