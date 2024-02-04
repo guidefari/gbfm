@@ -1,5 +1,5 @@
 import React from 'react'
-import CustomLink from '../CustomLink'
+import Link from 'next/link'
 
 export const SuperHero = () => (
   <section className="pb-8 body-font">
@@ -10,6 +10,11 @@ export const SuperHero = () => (
           <br />
           <span className="text-highlight">fm</span>
         </h1>
+        <div className="w-full text-right">
+          <Link href="/words">Words</Link>, <Link href="/labels">Labels</Link>,{' '}
+          <Link href="/mixes">Mixes</Link>, <Link href="/micro">Less Words</Link>,{' '}
+          <Link href={'/newslater'}>Newsletter</Link>, <Link href={'/rss.xml'}>Mixes via RSS</Link>
+        </div>
       </div>
     </div>
   </section>

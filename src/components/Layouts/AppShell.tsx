@@ -1,5 +1,4 @@
 import React from 'react'
-import { Newsletter } from '../Newsletter'
 import Nav from '../Nav'
 import { SuperHero } from './SuperHero'
 
@@ -10,11 +9,10 @@ type Props = {
 export default function AppShell({ children }: Props) {
   return (
     <>
-      <main className="flex flex-col justify-between h-full overflow-hidden font-jetbrains max-h-dvh overflow-y-auto">
+      <main className="flex flex-col justify-between h-full overflow-hidden overflow-y-auto font-jetbrains max-h-dvh">
         {children}
         <footer className="px-5 mb-24">
           <SuperHero />
-          <Newsletter />
         </footer>
       </main>
       <Nav />

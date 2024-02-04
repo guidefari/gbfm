@@ -21,10 +21,6 @@ module.exports = withContentlayer({
     },
   ],
 
-  experimental: {
-    scrollRestoration: true,
-  },
-
   images: {
     remotePatterns: hostnames.map(hostname => ({
       protocol: 'https',
