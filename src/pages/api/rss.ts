@@ -24,7 +24,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
         }
           <itunes:image href="${mix.thumbnailUrl ?? DEFAULT_IMAGE_URL}"/>
           <itunes:subtitle>${mix.title}</itunes:subtitle>
-          <itunes:summary>${encodeXML(mix.description)}</itunes:summary $&>
+          <itunes:summary>${encodeXML(mix.description)}</itunes:summary>
           ${mix.genres ? `<itunes:keywords>${mix.genres.join(', ')}</itunes:keywords>`: ''}
           <itunes:author>Guide Fari</itunes:author>
           <dc:creator>Guide Fari</dc:creator>
