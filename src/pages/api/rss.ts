@@ -7,12 +7,9 @@ import fetch from 'node-fetch';
 export default async (req: NextApiRequest, res: NextApiResponse) => {
   const DEFAULT_IMAGE_URL = 'https://res.cloudinary.com/hokaspokas/image/upload/v1663215495/goosebumpsfm/spotify_filler.png'
 
-  let count = 0
-
   try {
     const mixesRSSified = await Promise.all(allMixes.map(async (mix) => {
       const url = `https://${req.headers.host}${mix.url}`;
-      count++
       const { headers } = await fetch(mix.mp3Url)
       const contentLength = headers.get('content-length')
 
@@ -23,14 +20,12 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
           <enclosure url="${mix.mp3Url}" type="audio/mpeg" length="${contentLength}"/>
           <pubDate>${new Date(mix.date).toUTCString()}</pubDate>
           ${mix.description ?
-        `<description>${mix.description}. Get the tracklist and more a immersive experience over at ${url}</description>` : ''
+        `<description>${encodeXML(mix.description)}. Get the tracklist and more a immersive experience over at ${url}</description>` : ''
         }
           <itunes:image href="${mix.thumbnailUrl ?? DEFAULT_IMAGE_URL}"/>
           <itunes:subtitle>${mix.title}</itunes:subtitle>
-          <itunes:summary>${mix.description}</itunes:summary>
-          ${mix.genres ? `
-            <itunes:keywords>${mix.genres.join(', ')}</itunes:keywords>
-          `: ''}
+          <itunes:summary>${encodeXML(mix.description)}</itunes:summary>
+          ${mix.genres ? `<itunes:keywords>${mix.genres.join(', ')}</itunes:keywords>`: ''}
           <itunes:author>Guide Fari</itunes:author>
           <dc:creator>Guide Fari</dc:creator>
           <itunes:explicit>no</itunes:explicit>
@@ -38,8 +33,6 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     }))
       ;
 
-      console.log(mixesRSSified.join(''))
-    // console.log(count)
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
         <rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd">
         <channel>
@@ -75,3 +68,11 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
     return res.status(500).json({ error: e.message || '' });
   }
 };
+
+const encodeXML = (str: string) =>
+str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
