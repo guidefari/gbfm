@@ -30,14 +30,15 @@ export const LongPost = ({
 }: Props) => {
   const MDXContent = useMDXComponent(content)
   const encoded_title = encodeURIComponent(title)
-  const full_default_url = `https://goosebumps.fm/api/og?title=${encoded_title}`
+  // const full_default_url = `https://goosebumps.fm/api/og?title=${encoded_title}`
+  // console.log('full_default_url:', full_default_url)
 
   return (
     <>
       <PageSEO
         title={title}
         description={description || 'Goosebumps.fm curated sounds'}
-        ogImageUrl={thumbnailUrl || full_default_url}
+        ogImageUrl={thumbnailUrl || DEFAULT_IMAGE_URL}
         canonicalUrl={canonicalUrl || null}
       />
 
@@ -54,10 +55,7 @@ export const LongPost = ({
           ) : (
             <Image
               className="rounded-md "
-              src={
-                thumbnailUrl ||
-                'https://res.cloudinary.com/hokaspokas/image/upload/v1663215741/goosebumpsfm/generic_Thumb.svg'
-              }
+              src={thumbnailUrl || DEFAULT_IMAGE_URL}
               alt={`Thumbnail image for post titled - ${title}`}
               width={320}
               height={320}
