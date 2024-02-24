@@ -11,8 +11,8 @@ export const SuperHero = () => (
           <span className="text-highlight">fm</span>
         </h1>
         <div className="w-full text-right">
-          <Link href="/words">Words</Link>, <Link href="/labels">Labels</Link>,{' '}
-          <Link href="/mixes">Mixes</Link>, <Link href="/micro">Less Words</Link>,{' '}
+          <Link href="/words">Words</Link>, <Link href="/micro">Less Words</Link>,{' '}
+          <Link href="/labels">Labels</Link>, <Link href="/mixes">Mixes</Link>,{' '}
           <Link href={'/newslater'}>Newsletter</Link>, <Link href={'/rss.xml'}>Mixes via RSS</Link>
         </div>
       </div>

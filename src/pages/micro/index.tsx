@@ -19,7 +19,7 @@ export default function Index() {
       <div className="max-w-4xl mx-auto mb-4">
         {tweets.map((tweet: TweetType, index) => (
           <div
-            className="transition duration-300 ease-in-out delay-100 opacity-90 hover:opacity-100 "
+            className="transition duration-300 ease-in-out delay-100 opacity-90 hover:opacity-100"
             key={index}
           >
             <Tweet
