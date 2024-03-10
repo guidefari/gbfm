@@ -47,7 +47,7 @@ export const MinimalCard: React.FC<Props> = ({
 
   return (
     <div
-      className={`not-prose relative z-10 flex-shrink-0 max-w-md my-8 border-2 border-t-0 border-l-0 rounded-md md:max-w-xs border-gb-tomato ${className}`}
+      className={`not-prose relative z-10 min-w-64 flex-shrink-0 max-w-md my-8 border-2 border-t-0 border-l-0 rounded-md md:max-w-xs border-gb-tomato ${className}`}
     >
       <div className="relative flex-shrink-0 mb-4 sm:mb-0 sm:mr-4 group">
         <Image
