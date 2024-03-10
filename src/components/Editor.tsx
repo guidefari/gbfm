@@ -59,7 +59,7 @@ export const Example = () => {
         className="w-full rounded-lg min-h-56 overrides"
         ref={ref}
         markdown={''} // the contents of the file  below
-        onChange={() => console.log(ref.current.getMarkdown())}
+        onChange={() => console.log(ref?.current?.getMarkdown())}
         plugins={[
           frontmatterPlugin({ slug: 'uo' }),
           jsxPlugin({ jsxComponentDescriptors }),

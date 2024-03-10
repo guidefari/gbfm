@@ -1,4 +1,5 @@
 import querystring from 'querystring'
+import { AccessTokenResponse, PlaylistInput } from './types'
 
 const client_id = process.env.SPOTIFY_CLIENT_ID
 const client_secret = process.env.SPOTIFY_CLIENT_SECRET
@@ -111,7 +112,7 @@ export const getUsersPlaylists = async ({
   offset = 0,
   next_url,
 }: PlaylistInput) => {
-  const { access_token } = await getAccessToken(refresh_token)
+  const { access_token } = await getClientSideAcessToken(refresh_token)
   const url =
     next_url ?? `https://api.spotify.com/v1/users/${user_id}/playlists?limit=50&offset=${offset}`
 
@@ -120,4 +121,20 @@ export const getUsersPlaylists = async ({
       Authorization: `Bearer ${access_token}`,
     },
   })
+}
+
+const getClientSideAcessToken = async (refresh_token: string): Promise<AccessTokenResponse> => {
+  const response = await fetch(TOKEN_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${basic}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      grant_type: 'refresh_token',
+      refresh_token,
+    }),
+  })
+
+  return response.json()
 }

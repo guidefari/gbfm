@@ -47,7 +47,7 @@
         "name": "next"
       }
     ],
-    "strictNullChecks": true
+    // "strictNullChecks": true
   },
   "include": [
     "next-env.d.ts",
@@ -55,8 +55,7 @@
     "**/*.tsx",
     ".contentlayer/generated",
     ".eslintrc.js",
-    "src/lib/types/index.d.ts",
-    "src/pages/auth/[...nextauth].js",
+    "src/lib/types/*.ts",
     ".next/types/**/*.ts"
   ],
   "exclude": [

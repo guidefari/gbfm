@@ -24,7 +24,7 @@ export default function Playlist({ url, genres, blurb, children }: Props) {
       title={data?.title || ''}
       artists={data?.ownerName || ''}
       tracks={data?.tracks || []}
-      genres={genres || null}
+      genres={genres}
       blurb={blurb || ''}
       url={data?.playlistUrl || ''}
     >

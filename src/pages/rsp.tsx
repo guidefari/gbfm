@@ -1,7 +1,35 @@
+import { DefaultSession } from 'next-auth'
 import { useSession, signIn, signOut } from 'next-auth/react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useState } from 'react'
+
+declare module 'next-auth' {
+  /**
+   * Returned by `useSession`, `getSession` and received as a prop on the `SessionProvider` React Context
+   */
+
+  interface Session {
+    session: {
+      user: {
+        name: string
+        email: string
+        image: string
+      }
+      expires: string
+    }
+    token: {
+      name: string
+      email: string
+      picture: string
+      sub: string
+      accessToken: string
+      iat: number
+      exp: number
+      jti: string
+    } & DefaultSession['user']
+  }
+}
 
 export default function RSP() {
   const { data: session } = useSession()
