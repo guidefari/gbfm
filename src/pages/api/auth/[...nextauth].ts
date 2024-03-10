@@ -28,7 +28,7 @@ const authOptions = {
             }
             return token
         },
-        async session({ session, user, token }) {
+        async session(session, user) {
             session.user = user
             return session
         },
@@ -37,4 +37,6 @@ const authOptions = {
 
 
 
+
+// @ts-expect-error
 export default NextAuth(authOptions)
