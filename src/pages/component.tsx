@@ -1,4 +1,3 @@
-import { Tabs } from '@/components/FrontPage/Tabs'
 import Track from '@/components/Track'
 import HorizontalScrollCards from '@/components/common/HorizontalScrollCards'
 

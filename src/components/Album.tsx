@@ -25,7 +25,7 @@ export default function Album({ url, genres, blurb, children }: Props) {
       title={data?.title || ''}
       artists={data?.artists || ''}
       tracks={data?.tracks || []}
-      genres={genres || null}
+      genres={genres}
       blurb={blurb || ''}
       url={data?.albumUrl || ''}
     >

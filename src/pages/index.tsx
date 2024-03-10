@@ -1,5 +1,4 @@
 import { PageSEO } from 'src/components/SEO'
-import { Tabs } from '@/components/FrontPage/Tabs'
 import { useEffect } from 'react'
 import { useRouter } from 'next/router'
 

@@ -39,7 +39,7 @@ export const LongPost = ({
         title={title}
         description={description || 'Goosebumps.fm curated sounds'}
         ogImageUrl={thumbnailUrl || DEFAULT_IMAGE_URL}
-        canonicalUrl={canonicalUrl || null}
+        canonicalUrl={canonicalUrl}
       />
 
       <div className="relative grid grid-flow-row md:grid-flow-col md:grid-cols-3 md:space-x-5">

@@ -85,7 +85,7 @@ export function MultiTrack({
                         // track.previewUrl?.length > 0 && ' hover:cursor-pointer'
                       )}
                     >
-                      {track.previewUrl?.length > 0 && (
+                      {track.previewUrl?.length && (
                         <button
                           className={clsx(
                             'opacity-50 text-sky-300 hover:text-gb-tomato hover:opacity-95 hover:cursor-pointer',

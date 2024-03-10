@@ -38,6 +38,7 @@ export const MinimalCard: React.FC<Props> = ({
   hideTitle,
 }) => {
   const constructUrl = () => {
+    if (!previewUrl) return
     const safeTitle = encodeURIComponent(title)
     const safeDlUrl = encodeURIComponent(previewUrl)
     return `/api/dl?fileUrl=${safeDlUrl}&title=${safeTitle}`
@@ -74,7 +75,7 @@ export const MinimalCard: React.FC<Props> = ({
           </p>
         )}
 
-        {previewUrl?.length > 0 && (
+        {previewUrl?.length && (
           <div className="flex my-2 space-x-3 align-bottom ">
             <PlayPauseButton url={previewUrl} thumbnailUrl={imageUrl} />
             {download && (
