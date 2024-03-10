@@ -53,3 +53,61 @@ export type AlbumApiResponse = {
   tracks: AlbumSingleTrackApiResponse[]
   albumUrl: string
 }
+
+export type PlaylistInput = {
+  refresh_token: string
+  user_id: string
+  offset?: number
+  next_url?: string
+}
+
+type ExternalUrls = {
+  spotify: string
+}
+
+type Image = {
+  height: number | null
+  url: string
+  width: number | null
+}
+
+type Owner = {
+  display_name: string
+  external_urls: ExternalUrls
+  href: string
+  id: string
+  type: string
+  uri: string
+}
+
+type Tracks = {
+  href: string
+  total: number
+}
+
+type PlaylistItem = {
+  collaborative: boolean
+  description: string
+  external_urls: ExternalUrls
+  href: string
+  id: string
+  images: Image[]
+  name: string
+  owner: Owner
+  primary_color: string | null
+  public: boolean
+  snapshot_id: string
+  tracks: Tracks
+  type: string
+  uri: string
+}
+
+export type PlaylistResponse = {
+  href: string
+  items: PlaylistItem[]
+  limit: number
+  next: string | null
+  offset: number
+  previous: string | null
+  total: number
+}

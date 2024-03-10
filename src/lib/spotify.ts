@@ -104,3 +104,20 @@ export const getUserDetails = async (id) => {
 
   return response.json()
 }
+
+export const getUsersPlaylists = async ({
+  refresh_token,
+  user_id,
+  offset = 0,
+  next_url,
+}: PlaylistInput) => {
+  const { access_token } = await getAccessToken(refresh_token)
+  const url =
+    next_url ?? `https://api.spotify.com/v1/users/${user_id}/playlists?limit=50&offset=${offset}`
+
+  return fetch(url, {
+    headers: {
+      Authorization: `Bearer ${access_token}`,
+    },
+  })
+}
