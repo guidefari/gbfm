@@ -33,3 +33,5 @@ export default function Track({ url, genres, blurb, children }: Props) {
     </div>
   )
 }
+
+export { Track }
