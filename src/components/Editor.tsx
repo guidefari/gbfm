@@ -2,7 +2,6 @@ import '@mdxeditor/editor/style.css'
 import {
   MDXEditor,
   UndoRedo,
-  BoldItalicUnderlineToggles,
   toolbarPlugin,
   MDXEditorMethods,
   InsertFrontmatter,
@@ -11,72 +10,28 @@ import {
   insertJsx$,
   JsxComponentDescriptor,
   GenericJsxEditor,
-  NestedLexicalEditor,
   jsxPlugin,
 } from '@mdxeditor/editor'
 import { useRef } from 'react'
-import Track from './Track'
 
-// export default function App() {
-//   const ref = useRef<MDXEditorMethods>(null)
-
-//   const spotifyTrack = `%3CTrack%20url%3D%22%22%3E`
-
-//   return (
-//     <>
-//       <button onClick={() => ref.current?.insertMarkdown(spotifyTrack)}>
-//         inserting new markdown
-//       </button>
-//       <MDXEditor
-//         ref={ref}
-//         markdown="Let me tell you something"
-//         plugins={[
-//           frontmatterPlugin(),
-//           toolbarPlugin({
-//             toolbarContents: () => (
-//               <>
-//                 {' '}
-//                 <UndoRedo />
-//                 <BoldItalicUnderlineToggles />
-//                 <InsertFrontmatter />
-//                 {/* <InsertMyLeaf /> */}
-//               </>
-//             ),
-//           }),
-//         ]}
-//       />
-//     </>
-//   )
-// }
-
-// const InsertMyLeaf = () => {
-//   const insertJsx = usePublisher(insertJsx$)
-//   return <button onClick={() => insertJsx(<Track url="" />)}>Leaf</button>
-// }
+const SpotifyEmbeds = ['Track', 'Album', 'Playlist'] as const
 
 const jsxComponentDescriptors: JsxComponentDescriptor[] = [
-  {
-    name: 'Track',
-    kind: 'flow', // 'text' for inline, 'flow' for block
-    props: [{ name: 'url', type: 'string' }],
+  ...SpotifyEmbeds.map((name) => ({
+    name,
+    kind: 'text' as const, // 'text' for inline, 'flow' for block
+    props: [{ name: 'url', type: 'string' as const }],
     Editor: GenericJsxEditor,
-  },
-  {
-    name: 'Album',
-    kind: 'flow', // 'text' for inline, 'flow' for block
-    props: [{ name: 'url', type: 'string' }],
-    Editor: GenericJsxEditor,
-  },
+  })),
 ]
 
-// a toolbar button that will insert a JSX element into the editor.
-const InsertMyLeaf = () => {
+const EmbedSpotifyJSX = () => {
   const insertJsx = usePublisher(insertJsx$)
 
-  const clickHandler = (name: 'Album' | 'Track') => {
+  const clickHandler = (name: 'Album' | 'Track' | 'Playlist') => {
     insertJsx({
       name,
-      kind: 'flow',
+      kind: 'text',
       props: { url: '' },
     })
   }
@@ -85,27 +40,23 @@ const InsertMyLeaf = () => {
     <>
       <button onClick={() => clickHandler('Track')}>Track</button>
       <button onClick={() => clickHandler('Album')}>Album</button>
+      <button onClick={() => clickHandler('Playlist')}>Playlist</button>
     </>
   )
 }
 
-const jsxMarkdown = ` ---
-slug: hello-world
----
+const jsxMarkdown = `
 
 this is a cool markdown
 `
 
 export const Example = () => {
-  const yo = () => {
-    console.log(JSON.stringify(ref?.current?.getMarkdown()))
-  }
-
   const ref = useRef<MDXEditorMethods>(null)
 
   return (
-    <>
+    <section className="w-full max-w-4xl mx-auto border-y-gb-pastel-green-2 border-y-2 md:w-3/4">
       <MDXEditor
+        className="w-full rounded-lg min-h-56 overrides"
         ref={ref}
         markdown={''} // the contents of the file  below
         onChange={() => console.log(ref.current.getMarkdown())}
@@ -115,15 +66,18 @@ export const Example = () => {
           toolbarPlugin({
             toolbarContents: () => (
               <>
-                <InsertMyLeaf />
+                <EmbedSpotifyJSX />
                 <InsertFrontmatter />
+                <UndoRedo />
               </>
             ),
           }),
         ]}
       />
-      <button onClick={yo}>chek</button>
-    </>
+      <div className="flex flex-row-reverse ">
+        <button className="my-2 ">Send It</button>
+      </div>
+    </section>
   )
 }
 
