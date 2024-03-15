@@ -10,7 +10,9 @@ const hostnames = [
   'images-ak.spotifycdn.com', // New spotify images url?
   'image-cdn-ak.spotifycdn.com',
   'd20tmfka7s58bt.cloudfront.net', // img-omg
-  'spotifycdn.com'
+  'spotifycdn.com',
+  '*.spotifycdn.com'
+
 ]
 
 module.exports = withContentlayer({
