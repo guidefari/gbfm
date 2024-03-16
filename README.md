@@ -13,3 +13,8 @@
 - [ ] View content by tag/genre
 - [ ] Sentry
 - [ ] **Virtualized list** for micro posts
+- [ ] copy to clipboard icons
+- [ ] context: tracklist
+- [ ] random playlist can be more UI friendly
+  - [ ] return playlist name, & url
+  - [ ] watch out for the recursive logic. why am I having to dedupe before response?
