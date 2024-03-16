@@ -14,6 +14,9 @@ export const AudioProvider = ({ children }: Props) => {
   const [playAudio, setPlayAudio] = useState(false)
   const [thumbnailUrl, setThumbnailUrl] = useState(LATEST_MIX.thumbnailUrl ?? DEFAULT_IMAGE_URL)
   const [progress, setProgress] = useState(0)
+  const [nowPlayingContext, setNowPlayingContext] = useState<NowPlayingContext>({
+    url: window.location.pathname,
+  })
 
   useEffect(() => {
     audioRef.onended = () => {
@@ -31,11 +34,15 @@ export const AudioProvider = ({ children }: Props) => {
     () => ({
       play: () => {
         setPlayAudio(true)
-        audioRef.play()
+        audioRef?.play()
+        setNowPlayingContext({
+          ...nowPlayingContext,
+          url: window.location.pathname,
+        })
       },
       pause: () => {
         setPlayAudio(false)
-        audioRef.pause()
+        audioRef?.pause()
       },
       togglePlayPause: () => setPlayAudio(!playAudio),
       handleAlbumArtClick: (src: string, thumbnailUrl: string) => {
@@ -69,8 +76,8 @@ export const AudioProvider = ({ children }: Props) => {
   )
 
   const contextValue = useMemo(
-    () => [audioRef, handlers, playAudio, thumbnailUrl, progress],
-    [audioRef, handlers, playAudio, thumbnailUrl, progress]
+    () => [audioRef, handlers, playAudio, thumbnailUrl, progress, nowPlayingContext],
+    [audioRef, handlers, playAudio, thumbnailUrl, progress, nowPlayingContext]
   )
 
   return <AudioContext.Provider value={contextValue}>{children}</AudioContext.Provider>
@@ -90,8 +97,14 @@ type AudioPlayerContext = [
   playAudio: boolean,
   thumbnailUrl: string,
   progress: number,
+  nowPlayingContext: NowPlayingContext,
 ]
 
 type Props = {
   children: ReactNode
+}
+
+type NowPlayingContext = {
+  url: string
+  // tracklist
 }
