@@ -1,4 +1,4 @@
-import { Track } from '@/lib/types'
+import { Track } from '@/src/types'
 import { GB } from './common/icons'
 import * as ScrollArea from '@radix-ui/react-scroll-area'
 import { PlayPauseButton } from './PlayPauseButton'

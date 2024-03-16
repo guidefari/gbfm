@@ -3,7 +3,7 @@ import { useEffect } from 'react'
 import { animate } from 'motion'
 
 import fetcher from 'src/lib/fetcher'
-import { NowPlayingSong } from 'src/lib/types'
+import { NowPlayingSong } from '@/src/types'
 import Image from 'next/image'
 import CustomLink from './CustomLink'
 

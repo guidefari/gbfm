@@ -1,5 +1,5 @@
 import fetcher from 'src/lib/fetcher'
-import { AlbumApiResponse } from 'src/lib/types'
+import { AlbumApiResponse } from '@/src/types'
 import React from 'react'
 import useSWR from 'swr'
 import { MultiTrack } from './MultiTrack'

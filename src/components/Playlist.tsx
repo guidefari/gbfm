@@ -1,7 +1,7 @@
 import React from 'react'
 import fetcher from 'src/lib/fetcher'
 import useSWR from 'swr'
-import { PlaylistApiResponse } from 'src/lib/types'
+import { PlaylistApiResponse } from '@/src/types'
 import { MultiTrack } from './MultiTrack'
 
 interface Props {

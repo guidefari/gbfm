@@ -1,5 +1,5 @@
 import fetcher from 'src/lib/fetcher'
-import { TrackAPIResponse } from 'src/lib/types'
+import { TrackAPIResponse } from '@/src/types'
 import React from 'react'
 import useSWR from 'swr'
 import { MinimalCard } from './common/MinimalCard'
