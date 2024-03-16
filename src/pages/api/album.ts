@@ -1,4 +1,4 @@
-import { AlbumApiResponse, GenericAndMaybeLegacyError, TrackAPIResponse } from 'src/lib/types'
+import { AlbumApiResponse, GenericAndMaybeLegacyError, TrackAPIResponse } from '@/src/types'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getAlbumDetails } from '../../lib/spotify'
 

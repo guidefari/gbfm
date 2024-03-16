@@ -1,4 +1,4 @@
-import { GenericAndMaybeLegacyError, TrackAPIResponse } from 'src/lib/types'
+import { GenericAndMaybeLegacyError, TrackAPIResponse } from '@/src/types'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getTrackDetails } from '../../lib/spotify'
 
