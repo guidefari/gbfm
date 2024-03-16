@@ -1,3 +1,4 @@
+'use client'
 import React, { createContext, ReactNode, useEffect, useMemo, useState } from 'react'
 import { DEFAULT_IMAGE_URL, LATEST_MIX } from '../constants'
 
@@ -15,7 +16,7 @@ export const AudioProvider = ({ children }: Props) => {
   const [thumbnailUrl, setThumbnailUrl] = useState(LATEST_MIX.thumbnailUrl ?? DEFAULT_IMAGE_URL)
   const [progress, setProgress] = useState(0)
   const [nowPlayingContext, setNowPlayingContext] = useState<NowPlayingContext>({
-    url: window.location.pathname,
+    url: typeof window === 'undefined' ? '/' : window.location.pathname,
   })
 
   useEffect(() => {
