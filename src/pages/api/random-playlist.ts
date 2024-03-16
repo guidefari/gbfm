@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { getUsersPlaylists } from '../../lib/spotify';
 import { getSession } from 'next-auth/react';
-import { PlaylistInput, PlaylistResponse } from '@/lib/types';
+import { PlaylistInput, PlaylistResponse } from '@/src/types';
 const fs = require('fs');
 
 const stringsss: string[] = []

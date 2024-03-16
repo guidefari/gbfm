@@ -1,4 +1,3 @@
-import { DefaultSession } from 'next-auth'
 import { useSession, signIn, signOut } from 'next-auth/react'
 import Image from 'next/image'
 import Link from 'next/link'
@@ -10,14 +9,6 @@ declare module 'next-auth' {
    */
 
   interface Session {
-    session: {
-      user: {
-        name: string
-        email: string
-        image: string
-      }
-      expires: string
-    }
     token: {
       name: string
       email: string
@@ -27,7 +18,7 @@ declare module 'next-auth' {
       iat: number
       exp: number
       jti: string
-    } & DefaultSession['user']
+    }
   }
 }
 
