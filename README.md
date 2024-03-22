@@ -18,3 +18,4 @@
 - [ ] random playlist can be more UI friendly
   - [ ] return playlist name, & url
   - [ ] watch out for the recursive logic. why am I having to dedupe before response?
+- [ ] Separate API keys for spotify. dev & prod
