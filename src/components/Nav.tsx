@@ -1,6 +1,6 @@
 import { useAudioPlayerContext } from 'src/contexts/AudioPlayer'
 import { useRouter } from 'next/router'
-import { RxHome } from 'react-icons/rx'
+import { HiHome } from 'react-icons/hi'
 import {
   GiAnticlockwiseRotation,
   GiClockwiseRotation,
@@ -28,7 +28,7 @@ const Nav = () => {
           type="button"
           className=" floating-nav-button"
         >
-          <RxHome className="floating-nav-icon" />
+          <HiHome className="floating-nav-icon" />
         </button>
 
         <>

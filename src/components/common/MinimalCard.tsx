@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import React from 'react'
-import { FaDownload } from 'react-icons/fa'
+import { MdOutlineDownloading } from 'react-icons/md'
 import { DEFAULT_IMAGE_URL } from '@/src/constants'
 import { PlayPauseButton } from '../PlayPauseButton'
 import { cn, copyToClipboard } from '@/lib/util'
@@ -80,7 +80,7 @@ export const MinimalCard: React.FC<Props> = ({
             <PlayPauseButton url={previewUrl} thumbnailUrl={imageUrl} />
             {download && (
               <a type="button" title="Download" href={constructUrl()}>
-                <FaDownload className="default-icon h-[16px]" />
+                <MdOutlineDownloading className="default-icon h-[16px]" />
               </a>
             )}
           </div>

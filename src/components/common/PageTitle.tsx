@@ -7,9 +7,9 @@ type Props = {
 
 export const PageTitle = ({ title, description }: Props) => {
   return (
-    <div className="flex flex-col py-5 md:items-center md:flex-row">
+    <div className="flex flex-col p-3">
       <h2 className="my-0 underline">{title}</h2>
-      {description && <p className="max-w-xl px-4">{description}</p>}
+      {description && <p className="max-w-xl">{description}</p>}
     </div>
   )
 }

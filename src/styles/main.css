@@ -151,7 +151,7 @@ blockquote:before {
 
 .default-icon {
   color: inherit;
-  @apply w-7 h-7 aspect-square hover:text-gb-tomato;
+  @apply w-6 h-6 cursor-pointer aspect-square hover:text-gb-tomato;
 }
 
 
