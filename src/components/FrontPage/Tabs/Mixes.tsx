@@ -1,19 +1,23 @@
 import { Mix } from '.contentlayer/generated/types'
 import { PostCard } from '@/components/PostCard'
+import { RSS } from '@/components/RSS'
 import { PageTitle } from '@/components/common/PageTitle'
 import { allMixes } from '@/contentlayer/generated'
 import { DEFAULT_IMAGE_URL } from '@/src/constants'
 import { compareDesc } from 'date-fns'
-import Link from 'next/link'
 import React from 'react'
 
 export const Mixes = () => {
   const mixes: Mix[] = allMixes.sort((a, b) => compareDesc(new Date(a.date), new Date(b.date)))
 
   const Description = () => (
-    <>
-      Stream or download on here. Also distribured via <Link href={'/rss.xml'}>RSS</Link>
-    </>
+    <p className="leading-snug">
+      Stream or download on here. <br />
+      Also distribured via <RSS />.<br />
+      <a className="text-sm text-orange-300" href="https://thepodcasting.org/what-is-rss-feed/">
+        What is RSS?
+      </a>
+    </p>
   )
 
   return (

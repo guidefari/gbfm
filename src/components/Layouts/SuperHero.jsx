@@ -1,5 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
+import { RSS } from '../RSS'
 
 export const SuperHero = () => (
   <section className="pb-8 body-font">
@@ -13,7 +14,7 @@ export const SuperHero = () => (
         <div className="w-full text-right">
           <Link href="/words">Words</Link>, <Link href="/micro">Less Words</Link>,{' '}
           <Link href="/labels">Labels</Link>, <Link href="/mixes">Mixes</Link>,{' '}
-          <Link href={'/newslater'}>Newsletter</Link>, <Link href={'/rss.xml'}>Mixes via RSS</Link>
+          <Link href={'/newslater'}>Newsletter</Link>, <RSS />
         </div>
       </div>
     </div>
