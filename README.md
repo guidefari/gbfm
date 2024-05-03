@@ -6,7 +6,7 @@
 - [ ] Video archive infrastructure
   - [ ] direct embedding from S3? instead of embedding youtube videos
 - [ ] Visual arts archive
-- [ ] Add context info to Now Playing
+- [ ] **Add context info to Now Playing**!!
   - [x] url that you pressed play from
 - [ ] Labels page
   - [ ] content & styling
