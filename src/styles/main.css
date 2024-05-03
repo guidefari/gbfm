@@ -141,7 +141,7 @@ blockquote:before {
 }
 
 .floating-nav-button {
-  @apply inline-flex flex-col justify-center max-w-[24px] px-5;
+  @apply inline-flex flex-col justify-center px-5;
   @apply transition ease-in-out hover:underline;
 }
 

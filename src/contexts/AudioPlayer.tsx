@@ -1,6 +1,7 @@
 'use client'
 import React, { createContext, ReactNode, useEffect, useMemo, useState } from 'react'
 import { DEFAULT_IMAGE_URL, LATEST_MIX } from '../constants'
+import { Track } from '../types'
 
 const AudioContext = createContext(null)
 
@@ -107,6 +108,10 @@ type Props = {
 }
 
 type NowPlayingContext = {
+  tracklist: NowPlayingTrack[]
+}
+
+interface NowPlayingTrack
+  extends Required<Pick<Track, 'albumImageUrl' | 'title' | 'trackUrl' | 'artists'>> {
   queuedByUrl: string
-  // tracklist: track[]
 }

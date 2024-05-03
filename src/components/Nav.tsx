@@ -1,14 +1,10 @@
 import { useAudioPlayerContext } from 'src/contexts/AudioPlayer'
 import { useRouter } from 'next/router'
 import { HiHome } from 'react-icons/hi'
-import {
-  GiAnticlockwiseRotation,
-  GiClockwiseRotation,
-  GiPlayButton,
-  GiPauseButton,
-} from 'react-icons/gi'
+import { GiPlayButton, GiPauseButton } from 'react-icons/gi'
 import Image from 'next/image'
 import { useRef } from 'react'
+import { formatSeconds } from '@/lib/util'
 
 const Nav = () => {
   const [audioRef, handlers, isPlaying, thumbnailUrl, progress] = useAudioPlayerContext()
@@ -21,7 +17,7 @@ const Nav = () => {
   }
   return (
     <nav ref={navRef} className="fixed bottom-0 z-50 w-full py-2 space-y-1 bg-sky-900">
-      <div className="relative grid h-full max-w-xs grid-flow-col mx-auto">
+      <div className="relative grid items-center h-full max-w-xs grid-flow-col mx-auto">
         <button
           onClick={() => router.push('/')}
           data-tooltip-target="tooltip-home"
@@ -35,13 +31,10 @@ const Nav = () => {
           <button
             data-tooltip-target="tooltip-wallet"
             type="button"
-            className="floating-nav-button"
+            className="text-xs floating-nav-button"
+            onClick={() => handlers.jumpBackward()}
           >
-            <GiAnticlockwiseRotation
-              onClick={() => handlers.jumpBackward()}
-              className="floating-nav-icon"
-              title="-15s"
-            />
+            {`-15s`}
           </button>
           <button
             type="button"
@@ -58,13 +51,11 @@ const Nav = () => {
           <button
             data-tooltip-target="tooltip-settings"
             type="button"
-            className="floating-nav-button"
+            className="text-xs floating-nav-button"
             title="+30s"
+            onClick={() => handlers.jumpForward()}
           >
-            <GiClockwiseRotation
-              onClick={() => handlers.jumpForward()}
-              className="floating-nav-icon"
-            />
+            {`+30s`}
           </button>
           <Image
             src={thumbnailUrl}
@@ -75,13 +66,15 @@ const Nav = () => {
           />
         </>
       </div>
-      <div className="flex max-w-xl mx-auto rounded-full ">
+      <div className="flex items-center max-w-xl mx-auto space-x-1 rounded-full">
+        <p className="text-xs ">{formatSeconds(audioRef?.currentTime || 0)}</p>
         <input
           type="range"
           value={progress}
           className={`bg-gb-tomato h-2 w-full align-start rounded-full hover:cursor-pointer `}
           onInput={changeRange}
         />
+        <p className="text-xs ">{formatSeconds(audioRef?.duration || 0)}</p>
       </div>
     </nav>
   )
