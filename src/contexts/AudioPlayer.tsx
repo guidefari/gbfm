@@ -108,7 +108,8 @@ type Props = {
 }
 
 type NowPlayingContext = {
-  tracklist: NowPlayingTrack[]
+  url: string
+  // tracklist: NowPlayingTrack[]
 }
 
 interface NowPlayingTrack
