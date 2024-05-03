@@ -27,6 +27,7 @@ export const AudioProvider = ({ children }: Props) => {
   }, [audioRef])
 
   const handleTimeUpdate = () => {
+    console.log('yoo')
     const progress = (audioRef.currentTime / audioRef.duration) * 100 || 0
     setProgress(progress)
   }
@@ -70,6 +71,7 @@ export const AudioProvider = ({ children }: Props) => {
         audioRef.currentTime -= 15
       },
       setTimeUsingPercentage: (percentage: number) => {
+        setProgress(percentage)
         audioRef.currentTime = (percentage / 100) * audioRef.duration
       },
     }),
@@ -106,6 +108,6 @@ type Props = {
 }
 
 type NowPlayingContext = {
-  url: string
-  // tracklist
+  queuedByUrl: string
+  // tracklist: track[]
 }
