@@ -54,15 +54,17 @@ export default function Page() {
               },
               async () => {
                 const fetchData = async () => {
+                  let res
+
                   try {
-                    const res = await fetch('/api/sentry-example-api')
+                    res = await fetch('/api/sentry-example-api')
                     if (!res.ok) {
-                      throw new Error('Failed to fetch data from the server')
+                      throw new Error('yet anoother error message to throw them off?')
                     }
                     // Process the response
                   } catch (error) {
-                    // Handle the error gracefully
-                    console.error('An error occurred while fetching data:', error)
+                    // idk why I can't get the hint to work.{ data: { demoData: 'is this working' } }
+                    Sentry.captureException(error, { data: { demoData: 'is this working' } })
                     // Display a user-friendly message
                     alert('Oops! Something went wrong while fetching data. Please try again later.')
                   }
