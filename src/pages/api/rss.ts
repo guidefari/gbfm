@@ -3,7 +3,7 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { allMixes } from '@/contentlayer/generated'
 import fetch from 'node-fetch';
 import { DEFAULT_IMAGE_URL } from '@/src/constants';
-
+import * as Sentry from '@sentry/nextjs'
 
 export default async (req: NextApiRequest, res: NextApiResponse) => {
 
@@ -20,12 +20,12 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
           <enclosure url="${mix.mp3Url}" type="audio/mpeg" length="${contentLength}"/>
           <pubDate>${new Date(mix.date).toUTCString()}</pubDate>
           ${mix.description ?
-        `<description>${encodeXML(mix.description)}. Get the tracklist and more a immersive experience over at ${url}</description>` : ''
+          `<description>${encodeXML(mix.description)}. Get the tracklist and more a immersive experience over at ${url}</description>` : ''
         }
           <itunes:image href="${mix.thumbnailUrl ?? DEFAULT_IMAGE_URL}"/>
           <itunes:subtitle>${mix.title}</itunes:subtitle>
           <itunes:summary>${encodeXML(mix.description)}</itunes:summary>
-          ${mix.genres ? `<itunes:keywords>${mix.genres.join(', ')}</itunes:keywords>`: ''}
+          ${mix.genres ? `<itunes:keywords>${mix.genres.join(', ')}</itunes:keywords>` : ''}
           <itunes:author>Guide Fari</itunes:author>
           <dc:creator>Guide Fari</dc:creator>
           <itunes:explicit>no</itunes:explicit>
@@ -60,7 +60,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 
     return res.status(200).send(sitemap);
   } catch (e: unknown) {
-    console.log('e:', e)
+    Sentry.captureException(e)
     if (!(e instanceof Error)) {
       throw e;
     }
@@ -70,7 +70,7 @@ export default async (req: NextApiRequest, res: NextApiResponse) => {
 };
 
 const encodeXML = (str: string) =>
-str
+  str
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')

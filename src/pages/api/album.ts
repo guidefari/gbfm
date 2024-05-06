@@ -1,6 +1,7 @@
 import { AlbumApiResponse, GenericAndMaybeLegacyError, TrackAPIResponse } from '@/src/types'
 import { NextApiRequest, NextApiResponse } from 'next'
 import { getAlbumDetails } from '../../lib/spotify'
+import * as Sentry from '@sentry/nextjs'
 
 const { parse } = require('spotify-uri')
 
@@ -20,33 +21,39 @@ export default async (
     id = query?.id
   }
 
-  const response = await getAlbumDetails(id)
-  if (response.status > 400) {
-    return res.status(200).json({ error: 'Album Not Found' })
+  try {
+    const response = await getAlbumDetails(id)
+
+    if (response.status > 400) {
+      return res.status(response.status).json({ error: 'Album Not Found' })
+    }
+
+    const albumType = response.album_type
+    const albumImageUrl = response.images[0].url
+    const title = response.name
+    const artists = response.artists.map((_artist) => _artist.name).join(', ')
+    const albumUrl = response.external_urls.spotify
+
+    const number_of_tracks_in_album = response.tracks.items.length
+    const preview_url_track_number = randomNumberWithinRange(0, number_of_tracks_in_album - 1)
+    const previewUrl = response.tracks.items[preview_url_track_number].preview_url
+    const tracks: TrackAPIResponse[] = response.tracks.items.map(
+      (item): TrackAPIResponse => ({
+        artists: item.artists.map((_artist) => _artist.name).join(', '),
+        previewUrl: item.preview_url,
+        title: item.name,
+        trackUrl: item.external_urls.spotify,
+        albumImageUrl
+      })
+    )
+
+    return res
+      .status(200)
+      .json({ tracks, albumType, albumImageUrl, title, artists, albumUrl, previewUrl })
+  } catch (error) {
+    Sentry.captureException(error)
+    return res.status(500).json({ error: 'Internal Server Error' })
   }
-
-  const albumType = response.album_type
-  const albumImageUrl = response.images[0].url
-  const title = response.name
-  const artists = response.artists.map((_artist) => _artist.name).join(', ')
-  const albumUrl = response.external_urls.spotify
-
-  const number_of_tracks_in_album = response.tracks.items.length
-  const preview_url_track_number = randomNumberWithinRange(0, number_of_tracks_in_album - 1)
-  const previewUrl = response.tracks.items[preview_url_track_number].preview_url
-  const tracks: TrackAPIResponse[] = response.tracks.items.map(
-    (item): TrackAPIResponse => ({
-      artists: item.artists.map((_artist) => _artist.name).join(', '),
-      previewUrl: item.preview_url,
-      title: item.name,
-      trackUrl: item.external_urls.spotify,
-      albumImageUrl
-    })
-  )
-
-  return res
-    .status(200)
-    .json({ tracks, albumType, albumImageUrl, title, artists, albumUrl, previewUrl })
 }
 
 function randomNumberWithinRange(myMin, myMax) {
