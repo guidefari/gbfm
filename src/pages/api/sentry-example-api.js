@@ -1,5 +1,10 @@
-// A faulty API route to test Sentry's error monitoring
+import * as Sentry from '@sentry/nextjs'
+
 export default function handler(_req, res) {
-  throw new Error("Sentry Example API Route Error");
-  res.status(200).json({ name: "John Doe" });
+  try {
+    throw new Error("now it will show up in the dashboard");
+  } catch (error) {
+    Sentry.captureException(error);
+    res.status(500).json({ error: "Its me. not you." });
+  }
 }
