@@ -1,6 +1,7 @@
 import { useRouter } from 'next/router'
 import { useState } from 'react'
 import { FaSquareRss } from 'react-icons/fa6'
+import * as Sentry from '@sentry/nextjs'
 
 export const RSS = () => {
   const [isCopied, setIsCopied] = useState(false)
@@ -16,6 +17,7 @@ export const RSS = () => {
         setIsCopied(false)
       }, 3500)
     } catch (error) {
+      Sentry.captureException(error)
       console.error('Failed to copy to clipboard', error)
     }
   }
