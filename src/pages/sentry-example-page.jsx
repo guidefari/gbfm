@@ -1,5 +1,5 @@
-import Head from "next/head";
-import * as Sentry from "@sentry/nextjs";
+import Head from 'next/head'
+import * as Sentry from '@sentry/nextjs'
 
 export default function Page() {
   return (
@@ -11,17 +11,17 @@ export default function Page() {
 
       <main
         style={{
-          minHeight: "100vh",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
+          minHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
         }}
       >
-        <h1 style={{ fontSize: "4rem", margin: "14px 0" }}>
+        <h1 style={{ fontSize: '4rem', margin: '14px 0' }}>
           <svg
             style={{
-              height: "1em",
+              height: '1em',
             }}
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 200 44"
@@ -37,41 +37,55 @@ export default function Page() {
         <button
           type="button"
           style={{
-            padding: "12px",
-            cursor: "pointer",
-            backgroundColor: "#AD6CAA",
-            borderRadius: "4px",
-            border: "none",
-            color: "white",
-            fontSize: "14px",
-            margin: "18px",
+            padding: '12px',
+            cursor: 'pointer',
+            backgroundColor: '#AD6CAA',
+            borderRadius: '4px',
+            border: 'none',
+            color: 'white',
+            fontSize: '14px',
+            margin: '18px',
           }}
           onClick={() => {
-            Sentry.startSpan({
-              name: 'Example Frontend Span',
-              op: 'test'
-            }, async () => {
-              const res = await fetch("/api/sentry-example-api");
-              if (!res.ok) {
-                throw new Error("Sentry Example Frontend Error");
+            Sentry.startSpan(
+              {
+                name: 'New Span Name',
+                op: 'whats_op',
+              },
+              async () => {
+                const fetchData = async () => {
+                  try {
+                    const res = await fetch('/api/sentry-example-api')
+                    if (!res.ok) {
+                      throw new Error('Failed to fetch data from the server')
+                    }
+                    // Process the response
+                  } catch (error) {
+                    // Handle the error gracefully
+                    console.error('An error occurred while fetching data:', error)
+                    // Display a user-friendly message
+                    alert('Oops! Something went wrong while fetching data. Please try again later.')
+                  }
+                }
+                fetchData()
               }
-            });
+            )
           }}
         >
           Throw error!
         </button>
 
         <p>
-          Next, look for the error on the{" "}
+          Next, look for the error on the{' '}
           <a href="https://goosebumps-collective.sentry.io/issues/?project=5439010">Issues Page</a>.
         </p>
-        <p style={{ marginTop: "24px" }}>
-          For more information, see{" "}
+        <p style={{ marginTop: '24px' }}>
+          For more information, see{' '}
           <a href="https://docs.sentry.io/platforms/javascript/guides/nextjs/">
             https://docs.sentry.io/platforms/javascript/guides/nextjs/
           </a>
         </p>
       </main>
     </div>
-  );
+  )
 }
