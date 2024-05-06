@@ -11,7 +11,7 @@
 - [ ] Labels page
   - [ ] content & styling
 - [ ] View content by tag/genre
-- [ ] Sentry
+- [x] Sentry
 - [ ] **Virtualized list** for micro posts
 - [ ] copy to clipboard icons
 - [ ] context: tracklist
