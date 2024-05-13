@@ -14,7 +14,7 @@ export const AudioProvider = ({ children }: Props) => {
     []
   )
   const [playAudio, setPlayAudio] = useState(false)
-  const [thumbnailUrl, setThumbnailUrl] = useState()
+  const [thumbnailUrl, setThumbnailUrl] = useState('')
   const [progress, setProgress] = useState(0)
   const [nowPlayingContext, setNowPlayingContext] = useState<NowPlayingContext>({
     url: typeof window === 'undefined' ? '/' : window.location.pathname,
