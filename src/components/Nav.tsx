@@ -15,8 +15,14 @@ const Nav = () => {
     const { value } = e.target
     handlers.setTimeUsingPercentage(Number(value))
   }
+
+  if (!audioRef?.src) return <></>
+
   return (
-    <nav ref={navRef} className="fixed bottom-0 z-50 w-full py-2 space-y-1 bg-sky-900">
+    <nav
+      ref={navRef}
+      className="fixed transition ease-in-out delay-150 bottom-0 z-50 w-full py-2 space-y-1 bg-sky-900"
+    >
       <div className="relative grid items-center h-full max-w-xs grid-flow-col mx-auto">
         <button
           onClick={() => router.push('/')}

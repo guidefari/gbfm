@@ -10,11 +10,11 @@ export const useAudioPlayerContext = (): AudioPlayerContext =>
 
 export const AudioProvider = ({ children }: Props) => {
   const audioRef: HTMLAudioElement | null = useMemo(
-    () => (typeof window === 'undefined' ? null : new Audio(LATEST_MIX.mp3Url)),
+    () => (typeof window === 'undefined' ? null : new Audio()),
     []
   )
   const [playAudio, setPlayAudio] = useState(false)
-  const [thumbnailUrl, setThumbnailUrl] = useState(LATEST_MIX.thumbnailUrl ?? DEFAULT_IMAGE_URL)
+  const [thumbnailUrl, setThumbnailUrl] = useState()
   const [progress, setProgress] = useState(0)
   const [nowPlayingContext, setNowPlayingContext] = useState<NowPlayingContext>({
     url: typeof window === 'undefined' ? '/' : window.location.pathname,
