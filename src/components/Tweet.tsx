@@ -61,7 +61,9 @@ export const Tweet: React.FC<Props> = ({
           {children}
         </div>
       </div>
-      {underline && <hr className="mx-10 my-4 border-b-2 rounded-full border-gb-pastel-green-2" />}
+      {underline && (
+        <hr className="-mx-10 border-opacity-60 my-4 border-b-2 rounded-full border-gb-pastel-green-2" />
+      )}
     </div>
   )
 }

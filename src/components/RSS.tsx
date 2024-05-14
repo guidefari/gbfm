@@ -24,9 +24,7 @@ export const RSS = () => {
 
   return (
     <div title="Copy RSS link to clipboard" className="inline-block text-orange-300">
-      {!isCopied && (
-        <FaSquareRss onClick={handleCopyToClipboard} className="inline w-6 h-6 cursor-pointer" />
-      )}
+      {!isCopied && <FaSquareRss onClick={handleCopyToClipboard} className=" cursor-pointer" />}
       {isCopied && (
         <>
           <svg

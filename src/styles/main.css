@@ -16,10 +16,10 @@
   --h2Size: calc(var(--h3Size) * var(--typeScale));
   --h1Size: calc(var(--h2Size) * var(--typeScale));
   --small: calc(var(--fontSize) * 0.75);
-  --highlight: #9BFD9E;
+  --highlight: #9bfd9e;
   --bg: #16425b;
-  --pastel-green-1: #B6FADF;
-  --pastel-green-2: #4E8C71;
+  --pastel-green-1: #b6fadf;
+  --pastel-green-2: #4e8c71;
   --default-text: #81c3d7;
 }
 
@@ -56,7 +56,7 @@
 
 iframe.bandcamp-widget-wide,
 .bww {
-  @apply max-w-xs aspect-square; 
+  @apply max-w-xs aspect-square;
 }
 iframe.bandcamp-widget-wide.tracklist {
   height: 220px;
@@ -123,7 +123,7 @@ ul {
 
 blockquote {
   @apply p-4 m-4 border-l-8 rounded-md bg-cyan-900 border-gb-tomato;
-  quotes: '\201C''\201D''\2018''\2019';
+  quotes: '\201C' '\201D' '\2018' '\2019';
 }
 blockquote:before {
   @apply mr-1 text-5xl text-gb-tomato;
@@ -137,7 +137,7 @@ blockquote:before {
 }
 
 .floating-nav-icon {
-  @apply min-h-[48px] text-sky-300  hover:text-gb-tomato ;
+  @apply min-h-[48px] text-sky-300  hover:text-gb-tomato;
 }
 
 .floating-nav-button {
@@ -146,14 +146,13 @@ blockquote:before {
 }
 
 .curated-posts {
-  @apply grid w-full gap-10 px-4 py-16 mx-auto sm:grid-cols-2 lg:grid-cols-3 md:px-24 lg:px-8 lg:py-20;
+  @apply grid w-full gap-10 px-4 py-16 mx-auto sm:grid-cols-2 lg:grid-cols-3 lg:px-8 lg:py-20;
 }
 
 .default-icon {
   color: inherit;
   @apply w-6 h-6 cursor-pointer aspect-square hover:text-gb-tomato;
 }
-
 
 .overrides {
   --font-body: 'JetBrainsMono', monospace !important;

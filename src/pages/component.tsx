@@ -3,13 +3,48 @@ import Track from '@/components/Track'
 import HorizontalScrollCards from '@/components/common/HorizontalScrollCards'
 
 export default function component() {
+  const textList = ['Words', 'Less Words', 'Labels', 'Mixes', '!Newsletter', 'Mixes via RSS!']
+
+  const pagesAndPages = [
+    {
+      name: 'Words',
+      slug: 'words',
+    },
+    {
+      name: 'Less Words',
+      slug: 'words',
+    },
+    {
+      name: 'Labels',
+      slug: 'words',
+    },
+    {
+      name: 'Mixes',
+      slug: 'words',
+    },
+    {
+      name: '!Newsletter',
+      slug: 'words',
+    },
+    {
+      name: 'Mixes - RSS',
+      slug: 'words',
+    },
+  ]
+
   return (
-    <div className="max-w-3xl mx-auto">
-
-      <Album
-        url='https://open.spotify.com/album/4zy14W6bIZQao37geZsdN8?si=X5HslsPhRXuGWkU2KAAwng'
-      />
-
+    <div className="max-w-3xl flex items-start flex-col px-2">
+      {pagesAndPages.map((text, index) => (
+        <p
+          key={index}
+          className="cursor-pointer leading-none my-2 w-24
+            transition-transform duration-150
+            transform text-sm
+            hover:scale-[2.5] hover:translate-x-16 hover:text-gb-highlight "
+        >
+          {text.name}
+        </p>
+      ))}
     </div>
   )
 }
