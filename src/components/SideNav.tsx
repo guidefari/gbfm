@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { RSS } from './RSS'
+import { Youtube } from './Youtube'
 
 export const SideNav = () => {
   const pagesAndPages = [
@@ -26,7 +27,7 @@ export const SideNav = () => {
   ]
 
   return (
-    <div className="lg:fixed top-0 flex-wrap flex items-center lg:items-start lg:space-x-0 lg:space-y-3 space-x-2 my-1 lg:flex-col px-2 ">
+    <div className="top-0 flex flex-wrap items-center px-2 my-1 space-x-2 lg:fixed lg:items-start lg:space-x-0 lg:space-y-3 lg:flex-col ">
       {pagesAndPages.map((page, index) => (
         <Link
           key={index}
@@ -39,8 +40,9 @@ export const SideNav = () => {
           {page.name}
         </Link>
       ))}
-      <div className=" flex items-center justify-center">
+      <div className="flex items-center justify-center space-x-1 ">
         <RSS />
+        <Youtube />
       </div>
     </div>
   )
