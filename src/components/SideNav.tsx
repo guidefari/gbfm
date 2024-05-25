@@ -24,6 +24,10 @@ export const SideNav = () => {
       name: '!Newsletter',
       slug: '/newslater',
     },
+    {
+      name: 'rsp',
+      slug: '/rsp',
+    },
   ]
 
   return (

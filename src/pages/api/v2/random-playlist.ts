@@ -2,8 +2,6 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import { getSession } from 'next-auth/react';
 import { PlaylistInput, PlaylistResponse } from '@/src/types';
 import { getUsersPlaylists } from '@/lib/spotify';
-import { logMessage } from '@/lib/logger';
-const fs = require('fs');
 
 export type ResponseType = PlaylistResponse["items"]
 
