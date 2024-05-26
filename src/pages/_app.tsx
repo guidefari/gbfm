@@ -14,6 +14,7 @@ const App = memo(function _({ Component, pageProps: { session, ...pageProps } }:
       <Head>
         <meta content="width=device-width, initial-scale=1" name="viewport" />
         <link rel="shortcut icon" href="/favicons/goose.png" type="image/x-icon" />
+        <meta name="color-scheme" content="dark" />
       </Head>
       <ScrollPosition />
       <AudioProvider>
