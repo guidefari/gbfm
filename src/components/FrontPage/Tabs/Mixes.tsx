@@ -1,4 +1,4 @@
-import { Mix } from '.contentlayer/generated/types'
+import type { Mix } from '.contentlayer/generated/types'
 import { PostCard } from '@/components/PostCard'
 import { RSS } from '@/components/RSS'
 import { PageTitle } from '@/components/common/PageTitle'
