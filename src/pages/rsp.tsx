@@ -1,11 +1,11 @@
-import fetcher from '@/lib/fetcher'
-import { useSession, signIn, signOut } from 'next-auth/react'
-import Image from 'next/image'
-import useSWR from 'swr'
-import { type ResponseType as RandomPlaylistApiResponse } from './api/v2/random-playlist'
-import { useRouter } from 'next/router'
 import { SpinningCircleLoaderThingy } from '@/components/common/icons'
+import fetcher from '@/lib/fetcher'
 import clsx from 'clsx'
+import { signIn, signOut, useSession } from 'next-auth/react'
+import Image from 'next/image'
+import { useRouter } from 'next/router'
+import useSWR from 'swr'
+import type { ResponseType as RandomPlaylistApiResponse } from './api/v2/random-playlist'
 
 declare module 'next-auth' {
   /**
@@ -37,7 +37,7 @@ export default function RSP() {
   const router = useRouter()
 
   const goToRandomPlaylist = () => {
-    let randomIndex = Math.floor(Math.random() * playlists?.length || 0)
+    const randomIndex = Math.floor(Math.random() * playlists?.length || 0)
     router.push(`${playlists?.[randomIndex]?.external_urls.spotify}`)
   }
 
@@ -49,6 +49,7 @@ export default function RSP() {
             <button
               onClick={() => signIn()}
               className="w-full p-3 rounded-md text-gb-highlight hover:ring-2 hover:ring-gb-highlight"
+              type="button"
             >
               Sign in via Spotify
             </button>
@@ -91,6 +92,7 @@ export default function RSP() {
               <button
                 onClick={() => goToRandomPlaylist()}
                 disabled={!playlists?.length && playlistLoading}
+                type='button'
                 className={clsx(
                   'w-full p-3 rounded-md h-14 bg-gb-pastel-green-2 text-gb-highlight',
                   playlists?.length && !playlistLoading
@@ -102,6 +104,7 @@ export default function RSP() {
               </button>
               <button
                 className="w-full p-3 rounded-md h-14 hover:ring-2 hover:ring-gb-highlight"
+                type='button'
                 onClick={() => signOut()}
               >
                 Logout

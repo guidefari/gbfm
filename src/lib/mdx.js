@@ -16,6 +16,7 @@ export const MDXcomponents = {
   HorizontalScrollCards: dynamic(() => import('src/components/common/HorizontalScrollCards')),
   Tracklist: dynamic(() => import('src/components/Tracklist')),
   Nowplaying: dynamic(() => import('src/components/Nowplaying')),
+  YoutubeEmbed: dynamic(() => import('src/components/YoutubeEmbed')),
   Head,
 
 }
