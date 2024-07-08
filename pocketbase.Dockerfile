@@ -7,12 +7,12 @@ RUN apk add --no-cache \
     unzip \
     ca-certificates
 
-VOLUME /app/pb/pb_data
+VOLUME /app/pb_data
 
 # download and unzip PocketBase
 # ADD https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION}/pocketbase_${PB_VERSION}_linux_amd64.zip /tmp/pb.zip
 ADD https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION}/pocketbase_${PB_VERSION}_linux_${BUILDARCH}.zip /tmp/pb.zip
-RUN unzip /tmp/pb.zip -d /pb/
+RUN unzip /tmp/pb.zip -d /app/
 RUN rm /tmp/pb.zip
 
 # uncomment to copy the local pb_migrations dir into the image
@@ -24,4 +24,4 @@ RUN rm /tmp/pb.zip
 EXPOSE 443
 
 # start PocketBase
-CMD ["/pb/pocketbase", "serve", "--http=0.0.0.0:443"]
+CMD ["/app/pocketbase", "serve", "--http=0.0.0.0:443"]
