@@ -19,3 +19,5 @@
   - [ ] return playlist name, & url
   - [ ] watch out for the recursive logic. why am I having to dedupe before response?
 - [ ] Separate API keys for spotify. dev & prod
+
+- [pocketbase implementation reference](https://github.com/tech-with-mahad/next-pocketbase-tutorial-1)

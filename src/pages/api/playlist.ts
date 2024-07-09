@@ -1,7 +1,7 @@
-import { GenericAndMaybeLegacyError, PlaylistApiResponse, TrackAPIResponse } from '@/src/types'
-import { NextApiRequest, NextApiResponse } from 'next'
-import { getPlaylistDetails } from '../../lib/spotify'
+import type { GenericAndMaybeLegacyError, PlaylistApiResponse, TrackAPIResponse } from '@/src/types'
 import * as Sentry from '@sentry/nextjs'
+import type { NextApiRequest, NextApiResponse } from 'next'
+import { getPlaylistDetails } from '../../lib/spotify'
 
 const { parse } = require('spotify-uri')
 
