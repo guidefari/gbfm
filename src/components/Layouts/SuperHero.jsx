@@ -1,7 +1,7 @@
 import React from 'react'
 
 export const SuperHero = () => (
-  <section className="pb-8 body-font">
+  <section className="body-font">
     <div className="container flex flex-col mx-auto lg:px-5 lg:py-10">
       <div className="w-full px-1 pt-4 mb-4 leading-none border-gray-200 sm:mb-0">
         <h1 className="my-0 text-5xl font-bold text-right md:text-8xl xl:text-9xl">

@@ -64,13 +64,13 @@ export function MultiTrack({
           />
 
           {genres && genres[0] !== '' && (
-            <p className="flex flex-wrap mt-6">
+            <div className="flex flex-wrap mt-6">
               {genres.map((genre, index) => (
-                <span key={index} className="p-1 px-2 m-1 mr-2 text-sm rounded-full bg-cyan-800">
+                <span key={index} className="p-1 px-2 m-1 mr-2 text-sm rounded-full bg-gb-darker-bg">
                   {genre}
                 </span>
               ))}
-            </p>
+            </div>
           )}
         </div>
         <div className="col-span-2">

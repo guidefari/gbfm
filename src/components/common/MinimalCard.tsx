@@ -66,13 +66,13 @@ export const MinimalCard: React.FC<Props> = ({
       </div>
       <div className="p-3">
         {genres && genres.length > 0 && (
-          <p className="flex flex-wrap space-x-2">
+          <div className="flex flex-wrap space-x-2">
             {genres.map((genre, index) => (
-              <span key={index} className="p-1 px-2 text-sm rounded-full bg-cyan-800">
+              <span key={index} className="p-1 px-2 text-sm rounded-full bg-gb-darker-bg">
                 {genre}
               </span>
             ))}
-          </p>
+          </div>
         )}
 
         {previewUrl?.length && (
