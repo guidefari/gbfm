@@ -20,6 +20,7 @@ module.exports = {
         highlight: 'var(--highlight)',
         tomato: 'var(--highlight)',
         'gb-bg': 'var(--bg)',
+        'gb-darker-bg': 'var(--darker-bg)',
         'gb-highlight': 'var(--highlight)',
         'gb-tomato': 'var(--highlight)',
         'gb-pastel-green-1': 'var(--pastel-green-1)',
