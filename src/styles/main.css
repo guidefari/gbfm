@@ -18,6 +18,7 @@
   --small: calc(var(--fontSize) * 0.75);
   --highlight: #9bfd9e;
   --bg: #16425b;
+  --darker-bg: #111827;
   --pastel-green-1: #b6fadf;
   --pastel-green-2: #4e8c71;
   --default-text: #81c3d7;
@@ -52,6 +53,11 @@
   ul li {
     @apply list-disc;
   }
+
+  p {
+    @apply p-2 w-fit rounded-sm;
+    background: var(--darker-bg);
+  }
 }
 
 iframe.bandcamp-widget-wide,
@@ -63,7 +69,7 @@ iframe.bandcamp-widget-wide.tracklist {
 }
 
 body {
-  background-color: #16425b;
+  background-color: var(--bg);
   color: var(--default-text);
   @apply font-jetbrains;
 }
@@ -122,7 +128,8 @@ ul {
 }
 
 blockquote {
-  @apply p-4 m-4 border-l-8 rounded-md bg-cyan-900 border-gb-tomato;
+  @apply p-4 m-4 border-l-8 rounded-md border-gb-tomato;
+  background: var(--darker-bg);
   quotes: '\201C' '\201D' '\2018' '\2019';
 }
 blockquote:before {
