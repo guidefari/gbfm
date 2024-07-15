@@ -109,7 +109,7 @@ export default function SignIn() {
 	);
 }
 
-function LockIcon(props) {
+function LockIcon(props: React.SVGProps<SVGSVGElement>) {
 	return (
 		<svg
 			{...props}
@@ -130,7 +130,7 @@ function LockIcon(props) {
 	);
 }
 
-function XIcon(props) {
+function XIcon(props: React.SVGProps<SVGSVGElement>) {
 	return (
 		<svg
 			{...props}
