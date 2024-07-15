@@ -6,12 +6,14 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
+import { useDispatch } from "./AuthContext";
 
 export function SignIn() {
 	const route = useRouter();
 	const [email, setEmail] = useState<string>("");
 	const [password, setPassword] = useState<string>("");
 	const [error, setError] = useState("");
+	const dispatch = useDispatch();
 
 	const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -69,6 +71,12 @@ export function SignIn() {
 											href="#"
 											className="text-sm font-medium text-muted-foreground hover:underline"
 											prefetch={false}
+											onClick={() => {
+												dispatch({
+													type: "SET_STATE",
+													payload: "resetPassword",
+												});
+											}}
 										>
 											Forgot password?
 										</Link>

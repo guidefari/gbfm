@@ -1,1 +1,1 @@
-export type AuthState = "signin" | "signup" | "reset-password";
+export type AuthState = "signIn" | "signUp" | "resetPassword";

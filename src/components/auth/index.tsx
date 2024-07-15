@@ -6,5 +6,5 @@ import SignUp from "./SignUp";
 export default function Auth() {
 	const state = useStateValue();
 
-	return state === "signin" ? <SignIn /> : <SignUp />;
+	return state === "signIn" ? <SignIn /> : <SignUp />;
 }

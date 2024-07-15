@@ -6,9 +6,9 @@ type AuthTitle = {
 };
 
 export const AuthTitleCopy: AuthTitle = {
-	signin: "Sign In",
-	signup: "Sign Up",
-	"reset-password": "Reset Password",
+	signIn: "Sign In",
+	signUp: "Sign Up",
+	resetPassword: "Reset Password",
 };
 
 type Action = { type: "SET_STATE"; payload: AuthState };
@@ -50,7 +50,7 @@ export const useDispatch = () => {
 };
 
 // Define your initial state
-const initialState: AuthState = "signin";
+const initialState: AuthState = "signIn";
 
 // Define your reducer
 function reducer(state: AuthState, action: Action): AuthState {
