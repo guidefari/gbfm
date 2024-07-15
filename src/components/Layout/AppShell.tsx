@@ -25,31 +25,17 @@ export default function AppShell({ children }: Props) {
 		<div className="flex min-h-screen w-full">
 			<DesktopSideNav />
 			<div className="flex flex-col sm:gap-4 sm:py-4 sm:pl-14 flex-grow">
-				<header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+				<header className="sticky top-0 z-30 flex h-14 items-center gap-4 px-4 sm:static sm:h-auto sm:bg-transparent sm:px-6">
 					<MobileNav />
-					<Breadcrumb className="hidden md:flex">
-						<BreadcrumbList>
-							<BreadcrumbItem>
-								<BreadcrumbLink asChild>
-									<Link href="#" prefetch={false}>
-										Home
-									</Link>
-								</BreadcrumbLink>
-							</BreadcrumbItem>
-							<BreadcrumbSeparator />
-							<BreadcrumbItem>
-								<BreadcrumbPage>Content</BreadcrumbPage>
-							</BreadcrumbItem>
-						</BreadcrumbList>
-					</Breadcrumb>
-					<div className="relative ml-auto flex-1 md:grow-0">
+					{/* searrrrch */}
+					{/* <div className="relative ml-auto flex-1 md:grow-0">
 						<SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
 						<Input
 							type="search"
 							placeholder="Search..."
 							className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
 						/>
-					</div>
+					</div> */}
 				</header>
 				<main className="flex-1 px-4 py-8 sm:px-6 sm:py-10 md:px-8 md:py-12 lg:px-10 lg:py-16">
 					{children}

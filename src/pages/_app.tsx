@@ -2,7 +2,7 @@ import "@/css/main.css";
 import type { AppProps } from "next/app";
 import { AudioProvider } from "src/contexts/AudioPlayer";
 
-import AppShell from "@/components/Layouts/AppShell";
+import AppShell from "@/components/Layout/AppShell";
 import { ScrollPosition } from "@/components/ScrollPosition";
 import { SessionProvider } from "next-auth/react";
 import Head from "next/head";
