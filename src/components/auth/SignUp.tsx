@@ -2,7 +2,7 @@
 import Link from "next/link";
 import React from "react";
 
-function SignUpPage() {
+function SignUp() {
 	const [email, setEmail] = React.useState<string>("");
 	const [password, setPassword] = React.useState<string>("");
 	const [error, setError] = React.useState("");
@@ -95,4 +95,4 @@ function SignUpPage() {
 	);
 }
 
-export default SignUpPage;
+export default SignUp;
