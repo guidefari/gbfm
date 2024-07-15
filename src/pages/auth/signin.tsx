@@ -6,14 +6,12 @@ import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
-import { useDispatch } from "./AuthContext";
 
-export function SignIn() {
-	const route = useRouter();
+export default function SignIn() {
+	const router = useRouter();
 	const [email, setEmail] = useState<string>("");
 	const [password, setPassword] = useState<string>("");
 	const [error, setError] = useState("");
-	const dispatch = useDispatch();
 
 	const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -31,7 +29,7 @@ export function SignIn() {
 			}
 			const data = await response.json();
 			if (data?.token) {
-				route.push("/");
+				router.push("/");
 			} else {
 				setError("Failed to authenticate user");
 			}
@@ -72,10 +70,11 @@ export function SignIn() {
 											className="text-sm font-medium text-muted-foreground hover:underline"
 											prefetch={false}
 											onClick={() => {
-												dispatch({
-													type: "SET_STATE",
-													payload: "resetPassword",
-												});
+												router.push("/auth/reset-password");
+												// dispatch({
+												// 	type: "SET_STATE",
+												// 	payload: "resetPassword",
+												// });
 											}}
 										>
 											Forgot password?
