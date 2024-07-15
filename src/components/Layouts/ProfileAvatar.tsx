@@ -9,23 +9,30 @@ import {
 import { Button } from "@/ui/button";
 import React from "react";
 
-const ProfileAvatar = () => {
+type Props = {
+	title?: string;
+};
+
+const ProfileAvatar = ({ title = "" }: Props) => {
 	return (
 		<DropdownMenu>
-			<DropdownMenuTrigger asChild>
-				<Button
-					variant="outline"
-					size="icon"
-					className="overflow-hidden rounded-full"
-				>
-					<img
-						src="/placeholder.svg"
-						width={36}
-						height={36}
-						alt="Avatar"
+			<DropdownMenuTrigger>
+				<div className="flex items-center">
+					<Button
+						variant="outline"
+						size="icon"
 						className="overflow-hidden rounded-full"
-					/>
-				</Button>
+					>
+						<img
+							src="/placeholder.svg"
+							width={36}
+							height={36}
+							alt="Avatar"
+							className="overflow-hidden rounded-full"
+						/>
+					</Button>
+					{title && <span className="ml-2">{title}</span>}
+				</div>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end">
 				<DropdownMenuLabel>My Account</DropdownMenuLabel>

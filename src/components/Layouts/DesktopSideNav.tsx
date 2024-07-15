@@ -15,6 +15,7 @@ import {
 	SettingsIcon,
 	UserIcon,
 } from "../common/icons";
+import ProfileAvatar from "./ProfileAvatar";
 
 export const DesktopSideNav = () => {
 	return (
@@ -112,6 +113,7 @@ export const DesktopSideNav = () => {
 						<TooltipContent side="right">Settings</TooltipContent>
 					</Tooltip>
 				</TooltipProvider>
+				<ProfileAvatar />
 			</nav>
 		</aside>
 	);
