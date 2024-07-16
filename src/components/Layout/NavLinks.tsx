@@ -27,9 +27,9 @@ export const pagesAndPages: shit[] = [
 		name: "Not Tweets👀",
 		slug: "/micro",
 		icon: (
-			<>
+			<div className="flex gap-1 items-center -ml-4 sm:ml-0">
 				!<TwitterLogoIcon className={iconSytles} />
-			</>
+			</div>
 		),
 	},
 	{
@@ -49,7 +49,7 @@ export const pagesAndPages: shit[] = [
 	},
 	{
 		icon: <GiPerspectiveDiceSixFacesRandom className={iconSytles} />,
-		name: "Random Spotify Playlist",
+		name: "RSP",
 		slug: "/rsp",
 	},
 	{
