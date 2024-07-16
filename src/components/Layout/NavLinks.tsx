@@ -15,48 +15,50 @@ type shit = {
 	customComponent?: React.ReactNode;
 };
 
+const iconSytles = "h-5 w-5 transition-all group-hover:scale-110";
+
 export const pagesAndPages: shit[] = [
 	{
 		name: "Words",
 		slug: "/words",
-		icon: <SiWritedotas className="h-5 w-5" />,
+		icon: <SiWritedotas className={iconSytles} />,
 	},
 	{
-		name: "!Tweets",
+		name: "Not Tweets👀",
 		slug: "/micro",
 		icon: (
 			<>
-				!<TwitterLogoIcon className="h-5 w-5" />
+				!<TwitterLogoIcon className={iconSytles} />
 			</>
 		),
 	},
 	{
 		name: "Record Labels",
 		slug: "/labels",
-		icon: <BiSolidCameraHome className="h-5 w-5" />,
+		icon: <BiSolidCameraHome className={iconSytles} />,
 	},
 	{
 		name: "Mixes",
 		slug: "/mixes",
-		icon: <PiVinylRecordLight className="h-5 w-5" />,
+		icon: <PiVinylRecordLight className={iconSytles} />,
 	},
 	{
 		name: "!Newsletter",
 		slug: "/newslater",
-		icon: <IoIosMailOpen className="h-5 w-5" />,
+		icon: <IoIosMailOpen className={iconSytles} />,
 	},
 	{
-		icon: <GiPerspectiveDiceSixFacesRandom className="h-5 w-5" />,
+		icon: <GiPerspectiveDiceSixFacesRandom className={iconSytles} />,
 		name: "Random Spotify Playlist",
 		slug: "/rsp",
 	},
 	{
-		icon: <FileTextIcon className="h-5 w-5" />,
+		icon: <FileTextIcon className={iconSytles} />,
 		name: "Mixes via RSS",
 		customComponent: <RSS />,
 	},
 	{
-		icon: <FileTextIcon className="h-5 w-5" />,
+		icon: <FileTextIcon className={iconSytles} />,
 		name: "Mixes via Youtube",
 		customComponent: <Youtube />,
 	},
