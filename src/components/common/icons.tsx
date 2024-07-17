@@ -7,6 +7,7 @@ export const PlayIcon = () => (
 		stroke="currentColor"
 		className="w-full h-full pl-1 mx-auto"
 	>
+		<title>Play</title>
 		<path
 			strokeLinecap="round"
 			strokeLinejoin="round"
@@ -24,6 +25,7 @@ export const PauseIcon = () => (
 		stroke="currentColor"
 		className="w-full h-full mx-auto"
 	>
+		<title>Pause</title>
 		<path
 			strokeLinecap="round"
 			strokeLinejoin="round"
@@ -41,6 +43,7 @@ export const BackIcon = () => (
 		strokeWidth={2}
 		className="w-full h-full mx-auto"
 	>
+		<title>Back</title>
 		<path
 			strokeLinecap="round"
 			strokeLinejoin="round"
@@ -56,6 +59,7 @@ export const GB = () => (
 		fill="none"
 		xmlns="http://www.w3.org/2000/svg"
 	>
+		<title>Logo</title>
 		<path
 			d="M165.966 30.9279C160.91 25.9052 154.093 23.3959 145.516 23.4H101.4V42.4268H139.146C147.607 42.4268 151.837 46.565 151.837 54.8413V139.979C151.837 148.371 147.43 152.567 138.615 152.567H101.4V171.6H145.516C154.093 171.6 160.91 169.126 165.966 164.177C171.022 159.229 173.55 152.396 173.55 143.678V51.5382C173.55 42.8289 171.022 35.9588 165.966 30.9279Z"
 			fill="currentColor"
@@ -86,6 +90,7 @@ export const SpinningCircleLoaderThingy = () => (
 		fill="none"
 		viewBox="0 0 24 24"
 	>
+		<title>Loading</title>
 		<circle
 			className="opacity-25"
 			cx="12"
@@ -93,12 +98,12 @@ export const SpinningCircleLoaderThingy = () => (
 			r="10"
 			stroke="currentColor"
 			strokeWidth="4"
-		></circle>
+		/>
 		<path
 			className="opacity-75"
 			fill="currentColor"
 			d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-		></path>
+		/>
 	</svg>
 );
 

@@ -1,10 +1,13 @@
 "use client";
+import { useAuthContext } from "@/src/contexts/AuthContext";
+import type { PocketBaseSignUpResponse } from "@/src/types/auth";
 import Link from "next/link";
 import React from "react";
 
 function SignUp() {
 	const [email, setEmail] = React.useState<string>("");
 	const [password, setPassword] = React.useState<string>("");
+	const { onSignUp } = useAuthContext();
 	const [error, setError] = React.useState("");
 
 	const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -21,7 +24,13 @@ function SignUp() {
 				setError("Failed to register user");
 				return;
 			}
-			const data = await response.json();
+			const data: PocketBaseSignUpResponse = await response.json();
+			onSignUp({
+				id: data.result.id,
+				email,
+				username: data.result.username,
+				avatarUrl: data.result.avatar,
+			});
 		} catch (err) {
 			setEmail("Failed to register user");
 		}
