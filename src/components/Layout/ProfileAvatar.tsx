@@ -10,8 +10,7 @@ import { Button } from "@/ui/button";
 import Link from "next/link";
 
 const ProfileAvatar = () => {
-	const { user } = useAuthContext();
-  console.log({user})
+	const { user, onSignOut } = useAuthContext();
 
 	return (
 		<DropdownMenu>
@@ -31,17 +30,21 @@ const ProfileAvatar = () => {
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end">
-				<Link href="/auth">
-					<DropdownMenuItem className="hover:cursor-pointer">
-						Login
-					</DropdownMenuItem>
-				</Link>
+				{!user?.id && (
+					<>
+						<Link href="/auth">
+							<DropdownMenuItem className="hover:cursor-pointer">
+								Login
+							</DropdownMenuItem>
+						</Link>
+						<DropdownMenuSeparator />
+					</>
+				)}
 
-				<DropdownMenuSeparator />
 				<DropdownMenuItem>Profile</DropdownMenuItem>
 				<DropdownMenuItem>Support</DropdownMenuItem>
 				<DropdownMenuSeparator />
-				<DropdownMenuItem>Logout</DropdownMenuItem>
+				<DropdownMenuItem onClick={onSignOut}>Logout</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>
 	);
