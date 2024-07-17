@@ -2,16 +2,21 @@
 import { useAuthContext } from "@/src/contexts/AuthContext";
 import type { PocketBaseSignUpResponse } from "@/src/types/auth";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import React from "react";
 
 function SignUp() {
-	const [email, setEmail] = React.useState<string>("");
-	const [password, setPassword] = React.useState<string>("");
+	const router = useRouter();
+	// const [email, setEmail] = React.useState<string>("");
+	// const [password, setPassword] = React.useState<string>("");
 	const { onSignUp } = useAuthContext();
 	const [error, setError] = React.useState("");
 
 	const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
+		const formData = new FormData(event.currentTarget);
+		const email = formData.get("email") as string;
+		const password = formData.get("password") as string;
 
 		try {
 			const form = { email, password };
@@ -20,24 +25,27 @@ function SignUp() {
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify(form),
 			});
-			if (!response.ok) {
-				setError("Failed to register user");
-				return;
-			}
-			const data: PocketBaseSignUpResponse = await response.json();
+			// console.log("response:", response.json());
+			// if (!response.ok) {
+			// 	setError("Failed to register user");
+			// 	return;
+			// }
+			const data = await response.json();
+			console.log("data:", data);
 			onSignUp({
-				id: data.result.id,
+				id: data.id,
 				email,
-				username: data.result.username,
-				avatarUrl: data.result.avatar,
+				username: data.username,
+				avatarUrl: data.avatar,
 			});
+			router.push("/");
 		} catch (err) {
-			setEmail("Failed to register user");
+			setError("Failed to register user");
 		}
 	};
 
 	return (
-		<div className="flex min-h-full flex-col justify-center px-6 py-12 lg:px-8">
+		<div className="flex flex-col justify-center min-h-full px-6 py-12 lg:px-8">
 			<div className="mt-10 sm:mx-auto sm:w-full sm:max-w-sm">
 				<form className="space-y-6" onSubmit={onSubmit}>
 					<div>
@@ -55,8 +63,8 @@ function SignUp() {
 								autoComplete="email"
 								required
 								className="block w-full rounded-md border-0 py-1.5 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-								value={email}
-								onChange={(e) => setEmail(e.target.value || "")}
+								// value={email}
+								// onChange={(e) => setEmail(e.target.value || "")}
 							/>
 						</div>
 					</div>
@@ -85,8 +93,8 @@ function SignUp() {
 								autoComplete="current-password"
 								required
 								className="block w-full rounded-md border-0 py-1.5 shadow-sm ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6"
-								value={password}
-								onChange={(e) => setPassword(e.target.value || "")}
+								// value={password}
+								// onChange={(e) => setPassword(e.target.value || "")}
 							/>
 						</div>
 					</div>

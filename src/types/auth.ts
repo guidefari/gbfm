@@ -1,6 +1,6 @@
 export type AuthState = "signIn" | "signUp" | "resetPassword";
 
-export type User = {
+export type GoosebumpsUser = {
 	id: string;
 	email: string;
 	username: string;
@@ -19,4 +19,9 @@ export type PocketBaseSignUpResponse = {
 		username: string;
 		verified: boolean;
 	};
+};
+
+export type PocketBaseLoginResponse = {
+	record: PocketBaseSignUpResponse["result"] & { email: string };
+	token: string;
 };

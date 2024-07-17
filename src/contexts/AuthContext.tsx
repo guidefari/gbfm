@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useMemo, useState } from "react";
-import type { User } from "../types/auth";
+import type { GoosebumpsUser } from "../types/auth";
 
 const AuthContext = createContext<IContext | null>(null);
 
@@ -8,10 +8,10 @@ export function useAuthContext(): IContext {
 }
 
 export const AuthProvider = ({ children }) => {
-	const [user, setUser] = useState<User>();
+	const [user, setUser] = useState<GoosebumpsUser>();
 
-	const onSignIn = (loggedInUser: User) => setUser(loggedInUser);
-	const onSignUp = (loggedInUser: User) => setUser(loggedInUser);
+	const onSignIn = (loggedInUser: GoosebumpsUser) => setUser(loggedInUser);
+	const onSignUp = (loggedInUser: GoosebumpsUser) => setUser(loggedInUser);
 	const onSignOut = () => setUser(null);
 
 	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
@@ -33,8 +33,8 @@ export const AuthProvider = ({ children }) => {
 };
 
 type IContext = {
-	user: User;
-	onSignUp: (user: User) => void;
-	onSignIn: (user: User) => void;
+	user: GoosebumpsUser;
+	onSignUp: (user: GoosebumpsUser) => void;
+	onSignIn: (user: GoosebumpsUser) => void;
 	onSignOut: () => void;
 };

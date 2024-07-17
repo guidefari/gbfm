@@ -1,27 +1,34 @@
 import db from "@/src/data/pocketbase";
-import type { NextApiResponse } from "next";
+import type {
+	PocketBaseSignUpResponse,
+	GoosebumpsUser,
+} from "@/src/types/auth";
+import type { NextApiRequest, NextApiResponse } from "next";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 
-export const runtime = "edge";
+// export const runtime = "edge";
 
-export default async function POST(request: Request, res: NextApiResponse) {
+export default async function handler(
+	request: NextApiRequest,
+	res: NextApiResponse<GoosebumpsUser | { error: string }>,
+) {
 	try {
-		const { email, password } = await request.json();
+		const { body } = await request;
+		if (!body.email || !body.password) {
+			return res.status(400).json({ error: "Email and password are required" });
+		}
 
-		const result = await db.register(email, password);
+		const result: PocketBaseSignUpResponse = await db.register(body.email, body.password);
+		const sanitisedUser: GoosebumpsUser = {
+			id: result.result.id,
+			email: body.email,
+			username: result.result.username,
+			avatarUrl: result.result.avatar,
+		};
 
-		return NextResponse.json(result);
+		return res.status(200).json(sanitisedUser);
 	} catch (err) {
-		return new Response(
-			// check for type of error beforehand?
-			JSON.stringify(err),
-			{
-				status: 500,
-				headers: {
-					"Content-Type": "application/json",
-				},
-			},
-		);
+		return res.status(500).json({ error: err.message || err.toString() });
 	}
 }
