@@ -1,4 +1,6 @@
 "use client";
+import { type FormField, GenericAuthForm } from "@/components/Auth/GenericForm";
+import { LockIcon } from "@/components/common/icons";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -45,99 +47,36 @@ export default function SignIn() {
 		}
 	};
 
+	const fields: FormField[] = [
+		{
+			label: "Email",
+			name: "email",
+			type: "email",
+			placeholder: "m@example.com",
+		},
+		{
+			label: "Password",
+			name: "password",
+			type: "password",
+			placeholder: "••••••••",
+		},
+	];
+
 	return (
-		<div className="flex min-h-[65dvh] flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-			<div className="w-full max-w-md mx-auto space-y-8">
-				<div className="flex flex-col items-center justify-center space-y-2">
-					<div className="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full bg-primary text-primary-foreground">
-						<LockIcon className="w-4 h-4 mr-2" />
-						Sign In
-					</div>
-				</div>
-				<Card>
-					<CardContent className="space-y-4">
-						<form onSubmit={onSubmit}>
-							<div className="grid gap-2">
-								<div className="grid gap-1">
-									<Label htmlFor="email">Email</Label>
-									<Input
-										id="email"
-										type="email"
-										placeholder="m@example.com"
-										required
-										name="email"
-									/>
-								</div>
-								<div className="grid gap-1">
-									<div className="flex items-center justify-between">
-										<Label htmlFor="password">Password</Label>
-									</div>
-									<Input
-										id="password"
-										type="password"
-										placeholder="••••••••"
-										required
-										name="password"
-									/>
-								</div>
-								<Button type="submit" className="w-full">
-									Sign in
-								</Button>
-							</div>
-						</form>
-					</CardContent>
-				</Card>
-				<ul className="text-sm font-medium text-muted-foreground">
-					<li>
-						<Link href="/auth/signup">Create a new account</Link>
-					</li>
-					<li>
-						<Link href="/auth/reset-password">Forgot password?</Link>
-					</li>
-				</ul>
-			</div>
+		<div>
+			<GenericAuthForm
+				fields={fields}
+				onSubmit={onSubmit}
+				formTitle="Sign In"
+			/>
+			<ul className="text-sm font-medium text-muted-foreground">
+				<li>
+					<Link href="/auth/signup">Create a new account</Link>
+				</li>
+				<li>
+					<Link href="/auth/reset-password">Forgot password?</Link>
+				</li>
+			</ul>
 		</div>
-	);
-}
-
-function LockIcon(props: React.SVGProps<SVGSVGElement>) {
-	return (
-		<svg
-			{...props}
-			xmlns="http://www.w3.org/2000/svg"
-			width="24"
-			height="24"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="2"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-		>
-			<rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
-			<path d="M7 11V7a5 5 0 0 1 10 0v4" />
-			<title>Lock Icon</title>
-		</svg>
-	);
-}
-
-function XIcon(props: React.SVGProps<SVGSVGElement>) {
-	return (
-		<svg
-			{...props}
-			xmlns="http://www.w3.org/2000/svg"
-			width="24"
-			height="24"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="2"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-		>
-			<path d="M18 6 6 18" />
-			<path d="m6 6 12 12" />
-			<title>Close icon</title>
-		</svg>
 	);
 }
