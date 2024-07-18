@@ -1,10 +1,5 @@
 "use client";
 import { type FormField, GenericAuthForm } from "@/components/Auth/GenericForm";
-import { LockIcon } from "@/components/common/icons";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useAuthContext } from "@/src/contexts/AuthContext";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -12,8 +7,6 @@ import { useState } from "react";
 
 export default function SignIn() {
 	const router = useRouter();
-	// const [email, setEmail] = useState<string>("");
-	// const [password, setPassword] = useState<string>("");
 	const [error, setError] = useState("");
 	const { onSignIn } = useAuthContext();
 
@@ -36,6 +29,7 @@ export default function SignIn() {
 			// 	return;
 			// }
 			const data = await response.json();
+			// ToDo lol. gotta be safer with this man
 			onSignIn(data);
 			if (data?.token) {
 				router.push("/");

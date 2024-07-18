@@ -34,14 +34,16 @@ const ProfileAvatar = () => {
 					<>
 						<Link href="/auth">
 							<DropdownMenuItem className="hover:cursor-pointer">
-								Login
+								Sign In
 							</DropdownMenuItem>
 						</Link>
 						<DropdownMenuSeparator />
 					</>
 				)}
 
-				<DropdownMenuItem>Profile</DropdownMenuItem>
+				<DropdownMenuItem asChild>
+					<Link href="/settings/profile">Profile</Link>
+				</DropdownMenuItem>
 				<DropdownMenuItem>Support</DropdownMenuItem>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem onClick={onSignOut}>Logout</DropdownMenuItem>
