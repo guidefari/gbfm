@@ -1,14 +1,12 @@
 import db from "@/src/data/pocketbase";
-import type { GoosebumpsUser, PocketBaseLoginResponse } from "@/src/types/auth";
+import type { LoginResponse, PocketBaseLoginResponse } from "@/src/types/auth";
 import type { NextApiRequest, NextApiResponse } from "next";
-import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
 
 // export const runtime = "edge";
 
 export default async function handler(
     request: NextApiRequest,
-    res: NextApiResponse<GoosebumpsUser & { token: string } | { error: string }>,
+    res: NextApiResponse<LoginResponse>,
 ) {
     try {
         const { body } = await request;

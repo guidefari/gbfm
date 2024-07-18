@@ -7,6 +7,8 @@ export type GoosebumpsUser = {
 	avatarUrl: string;
 };
 
+export type LoginResponse = GoosebumpsUser & { token: string } | { error: string }
+
 export type PocketBaseSignUpResponse = {
 	result: {
 		avatar: string;

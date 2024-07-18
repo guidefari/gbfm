@@ -1063,6 +1063,11 @@
     protobufjs "^7.2.5"
     yargs "^17.7.2"
 
+"@guide/utils@npm:@jsr/guide__utils@^0.1.0":
+  version "0.1.1"
+  resolved "https://npm.jsr.io/~/11/@jsr/guide__utils/0.1.1.tgz#D9D622CF643B7E248D58330AE5D4E4BA5AF0933D"
+  integrity sha512-I+tkYgzluAgm3WrTCawkGfZ5tSD8ZTmLqlTS2it30Ho8UaUZg9e7eI2pO9kl6J4UYZLfsSqiDCntnyMIPVumBQ==
+
 "@isaacs/cliui@^8.0.2":
   version "8.0.2"
   resolved "https://registry.yarnpkg.com/@isaacs/cliui/-/cliui-8.0.2.tgz#b37667b7bc181c168782259bab42474fbf52b550"
