@@ -1,7 +1,6 @@
 import { useMDXComponent } from "next-contentlayer/hooks";
 import Image from "next/image";
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
 import { format, parseISO } from "date-fns";
 import { MDXcomponents } from "../lib/mdx";
 import Link from "next/link";
@@ -66,16 +65,16 @@ export const Tweet: React.FC<Props> = ({
 					</div>
 				</div>
 				{inView ? (
-					<div className="mt-4 mb-2 text-lg leading-normal whitespace-pre-wrap">
+					<article className="mt-4 mb-2 leading-normal prose whitespace-pre-wrap">
 						<MDXContent components={MDXcomponents} />
 						{children}
-					</div>
+					</article>
 				) : (
 					<div className="h-56 mb-4 bg-gray-300 rounded-lg animate-pulse" />
 				)}
 			</div>
 			{underline && (
-				<hr className="my-4 -mx-10 border-b-2 rounded-full border-opacity-60 border-gb-pastel-green-2" />
+				<hr className="my-4 border-b-2 rounded-full border-gb-darker-bg border-opacity-60" />
 			)}
 		</div>
 	);
