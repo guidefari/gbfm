@@ -4,8 +4,6 @@ import type {
 	GoosebumpsUser,
 } from "@/src/types/auth";
 import type { NextApiRequest, NextApiResponse } from "next";
-import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
 
 // export const runtime = "edge";
 

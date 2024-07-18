@@ -1,5 +1,6 @@
 import type { ReadonlyRequestCookies } from "next/dist/server/web/spec-extension/adapters/request-cookies";
 import PocketBase from "pocketbase";
+import type { GoosebumpsUser } from "../types/auth";
 
 export const POCKET_BASE_URL =
 	process.env.POCKET_BASE_URL || "http://127.0.0.1:8090";
@@ -59,6 +60,17 @@ export class DatabaseClient {
 
 		this.client.authStore.loadFromCookie(cookie?.value || "");
 		return this.client.authStore.model;
+	}
+
+	async updateProfile(data: GoosebumpsUser) {
+		try {
+			const result = await this.client
+				.collection("users")
+				.update(data.id, data);
+			return result;
+		} catch (err) {
+			return err;
+		}
 	}
 }
 

@@ -2,31 +2,64 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-const fields = [
-	{
-		name: "username",
-		label: "Username",
-		type: "text",
-		placeholder: "John Doe",
-	},
-	{
-		name: "email",
-		label: "Email",
-		type: "email",
-		placeholder: "john.doe@example.com",
-	},
-	{
-		name: "password",
-		label: "Password",
-		type: "password",
-		placeholder: "••••••••",
-	},
-];
+import { useAuthContext } from "@/src/contexts/AuthContext";
+import { readFromLocalStorage } from "@guide/utils";
 
 export default function Profile() {
-	const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+	const { user } = useAuthContext();
+
+	const fields = [
+		{
+			name: "username",
+			label: "Username",
+			type: "text",
+			placeholder: user?.username || "Silly Goose",
+		},
+		{
+			name: "email",
+			label: "Email",
+			type: "email",
+			placeholder: user?.email || "silly@goose.fm",
+		},
+		{
+			name: "password",
+			label: "Password",
+			type: "password",
+			placeholder: "••••••••",
+		},
+	];
+
+	const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
 		e.preventDefault();
+
+		const formData = new FormData(e.currentTarget);
+		const email = formData.get("email") as string;
+		const password = formData.get("password") as string;
+		const username = formData.get("username") as string;
+
+		try {
+			const token = readFromLocalStorage({
+				id: "login_token",
+				tableName: "goosebumps",
+			});
+			const response = await fetch("/api/auth/update-profile", {
+				method: "POST",
+				body: JSON.stringify({
+					username,
+					email,
+					password,
+					id: user?.id,
+				}),
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+			});
+			const data = await response.json();
+			console.log(data);
+		} catch (error) {
+			console.error(error);
+		}
+
 		console.log("Form submitted");
 	};
 
