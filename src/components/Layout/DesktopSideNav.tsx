@@ -10,11 +10,11 @@ import ProfileAvatar from "./ProfileAvatar";
 
 export const DesktopSideNav = () => {
 	return (
-		<aside className="fixed inset-y-0 left-0 z-10 hidden w-14 flex-col bg-gb-darker-bg sm:flex">
+		<aside className="fixed inset-y-0 left-0 z-10 flex-col hidden w-14 bg-gb-darker-bg sm:flex">
 			<nav className="flex flex-col items-center gap-4 px-2 sm:py-5">
 				{pagesAndPages.map((page) => {
-					if (page.customComponent) {
-						return page.customComponent;
+					if (page.CustomComponent) {
+						return <div key={page.name}>{page.CustomComponent}</div>;
 					}
 					return (
 						<TooltipProvider key={page.name}>
@@ -22,7 +22,7 @@ export const DesktopSideNav = () => {
 								<TooltipTrigger asChild>
 									<Link
 										href={page.slug}
-										className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:text-foreground md:h-8 md:w-8"
+										className="flex items-center justify-center transition-colors rounded-lg h-9 w-9 text-muted-foreground hover:text-foreground md:h-8 md:w-8"
 										prefetch={false}
 									>
 										{page.icon}
@@ -35,7 +35,7 @@ export const DesktopSideNav = () => {
 					);
 				})}
 			</nav>
-			<nav className="mt-auto flex flex-col items-center gap-4 px-2 sm:py-5">
+			<nav className="flex flex-col items-center gap-4 px-2 mt-auto sm:py-5">
 				<ProfileAvatar />
 			</nav>
 		</aside>
