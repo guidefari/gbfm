@@ -52,7 +52,7 @@
   }
 
   a {
-    @apply text-tomato transition ease-in-out hover:underline;
+    @apply transition ease-in-out text-tomato hover:underline;
   }
 
   li::before {
@@ -70,7 +70,7 @@
   }
 
   p {
-    @apply p-2 w-fit rounded-sm;
+    @apply p-2 rounded-sm w-fit;
     background: var(--darker-bg);
   }
 
@@ -149,10 +149,11 @@
   --tw-prose-headings: var(--pastel-green-2);
   --tw-prose-quotes: inherit;
   --tw-prose-bold: var(--pastel-green-2);
+  @apply text-inherit;
 }
 
 .prose a {
-  @apply text-gb-pastel-green-1;
+  @apply text-gb-pastel-green-1 hover:prose-a:text-gb-tomato;
   /* @apply text-yellow-500; this isn't such a bad color for links, should I ever get tired of the green*/
 }
 

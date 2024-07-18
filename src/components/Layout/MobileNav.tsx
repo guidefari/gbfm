@@ -4,7 +4,6 @@ import Link from "next/link";
 import React from "react";
 import { MenuIcon } from "../common/icons";
 import { pagesAndPages } from "./NavLinks";
-import ProfileAvatar from "./ProfileAvatar";
 
 export const MobileNav = () => {
 	const [open, setOpen] = React.useState(false);
