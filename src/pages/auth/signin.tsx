@@ -46,7 +46,7 @@ export default function SignIn() {
 			label: "Email",
 			name: "email",
 			type: "email",
-			placeholder: "m@example.com",
+			placeholder: "silly@goose.fm",
 		},
 		{
 			label: "Password",

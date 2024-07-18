@@ -1,15 +1,11 @@
 "use client";
 import { type FormField, GenericAuthForm } from "@/components/Auth/GenericForm";
 import { useAuthContext } from "@/src/contexts/AuthContext";
-import type { PocketBaseSignUpResponse } from "@/src/types/auth";
-import Link from "next/link";
 import { useRouter } from "next/router";
 import React from "react";
 
 function SignUp() {
 	const router = useRouter();
-	// const [email, setEmail] = React.useState<string>("");
-	// const [password, setPassword] = React.useState<string>("");
 	const { onSignUp } = useAuthContext();
 	const [error, setError] = React.useState("");
 
@@ -50,7 +46,7 @@ function SignUp() {
 			label: "Email",
 			name: "email",
 			type: "email",
-			placeholder: "m@example.com",
+			placeholder: "silly@goose.fm",
 		},
 		{
 			label: "Password",
