@@ -12,7 +12,7 @@ type shit = {
   slug?: string;
   external?: { link: string };
   icon: React.ReactNode;
-  customComponent?: React.ReactNode;
+  CustomComponent?: React.JSX.Element;
 };
 
 const iconSytles = "h-5 w-5 transition-all group-hover:scale-110";
@@ -55,12 +55,12 @@ export const pagesAndPages: shit[] = [
   {
     icon: <FileTextIcon className={iconSytles} />,
     name: "Mixes via RSS",
-    customComponent: <RSS />,
+    CustomComponent: <RSS />,
   },
   {
     icon: <FileTextIcon className={iconSytles} />,
     name: "Mixes via Youtube",
-    customComponent: <a href="https://youtube.com/@goosebumpsfm" className="text-inherit">
+    CustomComponent: <a href="https://youtube.com/@goosebumpsfm" className="text-inherit">
       <TfiYoutube />
     </a>,
   },

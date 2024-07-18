@@ -9,7 +9,7 @@ export default function Index() {
     .sort((a, b) => compareDesc(new Date(a.date), new Date(b.date)))
     .filter((tweet: TweetType) => tweet._id !== "micro/template-tweet.mdx");
   return (
-    <>
+    <section>
       <PageSEO
         title="goosebumps.fm/micro"
         description="Micro posts and archived tweets."
@@ -19,7 +19,7 @@ export default function Index() {
         description="Too small to be an entire post. Kind of like a tweet. Sometimes ephemeral thoughts"
       />
 
-      <div className="max-w-4xl mx-auto mb-4">
+      <div className="">
         {tweets.map((tweet: TweetType, index) => (
           <div
             className="transition duration-300 ease-in-out delay-100 opacity-90 hover:opacity-100"
@@ -36,6 +36,6 @@ export default function Index() {
           </div>
         ))}
       </div>
-    </>
+    </section>
   );
 }
