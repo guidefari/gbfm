@@ -14,7 +14,8 @@
     "oneTwo": "tsc && yarn lint",
     "test:unit": "vitest",
     "test:e2e": "playwright test",
-    "e2e": "yarn test:e2e"
+    "e2e": "yarn test:e2e",
+    "micro": "./scripts/new-micro.sh"
   },
   "dependencies": {
     "@guide/utils": "npm:@jsr/guide__utils@^0.1.0",

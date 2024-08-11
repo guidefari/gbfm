@@ -1,5 +1,8 @@
 #!/bin/bash
 
+scriptDir=$(dirname "$0")
+microDir="$scriptDir/../src/content/micro"
+
 # Check if the filename argument is provided
 if [ -z "$1" ]; then
 	echo "Please provide a filename as an argument."
@@ -17,13 +20,7 @@ avatarUrl: https://res.cloudinary.com/hokaspokas/image/upload/v1661928720/bar_sh
 date: $current_date
 ---"
 
-# Specify the directory path
-directory="../content/micro"
-
-# Create the directory if it doesn't exist
-mkdir -p "$directory"
-
 # Create the .mdx file with the frontmatter in the specified directory
-echo "$frontmatter" >"$directory/$1.mdx"
+echo "$frontmatter" >"$microDir/$1.mdx"
 
-echo "Generated $directory/$1.mdx with the specified frontmatter"
+echo "Generated $microDir/$1.mdx with the specified frontmatter"
