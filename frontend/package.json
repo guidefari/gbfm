@@ -1,5 +1,6 @@
 {
   "private": true,
+  "name": "frontend",
   "scripts": {
     "dev": "next",
     "build": "next build",

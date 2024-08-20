@@ -1,0 +1,13 @@
+{
+  "name": "nextgoose",
+  "version": "1.0.0",
+  "description": "",
+  "scripts": {},
+  "workspaces": [
+    "./backend",
+    "./frontend"
+  ],
+  "keywords": [],
+  "author": "Guide Fari (https://guidefari.com/)",
+  "license": "ISC"
+}
