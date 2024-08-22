@@ -14,12 +14,10 @@ jobs:
       with:
         bun-version: latest
     - name: Install dependencies
-      run: |
-        cd frontend
+      run:
         bun install
     - name: Install Playwright Browsers
-      run: |
-        cd frontend
+      run:
         bun playwright install --with-deps
     - name: Run Playwright tests
       run: |
