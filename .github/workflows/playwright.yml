@@ -19,6 +19,8 @@ jobs:
     - name: Install Playwright Browsers
       run:
         bun playwright install --with-deps
+    - name: WTF is going on
+      run: bun pm untrusted
     - name: Run Playwright tests
       run: |
         cd frontend
