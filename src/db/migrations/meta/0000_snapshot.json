@@ -1,5 +1,5 @@
 {
-  "id": "99d1665e-4da1-4ca3-972b-6ba766300361",
+  "id": "6005e668-d89a-43c0-be92-76012a490644",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -10,13 +10,13 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "text",
           "primaryKey": true,
           "notNull": true
         },
         "user_id": {
           "name": "user_id",
-          "type": "integer",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -52,7 +52,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "text",
           "primaryKey": true,
           "notNull": true
         },
@@ -60,7 +60,7 @@
           "name": "username",
           "type": "varchar",
           "primaryKey": false,
-          "notNull": true
+          "notNull": false
         },
         "password": {
           "name": "password",

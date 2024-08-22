@@ -23,10 +23,10 @@ function SignUp() {
 				body: JSON.stringify(form),
 			});
 			// console.log("response:", response.json());
-			// if (!response.ok) {
-			// 	setError("Failed to register user");
-			// 	return;
-			// }
+			if (!response.ok) {
+				setError("Failed to register user");
+				return;
+			}
 			const data = await response.json();
 			console.log("data:", data);
 			onSignUp({

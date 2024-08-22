@@ -5,14 +5,14 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "sessions" (
-	"id" serial PRIMARY KEY NOT NULL,
-	"user_id" integer NOT NULL,
+	"id" text PRIMARY KEY NOT NULL,
+	"user_id" text NOT NULL,
 	"expires_at" timestamp with time zone NOT NULL
 );
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "users" (
-	"id" serial PRIMARY KEY NOT NULL,
-	"username" varchar NOT NULL,
+	"id" text PRIMARY KEY NOT NULL,
+	"username" varchar,
 	"password" varchar NOT NULL,
 	"firstname" varchar,
 	"lastname" varchar,
