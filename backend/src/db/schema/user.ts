@@ -1,9 +1,9 @@
 import {
   boolean,
+  integer,
   pgEnum,
   pgTable,
   serial,
-  text,
   timestamp,
   uniqueIndex,
   varchar,
