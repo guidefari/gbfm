@@ -23,7 +23,6 @@ jobs:
       run: bun pm untrusted
     - name: Run Playwright tests
       run: |
-        cd frontend
         bun playwright test
     - uses: actions/upload-artifact@v3
       if: always()
