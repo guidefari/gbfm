@@ -1,4 +1,4 @@
-import "@/css/main.css";
+import "@/styles/main.css";
 import AppShell from "@/components/Layout/AppShell";
 import { ScrollPosition } from "@/components/ScrollPosition";
 import { SessionProvider } from "next-auth/react";
@@ -7,6 +7,7 @@ import Head from "next/head";
 import { memo } from "react";
 import { AudioProvider } from "src/contexts/AudioPlayer";
 import { AuthProvider } from "src/contexts/AuthContext";
+import { Toaster } from "@/components/ui/toaster";
 
 const App = memo(function _({
 	Component,
@@ -29,6 +30,7 @@ const App = memo(function _({
 				<AuthProvider>
 					<AppShell>
 						<Component {...pageProps} />
+						<Toaster />
 					</AppShell>
 				</AuthProvider>
 			</AudioProvider>
