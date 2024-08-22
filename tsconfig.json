@@ -15,14 +15,10 @@
 		"jsx": "preserve",
 		"baseUrl": ".",
 		"paths": {
-			"@/components/*": ["src/components/*"],
-			"@/utils/*": ["utils/*"],
-			"@/lib/*": ["src/lib/*"],
-			"@/src/*": ["src/*"],
-			"@/css/*": ["src/styles/*"],
-			"@/assets/*": ["public/*"],
 			"@/contentlayer/generated": [".contentlayer/generated"],
-			"@/ui/*": ["src/components/ui/*"]
+			"@/*": [
+				"./src/*"
+			  ]
 		},
 		"incremental": true,
 		"plugins": [
