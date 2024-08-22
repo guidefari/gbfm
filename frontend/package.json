@@ -19,7 +19,7 @@
     "micro": "./scripts/new-micro.sh"
   },
   "dependencies": {
-    "@guide/utils": "npm:@jsr/guide__utils@^0.1.0",
+    "@guide/utils": "npm:@jsr/guide__utils",
     "@mdxeditor/editor": "^3.8.0",
     "@radix-ui/colors": "^3.0.0",
     "@radix-ui/react-dialog": "^1.1.1",
