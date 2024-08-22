@@ -17,6 +17,7 @@ export type FormField = {
 	name: string;
 	type: HTMLInputTypeAttribute;
 	placeholder: string;
+	required?: boolean
 };
 
 export const GenericAuthForm = ({ fields, onSubmit, formTitle }: Props) => {
@@ -42,7 +43,7 @@ export const GenericAuthForm = ({ fields, onSubmit, formTitle }: Props) => {
 											id={field.name}
 											type={field.type}
 											placeholder={field.placeholder}
-											required
+											required={field.required || false}
 											name={field.name}
 										/>
 									</div>

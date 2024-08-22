@@ -4,10 +4,11 @@ export type GoosebumpsUser = {
 	id: string;
 	email: string;
 	username: string;
-	avatarUrl: string;
 };
 
-export type LoginResponse = GoosebumpsUser & { token: string } | { error: string }
+export type LoginResponse =
+	| (GoosebumpsUser & { token: string })
+	| { error: string };
 
 export type PocketBaseSignUpResponse = {
 	result: {
