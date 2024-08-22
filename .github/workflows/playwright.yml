@@ -5,39 +5,28 @@ on:
   pull_request:
     branches: [ main, master ]
 jobs:
-  # test_setup:
-  #   name: Test setup
-  #   runs-on: ubuntu-latest
-  #   outputs:
-  #     preview_url: ${{ steps.waitForVercelPreviewDeployment.outputs.url }}
-  #   steps:
-  #     - name: Wait for Vercel preview deployment to be ready
-  #       uses: patrickedqvist/wait-for-vercel-preview@v1.3.1
-  #       id: waitForVercelPreviewDeployment
-  #       with:
-  #         token: ${{ secrets.GITHUB_TOKEN }}
-  #         max_timeout: 300
-  
   test:
-    # needs: test_setup
     timeout-minutes: 5
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
+    - uses: oven-sh/setup-bun@v1
       with:
-        node-version: 18
+        bun-version: latest
     - name: Install dependencies
-      run: npm install -g yarn && yarn
+      run:
+        bun install
     - name: Install Playwright Browsers
-      run: yarn playwright install --with-deps
+      run:
+        bun playwright install --with-deps
+    - name: WTF is going on
+      run: bun pm untrusted
     - name: Run Playwright tests
-      run: yarn playwright test
-      # env:
-      #   PLAYWRIGHT_TEST_BASE_URL: ${{ needs.test_setup.outputs.preview_url }}
+      run: |
+        bun playwright test
     - uses: actions/upload-artifact@v3
       if: always()
       with:
         name: playwright-report
-        path: playwright-report/
+        path: frontend/playwright-report/
         retention-days: 30
