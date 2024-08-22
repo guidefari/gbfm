@@ -5,8 +5,8 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useAuthContext } from "@/src/contexts/AuthContext";
-import { Button } from "@/ui/button";
+import { useAuthContext } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 import Link from "next/link";
 
 const ProfileAvatar = () => {

@@ -5,7 +5,7 @@ import { LilDate } from "../common/LilDate";
 import { MDXcomponents } from "@/lib/mdx";
 import { useMDXComponent } from "next-contentlayer/hooks";
 import { MinimalCard } from "../common/MinimalCard";
-import { DEFAULT_IMAGE_URL } from "@/src/constants";
+import { DEFAULT_IMAGE_URL } from "@/constants";
 
 type Props = {
 	content: string;

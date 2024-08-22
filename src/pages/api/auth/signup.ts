@@ -2,8 +2,8 @@ import { generateId } from "lucia";
 import { hash } from "@node-rs/argon2";
 
 import type { NextApiRequest, NextApiResponse } from "next";
-import { lucia } from "@/src/db/auth";
-import { insertUser } from "@/src/db/schema";
+import { lucia } from "@/db/auth";
+import { insertUser } from "@/db/schema";
 import { z } from "zod";
 import { captureException } from "@sentry/nextjs";
 
@@ -29,7 +29,7 @@ export default async function handler(
 	const password = body?.password;
 	if (!password || password.length < 6 || password.length > 255) {
 		res.status(400).json({
-			error: "Invalid password",
+			message: "Invalid password",
 		});
 		return;
 	}
@@ -68,14 +68,14 @@ export default async function handler(
 		// check for specific e.code when item already exists
 		if (typeof e === "object" && e?.code === "23505") {
 			res.status(400).json({
-				error: "email already exists",
+				message: "email already exists",
 			});
 			return;
 		}
 		captureException(e);
 
 		res.status(500).json({
-			error: "An unknown error occurred",
+			message: "An unknown error occurred",
 			stack: e,
 		});
 		return;

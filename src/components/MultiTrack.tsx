@@ -1,5 +1,5 @@
 import { cn } from "@/lib/util";
-import type { Track } from "@/src/types";
+import type { Track } from "@/types";
 import * as ScrollArea from "@radix-ui/react-scroll-area";
 import clsx from "clsx";
 import Image from "next/image";
@@ -77,7 +77,7 @@ export function MultiTrack({
           )}
         </div>
         <div className="col-span-2">
-          <ScrollArea.Root className="w-full shadow-sm h-auto ScrollAreaRoot">
+          <ScrollArea.Root className="w-full h-auto shadow-sm ScrollAreaRoot">
             <ScrollArea.Viewport className="max-h-60 bg-gb-bg">
               <ul className="p-0">
                 {tracks.map((track, index) => (

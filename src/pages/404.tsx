@@ -1,4 +1,4 @@
-import siteMetadata from "@/src/siteMetadata";
+import siteMetadata from "@/siteMetadata";
 import { useRouter } from "next/router";
 import { PageSEO } from "src/components/SEO";
 

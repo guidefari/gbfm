@@ -2,7 +2,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuthContext } from "@/src/contexts/AuthContext";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { readFromLocalStorage } from "@guide/utils";
 
 export default function Profile() {

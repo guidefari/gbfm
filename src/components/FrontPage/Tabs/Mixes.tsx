@@ -3,7 +3,7 @@ import { PostCard } from '@/components/PostCard'
 import { RSS } from '@/components/RSS'
 import { PageTitle } from '@/components/common/PageTitle'
 import { allMixes } from '@/contentlayer/generated'
-import { DEFAULT_IMAGE_URL } from '@/src/constants'
+import { DEFAULT_IMAGE_URL } from '@/constants'
 import { compareDesc } from 'date-fns'
 import React from 'react'
 

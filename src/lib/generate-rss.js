@@ -1,5 +1,5 @@
 
-import siteMetadata from '@/src/siteMetadata'
+import siteMetadata from '@/siteMetadata'
 import { escape } from './htmlEscaper'
 
 const generateRssItem = (post) => `

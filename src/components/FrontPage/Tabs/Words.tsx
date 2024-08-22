@@ -2,7 +2,7 @@ import type { Post } from ".contentlayer/generated/types";
 import { PostCard } from "@/components/PostCard";
 import { PageTitle } from "@/components/common/PageTitle";
 import { allPosts } from "@/contentlayer/generated";
-import { DEFAULT_IMAGE_URL } from "@/src/constants";
+import { DEFAULT_IMAGE_URL } from "@/constants";
 import { compareDesc } from "date-fns";
 import React from "react";
 

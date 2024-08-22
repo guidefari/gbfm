@@ -1,7 +1,7 @@
 import Image from "next/image";
 import type React from "react";
 import { MdOutlineDownloading } from "react-icons/md";
-import { DEFAULT_IMAGE_URL } from "@/src/constants";
+import { DEFAULT_IMAGE_URL } from "@/constants";
 import { PlayPauseButton } from "../PlayPauseButton";
 import { cn, copyToClipboard } from "@/lib/util";
 

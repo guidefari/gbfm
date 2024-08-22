@@ -1,6 +1,6 @@
 "use client";
 import { type FormField, GenericAuthForm } from "@/components/Auth/GenericForm";
-import { useAuthContext } from "@/src/contexts/AuthContext";
+import { useAuthContext } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
 import React from "react";
 
