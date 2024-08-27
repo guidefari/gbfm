@@ -11,6 +11,7 @@ import {
 	uniqueIndex,
 	varchar,
 } from "drizzle-orm/pg-core";
+import { z } from "zod";
 
 export const roleEnum = pgEnum("role", ["user", "admin"]);
 
@@ -56,3 +57,6 @@ export const sessionTable = pgTable("sessions", {
 export const insertUser = async (user: NewUser & { username?: string }) => {
 	return db.insert(userTable).values(user).returning();
 };
+
+export const emailSchema = z.string().email();
+export const usernameSchema = z.string().min(3).max(64);
