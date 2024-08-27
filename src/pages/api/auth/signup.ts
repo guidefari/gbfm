@@ -3,8 +3,11 @@ import { hash } from "@node-rs/argon2";
 
 import type { NextApiRequest, NextApiResponse } from "next";
 import { lucia } from "@/services/auth";
-import { insertUser } from "@/db/models/user/user.schema";
-import { z } from "zod";
+import {
+	emailSchema,
+	insertUser,
+	usernameSchema,
+} from "@/db/models/user/user.schema";
 import { captureException } from "@sentry/nextjs";
 
 export default async function handler(
@@ -25,25 +28,28 @@ export default async function handler(
 	const password = body?.password;
 	const username = body?.username;
 
-	const emailSchema = z.string().email();
-	const usernameSchema = z.string().min(3).max(64);
+	if (!email || !password) {
+		return res.status(400).json({
+			message: "Missing email or password",
+		});
+	}
 
 	const validatedUser = usernameSchema.safeParse(username);
 	const validatedEmail = emailSchema.safeParse(email);
 
-	if (username && !validatedUser.success) {
+	if (!validatedUser.success) {
 		return res.status(400).json({
 			message: "Invalid username",
 		});
 	}
 
-	if (!email || !validatedEmail.success) {
+	if (!validatedEmail.success) {
 		res.status(400).json({
 			message: "Invalid email",
 		});
 		return;
 	}
-	if (!password || password.length < 6 || password.length > 255) {
+	if (password.length < 6 || password.length > 255) {
 		res.status(400).json({
 			message: "Invalid password",
 		});
