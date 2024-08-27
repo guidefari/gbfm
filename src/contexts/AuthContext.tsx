@@ -33,7 +33,6 @@ export const AuthProvider = ({ children }) => {
 			return;
 		}
 		setUser({
-			avatarUrl: data.avatarUrl,
 			email: data.email,
 			id: data.id,
 			username: data.username,
