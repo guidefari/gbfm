@@ -1,9 +1,9 @@
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Button } from "@/ui/button";
 import Link from "next/link";
 import React from "react";
 import { MenuIcon } from "../common/icons";
 import { pagesAndPages } from "./NavLinks";
+import { Button } from "@/components/ui/button";
 
 export const MobileNav = () => {
 	const [open, setOpen] = React.useState(false);
