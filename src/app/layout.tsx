@@ -1,6 +1,5 @@
 import "@/styles/main.css";
 import AppShell from "@/components/Layout/AppShell";
-import { ScrollPosition } from "@/components/ScrollPosition";
 import { SessionProvider } from "next-auth/react";
 import type { AppProps } from "next/app";
 import Head from "next/head";
@@ -8,13 +7,18 @@ import { memo } from "react";
 import { AudioProvider } from "src/contexts/AudioPlayer";
 import { AuthProvider } from "src/contexts/AuthContext";
 import { Toaster } from "@/components/ui/toaster";
+import useScrollRestoration from "./hooks/useScrollRestoration";
 
 const App = memo(function _({
-	Component,
-	pageProps: { session, ...pageProps },
-}: AppProps) {
+	children,
+}: {
+	children: React.ReactNode;
+}) {
+	// useScrollRestoration();
+
 	return (
-		<SessionProvider session={session}>
+		<>
+			{/* <SessionProvider session={session}> */}
 			<Head>
 				<meta content="width=device-width, initial-scale=1" name="viewport" />
 				<link
@@ -24,17 +28,21 @@ const App = memo(function _({
 				/>
 				<meta name="color-scheme" content="dark" />
 			</Head>
-			<ScrollPosition />
 
 			<AudioProvider>
 				<AuthProvider>
-					<AppShell>
-						<Component {...pageProps} />
-						<Toaster />
-					</AppShell>
+					<html lang="en">
+						<body>
+							<AppShell>
+								{children}
+								<Toaster />
+							</AppShell>
+						</body>
+					</html>
 				</AuthProvider>
 			</AudioProvider>
-		</SessionProvider>
+			{/* </SessionProvider> */}
+		</>
 	);
 });
 

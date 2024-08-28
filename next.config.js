@@ -3,6 +3,8 @@
 const { withContentlayer } = require('next-contentlayer')
 const { withSentryConfig } = require("@sentry/nextjs");
 
+const basePath = process.env.BASE_PATH ?? ''
+console.log('basePath:', basePath)
 
 const hostnames = [
   '**.scdn.co', // Spofity playlist mosaics
@@ -32,6 +34,9 @@ module.exports = withContentlayer({
 
   transpilePackages: ['@mdxeditor/editor', 'react-diff-view'],
   reactStrictMode: true,
+  // env: {
+  //   basePath,
+  // },
   webpack: (config) => {
     // this will override the experiments
     config.experiments = { ...config.experiments, topLevelAwait: true };

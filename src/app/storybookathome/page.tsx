@@ -33,10 +33,10 @@ export default function component() {
   ]
 
   return (
-    <div className="max-w-3xl flex items-start flex-col px-2">
+    <div className="flex flex-col items-start max-w-3xl px-2">
       {pagesAndPages.map((text, index) => (
         <p
-          key={index}
+          key={text.slug}
           className="cursor-pointer leading-none my-2 w-24
             transition-transform duration-150
             transform text-sm

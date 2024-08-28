@@ -2,7 +2,7 @@
 import { type FormField, GenericAuthForm } from "@/components/Auth/GenericForm";
 import { useAuthContext } from "@/contexts/AuthContext";
 import Link from "next/link";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 export default function SignIn() {

@@ -1,5 +1,5 @@
 import Head from "next/head";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import siteMetadata from "@/siteMetadata";
 import type React from "react";
 

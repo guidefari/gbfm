@@ -2,14 +2,14 @@
 import { type FormField, GenericAuthForm } from "@/components/Auth/GenericForm";
 import { useToast } from "@/components/ui/use-toast";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import React from "react";
 
 function SignUp() {
 	const router = useRouter();
 	const { onSignUp } = useAuthContext();
 	const [error, setError] = React.useState("");
-	const { toast } = useToast()
+	const { toast } = useToast();
 
 	const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -25,12 +25,12 @@ function SignUp() {
 			// console.log("response:", response.json());
 			if (!response.ok) {
 				// setError("Failed to register user");
-				const r = await response.json()
+				const r = await response.json();
 				toast({
 					title: "Failed to register user",
 					description: r.message || "",
-					variant: 'destructive'
-				  })
+					variant: "destructive",
+				});
 				return;
 			}
 			const data = await response.json();
@@ -52,20 +52,20 @@ function SignUp() {
 			name: "email",
 			type: "email",
 			placeholder: "silly@goose.fm",
-			required: true
+			required: true,
 		},
 		{
-			label: 'Username (optional)',
+			label: "Username (optional)",
 			name: "username",
 			type: "text",
-			placeholder: "big_cue"
+			placeholder: "big_cue",
 		},
 		{
 			label: "Password",
 			name: "password",
 			type: "password",
 			placeholder: "••••••••",
-			required: true
+			required: true,
 		},
 	];
 

@@ -1,3 +1,4 @@
+"use client";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import Link from "next/link";
 import React from "react";

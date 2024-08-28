@@ -3,14 +3,19 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { validateLoginState } from "@/services/auth";
+import { getUser, validateLoginState } from "@/services/auth";
 import { readFromLocalStorage } from "@guide/utils";
 import type { User } from "lucia";
 import type { GetServerSidePropsContext } from "next";
 
-export async function getServerSideProps(context: GetServerSidePropsContext) {
-	const user = await validateLoginState(context.req, context.res);
-	console.log('user:', user)
+interface ProfileProps {
+	user: User; // Make sure to import the User type if needed
+}
+
+export default async function Profile({ user: serverUser }: ProfileProps) {
+	// const { user } = useAuthContext();
+	const user = await getUser();
+	console.log("user:", user);
 	if (!user) {
 		return {
 			redirect: {
@@ -19,20 +24,6 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
 			},
 		};
 	}
-	// Return props for the authenticated user
-	return {
-		props: {
-			user: JSON.parse(JSON.stringify(user)), // Serialize the user object
-		},
-	};
-}
-
-interface ProfileProps {
-	user: User; // Make sure to import the User type if needed
-}
-
-export default function Profile({ user: serverUser }: ProfileProps) {
-	const { user } = useAuthContext();
 	const currentUser = serverUser || user;
 
 	const fields = [

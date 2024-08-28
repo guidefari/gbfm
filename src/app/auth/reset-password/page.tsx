@@ -1,7 +1,7 @@
 "use client";
 import { type FormField, GenericAuthForm } from "@/components/Auth/GenericForm";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import React from "react";
 
 function SignUp() {

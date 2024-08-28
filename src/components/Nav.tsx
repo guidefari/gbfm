@@ -1,6 +1,7 @@
+"use client";
 import { formatSeconds } from "@/lib/util";
 import Image from "next/image";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import { useRef } from "react";
 import { GiPauseButton, GiPlayButton } from "react-icons/gi";
 import { HiHome } from "react-icons/hi";
@@ -22,7 +23,7 @@ const Nav = () => {
 	return (
 		<nav
 			ref={navRef}
-			className="fixed transition ease-in-out delay-150 bottom-0 z-50 w-full py-2 space-y-1 bg-sky-900"
+			className="fixed bottom-0 z-50 w-full py-2 space-y-1 transition ease-in-out delay-150 bg-sky-900"
 		>
 			<div className="relative grid items-center h-full max-w-xs grid-flow-col mx-auto">
 				<button
@@ -78,7 +79,7 @@ const Nav = () => {
 				<input
 					type="range"
 					value={progress}
-					className="bg-gb-tomato h-2 w-full align-start rounded-full hover:cursor-pointer"
+					className="w-full h-2 rounded-full bg-gb-tomato align-start hover:cursor-pointer"
 					onInput={changeRange}
 				/>
 				<p className="text-xs ">{formatSeconds(audioRef?.duration || 0)}</p>
