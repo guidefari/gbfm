@@ -2,7 +2,7 @@ const siteMetadata = {
   title: 'Goosebumps.fm',
   author: 'Guide Fari',
   headerTitle: 'Goosebumps.fm',
-  description: 'Curated music by Guide Fari and friends',
+  description: 'Curated music for your friends',
   language: 'en-us',
   theme: 'system', // system, dark or light
   siteUrl: 'https://goosebumps.fm',
@@ -11,9 +11,10 @@ const siteMetadata = {
   image: '/static/images/avatar.png',
   socialBanner:
     'https://res.cloudinary.com/hokaspokas/image/upload/v1661926976/here-hugo/gbanner.png',
-  email: 'goose@guidefari.com',
-  github: 'https://github.com/txndai/nextgoose',
+  email: 'guideg6@gmail.com',
+  github: 'https://github.com/guidefari/nextgoose',
   twitter: 'https://twitter.com/guidefari',
+  twitterHandle: '@guidefari',
   // facebook: 'https://facebook.com',
   youtube: 'https://www.youtube.com/channel/UCXLiPJsFfPpwJZIF-3QvzXQ',
   linkedin: 'https://linkedin.com/in/guide-fari-8b0063176',
