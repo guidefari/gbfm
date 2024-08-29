@@ -5,7 +5,6 @@
     "dev": "next dev --turbo",
     "build": "next build",
     "postbuild": "next-sitemap",
-    "prebuild": "bun contentlayer build -c contentlayer.config.js",
     "start": "next start",
     "format": "biome format --write .",
     "lint": "biome lint ./src",

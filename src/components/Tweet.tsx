@@ -1,10 +1,10 @@
-import { useMDXComponent } from "next-contentlayer/hooks";
 import Image from "next/image";
 import type React from "react";
 import { format, parseISO } from "date-fns";
-import { MDXcomponents } from "../lib/mdx";
+import { MDXRemote } from "next-mdx-remote/rsc";
 import Link from "next/link";
 import { useInView } from "react-intersection-observer";
+import { CustomMDXComponents } from "@/app/mdx-components";
 
 interface Props {
 	authorName: string;
@@ -27,14 +27,15 @@ export const Tweet: React.FC<Props> = ({
 	underline = true,
 	url,
 }) => {
-	const MDXContent = useMDXComponent(content);
-
-	const { ref, inView } = useInView({
-		triggerOnce: true,
-		fallbackInView: true,
-	});
+	// const { ref, inView } = useInView({
+	// 	triggerOnce: true,
+	// 	fallbackInView: true,
+	// });
 	return (
-		<div ref={ref} className="relative w-full mb-8 ">
+		<div
+			// ref={ref}
+			className="relative w-full mb-8 "
+		>
 			<div className="px-6 py-4 ">
 				<div className="flex justify-between">
 					<div className="flex items-center">
@@ -64,14 +65,15 @@ export const Tweet: React.FC<Props> = ({
 						</Link>
 					</div>
 				</div>
-				{inView ? (
-					<article className="mt-4 mb-2 leading-normal prose whitespace-pre-wrap">
-						<MDXContent components={MDXcomponents} />
-						{children}
-					</article>
+				<article className="mt-4 mb-2 leading-normal prose whitespace-pre-wrap">
+					<MDXRemote components={CustomMDXComponents} source={content} />
+					{children}
+				</article>
+				{/* {inView ? (
+					<></>
 				) : (
 					<div className="h-56 mb-4 bg-gray-300 rounded-lg animate-pulse" />
-				)}
+				)} */}
 			</div>
 			{underline && (
 				<hr className="my-4 border-b-2 rounded-full border-gb-darker-bg border-opacity-60" />

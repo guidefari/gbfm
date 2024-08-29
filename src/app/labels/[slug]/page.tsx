@@ -45,7 +45,7 @@ export default function PostPage({ params }: Params) {
 	}
 	return (
 		<LongPost
-			content={post.body.code}
+			content={post.body.raw}
 			title={post.name}
 			thumbnailUrl={post.thumbnailUrl}
 		/>

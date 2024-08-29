@@ -47,11 +47,11 @@ export const pagesAndPages: shit[] = [
 		slug: "/subscribe",
 		icon: <IoIosMailOpen className={iconSytles} />,
 	},
-	{
-		icon: <GiPerspectiveDiceSixFacesRandom className={iconSytles} />,
-		name: "RSP",
-		slug: "/rsp",
-	},
+	// {
+	// 	icon: <GiPerspectiveDiceSixFacesRandom className={iconSytles} />,
+	// 	name: "RSP",
+	// 	slug: "/rsp",
+	// },
 	{
 		icon: <FileTextIcon className={iconSytles} />,
 		name: "Mixes via RSS",

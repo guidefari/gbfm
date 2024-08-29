@@ -45,7 +45,7 @@ export default function PostPage({ params }: Params) {
 	}
 	return (
 		<LongPost
-			content={mix.body.code}
+			content={mix.body.raw}
 			title={mix.title}
 			date={mix.date}
 			thumbnailUrl={mix.thumbnailUrl ?? DEFAULT_IMAGE_URL}

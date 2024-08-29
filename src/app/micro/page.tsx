@@ -14,6 +14,7 @@ export default function Index() {
 	const tweets: TweetType[] = allTweets
 		.sort((a, b) => compareDesc(new Date(a.date), new Date(b.date)))
 		.filter((tweet: TweetType) => tweet._id !== "micro/template-tweet.mdx");
+
 	return (
 		<section>
 			<PageTitle
@@ -32,7 +33,7 @@ export default function Index() {
 							avatarUrl={tweet.avatarUrl}
 							date={tweet.date}
 							handle={tweet.handle || ""}
-							content={tweet.body.code}
+							content={tweet.body.raw}
 							url={tweet.url}
 						/>
 					</div>

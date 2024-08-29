@@ -1,3 +1,4 @@
+"use client";
 import { SpinningCircleLoaderThingy } from "@/components/common/icons";
 import fetcher from "@/lib/fetcher";
 import clsx from "clsx";
