@@ -18,6 +18,12 @@ const hostnames = [
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    turbo: {
+      enabled: true,
+    }
+  },
+  
   rewrites: async () => [
     {
       source: '/rss.xml',
@@ -38,10 +44,13 @@ const nextConfig = {
 const withMDX = createMDX({
     experimental: {
         mdxRs: true,
+
     },
   
   // Add markdown plugins here, as desired
 })
+
+// export default withMDX(nextConfig)
 
 // Injected content via Sentry wizard below
 export default withSentryConfig(

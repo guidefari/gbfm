@@ -4,7 +4,6 @@ import AppShell from "@/components/Layout/AppShell";
 import { AudioProvider } from "src/contexts/AudioPlayer";
 import { AuthProvider } from "src/contexts/AuthContext";
 import { Toaster } from "@/components/ui/toaster";
-// import useScrollRestoration from "./hooks/useScrollRestoration";
 import type { Metadata } from "next";
 import siteMetadata from "@/siteMetadata";
 
@@ -39,8 +38,6 @@ export default function RootLayout({
 }: {
 	children: React.ReactNode;
 }) {
-	// useScrollRestoration();
-
 	return (
 		<>
 			{/* <SessionProvider session={session}> */}

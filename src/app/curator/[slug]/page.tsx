@@ -22,7 +22,7 @@ type Params = {
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
 	const { slug } = params;
-	const author = allAuthors.find((author) => author.url === slug);
+	const author = allAuthors.find((author) => author.fileName === slug);
 
 	if (!author || author instanceof Error) {
 		return {
