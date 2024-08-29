@@ -48,6 +48,7 @@ export default async function Profile({ user: serverUser }: ProfileProps) {
 	];
 
 	const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+		"use server";
 		e.preventDefault();
 
 		const formData = new FormData(e.currentTarget);
