@@ -2,19 +2,23 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getSession } from "next-auth/react";
 import type { PlaylistInput, PlaylistResponse } from "@/types";
 import { getUsersPlaylists } from "@/lib/spotify";
+import { Session } from "next-auth";
 
-export type ResponseType = PlaylistResponse["items"];
+export type ResponseType = PlaylistResponse["items"] | { error: string }; // Updated response type
 
-let playlists: ResponseType;
+let playlists: PlaylistResponse["items"] = []; // Ensure playlists is always an array
 let looping = true;
 
 const handler = async (
 	req: NextApiRequest,
 	res: NextApiResponse<ResponseType>,
 ) => {
-	const {
-		token: { accessToken, sub },
-	} = await getSession({ req });
+	const session = await getSession({ req });
+	if (!session || !session.token) {
+		return res.status(401).json({ error: "Unauthorized" });
+	}
+
+	const { accessToken, sub } = session.token;
 
 	playlists = [];
 
@@ -33,7 +37,7 @@ const getBatch = async ({
 	refresh_token,
 	user_id,
 	next_url,
-}: PlaylistInput): Promise<PlaylistResponse> => {
+}: PlaylistInput): Promise<void> => {
 	const response = await getUsersPlaylists({
 		refresh_token,
 		user_id,
@@ -46,11 +50,9 @@ const getBatch = async ({
 	playlists.push(...thing.items);
 	if (thing.next) {
 		await getBatch({ refresh_token, user_id, next_url: thing.next });
-		return;
 	}
 
 	looping = false;
-	return;
 };
 
 // const cleanShitUp = async (stuff: PlaylistResponse) => {

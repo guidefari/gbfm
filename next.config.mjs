@@ -4,7 +4,6 @@ import createMDX from '@next/mdx'
 import { withSentryConfig } from '@sentry/nextjs'
 
 const basePath = process.env.BASE_PATH ?? ''
-console.log('basePath:', basePath)
 
 const hostnames = [
   '**.scdn.co', // Spofity playlist mosaics

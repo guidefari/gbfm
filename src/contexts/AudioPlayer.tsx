@@ -8,10 +8,17 @@ import React, {
 } from "react";
 import type { Track } from "../types";
 
-const AudioContext = createContext(null);
+const AudioContext = createContext<AudioPlayerContext | null>(null);
 
-export const useAudioPlayerContext = (): AudioPlayerContext =>
-	React.useContext<AudioPlayerContext | null>(AudioContext);
+export const useAudioPlayerContext = (): AudioPlayerContext => {
+	const context = React.useContext(AudioContext);
+	if (context === null) {
+		throw new Error(
+			"useAudioPlayerContext must be used within an AudioProvider",
+		);
+	}
+	return context;
+};
 
 export const AudioProvider = ({ children }: Props) => {
 	const audioRef: HTMLAudioElement | null = useMemo(
@@ -28,15 +35,19 @@ export const AudioProvider = ({ children }: Props) => {
 	);
 
 	useEffect(() => {
-		audioRef.onended = () => {
-			handlers.pause();
-		};
-		audioRef.ontimeupdate = handleTimeUpdate;
+		if (audioRef) {
+			audioRef.onended = () => {
+				handlers.pause();
+			};
+			audioRef.ontimeupdate = handleTimeUpdate;
+		}
 	}, [audioRef]);
 
 	const handleTimeUpdate = () => {
-		const progress = (audioRef.currentTime / audioRef.duration) * 100 || 0;
-		setProgress(progress);
+		if (audioRef) {
+			const progress = (audioRef.currentTime / audioRef.duration) * 100 || 0;
+			setProgress(progress);
+		}
 	};
 
 	const handlers = React.useMemo(
@@ -55,6 +66,7 @@ export const AudioProvider = ({ children }: Props) => {
 			},
 			togglePlayPause: () => setPlayAudio(!playAudio),
 			handleAlbumArtClick: (src: string, thumbnailUrl: string) => {
+				if (!audioRef) return;
 				if (!src) {
 					alert("Yo, there's no preview audio for this one");
 				} else if (src === audioRef.src && playAudio === false) {
@@ -70,14 +82,15 @@ export const AudioProvider = ({ children }: Props) => {
 				}
 			},
 			jumpForward: () => {
-				if (!audioRef.src) return;
+				if (!audioRef || !audioRef.src) return;
 				audioRef.currentTime += 30;
 			},
 			jumpBackward: () => {
-				if (!audioRef.src) return;
+				if (!audioRef || !audioRef.src) return;
 				audioRef.currentTime -= 15;
 			},
 			setTimeUsingPercentage: (percentage: number) => {
+				if (!audioRef) return;
 				setProgress(percentage);
 				audioRef.currentTime = (percentage / 100) * audioRef.duration;
 			},
@@ -85,7 +98,7 @@ export const AudioProvider = ({ children }: Props) => {
 		[audioRef, playAudio, nowPlayingContext],
 	);
 
-	const contextValue = useMemo(
+	const contextValue = useMemo<AudioPlayerContext>(
 		() => [
 			audioRef,
 			handlers,
@@ -105,7 +118,7 @@ export const AudioProvider = ({ children }: Props) => {
 };
 
 type AudioPlayerContext = [
-	audioRef: HTMLAudioElement,
+	audioRef: HTMLAudioElement | null,
 	handlers: {
 		play: () => void;
 		pause: () => void;

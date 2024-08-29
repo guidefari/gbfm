@@ -1,18 +1,21 @@
-"use client"
+"use client";
+
+import { useEffect } from "react";
 import * as Sentry from "@sentry/nextjs";
-import NextError from "next/error";
 
-const CustomErrorComponent = (props) => {
-	return <NextError statusCode={props.statusCode} />;
-};
+export default function ErrorPage({
+	error,
+}: {
+	error: Error & { digest?: string };
+}) {
+	useEffect(() => {
+		// Log the error to Sentry
+		Sentry.captureException(error);
+	}, [error]);
 
-CustomErrorComponent.getInitialProps = async (contextData) => {
-	// In case this is running in a serverless function, await this in order to give Sentry
-	// time to send the error before the lambda exits
-	await Sentry.captureUnderscoreErrorException(contextData);
-
-	// This will contain the status code of the response
-	return NextError.getInitialProps(contextData);
-};
-
-export default CustomErrorComponent;
+	return (
+		<div>
+			<h2>Ooph! Something went wrong!</h2>
+		</div>
+	);
+}

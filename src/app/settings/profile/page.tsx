@@ -12,7 +12,7 @@ interface ProfileProps {
 	user: User; // Make sure to import the User type if needed
 }
 
-export default async function Profile({ user: serverUser }: ProfileProps) {
+export default async function Profile() {
 	// const { user } = useAuthContext();
 	const user = await getUser();
 	console.log("user:", user);
@@ -24,20 +24,21 @@ export default async function Profile({ user: serverUser }: ProfileProps) {
 			},
 		};
 	}
-	const currentUser = serverUser || user;
 
 	const fields = [
 		{
 			name: "username",
 			label: "Username",
 			type: "text",
-			placeholder: user?.username || "Silly Goose",
+			// placeholder: user?.username || "Silly Goose",
+			placeholder: "Silly Goose",
 		},
 		{
 			name: "email",
 			label: "Email",
 			type: "email",
-			placeholder: user?.email || "silly@goose.fm",
+			// placeholder: user?.email || "silly@goose.fm",
+			placeholder: "silly@goose.fm",
 		},
 		{
 			name: "password",

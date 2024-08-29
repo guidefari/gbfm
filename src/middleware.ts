@@ -4,8 +4,6 @@ import { type NextRequest, NextResponse } from "next/server";
 import { lucia } from "./services/auth";
 // import db from "./data/pocketbase";
 
-export const runtime = "experimental-edge";
-
 const protectedUrls = ["/settings", "/auth"];
 
 export async function middleware(request: NextRequest, res: NextApiResponse) {

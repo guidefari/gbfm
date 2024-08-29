@@ -1,22 +1,21 @@
-"use client"
-import React, {
-	createContext,
-	useContext,
-	useEffect,
-	useMemo,
-	useState,
-} from "react";
+"use client";
+import type React from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import type { GoosebumpsUser, LoginResponse } from "../types/auth";
 import { readFromLocalStorage, writeToLocalStorage } from "@guide/utils";
 
 const AuthContext = createContext<IContext | null>(null);
 
 export function useAuthContext(): IContext {
-	return useContext(AuthContext);
+	const context = useContext(AuthContext);
+	if (context === null) {
+		throw new Error("useAuthContext must be used within an AuthProvider");
+	}
+	return context;
 }
 
-export const AuthProvider = ({ children }) => {
-	const [user, setUser] = useState<GoosebumpsUser>();
+export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+	const [user, setUser] = useState<GoosebumpsUser | null>(null);
 
 	useEffect(() => {
 		const user = readFromLocalStorage<GoosebumpsUser>({
@@ -64,16 +63,12 @@ export const AuthProvider = ({ children }) => {
 		});
 	};
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: <explanation>
-	const contextValues = useMemo(
-		() => ({
-			user,
-			onSignIn,
-			onSignUp,
-			onSignOut,
-		}),
-		[user],
-	);
+	const contextValues: IContext = {
+		user,
+		onSignIn,
+		onSignUp,
+		onSignOut,
+	};
 
 	return (
 		<AuthContext.Provider value={contextValues}>
@@ -83,7 +78,7 @@ export const AuthProvider = ({ children }) => {
 };
 
 type IContext = {
-	user: GoosebumpsUser;
+	user: GoosebumpsUser | null;
 	onSignUp: (user: GoosebumpsUser) => void;
 	onSignIn: (data: LoginResponse) => void;
 	onSignOut: () => void;

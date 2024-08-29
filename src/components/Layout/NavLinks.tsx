@@ -7,13 +7,15 @@ import { IoIosMailOpen } from "react-icons/io";
 import { PiVinylRecordLight } from "react-icons/pi";
 import { SiWritedotas } from "react-icons/si";
 
-type shit = {
+type BaseLink = {
 	name: string;
-	slug?: string;
 	external?: { link: string };
 	icon: React.ReactNode;
-	CustomComponent?: React.JSX.Element;
 };
+
+type shit =
+	| (BaseLink & { slug: string; CustomComponent?: never })
+	| (BaseLink & { slug?: never; CustomComponent: React.JSX.Element });
 
 const iconSytles = "h-5 w-5 transition-all group-hover:scale-110";
 

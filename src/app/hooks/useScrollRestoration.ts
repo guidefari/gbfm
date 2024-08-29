@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 
 const useScrollRestoration = () => {
@@ -7,16 +7,20 @@ const useScrollRestoration = () => {
 	const searchParams = useSearchParams();
 	const scrollPositions: Record<string, number> = {};
 
-	const handleRouteChange = () => {
-		const currentPath = pathname + searchParams.toString();
-		scrollPositions[currentPath] = window.scrollY;
-	};
+	const handleRouteChange = useCallback(() => {
+		if (pathname && searchParams) {
+			const currentPath = pathname + searchParams.toString();
+			scrollPositions[currentPath] = window.scrollY;
+		}
+	}, [pathname, searchParams]);
 
-	const handleRouteComplete = () => {
-		const currentPath = pathname + searchParams.toString();
-		const scrollY = scrollPositions[currentPath] || 0;
-		window.scrollTo(0, scrollY);
-	};
+	const handleRouteComplete = useCallback(() => {
+		if (pathname && searchParams) {
+			const currentPath = pathname + searchParams.toString();
+			const scrollY = scrollPositions[currentPath] || 0;
+			window.scrollTo(0, scrollY);
+		}
+	}, [pathname, searchParams]);
 
 	useEffect(() => {
 		window.addEventListener("beforeunload", handleRouteChange);
@@ -26,9 +30,9 @@ const useScrollRestoration = () => {
 			handleRouteChange();
 			window.removeEventListener("beforeunload", handleRouteChange);
 		};
-	}, [pathname, searchParams]);
+	}, [handleRouteChange, handleRouteComplete]);
 
-	return scrollPositions; // Return the scrollPositions object
+	return scrollPositions;
 };
 
 export default useScrollRestoration;

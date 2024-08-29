@@ -2,14 +2,18 @@ import type { NextApiRequest, NextApiResponse } from "next";
 import { getUsersPlaylists } from "../../lib/spotify";
 import { getSession } from "next-auth/react";
 import type { PlaylistInput, PlaylistResponse } from "@/types";
+import { Session } from "next-auth";
 
 const stringsss: string[] = [];
 let looping = true;
 
 const handler = async (req: NextApiRequest, res: NextApiResponse<string>) => {
-	const {
-		token: { accessToken, sub },
-	} = await getSession({ req });
+	const session = await getSession({ req });
+	if (!session || !session.token) {
+		return res.status(401).json("Unauthorized");
+	}
+
+	const { accessToken, sub } = session.token;
 
 	await getBatch({ refresh_token: accessToken, user_id: sub });
 
@@ -26,7 +30,7 @@ const getBatch = async ({
 	refresh_token,
 	user_id,
 	next_url,
-}: PlaylistInput): Promise<PlaylistResponse> => {
+}: PlaylistInput): Promise<void> => {
 	const response = await getUsersPlaylists({
 		refresh_token,
 		user_id,
@@ -38,11 +42,9 @@ const getBatch = async ({
 	stringsss.push(...clean);
 	if (stuffToClean.next) {
 		await getBatch({ refresh_token, user_id, next_url: stuffToClean.next });
-		return;
 	}
 
 	looping = false;
-	return;
 };
 
 const cleanShitUp = async (stuff: PlaylistResponse) => {
