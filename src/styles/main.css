@@ -1,9 +1,9 @@
+@import url(fonts.css);
+@import url(scrollbar.css);
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url(fonts.css);
-@import url(scrollbar.css);
 
 @layer base {
   :root {

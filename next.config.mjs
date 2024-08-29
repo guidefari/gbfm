@@ -1,7 +1,7 @@
-/** @type {import('next').NextConfig} */
 
-const { withContentlayer } = require('next-contentlayer')
-const { withSentryConfig } = require("@sentry/nextjs");
+// const { withSentryConfig } = require("@sentry/nextjs");
+import createMDX from '@next/mdx'
+import { withSentryConfig } from '@sentry/nextjs'
 
 const basePath = process.env.BASE_PATH ?? ''
 console.log('basePath:', basePath)
@@ -17,7 +17,8 @@ const hostnames = [
   '**.spotifycdn.com'
 ]
 
-module.exports = withContentlayer({
+/** @type {import('next').NextConfig} */
+const nextConfig = {
   rewrites: async () => [
     {
       source: '/rss.xml',
@@ -32,26 +33,20 @@ module.exports = withContentlayer({
     }))
   },
 
-  transpilePackages: ['@mdxeditor/editor', 'react-diff-view'],
-  reactStrictMode: true,
-  // env: {
-  //   basePath,
-  // },
-  webpack: (config) => {
-    // this will override the experiments
-    config.experiments = { ...config.experiments, topLevelAwait: true };
-    // this will just update topLevelAwait property of config.experiments
-    // config.experiments.topLevelAwait = true 
-    return config;
-  },
+  pageExtensions: ['js', 'jsx', 'md', 'mdx', 'ts', 'tsx'],
+}
+
+const withMDX = createMDX({
+    experimental: {
+        mdxRs: true,
+    },
+  
+  // Add markdown plugins here, as desired
 })
 
-
-
-
 // Injected content via Sentry wizard below
-module.exports = withSentryConfig(
-  module.exports,
+export default withSentryConfig(
+  withMDX(nextConfig),
   {
     // For all available options, see:
     // https://github.com/getsentry/sentry-webpack-plugin#options
