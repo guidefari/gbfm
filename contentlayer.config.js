@@ -2,7 +2,7 @@ import { defineDocumentType, makeSource } from 'contentlayer/source-files'
 
 export const Post = defineDocumentType(() => ({
   name: 'Post',
-  filePathPattern: `words/**/*.mdx`,
+  filePathPattern: 'words/**/*.mdx',
   contentType: 'mdx',
   fields: {
     title: {
@@ -49,12 +49,16 @@ export const Post = defineDocumentType(() => ({
       type: 'string',
       resolve: (post) => `/${post._raw.flattenedPath}`,
     },
+    fileName: {
+      type: 'string',
+      resolve: (post) => post._raw.flattenedPath.split('/').slice(-1)[0],
+    },
   },
 }))
 
 export const Tweet = defineDocumentType(() => ({
   name: 'Tweet',
-  filePathPattern: `micro/*.mdx`,
+  filePathPattern: 'micro/*.mdx',
   contentType: 'mdx',
   fields: {
     authorName: {
@@ -82,12 +86,16 @@ export const Tweet = defineDocumentType(() => ({
       type: 'string',
       resolve: (post) => `/${post._raw.flattenedPath}`,
     },
+    fileName: {
+      type: 'string',
+      resolve: (post) => post._raw.flattenedPath.split('/').slice(-1)[0],
+    },
   },
 }))
 
 export const Mix = defineDocumentType(() => ({
   name: 'Mix',
-  filePathPattern: `mixes/*.mdx`,
+  filePathPattern: 'mixes/*.mdx',
   contentType: 'mdx',
   fields: {
     title: {
@@ -126,12 +134,16 @@ export const Mix = defineDocumentType(() => ({
       type: 'string',
       resolve: (post) => `/${post._raw.flattenedPath}`,
     },
+    fileName: {
+      type: 'string',
+      resolve: (post) => post._raw.flattenedPath.split('/').slice(-1)[0],
+    },
   },
 }))
 
 export const Label = defineDocumentType(() => ({
   name: 'Label',
-  filePathPattern: `labels/*.mdx`,
+  filePathPattern: 'labels/*.mdx',
   contentType: 'mdx',
   fields: {
     name: {
@@ -161,12 +173,16 @@ export const Label = defineDocumentType(() => ({
       type: 'string',
       resolve: (post) => `/${post._raw.flattenedPath}`,
     },
+    fileName: {
+      type: 'string',
+      resolve: (post) => post._raw.flattenedPath.split('/').slice(-1)[0],
+    },
   },
 }))
 
 export const Author = defineDocumentType(() => ({
   name: 'Author',
-  filePathPattern: `authors/**/*.mdx`,
+  filePathPattern: 'authors/**/*.mdx',
   contentType: 'mdx',
   fields: {
     name: {
@@ -199,6 +215,10 @@ export const Author = defineDocumentType(() => ({
     url: {
       type: 'string',
       resolve: (post) => `/${post._raw.flattenedPath}`,
+    },
+    fileName: {
+      type: 'string',
+      resolve: (post) => post._raw.flattenedPath.split('/').slice(-1)[0],
     },
   },
 }))

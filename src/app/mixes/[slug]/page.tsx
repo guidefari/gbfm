@@ -1,14 +1,10 @@
 import { LongPost } from "@/components/Layout/LongPost";
 import { DEFAULT_IMAGE_URL } from "@/constants";
 import type { Metadata } from "next";
-import {
-	getContentBody,
-	getFrontMatter,
-	getSlugsByContentType,
-} from "@/content";
+import { allMixes } from "@/contentlayer/generated";
 
 export async function generateStaticParams() {
-	const paths: string[] = await getSlugsByContentType("mixes");
+	const paths: string[] = allMixes.map((mix) => mix.url);
 
 	return paths.map((path) => ({
 		slug: path,
@@ -23,7 +19,7 @@ type Params = {
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
 	const { slug } = params;
-	const mix = await getFrontMatter({ type: "mixes", name: slug });
+	const mix = allMixes.find((mix) => mix.fileName === slug);
 
 	if (!mix || mix instanceof Error) {
 		return {
@@ -46,8 +42,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 export default async function PostPage({ params }: Params) {
 	const { slug } = params;
-	const mix = await getFrontMatter({ type: "mixes", name: slug });
-	const body = await getContentBody({ type: "mixes", name: slug });
+	const mix = allMixes.find((mix) => mix.fileName === slug);
 
 	if (!mix || mix instanceof Error) {
 		return <div>Mix not found</div>;
@@ -55,7 +50,7 @@ export default async function PostPage({ params }: Params) {
 
 	return (
 		<LongPost
-			content={body ?? ""}
+			content={mix.body.raw}
 			title={mix.title}
 			date={mix.date}
 			thumbnailUrl={mix.thumbnailUrl ?? DEFAULT_IMAGE_URL}

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import React from "react";
 import Image from "next/image";
 import CustomLink from "@/components/CustomLink";
-import { getAllFrontMatter } from "@/content";
+import { allLabels } from "@/contentlayer/generated";
 
 export const metadata: Metadata = {
 	title: "Curated Record Labels",
@@ -11,10 +11,9 @@ export const metadata: Metadata = {
 };
 
 const LabelsPage = async () => {
-	// const noTemplate: Label[] = allLabels.filter(
-	// 	(label: Label) => label._id !== "labels/template-label.mdx",
-	// );
-	const labels = await getAllFrontMatter({ type: "labels" });
+	const noTemplate = allLabels.filter(
+		(label) => label._id !== "labels/template-label.mdx",
+	);
 	return (
 		<>
 			<PageTitle
@@ -23,15 +22,12 @@ const LabelsPage = async () => {
 			/>
 
 			<div className="grid grid-cols-1 gap-4 px-4 my-4 md:grid-cols-3 lg:grid-cols-4">
-				{labels.map((label) => {
-					if (!label) return null;
-					if (label instanceof Error) return null;
-					if (label.slug === "template-label") return null;
+				{noTemplate.map((label) => {
 					return (
 						<CustomLink
-							href={`/labels/${label.slug}`}
-							as={`/labels/${label.slug}`}
-							key={label.slug}
+							href={label.url}
+							as={label.url}
+							key={label._id}
 							className="flex flex-col justify-center bg-white shadow-md rounded-2xl shadow-gray-400/20"
 						>
 							<Image

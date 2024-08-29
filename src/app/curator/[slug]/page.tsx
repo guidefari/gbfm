@@ -2,16 +2,12 @@ import CustomLink from "src/components/CustomLink";
 import Image from "next/image";
 import type { Metadata } from "next";
 import { DEFAULT_IMAGE_URL } from "@/constants";
-import {
-	getContentBody,
-	getFrontMatter,
-	getSlugsByContentType,
-} from "@/content";
 import { CustomMDXComponents } from "@/app/mdx-components";
 import { MDXRemote } from "next-mdx-remote/rsc";
+import { allAuthors } from "@/contentlayer/generated";
 
 export async function generateStaticParams() {
-	const paths: string[] = await getSlugsByContentType("authors");
+	const paths: string[] = allAuthors.map((author) => author.url);
 
 	return paths.map((path) => ({
 		slug: path,
@@ -26,9 +22,9 @@ type Params = {
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
 	const { slug } = params;
-	const author = await getFrontMatter({ type: "authors", name: slug });
+	const author = allAuthors.find((author) => author.url === slug);
 
-	if (author instanceof Error) {
+	if (!author || author instanceof Error) {
 		return {
 			title: "Author not found",
 			description: "Author not found",
@@ -38,11 +34,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 		};
 	}
 
-	const body = await getContentBody({ type: "authors", name: slug });
-
 	return {
 		title: author?.name,
-		description: body?.slice(0, 150),
+		description: author?.body.raw.slice(0, 150),
 		openGraph: {
 			images: [author?.avatar ?? DEFAULT_IMAGE_URL],
 		},
@@ -51,8 +45,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 export default async function AuthorPage({ params }: Params) {
 	const { slug } = params;
-	const author = await getFrontMatter({ type: "authors", name: slug });
-	const body = (await getContentBody({ type: "authors", name: slug })) ?? "";
+
+	const author = allAuthors.find((author) => author.url === slug);
 
 	if (!author || author instanceof Error) {
 		return <div>Author not found</div>;
@@ -94,7 +88,10 @@ export default async function AuthorPage({ params }: Params) {
 							</p>
 						)}
 						<article className="my-10 ">
-							<MDXRemote components={CustomMDXComponents} source={body} />
+							<MDXRemote
+								components={CustomMDXComponents}
+								source={author.body.raw}
+							/>
 						</article>
 					</div>
 				</div>

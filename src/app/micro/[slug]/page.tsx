@@ -1,14 +1,10 @@
 import { Tweet as SingleTweet } from "src/components/Tweet";
 import type { Metadata } from "next";
 import { DEFAULT_IMAGE_URL } from "@/constants";
-import {
-	getContentBody,
-	getFrontMatter,
-	getSlugsByContentType,
-} from "@/content";
+import { allTweets } from "@/contentlayer/generated";
 
 export async function generateStaticParams() {
-	const paths: string[] = await getSlugsByContentType("micro");
+	const paths: string[] = allTweets.map((tweet) => tweet.url);
 
 	return paths.map((path) => ({
 		slug: path,
@@ -21,7 +17,7 @@ type Params = {
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
 	const { slug } = params;
-	const tweet = await getFrontMatter({ type: "micro", name: slug });
+	const tweet = allTweets.find((tweet) => tweet.fileName === slug);
 
 	if (tweet instanceof Error) {
 		return {
@@ -33,11 +29,9 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 		};
 	}
 
-	const body = await getContentBody({ type: "micro", name: slug });
-
 	return {
 		title: tweet?.authorName,
-		description: body?.slice(0, 150),
+		description: tweet?.body.raw.slice(0, 150),
 		openGraph: {
 			images: [tweet?.avatarUrl ?? DEFAULT_IMAGE_URL],
 		},
@@ -46,8 +40,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 
 export default async function PostLayout({ params }: Params) {
 	const { slug } = params;
-	const tweet = await getFrontMatter({ type: "micro", name: slug });
-	const body = await getContentBody({ type: "micro", name: slug });
+	const tweet = allTweets.find((tweet) => tweet.fileName === slug);
 
 	if (!tweet || tweet instanceof Error) {
 		return <div>Micro post not found</div>;
@@ -58,9 +51,9 @@ export default async function PostLayout({ params }: Params) {
 			<SingleTweet
 				authorName={tweet.authorName}
 				avatarUrl={tweet.avatarUrl}
-				date={tweet.date.toISOString()}
+				date={tweet.date}
 				handle={tweet.handle || ""}
-				content={body ?? ""}
+				content={tweet.body.raw}
 				url={`/micro/${slug}`}
 				underline={false}
 			/>
