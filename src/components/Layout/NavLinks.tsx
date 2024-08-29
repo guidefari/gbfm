@@ -8,60 +8,62 @@ import { PiVinylRecordLight } from "react-icons/pi";
 import { SiWritedotas } from "react-icons/si";
 
 type shit = {
-  name: string;
-  slug?: string;
-  external?: { link: string };
-  icon: React.ReactNode;
-  CustomComponent?: React.JSX.Element;
+	name: string;
+	slug?: string;
+	external?: { link: string };
+	icon: React.ReactNode;
+	CustomComponent?: React.JSX.Element;
 };
 
 const iconSytles = "h-5 w-5 transition-all group-hover:scale-110";
 
 export const pagesAndPages: shit[] = [
-  {
-    name: "Words",
-    slug: "/words",
-    icon: <SiWritedotas className={iconSytles} />,
-  },
-  {
-    name: "Not Tweets👀",
-    slug: "/micro",
-    icon: (
-      <div className="flex text-sm gap-1 items-center -ml-4 sm:ml-0">
-        !<TwitterLogoIcon className={iconSytles} />
-      </div>
-    ),
-  },
-  {
-    name: "Record Labels",
-    slug: "/labels",
-    icon: <BiSolidCameraHome className={iconSytles} />,
-  },
-  {
-    name: "Mixes",
-    slug: "/mixes",
-    icon: <PiVinylRecordLight className={iconSytles} />,
-  },
-  {
-    name: "!Newsletter",
-    slug: "/newslater",
-    icon: <IoIosMailOpen className={iconSytles} />,
-  },
-  {
-    icon: <GiPerspectiveDiceSixFacesRandom className={iconSytles} />,
-    name: "RSP",
-    slug: "/rsp",
-  },
-  {
-    icon: <FileTextIcon className={iconSytles} />,
-    name: "Mixes via RSS",
-    CustomComponent: <RSS />,
-  },
-  {
-    icon: <FileTextIcon className={iconSytles} />,
-    name: "Mixes via Youtube",
-    CustomComponent: <a href="https://youtube.com/@goosebumpsfm" className="text-inherit">
-      <TfiYoutube />
-    </a>,
-  },
+	{
+		name: "Words",
+		slug: "/words",
+		icon: <SiWritedotas className={iconSytles} />,
+	},
+	{
+		name: "Not Tweets👀",
+		slug: "/micro",
+		icon: (
+			<div className="flex items-center gap-1 -ml-4 text-sm sm:ml-0">
+				!<TwitterLogoIcon className={iconSytles} />
+			</div>
+		),
+	},
+	{
+		name: "Record Labels",
+		slug: "/labels",
+		icon: <BiSolidCameraHome className={iconSytles} />,
+	},
+	{
+		name: "Mixes",
+		slug: "/mixes",
+		icon: <PiVinylRecordLight className={iconSytles} />,
+	},
+	{
+		name: "Subscribe",
+		slug: "/subscribe",
+		icon: <IoIosMailOpen className={iconSytles} />,
+	},
+	{
+		icon: <GiPerspectiveDiceSixFacesRandom className={iconSytles} />,
+		name: "RSP",
+		slug: "/rsp",
+	},
+	{
+		icon: <FileTextIcon className={iconSytles} />,
+		name: "Mixes via RSS",
+		CustomComponent: <RSS />,
+	},
+	{
+		icon: <FileTextIcon className={iconSytles} />,
+		name: "Mixes via Youtube",
+		CustomComponent: (
+			<a href="https://youtube.com/@goosebumpsfm" className="text-inherit">
+				<TfiYoutube />
+			</a>
+		),
+	},
 ];
