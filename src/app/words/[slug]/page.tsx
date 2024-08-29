@@ -1,12 +1,14 @@
 import { LongPost } from "@/components/Layout/LongPost";
 import { DEFAULT_IMAGE_URL } from "@/constants";
-import { allPosts } from "@/contentlayer/generated";
 import type { Metadata } from "next";
-import matter from "gray-matter";
-import fs from "node:fs";
+import {
+	getContentBody,
+	getFrontMatter,
+	getSlugsByContentType,
+} from "@/content";
 
 export async function generateStaticParams() {
-	const paths: string[] = allPosts.map((post) => post.url);
+	const paths: string[] = await getSlugsByContentType("words");
 
 	return paths.map((path) => ({
 		slug: path,
@@ -19,47 +21,48 @@ type Params = {
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
 	const { slug } = params;
-	// const post = allPosts.find(
-	// 	(singlePost) => singlePost._raw.flattenedPath === `words/${slug}`,
-	// );
 
 	// readdir, get the file from `src/content/words/${slug}.mdx`
-	const file = fs.readFileSync(`src/content/words/${slug}.mdx`, "utf8");
-	const post = matter(file);
+	const frontMatter = await getFrontMatter({ type: "words", name: slug });
 
-	if (!post) {
+	if (!frontMatter) {
 		return {
 			title: "Post not found",
 		};
 	}
+
+	if (frontMatter instanceof Error) {
+		return {
+			title: "Post not found",
+		};
+	}
+
 	return {
-		title: post.data.title,
-		description: post.data.description,
+		title: frontMatter.title,
+		description: frontMatter.description,
 		openGraph: {
-			images: [post.data.thumbnailUrl ?? DEFAULT_IMAGE_URL],
+			images: [frontMatter.thumbnailUrl ?? DEFAULT_IMAGE_URL],
 		},
 	};
 }
 
-export default function PostPage({ params }: Params) {
+export default async function PostPage({ params }: Params) {
 	const { slug } = params;
-	// const post = allPosts.find(
-	// 	(singlePost) => singlePost._raw.flattenedPath === `words/${slug}`,
-	// );
+	const post = await getFrontMatter({ type: "words", name: slug });
 
-	const file = fs.readFileSync(`src/content/words/${slug}.mdx`, "utf8");
-	const post = matter(file);
-
-	if (!post) {
+	if (!post || post instanceof Error) {
 		return <div>Post not found</div>;
 	}
+
+	const body = await getContentBody({ type: "words", name: slug });
+
 	return (
 		<LongPost
-			content={post.content}
-			title={post.data.title}
-			date={post.data.date}
-			thumbnailUrl={post.data.thumbnailUrl ?? DEFAULT_IMAGE_URL}
-			description={post.data.description}
+			content={body ?? ""}
+			title={post.title}
+			date={post.date}
+			thumbnailUrl={post.thumbnailUrl ?? DEFAULT_IMAGE_URL}
+			description={post.description}
 		/>
 	);
 }

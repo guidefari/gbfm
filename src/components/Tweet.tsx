@@ -39,7 +39,7 @@ export const Tweet: React.FC<Props> = ({
 			<div className="px-6 py-4 ">
 				<div className="flex justify-between">
 					<div className="flex items-center">
-						<Link className="flex w-12 h-12 mr-3" href={`/authors/${handle}`}>
+						<Link className="flex w-12 h-12 mr-3" href={`/curator/${handle}`}>
 							<Image
 								alt={authorName}
 								src={avatarUrl}
@@ -48,7 +48,7 @@ export const Tweet: React.FC<Props> = ({
 								className="rounded-full"
 							/>
 						</Link>
-						<Link href={`/authors/${handle}`} className="flex flex-col ml-4">
+						<Link href={`/curator/${handle}`} className="flex flex-col ml-4">
 							<span
 								className="flex items-center font-bold leading-5 "
 								title={authorName}

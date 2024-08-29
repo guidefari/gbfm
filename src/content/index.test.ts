@@ -1,9 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
-	FILE_NAME_ERROR_STRING,
+	getFrontMatter,
+	getSlugsByContentType,
 	listFilesByContentType,
 	readMarkdownFile,
 } from ".";
+import { MicroPostSchema } from "./types";
+import path from "node:path";
+import fs from "node:fs";
 
 describe("listFilesByContentType", () => {
 	it("should list files by content type", async () => {
@@ -47,5 +51,43 @@ describe("listFilesByContentType", () => {
 			expect(file).toBeInstanceOf(Error);
 			expect(file?.message).toContain(".mdx");
 		}
+	});
+
+	it("should return slugs by content type", async () => {
+		const slugs = await getSlugsByContentType("labels");
+		expect(slugs).toBeDefined();
+		expect(slugs.length).toBeGreaterThan(0);
+		expect(slugs.every((slug) => typeof slug === "string")).toBe(true);
+	});
+});
+
+describe("getFrontMatter", () => {
+	it("should return front matter", async () => {
+		const frontMatter = await getFrontMatter({ type: "micro", name: "synkro" });
+		expect(frontMatter).toBeDefined();
+	});
+
+	it("should return an error if the front matter is invalid", async () => {
+		const tempDir = path.join(__dirname, "micro");
+		const tempFile = path.join(tempDir, "invalid-frontmatter.mdx");
+
+		if (!fs.existsSync(tempDir)) {
+			fs.mkdirSync(tempDir);
+		}
+		fs.writeFileSync(
+			tempFile,
+			`---
+invalidKey: value
+---
+Content of the file`,
+		);
+
+		const frontMatter = await getFrontMatter({
+			type: "micro",
+			name: "invalid-frontmatter",
+		});
+		expect(frontMatter).toBeInstanceOf(Error);
+
+		fs.unlinkSync(tempFile);
 	});
 });

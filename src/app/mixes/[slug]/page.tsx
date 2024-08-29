@@ -1,10 +1,14 @@
 import { LongPost } from "@/components/Layout/LongPost";
 import { DEFAULT_IMAGE_URL } from "@/constants";
-import { allMixes } from "@/contentlayer/generated";
 import type { Metadata } from "next";
+import {
+	getContentBody,
+	getFrontMatter,
+	getSlugsByContentType,
+} from "@/content";
 
 export async function generateStaticParams() {
-	const paths: string[] = allMixes.map((mix) => mix.url);
+	const paths: string[] = await getSlugsByContentType("mixes");
 
 	return paths.map((path) => ({
 		slug: path,
@@ -18,12 +22,16 @@ type Params = {
 };
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
-	const mix = allMixes.find(
-		(mix) => mix._raw.flattenedPath === `mixes/${params.slug}`,
-	);
-	if (!mix) {
+	const { slug } = params;
+	const mix = await getFrontMatter({ type: "mixes", name: slug });
+
+	if (!mix || mix instanceof Error) {
 		return {
-			title: "Post not found",
+			title: "Mix not found",
+			description: "Mix not found",
+			openGraph: {
+				images: [DEFAULT_IMAGE_URL],
+			},
 		};
 	}
 
@@ -36,16 +44,18 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
 	};
 }
 
-export default function PostPage({ params }: Params) {
-	const mix = allMixes.find(
-		(singlePost) => singlePost._raw.flattenedPath === `mixes/${params.slug}`,
-	);
-	if (!mix) {
-		return <div>Post not found</div>;
+export default async function PostPage({ params }: Params) {
+	const { slug } = params;
+	const mix = await getFrontMatter({ type: "mixes", name: slug });
+	const body = await getContentBody({ type: "mixes", name: slug });
+
+	if (!mix || mix instanceof Error) {
+		return <div>Mix not found</div>;
 	}
+
 	return (
 		<LongPost
-			content={mix.body.raw}
+			content={body ?? ""}
 			title={mix.title}
 			date={mix.date}
 			thumbnailUrl={mix.thumbnailUrl ?? DEFAULT_IMAGE_URL}

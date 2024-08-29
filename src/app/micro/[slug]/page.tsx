@@ -1,10 +1,14 @@
-import { allTweets, type Tweet } from "@/contentlayer/generated";
 import { Tweet as SingleTweet } from "src/components/Tweet";
-import type { GetStaticProps, Metadata } from "next";
+import type { Metadata } from "next";
 import { DEFAULT_IMAGE_URL } from "@/constants";
+import {
+	getContentBody,
+	getFrontMatter,
+	getSlugsByContentType,
+} from "@/content";
 
 export async function generateStaticParams() {
-	const paths: string[] = allTweets.map((tweet) => tweet.url);
+	const paths: string[] = await getSlugsByContentType("micro");
 
 	return paths.map((path) => ({
 		slug: path,
@@ -17,46 +21,49 @@ type Params = {
 
 export async function generateMetadata({ params }: Params): Promise<Metadata> {
 	const { slug } = params;
-	// const post = allPosts.find(
-	// 	(singlePost) => singlePost._raw.flattenedPath === `words/${slug}`,
-	// );
-	const tweet = allTweets.find(
-		(singleTweet) => singleTweet._raw.flattenedPath === `micro/${params.slug}`,
-	);
+	const tweet = await getFrontMatter({ type: "micro", name: slug });
+
+	if (tweet instanceof Error) {
+		return {
+			title: "Micro post not found",
+			description: "Micro post not found",
+			openGraph: {
+				images: [DEFAULT_IMAGE_URL],
+			},
+		};
+	}
+
+	const body = await getContentBody({ type: "micro", name: slug });
+
 	return {
 		title: tweet?.authorName,
-		description: tweet?.body.code,
+		description: body?.slice(0, 150),
 		openGraph: {
 			images: [tweet?.avatarUrl ?? DEFAULT_IMAGE_URL],
 		},
 	};
 }
 
-const PostLayout = ({ params }: Params) => {
+export default async function PostLayout({ params }: Params) {
 	const { slug } = params;
-	const tweet = allTweets.find(
-		(singleTweet) => singleTweet._raw.flattenedPath === `micro/${slug}`,
-	);
+	const tweet = await getFrontMatter({ type: "micro", name: slug });
+	const body = await getContentBody({ type: "micro", name: slug });
 
-	if (!tweet) {
+	if (!tweet || tweet instanceof Error) {
 		return <div>Micro post not found</div>;
 	}
 
 	return (
-		<>
-			<article className="w-full max-w-4xl min-h-screen py-8 mx-auto">
-				<SingleTweet
-					authorName={tweet.authorName}
-					avatarUrl={tweet.avatarUrl}
-					date={tweet.date}
-					handle={tweet.handle || ""}
-					content={tweet.body.raw}
-					url={tweet.url}
-					underline={false}
-				/>
-			</article>
-		</>
+		<article className="w-full max-w-4xl min-h-screen py-8 mx-auto">
+			<SingleTweet
+				authorName={tweet.authorName}
+				avatarUrl={tweet.avatarUrl}
+				date={tweet.date.toISOString()}
+				handle={tweet.handle || ""}
+				content={body ?? ""}
+				url={`/micro/${slug}`}
+				underline={false}
+			/>
+		</article>
 	);
-};
-
-export default PostLayout;
+}
