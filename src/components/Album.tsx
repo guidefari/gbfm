@@ -1,3 +1,4 @@
+"use client";
 import fetcher from "src/lib/fetcher";
 import type { AlbumApiResponse } from "@/types";
 import type React from "react";

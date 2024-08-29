@@ -1,3 +1,4 @@
+"use client";
 import type React from "react";
 import fetcher from "src/lib/fetcher";
 import useSWR from "swr";

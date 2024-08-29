@@ -1,3 +1,4 @@
+"use client";
 import fetcher from "src/lib/fetcher";
 import type { TrackAPIResponse } from "@/types";
 import type React from "react";
