@@ -1,33 +1,54 @@
 import { LongPost } from "@/components/Layout/LongPost";
-import { type Mix, allMixes } from "@/contentlayer/generated";
+import { DEFAULT_IMAGE_URL } from "@/constants";
+import { allMixes } from "@/contentlayer/generated";
+import type { Metadata } from "next";
 
-export const getStaticPaths = () => {
+export async function generateStaticParams() {
 	const paths: string[] = allMixes.map((mix) => mix.url);
-	return {
-		paths,
-		fallback: false,
+
+	return paths.map((path) => ({
+		slug: path,
+	}));
+}
+
+type Params = {
+	params: {
+		slug: string;
 	};
 };
 
-export const getStaticProps = ({ params }) => {
-	const mix: Mix = allMixes.find(
-		(singlePost) => singlePost._raw.flattenedPath === `mixes/${params.slug}`,
+export async function generateMetadata({ params }: Params): Promise<Metadata> {
+	const mix = allMixes.find(
+		(mix) => mix._raw.flattenedPath === `mixes/${params.slug}`,
 	);
+	if (!mix) {
+		return {
+			title: "Post not found",
+		};
+	}
 
 	return {
-		props: {
-			mix,
+		title: mix.title,
+		description: mix.description,
+		openGraph: {
+			images: [mix.thumbnailUrl ?? DEFAULT_IMAGE_URL],
 		},
 	};
-};
+}
 
-export default function PostPage({ mix }: { mix: Mix }) {
+export default function PostPage({ params }: Params) {
+	const mix = allMixes.find(
+		(singlePost) => singlePost._raw.flattenedPath === `mixes/${params.slug}`,
+	);
+	if (!mix) {
+		return <div>Post not found</div>;
+	}
 	return (
 		<LongPost
 			content={mix.body.code}
 			title={mix.title}
 			date={mix.date}
-			thumbnailUrl={mix.thumbnailUrl}
+			thumbnailUrl={mix.thumbnailUrl ?? DEFAULT_IMAGE_URL}
 			description={mix.description}
 			youtubeId={mix.youtubeId}
 			mp3Url={mix.mp3Url}

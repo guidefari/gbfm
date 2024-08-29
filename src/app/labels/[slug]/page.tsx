@@ -1,27 +1,48 @@
 import { LongPost } from "@/components/Layout/LongPost";
-import { type Label, allLabels } from "@/contentlayer/generated";
+import { DEFAULT_IMAGE_URL } from "@/constants";
+import { allLabels } from "@/contentlayer/generated";
+import type { Metadata } from "next";
 
-export const getStaticPaths = () => {
+export async function generateStaticParams() {
 	const paths: string[] = allLabels.map((post) => post.url);
-	return {
-		paths,
-		fallback: false,
+
+	return paths.map((path) => ({
+		slug: path,
+	}));
+}
+
+type Params = {
+	params: {
+		slug: string;
 	};
 };
 
-export const getStaticProps = ({ params }) => {
-	const post: Label = allLabels.find(
+export async function generateMetadata({ params }: Params): Promise<Metadata> {
+	const post = allLabels.find(
 		(label) => label._raw.flattenedPath === `labels/${params.slug}`,
 	);
+	if (!post) {
+		return {
+			title: "Post not found",
+		};
+	}
 
 	return {
-		props: {
-			post,
+		title: post.name,
+		description: post.body.raw?.slice(0, 150),
+		openGraph: {
+			images: [post.thumbnailUrl ?? DEFAULT_IMAGE_URL],
 		},
 	};
-};
+}
 
-export default function PostPage({ post }: { post: Label }) {
+export default function PostPage({ params }: Params) {
+	const post = allLabels.find(
+		(label) => label._raw.flattenedPath === `labels/${params.slug}`,
+	);
+	if (!post) {
+		return <div>Post not found</div>;
+	}
 	return (
 		<LongPost
 			content={post.body.code}
