@@ -18,6 +18,10 @@ module.exports = {
 		},
 		extend: {
 			colors: {
+				"theme-dark": "var(--theme-dark)",
+				"theme-light": "var(--theme-light)",
+				"theme-highlight-main": "var(--theme-highlight-main)",
+				"theme-highlight-secondary": "var(--theme-highlight-secondary)",
 				border: "hsl(var(--border))",
 				input: "hsl(var(--input))",
 				ring: "hsl(var(--ring))",

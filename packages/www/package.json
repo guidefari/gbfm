@@ -6,11 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "bio": "biome lint ./src --apply && biome format --write ./src",
+    "bio": "biome lint ./src --write && biome format --write ./src",
     "preview": "vite preview"
   },
   "dependencies": {
     "@radix-ui/react-icons": "^1.3.0",
+    "@radix-ui/react-toast": "^1.2.1",
     "@tanstack/react-router": "^1.51.6",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
@@ -21,6 +22,8 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.8.3",
+    "@tanstack/router-devtools": "^1.51.6",
+    "@tanstack/router-plugin": "^1.51.6",
     "@types/node": "^22.5.1",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
