@@ -8,7 +8,7 @@ export default async function handler(
 ) {
 	// Get the URL of the file to download from the query parameters or request body
 	const { fileUrl, title } = req.query;
-	console.log("title:", title);
+	console.log("fileUrl:", fileUrl);
 
 	try {
 		// Download the file using the fetch function
