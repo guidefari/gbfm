@@ -1,14 +1,19 @@
 {
-  "name": "nextgoose",
+  "name": "gbfm",
   "version": "0.0.0",
   "sideEffects": false,
   "scripts": {
     "dev": "sst dev",
     "sso": "aws sso login --sso-session=terminal --no-browser",
-    "typecheck": "bun --filter=* typecheck"
+    "typecheck": "bun --filter=* typecheck",
+    "deploy": "sst deploy --stage=dev",
+    "deploy:prod": "sst deploy --stage=production"
   },
   "workspaces": [
     "packages/*"
+  ],
+  "nohoist": [
+    "packages/www-old"
   ],
   "dependencies": {
     "@effect/platform": "latest",

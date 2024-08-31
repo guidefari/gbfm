@@ -3,9 +3,9 @@
 import "sst"
 declare module "sst" {
   export interface Resource {
-    Site: {
-      type: "sst.aws.Nextjs"
-      url: string
+    "gbfm-web": {
+      "type": "sst.aws.StaticSite"
+      "url": string
     }
   }
 }
