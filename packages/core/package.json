@@ -1,6 +1,9 @@
 {
-  "name": "functions",
+  "name": "@gbfm/core",
   "type": "module",
+  "exports": {
+    "./*": "./src/*.ts"
+  },
   "sideEffects": false,
   "scripts": {
     "typecheck": "tsc --noEmit"
