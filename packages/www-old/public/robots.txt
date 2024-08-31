@@ -1,9 +1,0 @@
-# *
-User-agent: *
-Allow: /
-
-# Host
-Host: https://goosebumps.fm
-
-# Sitemaps
-Sitemap: https://goosebumps.fm/sitemap.xml
