@@ -1,4 +1,5 @@
 import { domain } from "./dns";
+import { allSecrets } from "./secret";
 
 // sst.Linkable.wrap(random.RandomString, (resource) => ({
 // 	properties: {
@@ -10,6 +11,7 @@ const apiFn = new sst.aws.Function("OpenApi", {
 	handler: "./packages/functions/src/api/index.handler",
 	streaming: !$dev,
 	url: true,
+	link: [...allSecrets],
 });
 
 export const api = new sst.cloudflare.Worker("OpenApiWorker", {

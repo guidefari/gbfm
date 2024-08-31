@@ -12,6 +12,14 @@ declare module "sst" {
       "type": "sst.cloudflare.Worker"
       "url": string
     }
+    "SpotifyClientId": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "SpotifyClientSecret": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "gbfm-web": {
       "type": "sst.aws.StaticSite"
       "url": string

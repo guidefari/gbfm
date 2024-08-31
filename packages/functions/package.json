@@ -7,8 +7,10 @@
   },
   "devDependencies": {},
   "dependencies": {
+    "@gbfm/core": "workspace:",
     "@hono/valibot-validator": "^0.3.0",
     "@hono/zod-openapi": "^0.16.0",
+    "@spotify/web-api-ts-sdk": "^1.2.0",
     "hono": "^4.5.10"
   }
 }
