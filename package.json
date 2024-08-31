@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "sst dev",
     "sso": "aws sso login --sso-session=terminal --no-browser",
-    "typecheck": "bun --filter=* typecheck",
+    "typecheck": "tsc --noEmit --project ./tsconfig.json",
     "deploy": "sst deploy --stage=dev",
     "deploy:prod": "sst deploy --stage=production"
   },
@@ -19,9 +19,11 @@
     "@effect/platform": "latest",
     "@effect/schema": "latest",
     "effect": "latest",
-    "sst": "ion"
+    "sst": "ion",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@tsconfig/node20": "^20.1.4",
     "typescript": "5.5.4"
   }
 }

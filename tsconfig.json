@@ -4,7 +4,13 @@
     "skipLibCheck": true,
   },
   "exclude": [
-    "packages/",
-    "node_modules"
+    "node_modules",
+    "packages/www-old"
+  ],
+  "include": [
+    "packages/**/*.ts",
+    "packages/**/*.tsx",
+    "packages/**/*.js",
+    "packages/**/*.jsx",
   ]
 }
