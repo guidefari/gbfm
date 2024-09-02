@@ -11,4 +11,21 @@ export namespace SpotifyProxyTypes {
 	});
 
 	export type Track = z.infer<typeof TrackSchema>;
+
+	const AlbumTrackSchema = TrackSchema.omit({
+		albumType: true,
+		albumImageUrl: true,
+	});
+
+	export const AlbumSchema = z.object({
+		albumType: z.string().optional(),
+		albumImageUrl: z.string().optional(),
+		title: z.string().optional(),
+		artists: z.string().optional(),
+		tracks: z.array(AlbumTrackSchema),
+		albumUrl: z.string(),
+	});
+
+	export type AlbumTrack = z.infer<typeof AlbumTrackSchema>;
+	export type Album = z.infer<typeof AlbumSchema>;
 }

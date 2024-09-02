@@ -32,4 +32,26 @@ export namespace SpotifyHttp {
 		};
 		return SpotifyProxyTypes.TrackSchema.parse(sanitizedData);
 	};
+
+	export const getAlbum = async (
+		id: string,
+	): Promise<SpotifyProxyTypes.Album> => {
+		const data = await client.albums.get(id);
+
+		const sanitizedData: SpotifyProxyTypes.Album = {
+			albumType: data.album_type,
+			albumImageUrl: data.images[0]?.url,
+			title: data.name,
+			artists: data.artists.map((artist) => artist.name).join(", "),
+			tracks: data.tracks.items.map((track) => ({
+				title: track.name,
+				artists: track.artists.map((artist) => artist.name).join(", "),
+				previewUrl: track.preview_url ?? undefined,
+				trackUrl: track.external_urls.spotify,
+			})),
+			albumUrl: data.external_urls.spotify,
+		};
+
+		return SpotifyProxyTypes.AlbumSchema.parse(sanitizedData);
+	};
 }
