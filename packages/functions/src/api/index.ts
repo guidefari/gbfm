@@ -1,4 +1,3 @@
-import { Hono } from "hono";
 import { handle, streamHandle } from "hono/aws-lambda";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { SpotifyApi } from "./spotify";
@@ -6,7 +5,7 @@ import { SpotifyApi } from "./spotify";
 const app = new OpenAPIHono();
 
 app.get("/", (c) => {
-	return c.text("Hello Hono!");
+	return c.text("This space has been left intentionally blank🤫");
 });
 
 const routes = app.route("/spotify", SpotifyApi.route);

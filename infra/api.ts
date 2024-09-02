@@ -1,5 +1,7 @@
 import { domain } from "./dns";
 import { allSecrets } from "./secret";
+import { isPermanentStage } from "./stage";
+import { www } from "./www";
 
 // sst.Linkable.wrap(random.RandomString, (resource) => ({
 // 	properties: {
@@ -11,7 +13,7 @@ const apiFn = new sst.aws.Function("OpenApi", {
 	handler: "./packages/functions/src/api/index.handler",
 	streaming: !$dev,
 	url: true,
-	link: [...allSecrets],
+	link: [...allSecrets, www],
 });
 
 export const api = new sst.cloudflare.Worker("OpenApiWorker", {
@@ -21,6 +23,7 @@ export const api = new sst.cloudflare.Worker("OpenApiWorker", {
 	handler: "./packages/workers/src/proxy.ts",
 	environment: {
 		ORIGIN_URL: apiFn.url,
+		NO_CACHE: String(isPermanentStage),
 	},
 });
 
