@@ -28,4 +28,15 @@ export namespace SpotifyProxyTypes {
 
 	export type AlbumTrack = z.infer<typeof AlbumTrackSchema>;
 	export type Album = z.infer<typeof AlbumSchema>;
+
+	export const PlaylistSchema = z.object({
+		coverImageUrl: z.string(),
+		title: z.string(),
+		description: z.string(),
+		tracks: z.array(TrackSchema),
+		ownerName: z.string(),
+		playlistUrl: z.string(),
+	});
+
+	export type Playlist = z.infer<typeof PlaylistSchema>;
 }

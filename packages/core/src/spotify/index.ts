@@ -1,20 +1,12 @@
-import querystring from "node:querystring";
 import { Resource } from "sst";
 import { SpotifyApi as SpotifyApiClient } from "@spotify/web-api-ts-sdk";
 import { SpotifyProxyTypes } from "./spotify.types";
 
-const client_id = Resource.SpotifyClientId.value;
-const client_secret = Resource.SpotifyClientSecret.value;
-
-const basic = Buffer.from(`${client_id}:${client_secret}`).toString("base64");
-const TOKEN_ENDPOINT = "https://accounts.spotify.com/api/token";
-const TRACK_DETAILS_ENDPOINT = "https://api.spotify.com/v1/tracks";
-
 export { SpotifyProxyTypes };
 export namespace SpotifyHttp {
 	const client = SpotifyApiClient.withClientCredentials(
-		client_id,
-		client_secret,
+		Resource.SpotifyClientId.value,
+		Resource.SpotifyClientSecret.value,
 	);
 
 	export const getTrack = async (
@@ -53,5 +45,27 @@ export namespace SpotifyHttp {
 		};
 
 		return SpotifyProxyTypes.AlbumSchema.parse(sanitizedData);
+	};
+
+	export const getPlaylist = async (
+		id: string,
+	): Promise<SpotifyProxyTypes.Playlist> => {
+		const data = await client.playlists.getPlaylist(id);
+
+		const sanitizedData: SpotifyProxyTypes.Playlist = {
+			coverImageUrl: data.images[0]?.url,
+			title: data.name,
+			description: data.description,
+			tracks: data.tracks.items.map(({ track }) => ({
+				title: track.name,
+				artists: track.artists.map((artist) => artist.name).join(", "),
+				previewUrl: track.preview_url ?? undefined,
+				trackUrl: track.external_urls.spotify,
+			})),
+			ownerName: data.owner.display_name,
+			playlistUrl: data.external_urls.spotify,
+		};
+
+		return SpotifyProxyTypes.PlaylistSchema.parse(sanitizedData);
 	};
 }

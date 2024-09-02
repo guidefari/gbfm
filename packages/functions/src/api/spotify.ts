@@ -64,6 +64,35 @@ export namespace SpotifyApi {
 				const result = await SpotifyHttp.getAlbum(c.req.valid("json").id);
 				return c.json({ result }, 200);
 			},
+		)
+		.openapi(
+			createRoute({
+				method: "post",
+				path: "/playlist",
+				request: {
+					body: {
+						content: {
+							"application/json": {
+								schema: z.object({ id: z.string() }),
+							},
+						},
+					},
+				},
+				responses: {
+					200: {
+						content: {
+							"application/json": {
+								schema: Result(SpotifyProxyTypes.PlaylistSchema),
+							},
+						},
+						description: "Returns playlist details",
+					},
+				},
+			}),
+			async (c) => {
+				const result = await SpotifyHttp.getPlaylist(c.req.valid("json").id);
+				return c.json({ result }, 200);
+			},
 		);
 
 	// .use(
