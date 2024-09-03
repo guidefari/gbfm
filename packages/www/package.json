@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "bio": "biome lint ./src --write && biome format --write ./src",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "types": "tsc --noEmit"
   },
   "dependencies": {
     "@radix-ui/react-icons": "^1.3.0",
