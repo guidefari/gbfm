@@ -1,4 +1,5 @@
 import { NavBar } from "@/components/NavBar";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "@/components/ui/toaster";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
 import { Suspense, lazy } from "react";
@@ -6,12 +7,14 @@ import { Suspense, lazy } from "react";
 export const Route = createRootRoute({
 	component: () => (
 		<>
-			<div className="flex flex-col">
-				<NavBar />
-				<main className="flex-1 w-full h-full font-inter ">
-					<Outlet />
-				</main>
-			</div>
+			<ThemeProvider>
+				<div className="flex flex-col">
+					<NavBar />
+					<main className="flex-1 w-full h-full font-inter ">
+						<Outlet />
+					</main>
+				</div>
+			</ThemeProvider>
 			<Toaster />
 			<Suspense>
 				<TanStackRouterDevtools />
