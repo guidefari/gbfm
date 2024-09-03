@@ -3,7 +3,7 @@ import type { SVGProps } from "react";
 
 export function NavBar() {
 	return (
-		<header className="sticky top-0 flex items-center justify-between w-full h-16 px-4 border-b bg-theme-dark md:px-6">
+		<header className="sticky top-0 flex items-center justify-between w-full h-16 px-4 border-b md:px-6">
 			<Link to="/">
 				<button
 					type="button"
