@@ -1,6 +1,6 @@
 import { domain } from "./dns";
 
-export const www = new sst.aws.StaticSite("gbfm-web", {
+export const www = new sst.aws.StaticSite("gbfm-www", {
 	path: "./packages/www",
 	build: {
 		command: "bun run build",
