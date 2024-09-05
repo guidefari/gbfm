@@ -43,7 +43,7 @@ export function ThemeProvider({
 
 		updateTheme(); // Initial theme setup
 
-		const handleChange = (e: MediaQueryListEvent) => {
+		const handleChange = () => {
 			if (theme === "system") {
 				updateTheme();
 			}
