@@ -14,7 +14,7 @@ declare module "sst" {
     }
     "SpotifyClientId": {
       "type": "sst.sst.Secret"
-      "value": 
+      "value": string
     }
     "SpotifyClientSecret": {
       "type": "sst.sst.Secret"
