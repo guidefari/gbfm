@@ -3,8 +3,8 @@ name: sst
 on:
   push:
     branches:
-      - dev
-      - production
+      - prod
+      - staging
 
 concurrency: 
   group: ${{ github.ref }}

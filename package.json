@@ -6,8 +6,8 @@
     "dev": "sst dev",
     "sso": "aws sso login --sso-session=terminal --no-browser",
     "typecheck": "tsc --noEmit --project ./tsconfig.json",
-    "deploy": "sst deploy --stage=dev",
-    "deploy:prod": "sst deploy --stage=production"
+    "deploy": "sst deploy --stage=staging",
+    "deploy:prod": "sst deploy --stage=prod"
   },
   "workspaces": [
     "packages/*"

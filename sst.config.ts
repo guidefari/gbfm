@@ -6,7 +6,7 @@ export default $config({
 	app(input) {
 		return {
 			name: "gbfm",
-			removal: input?.stage === "production" ? "retain" : "remove",
+			removal: input?.stage === "prod" ? "retain" : "remove",
 			home: "aws",
 			providers: {
 				cloudflare: true,

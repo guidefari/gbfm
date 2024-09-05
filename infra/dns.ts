@@ -1,8 +1,8 @@
 export const domain =
 	{
-		production: "goosebumps.fm",
-		dev: "dev.goosebumps.fm",
-	}[$app.stage] || `${$app.stage}.dev.goosebumps.fm`;
+		prod: "goosebumps.fm",
+		staging: "staging.goosebumps.fm",
+	}[$app.stage] || `${$app.stage}.staging.goosebumps.fm`;
 
 // export const shortDomain = domain.replace(/goosebumps\.fm$/, "gbfm.dev");
 
