@@ -5,5 +5,10 @@ export const Route = createLazyFileRoute("/")({
 });
 
 function Index() {
-	return <h1>gbfm reimagined or whatever</h1>;
+	return (
+		<>
+			<h1>gbfm reimagined innit.</h1>
+			<p>testing CI👀</p>
+		</>
+	);
 }

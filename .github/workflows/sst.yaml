@@ -1,0 +1,59 @@
+name: sst
+
+on:
+  push:
+    branches:
+      - dev
+      - production
+
+concurrency: 
+  group: ${{ github.ref }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - uses: actions/cache@v2
+        with:
+          path: |
+            .sst
+          key: ${{ runner.os }}-sst
+
+      - uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - uses: actions/setup-node@v1
+        with:
+          node-version: "20"
+
+      - run: "curl -fsSL https://ion.sst.dev/install | bash"
+
+      - name: Configure Production AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          role-to-assume: ${{secrets.AWS_ROLE_ARN}}
+          role-duration-seconds: 3600 #adjust as needed for your build time
+          aws-region: us-east-2
+
+      - name: deps
+        run: bun install
+
+      # - name: typecheck
+      #   run: bun typecheck
+
+      - name: Deploy
+        # env:
+        #   CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+        run: |
+          sst install
+          sst deploy --stage=${GITHUB_REF_NAME}
