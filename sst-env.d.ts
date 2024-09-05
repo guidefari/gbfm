@@ -20,7 +20,7 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
-    "gbfm-www": {
+    "gbfm-web": {
       "type": "sst.aws.StaticSite"
       "url": string
     }
