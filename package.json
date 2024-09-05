@@ -12,9 +12,6 @@
   "workspaces": [
     "packages/*"
   ],
-  "nohoist": [
-    "packages/www-old"
-  ],
   "dependencies": {
     "@effect/platform": "latest",
     "@effect/schema": "latest",
@@ -24,6 +21,6 @@
   },
   "devDependencies": {
     "@tsconfig/node20": "^20.1.4",
-    "typescript": "5.5.4"
+    "typescript": "latest"
   }
 }
