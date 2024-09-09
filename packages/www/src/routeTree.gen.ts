@@ -17,6 +17,7 @@ import { Route as rootRoute } from './routes/__root'
 // Create Virtual Routes
 
 const MixesLazyImport = createFileRoute('/mixes')()
+const MdxLazyImport = createFileRoute('/mdx')()
 const IndexLazyImport = createFileRoute('/')()
 
 // Create/Update Routes
@@ -25,6 +26,11 @@ const MixesLazyRoute = MixesLazyImport.update({
   path: '/mixes',
   getParentRoute: () => rootRoute,
 } as any).lazy(() => import('./routes/mixes.lazy').then((d) => d.Route))
+
+const MdxLazyRoute = MdxLazyImport.update({
+  path: '/mdx',
+  getParentRoute: () => rootRoute,
+} as any).lazy(() => import('./routes/mdx.lazy').then((d) => d.Route))
 
 const IndexLazyRoute = IndexLazyImport.update({
   path: '/',
@@ -42,6 +48,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexLazyImport
       parentRoute: typeof rootRoute
     }
+    '/mdx': {
+      id: '/mdx'
+      path: '/mdx'
+      fullPath: '/mdx'
+      preLoaderRoute: typeof MdxLazyImport
+      parentRoute: typeof rootRoute
+    }
     '/mixes': {
       id: '/mixes'
       path: '/mixes'
@@ -56,6 +69,7 @@ declare module '@tanstack/react-router' {
 
 export const routeTree = rootRoute.addChildren({
   IndexLazyRoute,
+  MdxLazyRoute,
   MixesLazyRoute,
 })
 
@@ -68,11 +82,15 @@ export const routeTree = rootRoute.addChildren({
       "filePath": "__root.tsx",
       "children": [
         "/",
+        "/mdx",
         "/mixes"
       ]
     },
     "/": {
       "filePath": "index.lazy.tsx"
+    },
+    "/mdx": {
+      "filePath": "mdx.lazy.tsx"
     },
     "/mixes": {
       "filePath": "mixes.lazy.tsx"
