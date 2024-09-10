@@ -2,6 +2,7 @@ import { domain } from "./dns";
 import { allSecrets } from "./secret";
 import { isPermanentStage } from "./stage";
 import { www } from "./www";
+import { bucket } from "./bucket";
 
 // sst.Linkable.wrap(random.RandomString, (resource) => ({
 // 	properties: {
@@ -13,7 +14,7 @@ const apiFn = new sst.aws.Function("OpenApi", {
 	handler: "./packages/functions/src/api/index.handler",
 	streaming: !$dev,
 	url: true,
-	link: [...allSecrets, www],
+	link: [...allSecrets, www, bucket],
 });
 
 export const api = new sst.cloudflare.Worker("OpenApiWorker", {

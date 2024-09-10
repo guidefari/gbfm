@@ -3,6 +3,10 @@
 import "sst"
 declare module "sst" {
   export interface Resource {
+    "MDX_Archive": {
+      "name": string
+      "type": "sst.aws.Bucket"
+    }
     "OpenApi": {
       "name": string
       "type": "sst.aws.Function"
@@ -20,7 +24,7 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
-    "gbfm-web": {
+    "gbfm-www": {
       "type": "sst.aws.StaticSite"
       "url": string
     }
