@@ -13,16 +13,6 @@ app.get("/", (c) => {
 	return c.text("This space has been left intentionally blank🤫");
 });
 
-app.get("/list", async (c) => {
-	const objects = await s3.send(
-		new ListObjectsV2Command({
-			Bucket: Resource.MDX_Archive.name,
-		}),
-	);
-
-	return c.json(objects);
-});
-
 const routes = app
 	.route("/spotify", SpotifyApi.route)
 	.route("/mdx-archive", MDXArchiveApi.route);
