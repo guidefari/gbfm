@@ -14,7 +14,7 @@ const apiFn = new sst.aws.Function("OpenApi", {
 	handler: "./packages/functions/src/api/index.handler",
 	streaming: !$dev,
 	url: true,
-	link: [...allSecrets, www, bucket],
+	link: [...allSecrets, bucket],
 });
 
 export const api = new sst.cloudflare.Worker("OpenApiWorker", {
