@@ -1,3 +1,4 @@
+import { api } from "./api";
 import { domain } from "./dns";
 
 export const www = new sst.aws.StaticSite("gbfm-www", {
@@ -5,6 +6,9 @@ export const www = new sst.aws.StaticSite("gbfm-www", {
 	build: {
 		command: "bun run build",
 		output: "dist",
+	},
+	environment: {
+		VITE_API_BASE_URL: api.url,
 	},
 	domain: {
 		name: `www.${domain}`,
