@@ -1,9 +1,6 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { Result } from "./common";
-import { SpotifyHttp, SpotifyProxyTypes } from "@gbfm/core/spotify/index";
-import { cors } from "hono/cors";
 import { Resource } from "sst";
-import { csrf } from "hono/csrf";
 import {
 	ListObjectsV2Command,
 	S3Client,
@@ -105,10 +102,6 @@ export namespace MDXArchiveApi {
 
 				const result = await object.Body.transformToString();
 				const gray = grayMatter(result);
-
-				// if (!objects.Contents) {
-				// 	return c.json({ result: [] }, 200);
-				// }
 
 				return c.json({ result: gray }, 200);
 			},

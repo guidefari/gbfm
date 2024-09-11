@@ -1,11 +1,7 @@
 import { handle, streamHandle } from "hono/aws-lambda";
 import { OpenAPIHono } from "@hono/zod-openapi";
 import { SpotifyApi } from "./spotify";
-import { ListObjectsV2Command, S3Client } from "@aws-sdk/client-s3";
-import { Resource } from "sst";
 import { MDXArchiveApi } from "./mdx-archive";
-
-const s3 = new S3Client({});
 
 const app = new OpenAPIHono();
 
