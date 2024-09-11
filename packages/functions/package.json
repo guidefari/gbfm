@@ -13,6 +13,7 @@
     "@hono/valibot-validator": "^0.3.0",
     "@hono/zod-openapi": "^0.16.0",
     "@spotify/web-api-ts-sdk": "^1.2.0",
+    "gray-matter": "^4.0.3",
     "hono": "^4.5.10"
   }
 }
