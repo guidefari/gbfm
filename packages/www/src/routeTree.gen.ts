@@ -67,11 +67,49 @@ declare module '@tanstack/react-router' {
 
 // Create and export the route tree
 
-export const routeTree = rootRoute.addChildren({
-  IndexLazyRoute,
-  MdxLazyRoute,
-  MixesLazyRoute,
-})
+export interface FileRoutesByFullPath {
+  '/': typeof IndexLazyRoute
+  '/mdx': typeof MdxLazyRoute
+  '/mixes': typeof MixesLazyRoute
+}
+
+export interface FileRoutesByTo {
+  '/': typeof IndexLazyRoute
+  '/mdx': typeof MdxLazyRoute
+  '/mixes': typeof MixesLazyRoute
+}
+
+export interface FileRoutesById {
+  __root__: typeof rootRoute
+  '/': typeof IndexLazyRoute
+  '/mdx': typeof MdxLazyRoute
+  '/mixes': typeof MixesLazyRoute
+}
+
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths: '/' | '/mdx' | '/mixes'
+  fileRoutesByTo: FileRoutesByTo
+  to: '/' | '/mdx' | '/mixes'
+  id: '__root__' | '/' | '/mdx' | '/mixes'
+  fileRoutesById: FileRoutesById
+}
+
+export interface RootRouteChildren {
+  IndexLazyRoute: typeof IndexLazyRoute
+  MdxLazyRoute: typeof MdxLazyRoute
+  MixesLazyRoute: typeof MixesLazyRoute
+}
+
+const rootRouteChildren: RootRouteChildren = {
+  IndexLazyRoute: IndexLazyRoute,
+  MdxLazyRoute: MdxLazyRoute,
+  MixesLazyRoute: MixesLazyRoute,
+}
+
+export const routeTree = rootRoute
+  ._addFileChildren(rootRouteChildren)
+  ._addFileTypes<FileRouteTypes>()
 
 /* prettier-ignore-end */
 
