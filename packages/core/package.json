@@ -10,8 +10,11 @@
   },
   "devDependencies": {},
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.645.0",
+    "@aws-sdk/s3-request-presigner": "^3.645.0",
     "@hono/valibot-validator": "^0.3.0",
     "@hono/zod-openapi": "^0.16.0",
+    "gray-matter": "^4.0.3",
     "hono": "^4.5.10"
   }
 }
