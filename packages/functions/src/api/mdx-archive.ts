@@ -43,21 +43,27 @@ export namespace MDXArchiveApi {
 						Bucket: Resource.MDX_Archive.name,
 					}),
 				);
+				const { archetype } = await c.req.json();
 
 				if (!objects.Contents) {
 					return c.json({ result: [] }, 200);
 				}
 
 				const result =
-					objects.Contents.map((object) => object.Key).filter(
-						(key): key is string => {
+					objects.Contents.map((object) => object.Key)
+						.filter((key): key is string => {
 							if (!key) return false;
 
 							const postType = key.split("/")[0];
 
-							return postType === c.req.valid("json").archetype;
-						},
-					) || [];
+							if (postType !== archetype) return false;
+
+							// Extract the last part of the key and remove the extension
+							const fileName = key.split("/").pop()?.split(".")[0];
+
+							return !!fileName;
+						})
+						.map((key) => key.split("/").pop()?.split(".")[0] || key) || [];
 
 				return c.json({ result }, 200);
 			},
