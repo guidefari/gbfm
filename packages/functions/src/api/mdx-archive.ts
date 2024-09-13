@@ -1,14 +1,7 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { Result } from "./common";
-import { Resource } from "sst";
-import {
-	ListObjectsV2Command,
-	S3Client,
-	GetObjectCommand,
-} from "@aws-sdk/client-s3";
-import grayMatter from "gray-matter";
+import { MDXArchiveTypes, MDXArchive } from "@gbfm/core/mdx/index";
 
-const s3 = new S3Client({});
 export namespace MDXArchiveApi {
 	export const route = new OpenAPIHono()
 		.openapi(
@@ -20,7 +13,7 @@ export namespace MDXArchiveApi {
 						content: {
 							"application/json": {
 								schema: z.object({
-									archetype: z.enum(["mixes", "labels", "micro", "words"]),
+									archetype: MDXArchiveTypes.archetype,
 								}),
 							},
 						},
@@ -38,26 +31,8 @@ export namespace MDXArchiveApi {
 				},
 			}),
 			async (c) => {
-				const objects = await s3.send(
-					new ListObjectsV2Command({
-						Bucket: Resource.MDX_Archive.name,
-					}),
-				);
-
-				if (!objects.Contents) {
-					return c.json({ result: [] }, 200);
-				}
-
-				const result =
-					objects.Contents.map((object) => object.Key).filter(
-						(key): key is string => {
-							if (!key) return false;
-
-							const postType = key.split("/")[0];
-
-							return postType === c.req.valid("json").archetype;
-						},
-					) || [];
+				const { archetype } = await c.req.json();
+				const result = await MDXArchive.list(archetype);
 
 				return c.json({ result }, 200);
 			},
@@ -89,21 +64,11 @@ export namespace MDXArchiveApi {
 				},
 			}),
 			async (c) => {
-				const object = await s3.send(
-					new GetObjectCommand({
-						Bucket: Resource.MDX_Archive.name,
-						Key: c.req.valid("json").filename,
-					}),
-				);
+				const { filename } = await c.req.json();
 
-				if (!object.Body) {
-					return c.json({ result: {} }, 200);
-				}
+				const result = await MDXArchive.readOne(filename);
 
-				const result = await object.Body.transformToString();
-				const gray = grayMatter(result);
-
-				return c.json({ result: gray }, 200);
+				return c.json({ result }, 200);
 			},
 		);
 }
