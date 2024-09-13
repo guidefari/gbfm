@@ -58,10 +58,7 @@ export namespace MDXArchiveApi {
 
 							if (postType !== archetype) return false;
 
-							// Extract the last part of the key and remove the extension
-							const fileName = key.split("/").pop()?.split(".")[0];
-
-							return !!fileName;
+							return !!key;
 						})
 						.map((key) => key.split("/").pop()?.split(".")[0] || key) || [];
 
