@@ -37,6 +37,7 @@ export function useMixes() {
 	};
 }
 
+// I'll likely have to move to a more fully featured network layer. tanstack/react-query. this is fine for now though.
 export function useArchetype(type: MDXArchiveTypes.archetype) {
 	const { data, error, isLoading, isValidating } = useSWR<
 		Response<string[]>,
