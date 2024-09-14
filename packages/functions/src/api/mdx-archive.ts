@@ -56,7 +56,7 @@ export namespace MDXArchiveApi {
 					200: {
 						content: {
 							"application/json": {
-								schema: Result(z.object({})),
+								schema: z.object({}),
 							},
 						},
 						description: "Returns an object of the post",
@@ -68,7 +68,7 @@ export namespace MDXArchiveApi {
 
 				const result = await MDXArchive.readOne(filename);
 
-				return c.json({ result }, 200);
+				return c.json({ ...result }, 200);
 			},
 		);
 }
