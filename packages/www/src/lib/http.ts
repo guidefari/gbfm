@@ -1,4 +1,5 @@
 import useSWR from "swr";
+import type { MDXArchiveTypes } from "@gbfm/core/mdx/mdx.types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -33,5 +34,25 @@ export function useMixes() {
 		mixes: data,
 		isLoading,
 		isError: error,
+	};
+}
+
+// I'll likely have to move to a more fully featured network layer. tanstack/react-query. this is fine for now though.
+export function useArchetype(type: MDXArchiveTypes.archetype) {
+	const { data, error, isLoading, isValidating } = useSWR<
+		Response<string[]>,
+		Error
+	>(`${API_BASE_URL}/mdx-archive/list`, (input: RequestInfo) =>
+		fetcher(input, {
+			method: "POST",
+			body: JSON.stringify({ archetype: type }),
+		}),
+	);
+
+	return {
+		data,
+		isLoading,
+		error,
+		isValidating,
 	};
 }

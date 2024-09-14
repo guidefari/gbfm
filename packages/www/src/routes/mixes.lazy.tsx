@@ -7,7 +7,6 @@ export const Route = createLazyFileRoute("/mixes")({
 
 function Component() {
 	const { mixes, isLoading, isError } = useMixes();
-	console.log("mixes:", mixes);
 
 	if (isLoading || !mixes) return <div>Loading...</div>;
 	if (isError) return <div>Error</div>;

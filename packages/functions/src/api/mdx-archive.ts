@@ -13,7 +13,7 @@ export namespace MDXArchiveApi {
 						content: {
 							"application/json": {
 								schema: z.object({
-									archetype: MDXArchiveTypes.archetype,
+									archetype: MDXArchiveTypes.archetypeSchema,
 								}),
 							},
 						},
