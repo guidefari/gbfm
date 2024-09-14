@@ -59,5 +59,4 @@ jobs:
 
         run: |
           sst install
-          sst refresh --stage=${GITHUB_REF_NAME}
           sst deploy --stage=${GITHUB_REF_NAME}
