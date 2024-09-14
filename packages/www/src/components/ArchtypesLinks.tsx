@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { MDXArchiveTypes } from "@gbfm/core/mdx/index";
+import { MDXArchiveTypes } from "@gbfm/core/mdx/mdx.types";
 
 export const ArchetypesLinks = () => {
 	return (

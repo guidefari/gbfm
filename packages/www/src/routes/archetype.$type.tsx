@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useArchetype } from "@/lib/http";
-import { MDXArchiveTypes } from "@gbfm/core/mdx/index";
+import { MDXArchiveTypes } from "@gbfm/core/mdx/mdx.types";
 import { ArchetypesLinks } from "@/components/ArchtypesLinks";
 
 export const Route = createFileRoute("/archetype/$type")({

@@ -1,5 +1,5 @@
 import useSWR from "swr";
-import type { MDXArchiveTypes } from "@gbfm/core/mdx/index";
+import type { MDXArchiveTypes } from "@gbfm/core/mdx/mdx.types";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
