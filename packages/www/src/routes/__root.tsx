@@ -1,6 +1,7 @@
 import { NavBar } from "@/components/NavBar";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "@/components/ui/toaster";
+import { AudioProvider } from "@/contexts/AudioPlayer";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
 import { Suspense, lazy } from "react";
 
@@ -8,12 +9,14 @@ export const Route = createRootRoute({
 	component: () => (
 		<>
 			<ThemeProvider>
-				<div className="flex flex-col">
-					<NavBar />
-					<main className="flex-1 w-full h-full font-inter ">
-						<Outlet />
-					</main>
-				</div>
+				<AudioProvider>
+					<div className="flex flex-col">
+						<NavBar />
+						<main className="flex-1 w-full h-full font-inter ">
+							<Outlet />
+						</main>
+					</div>
+				</AudioProvider>
 			</ThemeProvider>
 			<Toaster />
 			<Suspense>
