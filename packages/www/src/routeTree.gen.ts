@@ -13,12 +13,14 @@ import { createFileRoute } from '@tanstack/react-router'
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as ArchetypeTypeImport } from './routes/archetype.$type'
 
 // Create Virtual Routes
 
 const MixesLazyImport = createFileRoute('/mixes')()
 const MdxLazyImport = createFileRoute('/mdx')()
 const IndexLazyImport = createFileRoute('/')()
+const ArchetypeIndexLazyImport = createFileRoute('/archetype/')()
 
 // Create/Update Routes
 
@@ -36,6 +38,18 @@ const IndexLazyRoute = IndexLazyImport.update({
   path: '/',
   getParentRoute: () => rootRoute,
 } as any).lazy(() => import('./routes/index.lazy').then((d) => d.Route))
+
+const ArchetypeIndexLazyRoute = ArchetypeIndexLazyImport.update({
+  path: '/archetype/',
+  getParentRoute: () => rootRoute,
+} as any).lazy(() =>
+  import('./routes/archetype.index.lazy').then((d) => d.Route),
+)
+
+const ArchetypeTypeRoute = ArchetypeTypeImport.update({
+  path: '/archetype/$type',
+  getParentRoute: () => rootRoute,
+} as any)
 
 // Populate the FileRoutesByPath interface
 
@@ -62,6 +76,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MixesLazyImport
       parentRoute: typeof rootRoute
     }
+    '/archetype/$type': {
+      id: '/archetype/$type'
+      path: '/archetype/$type'
+      fullPath: '/archetype/$type'
+      preLoaderRoute: typeof ArchetypeTypeImport
+      parentRoute: typeof rootRoute
+    }
+    '/archetype/': {
+      id: '/archetype/'
+      path: '/archetype'
+      fullPath: '/archetype'
+      preLoaderRoute: typeof ArchetypeIndexLazyImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
@@ -71,12 +99,16 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexLazyRoute
   '/mdx': typeof MdxLazyRoute
   '/mixes': typeof MixesLazyRoute
+  '/archetype/$type': typeof ArchetypeTypeRoute
+  '/archetype': typeof ArchetypeIndexLazyRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexLazyRoute
   '/mdx': typeof MdxLazyRoute
   '/mixes': typeof MixesLazyRoute
+  '/archetype/$type': typeof ArchetypeTypeRoute
+  '/archetype': typeof ArchetypeIndexLazyRoute
 }
 
 export interface FileRoutesById {
@@ -84,14 +116,16 @@ export interface FileRoutesById {
   '/': typeof IndexLazyRoute
   '/mdx': typeof MdxLazyRoute
   '/mixes': typeof MixesLazyRoute
+  '/archetype/$type': typeof ArchetypeTypeRoute
+  '/archetype/': typeof ArchetypeIndexLazyRoute
 }
 
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/mdx' | '/mixes'
+  fullPaths: '/' | '/mdx' | '/mixes' | '/archetype/$type' | '/archetype'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/mdx' | '/mixes'
-  id: '__root__' | '/' | '/mdx' | '/mixes'
+  to: '/' | '/mdx' | '/mixes' | '/archetype/$type' | '/archetype'
+  id: '__root__' | '/' | '/mdx' | '/mixes' | '/archetype/$type' | '/archetype/'
   fileRoutesById: FileRoutesById
 }
 
@@ -99,12 +133,16 @@ export interface RootRouteChildren {
   IndexLazyRoute: typeof IndexLazyRoute
   MdxLazyRoute: typeof MdxLazyRoute
   MixesLazyRoute: typeof MixesLazyRoute
+  ArchetypeTypeRoute: typeof ArchetypeTypeRoute
+  ArchetypeIndexLazyRoute: typeof ArchetypeIndexLazyRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexLazyRoute: IndexLazyRoute,
   MdxLazyRoute: MdxLazyRoute,
   MixesLazyRoute: MixesLazyRoute,
+  ArchetypeTypeRoute: ArchetypeTypeRoute,
+  ArchetypeIndexLazyRoute: ArchetypeIndexLazyRoute,
 }
 
 export const routeTree = rootRoute
@@ -121,7 +159,9 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/mdx",
-        "/mixes"
+        "/mixes",
+        "/archetype/$type",
+        "/archetype/"
       ]
     },
     "/": {
@@ -132,6 +172,12 @@ export const routeTree = rootRoute
     },
     "/mixes": {
       "filePath": "mixes.lazy.tsx"
+    },
+    "/archetype/$type": {
+      "filePath": "archetype.$type.tsx"
+    },
+    "/archetype/": {
+      "filePath": "archetype.index.lazy.tsx"
     }
   }
 }
