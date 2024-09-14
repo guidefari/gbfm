@@ -8,6 +8,7 @@ export const www = new sst.aws.StaticSite("gbfm-www", {
 		output: "dist",
 	},
 	environment: {
+		// @ts-expect-error - should be fine
 		VITE_API_BASE_URL: api.url,
 	},
 	domain: {

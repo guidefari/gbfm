@@ -1,7 +1,6 @@
 import { domain } from "./dns";
 import { allSecrets } from "./secret";
 import { isPermanentStage } from "./stage";
-import { www } from "./www";
 import { bucket } from "./bucket";
 
 // sst.Linkable.wrap(random.RandomString, (resource) => ({
@@ -19,7 +18,7 @@ const apiFn = new sst.aws.Function("OpenApi", {
 
 export const api = new sst.cloudflare.Worker("OpenApiWorker", {
 	url: true,
-	live: false,
+	// live: false,
 	domain: `openapi.${domain}`,
 	handler: "./packages/workers/src/proxy.ts",
 	environment: {
