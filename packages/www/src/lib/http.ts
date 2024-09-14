@@ -1,7 +1,9 @@
 import useSWR from "swr";
 import type { MDXArchiveTypes } from "@gbfm/core/mdx/mdx.types";
+import type { AlbumApiResponse, TrackAPIResponse } from "@/types";
+import { useQuery } from "@tanstack/react-query";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export async function fetcher(input: RequestInfo, init?: RequestInit) {
 	const res = await fetch(input, init);
@@ -50,9 +52,50 @@ export function useArchetype(type: MDXArchiveTypes.archetype) {
 	);
 
 	return {
-		data,
+		data: data,
 		isLoading,
 		error,
 		isValidating,
+	};
+}
+
+export function useMDXArchive(filename: string) {
+	const { data, error, isLoading } = useQuery({
+		queryKey: ["mdx-archive", filename],
+		queryFn: async (): Promise<TrackAPIResponse> => {
+			const response = await fetch(`${API_BASE_URL}/mdx-archive/read`, {
+				method: "POST",
+				body: JSON.stringify({ filename }),
+			});
+			return await response.json();
+		},
+	});
+	return {
+		data: data,
+		isLoading,
+		error,
+	};
+}
+
+type SpotifyProxyInput = {
+	id: string;
+	type: "album" | "track" | "artist" | "playlist";
+};
+
+export function useSpotifyProxy({ id, type }: SpotifyProxyInput) {
+	const { data, error, isLoading } = useQuery({
+		queryKey: ["spotify/proxy", type, id],
+		queryFn: async (): Promise<AlbumApiResponse> => {
+			const response = await fetch(`${API_BASE_URL}/spotify/${type}`, {
+				method: "POST",
+				body: JSON.stringify({ id }),
+			});
+			return await response.json();
+		},
+	});
+	return {
+		data: data,
+		isLoading,
+		error,
 	};
 }
