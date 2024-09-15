@@ -24,7 +24,7 @@ export namespace SpotifyApi {
 					200: {
 						content: {
 							"application/json": {
-								schema: Result(SpotifyProxyTypes.TrackSchema),
+								schema: SpotifyProxyTypes.TrackSchema,
 							},
 						},
 						description: "Returns track details",
@@ -32,8 +32,9 @@ export namespace SpotifyApi {
 				},
 			}),
 			async (c) => {
-				const result = await SpotifyHttp.getTrack(c.req.valid("json").id);
-				return c.json({ result }, 200);
+				const { id } = await c.req.json();
+				const result = await SpotifyHttp.getTrack(id);
+				return c.json({ ...result }, 200);
 			},
 		)
 		.openapi(
@@ -53,7 +54,7 @@ export namespace SpotifyApi {
 					200: {
 						content: {
 							"application/json": {
-								schema: Result(SpotifyProxyTypes.AlbumSchema),
+								schema: SpotifyProxyTypes.AlbumSchema,
 							},
 						},
 						description: "Returns album details",
@@ -61,8 +62,9 @@ export namespace SpotifyApi {
 				},
 			}),
 			async (c) => {
-				const result = await SpotifyHttp.getAlbum(c.req.valid("json").id);
-				return c.json({ result }, 200);
+				const { id } = await c.req.json();
+				const result = await SpotifyHttp.getAlbum(id);
+				return c.json({ ...result }, 200);
 			},
 		)
 		.openapi(
@@ -82,7 +84,7 @@ export namespace SpotifyApi {
 					200: {
 						content: {
 							"application/json": {
-								schema: Result(SpotifyProxyTypes.PlaylistSchema),
+								schema: SpotifyProxyTypes.PlaylistSchema,
 							},
 						},
 						description: "Returns playlist details",
@@ -90,8 +92,9 @@ export namespace SpotifyApi {
 				},
 			}),
 			async (c) => {
-				const result = await SpotifyHttp.getPlaylist(c.req.valid("json").id);
-				return c.json({ result }, 200);
+				const { id } = await c.req.json();
+				const result = await SpotifyHttp.getPlaylist(id);
+				return c.json({ ...result }, 200);
 			},
 		);
 

@@ -1,20 +1,48 @@
 import { createLazyFileRoute } from "@tanstack/react-router";
-import { MDXProvider } from "@mdx-js/react";
-import MyMarkdown from "../mdx/test.mdx";
+import { useMDXArchive } from "@/lib/http";
+import { run } from "@mdx-js/mdx";
+import * as runtime from "react/jsx-runtime";
+import { useEffect, useState } from "react";
+import { CustomMDXComponents } from "@/components/mdx-components";
 
 export const Route = createLazyFileRoute("/mdx")({
 	component: Component,
 });
 
-const components = {
-	// @ts-expect-error - testing
-	em: (props) => <i {...props} />,
-};
+type LoadedContentType = Awaited<ReturnType<typeof run>>["default"];
 
 function Component() {
+	const { data, error, isLoading } = useMDXArchive("words/jazz-codes.mdx");
+	const [Content, setContent] = useState<LoadedContentType | null>(null); // State to hold Content
+	console.log("Content:", Content);
+	console.log("data:", data);
+
+	// what a monstrosity piece of code. Father forgive me for I have sinned.😭
+	// if you're reading this, it's a PoC.
+
+	useEffect(() => {
+		const fetchContent = async () => {
+			// @ts-expect-error: `runtime` types are currently broken.
+			const { default: loadedContent } = await run(data?.compiled, {
+				...runtime,
+				baseUrl: import.meta.url,
+			});
+			setContent(() => loadedContent); // Set the loaded content
+		};
+
+		if (data?.compiled) {
+			fetchContent();
+		}
+	}, [data?.compiled]);
+
+	if (isLoading) return <div>Loading...</div>;
+	if (error) return <div>Error: {error.message}</div>;
+
 	return (
-		<MDXProvider components={components}>
-			<MyMarkdown />
-		</MDXProvider>
+		<>
+			{/* {data && data.result.content} */}
+			{/* <MyMarkdown /> */}
+			{Content ? <Content components={CustomMDXComponents} /> : null}
+		</>
 	);
 }

@@ -6,6 +6,7 @@ import {
 	GetObjectCommand,
 } from "@aws-sdk/client-s3";
 import { MDXArchiveTypes } from "./mdx.types";
+import { compile } from "@mdx-js/mdx";
 
 const s3 = new S3Client({});
 export { MDXArchiveTypes };
@@ -54,7 +55,10 @@ export namespace MDXArchive {
 
 		const result = await object.Body.transformToString();
 		const gray = grayMatter(result);
+		const compiled = await compile(gray.content, {
+			outputFormat: "function-body",
+		});
 
-		return gray;
+		return { gray, compiled: compiled.value };
 	};
 }

@@ -1,19 +1,27 @@
 import { NavBar } from "@/components/NavBar";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "@/components/ui/toaster";
+import { AudioProvider } from "@/contexts/AudioPlayer";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
 import { Suspense, lazy } from "react";
+
+const queryClient = new QueryClient();
 
 export const Route = createRootRoute({
 	component: () => (
 		<>
 			<ThemeProvider>
-				<div className="flex flex-col">
-					<NavBar />
-					<main className="flex-1 w-full h-full font-inter ">
-						<Outlet />
-					</main>
-				</div>
+				<AudioProvider>
+					<QueryClientProvider client={queryClient}>
+						<div className="flex flex-col">
+							<NavBar />
+							<main className="flex-1 w-full h-full font-inter ">
+								<Outlet />
+							</main>
+						</div>
+					</QueryClientProvider>
+				</AudioProvider>
 			</ThemeProvider>
 			<Toaster />
 			<Suspense>
