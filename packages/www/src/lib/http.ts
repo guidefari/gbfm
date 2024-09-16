@@ -29,23 +29,6 @@ type Response<T> = {
 	result: T;
 };
 
-export function useMixes() {
-	const { data, error, isLoading } = useQuery<Response<string[]>, Error>({
-		queryKey: ["mdx-archive", "mixes"],
-		queryFn: async () =>
-			fetcher(`${API_BASE_URL}/mdx-archive/list`, {
-				method: "POST",
-				body: JSON.stringify({ archetype: "mixes" }),
-			}),
-	});
-	return {
-		mixes: data,
-		isLoading,
-		isError: error,
-	};
-}
-
-// I'll likely have to move to a more fully featured network layer. tanstack/react-query. this is fine for now though.
 export function useArchetype(type: MDXArchiveTypes.archetype) {
 	const { data, error, isLoading } = useQuery<Response<string[]>, Error>({
 		queryKey: ["mdx-archive", type],
