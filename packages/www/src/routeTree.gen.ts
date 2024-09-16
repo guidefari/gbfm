@@ -13,27 +13,22 @@ import { createFileRoute } from '@tanstack/react-router'
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
-import { Route as ArchetypeImport } from './routes/_archetype'
-import { Route as ArchetypeWordsImport } from './routes/_archetype.words'
-import { Route as ArchetypeMixesImport } from './routes/_archetype.mixes'
-import { Route as ArchetypeMicroImport } from './routes/_archetype.micro'
-import { Route as ArchetypeLabelsImport } from './routes/_archetype.labels'
+import { Route as ArchetypeListImport } from './routes/_archetypeList'
+import { Route as ArchetypeListWordsImport } from './routes/_archetypeList.words'
+import { Route as ArchetypeListMixesImport } from './routes/_archetypeList.mixes'
+import { Route as ArchetypeListMicroImport } from './routes/_archetypeList.micro'
+import { Route as ArchetypeListLabelsImport } from './routes/_archetypeList.labels'
+import { Route as ReadArchetypeIdImport } from './routes/read.$archetype.$id'
 
 // Create Virtual Routes
 
-const MdxLazyImport = createFileRoute('/mdx')()
 const IndexLazyImport = createFileRoute('/')()
 const ArchetypeIndexLazyImport = createFileRoute('/archetype/')()
 
 // Create/Update Routes
 
-const MdxLazyRoute = MdxLazyImport.update({
-  path: '/mdx',
-  getParentRoute: () => rootRoute,
-} as any).lazy(() => import('./routes/mdx.lazy').then((d) => d.Route))
-
-const ArchetypeRoute = ArchetypeImport.update({
-  id: '/_archetype',
+const ArchetypeListRoute = ArchetypeListImport.update({
+  id: '/_archetypeList',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -49,24 +44,29 @@ const ArchetypeIndexLazyRoute = ArchetypeIndexLazyImport.update({
   import('./routes/archetype.index.lazy').then((d) => d.Route),
 )
 
-const ArchetypeWordsRoute = ArchetypeWordsImport.update({
+const ArchetypeListWordsRoute = ArchetypeListWordsImport.update({
   path: '/words',
-  getParentRoute: () => ArchetypeRoute,
+  getParentRoute: () => ArchetypeListRoute,
 } as any)
 
-const ArchetypeMixesRoute = ArchetypeMixesImport.update({
+const ArchetypeListMixesRoute = ArchetypeListMixesImport.update({
   path: '/mixes',
-  getParentRoute: () => ArchetypeRoute,
+  getParentRoute: () => ArchetypeListRoute,
 } as any)
 
-const ArchetypeMicroRoute = ArchetypeMicroImport.update({
+const ArchetypeListMicroRoute = ArchetypeListMicroImport.update({
   path: '/micro',
-  getParentRoute: () => ArchetypeRoute,
+  getParentRoute: () => ArchetypeListRoute,
 } as any)
 
-const ArchetypeLabelsRoute = ArchetypeLabelsImport.update({
+const ArchetypeListLabelsRoute = ArchetypeListLabelsImport.update({
   path: '/labels',
-  getParentRoute: () => ArchetypeRoute,
+  getParentRoute: () => ArchetypeListRoute,
+} as any)
+
+const ReadArchetypeIdRoute = ReadArchetypeIdImport.update({
+  path: '/read/$archetype/$id',
+  getParentRoute: () => rootRoute,
 } as any)
 
 // Populate the FileRoutesByPath interface
@@ -80,47 +80,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexLazyImport
       parentRoute: typeof rootRoute
     }
-    '/_archetype': {
-      id: '/_archetype'
+    '/_archetypeList': {
+      id: '/_archetypeList'
       path: ''
       fullPath: ''
-      preLoaderRoute: typeof ArchetypeImport
+      preLoaderRoute: typeof ArchetypeListImport
       parentRoute: typeof rootRoute
     }
-    '/mdx': {
-      id: '/mdx'
-      path: '/mdx'
-      fullPath: '/mdx'
-      preLoaderRoute: typeof MdxLazyImport
-      parentRoute: typeof rootRoute
-    }
-    '/_archetype/labels': {
-      id: '/_archetype/labels'
+    '/_archetypeList/labels': {
+      id: '/_archetypeList/labels'
       path: '/labels'
       fullPath: '/labels'
-      preLoaderRoute: typeof ArchetypeLabelsImport
-      parentRoute: typeof ArchetypeImport
+      preLoaderRoute: typeof ArchetypeListLabelsImport
+      parentRoute: typeof ArchetypeListImport
     }
-    '/_archetype/micro': {
-      id: '/_archetype/micro'
+    '/_archetypeList/micro': {
+      id: '/_archetypeList/micro'
       path: '/micro'
       fullPath: '/micro'
-      preLoaderRoute: typeof ArchetypeMicroImport
-      parentRoute: typeof ArchetypeImport
+      preLoaderRoute: typeof ArchetypeListMicroImport
+      parentRoute: typeof ArchetypeListImport
     }
-    '/_archetype/mixes': {
-      id: '/_archetype/mixes'
+    '/_archetypeList/mixes': {
+      id: '/_archetypeList/mixes'
       path: '/mixes'
       fullPath: '/mixes'
-      preLoaderRoute: typeof ArchetypeMixesImport
-      parentRoute: typeof ArchetypeImport
+      preLoaderRoute: typeof ArchetypeListMixesImport
+      parentRoute: typeof ArchetypeListImport
     }
-    '/_archetype/words': {
-      id: '/_archetype/words'
+    '/_archetypeList/words': {
+      id: '/_archetypeList/words'
       path: '/words'
       fullPath: '/words'
-      preLoaderRoute: typeof ArchetypeWordsImport
-      parentRoute: typeof ArchetypeImport
+      preLoaderRoute: typeof ArchetypeListWordsImport
+      parentRoute: typeof ArchetypeListImport
     }
     '/archetype/': {
       id: '/archetype/'
@@ -129,61 +122,68 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArchetypeIndexLazyImport
       parentRoute: typeof rootRoute
     }
+    '/read/$archetype/$id': {
+      id: '/read/$archetype/$id'
+      path: '/read/$archetype/$id'
+      fullPath: '/read/$archetype/$id'
+      preLoaderRoute: typeof ReadArchetypeIdImport
+      parentRoute: typeof rootRoute
+    }
   }
 }
 
 // Create and export the route tree
 
-interface ArchetypeRouteChildren {
-  ArchetypeLabelsRoute: typeof ArchetypeLabelsRoute
-  ArchetypeMicroRoute: typeof ArchetypeMicroRoute
-  ArchetypeMixesRoute: typeof ArchetypeMixesRoute
-  ArchetypeWordsRoute: typeof ArchetypeWordsRoute
+interface ArchetypeListRouteChildren {
+  ArchetypeListLabelsRoute: typeof ArchetypeListLabelsRoute
+  ArchetypeListMicroRoute: typeof ArchetypeListMicroRoute
+  ArchetypeListMixesRoute: typeof ArchetypeListMixesRoute
+  ArchetypeListWordsRoute: typeof ArchetypeListWordsRoute
 }
 
-const ArchetypeRouteChildren: ArchetypeRouteChildren = {
-  ArchetypeLabelsRoute: ArchetypeLabelsRoute,
-  ArchetypeMicroRoute: ArchetypeMicroRoute,
-  ArchetypeMixesRoute: ArchetypeMixesRoute,
-  ArchetypeWordsRoute: ArchetypeWordsRoute,
+const ArchetypeListRouteChildren: ArchetypeListRouteChildren = {
+  ArchetypeListLabelsRoute: ArchetypeListLabelsRoute,
+  ArchetypeListMicroRoute: ArchetypeListMicroRoute,
+  ArchetypeListMixesRoute: ArchetypeListMixesRoute,
+  ArchetypeListWordsRoute: ArchetypeListWordsRoute,
 }
 
-const ArchetypeRouteWithChildren = ArchetypeRoute._addFileChildren(
-  ArchetypeRouteChildren,
+const ArchetypeListRouteWithChildren = ArchetypeListRoute._addFileChildren(
+  ArchetypeListRouteChildren,
 )
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexLazyRoute
-  '': typeof ArchetypeRouteWithChildren
-  '/mdx': typeof MdxLazyRoute
-  '/labels': typeof ArchetypeLabelsRoute
-  '/micro': typeof ArchetypeMicroRoute
-  '/mixes': typeof ArchetypeMixesRoute
-  '/words': typeof ArchetypeWordsRoute
+  '': typeof ArchetypeListRouteWithChildren
+  '/labels': typeof ArchetypeListLabelsRoute
+  '/micro': typeof ArchetypeListMicroRoute
+  '/mixes': typeof ArchetypeListMixesRoute
+  '/words': typeof ArchetypeListWordsRoute
   '/archetype': typeof ArchetypeIndexLazyRoute
+  '/read/$archetype/$id': typeof ReadArchetypeIdRoute
 }
 
 export interface FileRoutesByTo {
   '/': typeof IndexLazyRoute
-  '': typeof ArchetypeRouteWithChildren
-  '/mdx': typeof MdxLazyRoute
-  '/labels': typeof ArchetypeLabelsRoute
-  '/micro': typeof ArchetypeMicroRoute
-  '/mixes': typeof ArchetypeMixesRoute
-  '/words': typeof ArchetypeWordsRoute
+  '': typeof ArchetypeListRouteWithChildren
+  '/labels': typeof ArchetypeListLabelsRoute
+  '/micro': typeof ArchetypeListMicroRoute
+  '/mixes': typeof ArchetypeListMixesRoute
+  '/words': typeof ArchetypeListWordsRoute
   '/archetype': typeof ArchetypeIndexLazyRoute
+  '/read/$archetype/$id': typeof ReadArchetypeIdRoute
 }
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexLazyRoute
-  '/_archetype': typeof ArchetypeRouteWithChildren
-  '/mdx': typeof MdxLazyRoute
-  '/_archetype/labels': typeof ArchetypeLabelsRoute
-  '/_archetype/micro': typeof ArchetypeMicroRoute
-  '/_archetype/mixes': typeof ArchetypeMixesRoute
-  '/_archetype/words': typeof ArchetypeWordsRoute
+  '/_archetypeList': typeof ArchetypeListRouteWithChildren
+  '/_archetypeList/labels': typeof ArchetypeListLabelsRoute
+  '/_archetypeList/micro': typeof ArchetypeListMicroRoute
+  '/_archetypeList/mixes': typeof ArchetypeListMixesRoute
+  '/_archetypeList/words': typeof ArchetypeListWordsRoute
   '/archetype/': typeof ArchetypeIndexLazyRoute
+  '/read/$archetype/$id': typeof ReadArchetypeIdRoute
 }
 
 export interface FileRouteTypes {
@@ -191,47 +191,47 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | ''
-    | '/mdx'
     | '/labels'
     | '/micro'
     | '/mixes'
     | '/words'
     | '/archetype'
+    | '/read/$archetype/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | ''
-    | '/mdx'
     | '/labels'
     | '/micro'
     | '/mixes'
     | '/words'
     | '/archetype'
+    | '/read/$archetype/$id'
   id:
     | '__root__'
     | '/'
-    | '/_archetype'
-    | '/mdx'
-    | '/_archetype/labels'
-    | '/_archetype/micro'
-    | '/_archetype/mixes'
-    | '/_archetype/words'
+    | '/_archetypeList'
+    | '/_archetypeList/labels'
+    | '/_archetypeList/micro'
+    | '/_archetypeList/mixes'
+    | '/_archetypeList/words'
     | '/archetype/'
+    | '/read/$archetype/$id'
   fileRoutesById: FileRoutesById
 }
 
 export interface RootRouteChildren {
   IndexLazyRoute: typeof IndexLazyRoute
-  ArchetypeRoute: typeof ArchetypeRouteWithChildren
-  MdxLazyRoute: typeof MdxLazyRoute
+  ArchetypeListRoute: typeof ArchetypeListRouteWithChildren
   ArchetypeIndexLazyRoute: typeof ArchetypeIndexLazyRoute
+  ReadArchetypeIdRoute: typeof ReadArchetypeIdRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexLazyRoute: IndexLazyRoute,
-  ArchetypeRoute: ArchetypeRouteWithChildren,
-  MdxLazyRoute: MdxLazyRoute,
+  ArchetypeListRoute: ArchetypeListRouteWithChildren,
   ArchetypeIndexLazyRoute: ArchetypeIndexLazyRoute,
+  ReadArchetypeIdRoute: ReadArchetypeIdRoute,
 }
 
 export const routeTree = rootRoute
@@ -247,44 +247,44 @@ export const routeTree = rootRoute
       "filePath": "__root.tsx",
       "children": [
         "/",
-        "/_archetype",
-        "/mdx",
-        "/archetype/"
+        "/_archetypeList",
+        "/archetype/",
+        "/read/$archetype/$id"
       ]
     },
     "/": {
       "filePath": "index.lazy.tsx"
     },
-    "/_archetype": {
-      "filePath": "_archetype.tsx",
+    "/_archetypeList": {
+      "filePath": "_archetypeList.tsx",
       "children": [
-        "/_archetype/labels",
-        "/_archetype/micro",
-        "/_archetype/mixes",
-        "/_archetype/words"
+        "/_archetypeList/labels",
+        "/_archetypeList/micro",
+        "/_archetypeList/mixes",
+        "/_archetypeList/words"
       ]
     },
-    "/mdx": {
-      "filePath": "mdx.lazy.tsx"
+    "/_archetypeList/labels": {
+      "filePath": "_archetypeList.labels.tsx",
+      "parent": "/_archetypeList"
     },
-    "/_archetype/labels": {
-      "filePath": "_archetype.labels.tsx",
-      "parent": "/_archetype"
+    "/_archetypeList/micro": {
+      "filePath": "_archetypeList.micro.tsx",
+      "parent": "/_archetypeList"
     },
-    "/_archetype/micro": {
-      "filePath": "_archetype.micro.tsx",
-      "parent": "/_archetype"
+    "/_archetypeList/mixes": {
+      "filePath": "_archetypeList.mixes.tsx",
+      "parent": "/_archetypeList"
     },
-    "/_archetype/mixes": {
-      "filePath": "_archetype.mixes.tsx",
-      "parent": "/_archetype"
-    },
-    "/_archetype/words": {
-      "filePath": "_archetype.words.tsx",
-      "parent": "/_archetype"
+    "/_archetypeList/words": {
+      "filePath": "_archetypeList.words.tsx",
+      "parent": "/_archetypeList"
     },
     "/archetype/": {
       "filePath": "archetype.index.lazy.tsx"
+    },
+    "/read/$archetype/$id": {
+      "filePath": "read.$archetype.$id.tsx"
     }
   }
 }

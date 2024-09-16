@@ -107,3 +107,19 @@ export function useSpotifyProxy<T extends SpotifyContentType>({
 		error,
 	};
 }
+
+type ReadSingleInput = {
+	archetype: MDXArchiveTypes.archetype;
+	id: string;
+};
+
+export function useReadSingle({ archetype, id }: ReadSingleInput) {
+	return useQuery({
+		queryKey: ["read-single", archetype, id],
+		queryFn: async () =>
+			fetcher(`${API_BASE_URL}/read`, {
+				method: "POST",
+				body: JSON.stringify({ filename: `${archetype}/${id}.mdx` }),
+			}),
+	});
+}
