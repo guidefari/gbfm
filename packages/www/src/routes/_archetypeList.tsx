@@ -1,13 +1,14 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useArchetype } from "@/lib/http";
 import { MDXArchiveTypes } from "@gbfm/core/mdx/mdx.types";
 import { ArchetypesLinks } from "@/components/ArchtypesLinks";
 
-export const Route = createFileRoute("/archetype/$type")({
+export const Route = createFileRoute("/_archetypeList")({
 	component: Component,
 	errorComponent: PostErrorComponent,
-	loader: async ({ params }) => {
-		const archetype = MDXArchiveTypes.archetypeSchema.parse(params.type);
+	loader: async ({ location }) => {
+		const archetypeFromUrl = location.pathname.split("/")[1];
+		const archetype = MDXArchiveTypes.archetypeSchema.parse(archetypeFromUrl);
 		return archetype;
 	},
 });
@@ -29,21 +30,19 @@ export function PostErrorComponent() {
 function Component() {
 	const archetype = Route.useLoaderData();
 
-	const { data, isLoading, error, isValidating } = useArchetype(archetype);
+	const { data, isLoading, error } = useArchetype(archetype);
 
 	return (
 		<div>
 			<h2>Archetype: {archetype}</h2>
 			{isLoading && <div>Loading...</div>}
-			{isValidating && <div>Validating...</div>}
 			<ul className="mx-2">
 				{!isLoading &&
 					!error &&
-					!isValidating &&
 					data?.result.length &&
 					data.result.map((post) => (
 						<li className="" key={post}>
-							{post}
+							<Link to={`/read/${archetype}/${post}`}>{post}</Link>
 						</li>
 					))}
 			</ul>

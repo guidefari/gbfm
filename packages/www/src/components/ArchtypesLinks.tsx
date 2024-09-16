@@ -6,14 +6,7 @@ export const ArchetypesLinks = () => {
 		<ul>
 			{MDXArchiveTypes.archetypeSchema.options.map((archetype) => (
 				<li key={archetype}>
-					<Link
-						to="/archetype/$type"
-						params={{
-							type: archetype,
-						}}
-					>
-						{archetype}
-					</Link>
+					<Link to={`/${archetype}`}>{archetype}</Link>
 				</li>
 			))}
 		</ul>
