@@ -1,0 +1,239 @@
+@import url(fonts.css);
+@import url(scrollbar.css);
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    :root {
+        /* typography vars from Ronny */
+        --fontSize: 1.2rem;
+        --lineHeight: calc(var(--fontSize) * 1.65);
+        --baseLine: calc(var(--lineHeight) / 2);
+        --typeScale: 1.333;
+        --h5Size: calc(var(--fontSize) * var(--typeScale));
+        --h4Size: calc(var(--h5Size) * var(--typeScale));
+        --h3Size: calc(var(--h4Size) * var(--typeScale));
+        --h2Size: calc(var(--h3Size) * var(--typeScale));
+        --h1Size: calc(var(--h2Size) * var(--typeScale));
+        --small: calc(var(--fontSize) * 0.75);
+
+        /* my colors */
+        --highlight: #9bfd9e;
+        --bg: #16415a;
+        --darker-bg: #111827;
+        --pastel-green-1: #b6fadf;
+        --pastel-green-2: #4e8c71;
+        --default-text: #81c3d7;
+        
+        /* shadcn theme */
+        --background: hsl(215 98.05% 98.44%);
+        --foreground: hsl(215 6.1% 0.88);
+    
+        --card: hsl(0, 0%, 100%);
+        --card-foreground: hsl(224, 71.4%, 4.1%);
+    
+        --popover: hsl(0, 0%, 100%);
+        --popover-foreground: hsl(224, 71.4%, 4.1%);
+    
+        --primary: hsl(220.9, 39.3%, 11%);
+        --primary-foreground: hsl(210, 20%, 98%);
+    
+        --secondary: hsl(220, 14.3%, 95.9%);
+        --secondary-foreground: hsl(220.9, 39.3%, 11%);
+    
+        --muted: hsl(220, 14.3%, 95.9%);
+        --muted-foreground: hsl(220, 8.9%, 46.1%);
+    
+        --accent: hsl(220, 14.3%, 95.9%);
+        --accent-foreground: hsl(220.9, 39.3%, 11%);
+    
+        --destructive: hsl(0, 84.2%, 60.2%);
+        --destructive-foreground: hsl(210, 20%, 98%);
+    
+        --border: hsl(220, 13%, 91%);
+        --input: hsl(220, 13%, 91%);
+        --ring: hsl(224, 71.4%, 4.1%);
+    
+        --radius: 0.5rem;
+
+        --chart-1: 220 70% 50%;
+        --chart-2: 160 60% 45%;
+        --chart-3: 30 80% 55%;
+        --chart-4: 280 65% 60%;
+        --chart-5: 340 75% 55%;
+
+    }
+    
+    .dark {
+        --background: hsl(224, 71.4%, 4.1%);
+        --foreground: hsl(210, 20%, 98%);
+    
+        --card: hsl(224, 71.4%, 4.1%);
+        --card-foreground: hsl(210, 20%, 98%);
+    
+        --popover: hsl(224, 71.4%, 4.1%);
+        --popover-foreground: hsl(210, 20%, 98%);
+    
+        --primary: hsl(210, 20%, 98%);
+        --primary-foreground: hsl(220.9, 39.3%, 11%);
+    
+        --secondary: hsl(215, 27.9%, 16.9%);
+        --secondary-foreground: hsl(210, 20%, 98%);
+    
+        --muted: hsl(215, 27.9%, 16.9%);
+        --muted-foreground: hsl(217.9, 10.6%, 64.9%);
+    
+        --accent: hsl(215, 27.9%, 16.9%);
+        --accent-foreground: hsl(210, 20%, 98%);
+    
+        --destructive: hsl(0, 62.8%, 30.6%);
+        --destructive-foreground: hsl(210, 20%, 98%);
+    
+        --border: hsl(215, 27.9%, 16.9%);
+        --input: hsl(215, 27.9%, 16.9%);
+        --ring: hsl(216, 12.2%, 83.9%);
+    }}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+    body {
+        @apply transition-colors duration-700 font-jetbrains bg-background text-foreground;
+        font-size: var(--fontSize);
+        line-height: var(--lineHeight);
+    }
+
+    a {
+        @apply transition ease-in-out hover:underline;
+      }
+    
+      li::before {
+        font-weight: 800;
+      }
+    
+      li {
+        margin-bottom: calc(0.75ex * 1.65);
+        @apply ml-2;
+      }
+    
+      ul li {
+        @apply list-disc;
+      }
+    
+      p {
+        @apply p-2 rounded-sm w-fit;
+      }
+    
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6 {
+        font-weight: 800;
+        margin-top: calc(1ex * 1.65);
+        margin-bottom: calc(0.5ex * 1.65);
+        line-height: 2ex;
+        word-wrap: break-word;
+      }
+    
+      h1 {
+        font-size: var(--h1Size);
+        line-height: calc(var(--h1Size) * calc(var(--typeScale) - 0.165));
+      }
+    
+      h2 {
+        font-size: var(--h2Size);
+        line-height: calc(var(--h2Size) * calc(var(--typeScale) - 0.165));
+      }
+    
+      h3 {
+        font-size: var(--h3Size);
+        line-height: calc(var(--h3Size) * calc(var(--typeScale) - 0.165));
+      }
+    
+      h4 {
+        font-size: var(--h4Size);
+        line-height: calc(var(--h4Size) * calc(var(--typeScale) - 0.165));
+      }
+    
+      h5 {
+        font-size: var(--h5Size);
+        line-height: calc(var(--h5Size) * calc(var(--typeScale) - 0.165));
+      }
+    
+      p,
+      ul {
+        font-size: var(--fontSize);
+        max-width: 65ch;
+      }
+    
+      blockquote {
+        @apply p-4 m-4 border-l-8 rounded-md border-highlight;
+        background: var(--darker-bg);
+        quotes: '\201C' '\201D' '\2018' '\2019';
+      }
+    
+      blockquote:before {
+        @apply mr-1 text-5xl text-highlight;
+        content: open-quote;
+        line-height: 0.1em;
+        vertical-align: -0.4em;
+      }
+    
+      .prose {
+        --tw-prose-headings: var(--pastel-green-2);
+        --tw-prose-quotes: inherit;
+        --tw-prose-bold: var(--pastel-green-2);
+        @apply text-inherit;
+      }
+      
+      .prose a {
+        @apply text-gb-pastel-green-1 hover:prose-a:text-highlight;
+        /* @apply text-yellow-500; this isn't such a bad color for links, should I ever get tired of the green*/
+      }
+      
+      iframe.bandcamp-widget-wide,
+      .bww {
+        @apply max-w-xs aspect-square;
+      }
+      
+      iframe.bandcamp-widget-wide.tracklist {
+        height: 220px;
+      }
+      
+      .title {
+        @apply mx-4 my-5 text-3xl font-bold text-left sm:text-6xl md:text-7xl;
+      }
+      
+      .shadooo {
+        box-shadow: inset -86px 0px 34px -43px rgba(217, 217, 217, 0.6);
+      }
+      
+      .floating-nav-icon {
+        @apply min-h-[48px] text-sky-300 hover:text-highlight;
+      }
+      
+      .floating-nav-button {
+        @apply inline-flex flex-col justify-center px-5;
+        @apply transition ease-in-out hover:underline;
+      }
+      
+      .curated-posts {
+        @apply grid w-full gap-10 px-4 py-16 mx-auto sm:grid-cols-2 lg:grid-cols-3 lg:px-8 lg:py-20;
+      }
+      
+      .default-icon {
+        color: inherit;
+        @apply w-6 h-6 cursor-pointer aspect-square hover:text-highlight;
+      }
+      
+      /* .overrides {
+        --font-body: 'JetBrainsMono', monospace !important;
+        --baseTextContrast: var(--default-text) !important;
+      } */
+    }
+    
+ 
