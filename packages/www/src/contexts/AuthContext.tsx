@@ -1,6 +1,6 @@
 "use client";
 import type React from "react";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import type { GoosebumpsUser, LoginResponse } from "../types/auth";
 import { readFromLocalStorage, writeToLocalStorage } from "@guide/utils";
 

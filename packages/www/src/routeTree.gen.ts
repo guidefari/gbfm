@@ -14,6 +14,7 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as ArchetypeListImport } from './routes/_archetypeList'
+import { Route as IndexImport } from './routes/index'
 import { Route as ArchetypeListWordsImport } from './routes/_archetypeList.words'
 import { Route as ArchetypeListMixesImport } from './routes/_archetypeList.mixes'
 import { Route as ArchetypeListMicroImport } from './routes/_archetypeList.micro'
@@ -22,7 +23,6 @@ import { Route as ReadArchetypeIdImport } from './routes/read.$archetype.$id'
 
 // Create Virtual Routes
 
-const IndexLazyImport = createFileRoute('/')()
 const ArchetypeIndexLazyImport = createFileRoute('/archetype/')()
 
 // Create/Update Routes
@@ -32,10 +32,10 @@ const ArchetypeListRoute = ArchetypeListImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const IndexLazyRoute = IndexLazyImport.update({
+const IndexRoute = IndexImport.update({
   path: '/',
   getParentRoute: () => rootRoute,
-} as any).lazy(() => import('./routes/index.lazy').then((d) => d.Route))
+} as any)
 
 const ArchetypeIndexLazyRoute = ArchetypeIndexLazyImport.update({
   path: '/archetype/',
@@ -77,7 +77,7 @@ declare module '@tanstack/react-router' {
       id: '/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexLazyImport
+      preLoaderRoute: typeof IndexImport
       parentRoute: typeof rootRoute
     }
     '/_archetypeList': {
@@ -153,7 +153,7 @@ const ArchetypeListRouteWithChildren = ArchetypeListRoute._addFileChildren(
 )
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexLazyRoute
+  '/': typeof IndexRoute
   '': typeof ArchetypeListRouteWithChildren
   '/labels': typeof ArchetypeListLabelsRoute
   '/micro': typeof ArchetypeListMicroRoute
@@ -164,7 +164,7 @@ export interface FileRoutesByFullPath {
 }
 
 export interface FileRoutesByTo {
-  '/': typeof IndexLazyRoute
+  '/': typeof IndexRoute
   '': typeof ArchetypeListRouteWithChildren
   '/labels': typeof ArchetypeListLabelsRoute
   '/micro': typeof ArchetypeListMicroRoute
@@ -176,7 +176,7 @@ export interface FileRoutesByTo {
 
 export interface FileRoutesById {
   __root__: typeof rootRoute
-  '/': typeof IndexLazyRoute
+  '/': typeof IndexRoute
   '/_archetypeList': typeof ArchetypeListRouteWithChildren
   '/_archetypeList/labels': typeof ArchetypeListLabelsRoute
   '/_archetypeList/micro': typeof ArchetypeListMicroRoute
@@ -221,14 +221,14 @@ export interface FileRouteTypes {
 }
 
 export interface RootRouteChildren {
-  IndexLazyRoute: typeof IndexLazyRoute
+  IndexRoute: typeof IndexRoute
   ArchetypeListRoute: typeof ArchetypeListRouteWithChildren
   ArchetypeIndexLazyRoute: typeof ArchetypeIndexLazyRoute
   ReadArchetypeIdRoute: typeof ReadArchetypeIdRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexLazyRoute: IndexLazyRoute,
+  IndexRoute: IndexRoute,
   ArchetypeListRoute: ArchetypeListRouteWithChildren,
   ArchetypeIndexLazyRoute: ArchetypeIndexLazyRoute,
   ReadArchetypeIdRoute: ReadArchetypeIdRoute,
@@ -253,7 +253,7 @@ export const routeTree = rootRoute
       ]
     },
     "/": {
-      "filePath": "index.lazy.tsx"
+      "filePath": "index.tsx"
     },
     "/_archetypeList": {
       "filePath": "_archetypeList.tsx",

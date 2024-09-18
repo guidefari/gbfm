@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@gbfm/core": "workspace:",
+    "@guide/utils": "npm:@jsr/guide__utils",
     "@mdx-js/react": "^3.0.1",
     "@mdx-js/rollup": "^3.0.1",
     "@radix-ui/colors": "^3.0.0",
