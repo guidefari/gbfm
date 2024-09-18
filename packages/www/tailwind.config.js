@@ -18,6 +18,9 @@ module.exports = {
 		},
 		extend: {
 			colors: {
+				highlight: "var(--highlight)",
+				"gb-pastel-green-1": "var(--pastel-green-1)",
+				"gb-pastel-green-2": "var(--pastel-green-2)",
 				border: "var(--border)",
 				input: "var(--input)",
 				ring: "var(--ring)",
@@ -68,10 +71,30 @@ module.exports = {
 				},
 			},
 			animation: {
+				"spin-slow": "spin 3s linear infinite",
 				"accordion-down": "accordion-down 0.2s ease-out",
 				"accordion-up": "accordion-up 0.2s ease-out",
 			},
+			fontFamily: {
+				jetbrains: [
+					"JetBrainsMono",
+					"ui-monospace",
+					"monospace",
+					"SFMono-Regular",
+					"Menlo",
+					"Monaco",
+					"Consolas",
+					"Liberation Mono",
+					"Courier New",
+				],
+			},
+			scale: {
+				101: "1.01",
+				102: "1.02",
+				103: "1.03",
+				104: "1.04",
+			},
 		},
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [require("@tailwindcss/typography"), require("tailwindcss-animate")],
 };

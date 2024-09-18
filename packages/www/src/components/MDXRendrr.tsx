@@ -21,9 +21,6 @@ export function MDXRendrr({ mdxString }: { mdxString: string }) {
 	}, [mdxString]);
 
 	return (
-		<div>
-			<h1>Async Component Example</h1>
-			{Content ? <Content components={CustomMDXComponents} /> : null}{" "}
-		</div>
+		<div>{Content ? <Content components={CustomMDXComponents} /> : null} </div>
 	);
 }

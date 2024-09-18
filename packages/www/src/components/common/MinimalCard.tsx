@@ -66,9 +66,9 @@ export const MinimalCard: React.FC<Props> = ({
 			<div className="p-3">
 				{genres && genres.length > 0 && (
 					<div className="flex flex-wrap space-x-2">
-						{genres.map((genre, index) => (
+						{genres.map((genre) => (
 							<span
-								key={index}
+								key={genre}
 								className="p-1 px-2 text-sm rounded-full bg-gb-darker-bg"
 							>
 								{genre}
@@ -89,12 +89,14 @@ export const MinimalCard: React.FC<Props> = ({
 				)}
 
 				{!hideTitle && (
-					<p
+					<button
 						onClick={() => copyToClipboard(artistsAndTitle)}
+						tabIndex={0}
 						className="mt-3 text-sm font-medium leading-6"
+						type="button"
 					>
 						{artistsAndTitle}
-					</p>
+					</button>
 				)}
 				{(blurb || children) && (
 					<hr className="mx-10 my-4 border-b-2 rounded-full border-gb-pastel-green-2" />

@@ -6,14 +6,14 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { CheckIcon } from "@radix-ui/react-icons";
-import * as Sentry from "@sentry/nextjs";
+// import * as Sentry from "@sentry/nextjs";
 import { useState } from "react";
 import { FaSquareRss } from "react-icons/fa6";
 
 export const RSS = () => {
 	const [isCopied, setIsCopied] = useState(false);
-	const basePath = process.env.basePath;
-	const BASS = basePath ? basePath : "https://goosebumps.fm";
+	const basepath = window.location.origin;
+	const BASS = basepath ? basepath : "https://goosebumps.fm";
 	const RSSurl = new URL(`${BASS}/rss.xml`).toString();
 
 	const toggleIsCopiedForThreeSeconds = () => {
@@ -28,7 +28,7 @@ export const RSS = () => {
 			navigator.clipboard.writeText(RSSurl);
 			toggleIsCopiedForThreeSeconds();
 		} catch (error) {
-			Sentry.captureException(error);
+			// Sentry.captureException(error);
 			console.error("Failed to copy to clipboard", error);
 		}
 	};

@@ -28,7 +28,7 @@ export default function AppShell({ children }: Props) {
 						/>
 					</div> */}
 				</header>
-				<main className="flex-1 px-4 py-8 sm:px-6 sm:py-10 md:px-8 md:py-12 lg:px-10 lg:py-16">
+				<main className="flex-1 px-4 sm:px-6 md:px-8 lg:px-10">
 					{children}
 				</main>
 				<footer className="px-5">

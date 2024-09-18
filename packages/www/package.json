@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@gbfm/core": "workspace:",
+    "@guide/utils": "npm:@jsr/guide__utils",
     "@mdx-js/react": "^3.0.1",
     "@mdx-js/rollup": "^3.0.1",
     "@radix-ui/colors": "^3.0.0",
@@ -37,6 +38,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.8.3",
+    "@tailwindcss/typography": "^0.5.15",
     "@tanstack/router-cli": "^1.57.13",
     "@tanstack/router-devtools": "^1.51.6",
     "@tanstack/router-plugin": "^1.51.6",
