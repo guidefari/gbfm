@@ -2,9 +2,9 @@ import { Resource } from "sst"
 import { defineConfig } from "drizzle-kit"
 
 export default defineConfig({
-  schema: "src/db/models/**/**schema.ts",
+  schema: "./src/**/*.sql.ts",
   dialect: "postgresql",
-  out: "src/db/migrations",
+  out: "src/migrations",
   dbCredentials: {
     url: Resource.SquealDBUrl.value,
   },

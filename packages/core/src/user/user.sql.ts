@@ -1,4 +1,4 @@
-import { db } from "@/db"
+import { db } from "@/drizzle"
 import { DrizzlePostgreSQLAdapter } from "@lucia-auth/adapter-drizzle"
 import {
   boolean,
@@ -21,7 +21,7 @@ export const userTable = pgTable(
     id: text("id").primaryKey(),
     username: varchar("username").unique(),
     email: varchar("email", {}).notNull().unique(),
-    password: varchar("password").notNull(),
+    password: varchar("password"),
     firstname: varchar("firstname"),
     lastname: varchar("lastname"),
     role: roleEnum("role").notNull().default("user"),
@@ -54,7 +54,7 @@ export const sessionTable = pgTable("sessions", {
 })
 
 // TODO: go for inference here?
-export const insertUser = async (user: NewUser & { username?: string }) => {
+export const insertUser = async (user: NewUser) => {
   return db.insert(userTable).values(user).returning()
 }
 

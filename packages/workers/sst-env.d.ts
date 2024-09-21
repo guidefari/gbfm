@@ -6,6 +6,23 @@ export {}
 import "sst"
 declare module "sst" {
   export interface Resource {
+    "Auth": {
+      "publicKey": string
+      "type": "sst.aws.Auth"
+    }
+    "AuthAuthenticator": {
+      "name": string
+      "type": "sst.aws.Function"
+      "url": string
+    }
+    "AuthRouter": {
+      "type": "sst.aws.Router"
+      "url": string
+    }
+    "Email": {
+      "sender": string
+      "type": "sst.aws.Email"
+    }
     "MDX_Archive": {
       "name": string
       "type": "sst.aws.Bucket"
