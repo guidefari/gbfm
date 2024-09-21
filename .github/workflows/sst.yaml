@@ -35,8 +35,6 @@ jobs:
         with:
           node-version: "20"
 
-      # - run: "curl -fsSL https://ion.sst.dev/install | bash"
-
       - name: Configure Production AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
