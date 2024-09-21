@@ -56,8 +56,7 @@ jobs:
           CLOUDFLARE_DEFAULT_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_DEFAULT_ACCOUNT_ID }}
           SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
           SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+          SQUEAL_DB_URL: ${{ secrets.SQUEAL_DB_URL }}
 
         run: |
-          bun run sst install
-          bun run sst refresh --stage=${GITHUB_REF_NAME}
           bun run sst deploy --stage=${GITHUB_REF_NAME}

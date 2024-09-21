@@ -7,7 +7,7 @@ export const secret = {
     "SpotifyClientSecret",
     process.env.SPOTIFY_CLIENT_SECRET
   ),
-  SquealDBUrl: new sst.Secret("SquealDBUrl"),
+  SquealDBUrl: new sst.Secret("SquealDBUrl", process.env.SQUEAL_DB_URL),
 }
 
 export const allSecrets = Object.values(secret)
