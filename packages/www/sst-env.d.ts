@@ -26,6 +26,10 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
+    "SquealDBUrl": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "gbfm-www": {
       "type": "sst.aws.StaticSite"
       "url": string

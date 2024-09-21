@@ -2,11 +2,19 @@
   "name": "@gbfm/core",
   "type": "module",
   "exports": {
+    "./*.sql": "./src/*.sql.ts",
+    "./*.ts": "./src/*.ts",
     "./*": "./src/*.ts"
   },
   "sideEffects": false,
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "db:gen": "sst shell drizzle-kit generate",
+    "db:migrate": "sst shell drizzle-kit migrate",
+    "db:studio": "sst shell drizzle-kit studio",
+    "db": "sst shell drizzle-kit",
+    "db:exec": "sst shell src/scripts/psql",
+    "db:reset": "sst shell src/scripts/db-reset"
   },
   "devDependencies": {},
   "dependencies": {
@@ -15,6 +23,8 @@
     "@hono/valibot-validator": "^0.3.0",
     "@hono/zod-openapi": "^0.16.0",
     "@mdx-js/mdx": "^3.0.1",
+    "drizzle-kit": "^0.24.2",
+    "drizzle-orm": "^0.33.0",
     "gray-matter": "^4.0.3",
     "hono": "^4.5.10"
   }
