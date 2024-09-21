@@ -29,9 +29,11 @@ const app = AuthHandler({
         const claims = claimsSchema.parse(unvalidatedClaims)
         console.log({ code })
 
+        console.log("Resource.Email:", Resource.Email)
         const from = Resource.Email.sender.includes("@")
-          ? `Peasy <${Resource.Email.sender}>`
-          : `Peasy <mail@${Resource.Email.sender}>`
+          ? `gbfm <${Resource.Email.sender}>`
+          : `gbfm auth@${Resource.Email.sender}`
+        console.log("from:", from)
 
         const cmd = new SendEmailCommand({
           Destination: { ToAddresses: [claims.email] },

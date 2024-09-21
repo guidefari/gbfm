@@ -14,8 +14,8 @@ declare module "sst" {
       "type": "sst.aws.Function"
       "url": string
     }
-    "AuthRouter": {
-      "type": "sst.aws.Router"
+    "AuthWorkerCF": {
+      "type": "sst.cloudflare.Worker"
       "url": string
     }
     "Email": {

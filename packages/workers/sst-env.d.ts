@@ -15,10 +15,6 @@ declare module "sst" {
       "type": "sst.aws.Function"
       "url": string
     }
-    "AuthRouter": {
-      "type": "sst.aws.Router"
-      "url": string
-    }
     "Email": {
       "sender": string
       "type": "sst.aws.Email"
@@ -54,6 +50,7 @@ declare module "sst" {
 import * as cloudflare from "@cloudflare/workers-types";
 declare module "sst" {
   export interface Resource {
+    "AuthWorkerCF": cloudflare.Service
     "OpenApiWorker": cloudflare.Service
   }
 }

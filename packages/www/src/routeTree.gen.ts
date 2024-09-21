@@ -13,6 +13,7 @@ import { createFileRoute } from '@tanstack/react-router'
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as AuthImport } from './routes/auth'
 import { Route as ArchetypeListImport } from './routes/_archetypeList'
 import { Route as IndexImport } from './routes/index'
 import { Route as ArchetypeListWordsImport } from './routes/_archetypeList.words'
@@ -26,6 +27,11 @@ import { Route as ReadArchetypeIdImport } from './routes/read.$archetype.$id'
 const ArchetypeIndexLazyImport = createFileRoute('/archetype/')()
 
 // Create/Update Routes
+
+const AuthRoute = AuthImport.update({
+  path: '/auth',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const ArchetypeListRoute = ArchetypeListImport.update({
   id: '/_archetypeList',
@@ -85,6 +91,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: ''
       preLoaderRoute: typeof ArchetypeListImport
+      parentRoute: typeof rootRoute
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthImport
       parentRoute: typeof rootRoute
     }
     '/_archetypeList/labels': {
@@ -155,6 +168,7 @@ const ArchetypeListRouteWithChildren = ArchetypeListRoute._addFileChildren(
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '': typeof ArchetypeListRouteWithChildren
+  '/auth': typeof AuthRoute
   '/labels': typeof ArchetypeListLabelsRoute
   '/micro': typeof ArchetypeListMicroRoute
   '/mixes': typeof ArchetypeListMixesRoute
@@ -166,6 +180,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '': typeof ArchetypeListRouteWithChildren
+  '/auth': typeof AuthRoute
   '/labels': typeof ArchetypeListLabelsRoute
   '/micro': typeof ArchetypeListMicroRoute
   '/mixes': typeof ArchetypeListMixesRoute
@@ -178,6 +193,7 @@ export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/_archetypeList': typeof ArchetypeListRouteWithChildren
+  '/auth': typeof AuthRoute
   '/_archetypeList/labels': typeof ArchetypeListLabelsRoute
   '/_archetypeList/micro': typeof ArchetypeListMicroRoute
   '/_archetypeList/mixes': typeof ArchetypeListMixesRoute
@@ -191,6 +207,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | ''
+    | '/auth'
     | '/labels'
     | '/micro'
     | '/mixes'
@@ -201,6 +218,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | ''
+    | '/auth'
     | '/labels'
     | '/micro'
     | '/mixes'
@@ -211,6 +229,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_archetypeList'
+    | '/auth'
     | '/_archetypeList/labels'
     | '/_archetypeList/micro'
     | '/_archetypeList/mixes'
@@ -223,6 +242,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ArchetypeListRoute: typeof ArchetypeListRouteWithChildren
+  AuthRoute: typeof AuthRoute
   ArchetypeIndexLazyRoute: typeof ArchetypeIndexLazyRoute
   ReadArchetypeIdRoute: typeof ReadArchetypeIdRoute
 }
@@ -230,6 +250,7 @@ export interface RootRouteChildren {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ArchetypeListRoute: ArchetypeListRouteWithChildren,
+  AuthRoute: AuthRoute,
   ArchetypeIndexLazyRoute: ArchetypeIndexLazyRoute,
   ReadArchetypeIdRoute: ReadArchetypeIdRoute,
 }
@@ -248,6 +269,7 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/_archetypeList",
+        "/auth",
         "/archetype/",
         "/read/$archetype/$id"
       ]
@@ -263,6 +285,9 @@ export const routeTree = rootRoute
         "/_archetypeList/mixes",
         "/_archetypeList/words"
       ]
+    },
+    "/auth": {
+      "filePath": "auth.tsx"
     },
     "/_archetypeList/labels": {
       "filePath": "_archetypeList.labels.tsx",
