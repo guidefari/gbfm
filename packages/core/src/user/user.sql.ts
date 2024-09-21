@@ -1,5 +1,5 @@
 import { db } from "@/drizzle"
-import { DrizzlePostgreSQLAdapter } from "@lucia-auth/adapter-drizzle"
+// import { DrizzlePostgreSQLAdapter } from "@lucia-auth/adapter-drizzle"
 import {
   boolean,
   integer,
