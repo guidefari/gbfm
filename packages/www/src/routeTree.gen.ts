@@ -13,6 +13,8 @@ import { createFileRoute } from '@tanstack/react-router'
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as SubscribeImport } from './routes/subscribe'
+import { Route as PostImport } from './routes/post'
 import { Route as AuthImport } from './routes/auth'
 import { Route as ArchetypeListImport } from './routes/_archetypeList'
 import { Route as IndexImport } from './routes/index'
@@ -27,6 +29,16 @@ import { Route as ReadArchetypeIdImport } from './routes/read.$archetype.$id'
 const ArchetypeIndexLazyImport = createFileRoute('/archetype/')()
 
 // Create/Update Routes
+
+const SubscribeRoute = SubscribeImport.update({
+  path: '/subscribe',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const PostRoute = PostImport.update({
+  path: '/post',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const AuthRoute = AuthImport.update({
   path: '/auth',
@@ -100,6 +112,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthImport
       parentRoute: typeof rootRoute
     }
+    '/post': {
+      id: '/post'
+      path: '/post'
+      fullPath: '/post'
+      preLoaderRoute: typeof PostImport
+      parentRoute: typeof rootRoute
+    }
+    '/subscribe': {
+      id: '/subscribe'
+      path: '/subscribe'
+      fullPath: '/subscribe'
+      preLoaderRoute: typeof SubscribeImport
+      parentRoute: typeof rootRoute
+    }
     '/_archetypeList/labels': {
       id: '/_archetypeList/labels'
       path: '/labels'
@@ -169,6 +195,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '': typeof ArchetypeListRouteWithChildren
   '/auth': typeof AuthRoute
+  '/post': typeof PostRoute
+  '/subscribe': typeof SubscribeRoute
   '/labels': typeof ArchetypeListLabelsRoute
   '/micro': typeof ArchetypeListMicroRoute
   '/mixes': typeof ArchetypeListMixesRoute
@@ -181,6 +209,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '': typeof ArchetypeListRouteWithChildren
   '/auth': typeof AuthRoute
+  '/post': typeof PostRoute
+  '/subscribe': typeof SubscribeRoute
   '/labels': typeof ArchetypeListLabelsRoute
   '/micro': typeof ArchetypeListMicroRoute
   '/mixes': typeof ArchetypeListMixesRoute
@@ -194,6 +224,8 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_archetypeList': typeof ArchetypeListRouteWithChildren
   '/auth': typeof AuthRoute
+  '/post': typeof PostRoute
+  '/subscribe': typeof SubscribeRoute
   '/_archetypeList/labels': typeof ArchetypeListLabelsRoute
   '/_archetypeList/micro': typeof ArchetypeListMicroRoute
   '/_archetypeList/mixes': typeof ArchetypeListMixesRoute
@@ -208,6 +240,8 @@ export interface FileRouteTypes {
     | '/'
     | ''
     | '/auth'
+    | '/post'
+    | '/subscribe'
     | '/labels'
     | '/micro'
     | '/mixes'
@@ -219,6 +253,8 @@ export interface FileRouteTypes {
     | '/'
     | ''
     | '/auth'
+    | '/post'
+    | '/subscribe'
     | '/labels'
     | '/micro'
     | '/mixes'
@@ -230,6 +266,8 @@ export interface FileRouteTypes {
     | '/'
     | '/_archetypeList'
     | '/auth'
+    | '/post'
+    | '/subscribe'
     | '/_archetypeList/labels'
     | '/_archetypeList/micro'
     | '/_archetypeList/mixes'
@@ -243,6 +281,8 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ArchetypeListRoute: typeof ArchetypeListRouteWithChildren
   AuthRoute: typeof AuthRoute
+  PostRoute: typeof PostRoute
+  SubscribeRoute: typeof SubscribeRoute
   ArchetypeIndexLazyRoute: typeof ArchetypeIndexLazyRoute
   ReadArchetypeIdRoute: typeof ReadArchetypeIdRoute
 }
@@ -251,6 +291,8 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ArchetypeListRoute: ArchetypeListRouteWithChildren,
   AuthRoute: AuthRoute,
+  PostRoute: PostRoute,
+  SubscribeRoute: SubscribeRoute,
   ArchetypeIndexLazyRoute: ArchetypeIndexLazyRoute,
   ReadArchetypeIdRoute: ReadArchetypeIdRoute,
 }
@@ -270,6 +312,8 @@ export const routeTree = rootRoute
         "/",
         "/_archetypeList",
         "/auth",
+        "/post",
+        "/subscribe",
         "/archetype/",
         "/read/$archetype/$id"
       ]
@@ -288,6 +332,12 @@ export const routeTree = rootRoute
     },
     "/auth": {
       "filePath": "auth.tsx"
+    },
+    "/post": {
+      "filePath": "post.tsx"
+    },
+    "/subscribe": {
+      "filePath": "subscribe.tsx"
     },
     "/_archetypeList/labels": {
       "filePath": "_archetypeList.labels.tsx",
