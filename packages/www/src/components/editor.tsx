@@ -2,7 +2,6 @@ import { useState } from "react"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Textarea } from "./ui/textarea"
-// import { Button, Input, Textarea } from "@/components/ui"
 
 export function Editor() {
   const [isPreview, setIsPreview] = useState(false)
@@ -88,7 +87,7 @@ export function Editor() {
   )
 }
 
-function ArrowLeftIcon(props) {
+function ArrowLeftIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
@@ -108,7 +107,7 @@ function ArrowLeftIcon(props) {
   )
 }
 
-function BoldIcon(props) {
+function BoldIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
@@ -127,7 +126,7 @@ function BoldIcon(props) {
   )
 }
 
-function CodeIcon(props) {
+function CodeIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
@@ -147,7 +146,7 @@ function CodeIcon(props) {
   )
 }
 
-function ExpandIcon(props) {
+function ExpandIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
@@ -169,7 +168,7 @@ function ExpandIcon(props) {
   )
 }
 
-function ImageIcon(props) {
+function ImageIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
@@ -190,7 +189,7 @@ function ImageIcon(props) {
   )
 }
 
-function ItalicIcon(props) {
+function ItalicIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
@@ -211,7 +210,7 @@ function ItalicIcon(props) {
   )
 }
 
-function LinkIcon(props) {
+function LinkIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
@@ -231,7 +230,7 @@ function LinkIcon(props) {
   )
 }
 
-function ListIcon(props) {
+function ListIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
@@ -255,7 +254,7 @@ function ListIcon(props) {
   )
 }
 
-function QuoteIcon(props) {
+function QuoteIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
@@ -275,7 +274,7 @@ function QuoteIcon(props) {
   )
 }
 
-function RedoIcon(props) {
+function RedoIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
@@ -295,7 +294,7 @@ function RedoIcon(props) {
   )
 }
 
-function StrikethroughIcon(props) {
+function StrikethroughIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
@@ -316,7 +315,7 @@ function StrikethroughIcon(props) {
   )
 }
 
-function UndoIcon(props) {
+function UndoIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
@@ -336,7 +335,7 @@ function UndoIcon(props) {
   )
 }
 
-function VideoIcon(props) {
+function VideoIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
     <svg
       {...props}
