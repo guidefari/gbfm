@@ -35,8 +35,6 @@ jobs:
         with:
           node-version: "20"
 
-      - run: "curl -fsSL https://ion.sst.dev/install | bash"
-
       - name: Configure Production AWS credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -56,7 +54,8 @@ jobs:
           CLOUDFLARE_DEFAULT_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_DEFAULT_ACCOUNT_ID }}
           SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
           SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+          SQUEAL_DB_URL: ${{ secrets.SQUEAL_DB_URL }}
 
         run: |
-          sst install
-          sst deploy --stage=${GITHUB_REF_NAME}
+          bun run sst refresh --stage=${GITHUB_REF_NAME}
+          bun run sst deploy --stage=${GITHUB_REF_NAME}

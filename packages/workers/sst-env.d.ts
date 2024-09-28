@@ -6,6 +6,19 @@ export {}
 import "sst"
 declare module "sst" {
   export interface Resource {
+    "Auth": {
+      "publicKey": string
+      "type": "sst.aws.Auth"
+    }
+    "AuthAuthenticator": {
+      "name": string
+      "type": "sst.aws.Function"
+      "url": string
+    }
+    "Email": {
+      "sender": string
+      "type": "sst.aws.Email"
+    }
     "MDX_Archive": {
       "name": string
       "type": "sst.aws.Bucket"
@@ -23,6 +36,10 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
+    "SquealDBUrl": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "gbfm-www": {
       "type": "sst.aws.StaticSite"
       "url": string
@@ -33,6 +50,7 @@ declare module "sst" {
 import * as cloudflare from "@cloudflare/workers-types";
 declare module "sst" {
   export interface Resource {
+    "AuthWorkerCF": cloudflare.Service
     "OpenApiWorker": cloudflare.Service
   }
 }

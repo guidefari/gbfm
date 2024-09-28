@@ -5,6 +5,23 @@ import "sst"
 export {}
 declare module "sst" {
   export interface Resource {
+    "Auth": {
+      "publicKey": string
+      "type": "sst.aws.Auth"
+    }
+    "AuthAuthenticator": {
+      "name": string
+      "type": "sst.aws.Function"
+      "url": string
+    }
+    "AuthWorkerCF": {
+      "type": "sst.cloudflare.Worker"
+      "url": string
+    }
+    "Email": {
+      "sender": string
+      "type": "sst.aws.Email"
+    }
     "MDX_Archive": {
       "name": string
       "type": "sst.aws.Bucket"
@@ -23,6 +40,10 @@ declare module "sst" {
       "value": string
     }
     "SpotifyClientSecret": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "SquealDBUrl": {
       "type": "sst.sst.Secret"
       "value": string
     }
