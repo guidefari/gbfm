@@ -1,4 +1,4 @@
-import { api } from "./api";
+import { api, auth } from "./api";
 import { domain } from "./dns";
 
 export const www = new sst.aws.StaticSite("gbfm-www", {
@@ -10,6 +10,7 @@ export const www = new sst.aws.StaticSite("gbfm-www", {
 	environment: {
 		// @ts-expect-error - should be fine
 		VITE_API_BASE_URL: api.url,
+		VITE_AUTH_BASE_URL: auth.url,
 	},
 	domain: {
 		name: `www.${domain}`,
