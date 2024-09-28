@@ -32,7 +32,7 @@ const app = AuthHandler({
         console.log("Resource.Email:", Resource.Email)
         const from = Resource.Email.sender.includes("@")
           ? `gbfm <${Resource.Email.sender}>`
-          : `gbfm auth@${Resource.Email.sender}`
+          : `gbfm <auth@${Resource.Email.sender}>`
         console.log("from:", from)
 
         const cmd = new SendEmailCommand({
