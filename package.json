@@ -16,7 +16,7 @@
     "@effect/platform": "latest",
     "@effect/schema": "latest",
     "effect": "latest",
-    "sst": "ion",
+    "sst": "^3.1.47",
     "zod": "^3.23.8"
   },
   "devDependencies": {
