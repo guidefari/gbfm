@@ -5,12 +5,26 @@ import type {
 	TrackAPIResponse,
 } from "@/types";
 import { useQuery } from "@tanstack/react-query";
+import { Cookies } from "./cookies";
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 export const AUTH_BASE_URL = import.meta.env.VITE_AUTH_BASE_URL;
 
 export async function fetcher(input: RequestInfo, init?: RequestInit) {
-	const res = await fetch(input, init);
+	const isApiRequest = input.toString().includes(API_BASE_URL);
+	const sessionToken = Cookies.get(Cookies.sessionKey);
+
+	const headers = {
+		"Content-Type": "application/json",
+		...(isApiRequest && sessionToken
+			? { Authorization: `Bearer ${sessionToken}` }
+			: {}),
+	};
+
+	const res = await fetch(input, {
+		...init,
+		headers,
+	});
 	return res.json();
 }
 
@@ -48,16 +62,15 @@ export function useArchetype(type: MDXArchiveTypes.archetype) {
 }
 
 export function useMDXArchive(filename: string) {
-	const { data, error, isLoading } = useQuery({
+	const { data, error, isLoading } = useQuery<
+		MDXArchiveTypes.GrayMatter & { compiled: string }
+	>({
 		queryKey: ["mdx-archive", filename],
-		queryFn: async (): Promise<
-			MDXArchiveTypes.GrayMatter & { compiled: string }
-		> => {
-			const response = await fetch(`${API_BASE_URL}/mdx-archive/read`, {
+		queryFn: async () => {
+			return fetcher(`${API_BASE_URL}/mdx-archive/read`, {
 				method: "POST",
 				body: JSON.stringify({ filename }),
 			});
-			return await response.json();
 		},
 	});
 	return {
@@ -86,21 +99,16 @@ export function useSpotifyProxy<T extends SpotifyContentType>({
 	id,
 	spotifyContentType,
 }: SpotifyProxyInput<T>) {
-	const { data, error, isLoading } = useQuery({
+	const { data, error, isLoading } = useQuery<
+		SpotifyProxyResponseType<typeof spotifyContentType>
+	>({
 		queryKey: ["spotify/proxy", spotifyContentType, id],
 
-		queryFn: async (): Promise<
-			SpotifyProxyResponseType<typeof spotifyContentType>
-		> => {
-			const response = await fetch(
-				`${API_BASE_URL}/spotify/${spotifyContentType}`,
-				{
-					method: "POST",
-					body: JSON.stringify({ id }),
-				},
-			);
-			return await response.json();
-		},
+		queryFn: async () =>
+			fetcher(`${API_BASE_URL}/spotify/${spotifyContentType}`, {
+				method: "POST",
+				body: JSON.stringify({ id }),
+			}),
 	});
 	return {
 		data: data,
@@ -133,11 +141,6 @@ export const constructSignInUrl = (
 	email: string,
 	flow: AuthFlow = "code",
 ): RedirectUrl => {
-	//   const headersList = headers()
-	//   const host = headersList.get("X-Forwarded-Host")
-	//   const proto = headersList.get("X-Forwarded-Proto")
-	//   const origin = `${proto}://${host}`
-
 	const origin = window.location.origin;
 
 	const params = new URLSearchParams({
@@ -150,7 +153,6 @@ export const constructSignInUrl = (
 	}).toString();
 
 	return `${AUTH_BASE_URL}/${flow}/authorize?${params}`;
-	//   return redirect(Resource.AuthRouter.url + "/code/authorize?" + params)
 };
 
 export const constructAuthCallbackUrl = (code: string) => {
