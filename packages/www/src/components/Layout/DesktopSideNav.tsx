@@ -22,7 +22,7 @@ export const DesktopSideNav = () => {
 								<TooltipTrigger asChild>
 									<Link
 										to={page.slug}
-										className="flex items-center justify-center transition-colors rounded-lg h-9 w-9 text-muted-foreground hover:text-foreground md:h-8 md:w-8"
+										className="flex items-center justify-center transition-colors rounded-lg h-9 w-9 text-gb-bg hover:text-white md:h-8 md:w-8"
 									>
 										{page.icon}
 										<span className="sr-only">{page.name}</span>
