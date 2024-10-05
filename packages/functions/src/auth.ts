@@ -28,10 +28,7 @@ const app = AuthHandler({
 				const referrer = req.headers.get("referer");
 				const claims = claimsSchema.parse(unvalidatedClaims);
 
-				console.log("Resource.Email:", Resource.Email);
-				const from = Resource.Email.sender.includes("@")
-					? `gbfm <${Resource.Email.sender}>`
-					: `gbfm <auth@${Resource.Email.sender}>`;
+				const from = `gbfm <auth@${Resource.Email.sender}>`;
 
 				const cmd = new SendEmailCommand({
 					Destination: { ToAddresses: [claims.email] },
