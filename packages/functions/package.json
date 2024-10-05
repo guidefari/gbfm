@@ -2,6 +2,13 @@
   "name": "@gbfm/functions",
   "type": "module",
   "sideEffects": false,
+  "exports": {
+    "./*.ts": "./src/*.ts",
+    "./*": [
+      "./src/*/index.ts",
+      "./src/*.ts"
+    ]
+  },
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
