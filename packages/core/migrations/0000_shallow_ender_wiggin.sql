@@ -4,6 +4,14 @@ EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
+CREATE TABLE IF NOT EXISTS "account" (
+	"id" varchar(20) PRIMARY KEY NOT NULL,
+	"email" varchar(255) NOT NULL,
+	"time_created" timestamp (3) DEFAULT now() NOT NULL,
+	"time_updated" timestamp (3) DEFAULT now() NOT NULL,
+	"time_deleted" timestamp (3)
+);
+--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "mixes" (
 	"id" text PRIMARY KEY NOT NULL,
 	"name" text
@@ -18,12 +26,13 @@ CREATE TABLE IF NOT EXISTS "sessions" (
 CREATE TABLE IF NOT EXISTS "users" (
 	"id" text PRIMARY KEY NOT NULL,
 	"username" varchar,
-	"password" varchar NOT NULL,
+	"email" varchar NOT NULL,
+	"password" varchar,
 	"firstname" varchar,
 	"lastname" varchar,
 	"role" "role" DEFAULT 'user' NOT NULL,
 	"is_deleted" boolean DEFAULT false,
-	"email" varchar NOT NULL,
+	"is_verified" boolean DEFAULT false,
 	"created_at" timestamp NOT NULL,
 	"updated_at" timestamp NOT NULL,
 	CONSTRAINT "users_username_unique" UNIQUE("username"),
@@ -36,5 +45,6 @@ EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "account_email_index" ON "account" USING btree ("email");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "username_idx" ON "users" USING btree ("username");--> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "email_idx" ON "users" USING btree ("email");
