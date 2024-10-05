@@ -57,5 +57,5 @@ jobs:
           SQUEAL_DB_URL: ${{ secrets.SQUEAL_DB_URL }}
 
         run: |
-          # bun run sst refresh --stage=${GITHUB_REF_NAME}
+          bun run sst refresh --stage=${GITHUB_REF_NAME}
           bun run sst deploy --stage=${GITHUB_REF_NAME}
