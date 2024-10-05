@@ -10,6 +10,9 @@ export default $config({
 			home: "aws",
 			providers: {
 				cloudflare: true,
+				aws: {
+					region: "us-east-1",
+				},
 			},
 		};
 	},
