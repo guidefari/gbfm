@@ -76,7 +76,7 @@ export function VerifyPage() {
 			{...form}
 			onSubmit={onSubmit}
 		>
-			<Card className="w-full max-w-md px-8">
+			<Card className="w-full max-w-lg px-8">
 				<CardTitle>Verification Code</CardTitle>
 				<CardDescription>
 					Enter the verification code sent to {email}

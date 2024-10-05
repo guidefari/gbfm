@@ -22,7 +22,4 @@ export default defineConfig({
 			"@": path.resolve(__dirname, "./src"),
 		},
 	},
-	define: {
-		"process.version": JSON.stringify(process.version),
-	},
 });

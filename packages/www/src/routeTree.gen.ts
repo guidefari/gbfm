@@ -19,6 +19,7 @@ import { Route as ArchetypeListImport } from './routes/_archetypeList'
 import { Route as IndexImport } from './routes/index'
 import { Route as AuthIndexImport } from './routes/auth/index'
 import { Route as AuthVerifyImport } from './routes/auth/verify'
+import { Route as AuthCallbackImport } from './routes/auth/callback'
 import { Route as ArchetypeListWordsImport } from './routes/_archetypeList.words'
 import { Route as ArchetypeListMixesImport } from './routes/_archetypeList.mixes'
 import { Route as ArchetypeListMicroImport } from './routes/_archetypeList.micro'
@@ -65,6 +66,11 @@ const AuthIndexRoute = AuthIndexImport.update({
 
 const AuthVerifyRoute = AuthVerifyImport.update({
   path: '/auth/verify',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AuthCallbackRoute = AuthCallbackImport.update({
+  path: '/auth/callback',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -153,6 +159,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArchetypeListWordsImport
       parentRoute: typeof ArchetypeListImport
     }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackImport
+      parentRoute: typeof rootRoute
+    }
     '/auth/verify': {
       id: '/auth/verify'
       path: '/auth/verify'
@@ -213,6 +226,7 @@ export interface FileRoutesByFullPath {
   '/micro': typeof ArchetypeListMicroRoute
   '/mixes': typeof ArchetypeListMixesRoute
   '/words': typeof ArchetypeListWordsRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/auth': typeof AuthIndexRoute
   '/archetype': typeof ArchetypeIndexLazyRoute
@@ -228,6 +242,7 @@ export interface FileRoutesByTo {
   '/micro': typeof ArchetypeListMicroRoute
   '/mixes': typeof ArchetypeListMixesRoute
   '/words': typeof ArchetypeListWordsRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/auth': typeof AuthIndexRoute
   '/archetype': typeof ArchetypeIndexLazyRoute
@@ -244,6 +259,7 @@ export interface FileRoutesById {
   '/_archetypeList/micro': typeof ArchetypeListMicroRoute
   '/_archetypeList/mixes': typeof ArchetypeListMixesRoute
   '/_archetypeList/words': typeof ArchetypeListWordsRoute
+  '/auth/callback': typeof AuthCallbackRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/auth/': typeof AuthIndexRoute
   '/archetype/': typeof ArchetypeIndexLazyRoute
@@ -261,6 +277,7 @@ export interface FileRouteTypes {
     | '/micro'
     | '/mixes'
     | '/words'
+    | '/auth/callback'
     | '/auth/verify'
     | '/auth'
     | '/archetype'
@@ -275,6 +292,7 @@ export interface FileRouteTypes {
     | '/micro'
     | '/mixes'
     | '/words'
+    | '/auth/callback'
     | '/auth/verify'
     | '/auth'
     | '/archetype'
@@ -289,6 +307,7 @@ export interface FileRouteTypes {
     | '/_archetypeList/micro'
     | '/_archetypeList/mixes'
     | '/_archetypeList/words'
+    | '/auth/callback'
     | '/auth/verify'
     | '/auth/'
     | '/archetype/'
@@ -301,6 +320,7 @@ export interface RootRouteChildren {
   ArchetypeListRoute: typeof ArchetypeListRouteWithChildren
   PostRoute: typeof PostRoute
   SubscribeRoute: typeof SubscribeRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
   AuthVerifyRoute: typeof AuthVerifyRoute
   AuthIndexRoute: typeof AuthIndexRoute
   ArchetypeIndexLazyRoute: typeof ArchetypeIndexLazyRoute
@@ -312,6 +332,7 @@ const rootRouteChildren: RootRouteChildren = {
   ArchetypeListRoute: ArchetypeListRouteWithChildren,
   PostRoute: PostRoute,
   SubscribeRoute: SubscribeRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
   AuthVerifyRoute: AuthVerifyRoute,
   AuthIndexRoute: AuthIndexRoute,
   ArchetypeIndexLazyRoute: ArchetypeIndexLazyRoute,
@@ -334,6 +355,7 @@ export const routeTree = rootRoute
         "/_archetypeList",
         "/post",
         "/subscribe",
+        "/auth/callback",
         "/auth/verify",
         "/auth/",
         "/archetype/",
@@ -373,6 +395,9 @@ export const routeTree = rootRoute
     "/_archetypeList/words": {
       "filePath": "_archetypeList.words.tsx",
       "parent": "/_archetypeList"
+    },
+    "/auth/callback": {
+      "filePath": "auth/callback.tsx"
     },
     "/auth/verify": {
       "filePath": "auth/verify.tsx"
