@@ -1,6 +1,6 @@
 import { AuthHandler } from "sst/auth";
 
-import { CodeAdapter } from "sst/auth/adapter";
+import { CodeAdapter, LinkAdapter } from "sst/auth/adapter";
 import { sessions } from "./sessions";
 // import { Account } from "@peasy-store/core/account/index";
 import { SESv2Client, SendEmailCommand } from "@aws-sdk/client-sesv2";
@@ -39,8 +39,10 @@ const app = AuthHandler({
 					Content: {
 						Simple: {
 							Body: {
-								Html: { Data: `Your pin code is <strong>${code}</strong>` },
-								Text: { Data: `Your pin code is ${code}` },
+								Html: {
+									Data: `Your verification code is <strong>${code}</strong>`,
+								},
+								Text: { Data: `Your verification code is ${code}` },
 							},
 							Subject: { Data: `Goosebumps fm code: ${code}` },
 						},
@@ -65,6 +67,24 @@ const app = AuthHandler({
 				});
 			},
 		}),
+		// link: LinkAdapter({
+		// 	async onLink(link, claims) {
+		// 		return new Response("ok", {
+		// 			status: 200,
+		// 			headers: {
+		// 				location: JSON.stringify({
+		// 					link,
+		// 					claims,
+		// 				}),
+		// 			},
+		// 		});
+		// 	},
+		// 	async onSuccess(ctx, input) {
+		// 		console.log("callback");
+		// 		console.log("input:", input);
+		// 		console.log("ctx:", ctx);
+		// 	},
+		// }),
 	},
 	callbacks: {
 		auth: {
@@ -76,11 +96,19 @@ const app = AuthHandler({
 					const email = input.claims.email.toLowerCase();
 					let account = await User.fromEmail(email);
 					if (!account) {
-						const accountID = await User.create(email);
-						account = {
-							id: accountID,
-							email,
-						};
+						try {
+							const accountID = await User.create(email);
+							account = {
+								id: accountID,
+								email,
+							};
+						} catch (error) {
+							console.error(error);
+							return new Response("Failed to create user", {
+								status: 500,
+								headers: { "content-type": "text/plain" },
+							});
+						}
 					}
 					return ctx.session({
 						type: "account",

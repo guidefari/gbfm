@@ -5,7 +5,6 @@ import type {
 	TrackAPIResponse,
 } from "@/types";
 import { useQuery } from "@tanstack/react-query";
-import { redirect } from "@tanstack/react-router";
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 export const AUTH_BASE_URL = import.meta.env.VITE_AUTH_BASE_URL;
@@ -128,7 +127,12 @@ export function useReadSingle({ archetype, id }: ReadSingleInput) {
 
 type RedirectUrl = string;
 
-export const signin = (email: string): RedirectUrl => {
+type AuthFlow = "code" | "link";
+
+export const constructSignInUrl = (
+	email: string,
+	flow: AuthFlow = "code",
+): RedirectUrl => {
 	//   const headersList = headers()
 	//   const host = headersList.get("X-Forwarded-Host")
 	//   const proto = headersList.get("X-Forwarded-Proto")
@@ -145,10 +149,10 @@ export const signin = (email: string): RedirectUrl => {
 		provider: "code",
 	}).toString();
 
-	return `${AUTH_BASE_URL}/code/authorize?${params}`;
+	return `${AUTH_BASE_URL}/${flow}/authorize?${params}`;
 	//   return redirect(Resource.AuthRouter.url + "/code/authorize?" + params)
 };
 
-export const authCallback = async (code: string) => {
+export const constructAuthCallbackUrl = (code: string) => {
 	return `${AUTH_BASE_URL}/code/callback?${new URLSearchParams({ code })}`;
 };
