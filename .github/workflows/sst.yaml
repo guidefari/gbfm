@@ -40,7 +40,7 @@ jobs:
         with:
           role-to-assume: ${{secrets.AWS_ROLE_ARN}}
           role-duration-seconds: 3600 #adjust as needed for your build time
-          aws-region: us-east-2
+          aws-region: us-east-1
 
       - name: deps
         run: bun install
