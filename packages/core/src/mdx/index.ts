@@ -17,7 +17,7 @@ export namespace MDXArchive {
 	): Promise<string[]> => {
 		const objects = await s3.send(
 			new ListObjectsV2Command({
-				Bucket: Resource.MDX_Archive.name,
+				Bucket: Resource.MDX_Bucket.name,
 			}),
 		);
 
@@ -44,7 +44,7 @@ export namespace MDXArchive {
 	export const readOne = async (filename: string) => {
 		const object = await s3.send(
 			new GetObjectCommand({
-				Bucket: Resource.MDX_Archive.name,
+				Bucket: Resource.MDX_Bucket.name,
 				Key: filename,
 			}),
 		);

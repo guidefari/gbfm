@@ -19,7 +19,7 @@ declare module "sst" {
       "sender": string
       "type": "sst.aws.Email"
     }
-    "MDX_Archive": {
+    "MDX_Bucket": {
       "name": string
       "type": "sst.aws.Bucket"
     }
