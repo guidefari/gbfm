@@ -16,6 +16,7 @@
   "dependencies": {
     "@aws-sdk/client-sesv2": "^3.654.0",
     "@gbfm/core": "workspace:",
+    "@hono/swagger-ui": "^0.4.1",
     "@hono/valibot-validator": "^0.3.0",
     "@hono/zod-openapi": "^0.16.0",
     "@spotify/web-api-ts-sdk": "^1.2.0",

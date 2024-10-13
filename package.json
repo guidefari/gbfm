@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "sideEffects": false,
   "scripts": {
-    "dev": "sst dev",
+    "dev": "sst dev --stage=local",
     "sso": "aws sso login --sso-session=terminal --no-browser",
     "typecheck": "tsc --noEmit --project ./tsconfig.json",
     "deploy": "sst deploy --stage=staging",
