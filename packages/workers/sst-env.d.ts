@@ -6,6 +6,11 @@ export {}
 import "sst"
 declare module "sst" {
   export interface Resource {
+    "Api": {
+      "name": string
+      "type": "sst.aws.Function"
+      "url": string
+    }
     "Auth": {
       "publicKey": string
       "type": "sst.aws.Auth"
@@ -22,11 +27,6 @@ declare module "sst" {
     "MDX_Bucket": {
       "name": string
       "type": "sst.aws.Bucket"
-    }
-    "OpenApi": {
-      "name": string
-      "type": "sst.aws.Function"
-      "url": string
     }
     "SpotifyClientId": {
       "type": "sst.sst.Secret"
@@ -50,7 +50,7 @@ declare module "sst" {
 import * as cloudflare from "@cloudflare/workers-types";
 declare module "sst" {
   export interface Resource {
+    "ApiWorker": cloudflare.Service
     "AuthWorkerCF": cloudflare.Service
-    "OpenApiWorker": cloudflare.Service
   }
 }

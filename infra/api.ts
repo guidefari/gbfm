@@ -28,18 +28,18 @@ export const auth = new sst.aws.Auth("Auth", {
 	},
 });
 
-const apiFn = new sst.aws.Function("OpenApi", {
+const apiFn = new sst.aws.Function("Api", {
 	handler: "./packages/functions/src/api/index.handler",
 	streaming: !$dev,
 	url: true,
 	link: [...allSecrets, bucket, auth],
 });
 
-export const api = new sst.cloudflare.Worker("OpenApiWorker", {
+export const api = new sst.cloudflare.Worker("ApiWorker", {
 	url: true,
 	// live: false,
 	// link: [...allSecrets, bucket, auth],
-	domain: `openapi.${domain}`,
+	domain: `api.${domain}`,
 	handler: "./packages/workers/src/proxy.ts",
 	environment: {
 		ORIGIN_URL: apiFn.url,
@@ -67,5 +67,5 @@ export const authRouter = new sst.cloudflare.Worker("AuthWorkerCF", {
 
 export const outputs = {
 	auth: authRouter.url,
-	openapi: api.url,
+	api: api.url,
 };

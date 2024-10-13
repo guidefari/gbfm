@@ -5,6 +5,15 @@ import "sst"
 export {}
 declare module "sst" {
   export interface Resource {
+    "Api": {
+      "name": string
+      "type": "sst.aws.Function"
+      "url": string
+    }
+    "ApiWorker": {
+      "type": "sst.cloudflare.Worker"
+      "url": string
+    }
     "Auth": {
       "publicKey": string
       "type": "sst.aws.Auth"
@@ -25,15 +34,6 @@ declare module "sst" {
     "MDX_Bucket": {
       "name": string
       "type": "sst.aws.Bucket"
-    }
-    "OpenApi": {
-      "name": string
-      "type": "sst.aws.Function"
-      "url": string
-    }
-    "OpenApiWorker": {
-      "type": "sst.cloudflare.Worker"
-      "url": string
     }
     "SpotifyClientId": {
       "type": "sst.sst.Secret"
