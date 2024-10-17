@@ -29,12 +29,22 @@ export namespace SpotifyApi {
 						},
 						description: "Returns track details",
 					},
+					404: {
+						description: "Track not found",
+					},
 				},
 			}),
 			async (c) => {
-				const { id } = await c.req.json();
-				const result = await SpotifyHttp.getTrack(id);
-				return c.json({ ...result }, 200);
+				try {
+					const { id } = await c.req.json();
+					const result = await SpotifyHttp.getTrack(id);
+					return c.json({ ...result }, 200);
+				} catch (error) {
+					if (error instanceof Error) {
+						return c.json({ error: error.message }, 404);
+					}
+					return c.json({ error: "An unknown error occurred" }, 500);
+				}
 			},
 		)
 		.openapi(
@@ -59,12 +69,22 @@ export namespace SpotifyApi {
 						},
 						description: "Returns album details",
 					},
+					404: {
+						description: "Album not found",
+					},
 				},
 			}),
 			async (c) => {
-				const { id } = await c.req.json();
-				const result = await SpotifyHttp.getAlbum(id);
-				return c.json({ ...result }, 200);
+				try {
+					const { id } = await c.req.json();
+					const result = await SpotifyHttp.getAlbum(id);
+					return c.json({ ...result }, 200);
+				} catch (error) {
+					if (error instanceof Error) {
+						return c.json({ error: error.message }, 404);
+					}
+					return c.json({ error: "An unknown error occurred" }, 500);
+				}
 			},
 		)
 		.openapi(
@@ -89,12 +109,23 @@ export namespace SpotifyApi {
 						},
 						description: "Returns playlist details",
 					},
+					404: {
+						description: "Playlist not found",
+					},
 				},
 			}),
 			async (c) => {
-				const { id } = await c.req.json();
-				const result = await SpotifyHttp.getPlaylist(id);
-				return c.json({ ...result }, 200);
+				try {
+					const { id } = await c.req.json();
+
+					const result = await SpotifyHttp.getPlaylist(id);
+					return c.json({ ...result }, 200);
+				} catch (error) {
+					if (error instanceof Error) {
+						return c.json({ error: error.message }, 404);
+					}
+					return c.json({ error: "An unknown error occurred" }, 500);
+				}
 			},
 		);
 
