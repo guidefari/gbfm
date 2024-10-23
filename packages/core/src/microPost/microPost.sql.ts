@@ -8,22 +8,18 @@ import {
 	timestamp,
 } from "drizzle-orm/pg-core";
 import { userTable } from "../user/user.sql";
-import { moodTable } from "../mood/mood.sql";
 
-export const postsTable = pgTable("posts", {
+export const microPostsTable = pgTable("micro_posts", {
 	id: text("id").primaryKey(),
 	title: varchar("title", { length: 255 }).notNull(),
 	description: text("description"),
 	date: date("date").notNull(),
 	thumbnailUrl: varchar("thumbnail_url", { length: 255 }),
 	author: text("author_id").references(() => userTable.id),
-	genres: text("genres")
-		.array()
-		.references(() => moodTable.id),
 	createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
 	updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
 	content: text("content"),
 });
 
-export type Post = typeof postsTable.$inferSelect;
-export type NewPost = typeof postsTable.$inferInsert;
+export type MicroPost = typeof microPostsTable.$inferSelect;
+export type NewMicroPost = typeof microPostsTable.$inferInsert;
