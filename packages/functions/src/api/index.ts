@@ -2,7 +2,7 @@ import { handle, streamHandle } from "hono/aws-lambda";
 import { createRoute, OpenAPIHono } from "@hono/zod-openapi";
 import { SpotifyApi } from "./spotify";
 import { MDXArchiveApi } from "./mdx-archive";
-// import { AuthMiddleware } from "./auth.middleware";
+import { AuthMiddleware } from "./auth.middleware";
 import { swaggerUI } from "@hono/swagger-ui";
 
 const app = new OpenAPIHono();
