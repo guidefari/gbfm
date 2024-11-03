@@ -1,7 +1,7 @@
-import { drizzle } from "drizzle-orm/postgres-js";
-import postgres from "postgres";
+import { drizzle } from "drizzle-orm/node-postgres";
 import { Resource } from "sst";
 import { z } from "zod";
+import { Pool } from "pg";
 
 const connectionStringSchema = z
 	.string()
@@ -25,7 +25,15 @@ try {
 	throw new Error("Invalid DATABASE_URL format");
 }
 
-// Disable prefetch as it is not supported for "Transaction" pool mode
-export const client = postgres(connectionString, { prepare: false });
-export const db = drizzle(client);
+const pool = new Pool({
+	connectionString,
+	max: process.env.DB_MIGRATING || process.env.DB_SEEDING ? 1 : undefined,
+});
+
+export const db = drizzle({
+	client: pool,
+	logger: true,
+});
 export type db = typeof db;
+
+export default db;

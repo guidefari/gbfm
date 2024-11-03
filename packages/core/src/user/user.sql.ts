@@ -1,4 +1,5 @@
 import { db } from "@/drizzle";
+import { sql } from "drizzle-orm";
 // import { DrizzlePostgreSQLAdapter } from "@lucia-auth/adapter-drizzle"
 import {
 	boolean,
@@ -18,21 +19,17 @@ export const roleEnum = pgEnum("role", ["user", "admin"]);
 export const userTable = pgTable(
 	"users",
 	{
-		id: text("id").primaryKey(),
-		username: varchar("username").unique(),
-		email: varchar("email", {}).notNull().unique(),
-		password: varchar("password"),
-		firstname: varchar("firstname"),
-		lastname: varchar("lastname"),
+		id: text().primaryKey(),
+		username: varchar().unique(),
+		email: varchar().notNull().unique(),
+		password: varchar(),
+		firstname: varchar(),
+		lastname: varchar(),
 		role: roleEnum("role").notNull().default("user"),
-		isDeleted: boolean("is_deleted").default(false),
-		isVerified: boolean("is_verified").default(false),
-		createdAt: timestamp("created_at")
-			.$default(() => new Date())
-			.notNull(),
-		updatedAt: timestamp("updated_at", {})
-			.$default(() => new Date())
-			.notNull(),
+		isDeleted: boolean().default(false),
+		isVerified: boolean().default(false),
+		createdAt: timestamp().defaultNow().notNull(),
+		updatedAt: timestamp().defaultNow().notNull(),
 	},
 	(users) => ({
 		usernameIndex: uniqueIndex("username_idx").on(users.username),
@@ -44,11 +41,11 @@ export type User = typeof userTable.$inferSelect;
 export type NewUser = typeof userTable.$inferInsert;
 
 export const sessionTable = pgTable("sessions", {
-	id: text("id").primaryKey(),
-	userId: text("user_id")
+	id: text().primaryKey(),
+	userId: text()
 		.notNull()
 		.references(() => userTable.id),
-	expiresAt: timestamp("expires_at", {
+	expiresAt: timestamp({
 		withTimezone: true,
 		mode: "date",
 	}).notNull(),

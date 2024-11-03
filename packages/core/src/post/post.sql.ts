@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
 	pgTable,
 	serial,
@@ -11,19 +11,27 @@ import { userTable } from "../user/user.sql";
 import { moodTable } from "../mood/mood.sql";
 
 export const postsTable = pgTable("posts", {
-	id: text("id").primaryKey(),
-	title: varchar("title", { length: 255 }).notNull(),
-	description: text("description"),
-	date: date("date").notNull(),
-	thumbnailUrl: varchar("thumbnail_url", { length: 255 }),
-	author: text("author_id").references(() => userTable.id),
-	genres: text("genres")
-		.array()
-		.references(() => moodTable.id),
-	createdAt: timestamp("created_at").default(sql`CURRENT_TIMESTAMP`),
-	updatedAt: timestamp("updated_at").default(sql`CURRENT_TIMESTAMP`),
-	content: text("content"),
+	id: text().primaryKey(),
+	title: varchar({ length: 255 }).notNull(),
+	description: text(),
+	date: date().notNull(),
+	thumbnailUrl: varchar({ length: 255 }),
+	authorId: text().references(() => userTable.id),
+	// genres: text()
+	// 	.array()
+	// 	.references(() => moodTable.id),
+	createdAt: timestamp().defaultNow(),
+	updatedAt: timestamp().defaultNow(),
+	content: text(),
 });
 
 export type Post = typeof postsTable.$inferSelect;
 export type NewPost = typeof postsTable.$inferInsert;
+
+export const postsRelations = relations(postsTable, ({ one, many }) => ({
+	author: one(userTable, {
+		fields: [postsTable.authorId],
+		references: [userTable.id],
+	}),
+	genres: many(moodTable),
+}));
