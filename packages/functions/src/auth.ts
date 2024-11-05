@@ -89,6 +89,8 @@ const app = AuthHandler({
 				return true;
 			},
 			async success(ctx, input) {
+				User.setUserRepository("dynamo");
+
 				if (input.provider === "code") {
 					const email = input.claims.email.toLowerCase();
 					let account = await User.fromEmail(email);

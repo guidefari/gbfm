@@ -1,48 +1,54 @@
-import { fn } from "@/util/fn"
-import { z } from "zod"
-import { insertUser, userTable } from "./user.sql"
-import { and, eq } from "drizzle-orm"
-import { db } from "../drizzle"
-import { createID } from "@/util/id"
+// core/src/user/index.ts
+import type { UserRepository } from "./user.repository";
+import { SqlUserRepository } from "./user.sql.repository";
+import { DynamoUserRepository } from "./user.dynamo.repository";
+import { z } from "zod";
+import { fn } from "@/util/fn";
 
 export namespace User {
-  export const Info = z.object({
-    id: z.string(),
-    email: z.string().email(),
-  })
+	let userRepository: UserRepository | null = null;
 
-  export const create = fn(Info.shape.email, async email => {
-    const id = createID("user")
-    const user = await insertUser({
-      id,
-      email,
-    })
+	export const UserSchema = z.object({
+		id: z.string(),
+		email: z.string().email(),
+	});
 
-    return user
-  })
+	export const setUserRepository = (dbType: "sql" | "dynamo") => {
+		if (dbType === "sql") {
+			userRepository = new SqlUserRepository();
+			return;
+		}
+		if (dbType === "dynamo") {
+			userRepository = new DynamoUserRepository();
+			return;
+		}
+		throw new Error("Invalid database type");
+	};
 
-  export const fromID = fn(Info.shape.id, async id =>
-    db
-      .select()
-      .from(userTable)
-      .where(eq(userTable.id, id))
-      .then(rows => rows.map(serialize).at(0))
-  )
+	export const create = fn(UserSchema.shape.email, async (email) => {
+		if (!userRepository) {
+			throw new Error(
+				"User repository is not initialized. Call setUserRepository first.",
+			);
+		}
+		return userRepository.create(email);
+	});
 
-  export const fromEmail = fn(Info.shape.email, async email =>
-    db
-      .select()
-      .from(userTable)
-      .where(and(eq(userTable.email, email)))
-      .then(rows => rows.map(serialize).at(0))
-  )
+	export const fromID = fn(UserSchema.shape.id, async (id) => {
+		if (!userRepository) {
+			throw new Error(
+				"User repository is not initialized. Call setUserRepository first.",
+			);
+		}
+		return userRepository.fromID(id);
+	});
 
-  function serialize(
-    input: typeof userTable.$inferSelect
-  ): z.infer<typeof Info> {
-    return {
-      id: input.id,
-      email: input.email,
-    }
-  }
+	export const fromEmail = fn(UserSchema.shape.email, async (email) => {
+		if (!userRepository) {
+			throw new Error(
+				"User repository is not initialized. Call setUserRepository first.",
+			);
+		}
+		return userRepository.fromEmail(email);
+	});
 }

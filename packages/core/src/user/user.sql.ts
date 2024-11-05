@@ -53,7 +53,8 @@ export const sessionTable = pgTable("sessions", {
 
 // TODO: go for inference here?
 export const insertUser = async (user: NewUser) => {
-	return db.insert(userTable).values(user).returning();
+	const [result] = await db.insert(userTable).values(user).returning();
+	return result;
 };
 
 export const emailSchema = z.string().email();
