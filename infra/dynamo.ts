@@ -3,7 +3,6 @@ export const ContentTable = new sst.aws.Dynamo("ContentTable", {
 		authorId: "string",
 		contentId: "string",
 		createdAt: "number",
-		updatedAt: "number",
 	},
 	primaryIndex: { hashKey: "authorId", rangeKey: "contentId" },
 	globalIndexes: {
