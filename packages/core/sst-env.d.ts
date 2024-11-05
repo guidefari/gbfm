@@ -27,6 +27,10 @@ declare module "sst" {
       "type": "sst.cloudflare.Worker"
       "url": string
     }
+    "ContentTable": {
+      "name": string
+      "type": "sst.aws.Dynamo"
+    }
     "Email": {
       "sender": string
       "type": "sst.aws.Email"
@@ -46,6 +50,10 @@ declare module "sst" {
     "SquealDBUrl": {
       "type": "sst.sst.Secret"
       "value": string
+    }
+    "UserTable": {
+      "name": string
+      "type": "sst.aws.Dynamo"
     }
     "gbfm-www": {
       "type": "sst.aws.StaticSite"
