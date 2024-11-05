@@ -14,7 +14,9 @@
   },
   "devDependencies": {},
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.682.0",
     "@aws-sdk/client-sesv2": "^3.654.0",
+    "@aws-sdk/lib-dynamodb": "^3.685.0",
     "@gbfm/core": "workspace:",
     "@hono/swagger-ui": "^0.4.1",
     "@hono/valibot-validator": "^0.3.0",
