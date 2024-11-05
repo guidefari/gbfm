@@ -14,7 +14,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { z } from "zod";
 
-export const roleEnum = pgEnum("role", ["user", "admin"]);
+// export const roleEnum = pgEnum("role", ["user", "admin"]);
 
 export const userTable = pgTable(
 	"users",
@@ -25,7 +25,7 @@ export const userTable = pgTable(
 		password: varchar(),
 		firstname: varchar(),
 		lastname: varchar(),
-		role: roleEnum("role").notNull().default("user"),
+		// role: roleEnum("role").notNull().default("user"),
 		isDeleted: boolean().default(false),
 		isVerified: boolean().default(false),
 		createdAt: timestamp().defaultNow().notNull(),

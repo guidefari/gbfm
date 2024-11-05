@@ -17,9 +17,9 @@ export const postsTable = pgTable("posts", {
 	date: date().notNull(),
 	thumbnailUrl: varchar({ length: 255 }),
 	authorId: text().references(() => userTable.id),
-	// genres: text()
-	// 	.array()
-	// 	.references(() => moodTable.id),
+	genres: text()
+		.array()
+		.references(() => moodTable.id),
 	createdAt: timestamp().defaultNow(),
 	updatedAt: timestamp().defaultNow(),
 	content: text(),
