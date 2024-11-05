@@ -7,6 +7,8 @@ import { postsTable } from "../post/post.sql";
 import { mixesTable } from "../mix/mix.sql";
 import { moodTable } from "../mood/mood.sql";
 import { recordLabelTable } from "@/record_label/record_label.sql";
+import { userTable } from "@/user/user.sql";
+import { accountTable } from "@/account/account.sql";
 // import { recordLabelTable } from "../record_label/record_label.sql";
 
 async function resetTable(db: db, table: Table) {
@@ -24,8 +26,8 @@ async function deleteTable(db: db, table: Table) {
 }
 
 for (const table of [
-	// accountTable,
-	// userTable,
+	accountTable,
+	userTable,
 	microPostsTable,
 	postsTable,
 	mixesTable,
