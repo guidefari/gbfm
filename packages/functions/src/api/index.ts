@@ -4,6 +4,7 @@ import { SpotifyApi } from "./spotify";
 import { MDXArchiveApi } from "./mdx-archive";
 import { AuthMiddleware } from "./auth.middleware";
 import { swaggerUI } from "@hono/swagger-ui";
+import { UserApi } from "./user";
 
 const app = new OpenAPIHono();
 
@@ -24,7 +25,8 @@ const routes = app
 	// TODO: auth on a per route basis. and none of these need auth
 	// .use("*", AuthMiddleware)
 	.route("/spotify", SpotifyApi.route)
-	.route("/mdx-archive", MDXArchiveApi.route);
+	.route("/mdx-archive", MDXArchiveApi.route)
+	.route("/users", UserApi.route);
 
 app.doc("/doc", () => ({
 	openapi: "3.0.0",
