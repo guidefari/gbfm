@@ -6,6 +6,7 @@ import { bucket } from "./bucket";
 // import { database } from "./database";
 import { email } from "./email";
 import { secret } from "./secret";
+import { ContentTable, UserTable } from "./dynamo";
 
 if (!domain) throw new Error("no custom domain provided, what you doing blud?");
 
@@ -17,7 +18,7 @@ if (!domain) throw new Error("no custom domain provided, what you doing blud?");
 
 export const auth = new sst.aws.Auth("Auth", {
 	authenticator: {
-		link: [email, secret.SquealDBUrl],
+		link: [email, secret.SquealDBUrl, UserTable],
 		handler: "./packages/functions/src/auth.handler",
 		permissions: [
 			{
@@ -32,7 +33,7 @@ const apiFn = new sst.aws.Function("Api", {
 	handler: "./packages/functions/src/api/index.handler",
 	streaming: !$dev,
 	url: true,
-	link: [...allSecrets, bucket, auth],
+	link: [...allSecrets, bucket, auth, UserTable, ContentTable],
 });
 
 export const api = new sst.cloudflare.Worker("ApiWorker", {
