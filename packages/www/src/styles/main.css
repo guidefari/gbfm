@@ -229,6 +229,7 @@
     @apply w-6 h-6 cursor-pointer aspect-square hover:text-highlight;
   }
 
+  /* for markdown editor seen in previous codebase */
   /* .overrides {
         --font-body: 'JetBrainsMono', monospace !important;
         --baseTextContrast: var(--default-text) !important;
