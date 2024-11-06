@@ -7,18 +7,13 @@
 @layer base {
   :root {
 
+    /* Major Third scaling type shit😌 */
     --scale-ratio: 1.333;
-    /* Example: Major Third (1.333) */
     --font-size-1: clamp(0.875rem, 1rem, 1rem);
-    /* 14px, 16px, 16px */
     --font-size-2: clamp(1.125rem, calc(var(--font-size-1) * var(--scale-ratio)), 1.25rem);
-    /* 18px, 20px */
     --font-size-3: clamp(1.5rem, calc(var(--font-size-2) * var(--scale-ratio)), 1.75rem);
-    /* 24px, 28px */
     --font-size-4: clamp(2rem, calc(var(--font-size-3) * var(--scale-ratio)), 2.25rem);
-    /* 32px, 36px */
     --font-size-5: clamp(2.625rem, calc(var(--font-size-4) * var(--scale-ratio)), 3rem);
-    /* 42px, 48px */
 
     /* my colors */
     --highlight: #9bfd9e;
@@ -141,27 +136,27 @@
   }
 
   h1 {
-    font-size: var(--font-size-5);
+    font-size: clamp(2rem, 5vw, var(--font-size-5));
   }
 
   h2 {
-    font-size: var(--font-size-4);
+    font-size: clamp(1.75rem, 4.5vw, var(--font-size-4));
   }
 
   h3 {
-    font-size: var(--font-size-3);
+    font-size: clamp(1.5rem, 4vw, var(--font-size-3));
   }
 
   h4 {
-    font-size: var(--font-size-2);
+    font-size: clamp(1.25rem, 3.5vw, var(--font-size-2));
   }
 
   h5 {
-    font-size: var(--font-size-1);
+    font-size: clamp(1rem, 3vw, var(--font-size-1));
   }
 
   h6 {
-    font-size: var(--font-size-1);
+    font-size: clamp(0.875rem, 2.5vw, var(--font-size-1));
   }
 
   p,
