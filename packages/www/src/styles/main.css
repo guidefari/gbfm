@@ -7,7 +7,18 @@
 @layer base {
   :root {
 
-    --base-font-size: 1.25rem;
+    --scale-ratio: 1.333;
+    /* Example: Major Third (1.333) */
+    --font-size-1: clamp(0.875rem, 1rem, 1rem);
+    /* 14px, 16px, 16px */
+    --font-size-2: clamp(1.125rem, calc(var(--font-size-1) * var(--scale-ratio)), 1.25rem);
+    /* 18px, 20px */
+    --font-size-3: clamp(1.5rem, calc(var(--font-size-2) * var(--scale-ratio)), 1.75rem);
+    /* 24px, 28px */
+    --font-size-4: clamp(2rem, calc(var(--font-size-3) * var(--scale-ratio)), 2.25rem);
+    /* 32px, 36px */
+    --font-size-5: clamp(2.625rem, calc(var(--font-size-4) * var(--scale-ratio)), 3rem);
+    /* 42px, 48px */
 
     /* my colors */
     --highlight: #9bfd9e;
@@ -94,14 +105,10 @@
 
   body {
     @apply transition-colors duration-700 font-jetbrains bg-background text-foreground;
-    font-size: var(--base-font-size);
-    line-height: clamp(calc(var(--base-font-size) * 1.5),
-        2rem,
-        3rem);
   }
 
   a {
-    @apply transition ease-in-out hover:underline;
+    @apply underline transition ease-in-out;
   }
 
   li::before {
@@ -128,49 +135,43 @@
   h5,
   h6 {
     font-weight: 700;
+    margin-top: calc(1ex * 1.65);
+    margin-bottom: calc(0.5ex * 1.65);
     word-wrap: break-word;
   }
 
   h1 {
-    font-size: clamp(calc(var(--base-font-size) * 1.5),
-        2rem,
-        3rem);
+    font-size: var(--font-size-5);
   }
 
   h2 {
-    font-size: clamp(calc(var(--base-font-size) * 1.2),
-        1.5rem,
-        2.5rem);
+    font-size: var(--font-size-4);
   }
 
   h3 {
-    font-size: clamp(var(--base-font-size),
-        1rem,
-        2rem);
+    font-size: var(--font-size-3);
   }
 
   h4 {
-    font-size: clamp(calc(var(--base-font-size) * 0.85),
-        0.875rem,
-        1.5rem);
+    font-size: var(--font-size-2);
   }
 
   h5 {
-    font-size: clamp(calc(var(--base-font-size) * 0.75),
-        0.75rem,
-        1.25rem);
+    font-size: var(--font-size-1);
   }
 
   h6 {
-    font-size: clamp(calc(var(--base-font-size) * 0.65),
-        0.625rem,
-        1rem);
+    font-size: var(--font-size-1);
   }
 
   p,
-  ul {
-    font-size: var(--fontSize);
-    max-width: 65ch;
+  li,
+  ul,
+  body {
+    font-size: var(--font-size-1);
+    line-height: clamp(calc(var(--font-size-1) * 1.5),
+        2rem,
+        3rem);
   }
 
   blockquote {
