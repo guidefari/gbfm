@@ -1,16 +1,14 @@
-// core/src/user/index.ts
-import type { UserRepository } from "./user.repository";
 import { SqlUserRepository } from "./user.sql.repository";
 import { DynamoUserRepository } from "./user.dynamo.repository";
 import { z } from "zod";
 import { fn } from "@/util/fn";
 
 export namespace User {
-	let userRepository: UserRepository | null = null;
+	let userRepository: IUserRepository | null = null;
 
 	export const UserSchema = z.object({
 		id: z.string(),
-		username: z.string().min(1),
+		username: z.string().min(1).optional(),
 		email: z.string().email(),
 		password: z.string().optional(),
 		firstname: z.string().optional(),
@@ -21,6 +19,14 @@ export namespace User {
 		createdAt: z.date().default(() => new Date()),
 		updatedAt: z.date().default(() => new Date()),
 	});
+
+	export type IUserRepository = {
+		create(email: string): Promise<User.PartialUser>;
+		fromID(id: string): Promise<User.UserType | null>;
+		fromEmail(email: string): Promise<User.UserType | null>;
+		update(user: User.PartialUser): Promise<User.PartialUser>;
+		deleteByID(id: string): Promise<boolean>;
+	};
 
 	export type UserType = z.infer<typeof UserSchema>;
 	export type PartialUser = Partial<UserType>;
@@ -43,6 +49,7 @@ export namespace User {
 				"User repository is not initialized. Call setUserRepository first.",
 			);
 		}
+
 		return userRepository.create(email);
 	});
 
