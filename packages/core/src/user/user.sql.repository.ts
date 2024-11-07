@@ -1,6 +1,3 @@
-// core/src/user/user.sql.repository.ts
-import type { UserRepository } from "./user.repository";
-import { fn } from "@/util/fn";
 import type { z } from "zod";
 import { insertUser, userTable } from "../drizzle/schemas/user.sql";
 import { and, eq } from "drizzle-orm";
@@ -8,7 +5,7 @@ import { db } from "../drizzle";
 import { createID } from "@/util/id";
 import type { User } from ".";
 
-export class SqlUserRepository implements UserRepository {
+export class SqlUserRepository implements User.IUserRepository {
 	update(user: User.PartialUser): Promise<User.PartialUser> {
 		throw new Error("Method not implemented.");
 	}

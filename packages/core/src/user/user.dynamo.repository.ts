@@ -1,7 +1,4 @@
-// core/src/user/user.dynamo.repository.ts
 import type { User } from ".";
-import type { UserRepository } from "./user.repository";
-import type { z } from "zod";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
 	DynamoDBDocumentClient,
@@ -15,7 +12,7 @@ import { Resource } from "sst/resource";
 
 const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
-export class DynamoUserRepository implements UserRepository {
+export class DynamoUserRepository implements User.IUserRepository {
 	async create(email: string) {
 		const id = createID("user");
 		const write = await client.send(
@@ -24,7 +21,6 @@ export class DynamoUserRepository implements UserRepository {
 				Item: { id, email },
 			}),
 		);
-		console.log("write:", write);
 
 		return {
 			id,
@@ -63,12 +59,10 @@ export class DynamoUserRepository implements UserRepository {
 
 	async update(user: User.PartialUser) {
 		const keysToUpdate = Object.keys(user).filter((key) => key !== "id");
-		console.log("user:", user);
-		console.log("keysToUpdate:", keysToUpdate);
 
 		const expressionAttributeValues = keysToUpdate.reduce(
 			(acc, key) => {
-				acc[`:${key}`] = user[key as keyof User.PartialUser] || null;
+				acc[`:${key}`] = user[key as keyof User.PartialUser];
 				return acc;
 			},
 			{} as Record<string, unknown>,

@@ -16,9 +16,7 @@ export namespace UserApi {
 					body: {
 						content: {
 							"application/json": {
-								schema: z.object({
-									email: z.string().email(),
-								}),
+								schema: User.UserSchema.omit({ id: true }),
 							},
 						},
 					},
@@ -35,8 +33,12 @@ export namespace UserApi {
 				},
 			}),
 			async (c) => {
-				const { email } = await c.req.json(); // Only email is needed for creation
-				const user = await User.create(email); // Use User namespace to create user
+				const payload = c.req.valid("json"); // Only email is needed for creation
+				const doesUserExist = await User.fromEmail(payload.email);
+				if (doesUserExist) {
+					return c.json({ error: "User already exists" }, 400);
+				}
+				const user = await User.create(payload.email); // Use User namespace to create user
 				return c.json({ id: user.id }, 201);
 			},
 		)
@@ -49,12 +51,7 @@ export namespace UserApi {
 					200: {
 						content: {
 							"application/json": {
-								schema: Result(
-									z.object({
-										id: z.string(),
-										email: z.string(),
-									}),
-								),
+								schema: User.UserSchema.partial(),
 							},
 						},
 						description: "Returns user details",
@@ -85,7 +82,7 @@ export namespace UserApi {
 					200: {
 						content: {
 							"application/json": {
-								schema: Result(z.object({ success: z.boolean() })),
+								schema: User.UserSchema.partial(),
 							},
 						},
 						description: "User updated successfully",
@@ -94,12 +91,15 @@ export namespace UserApi {
 			}),
 			async (c) => {
 				const { id } = c.req.param();
-				const payload = await c.req.json();
+				const payload = c.req.valid("json");
 				const user = await User.fromID(id); // Fetch user first
 				if (!user) {
 					return c.json({ success: false }, 404); // User not found
 				}
-				const updatedUser = await User.update({ id, ...payload }); // Update user email
+				const updatedUser = await User.update({
+					id,
+					...payload,
+				});
 				return c.json(updatedUser, 200);
 			},
 		)
