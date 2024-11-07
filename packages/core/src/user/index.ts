@@ -10,8 +10,20 @@ export namespace User {
 
 	export const UserSchema = z.object({
 		id: z.string(),
+		username: z.string().min(1),
 		email: z.string().email(),
+		password: z.string().optional(),
+		firstname: z.string().optional(),
+		lastname: z.string().optional(),
+		role: z.enum(["user", "admin"]).default("user"),
+		isDeleted: z.boolean().default(false),
+		isVerified: z.boolean().default(false),
+		createdAt: z.date().default(() => new Date()),
+		updatedAt: z.date().default(() => new Date()),
 	});
+
+	export type UserType = z.infer<typeof UserSchema>;
+	export type PartialUser = Partial<UserType>;
 
 	export const setUserRepository = (dbType: "sql" | "dynamo") => {
 		if (dbType === "sql") {
@@ -50,5 +62,14 @@ export namespace User {
 			);
 		}
 		return userRepository.fromEmail(email);
+	});
+
+	export const update = fn(UserSchema.partial(), async (user) => {
+		if (!userRepository) {
+			throw new Error(
+				"User repository is not initialized. Call setUserRepository first.",
+			);
+		}
+		return userRepository.update(user);
 	});
 }
