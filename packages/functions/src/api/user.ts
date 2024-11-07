@@ -63,7 +63,7 @@ export namespace UserApi {
 			}),
 			async (c) => {
 				const { id } = c.req.param();
-				const user = await User.fromID(id); // Use User namespace to fetch user by ID
+				const user = await User.fromID(id);
 				return c.json(user, 200);
 			},
 		)
@@ -76,9 +76,7 @@ export namespace UserApi {
 					body: {
 						content: {
 							"application/json": {
-								schema: z.object({
-									email: z.string().email().optional(),
-								}),
+								schema: User.UserSchema.partial(),
 							},
 						},
 					},
@@ -96,13 +94,13 @@ export namespace UserApi {
 			}),
 			async (c) => {
 				const { id } = c.req.param();
-				const { email } = await c.req.json();
+				const payload = await c.req.json();
 				const user = await User.fromID(id); // Fetch user first
 				if (!user) {
 					return c.json({ success: false }, 404); // User not found
 				}
-				const success = await User.create(email); // Update user email
-				return c.json({ success: !!success }, 200);
+				const updatedUser = await User.update({ id, ...payload }); // Update user email
+				return c.json(updatedUser, 200);
 			},
 		)
 		// Delete User
@@ -118,9 +116,9 @@ export namespace UserApi {
 			}),
 			async (c) => {
 				const { id } = c.req.param();
-				// Implement delete logic in the User namespace
-				// Assuming a delete method exists in the User repository
-				await User.delete(id); // Implement this function in the User namespace
+				// can't delete self
+				// can't delete if role !=admin
+				await User.deleteByID(id);
 				return c.json(null, 204);
 			},
 		);

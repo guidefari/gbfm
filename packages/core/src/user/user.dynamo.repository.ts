@@ -86,4 +86,9 @@ export class DynamoUserRepository implements UserRepository {
 
 		return update.Attributes;
 	}
+
+	async deleteByID(id: string) {
+		// Implement DynamoDB logic to delete a user by ID
+		return true;
+	}
 }

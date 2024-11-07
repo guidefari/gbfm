@@ -55,6 +55,15 @@ export namespace User {
 		return userRepository.fromID(id);
 	});
 
+	export const deleteByID = fn(UserSchema.shape.id, async (id) => {
+		if (!userRepository) {
+			throw new Error(
+				"User repository is not initialized. Call setUserRepository first.",
+			);
+		}
+		return userRepository.deleteByID(id);
+	});
+
 	export const fromEmail = fn(UserSchema.shape.email, async (email) => {
 		if (!userRepository) {
 			throw new Error(
