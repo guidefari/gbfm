@@ -3,45 +3,87 @@ import type { User } from ".";
 import type { UserRepository } from "./user.repository";
 import type { z } from "zod";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import {
+	DynamoDBDocumentClient,
+	PutCommand,
+	GetCommand,
+	QueryCommand,
+	UpdateCommand,
+} from "@aws-sdk/lib-dynamodb";
 import { createID } from "@/util/id";
 import { Resource } from "sst/resource";
 
 const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 export class DynamoUserRepository implements UserRepository {
-	async create(email: string): Promise<z.infer<typeof User.UserSchema>> {
-		// Implement DynamoDB logic to create a user
-		console.log("implement me!");
+	async create(email: string) {
+		const id = createID("user");
 		const write = await client.send(
 			new PutCommand({
 				TableName: Resource.UserTable.name,
-				Item: { id: createID("user"), email },
+				Item: { id, email },
 			}),
 		);
 		console.log("write:", write);
 
 		return {
-			id: "1",
-			email,
-		};
-	}
-
-	async fromID(id: string): Promise<z.infer<typeof User.UserSchema>> {
-		// Implement DynamoDB logic to fetch a user by ID
-		console.log("implement me!");
-		return {
 			id,
-			email: "test@test.com",
+			email,
 		};
 	}
 
-	async fromEmail(email: string): Promise<z.infer<typeof User.UserSchema>> {
+	async fromID(id: string) {
+		// Implement DynamoDB logic to fetch a user by ID
+		const user = await client.send(
+			new GetCommand({
+				TableName: Resource.UserTable.name,
+				Key: { id },
+			}),
+		);
+
+		return user.Item;
+		// return User.UserSchema.parse(user.Item);
+	}
+
+	async fromEmail(email: string) {
 		// Implement DynamoDB logic to fetch a user by email
-		console.log("implement me!");
-		return {
-			id: "1",
-			email,
-		};
+		const user = await client.send(
+			new QueryCommand({
+				TableName: Resource.UserTable.name,
+				IndexName: "EmailIndex",
+				KeyConditionExpression: "email = :email",
+				ExpressionAttributeValues: {
+					":email": email,
+				},
+			}),
+		);
+
+		return user.Items;
+	}
+
+	async update(user: User.PartialUser) {
+		const keysToUpdate = Object.keys(user).filter((key) => key !== "id");
+		console.log("user:", user);
+		console.log("keysToUpdate:", keysToUpdate);
+
+		const expressionAttributeValues = keysToUpdate.reduce(
+			(acc, key) => {
+				acc[`:${key}`] = user[key as keyof User.PartialUser] || null;
+				return acc;
+			},
+			{} as Record<string, unknown>,
+		);
+
+		const update = await client.send(
+			new UpdateCommand({
+				TableName: Resource.UserTable.name,
+				Key: { id: user.id },
+				ExpressionAttributeValues: expressionAttributeValues,
+				UpdateExpression: `SET ${keysToUpdate.map((key) => `${key} = :${key}`).join(", ")}`,
+				ReturnValues: "ALL_NEW",
+			}),
+		);
+
+		return update.Attributes;
 	}
 }
