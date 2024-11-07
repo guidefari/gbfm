@@ -1,4 +1,4 @@
-import { moodTable } from "@/mood/mood.sql";
+import { moodTable } from "@/drizzle/schemas/mood.sql";
 import { relations } from "drizzle-orm";
 import { pgTable, text, varchar } from "drizzle-orm/pg-core";
 

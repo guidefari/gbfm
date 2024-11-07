@@ -5,7 +5,7 @@ import { db } from "./index";
 import { microPostsTable } from "../microPost/microPost.sql";
 import { postsTable } from "../post/post.sql";
 import { mixesTable } from "../mix/mix.sql";
-import { moodTable } from "../mood/mood.sql";
+import { moodTable } from "./schemas/mood.sql";
 import { recordLabelTable } from "@/record_label/record_label.sql";
 import { userTable } from "@/user/user.sql";
 import { accountTable } from "@/account/account.sql";

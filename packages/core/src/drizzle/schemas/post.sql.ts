@@ -7,8 +7,8 @@ import {
 	date,
 	timestamp,
 } from "drizzle-orm/pg-core";
-import { userTable } from "../user/user.sql";
-import { moodTable } from "../mood/mood.sql";
+import { userTable } from "../drizzle/schemas/user.sql";
+import { moodTable } from "../drizzle/schemas/mood.sql";
 
 export const postsTable = pgTable("posts", {
 	id: text().primaryKey(),
