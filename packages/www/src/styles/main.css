@@ -7,7 +7,6 @@
 @layer base {
   :root {
 
-    /* Major Third scaling type shit😌 */
     --scale-ratio: 1.333;
     --font-size-1: clamp(0.875rem, 1rem, 1rem);
     --font-size-2: clamp(1.125rem, calc(var(--font-size-1) * var(--scale-ratio)), 1.25rem);
