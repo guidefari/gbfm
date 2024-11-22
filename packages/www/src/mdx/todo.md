@@ -8,6 +8,7 @@
     - TODO
     - changelog
 - [ ] Account page
+- [ ] what happens after user login/signup?
 
 # Shaping
 
@@ -30,3 +31,6 @@ function extractGbfmPosts(data) {
 }
 
 ```
+- Could probably also filter to grab anything with a spotify link (track|album|playlist)
+- And also apple? 
+  - maybe just use those details to query spotify search, that way I don't have to integrate with apple music api too.
