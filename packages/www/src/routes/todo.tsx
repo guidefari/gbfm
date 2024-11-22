@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import todo from "@/mdx/todo.md";
+import todo from "@/mdx/todo.mdx";
 
 import { CustomMDXComponents } from "@/components/mdx-components";
 
