@@ -1,6 +1,5 @@
 import type { MDXComponents } from "mdx/types";
 import { YoutubeEmbed } from "@/components/YoutubeEmbed";
-import CustomLink from "@/components/CustomLink";
 import Album from "@/components/Album";
 import Track from "@/components/Track";
 import Playlist from "@/components/Playlist";
