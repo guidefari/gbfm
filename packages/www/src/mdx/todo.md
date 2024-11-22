@@ -2,6 +2,7 @@
 - [ ] Migrate archive content to dynamo
 
 # UI
+- [ ] ffs, more horizontal scroll to fix. this page looks on mobile, fix that.
 - [ ] Use local markdown on the frontend for admin like content. EG this file, changelog, etc.
     - Landing page
     - TODO
