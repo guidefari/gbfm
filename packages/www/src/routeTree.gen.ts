@@ -13,8 +13,10 @@ import { createFileRoute } from '@tanstack/react-router'
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as TodoImport } from './routes/todo'
 import { Route as SubscribeImport } from './routes/subscribe'
 import { Route as PostImport } from './routes/post'
+import { Route as ChangelogImport } from './routes/changelog'
 import { Route as ArchetypeListImport } from './routes/_archetypeList'
 import { Route as IndexImport } from './routes/index'
 import { Route as AuthIndexImport } from './routes/auth/index'
@@ -32,6 +34,11 @@ const ArchetypeIndexLazyImport = createFileRoute('/archetype/')()
 
 // Create/Update Routes
 
+const TodoRoute = TodoImport.update({
+  path: '/todo',
+  getParentRoute: () => rootRoute,
+} as any)
+
 const SubscribeRoute = SubscribeImport.update({
   path: '/subscribe',
   getParentRoute: () => rootRoute,
@@ -39,6 +46,11 @@ const SubscribeRoute = SubscribeImport.update({
 
 const PostRoute = PostImport.update({
   path: '/post',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const ChangelogRoute = ChangelogImport.update({
+  path: '/changelog',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -117,6 +129,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArchetypeListImport
       parentRoute: typeof rootRoute
     }
+    '/changelog': {
+      id: '/changelog'
+      path: '/changelog'
+      fullPath: '/changelog'
+      preLoaderRoute: typeof ChangelogImport
+      parentRoute: typeof rootRoute
+    }
     '/post': {
       id: '/post'
       path: '/post'
@@ -129,6 +148,13 @@ declare module '@tanstack/react-router' {
       path: '/subscribe'
       fullPath: '/subscribe'
       preLoaderRoute: typeof SubscribeImport
+      parentRoute: typeof rootRoute
+    }
+    '/todo': {
+      id: '/todo'
+      path: '/todo'
+      fullPath: '/todo'
+      preLoaderRoute: typeof TodoImport
       parentRoute: typeof rootRoute
     }
     '/_archetypeList/labels': {
@@ -220,8 +246,10 @@ const ArchetypeListRouteWithChildren = ArchetypeListRoute._addFileChildren(
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '': typeof ArchetypeListRouteWithChildren
+  '/changelog': typeof ChangelogRoute
   '/post': typeof PostRoute
   '/subscribe': typeof SubscribeRoute
+  '/todo': typeof TodoRoute
   '/labels': typeof ArchetypeListLabelsRoute
   '/micro': typeof ArchetypeListMicroRoute
   '/mixes': typeof ArchetypeListMixesRoute
@@ -236,8 +264,10 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '': typeof ArchetypeListRouteWithChildren
+  '/changelog': typeof ChangelogRoute
   '/post': typeof PostRoute
   '/subscribe': typeof SubscribeRoute
+  '/todo': typeof TodoRoute
   '/labels': typeof ArchetypeListLabelsRoute
   '/micro': typeof ArchetypeListMicroRoute
   '/mixes': typeof ArchetypeListMixesRoute
@@ -253,8 +283,10 @@ export interface FileRoutesById {
   __root__: typeof rootRoute
   '/': typeof IndexRoute
   '/_archetypeList': typeof ArchetypeListRouteWithChildren
+  '/changelog': typeof ChangelogRoute
   '/post': typeof PostRoute
   '/subscribe': typeof SubscribeRoute
+  '/todo': typeof TodoRoute
   '/_archetypeList/labels': typeof ArchetypeListLabelsRoute
   '/_archetypeList/micro': typeof ArchetypeListMicroRoute
   '/_archetypeList/mixes': typeof ArchetypeListMixesRoute
@@ -271,8 +303,10 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | ''
+    | '/changelog'
     | '/post'
     | '/subscribe'
+    | '/todo'
     | '/labels'
     | '/micro'
     | '/mixes'
@@ -286,8 +320,10 @@ export interface FileRouteTypes {
   to:
     | '/'
     | ''
+    | '/changelog'
     | '/post'
     | '/subscribe'
+    | '/todo'
     | '/labels'
     | '/micro'
     | '/mixes'
@@ -301,8 +337,10 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_archetypeList'
+    | '/changelog'
     | '/post'
     | '/subscribe'
+    | '/todo'
     | '/_archetypeList/labels'
     | '/_archetypeList/micro'
     | '/_archetypeList/mixes'
@@ -318,8 +356,10 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ArchetypeListRoute: typeof ArchetypeListRouteWithChildren
+  ChangelogRoute: typeof ChangelogRoute
   PostRoute: typeof PostRoute
   SubscribeRoute: typeof SubscribeRoute
+  TodoRoute: typeof TodoRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthVerifyRoute: typeof AuthVerifyRoute
   AuthIndexRoute: typeof AuthIndexRoute
@@ -330,8 +370,10 @@ export interface RootRouteChildren {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ArchetypeListRoute: ArchetypeListRouteWithChildren,
+  ChangelogRoute: ChangelogRoute,
   PostRoute: PostRoute,
   SubscribeRoute: SubscribeRoute,
+  TodoRoute: TodoRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   AuthVerifyRoute: AuthVerifyRoute,
   AuthIndexRoute: AuthIndexRoute,
@@ -353,8 +395,10 @@ export const routeTree = rootRoute
       "children": [
         "/",
         "/_archetypeList",
+        "/changelog",
         "/post",
         "/subscribe",
+        "/todo",
         "/auth/callback",
         "/auth/verify",
         "/auth/",
@@ -374,11 +418,17 @@ export const routeTree = rootRoute
         "/_archetypeList/words"
       ]
     },
+    "/changelog": {
+      "filePath": "changelog.tsx"
+    },
     "/post": {
       "filePath": "post.tsx"
     },
     "/subscribe": {
       "filePath": "subscribe.tsx"
+    },
+    "/todo": {
+      "filePath": "todo.tsx"
     },
     "/_archetypeList/labels": {
       "filePath": "_archetypeList.labels.tsx",
