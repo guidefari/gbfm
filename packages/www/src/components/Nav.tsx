@@ -22,7 +22,7 @@ const Nav = () => {
 	return (
 		<nav
 			ref={navRef}
-			className="fixed bottom-0 z-50 w-full py-2 space-y-1 transition ease-in-out delay-150 bg-sky-900"
+			className="fixed bottom-0 z-50 w-full py-2 space-y-1 transition ease-in-out delay-150 shadow-inner bg-background opacity-95"
 		>
 			<div className="relative grid items-center h-full max-w-xs grid-flow-col mx-auto">
 				<button

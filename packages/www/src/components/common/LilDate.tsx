@@ -1,10 +1,24 @@
-import { format, parseISO } from "date-fns";
+// import { format, parseISO } from "date-fns";
+
+// export const LilDate = ({ date }: { date: string }) => {
+// 	return (
+// 		<time dateTime={date} className="text-xs opacity-80 bg-gb-bg">
+// 			{format(parseISO(date), "LLLL d, yyyy")}
+// 		</time>
+// 	);
+// };
 
 export const LilDate = ({ date }: { date: string }) => {
-	console.log("date:", date);
+	const parsedDate = new Date(date);
+	const formattedDate = parsedDate.toLocaleDateString("en-US", {
+		month: "long",
+		day: "numeric",
+		year: "numeric",
+	});
+
 	return (
 		<time dateTime={date} className="text-xs opacity-80 bg-gb-bg">
-			{format(parseISO(date), "LLLL d, yyyy")}
+			{formattedDate}
 		</time>
 	);
 };

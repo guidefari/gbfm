@@ -90,9 +90,20 @@
     --input: hsl(215, 27.9%, 16.9%);
     --ring: hsl(216, 12.2%, 83.9%);
   }
-}
 
-@layer base {
+  .prose {
+    --tw-prose-headings: var(--pastel-green-2);
+    --tw-prose-quotes: inherit;
+    --tw-prose-bold: var(--pastel-green-2);
+    --tw-prose-body: var(--default-text);
+    /* @apply text-inherit; */
+  }
+
+  .prose a {
+    @apply text-gb-pastel-green-1 hover:prose-a:text-highlight;
+    /* @apply text-yellow-500; this isn't such a bad color for links, should I ever get tired of the green*/
+  }
+
   * {
     @apply border-border;
   }
@@ -181,17 +192,6 @@
     vertical-align: -0.4em;
   }
 
-  .prose {
-    --tw-prose-headings: var(--pastel-green-2);
-    --tw-prose-quotes: inherit;
-    --tw-prose-bold: var(--pastel-green-2);
-    @apply text-inherit;
-  }
-
-  .prose a {
-    @apply text-gb-pastel-green-1 hover:prose-a:text-highlight;
-    /* @apply text-yellow-500; this isn't such a bad color for links, should I ever get tired of the green*/
-  }
 
   iframe.bandcamp-widget-wide,
   .bww {
@@ -232,5 +232,6 @@
   /* .overrides {
         --font-body: 'JetBrainsMono', monospace !important;
         --baseTextContrast: var(--default-text) !important;
-      } */
+      } */ 
+  
 }

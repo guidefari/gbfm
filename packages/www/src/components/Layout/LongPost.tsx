@@ -1,8 +1,7 @@
 import { LilDate } from "../common/LilDate";
 import { MinimalCard } from "../common/MinimalCard";
 import { DEFAULT_IMAGE_URL } from "@/lib/constants";
-import { MDXRemote } from "next-mdx-remote/rsc";
-import { CustomMDXComponents } from "@/components/mdx-components";
+import { MDXRendrr } from "../MDXRendrr";
 
 type Props = {
 	content: string;
@@ -39,7 +38,7 @@ export const LongPost = ({
 						<img
 							className="rounded-md "
 							src={thumbnailUrl || DEFAULT_IMAGE_URL}
-							alt={`Thumbnail image for post titled - ${title}`}
+							alt={`Thumbnail for post titled - ${title}`}
 							width={320}
 							height={320}
 							loading="lazy"
@@ -58,9 +57,9 @@ export const LongPost = ({
 						/>
 					)}
 				</div>
-				<article className="min-h-screen px-2 mt-6 prose break-words md:w-auto md:px-0 md:col-start-2 md:col-span-2 lg:prose-xl">
+				<article className="min-h-screen px-2 mt-6 break-words md:w-auto md:px-0 md:col-start-2 md:col-span-2 ">
 					{description && <p className="text-left ">{description}</p>}
-					{/* <MDXRemote components={CustomMDXComponents} source={content} /> */}
+					<MDXRendrr mdxString={content} />
 				</article>
 			</div>
 		</>

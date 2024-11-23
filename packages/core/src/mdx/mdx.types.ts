@@ -12,4 +12,8 @@ export namespace MDXArchiveTypes {
 	export const archetypeSchema = z.enum(["mixes", "labels", "micro", "words"]);
 	export type archetype = z.infer<typeof archetypeSchema>;
 	export type GrayMatter = ReturnType<typeof grayMatter>;
+	export type ReadOneResult = {
+		gray?: GrayMatter;
+		compiled?: string;
+	};
 }
