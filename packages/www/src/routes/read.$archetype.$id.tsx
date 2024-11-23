@@ -1,3 +1,4 @@
+import { LongPost } from "@/components/Layout/LongPost";
 import { MDXRendrr } from "@/components/MDXRendrr";
 import { API_BASE_URL, fetcher } from "@/lib/http";
 import { useQuery } from "@tanstack/react-query";
@@ -24,5 +25,21 @@ function ReadSingle() {
 	if (isLoading || isFetching) return <div>Loading...</div>;
 	if (error) return <div>Error: {error.message}</div>;
 
-	return <MDXRendrr mdxString={data?.compiled} />;
+	if (!data) return <div>No data</div>;
+
+	if (archetype === "micro") {
+		return <MDXRendrr mdxString={data.compiled as string} />;
+	}
+
+	return (
+		<LongPost
+			title={data.gray?.data.title}
+			description={data.gray?.data.description}
+			content={data.compiled as string}
+			thumbnailUrl={data.gray?.data.thumbnailUrl}
+			date={data.gray?.data.date}
+			youtubeId={data.gray?.data.youtubeId}
+			mp3Url={data.gray?.data.mp3Url}
+		/>
+	);
 }

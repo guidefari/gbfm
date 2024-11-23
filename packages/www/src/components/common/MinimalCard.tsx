@@ -82,7 +82,7 @@ export const MinimalCard: React.FC<Props> = ({
 						<PlayPauseButton url={previewUrl} thumbnailUrl={imageUrl} />
 						{download && (
 							<a type="button" title="Download" href={constructUrl()}>
-								<MdOutlineDownloading className="default-icon h-[16px]" />
+								<MdOutlineDownloading className="py-0.5 default-icon" />
 							</a>
 						)}
 					</div>

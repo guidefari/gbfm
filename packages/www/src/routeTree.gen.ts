@@ -26,7 +26,6 @@ import { Route as ArchetypeListWordsImport } from './routes/_archetypeList.words
 import { Route as ArchetypeListMixesImport } from './routes/_archetypeList.mixes'
 import { Route as ArchetypeListMicroImport } from './routes/_archetypeList.micro'
 import { Route as ArchetypeListLabelsImport } from './routes/_archetypeList.labels'
-import { Route as ReadMixesIdImport } from './routes/read.mixes.$id'
 import { Route as ReadArchetypeIdImport } from './routes/read.$archetype.$id'
 
 // Create Virtual Routes
@@ -105,11 +104,6 @@ const ArchetypeListMicroRoute = ArchetypeListMicroImport.update({
 const ArchetypeListLabelsRoute = ArchetypeListLabelsImport.update({
   path: '/labels',
   getParentRoute: () => ArchetypeListRoute,
-} as any)
-
-const ReadMixesIdRoute = ReadMixesIdImport.update({
-  path: '/read/mixes/$id',
-  getParentRoute: () => rootRoute,
 } as any)
 
 const ReadArchetypeIdRoute = ReadArchetypeIdImport.update({
@@ -226,13 +220,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReadArchetypeIdImport
       parentRoute: typeof rootRoute
     }
-    '/read/mixes/$id': {
-      id: '/read/mixes/$id'
-      path: '/read/mixes/$id'
-      fullPath: '/read/mixes/$id'
-      preLoaderRoute: typeof ReadMixesIdImport
-      parentRoute: typeof rootRoute
-    }
   }
 }
 
@@ -272,7 +259,6 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthIndexRoute
   '/archetype': typeof ArchetypeIndexLazyRoute
   '/read/$archetype/$id': typeof ReadArchetypeIdRoute
-  '/read/mixes/$id': typeof ReadMixesIdRoute
 }
 
 export interface FileRoutesByTo {
@@ -291,7 +277,6 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthIndexRoute
   '/archetype': typeof ArchetypeIndexLazyRoute
   '/read/$archetype/$id': typeof ReadArchetypeIdRoute
-  '/read/mixes/$id': typeof ReadMixesIdRoute
 }
 
 export interface FileRoutesById {
@@ -311,7 +296,6 @@ export interface FileRoutesById {
   '/auth/': typeof AuthIndexRoute
   '/archetype/': typeof ArchetypeIndexLazyRoute
   '/read/$archetype/$id': typeof ReadArchetypeIdRoute
-  '/read/mixes/$id': typeof ReadMixesIdRoute
 }
 
 export interface FileRouteTypes {
@@ -332,7 +316,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/archetype'
     | '/read/$archetype/$id'
-    | '/read/mixes/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -350,7 +333,6 @@ export interface FileRouteTypes {
     | '/auth'
     | '/archetype'
     | '/read/$archetype/$id'
-    | '/read/mixes/$id'
   id:
     | '__root__'
     | '/'
@@ -368,7 +350,6 @@ export interface FileRouteTypes {
     | '/auth/'
     | '/archetype/'
     | '/read/$archetype/$id'
-    | '/read/mixes/$id'
   fileRoutesById: FileRoutesById
 }
 
@@ -384,7 +365,6 @@ export interface RootRouteChildren {
   AuthIndexRoute: typeof AuthIndexRoute
   ArchetypeIndexLazyRoute: typeof ArchetypeIndexLazyRoute
   ReadArchetypeIdRoute: typeof ReadArchetypeIdRoute
-  ReadMixesIdRoute: typeof ReadMixesIdRoute
 }
 
 const rootRouteChildren: RootRouteChildren = {
@@ -399,7 +379,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthIndexRoute: AuthIndexRoute,
   ArchetypeIndexLazyRoute: ArchetypeIndexLazyRoute,
   ReadArchetypeIdRoute: ReadArchetypeIdRoute,
-  ReadMixesIdRoute: ReadMixesIdRoute,
 }
 
 export const routeTree = rootRoute
@@ -424,8 +403,7 @@ export const routeTree = rootRoute
         "/auth/verify",
         "/auth/",
         "/archetype/",
-        "/read/$archetype/$id",
-        "/read/mixes/$id"
+        "/read/$archetype/$id"
       ]
     },
     "/": {
@@ -482,9 +460,6 @@ export const routeTree = rootRoute
     },
     "/read/$archetype/$id": {
       "filePath": "read.$archetype.$id.tsx"
-    },
-    "/read/mixes/$id": {
-      "filePath": "read.mixes.$id.tsx"
     }
   }
 }
