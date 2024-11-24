@@ -16,7 +16,7 @@ export const MobileNav = () => {
 					onClick={() => setOpen(true)}
 					size="icon"
 					variant="default"
-					className="sm:hidden"
+					className="bg-background text-foreground sm:hidden"
 				>
 					<MenuIcon className="w-5 h-5" />
 					<span className="sr-only">Toggle Menu</span>
