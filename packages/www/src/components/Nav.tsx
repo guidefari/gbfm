@@ -6,6 +6,12 @@ import { HiHome } from "react-icons/hi";
 import { useAudioPlayerContext } from "@/contexts/AudioPlayer";
 import { Link, useRouter } from "@tanstack/react-router";
 import { useScrollStatus } from "@/lib/useScrollStatus";
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const Nav = () => {
 	const [
@@ -57,7 +63,11 @@ const Nav = () => {
 						type="button"
 						className="floating-nav-button"
 						title="Play/Pause"
-						onClick={() => (isPlaying ? handlers.pause() : handlers.play())}
+						onClick={() =>
+							isPlaying
+								? handlers.pause()
+								: handlers.play({ title: nowPlayingContext.title })
+						}
 					>
 						{isPlaying ? (
 							<GiPauseButton className="floating-nav-icon" />
@@ -74,15 +84,24 @@ const Nav = () => {
 					>
 						+30s
 					</button>
-					<Link to={nowPlayingContext.url}>
-						<img
-							src={thumbnailUrl}
-							className="min-w-[45px] w-12 m-auto rounded-md aspect-square"
-							alt=""
-							width={80}
-							height={80}
-						/>
-					</Link>
+					<TooltipProvider>
+						<Tooltip>
+							<TooltipTrigger asChild>
+								<Link to={nowPlayingContext.url}>
+									<img
+										src={thumbnailUrl}
+										className="min-w-[45px] w-12 m-auto rounded-md aspect-square"
+										alt={nowPlayingContext.title}
+										width={80}
+										height={80}
+									/>
+								</Link>
+							</TooltipTrigger>
+							<TooltipContent side="top">
+								{nowPlayingContext.title}
+							</TooltipContent>
+						</Tooltip>
+					</TooltipProvider>
 				</>
 			</div>
 			<div className="flex items-center max-w-xl mx-auto space-x-1 rounded-full">

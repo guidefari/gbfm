@@ -6,7 +6,7 @@ import React, {
 	useMemo,
 	useState,
 } from "react";
-import type { Track } from "../types";
+// import type { Track } from "../types";
 
 const AudioContext = createContext<AudioPlayerContext | null>(null);
 
@@ -31,6 +31,7 @@ export const AudioProvider = ({ children }: Props) => {
 	const [nowPlayingContext, setNowPlayingContext] = useState<NowPlayingContext>(
 		{
 			url: typeof window === "undefined" ? "/" : window.location.pathname,
+			title: "Nothing playing, yet",
 		},
 	);
 
@@ -50,13 +51,14 @@ export const AudioProvider = ({ children }: Props) => {
 		}
 	};
 
-	const handlers = React.useMemo(
+	const handlers: AudioPlayerHandlers = React.useMemo(
 		() => ({
-			play: () => {
+			play: ({ title }) => {
 				setPlayAudio(true);
 				audioRef?.play();
 				setNowPlayingContext({
 					...nowPlayingContext,
+					title,
 					url: window.location.pathname,
 				});
 			},
@@ -65,12 +67,16 @@ export const AudioProvider = ({ children }: Props) => {
 				audioRef?.pause();
 			},
 			togglePlayPause: () => setPlayAudio(!playAudio),
-			handleAlbumArtClick: (src: string, thumbnailUrl: string) => {
+			handleAlbumArtClick: (
+				src: string,
+				thumbnailUrl: string,
+				title: string,
+			) => {
 				if (!audioRef) return;
 				if (!src) {
 					alert("Yo, there's no preview audio for this one");
 				} else if (src === audioRef.src && playAudio === false) {
-					handlers.play();
+					handlers.play({ title });
 				} else if (src === audioRef.src) {
 					handlers.pause();
 				} else {
@@ -78,7 +84,7 @@ export const AudioProvider = ({ children }: Props) => {
 					if (thumbnailUrl) {
 						setThumbnailUrl(thumbnailUrl);
 					}
-					handlers.play();
+					handlers.play({ title });
 				}
 			},
 			jumpForward: () => {
@@ -119,15 +125,7 @@ export const AudioProvider = ({ children }: Props) => {
 
 type AudioPlayerContext = [
 	audioRef: HTMLAudioElement | null,
-	handlers: {
-		play: () => void;
-		pause: () => void;
-		togglePlayPause: () => void;
-		handleAlbumArtClick: (src: string, thumbnailUrl: string) => void;
-		jumpForward: () => void;
-		jumpBackward: () => void;
-		setTimeUsingPercentage: (percentage: number) => void;
-	},
+	handlers: AudioPlayerHandlers,
 	playAudio: boolean,
 	thumbnailUrl: string,
 	progress: number,
@@ -138,14 +136,31 @@ type Props = {
 	children: ReactNode;
 };
 
+type AudioPlayerHandlers = {
+	play: (ctx: Action_Play) => void;
+	pause: () => void;
+	togglePlayPause: () => void;
+	handleAlbumArtClick: (
+		src: string,
+		thumbnailUrl: string,
+		title: string,
+	) => void;
+	jumpForward: () => void;
+	jumpBackward: () => void;
+	setTimeUsingPercentage: (percentage: number) => void;
+};
+
 type NowPlayingContext = {
 	url: string;
+	title: string;
 	// tracklist: NowPlayingTrack[]
 };
 
-interface NowPlayingTrack
-	extends Required<
-		Pick<Track, "albumImageUrl" | "title" | "trackUrl" | "artists">
-	> {
-	queuedByUrl: string;
-}
+type Action_Play = Pick<NowPlayingContext, "title">;
+
+// interface NowPlayingTrack
+// 	extends Required<
+// 		Pick<Track, "albumImageUrl" | "title" | "trackUrl" | "artists">
+// 	> {
+// 	queuedByUrl: string;
+// }

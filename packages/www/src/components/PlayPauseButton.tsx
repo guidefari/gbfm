@@ -6,17 +6,19 @@ import { DEFAULT_IMAGE_URL } from "../lib/constants";
 type PlayPauseButtonProps = {
 	url: string;
 	thumbnailUrl?: string;
+	title: string;
 };
 
 export const PlayPauseButton = ({
 	url,
 	thumbnailUrl,
+	title,
 }: PlayPauseButtonProps) => {
 	const [audioRef, { handleAlbumArtClick }, isPlaying] =
 		useAudioPlayerContext();
 
 	const handleClick = () =>
-		handleAlbumArtClick(url, thumbnailUrl || DEFAULT_IMAGE_URL);
+		handleAlbumArtClick(url, thumbnailUrl || DEFAULT_IMAGE_URL, title);
 
 	if (url !== audioRef?.src)
 		return <GiPlayButton className="default-icon" onClick={handleClick} />;
