@@ -4,7 +4,7 @@ import { MDXArchiveTypes } from "@gbfm/core/mdx/mdx.types";
 import { ArchetypesLinks } from "@/components/ArchtypesLinks";
 import { capitalizeFirstLetter } from "@/lib/utils";
 
-export const Route = createFileRoute("/_archetypeList")({
+export const Route = createFileRoute("/_contentList")({
 	component: Component,
 	errorComponent: PostErrorComponent,
 	loader: async ({ location }) => {

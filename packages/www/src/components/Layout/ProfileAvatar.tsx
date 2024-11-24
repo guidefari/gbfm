@@ -22,7 +22,7 @@ const ProfileAvatar = () => {
 					className="overflow-hidden rounded-full"
 				>
 					<img
-						src="/placeholder.svg"
+						src="/fav.png"
 						width={36}
 						height={36}
 						alt="Avatar"
@@ -45,7 +45,6 @@ const ProfileAvatar = () => {
 				<DropdownMenuItem asChild>
 					<Link to="/settings/profile">Profile</Link>
 				</DropdownMenuItem>
-				<DropdownMenuItem>Support</DropdownMenuItem>
 				<DropdownMenuSeparator />
 				<DropdownMenuItem onClick={onSignOut}>Logout</DropdownMenuItem>
 			</DropdownMenuContent>
