@@ -2,7 +2,7 @@ import { useEffect } from "react";
 // import { getAccount } from "@/app/actions";
 // import Routes from "@/lib/routes";
 // import { Session } from "@/lib/session";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Cookies } from "@/lib/cookies";
 import { AUTH_BASE_URL } from "@/lib/http";
 
@@ -11,6 +11,9 @@ export const Route = createFileRoute("/auth/callback")({
 });
 
 function Component() {
+	const navigate = useNavigate();
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: calm
 	useEffect(() => {
 		async function handleAuthCallback() {
 			const urlParams = new URLSearchParams(window.location.search);
@@ -50,6 +53,8 @@ function Component() {
 					maxAge: 31536000,
 					sameSite: "lax",
 				});
+
+				navigate({ to: "/", replace: true });
 			} catch (e) {
 				console.error(e);
 			}
