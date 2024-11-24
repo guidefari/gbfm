@@ -180,8 +180,7 @@
   }
 
   blockquote {
-    @apply p-4 m-4 border-l-8 rounded-md border-highlight;
-    background: var(--darker-bg);
+    @apply p-4 m-4 border-l-8 rounded-md border-highlight bg-[var(--darker-bg)] text-background;
     quotes: '\201C' '\201D' '\2018' '\2019';
   }
 
@@ -232,6 +231,6 @@
   /* .overrides {
         --font-body: 'JetBrainsMono', monospace !important;
         --baseTextContrast: var(--default-text) !important;
-      } */ 
-  
+      } */
+
 }
