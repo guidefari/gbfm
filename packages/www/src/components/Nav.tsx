@@ -4,17 +4,23 @@ import { useRef } from "react";
 import { GiPauseButton, GiPlayButton } from "react-icons/gi";
 import { HiHome } from "react-icons/hi";
 import { useAudioPlayerContext } from "@/contexts/AudioPlayer";
-import { useRouter } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { useScrollStatus } from "@/lib/useScrollStatus";
 
 const Nav = () => {
-	const [audioRef, handlers, isPlaying, thumbnailUrl, progress] =
-		useAudioPlayerContext();
+	const [
+		audioRef,
+		handlers,
+		isPlaying,
+		thumbnailUrl,
+		progress,
+		nowPlayingContext,
+	] = useAudioPlayerContext();
 	const router = useRouter();
 	const navRef = useRef<HTMLElement>(null);
 	const isScrolling = useScrollStatus(1000);
 
-	const navStyles = isScrolling ? "opacity-95" : "opacity-100 border-t-2";
+	const navStyles = isScrolling ? "opacity-95" : "opacity-100";
 
 	const changeRange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const { value } = e.target;
@@ -26,7 +32,7 @@ const Nav = () => {
 	return (
 		<nav
 			ref={navRef}
-			className={`fixed bottom-0 z-50 w-full py-2 space-y-1 transition ease-in-out delay-150 shadow-inner bg-background ${navStyles}`}
+			className={`fixed bottom-0 z-50 w-full py-2 space-y-1 transition ease-in-out delay-150  bg-background ${navStyles}`}
 		>
 			<div className="relative grid items-center h-full max-w-xs grid-flow-col mx-auto">
 				<button
@@ -68,13 +74,15 @@ const Nav = () => {
 					>
 						+30s
 					</button>
-					<img
-						src={thumbnailUrl}
-						className="min-w-[45px] w-12 m-auto rounded-md aspect-square"
-						alt=""
-						width={80}
-						height={80}
-					/>
+					<Link to={nowPlayingContext.url}>
+						<img
+							src={thumbnailUrl}
+							className="min-w-[45px] w-12 m-auto rounded-md aspect-square"
+							alt=""
+							width={80}
+							height={80}
+						/>
+					</Link>
 				</>
 			</div>
 			<div className="flex items-center max-w-xl mx-auto space-x-1 rounded-full">
