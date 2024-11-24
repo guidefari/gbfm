@@ -1,8 +1,11 @@
 import { RSS } from "@/components/RSS";
 import { TfiYoutube } from "react-icons/tfi";
-import { FileTextIcon, TwitterLogoIcon } from "@radix-ui/react-icons";
+import {
+	FileTextIcon,
+	TwitterLogoIcon,
+	Pencil2Icon,
+} from "@radix-ui/react-icons";
 import { BiSolidCameraHome } from "react-icons/bi";
-import { GiPerspectiveDiceSixFacesRandom } from "react-icons/gi";
 import { IoIosMailOpen } from "react-icons/io";
 import { PiVinylRecordLight } from "react-icons/pi";
 import { SiWritedotas } from "react-icons/si";
@@ -67,5 +70,10 @@ export const pagesAndPages: shit[] = [
 				<TfiYoutube />
 			</a>
 		),
+	},
+	{
+		icon: <Pencil2Icon className={iconSytles} />,
+		name: "New Post",
+		slug: "/post",
 	},
 ];
