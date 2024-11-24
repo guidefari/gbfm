@@ -3,6 +3,7 @@ import { MDXRendrr } from "@/components/MDXRendrr";
 import { API_BASE_URL, fetcher } from "@/lib/http";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/read/$archetype/$id")({
 	component: ReadSingle,
@@ -11,7 +12,7 @@ export const Route = createFileRoute("/read/$archetype/$id")({
 function ReadSingle() {
 	const { archetype, id } = Route.useParams();
 
-	const { data, isLoading, error, isFetching } = useQuery({
+	const { data, isLoading, error, isFetching, refetch } = useQuery({
 		queryKey: ["read-single"],
 		queryFn: async () =>
 			fetcher(`${API_BASE_URL}/mdx-archive/read`, {
@@ -21,6 +22,11 @@ function ReadSingle() {
 				}),
 			}),
 	});
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: stable function
+	useEffect(() => {
+		refetch();
+	}, [archetype, id]);
 
 	if (isLoading || isFetching) return <div>Loading...</div>;
 	if (error) return <div>Error: {error.message}</div>;
