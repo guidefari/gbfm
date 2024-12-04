@@ -33,5 +33,5 @@ Dev & infra via [SST](https://sst.dev)
   - Potentially, it's just about getting the session id via request cookies & checking that exists in my session table?
 
 ### Transactional email
-- SES.
+- [x] SES.
 
