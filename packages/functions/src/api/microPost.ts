@@ -12,7 +12,9 @@ export namespace MicroPostApi {
 					body: {
 						content: {
 							"application/json": {
-								schema: MicroPost.MicroPostSchema.pick({ content: true }),
+								schema: z.object({
+									content: z.string(),
+								}),
 							},
 						},
 					},
@@ -25,6 +27,7 @@ export namespace MicroPostApi {
 			}),
 			async (c) => {
 				const payload = c.req.valid("json");
+				console.log("payload:", payload);
 				const token = c.req.header("Authorization")?.split(" ")[1];
 				if (!token) {
 					return c.json({ error: "No token provided" }, 401);
@@ -72,8 +75,12 @@ export namespace MicroPostApi {
 				},
 			}),
 			async (c) => {
-				const microPosts = await MicroPost.seed(c.req.valid("json"));
-				return c.json(microPosts, 200);
+				const microPosts = await c.req.json();
+				console.log("type:", typeof microPosts);
+				// console.log("microPosts:", microPosts);
+				// return c.json(microPosts, 200);
+				const seeded = await MicroPost.seed(microPosts);
+				return c.json({ success: true }, 200);
 			},
 		);
 }

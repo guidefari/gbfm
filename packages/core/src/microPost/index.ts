@@ -4,6 +4,7 @@ import { z } from "zod";
 import { fn } from "@/util/fn";
 import { DynamoWrapper } from "@/util/dynamo.wrapper";
 import { Resource } from "sst";
+import { readContentsOfFilesInFolder } from "@/archive/seed";
 
 export namespace MicroPost {
 	export const MicroPostSchema = z.object({
@@ -37,10 +38,21 @@ export namespace MicroPost {
 	};
 
 	export const seed = async (input: MicroPost[]) => {
-		return DynamoWrapper.seed(
-			Resource.ContentTable.name,
-			input,
-			MicroPostSchema,
-		);
+		const batchSize = 25;
+		for (let i = 0; i < input.length; i += batchSize) {
+			const batch = input.slice(i, i + batchSize);
+			await DynamoWrapper.seed(
+				Resource.ContentTable.name,
+				batch,
+				MicroPostSchema,
+			);
+		}
+		return input;
 	};
+
+	// export const seedFromArchive = async () => {
+	// 	const microPosts = await readContentsOfFilesInFolder("micro");
+
+	// 	return seed(microPosts);
+	// };
 }

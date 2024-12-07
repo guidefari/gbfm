@@ -44,13 +44,12 @@ export namespace DynamoWrapper {
 		return response.UnprocessedItems;
 	};
 
-	export const listAll = async <T extends object>(
-		tableName: string,
-	): Promise<T[]> => {
+	export const listAll = async <T extends object>(tableName: string) => {
 		const command = new ScanCommand({
 			TableName: tableName,
+			Limit: 100,
 		});
 		const response = await client.send(command);
-		return response.Items;
+		return response.Items ?? [];
 	};
 }
