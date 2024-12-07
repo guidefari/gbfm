@@ -5,6 +5,7 @@ import { MDXArchiveApi } from "./mdx-archive";
 import { AuthMiddleware } from "./auth.middleware";
 import { swaggerUI } from "@hono/swagger-ui";
 import { UserApi } from "./user";
+import { MicroPostApi } from "./microPost";
 
 const app = new OpenAPIHono();
 
@@ -24,9 +25,11 @@ app.openapi(
 const routes = app
 	// TODO: auth on a per route basis. and none of these need auth
 	// .use("*", AuthMiddleware)
+	// .use("/micro-posts", AuthMiddleware)
 	.route("/spotify", SpotifyApi.route)
 	.route("/mdx-archive", MDXArchiveApi.route)
-	.route("/users", UserApi.route);
+	.route("/users", UserApi.route)
+	.route("/micro-posts", MicroPostApi.route);
 
 app.doc("/doc", () => ({
 	openapi: "3.0.0",
