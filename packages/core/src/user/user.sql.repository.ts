@@ -1,4 +1,3 @@
-import type { z } from "zod";
 import { insertUser, userTable } from "../drizzle/schemas/user.sql";
 import { and, eq } from "drizzle-orm";
 import { db } from "../drizzle";
@@ -6,26 +5,27 @@ import { createID } from "@/util/id";
 import type { User } from ".";
 
 export class SqlUserRepository implements User.IUserRepository {
-	update(user: User.PartialUser): Promise<User.PartialUser> {
-		throw new Error("Method not implemented.");
+	async update(user: User.PartialUser) {
+		console.info("Method not implemented.");
+		return user;
 	}
-	deleteByID(id: string): Promise<boolean> {
-		throw new Error("Method not implemented.");
+	async deleteByID(id: string) {
+		console.info("Method not implemented.");
+		return false;
 	}
-	async create(email: string): Promise<z.infer<typeof User.UserSchema>> {
+	async create(email: string) {
 		const id = createID("user");
 		const user = await insertUser({ id, email });
 		return this.serialize(user);
 	}
 
-	async fromID(id: string): Promise<z.infer<typeof User.UserSchema> | null> {
+	async fromID(id: string) {
 		const rows = await db.select().from(userTable).where(eq(userTable.id, id));
+
 		return rows.map(this.serialize).at(0) || null;
 	}
 
-	async fromEmail(
-		email: string,
-	): Promise<z.infer<typeof User.UserSchema> | null> {
+	async fromEmail(email: string) {
 		const rows = await db
 			.select()
 			.from(userTable)
@@ -33,12 +33,17 @@ export class SqlUserRepository implements User.IUserRepository {
 		return rows.map(this.serialize).at(0) || null;
 	}
 
-	private serialize(
-		input: typeof userTable.$inferSelect,
-	): z.infer<typeof User.UserSchema> {
+	private serialize(input: typeof userTable.$inferSelect): User.PartialUser {
+		console.log("input:", input);
 		return {
 			id: input.id,
 			email: input.email,
+			...(input.username && { username: input.username }),
+			...(input.password && { password: input.password }),
+			...(input.firstname && { firstname: input.firstname }),
+			...(input.lastname && { lastname: input.lastname }),
+			...(input.isDeleted && { isDeleted: input.isDeleted }),
+			...(input.isVerified && { isVerified: input.isVerified }),
 		};
 	}
 }

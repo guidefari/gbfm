@@ -112,7 +112,7 @@ const app = AuthHandler({
 					return ctx.session({
 						type: "account",
 						properties: {
-							accountID: account.id,
+							id: account.id,
 							email: account.email,
 						},
 					});

@@ -19,7 +19,12 @@ export const AuthMiddleware: MiddlewareHandler = async (c, next) => {
 
 	// const actor: Actor = await sessions.verify(token);
 	const actor = await sessions.verify(token);
-	console.log("actor:", actor);
+	if (!actor) throw new HTTPException(403, { message: "Invalid token" });
+	// if actor.properties is an empty object, throw an error
+	if (Object.keys(actor.properties).length === 0) {
+		throw new HTTPException(403, { message: "Invalid token" });
+	}
+
 	//   if (actor.type === "account") {
 	//     const accountActor = actor; // helps TypeScript infer through the callback below
 	//     const slug = c.req.header("x-peasy-shop");
@@ -46,5 +51,8 @@ export const AuthMiddleware: MiddlewareHandler = async (c, next) => {
 	//     }
 	//   }
 	//   await withActor(actor, next);
+
+	// how to pass the actor to the next middleware?
+
 	await next();
 };

@@ -1,7 +1,7 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { Result } from "./common";
 import { User } from "@gbfm/core/user/index.ts";
-// import { User } from "@gbfm/core/user"; // Import the User namespace
+// import { User } from "@gbfm/core/user";
 
 export namespace UserApi {
 	User.setUserRepository("dynamo");
@@ -16,7 +16,7 @@ export namespace UserApi {
 					body: {
 						content: {
 							"application/json": {
-								schema: User.UserSchema.omit({ id: true }),
+								schema: User.UserSchema.pick({ email: true }),
 							},
 						},
 					},
@@ -25,7 +25,7 @@ export namespace UserApi {
 					201: {
 						content: {
 							"application/json": {
-								schema: Result(z.object({ id: z.string() })),
+								schema: z.object({ id: z.string() }),
 							},
 						},
 						description: "User created successfully",
@@ -33,12 +33,19 @@ export namespace UserApi {
 				},
 			}),
 			async (c) => {
-				const payload = c.req.valid("json"); // Only email is needed for creation
-				const doesUserExist = await User.fromEmail(payload.email);
+				const payload = c.req.valid("json");
+				let doesUserExist: User.PartialUser | null = null;
+
+				try {
+					doesUserExist = await User.fromEmail(payload.email);
+				} catch (error) {
+					return c.json({ error: "error retrieving user" }, 500);
+				}
+
 				if (doesUserExist) {
 					return c.json({ error: "User already exists" }, 400);
 				}
-				const user = await User.create(payload.email); // Use User namespace to create user
+				const user = await User.create(payload.email);
 				return c.json({ id: user.id }, 201);
 			},
 		)

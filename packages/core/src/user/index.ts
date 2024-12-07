@@ -13,7 +13,7 @@ export namespace User {
 		password: z.string().optional(),
 		firstname: z.string().optional(),
 		lastname: z.string().optional(),
-		role: z.enum(["user", "admin"]).default("user"),
+		role: z.enum(["user", "admin"]).default("user").optional(),
 		isDeleted: z.boolean().default(false),
 		isVerified: z.boolean().default(false),
 		createdAt: z.date().default(() => new Date()),
@@ -22,10 +22,11 @@ export namespace User {
 
 	export type IUserRepository = {
 		create(email: string): Promise<User.PartialUser>;
-		fromID(id: string): Promise<User.UserType | null>;
-		fromEmail(email: string): Promise<User.UserType | null>;
+		fromID(id: string): Promise<User.PartialUser | null>;
+		fromEmail(email: string): Promise<User.PartialUser | null>;
 		update(user: User.PartialUser): Promise<User.PartialUser>;
 		deleteByID(id: string): Promise<boolean>;
+		fromToken(token: string): Promise<User.PartialUser | null>;
 	};
 
 	export type UserType = z.infer<typeof UserSchema>;
@@ -88,4 +89,13 @@ export namespace User {
 		}
 		return userRepository.update(user);
 	});
+
+	export const fromToken = async (token: string) => {
+		if (!userRepository) {
+			throw new Error(
+				"User repository is not initialized. Call setUserRepository first.",
+			);
+		}
+		return userRepository.fromToken(token);
+	};
 }

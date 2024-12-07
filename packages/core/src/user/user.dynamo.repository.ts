@@ -9,6 +9,7 @@ import {
 } from "@aws-sdk/lib-dynamodb";
 import { createID } from "@/util/id";
 import { Resource } from "sst/resource";
+import { sessions } from "../../../functions/src/sessions";
 
 const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
@@ -54,7 +55,11 @@ export class DynamoUserRepository implements User.IUserRepository {
 			}),
 		);
 
-		return user.Items;
+		if (user.Items && user.Items.length > 1) {
+			console.info("Multiple users found with the same email");
+		}
+
+		return user.Items?.[0];
 	}
 
 	async update(user: User.PartialUser) {
@@ -84,5 +89,13 @@ export class DynamoUserRepository implements User.IUserRepository {
 	async deleteByID(id: string) {
 		// Implement DynamoDB logic to delete a user by ID
 		return true;
+	}
+
+	async fromToken(token: string) {
+		const session = await sessions.verify(token);
+		if (session.type === "account") {
+			return session.properties;
+		}
+		return null;
 	}
 }
