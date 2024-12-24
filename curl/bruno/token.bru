@@ -1,0 +1,36 @@
+meta {
+  name: token
+  type: http
+  seq: 2
+}
+
+post {
+  url: https://auth.local.staging.goosebumps.fm/token
+  body: formUrlEncoded
+  auth: none
+}
+
+headers {
+  accept: */*
+  accept-language: en-US,en;q=0.9
+  content-type: application/x-www-form-urlencoded
+  dnt: 1
+  origin: http://localhost:5173
+  priority: u=1, i
+  referer: http://localhost:5173/
+  sec-ch-ua: "Chromium";v="131", "Not_A Brand";v="24"
+  sec-ch-ua-mobile: ?0
+  sec-ch-ua-platform: "macOS"
+  sec-fetch-dest: empty
+  sec-fetch-mode: cors
+  sec-fetch-site: cross-site
+  user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36
+}
+
+body:form-urlencoded {
+  code: b861b1d9-f8e9-4bc6-b6d7-5b31a3c436f4
+  redirect_uri: http://localhost:5173
+  grant_type: authorization_code
+  client_id: gbfm-www
+  code_verifier: KccrQkT34V18TnA1_k-15xQJmBzTMwW6LQ_SrEh0j1SWPacEmuZ7np27P-KcwH02jlKJMo0NNGexobDpFwZ7Cg
+}
