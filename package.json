@@ -15,8 +15,9 @@
   "dependencies": {
     "@effect/platform": "latest",
     "@effect/schema": "latest",
+    "@openauthjs/openauth": "^0.2.5",
     "effect": "latest",
-    "sst": "3.3.22",
+    "sst": "3.4.28",
     "zod": "^3.23.8"
   },
   "devDependencies": {

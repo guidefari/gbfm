@@ -1,65 +1,23 @@
 import { useEffect } from "react";
-// import { getAccount } from "@/app/actions";
-// import Routes from "@/lib/routes";
-// import { Session } from "@/lib/session";
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Cookies } from "@/lib/cookies";
-import { AUTH_BASE_URL } from "@/lib/http";
-
+import { createFileRoute } from "@tanstack/react-router";
+import { useAuthContext } from "@/contexts/AuthContext";
 export const Route = createFileRoute("/auth/callback")({
 	component: Component,
 });
 
 function Component() {
-	const navigate = useNavigate();
-
+	const { callback } = useAuthContext();
 	// biome-ignore lint/correctness/useExhaustiveDependencies: calm
 	useEffect(() => {
 		async function handleAuthCallback() {
-			const urlParams = new URLSearchParams(window.location.search);
-			const code = urlParams.get("code");
-			if (!code) {
-				// navigate(Routes.home);
-				return;
-			}
-			let token: string | undefined;
+			const hash = new URLSearchParams(location.search.slice(1));
+			const code = hash.get("code");
+			const state = hash.get("state");
 
-			try {
-				const response = await fetch(`${AUTH_BASE_URL}/token`, {
-					method: "POST",
-					headers: { Accept: "application/json" },
-					body: new URLSearchParams({
-						grant_type: "authorization_code",
-						client_id: "web",
-						code,
-						redirect_uri: window.location.origin + window.location.pathname,
-					}),
-				});
-
-				const json = await response.json();
-				console.log("json:", json);
-				token = json.access_token;
-				if (!token) {
-					// navigate("/");
-					return;
-				}
-
-				const expires = new Date();
-				expires.setDate(expires.getDate() + 90);
-				Cookies.set(Cookies.sessionKey, token, {
-					path: "/",
-					secure: true,
-					expires,
-					maxAge: 31536000,
-					sameSite: "lax",
-				});
-
-				navigate({ to: "/", replace: true });
-			} catch (e) {
-				console.error(e);
+			if (code && state) {
+				callback(code, state);
 			}
 		}
-
 		handleAuthCallback();
 	}, []);
 

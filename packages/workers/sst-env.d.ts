@@ -13,12 +13,7 @@ declare module "sst" {
       "url": string
     }
     "Auth": {
-      "publicKey": string
       "type": "sst.aws.Auth"
-    }
-    "AuthAuthenticator": {
-      "name": string
-      "type": "sst.aws.Function"
       "url": string
     }
     "ContentTable": {

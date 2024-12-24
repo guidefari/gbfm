@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
 
 const ProfileAvatar = () => {
-	const { user, onSignOut } = useAuthContext();
+	const { user, onSignOut, login } = useAuthContext();
 
 	return (
 		<DropdownMenu>
@@ -33,11 +33,9 @@ const ProfileAvatar = () => {
 			<DropdownMenuContent align="end">
 				{!user?.id && (
 					<>
-						<Link to="/auth">
-							<DropdownMenuItem className="hover:cursor-pointer">
-								Sign In
-							</DropdownMenuItem>
-						</Link>
+						<DropdownMenuItem className="hover:cursor-pointer" onClick={login}>
+							Sign In
+						</DropdownMenuItem>
 						<DropdownMenuSeparator />
 					</>
 				)}

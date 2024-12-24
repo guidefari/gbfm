@@ -17,9 +17,9 @@ if (!domain) throw new Error("no custom domain provided, what you doing blud?");
 // }));
 
 export const auth = new sst.aws.Auth("Auth", {
-	authenticator: {
+	authorizer: {
 		link: [email, secret.SquealDBUrl, UserTable],
-		handler: "./packages/functions/src/auth.handler",
+		handler: "./packages/functions/src/openauth.handler",
 		permissions: [
 			{
 				actions: ["ses:SendEmail"],
@@ -27,6 +27,7 @@ export const auth = new sst.aws.Auth("Auth", {
 			},
 		],
 	},
+	forceUpgrade: "v2",
 });
 
 const apiFn = new sst.aws.Function("Api", {
