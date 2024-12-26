@@ -11,23 +11,23 @@ concurrency:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: linux
     permissions:
       id-token: write
       contents: read
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: actions/cache@v2
+      - uses: actions/cache@v4
         with:
-          path: |
-            .sst
-          key: ${{ runner.os }}-sst
+            path: |
+              ~/.bun/install/cache
+            key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
 
-      - uses: oven-sh/setup-bun@v1
+      - uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
@@ -36,7 +36,7 @@ jobs:
           node-version-file: '.nvmrc'
 
       - name: Configure Production AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{secrets.AWS_ROLE_ARN}}
           role-duration-seconds: 3600 #adjust as needed for your build time
