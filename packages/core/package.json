@@ -24,13 +24,11 @@
     "@aws-sdk/s3-request-presigner": "^3.645.0",
     "@hono/valibot-validator": "^0.3.0",
     "@hono/zod-openapi": "^0.16.0",
-    "@mdx-js/mdx": "^3.0.1",
     "@types/bun": "^1.1.14",
     "dotenv": "^16.4.5",
     "dotenv-expand": "^11.0.6",
     "drizzle-kit": "0.27.1",
     "drizzle-orm": "0.36.0",
-    "gray-matter": "^4.0.3",
     "hono": "^4.5.10",
     "pg": "^8.13.1"
   }

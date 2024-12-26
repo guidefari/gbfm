@@ -1,77 +1,62 @@
-import {
-	EditorProvider,
-	FloatingMenu,
-	BubbleMenu,
-	useEditor,
-	EditorContent,
-} from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
-import Link from "@tiptap/extension-link";
-import { useEffect, useState } from "react";
-import { Button } from "./ui/button";
-
-const extensions = [StarterKit, Link];
-
-const content = "<p>Hello World!</p>";
+import { useState } from "react";
+import ReactMde from "react-mde";
+import { MDXRendrr } from "./MDXRendrr";
+import "react-mde/lib/styles/css/react-mde-all.css";
+import { compile } from "@mdx-js/mdx";
 
 export function Editor() {
-	const [isEditable, setIsEditable] = useState(true);
-	const editor = useEditor({
-		extensions,
-		content,
-	});
+	const [value, setValue] = useState("**Hello world!!!**");
+	const [selectedTab, setSelectedTab] = useState<"write" | "preview">("write");
 
-	useEffect(() => {
-		if (editor) {
-			editor.setEditable(isEditable);
-		}
-	}, [isEditable, editor]);
+	const save = async function* (data: ArrayBuffer) {
+		// Promise that waits for "time" milliseconds
+		const wait = (time: number) =>
+			new Promise<void>((resolve) => {
+				setTimeout(resolve, time);
+			});
+
+		// Upload "data" to your server
+		// Use XMLHttpRequest.send to send a FormData object containing
+		// "data"
+		// Check this question: https://stackoverflow.com/questions/18055422/how-to-receive-php-image-data-over-copy-n-paste-javascript-with-xmlhttprequest
+
+		await wait(2000);
+		// yields the URL that should be inserted in the markdown
+		yield "https://picsum.photos/300";
+		await wait(2000);
+
+		// returns true meaning that the save was successful
+		return true;
+	};
 
 	return (
-		<>
-			<EditorContent className="" editor={editor} height={500} />
-			<FloatingMenu className="" editor={editor}>
-				This is the floating menu
-			</FloatingMenu>
-			{editor && (
-				<BubbleMenu editor={editor} tippyOptions={{ duration: 100 }}>
-					<div className="flex flex-row gap-2 p-2 bg-white rounded-md bubble-menu">
-						<Button
-							type="button"
-							onClick={() => editor.chain().focus().toggleBold().run()}
-							className={editor.isActive("bold") ? "is-active" : ""}
-						>
-							Bold
-						</Button>
-						<Button
-							type="button"
-							onClick={() => editor.chain().focus().toggleItalic().run()}
-							className={editor.isActive("italic") ? "is-active" : ""}
-						>
-							Italic
-						</Button>
-						<Button
-							type="button"
-							onClick={() => editor.chain().focus().toggleStrike().run()}
-							className={editor.isActive("strike") ? "is-active" : ""}
-						>
-							Strike
-						</Button>
-						<Button
-							type="button"
-							onClick={() => {
-								const url = prompt("Enter the URL");
-								if (url) {
-									editor.chain().focus().setLink({ href: url }).run();
-								}
-							}}
-							className={editor.isActive("link") ? "is-active" : ""}
-						>
-							Link
-						</Button>
-					</div>
-				</BubbleMenu>
-			)}
-		</>
+		<ReactMde
+			value={value}
+			onChange={setValue}
+			selectedTab={selectedTab}
+			onTabChange={setSelectedTab}
+			generateMarkdownPreview={async (markdown) => {
+				const compiled = await compileMdx(markdown);
+				return Promise.resolve(<MDXRendrr mdxString={compiled} />);
+			}}
+			childProps={{
+				writeButton: {
+					tabIndex: -1,
+				},
+			}}
+			paste={{
+				saveImage: save,
+			}}
+		/>
 	);
+}
+
+async function compileMdx(markdown: string) {
+	// console.log("markdown:", markdown);
+	// const gray = matter(markdown);
+	// console.log("gray:", gray);
+	const compiled = await compile(markdown, {
+		outputFormat: "function-body",
+	});
+	return compiled.toString();
 }
