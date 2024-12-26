@@ -8,6 +8,7 @@ import {
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import { useEffect, useState } from "react";
+import { Button } from "./ui/button";
 
 const extensions = [StarterKit, Link];
 
@@ -34,29 +35,29 @@ export function Editor() {
 			</FloatingMenu>
 			{editor && (
 				<BubbleMenu editor={editor} tippyOptions={{ duration: 100 }}>
-					<div className="bubble-menu">
-						<button
+					<div className="flex flex-row gap-2 p-2 bg-white rounded-md bubble-menu">
+						<Button
 							type="button"
 							onClick={() => editor.chain().focus().toggleBold().run()}
 							className={editor.isActive("bold") ? "is-active" : ""}
 						>
 							Bold
-						</button>
-						<button
+						</Button>
+						<Button
 							type="button"
 							onClick={() => editor.chain().focus().toggleItalic().run()}
 							className={editor.isActive("italic") ? "is-active" : ""}
 						>
 							Italic
-						</button>
-						<button
+						</Button>
+						<Button
 							type="button"
 							onClick={() => editor.chain().focus().toggleStrike().run()}
 							className={editor.isActive("strike") ? "is-active" : ""}
 						>
 							Strike
-						</button>
-						<button
+						</Button>
+						<Button
 							type="button"
 							onClick={() => {
 								const url = prompt("Enter the URL");
@@ -67,7 +68,7 @@ export function Editor() {
 							className={editor.isActive("link") ? "is-active" : ""}
 						>
 							Link
-						</button>
+						</Button>
 					</div>
 				</BubbleMenu>
 			)}
