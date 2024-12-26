@@ -9,14 +9,14 @@ import {
 } from "@aws-sdk/lib-dynamodb";
 import { createID } from "@/util/id";
 import { Resource } from "sst/resource";
-import { sessions } from "../../../functions/src/sessions";
+import { subjects } from "../../../functions/src/subjects";
 
-const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+const dynamoClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 export class DynamoUserRepository implements User.IUserRepository {
 	async create(email: string) {
 		const id = createID("user");
-		const write = await client.send(
+		const write = await dynamoClient.send(
 			new PutCommand({
 				TableName: Resource.UserTable.name,
 				Item: { id, email },
@@ -31,7 +31,7 @@ export class DynamoUserRepository implements User.IUserRepository {
 
 	async fromID(id: string) {
 		// Implement DynamoDB logic to fetch a user by ID
-		const user = await client.send(
+		const user = await dynamoClient.send(
 			new GetCommand({
 				TableName: Resource.UserTable.name,
 				Key: { id },
@@ -44,7 +44,7 @@ export class DynamoUserRepository implements User.IUserRepository {
 
 	async fromEmail(email: string) {
 		// Implement DynamoDB logic to fetch a user by email
-		const user = await client.send(
+		const user = await dynamoClient.send(
 			new QueryCommand({
 				TableName: Resource.UserTable.name,
 				IndexName: "EmailIndex",
@@ -73,7 +73,7 @@ export class DynamoUserRepository implements User.IUserRepository {
 			{} as Record<string, unknown>,
 		);
 
-		const update = await client.send(
+		const update = await dynamoClient.send(
 			new UpdateCommand({
 				TableName: Resource.UserTable.name,
 				Key: { id: user.id },
@@ -92,10 +92,15 @@ export class DynamoUserRepository implements User.IUserRepository {
 	}
 
 	async fromToken(token: string) {
-		const session = await sessions.verify(token);
-		if (session.type === "account") {
-			return session.properties;
-		}
-		return null;
+		return token;
+		// const session = await AuthClient_API.verify(subjects, token);
+
+		// if (session.err) {
+		// 	console.error({ "session.err": session.err });
+		// 	console.error("No session");
+		// 	return null;
+		// }
+
+		// return session.subject.properties;
 	}
 }

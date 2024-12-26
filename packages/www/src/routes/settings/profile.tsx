@@ -4,10 +4,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthContext } from "@/contexts/AuthContext";
-// import { getUser, validateLoginState } from "@/services/auth";
 import { readFromLocalStorage } from "@guide/utils";
-// import type { User } from "lucia";
-import type { GetServerSidePropsContext } from "next";
 
 export const Route = createFileRoute("/settings/profile")({
 	component: Profile,

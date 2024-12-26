@@ -1,6 +1,8 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { MicroPost } from "@gbfm/core/microPost/index";
 import { User } from "@gbfm/core/user/index.ts";
+import { AuthClient_API } from ".";
+import { subjects } from "../subjects";
 
 export namespace MicroPostApi {
 	export const route = new OpenAPIHono()
@@ -32,11 +34,14 @@ export namespace MicroPostApi {
 				if (!token) {
 					return c.json({ error: "No token provided" }, 401);
 				}
-				const user = await User.fromToken(token);
-				if (!user || !user.id) {
+				const user = await AuthClient_API.verify(subjects, token);
+				if (!user || user.err) {
 					return c.json({ error: "Invalid token" }, 401);
 				}
-				const microPost = await MicroPost.create(payload.content, user.id);
+				const microPost = await MicroPost.create(
+					payload.content,
+					user.subject.properties.id,
+				);
 				return c.json(microPost, 201);
 			},
 		)

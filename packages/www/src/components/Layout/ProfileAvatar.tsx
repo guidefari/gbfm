@@ -9,9 +9,10 @@ import {
 import { useAuthContext } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
+import { login } from "@/lib/http";
 
 const ProfileAvatar = () => {
-	const { user, onSignOut, login } = useAuthContext();
+	const { user, onSignOut } = useAuthContext();
 
 	return (
 		<DropdownMenu>

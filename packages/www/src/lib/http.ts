@@ -5,27 +5,116 @@ import type {
 	TrackAPIResponse,
 } from "@/types";
 import { useQuery } from "@tanstack/react-query";
-import { Cookies } from "./cookies";
+import { createClient } from "@openauthjs/openauth/client";
+import { toast } from "@/components/ui/use-toast";
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 export const AUTH_BASE_URL = import.meta.env.VITE_AUTH_BASE_URL;
 
-export async function fetcher(input: RequestInfo, init?: RequestInit) {
-	const isApiRequest = input.toString().includes(API_BASE_URL);
-	const sessionToken = Cookies.get(Cookies.sessionKey);
+export const AuthClient_Frontend = createClient({
+	clientID: "gbfm-www",
+	issuer: AUTH_BASE_URL,
+});
 
-	const headers = {
-		"Content-Type": "application/json",
-		...(isApiRequest && sessionToken
-			? { Authorization: `Bearer ${sessionToken}` }
-			: {}),
-	};
+let accessToken: string;
 
-	const res = await fetch(input, {
-		...init,
-		headers,
+export async function getToken() {
+	if (accessToken) return accessToken;
+
+	const refresh = localStorage.getItem("refresh");
+	if (!refresh) return;
+	const next = await AuthClient_Frontend.refresh(refresh, {
+		access: accessToken,
 	});
-	return res.json();
+	if (next.err) return;
+	if (!next.tokens) return accessToken;
+
+	localStorage.setItem("refresh", next.tokens.refresh);
+	accessToken = next.tokens.access;
+
+	return next.tokens.access;
+}
+
+export async function fetcher(input: RequestInfo, init?: RequestInit) {
+	try {
+		const isApiRequest = input.toString().includes(API_BASE_URL);
+		let sessionToken = await getToken();
+
+		const headers = {
+			"Content-Type": "application/json",
+			...(isApiRequest && sessionToken
+				? { Authorization: `Bearer ${sessionToken}` }
+				: {}),
+		};
+
+		let res = await fetch(input, {
+			...init,
+			headers,
+		});
+
+		if (res.status === 401 && isApiRequest) {
+			sessionToken = await getToken();
+			if (sessionToken) {
+				const retryHeaders = {
+					...headers,
+					Authorization: `Bearer ${sessionToken}`,
+				};
+				res = await fetch(input, {
+					...init,
+					headers: retryHeaders,
+				});
+			}
+		}
+
+		return res.json();
+	} catch (error) {
+		console.error(error);
+		throw error;
+	}
+}
+
+export async function AuthCallback(code: string, state: string) {
+	const challenge = JSON.parse(sessionStorage.getItem("challenge") ?? "");
+	console.log("challenge:", challenge);
+	if (!challenge) {
+		toast({
+			title: "No challenge found",
+			description: "Please try again",
+		});
+		return;
+	}
+
+	if (code) {
+		if (state === challenge.state && challenge.verifier) {
+			const exchanged = await AuthClient_Frontend.exchange(
+				code,
+				`${location.origin}/auth/callback`,
+				challenge.verifier,
+			);
+			console.log("exchanged:", exchanged);
+			if (!exchanged.err) {
+				accessToken = exchanged.tokens?.access;
+				localStorage.setItem("refresh", exchanged.tokens.refresh);
+			}
+		}
+		window.location.replace("/");
+	}
+}
+
+export async function login() {
+	const token = await getToken();
+	if (!token) {
+		const { challenge, url } = await AuthClient_Frontend.authorize(
+			`${location.origin}/auth/callback`,
+			"code",
+			{
+				pkce: true,
+			},
+		);
+		console.log("challenge:", challenge);
+		sessionStorage.setItem("challenge", JSON.stringify(challenge));
+		location.href = url;
+	}
 }
 
 export function useUser(id: string) {

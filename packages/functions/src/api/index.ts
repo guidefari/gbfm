@@ -6,6 +6,13 @@ import { AuthMiddleware } from "./auth.middleware";
 import { swaggerUI } from "@hono/swagger-ui";
 import { UserApi } from "./user";
 import { MicroPostApi } from "./microPost";
+import { Resource } from "sst";
+import { createClient } from "@openauthjs/openauth/client";
+
+export const AuthClient_API = createClient({
+	clientID: "api",
+	issuer: Resource.Auth.url,
+});
 
 const app = new OpenAPIHono();
 

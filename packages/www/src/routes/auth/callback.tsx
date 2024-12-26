@@ -1,13 +1,11 @@
 import { useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
-import { useAuthContext } from "@/contexts/AuthContext";
+import { AuthCallback } from "@/lib/http";
 export const Route = createFileRoute("/auth/callback")({
 	component: Component,
 });
 
 function Component() {
-	const { callback } = useAuthContext();
-	// biome-ignore lint/correctness/useExhaustiveDependencies: calm
 	useEffect(() => {
 		async function handleAuthCallback() {
 			const hash = new URLSearchParams(location.search.slice(1));
@@ -15,7 +13,7 @@ function Component() {
 			const state = hash.get("state");
 
 			if (code && state) {
-				callback(code, state);
+				AuthCallback(code, state);
 			}
 		}
 		handleAuthCallback();
