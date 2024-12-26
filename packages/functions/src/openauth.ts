@@ -16,7 +16,14 @@ const app = authorizer({
 		table: Resource.UserTable.name,
 	}),
 	subjects,
-	theme,
+	theme: {
+		primary: "hsl(194, 52%, 67%)",
+		background: "hsl(202, 61%, 22%)",
+		favicon: "https://www.goosebumps.fm/fav.png",
+		radius: "md",
+		title: `goosebumps.fm - ${Resource.App.stage} login`,
+		logo: "https://www.goosebumps.fm/fav.png",
+	},
 	providers: {
 		code: CodeAdapter<{ email: string }>(
 			CodeUI({
@@ -24,8 +31,8 @@ const app = authorizer({
 					await Email.send(
 						"auth",
 						claims.email,
-						`Goosebumps fm code: ${code}`,
-						`Your goosebumps fm login code is ${code}`,
+						`goosebumps.fm code: ${code}`,
+						`Your goosebumps.fm login code is ${code}`,
 					);
 				},
 			}),
@@ -37,8 +44,8 @@ const app = authorizer({
 					await Email.send(
 						"auth",
 						email,
-						`Goosebumps fm code: ${code}`,
-						`Your goosebumps fm login code is ${code}`,
+						`goosebumps.fm code: ${code}`,
+						`Your goosebumps.fm login code is ${code}`,
 					);
 				},
 			}),
