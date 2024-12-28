@@ -47,6 +47,10 @@ export function Editor() {
 			childProps={{
 				writeButton: {
 					tabIndex: -1,
+					// className: "focus:outline-none focus:underline",
+				},
+				previewButton: {
+					// className: "focus:outline-none focus:underline",
 				},
 			}}
 			paste={{
