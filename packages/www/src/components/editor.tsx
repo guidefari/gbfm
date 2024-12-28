@@ -1,7 +1,12 @@
 import { useState } from "react";
 import ReactMde from "react-mde";
+// import { getDefaultToolbarCommands } from "react-mde";
 import { MDXRendrr } from "./MDXRendrr";
-import "react-mde/lib/styles/css/react-mde-all.css";
+// import "react-mde/lib/styles/css/react-mde-all.css";
+import "react-mde/lib/styles/css/react-mde-toolbar.css";
+import "react-mde/lib/styles/css/react-mde.css";
+import "react-mde/lib/styles/css/react-mde-editor.css";
+import "./editor.css";
 import { compile } from "@mdx-js/mdx";
 
 export function Editor() {
@@ -47,6 +52,12 @@ export function Editor() {
 			paste={{
 				saveImage: save,
 			}}
+			classes={{
+				textArea: "focus:outline-none bg-transparent label:rounded-lg ",
+				toolbar: "bg-transparent border-none",
+				reactMde: "focus:outline-none border-none",
+			}}
+			toolbarCommands={[["link", "image"]]}
 		/>
 	);
 }

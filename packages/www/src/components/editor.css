@@ -1,0 +1,9 @@
+.react-mde .image-tip {
+	background-color: transparent;
+	color: inherit;
+	border: none;
+}
+
+.mde-header .mde-tabs button {
+	border-radius: 0.5rem;
+}
