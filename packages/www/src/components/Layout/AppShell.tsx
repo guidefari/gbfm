@@ -10,10 +10,10 @@ type Props = {
 
 export default function AppShell({ children }: Props) {
 	return (
-		<div className="flex w-full min-h-screen">
+		<div className="flex w-full min-h-dvh bg-background">
 			<DesktopSideNav />
 			<div className="flex flex-col flex-grow sm:gap-4 sm:py-4 sm:pl-14">
-				<header className="sticky top-0 z-30 flex items-center justify-between gap-4 px-4 h-14 sm:static sm:h-auto sm:bg-transparent sm:px-6">
+				<header className="sticky top-0 z-30 flex items-center justify-between gap-4 px-4 h-14 sm:static sm:h-auto sm:px-6">
 					<MobileNav />
 					<div className="flex justify-center sm:hidden">
 						<ProfileAvatar />
@@ -28,9 +28,11 @@ export default function AppShell({ children }: Props) {
 						/>
 					</div> */}
 				</header>
-				<main className="flex-1 px-4 sm:px-6 md:px-8 lg:px-10">{children}</main>
-				<footer className="px-5">
-					<div className="container flex flex-col w-full px-1 pt-4 mx-auto mb-4 leading-none border-gray-200 sm:mb-0 lg:px-5 lg:pt-10">
+				<main className="z-10 flex-1 px-4 sm:px-6 md:px-8 lg:px-10 bg-background">
+					{children}
+				</main>
+				<footer className="sticky bottom-0 z-0 px-5">
+					<div className="container flex flex-col w-full px-1 mx-auto leading-none border-gray-200 lg:px-5">
 						<h1 className="my-0 text-5xl font-bold text-right md:text-8xl xl:text-9xl">
 							goosebumps.
 							<br />
