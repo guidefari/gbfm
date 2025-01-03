@@ -7,7 +7,6 @@ import { PasswordAdapter } from "@openauthjs/openauth/adapter/password";
 import { CodeUI } from "@openauthjs/openauth/ui/code";
 import { PasswordUI } from "@openauthjs/openauth/ui/password";
 import { Email } from "@gbfm/core/email/index.ts";
-import { THEME_TERMINAL as theme } from "@openauthjs/openauth/ui/theme";
 import { DynamoStorage } from "@openauthjs/openauth/storage/dynamo";
 import { Resource } from "sst";
 

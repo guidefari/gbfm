@@ -19,7 +19,7 @@ if (!domain) throw new Error("no custom domain provided, what you doing blud?");
 export const auth = new sst.aws.Auth("Auth", {
 	authorizer: {
 		link: [email, secret.SquealDBUrl, UserTable],
-		handler: "./packages/functions/src/openauth.handler",
+		handler: "./backend/src/openauth.handler",
 		permissions: [
 			{
 				actions: ["ses:SendEmail"],
@@ -31,7 +31,7 @@ export const auth = new sst.aws.Auth("Auth", {
 });
 
 const apiFn = new sst.aws.Function("Api", {
-	handler: "./packages/functions/src/api/index.handler",
+	handler: "./backend/src/api/index.handler",
 	streaming: !$dev,
 	url: true,
 	link: [...allSecrets, bucket, auth, UserTable, ContentTable],
@@ -42,7 +42,7 @@ export const api = new sst.cloudflare.Worker("ApiWorker", {
 	// live: false,
 	// link: [...allSecrets, bucket, auth],
 	domain: `api.${domain}`,
-	handler: "./packages/workers/src/proxy.ts",
+	handler: "./backend/src/proxy.ts",
 	environment: {
 		ORIGIN_URL: apiFn.url,
 		NO_CACHE: String(isPermanentStage),
@@ -61,7 +61,7 @@ export const authRouter = new sst.cloudflare.Worker("AuthWorkerCF", {
 	url: true,
 	dev: false,
 	domain: `auth.${domain}`,
-	handler: "./packages/workers/src/proxy.ts",
+	handler: "./backend/src/proxy.ts",
 	environment: {
 		ORIGIN_URL: auth.url,
 	},

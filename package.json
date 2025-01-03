@@ -10,7 +10,9 @@
     "deploy:prod": "sst deploy --stage=prod"
   },
   "workspaces": [
-    "packages/*"
+    "backend",
+    "core",
+    "web"
   ],
   "dependencies": {
     "@effect/platform": "latest",

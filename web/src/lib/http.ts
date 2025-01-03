@@ -35,10 +35,19 @@ export async function getToken() {
 	return next.tokens.access;
 }
 
-export async function fetcher(input: RequestInfo, init?: RequestInit) {
+type CustomRequestInit = RequestInit & {
+	skipAuth?: boolean;
+};
+
+export async function fetcher<T>(input: RequestInfo, init?: CustomRequestInit) {
 	try {
-		const isApiRequest = input.toString().includes(API_BASE_URL);
-		let sessionToken = await getToken();
+		let sessionToken: string | undefined;
+		const isApiRequest =
+			input.toString().includes(API_BASE_URL) && !init?.skipAuth;
+
+		if (isApiRequest) {
+			sessionToken = await getToken();
+		}
 
 		const headers = {
 			"Content-Type": "application/json",
@@ -66,7 +75,7 @@ export async function fetcher(input: RequestInfo, init?: RequestInit) {
 			}
 		}
 
-		return res.json();
+		return res.json() as Promise<T>;
 	} catch (error) {
 		console.error(error);
 		throw error;
@@ -197,6 +206,7 @@ export function useSpotifyProxy<T extends SpotifyContentType>({
 			fetcher(`${API_BASE_URL}/spotify/${spotifyContentType}`, {
 				method: "POST",
 				body: JSON.stringify({ id }),
+				skipAuth: true,
 			}),
 	});
 	return {

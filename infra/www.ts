@@ -2,7 +2,7 @@ import { api, authRouter } from "./api";
 import { domain } from "./dns";
 
 export const www = new sst.aws.StaticSite("gbfm-www", {
-	path: "./packages/www",
+	path: "./web",
 	build: {
 		command: "bun run build",
 		output: "dist",

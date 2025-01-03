@@ -62,3 +62,10 @@ export namespace MDXArchive {
 		return { gray, compiled: compiled.value };
 	};
 }
+
+export const compileMdx = async (markdown: string) => {
+	const compiled = await compile(markdown, {
+		outputFormat: "function-body",
+	});
+	return compiled.toString();
+};

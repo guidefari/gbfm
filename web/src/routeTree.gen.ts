@@ -16,6 +16,7 @@ import { Route as rootRoute } from './routes/__root'
 import { Route as TodoImport } from './routes/todo'
 import { Route as SubscribeImport } from './routes/subscribe'
 import { Route as PostImport } from './routes/post'
+import { Route as MicroImport } from './routes/micro'
 import { Route as ChangelogImport } from './routes/changelog'
 import { Route as ContentListImport } from './routes/_contentList'
 import { Route as IndexImport } from './routes/index'
@@ -25,7 +26,6 @@ import { Route as AuthVerifyImport } from './routes/auth/verify'
 import { Route as AuthCallbackImport } from './routes/auth/callback'
 import { Route as ContentListWordsImport } from './routes/_contentList.words'
 import { Route as ContentListMixesImport } from './routes/_contentList.mixes'
-import { Route as ContentListMicroImport } from './routes/_contentList.micro'
 import { Route as ContentListLabelsImport } from './routes/_contentList.labels'
 import { Route as ReadArchetypeIdImport } from './routes/read.$archetype.$id'
 
@@ -47,6 +47,11 @@ const SubscribeRoute = SubscribeImport.update({
 
 const PostRoute = PostImport.update({
   path: '/post',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const MicroRoute = MicroImport.update({
+  path: '/micro',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -100,11 +105,6 @@ const ContentListMixesRoute = ContentListMixesImport.update({
   getParentRoute: () => ContentListRoute,
 } as any)
 
-const ContentListMicroRoute = ContentListMicroImport.update({
-  path: '/micro',
-  getParentRoute: () => ContentListRoute,
-} as any)
-
 const ContentListLabelsRoute = ContentListLabelsImport.update({
   path: '/labels',
   getParentRoute: () => ContentListRoute,
@@ -140,6 +140,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ChangelogImport
       parentRoute: typeof rootRoute
     }
+    '/micro': {
+      id: '/micro'
+      path: '/micro'
+      fullPath: '/micro'
+      preLoaderRoute: typeof MicroImport
+      parentRoute: typeof rootRoute
+    }
     '/post': {
       id: '/post'
       path: '/post'
@@ -166,13 +173,6 @@ declare module '@tanstack/react-router' {
       path: '/labels'
       fullPath: '/labels'
       preLoaderRoute: typeof ContentListLabelsImport
-      parentRoute: typeof ContentListImport
-    }
-    '/_contentList/micro': {
-      id: '/_contentList/micro'
-      path: '/micro'
-      fullPath: '/micro'
-      preLoaderRoute: typeof ContentListMicroImport
       parentRoute: typeof ContentListImport
     }
     '/_contentList/mixes': {
@@ -238,14 +238,12 @@ declare module '@tanstack/react-router' {
 
 interface ContentListRouteChildren {
   ContentListLabelsRoute: typeof ContentListLabelsRoute
-  ContentListMicroRoute: typeof ContentListMicroRoute
   ContentListMixesRoute: typeof ContentListMixesRoute
   ContentListWordsRoute: typeof ContentListWordsRoute
 }
 
 const ContentListRouteChildren: ContentListRouteChildren = {
   ContentListLabelsRoute: ContentListLabelsRoute,
-  ContentListMicroRoute: ContentListMicroRoute,
   ContentListMixesRoute: ContentListMixesRoute,
   ContentListWordsRoute: ContentListWordsRoute,
 }
@@ -258,11 +256,11 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '': typeof ContentListRouteWithChildren
   '/changelog': typeof ChangelogRoute
+  '/micro': typeof MicroRoute
   '/post': typeof PostRoute
   '/subscribe': typeof SubscribeRoute
   '/todo': typeof TodoRoute
   '/labels': typeof ContentListLabelsRoute
-  '/micro': typeof ContentListMicroRoute
   '/mixes': typeof ContentListMixesRoute
   '/words': typeof ContentListWordsRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -277,11 +275,11 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '': typeof ContentListRouteWithChildren
   '/changelog': typeof ChangelogRoute
+  '/micro': typeof MicroRoute
   '/post': typeof PostRoute
   '/subscribe': typeof SubscribeRoute
   '/todo': typeof TodoRoute
   '/labels': typeof ContentListLabelsRoute
-  '/micro': typeof ContentListMicroRoute
   '/mixes': typeof ContentListMixesRoute
   '/words': typeof ContentListWordsRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -297,11 +295,11 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_contentList': typeof ContentListRouteWithChildren
   '/changelog': typeof ChangelogRoute
+  '/micro': typeof MicroRoute
   '/post': typeof PostRoute
   '/subscribe': typeof SubscribeRoute
   '/todo': typeof TodoRoute
   '/_contentList/labels': typeof ContentListLabelsRoute
-  '/_contentList/micro': typeof ContentListMicroRoute
   '/_contentList/mixes': typeof ContentListMixesRoute
   '/_contentList/words': typeof ContentListWordsRoute
   '/auth/callback': typeof AuthCallbackRoute
@@ -318,11 +316,11 @@ export interface FileRouteTypes {
     | '/'
     | ''
     | '/changelog'
+    | '/micro'
     | '/post'
     | '/subscribe'
     | '/todo'
     | '/labels'
-    | '/micro'
     | '/mixes'
     | '/words'
     | '/auth/callback'
@@ -336,11 +334,11 @@ export interface FileRouteTypes {
     | '/'
     | ''
     | '/changelog'
+    | '/micro'
     | '/post'
     | '/subscribe'
     | '/todo'
     | '/labels'
-    | '/micro'
     | '/mixes'
     | '/words'
     | '/auth/callback'
@@ -354,11 +352,11 @@ export interface FileRouteTypes {
     | '/'
     | '/_contentList'
     | '/changelog'
+    | '/micro'
     | '/post'
     | '/subscribe'
     | '/todo'
     | '/_contentList/labels'
-    | '/_contentList/micro'
     | '/_contentList/mixes'
     | '/_contentList/words'
     | '/auth/callback'
@@ -374,6 +372,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ContentListRoute: typeof ContentListRouteWithChildren
   ChangelogRoute: typeof ChangelogRoute
+  MicroRoute: typeof MicroRoute
   PostRoute: typeof PostRoute
   SubscribeRoute: typeof SubscribeRoute
   TodoRoute: typeof TodoRoute
@@ -389,6 +388,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ContentListRoute: ContentListRouteWithChildren,
   ChangelogRoute: ChangelogRoute,
+  MicroRoute: MicroRoute,
   PostRoute: PostRoute,
   SubscribeRoute: SubscribeRoute,
   TodoRoute: TodoRoute,
@@ -415,6 +415,7 @@ export const routeTree = rootRoute
         "/",
         "/_contentList",
         "/changelog",
+        "/micro",
         "/post",
         "/subscribe",
         "/todo",
@@ -433,13 +434,15 @@ export const routeTree = rootRoute
       "filePath": "_contentList.tsx",
       "children": [
         "/_contentList/labels",
-        "/_contentList/micro",
         "/_contentList/mixes",
         "/_contentList/words"
       ]
     },
     "/changelog": {
       "filePath": "changelog.tsx"
+    },
+    "/micro": {
+      "filePath": "micro.tsx"
     },
     "/post": {
       "filePath": "post.tsx"
@@ -452,10 +455,6 @@ export const routeTree = rootRoute
     },
     "/_contentList/labels": {
       "filePath": "_contentList.labels.tsx",
-      "parent": "/_contentList"
-    },
-    "/_contentList/micro": {
-      "filePath": "_contentList.micro.tsx",
       "parent": "/_contentList"
     },
     "/_contentList/mixes": {

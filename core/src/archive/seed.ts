@@ -59,16 +59,17 @@ const readMicro = await readContentsOfFilesInFolder("micro");
 // 	"./src/archive/micro.json",
 // 	JSON.stringify(readMicro, null, 2),
 // );
-console.log("readMicro:", readMicro);
-const apiUrl = `https://api.local.staging.goosebumps.fm/micro-posts/seed`;
+// console.log("readMicro:", readMicro);
+const apiUrl = `https://api.goosebumps.fm/micro-posts/seed`;
 
 try {
-	await fetch(apiUrl, {
+	const res = await fetch(apiUrl, {
 		method: "POST",
 		body: JSON.stringify(readMicro),
 	});
+	console.log("res:", res);
 } catch (error) {
-	// console.error("error:", error);
+	console.error("error:", error);
 }
 
 // console.log("microPosts:", readMicro);

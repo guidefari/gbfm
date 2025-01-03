@@ -5,6 +5,7 @@ import { fn } from "@/util/fn";
 import { DynamoWrapper } from "@/util/dynamo.wrapper";
 import { Resource } from "sst";
 import { readContentsOfFilesInFolder } from "@/archive/seed";
+import { compileMdx } from "@/mdx";
 
 export namespace MicroPost {
 	export const MicroPostSchema = z.object({
@@ -34,7 +35,22 @@ export namespace MicroPost {
 	};
 
 	export const listAll = async () => {
-		return DynamoWrapper.listAll<MicroPost>(Resource.ContentTable.name);
+		const microPosts = await DynamoWrapper.listAll<MicroPost[]>(
+			Resource.ContentTable.name,
+		);
+		return Promise.all(
+			microPosts.map(async (microPost) => {
+				return {
+					...microPost,
+					content: await compileMdx(microPost.content),
+				};
+			}),
+		);
+		// return compiled;
+		// return DynamoWrapper.listAllByPrefix<MicroPost>({
+		// 	tableName: Resource.ContentTable.name,
+		// 	contentPrefix: "micro",
+		// });
 	};
 
 	export const seed = async (input: MicroPost[]) => {

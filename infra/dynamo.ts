@@ -7,6 +7,7 @@ export const ContentTable = new sst.aws.Dynamo("ContentTable", {
 	primaryIndex: { hashKey: "authorId", rangeKey: "contentId" },
 	globalIndexes: {
 		CreatedAtIndex: { hashKey: "authorId", rangeKey: "createdAt" },
+		ContentTypeIndex: { hashKey: "contentId", rangeKey: "authorId" },
 	},
 });
 
