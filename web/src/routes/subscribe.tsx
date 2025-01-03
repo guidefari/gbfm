@@ -24,14 +24,6 @@ function Newslater() {
 									action="https://buttondown.email/api/emails/embed-subscribe/guidefari"
 									method="post"
 									target="popupwindow"
-									onSubmit={async () => {
-										"use server";
-
-										window.open(
-											"https://buttondown.email/goosebumpsfm",
-											"popupwindow",
-										);
-									}}
 									className="flex-row md:flex"
 								>
 									<input
