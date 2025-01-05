@@ -1,0 +1,21 @@
+meta {
+  name: blu
+  type: http
+  seq: 4
+}
+
+post {
+  url: https://api.local.staging.goosebumps.fm/bsky/feed
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+      //"page": 1,
+      //"pageSize": 10,
+      //"total": 100,
+      "actor": "guidefari.com"
+  }
+  
+}

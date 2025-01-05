@@ -1,5 +1,4 @@
 import { createID } from "@/util/id";
-import type { PaginationInput } from "../util/pagination.types";
 import { z } from "zod";
 import { fn } from "@/util/fn";
 import { DynamoWrapper } from "@/util/dynamo.wrapper";
