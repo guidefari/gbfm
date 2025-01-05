@@ -6,13 +6,11 @@ const nanoid = customAlphabet(
 const lowercase = customAlphabet("123456789abcdefghijkmnopqrstuvwxyz");
 
 const prefixes = {
-	account: "act",
 	user: "usr",
-	shop: "shp",
-	product: "prd",
-	file: "fil",
-	collection: "col",
 	microPost: "micro",
+	post: "post",
+	label: "lbl",
+	mix: "mix",
 } as const;
 
 export function createID(prefix: keyof typeof prefixes): string {

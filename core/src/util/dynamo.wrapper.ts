@@ -33,15 +33,21 @@ export namespace DynamoWrapper {
 	export const seed = async <T extends object>(
 		tableName: string,
 		input: T[],
-		schema: ZodSchema<T>,
 	) => {
-		const command = new BatchWriteCommand({
-			RequestItems: {
-				[tableName]: input.map((item) => ({ PutRequest: { Item: item } })),
-			},
-		});
-		const response = await client.send(command);
-		return response.UnprocessedItems;
+		const batchSize = 25;
+		for (let i = 0; i < input.length; i += batchSize) {
+			const batch = input.slice(i, i + batchSize);
+			const command = new BatchWriteCommand({
+				RequestItems: {
+					[tableName]: batch.map((item) => ({
+						PutRequest: { Item: item },
+					})),
+				},
+			});
+			await client.send(command);
+		}
+
+		return true;
 	};
 
 	export const listAll = async <T extends object>(tableName: string) => {

@@ -56,11 +56,7 @@ export namespace MicroPost {
 		const batchSize = 25;
 		for (let i = 0; i < input.length; i += batchSize) {
 			const batch = input.slice(i, i + batchSize);
-			await DynamoWrapper.seed(
-				Resource.ContentTable.name,
-				batch,
-				MicroPostSchema,
-			);
+			await DynamoWrapper.seed(Resource.ContentTable.name, batch);
 		}
 		return input;
 	};

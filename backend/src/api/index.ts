@@ -9,6 +9,7 @@ import { MicroPostApi } from "./microPost";
 import { Resource } from "sst";
 import { createClient } from "@openauthjs/openauth/client";
 import { BlueskyApi } from "./bsky";
+import { ContentApi } from "./content";
 
 export const AuthClient_API = createClient({
 	clientID: "api",
@@ -38,7 +39,8 @@ const routes = app
 	.route("/mdx-archive", MDXArchiveApi.route)
 	.route("/users", UserApi.route)
 	.route("/micro-posts", MicroPostApi.route)
-	.route("/bsky", BlueskyApi.route);
+	.route("/bsky", BlueskyApi.route)
+	.route("/content", ContentApi.route);
 
 app.doc("/doc", () => ({
 	openapi: "3.0.0",

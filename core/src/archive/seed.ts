@@ -38,14 +38,18 @@ export const readContentsOfFilesInFolder = async (
 			const content = await Bun.file(`${dir}/${file}`).text();
 			const gray = grayMatter(content);
 			const obj = {
-				contentId: createID("microPost"),
+				contentId: createID("mix"),
 				content: gray.content,
 				createdAt: new Date(gray.data.date).getTime() / 1000,
 				updatedAt: new Date(gray.data.date).getTime() / 1000,
 				authorId: "usr_6ehHmLSaGyn3Hq9z",
+				description: gray.data.description,
+				genres: gray.data.genres,
+				mp3Url: gray.data.mp3Url,
+				youtubeId: gray.data.youtubeId,
 			};
 
-			MicroPost.MicroPostSchema.parse(obj);
+			// MicroPost.MicroPostSchema.parse(obj);
 
 			return obj;
 		}),
@@ -54,18 +58,19 @@ export const readContentsOfFilesInFolder = async (
 	return results;
 };
 
-const readMicro = await readContentsOfFilesInFolder("micro");
+const readMixes = await readContentsOfFilesInFolder("mixes");
 // const writeToLocal = await Bun.write(
 // 	"./src/archive/micro.json",
 // 	JSON.stringify(readMicro, null, 2),
 // );
 // console.log("readMicro:", readMicro);
-const apiUrl = `https://api.goosebumps.fm/micro-posts/seed`;
+// const apiUrl = "https://api.goosebumps.fm/micro-posts/seed";
+const apiUrl = "https://api.local.staging.goosebumps.fm/content/seed";
 
 try {
 	const res = await fetch(apiUrl, {
 		method: "POST",
-		body: JSON.stringify(readMicro),
+		body: JSON.stringify(readMixes),
 	});
 	console.log("res:", res);
 } catch (error) {
