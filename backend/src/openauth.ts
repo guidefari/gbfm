@@ -60,9 +60,15 @@ const app = authorizer({
 
 	async success(ctx, input) {
 		User.setUserRepository("dynamo");
+		let email = "";
 
 		if (input.provider === "code") {
-			const email = input.claims.email.toLowerCase();
+			email = input.claims.email.toLowerCase();
+		} else if (input.provider === "password") {
+			email = input.email.toLowerCase();
+		}
+
+		if (input.provider === "code" || input.provider === "password") {
 			let user = await User.fromEmail(email);
 			if (!user) {
 				try {
