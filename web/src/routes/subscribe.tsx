@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/subscribe")({
-	component: Newslater,
+	component: Subscribe,
 });
 
-function Newslater() {
+function Subscribe() {
 	return (
 		<section className="mt-20 mb-8 text-center lg:text-left group">
 			<div className="flex flex-wrap justify-center">
