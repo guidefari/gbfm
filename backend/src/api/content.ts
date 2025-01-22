@@ -6,11 +6,15 @@ export namespace ContentApi {
 	export const route = new Hono()
 		.get("/", async (c) => {
 			const type = c.req.query("type");
-			console.log('type:', type)
 
-			const content = await DynamoWrapper.listAll(
+			if (!type) {
+				return c.json({ error: "type is required" }, 400);
+			}
+
+			const content = await DynamoWrapper.listByPrefix(
 				Resource.ContentTable.name,
-			).then((items) => items.filter((item) => item.contentId.includes(type)));
+				type,
+			);
 
 			return c.json({ content }, 200);
 		})

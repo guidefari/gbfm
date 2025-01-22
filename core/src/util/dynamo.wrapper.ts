@@ -58,4 +58,19 @@ export namespace DynamoWrapper {
 		const response = await client.send(command);
 		return response.Items ?? [];
 	};
+
+	export const listByPrefix = async <T extends object>(
+		tableName: string,
+		prefix: string,
+	) => {
+		const command = new ScanCommand({
+			TableName: tableName,
+			FilterExpression: "contains(contentId, :prefix)",
+			ExpressionAttributeValues: {
+				":prefix": prefix,
+			},
+		});
+		const response = await client.send(command);
+		return response.Items ?? [];
+	}
 }
