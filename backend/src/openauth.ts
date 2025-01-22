@@ -1,16 +1,18 @@
 import { handle } from "hono/aws-lambda";
 import { subjects } from "./subjects";
 import { User } from "@gbfm/core/user/index.ts";
-import { authorizer } from "@openauthjs/openauth";
-import { CodeAdapter } from "@openauthjs/openauth/adapter/code";
-import { PasswordAdapter } from "@openauthjs/openauth/adapter/password";
+import { issuer } from "@openauthjs/openauth";
+// import { CodeAdapter } from "@openauthjs/openauth/adapter/code";
+// import { PasswordAdapter } from "@openauthjs/openauth/adapter/password";
 import { CodeUI } from "@openauthjs/openauth/ui/code";
 import { PasswordUI } from "@openauthjs/openauth/ui/password";
 import { Email } from "@gbfm/core/email/index.ts";
 import { DynamoStorage } from "@openauthjs/openauth/storage/dynamo";
 import { Resource } from "sst";
+import { CodeProvider } from "@openauthjs/openauth/provider/code";
+import { PasswordProvider } from "@openauthjs/openauth/provider/password";
 
-const app = authorizer({
+const app = issuer({
 	storage: DynamoStorage({
 		table: Resource.UserTable.name,
 	}),
@@ -24,7 +26,7 @@ const app = authorizer({
 		logo: "https://www.goosebumps.fm/fav.png",
 	},
 	providers: {
-		code: CodeAdapter<{ email: string }>(
+		code: CodeProvider<{ email: string }>(
 			CodeUI({
 				sendCode: async (claims, code) => {
 					await Email.send(
@@ -36,7 +38,7 @@ const app = authorizer({
 				},
 			}),
 		),
-		password: PasswordAdapter(
+		password: PasswordProvider(
 			PasswordUI({
 				sendCode: async (email, code) => {
 					console.log(email, code);
