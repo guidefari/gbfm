@@ -4,9 +4,15 @@ import { Resource } from "sst";
 
 export namespace ContentApi {
 	export const route = new Hono()
-		.get("/", (c) => {
+		.get("/", async (c) => {
 			const type = c.req.query("type");
-			return c.json({ message: "content" }, 200);
+			console.log('type:', type)
+
+			const content = await DynamoWrapper.listAll(
+				Resource.ContentTable.name,
+			).then((items) => items.filter((item) => item.contentId.includes(type)));
+
+			return c.json({ content }, 200);
 		})
 		.post("/seed", async (c) => {
 			const content = await c.req.json();

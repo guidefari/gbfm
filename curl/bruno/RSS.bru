@@ -1,0 +1,15 @@
+meta {
+  name: RSS
+  type: http
+  seq: 5
+}
+
+get {
+  url: https://api.local.staging.goosebumps.fm/content
+  body: none
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
