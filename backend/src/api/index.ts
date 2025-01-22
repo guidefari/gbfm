@@ -10,6 +10,7 @@ import { Resource } from "sst";
 import { createClient } from "@openauthjs/openauth/client";
 import { BlueskyApi } from "./bsky";
 import { ContentApi } from "./content";
+import { RssApi } from "./rss";
 
 export const AuthClient_API = createClient({
 	clientID: "api",
@@ -40,7 +41,8 @@ const routes = app
 	.route("/users", UserApi.route)
 	.route("/micro-posts", MicroPostApi.route)
 	.route("/bsky", BlueskyApi.route)
-	.route("/content", ContentApi.route);
+	.route("/content", ContentApi.route)
+	.route("/rss", RssApi.route);
 
 app.doc("/doc", () => ({
 	openapi: "3.0.0",

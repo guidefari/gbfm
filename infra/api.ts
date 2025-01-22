@@ -52,4 +52,5 @@ export const authRouter = new sst.cloudflare.Worker("AuthWorkerCF", {
 export const outputs = {
 	auth: authRouter.url,
 	api: api.url,
+	swagger: api.url.apply(url => `${url}/swag`),
 };
