@@ -21,7 +21,6 @@ export namespace ContentApi {
 		.post("/seed", async (c) => {
 			const content = await c.req.json();
 			await DynamoWrapper.seed(Resource.ContentTable.name, content);
-			console.log("content:", content);
 			return c.json({ message: "content seeded" }, 200);
 		});
 }

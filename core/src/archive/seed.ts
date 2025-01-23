@@ -23,8 +23,6 @@ const posts = await readdir(dirs.posts, { recursive: true });
 const mixes = await readdir(dirs.mixes, { recursive: true });
 const labels = await readdir(dirs.labels, { recursive: true });
 
-// console.log(microPosts);
-// console.log(posts);
 
 export const readContentsOfFilesInFolder = async (
 	folder: keyof typeof dirs,
@@ -65,7 +63,6 @@ const readMixes = await readContentsOfFilesInFolder("mixes");
 // 	"./src/archive/micro.json",
 // 	JSON.stringify(readMicro, null, 2),
 // );
-// console.log("readMicro:", readMicro);
 // const apiUrl = "https://api.goosebumps.fm/micro-posts/seed";
 // const apiUrl = "https://api.local.staging.goosebumps.fm/content/seed";
 const prodApiUrl = "https://api.goosebumps.fm/content/seed";

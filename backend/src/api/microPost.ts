@@ -29,7 +29,6 @@ export namespace MicroPostApi {
 			}),
 			async (c) => {
 				const payload = c.req.valid("json");
-				console.log("payload:", payload);
 				const token = c.req.header("Authorization")?.split(" ")[1];
 				if (!token) {
 					return c.json({ error: "No token provided" }, 401);
@@ -81,8 +80,6 @@ export namespace MicroPostApi {
 			}),
 			async (c) => {
 				const microPosts = await c.req.json();
-				console.log("type:", typeof microPosts);
-				// console.log("microPosts:", microPosts);
 				// return c.json(microPosts, 200);
 				const seeded = await MicroPost.seed(microPosts);
 				return c.json({ success: true }, 200);

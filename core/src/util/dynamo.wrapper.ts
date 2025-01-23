@@ -59,6 +59,7 @@ export namespace DynamoWrapper {
 		return response.Items ?? [];
 	};
 
+	// TODO: pagination
 	export const listByPrefix = async <T extends object>(
 		tableName: string,
 		prefix: string,

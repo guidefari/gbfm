@@ -23,7 +23,6 @@ function Component() {
 			}),
 	});
 	// const { microPosts } = Route.useLoaderData();
-	// console.log("microPosts:", microPosts);
 	if (isFetching) {
 		return <div>Loading...</div>;
 	}

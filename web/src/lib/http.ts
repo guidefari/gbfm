@@ -84,7 +84,6 @@ export async function fetcher<T>(input: RequestInfo, init?: CustomRequestInit) {
 
 export async function AuthCallback(code: string, state: string) {
 	const challenge = JSON.parse(sessionStorage.getItem("challenge") ?? "");
-	console.log("challenge:", challenge);
 	if (!challenge) {
 		toast({
 			title: "No challenge found",
@@ -100,7 +99,6 @@ export async function AuthCallback(code: string, state: string) {
 				`${location.origin}/auth/callback`,
 				challenge.verifier,
 			);
-			console.log("exchanged:", exchanged);
 			if (!exchanged.err) {
 				accessToken = exchanged.tokens?.access;
 				localStorage.setItem("refresh", exchanged.tokens.refresh);
@@ -120,7 +118,6 @@ export async function login() {
 				pkce: true,
 			},
 		);
-		console.log("challenge:", challenge);
 		sessionStorage.setItem("challenge", JSON.stringify(challenge));
 		location.href = url;
 	}

@@ -13,7 +13,6 @@ export const Route = createFileRoute("/settings/profile")({
 export default function Profile() {
 	const { user } = useAuthContext();
 	// const user = await getUser();
-	console.log("user:", user);
 	// if (!user) {
 	// 	return {
 	// 		redirect: {
@@ -78,7 +77,6 @@ export default function Profile() {
 			console.error(error);
 		}
 
-		console.log("Form submitted");
 	};
 
 	return (

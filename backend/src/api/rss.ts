@@ -12,7 +12,6 @@ export namespace RssApi {
 
 			const DEFAULT_IMAGE_URL = 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'
 			const sortedContent = content.sort((a, b) => b.updatedAt - a.updatedAt);
-			console.log('sortedContent:', sortedContent[0])
 			const latestUpdated = new Date((sortedContent[0].updatedAt * 1000 || sortedContent[0].createdAt * 1000) + (2 * 60 * 60 * 1000));
 
 

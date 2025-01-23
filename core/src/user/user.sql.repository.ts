@@ -5,6 +5,9 @@ import { createID } from "@/util/id";
 import type { User } from ".";
 
 export class SqlUserRepository implements User.IUserRepository {
+	fromToken(token: string): Promise<User.PartialUser | null> {
+		throw new Error("Method not implemented.");
+	}
 	async update(user: User.PartialUser) {
 		console.info("Method not implemented.");
 		return user;
@@ -34,7 +37,6 @@ export class SqlUserRepository implements User.IUserRepository {
 	}
 
 	private serialize(input: typeof userTable.$inferSelect): User.PartialUser {
-		console.log("input:", input);
 		return {
 			id: input.id,
 			email: input.email,

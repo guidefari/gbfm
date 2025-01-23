@@ -108,9 +108,7 @@ export function Editor() {
 }
 
 async function compileMdx(markdown: string) {
-	// console.log("markdown:", markdown);
 	// const gray = matter(markdown);
-	// console.log("gray:", gray);
 	const compiled = await compile(markdown, {
 		outputFormat: "function-body",
 	});

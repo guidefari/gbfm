@@ -41,7 +41,6 @@ const app = issuer({
 		password: PasswordProvider(
 			PasswordUI({
 				sendCode: async (email, code) => {
-					console.log(email, code);
 					await Email.send(
 						"auth",
 						email,

@@ -44,7 +44,6 @@ export const MinimalCard: React.FC<Props> = ({
 	};
 
 	const artistsAndTitle = `${artists ?? null} ${" - "} ${title ?? null}`;
-	console.log(imageUrl);
 
 	return (
 		<div
