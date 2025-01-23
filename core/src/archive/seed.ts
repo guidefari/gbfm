@@ -32,12 +32,14 @@ export const readContentsOfFilesInFolder = async (
 	const dir = dirs[folder];
 
 	const files = await readdir(dir, { recursive: true });
+	console.log('files:', files[0])
 
 	const results = await Promise.all(
 		files.map(async (file) => {
 			const content = await Bun.file(`${dir}/${file}`).text();
 			const gray = grayMatter(content);
 			const obj = {
+				title: gray.data.title,
 				contentId: createID("mix"),
 				content: gray.content,
 				createdAt: new Date(gray.data.date).getTime() / 1000,
@@ -77,7 +79,6 @@ try {
 	console.error("error:", error);
 }
 
-// console.log("microPosts:", readMicro);
 
 interface PostFrontmatter {
 	title: string;
