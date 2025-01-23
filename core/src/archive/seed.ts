@@ -32,7 +32,6 @@ export const readContentsOfFilesInFolder = async (
 	const dir = dirs[folder];
 
 	const files = await readdir(dir, { recursive: true });
-	console.log('files:', files[0])
 
 	const results = await Promise.all(
 		files.map(async (file) => {
@@ -49,6 +48,7 @@ export const readContentsOfFilesInFolder = async (
 				genres: gray.data.genres,
 				mp3Url: gray.data.mp3Url,
 				youtubeId: gray.data.youtubeId,
+				slug: file.replace(".mdx", ""),
 			};
 
 			// MicroPost.MicroPostSchema.parse(obj);
@@ -67,10 +67,11 @@ const readMixes = await readContentsOfFilesInFolder("mixes");
 // );
 // console.log("readMicro:", readMicro);
 // const apiUrl = "https://api.goosebumps.fm/micro-posts/seed";
-const apiUrl = "https://api.local.staging.goosebumps.fm/content/seed";
+// const apiUrl = "https://api.local.staging.goosebumps.fm/content/seed";
+const prodApiUrl = "https://api.goosebumps.fm/content/seed";
 
 try {
-	const res = await fetch(apiUrl, {
+	const res = await fetch(prodApiUrl, {
 		method: "POST",
 		body: JSON.stringify(readMixes),
 	});
