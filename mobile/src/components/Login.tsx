@@ -17,7 +17,7 @@ export default function Login() {
     
   return (
 
-      <SafeAreaView className="flex-1 bg-gray-100">
+      <>
         <Stack.Screen
         options={{
             title: 'Login',
@@ -65,6 +65,8 @@ export default function Login() {
           </View>
 
           {/* Email Input */}
+          <View className='flex flex-col gap-4'>
+
           <TextInput
             className="p-2 mb-4 border border-gray-300 rounded-lg"
             placeholder="Email"
@@ -77,13 +79,14 @@ export default function Login() {
           {/* Password Input (Only show for password method) */}
           {loginMethod === 'password' && (
             <TextInput
-              className="p-2 mb-4 border border-gray-300 rounded-lg"
+              className="p-2 mb-4 border border-gray-300 rounded-lg "
               placeholder="Password"
               value={password}
               onChangeText={setPassword}
               secureTextEntry
             />
           )}
+          </View>
 
           {/* Login Button */}
           <TouchableOpacity 
@@ -104,7 +107,7 @@ export default function Login() {
             </TouchableOpacity>
           )}
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </>
 
   )
 }
