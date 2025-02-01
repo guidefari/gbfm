@@ -1,0 +1,22 @@
+{
+  "expo": {
+    "scheme": "gbfm",
+    "userInterfaceStyle": "automatic",
+    "orientation": "default",
+    "web": {
+      "output": "static"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "name": "mobile",
+    "slug": "mobile",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": true
+    },
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
