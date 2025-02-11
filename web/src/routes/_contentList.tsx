@@ -31,14 +31,14 @@ export function PostErrorComponent() {
 function Component() {
 	const archetype = Route.useLoaderData();
 
-	const { data, isLoading, error } = useArchetype(archetype);
+	const { data, isPending, error } = useArchetype(archetype);
 
 	return (
 		<div>
 			<h2>{capitalizeFirstLetter(archetype)}</h2>
-			{isLoading && <div>Loading...</div>}
+			{isPending && <div>Loading...</div>}
 			<ul className="mx-2">
-				{!isLoading &&
+				{!isPending &&
 					!error &&
 					data?.result?.map((post) => (
 						<li className="" key={post}>
@@ -46,7 +46,7 @@ function Component() {
 						</li>
 					))}
 			</ul>
-			{!isLoading && !error && data?.result?.length === 0 && (
+			{!isPending && !error && data?.result?.length === 0 && (
 				<>
 					<h3>No posts found</h3>
 					<p>

@@ -15,7 +15,7 @@ function Component() {
 	const [currentPage, setCurrentPage] = useState(1);
 	const itemsPerPage = 5;
 
-	const { data, isFetching } = useQuery({
+	const { data, isPending } = useQuery({
 		queryKey: ["microPosts"],
 		queryFn: () =>
 			fetcher<MicroPost.MicroPost[]>(`${API_BASE_URL}/micro-posts`, {
@@ -23,7 +23,7 @@ function Component() {
 			}),
 	});
 	// const { microPosts } = Route.useLoaderData();
-	if (isFetching) {
+	if (isPending) {
 		return <div>Loading...</div>;
 	}
 
