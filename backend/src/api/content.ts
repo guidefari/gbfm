@@ -18,6 +18,24 @@ export namespace ContentApi {
 
 			return c.json({ content }, 200);
 		})
+		.get("/:contentId", async (c) => {
+			const contentId = c.req.param("contentId");
+			
+			if (!contentId) {
+				return c.json({ error: "contentId is required" }, 400);
+			}
+
+			const content = await DynamoWrapper.readById(
+				Resource.ContentTable.name,
+				contentId
+			);
+
+			if (!content) {
+				return c.json({ error: "content not found" }, 404);
+			}
+
+			return c.json( content , 200);
+		})
 		.post("/seed", async (c) => {
 			const content = await c.req.json();
 			await DynamoWrapper.seed(Resource.ContentTable.name, content);

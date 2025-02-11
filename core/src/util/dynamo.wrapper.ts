@@ -1,3 +1,4 @@
+import { compileMdx } from "@/mdx";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
 	DynamoDBDocumentClient,
@@ -12,7 +13,6 @@ import { z, type ZodSchema } from "zod";
 
 const client = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
-// export namespace that implements DynamoWrapper
 export namespace DynamoWrapper {
 	export const create = async <T extends object>(
 		tableName: string,
@@ -59,7 +59,6 @@ export namespace DynamoWrapper {
 		return response.Items ?? [];
 	};
 
-	// TODO: pagination
 	export const listByPrefix = async <T extends object>(
 		tableName: string,
 		prefix: string,
@@ -72,6 +71,47 @@ export namespace DynamoWrapper {
 			},
 		});
 		const response = await client.send(command);
-		return response.Items ?? [];
-	}
+		const items = response.Items ?? [];
+
+		if (items.length > 0 && "content" in items[0]) {
+			return Promise.all(
+				items.map(async (item) => ({
+					...item,
+					content: await compileMdx(item.content),
+				})),
+			);
+		}
+
+		return items;
+	};
+
+	export const getContentListByPrefix = async () => {};
+
+	export const readById = async <T extends object>(
+		tableName: string,
+		contentId: string,
+	): Promise<T | null> => {
+		const command = new ScanCommand({
+			TableName: tableName,
+			FilterExpression: "contentId = :contentId",
+        ExpressionAttributeValues: {
+            ":contentId": contentId,
+        },
+		});
+
+		const response = await client.send(command);
+		const item = response.Items?.[0];
+
+		if (!item) return null;
+
+		// If the item has content field, compile MDX
+		if ("content" in item) {
+			return {
+				...item,
+				content: await compileMdx(item.content),
+			} as T;
+		}
+
+		return item as T;
+	};
 }
