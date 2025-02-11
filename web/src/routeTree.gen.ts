@@ -13,6 +13,7 @@ import { createFileRoute } from '@tanstack/react-router'
 // Import Routes
 
 import { Route as rootRoute } from './routes/__root'
+import { Route as WordsImport } from './routes/words'
 import { Route as TodoImport } from './routes/todo'
 import { Route as SubscribeImport } from './routes/subscribe'
 import { Route as PostImport } from './routes/post'
@@ -24,7 +25,6 @@ import { Route as AuthIndexImport } from './routes/auth/index'
 import { Route as SettingsProfileImport } from './routes/settings/profile'
 import { Route as AuthVerifyImport } from './routes/auth/verify'
 import { Route as AuthCallbackImport } from './routes/auth/callback'
-import { Route as ContentListWordsImport } from './routes/_contentList.words'
 import { Route as ContentListMixesImport } from './routes/_contentList.mixes'
 import { Route as ContentListLabelsImport } from './routes/_contentList.labels'
 import { Route as ReadArchetypeIdImport } from './routes/read.$archetype.$id'
@@ -34,6 +34,11 @@ import { Route as ReadArchetypeIdImport } from './routes/read.$archetype.$id'
 const ContentIndexLazyImport = createFileRoute('/content/')()
 
 // Create/Update Routes
+
+const WordsRoute = WordsImport.update({
+  path: '/words',
+  getParentRoute: () => rootRoute,
+} as any)
 
 const TodoRoute = TodoImport.update({
   path: '/todo',
@@ -93,11 +98,6 @@ const AuthVerifyRoute = AuthVerifyImport.update({
 const AuthCallbackRoute = AuthCallbackImport.update({
   path: '/auth/callback',
   getParentRoute: () => rootRoute,
-} as any)
-
-const ContentListWordsRoute = ContentListWordsImport.update({
-  path: '/words',
-  getParentRoute: () => ContentListRoute,
 } as any)
 
 const ContentListMixesRoute = ContentListMixesImport.update({
@@ -168,6 +168,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TodoImport
       parentRoute: typeof rootRoute
     }
+    '/words': {
+      id: '/words'
+      path: '/words'
+      fullPath: '/words'
+      preLoaderRoute: typeof WordsImport
+      parentRoute: typeof rootRoute
+    }
     '/_contentList/labels': {
       id: '/_contentList/labels'
       path: '/labels'
@@ -180,13 +187,6 @@ declare module '@tanstack/react-router' {
       path: '/mixes'
       fullPath: '/mixes'
       preLoaderRoute: typeof ContentListMixesImport
-      parentRoute: typeof ContentListImport
-    }
-    '/_contentList/words': {
-      id: '/_contentList/words'
-      path: '/words'
-      fullPath: '/words'
-      preLoaderRoute: typeof ContentListWordsImport
       parentRoute: typeof ContentListImport
     }
     '/auth/callback': {
@@ -239,13 +239,11 @@ declare module '@tanstack/react-router' {
 interface ContentListRouteChildren {
   ContentListLabelsRoute: typeof ContentListLabelsRoute
   ContentListMixesRoute: typeof ContentListMixesRoute
-  ContentListWordsRoute: typeof ContentListWordsRoute
 }
 
 const ContentListRouteChildren: ContentListRouteChildren = {
   ContentListLabelsRoute: ContentListLabelsRoute,
   ContentListMixesRoute: ContentListMixesRoute,
-  ContentListWordsRoute: ContentListWordsRoute,
 }
 
 const ContentListRouteWithChildren = ContentListRoute._addFileChildren(
@@ -260,9 +258,9 @@ export interface FileRoutesByFullPath {
   '/post': typeof PostRoute
   '/subscribe': typeof SubscribeRoute
   '/todo': typeof TodoRoute
+  '/words': typeof WordsRoute
   '/labels': typeof ContentListLabelsRoute
   '/mixes': typeof ContentListMixesRoute
-  '/words': typeof ContentListWordsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/settings/profile': typeof SettingsProfileRoute
@@ -279,9 +277,9 @@ export interface FileRoutesByTo {
   '/post': typeof PostRoute
   '/subscribe': typeof SubscribeRoute
   '/todo': typeof TodoRoute
+  '/words': typeof WordsRoute
   '/labels': typeof ContentListLabelsRoute
   '/mixes': typeof ContentListMixesRoute
-  '/words': typeof ContentListWordsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/settings/profile': typeof SettingsProfileRoute
@@ -299,9 +297,9 @@ export interface FileRoutesById {
   '/post': typeof PostRoute
   '/subscribe': typeof SubscribeRoute
   '/todo': typeof TodoRoute
+  '/words': typeof WordsRoute
   '/_contentList/labels': typeof ContentListLabelsRoute
   '/_contentList/mixes': typeof ContentListMixesRoute
-  '/_contentList/words': typeof ContentListWordsRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/settings/profile': typeof SettingsProfileRoute
@@ -320,9 +318,9 @@ export interface FileRouteTypes {
     | '/post'
     | '/subscribe'
     | '/todo'
+    | '/words'
     | '/labels'
     | '/mixes'
-    | '/words'
     | '/auth/callback'
     | '/auth/verify'
     | '/settings/profile'
@@ -338,9 +336,9 @@ export interface FileRouteTypes {
     | '/post'
     | '/subscribe'
     | '/todo'
+    | '/words'
     | '/labels'
     | '/mixes'
-    | '/words'
     | '/auth/callback'
     | '/auth/verify'
     | '/settings/profile'
@@ -356,9 +354,9 @@ export interface FileRouteTypes {
     | '/post'
     | '/subscribe'
     | '/todo'
+    | '/words'
     | '/_contentList/labels'
     | '/_contentList/mixes'
-    | '/_contentList/words'
     | '/auth/callback'
     | '/auth/verify'
     | '/settings/profile'
@@ -376,6 +374,7 @@ export interface RootRouteChildren {
   PostRoute: typeof PostRoute
   SubscribeRoute: typeof SubscribeRoute
   TodoRoute: typeof TodoRoute
+  WordsRoute: typeof WordsRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
   AuthVerifyRoute: typeof AuthVerifyRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
@@ -392,6 +391,7 @@ const rootRouteChildren: RootRouteChildren = {
   PostRoute: PostRoute,
   SubscribeRoute: SubscribeRoute,
   TodoRoute: TodoRoute,
+  WordsRoute: WordsRoute,
   AuthCallbackRoute: AuthCallbackRoute,
   AuthVerifyRoute: AuthVerifyRoute,
   SettingsProfileRoute: SettingsProfileRoute,
@@ -419,6 +419,7 @@ export const routeTree = rootRoute
         "/post",
         "/subscribe",
         "/todo",
+        "/words",
         "/auth/callback",
         "/auth/verify",
         "/settings/profile",
@@ -434,8 +435,7 @@ export const routeTree = rootRoute
       "filePath": "_contentList.tsx",
       "children": [
         "/_contentList/labels",
-        "/_contentList/mixes",
-        "/_contentList/words"
+        "/_contentList/mixes"
       ]
     },
     "/changelog": {
@@ -453,16 +453,15 @@ export const routeTree = rootRoute
     "/todo": {
       "filePath": "todo.tsx"
     },
+    "/words": {
+      "filePath": "words.tsx"
+    },
     "/_contentList/labels": {
       "filePath": "_contentList.labels.tsx",
       "parent": "/_contentList"
     },
     "/_contentList/mixes": {
       "filePath": "_contentList.mixes.tsx",
-      "parent": "/_contentList"
-    },
-    "/_contentList/words": {
-      "filePath": "_contentList.words.tsx",
       "parent": "/_contentList"
     },
     "/auth/callback": {
