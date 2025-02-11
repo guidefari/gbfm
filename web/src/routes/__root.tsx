@@ -7,7 +7,17 @@ import { Outlet, createRootRoute } from "@tanstack/react-router";
 import { Suspense, lazy } from "react";
 import AppShell from "@/components/Layout/AppShell";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient(
+	{
+		defaultOptions: {
+		  queries: {
+			staleTime: 2 * 60 * 1000, // 5 minutes
+			refetchOnWindowFocus: false,
+			retry: 1,
+		  },
+		},
+	  }
+);
 
 export const Route = createRootRoute({
 	component: () => (

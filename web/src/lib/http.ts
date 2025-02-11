@@ -39,7 +39,10 @@ type CustomRequestInit = RequestInit & {
 	skipAuth?: boolean;
 };
 
-export async function fetcher<T>(input: RequestInfo, init?: CustomRequestInit) {
+export async function fetcher<T>(
+	input: RequestInfo,
+	init: CustomRequestInit = { skipAuth: true },
+) {
 	try {
 		let sessionToken: string | undefined;
 		const isApiRequest =
@@ -140,7 +143,7 @@ type Response<T> = {
 };
 
 export function useArchetype(type: MDXArchiveTypes.archetype) {
-	const { data, error, isLoading } = useQuery<Response<string[]>, Error>({
+	const { data, error, isPending } = useQuery<Response<string[]>, Error>({
 		queryKey: ["mdx-archive", type],
 		queryFn: async () =>
 			fetcher(`${API_BASE_URL}/mdx-archive/list`, {
@@ -151,8 +154,8 @@ export function useArchetype(type: MDXArchiveTypes.archetype) {
 
 	return {
 		data: data,
-		isLoading,
 		error,
+		isPending
 	};
 }
 
@@ -205,6 +208,7 @@ export function useSpotifyProxy<T extends SpotifyContentType>({
 				body: JSON.stringify({ id }),
 				skipAuth: true,
 			}),
+			staleTime: 15 * 60 * 1000,
 	});
 	return {
 		data: data,
