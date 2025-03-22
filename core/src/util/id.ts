@@ -16,7 +16,7 @@ export const contentPrefixes = {
 export type ContentPrefixes = keyof typeof contentPrefixes
 
 export function createID(prefix: ContentPrefixes): string {
-	return [contentPrefixes[prefix], nanoid(16)].join("_");
+	return [contentPrefixes[prefix] ?? prefix, nanoid(16)].join("_");
 }
 
 export function createSlug(name: string) {

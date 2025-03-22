@@ -1,0 +1,29 @@
+meta {
+  name: Write Content
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{api_url}}/content
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "content": "Hi **bro**",
+    "updatedAt": 1739313449468,
+    "contentId": "post_1AszT1wsLNqGYr4Y",
+    "authorId": "usr_6ehHmLSaGyn3Hq9z",
+    "slug": "how-to",
+    "createdAt": 1739313449468
+  ,
+    "description": "A few features might not be obvious at first glance, let me show you around",
+    "tags": [
+      "tutorial"
+    ],
+    "title": "Testing APi",
+    "type": "post"
+  }
+}

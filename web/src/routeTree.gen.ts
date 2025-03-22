@@ -24,7 +24,6 @@ import { Route as IndexImport } from './routes/index'
 import { Route as AuthIndexImport } from './routes/auth/index'
 import { Route as SettingsProfileImport } from './routes/settings/profile'
 import { Route as AuthVerifyImport } from './routes/auth/verify'
-import { Route as AuthCallbackImport } from './routes/auth/callback'
 import { Route as ContentListMixesImport } from './routes/_contentList.mixes'
 import { Route as ContentListLabelsImport } from './routes/_contentList.labels'
 import { Route as ReadArchetypeIdImport } from './routes/read.$archetype.$id'
@@ -92,11 +91,6 @@ const SettingsProfileRoute = SettingsProfileImport.update({
 
 const AuthVerifyRoute = AuthVerifyImport.update({
   path: '/auth/verify',
-  getParentRoute: () => rootRoute,
-} as any)
-
-const AuthCallbackRoute = AuthCallbackImport.update({
-  path: '/auth/callback',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -189,13 +183,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContentListMixesImport
       parentRoute: typeof ContentListImport
     }
-    '/auth/callback': {
-      id: '/auth/callback'
-      path: '/auth/callback'
-      fullPath: '/auth/callback'
-      preLoaderRoute: typeof AuthCallbackImport
-      parentRoute: typeof rootRoute
-    }
     '/auth/verify': {
       id: '/auth/verify'
       path: '/auth/verify'
@@ -261,7 +248,6 @@ export interface FileRoutesByFullPath {
   '/words': typeof WordsRoute
   '/labels': typeof ContentListLabelsRoute
   '/mixes': typeof ContentListMixesRoute
-  '/auth/callback': typeof AuthCallbackRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/auth': typeof AuthIndexRoute
@@ -280,7 +266,6 @@ export interface FileRoutesByTo {
   '/words': typeof WordsRoute
   '/labels': typeof ContentListLabelsRoute
   '/mixes': typeof ContentListMixesRoute
-  '/auth/callback': typeof AuthCallbackRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/auth': typeof AuthIndexRoute
@@ -300,7 +285,6 @@ export interface FileRoutesById {
   '/words': typeof WordsRoute
   '/_contentList/labels': typeof ContentListLabelsRoute
   '/_contentList/mixes': typeof ContentListMixesRoute
-  '/auth/callback': typeof AuthCallbackRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/auth/': typeof AuthIndexRoute
@@ -321,7 +305,6 @@ export interface FileRouteTypes {
     | '/words'
     | '/labels'
     | '/mixes'
-    | '/auth/callback'
     | '/auth/verify'
     | '/settings/profile'
     | '/auth'
@@ -339,7 +322,6 @@ export interface FileRouteTypes {
     | '/words'
     | '/labels'
     | '/mixes'
-    | '/auth/callback'
     | '/auth/verify'
     | '/settings/profile'
     | '/auth'
@@ -357,7 +339,6 @@ export interface FileRouteTypes {
     | '/words'
     | '/_contentList/labels'
     | '/_contentList/mixes'
-    | '/auth/callback'
     | '/auth/verify'
     | '/settings/profile'
     | '/auth/'
@@ -375,7 +356,6 @@ export interface RootRouteChildren {
   SubscribeRoute: typeof SubscribeRoute
   TodoRoute: typeof TodoRoute
   WordsRoute: typeof WordsRoute
-  AuthCallbackRoute: typeof AuthCallbackRoute
   AuthVerifyRoute: typeof AuthVerifyRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
   AuthIndexRoute: typeof AuthIndexRoute
@@ -392,7 +372,6 @@ const rootRouteChildren: RootRouteChildren = {
   SubscribeRoute: SubscribeRoute,
   TodoRoute: TodoRoute,
   WordsRoute: WordsRoute,
-  AuthCallbackRoute: AuthCallbackRoute,
   AuthVerifyRoute: AuthVerifyRoute,
   SettingsProfileRoute: SettingsProfileRoute,
   AuthIndexRoute: AuthIndexRoute,
@@ -420,7 +399,6 @@ export const routeTree = rootRoute
         "/subscribe",
         "/todo",
         "/words",
-        "/auth/callback",
         "/auth/verify",
         "/settings/profile",
         "/auth/",
@@ -463,9 +441,6 @@ export const routeTree = rootRoute
     "/_contentList/mixes": {
       "filePath": "_contentList.mixes.tsx",
       "parent": "/_contentList"
-    },
-    "/auth/callback": {
-      "filePath": "auth/callback.tsx"
     },
     "/auth/verify": {
       "filePath": "auth/verify.tsx"
