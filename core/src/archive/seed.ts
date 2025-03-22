@@ -1,3 +1,6 @@
+/**
+ * @deprecated Don't use this 👀 go build the UI. Archiving this.
+ */
 import { createID } from "@/util/id";
 import grayMatter from "gray-matter";
 import { readdir } from "node:fs/promises";
@@ -14,6 +17,7 @@ const dirs: Record<ContentPrefixes, string> = {
 	mix: "./src/archive/mixes",
 	label: "./src/archive/labels",
 	user: "./src/archive/authors",
+	// upload: "./src/archive/upload",
 };
 
 
@@ -31,11 +35,11 @@ export const readContentsOfFilesInFolder = async (
 			const gray = grayMatter(content);
 			const obj = {
 				title: gray.data.title,
-				contentId: createID(folder),
+				contentId: createID("post"),
 				content: gray.content,
-				createdAt: new Date(gray.data.date).getTime() / 1000,
-				updatedAt: new Date(gray.data.lastmod || gray.data.date).getTime() / 1000,
-				authorId: "usr_6ehHmLSaGyn3Hq9z",
+				createdAt: new Date(gray.data.date).getTime() ,
+				updatedAt: new Date(gray.data.lastmod || gray.data.date).getTime() ,
+				authorId: gray.data.authors[0] ?? "usr_6ehHmLSaGyn3Hq9z",
 				description: gray.data.description,
 				tags: gray.data.tags,
 				// genres: gray.data.genres,
@@ -56,11 +60,11 @@ export const readContentsOfFilesInFolder = async (
 };
 
 const content = await readContentsOfFilesInFolder("post");
-log(content[1])
-await Bun.write(
-	"./src/archive/sample-post.json",
-	JSON.stringify(content[1], null, 2)
-  );
+// log(content[1])
+// await Bun.write(
+// 	"./src/archive/sample-post.json",
+// 	JSON.stringify(content[1], null, 2)
+//   );
 // const writeToLocal = await Bun.write(
 // 	"./src/archive/micro.json",
 // 	JSON.stringify(readMicro, null, 2),
