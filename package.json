@@ -17,12 +17,12 @@
   "dependencies": {
     "@effect/platform": "latest",
     "@effect/schema": "latest",
-    "@mdx-js/mdx": "^3.1.0",
-    "@openauthjs/openauth": "^0.3.6",
+    "@mdx-js/mdx": "3.1.0",
+    "@openauthjs/openauth": "0.4.3",
     "effect": "latest",
-    "gray-matter": "^4.0.3",
-    "sst": "^3.6.9",
-    "zod": "^3.24.1"
+    "gray-matter": "4.0.3",
+    "sst": "3.10.8",
+    "zod": "3.24.1"
   },
   "devDependencies": {
     "@tsconfig/node20": "^20.1.4",

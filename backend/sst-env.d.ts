@@ -46,7 +46,6 @@ declare module "sst" {
     }
     "gbfm-www": {
       "type": "sst.aws.StaticSite"
-      "url": string
     }
   }
 }
