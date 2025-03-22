@@ -9,10 +9,10 @@ import {
 import { useAuthContext } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
-import { login } from "@/lib/http";
 
 const ProfileAvatar = () => {
-	const { user, onSignOut } = useAuthContext();
+	const { user, logout, login } = useAuthContext();
+	console.log('user:', user)
 
 	return (
 		<DropdownMenu>
@@ -22,19 +22,20 @@ const ProfileAvatar = () => {
 					size="icon"
 					className="overflow-hidden rounded-full"
 				>
-					<img
+					{user}
+					{/* <img
 						src="/fav.png"
 						width={36}
 						height={36}
 						alt="Avatar"
 						className="overflow-hidden rounded-full"
-					/>
+					/> */}
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end">
-				{!user?.id && (
+				{!user && (
 					<>
-						<DropdownMenuItem className="hover:cursor-pointer" onClick={login}>
+						<DropdownMenuItem className="hover:cursor-pointer" onClick={() => login()}>
 							Sign In
 						</DropdownMenuItem>
 						<DropdownMenuSeparator />
@@ -45,7 +46,7 @@ const ProfileAvatar = () => {
 					<Link to="/settings/profile">Profile</Link>
 				</DropdownMenuItem>
 				<DropdownMenuSeparator />
-				<DropdownMenuItem onClick={onSignOut}>Logout</DropdownMenuItem>
+				<DropdownMenuItem onClick={() => logout()}>Logout</DropdownMenuItem>
 			</DropdownMenuContent>
 		</DropdownMenu>
 	);

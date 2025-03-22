@@ -1,6 +1,8 @@
 import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { Result } from "./common";
 import { User } from "@gbfm/core/user/index.ts";
+import { AuthClient_API } from ".";
+import { subjects } from "../subjects";
 // import { User } from "@gbfm/core/user";
 
 export namespace UserApi {
@@ -53,22 +55,36 @@ export namespace UserApi {
 		.openapi(
 			createRoute({
 				method: "get",
-				path: "/:id",
+				path: "/",
 				responses: {
 					200: {
-						content: {
-							"application/json": {
-								schema: User.UserSchema.partial(),
-							},
-						},
+						// content: {
+						// 	"application/json": {
+						// 		schema: User.UserSchema.partial(),
+						// 	},
+						// },
 						description: "Returns user details",
+					},
+					401: {
+						description: "Unauthorized",
 					},
 				},
 			}),
 			async (c) => {
-				const { id } = c.req.param();
-				const user = await User.fromID(id);
-				return c.json(user, 200);
+				const token = c.req.header("Authorization")?.split(" ")[1];
+				
+				if (!token) {
+					return c.json({ error: "No token provided" }, 401);
+				}
+
+				const session = await AuthClient_API.verify(subjects, token);
+				
+				if (session.err) {
+					console.error({ "session.err": session.err });
+					return c.json({ error: "No session" }, 401);
+				}
+
+				return c.json(session.subject.properties, 200);
 			},
 		)
 		// Update User

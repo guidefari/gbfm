@@ -2,8 +2,6 @@ import { handle } from "hono/aws-lambda";
 import { subjects } from "./subjects";
 import { User } from "@gbfm/core/user/index.ts";
 import { issuer } from "@openauthjs/openauth";
-// import { CodeAdapter } from "@openauthjs/openauth/adapter/code";
-// import { PasswordAdapter } from "@openauthjs/openauth/adapter/password";
 import { CodeUI } from "@openauthjs/openauth/ui/code";
 import { PasswordUI } from "@openauthjs/openauth/ui/password";
 import { Email } from "@gbfm/core/email/index.ts";

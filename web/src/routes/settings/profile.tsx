@@ -4,14 +4,26 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthContext } from "@/contexts/AuthContext";
-import { readFromLocalStorage } from "@guide/utils";
+// import { useEffect } from "react";
 
 export const Route = createFileRoute("/settings/profile")({
 	component: Profile,
 });
 
 export default function Profile() {
-	const { user } = useAuthContext();
+	const {  getToken, userData } = useAuthContext();
+	console.log('userData:', userData)
+	// const token = getToken();
+	// console.log('user:', user)
+
+	// useEffect(() => {
+	// 	const token = async () => {
+	// 		const token = await getToken();
+	// 		console.log('token:', token)
+	// 	}
+	// 	token();
+	// }, [])
+	
 	// const user = await getUser();
 	// if (!user) {
 	// 	return {
@@ -35,7 +47,7 @@ export default function Profile() {
 			label: "Email",
 			type: "email",
 			// placeholder: user?.email || "silly@goose.fm",
-			placeholder: "silly@goose.fm",
+			placeholder: userData?.email || "silly@goose.fm",
 		},
 		{
 			name: "password",
@@ -53,19 +65,16 @@ export default function Profile() {
 		const email = formData.get("email") as string;
 		const password = formData.get("password") as string;
 		const username = formData.get("username") as string;
+		const token = await getToken();
 
 		try {
-			const token = readFromLocalStorage({
-				id: "login_token",
-				tableName: "goosebumps",
-			});
 			const response = await fetch("/api/auth/update-profile", {
 				method: "POST",
 				body: JSON.stringify({
 					username,
 					email,
 					password,
-					id: user?.id,
+					id: userData?.id,
 				}),
 				headers: {
 					Authorization: `Bearer ${token}`,
@@ -89,6 +98,7 @@ export default function Profile() {
 				</div>
 				<Card>
 					<CardContent className="space-y-4">
+						{/* <p className="text-xs text-right">{userData?.id}</p> */}
 						<form onSubmit={onSubmit}>
 							<div className="flex justify-center mb-6">
 								<div className="relative w-20 h-20 mr-4 rounded-full group">

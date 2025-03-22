@@ -42,7 +42,7 @@ const routes = app
 	.route("/micro-posts", MicroPostApi.route)
 	.route("/bsky", BlueskyApi.route)
 	.route("/content", ContentApi.route)
-	.route("/rss", RssApi.route);
+	.route("/rss", RssApi.route)
 
 app.doc("/doc", () => ({
 	openapi: "3.0.0",
