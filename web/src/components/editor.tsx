@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ReactMde from "react-mde";
 // import { getDefaultToolbarCommands } from "react-mde";
 import { MDXRendrr } from "./MDXRendrr";
@@ -8,10 +8,14 @@ import "react-mde/lib/styles/css/react-mde.css";
 import "react-mde/lib/styles/css/react-mde-editor.css";
 import "./editor.css";
 import { compile } from "@mdx-js/mdx";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { API_BASE_URL, fetcher } from "@/lib/http";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useSearch } from "@tanstack/react-router";
 
 type ContentType = {
 	value: string;
@@ -24,10 +28,22 @@ const contentTypes: ContentType[] = [
 	{ value: "mix", label: "Mix" },
 ];
 
+const contentSchema = z.object({
+	content: z.string().min(1, "Content is required"),
+	dateCreated: z.number(),
+	dateUpdated: z.number(),
+	type: z.enum(["micro", "post", "mix"])
+  });
+
+  type FormData = z.infer<typeof contentSchema>;
+
 export function Editor() {
-	const [value, setValue] = useState("**Hello world!!!**");
+	const [value, setValue] = useState("");
+	const { id } = useSearch({
+		strict: false
+	});
 	const [selectedTab, setSelectedTab] = useState<"write" | "preview">("write");
-	const [type, setType] = useState<"micro" | "post" | "mix">("mdx");
+	const [type, setType] = useState<"micro" | "post" | "mix">("post");
 
 	const save = async function* (data: ArrayBuffer) {
 		// Promise that waits for "time" milliseconds
@@ -50,19 +66,55 @@ export function Editor() {
 		return true;
 	};
 
+	const form = useForm<FormData>({
+		resolver: zodResolver(contentSchema),
+		defaultValues: {
+		  content: "",
+		  dateCreated: Date.now(),
+		  dateUpdated: Date.now(),
+		  type: "post"
+		}
+	  });
+	
+	  const { data: existingContent } = useQuery({
+        queryKey: ['content', id],
+        queryFn: async () => {
+            if (!id) return null
+            return await fetcher(`${API_BASE_URL}/content/${id}`)
+        },
+        enabled: !!id
+    })
+
 	const { mutate, isPending } = useMutation({
-		mutationFn: async (content: string) => {
-			const res = await fetcher(`${API_BASE_URL}/micro-posts`, {
-				method: "POST",
-				body: JSON.stringify({ content }),
-			});
-			return res.json();
-		},
-	});
+        mutationFn: async (data: FormData) => {
+            const endpoint = id 
+                ? `${API_BASE_URL}/content/${id}`
+                : `${API_BASE_URL}/content`
+            const method = id ? 'PUT' : 'POST'
+            
+            return await fetcher(endpoint, {
+                method,
+                body: JSON.stringify(data),
+            })
+        },
+    })
+
+    // Update form with existing content when available
+    useEffect(() => {
+        console.log('existingContent:', existingContent)
+        if (existingContent) {
+            setValue(existingContent.content)
+        }
+    }, [existingContent])
+
+	const onSubmit = form.handleSubmit((data) => {
+		mutate(data);
+	  });
 
 	return (
+		<form onSubmit={onSubmit}>
 		<section>
-			<Button onClick={() => mutate(value)} disabled={isPending}>
+			<Button onClick={() => mutate(form.getValues())} disabled={isPending}>
 				{isPending ? "Saving..." : "Save"}
 			</Button>
 			<select
@@ -76,6 +128,7 @@ export function Editor() {
 				))}
 			</select>
 			<ReactMde
+			key={id}
 				value={value}
 				onChange={setValue}
 				selectedTab={selectedTab}
@@ -104,6 +157,7 @@ export function Editor() {
 				toolbarCommands={[["link", "image"]]}
 			/>
 		</section>
+		</form>
 	);
 }
 

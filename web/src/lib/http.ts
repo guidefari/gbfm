@@ -23,7 +23,6 @@ export async function fetcher<T>(
 	const sessionToken = init.token;
 	
 	try {
-		let sessionToken: string | undefined;
 		const isApiRequest =
 			input.toString().includes(API_BASE_URL) && !init?.skipAuth;
 

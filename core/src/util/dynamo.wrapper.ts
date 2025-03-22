@@ -17,9 +17,11 @@ export namespace DynamoWrapper {
 	export const create = async <T extends object>(
 		tableName: string,
 		input: T,
-		schema: ZodSchema<T>,
+		schema?: ZodSchema<T>,
 	): Promise<T> => {
-		schema.parse(input);
+		if (schema) {
+			schema.parse(input);
+		}
 
 		const command = new PutCommand({
 			TableName: tableName,
@@ -113,5 +115,13 @@ export namespace DynamoWrapper {
 		}
 
 		return item as T;
+	};
+
+	export const update = async <T extends object>(
+		tableName: string,
+		id: string,
+		updates: Partial<T>,
+	) => {
+		throw new Error("Not implemented");
 	};
 }
