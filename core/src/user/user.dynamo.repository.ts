@@ -62,6 +62,21 @@ export class DynamoUserRepository implements User.IUserRepository {
 		return user.Items?.[0];
 	}
 
+	async fromUsername(username: string) {
+		const user = await dynamoClient.send(
+			new QueryCommand({
+				TableName: Resource.UserTable.name,
+				IndexName: "UsernameIndex",
+				KeyConditionExpression: "username = :username",
+				ExpressionAttributeValues: {
+					":username": username,
+				},
+			}),
+		);
+
+		return user.Items?.[0] as User.PartialUser;
+	}
+
 	async update(user: User.PartialUser) {
 		const keysToUpdate = Object.keys(user).filter((key) => key !== "id");
 

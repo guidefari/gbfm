@@ -27,6 +27,7 @@ export namespace User {
 		update(user: User.PartialUser): Promise<User.PartialUser>;
 		deleteByID(id: string): Promise<boolean>;
 		fromToken(token: string): Promise<User.PartialUser | null>;
+		fromUsername(username: string): Promise<User.PartialUser | null>;
 	};
 
 	export type UserType = z.infer<typeof UserSchema>;
@@ -98,4 +99,13 @@ export namespace User {
 		}
 		return userRepository.fromToken(token);
 	};
+
+	export const fromUsername = fn(UserSchema.shape.username, async (username: string) => {
+		if (!userRepository) {
+			throw new Error(
+				"User repository is not initialized. Call setUserRepository first.",
+			);
+		}
+		return userRepository.fromUsername(username);
+	});
 }

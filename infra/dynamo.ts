@@ -15,9 +15,11 @@ export const UserTable = new sst.aws.Dynamo("UserTable", {
 	fields: {
 		id: "string",
 		email: "string",
+		username: "string",
 	},
 	primaryIndex: { hashKey: "id" },
 	globalIndexes: {
 		EmailIndex: { hashKey: "email" },
+		UsernameIndex: { hashKey: "username" },
 	},
 });

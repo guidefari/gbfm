@@ -35,6 +35,10 @@ declare module "sst" {
       "name": string
       "type": "sst.aws.Bucket"
     }
+    "Mixes": {
+      "name": string
+      "type": "sst.aws.Bucket"
+    }
     "SpotifyClientId": {
       "type": "sst.sst.Secret"
       "value": string
@@ -50,6 +54,10 @@ declare module "sst" {
     "UserTable": {
       "name": string
       "type": "sst.aws.Dynamo"
+    }
+    "User_Content": {
+      "name": string
+      "type": "sst.aws.Bucket"
     }
     "gbfm-www": {
       "type": "sst.aws.StaticSite"

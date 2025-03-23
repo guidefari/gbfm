@@ -4,6 +4,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { useState } from "react";
+import { API_BASE_URL } from "@/lib/http";
 // import { useEffect } from "react";
 
 export const Route = createFileRoute("/settings/profile")({
@@ -12,6 +14,46 @@ export const Route = createFileRoute("/settings/profile")({
 
 export default function Profile() {
 	const {  getToken, userData } = useAuthContext();
+	const [imagePreview, setImagePreview] = useState<string>(userData?.avatarUrl || "/placeholder.svg");
+	const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleSaveImage = async () => {
+    if (!selectedFile || !userData?.id) return;
+
+    const token = await getToken();
+    const formData = new FormData();
+    formData.append('avatar', selectedFile);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/users/${userData.id}/avatar`, {
+        method: 'PUT',
+        body: formData,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) throw new Error('Failed to upload image');
+      
+      // Handle successful upload
+      console.log('Image uploaded successfully');
+    } catch (error) {
+      console.error('Error uploading image:', error);
+    }
+  };
+
 	console.log('userData:', userData)
 	// const token = getToken();
 	// console.log('user:', user)
@@ -68,8 +110,8 @@ export default function Profile() {
 		const token = await getToken();
 
 		try {
-			const response = await fetch("/api/auth/update-profile", {
-				method: "POST",
+			const response = await fetch(`${API_BASE_URL}/users`, {
+				method: "PUT",
 				body: JSON.stringify({
 					username,
 					email,
@@ -103,7 +145,7 @@ export default function Profile() {
 							<div className="flex justify-center mb-6">
 								<div className="relative w-20 h-20 mr-4 rounded-full group">
 									<img
-										src="/placeholder.svg"
+										src={imagePreview}
 										alt="User Avatar"
 										className="rounded-full cursor-pointer"
 										width={80}
@@ -114,9 +156,26 @@ export default function Profile() {
 										className="absolute bottom-0 right-0 hidden px-2 py-1 text-xs rounded-full cursor-pointer group-hover:flex bg-gb-darker-bg"
 									>
 										Change
-										<input id="avatar" type="file" className="hidden" />
+										<input 
+											id="avatar" 
+											type="file" 
+											accept="image/*"
+											className="hidden" 
+											onChange={handleImageChange} 
+										/>
 									</label>
 								</div>
+								{selectedFile && (
+									<Button
+										type="button"
+										onClick={handleSaveImage}
+										variant="secondary"
+										size="sm"
+										className="self-end mb-2"
+									>
+										Save Avatar
+									</Button>
+								)}
 							</div>
 
 							<div className="grid gap-2">

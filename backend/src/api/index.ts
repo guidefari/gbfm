@@ -11,11 +11,16 @@ import { createClient } from "@openauthjs/openauth/client";
 import { BlueskyApi } from "./bsky";
 import { ContentApi } from "./content";
 import { RssApi } from "./rss";
+import {
+	S3Client,
+} from "@aws-sdk/client-s3";
 
 export const AuthClient_API = createClient({
 	clientID: "api",
 	issuer: Resource.Auth.url,
 });
+
+export const s3 = new S3Client({});
 
 const app = new OpenAPIHono();
 
@@ -38,11 +43,12 @@ const routes = app
 	// .use("/micro-posts", AuthMiddleware)
 	.route("/spotify", SpotifyApi.route)
 	.route("/mdx-archive", MDXArchiveApi.route)
-	.route("/users", UserApi.route)
 	.route("/micro-posts", MicroPostApi.route)
 	.route("/bsky", BlueskyApi.route)
 	.route("/content", ContentApi.route)
 	.route("/rss", RssApi.route)
+	.use("*", AuthMiddleware)
+	.route("/users", UserApi.route)
 
 app.doc("/doc", () => ({
 	openapi: "3.0.0",

@@ -1,0 +1,24 @@
+meta {
+  name: update user details
+  type: http
+  seq: 10
+}
+
+put {
+  url: {{api_url}}/users/usr_6ehHmLSaGyn3Hq9z
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "id": "usr_6ehHmLSaGyn3Hq9z",
+    "email": "guidefari@icloud.com",
+    "username": "bro"
+  }
+}
+
+body:multipart-form {
+  action: request
+  email: guide@gmail.com
+}

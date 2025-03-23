@@ -38,15 +38,18 @@ const ProfileAvatar = () => {
 						<DropdownMenuItem className="hover:cursor-pointer" onClick={() => login()}>
 							Sign In
 						</DropdownMenuItem>
-						<DropdownMenuSeparator />
 					</>
 				)}
 
-				<DropdownMenuItem asChild>
-					<Link to="/settings/profile">Profile</Link>
-				</DropdownMenuItem>
-				<DropdownMenuSeparator />
-				<DropdownMenuItem onClick={() => logout()}>Logout</DropdownMenuItem>
+				{user && (
+					<>
+						<DropdownMenuItem asChild>
+							<Link to="/settings/profile">Profile</Link>
+						</DropdownMenuItem>
+						<DropdownMenuSeparator />
+						<DropdownMenuItem onClick={() => logout()}>Logout</DropdownMenuItem>
+					</>
+				)}
 			</DropdownMenuContent>
 		</DropdownMenu>
 	);
