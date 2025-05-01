@@ -1,0 +1,48 @@
+services:
+  app:
+    build: .
+    container_name: bun_app
+    ports:
+      - "3000:3000"
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: postgresql://user-name:strong-password@db:5432/postgres
+    # networks:
+    #   - app-network
+
+  db:
+    image: postgres
+    container_name: local_pgdb
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: user-name
+      POSTGRES_PASSWORD: strong-password
+    volumes:
+      - local_pgdata:/var/lib/postgresql/data
+    # networks:
+    #   - app-network
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin4_container
+    restart: always
+    ports:
+      - "8888:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: user-name
+      PGADMIN_DEFAULT_PASSWORD: strong-password
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+    # networks:
+    #   - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  local_pgdata:
+  pgadmin-data:

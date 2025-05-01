@@ -1,0 +1,39 @@
+meta {
+  name: write post
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{api_url}}/content
+  body: json
+  auth: none
+}
+
+body:json {
+  // {
+  //   "content": "Hi **bro**",  
+  //   "authorId": "1212",
+  //   "slug": "how-to",
+  //   "description": "A few features might not be obvious at first glance, let me show you around",
+  //   "tags": [
+  //     "tutorial"
+  //   ],
+  //   "title": "Testing APi",
+  //   "type": "post"
+  // }
+  
+  {
+    "title": "other thing",
+    "description": "New oiii",
+    "content": "# yoooo...",
+    "thumbnailUrl": "https://example.com/images/hono-thumb.webp",
+    "slug": "oi",
+    "tags": ["bro", "hono", "api"],
+    "draft": false,
+    "type": "micro",
+    "authorIds": ["dc1f9336-6dae-40e6-a34e-66515f6673ff"],
+    "publicationId": "550e8400-e29b-41d4-a716-446655440000"
+    // Array of author IDs
+  }
+}

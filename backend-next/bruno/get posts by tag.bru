@@ -1,0 +1,38 @@
+meta {
+  name: get posts by tag
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{api_url}}/content/tag/
+  body: none
+  auth: none
+}
+
+body:json {
+  // {
+  //   "content": "Hi **bro**",  
+  //   "authorId": "usr_6ehHmLSaGyn3Hq9z",
+  //   "slug": "how-to",
+  //   "description": "A few features might not be obvious at first glance, let me show you around",
+  //   "tags": [
+  //     "tutorial"
+  //   ],
+  //   "title": "Testing APi",
+  //   "type": "post"
+  // }
+  
+  {
+    "title": "with two authors",
+    "date": "2025-03-20T12:00:00Z",
+    "description": "New oiii",
+    "content": "# yoooo...",
+    "thumbnailUrl": "https://example.com/images/hono-thumb.webp",
+    "slug": "oi",
+    "tags": ["typescript", "hono", "api"],
+    "draft": false,
+    "type": "post",
+    "authorIds": ["2ea687d0-5bae-4144-a593-8f1cab9e2616"]  // Array of author IDs
+  }
+}

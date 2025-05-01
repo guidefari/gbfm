@@ -1,0 +1,31 @@
+meta {
+  name: create mix
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{api_url}}/mix
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "title": "Mix 1",
+    "description": "Description 1",
+    "thumbnailUrl": "https://example.com/thumbnail1.jpg",
+    "slug": "mix-1",
+    "content": "Content 1",
+    "authorIds": [
+      "2ea687d0-5bae-4144-a593-8f1cab9e2616"
+    ],
+    "url": "https://example.com/mix1.mp3",
+    "draft": false,
+    "tags": [
+      "dnb",
+      "techno",
+      "house"
+    ]
+  }
+}

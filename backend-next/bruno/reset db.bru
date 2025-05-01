@@ -1,0 +1,17 @@
+meta {
+  name: reset db
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{api_url}}/reset-tables
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "tables": ["publications", "bdo"]
+  }
+}

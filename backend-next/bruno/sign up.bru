@@ -1,0 +1,20 @@
+meta {
+  name: sign up
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{api_url}}/publication
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Guide Fari",
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "description": "guide@gb.fm",
+    "slug": "guide"
+  }
+}

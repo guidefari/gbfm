@@ -1,0 +1,35 @@
+{
+  "name": "gbfm-server",
+  "scripts": {
+    "dev": "bun run --hot src/api/index.ts",
+    "dev:sst": "sst dev",
+    "db:studio": "drizzle-kit studio",
+    "db:yeet": "drizzle-kit push",
+    "db:migrate": "drizzle-kit migrate",
+    "db:gen": "drizzle-kit generate"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "8.10.145",
+    "@types/bun": "^1.2.5",
+    "@types/pg": "^8.11.11",
+    "drizzle-kit": "^0.30.5"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.658.1",
+    "@aws-sdk/lib-storage": "^3.658.1",
+    "@aws-sdk/s3-request-presigner": "^3.658.1",
+    "@hono/zod-validator": "^0.4.3",
+    "dotenv": "^16.4.7",
+    "drizzle-orm": "^0.41.0",
+    "drizzle-zod": "^0.7.0",
+    "ffmpeg-static": "^5.2.0",
+    "hono": "4.7.5",
+    "pg": "^8.14.1",
+    "resend": "^4.1.2",
+    "sst": "latest",
+    "zod": "^3.24.2"
+  }
+}

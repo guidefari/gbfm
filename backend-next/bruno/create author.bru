@@ -1,0 +1,19 @@
+meta {
+  name: create author
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{api_url}}/author
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Guide Fari",
+    "username": "guidefari",
+    "email": "guide@gb.fm"
+  }
+}
