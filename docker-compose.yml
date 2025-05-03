@@ -9,8 +9,6 @@ services:
       - "3003:3003"
     depends_on:
       - db
-    environment:
-      DATABASE_URL: postgresql://user-name:strong-password@db:5433/postgres
     volumes:
       - ./vps:/app/vps
       - ./core:/app/core
@@ -26,7 +24,7 @@ services:
     container_name: gbfm_pgdb
     restart: always
     ports:
-      - "5433:5433"
+      - "5432:5432"
     environment:
       POSTGRES_USER: user-name
       POSTGRES_PASSWORD: strong-password

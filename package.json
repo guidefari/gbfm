@@ -7,7 +7,8 @@
     "sso": "aws sso login --sso-session=terminal --no-browser",
     "typecheck": "bun --filter=* typecheck",
     "deploy": "sst deploy --stage=staging",
-    "deploy:prod": "sst deploy --stage=prod"
+    "deploy:prod": "sst deploy --stage=prod",
+    "gen": "cd vps && sst shell drizzle-kit generate"
   },
   "workspaces": [
     "backend",

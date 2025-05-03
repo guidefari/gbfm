@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { Resource } from 'sst/resource';
+import { Resource } from 'sst';
 
 const envSchema = z.object({
   // NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -16,10 +16,16 @@ const envSchema = z.object({
 });
 
 function createEnvConfig() {
+  let databaseUrl = process.env.DATABASE_URL || '';
+  let emailSender = process.env.EMAIL_SENDER || '';
 
-  const { username, password, host, port, database } = Resource.gbfm_postgres
-  const databaseUrl = `postgresql://${username}:${password}@${host}:${port}/${database}`
-  const emailSender = Resource.Email.sender
+  const isLocal = Resource.App.stage === "local";
+
+  if (isLocal) {
+    const { username, password, host, port, database } = Resource.gbfm_postgres
+    databaseUrl = `postgresql://${username}:${password}@${host}:${port}/${database}`
+    emailSender = Resource.Email.sender
+  }
   
   try {
     const config = envSchema.parse({

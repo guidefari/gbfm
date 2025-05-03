@@ -15,8 +15,16 @@ export const database = new sst.aws.Postgres("gbfm_postgres", {
 		username: "user-name",
 		password: "strong-password",
 		database: "postgres",
-		port: 5433,
+		port: 5432,
 	}
+  });
+
+  new sst.x.DevCommand("Studio", {
+	link: [database, email],
+	dev: {
+		command: "npx drizzle-kit studio",
+		directory: "./vps",
+	},
   });
 
 export const service = new sst.aws.Service("gbfm_vps", {
@@ -42,9 +50,6 @@ export const service = new sst.aws.Service("gbfm_vps", {
 		context: "./",
 		target: "release",
 		dockerfile: "vps/Dockerfile",
-	},
-	environment: {
-		// DATABASE_URL: `postgresql://${database.username.get.name}:${database.password.get.name}:${database.host.get.name}:${database.port.get.name}/${database.database.get.name}`,
 	},
 	link: [database, email],
 });

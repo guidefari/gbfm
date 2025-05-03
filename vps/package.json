@@ -3,10 +3,10 @@
   "scripts": {
     "dev": "bun run --hot src/api/index.ts",
     "dev:sst": "sst dev",
-    "db:studio": "drizzle-kit studio",
-    "db:yeet": "drizzle-kit push",
-    "db:migrate": "drizzle-kit migrate",
-    "db:gen": "drizzle-kit generate"
+    "db:studio": "sst shell --stage=local drizzle-kit studio",
+    "db:yeet": "sst shell --stage=local drizzle-kit push",
+    "db:migrate": "sst shell --stage=local drizzle-kit migrate",
+    "db:gen": "sst shell --stage=local drizzle-kit generate"
   },
   "devDependencies": {
     "@types/aws-lambda": "8.10.145",

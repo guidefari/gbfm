@@ -1,5 +1,5 @@
 import { pgTable, varchar, boolean, timestamp, uuid } from "drizzle-orm/pg-core";
-import { createSelectSchema } from "drizzle-zod";
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { postsToAuthors } from "./post.schema";
 import { mixesToAuthors } from "./mix.schema";
@@ -16,6 +16,7 @@ export const authorsTable = pgTable("authors", {
 });
 
 export const zAuthorSchema = createSelectSchema(authorsTable);
+export const createAuthorSchema = createInsertSchema(authorsTable);
 
 export const authorsRelations = relations(authorsTable, ({ many }) => ({
     postsToAuthors: many(postsToAuthors),

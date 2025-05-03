@@ -1,11 +1,11 @@
 import { Hono } from "hono";
 import { zValidator } from '@hono/zod-validator';
 import { db } from '../db';
-import { authorsTable, zAuthorSchema } from "@/db/author.schema";
+import { authorsTable, createAuthorSchema, zAuthorSchema } from "@/db/author.schema";
 
 const app = new Hono();
 
-export const createAuthorSchema = zAuthorSchema.omit({ id: true, createdAt: true, updatedAt: true, verified: true });
+// export const createAuthorSchema = zAuthorSchema.omit({ id: true, createdAt: true, updatedAt: true, verified: true });
 
 app.post('/', zValidator('json', createAuthorSchema), async (c) => {
 	const data = c.req.valid('json');
