@@ -40,7 +40,7 @@ export const service = new sst.aws.Service("gbfm_vps", {
 	},
 	image: {
 		context: "./",
-		target: "prod",
+		target: "release",
 		dockerfile: "vps/Dockerfile",
 	},
 	environment: {
