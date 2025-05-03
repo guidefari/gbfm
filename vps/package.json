@@ -24,7 +24,7 @@
     "@gbfm/core": "workspace:",
     "@hono/zod-validator": "^0.4.3",
     "dotenv": "^16.4.7",
-    "drizzle-orm": "^0.41.0",
+    "drizzle-orm": "0.41.0",
     "drizzle-zod": "^0.7.0",
     "ffmpeg-static": "^5.2.0",
     "hono": "4.7.5",
