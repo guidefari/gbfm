@@ -1,9 +1,3 @@
-node_modules
-.git
 .gitignore
 README.md
 Dockerfile*
-
-
-# sst
-.sst
