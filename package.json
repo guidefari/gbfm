@@ -21,7 +21,7 @@
     "@openauthjs/openauth": "0.4.3",
     "effect": "latest",
     "gray-matter": "4.0.3",
-    "sst": "^3.14.11",
+    "sst": "3.13.3",
     "zod": "^3.24.3"
   },
   "devDependencies": {
