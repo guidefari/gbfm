@@ -44,5 +44,6 @@ const apiGateway = new sst.aws.ApiGatewayV2("gbfm_vps_gateway", {
 apiGateway.routePrivate("$default", service.nodes.cloudmapService.arn);
 
 export const outputs = {
-	service: service.url,
+	apiGateway: apiGateway.url,
+	// service: service.url,
 };
