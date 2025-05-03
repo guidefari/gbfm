@@ -12,7 +12,8 @@
   "workspaces": [
     "backend",
     "core",
-    "web"
+    "web", 
+    "vps"
   ],
   "dependencies": {
     "@effect/platform": "latest",

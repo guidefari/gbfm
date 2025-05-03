@@ -1,13 +1,23 @@
 services:
   app:
-    build: .
+    build:
+      context: .
+      target: dev
+      dockerfile: vps/Dockerfile
     container_name: bun_app
     ports:
-      - "3000:3000"
+      - "3003:3003"
     depends_on:
       - db
     environment:
       DATABASE_URL: postgresql://user-name:strong-password@db:5433/postgres
+    volumes:
+      - ./vps:/app/vps
+      - ./core:/app/core
+      - ./backend:/app/backend
+      - ./web:/app/web
+    working_dir: /app/vps
+    command: bun --hot run src/api/index.ts
     # networks:
     #   - app-network
 

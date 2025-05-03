@@ -14,6 +14,7 @@ import { postsTable } from "@/db/post.schema";
 import publication from "./publication";
 import { publicationsTable, publicationAuthors, publicationPosts } from "@/db/publication.schema";
 import auth from "./auth";
+
 const db = drizzle(env.DATABASE_URL);
 const app = new Hono();
 
@@ -23,7 +24,7 @@ app.route("/content", content);
 app.route("/mix", mix);
 app.route("/publication", publication);
 app.get("/", (c) => {
-	return c.text("Hello Hono!");
+	return c.json(env.DATABASE_URL);
 });
 
 app.post("/reset-tables", async (c) => {
@@ -80,7 +81,7 @@ app.post("/reset-tables", async (c) => {
 });
 
 export default {
-	port: 3000,
+	port: 3003,
 	fetch: app.fetch,
 	maxRequestBodySize: 1024 * 1024 * 1000, // 1GB
 };

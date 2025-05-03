@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '../db'
 import { authorsTable } from '../db/author.schema'
 import { z } from 'zod'
-import { client as emailClient } from '../email'
+import { Email } from '@gbfm/core/email/index'
 
 const signupSchema = z.object({
   username: z.string().min(3).max(50),
@@ -37,10 +37,11 @@ auth.post('/signup', async (c) => {
       email: validated.email,
     }).returning()
 
-    await emailClient.sendEmail({
-      to: validated.email,
-      subject: "Welcome to the gbfm cms!",
-      body: `
+    await Email.send(
+      "vps",
+      validated.email,
+      "Welcome to the gbfm cms!",
+      `
         <h1>Welcome to the gbfm cms, ${validated.username}!</h1>
         <p>Thank you for joining our community. We're excited to have you on board!</p>
         <p>You can now log in and start exploring all our features.</p>
@@ -48,7 +49,7 @@ auth.post('/signup', async (c) => {
         <p>Best regards,</p>
         <p>Guide</p>
       `
-    })
+    )
 
     const { password, ...authorWithoutPassword } = newAuthor[0]
 

@@ -63,9 +63,20 @@ declare module "sst" {
     "gbfm_network": {
       "type": "sst.aws.Vpc"
     }
+    "gbfm_postgres": {
+      "database": string
+      "host": string
+      "password": string
+      "port": number
+      "type": "sst.aws.Postgres"
+      "username": string
+    }
     "gbfm_vps": {
       "service": string
       "type": "sst.aws.Service"
+    }
+    "gbfm_vps_gateway": {
+      "type": "sst.aws.ApiGatewayV2"
       "url": string
     }
   }
