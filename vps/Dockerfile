@@ -8,4 +8,4 @@ RUN bun install --frozen-lockfile
 COPY . .
 
 EXPOSE 3000
-CMD ["bun", "index.ts"]
+CMD ["bun", "src/api/index.ts"]
