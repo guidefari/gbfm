@@ -65,6 +65,15 @@ declare module "sst" {
     }
     "gbfm-www": {
       "type": "sst.aws.StaticSite"
+      "url": string
+    }
+    "gbfm_network": {
+      "type": "sst.aws.Vpc"
+    }
+    "gbfm_vps": {
+      "service": string
+      "type": "sst.aws.Service"
+      "url": string
     }
   }
 }
