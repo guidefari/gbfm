@@ -23,7 +23,6 @@ export const service = new sst.aws.Service("gbfm_vps", {
 	},
 	image: {
 		context: "./vps",
-		dockerfile: "Dockerfile"
 	},
 	// link: [bucket, fileRouter, etc],
 });
