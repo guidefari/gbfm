@@ -17,14 +17,11 @@ const envSchema = z.object({
 
 function createEnvConfig() {
 
-  // @ts-expect-error - sst trippin
   const { username, password, host, port, database } = Resource.gbfm_postgres
   const databaseUrl = `postgresql://${username}:${password}@${host}:${port}/${database}`
-  // @ts-expect-error - sst trippin
   const emailSender = Resource.Email.sender
   
   try {
-    // console.log('process:', Resource.Email)
     const config = envSchema.parse({
       ...process.env,
       DATABASE_URL: databaseUrl,
