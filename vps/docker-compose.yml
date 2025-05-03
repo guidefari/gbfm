@@ -7,35 +7,35 @@ services:
     depends_on:
       - db
     environment:
-      DATABASE_URL: postgresql://user-name:strong-password@db:5432/postgres
+      DATABASE_URL: postgresql://user-name:strong-password@db:5433/postgres
     # networks:
     #   - app-network
 
   db:
     image: postgres
-    container_name: local_pgdb
+    container_name: gbfm_pgdb
     restart: always
     ports:
-      - "5432:5432"
+      - "5433:5433"
     environment:
       POSTGRES_USER: user-name
       POSTGRES_PASSWORD: strong-password
     volumes:
-      - local_pgdata:/var/lib/postgresql/data
+      - gbfm_pgdb:/var/lib/postgresql/data
     # networks:
     #   - app-network
 
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: pgadmin4_container
-    restart: always
-    ports:
-      - "8888:80"
-    environment:
-      PGADMIN_DEFAULT_EMAIL: user-name
-      PGADMIN_DEFAULT_PASSWORD: strong-password
-    volumes:
-      - pgadmin-data:/var/lib/pgadmin
+  # pgadmin:
+  #   image: dpage/pgadmin4
+  #   container_name: pgadmin4_container
+  #   restart: always
+  #   ports:
+  #     - "8888:80"
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: user-name
+  #     PGADMIN_DEFAULT_PASSWORD: strong-password
+  #   volumes:
+  #     - pgadmin-data:/var/lib/pgadmin
     # networks:
     #   - app-network
 
@@ -44,5 +44,5 @@ networks:
     driver: bridge
 
 volumes:
-  local_pgdata:
-  pgadmin-data:
+  gbfm_pgdb:
+  # pgadmin-data:
