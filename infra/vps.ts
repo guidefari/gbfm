@@ -39,8 +39,9 @@ export const service = new sst.aws.Service("gbfm_vps", {
 		command: "bun dev",
 	},
 	image: {
-		context: "./vps",
+		context: "./",
 		target: "prod",
+		dockerfile: "vps/Dockerfile",
 	},
 	environment: {
 		// DATABASE_URL: `postgresql://${database.username.get.name}:${database.password.get.name}:${database.host.get.name}:${database.port.get.name}/${database.database.get.name}`,
