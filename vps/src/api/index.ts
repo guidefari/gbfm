@@ -23,9 +23,15 @@ app.route("/author", author);
 app.route("/content", content);
 app.route("/mix", mix);
 app.route("/publication", publication);
-app.get("/", (c) => {
-	return c.json(env.DATABASE_URL);
-});
+
+app.get("/health", async (c) => {
+	try {
+	  await db.execute(sql.raw("SELECT 1"));
+	  return c.json({ dbConnected: true });
+	} catch {
+	  return c.json({ dbConnected: false }, 500);
+	}
+  });
 
 app.post("/reset-tables", async (c) => {
 	try {
