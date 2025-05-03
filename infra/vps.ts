@@ -18,10 +18,11 @@ export const service = new sst.aws.Service("gbfm_vps", {
 		},
 	},
 	dev: {
+		directory: "./vps",
 		command: "bun dev",
 	},
 	image: {
-		context: "../vps",
+		context: "./vps",
 		dockerfile: "Dockerfile"
 	},
 	// link: [bucket, fileRouter, etc],
