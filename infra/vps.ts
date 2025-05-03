@@ -11,7 +11,10 @@ export const cluster = new sst.aws.Cluster("gbfm_cluster", {
 export const service = new sst.aws.Service("gbfm_vps", {
 	cluster,
 	loadBalancer: {
-		ports: [{ listen: "80/http", forward: "3000/http" }],
+		rules: [
+			{ listen: "80/http", redirect: "443/https" },
+			{ listen: "443/https", forward: "3000/http" },
+		],
 		domain: {
 			name: `vps.${domain}`,
 			dns: sst.cloudflare.dns(),
