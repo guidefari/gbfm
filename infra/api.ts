@@ -1,7 +1,7 @@
 import { domain } from "./dns";
 import { allSecrets } from "./secret";
 import { isPermanentStage } from "./stage";
-import { bucket, contentBucket, mixesBucket } from "./bucket";
+import { bucket, contentBucket, mixesBucket, fileRouter } from "./bucket";
 import { email } from "./email";
 import { secret } from "./secret";
 import { ContentTable, UserTable } from "./dynamo";
@@ -26,7 +26,7 @@ const apiFn = new sst.aws.Function("Api", {
 	handler: "./backend/src/api/index.handler",
 	streaming: !$dev,
 	url: true,
-	link: [...allSecrets, bucket, auth, UserTable, ContentTable, contentBucket, mixesBucket],
+	link: [...allSecrets, bucket, auth, UserTable, ContentTable, contentBucket, mixesBucket, fileRouter],
 });
 
 export const api = new sst.cloudflare.Worker("ApiWorker", {

@@ -185,8 +185,7 @@ export namespace UserApi {
 				}
 
 				const fileBuffer = await payload.avatar.arrayBuffer();
-				const fileName = `avatar_${id}_${payload.avatar.name}`;
-				console.log('fileName:', fileName)
+				const fileName = `avatar_${id}_${payload.avatar.name.replace(/\s+/g, '_')}`;
 				
 				try {
 					const result = await s3.send(
@@ -200,14 +199,17 @@ export namespace UserApi {
 
 					// Generate S3 URL
 					// const avatarUrl = `https://${Resource.Parameter.value.CONTENT_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
+					const avatarUrl = `${Resource.FileRouter.url}/user-content/${fileName}`;
+					console.log('avatarUrl:', avatarUrl)
 
 					// Update user with avatar URL
-					// const updatedUser = await User.update({
-					// 	id,
-					// 	avatarUrl,
-					// });
+					const updatedUser = await User.update({
+						id,
+						avatarUrl,
+						...user,
+					});
 
-					return c.json(result, 200);
+					return c.json(updatedUser, 200);
 				} catch (error) {
 					console.error('Error uploading avatar:', error);
 					return c.json({ error: "Failed to upload avatar" }, 500);

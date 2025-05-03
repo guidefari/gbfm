@@ -31,6 +31,10 @@ declare module "sst" {
       "sender": string
       "type": "sst.aws.Email"
     }
+    "FileRouter": {
+      "type": "sst.aws.Router"
+      "url": string
+    }
     "MDX_Bucket": {
       "name": string
       "type": "sst.aws.Bucket"
