@@ -2,6 +2,7 @@
 
 import { domain } from "./dns";
 import { email } from "./email";
+import { allSecrets } from "./secret";
 
 export const vpc = new sst.aws.Vpc("gbfm_network");
 
@@ -51,7 +52,7 @@ export const service = new sst.aws.Service("gbfm_vps", {
 		target: "release",
 		dockerfile: "vps/Dockerfile",
 	},
-	link: [database, email],
+link: [database, email, ...allSecrets],
 });
 
 const vps_gateway = new sst.aws.ApiGatewayV2("gbfm_vps_gateway", {
@@ -71,5 +72,4 @@ if (!isLocal) {
 
 export const outputs = {
 	vps_gateway: vps_gateway.url,
-	database: database.urn,
 };

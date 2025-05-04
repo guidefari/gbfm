@@ -15,6 +15,13 @@
       "when": 1746372169321,
       "tag": "0001_absent_vulcan",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1746375598494,
+      "tag": "0002_cuddly_gideon",
+      "breakpoints": true
     }
   ]
 }

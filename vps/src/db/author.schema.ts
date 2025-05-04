@@ -26,8 +26,22 @@ export const authorPasswordResetTokensTable = pgTable("author_password_reset_tok
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });
 
+export const authorSessionsTable = pgTable("author_sessions", {
+  id: uuid().primaryKey().defaultRandom(),
+  authorId: uuid().notNull().references(() => authorsTable.id),
+  refreshToken: varchar({ length: 255 }).notNull().unique(),
+  userAgent: varchar({ length: 512 }),
+  ip: varchar({ length: 64 }),
+  expiresAt: timestamp({ withTimezone: true }).notNull(),
+  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});
+
 export const selectAuthorPasswordResetTokenSchema = createSelectSchema(authorPasswordResetTokensTable);
 export const insertAuthorPasswordResetTokenSchema = createInsertSchema(authorPasswordResetTokensTable);
+
+export const selectAuthorSessionSchema = createSelectSchema(authorSessionsTable);
+export const insertAuthorSessionSchema = createInsertSchema(authorSessionsTable);
 
 export const zAuthorSchema = createSelectSchema(authorsTable);
 export const createAuthorSchema = createInsertSchema(authorsTable);

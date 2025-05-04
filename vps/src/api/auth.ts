@@ -1,11 +1,14 @@
 import { Hono } from 'hono'
 import { and, eq } from 'drizzle-orm'
 import { db } from '../db'
-import { authorsTable, authorPasswordResetTokensTable } from '../db/author.schema'
+import { authorsTable, authorPasswordResetTokensTable, authorSessionsTable } from '../db/author.schema'
 import { z } from 'zod'
 import { Email } from '@gbfm/core/email/index'
 import { randomUUID } from 'node:crypto'
 import { getAuthorByEmailOrId } from '@/db/author.repo'
+import { decode, sign, verify } from 'hono/jwt'
+import type { JWTPayload } from 'hono/utils/jwt/types'
+import { env } from '@/env'
 
 const signupSchema = z.object({
   username: z.string().min(3).max(50),
@@ -16,6 +19,9 @@ const signupSchema = z.object({
 export type SignupBody = z.infer<typeof signupSchema>
 
 const auth = new Hono()
+
+const ACCESS_TOKEN_EXPIRES_IN = 60 * 15 // 15 minutes
+const REFRESH_TOKEN_EXPIRES_IN = 60 * 60 * 24 * 7 // 7 days
 
 auth.post('/signup', async (c) => {
     const body = await c.req.json()
@@ -70,28 +76,56 @@ auth.post('/signin', async (c) => {
   const body = await c.req.json()
   const validated = signinSchema.parse(body)
 
-  const author = await getAuthorByEmailOrId({email: validated.email})
+  const author = await getAuthorByEmailOrId({ email: validated.email })
 
-  if (author.length === 0) {
+  if (author.length === 0 || !author[0].password)
     return c.json({ error: 'Invalid username or password' }, 401)
-  }
 
-  if (!author[0].password) {
-    return c.json({ error: 'No password set for this user' }, 401)
-  }
-  
   const isPasswordValid = await Bun.password.verify(validated.password, author[0].password)
-
-  if (!isPasswordValid) {
+  if (!isPasswordValid)
     return c.json({ error: 'Invalid username or password' }, 401)
-  }
 
   const { password, ...authorWithoutPassword } = author[0]
 
-  // todo: return a jwt token and create a refresh token and a db session
+  const now = Math.floor(Date.now() / 1000)
+  const accessToken = await sign(
+    {
+      sub: author[0].id,
+      email: author[0].email,
+      type: 'access',
+      exp: now + ACCESS_TOKEN_EXPIRES_IN,
+      iat: now,
+    },
+    env.ACCESS_TOKEN_SECRET
+  )
+
+  const refreshToken = await sign(
+    {
+      sub: author[0].id,
+      email: author[0].email,
+      type: 'refresh',
+      exp: now + REFRESH_TOKEN_EXPIRES_IN,
+      iat: now,
+    },
+    env.REFRESH_TOKEN_SECRET
+  )
+
+  const userAgent = c.req.header('user-agent')
+  const forwarded = c.req.header('x-forwarded-for')
+  const ip = forwarded ? forwarded.split(',')[0].trim() : undefined
+
+  await db.insert(authorSessionsTable).values({
+    authorId: author[0].id,
+    refreshToken,
+    userAgent,
+    ip,
+    expiresAt: new Date(Date.now() + REFRESH_TOKEN_EXPIRES_IN * 1000),
+  })
+
   return c.json({
-    message: 'Signin successful',
-    user: authorWithoutPassword
+    user: authorWithoutPassword,
+    accessToken,
+    refreshToken,
   }, 200)
 })
 
@@ -169,6 +203,50 @@ auth.post('/reset-password', async (c) => {
     .where(eq(authorPasswordResetTokensTable.token, validated.token))
 
   return c.json({ message: 'Password reset successful' }, 200)
+})
+
+auth.post('/refresh-token', async (c) => {
+  const { refreshToken } = await c.req.json()
+
+  if (!refreshToken)
+    return c.json({ error: 'Refresh token required' }, 400)
+
+  let payload: JWTPayload
+  try {
+    payload = await verify(refreshToken, env.REFRESH_TOKEN_SECRET)
+  } catch {
+    return c.json({ error: 'Invalid refresh token' }, 401)
+  }
+
+  const session = await db.select().from(authorSessionsTable)
+    .where(eq(authorSessionsTable.refreshToken, refreshToken))
+
+  if (session.length === 0 || new Date(session[0].expiresAt) < new Date())
+    return c.json({ error: 'Session expired or not found' }, 401)
+
+  const authorId = payload.sub
+
+  if (!authorId || typeof authorId !== 'string')
+    return c.json({ error: 'Invalid payload' }, 401)
+  
+  const author = await getAuthorByEmailOrId({ authorId })
+
+  if (author.length === 0)
+    return c.json({ error: 'User not found' }, 404)
+
+  const now = Math.floor(Date.now() / 1000)
+  const accessToken = await sign(
+    {
+      sub: author[0].id,
+      email: author[0].email,
+      type: 'access',
+      exp: now + ACCESS_TOKEN_EXPIRES_IN,
+      iat: now,
+    },
+    env.ACCESS_TOKEN_SECRET
+  )
+
+  return c.json({ accessToken }, 200)
 })
 
 export default auth 

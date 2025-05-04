@@ -4,22 +4,24 @@ import { Resource } from 'sst';
 const envSchema = z.object({
   DATABASE_URL: z.string().url(),
   EMAIL_SENDER: z.string(),
+  ACCESS_TOKEN_SECRET: z.string(),
+  REFRESH_TOKEN_SECRET: z.string(),
 });
 
 function createEnvConfig() {
   let databaseUrl = process.env.DATABASE_URL || '';
   let emailSender = process.env.EMAIL_SENDER || '';
-  let isLocal = false;
-
-  isLocal = Object.keys(Resource).length === 0 || Resource.App.stage === "local";
+  let accessTokenSecret = process.env.ACCESS_TOKEN_SECRET || 'secret';
+  let refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET || 'secret';
+  
+  const isLocal = Object.keys(Resource).length === 0 || Resource.App.stage === "local";
 
   if (!isLocal) {
     const { username, password, host, port, database } = Resource.gbfm_postgres
     databaseUrl = `postgresql://${username}:${password}@${host}:${port}/${database}`
     emailSender = Resource.Email.sender
-  } else {
-    databaseUrl = process.env.DATABASE_URL || '';
-    emailSender = process.env.EMAIL_SENDER || '';
+    accessTokenSecret = Resource.AccessTokenSecret.value
+    refreshTokenSecret = Resource.RefreshTokenSecret.value
   }
   
   try {
@@ -27,6 +29,8 @@ function createEnvConfig() {
       ...process.env,
       DATABASE_URL: databaseUrl,
       EMAIL_SENDER: emailSender,
+      ACCESS_TOKEN_SECRET: accessTokenSecret,
+      REFRESH_TOKEN_SECRET: refreshTokenSecret,
     });
     return config;
   } catch (error) {
