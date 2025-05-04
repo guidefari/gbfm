@@ -3,6 +3,9 @@ import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { relations } from "drizzle-orm";
 import { postsToAuthors } from "./post.schema";
 import { mixesToAuthors } from "./mix.schema";
+import { publicationPosts } from "./publication.schema";
+import { publicationsTable } from "./publication.schema";
+import { postsTable } from "./post.schema";
 
 export const authorsTable = pgTable("authors", {
   id: uuid().primaryKey().defaultRandom(),
@@ -22,3 +25,14 @@ export const authorsRelations = relations(authorsTable, ({ many }) => ({
     postsToAuthors: many(postsToAuthors),
     mixesToAuthors: many(mixesToAuthors),
   }));
+
+export const publicationPostsRelations = relations(publicationPosts, ({ one }) => ({
+  publication: one(publicationsTable, {
+    fields: [publicationPosts.publicationId],
+    references: [publicationsTable.id],
+  }),
+  post: one(postsTable, {
+    fields: [publicationPosts.postId],
+    references: [postsTable.id],
+  }),
+}));

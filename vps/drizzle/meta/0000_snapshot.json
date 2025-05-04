@@ -1,11 +1,11 @@
 {
-  "id": "3da5ecbe-e242-4000-960c-c2342b51cb7d",
-  "prevId": "00000000-0000-0000-0000-000000000000",
+  "id": "00000000-0000-0000-0000-000000000000",
+  "prevId": "",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
-    "public.authors": {
-      "name": "authors",
+    "public.publications": {
+      "name": "publications",
       "schema": "",
       "columns": {
         "id": {
@@ -17,71 +17,37 @@
         },
         "name": {
           "name": "name",
-          "type": "varchar(255)",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "username": {
-          "name": "username",
-          "type": "varchar(255)",
+        "description": {
+          "name": "description",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "email": {
-          "name": "email",
-          "type": "varchar(255)",
+        "slug": {
+          "name": "slug",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
-        },
-        "password": {
-          "name": "password",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "verified": {
-          "name": "verified",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updatedAt": {
-          "name": "updatedAt",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
         }
       },
       "indexes": {},
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "authors_username_unique": {
-          "name": "authors_username_unique",
-          "nullsNotDistinct": false,
+        "publications_slug_unique": {
           "columns": [
-            "username"
-          ]
-        },
-        "authors_email_unique": {
-          "name": "authors_email_unique",
+            "slug"
+          ],
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "name": "publications_slug_unique"
         }
       },
-      "policies": {},
       "checkConstraints": {},
+      "policies": {},
       "isRLSEnabled": false
     },
     "public.mixes": {
@@ -165,9 +131,10 @@
           "columns": [
             {
               "expression": "slug",
-              "isExpression": false,
               "asc": true,
-              "nulls": "last"
+              "nulls": "last",
+              "opclass": "text_ops",
+              "isExpression": false
             }
           ],
           "isUnique": false,
@@ -179,68 +146,8 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
       "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.mixes_to_authors": {
-      "name": "mixes_to_authors",
-      "schema": "",
-      "columns": {
-        "mixId": {
-          "name": "mixId",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "authorId": {
-          "name": "authorId",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "mixes_to_authors_mixId_mixes_id_fk": {
-          "name": "mixes_to_authors_mixId_mixes_id_fk",
-          "tableFrom": "mixes_to_authors",
-          "tableTo": "mixes",
-          "columnsFrom": [
-            "mixId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "mixes_to_authors_authorId_authors_id_fk": {
-          "name": "mixes_to_authors_authorId_authors_id_fk",
-          "tableFrom": "mixes_to_authors",
-          "tableTo": "authors",
-          "columnsFrom": [
-            "authorId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "mixes_to_authors_mixId_authorId_pk": {
-          "name": "mixes_to_authors_mixId_authorId_pk",
-          "columns": [
-            "mixId",
-            "authorId"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
       "policies": {},
-      "checkConstraints": {},
       "isRLSEnabled": false
     },
     "public.posts": {
@@ -331,9 +238,10 @@
           "columns": [
             {
               "expression": "slug",
-              "isExpression": false,
               "asc": true,
-              "nulls": "last"
+              "nulls": "last",
+              "opclass": "text_ops",
+              "isExpression": false
             }
           ],
           "isUnique": false,
@@ -347,6 +255,7 @@
           "name": "posts_publicationId_publications_id_fk",
           "tableFrom": "posts",
           "tableTo": "publications",
+          "schemaTo": "public",
           "columnsFrom": [
             "publicationId"
           ],
@@ -359,68 +268,88 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
       "checkConstraints": {},
+      "policies": {},
       "isRLSEnabled": false
     },
-    "public.posts_to_authors": {
-      "name": "posts_to_authors",
+    "public.authors": {
+      "name": "authors",
       "schema": "",
       "columns": {
-        "postId": {
-          "name": "postId",
+        "id": {
+          "name": "id",
           "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true
         },
-        "authorId": {
-          "name": "authorId",
-          "type": "uuid",
+        "username": {
+          "name": "username",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": true
+        },
+        "password": {
+          "name": "password",
+          "type": "varchar(255)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "verified": {
+          "name": "verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
         }
       },
       "indexes": {},
-      "foreignKeys": {
-        "posts_to_authors_postId_posts_id_fk": {
-          "name": "posts_to_authors_postId_posts_id_fk",
-          "tableFrom": "posts_to_authors",
-          "tableTo": "posts",
-          "columnsFrom": [
-            "postId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "posts_to_authors_authorId_authors_id_fk": {
-          "name": "posts_to_authors_authorId_authors_id_fk",
-          "tableFrom": "posts_to_authors",
-          "tableTo": "authors",
-          "columnsFrom": [
-            "authorId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {
-        "posts_to_authors_postId_authorId_pk": {
-          "name": "posts_to_authors_postId_authorId_pk",
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "authors_username_unique": {
           "columns": [
-            "postId",
-            "authorId"
-          ]
+            "username"
+          ],
+          "nullsNotDistinct": false,
+          "name": "authors_username_unique"
+        },
+        "authors_email_unique": {
+          "columns": [
+            "email"
+          ],
+          "nullsNotDistinct": false,
+          "name": "authors_email_unique"
         }
       },
-      "uniqueConstraints": {},
-      "policies": {},
       "checkConstraints": {},
+      "policies": {},
       "isRLSEnabled": false
     },
     "public.publication_authors": {
@@ -446,6 +375,7 @@
           "name": "publication_authors_publicationId_publications_id_fk",
           "tableFrom": "publication_authors",
           "tableTo": "publications",
+          "schemaTo": "public",
           "columnsFrom": [
             "publicationId"
           ],
@@ -459,6 +389,7 @@
           "name": "publication_authors_authorId_authors_id_fk",
           "tableFrom": "publication_authors",
           "tableTo": "authors",
+          "schemaTo": "public",
           "columnsFrom": [
             "authorId"
           ],
@@ -471,8 +402,8 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
       "checkConstraints": {},
+      "policies": {},
       "isRLSEnabled": false
     },
     "public.publication_posts": {
@@ -498,6 +429,7 @@
           "name": "publication_posts_publicationId_publications_id_fk",
           "tableFrom": "publication_posts",
           "tableTo": "publications",
+          "schemaTo": "public",
           "columnsFrom": [
             "publicationId"
           ],
@@ -511,6 +443,7 @@
           "name": "publication_posts_postId_posts_id_fk",
           "tableFrom": "publication_posts",
           "tableTo": "posts",
+          "schemaTo": "public",
           "columnsFrom": [
             "postId"
           ],
@@ -523,66 +456,144 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
       "checkConstraints": {},
+      "policies": {},
       "isRLSEnabled": false
     },
-    "public.publications": {
-      "name": "publications",
+    "public.mixes_to_authors": {
+      "name": "mixes_to_authors",
       "schema": "",
       "columns": {
-        "id": {
-          "name": "id",
+        "mixId": {
+          "name": "mixId",
           "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "slug": {
-          "name": "slug",
-          "type": "text",
+        "authorId": {
+          "name": "authorId",
+          "type": "uuid",
           "primaryKey": false,
           "notNull": true
         }
       },
       "indexes": {},
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "publications_slug_unique": {
-          "name": "publications_slug_unique",
-          "nullsNotDistinct": false,
+      "foreignKeys": {
+        "mixes_to_authors_mixId_mixes_id_fk": {
+          "name": "mixes_to_authors_mixId_mixes_id_fk",
+          "tableFrom": "mixes_to_authors",
+          "tableTo": "mixes",
+          "schemaTo": "public",
+          "columnsFrom": [
+            "mixId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "mixes_to_authors_authorId_authors_id_fk": {
+          "name": "mixes_to_authors_authorId_authors_id_fk",
+          "tableFrom": "mixes_to_authors",
+          "tableTo": "authors",
+          "schemaTo": "public",
+          "columnsFrom": [
+            "authorId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "mixes_to_authors_mixId_authorId_pk": {
+          "name": "mixes_to_authors_mixId_authorId_pk",
           "columns": [
-            "slug"
+            "mixId",
+            "authorId"
           ]
         }
       },
-      "policies": {},
+      "uniqueConstraints": {},
       "checkConstraints": {},
+      "policies": {},
+      "isRLSEnabled": false
+    },
+    "public.posts_to_authors": {
+      "name": "posts_to_authors",
+      "schema": "",
+      "columns": {
+        "postId": {
+          "name": "postId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "authorId": {
+          "name": "authorId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "posts_to_authors_postId_posts_id_fk": {
+          "name": "posts_to_authors_postId_posts_id_fk",
+          "tableFrom": "posts_to_authors",
+          "tableTo": "posts",
+          "schemaTo": "public",
+          "columnsFrom": [
+            "postId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "posts_to_authors_authorId_authors_id_fk": {
+          "name": "posts_to_authors_authorId_authors_id_fk",
+          "tableFrom": "posts_to_authors",
+          "tableTo": "authors",
+          "schemaTo": "public",
+          "columnsFrom": [
+            "authorId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "posts_to_authors_postId_authorId_pk": {
+          "name": "posts_to_authors_postId_authorId_pk",
+          "columns": [
+            "postId",
+            "authorId"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "checkConstraints": {},
+      "policies": {},
       "isRLSEnabled": false
     }
   },
   "enums": {
     "public.post_type": {
       "name": "post_type",
-      "schema": "public",
       "values": [
         "post",
         "micro",
         "label"
-      ]
+      ],
+      "schema": "public"
     }
   },
   "schemas": {},
@@ -591,8 +602,30 @@
   "policies": {},
   "views": {},
   "_meta": {
-    "columns": {},
     "schemas": {},
-    "tables": {}
+    "tables": {},
+    "columns": {}
+  },
+  "internal": {
+    "tables": {
+      "mixes": {
+        "columns": {
+          "tags": {
+            "isArray": true,
+            "dimensions": 1,
+            "rawType": "character varying(255)"
+          }
+        }
+      },
+      "posts": {
+        "columns": {
+          "tags": {
+            "isArray": true,
+            "dimensions": 1,
+            "rawType": "character varying(255)"
+          }
+        }
+      }
+    }
   }
 }

@@ -82,7 +82,7 @@ app.post("/reset-tables", async (c) => {
 		return c.json({ message: "Reset all tables successfully" });
 	} catch (error) {
 		console.error("Error resetting tables:", error);
-		return c.json({ error: "Failed to reset tables" }, 500);
+		return c.json({ error: "Failed to reset tables", stack: error }, 500);
 	}
 });
 

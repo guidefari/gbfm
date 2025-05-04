@@ -31,8 +31,29 @@ export const publicationPosts = pgTable('publication_posts', {
 });
 
 export const publicationsRelations = relations(publicationsTable, ({ many }) => ({
-  authors: many(publicationAuthors),
-  posts: many(postsTable),
+  publicationAuthors: many(publicationAuthors),
+}));
+
+export const publicationAuthorsRelations = relations(publicationAuthors, ({ one }) => ({
+  publication: one(publicationsTable, {
+    fields: [publicationAuthors.publicationId],
+    references: [publicationsTable.id],
+  }),
+  author: one(authorsTable, {
+    fields: [publicationAuthors.authorId],
+    references: [authorsTable.id],
+  }),
+}));
+
+export const publicationPostsRelations = relations(publicationPosts, ({ one }) => ({
+  publication: one(publicationsTable, {
+    fields: [publicationPosts.publicationId],
+    references: [publicationsTable.id],
+  }),
+  post: one(postsTable, {
+    fields: [publicationPosts.postId],
+    references: [postsTable.id],
+  }),
 }));
 
 export const insertPublicationSchema = createInsertSchema(publicationsTable, {
