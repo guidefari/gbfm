@@ -20,8 +20,8 @@ function createEnvConfig() {
     const { username, password, host, port, database } = Resource.gbfm_postgres
     databaseUrl = `postgresql://${username}:${password}@${host}:${port}/${database}`
     emailSender = Resource.Email.sender
-    accessTokenSecret = Resource.AccessTokenSecret.value
-    refreshTokenSecret = Resource.RefreshTokenSecret.value
+    accessTokenSecret = Resource.ACCESS_TOKEN_SECRET.value
+    refreshTokenSecret = Resource.REFRESH_TOKEN_SECRET.value
   }
   
   try {

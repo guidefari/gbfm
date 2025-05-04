@@ -8,8 +8,8 @@ export const secret = {
     process.env.SPOTIFY_CLIENT_SECRET
   ),
   SquealDBUrl: new sst.Secret("SquealDBUrl", process.env.SQUEAL_DB_URL),
-  AccessTokenSecret: new sst.Secret("AccessTokenSecret", process.env.ACCESS_TOKEN_SECRET),
-  RefreshTokenSecret: new sst.Secret("RefreshTokenSecret", process.env.REFRESH_TOKEN_SECRET),
+  AccessTokenSecret: new sst.Secret("ACCESS_TOKEN_SECRET", process.env.ACCESS_TOKEN_SECRET),
+  RefreshTokenSecret: new sst.Secret("REFRESH_TOKEN_SECRET", process.env.REFRESH_TOKEN_SECRET),
 }
 
 export const allSecrets = Object.values(secret)
