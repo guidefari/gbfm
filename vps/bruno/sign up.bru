@@ -5,16 +5,15 @@ meta {
 }
 
 post {
-  url: {{api_url}}/publication
+  url: {{api_url}}/auth/signup
   body: json
   auth: none
 }
 
 body:json {
   {
-    "name": "Guide Fari",
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "description": "guide@gb.fm",
-    "slug": "guide"
+    "username": "Guide Fari iclouder",
+    "email": "guideg6+icr@icloud.com",
+    "password": "12341234"
   }
 }

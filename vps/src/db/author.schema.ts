@@ -18,6 +18,17 @@ export const authorsTable = pgTable("authors", {
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
 });
 
+export const authorPasswordResetTokensTable = pgTable("author_password_reset_tokens", {
+  id: uuid().primaryKey().defaultRandom(),
+  authorId: uuid().notNull().references(() => authorsTable.id),
+  token: varchar({ length: 255 }).notNull().unique(),
+  expiresAt: timestamp({ withTimezone: true }).notNull(),
+  createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+});
+
+export const selectAuthorPasswordResetTokenSchema = createSelectSchema(authorPasswordResetTokensTable);
+export const insertAuthorPasswordResetTokenSchema = createInsertSchema(authorPasswordResetTokensTable);
+
 export const zAuthorSchema = createSelectSchema(authorsTable);
 export const createAuthorSchema = createInsertSchema(authorsTable);
 
