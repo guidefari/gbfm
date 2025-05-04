@@ -14,9 +14,17 @@ import { postsTable } from "@/db/post.schema";
 import publication from "./publication";
 import { publicationsTable, publicationAuthors, publicationPosts } from "@/db/publication.schema";
 import auth from "./auth";
+import { ZodError } from "zod";
 
 const db = drizzle(env.DATABASE_URL);
 const app = new Hono();
+
+app.onError((err, c) => {
+	if (err instanceof ZodError) {
+		return c.json({ error: "Invalid request", details: err.errors }, 400);
+	}
+	throw err;
+});
 
 app.route("/auth", auth);
 app.route("/author", author);

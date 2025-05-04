@@ -1,0 +1,19 @@
+meta {
+  name: sign in
+  type: http
+  seq: 10
+}
+
+post {
+  url: {{api_url}}/auth/signup
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "username": "Guide Fari iclouder",
+    "email": "guide@icloud.com",
+    "password": "12341234"
+  }
+}

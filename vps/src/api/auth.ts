@@ -16,7 +16,6 @@ export type SignupBody = z.infer<typeof signupSchema>
 const auth = new Hono()
 
 auth.post('/signup', async (c) => {
-  try {
     const body = await c.req.json()
     const validated = signupSchema.parse(body)
     
@@ -58,12 +57,40 @@ auth.post('/signup', async (c) => {
       user: authorWithoutPassword
     }, 201)
 
-  } catch (error) {
-    console.error('Signup error:', error)
-    return c.json({ 
-      error: 'Failed to create user' 
-    }, 500)
+})
+
+const signinSchema = z.object({
+  username: z.string().min(3).max(50),
+  password: z.string().min(8),
+})
+
+auth.post('/signin', async (c) => {
+  const body = await c.req.json()
+  const validated = signinSchema.parse(body)
+
+  const author = await db.select().from(authorsTable).where(eq(authorsTable.username, validated.username))
+
+  if (author.length === 0) {
+    return c.json({ error: 'Invalid username or password' }, 401)
   }
+
+  if (!author[0].password) {
+    return c.json({ error: 'No password set for this user' }, 401)
+  }
+  
+  const isPasswordValid = await Bun.password.verify(validated.password, author[0].password)
+
+  if (!isPasswordValid) {
+    return c.json({ error: 'Invalid username or password' }, 401)
+  }
+
+  const { password, ...authorWithoutPassword } = author[0]
+
+  // todo: return a jwt token and create a refresh token and a db session
+  return c.json({
+    message: 'Signin successful',
+    user: authorWithoutPassword
+  }, 200)
 })
 
 export default auth 
