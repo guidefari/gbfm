@@ -6,6 +6,10 @@
 import "sst"
 declare module "sst" {
   export interface Resource {
+    "ACCESS_TOKEN_SECRET": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "Api": {
       "name": string
       "type": "sst.aws.Function"
@@ -35,6 +39,10 @@ declare module "sst" {
     "Mixes": {
       "name": string
       "type": "sst.aws.Bucket"
+    }
+    "REFRESH_TOKEN_SECRET": {
+      "type": "sst.sst.Secret"
+      "value": string
     }
     "SpotifyClientId": {
       "type": "sst.sst.Secret"
