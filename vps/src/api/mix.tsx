@@ -3,6 +3,7 @@ import { mixesToAuthors, zMixSchema, mixesTable } from "../db/mix.schema";
 import { Hono } from "hono";
 import { zValidator } from "@hono/zod-validator";
 import { db } from "../db";
+import { bodyLimit } from "hono/body-limit";
 import type { FC } from "hono/jsx";
 import ffmpeg from "ffmpeg-static";
 import { spawn } from "node:child_process";
@@ -97,64 +98,100 @@ async function processUpload(c: Context): Promise<ProcessedFiles> {
 }
 
 function formatTracklist(tracklist: string): string {
-    return tracklist
-        .split('\n')
-        .filter(line => line.trim() && !line.startsWith('#')) // Skip header and empty lines
-        .map(line => {
-            const [number, artist, ...titleParts] = line.split('\t').map(part => part.trim());
-            const title = titleParts.join(' '); // Rejoin title parts in case they contain tabs
-            return `${number}. ${artist} - ${title}`;
-        })
-        .join('\n');
+	return tracklist
+		.split("\n")
+		.filter((line) => line.trim() && !line.startsWith("#")) // Skip header and empty lines
+		.map((line) => {
+			const [number, artist, ...titleParts] = line
+				.split("\t")
+				.map((part) => part.trim());
+			const title = titleParts.join(" "); // Rejoin title parts in case they contain tabs
+			return `${number}. ${artist} - ${title}`;
+		})
+		.join("\n");
 }
 
-async function createAudioOrVideo(files: ProcessedFiles, outputFormat: string): Promise<string> {
+async function createAudioOrVideo(
+	files: ProcessedFiles,
+	outputFormat: string,
+): Promise<string> {
 	const formattedTracklist = formatTracklist(files.description);
-	
+
 	return new Promise((resolve, reject) => {
-		const ffmpegArgs = outputFormat === 'mp3' 
-			? [
-				'-i', files.audioPath,
-				'-i', 'public/intro.wav',
-				'-i', files.imagePath,
-				'-filter_complex', '[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=2[a]',
-				'-c:a', 'libmp3lame',
-				'-b:a', '320k',
-				'-map', '[a]',
-				'-map', '2',
-				'-c:v', 'mjpeg',
-				'-disposition:v:0', 'attached_pic',
-				'-metadata', 'TCON=Electronic',
-				...(files.artist ? ['-metadata', `artist=${files.artist}`] : []),
-				'-metadata', `album=${files.album || 'GBFM'}`,
-				'-metadata', `description=Tracklist:\n${formattedTracklist}`,
-                '-metadata', `comment=Tracklist:\n${formattedTracklist}`,
-                '-metadata', `lyrics=Tracklist:\n${formattedTracklist}`,
-				'-metadata', `USLT=Tracklist:\n${formattedTracklist}`,
-				'-id3v2_version', '3',
-				files.outputPath
-			]
-			: [
-				'-loop', '1',
-				'-i', files.imagePath,
-				'-i', files.audioPath,
-				'-i', 'public/intro.wav',
-				'-filter_complex', '[1:a][2:a]amix=inputs=2:duration=first:dropout_transition=2[a]',
-				'-c:v', 'libx264',
-				'-tune', 'stillimage',
-				'-c:a', 'aac',
-				'-b:a', '192k',
-				'-pix_fmt', 'yuv420p',
-				'-shortest',
-				'-vf', 'scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2',
-				'-map', '0:v',
-				'-map', '[a]',
-				files.outputPath
-			];
+		const ffmpegArgs =
+			outputFormat === "mp3"
+				? [
+						"-i",
+						files.audioPath,
+						"-i",
+						"public/intro.wav",
+						"-i",
+						files.imagePath,
+						"-filter_complex",
+						"[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=2[a]",
+						"-c:a",
+						"libmp3lame",
+						"-b:a",
+						"320k",
+						"-map",
+						"[a]",
+						"-map",
+						"2",
+						"-c:v",
+						"mjpeg",
+						"-disposition:v:0",
+						"attached_pic",
+						"-metadata",
+						"TCON=Electronic",
+						...(files.artist ? ["-metadata", `artist=${files.artist}`] : []),
+						"-metadata",
+						`album=${files.album || "GBFM"}`,
+						"-metadata",
+						`description=Tracklist:\n${formattedTracklist}`,
+						"-metadata",
+						`comment=Tracklist:\n${formattedTracklist}`,
+						"-metadata",
+						`lyrics=Tracklist:\n${formattedTracklist}`,
+						"-metadata",
+						`USLT=Tracklist:\n${formattedTracklist}`,
+						"-id3v2_version",
+						"3",
+						files.outputPath,
+					]
+				: [
+						"-loop",
+						"1",
+						"-i",
+						files.imagePath,
+						"-i",
+						files.audioPath,
+						"-i",
+						"public/intro.wav",
+						"-filter_complex",
+						"[1:a][2:a]amix=inputs=2:duration=first:dropout_transition=2[a]",
+						"-c:v",
+						"libx264",
+						"-tune",
+						"stillimage",
+						"-c:a",
+						"aac",
+						"-b:a",
+						"192k",
+						"-pix_fmt",
+						"yuv420p",
+						"-shortest",
+						"-vf",
+						"scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2",
+						"-map",
+						"0:v",
+						"-map",
+						"[a]",
+						files.outputPath,
+					];
 
 		const ffmpegProcess = spawn(ffmpeg as string, ffmpegArgs);
 
-		ffmpegProcess.on('close', (code) => {
+		ffmpegProcess.on("close", (code) => {
 			if (code === 0) {
 				resolve(files.outputPath);
 			} else {
@@ -162,7 +199,7 @@ async function createAudioOrVideo(files: ProcessedFiles, outputFormat: string): 
 			}
 		});
 
-		ffmpegProcess.stderr.on('data', (data) => {
+		ffmpegProcess.stderr.on("data", (data) => {
 			console.log(`FFmpeg: ${data}`);
 		});
 	});
@@ -179,32 +216,41 @@ async function cleanup(files: ProcessedFiles) {
 	}
 }
 
-app.post("/process", async (c) => {
-	try {
-		const formData = await c.req.formData();
-		const files = await processUpload(c);
-		const outputFormat = (formData.get("outputFormat") as string) || 'mp4';
-		const title = formData.get("title") as string;
-		const safeTitle = title.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+app.post(
+	"/process",
+	bodyLimit({
+		maxSize: 1024 * 1024 * 1000, // 1GB
+		onError: (c) => {
+			return c.text("bro, your file is bigger than 1GB. stop it.", 413);
+		},
+	}),
+	async (c) => {
+		try {
+			const formData = await c.req.formData();
+			const files = await processUpload(c);
+			const outputFormat = (formData.get("outputFormat") as string) || "mp4";
+			const title = formData.get("title") as string;
+			const safeTitle = title.replace(/[^a-z0-9]/gi, "_").toLowerCase();
 
-		const outputPath = await createAudioOrVideo(files, outputFormat);
-		const outputBuffer = await fs.readFile(outputPath);
+			const outputPath = await createAudioOrVideo(files, outputFormat);
+			const outputBuffer = await fs.readFile(outputPath);
 
-		await cleanup(files);
+			await cleanup(files);
 
-		return new Response(outputBuffer, {
-			headers: {
-				"Content-Type": outputFormat === 'mp3' ? "audio/mpeg" : "video/mp4",
-				"Content-Disposition": `attachment; filename="${safeTitle}.${outputFormat}"`,
-			},
-		});
-	} catch (error) {
-		if (error instanceof Error) {
-			return c.json({ error: error.message }, 400);
+			return new Response(outputBuffer, {
+				headers: {
+					"Content-Type": outputFormat === "mp3" ? "audio/mpeg" : "video/mp4",
+					"Content-Disposition": `attachment; filename="${safeTitle}.${outputFormat}"`,
+				},
+			});
+		} catch (error) {
+			if (error instanceof Error) {
+				return c.json({ error: error.message }, 400);
+			}
+			return c.json({ error: "Failed to process upload" }, 500);
 		}
-		return c.json({ error: "Failed to process upload" }, 500);
-	}
-});
+	},
+);
 
 const styles = {
 	formContainer: {
