@@ -29,28 +29,28 @@ const apiFn = new sst.aws.Function("Api", {
 	link: [...allSecrets, bucket, auth, UserTable, ContentTable, contentBucket, mixesBucket, fileRouter],
 });
 
-// export const api = new sst.cloudflare.Worker("ApiWorker", {
-// 	url: true,
-// 	domain: `api.${domain}`,
-// 	handler: "./backend/src/proxy.ts",
-// 	environment: {
-// 		ORIGIN_URL: apiFn.url,
-// 		NO_CACHE: String(isPermanentStage),
-// 	},
-// });
+export const api = new sst.cloudflare.Worker("ApiWorker", {
+	url: true,
+	domain: `api.${domain}`,
+	handler: "./backend/src/proxy.ts",
+	environment: {
+		ORIGIN_URL: apiFn.url,
+		NO_CACHE: String(isPermanentStage),
+	},
+});
 
-// export const authRouter = new sst.cloudflare.Worker("AuthWorkerCF", {
-// 	url: true,
-// 	dev: false,
-// 	domain: `auth.${domain}`,
-// 	handler: "./backend/src/proxy.ts",
-// 	environment: {
-// 		ORIGIN_URL: auth.url,
-// 	},
-// });
+export const authRouter = new sst.cloudflare.Worker("AuthWorkerCF", {
+	url: true,
+	dev: false,
+	domain: `auth.${domain}`,
+	handler: "./backend/src/proxy.ts",
+	environment: {
+		ORIGIN_URL: auth.url,
+	},
+});
 
 export const outputs = {
-	// auth: authRouter.url,
-	// api: api.url,
-	// swagger: api.url.apply(url => `${url}/swag`),
+	auth: authRouter.url,
+	api: api.url,
+	swagger: api.url.apply(url => `${url}/swag`),
 };
