@@ -56,6 +56,11 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
+    "Urls": {
+      "site": string
+      "type": "sst.sst.Linkable"
+      "vps": string
+    }
     "UserTable": {
       "name": string
       "type": "sst.aws.Dynamo"

@@ -1,9 +1,8 @@
 // import  from './bucket'
 
-import { domain } from "./dns";
+import { domain, urls } from "./dns";
 import { email } from "./email";
 import { allSecrets } from "./secret";
-import { www } from "./www";
 
 export const vpc = new sst.aws.Vpc("gbfm_network");
 
@@ -18,16 +17,16 @@ export const database = new sst.aws.Postgres("gbfm_postgres", {
 		password: "strong-password",
 		database: "postgres",
 		port: 5432,
-	}
-  });
+	},
+});
 
-  new sst.x.DevCommand("Studio", {
+new sst.x.DevCommand("Studio", {
 	link: [database, email],
 	dev: {
 		command: "npx drizzle-kit studio",
 		directory: "./vps",
 	},
-  });
+});
 
 export const service = new sst.aws.Service("gbfm_vps", {
 	cluster,
@@ -53,7 +52,7 @@ export const service = new sst.aws.Service("gbfm_vps", {
 		target: "release",
 		dockerfile: "vps/Dockerfile",
 	},
-link: [database, email, www, ...allSecrets],
+	link: [database, email, urls, ...allSecrets],
 });
 
 export const vps_gateway = new sst.aws.ApiGatewayV2("gbfm_vps_gateway", {
@@ -69,7 +68,6 @@ const isLocal = ["local", "dev"].includes($app.stage);
 if (!isLocal) {
 	vps_gateway.routePrivate("$default", service.nodes.cloudmapService.arn);
 }
-
 
 export const outputs = {
 	vps_gateway: vps_gateway.url,
