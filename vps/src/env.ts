@@ -14,7 +14,7 @@ function createEnvConfig() {
   let accessTokenSecret = process.env.ACCESS_TOKEN_SECRET || 'secret';
   let refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET || 'secret';
   
-  const isLocal = Object.keys(Resource).length === 0 || Resource.App.stage === "local";
+  const isLocal = Object.keys(Resource).length === 0 || ["local", "dev"].includes(Resource.App.stage);
 
   if (!isLocal) {
     const { username, password, host, port, database } = Resource.gbfm_postgres

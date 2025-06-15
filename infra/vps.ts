@@ -63,7 +63,7 @@ const vps_gateway = new sst.aws.ApiGatewayV2("gbfm_vps_gateway", {
 	},
 });
 
-const isLocal = $app.stage === "local";
+const isLocal = ["local", "dev"].includes($app.stage);
 
 if (!isLocal) {
 	vps_gateway.routePrivate("$default", service.nodes.cloudmapService.arn);
