@@ -4,6 +4,7 @@ import {
 	FileTextIcon,
 	TwitterLogoIcon,
 	Pencil2Icon,
+	HomeIcon,
 } from "@radix-ui/react-icons";
 import { BiSolidCameraHome } from "react-icons/bi";
 import { IoIosMailOpen } from "react-icons/io";
@@ -23,6 +24,11 @@ type shit =
 const iconSytles = "h-5 w-5 transition-all group-hover:scale-110";
 
 export const pagesAndPages: shit[] = [
+	{
+		name: "Home",
+		slug: "/",
+		icon: <HomeIcon className={iconSytles} />,
+	},
 	{
 		name: "Words",
 		slug: "/words",

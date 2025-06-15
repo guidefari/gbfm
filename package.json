@@ -3,11 +3,11 @@
 	"version": "0.0.0",
 	"sideEffects": false,
 	"scripts": {
-		"dev": "sst dev --stage=local",
-		"refresh": "sst refresh --stage=local",
+		"dev": "sst dev --stage=dev",
+		"refresh": "sst refresh --stage=dev",
 		"sso": "aws sso login --sso-session=terminal --no-browser",
 		"typecheck": "bun --filter=* typecheck",
-		"deploy": "sst deploy --stage=staging",
+		"deploy": "sst deploy --stage=dev",
 		"deploy:prod": "sst deploy --stage=prod",
 		"gen": "cd vps && sst shell drizzle-kit generate"
 	},
