@@ -10,6 +10,7 @@ type Props = {
 	fields: FormField[];
 	onSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>;
 	formTitle: string;
+	submitButtonText?: string;
 };
 
 export type FormField = {
@@ -31,7 +32,7 @@ const AutoCompleteMatcher = (type: HTMLInputTypeAttribute): HTMLInputAutoComplet
 	}
 };
 
-export const GenericAuthForm = ({ fields, onSubmit, formTitle }: Props) => {
+export const GenericAuthForm = ({ fields, onSubmit, formTitle, submitButtonText }: Props) => {
 	return (
 		<div className="flex min-h-[65dvh] flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
 			<div className="w-full max-w-md mx-auto space-y-8">
@@ -61,7 +62,7 @@ export const GenericAuthForm = ({ fields, onSubmit, formTitle }: Props) => {
 									</div>
 								))}
 								<Button type="submit" className="w-full">
-									{formTitle}
+									{submitButtonText || formTitle}
 								</Button>
 							</div>
 						</form>

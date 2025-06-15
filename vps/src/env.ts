@@ -6,6 +6,7 @@ const envSchema = z.object({
   EMAIL_SENDER: z.string(),
   ACCESS_TOKEN_SECRET: z.string(),
   REFRESH_TOKEN_SECRET: z.string(),
+  FRONTEND_URL: z.string().url(),
 });
 
 function createEnvConfig() {
@@ -13,6 +14,7 @@ function createEnvConfig() {
   let emailSender = process.env.EMAIL_SENDER || '';
   let accessTokenSecret = process.env.ACCESS_TOKEN_SECRET || 'secret';
   let refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET || 'secret';
+  let frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
   
   const isLocal = Object.keys(Resource).length === 0 || ["local", "dev"].includes(Resource.App.stage);
 
@@ -22,6 +24,7 @@ function createEnvConfig() {
     emailSender = Resource.Email.sender
     accessTokenSecret = Resource.ACCESS_TOKEN_SECRET.value
     refreshTokenSecret = Resource.REFRESH_TOKEN_SECRET.value
+    frontendUrl = Resource['gbfm-www'].url
   }
   
   try {
@@ -31,6 +34,7 @@ function createEnvConfig() {
       EMAIL_SENDER: emailSender,
       ACCESS_TOKEN_SECRET: accessTokenSecret,
       REFRESH_TOKEN_SECRET: refreshTokenSecret,
+      FRONTEND_URL: frontendUrl,
     });
     return config;
   } catch (error) {

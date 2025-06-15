@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import { cors } from "hono/cors";
 
 import "dotenv/config";
 import { drizzle } from "drizzle-orm/node-postgres";
@@ -18,6 +19,17 @@ import { ZodError } from "zod";
 
 const db = drizzle(env.DATABASE_URL);
 const app = new Hono();
+
+app.use("*", cors({
+	origin: [
+		"http://localhost:5173",
+		"https://www.goosebumps.fm",
+		"https://goosebumps.fm"
+	],
+	allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+	allowHeaders: ["Content-Type", "Authorization"],
+	credentials: true,
+}));
 
 app.onError((err, c) => {
 	if (err instanceof ZodError) {
@@ -94,10 +106,8 @@ app.get("/health", async (c) => {
 // 	}
 // });
 
-export const localVPSPort = 3003;
-
 export default {
-	port: localVPSPort,
+	port: 3003,
 	fetch: app.fetch,
 	maxRequestBodySize: 1024 * 1024 * 1000, // 1GB
 };

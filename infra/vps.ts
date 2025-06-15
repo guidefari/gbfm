@@ -3,6 +3,7 @@
 import { domain } from "./dns";
 import { email } from "./email";
 import { allSecrets } from "./secret";
+import { www } from "./www";
 
 export const vpc = new sst.aws.Vpc("gbfm_network");
 
@@ -52,7 +53,7 @@ export const service = new sst.aws.Service("gbfm_vps", {
 		target: "release",
 		dockerfile: "vps/Dockerfile",
 	},
-link: [database, email, ...allSecrets],
+link: [database, email, www, ...allSecrets],
 });
 
 export const vps_gateway = new sst.aws.ApiGatewayV2("gbfm_vps_gateway", {

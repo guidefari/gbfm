@@ -24,6 +24,8 @@ import { Route as IndexImport } from './routes/index'
 import { Route as AuthIndexImport } from './routes/auth/index'
 import { Route as SettingsProfileImport } from './routes/settings/profile'
 import { Route as AuthVerifyImport } from './routes/auth/verify'
+import { Route as AuthSignInImport } from './routes/auth/sign-in'
+import { Route as AuthResetPasswordImport } from './routes/auth/reset-password'
 import { Route as AuthForgotPasswordImport } from './routes/auth/forgot-password'
 import { Route as ContentListMixesImport } from './routes/_contentList.mixes'
 import { Route as ContentListLabelsImport } from './routes/_contentList.labels'
@@ -103,6 +105,18 @@ const SettingsProfileRoute = SettingsProfileImport.update({
 const AuthVerifyRoute = AuthVerifyImport.update({
   id: '/auth/verify',
   path: '/auth/verify',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AuthSignInRoute = AuthSignInImport.update({
+  id: '/auth/sign-in',
+  path: '/auth/sign-in',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AuthResetPasswordRoute = AuthResetPasswordImport.update({
+  id: '/auth/reset-password',
+  path: '/auth/reset-password',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -211,6 +225,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthForgotPasswordImport
       parentRoute: typeof rootRoute
     }
+    '/auth/reset-password': {
+      id: '/auth/reset-password'
+      path: '/auth/reset-password'
+      fullPath: '/auth/reset-password'
+      preLoaderRoute: typeof AuthResetPasswordImport
+      parentRoute: typeof rootRoute
+    }
+    '/auth/sign-in': {
+      id: '/auth/sign-in'
+      path: '/auth/sign-in'
+      fullPath: '/auth/sign-in'
+      preLoaderRoute: typeof AuthSignInImport
+      parentRoute: typeof rootRoute
+    }
     '/auth/verify': {
       id: '/auth/verify'
       path: '/auth/verify'
@@ -277,6 +305,8 @@ export interface FileRoutesByFullPath {
   '/labels': typeof ContentListLabelsRoute
   '/mixes': typeof ContentListMixesRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/auth/sign-in': typeof AuthSignInRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/auth': typeof AuthIndexRoute
@@ -296,6 +326,8 @@ export interface FileRoutesByTo {
   '/labels': typeof ContentListLabelsRoute
   '/mixes': typeof ContentListMixesRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/auth/sign-in': typeof AuthSignInRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/auth': typeof AuthIndexRoute
@@ -316,6 +348,8 @@ export interface FileRoutesById {
   '/_contentList/labels': typeof ContentListLabelsRoute
   '/_contentList/mixes': typeof ContentListMixesRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
+  '/auth/reset-password': typeof AuthResetPasswordRoute
+  '/auth/sign-in': typeof AuthSignInRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/auth/': typeof AuthIndexRoute
@@ -337,6 +371,8 @@ export interface FileRouteTypes {
     | '/labels'
     | '/mixes'
     | '/auth/forgot-password'
+    | '/auth/reset-password'
+    | '/auth/sign-in'
     | '/auth/verify'
     | '/settings/profile'
     | '/auth'
@@ -355,6 +391,8 @@ export interface FileRouteTypes {
     | '/labels'
     | '/mixes'
     | '/auth/forgot-password'
+    | '/auth/reset-password'
+    | '/auth/sign-in'
     | '/auth/verify'
     | '/settings/profile'
     | '/auth'
@@ -373,6 +411,8 @@ export interface FileRouteTypes {
     | '/_contentList/labels'
     | '/_contentList/mixes'
     | '/auth/forgot-password'
+    | '/auth/reset-password'
+    | '/auth/sign-in'
     | '/auth/verify'
     | '/settings/profile'
     | '/auth/'
@@ -391,6 +431,8 @@ export interface RootRouteChildren {
   TodoRoute: typeof TodoRoute
   WordsRoute: typeof WordsRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
+  AuthResetPasswordRoute: typeof AuthResetPasswordRoute
+  AuthSignInRoute: typeof AuthSignInRoute
   AuthVerifyRoute: typeof AuthVerifyRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
   AuthIndexRoute: typeof AuthIndexRoute
@@ -408,6 +450,8 @@ const rootRouteChildren: RootRouteChildren = {
   TodoRoute: TodoRoute,
   WordsRoute: WordsRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
+  AuthResetPasswordRoute: AuthResetPasswordRoute,
+  AuthSignInRoute: AuthSignInRoute,
   AuthVerifyRoute: AuthVerifyRoute,
   SettingsProfileRoute: SettingsProfileRoute,
   AuthIndexRoute: AuthIndexRoute,
@@ -434,6 +478,8 @@ export const routeTree = rootRoute
         "/todo",
         "/words",
         "/auth/forgot-password",
+        "/auth/reset-password",
+        "/auth/sign-in",
         "/auth/verify",
         "/settings/profile",
         "/auth/",
@@ -479,6 +525,12 @@ export const routeTree = rootRoute
     },
     "/auth/forgot-password": {
       "filePath": "auth/forgot-password.tsx"
+    },
+    "/auth/reset-password": {
+      "filePath": "auth/reset-password.tsx"
+    },
+    "/auth/sign-in": {
+      "filePath": "auth/sign-in.tsx"
     },
     "/auth/verify": {
       "filePath": "auth/verify.tsx"

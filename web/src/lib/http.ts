@@ -19,16 +19,20 @@ export async function fetcher<T>(
 	input: RequestInfo,
 	init: CustomRequestInit = { skipAuth: true },
 ) {
-	const sessionToken = init.token;
+	const jwt = init.token || localStorage.getItem("accessToken");
+	console.log('jwt:', jwt)
+	const refreshToken = localStorage.getItem("refreshToken");
+	console.log('refreshToken:', refreshToken)
 	
 	try {
 		const isApiRequest =
-			input.toString().includes(API_BASE_URL) && !init?.skipAuth;
+		[API_BASE_URL, VPS_BASE_URL].some(base => input.toString().includes(base)) && !init?.skipAuth;
+		console.log('isApiRequest:', isApiRequest)
 
 		const headers = {
 			"Content-Type": "application/json",
-			...(isApiRequest && sessionToken
-				? { Authorization: `Bearer ${sessionToken}` }
+			...(isApiRequest && jwt
+				? { Authorization: `Bearer ${jwt}`, "Refresh-Token": refreshToken || "" }
 				: {}),
 		};
 
@@ -39,10 +43,10 @@ export async function fetcher<T>(
 
 		// todo: this actually needs to be implemented, lol.
 		if (res.status === 401 && isApiRequest) {
-			if (sessionToken) {
+			if (jwt) {
 				const retryHeaders = {
 					...headers,
-					Authorization: `Bearer ${sessionToken}`,
+					Authorization: `Bearer ${jwt}`,
 				};
 				res = await fetch(input, {
 					...init,
