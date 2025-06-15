@@ -1,4 +1,4 @@
-import { api, authRouter } from "./api";
+// import { api, authRouter } from "./api";
 import { domain } from "./dns";
 
 export const www = new sst.aws.StaticSite("gbfm-www", {
@@ -9,9 +9,11 @@ export const www = new sst.aws.StaticSite("gbfm-www", {
 	},
 	environment: {
 		// @ts-expect-error - should be fine
-		VITE_API_BASE_URL: api.url,
+		// VITE_API_BASE_URL: api.url,
+  VITE_API_BASE_URL: "yooo",
 		// @ts-expect-error - should be fine
-		VITE_AUTH_BASE_URL: authRouter.url,
+		// VITE_AUTH_BASE_URL: authRouter.url,
+		VITE_AUTH_BASE_URL: "bu",
 	},
 	domain: {
 		name: `www.${domain}`,

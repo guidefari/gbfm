@@ -89,14 +89,6 @@ declare module "sst" {
     }
   }
 }
-// cloudflare 
-import * as cloudflare from "@cloudflare/workers-types";
-declare module "sst" {
-  export interface Resource {
-    "ApiWorker": cloudflare.Service
-    "AuthWorkerCF": cloudflare.Service
-  }
-}
 
 import "sst"
 export {}

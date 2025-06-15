@@ -6,9 +6,11 @@ export const domain =
 
 // export const shortDomain = domain.replace(/goosebumps\.fm$/, "gbfm.dev");
 
-export const zone = cloudflare.getZoneOutput({
-	name: "goosebumps.fm",
-});
+// export const zone = cloudflare.getZoneOutput({
+// 	filter: {
+// 		name: domain,
+// 	},
+// });
 
 // export const shortZone = cloudflare.getZoneOutput({
 //   name: "gbfm.dev",

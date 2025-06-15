@@ -1,33 +1,29 @@
 {
-  "name": "gbfm",
-  "version": "0.0.0",
-  "sideEffects": false,
-  "scripts": {
-    "dev": "sst dev --stage=local",
-    "sso": "aws sso login --sso-session=terminal --no-browser",
-    "typecheck": "bun --filter=* typecheck",
-    "deploy": "sst deploy --stage=staging",
-    "deploy:prod": "sst deploy --stage=prod",
-    "gen": "cd vps && sst shell drizzle-kit generate"
-  },
-  "workspaces": [
-    "backend",
-    "core",
-    "web", 
-    "vps"
-  ],
-  "dependencies": {
-    "@effect/platform": "latest",
-    "@effect/schema": "latest",
-    "@mdx-js/mdx": "3.1.0",
-    "@openauthjs/openauth": "0.4.3",
-    "effect": "latest",
-    "gray-matter": "4.0.3",
-    "sst": "3.14.11",
-    "zod": "^3.24.3"
-  },
-  "devDependencies": {
-    "@tsconfig/node20": "^20.1.5",
-    "typescript": "latest"
-  }
+	"name": "gbfm",
+	"version": "0.0.0",
+	"sideEffects": false,
+	"scripts": {
+		"dev": "sst dev --stage=local",
+		"refresh": "sst refresh --stage=local",
+		"sso": "aws sso login --sso-session=terminal --no-browser",
+		"typecheck": "bun --filter=* typecheck",
+		"deploy": "sst deploy --stage=staging",
+		"deploy:prod": "sst deploy --stage=prod",
+		"gen": "cd vps && sst shell drizzle-kit generate"
+	},
+	"workspaces": ["backend", "core", "web", "vps"],
+	"dependencies": {
+		"@effect/platform": "latest",
+		"@effect/schema": "latest",
+		"@mdx-js/mdx": "3.1.0",
+		"@openauthjs/openauth": "0.4.3",
+		"effect": "latest",
+		"gray-matter": "4.0.3",
+		"sst": "3.17.5",
+		"zod": "3.25.64"
+	},
+	"devDependencies": {
+		"@tsconfig/node20": "^20.1.6",
+		"typescript": "latest"
+	}
 }
