@@ -189,11 +189,7 @@ async function createAudioOrVideo(
 						files.outputPath,
 					];
 
-					const ffmpegPath = process.platform === 'darwin' 
-  ? '/usr/local/bin/ffmpeg'  // macOS path
-  : ffmpeg as string;
-		
-		const ffmpegProcess = spawn(ffmpegPath as string, ffmpegArgs);
+		const ffmpegProcess = spawn(ffmpeg as string, ffmpegArgs);
 
 		ffmpegProcess.on("close", (code) => {
 			if (code === 0) {
