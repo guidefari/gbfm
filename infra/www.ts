@@ -1,5 +1,8 @@
 import { api, authRouter } from "./api";
+import { vps_gateway } from "./vps";
 import { domain } from "./dns";
+import { isLocal } from "./stage";
+import { localVPSPort } from "../vps/src/api";
 
 export const www = new sst.aws.StaticSite("gbfm-www", {
 	path: "./web",
@@ -12,6 +15,7 @@ export const www = new sst.aws.StaticSite("gbfm-www", {
 		VITE_API_BASE_URL: api.url,
 		// @ts-expect-error - should be fine
 		VITE_AUTH_BASE_URL: authRouter.url,
+		VITE_VPS_BASE_URL: isLocal ? `http://localhost:${localVPSPort}` : vps_gateway.url,
 	},
 	domain: {
 		name: `www.${domain}`,

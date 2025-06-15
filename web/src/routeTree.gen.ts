@@ -24,6 +24,7 @@ import { Route as IndexImport } from './routes/index'
 import { Route as AuthIndexImport } from './routes/auth/index'
 import { Route as SettingsProfileImport } from './routes/settings/profile'
 import { Route as AuthVerifyImport } from './routes/auth/verify'
+import { Route as AuthForgotPasswordImport } from './routes/auth/forgot-password'
 import { Route as ContentListMixesImport } from './routes/_contentList.mixes'
 import { Route as ContentListLabelsImport } from './routes/_contentList.labels'
 import { Route as ReadArchetypeIdImport } from './routes/read.$archetype.$id'
@@ -102,6 +103,12 @@ const SettingsProfileRoute = SettingsProfileImport.update({
 const AuthVerifyRoute = AuthVerifyImport.update({
   id: '/auth/verify',
   path: '/auth/verify',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const AuthForgotPasswordRoute = AuthForgotPasswordImport.update({
+  id: '/auth/forgot-password',
+  path: '/auth/forgot-password',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -197,6 +204,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContentListMixesImport
       parentRoute: typeof ContentListImport
     }
+    '/auth/forgot-password': {
+      id: '/auth/forgot-password'
+      path: '/auth/forgot-password'
+      fullPath: '/auth/forgot-password'
+      preLoaderRoute: typeof AuthForgotPasswordImport
+      parentRoute: typeof rootRoute
+    }
     '/auth/verify': {
       id: '/auth/verify'
       path: '/auth/verify'
@@ -262,6 +276,7 @@ export interface FileRoutesByFullPath {
   '/words': typeof WordsRoute
   '/labels': typeof ContentListLabelsRoute
   '/mixes': typeof ContentListMixesRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/auth': typeof AuthIndexRoute
@@ -280,6 +295,7 @@ export interface FileRoutesByTo {
   '/words': typeof WordsRoute
   '/labels': typeof ContentListLabelsRoute
   '/mixes': typeof ContentListMixesRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/auth': typeof AuthIndexRoute
@@ -299,6 +315,7 @@ export interface FileRoutesById {
   '/words': typeof WordsRoute
   '/_contentList/labels': typeof ContentListLabelsRoute
   '/_contentList/mixes': typeof ContentListMixesRoute
+  '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/verify': typeof AuthVerifyRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/auth/': typeof AuthIndexRoute
@@ -319,6 +336,7 @@ export interface FileRouteTypes {
     | '/words'
     | '/labels'
     | '/mixes'
+    | '/auth/forgot-password'
     | '/auth/verify'
     | '/settings/profile'
     | '/auth'
@@ -336,6 +354,7 @@ export interface FileRouteTypes {
     | '/words'
     | '/labels'
     | '/mixes'
+    | '/auth/forgot-password'
     | '/auth/verify'
     | '/settings/profile'
     | '/auth'
@@ -353,6 +372,7 @@ export interface FileRouteTypes {
     | '/words'
     | '/_contentList/labels'
     | '/_contentList/mixes'
+    | '/auth/forgot-password'
     | '/auth/verify'
     | '/settings/profile'
     | '/auth/'
@@ -370,6 +390,7 @@ export interface RootRouteChildren {
   SubscribeRoute: typeof SubscribeRoute
   TodoRoute: typeof TodoRoute
   WordsRoute: typeof WordsRoute
+  AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthVerifyRoute: typeof AuthVerifyRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
   AuthIndexRoute: typeof AuthIndexRoute
@@ -386,6 +407,7 @@ const rootRouteChildren: RootRouteChildren = {
   SubscribeRoute: SubscribeRoute,
   TodoRoute: TodoRoute,
   WordsRoute: WordsRoute,
+  AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthVerifyRoute: AuthVerifyRoute,
   SettingsProfileRoute: SettingsProfileRoute,
   AuthIndexRoute: AuthIndexRoute,
@@ -411,6 +433,7 @@ export const routeTree = rootRoute
         "/subscribe",
         "/todo",
         "/words",
+        "/auth/forgot-password",
         "/auth/verify",
         "/settings/profile",
         "/auth/",
@@ -453,6 +476,9 @@ export const routeTree = rootRoute
     "/_contentList/mixes": {
       "filePath": "_contentList.mixes.tsx",
       "parent": "/_contentList"
+    },
+    "/auth/forgot-password": {
+      "filePath": "auth/forgot-password.tsx"
     },
     "/auth/verify": {
       "filePath": "auth/verify.tsx"

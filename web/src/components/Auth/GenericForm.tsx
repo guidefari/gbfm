@@ -1,5 +1,5 @@
 import type React from "react";
-import type { HTMLInputTypeAttribute } from "react";
+import type { HTMLInputAutoCompleteAttribute, HTMLInputTypeAttribute } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { LockIcon } from "@/components/common/icons";
 import { Input } from "@/components/ui/input";
@@ -18,6 +18,17 @@ export type FormField = {
 	type: HTMLInputTypeAttribute;
 	placeholder: string;
 	required?: boolean;
+};
+
+const AutoCompleteMatcher = (type: HTMLInputTypeAttribute): HTMLInputAutoCompleteAttribute => {
+	switch (type) {
+		case "email":
+			return "email";
+		case "password":
+			return "current-password";
+		default:
+			return "off";
+	}
 };
 
 export const GenericAuthForm = ({ fields, onSubmit, formTitle }: Props) => {
@@ -45,6 +56,7 @@ export const GenericAuthForm = ({ fields, onSubmit, formTitle }: Props) => {
 											placeholder={field.placeholder}
 											required={field.required || false}
 											name={field.name}
+											autoComplete={AutoCompleteMatcher(field.type)}
 										/>
 									</div>
 								))}

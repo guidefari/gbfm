@@ -55,7 +55,7 @@ export const service = new sst.aws.Service("gbfm_vps", {
 link: [database, email, ...allSecrets],
 });
 
-const vps_gateway = new sst.aws.ApiGatewayV2("gbfm_vps_gateway", {
+export const vps_gateway = new sst.aws.ApiGatewayV2("gbfm_vps_gateway", {
 	vpc,
 	domain: {
 		name: `vps.${domain}`,
