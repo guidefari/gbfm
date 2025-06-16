@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { getAuthorByEmailOrId } from "@/db/author.repo";
 import { env } from "@/env";
-import { Email } from "@gbfm/core/email/index";
+import { Email } from "@gbfm/core/email/index.tsx";
 import { and, eq } from "drizzle-orm";
 import { Hono } from "hono";
-import { decode, sign, verify } from "hono/jwt";
+import { sign, verify } from "hono/jwt";
 import type { JWTPayload } from "hono/utils/jwt/types";
 import { z } from "zod";
 import { db } from "../db";
@@ -62,14 +62,20 @@ auth.post("/signup", async (c) => {
 		to: validated.email,
 		subject: "Welcome to the gbfm cms!",
 		body: `
-        <h1>Welcome to the gbfm cms, ${validated.username}!</h1>
-        <p>Thank you for joining our community. We're excited to have you on board!</p>
-        <p>You can now log in and start exploring all our features.</p>
-        <br>
-        <p>Best regards,</p>
-        <p>Guide</p>
-      `,
+			<h1>Welcome to the gbfm cms, ${validated.username}!</h1>
+			<p>Thank you for joining our community. We're excited to have you on board!</p>
+			<p>You can now log in and start exploring all our features.</p>
+			<br>
+			<p>Best regards,</p>
+			<p>Guide</p>
+		  `,
 	});
+
+	// await sendWelcomeEmail({
+	// 	to: validated.email,
+	// 	username: validated.username,
+	// 	loginUrl: `${env.FRONTEND_URL}/auth/signin`,
+	// });
 
 	const { password, ...authorWithoutPassword } = newAuthor[0];
 
@@ -169,7 +175,7 @@ auth.post("/forgot-password", async (c) => {
 		.where(eq(authorPasswordResetTokensTable.authorId, author[0].id));
 
 	const token = randomUUID();
-	const expiresAt = new Date(Date.now() + 1000 * 60 * 60); // 1 hour
+	const expiresAt = new Date(Date.now() + 1000 * 60 * 60);
 
 	await db.insert(authorPasswordResetTokensTable).values({
 		authorId: author[0].id,
@@ -189,6 +195,14 @@ auth.post("/forgot-password", async (c) => {
       <p>If you didn't request this, please ignore this email.</p>
     `,
 	});
+
+	// const resetUrl = `${env.FRONTEND_URL}/auth/reset-password?token=${token}&email=${validated.email}`;
+
+	// await Email.sendPasswordResetEmail({
+	// 	to: validated.email,
+	// 	resetUrl,
+	// 	expiresIn: "1 hour",
+	// });
 
 	return c.json({ message: "Password reset email sent" }, 200);
 });
