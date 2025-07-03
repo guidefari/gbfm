@@ -8,11 +8,13 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useAuthContext } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 
 const ProfileAvatar = () => {
-	const { user, logout, login } = useAuthContext();
-	console.log('user:', user)
+	const navigate = useNavigate();
+	// const { user, logout, login } = useAuthContext();
+	// console.log('user:', user)
+	const user = null;
 
 	return (
 		<DropdownMenu>
@@ -22,7 +24,7 @@ const ProfileAvatar = () => {
 					size="icon"
 					className="overflow-hidden rounded-full"
 				>
-					{user}
+					{/* {user} */}
 					{/* <img
 						src="/fav.png"
 						width={36}
@@ -34,14 +36,12 @@ const ProfileAvatar = () => {
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end">
 				{!user && (
-					<>
-						<DropdownMenuItem className="hover:cursor-pointer" onClick={() => login()}>
-							Sign In
-						</DropdownMenuItem>
-					</>
+					<DropdownMenuItem className="hover:cursor-pointer" onClick={() => navigate({ to: "/auth/sign-in" })}>
+						Sign In
+					</DropdownMenuItem>
 				)}
 
-				{user && (
+				{/* {user && (
 					<>
 						<DropdownMenuItem asChild>
 							<Link to="/settings/profile">Profile</Link>
@@ -49,7 +49,7 @@ const ProfileAvatar = () => {
 						<DropdownMenuSeparator />
 						<DropdownMenuItem onClick={() => logout()}>Logout</DropdownMenuItem>
 					</>
-				)}
+				)} */}
 			</DropdownMenuContent>
 		</DropdownMenu>
 	);

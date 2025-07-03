@@ -1,9 +1,7 @@
-import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { User } from "@gbfm/core/user/index.ts";
-import { AuthClient_API, s3 } from ".";
-import { subjects } from "../subjects";
+import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
+// import { subjects } from "../subjects";
 import { Resource } from "sst";
-import { PutObjectCommand } from "@aws-sdk/client-s3";
 
 export namespace UserApi {
 	User.setUserRepository("dynamo");
@@ -72,19 +70,19 @@ export namespace UserApi {
 			}),
 			async (c) => {
 				const token = c.req.header("Authorization")?.split(" ")[1];
-				
+
 				if (!token) {
 					return c.json({ error: "No token provided" }, 401);
 				}
 
-				const session = await AuthClient_API.verify(subjects, token);
-				
-				if (session.err) {
-					console.error({ "session.err": session.err });
-					return c.json({ error: "No session" }, 401);
-				}
+				// const session = await AuthClient_API.verify(subjects, token);
 
-				const user = await User.fromID(session.subject.properties.id);
+				// if (session.err) {
+				// 	console.error({ "session.err": session.err });
+				// 	return c.json({ error: "No session" }, 401);
+				// }
+
+				const user = await User.fromID("system");
 				if (!user) {
 					return c.json({ error: "User not found" }, 404);
 				}
@@ -124,7 +122,6 @@ export namespace UserApi {
 				// const user = await User.fromUsername(payload.username);
 				const user = await User.fromID(id); // Fetch user first
 
-
 				if (!user) {
 					return c.json({ error: "User not found" }, 404);
 				}
@@ -151,7 +148,7 @@ export namespace UserApi {
 				// can't delete self
 				// can't delete if role !=admin
 				await User.deleteByID(id);
-				return c.json(null, 204);
+				return c.status(204);
 			},
 		)
 		// update avatar
@@ -185,22 +182,13 @@ export namespace UserApi {
 				}
 
 				const fileBuffer = await payload.avatar.arrayBuffer();
-				const fileName = `avatar_${id}_${payload.avatar.name.replace(/\s+/g, '_')}`;
-				
-				try {
-					const result = await s3.send(
-						new PutObjectCommand({
-							Bucket: Resource.User_Content.name,
-							Key: fileName,
-							Body: Buffer.from(fileBuffer),
-							ContentType: payload.avatar.type,
-						})
-					);
+				const fileName = `avatar_${id}_${payload.avatar.name.replace(/\s+/g, "_")}`;
 
+				try {
 					// Generate S3 URL
 					// const avatarUrl = `https://${Resource.Parameter.value.CONTENT_BUCKET}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
 					const avatarUrl = `${Resource.FileRouter.url}/user-content/${fileName}`;
-					console.log('avatarUrl:', avatarUrl)
+					console.log("avatarUrl:", avatarUrl);
 
 					// Update user with avatar URL
 					const updatedUser = await User.update({
@@ -211,7 +199,7 @@ export namespace UserApi {
 
 					return c.json(updatedUser, 200);
 				} catch (error) {
-					console.error('Error uploading avatar:', error);
+					console.error("Error uploading avatar:", error);
 					return c.json({ error: "Failed to upload avatar" }, 500);
 				}
 			},

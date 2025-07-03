@@ -26,6 +26,10 @@ declare module "sst" {
       "type": "sst.cloudflare.Worker"
       "url": string
     }
+    "BucketRouter": {
+      "type": "sst.aws.Router"
+      "url": string
+    }
     "ContentTable": {
       "name": string
       "type": "sst.aws.Dynamo"
@@ -34,10 +38,6 @@ declare module "sst" {
       "configSet": string
       "sender": string
       "type": "sst.aws.Email"
-    }
-    "FileRouter": {
-      "type": "sst.aws.Router"
-      "url": string
     }
     "MDX_Bucket": {
       "name": string

@@ -1,10 +1,13 @@
-import type React from "react";
-import type { HTMLInputAutoCompleteAttribute, HTMLInputTypeAttribute } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { LockIcon } from "@/components/common/icons";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import type React from "react";
+import type {
+	HTMLInputAutoCompleteAttribute,
+	HTMLInputTypeAttribute,
+} from "react";
 
 type Props = {
 	fields: FormField[];
@@ -21,7 +24,9 @@ export type FormField = {
 	required?: boolean;
 };
 
-const AutoCompleteMatcher = (type: HTMLInputTypeAttribute): HTMLInputAutoCompleteAttribute => {
+const AutoCompleteMatcher = (
+	type: HTMLInputTypeAttribute,
+): HTMLInputAutoCompleteAttribute => {
 	switch (type) {
 		case "email":
 			return "email";
@@ -32,23 +37,28 @@ const AutoCompleteMatcher = (type: HTMLInputTypeAttribute): HTMLInputAutoComplet
 	}
 };
 
-export const GenericAuthForm = ({ fields, onSubmit, formTitle, submitButtonText }: Props) => {
+export const GenericAuthForm = ({
+	fields,
+	onSubmit,
+	formTitle,
+	submitButtonText,
+}: Props) => {
 	return (
-		<div className="flex min-h-[65dvh] flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
-			<div className="w-full max-w-md mx-auto space-y-8">
-				<div className="flex flex-col items-center justify-center space-y-2">
+		<div className="flex-col justify-center items-center sm:px-6 lg:px-8">
+			<div className="mx-auto space-y-8 w-full max-w-md">
+				<div className="flex flex-col justify-center items-center space-y-2">
 					<div className="inline-flex items-center px-3 py-1 text-sm font-medium rounded-full bg-primary text-primary-foreground">
-						<LockIcon className="w-4 h-4 mr-2" />
+						<LockIcon className="mr-2 w-4 h-4" />
 						{formTitle}
 					</div>
 				</div>
 				<Card>
 					<CardContent className="space-y-4">
 						<form onSubmit={onSubmit}>
-							<div className="grid gap-2">
+							<div className="grid gap-3">
 								{fields.map((field) => (
 									<div className="grid gap-1" key={field.name}>
-										<div className="flex items-center justify-between">
+										<div className="flex justify-between items-center">
 											<Label htmlFor={field.name}>{field.label}</Label>
 										</div>
 										<Input

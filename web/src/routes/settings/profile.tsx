@@ -1,11 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuthContext } from "@/contexts/AuthContext";
+import { VPS_BASE_URL } from "@/lib/http";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { API_BASE_URL } from "@/lib/http";
 // import { useEffect } from "react";
 
 export const Route = createFileRoute("/settings/profile")({
@@ -13,48 +13,49 @@ export const Route = createFileRoute("/settings/profile")({
 });
 
 export default function Profile() {
-	const {  getToken, userData } = useAuthContext();
-	const [imagePreview, setImagePreview] = useState<string>(userData?.avatarUrl || "/placeholder.svg");
+	const { getToken, userData } = useAuthContext();
+	const [imagePreview, setImagePreview] = useState<string>(
+		userData?.avatarUrl || "/placeholder.svg",
+	);
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+	const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+		const file = event.target.files?.[0];
+		if (file) {
+			setSelectedFile(file);
+			const reader = new FileReader();
+			reader.onloadend = () => {
+				setImagePreview(reader.result as string);
+			};
+			reader.readAsDataURL(file);
+		}
+	};
 
-  const handleSaveImage = async () => {
-    if (!selectedFile || !userData?.id) return;
+	const handleSaveImage = async () => {
+		if (!selectedFile || !userData?.id) return;
 
-    const token = await getToken();
-    const formData = new FormData();
-    formData.append('avatar', selectedFile);
+		const token = await getToken();
+		const formData = new FormData();
+		formData.append("avatar", selectedFile);
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/users/${userData.id}/avatar`, {
-        method: 'PUT',
-        body: formData,
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
+		try {
+			const response = await fetch(`${VPS_BASE_URL}/author/${userData.id}`, {
+				method: "PATCH",
+				body: formData,
+				headers: {
+					Authorization: `Bearer ${token}`,
+				},
+			});
 
-      if (!response.ok) throw new Error('Failed to upload image');
-      
-      // Handle successful upload
-      console.log('Image uploaded successfully');
-    } catch (error) {
-      console.error('Error uploading image:', error);
-    }
-  };
+			if (!response.ok) throw new Error("Failed to upload image");
+			// Handle successful upload
+			console.log("Image uploaded successfully");
+		} catch (error) {
+			console.error("Error uploading image:", error);
+		}
+	};
 
-	console.log('userData:', userData)
+	console.log("userData:", userData);
 	// const token = getToken();
 	// console.log('user:', user)
 
@@ -65,7 +66,7 @@ export default function Profile() {
 	// 	}
 	// 	token();
 	// }, [])
-	
+
 	// const user = await getUser();
 	// if (!user) {
 	// 	return {
@@ -100,8 +101,8 @@ export default function Profile() {
 	];
 
 	const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-		"use server";
 		e.preventDefault();
+		if (!userData?.id) return;
 
 		const formData = new FormData(e.currentTarget);
 		const email = formData.get("email") as string;
@@ -110,16 +111,16 @@ export default function Profile() {
 		const token = await getToken();
 
 		try {
-			const response = await fetch(`${API_BASE_URL}/users`, {
-				method: "PUT",
+			const response = await fetch(`${VPS_BASE_URL}/author/${userData.id}`, {
+				method: "PATCH",
 				body: JSON.stringify({
 					username,
 					email,
 					password,
-					id: userData?.id,
 				}),
 				headers: {
 					Authorization: `Bearer ${token}`,
+					"Content-Type": "application/json",
 				},
 			});
 			const data = await response.json();
@@ -127,7 +128,6 @@ export default function Profile() {
 		} catch (error) {
 			console.error(error);
 		}
-
 	};
 
 	return (
@@ -156,12 +156,12 @@ export default function Profile() {
 										className="absolute bottom-0 right-0 hidden px-2 py-1 text-xs rounded-full cursor-pointer group-hover:flex bg-gb-darker-bg"
 									>
 										Change
-										<input 
-											id="avatar" 
-											type="file" 
+										<input
+											id="avatar"
+											type="file"
 											accept="image/*"
-											className="hidden" 
-											onChange={handleImageChange} 
+											className="hidden"
+											onChange={handleImageChange}
 										/>
 									</label>
 								</div>

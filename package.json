@@ -18,18 +18,17 @@
 		"vps"
 	],
 	"dependencies": {
-		"@effect/platform": "latest",
-		"@effect/schema": "latest",
+		"@effect/platform": "0.86.0",
+		"@effect/schema": "0.75.5",
 		"@mdx-js/mdx": "3.1.0",
-		"@openauthjs/openauth": "0.4.3",
-		"effect": "latest",
+		"effect": "3.16.9",
 		"gray-matter": "4.0.3",
-		"sst": "3.17.5",
-		"zod": "3.25.64"
+		"sst": "3.17.6",
+		"zod": "3.25.67"
 	},
 	"devDependencies": {
-		"@tsconfig/node20": "^20.1.6",
-		"typescript": "latest"
+		"@tsconfig/node20": "20.1.6",
+		"typescript": "5.8.3"
 	},
 	"overrides": {
 		"react": "19.1.0",

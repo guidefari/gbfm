@@ -1,5 +1,9 @@
-// import  from './bucket'
-
+import {
+	// cf_contentBucket,
+	contentBucket,
+	fileRouter,
+	mixesBucket,
+} from "./bucket";
 import { domain, urls } from "./dns";
 import { email } from "./email";
 import { allSecrets } from "./secret";
@@ -33,16 +37,6 @@ export const service = new sst.aws.Service("gbfm_vps", {
 	serviceRegistry: {
 		port: 3003,
 	},
-	// loadBalancer: {
-	// 	rules: [
-	// 		{ listen: "80/http", redirect: "443/https" },
-	// 		{ listen: "443/https", forward: "3000/http" },
-	// 	],
-	// 	domain: {
-	// 		name: `vps.${domain}`,
-	// 		dns: sst.cloudflare.dns(),
-	// 	},
-	// },
 	dev: {
 		directory: "./vps",
 		command: "bun dev",
@@ -52,7 +46,15 @@ export const service = new sst.aws.Service("gbfm_vps", {
 		target: "release",
 		dockerfile: "vps/Dockerfile",
 	},
-	link: [database, email, urls, ...allSecrets],
+	link: [
+		database,
+		email,
+		urls,
+		...allSecrets,
+		fileRouter,
+		contentBucket,
+		mixesBucket,
+	],
 });
 
 export const vps_gateway = new sst.aws.ApiGatewayV2("gbfm_vps_gateway", {

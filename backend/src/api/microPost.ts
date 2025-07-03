@@ -1,8 +1,7 @@
-import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
 import { MicroPost } from "@gbfm/core/microPost/index";
-import { User } from "@gbfm/core/user/index.ts";
-import { AuthClient_API } from ".";
-import { subjects } from "../subjects";
+import { OpenAPIHono, createRoute, z } from "@hono/zod-openapi";
+// import { AuthClient_API } from ".";
+// import { subjects } from "../subjects";
 
 export namespace MicroPostApi {
 	export const route = new OpenAPIHono()
@@ -33,14 +32,11 @@ export namespace MicroPostApi {
 				if (!token) {
 					return c.json({ error: "No token provided" }, 401);
 				}
-				const user = await AuthClient_API.verify(subjects, token);
-				if (!user || user.err) {
-					return c.json({ error: "Invalid token" }, 401);
-				}
-				const microPost = await MicroPost.create(
-					payload.content,
-					user.subject.properties.id,
-				);
+				// const user = await AuthClient_API.verify(subjects, token);
+				// if (!user || user.err) {
+				// 	return c.json({ error: "Invalid token" }, 401);
+				// }
+				const microPost = await MicroPost.create(payload.content, "system");
 				return c.json(microPost, 201);
 			},
 		)
@@ -81,7 +77,6 @@ export namespace MicroPostApi {
 			async (c) => {
 				const microPosts = await c.req.json();
 				// return c.json(microPosts, 200);
-				const seeded = await MicroPost.seed(microPosts);
 				return c.json({ success: true }, 200);
 			},
 		);

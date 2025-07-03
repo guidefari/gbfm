@@ -1,4 +1,3 @@
-import { Resource } from "sst";
 import { z } from "zod";
 
 const envSchema = z.object({
@@ -10,24 +9,11 @@ const envSchema = z.object({
 });
 
 function createEnvConfig() {
-	let databaseUrl = process.env.DATABASE_URL || "";
-	let emailSender = process.env.EMAIL_SENDER || "";
-	let accessTokenSecret = process.env.ACCESS_TOKEN_SECRET || "secret";
-	let refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET || "secret";
-	let frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
-
-	const isLocal =
-		Object.keys(Resource).length === 0 ||
-		["local", "dev"].includes(Resource.App.stage);
-
-	if (!isLocal) {
-		const { username, password, host, port, database } = Resource.gbfm_postgres;
-		databaseUrl = `postgresql://${username}:${password}@${host}:${port}/${database}`;
-		emailSender = Resource.Email.sender;
-		accessTokenSecret = Resource.ACCESS_TOKEN_SECRET.value;
-		refreshTokenSecret = Resource.REFRESH_TOKEN_SECRET.value;
-		frontendUrl = Resource.Urls.site;
-	}
+	const databaseUrl = process.env.DATABASE_URL || "";
+	const emailSender = process.env.EMAIL_SENDER || "";
+	const accessTokenSecret = process.env.ACCESS_TOKEN_SECRET || "secret";
+	const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET || "secret";
+	const frontendUrl = process.env.FRONTEND_URL || "http://localhost:5173";
 
 	try {
 		const config = envSchema.parse({

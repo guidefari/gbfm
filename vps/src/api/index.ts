@@ -1,35 +1,35 @@
 import { Hono } from "hono";
-import { cors } from "hono/cors";
 
 import "dotenv/config";
-import { drizzle } from "drizzle-orm/node-postgres";
-import { env } from "../env";
 import { sql } from "drizzle-orm";
-import { getTableName } from "drizzle-orm";
-import type { Table } from "drizzle-orm";
-import content from "./content";
-import author from "./author";
-import mix from "./mix";
-import { authorsTable } from "@/db/author.schema";
-import { postsTable } from "@/db/post.schema";
-import publication from "./publication";
-import { publicationsTable, publicationAuthors, publicationPosts } from "@/db/publication.schema";
-import auth from "./auth";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { cors } from "hono/cors";
 import { ZodError } from "zod";
+import { env } from "../env";
+import auth from "./auth";
+import author from "./author";
+import content from "./content";
+import mix from "./mix";
+import publication from "./publication";
 
 const db = drizzle(env.DATABASE_URL);
 const app = new Hono();
 
-app.use("*", cors({
-	origin: [
-		"http://localhost:5173",
-		"https://www.goosebumps.fm",
-		"https://goosebumps.fm"
-	],
-	allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-	allowHeaders: ["Content-Type", "Authorization"],
-	credentials: true,
-}));
+app.use(
+	"*",
+	cors({
+		origin: [
+			"http://localhost:5173",
+			"http://localhost:4173",
+			"http://localhost:3003",
+			"https://www.goosebumps.fm",
+			"https://goosebumps.fm",
+		],
+		allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+		allowHeaders: ["Content-Type", "Authorization"],
+		credentials: true,
+	}),
+);
 
 app.onError((err, c) => {
 	if (err instanceof ZodError) {
@@ -46,12 +46,12 @@ app.route("/publication", publication);
 
 app.get("/health", async (c) => {
 	try {
-	  await db.execute(sql.raw("SELECT 1"));
-	  return c.json({ dbConnected: true });
+		await db.execute(sql.raw("SELECT 1"));
+		return c.json({ dbConnected: true });
 	} catch {
-	  return c.json({ dbConnected: false }, 500);
+		return c.json({ dbConnected: false }, 500);
 	}
-  });
+});
 
 // app.post("/reset-tables", async (c) => {
 // 	try {
@@ -72,9 +72,8 @@ app.get("/health", async (c) => {
 // 			authorsTable,
 // 			postsTable,
 // 			publicationsTable,
-			
-// 		];
 
+// 		];
 
 // 		if (tablesToReset?.length) {
 //       const failedToReset = new Set<string>();
@@ -82,7 +81,7 @@ app.get("/health", async (c) => {
 
 // 			for (const tableName of tablesToReset) {
 // 				const table = allTables.find((t) => getTableName(t) === tableName);
-        
+
 // 				if (!table) {
 // 					failedToReset.add(tableName);
 //           continue;
@@ -95,7 +94,7 @@ app.get("/health", async (c) => {
 //         notOk: Array.from(failedToReset),
 // 			}, 201);
 // 		}
-		
+
 // 		for (const table of allTables) {
 // 			await resetTable(table);
 // 		}
@@ -106,8 +105,10 @@ app.get("/health", async (c) => {
 // 	}
 // });
 
+export const localVPSPort = 3003;
+
 export default {
-	port: 3003,
+	port: localVPSPort,
 	fetch: app.fetch,
 	maxRequestBodySize: 1024 * 1024 * 1000, // 1GB
 };

@@ -1,6 +1,6 @@
 import { GenericAuthForm } from "@/components/Auth/GenericForm";
-import { createFileRoute } from "@tanstack/react-router";
 import { constructSignInUrl } from "@/lib/http";
+import { Link, createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/auth/")({
 	component: Component,
@@ -22,7 +22,19 @@ function Component() {
 	};
 
 	return (
-		<>
+		<div className="flex flex-col items-center justify-center min-h-screen">
+			<h1 className="text-2xl font-bold mb-4">Auth</h1>
+			<div className="space-y-2">
+				<Link to="/auth/sign-in" className="text-blue-600 underline">
+					Sign In
+				</Link>
+				<Link to="/auth/sign-up" className="text-blue-600 underline">
+					Sign Up
+				</Link>
+				<Link to="/auth/forgot-password" className="text-blue-600 underline">
+					Forgot Password?
+				</Link>
+			</div>
 			<GenericAuthForm
 				formTitle="Sign in"
 				fields={[
@@ -36,6 +48,6 @@ function Component() {
 				]}
 				onSubmit={onSubmit}
 			/>
-		</>
+		</div>
 	);
 }
