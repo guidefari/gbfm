@@ -19,10 +19,6 @@ declare module "sst" {
       "type": "sst.aws.Auth"
       "url": string
     }
-    "BucketRouter": {
-      "type": "sst.aws.Router"
-      "url": string
-    }
     "ContentTable": {
       "name": string
       "type": "sst.aws.Dynamo"
@@ -43,6 +39,10 @@ declare module "sst" {
     "REFRESH_TOKEN_SECRET": {
       "type": "sst.sst.Secret"
       "value": string
+    }
+    "Router": {
+      "type": "sst.aws.Router"
+      "url": string
     }
     "SpotifyClientId": {
       "type": "sst.sst.Secret"

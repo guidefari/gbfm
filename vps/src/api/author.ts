@@ -58,9 +58,7 @@ app.patch("/updateProfile", authenticate, async (c: Context) => {
 					const fileBuffer = Buffer.from(await file.arrayBuffer());
 					const fileName = `avatar_${Date.now()}_${file.name.replace(/\s+/g, "_")}`;
 					// Get bucket name from environment variables
-					console.log("Resource:", Resource);
 					const bucketName = Resource.User_Content.name;
-					console.log("bucketName:", bucketName);
 					const contentType = file.type || "application/octet-stream";
 					await uploadToS3({
 						key: fileName,
@@ -70,7 +68,7 @@ app.patch("/updateProfile", authenticate, async (c: Context) => {
 					});
 
 					// Construct URL using the bucket router URL from environment variables
-					updateData.avatarUrl = `${Resource.BucketRouter.url}/user-content/${fileName}`;
+					updateData.avatarUrl = `${Resource.Router.url}/user-content/${fileName}`;
 				} else if (typeof value === "string") {
 					if (key === "password") {
 						updateData.password = await Bun.password.hash(value);
