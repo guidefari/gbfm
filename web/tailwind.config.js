@@ -9,6 +9,7 @@ export default {
 		"./components/**/*.{ts,tsx}",
 		"./app/**/*.{ts,tsx}",
 		"./src/**/*.{ts,tsx}",
+		"./src/**/*.{md,mdx}",
 	],
 	prefix: "",
 	theme: {

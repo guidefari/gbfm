@@ -99,9 +99,9 @@
     /* @apply text-inherit; */
   }
 
+  a,
   .prose a {
-    @apply text-gb-pastel-green-1 hover:prose-a:text-highlight;
-    /* @apply text-yellow-500; this isn't such a bad color for links, should I ever get tired of the green*/
+    @apply underline transition ease-in-out hover:text-white;
   }
 
   * {
@@ -110,10 +110,6 @@
 
   body {
     @apply transition-colors duration-700 font-jetbrains bg-background text-foreground;
-  }
-
-  a {
-    @apply underline transition ease-in-out;
   }
 
   li::before {
@@ -219,7 +215,7 @@
   }
 
   .curated-posts {
-    @apply grid w-full gap-10 px-4 py-16 mx-auto sm:grid-cols-2 lg:grid-cols-3 lg:px-8 lg:py-20;
+    @apply grid gap-10 px-4 py-16 mx-auto w-full sm:grid-cols-2 lg:grid-cols-3 lg:px-8 lg:py-20;
   }
 
   .default-icon {

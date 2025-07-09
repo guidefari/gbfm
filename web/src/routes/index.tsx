@@ -1,11 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
-import landingPage from "@/mdx/landing-page.mdx";
-import { CustomMDXComponents } from "@/components/mdx-components";
 
 export const Route = createFileRoute("/")({
 	component: Index,
 });
 
 function Index() {
-	return landingPage({ components: CustomMDXComponents });
+	return (
+		<div className="flex flex-col justify-center items-center px-1 leading-none h-dvh">
+			<h1 className="my-0 text-5xl font-bold text-right w-fit md:text-8xl xl:text-9xl">
+				goosebumps.
+				<br />
+				<span className="text-highlight">fm</span>
+			</h1>
+		</div>
+	);
 }

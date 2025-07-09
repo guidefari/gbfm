@@ -1,45 +1,31 @@
-import type React from "react";
 import Nav from "@/components/Nav";
-import { DesktopSideNav } from "./DesktopSideNav";
-import { MobileNav } from "./MobileNav";
-import ProfileAvatar from "./ProfileAvatar";
+import { cn } from "@/lib/utils";
+import type React from "react";
+import { Footer } from "./Footer";
+// import { HorizontalMenu } from "./HorizontalMenu";
+// import { DesktopSideNav } from "./DesktopSideNav";
 
 type Props = {
 	children: React.ReactNode;
+	showFooter?: boolean;
 };
 
-export default function AppShell({ children }: Props) {
+export default function AppShell({ children, showFooter = true }: Props) {
 	return (
 		<div className="flex w-full min-h-dvh bg-background">
-			<DesktopSideNav />
-			<div className="flex flex-col flex-grow sm:gap-4 sm:py-4 sm:pl-14">
-				<header className="sticky top-0 z-30 flex items-center justify-between gap-4 px-4 h-14 sm:static sm:h-auto sm:px-6">
-					<MobileNav />
-					<div className="flex justify-center sm:hidden">
-						<ProfileAvatar />
-					</div>
-					{/* searrrrch */}
-					{/* <div className="relative flex-1 ml-auto md:grow-0">
-						<SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-						<Input
-							type="search"
-							placeholder="Search..."
-							className="w-full rounded-lg bg-background pl-8 md:w-[200px] lg:w-[336px]"
-						/>
-					</div> */}
-				</header>
+			{/* <DesktopSideNav /> */}
+			<div
+				className={cn(
+					"flex flex-col flex-grow sm:gap-4",
+					// todo: this is needed for the desktop side nav, if i decide to bring it back.
+					// "sm:py-4 sm:pl-14"
+				)}
+			>
+				{/* <HorizontalMenu /> */}
 				<main className="z-10 flex-1 px-4 sm:px-6 md:px-8 lg:px-10 bg-background">
 					{children}
 				</main>
-				<footer className="sticky bottom-0 z-0 px-5">
-					<div className="container flex flex-col w-full px-1 mx-auto leading-none border-gray-200 lg:px-5">
-						<h1 className="my-0 text-5xl font-bold text-right md:text-8xl xl:text-9xl">
-							goosebumps.
-							<br />
-							<span className="text-highlight">fm</span>
-						</h1>
-					</div>
-				</footer>
+				{showFooter && <Footer />}
 				<Nav />
 			</div>
 		</div>

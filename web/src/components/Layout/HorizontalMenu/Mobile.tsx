@@ -1,12 +1,12 @@
 "use client";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import React from "react";
-import { MenuIcon } from "../common/icons";
-import { pagesAndPages } from "./NavLinks";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Link } from "@tanstack/react-router";
+import React from "react";
+import { MenuIcon } from "../../common/icons";
+import { pagesAndPages } from "../NavLinks";
 
-export const MobileNav = () => {
+export const HamburgerMenu = () => {
 	const [open, setOpen] = React.useState(false);
 
 	return (
@@ -32,7 +32,7 @@ export const MobileNav = () => {
 							return (
 								<div
 									key={page.name}
-									className="flex items-center gap-4 text-muted-foreground hover:text-foreground"
+									className="flex gap-4 items-center text-muted-foreground hover:text-foreground"
 								>
 									{page.CustomComponent}
 									{page.name}
@@ -45,7 +45,7 @@ export const MobileNav = () => {
 								key={page.slug}
 								to={page.slug}
 								onClick={() => setOpen(false)}
-								className="flex items-center gap-4 text-muted-foreground hover:text-foreground"
+								className="flex gap-4 items-center text-muted-foreground hover:text-foreground"
 							>
 								{page.icon}
 								{page.name}
