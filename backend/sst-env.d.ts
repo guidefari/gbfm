@@ -15,10 +15,6 @@ declare module "sst" {
       "type": "sst.aws.Function"
       "url": string
     }
-    "Auth": {
-      "type": "sst.aws.Auth"
-      "url": string
-    }
     "ContentTable": {
       "name": string
       "type": "sst.aws.Dynamo"
@@ -99,7 +95,6 @@ import * as cloudflare from "@cloudflare/workers-types";
 declare module "sst" {
   export interface Resource {
     "ApiWorker": cloudflare.Service
-    "AuthWorkerCF": cloudflare.Service
   }
 }
 

@@ -7,7 +7,6 @@ export const domain =
 export const urls = new sst.Linkable("Urls", {
 	properties: {
 		//   api: `https://api.${domain}`,
-		//   auth: `https://auth.${domain}`,
 		//   openapi: `https://api.${domain}/doc`,
 		site:
 			$app.stage === "dev" ? "http://localhost:5173" : `https://www.${domain}`,

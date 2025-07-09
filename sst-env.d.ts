@@ -18,14 +18,6 @@ declare module "sst" {
       "type": "sst.cloudflare.Worker"
       "url": string
     }
-    "Auth": {
-      "type": "sst.aws.Auth"
-      "url": string
-    }
-    "AuthWorkerCF": {
-      "type": "sst.cloudflare.Worker"
-      "url": string
-    }
     "ContentTable": {
       "name": string
       "type": "sst.aws.Dynamo"

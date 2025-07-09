@@ -1,14 +1,13 @@
-import type { MDXArchiveTypes } from "@gbfm/core/mdx/mdx.types";
 import type {
 	AlbumApiResponse,
 	PlaylistApiResponse,
 	TrackAPIResponse,
 } from "@/types";
+import type { MDXArchiveTypes } from "@gbfm/core/mdx/mdx.types";
 import { useQuery } from "@tanstack/react-query";
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 export const VPS_BASE_URL = import.meta.env.VITE_VPS_BASE_URL;
-export const AUTH_BASE_URL = import.meta.env.VITE_AUTH_BASE_URL;
-
+export const AUTH_BASE_URL = `${VPS_BASE_URL}/auth`;
 
 type CustomRequestInit = RequestInit & {
 	skipAuth?: boolean;
@@ -20,19 +19,24 @@ export async function fetcher<T>(
 	init: CustomRequestInit = { skipAuth: true },
 ) {
 	const jwt = init.token || localStorage.getItem("accessToken");
-	console.log('jwt:', jwt)
+	console.log("jwt:", jwt);
 	const refreshToken = localStorage.getItem("refreshToken");
-	console.log('refreshToken:', refreshToken)
-	
+	console.log("refreshToken:", refreshToken);
+
 	try {
 		const isApiRequest =
-		[API_BASE_URL, VPS_BASE_URL].some(base => input.toString().includes(base)) && !init?.skipAuth;
-		console.log('isApiRequest:', isApiRequest)
+			[API_BASE_URL, VPS_BASE_URL].some((base) =>
+				input.toString().includes(base),
+			) && !init?.skipAuth;
+		console.log("isApiRequest:", isApiRequest);
 
 		const headers = {
 			"Content-Type": "application/json",
 			...(isApiRequest && jwt
-				? { Authorization: `Bearer ${jwt}`, "Refresh-Token": refreshToken || "" }
+				? {
+						Authorization: `Bearer ${jwt}`,
+						"Refresh-Token": refreshToken || "",
+					}
 				: {}),
 		};
 
@@ -62,7 +66,6 @@ export async function fetcher<T>(
 	}
 }
 
-
 type Response<T> = {
 	result: T;
 };
@@ -80,7 +83,7 @@ export function useArchetype(type: MDXArchiveTypes.archetype) {
 	return {
 		data: data,
 		error,
-		isPending
+		isPending,
 	};
 }
 
@@ -133,7 +136,7 @@ export function useSpotifyProxy<T extends SpotifyContentType>({
 				body: JSON.stringify({ id }),
 				skipAuth: true,
 			}),
-			staleTime: 15 * 60 * 1000,
+		staleTime: 15 * 60 * 1000,
 	});
 	return {
 		data: data,
