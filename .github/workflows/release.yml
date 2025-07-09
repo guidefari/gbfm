@@ -21,15 +21,14 @@ jobs:
 
       - name: Update web package.json version
         run: |
-          cd web
           bun pm version ${{ steps.versioning.outputs.version }} --no-git-tag-version
 
       - name: Create Tag
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add web/package.json
-          git commit -m "chore: bump www package version to ${{ steps.versioning.outputs.version }}"
+          git add package.json
+          git commit -m "chore: bump package version to ${{ steps.versioning.outputs.version }}"
           git tag -a "v${{ steps.versioning.outputs.version }}" -m "Release v${{ steps.versioning.outputs.version }}"
           git push origin "v${{ steps.versioning.outputs.version }}"
 
