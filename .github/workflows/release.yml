@@ -22,6 +22,9 @@ jobs:
       - name: Update web package.json version
         run: |
           bun pm version ${{ steps.versioning.outputs.version }} --no-git-tag-version
+          cd web
+          bun pm version ${{ steps.versioning.outputs.version }} --no-git-tag-version
+          cd ..
 
       - name: Create Tag
         run: |
@@ -30,6 +33,7 @@ jobs:
           git add package.json
           git commit -m "chore: bump package version to ${{ steps.versioning.outputs.version }}"
           git tag -a "v${{ steps.versioning.outputs.version }}" -m "Release v${{ steps.versioning.outputs.version }}"
+          git push origin prod
           git push origin "v${{ steps.versioning.outputs.version }}"
 
       - name: Create Release
