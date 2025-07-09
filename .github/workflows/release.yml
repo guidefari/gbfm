@@ -23,7 +23,7 @@ jobs:
           branch: prod
           patchList: fix, bugfix, perf, refactor, test, tests, ci, docs, chore
 
-      - name: Update web package.json version
+      - name: Update package.jsons
         run: |
           bun pm version ${{ steps.versioning.outputs.nextStrict }} --no-git-tag-version
           cd web && bun pm version ${{ steps.versioning.outputs.nextStrict }} --no-git-tag-version
