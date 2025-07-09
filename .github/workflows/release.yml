@@ -35,7 +35,7 @@ jobs:
           git commit -m "chore: bump package version to ${{ steps.versioning.outputs.next }}"
           git tag -a "${{ steps.versioning.outputs.next }}" -m "Release ${{ steps.versioning.outputs.next }}"
           git push origin prod
-          git push origin "v${{ steps.versioning.outputs.next }}"
+          git push origin "${{ steps.versioning.outputs.next }}"
 
       - name: Create Release
         uses: ncipollo/release-action@v1
