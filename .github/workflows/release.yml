@@ -21,6 +21,7 @@ jobs:
         with:
           token: ${{ github.token }}
           branch: prod
+          patchList: fix, bugfix, perf, refactor, test, tests, ci, docs, chore
 
       - name: Update web package.json version
         run: |
