@@ -31,15 +31,15 @@ jobs:
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git add package.json
+          git add .
           git commit -m "chore: bump package version to ${{ steps.versioning.outputs.next }}"
-          git tag -a "v${{ steps.versioning.outputs.next }}" -m "Release v${{ steps.versioning.outputs.next }}"
+          git tag -a "${{ steps.versioning.outputs.next }}" -m "Release ${{ steps.versioning.outputs.next }}"
           git push origin prod
           git push origin "v${{ steps.versioning.outputs.next }}"
 
       - name: Create Release
         uses: ncipollo/release-action@v1
         with:
-          tag: "v${{ steps.versioning.outputs.next }}"
-          name: "Release v${{ steps.versioning.outputs.next }}"
+          tag: "${{ steps.versioning.outputs.next }}"
+          name: "Release ${{ steps.versioning.outputs.next }}"
           body: "Automated release notes"
