@@ -1,9 +1,11 @@
-name: Deploy
+name: Prod Deployment
 
 on:
   push:
+    branches:
+      - prod
     tags:
-      - 'v*'
+      - 'v[0-9]+.[0-9]+.[0-9]+'
 
 concurrency: 
   group: ${{ github.ref }}
@@ -56,4 +58,4 @@ jobs:
           SQUEAL_DB_URL: ${{ secrets.SQUEAL_DB_URL }}
 
         run: |
-          bun run sst deploy --stage=${GITHUB_REF_NAME}
+          bun run sst deploy --stage=prod
