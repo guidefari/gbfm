@@ -7,7 +7,7 @@ export const Route = createFileRoute("/")({
 function Index() {
 	return (
 		<div className="flex flex-col justify-center items-center px-1 leading-none h-dvh">
-			<h1 className="my-0 text-5xl font-bold text-right w-fit md:text-8xl xl:text-9xl">
+			<h1 className="my-0 text-5xl font-bold text-right w-fit md:text-7xl">
 				goosebumps.
 				<br />
 				<span className="text-highlight">fm</span>

@@ -1,10 +1,6 @@
 name: sst
 
 on:
-  push:
-    branches:
-      - prod
-      - staging
   workflow_run:
     workflows: ["Release"]
     types:
