@@ -15,10 +15,10 @@ jobs:
         uses: jveldboom/action-conventional-versioning@v1
         id: versioning
 
-      - name: Update www package.json version
+      - name: Update web package.json version
         run: |
           cd web
-          npm version ${{ steps.versioning.outputs.version }} --no-git-tag-version
+          bun pm version ${{ steps.versioning.outputs.version }} --no-git-tag-version
 
       - name: Create Tag
         run: |
