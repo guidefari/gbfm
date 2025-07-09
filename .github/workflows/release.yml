@@ -1,0 +1,37 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Automated Versioning
+        uses: jveldboom/action-conventional-versioning@v1
+        id: versioning
+
+      - name: Update www package.json version
+        run: |
+          cd web
+          npm version ${{ steps.versioning.outputs.version }} --no-git-tag-version
+
+      - name: Create Tag
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add web/package.json
+          git commit -m "chore: bump www package version to ${{ steps.versioning.outputs.version }}"
+          git tag -a "v${{ steps.versioning.outputs.version }}" -m "Release v${{ steps.versioning.outputs.version }}"
+          git push origin "v${{ steps.versioning.outputs.version }}"
+
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: "v${{ steps.versioning.outputs.version }}"
+          name: "Release v${{ steps.versioning.outputs.version }}"
+          body: "Automated release notes"

@@ -5,6 +5,10 @@ on:
     branches:
       - prod
       - staging
+  workflow_run:
+    workflows: ["Release"]
+    types:
+      - completed
 
 concurrency: 
   group: ${{ github.ref }}
