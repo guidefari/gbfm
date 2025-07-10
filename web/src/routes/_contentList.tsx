@@ -1,8 +1,8 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useArchetype } from "@/lib/http";
-import { MDXArchiveTypes } from "@gbfm/core/mdx/mdx.types";
 import { ArchetypesLinks } from "@/components/ArchtypesLinks";
+import { useArchetype } from "@/lib/http";
 import { capitalizeFirstLetter } from "@/lib/utils";
+import { MDXArchiveTypes } from "@gbfm/core/mdx/mdx.types";
+import { Link, createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_contentList")({
 	component: Component,

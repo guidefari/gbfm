@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@gbfm/core": "workspace:",
+    "@gbfm/vps": "workspace:",
     "@guide/utils": "npm:@jsr/guide__utils",
     "@hookform/resolvers": "^3.9.0",
     "@mdx-js/react": "^3.0.1",

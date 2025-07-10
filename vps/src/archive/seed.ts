@@ -1,13 +1,13 @@
+import { log } from "node:console";
+import { readdir } from "node:fs/promises";
+import { MicroPost } from "@/microPost";
 /**
  * @deprecated Don't use this 👀 go build the UI. Archiving this.
  */
 import { createID } from "@/util/id";
+import type { ContentPrefixes } from "@gbfm/core/util/id.ts";
 import grayMatter from "gray-matter";
-import { readdir } from "node:fs/promises";
-import { MicroPost } from "@/microPost";
 import { Resource } from "sst/resource";
-import { log } from "node:console";
-import type {ContentPrefixes} from '../util/id'
 
 // type ArchiveDirectoryKeys = Omit<ContentPrefixes, "">
 
@@ -20,12 +20,11 @@ const dirs: Record<ContentPrefixes, string> = {
 	// upload: "./src/archive/upload",
 };
 
-
 export const readContentsOfFilesInFolder = async (
 	folder: keyof typeof dirs,
 ) => {
 	const dir = dirs[folder];
-	log({dir})
+	log({ dir });
 
 	const files = await readdir(dir, { recursive: true });
 
@@ -37,8 +36,8 @@ export const readContentsOfFilesInFolder = async (
 				title: gray.data.title,
 				contentId: createID("post"),
 				content: gray.content,
-				createdAt: new Date(gray.data.date).getTime() ,
-				updatedAt: new Date(gray.data.lastmod || gray.data.date).getTime() ,
+				createdAt: new Date(gray.data.date).getTime(),
+				updatedAt: new Date(gray.data.lastmod || gray.data.date).getTime(),
 				authorId: gray.data.authors[0] ?? "usr_6ehHmLSaGyn3Hq9z",
 				description: gray.data.description,
 				tags: gray.data.tags,

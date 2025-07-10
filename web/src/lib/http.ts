@@ -4,6 +4,7 @@ import type {
 	TrackAPIResponse,
 } from "@/types";
 import type { MDXArchiveTypes } from "@gbfm/core/mdx/mdx.types";
+import type { MixSchema } from "@gbfm/vps/schemas";
 import { useQuery } from "@tanstack/react-query";
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 export const VPS_BASE_URL = import.meta.env.VITE_VPS_BASE_URL;
@@ -82,6 +83,19 @@ export function useArchetype(type: MDXArchiveTypes.archetype) {
 
 	return {
 		data: data,
+		error,
+		isPending,
+	};
+}
+
+export function useMixes() {
+	const { data, error, isPending } = useQuery<MixSchema[], Error>({
+		queryKey: ["mixes"],
+		queryFn: async () => fetcher<MixSchema[]>(`${VPS_BASE_URL}/content/mixes`),
+	});
+
+	return {
+		data,
 		error,
 		isPending,
 	};

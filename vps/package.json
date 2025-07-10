@@ -1,5 +1,8 @@
 {
-  "name": "gbfm-server",
+  "name": "@gbfm/vps",
+  "exports": {
+    "./schemas": "./src/db/exports.ts"
+  },
   "scripts": {
     "dev": "bun run --hot src/api/index.ts",
     "dev:sst": "sst dev",
@@ -30,6 +33,7 @@
     "hono": "4.7.5",
     "pg": "^8.14.1",
     "resend": "^4.1.2",
+    "stoker": "^1.4.3",
     "zod": "^3.24.2"
   }
 }

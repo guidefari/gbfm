@@ -5,7 +5,8 @@
     "./*.sql": "./src/*.sql.ts",
     "./*.ts": "./src/*.ts",
     "./*.tsx": "./src/*.tsx",
-    "./*": "./src/*.ts"
+    "./*": "./src/*.ts",
+    "./seed-mixes": "./src/archive/seed-mixes.ts"
   },
   "sideEffects": false,
   "scripts": {
@@ -16,6 +17,7 @@
     "db:studio": "sst shell drizzle-kit studio",
     "db": "sst shell drizzle-kit",
     "db:seed": "sst shell bun src/drizzle/seed.ts",
+    "db:seed:mixes": "bun src/archive/seed-mixes.ts",
     "archive:seed": "bun src/archive/seed.ts"
   },
   "devDependencies": {
@@ -23,6 +25,7 @@
     "react-email": "4.0.16"
   },
   "dependencies": {
+    "@gbfm/vps": "workspace:*",
     "@aws-sdk/client-s3": "^3.645.0",
     "@aws-sdk/client-ses": "^3.828.0",
     "@aws-sdk/s3-request-presigner": "^3.645.0",

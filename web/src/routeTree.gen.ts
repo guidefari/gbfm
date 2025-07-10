@@ -17,6 +17,7 @@ import { Route as WordsImport } from './routes/words'
 import { Route as TodoImport } from './routes/todo'
 import { Route as SubscribeImport } from './routes/subscribe'
 import { Route as PostImport } from './routes/post'
+import { Route as MixesImport } from './routes/mixes'
 import { Route as MicroImport } from './routes/micro'
 import { Route as ChangelogImport } from './routes/changelog'
 import { Route as ContentListImport } from './routes/_contentList'
@@ -28,7 +29,6 @@ import { Route as AuthSignUpImport } from './routes/auth/sign-up'
 import { Route as AuthSignInImport } from './routes/auth/sign-in'
 import { Route as AuthResetPasswordImport } from './routes/auth/reset-password'
 import { Route as AuthForgotPasswordImport } from './routes/auth/forgot-password'
-import { Route as ContentListMixesImport } from './routes/_contentList.mixes'
 import { Route as ContentListLabelsImport } from './routes/_contentList.labels'
 import { Route as ReadArchetypeIdImport } from './routes/read.$archetype.$id'
 
@@ -59,6 +59,12 @@ const SubscribeRoute = SubscribeImport.update({
 const PostRoute = PostImport.update({
   id: '/post',
   path: '/post',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const MixesRoute = MixesImport.update({
+  id: '/mixes',
+  path: '/mixes',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -133,12 +139,6 @@ const AuthForgotPasswordRoute = AuthForgotPasswordImport.update({
   getParentRoute: () => rootRoute,
 } as any)
 
-const ContentListMixesRoute = ContentListMixesImport.update({
-  id: '/mixes',
-  path: '/mixes',
-  getParentRoute: () => ContentListRoute,
-} as any)
-
 const ContentListLabelsRoute = ContentListLabelsImport.update({
   id: '/labels',
   path: '/labels',
@@ -183,6 +183,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MicroImport
       parentRoute: typeof rootRoute
     }
+    '/mixes': {
+      id: '/mixes'
+      path: '/mixes'
+      fullPath: '/mixes'
+      preLoaderRoute: typeof MixesImport
+      parentRoute: typeof rootRoute
+    }
     '/post': {
       id: '/post'
       path: '/post'
@@ -216,13 +223,6 @@ declare module '@tanstack/react-router' {
       path: '/labels'
       fullPath: '/labels'
       preLoaderRoute: typeof ContentListLabelsImport
-      parentRoute: typeof ContentListImport
-    }
-    '/_contentList/mixes': {
-      id: '/_contentList/mixes'
-      path: '/mixes'
-      fullPath: '/mixes'
-      preLoaderRoute: typeof ContentListMixesImport
       parentRoute: typeof ContentListImport
     }
     '/auth/forgot-password': {
@@ -295,12 +295,10 @@ declare module '@tanstack/react-router' {
 
 interface ContentListRouteChildren {
   ContentListLabelsRoute: typeof ContentListLabelsRoute
-  ContentListMixesRoute: typeof ContentListMixesRoute
 }
 
 const ContentListRouteChildren: ContentListRouteChildren = {
   ContentListLabelsRoute: ContentListLabelsRoute,
-  ContentListMixesRoute: ContentListMixesRoute,
 }
 
 const ContentListRouteWithChildren = ContentListRoute._addFileChildren(
@@ -312,12 +310,12 @@ export interface FileRoutesByFullPath {
   '': typeof ContentListRouteWithChildren
   '/changelog': typeof ChangelogRoute
   '/micro': typeof MicroRoute
+  '/mixes': typeof MixesRoute
   '/post': typeof PostRoute
   '/subscribe': typeof SubscribeRoute
   '/todo': typeof TodoRoute
   '/words': typeof WordsRoute
   '/labels': typeof ContentListLabelsRoute
-  '/mixes': typeof ContentListMixesRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/sign-in': typeof AuthSignInRoute
@@ -334,12 +332,12 @@ export interface FileRoutesByTo {
   '': typeof ContentListRouteWithChildren
   '/changelog': typeof ChangelogRoute
   '/micro': typeof MicroRoute
+  '/mixes': typeof MixesRoute
   '/post': typeof PostRoute
   '/subscribe': typeof SubscribeRoute
   '/todo': typeof TodoRoute
   '/words': typeof WordsRoute
   '/labels': typeof ContentListLabelsRoute
-  '/mixes': typeof ContentListMixesRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/sign-in': typeof AuthSignInRoute
@@ -357,12 +355,12 @@ export interface FileRoutesById {
   '/_contentList': typeof ContentListRouteWithChildren
   '/changelog': typeof ChangelogRoute
   '/micro': typeof MicroRoute
+  '/mixes': typeof MixesRoute
   '/post': typeof PostRoute
   '/subscribe': typeof SubscribeRoute
   '/todo': typeof TodoRoute
   '/words': typeof WordsRoute
   '/_contentList/labels': typeof ContentListLabelsRoute
-  '/_contentList/mixes': typeof ContentListMixesRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/sign-in': typeof AuthSignInRoute
@@ -381,12 +379,12 @@ export interface FileRouteTypes {
     | ''
     | '/changelog'
     | '/micro'
+    | '/mixes'
     | '/post'
     | '/subscribe'
     | '/todo'
     | '/words'
     | '/labels'
-    | '/mixes'
     | '/auth/forgot-password'
     | '/auth/reset-password'
     | '/auth/sign-in'
@@ -402,12 +400,12 @@ export interface FileRouteTypes {
     | ''
     | '/changelog'
     | '/micro'
+    | '/mixes'
     | '/post'
     | '/subscribe'
     | '/todo'
     | '/words'
     | '/labels'
-    | '/mixes'
     | '/auth/forgot-password'
     | '/auth/reset-password'
     | '/auth/sign-in'
@@ -423,12 +421,12 @@ export interface FileRouteTypes {
     | '/_contentList'
     | '/changelog'
     | '/micro'
+    | '/mixes'
     | '/post'
     | '/subscribe'
     | '/todo'
     | '/words'
     | '/_contentList/labels'
-    | '/_contentList/mixes'
     | '/auth/forgot-password'
     | '/auth/reset-password'
     | '/auth/sign-in'
@@ -446,6 +444,7 @@ export interface RootRouteChildren {
   ContentListRoute: typeof ContentListRouteWithChildren
   ChangelogRoute: typeof ChangelogRoute
   MicroRoute: typeof MicroRoute
+  MixesRoute: typeof MixesRoute
   PostRoute: typeof PostRoute
   SubscribeRoute: typeof SubscribeRoute
   TodoRoute: typeof TodoRoute
@@ -466,6 +465,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContentListRoute: ContentListRouteWithChildren,
   ChangelogRoute: ChangelogRoute,
   MicroRoute: MicroRoute,
+  MixesRoute: MixesRoute,
   PostRoute: PostRoute,
   SubscribeRoute: SubscribeRoute,
   TodoRoute: TodoRoute,
@@ -495,6 +495,7 @@ export const routeTree = rootRoute
         "/_contentList",
         "/changelog",
         "/micro",
+        "/mixes",
         "/post",
         "/subscribe",
         "/todo",
@@ -516,8 +517,7 @@ export const routeTree = rootRoute
     "/_contentList": {
       "filePath": "_contentList.tsx",
       "children": [
-        "/_contentList/labels",
-        "/_contentList/mixes"
+        "/_contentList/labels"
       ]
     },
     "/changelog": {
@@ -525,6 +525,9 @@ export const routeTree = rootRoute
     },
     "/micro": {
       "filePath": "micro.tsx"
+    },
+    "/mixes": {
+      "filePath": "mixes.tsx"
     },
     "/post": {
       "filePath": "post.tsx"
@@ -540,10 +543,6 @@ export const routeTree = rootRoute
     },
     "/_contentList/labels": {
       "filePath": "_contentList.labels.tsx",
-      "parent": "/_contentList"
-    },
-    "/_contentList/mixes": {
-      "filePath": "_contentList.mixes.tsx",
       "parent": "/_contentList"
     },
     "/auth/forgot-password": {
