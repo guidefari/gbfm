@@ -1,19 +1,19 @@
 "use client";
-import { formatSeconds } from "@/lib/utils";
-import { useRef } from "react";
-import { GiPauseButton, GiPlayButton } from "react-icons/gi";
-import { HiHome } from "react-icons/hi";
-import { useAudioPlayerContext } from "@/contexts/AudioPlayer";
-import { Link, useRouter } from "@tanstack/react-router";
-import { useScrollStatus } from "@/lib/useScrollStatus";
 import {
 	Tooltip,
 	TooltipContent,
 	TooltipProvider,
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useAudioPlayerContext } from "@/contexts/AudioPlayer";
+import { useScrollStatus } from "@/lib/useScrollStatus";
+import { formatSeconds } from "@/lib/utils";
+import { Link, useRouter } from "@tanstack/react-router";
+import { useRef } from "react";
+import { GiPauseButton, GiPlayButton } from "react-icons/gi";
+import { HiHome } from "react-icons/hi";
 
-const Nav = () => {
+const AudioPlayer = () => {
 	const [
 		audioRef,
 		handlers,
@@ -38,14 +38,14 @@ const Nav = () => {
 	return (
 		<nav
 			ref={navRef}
-			className={`fixed bottom-0 z-50 w-full py-2 space-y-1 transition ease-in-out delay-150  bg-background ${navStyles}`}
+			className={`fixed bottom-0 z-50 py-2 space-y-1 w-full transition ease-in-out delay-150 bg-background ${navStyles}`}
 		>
-			<div className="relative grid items-center h-full max-w-xs grid-flow-col mx-auto">
+			<div className="grid relative grid-flow-col items-center mx-auto max-w-xs h-full">
 				<button
 					onClick={() => router.navigate({ to: "/" })}
 					data-tooltip-target="tooltip-home"
 					type="button"
-					className=" floating-nav-button"
+					className="floating-nav-button"
 				>
 					<HiHome className="floating-nav-icon" />
 				</button>
@@ -104,18 +104,18 @@ const Nav = () => {
 					</TooltipProvider>
 				</>
 			</div>
-			<div className="flex items-center max-w-xl mx-auto space-x-1 rounded-full">
-				<p className="text-xs ">{formatSeconds(audioRef?.currentTime || 0)}</p>
+			<div className="flex items-center mx-auto space-x-1 max-w-xl rounded-full">
+				<p className="text-xs">{formatSeconds(audioRef?.currentTime || 0)}</p>
 				<input
 					type="range"
 					value={progress}
 					className="w-full h-2 rounded-full bg-gb-tomato align-start hover:cursor-pointer"
 					onInput={changeRange}
 				/>
-				<p className="text-xs ">{formatSeconds(audioRef?.duration || 0)}</p>
+				<p className="text-xs">{formatSeconds(audioRef?.duration || 0)}</p>
 			</div>
 		</nav>
 	);
 };
 
-export default Nav;
+export default AudioPlayer;

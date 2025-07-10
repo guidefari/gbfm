@@ -1,4 +1,4 @@
-import Nav from "@/components/Nav";
+import AudioPlayer from "@/components/AudioPlayer";
 import { cn } from "@/lib/utils";
 import type React from "react";
 import { Footer } from "./Footer";
@@ -26,7 +26,7 @@ export default function AppShell({ children, showFooter = true }: Props) {
 					{children}
 				</main>
 				{showFooter && <Footer />}
-				<Nav />
+				<AudioPlayer />
 			</div>
 		</div>
 	);

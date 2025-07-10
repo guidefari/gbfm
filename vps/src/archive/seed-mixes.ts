@@ -4,6 +4,7 @@ import path from "node:path";
 import type { ContentPrefixes } from "@gbfm/core/util/id";
 import { type InsertMix, InsertMixSchema } from "@gbfm/vps/schemas";
 import grayMatter from "gray-matter";
+import { Resource } from "sst";
 
 const fallbackThumbnailUrl =
 	"https://d20tmfka7s58bt.cloudfront.net/gb-default.png";
@@ -29,6 +30,10 @@ export const readContentsOfFilesInFolder = async (
 		files.map(async (file) => {
 			const content = await Bun.file(`${dir}/${file}`).text();
 			const gray = grayMatter(content);
+			const slug = file.replace(".mdx", "");
+
+			const mp3Name = gray.data.mp3Url.split("/").pop();
+
 			const obj: InsertMix = {
 				title: gray.data.title,
 				// id: createID("mix"),
@@ -38,10 +43,10 @@ export const readContentsOfFilesInFolder = async (
 				// authorId: gray.data.authors?.[0] ?? "usr_6ehHmLSaGyn3Hq9z",
 				description: gray.data.description,
 				tags: gray.data.tags,
-				slug: file.replace(".mdx", ""),
+				slug,
 				thumbnailUrl: gray.data.thumbnailUrl || fallbackThumbnailUrl,
 				draft: gray.data.draft || false,
-				url: gray.data.mp3Url,
+				url: `${Resource.Router.url}/mixes/${mp3Name}`,
 			};
 
 			console.log(obj);
