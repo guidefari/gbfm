@@ -5,6 +5,7 @@
   },
   "scripts": {
     "dev": "bun run --hot src/api/index.ts",
+    "typecheck": "tsc --noEmit",
     "dev:sst": "sst dev",
     "db:studio": "drizzle-kit studio",
     "db:yeet": "drizzle-kit push",
@@ -13,27 +14,31 @@
   },
   "devDependencies": {
     "@types/aws-lambda": "8.10.145",
-    "@types/bun": "^1.2.5",
-    "@types/pg": "^8.11.11",
+    "@types/bun": "^1.2.18",
+    "@types/pg": "^8.15.4",
     "drizzle-kit": "^0.30.6"
   },
   "peerDependencies": {
-    "typescript": "^5.0.0"
+    "typescript": "^5.8.3"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.658.1",
-    "@aws-sdk/lib-storage": "^3.658.1",
-    "@aws-sdk/s3-request-presigner": "^3.658.1",
+    "@aws-sdk/client-s3": "^3.844.0",
+    "@aws-sdk/lib-storage": "^3.844.0",
+    "@aws-sdk/s3-request-presigner": "^3.844.0",
     "@gbfm/core": "workspace:*",
     "@hono/zod-validator": "^0.4.3",
-    "dotenv": "^16.4.7",
+    "dotenv": "^16.6.1",
+    "dotenv-expand": "^12.0.2",
     "drizzle-orm": "0.41.0",
-    "drizzle-zod": "^0.7.0",
+    "drizzle-zod": "^0.7.1",
     "ffmpeg-static": "^5.2.0",
-    "hono": "4.7.5",
-    "pg": "^8.14.1",
-    "resend": "^4.1.2",
+    "hono": "4.7.11",
+    "hono-pino": "^0.9.1",
+    "pg": "^8.16.3",
+    "pino": "^9.7.0",
+    "pino-pretty": "^13.0.0",
+    "resend": "^4.6.0",
     "stoker": "^1.4.3",
-    "zod": "^3.24.2"
+    "zod": "^3.25.76"
   }
 }

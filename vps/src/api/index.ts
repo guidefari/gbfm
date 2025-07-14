@@ -4,12 +4,14 @@ import "dotenv/config";
 import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { cors } from "hono/cors";
-import { ZodError } from "zod";
+import { requestId } from "hono/request-id";
+import { notFound, onError, serveEmojiFavicon } from "stoker/middlewares";
 import { env } from "../env";
 import auth from "./auth";
 import author from "./author";
 import content from "./content";
 import mix from "./mix";
+import { pinoLogger } from "./pino.middleware";
 import publication from "./publication";
 
 const db = drizzle(env.DATABASE_URL);
@@ -31,12 +33,12 @@ app.use(
 	}),
 );
 
-app.onError((err, c) => {
-	if (err instanceof ZodError) {
-		return c.json({ error: "Invalid request", details: err.errors }, 400);
-	}
-	throw err;
-});
+app.use(requestId());
+app.use(serveEmojiFavicon("🪿"));
+app.use(pinoLogger());
+
+app.notFound(notFound);
+app.onError(onError);
 
 app.route("/auth", auth);
 app.route("/author", author);

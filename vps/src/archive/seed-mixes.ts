@@ -49,8 +49,6 @@ export const readContentsOfFilesInFolder = async (
 				url: `${Resource.Router.url}/mixes/${mp3Name}`,
 			};
 
-			console.log(obj);
-
 			InsertMixSchema.parse(obj);
 
 			return obj;
