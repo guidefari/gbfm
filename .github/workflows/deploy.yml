@@ -5,7 +5,7 @@ on:
     # branches:
     #   - prod
     tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+'
   workflow_dispatch:  # Allows manual triggering of the workflow
 
 
