@@ -3,7 +3,9 @@ import { domain, urls } from "./dns";
 import { email } from "./email";
 import { allSecrets, secret } from "./secret";
 
-export const vpc = new sst.aws.Vpc("gbfm_network");
+export const vpc = new sst.aws.Vpc("gbfm_network", {
+	bastion: true,
+});
 
 export const cluster = new sst.aws.Cluster("gbfm_cluster", {
 	vpc,
