@@ -3,8 +3,7 @@ name: Prod Deployment
 on:
   push:
     tags:
-      - 'v*.*.*'
-      - '*.*.*'
+      - '[0-9a-z].[0-9].[0-9]'
   workflow_dispatch:  # Allows manual triggering of the workflow
 
 
@@ -59,5 +58,4 @@ jobs:
           SQUEAL_DB_URL: ${{ secrets.SQUEAL_DB_URL }}
 
         run: |
-          bun run sst refresh --stage=prod
           bun run sst deploy --stage=prod
