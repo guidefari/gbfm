@@ -58,5 +58,4 @@ jobs:
           SQUEAL_DB_URL: ${{ secrets.SQUEAL_DB_URL }}
 
         run: |
-          bun run sst refresh --stage=prod
           bun run sst deploy --stage=prod
