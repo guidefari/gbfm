@@ -1,7 +1,6 @@
 import AudioPlayer from "@/components/AudioPlayer";
 import { cn } from "@/lib/utils";
 import type React from "react";
-import { Footer } from "./Footer";
 // import { HorizontalMenu } from "./HorizontalMenu";
 // import { DesktopSideNav } from "./DesktopSideNav";
 
@@ -10,9 +9,9 @@ type Props = {
 	showFooter?: boolean;
 };
 
-export default function AppShell({ children, showFooter = true }: Props) {
+export default function AppShell({ children }: Props) {
 	return (
-		<div className="flex w-full min-h-dvh bg-background">
+		<div className="flex relative w-full min-h-dvh bg-background">
 			{/* <DesktopSideNav /> */}
 			<div
 				className={cn(
@@ -22,12 +21,12 @@ export default function AppShell({ children, showFooter = true }: Props) {
 				)}
 			>
 				{/* <HorizontalMenu /> */}
-				<main className="z-10 flex-1 px-4 sm:px-6 md:px-8 lg:px-10 bg-background">
+				<main className="z-10 flex-1 px-4 mx-auto max-w-xl sm:px-6 md:px-8 lg:px-10 bg-background">
 					{children}
 				</main>
-				{showFooter && <Footer />}
-				<AudioPlayer />
+				{/* {showFooter && <Footer />} */}
 			</div>
+			<AudioPlayer />
 		</div>
 	);
 }

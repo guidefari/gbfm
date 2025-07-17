@@ -1,9 +1,4 @@
-import {
-	// cf_contentBucket,
-	contentBucket,
-	fileRouter,
-	mixesBucket,
-} from "./bucket";
+import { contentBucket, fileRouter, mixesBucket } from "./bucket";
 import { domain, urls } from "./dns";
 import { email } from "./email";
 import { allSecrets } from "./secret";
@@ -22,6 +17,7 @@ export const database = new sst.aws.Postgres("gbfm_postgres", {
 		database: "postgres",
 		port: 5432,
 	},
+	version: "16.8",
 });
 
 new sst.x.DevCommand("Studio", {
@@ -50,10 +46,10 @@ export const service = new sst.aws.Service("gbfm_vps", {
 		database,
 		email,
 		urls,
-		...allSecrets,
 		fileRouter,
 		contentBucket,
 		mixesBucket,
+		...allSecrets,
 	],
 });
 

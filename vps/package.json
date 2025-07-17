@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "bun run --hot src/api/index.ts",
     "typecheck": "tsc --noEmit",
-    "dev:sst": "sst dev",
     "db:studio": "drizzle-kit studio",
     "db:yeet": "drizzle-kit push",
     "db:migrate": "drizzle-kit migrate",
