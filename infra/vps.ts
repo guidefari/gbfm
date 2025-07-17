@@ -1,7 +1,7 @@
 import { contentBucket, fileRouter, mixesBucket } from "./bucket";
 import { domain, urls } from "./dns";
 import { email } from "./email";
-import { allSecrets } from "./secret";
+import { allSecrets, secret } from "./secret";
 
 export const vpc = new sst.aws.Vpc("gbfm_network");
 
@@ -18,6 +18,7 @@ export const database = new sst.aws.Postgres("gbfm_postgres", {
 		port: 5432,
 	},
 	version: "16.8",
+	password: secret.SpotifyClientSecret.value,
 });
 
 new sst.x.DevCommand("Studio", {
