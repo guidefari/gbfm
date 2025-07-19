@@ -5,7 +5,7 @@ import { allSecrets } from "./secret";
 
 export const vpc = new sst.aws.Vpc("gbfm_network", {
 	bastion: true,
-	nat: "ec2",
+	// nat: "ec2",
 });
 
 export const cluster = new sst.aws.Cluster("gbfm_cluster", {
