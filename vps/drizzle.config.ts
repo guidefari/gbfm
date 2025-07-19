@@ -1,7 +1,12 @@
+import path from "node:path";
 import { defineConfig } from "drizzle-kit";
 import { Resource } from "sst";
 
-console.log(Resource);
+const relativePath = path.relative(process.cwd(), __filename);
+
+console.log(`🔒 SSL Configuration Reminder
+If you need to connect to the production database from local, 
+uncomment the SSL configuration in ${relativePath} .`);
 
 export default defineConfig({
 	out: "./drizzle",
@@ -13,5 +18,8 @@ export default defineConfig({
 		user: Resource.gbfm_postgres.username,
 		password: Resource.gbfm_postgres.password,
 		database: Resource.gbfm_postgres.database,
+		// ssl: {
+		// 	rejectUnauthorized: false,
+		// },
 	},
 });

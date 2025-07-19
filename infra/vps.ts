@@ -3,8 +3,10 @@ import { domain, urls } from "./dns";
 import { email } from "./email";
 import { allSecrets } from "./secret";
 
+const isLocal = ["local", "dev"].includes($app.stage);
+
 export const vpc = new sst.aws.Vpc("gbfm_network", {
-	bastion: true,
+	bastion: !isLocal,
 	// nat: "ec2",
 });
 
@@ -15,7 +17,6 @@ export const cluster = new sst.aws.Cluster("gbfm_cluster", {
 export const database = new sst.aws.Postgres("gbfm_postgres", {
 	vpc,
 	version: "16.8",
-	// proxy: true,
 	dev: {
 		username: "user-name",
 		password: "strong-password",
@@ -65,8 +66,6 @@ export const vps_gateway = new sst.aws.ApiGatewayV2("gbfm_vps_gateway", {
 		dns: sst.cloudflare.dns(),
 	},
 });
-
-const isLocal = ["local", "dev"].includes($app.stage);
 
 if (!isLocal) {
 	vps_gateway.routePrivate("$default", service.nodes.cloudmapService.arn);

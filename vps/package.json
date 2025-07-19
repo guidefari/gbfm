@@ -9,7 +9,9 @@
     "db:studio": "drizzle-kit studio",
     "db:yeet": "drizzle-kit push",
     "db:migrate": "drizzle-kit migrate",
-    "db:gen": "drizzle-kit generate"
+    "db:gen": "drizzle-kit generate",
+    "db:migrate:prod": "bun sst shell --stage=prod bun run src/migrate.ts",
+    "db:deets:prod": "bun sst shell --stage=prod bun run ./scripts/db.ts"
   },
   "devDependencies": {
     "@types/aws-lambda": "8.10.145",

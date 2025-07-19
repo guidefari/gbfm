@@ -75,7 +75,7 @@
         "drizzle-orm": "0.41.0",
         "drizzle-zod": "^0.7.1",
         "ffmpeg-static": "^5.2.0",
-        "hono": "^4.7.11",
+        "hono": "4.7.11",
         "hono-pino": "^0.9.1",
         "pg": "^8.16.3",
         "pino": "^9.7.0",
@@ -85,7 +85,7 @@
         "zod": "^3.25.76",
       },
       "devDependencies": {
-        "@types/aws-lambda": "^8.10.145",
+        "@types/aws-lambda": "8.10.145",
         "@types/bun": "^1.2.18",
         "@types/pg": "^8.15.4",
         "drizzle-kit": "^0.30.6",
@@ -96,7 +96,7 @@
     },
     "web": {
       "name": "@gbfm/www",
-      "version": "0.3.1",
+      "version": "0.4.2",
       "dependencies": {
         "@gbfm/core": "workspace:",
         "@gbfm/vps": "workspace:",

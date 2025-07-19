@@ -28,7 +28,15 @@ function Index() {
 					goosebumps.
 					<br />
 					<span className="text-highlight">fm</span>
-					<aside className="text-sm text-right opacity-60">v{version}</aside>
+					<aside className="text-sm text-right opacity-60">
+						<a
+							href={`https://github.com/guidefari/gbfm/releases/tag/${version}`}
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							v{version}
+						</a>
+					</aside>
 				</h1>
 				<nav className="flex gap-4" aria-label="Main navigation">
 					<Link

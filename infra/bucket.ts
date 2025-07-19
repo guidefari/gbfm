@@ -14,7 +14,7 @@ export const mixesBucket = new sst.aws.Bucket("Mixes", {
 
 export const fileRouter = new sst.aws.Router("Router", {
 	domain: {
-		name: `files.${domain}`,
+		name: `cdn.${domain}`,
 		dns: sst.cloudflare.dns(),
 	},
 });
