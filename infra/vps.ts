@@ -15,7 +15,7 @@ export const cluster = new sst.aws.Cluster("gbfm_cluster", {
 export const database = new sst.aws.Postgres("gbfm_postgres", {
 	vpc,
 	version: "16.8",
-	proxy: true,
+	// proxy: true,
 	dev: {
 		username: "user-name",
 		password: "strong-password",
