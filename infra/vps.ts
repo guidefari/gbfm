@@ -1,10 +1,11 @@
 import { contentBucket, fileRouter, mixesBucket } from "./bucket";
 import { domain, urls } from "./dns";
 import { email } from "./email";
-import { allSecrets, secret } from "./secret";
+import { allSecrets } from "./secret";
 
 export const vpc = new sst.aws.Vpc("gbfm_network", {
 	bastion: true,
+	nat: "ec2",
 });
 
 export const cluster = new sst.aws.Cluster("gbfm_cluster", {
@@ -13,14 +14,14 @@ export const cluster = new sst.aws.Cluster("gbfm_cluster", {
 
 export const database = new sst.aws.Postgres("gbfm_postgres", {
 	vpc,
+	version: "16.8",
+	proxy: true,
 	dev: {
 		username: "user-name",
 		password: "strong-password",
 		database: "postgres",
 		port: 5432,
 	},
-	version: "16.8",
-	password: secret.SpotifyClientSecret.value,
 });
 
 new sst.x.DevCommand("Studio", {
@@ -28,6 +29,7 @@ new sst.x.DevCommand("Studio", {
 	dev: {
 		command: "npx drizzle-kit studio",
 		directory: "./vps",
+		autostart: false,
 	},
 });
 

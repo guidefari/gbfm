@@ -3,7 +3,6 @@
 /* eslint-disable */
 /* deno-fmt-ignore-file */
 
-import "sst";
 declare module "sst" {
 	export interface Resource {
 		ACCESS_TOKEN_SECRET: {
@@ -70,6 +69,7 @@ declare module "sst" {
 			url: string;
 		};
 		gbfm_network: {
+			bastion: string;
 			type: "sst.aws.Vpc";
 		};
 		gbfm_postgres: {
@@ -90,5 +90,6 @@ declare module "sst" {
 		};
 	}
 }
+/// <reference path="sst-env.d.ts" />
 
 import "sst";
