@@ -31,16 +31,16 @@ jobs:
       - name: Create Tag
         run: |
           git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
+          git config --local user.name "The Machine🤖"
           git add .
           git commit -m "chore: bump package version to ${{ steps.versioning.outputs.nextStrict }}"
           git tag -a "${{ steps.versioning.outputs.nextStrict }}" -m "Release ${{ steps.versioning.outputs.nextStrict }}"
           git push origin prod
           git push origin "${{ steps.versioning.outputs.nextStrict }}"
 
-      - name: Create Release
-        uses: ncipollo/release-action@v1
-        with:
-          tag: "${{ steps.versioning.outputs.nextStrict }}"
-          name: "Release ${{ steps.versioning.outputs.nextStrict }}"
-          body: "Automated release notes"
+      # - name: Create Release
+      #   uses: ncipollo/release-action@v1
+      #   with:
+      #     tag: "${{ steps.versioning.outputs.nextStrict }}"
+      #     name: "Release ${{ steps.versioning.outputs.nextStrict }}"
+      #     body: "Automated release notes"
