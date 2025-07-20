@@ -4,6 +4,8 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "@/components/ui/toaster";
 import { AudioProvider } from "@/contexts/AudioPlayer";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { env } from "@/env";
+import { FPSMeter } from "@overengineering/fps-meter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Outlet, createRootRoute } from "@tanstack/react-router";
 import { Suspense } from "react";
@@ -26,6 +28,9 @@ export const Route = createRootRoute({
 					<AudioProvider>
 						<QueryClientProvider client={queryClient}>
 							<AppShell showFooter={location.pathname !== "/"}>
+								{env.isDev && (
+									<FPSMeter className="fixed top-0 right-0 z-50" height={40} />
+								)}
 								<CommandDialogDemo />
 								<Outlet />
 							</AppShell>

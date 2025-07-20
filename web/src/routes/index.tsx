@@ -1,25 +1,20 @@
+import { cn } from "@/lib/utils";
 import { createFileRoute } from "@tanstack/react-router";
-import { Link } from "@tanstack/react-router";
-import React from "react";
-import { version } from "../../../package.json";
+import { useEffect, useState } from "react";
 
 export const Route = createFileRoute("/")({
 	component: Index,
 });
 
 function Index() {
-	const router = Route.useNavigate();
+	const [oneSecondLater, setOneSecondLater] = useState(false);
+	const timeout = setTimeout(() => {
+		setOneSecondLater(true);
+	}, 1000);
 
-	React.useEffect(() => {
-		const handleKeyDown = (e: KeyboardEvent) => {
-			if (e.key === "0") {
-				e.preventDefault();
-				router({ to: "/mixes" });
-			}
-		};
-		document.addEventListener("keydown", handleKeyDown);
-		return () => document.removeEventListener("keydown", handleKeyDown);
-	}, [router]);
+	useEffect(() => {
+		return () => clearTimeout(timeout);
+	}, [timeout]);
 
 	return (
 		<div className="flex flex-col justify-center items-center px-1 leading-none h-dvh">
@@ -28,25 +23,27 @@ function Index() {
 					goosebumps.
 					<br />
 					<span className="text-highlight">fm</span>
-					<aside className="text-sm text-right opacity-60">
-						<a
-							href={`https://github.com/guidefari/gbfm/releases/tag/v${version}`}
-							target="_blank"
-							rel="noopener noreferrer"
+					<aside className="text-sm">
+						<p
+							className={cn(
+								"text-sm text-left w-full text-background opacity-0 transition-all duration-500 ease-in-out",
+								oneSecondLater && "text-muted-foreground opacity-100",
+							)}
 						>
-							v{version}
-						</a>
+							Press{" "}
+							<kbd
+								className={cn(
+									"pointer-events-none inline-flex h-5 bg-muted text-muted-foreground items-center gap-1 rounded border px-1.5 font-mono text-[10px] font-medium opacity-100 select-none",
+								)}
+							>
+								<span className="text-xs">
+									{navigator.platform.includes("Mac") ? "⌘" : "Ctrl"}
+								</span>
+								K
+							</kbd>
+						</p>
 					</aside>
 				</h1>
-				<nav className="flex gap-4" aria-label="Main navigation">
-					<Link
-						to="/mixes"
-						className="px-3 py-1 rounded focus:outline-none focus:ring-2 focus:ring-highlight focus:ring-offset-2"
-						aria-label="Go to mixes page (press 0)"
-					>
-						[0]Mixes
-					</Link>
-				</nav>
 			</div>
 		</div>
 	);

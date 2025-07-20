@@ -2,13 +2,14 @@
 
 import {
 	Calculator,
-	Calendar,
 	CreditCard,
+	Headphones,
+	LockKeyhole,
 	Settings,
-	Smile,
 	User,
 } from "lucide-react";
 import * as React from "react";
+import { version } from "../../../package.json";
 
 import {
 	CommandDialog,
@@ -20,36 +21,59 @@ import {
 	CommandSeparator,
 	CommandShortcut,
 } from "@/components/ui/command";
+import { useUIStore } from "@/store";
+import { useNavigate } from "@tanstack/react-router";
 
 export function CommandDialogDemo() {
-	const [open, setOpen] = React.useState(false);
+	const router = useNavigate();
+	const { commando, openCommando, closeCommando, toggleCommando } =
+		useUIStore();
+
+	const routeToMixes = React.useCallback(() => {
+		router({ to: "/mixes" });
+		closeCommando();
+	}, [router, closeCommando]);
+
+	const routeToLogin = React.useCallback(() => {
+		router({ to: "/auth/sign-in" });
+		closeCommando();
+	}, [router, closeCommando]);
 
 	React.useEffect(() => {
 		const down = (e: KeyboardEvent) => {
 			if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
 				e.preventDefault();
-				setOpen((open) => !open);
+				toggleCommando();
+			}
+
+			if (e.key === "0") {
+				e.preventDefault();
+				routeToMixes();
 			}
 		};
 
 		document.addEventListener("keydown", down);
 		return () => document.removeEventListener("keydown", down);
-	}, []);
+	}, [toggleCommando, routeToMixes]);
 
 	return (
 		<>
-			<CommandDialog open={open} onOpenChange={setOpen}>
+			<CommandDialog
+				open={commando.isOpen}
+				onOpenChange={(open) => (open ? openCommando() : closeCommando())}
+			>
 				<CommandInput placeholder="Type a command or search..." />
 				<CommandList>
 					<CommandEmpty>No results found.</CommandEmpty>
 					<CommandGroup heading="Suggestions">
-						<CommandItem>
-							<Calendar />
-							<span>Calendar</span>
+						<CommandItem onSelect={routeToMixes}>
+							<Headphones />
+							<span>Mixes</span>
+							<CommandShortcut>0</CommandShortcut>
 						</CommandItem>
-						<CommandItem>
-							<Smile />
-							<span>Search Emoji</span>
+						<CommandItem onSelect={routeToLogin}>
+							<LockKeyhole />
+							<span>Login</span>
 						</CommandItem>
 						<CommandItem>
 							<Calculator />
@@ -75,6 +99,16 @@ export function CommandDialogDemo() {
 						</CommandItem>
 					</CommandGroup>
 				</CommandList>
+				<div className="flex justify-center items-center p-2 border-t">
+					<a
+						href={`https://github.com/guidefari/gbfm/releases/tag/v${version}`}
+						target="_blank"
+						rel="noopener noreferrer"
+						className="text-xs transition-colors text-muted-foreground hover:text-foreground"
+					>
+						v{version}
+					</a>
+				</div>
 			</CommandDialog>
 		</>
 	);
