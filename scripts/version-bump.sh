@@ -104,4 +104,3 @@ git commit -m "chore: bump version to $NEW_VERSION" --no-verify
 
 echo "✅ Version bump complete! New tag: $NEW_VERSION"
 echo "💡 Remember to push your changes: git push origin prod --tags" 
-# post commit test
