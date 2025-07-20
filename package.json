@@ -1,6 +1,6 @@
 {
 	"name": "gbfm",
-	"version": "0.4.7",
+	"version": "0.4.8",
 	"sideEffects": false,
 	"scripts": {
 		"dev": "sst dev --stage=dev",
