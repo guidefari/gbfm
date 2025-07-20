@@ -27,7 +27,7 @@ app.use(
 			"https://www.goosebumps.fm",
 			"https://goosebumps.fm",
 		],
-		allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+		allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
 		allowHeaders: ["Content-Type", "Authorization"],
 		credentials: true,
 	}),

@@ -1,8 +1,11 @@
+import { useAuthStore } from "@/store/auth";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { RouterProvider, createRouter } from "@tanstack/react-router";
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { RouterProvider, createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
 import "./styles/main.css";
+import { ThemeProvider } from "./components/ThemeProvider";
 
 const router = createRouter({ routeTree });
 
@@ -12,6 +15,34 @@ declare module "@tanstack/react-router" {
 	}
 }
 
+const queryClient = new QueryClient({
+	defaultOptions: {
+		queries: {
+			staleTime: 1000 * 60 * 5,
+		},
+	},
+});
+
+function App() {
+	const { initializeWorker, destroyWorker } = useAuthStore();
+
+	React.useEffect(() => {
+		initializeWorker();
+
+		return () => {
+			destroyWorker();
+		};
+	}, [initializeWorker, destroyWorker]);
+
+	return (
+		<QueryClientProvider client={queryClient}>
+			<ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+				<RouterProvider router={router} />
+			</ThemeProvider>
+		</QueryClientProvider>
+	);
+}
+
 const container = document.getElementById("root");
 
 if (container) {
@@ -19,7 +50,7 @@ if (container) {
 
 	root.render(
 		<React.StrictMode>
-			<RouterProvider router={router} />
+			<App />
 		</React.StrictMode>,
 	);
 } else {

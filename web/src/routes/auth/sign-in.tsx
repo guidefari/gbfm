@@ -1,5 +1,7 @@
 import { GenericAuthForm } from "@/components/Auth/GenericForm";
+import { toast } from "@/components/ui/use-toast";
 import { VPS_BASE_URL } from "@/lib/http";
+import { useAuthStore } from "@/store/auth";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 
@@ -8,9 +10,9 @@ export const Route = createFileRoute("/auth/sign-in")({
 });
 
 function SignInPage() {
-	const [message, setMessage] = useState<string>("");
 	const [error, setError] = useState<string>("");
 	const navigate = Route.useNavigate();
+	const { setAuth } = useAuthStore();
 
 	const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
@@ -30,34 +32,31 @@ function SignInPage() {
 			const data = await response.json();
 
 			if (response.ok) {
-				setMessage("Sign in successful! Redirecting...");
+				toast({
+					title: "Sign in successful!",
+					description: "Redirecting to home page...",
+					variant: "default",
+				});
 				setError("");
 
-				localStorage.setItem("accessToken", data.accessToken);
-				localStorage.setItem("refreshToken", data.refreshToken);
+				setAuth({
+					user: data.user,
+					accessToken: data.accessToken,
+					refreshToken: data.refreshToken,
+				});
 
-				setTimeout(() => {
-					navigate({ to: "/" });
-				}, 1500);
+				navigate({ to: "/" });
 			} else {
 				setError(data.error || "Failed to sign in");
-				setMessage("");
 			}
 		} catch (err) {
 			setError("Failed to sign in");
-			setMessage("");
 		}
 	};
 
 	return (
 		<div className="">
 			<div className="mx-auto space-y-8 w-full max-w-md">
-				{message && (
-					<div className="p-4 text-sm text-green-700 bg-green-100 rounded-md">
-						{message}
-					</div>
-				)}
-
 				{error && (
 					<div className="p-4 text-sm text-red-700 bg-red-100 rounded-md">
 						{error}

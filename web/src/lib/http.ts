@@ -1,3 +1,4 @@
+import { useAuthStore } from "@/store/auth";
 import type {
 	AlbumApiResponse,
 	PlaylistApiResponse,
@@ -6,6 +7,7 @@ import type {
 import type { MDXArchiveTypes } from "@gbfm/core/mdx/mdx.types";
 import type { MixSchema } from "@gbfm/vps/schemas";
 import { useQuery } from "@tanstack/react-query";
+
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 export const VPS_BASE_URL = import.meta.env.VITE_VPS_BASE_URL;
 export const AUTH_BASE_URL = `${VPS_BASE_URL}/auth`;
@@ -19,17 +21,15 @@ export async function fetcher<T>(
 	input: RequestInfo,
 	init: CustomRequestInit = { skipAuth: true },
 ) {
-	const jwt = init.token || localStorage.getItem("accessToken");
-	console.log("jwt:", jwt);
-	const refreshToken = localStorage.getItem("refreshToken");
-	console.log("refreshToken:", refreshToken);
+	const { getAccessToken } = useAuthStore.getState();
+	const jwt = init.token || (await getAccessToken());
+	const refreshToken = useAuthStore.getState().refreshToken;
 
 	try {
 		const isApiRequest =
 			[API_BASE_URL, VPS_BASE_URL].some((base) =>
 				input.toString().includes(base),
 			) && !init?.skipAuth;
-		console.log("isApiRequest:", isApiRequest);
 
 		const headers = {
 			"Content-Type": "application/json",
@@ -46,17 +46,31 @@ export async function fetcher<T>(
 			headers,
 		});
 
-		// todo: this actually needs to be implemented, lol.
 		if (res.status === 401 && isApiRequest) {
-			if (jwt) {
-				const retryHeaders = {
-					...headers,
-					Authorization: `Bearer ${jwt}`,
-				};
-				res = await fetch(input, {
-					...init,
-					headers: retryHeaders,
+			const { worker } = useAuthStore.getState();
+			if (worker) {
+				const newToken = await new Promise<string | null>((resolve) => {
+					const handleMessage = (event: MessageEvent) => {
+						if (event.data.type === "ACCESS_TOKEN") {
+							worker.removeEventListener("message", handleMessage);
+							resolve(event.data.payload?.accessToken || null);
+						}
+					};
+
+					worker.addEventListener("message", handleMessage);
+					worker.postMessage({ type: "REFRESH_TOKEN" });
 				});
+
+				if (newToken) {
+					const retryHeaders = {
+						...headers,
+						Authorization: `Bearer ${newToken}`,
+					};
+					res = await fetch(input, {
+						...init,
+						headers: retryHeaders,
+					});
+				}
 			}
 		}
 

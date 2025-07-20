@@ -1,13 +1,6 @@
 "use client";
 
-import {
-	Calculator,
-	CreditCard,
-	Headphones,
-	LockKeyhole,
-	Settings,
-	User,
-} from "lucide-react";
+import { Headphones, LockKeyhole, LogOut, User } from "lucide-react";
 import * as React from "react";
 import { version } from "../../../package.json";
 
@@ -22,12 +15,14 @@ import {
 	CommandShortcut,
 } from "@/components/ui/command";
 import { useUIStore } from "@/store";
+import { useAuthStore } from "@/store/auth";
 import { useNavigate } from "@tanstack/react-router";
 
 export function CommandDialogDemo() {
 	const router = useNavigate();
 	const { commando, openCommando, closeCommando, toggleCommando } =
 		useUIStore();
+	const { isAuthenticated, clearAuth } = useAuthStore();
 
 	const routeToMixes = React.useCallback(() => {
 		router({ to: "/mixes" });
@@ -39,6 +34,12 @@ export function CommandDialogDemo() {
 		closeCommando();
 	}, [router, closeCommando]);
 
+	const routeToProfile = React.useCallback(() => {
+		router({ to: "/settings/profile" });
+		closeCommando();
+	}, [router, closeCommando]);
+
+	// biome-ignore lint/correctness/useExhaustiveDependencies: 👀
 	React.useEffect(() => {
 		const down = (e: KeyboardEvent) => {
 			if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
@@ -54,13 +55,14 @@ export function CommandDialogDemo() {
 
 		document.addEventListener("keydown", down);
 		return () => document.removeEventListener("keydown", down);
-	}, [toggleCommando, routeToMixes]);
+	}, []);
 
 	return (
 		<>
 			<CommandDialog
 				open={commando.isOpen}
 				onOpenChange={(open) => (open ? openCommando() : closeCommando())}
+				title="Command palette for GBFM"
 			>
 				<CommandInput placeholder="Type a command or search..." />
 				<CommandList>
@@ -71,33 +73,29 @@ export function CommandDialogDemo() {
 							<span>Mixes</span>
 							<CommandShortcut>0</CommandShortcut>
 						</CommandItem>
-						<CommandItem onSelect={routeToLogin}>
-							<LockKeyhole />
-							<span>Login</span>
-						</CommandItem>
-						<CommandItem>
-							<Calculator />
-							<span>Calculator</span>
-						</CommandItem>
+						{!isAuthenticated && (
+							<CommandItem onSelect={routeToLogin}>
+								<LockKeyhole />
+								<span>Login</span>
+							</CommandItem>
+						)}
 					</CommandGroup>
 					<CommandSeparator />
-					<CommandGroup heading="Settings">
-						<CommandItem>
-							<User />
-							<span>Profile</span>
-							<CommandShortcut>⌘P</CommandShortcut>
-						</CommandItem>
-						<CommandItem>
-							<CreditCard />
-							<span>Billing</span>
-							<CommandShortcut>⌘B</CommandShortcut>
-						</CommandItem>
-						<CommandItem>
-							<Settings />
-							<span>Settings</span>
-							<CommandShortcut>⌘S</CommandShortcut>
-						</CommandItem>
-					</CommandGroup>
+					{isAuthenticated && (
+						<CommandGroup heading="Settings">
+							<CommandItem onSelect={routeToProfile}>
+								<User />
+								<span>Profile</span>
+								<CommandShortcut>⌘P</CommandShortcut>
+							</CommandItem>
+
+							<CommandItem onSelect={clearAuth}>
+								<LogOut />
+								<span>Logout</span>
+								<CommandShortcut>⌘L</CommandShortcut>
+							</CommandItem>
+						</CommandGroup>
+					)}
 				</CommandList>
 				<div className="flex justify-center items-center p-2 border-t">
 					<a
