@@ -25,22 +25,22 @@ jobs:
 
       - name: Update package.jsons
         run: |
-          bun pm version ${{ steps.versioning.outputs.nextStrict }} --no-git-tag-version
-          cd web && bun pm version ${{ steps.versioning.outputs.nextStrict }} --no-git-tag-version
-
-      - name: Create Tag
-        run: |
           git config --local user.email "action@github.com"
           git config --local user.name "The Machine🤖"
-          git add .
-          git commit -m "chore: bump package version to ${{ steps.versioning.outputs.nextStrict }}"
-          git tag -a "${{ steps.versioning.outputs.nextStrict }}" -m "Release ${{ steps.versioning.outputs.nextStrict }}"
+          bun pm version ${{ steps.versioning.outputs.nextStrict }}
+          cd web && bun pm version ${{ steps.versioning.outputs.nextStrict }}
           git push origin prod
-          git push origin "${{ steps.versioning.outputs.nextStrict }}"
-      
-      - name: Deploy
-        run: gh workflow run deploy.yml
 
+      # - name: Create Tag
+      #   run: |
+      #     git config --local user.email "action@github.com"
+      #     git config --local user.name "The Machine🤖"
+      #     git add .
+      #     git commit -m "chore: bump package version to ${{ steps.versioning.outputs.nextStrict }}"
+      #     git tag -a "${{ steps.versioning.outputs.nextStrict }}" -m "Release ${{ steps.versioning.outputs.nextStrict }}"
+      #     git push origin prod
+      #     git push origin "${{ steps.versioning.outputs.nextStrict }}"
+      
       # - name: Create Release
       #   uses: ncipollo/release-action@v1
       #   with:
