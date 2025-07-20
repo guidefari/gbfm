@@ -99,6 +99,7 @@ echo "📦 Creating new tag: $NEW_VERSION"
 git tag "$NEW_VERSION"
 
 echo "📤 Pushing tag to remote..."
+git add .
 git push origin "$NEW_VERSION"
 
 echo "✅ Version bump complete! New tag: $NEW_VERSION" 
