@@ -29,7 +29,7 @@ jobs:
           git config --local user.name "The Machine🤖"
           bun pm version ${{ steps.versioning.outputs.nextStrict }}
           cd web && bun pm version ${{ steps.versioning.outputs.nextStrict }}
-          git push origin prod
+          git push origin prod --tags
 
       # - name: Create Tag
       #   run: |
@@ -38,7 +38,7 @@ jobs:
       #     git add .
       #     git commit -m "chore: bump package version to ${{ steps.versioning.outputs.nextStrict }}"
       #     git tag -a "${{ steps.versioning.outputs.nextStrict }}" -m "Release ${{ steps.versioning.outputs.nextStrict }}"
-      #     git push origin prod
+      #     git push origin prod --tags
       #     git push origin "${{ steps.versioning.outputs.nextStrict }}"
       
       # - name: Create Release
