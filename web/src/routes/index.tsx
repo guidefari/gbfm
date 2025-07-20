@@ -30,7 +30,7 @@ function Index() {
 					<span className="text-highlight">fm</span>
 					<aside className="text-sm text-right opacity-60">
 						<a
-							href={`https://github.com/guidefari/gbfm/releases/tag/${version}`}
+							href={`https://github.com/guidefari/gbfm/releases/tag/v${version}`}
 							target="_blank"
 							rel="noopener noreferrer"
 						>

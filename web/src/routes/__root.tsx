@@ -1,3 +1,4 @@
+import { CommandDialogDemo } from "@/components/Commando";
 import AppShell from "@/components/Layout/AppShell";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { Toaster } from "@/components/ui/toaster";
@@ -25,6 +26,7 @@ export const Route = createRootRoute({
 					<AudioProvider>
 						<QueryClientProvider client={queryClient}>
 							<AppShell showFooter={location.pathname !== "/"}>
+								<CommandDialogDemo />
 								<Outlet />
 							</AppShell>
 						</QueryClientProvider>
