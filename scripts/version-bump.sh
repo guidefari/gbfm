@@ -100,6 +100,7 @@ git tag "$NEW_VERSION"
 
 echo "📤 Pushing tag to remote..."
 git add .
-git push origin "$NEW_VERSION"
+git commit -m "chore: bump version to $NEW_VERSION"
+git push origin prod --tags
 
 echo "✅ Version bump complete! New tag: $NEW_VERSION" 
