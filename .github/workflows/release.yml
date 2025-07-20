@@ -37,6 +37,9 @@ jobs:
           git tag -a "${{ steps.versioning.outputs.nextStrict }}" -m "Release ${{ steps.versioning.outputs.nextStrict }}"
           git push origin prod
           git push origin "${{ steps.versioning.outputs.nextStrict }}"
+      
+      - name: Deploy
+        run: gh workflow run deploy.yml
 
       # - name: Create Release
       #   uses: ncipollo/release-action@v1
