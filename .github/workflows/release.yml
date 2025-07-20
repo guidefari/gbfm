@@ -28,7 +28,6 @@ jobs:
           git config --local user.email "action@github.com"
           git config --local user.name "The Machine🤖"
           bun pm version ${{ steps.versioning.outputs.nextStrict }}
-          cd web && bun pm version ${{ steps.versioning.outputs.nextStrict }}
           git push origin prod --tags
 
       # - name: Create Tag
