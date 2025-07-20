@@ -98,9 +98,9 @@ bun pm version $VERSION_TYPE --no-git-tag-version
 echo "📦 Creating new tag: $NEW_VERSION"
 git tag "$NEW_VERSION"
 
-echo "📤 Pushing tag to remote..."
+echo "📝 Committing version bump..."
 git add .
-git commit -m "chore: bump version to $NEW_VERSION"
-git push origin prod --tags
+git commit -m "chore: bump version to $NEW_VERSION" --no-verify
 
-echo "✅ Version bump complete! New tag: $NEW_VERSION" 
+echo "✅ Version bump complete! New tag: $NEW_VERSION"
+echo "💡 Remember to push your changes: git push origin prod --tags" 

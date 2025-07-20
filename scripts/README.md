@@ -15,11 +15,11 @@ Automatically bumps the project version based on conventional commit messages si
   - `docs:`, `style:`, `refactor:`, `perf:`, `test:`, `build:`, `ci:`, `chore:`, `revert:` → Patch version bump
   - `BREAKING CHANGE` → Major version bump
 - **Package.json Sync**: Ensures package.json version matches the latest git tag
-- **Git Tag Management**: Creates and pushes new version tags
+- **Git Tag Management**: Creates new version tags and commits version changes
 
 ### Usage
 
-The script is automatically executed by the git pre-push hook, but can also be run manually:
+The script is automatically executed by the git post-commit hook, but can also be run manually:
 
 ```bash
 ./scripts/version-bump.sh
@@ -38,15 +38,16 @@ The script is automatically executed by the git pre-push hook, but can also be r
 3. Analyzes commits since the last tag for conventional commit prefixes
 4. Determines the next version based on commit types
 5. Updates package.json using `bun pm version --no-git-tag-version`
-6. Creates and pushes a new git tag
+6. Creates a new git tag
+7. Commits the version bump changes
 
 ## Git Hook Setup
 
-To enable automatic version bumping on push, you need to set up the git pre-push hook.
+To enable automatic version bumping after each commit, you need to set up the git post-commit hook.
 
 ### Option 1: Manual Setup
 
-Create or update `.git/hooks/pre-push` with the following content:
+Create or update `.git/hooks/post-commit` with the following content:
 
 ```bash
 #!/bin/bash
@@ -63,7 +64,7 @@ exec "$REPO_ROOT/scripts/version-bump.sh"
 Then make it executable:
 
 ```bash
-chmod +x .git/hooks/pre-push
+chmod +x .git/hooks/post-commit
 ```
 
 ### Option 2: Copy from Repository
@@ -71,8 +72,8 @@ chmod +x .git/hooks/pre-push
 If the hook is already set up in the repository, you can copy it:
 
 ```bash
-cp .git/hooks/pre-push.sample .git/hooks/pre-push
-chmod +x .git/hooks/pre-push
+cp .git/hooks/post-commit.sample .git/hooks/post-commit
+chmod +x .git/hooks/post-commit
 ```
 
 ### Option 3: Using Git Config
@@ -85,7 +86,7 @@ git config core.hooksPath .git/hooks
 
 ### Verification
 
-To verify the hook is working, try pushing to your repository. You should see output like:
+To verify the hook is working, try making a commit with a conventional commit message. You should see output like:
 
 ```
 🔍 Analyzing commits for version bump...
@@ -106,12 +107,21 @@ def5678 fix: resolve bug
 
 📦 Updating package.json version...
 📦 Creating new tag: v1.1.0
-📤 Pushing tag to remote...
+📝 Committing version bump...
 ✅ Version bump complete! New tag: v1.1.0
+💡 Remember to push your changes: git push origin prod --tags
 ```
+
+### Important Notes
+
+- The script runs after each commit and will create a new commit for version bumps
+- Version bump commits use `--no-verify` to prevent triggering other hooks
+- You need to manually push tags and commits: `git push origin prod --tags`
+- The script will skip version bumping if no conventional commits are found since the last tag
 
 ### Troubleshooting
 
-- **Hook not running**: Make sure the file is executable (`chmod +x .git/hooks/pre-push`)
+- **Hook not running**: Make sure the file is executable (`chmod +x .git/hooks/post-commit`)
 - **Script not found**: Ensure the repository root is correctly detected
-- **Permission denied**: Check that the script file is executable (`chmod +x scripts/version-bump.sh`) 
+- **Permission denied**: Check that the script file is executable (`chmod +x scripts/version-bump.sh`)
+- **Infinite loops**: The script uses `--no-verify` when committing version bumps to prevent hook loops 
