@@ -9,7 +9,8 @@
 		"typecheck": "bun --filter=* typecheck",
 		"deploy": "sst deploy --stage=dev",
 		"deploy:prod": "sst deploy --stage=prod",
-		"gen": "cd vps && sst shell drizzle-kit generate"
+		"gen": "cd vps && sst shell drizzle-kit generate",
+		"release": "semantic-release"
 	},
 	"workspaces": [
 		"apps/*",
@@ -25,7 +26,11 @@
 		"zod": "3.25.67"
 	},
 	"devDependencies": {
+		"@semantic-release/changelog": "^6.0.3",
+		"@semantic-release/git": "^10.0.1",
+		"@semantic-release/github": "^11.0.3",
 		"@tsconfig/node20": "20.1.6",
+		"semantic-release": "^24.2.7",
 		"typescript": "5.8.3"
 	},
 	"overrides": {
