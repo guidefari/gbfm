@@ -2,7 +2,7 @@
 
 import { Headphones, LockKeyhole, LogOut, User } from "lucide-react";
 import * as React from "react";
-import { version } from "../../../package.json";
+import { version } from "../../../../package.json";
 
 import {
 	CommandDialog,
