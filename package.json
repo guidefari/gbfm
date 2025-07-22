@@ -12,10 +12,8 @@
 		"gen": "cd vps && sst shell drizzle-kit generate"
 	},
 	"workspaces": [
-		"backend",
-		"core",
-		"web",
-		"vps"
+		"apps/*",
+		"packages/*"
 	],
 	"dependencies": {
 		"@effect/platform": "0.86.0",

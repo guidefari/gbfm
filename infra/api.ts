@@ -7,7 +7,7 @@ import { isPermanentStage } from "./stage";
 if (!domain) throw new Error("no custom domain provided, what you doing blud?");
 
 const apiFn = new sst.aws.Function("Api", {
-	handler: "./backend/src/api/index.handler",
+	handler: "./apps/functions/src/api/index.handler",
 	streaming: !$dev,
 	url: true,
 	link: [
@@ -24,7 +24,7 @@ const apiFn = new sst.aws.Function("Api", {
 export const api = new sst.cloudflare.Worker("ApiWorker", {
 	url: true,
 	domain: `api.${domain}`,
-	handler: "./backend/src/proxy.ts",
+	handler: "./apps/functions/src/proxy.ts",
 	environment: {
 		ORIGIN_URL: apiFn.url,
 		NO_CACHE: String(isPermanentStage),

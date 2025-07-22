@@ -29,7 +29,7 @@ new sst.x.DevCommand("Studio", {
 	link: [database, email],
 	dev: {
 		command: "npx drizzle-kit studio",
-		directory: "./vps",
+		directory: "./apps/vps",
 		autostart: false,
 	},
 });
@@ -40,13 +40,13 @@ export const service = new sst.aws.Service("gbfm_vps", {
 		port: 3003,
 	},
 	dev: {
-		directory: "./vps",
+		directory: "./apps/vps",
 		command: "bun dev",
 	},
 	image: {
 		context: "./",
 		target: "release",
-		dockerfile: "vps/Dockerfile",
+		dockerfile: "apps/vps/Dockerfile",
 	},
 	link: [
 		database,
