@@ -1,4 +1,3 @@
-import { api } from "./api";
 import { domain } from "./dns";
 import { isLocal } from "./stage";
 import { vps_gateway } from "./vps";
@@ -10,7 +9,6 @@ export const www = new sst.aws.StaticSite("gbfm-www", {
 		output: "dist",
 	},
 	environment: {
-		VITE_API_BASE_URL: api.url,
 		VITE_VPS_BASE_URL: isLocal ? "http://localhost:3003" : vps_gateway.url,
 	},
 	domain: {

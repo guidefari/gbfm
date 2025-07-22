@@ -8,7 +8,6 @@ import type { MDXArchiveTypes } from "@gbfm/core/mdx/mdx.types";
 import type { MixSchema } from "@gbfm/vps/schemas";
 import { useQuery } from "@tanstack/react-query";
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 export const VPS_BASE_URL = import.meta.env.VITE_VPS_BASE_URL;
 export const AUTH_BASE_URL = `${VPS_BASE_URL}/auth`;
 
@@ -27,9 +26,8 @@ export async function fetcher<T>(
 
 	try {
 		const isApiRequest =
-			[API_BASE_URL, VPS_BASE_URL].some((base) =>
-				input.toString().includes(base),
-			) && !init?.skipAuth;
+			[VPS_BASE_URL].some((base) => input.toString().includes(base)) &&
+			!init?.skipAuth;
 
 		const headers = {
 			"Content-Type": "application/json",
@@ -89,7 +87,7 @@ export function useArchetype(type: MDXArchiveTypes.archetype) {
 	const { data, error, isPending } = useQuery<Response<string[]>, Error>({
 		queryKey: ["mdx-archive", type],
 		queryFn: async () =>
-			fetcher(`${API_BASE_URL}/mdx-archive/list`, {
+			fetcher(`${VPS_BASE_URL}/mdx-archive/list`, {
 				method: "POST",
 				body: JSON.stringify({ archetype: type }),
 			}),
@@ -112,25 +110,6 @@ export function useMixes() {
 		data,
 		error,
 		isPending,
-	};
-}
-
-export function useMDXArchive(filename: string) {
-	const { data, error, isLoading } = useQuery<
-		MDXArchiveTypes.GrayMatter & { compiled: string }
-	>({
-		queryKey: ["mdx-archive", filename],
-		queryFn: async () => {
-			return fetcher(`${API_BASE_URL}/mdx-archive/read`, {
-				method: "POST",
-				body: JSON.stringify({ filename }),
-			});
-		},
-	});
-	return {
-		data: data,
-		isLoading,
-		error,
 	};
 }
 
@@ -172,45 +151,3 @@ export function useSpotifyProxy<T extends SpotifyContentType>({
 		error,
 	};
 }
-
-type ReadSingleInput = {
-	archetype: MDXArchiveTypes.archetype;
-	id: string;
-};
-
-export function useReadSingle({ archetype, id }: ReadSingleInput) {
-	return useQuery({
-		queryKey: ["read-single", archetype, id],
-		queryFn: async () =>
-			fetcher(`${API_BASE_URL}/read`, {
-				method: "POST",
-				body: JSON.stringify({ filename: `${archetype}/${id}.mdx` }),
-			}),
-	});
-}
-
-type RedirectUrl = string;
-
-type AuthFlow = "code" | "link";
-
-export const constructSignInUrl = (
-	email: string,
-	flow: AuthFlow = "code",
-): RedirectUrl => {
-	const origin = window.location.origin;
-
-	const params = new URLSearchParams({
-		email,
-		grant_type: "authorization_code",
-		client_id: "web",
-		redirect_uri: `${origin}/auth/callback`,
-		response_type: "code",
-		provider: "code",
-	}).toString();
-
-	return `${AUTH_BASE_URL}/${flow}/authorize?${params}`;
-};
-
-export const constructAuthCallbackUrl = (code: string) => {
-	return `${AUTH_BASE_URL}/code/callback?${new URLSearchParams({ code })}`;
-};

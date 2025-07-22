@@ -6,7 +6,7 @@
 		"dev": "sst dev --stage=dev",
 		"refresh": "sst refresh --stage=dev",
 		"sso": "aws sso login --sso-session=terminal --no-browser",
-		"typecheck": "bun --filter=* typecheck",
+		"typecheck": "bun --filter=@gbfm/vps --filter=@gbfm/www typecheck",
 		"deploy": "sst deploy --stage=dev",
 		"deploy:prod": "sst deploy --stage=prod",
 		"gen": "cd vps && sst shell drizzle-kit generate",
@@ -29,7 +29,7 @@
 		"@semantic-release/changelog": "^6.0.3",
 		"@semantic-release/git": "^10.0.1",
 		"@semantic-release/github": "^11.0.3",
-		"@tsconfig/node20": "20.1.6",
+		"@tsconfig/bun": "^1.0.8",
 		"semantic-release": "^24.2.7",
 		"typescript": "5.8.3"
 	},

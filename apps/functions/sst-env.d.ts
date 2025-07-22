@@ -10,15 +10,6 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
-    "Api": {
-      "name": string
-      "type": "sst.aws.Function"
-      "url": string
-    }
-    "ContentTable": {
-      "name": string
-      "type": "sst.aws.Dynamo"
-    }
     "Email": {
       "configSet": string
       "sender": string
@@ -57,10 +48,6 @@ declare module "sst" {
       "type": "sst.sst.Linkable"
       "vps": string
     }
-    "UserTable": {
-      "name": string
-      "type": "sst.aws.Dynamo"
-    }
     "User_Content": {
       "name": string
       "type": "sst.aws.Bucket"
@@ -88,13 +75,6 @@ declare module "sst" {
       "type": "sst.aws.ApiGatewayV2"
       "url": string
     }
-  }
-}
-// cloudflare 
-import * as cloudflare from "@cloudflare/workers-types";
-declare module "sst" {
-  export interface Resource {
-    "ApiWorker": cloudflare.Service
   }
 }
 

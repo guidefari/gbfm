@@ -9,19 +9,6 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
-    "Api": {
-      "name": string
-      "type": "sst.aws.Function"
-      "url": string
-    }
-    "ApiWorker": {
-      "type": "sst.cloudflare.Worker"
-      "url": string
-    }
-    "ContentTable": {
-      "name": string
-      "type": "sst.aws.Dynamo"
-    }
     "Email": {
       "configSet": string
       "sender": string
@@ -59,10 +46,6 @@ declare module "sst" {
       "site": string
       "type": "sst.sst.Linkable"
       "vps": string
-    }
-    "UserTable": {
-      "name": string
-      "type": "sst.aws.Dynamo"
     }
     "User_Content": {
       "name": string
