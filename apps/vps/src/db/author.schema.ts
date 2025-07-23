@@ -106,6 +106,20 @@ export const updateProfileSchema = insertAuthorSchema.pick({
   password: z.string().min(8).optional(),
 });
 
+// User management schemas
+export const createUserSchema = insertAuthorSchema.pick({
+  name: true,
+  username: true,
+  email: true,
+  password: true,
+}).extend({
+  password: z.string().min(8),
+});
+
+export const userParamsSchema = z.object({
+  id: z.string().uuid(),
+});
+
 export const authorsRelations = relations(authorsTable, ({ many }) => ({
 	postsToAuthors: many(postsToAuthors),
 	mixesToAuthors: many(mixesToAuthors),

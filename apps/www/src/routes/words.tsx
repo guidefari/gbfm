@@ -1,7 +1,7 @@
 import { PostCard } from "@/components/PostCard";
 import { DEFAULT_IMAGE_URL } from "@/lib/constants";
 import { fetcher } from "@/lib/http";
-import { API_BASE_URL } from "@/lib/http";
+import { VPS_BASE_URL } from "@/lib/http";
 // import type { MicroPost } from "@gbfm/core/microPost/index.ts";
 import type { PostFrontmatter } from "@gbfm/core/post/schema";
 import { useQuery } from "@tanstack/react-query";
@@ -19,12 +19,11 @@ export const Route = createFileRoute("/words")({
 
 function Component() {
 	const [currentPage, setCurrentPage] = useState(1);
-	const itemsPerPage = 5;
 
-	const { data, isFetching, isPending } = useQuery({
+	const { data, isPending } = useQuery({
 		queryKey: ["posts"],
 		queryFn: () =>
-			fetcher<ContentResponse>(`${API_BASE_URL}/content?type=post`, {
+			fetcher<ContentResponse>(`${VPS_BASE_URL}/content?type=post`, {
 				skipAuth: true,
 			}),
 	});
@@ -62,7 +61,7 @@ function Component() {
 						thumbnailUrl={post.thumbnailUrl ?? DEFAULT_IMAGE_URL}
 					/>
 				))}
-				{/* <div className="flex justify-center gap-2">
+				{/* <div className="flex gap-2 justify-center">
 					<Button
 						disabled={currentPage === 1}
 						onClick={() => setCurrentPage((prev) => prev - 1)}

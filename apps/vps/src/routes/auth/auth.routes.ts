@@ -10,6 +10,8 @@ import {
   resetPasswordSchema,
   refreshTokenSchema,
   selectAuthorSchema,
+  createUserSchema,
+  updateProfileSchema,
 } from "@/db/author.schema";
 
 const tags = ["Auth"];
@@ -25,7 +27,7 @@ const messageResponseSchema = z.object({
   message: z.string(),
 });
 
-const userResponseSchema = selectAuthorSchema.omit({ password: true });
+const userResponseSchema = selectAuthorSchema.omit({ password: true, updatedAt: true, verified: true, createdAt: true });
 
 export const signup = createRoute({
   path: "/signup",
@@ -157,9 +159,94 @@ export const refreshToken = createRoute({
   },
 });
 
+// User management routes
+export const createUser = createRoute({
+  path: "/users",
+  method: "post",
+  request: {
+    body: jsonContentRequired(createUserSchema, "User data"),
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.CREATED]: jsonContent(
+      userResponseSchema,
+      "User created successfully",
+    ),
+    [HttpStatusCodes.CONFLICT]: jsonContent(
+      z.object({ error: z.string() }),
+      "Username or email already exists",
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      "Failed to create user",
+    ),
+    [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
+      createErrorSchema(createUserSchema),
+      "Validation error",
+    ),
+  },
+});
+
+export const listUsers = createRoute({
+  path: "/users",
+  method: "get",
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.array(userResponseSchema),
+      "List of users",
+    ),
+  },
+});
+
+export const updateProfile = createRoute({
+  path: "/profile",
+  method: "patch",
+  request: {
+    body: {
+      content: {
+        "application/json": {
+          schema: updateProfileSchema,
+        },
+        "multipart/form-data": {
+          schema: z.object({
+            name: z.string().optional(),
+            username: z.string().optional(),
+            email: z.string().email().optional(),
+            password: z.string().min(8).optional(),
+            avatar: z.any().optional(),
+          }),
+        },
+      },
+    },
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      userResponseSchema,
+      "Profile updated successfully",
+    ),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
+      z.object({ error: z.string() }),
+      "Invalid input",
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      z.object({ error: z.string() }),
+      "User not found",
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      "Failed to update profile",
+    ),
+  },
+});
+
 // Export types for handlers
 export type SignupRoute = typeof signup;
 export type SigninRoute = typeof signin;
 export type ForgotPasswordRoute = typeof forgotPassword;
 export type ResetPasswordRoute = typeof resetPassword;
 export type RefreshTokenRoute = typeof refreshToken;
+export type CreateUserRoute = typeof createUser;
+export type ListUsersRoute = typeof listUsers;
+export type UpdateProfileRoute = typeof updateProfile;

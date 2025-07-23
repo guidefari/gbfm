@@ -7,6 +7,8 @@ const router = createRouter()
   .openapi(routes.createPost, handlers.createPost)
   .openapi(routes.getPostsByTag, handlers.getPostsByTag)
   .openapi(routes.getMixes, handlers.getMixes)
-  .openapi(routes.seedMixes, handlers.seedMixes);
+  .openapi(routes.seedMixes, handlers.seedMixes)
+  .openapi(routes.createMix, handlers.createMix)
+  .openapi(routes.processMixUpload, handlers.processUpload);
 
 export default router;

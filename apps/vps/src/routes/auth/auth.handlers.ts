@@ -7,6 +7,7 @@ import { sign, verify } from "hono/jwt";
 import type { JWTPayload } from "hono/utils/jwt/types";
 import type { AppRouteHandler } from "@/lib/types";
 import * as HttpStatusCodes from "stoker/http-status-codes";
+import { Resource } from "sst";
 
 import { db } from "@/db";
 import {
@@ -21,6 +22,9 @@ import type {
   ForgotPasswordRoute,
   ResetPasswordRoute, 
   RefreshTokenRoute,
+  CreateUserRoute,
+  ListUsersRoute,
+  UpdateProfileRoute,
 } from "./auth.routes";
 
 const ACCESS_TOKEN_EXPIRES_IN = 60 * 15; // 15 minutes
@@ -310,4 +314,114 @@ export const refreshToken: AppRouteHandler<RefreshTokenRoute> = async (c) => {
   );
 
   return c.json({ accessToken }, HttpStatusCodes.OK);
+};
+
+// User management handlers
+export const createUser: AppRouteHandler<CreateUserRoute> = async (c) => {
+  const validated = c.req.valid("json");
+
+  const hashedPassword = await Bun.password.hash(validated.password);
+
+  try {
+    const [newAuthor] = await db
+      .insert(authorsTable)
+      .values({ ...validated, password: hashedPassword })
+      .returning();
+
+    const { password: _, ...authorWithoutPassword } = newAuthor;
+    return c.json(authorWithoutPassword, HttpStatusCodes.CREATED);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("unique constraint")) {
+      return c.json({ error: error.message }, HttpStatusCodes.CONFLICT);
+    }
+
+    return c.json({ error: "Failed to create user" }, HttpStatusCodes.INTERNAL_SERVER_ERROR);
+  }
+};
+
+export const listUsers: AppRouteHandler<ListUsersRoute> = async (c) => {
+  const authors = await db.select().from(authorsTable);
+  // Remove passwords from response
+  const authorsWithoutPasswords = authors.map(({ password, ...author }) => author);
+  return c.json(authorsWithoutPasswords, HttpStatusCodes.OK);
+};
+
+export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
+  // TODO: Get user ID from authentication middleware
+  // For now, we'll need to pass username in the request body
+  let updateData: any = {};
+  let username: string | undefined;
+
+  try {
+    const contentType = c.req.header("content-type") || "";
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await c.req.formData();
+      for (const [key, value] of formData.entries()) {
+        if (
+          key === "avatar" &&
+          value &&
+          typeof value === "object" &&
+          "arrayBuffer" in value
+        ) {
+          const file = value as File;
+          const { uploadToS3 } = await import("@/bucket");
+          const fileBuffer = Buffer.from(await file.arrayBuffer());
+          const fileName = `avatar_${Date.now()}_${file.name.replace(/\s+/g, "_")}`;
+          // @ts-expect-error
+          const bucketName = Resource.User_Content.name;
+          const contentType = file.type || "application/octet-stream";
+          await uploadToS3({
+            key: fileName,
+            body: fileBuffer,
+            contentType,
+            bucketName,
+          });
+
+          // Construct URL using the bucket router URL from environment variables
+          // @ts-expect-error
+          updateData.avatarUrl = `${Resource.Router.url}/user-content/${fileName}`;
+        } else if (typeof value === "string") {
+          if (key === "password") {
+            updateData.password = value; // Will be hashed below
+          } else if (key === "name" || key === "username" || key === "email") {
+            updateData[key] = value;
+          }
+          if (key === "username") username = value;
+        }
+      }
+    } else {
+      const requestBody = c.req.valid("json");
+      updateData = { ...requestBody };
+      username = requestBody.username || requestBody.email;
+    }
+
+    if (!username) {
+      return c.json({ error: "Username is required" }, HttpStatusCodes.BAD_REQUEST);
+    }
+
+    // Hash password if provided
+    if (updateData.password) {
+      updateData.password = await Bun.password.hash(updateData.password);
+    }
+  } catch (err) {
+    console.log("err:", err);
+    return c.json({ error: "Invalid input" }, HttpStatusCodes.BAD_REQUEST);
+  }
+
+  if (!username) {
+    return c.json({ error: "Username is required" }, HttpStatusCodes.BAD_REQUEST);
+  }
+
+  try {
+    const [updated] = await db
+      .update(authorsTable)
+      .set(updateData)
+      .where(eq(authorsTable.username, username))
+      .returning();
+    if (!updated) return c.json({ error: "User not found" }, HttpStatusCodes.NOT_FOUND);
+    const { password, ...authorWithoutPassword } = updated;
+    return c.json(authorWithoutPassword, HttpStatusCodes.OK);
+  } catch (error) {
+    return c.json({ error: "Failed to update profile" }, HttpStatusCodes.INTERNAL_SERVER_ERROR);
+  }
 };

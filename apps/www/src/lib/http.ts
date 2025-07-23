@@ -5,7 +5,7 @@ import type {
 	TrackAPIResponse,
 } from "@/types";
 import type { MDXArchiveTypes } from "@gbfm/core/mdx/mdx.types";
-import type { MixSchema } from "@gbfm/vps/schemas";
+import type { SelectMix } from "@gbfm/vps/schemas";
 import { useQuery } from "@tanstack/react-query";
 
 export const VPS_BASE_URL = import.meta.env.VITE_VPS_BASE_URL;
@@ -101,9 +101,9 @@ export function useArchetype(type: MDXArchiveTypes.archetype) {
 }
 
 export function useMixes() {
-	const { data, error, isPending } = useQuery<MixSchema[], Error>({
+	const { data, error, isPending } = useQuery<SelectMix[], Error>({
 		queryKey: ["mixes"],
-		queryFn: async () => fetcher<MixSchema[]>(`${VPS_BASE_URL}/content/mixes`),
+		queryFn: async () => fetcher<SelectMix[]>(`${VPS_BASE_URL}/content/mixes`),
 	});
 
 	return {
@@ -138,7 +138,7 @@ export function useSpotifyProxy<T extends SpotifyContentType>({
 		queryKey: ["spotify/proxy", spotifyContentType, id],
 
 		queryFn: async () =>
-			fetcher(`${API_BASE_URL}/spotify/${spotifyContentType}`, {
+			fetcher(`${VPS_BASE_URL}/spotify/${spotifyContentType}`, {
 				method: "POST",
 				body: JSON.stringify({ id }),
 				skipAuth: true,

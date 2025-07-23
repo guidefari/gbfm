@@ -1,5 +1,5 @@
 import { fetcher } from "@/lib/http";
-import { API_BASE_URL } from "@/lib/http";
+import { VPS_BASE_URL } from "@/lib/http";
 import { createFileRoute } from "@tanstack/react-router";
 import type { MicroPost } from "@gbfm/core/microPost/index.ts";
 import { MDXRendrr } from "@/components/MDXRendrr";
@@ -18,7 +18,7 @@ function Component() {
 	const { data, isPending } = useQuery({
 		queryKey: ["microPosts"],
 		queryFn: () =>
-			fetcher<MicroPost.MicroPost[]>(`${API_BASE_URL}/micro-posts`, {
+			fetcher<MicroPost.MicroPost[]>(`${VPS_BASE_URL}/micro-posts`, {
 				skipAuth: true,
 			}),
 	});
@@ -39,7 +39,7 @@ function Component() {
 						<MDXRendrr mdxString={microPost.content} />
 					</div>
 				))}
-				<div className="flex justify-center gap-2">
+				<div className="flex gap-2 justify-center">
 					<Button
 						disabled={currentPage === 1}
 						onClick={() => setCurrentPage((prev) => prev - 1)}

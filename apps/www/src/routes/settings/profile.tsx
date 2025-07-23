@@ -68,7 +68,7 @@ export default function Profile() {
 				formData.append("avatar", selectedFile);
 			}
 
-			const response = await fetch(`${VPS_BASE_URL}/author/updateProfile`, {
+			const response = await fetch(`${VPS_BASE_URL}/auth/profile`, {
 				method: "PATCH",
 				body: formData,
 				headers: {

@@ -2,7 +2,6 @@ import { sql } from "drizzle-orm";
 import configureOpenAPI from "@/lib/configure-open-api";
 import createApp from "@/lib/create-app";
 import auth from "@/routes/auth/auth.index";
-import author from "@/routes/author/author.index";
 import content from "@/routes/content/content.index";
 import mix from "@/routes/mix/mix.index.tsx";
 import publication from "@/routes/publication/publication.index";
@@ -14,7 +13,6 @@ configureOpenAPI(app);
 
 const routes = [
   { path: "/auth", handler: auth },
-  { path: "/author", handler: author },
   { path: "/content", handler: content },
   { path: "/mix", handler: mix },
   { path: "/publication", handler: publication },

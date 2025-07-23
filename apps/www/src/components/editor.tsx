@@ -9,9 +9,8 @@ import "react-mde/lib/styles/css/react-mde-editor.css";
 import "./editor.css";
 import { compile } from "@mdx-js/mdx";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { API_BASE_URL, fetcher } from "@/lib/http";
+import { VPS_BASE_URL, fetcher } from "@/lib/http";
 import { Button } from "./ui/button";
-import { Input } from "./ui/input";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -80,7 +79,7 @@ export function Editor() {
         queryKey: ['content', id],
         queryFn: async () => {
             if (!id) return null
-            return await fetcher(`${API_BASE_URL}/content/${id}`)
+            return await fetcher(`${VPS_BASE_URL}/content/${id}`)
         },
         enabled: !!id
     })
@@ -88,8 +87,8 @@ export function Editor() {
 	const { mutate, isPending } = useMutation({
         mutationFn: async (data: FormData) => {
             const endpoint = id 
-                ? `${API_BASE_URL}/content/${id}`
-                : `${API_BASE_URL}/content`
+                ? `${VPS_BASE_URL}/content/${id}`
+                : `${VPS_BASE_URL}/content`
             const method = id ? 'PUT' : 'POST'
             
             return await fetcher(endpoint, {

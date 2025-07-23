@@ -4,7 +4,7 @@ import { jsonContent, jsonContentRequired } from "stoker/openapi/helpers";
 import { createErrorSchema } from "stoker/openapi/schemas";
 
 import { createPostSchema, tagParamsSchema, selectPostSchema } from "@/db/post.schema";
-import { selectMixSchema } from "@/db/mix.schema";
+import { selectMixSchema, createMixSchema } from "@/db/mix.schema";
 
 const tags = ["Content"];
 
@@ -89,8 +89,89 @@ export const seedMixes = createRoute({
   },
 });
 
+export const createMix = createRoute({
+  path: "/mixes",
+  method: "post",
+  request: {
+    body: jsonContentRequired(createMixSchema, "The mix to create"),
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.CREATED]: jsonContent(
+      selectMixSchema,
+      "The created mix",
+    ),
+    [HttpStatusCodes.CONFLICT]: jsonContent(
+      z.object({ error: z.string() }),
+      "Mix with this slug already exists or invalid author id",
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      "Failed to create mix",
+    ),
+    [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
+      createErrorSchema(createMixSchema),
+      "Validation error",
+    ),
+  },
+});
+
+export const processMixUpload = createRoute({
+  path: "/mixes/process",
+  method: "post",
+  request: {
+    body: {
+      content: {
+        "multipart/form-data": {
+          schema: z.object({
+            title: z.string(),
+            artist: z.string().optional(),
+            album: z.string().optional(),
+            description: z.string(),
+            outputFormat: z.enum(["mp3", "mp4"]),
+            audioFile: z.any(),
+            coverImage: z.any(),
+          }),
+        },
+      },
+    },
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: {
+      content: {
+        "audio/mpeg": {
+          schema: z.string().openapi({ format: "binary" }),
+        },
+        "video/mp4": {
+          schema: z.string().openapi({ format: "binary" }),
+        },
+      },
+      description: "Processed audio/video file",
+    },
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
+      z.object({ error: z.string() }),
+      "Processing error",
+    ),
+    [HttpStatusCodes.IM_A_TEAPOT]: {
+      content: {
+        "text/plain": {
+          schema: z.string(),
+        },
+      },
+      description: "File too large",
+    },
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      "Failed to process upload",
+    ),
+  },
+});
+
 // Export types
 export type CreatePostRoute = typeof createPost;
 export type GetPostsByTagRoute = typeof getPostsByTag;
 export type GetMixesRoute = typeof getMixes;
 export type SeedMixesRoute = typeof seedMixes;
+export type CreateMixRoute = typeof createMix;
+export type ProcessMixUploadRoute = typeof processMixUpload;

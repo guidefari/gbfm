@@ -1,6 +1,6 @@
 import { LongPost } from "@/components/Layout/LongPost";
 import { MDXRendrr } from "@/components/MDXRendrr";
-import { API_BASE_URL, fetcher } from "@/lib/http";
+import { VPS_BASE_URL, fetcher } from "@/lib/http";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -16,9 +16,9 @@ function ReadSingle() {
 		staleTime: 2 * 60 * 1000,
 		queryFn: async () =>{
 			if (archetype === "words") {
-				return fetcher(`${API_BASE_URL}/content/${id}`, );
+				return fetcher(`${VPS_BASE_URL}/content/${id}`, );
 			  }
-			  return fetcher(`${API_BASE_URL}/mdx-archive/read`, {
+			  return fetcher(`${VPS_BASE_URL}/mdx-archive/read`, {
 				method: "POST",
 				body: JSON.stringify({
 				  filename: `${archetype}/${id}.mdx`,
