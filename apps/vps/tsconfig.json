@@ -1,4 +1,6 @@
 {
+  "$schema": "https://json.schemastore.org/tsconfig",
+  // "extends": "@tsconfig/bun/tsconfig.json",
   "compilerOptions": {
     // Enable latest features
     "lib": ["ESNext", "DOM"],
@@ -29,7 +31,10 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
-    },
-    "types": ["bun"]
-  }
+    }
+  },
+  "exclude": [
+    "src/archive",
+    "sst-env.d.ts"
+  ]
 }

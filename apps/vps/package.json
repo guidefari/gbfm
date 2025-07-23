@@ -15,11 +15,9 @@
   },
   "devDependencies": {
     "@types/aws-lambda": "8.10.145",
-    "@types/bun": "^1.2.18",
+    "@types/bun": "^1.2.19",
     "@types/pg": "^8.15.4",
-    "drizzle-kit": "^0.30.6"
-  },
-  "peerDependencies": {
+    "drizzle-kit": "^0.30.6",
     "typescript": "^5.8.3"
   },
   "dependencies": {

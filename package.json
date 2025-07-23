@@ -6,19 +6,13 @@
 		"dev": "sst dev --stage=dev",
 		"refresh": "sst refresh --stage=dev",
 		"sso": "aws sso login --sso-session=terminal --no-browser",
-		"typecheck": "bun --filter=@gbfm/vps --filter=@gbfm/www typecheck",
+		"typecheck": "pnpm --filter=@gbfm/vps --filter=@gbfm/www typecheck",
 		"deploy": "sst deploy --stage=dev",
 		"deploy:prod": "sst deploy --stage=prod",
 		"gen": "cd vps && sst shell drizzle-kit generate",
 		"release": "semantic-release"
 	},
-	"workspaces": [
-		"apps/*",
-		"packages/*"
-	],
 	"dependencies": {
-		"@effect/platform": "0.86.0",
-		"@effect/schema": "0.75.5",
 		"@mdx-js/mdx": "3.1.0",
 		"effect": "3.16.9",
 		"gray-matter": "4.0.3",

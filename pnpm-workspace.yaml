@@ -1,0 +1,10 @@
+packages:
+  - apps/*
+  - packages/*
+
+onlyBuiltDependencies:
+  - '@biomejs/biome'
+  - aws-sdk
+  - esbuild
+  - ffmpeg-static
+  - sharp

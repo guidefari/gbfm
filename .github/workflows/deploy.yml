@@ -23,15 +23,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
       - uses: actions/cache@v4
         with:
-            path: |
-              ~/.bun/install/cache
-            key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lockb') }}
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
 
       - uses: actions/setup-node@v4
         with:
@@ -45,10 +46,10 @@ jobs:
           aws-region: us-east-1
 
       - name: deps
-        run: bun install
+        run: pnpm install --frozen-lockfile
 
       # - name: typecheck
-      #   run: bun typecheck
+      #   run: pnpm typecheck
 
       - name: Deploy
         env:
@@ -59,4 +60,4 @@ jobs:
           SQUEAL_DB_URL: ${{ secrets.SQUEAL_DB_URL }}
 
         run: |
-          bun run sst deploy --stage=prod
+          pnpm sst deploy --stage=prod
