@@ -1,3 +1,15 @@
+# [0.7.0](https://github.com/guidefari/gbfm/compare/v0.6.5...v0.7.0) (2025-07-23)
+
+
+### Bug Fixes
+
+* update seed scripts ([bfe3835](https://github.com/guidefari/gbfm/commit/bfe38358176fd97b590d966ceec0fc1fa4bce4b8))
+
+
+### Features
+
+* disable seed endpoint ([5bc992e](https://github.com/guidefari/gbfm/commit/5bc992efb30cd133ab098fb789012c0421f59984))
+
 ## [0.6.5](https://github.com/guidefari/gbfm/compare/v0.6.4...v0.6.5) (2025-07-22)
 
 
