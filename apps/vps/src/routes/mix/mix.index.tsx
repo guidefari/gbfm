@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { mixesToAuthors, zMixSchema, mixesTable } from "../db/mix.schema";
-import { Hono } from "hono";
+import { mixesToAuthors, zMixSchema, mixesTable } from "@/db/mix.schema";
+import { createRouter } from "@/lib/create-app";
 import { zValidator } from "@hono/zod-validator";
-import { db } from "../db";
+import { db } from "@/db";
 import { bodyLimit } from "hono/body-limit";
 import type { FC } from "hono/jsx";
 import ffmpeg from "ffmpeg-static";
@@ -22,7 +22,7 @@ export const createMixSchema = zMixSchema
 		authorIds: z.string().array().min(1),
 	});
 
-const app = new Hono();
+const app = createRouter();
 
 app.post("/", zValidator("json", createMixSchema), async (c) => {
 	const { authorIds, ...mixData } = c.req.valid("json");

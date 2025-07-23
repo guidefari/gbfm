@@ -1,13 +1,13 @@
 import { mixesTable } from "@/db/mix.schema";
 import { zValidator } from "@hono/zod-validator";
 import { arrayContains } from "drizzle-orm";
-import { Hono } from "hono";
+import { createRouter } from "@/lib/create-app";
 import { z } from "zod";
 // import { parsedMixes } from "../archive/seed-mixes";
-import { db } from "../db";
-import { postsTable, postsToAuthors, zPostSchema } from "../db/post.schema";
+import { db } from "@/db";
+import { postsTable, postsToAuthors, zPostSchema } from "@/db/post.schema";
 
-const app = new Hono();
+const app = createRouter();
 
 export const createPostSchema = zPostSchema
 	.omit({

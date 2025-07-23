@@ -2,13 +2,13 @@ import { authorsTable, createAuthorSchema } from "@/db/author.schema";
 import { zValidator } from "@hono/zod-validator";
 import Bun from "bun";
 import { eq } from "drizzle-orm";
-import { Hono } from "hono";
+import { createRouter } from "@/lib/create-app";
 import type { Context } from "hono";
 import { Resource } from "sst";
-import { db } from "../db";
-import { authenticate } from "./auth.middleware";
+import { db } from "@/db";
+import { authenticate } from "@/middlewares/auth.middleware";
 
-const app = new Hono();
+const app = createRouter();
 
 // export const createAuthorSchema = zAuthorSchema.omit({ id: true, createdAt: true, updatedAt: true, verified: true });
 
@@ -54,7 +54,7 @@ app.patch("/updateProfile", authenticate, async (c: Context) => {
 					"arrayBuffer" in value
 				) {
 					const file = value as File;
-					const { uploadToS3 } = await import("../bucket");
+					const { uploadToS3 } = await import("@/bucket");
 					const fileBuffer = Buffer.from(await file.arrayBuffer());
 					const fileName = `avatar_${Date.now()}_${file.name.replace(/\s+/g, "_")}`;
 					// Get bucket name from environment variables

@@ -3,16 +3,16 @@ import { getAuthorByEmailOrId } from "@/db/author.repo";
 import { env } from "@/env";
 import { Email } from "@gbfm/core/email/index.tsx";
 import { and, eq } from "drizzle-orm";
-import { Hono } from "hono";
+import { createRouter } from "@/lib/create-app";
 import { sign, verify } from "hono/jwt";
 import type { JWTPayload } from "hono/utils/jwt/types";
 import { z } from "zod";
-import { db } from "../db";
+import { db } from "@/db";
 import {
 	authorPasswordResetTokensTable,
 	authorSessionsTable,
 	authorsTable,
-} from "../db/author.schema";
+} from "@/db/author.schema";
 
 const signupSchema = z.object({
 	username: z.string().min(3).max(50),
@@ -22,7 +22,7 @@ const signupSchema = z.object({
 
 export type SignupBody = z.infer<typeof signupSchema>;
 
-const auth = new Hono();
+const auth = createRouter();
 
 const ACCESS_TOKEN_EXPIRES_IN = 60 * 15; // 15 minutes
 const REFRESH_TOKEN_EXPIRES_IN = 60 * 60 * 24 * 7; // 7 days

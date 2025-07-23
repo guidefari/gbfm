@@ -1,18 +1,15 @@
-import { Hono } from 'hono'
-import { db } from '../db'
-import { publicationsTable, insertPublicationSchema } from '../db/publication.schema'
+import { createRouter } from '@/lib/create-app'
+import { db } from '@/db'
+import { publicationsTable, insertPublicationSchema } from '@/db/publication.schema'
 import { eq } from 'drizzle-orm'
-import { z } from 'zod'
 
-const publication = new Hono()
+const publication = createRouter()
 
-// GET /publications
 publication.get('/', async (c) => {
   const publications = await db.select().from(publicationsTable)
   return c.json(publications)
 })
 
-// GET /publications/:id
 publication.get('/:id', async (c) => {
   const id = c.req.param('id')
   const publication = await db.select().from(publicationsTable).where(eq(publicationsTable.id, id))
@@ -25,7 +22,6 @@ publication.get('/:id', async (c) => {
   return c.json(publication)
 })
 
-// POST /publications
 publication.post('/', async (c) => {
   const body = await c.req.json()
   const parsed = insertPublicationSchema.safeParse(body)
@@ -42,7 +38,6 @@ publication.post('/', async (c) => {
   return c.json(newPublication[0])
 })
 
-// PATCH /publications/:id
 publication.patch('/:id', async (c) => {
   const id = c.req.param('id')
   const body = await c.req.json()
@@ -65,7 +60,6 @@ publication.patch('/:id', async (c) => {
   return c.json(updated[0])
 })
 
-// DELETE /publications/:id
 publication.delete('/:id', async (c) => {
   const id = c.req.param('id')
   const deleted = await db
