@@ -14,7 +14,7 @@ export const mixesTable = pgTable(
 	(table) => [index("mixes_slug_idx").on(table.slug)],
 );
 
-export const zMixSchema = createSelectSchema(mixesTable).extend({
+export const selectMixSchema = createSelectSchema(mixesTable).extend({
 	createdAt: z
 		.string()
 		.or(z.date())
@@ -25,14 +25,18 @@ export const zMixSchema = createSelectSchema(mixesTable).extend({
 		.transform((val) => new Date(val)),
 });
 
-export const InsertMixSchema = createInsertSchema(mixesTable).omit({
+export const insertMixSchema = createInsertSchema(mixesTable).omit({
 	id: true,
 	createdAt: true,
 	updatedAt: true,
 });
 
-export type InsertMix = z.infer<typeof InsertMixSchema>;
-export type MixSchema = z.infer<typeof zMixSchema>;
+export const createMixSchema = insertMixSchema.extend({
+	authorIds: z.array(z.string().uuid()).min(1),
+});
+
+export type InsertMix = z.infer<typeof insertMixSchema>;
+export type SelectMix = z.infer<typeof selectMixSchema>;
 
 export const mixesToAuthors = pgTable(
 	"mixes_to_authors",

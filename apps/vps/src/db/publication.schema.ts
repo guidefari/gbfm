@@ -1,5 +1,5 @@
-import { relations, sql } from 'drizzle-orm';
-import { pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { relations } from 'drizzle-orm';
+import { pgTable, text, uuid } from 'drizzle-orm/pg-core';
 import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { authorsTable } from './author.schema';
@@ -62,6 +62,12 @@ export const insertPublicationSchema = createInsertSchema(publicationsTable, {
 });
 
 export const selectPublicationSchema = createSelectSchema(publicationsTable);
+
+export const createPublicationSchema = insertPublicationSchema;
+export const updatePublicationSchema = insertPublicationSchema.partial();
+export const publicationParamsSchema = z.object({
+  id: z.string().uuid(),
+});
 
 export type Publication = z.infer<typeof selectPublicationSchema>;
 export type NewPublication = z.infer<typeof insertPublicationSchema>;

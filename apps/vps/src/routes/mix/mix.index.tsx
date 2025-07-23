@@ -1,7 +1,5 @@
-import { z } from "zod";
-import { mixesToAuthors, zMixSchema, mixesTable } from "@/db/mix.schema";
+import { mixesToAuthors, mixesTable } from "@/db/mix.schema";
 import { createRouter } from "@/lib/create-app";
-import { zValidator } from "@hono/zod-validator";
 import { db } from "@/db";
 import { bodyLimit } from "hono/body-limit";
 import type { FC } from "hono/jsx";
@@ -10,21 +8,11 @@ import { spawn } from "node:child_process";
 import path from "node:path";
 import fs from "node:fs/promises";
 import os from "node:os";
-import type { Context } from "hono";
+import type { AppRouteHandler } from "@/lib/types";
+import * as routes from "./mix.routes";
+import type { CreateRoute, UploadFormRoute, ProcessUploadRoute } from "./mix.routes";
 
-export const createMixSchema = zMixSchema
-	.omit({
-		id: true,
-		createdAt: true,
-		updatedAt: true,
-	})
-	.extend({
-		authorIds: z.string().array().min(1),
-	});
-
-const app = createRouter();
-
-app.post("/", zValidator("json", createMixSchema), async (c) => {
+const createMix: AppRouteHandler<CreateRoute> = async (c) => {
 	const { authorIds, ...mixData } = c.req.valid("json");
 
 	try {
@@ -32,7 +20,7 @@ app.post("/", zValidator("json", createMixSchema), async (c) => {
 			const [newMix] = await tx.insert(mixesTable).values(mixData).returning();
 
 			await tx.insert(mixesToAuthors).values(
-				authorIds.map((authorId) => ({
+				authorIds.map((authorId: string) => ({
 					mixId: newMix.id,
 					authorId,
 				})),
@@ -59,7 +47,7 @@ app.post("/", zValidator("json", createMixSchema), async (c) => {
 
 		return c.json({ error: `Failed to create mix: ${error}` }, 500);
 	}
-});
+};
 
 interface ProcessedFiles {
 	audioPath: string;
@@ -70,7 +58,7 @@ interface ProcessedFiles {
 	album?: string;
 }
 
-async function processUpload(c: Context): Promise<ProcessedFiles> {
+async function processUpload(c: any): Promise<ProcessedFiles> {
 	const formData = await c.req.formData();
 	const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "mix-"));
 
@@ -216,15 +204,7 @@ async function cleanup(files: ProcessedFiles) {
 	}
 }
 
-app.post(
-	"/process",
-	bodyLimit({
-		maxSize: 1024 * 1024 * 1000, // 1GB
-		onError: (c) => {
-			return c.text("bro, your file is bigger than 1GB. stop it.", 413);
-		},
-	}),
-	async (c) => {
+const processUpload: AppRouteHandler<ProcessUploadRoute> = async (c) => {
 		try {
 			const formData = await c.req.formData();
 			const files = await processUpload(c);
@@ -249,8 +229,7 @@ app.post(
 			}
 			return c.json({ error: "Failed to process upload" }, 500);
 		}
-	},
-);
+	};
 
 const styles = {
 	formContainer: {
@@ -398,8 +377,22 @@ const UploadForm: FC = () => {
 	);
 };
 
-app.get("/upload", (c) => {
+const getUploadForm: AppRouteHandler<UploadFormRoute> = (c) => {
 	return c.html(<UploadForm />);
-});
+};
 
-export default app;
+const router = createRouter()
+	.openapi(routes.create, createMix)
+	.openapi(routes.uploadForm, getUploadForm)
+	.post(
+		"/process",
+		bodyLimit({
+			maxSize: 1024 * 1024 * 1000, // 1GB
+			onError: (c) => {
+				return c.text("bro, your file is bigger than 1GB. stop it.", 413);
+			},
+		}),
+		processUpload,
+	);
+
+export default router;

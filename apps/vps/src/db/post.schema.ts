@@ -1,6 +1,6 @@
-import { pgEnum, pgTable, varchar, index, primaryKey, uuid } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, index, primaryKey, uuid } from "drizzle-orm/pg-core";
 import { defaultContentFields } from "./util";
-import { createSelectSchema } from "drizzle-zod";
+import { createSelectSchema, createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { authorsTable } from "./author.schema";
 import { relations } from "drizzle-orm";
@@ -16,10 +16,24 @@ export const postsTable = pgTable("posts", {
   index('posts_slug_idx').on(table.slug),
 ]));
 
-export const zPostSchema = createSelectSchema(postsTable).extend({
+export const selectPostSchema = createSelectSchema(postsTable).extend({
     createdAt: z.string().or(z.date()).transform((val) => new Date(val)),
     updatedAt: z.string().or(z.date()).transform((val) => new Date(val)),
   });
+
+export const insertPostSchema = createInsertSchema(postsTable);
+
+export const createPostSchema = insertPostSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  authorIds: z.array(z.string().uuid()).min(1),
+});
+
+export const tagParamsSchema = z.object({
+  tag: z.string().min(1),
+});
 
   export const postsToAuthors = pgTable('posts_to_authors', {
     postId: uuid()

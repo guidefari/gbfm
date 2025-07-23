@@ -7,6 +7,7 @@ import {
 	varchar,
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import { z } from "zod";
 import { mixesToAuthors } from "./mix.schema";
 import { postsToAuthors } from "./post.schema";
 import { postsTable } from "./post.schema";
@@ -63,8 +64,47 @@ export const selectAuthorSessionSchema =
 export const insertAuthorSessionSchema =
 	createInsertSchema(authorSessionsTable);
 
-export const zAuthorSchema = createSelectSchema(authorsTable);
-export const createAuthorSchema = createInsertSchema(authorsTable);
+export const selectAuthorSchema = createSelectSchema(authorsTable);
+export const insertAuthorSchema = createInsertSchema(authorsTable);
+
+export const signupSchema = insertAuthorSchema.pick({
+  name: true,
+  username: true,
+  email: true,
+  password: true,
+}).extend({
+  password: z.string().min(8),
+});
+
+export const signinSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+});
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().email(),
+});
+
+export const resetPasswordSchema = z.object({
+  email: z.string().email().optional(),
+  authorId: z.string().optional(),
+  token: z.string().uuid(),
+  password: z.string().min(8),
+});
+
+export const refreshTokenSchema = z.object({
+  refreshToken: z.string(),
+});
+
+export const updateProfileSchema = insertAuthorSchema.pick({
+  name: true,
+  username: true,
+  email: true,
+  password: true,
+  avatarUrl: true,
+}).partial().extend({
+  password: z.string().min(8).optional(),
+});
 
 export const authorsRelations = relations(authorsTable, ({ many }) => ({
 	postsToAuthors: many(postsToAuthors),

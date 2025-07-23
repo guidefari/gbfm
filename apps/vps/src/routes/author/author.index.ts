@@ -1,19 +1,25 @@
-import { authorsTable, createAuthorSchema } from "@/db/author.schema";
-import { zValidator } from "@hono/zod-validator";
+import { authorsTable } from "@/db/author.schema";
 import Bun from "bun";
 import { eq } from "drizzle-orm";
 import { createRouter } from "@/lib/create-app";
-import type { Context } from "hono";
+import type { Handler } from "hono";
+import type { AppBindings } from "@/lib/types";
 import { Resource } from "sst";
 import { db } from "@/db";
 import { authenticate } from "@/middlewares/auth.middleware";
+import {
+  insertAuthorSchema as createAuthorSchema,
+  updateProfileSchema,
+} from "@/db/author.schema";
+import { z } from "zod";
+
+type CreateAuthorRequest = z.infer<typeof createAuthorSchema>;
+type UpdateProfileRequest = z.infer<typeof updateProfileSchema>;
 
 const app = createRouter();
 
-// export const createAuthorSchema = zAuthorSchema.omit({ id: true, createdAt: true, updatedAt: true, verified: true });
-
-app.post("/", zValidator("json", createAuthorSchema), async (c: Context) => {
-	const data = await c.req.json();
+app.post("/", (async (c) => {
+	const data: CreateAuthorRequest = c.req.valid("json");
 
 	const password = await Bun.password.hash(data.password);
 
@@ -23,7 +29,8 @@ app.post("/", zValidator("json", createAuthorSchema), async (c: Context) => {
 			.values({ ...data, password })
 			.returning();
 
-		return c.json(newAuthor, 201);
+		const { password: _, ...authorWithoutPassword } = newAuthor;
+		return c.json(authorWithoutPassword, 201);
 	} catch (error) {
 		if (error instanceof Error && error.message.includes("unique constraint")) {
 			return c.json({ error: error.message }, 409);
@@ -33,13 +40,15 @@ app.post("/", zValidator("json", createAuthorSchema), async (c: Context) => {
 	}
 });
 
-app.get("/", async (c: Context) => {
+app.get("/", (async (c) => {
 	const authors = await db.select().from(authorsTable);
-	return c.json(authors);
+	// Remove passwords from response
+	const authorsWithoutPasswords = authors.map(({ password, ...author }) => author);
+	return c.json(authorsWithoutPasswords);
 });
 
-app.patch("/updateProfile", authenticate, async (c: Context) => {
-	let updateData: Record<string, unknown> = {};
+app.patch("/updateProfile", authenticate, (async (c) => {
+	let updateData: Partial<UpdateProfileRequest> = {};
 	let username: string | undefined;
 
 	try {
@@ -71,8 +80,8 @@ app.patch("/updateProfile", authenticate, async (c: Context) => {
 					updateData.avatarUrl = `${Resource.Router.url}/user-content/${fileName}`;
 				} else if (typeof value === "string") {
 					if (key === "password") {
-						updateData.password = await Bun.password.hash(value);
-					} else {
+						updateData.password = value; // Will be hashed below
+					} else if (key === "name" || key === "username" || key === "email") {
 						updateData[key] = value;
 					}
 					if (key === "username") username = value;
@@ -80,11 +89,13 @@ app.patch("/updateProfile", authenticate, async (c: Context) => {
 			}
 		} else {
 			const requestBody = await c.req.json();
-			if (requestBody.password) {
-				requestBody.password = await Bun.password.hash(requestBody.password);
-			}
 			updateData = { ...requestBody };
 			username = requestBody.username;
+		}
+
+		// Hash password if provided
+		if (updateData.password) {
+			updateData.password = await Bun.password.hash(updateData.password);
 		}
 	} catch (err) {
 		console.log("err:", err);
@@ -107,6 +118,6 @@ app.patch("/updateProfile", authenticate, async (c: Context) => {
 	} catch (error) {
 		return c.json({ error: "Failed to update author" }, 500);
 	}
-});
+}) as Handler<AppBindings>);
 
 export default app;
