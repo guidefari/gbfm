@@ -1,4 +1,5 @@
 import { Scalar } from "@scalar/hono-api-reference";
+import { version } from "../../../../package.json";
 
 import type { AppOpenAPI } from "./types";
 
@@ -6,7 +7,7 @@ export default function configureOpenAPI(app: AppOpenAPI) {
   app.doc("/doc", {
     openapi: "3.0.0",
     info: {
-      version: "1.0.0",
+      version,
       title: "GBFM VPS API",
     },
   });

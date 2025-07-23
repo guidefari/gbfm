@@ -2,6 +2,7 @@
 	"name": "gbfm",
 	"version": "0.6.5",
 	"sideEffects": false,
+	"private": true,
 	"scripts": {
 		"dev": "sst dev --stage=dev",
 		"refresh": "sst refresh --stage=dev",
