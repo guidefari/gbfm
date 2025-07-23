@@ -3,7 +3,7 @@ import { zValidator } from "@hono/zod-validator";
 import { arrayContains } from "drizzle-orm";
 import { Hono } from "hono";
 import { z } from "zod";
-import { parsedMixes } from "../archive/seed-mixes";
+// import { parsedMixes } from "../archive/seed-mixes";
 import { db } from "../db";
 import { postsTable, postsToAuthors, zPostSchema } from "../db/post.schema";
 
@@ -81,11 +81,9 @@ app.get("/mixes", async (c) => {
 });
 
 app.get("/seed-mixes", async (c) => {
-	const content = await parsedMixes;
-
-	await db.insert(mixesTable).values(content);
-
-	return c.json({ content }, 200);
+	// const content = await parsedMixes;
+	// await db.insert(mixesTable).values(content);
+	return c.json({ message: "Seed endpoint disabled" }, 200);
 	// return c.json({ message: "Content seeded" }, 200);
 });
 
