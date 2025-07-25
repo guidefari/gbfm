@@ -1,3 +1,10 @@
+# [0.9.0](https://github.com/guidefari/gbfm/compare/v0.8.0...v0.9.0) (2025-07-25)
+
+
+### Features
+
+* migrating from mixes schema to generic audio ([c5335f0](https://github.com/guidefari/gbfm/commit/c5335f04fd78b6eddb094851f29bc926a4dfa217))
+
 # [0.8.0](https://github.com/guidefari/gbfm/compare/v0.7.0...v0.8.0) (2025-07-23)
 
 
