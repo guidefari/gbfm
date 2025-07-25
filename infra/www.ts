@@ -5,7 +5,7 @@ import { vps_gateway } from "./vps";
 export const www = new sst.aws.StaticSite("gbfm-www", {
 	path: "./apps/www",
 	build: {
-		command: "bun run build",
+		command: "pnpm run build",
 		output: "dist",
 	},
 	environment: {
