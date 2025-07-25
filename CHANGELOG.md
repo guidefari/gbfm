@@ -1,3 +1,10 @@
+## [0.10.1](https://github.com/guidefari/gbfm/compare/v0.10.0...v0.10.1) (2025-07-25)
+
+
+### Bug Fixes
+
+* dockerfile paths ([ac2ce8e](https://github.com/guidefari/gbfm/commit/ac2ce8e608269db90fda3b114b69ae343946a68e))
+
 # [0.10.0](https://github.com/guidefari/gbfm/compare/v0.9.0...v0.10.0) (2025-07-25)
 
 
