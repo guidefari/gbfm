@@ -1,3 +1,10 @@
+## [0.10.2](https://github.com/guidefari/gbfm/compare/v0.10.1...v0.10.2) (2025-07-25)
+
+
+### Bug Fixes
+
+* www build script ([1585e92](https://github.com/guidefari/gbfm/commit/1585e92d07ff427fc48b1a4f3855c3933706f88b))
+
 ## [0.10.1](https://github.com/guidefari/gbfm/compare/v0.10.0...v0.10.1) (2025-07-25)
 
 
