@@ -7,7 +7,7 @@ RUN bun add -g pnpm
 RUN mkdir -p /temp/dev
 
 # Copy monorepo root files and all workspace manifests for dependency resolution
-COPY pnpm-lock.yaml package.json tsconfig.json /temp/dev/
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json tsconfig.json /temp/dev/
 COPY packages/core/package.json packages/core/tsconfig.json /temp/dev/packages/core/
 COPY apps/www/package.json apps/www/tsconfig.json /temp/dev/apps/www/
 COPY apps/vps/package.json apps/vps/tsconfig.json /temp/dev/apps/vps/
