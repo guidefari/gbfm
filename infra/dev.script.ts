@@ -18,22 +18,22 @@ new sst.x.DevCommand("Drizzle_Generate", {
 		autostart: false,
 	},
 });
-new sst.x.DevCommand("Drizzle_Migrate", {
-	link: [database, email],
-	dev: {
-		command: "npx drizzle-kit migrate",
-		directory: "./apps/vps",
-		autostart: false,
-	},
-});
-new sst.x.DevCommand("Drizzle_Check", {
-	link: [database, email],
-	dev: {
-		command: "npx drizzle-kit check",
-		directory: "./apps/vps",
-		autostart: false,
-	},
-});
+// new sst.x.DevCommand("Drizzle_Migrate", {
+// 	link: [database, email],
+// 	dev: {
+// 		command: "npx drizzle-kit migrate",
+// 		directory: "./apps/vps",
+// 		autostart: false,
+// 	},
+// });
+// new sst.x.DevCommand("Drizzle_Check", {
+// 	link: [database, email],
+// 	dev: {
+// 		command: "npx drizzle-kit check",
+// 		directory: "./apps/vps",
+// 		autostart: false,
+// 	},
+// });
 new sst.x.DevCommand("Drizzle_Push", {
 	link: [database, email],
 	dev: {
@@ -42,3 +42,12 @@ new sst.x.DevCommand("Drizzle_Push", {
 		autostart: false,
 	},
 });
+// new sst.x.DevCommand("rename_to_cdn", {
+// 	link: [database, email],
+// 	dev: {
+// 		command: "bun scripts/rename-audio-cdn-name.ts",
+// 		directory: "./apps/vps",
+// 		autostart: false,
+// 	},
+// });
+

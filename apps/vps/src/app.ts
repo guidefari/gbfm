@@ -3,7 +3,6 @@ import configureOpenAPI from "@/lib/configure-open-api";
 import createApp from "@/lib/create-app";
 import auth from "@/routes/auth/auth.index";
 import content from "@/routes/content/content.index";
-import mix from "@/routes/mix/mix.index.tsx";
 import publication from "@/routes/publication/publication.index";
 import { db } from "./db";
 
@@ -14,7 +13,6 @@ configureOpenAPI(app);
 const routes = [
   { path: "/auth", handler: auth },
   { path: "/content", handler: content },
-  { path: "/mix", handler: mix },
   { path: "/publication", handler: publication },
 ] as const;
 
