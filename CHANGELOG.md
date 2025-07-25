@@ -1,3 +1,10 @@
+## [0.10.4](https://github.com/guidefari/gbfm/compare/v0.10.3...v0.10.4) (2025-07-25)
+
+
+### Bug Fixes
+
+* add pnpm workspace file to container ([92e5034](https://github.com/guidefari/gbfm/commit/92e503459881f160b2a7b61c67b1a092ab7b45c0))
+
 ## [0.10.3](https://github.com/guidefari/gbfm/compare/v0.10.2...v0.10.3) (2025-07-25)
 
 
