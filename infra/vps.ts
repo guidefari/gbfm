@@ -25,15 +25,6 @@ export const database = new sst.aws.Postgres("gbfm_postgres", {
 	},
 });
 
-new sst.x.DevCommand("Studio", {
-	link: [database, email],
-	dev: {
-		command: "npx drizzle-kit studio",
-		directory: "./apps/vps",
-		autostart: false,
-	},
-});
-
 export const service = new sst.aws.Service("gbfm_vps", {
 	cluster,
 	serviceRegistry: {

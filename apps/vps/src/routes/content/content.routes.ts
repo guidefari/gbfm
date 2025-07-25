@@ -4,20 +4,19 @@ import { jsonContent, jsonContentRequired } from "stoker/openapi/helpers";
 import { createErrorSchema } from "stoker/openapi/schemas";
 
 import { createPostSchema, tagParamsSchema, selectPostSchema } from "@/db/post.schema";
-import { selectMixSchema, createMixSchema } from "@/db/mix.schema";
+import { selectAudioSchema, createAudioSchema } from "@/db/audio.schema";
 
 const tags = ["Content"];
 
 // Use schemas from database
 
 const postResponseSchema = selectPostSchema;
-const mixResponseSchema = selectMixSchema;
 
 // tagParamsSchema imported from database
 
 // Routes
 export const createPost = createRoute({
-  path: "/",
+  path: "/post",
   method: "post",
   request: {
     body: jsonContentRequired(createPostSchema, "The post to create"),
@@ -71,7 +70,7 @@ export const getMixes = createRoute({
   tags,
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
-      z.array(mixResponseSchema),
+      z.array(selectAudioSchema),
       "List of mixes",
     ),
   },
@@ -93,13 +92,13 @@ export const createMix = createRoute({
   path: "/mixes",
   method: "post",
   request: {
-    body: jsonContentRequired(createMixSchema, "The mix to create"),
+    body: jsonContentRequired(createAudioSchema, "The audio to create"),
   },
   tags,
   responses: {
     [HttpStatusCodes.CREATED]: jsonContent(
-      selectMixSchema,
-      "The created mix",
+      selectAudioSchema,
+      "The created audio",
     ),
     [HttpStatusCodes.CONFLICT]: jsonContent(
       z.object({ error: z.string() }),
@@ -110,7 +109,7 @@ export const createMix = createRoute({
       "Failed to create mix",
     ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
-      createErrorSchema(createMixSchema),
+      createErrorSchema(createAudioSchema),
       "Validation error",
     ),
   },
@@ -153,7 +152,7 @@ export const processMixUpload = createRoute({
       z.object({ error: z.string() }),
       "Processing error",
     ),
-    [HttpStatusCodes.IM_A_TEAPOT]: {
+    [HttpStatusCodes.REQUEST_TOO_LONG]: {
       content: {
         "text/plain": {
           schema: z.string(),
@@ -168,6 +167,48 @@ export const processMixUpload = createRoute({
   },
 });
 
+export const getAudioByType = createRoute({
+  path: "/audio/{type}",
+  method: "get",
+  request: {
+    params: z.object({ type: z.enum(["mix", "track", "misc"]) }),
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.array(selectAudioSchema),
+      "List of audio",
+    ),
+  },
+});
+
+export const createAudio = createRoute({
+  path: "/audio",
+  method: "post",
+  request: {
+    body: jsonContentRequired(createAudioSchema, "The audio to create"),
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.CREATED]: jsonContent(
+      selectAudioSchema,
+      "The created audio",
+    ),
+    [HttpStatusCodes.CONFLICT]: jsonContent(
+      z.object({ error: z.string() }),
+      "Audio with this slug already exists or invalid author id",
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      "Failed to create audio",
+    ),
+    [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
+      createErrorSchema(createAudioSchema),
+      "Validation error",
+    ),
+  },
+});
+
 // Export types
 export type CreatePostRoute = typeof createPost;
 export type GetPostsByTagRoute = typeof getPostsByTag;
@@ -175,3 +216,5 @@ export type GetMixesRoute = typeof getMixes;
 export type SeedMixesRoute = typeof seedMixes;
 export type CreateMixRoute = typeof createMix;
 export type ProcessMixUploadRoute = typeof processMixUpload;
+export type GetAudioByTypeRoute = typeof getAudioByType;
+export type CreateAudioRoute = typeof createAudio;

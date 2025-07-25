@@ -1,1 +1,1 @@
-export * from "./mix.schema";
+export * from "./audio.schema.ts";

@@ -1,10 +1,10 @@
-import { arrayContains } from "drizzle-orm";
+import { arrayContains, eq } from "drizzle-orm";
 import * as HttpStatusCodes from "stoker/http-status-codes";
 import type { AppRouteHandler } from "@/lib/types";
 
 import { db } from "@/db";
 import { postsTable, postsToAuthors } from "@/db/post.schema";
-import { mixesTable, mixesToAuthors } from "@/db/mix.schema";
+import { audioTable, audioToAuthors } from "@/db/audio.schema";
 import ffmpeg from "ffmpeg-static";
 import { spawn } from "node:child_process";
 import path from "node:path";
@@ -18,6 +18,8 @@ import type {
   SeedMixesRoute,
   CreateMixRoute,
   ProcessMixUploadRoute,
+  GetAudioByTypeRoute,
+  CreateAudioRoute,
 } from "./content.routes";
 
 export const createPost: AppRouteHandler<CreatePostRoute> = async (c) => {
@@ -80,7 +82,7 @@ export const getPostsByTag: AppRouteHandler<GetPostsByTagRoute> = async (c) => {
 };
 
 export const getMixes: AppRouteHandler<GetMixesRoute> = async (c) => {
-  const mixes = await db.select().from(mixesTable);
+  const mixes = await db.select().from(audioTable);
   return c.json(mixes, HttpStatusCodes.OK);
 };
 
@@ -94,11 +96,11 @@ export const createMix: AppRouteHandler<CreateMixRoute> = async (c) => {
 
   try {
     const result = await db.transaction(async (tx) => {
-      const [newMix] = await tx.insert(mixesTable).values(mixData).returning();
+      const [newMix] = await tx.insert(audioTable).values(mixData).returning();
 
-      await tx.insert(mixesToAuthors).values(
+      await tx.insert(audioToAuthors).values(
         authorIds.map((authorId: string) => ({
-          mixId: newMix.id,
+          audioId: newMix.id,
           authorId,
         })),
       );
@@ -123,6 +125,43 @@ export const createMix: AppRouteHandler<CreateMixRoute> = async (c) => {
     }
 
     return c.json({ error: `Failed to create mix: ${error}` }, HttpStatusCodes.INTERNAL_SERVER_ERROR);
+  }
+};
+
+export const getAudioByType: AppRouteHandler<GetAudioByTypeRoute> = async (c) => {
+  const { type } = c.req.valid("param");
+  const audio = await db.select().from(audioTable).where(eq(audioTable.type, type));
+  return c.json(audio, HttpStatusCodes.OK);
+};
+
+export const createAudio: AppRouteHandler<CreateAudioRoute> = async (c) => {
+  const { authorIds, ...audioData } = c.req.valid("json");
+  try {
+    const result = await db.transaction(async (tx) => {
+      const [newAudio] = await tx.insert(audioTable).values(audioData).returning();
+      await tx.insert(audioToAuthors).values(
+        authorIds.map((authorId: string) => ({
+          audioId: newAudio.id,
+          authorId,
+        }))
+      );
+      return newAudio;
+    });
+    return c.json(result, HttpStatusCodes.CREATED);
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("unique constraint")) {
+      return c.json({ error: "Audio with this slug already exists" }, HttpStatusCodes.CONFLICT);
+    }
+    if (
+      error instanceof Error &&
+      error.message.includes("foreign key constraint")
+    ) {
+      return c.json(
+        { error: "You may have entered a non-existent author id" },
+        HttpStatusCodes.CONFLICT,
+      );
+    }
+    return c.json({ error: `Failed to create audio: ${error}` }, HttpStatusCodes.INTERNAL_SERVER_ERROR);
   }
 };
 
@@ -163,6 +202,7 @@ async function processUploadHelper(c: any): Promise<ProcessedFiles> {
   return { audioPath, imagePath, outputPath, description, artist, album };
 }
 
+// @ts-expect-error - don't really care about this endpoint. will fix when i need to use it🚀
 export const processUpload: AppRouteHandler<ProcessMixUploadRoute> = async (c) => {
   try {
     const formData = await c.req.formData();

@@ -8,7 +8,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
-import { mixesToAuthors } from "./mix.schema";
+import { audioToAuthors } from "./audio.schema";
 import { postsToAuthors } from "./post.schema";
 import { postsTable } from "./post.schema";
 import { publicationPosts } from "./publication.schema";
@@ -122,7 +122,7 @@ export const userParamsSchema = z.object({
 
 export const authorsRelations = relations(authorsTable, ({ many }) => ({
 	postsToAuthors: many(postsToAuthors),
-	mixesToAuthors: many(mixesToAuthors),
+	audioToAuthors: many(audioToAuthors),
 }));
 
 export const publicationPostsRelations = relations(
