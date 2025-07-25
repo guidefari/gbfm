@@ -1,3 +1,10 @@
+# [0.10.0](https://github.com/guidefari/gbfm/compare/v0.9.0...v0.10.0) (2025-07-25)
+
+
+### Features
+
+* content migration scripts ([b5881b2](https://github.com/guidefari/gbfm/commit/b5881b2c6c21f592c6e77c0286567c8df12980f4))
+
 # [0.9.0](https://github.com/guidefari/gbfm/compare/v0.8.0...v0.9.0) (2025-07-25)
 
 
