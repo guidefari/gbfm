@@ -1,3 +1,15 @@
+# [0.12.0](https://github.com/guidefari/gbfm/compare/v0.11.0...v0.12.0) (2025-07-26)
+
+
+### Bug Fixes
+
+* type errors ([88bcac9](https://github.com/guidefari/gbfm/commit/88bcac941e01fb3c2495123a652fe4b2fd9bde8f))
+
+
+### Features
+
+* auth & profile stuff ([e7e1490](https://github.com/guidefari/gbfm/commit/e7e1490009b66bf7f7d6442229fc61a8eba364d2))
+
 # [0.11.0](https://github.com/guidefari/gbfm/compare/v0.10.4...v0.11.0) (2025-07-26)
 
 
