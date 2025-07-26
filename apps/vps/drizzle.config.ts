@@ -21,5 +21,6 @@ export default defineConfig({
 		// ssl: {
 		// 	rejectUnauthorized: false,
 		// },
+		// ssl: false,
 	},
 });

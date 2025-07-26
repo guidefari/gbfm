@@ -3,7 +3,6 @@
 /* eslint-disable */
 /* deno-fmt-ignore-file */
 import "sst"
-export {}
 declare module "sst" {
   export interface Resource {
     "Api": {
@@ -55,6 +54,28 @@ declare module "sst" {
     "gbfm-www": {
       "type": "sst.aws.StaticSite"
       "url": string
-    }
+    },
+    "gbfm_postgres": {
+      "database": string,
+      "host": string,
+      "password": string,
+      "port": number,
+      "type": "sst.aws.Postgres",
+      "username": string,
+    },
+    Urls: {
+      site: string,
+      type: "sst.sst.Linkable",
+      vps: string,
+    },
+    Router: {
+      type: "sst.aws.Router",
+      url: string,
+    },
+    User_Content: {
+      name: string,
+      type: "sst.aws.Bucket",
+    },
   }
 }
+

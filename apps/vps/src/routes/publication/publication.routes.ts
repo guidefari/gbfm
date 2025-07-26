@@ -1,19 +1,18 @@
 import { createRoute, z } from "@hono/zod-openapi";
 import * as HttpStatusCodes from "stoker/http-status-codes";
 import { jsonContent, jsonContentRequired } from "stoker/openapi/helpers";
-import { createErrorSchema, IdParamsSchema } from "stoker/openapi/schemas";
+import { createErrorSchema } from "stoker/openapi/schemas";
 
-import { createPublicationSchema, updatePublicationSchema } from "@/db/publication.schema";
+import { createPublicationSchema, updatePublicationSchema, selectPublicationSchema } from "@/db/publication.schema";
 
 const tags = ["Publications"];
 
-// Response schema based on the database schema
-const publicationResponseSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  description: z.string().nullable(),
-  createdAt: z.string(),
-  updatedAt: z.string(),
+// Use derived schema from database
+const publicationResponseSchema = selectPublicationSchema;
+
+// UUID parameter schema for publications
+const publicationParamsSchema = z.object({
+  id: z.string().uuid(),
 });
 
 // Routes
@@ -33,12 +32,12 @@ export const getOne = createRoute({
   path: "/{id}",
   method: "get",
   request: {
-    params: IdParamsSchema,
+    params: publicationParamsSchema,
   },
   tags,
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
-      z.array(publicationResponseSchema),
+      publicationResponseSchema,
       "The requested publication",
     ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(
@@ -46,7 +45,7 @@ export const getOne = createRoute({
       "Publication not found",
     ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
-      createErrorSchema(IdParamsSchema),
+      createErrorSchema(publicationParamsSchema),
       "Invalid id error",
     ),
   },
@@ -63,7 +62,7 @@ export const create = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
+    [HttpStatusCodes.CREATED]: jsonContent(
       publicationResponseSchema,
       "The created publication",
     ),
@@ -78,7 +77,7 @@ export const patch = createRoute({
   path: "/{id}",
   method: "patch",
   request: {
-    params: IdParamsSchema,
+    params: publicationParamsSchema,
     body: jsonContentRequired(
       updatePublicationSchema,
       "The publication updates",
@@ -96,7 +95,7 @@ export const patch = createRoute({
     ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
       createErrorSchema(updatePublicationSchema)
-        .or(createErrorSchema(IdParamsSchema)),
+        .or(createErrorSchema(publicationParamsSchema)),
       "Validation error",
     ),
   },
@@ -106,7 +105,7 @@ export const remove = createRoute({
   path: "/{id}",
   method: "delete",
   request: {
-    params: IdParamsSchema,
+    params: publicationParamsSchema,
   },
   tags,
   responses: {
@@ -119,7 +118,7 @@ export const remove = createRoute({
       "Publication not found",
     ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
-      createErrorSchema(IdParamsSchema),
+      createErrorSchema(publicationParamsSchema),
       "Invalid id error",
     ),
   },
