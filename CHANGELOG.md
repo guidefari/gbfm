@@ -1,3 +1,10 @@
+# [0.14.0](https://github.com/guidefari/gbfm/compare/v0.13.0...v0.14.0) (2025-07-26)
+
+
+### Features
+
+* remove web workers. ([5689fed](https://github.com/guidefari/gbfm/commit/5689fed7bc25cdd86957ae660aa4c506a8256265))
+
 # [0.13.0](https://github.com/guidefari/gbfm/compare/v0.12.0...v0.13.0) (2025-07-26)
 
 
