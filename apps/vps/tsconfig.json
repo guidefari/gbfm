@@ -34,7 +34,6 @@
     }
   },
   "exclude": [
-    "src/archive",
-    "sst-env.d.ts"
+    "src/archive"
   ]
 }

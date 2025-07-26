@@ -2,6 +2,7 @@ import type { Context, Next } from 'hono'
 import { verify } from 'hono/jwt'
 import { env } from '@/env'
 import { getAuthorByEmailOrId } from '@/db/author.repo'
+import type { AppBindings } from '@/lib/types'
 
 /**
  * Authenticates a user by verifying the JWT token in the Authorization header.
@@ -25,7 +26,7 @@ protectedRoutes.get('/profile', async (c) => {
   return c.json({ user })
 })
  */
-export const authenticate = async (c: Context, next: Next) => {
+export const authenticate = async (c: Context<AppBindings>, next: Next) => {
   const authHeader = c.req.header('Authorization')
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -47,11 +48,12 @@ export const authenticate = async (c: Context, next: Next) => {
     }
 
     const author = await getAuthorByEmailOrId({ authorId })
+    const {password, ...authorWithoutPassword} = author[0]
     if (author.length === 0) {
       return c.json({ error: 'User not found' }, 404)
     }
 
-    c.set('user', author[0])
+    c.set('user', authorWithoutPassword)
     await next()
   } catch (error) {
     return c.json({ error: 'Invalid or expired token' }, 401)

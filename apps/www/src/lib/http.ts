@@ -1,4 +1,4 @@
-import { useAuthStore } from "@/store/auth";
+import { useAuthStore, User } from "@/store/auth";
 import type {
 	AlbumApiResponse,
 	PlaylistApiResponse,
@@ -20,18 +20,14 @@ export async function fetcher<T>(
 	input: RequestInfo,
 	init: CustomRequestInit = { skipAuth: true },
 ) {
-	const { getAccessToken } = useAuthStore.getState();
-	const jwt = init.token || (await getAccessToken());
-	const refreshToken = useAuthStore.getState().refreshToken;
+	const { accessToken, refreshToken } = useAuthStore.getState();
+	const jwt = init.token || accessToken;
 
 	try {
-		const isApiRequest =
-			[VPS_BASE_URL].some((base) => input.toString().includes(base)) &&
-			!init?.skipAuth;
 
 		const headers = {
 			"Content-Type": "application/json",
-			...(isApiRequest && jwt
+			...(jwt
 				? {
 						Authorization: `Bearer ${jwt}`,
 						"Refresh-Token": refreshToken || "",
@@ -44,8 +40,10 @@ export async function fetcher<T>(
 			headers,
 		});
 
-		if (res.status === 401 && isApiRequest) {
+		if (res.status === 401) {
+			console.log("401, attempting to refresh token")
 			const { worker } = useAuthStore.getState();
+			console.log('worker:', worker)
 			if (worker) {
 				const newToken = await new Promise<string | null>((resolve) => {
 					const handleMessage = (event: MessageEvent) => {
@@ -69,6 +67,8 @@ export async function fetcher<T>(
 						headers: retryHeaders,
 					});
 				}
+			} else {
+				console.log('no worker, initializing worker')
 			}
 		}
 
@@ -149,5 +149,18 @@ export function useSpotifyProxy<T extends SpotifyContentType>({
 		data: data,
 		isLoading,
 		error,
+	};
+}
+
+export function useUserLOL() {
+	const { data, error, isPending } = useQuery<User, Error>({
+		queryKey: ["user"],
+		queryFn: async () => fetcher(`${VPS_BASE_URL}/auth/profile`),
+	});
+
+	return {
+		data,
+		error,
+		isPending,
 	};
 }

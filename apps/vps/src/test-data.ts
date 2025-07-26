@@ -1,6 +1,6 @@
-import type { createAuthorSchema } from "./api/author";
-import type { createPostSchema } from "./api/content";
-import type { createMixSchema } from "./api/mix";
+import type { insertAuthorSchema } from "./db/author.schema";
+import type { createPostSchema } from "./db/post.schema";
+import type { createMixSchema } from "./db/mix.schema";
 import type { z } from "zod";
 import type { selectPublicationSchema } from "./db/publication.schema";
 
@@ -18,7 +18,7 @@ export const mixes: Array<z.infer<typeof createMixSchema>> = [
 	},
 ];
 
-export const authors: Array<z.infer<typeof createAuthorSchema>> = [
+export const authors: Array<z.infer<typeof insertAuthorSchema>> = [
 	{
 		name: "Author 1",
 		email: "author1@example.com",
@@ -75,5 +75,6 @@ export const publications: Array<z.infer<typeof selectPublicationSchema>> = [
 		id: "1",
 		name: "Publication 1",
 		description: "Description 1",
+		slug: "publication-1",
 	},
 ];

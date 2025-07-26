@@ -31,7 +31,7 @@ export default function createApp() {
         "https://goosebumps.fm",
       ],
       allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
-      allowHeaders: ["Content-Type", "Authorization"],
+      allowHeaders: ["Content-Type", "Authorization", "Refresh-Token"],
       credentials: true,
     }),
   );

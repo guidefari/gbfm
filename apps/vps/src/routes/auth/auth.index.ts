@@ -11,6 +11,7 @@ const router = createRouter()
   .openapi(routes.refreshToken, handlers.refreshToken)
   .openapi(routes.createUser, handlers.createUser)
   .openapi(routes.listUsers, handlers.listUsers)
-  .openapi(routes.updateProfile, handlers.updateProfile);
+  .openapi(routes.updateProfile, handlers.updateProfile)
+  .openapi(routes.getProfile, handlers.getProfile);
 
 export default router;

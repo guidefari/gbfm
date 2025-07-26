@@ -14,6 +14,14 @@ import { postsTable } from "./post.schema";
 import { publicationPosts } from "./publication.schema";
 import { publicationsTable } from "./publication.schema";
 
+const usernameSchema = z
+  .string()
+  .min(3, "Username must be at least 3 characters")
+  .max(30, "Username must be less than 30 characters")
+  .regex(/^[a-zA-Z0-9_-]+$/, "Username can only contain letters, numbers, underscores, and hyphens")
+  .regex(/^[a-zA-Z]/, "Username must start with a letter")
+  .regex(/[a-zA-Z0-9]$/, "Username must end with a letter or number");
+
 export const authorsTable = pgTable("authors", {
 	id: uuid().primaryKey().defaultRandom(),
 	name: varchar({ length: 255 }).notNull(),
@@ -69,10 +77,10 @@ export const insertAuthorSchema = createInsertSchema(authorsTable);
 
 export const signupSchema = insertAuthorSchema.pick({
   name: true,
-  username: true,
   email: true,
   password: true,
 }).extend({
+  username: usernameSchema,
   password: z.string().min(8),
 });
 
@@ -97,14 +105,18 @@ export const refreshTokenSchema = z.object({
 });
 
 export const updateProfileSchema = insertAuthorSchema.pick({
+  id: true,
   name: true,
-  username: true,
   email: true,
   password: true,
   avatarUrl: true,
 }).partial().extend({
+  username: usernameSchema.optional(),
   password: z.string().min(8).optional(),
+  avatar: z.instanceof(File).optional(),
 });
+
+export type UpdateProfileSchema = z.infer<typeof updateProfileSchema>;
 
 // User management schemas
 export const createUserSchema = insertAuthorSchema.pick({

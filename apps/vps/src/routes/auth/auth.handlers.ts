@@ -7,13 +7,13 @@ import { sign, verify } from "hono/jwt";
 import type { JWTPayload } from "hono/utils/jwt/types";
 import type { AppRouteHandler } from "@/lib/types";
 import * as HttpStatusCodes from "stoker/http-status-codes";
-import { Resource } from "sst";
 
 import { db } from "@/db";
 import {
   authorPasswordResetTokensTable,
   authorSessionsTable,
   authorsTable,
+  type UpdateProfileSchema,
 } from "@/db/author.schema";
 
 import type {
@@ -25,7 +25,9 @@ import type {
   CreateUserRoute,
   ListUsersRoute,
   UpdateProfileRoute,
+  GetProfileRoute,
 } from "./auth.routes";
+import { isUsernameAvailable, uploadAvatar } from "./auth.util";
 
 const ACCESS_TOKEN_EXPIRES_IN = 60 * 15; // 15 minutes
 const REFRESH_TOKEN_EXPIRES_IN = 60 * 60 * 24 * 7; // 7 days
@@ -341,87 +343,73 @@ export const createUser: AppRouteHandler<CreateUserRoute> = async (c) => {
 
 export const listUsers: AppRouteHandler<ListUsersRoute> = async (c) => {
   const authors = await db.select().from(authorsTable);
-  // Remove passwords from response
   const authorsWithoutPasswords = authors.map(({ password, ...author }) => author);
   return c.json(authorsWithoutPasswords, HttpStatusCodes.OK);
 };
 
+
 export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
-  // TODO: Get user ID from authentication middleware
-  // For now, we'll need to pass username in the request body
-  let updateData: any = {};
-  let username: string | undefined;
+  const user = c.get("user");
 
-  try {
-    const contentType = c.req.header("content-type") || "";
-    if (contentType.includes("multipart/form-data")) {
-      const formData = await c.req.formData();
-      for (const [key, value] of formData.entries()) {
-        if (
-          key === "avatar" &&
-          value &&
-          typeof value === "object" &&
-          "arrayBuffer" in value
-        ) {
-          const file = value as File;
-          const { uploadToS3 } = await import("@/bucket");
-          const fileBuffer = Buffer.from(await file.arrayBuffer());
-          const fileName = `avatar_${Date.now()}_${file.name.replace(/\s+/g, "_")}`;
-          // @ts-expect-error
-          const bucketName = Resource.User_Content.name;
-          const contentType = file.type || "application/octet-stream";
-          await uploadToS3({
-            key: fileName,
-            body: fileBuffer,
-            contentType,
-            bucketName,
-          });
+  if (!user) {
+    return c.json({ error: "Unauthorized" }, HttpStatusCodes.UNAUTHORIZED);
+  }
 
-          // Construct URL using the bucket router URL from environment variables
-          // @ts-expect-error
-          updateData.avatarUrl = `${Resource.Router.url}/user-content/${fileName}`;
-        } else if (typeof value === "string") {
-          if (key === "password") {
-            updateData.password = value; // Will be hashed below
-          } else if (key === "name" || key === "username" || key === "email") {
-            updateData[key] = value;
-          }
-          if (key === "username") username = value;
-        }
+  let updateData: UpdateProfileSchema = {};
+  let avatarFile: File | null = null;
+  const contentType = c.req.header("content-type") || "";
+  
+  if (contentType.includes("multipart/form-data")) {
+    const formData = await c.req.formData();
+    
+    for (const [key, value] of formData.entries()) {
+      if (key === "avatar" && value && typeof value === "object" && "arrayBuffer" in value) {
+        avatarFile = value as File;
+      } else if (typeof value === "string" && key !== "avatar") {
+        (updateData as any)[key] = value;
       }
-    } else {
-      const requestBody = c.req.valid("json");
-      updateData = { ...requestBody };
-      username = requestBody.username || requestBody.email;
     }
-
-    if (!username) {
-      return c.json({ error: "Username is required" }, HttpStatusCodes.BAD_REQUEST);
-    }
-
-    // Hash password if provided
-    if (updateData.password) {
-      updateData.password = await Bun.password.hash(updateData.password);
-    }
-  } catch (err) {
-    console.log("err:", err);
-    return c.json({ error: "Invalid input" }, HttpStatusCodes.BAD_REQUEST);
+  } else {
+    updateData = { ...c.req.valid("json") };
   }
 
-  if (!username) {
-    return c.json({ error: "Username is required" }, HttpStatusCodes.BAD_REQUEST);
+  if (updateData.username) {
+    const isAvailable = await isUsernameAvailable(updateData.username);
+    if (!isAvailable) {
+      return c.json({ error: "Username already taken" }, HttpStatusCodes.BAD_REQUEST);
+    }
   }
+
+  if (updateData.password) {
+    updateData.password = await Bun.password.hash(updateData.password);
+  }
+
+  if (avatarFile) {
+    updateData.avatarUrl = await uploadAvatar(avatarFile);
+  }
+
 
   try {
     const [updated] = await db
       .update(authorsTable)
       .set(updateData)
-      .where(eq(authorsTable.username, username))
+      .where(eq(authorsTable.id, user.id))
       .returning();
     if (!updated) return c.json({ error: "User not found" }, HttpStatusCodes.NOT_FOUND);
     const { password, ...authorWithoutPassword } = updated;
     return c.json(authorWithoutPassword, HttpStatusCodes.OK);
   } catch (error) {
+    console.error('error:', error)
     return c.json({ error: "Failed to update profile" }, HttpStatusCodes.INTERNAL_SERVER_ERROR);
   }
+};
+
+export const getProfile: AppRouteHandler<GetProfileRoute> = async (c) => {
+  const user = c.get("user");
+
+  if (!user) {
+    return c.json({ error: "Unauthorized" }, HttpStatusCodes.NOT_FOUND);
+  }
+
+  return c.json(user, HttpStatusCodes.OK);
 };

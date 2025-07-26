@@ -2,17 +2,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { VPS_BASE_URL } from "@/lib/http";
-import { useAuthStore } from "@/store/auth";
+import { useUserLOL, VPS_BASE_URL } from "@/lib/http";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { useAuthStore } from "@/store/auth";
 
 export const Route = createFileRoute("/settings/profile")({
 	component: Profile,
 });
 
 export default function Profile() {
-	const { user, accessToken } = useAuthStore();
+	const { accessToken } = useAuthStore();
+	const { data: user } = useUserLOL();
+
+
 	const [imagePreview, setImagePreview] = useState<string>(
 		user?.avatarUrl || "/placeholder.svg",
 	);
@@ -107,7 +110,7 @@ export default function Profile() {
 							<div className="flex justify-center mb-6">
 								<div className="relative mr-4 w-20 h-20 rounded-full group">
 									<img
-										src={imagePreview}
+										src={user?.avatarUrl || imagePreview}
 										alt="User Avatar"
 										className="rounded-full cursor-pointer"
 										width={80}

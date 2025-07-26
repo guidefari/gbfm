@@ -14,6 +14,16 @@ import {
   updateProfileSchema,
 } from "@/db/author.schema";
 
+const usernameSchema = z
+  .string()
+  .min(3, "Username must be at least 3 characters")
+  .max(30, "Username must be less than 30 characters")
+  .regex(/^[a-zA-Z0-9_-]+$/, "Username can only contain letters, numbers, underscores, and hyphens")
+  .regex(/^[a-zA-Z]/, "Username must start with a letter")
+  .regex(/[a-zA-Z0-9]$/, "Username must end with a letter or number");
+
+import { authenticate } from "@/middlewares/auth.middleware";
+
 const tags = ["Auth"];
 
 // Response schemas
@@ -202,6 +212,7 @@ export const listUsers = createRoute({
 export const updateProfile = createRoute({
   path: "/profile",
   method: "patch",
+  middleware: [authenticate],
   request: {
     body: {
       content: {
@@ -211,10 +222,10 @@ export const updateProfile = createRoute({
         "multipart/form-data": {
           schema: z.object({
             name: z.string().optional(),
-            username: z.string().optional(),
+            username: usernameSchema.optional(),
             email: z.string().email().optional(),
             password: z.string().min(8).optional(),
-            avatar: z.any().optional(),
+            avatar: z.instanceof(File).optional(),
           }),
         },
       },
@@ -234,9 +245,38 @@ export const updateProfile = createRoute({
       z.object({ error: z.string() }),
       "User not found",
     ),
+    [HttpStatusCodes.FORBIDDEN]: jsonContent(
+      z.object({ error: z.string() }),
+      "Forbidden - can only update own profile",
+    ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       "Failed to update profile",
+    ),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
+      z.object({ error: z.string() }),
+      "Unauthorized mf",
+    ),
+  },
+});
+
+export const getProfile = createRoute({
+  path: "/profile",
+  method: "get",
+  middleware: [authenticate],
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      userResponseSchema,
+      "Profile retrieved successfully",
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      z.object({ error: z.string() }),
+      "User not found",
+    ),
+    [HttpStatusCodes.FORBIDDEN]: jsonContent(
+      z.object({ error: z.string() }),
+      "Forbidden - can only get own profile",
     ),
   },
 });
@@ -250,3 +290,4 @@ export type RefreshTokenRoute = typeof refreshToken;
 export type CreateUserRoute = typeof createUser;
 export type ListUsersRoute = typeof listUsers;
 export type UpdateProfileRoute = typeof updateProfile;
+export type GetProfileRoute = typeof getProfile;
