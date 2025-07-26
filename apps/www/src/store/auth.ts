@@ -1,6 +1,15 @@
 import { fetcher, VPS_BASE_URL } from "@/lib/http";
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
+import { jwtDecode } from "jwt-decode";
+
+interface JWTPayload {
+	sub: string;
+	email: string;
+	type: "access" | "refresh";
+	exp: number;
+	iat: number;
+}
 
 export interface User {
 	id: string;
@@ -18,7 +27,8 @@ interface AuthState {
 	accessToken: string | null;
 	refreshToken: string | null;
 	isAuthenticated: boolean;
-	worker: Worker | null;
+	isRefreshing: boolean;
+	refreshTimeout: ReturnType<typeof setTimeout> | null;
 }
 
 interface AuthActions {
@@ -30,8 +40,9 @@ interface AuthActions {
 	clearAuth: () => void;
 	updateUser: (userData: Partial<User>) => void;
 	getAccessToken: () => Promise<string | null>;
-	initializeWorker: () => void;
-	destroyWorker: () => void;
+	refreshAccessToken: () => Promise<string | null>;
+	scheduleTokenRefresh: (token: string) => void;
+	clearTokenRefresh: () => void;
 	refreshUser: () => Promise<void>;
 }
 
@@ -45,7 +56,8 @@ export const useAuthStore = create<AuthStore>()(
 					accessToken: null,
 					refreshToken: null,
 					isAuthenticated: false,
-					worker: null,
+					isRefreshing: false,
+					refreshTimeout: null,
 					setAuth: (auth) => {
 						set(
 							() => ({
@@ -58,33 +70,21 @@ export const useAuthStore = create<AuthStore>()(
 							"auth/set",
 						);
 
-						const { worker } = get();
-						if (worker) {
-							worker.postMessage({
-								type: "SET_TOKENS",
-								payload: {
-									accessToken: auth.accessToken,
-									refreshToken: auth.refreshToken,
-								},
-							});
-						}
+						get().scheduleTokenRefresh(auth.accessToken);
 					},
 					clearAuth: () => {
+						get().clearTokenRefresh();
 						set(
 							() => ({
 								user: null,
 								accessToken: null,
 								refreshToken: null,
 								isAuthenticated: false,
+								isRefreshing: false,
 							}),
 							false,
 							"auth/clear",
 						);
-
-						const { worker } = get();
-						if (worker) {
-							worker.postMessage({ type: "CLEAR_TOKENS" });
-						}
 					},
 					updateUser: (userData) =>
 						set(
@@ -95,62 +95,94 @@ export const useAuthStore = create<AuthStore>()(
 							"auth/updateUser",
 						),
 					getAccessToken: async () => {
-						const { worker } = get();
-						if (!worker) {
+						const { accessToken } = get();
+						if (!accessToken) {
+							return null;
+						}
+
+						try {
+							const decoded = jwtDecode<JWTPayload>(accessToken);
+							const now = Math.floor(Date.now() / 1000);
+
+							if (decoded.exp <= now + 300) {
+								return await get().refreshAccessToken();
+							}
+
+							return accessToken;
+						} catch (error) {
+							console.error("Error decoding token:", error);
+							return null;
+						}
+					},
+					refreshAccessToken: async () => {
+						const { isRefreshing, refreshToken } = get();
+						if (isRefreshing || !refreshToken) {
 							return get().accessToken;
 						}
 
-						return new Promise((resolve) => {
-							const handleMessage = (event: MessageEvent) => {
-								if (event.data.type === "ACCESS_TOKEN") {
-									worker.removeEventListener("message", handleMessage);
-									resolve(event.data.payload?.accessToken || null);
+						set({ isRefreshing: true }, false, "auth/refreshStart");
+
+						try {
+							const response = await fetch(`${VPS_BASE_URL}/auth/refresh-token`, {
+								method: "POST",
+								headers: {
+									"Content-Type": "application/json",
+								},
+								body: JSON.stringify({ refreshToken }),
+							});
+
+							if (response.ok) {
+								const data = await response.json();
+								const newAccessToken = data.accessToken;
+
+								set(
+									{ accessToken: newAccessToken, isRefreshing: false },
+									false,
+									"auth/refreshSuccess"
+								);
+
+								if (newAccessToken) {
+									get().scheduleTokenRefresh(newAccessToken);
 								}
-							};
 
-							worker.addEventListener("message", handleMessage);
-							worker.postMessage({ type: "GET_ACCESS_TOKEN" });
-						});
-					},
-					initializeWorker: () => {
-						const { worker } = get();
-						if (worker) return;
-
-						const authWorker = new Worker(
-							new URL("../worker.ts", import.meta.url),
-							{
-								type: "module",
-							},
-						);
-
-						authWorker.addEventListener("message", (event) => {
-							const { type, payload } = event.data;
-
-							switch (type) {
-								case "TOKENS_UPDATED":
-									if (payload?.accessToken) {
-										set(
-											() => ({ accessToken: payload.accessToken }),
-											false,
-											"auth/tokenUpdated",
-										);
-									}
-									break;
-								case "REFRESH_FAILED":
-									console.error("Token refresh failed:", payload?.error);
-									break;
+								return newAccessToken;
 							}
-						});
 
-						console.info("initializing gbfm worker");
-						set({ worker: authWorker }, false, "auth/workerInitialized");
+							console.error("Failed to refresh token:", response.status);
+							set({ isRefreshing: false }, false, "auth/refreshFailed");
+							return null;
+						} catch (error) {
+							console.error("Error refreshing token:", error);
+							set({ isRefreshing: false }, false, "auth/refreshError");
+							return null;
+						}
 					},
-					destroyWorker: () => {
-						const { worker } = get();
-						if (worker) {
-							console.info("destroying gbfm worker");
-							worker.terminate();
-							set({ worker: null }, false, "auth/workerDestroyed");
+					scheduleTokenRefresh: (token: string) => {
+						try {
+							const decoded = jwtDecode<JWTPayload>(token);
+							const now = Math.floor(Date.now() / 1000);
+							const timeUntilExpiry = decoded.exp - now;
+
+							const refreshTime = Math.max((timeUntilExpiry - 300) * 1000, 1000);
+
+							get().clearTokenRefresh();
+
+							const timeout = setTimeout(async () => {
+								await get().refreshAccessToken();
+							}, refreshTime);
+
+							set({ refreshTimeout: timeout }, false, "auth/refreshScheduled");
+
+							console.log(`Token refresh scheduled in ${refreshTime / 1000} seconds`);
+						} catch (error) {
+							console.error("Failed to decode token for scheduling refresh:", error);
+						}
+					},
+					clearTokenRefresh: () => {
+						const { refreshTimeout } = get();
+						if (refreshTimeout) {
+							clearTimeout(refreshTimeout);
+							set({ refreshTimeout: null }, false, "auth/refreshCleared");
 						}
 					},
 					refreshUser: async () => {

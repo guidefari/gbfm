@@ -42,33 +42,18 @@ export async function fetcher<T>(
 
 		if (res.status === 401) {
 			console.log("401, attempting to refresh token")
-			const { worker } = useAuthStore.getState();
-			console.log('worker:', worker)
-			if (worker) {
-				const newToken = await new Promise<string | null>((resolve) => {
-					const handleMessage = (event: MessageEvent) => {
-						if (event.data.type === "ACCESS_TOKEN") {
-							worker.removeEventListener("message", handleMessage);
-							resolve(event.data.payload?.accessToken || null);
-						}
-					};
+			const { refreshAccessToken } = useAuthStore.getState();
+			const newToken = await refreshAccessToken();
 
-					worker.addEventListener("message", handleMessage);
-					worker.postMessage({ type: "REFRESH_TOKEN" });
+			if (newToken) {
+				const retryHeaders = {
+					...headers,
+					Authorization: `Bearer ${newToken}`,
+				};
+				res = await fetch(input, {
+					...init,
+					headers: retryHeaders,
 				});
-
-				if (newToken) {
-					const retryHeaders = {
-						...headers,
-						Authorization: `Bearer ${newToken}`,
-					};
-					res = await fetch(input, {
-						...init,
-						headers: retryHeaders,
-					});
-				}
-			} else {
-				console.log('no worker, initializing worker')
 			}
 		}
 

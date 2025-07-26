@@ -1,4 +1,3 @@
-import { useAuthStore } from "@/store/auth";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RouterProvider, createRouter } from "@tanstack/react-router";
 import React from "react";
@@ -24,16 +23,6 @@ const queryClient = new QueryClient({
 });
 
 function App() {
-	const { initializeWorker, destroyWorker } = useAuthStore();
-
-	React.useEffect(() => {
-		initializeWorker();
-
-		return () => {
-			destroyWorker();
-		};
-	}, [initializeWorker, destroyWorker]);
-
 	return (
 		<QueryClientProvider client={queryClient}>
 			<ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
