@@ -1,3 +1,10 @@
+# [0.11.0](https://github.com/guidefari/gbfm/compare/v0.10.4...v0.11.0) (2025-07-26)
+
+
+### Features
+
+* update mix route ([9acbbc0](https://github.com/guidefari/gbfm/commit/9acbbc0a0562ada6d0147025c18e51d05d6ca677))
+
 ## [0.10.4](https://github.com/guidefari/gbfm/compare/v0.10.3...v0.10.4) (2025-07-25)
 
 
