@@ -1,3 +1,10 @@
+# [0.13.0](https://github.com/guidefari/gbfm/compare/v0.12.0...v0.13.0) (2025-07-26)
+
+
+### Features
+
+* update profile ([fad00e6](https://github.com/guidefari/gbfm/commit/fad00e6ccc516793c758d27074edc91540de7f45))
+
 # [0.12.0](https://github.com/guidefari/gbfm/compare/v0.11.0...v0.12.0) (2025-07-26)
 
 
