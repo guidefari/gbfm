@@ -5,8 +5,8 @@ import type {
 	TrackAPIResponse,
 } from "@/types";
 import type { MDXArchiveTypes } from "@gbfm/core/mdx/mdx.types";
-import type { SelectMix } from "@gbfm/vps/schemas";
 import { useQuery } from "@tanstack/react-query";
+import type { SelectAudio } from "@gbfm/vps/schemas";
 
 export const VPS_BASE_URL = import.meta.env.VITE_VPS_BASE_URL;
 export const AUTH_BASE_URL = `${VPS_BASE_URL}/auth`;
@@ -100,10 +100,10 @@ export function useArchetype(type: MDXArchiveTypes.archetype) {
 	};
 }
 
-export function useMixes() {
-	const { data, error, isPending } = useQuery<SelectMix[], Error>({
-		queryKey: ["mixes"],
-		queryFn: async () => fetcher<SelectMix[]>(`${VPS_BASE_URL}/content/mixes`),
+export function useAudioByType(type: "mix" | "track" | "misc") {
+	const { data, error, isPending } = useQuery<SelectAudio[], Error>({
+		queryKey: ["audio", type],
+		queryFn: async () => fetcher<SelectAudio[]>(`${VPS_BASE_URL}/content/audio/${type}`),
 	});
 
 	return {

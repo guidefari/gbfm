@@ -64,18 +64,6 @@ export const getPostsByTag = createRoute({
   },
 });
 
-export const getMixes = createRoute({
-  path: "/mixes",
-  method: "get",
-  tags,
-  responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      z.array(selectAudioSchema),
-      "List of mixes",
-    ),
-  },
-});
-
 export const seedMixes = createRoute({
   path: "/seed-mixes",
   method: "get",
@@ -212,7 +200,6 @@ export const createAudio = createRoute({
 // Export types
 export type CreatePostRoute = typeof createPost;
 export type GetPostsByTagRoute = typeof getPostsByTag;
-export type GetMixesRoute = typeof getMixes;
 export type SeedMixesRoute = typeof seedMixes;
 export type CreateMixRoute = typeof createMix;
 export type ProcessMixUploadRoute = typeof processMixUpload;

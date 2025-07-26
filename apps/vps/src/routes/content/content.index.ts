@@ -6,8 +6,7 @@ import * as routes from "./content.routes";
 const router = createRouter()
   .openapi(routes.createPost, handlers.createPost)
   .openapi(routes.getPostsByTag, handlers.getPostsByTag)
-  .openapi(routes.getMixes, handlers.getMixes)
-  .openapi(routes.seedMixes, handlers.seedMixes)
+  .openapi(routes.getAudioByType, handlers.getAudioByType)
   .openapi(routes.createMix, handlers.createMix)
   .openapi(routes.processMixUpload, handlers.processUpload);
 

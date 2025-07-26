@@ -1,5 +1,5 @@
 import { useAudioPlayerContext } from "@/contexts/AudioPlayer";
-import { useMixes } from "@/lib/http";
+import { useAudioByType } from "@/lib/http";
 import { createFileRoute } from "@tanstack/react-router";
 import { GiPauseButton, GiPlayButton } from "react-icons/gi";
 
@@ -8,7 +8,7 @@ export const Route = createFileRoute("/mixes")({
 });
 
 function Component() {
-	const { data } = useMixes();
+	const { data } = useAudioByType("mix");
 	const [, handlers, isPlaying, , , nowPlayingContext] =
 		useAudioPlayerContext();
 

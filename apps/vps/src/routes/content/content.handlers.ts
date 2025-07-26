@@ -14,8 +14,6 @@ import os from "node:os";
 import type {
   CreatePostRoute,
   GetPostsByTagRoute,
-  GetMixesRoute,
-  SeedMixesRoute,
   CreateMixRoute,
   ProcessMixUploadRoute,
   GetAudioByTypeRoute,
@@ -79,15 +77,6 @@ export const getPostsByTag: AppRouteHandler<GetPostsByTagRoute> = async (c) => {
       HttpStatusCodes.INTERNAL_SERVER_ERROR,
     );
   }
-};
-
-export const getMixes: AppRouteHandler<GetMixesRoute> = async (c) => {
-  const mixes = await db.select().from(audioTable);
-  return c.json(mixes, HttpStatusCodes.OK);
-};
-
-export const seedMixes: AppRouteHandler<SeedMixesRoute> = async (c) => {
-  return c.json({ message: "Seed endpoint disabled" }, HttpStatusCodes.OK);
 };
 
 // Mix management handlers
