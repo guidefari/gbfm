@@ -5,7 +5,7 @@ import type {
 	TrackAPIResponse,
 } from "@/types";
 import type { MDXArchiveTypes } from "@gbfm/core/mdx/mdx.types";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import type { SelectAudio } from "@gbfm/vps/schemas";
 
 export const VPS_BASE_URL = import.meta.env.VITE_VPS_BASE_URL;
@@ -161,6 +161,20 @@ export function useUserLOL() {
 	return {
 		data,
 		error,
+		isPending,
+	};
+}
+
+export function useUpdateProfile() {
+	const { mutate: updateProfile, isPending } = useMutation<User, Error, User>({
+		mutationFn: async (user) => fetcher(`${VPS_BASE_URL}/auth/profile`, {
+			method: "PATCH",
+			body: JSON.stringify(user),
+		}),
+	});
+
+	return {
+		updateProfile,
 		isPending,
 	};
 }

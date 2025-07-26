@@ -2,23 +2,20 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useUserLOL, VPS_BASE_URL } from "@/lib/http";
+import { useUpdateProfile, useUserLOL } from "@/lib/http";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { useAuthStore } from "@/store/auth";
+import { User } from "@/store/auth";
 
 export const Route = createFileRoute("/settings/profile")({
 	component: Profile,
 });
 
 export default function Profile() {
-	const { accessToken } = useAuthStore();
 	const { data: user } = useUserLOL();
+	const { updateProfile } = useUpdateProfile();
 
-
-	const [imagePreview, setImagePreview] = useState<string>(
-		user?.avatarUrl || "/placeholder.svg",
-	);
+	const [imagePreview, setImagePreview] = useState<string | null>(null);
 	const [selectedFile, setSelectedFile] = useState<File | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -71,22 +68,8 @@ export default function Profile() {
 				formData.append("avatar", selectedFile);
 			}
 
-			const response = await fetch(`${VPS_BASE_URL}/auth/profile`, {
-				method: "PATCH",
-				body: formData,
-				headers: {
-					Authorization: `Bearer ${accessToken}`,
-					// "Content-Type": "application/json",
-				},
-			});
+			updateProfile(formData as unknown as User);
 
-			if (!response.ok) {
-				const errorData = await response.json();
-				throw new Error(errorData.error || "Failed to update profile");
-			}
-
-			const data = await response.json();
-			console.log("Profile updated successfully:", data);
 
 			setSelectedFile(null);
 		} catch (error) {
@@ -110,7 +93,7 @@ export default function Profile() {
 							<div className="flex justify-center mb-6">
 								<div className="relative mr-4 w-20 h-20 rounded-full group">
 									<img
-										src={user?.avatarUrl || imagePreview}
+										src={imagePreview || user?.avatarUrl || "/placeholder.svg"}
 										alt="User Avatar"
 										className="rounded-full cursor-pointer"
 										width={80}
