@@ -24,7 +24,7 @@ if ($app.stage === "prod") {
 		},
 	});
 
-	typeof zone.zoneId === "string" && new cloudflare.Ruleset("rss-redirect", {
+	new cloudflare.Ruleset("rss-redirect", {
 		kind: "zone",
 		zoneId: zone.zoneId,
 		name: "RSS Feed Redirects",
