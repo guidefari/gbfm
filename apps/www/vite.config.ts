@@ -22,4 +22,13 @@ export default defineConfig({
 			"@": resolve(__dirname, "./src"),
 		},
 	},
+	server: {
+		proxy: {
+			'/rss.xml': {
+				target: process.env.VITE_VPS_BASE_URL || 'http://localhost:3003',
+				changeOrigin: true,
+				rewrite: (path) => path.replace(/^\/rss\.xml/, '/rss.xml')
+			}
+		}
+	}
 });

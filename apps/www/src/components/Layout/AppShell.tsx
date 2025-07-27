@@ -11,7 +11,7 @@ type Props = {
 
 export default function AppShell({ children }: Props) {
 	return (
-		<div className="flex relative w-screen min-h-dvh bg-background">
+		<div className="flex relative min-h-dvh bg-background">
 			{/* <DesktopSideNav /> */}
 			<div
 				className={cn(

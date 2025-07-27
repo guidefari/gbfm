@@ -9,12 +9,11 @@ import { CheckIcon } from "@radix-ui/react-icons";
 // import * as Sentry from "@sentry/nextjs";
 import { useState } from "react";
 import { FaSquareRss } from "react-icons/fa6";
+import { VPS_BASE_URL } from "@/lib/http";
 
 export const RSS = () => {
 	const [isCopied, setIsCopied] = useState(false);
-	const basepath = window.location.origin;
-	const BASS = basepath ? basepath : "https://goosebumps.fm";
-	const RSSurl = new URL(`${BASS}/rss.xml`).toString();
+	const RSSurl = new URL(`${VPS_BASE_URL}/rss.xml`).toString();
 
 	const toggleIsCopiedForThreeSeconds = () => {
 		setIsCopied(true);
@@ -37,7 +36,7 @@ export const RSS = () => {
 		<TooltipProvider>
 			<Tooltip>
 				<TooltipTrigger>
-					<div className="flex items-center justify-center w-5 h-5">
+					<div className="flex justify-center items-center w-5 h-5">
 						{isCopied ? (
 							<CheckIcon className="w-full h-full text-orange-300 cursor-pointer" />
 						) : (
