@@ -1,3 +1,12 @@
+# [0.15.0](https://github.com/guidefari/gbfm/compare/v0.14.0...v0.15.0) (2025-07-27)
+
+
+### Features
+
+* dynamic rss ([de26bb6](https://github.com/guidefari/gbfm/commit/de26bb66f19859326992058d2828a997a3804cfc))
+* file upload endpoints ([fcc59a6](https://github.com/guidefari/gbfm/commit/fcc59a69921e903c019565ac10a489d825ccbb50))
+* upload audio ui ([485cb92](https://github.com/guidefari/gbfm/commit/485cb9240535fbb412d8be9c9f2d524927750c1e))
+
 # [0.14.0](https://github.com/guidefari/gbfm/compare/v0.13.0...v0.14.0) (2025-07-26)
 
 
