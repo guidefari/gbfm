@@ -26,7 +26,7 @@ if ($app.stage === "prod") {
 
 	new cloudflare.Ruleset("rss-redirect", {
 		kind: "zone",
-		zoneId: zone.zoneId?.get(),
+		zoneId: zone.zoneId,
 		name: "RSS Feed Redirects",
 		description: "Redirect RSS requests to VPS",
 		phase: "http_request_dynamic_redirect",
