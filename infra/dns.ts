@@ -15,6 +15,7 @@ export const urls = new sst.Linkable("Urls", {
 	},
 });
 
+
 // RSS redirect rule for production
 if ($app.stage === "prod") {
 	const zone = cloudflare.getZoneOutput({
@@ -25,7 +26,7 @@ if ($app.stage === "prod") {
 
 	new cloudflare.Ruleset("rss-redirect", {
 		kind: "zone",
-		zoneId: zone.id,
+		zoneId: zone.zoneId,
 		name: "RSS Feed Redirects",
 		description: "Redirect RSS requests to VPS",
 		phase: "http_request_dynamic_redirect",
