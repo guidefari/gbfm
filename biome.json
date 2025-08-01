@@ -43,7 +43,8 @@
       "jsxQuoteStyle": "single",
       "quoteProperties": "asNeeded",
       "semicolons": "asNeeded",
-      "trailingCommas": "none"
+      "trailingCommas": "none",
+      "quoteStyle": "single"
     }
   },
   "json": {
