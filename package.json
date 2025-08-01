@@ -1,35 +1,42 @@
 {
-	"name": "gbfm",
-	"version": "0.15.0",
-	"sideEffects": false,
-	"private": true,
-	"scripts": {
-		"dev": "sst dev --stage=dev",
-		"refresh": "sst refresh --stage=dev",
-		"sso": "aws sso login --sso-session=terminal --no-browser",
-		"typecheck": "pnpm --filter=@gbfm/vps --filter=@gbfm/www typecheck",
-		"deploy": "sst deploy --stage=dev",
-		"deploy:prod": "sst deploy --stage=prod",
-		"gen": "cd vps && sst shell drizzle-kit generate",
-		"release": "semantic-release"
-	},
-	"dependencies": {
-		"@mdx-js/mdx": "3.1.0",
-		"effect": "3.16.9",
-		"gray-matter": "4.0.3",
-		"sst": "3.17.10",
-		"zod": "3.25.67"
-	},
-	"devDependencies": {
-		"@semantic-release/changelog": "^6.0.3",
-		"@semantic-release/git": "^10.0.1",
-		"@semantic-release/github": "^11.0.3",
-		"@tsconfig/bun": "^1.0.8",
-		"semantic-release": "^24.2.7",
-		"typescript": "5.8.3"
-	},
-	"overrides": {
-		"react": "19.1.0",
-		"react-dom": "19.1.0"
-	}
+  "name": "gbfm",
+  "version": "0.15.0",
+  "sideEffects": false,
+  "private": true,
+  "scripts": {
+    "dev": "sst dev --stage=dev",
+    "refresh": "sst refresh --stage=dev",
+    "sso": "aws sso login --sso-session=terminal --no-browser",
+    "typecheck": "pnpm --filter=@gbfm/vps --filter=@gbfm/www typecheck",
+    "deploy": "sst deploy --stage=dev",
+    "deploy:prod": "sst deploy --stage=prod",
+    "gen": "cd vps && sst shell drizzle-kit generate",
+    "release": "semantic-release",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint --write .",
+    "format": "biome format --write .",
+    "check": "biome check --write .",
+    "biome:ci": "biome ci"
+  },
+  "dependencies": {
+    "@mdx-js/mdx": "3.1.0",
+    "effect": "3.16.9",
+    "gray-matter": "4.0.3",
+    "sst": "3.17.10",
+    "zod": "3.25.67"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.1.3",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^11.0.3",
+    "@tsconfig/bun": "^1.0.8",
+    "lefthook": "^1.12.2",
+    "semantic-release": "^24.2.7",
+    "typescript": "5.8.3"
+  },
+  "overrides": {
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
+  }
 }

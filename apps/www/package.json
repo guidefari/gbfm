@@ -49,7 +49,6 @@
     "zustand": "^5.0.6"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.9.4",
     "@overengineering/fps-meter": "^0.2.1",
     "@tailwindcss/typography": "^0.5.15",
     "@tanstack/router-cli": "^1.57.13",

@@ -1,0 +1,21 @@
+pre-commit:
+  parallel: true
+  commands:
+    biome-check:
+      glob: "*.{js,ts,tsx,jsx,json,jsonc}"
+      run: npx biome check --write {staged_files}
+      stage_fixed: true
+    biome-format:
+      glob: "*.{js,ts,tsx,jsx,json,jsonc}"
+      run: npx biome format --write {staged_files}
+      stage_fixed: true
+
+# pre-push:
+#   commands:
+#     biome-ci:
+#       run: npx biome ci
+
+# commit-msg:
+#   commands:
+#     "commitlint":
+#       run: echo "Commit message validated"
