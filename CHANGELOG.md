@@ -1,3 +1,10 @@
+# [0.16.0](https://github.com/guidefari/gbfm/compare/v0.15.0...v0.16.0) (2025-08-01)
+
+
+### Features
+
+* commando updates ([0841bd3](https://github.com/guidefari/gbfm/commit/0841bd31e5ae6e6d22412afa4a50ecb992f6ddef))
+
 # [0.15.0](https://github.com/guidefari/gbfm/compare/v0.14.0...v0.15.0) (2025-07-27)
 
 
