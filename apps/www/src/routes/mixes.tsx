@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useMemo } from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
 import { useAudioPlayerContext } from '@/contexts/AudioPlayer'
@@ -69,7 +69,12 @@ function Component() {
               </span>
             </button>
             <div className='flex-1'>
-              <span className='font-bold text-highlight'>{mix.title}</span>
+              <Link
+                to='/read/$archetype/$id'
+                params={{ archetype: 'mix', id: mix.slug }}
+                className='font-bold text-highlight hover:underline'>
+                {mix.title}
+              </Link>
               {mix.description && (
                 <span className='ml-2 text-foreground/80'>
                   {mix.description}

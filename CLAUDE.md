@@ -16,7 +16,7 @@ This is a monorepo built with SST (Serverless Stack) managing multiple packages 
 ## Development Commands
 
 ### Root Level Commands
-- pnpm add - to add dependencies. This project uses pnpm for package management!
+- `pnpm add` - to add dependencies. This project uses pnpm for package management!
 - `bun dev` - Start SST development environment
 - `bun typecheck` - Type check all workspace packages
 - `bun deploy` - Deploy to dev stage
