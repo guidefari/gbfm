@@ -12,7 +12,7 @@ import {
   type SelectMdxCompiledAudio
 } from '@/db/audio.schema'
 import { postsTable, postsToAuthors } from '@/db/post.schema'
-import { isMDXResult, type MixFrontmatter, processMDX } from '@/lib/mdx'
+import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
 import type { AppRouteHandler } from '@/lib/types'
 
 import type {
@@ -163,25 +163,20 @@ export const getAudioBySlug: AppRouteHandler<GetAudioBySlugRoute> = async (
 
     let processedAudio: SelectMdxCompiledAudio = {
       ...audio,
-      compiledContent: '',
-      frontmatter: {}
+      compiledContent: ''
     }
-    console.log('audio:', audio)
 
     if (audio.content) {
-      const mdxResult = await processMDX<MixFrontmatter>(audio.content)
+      const mdxResult = await compileMDX(audio.content)
 
-      if (isMDXResult(mdxResult)) {
+      if (isMDXCompilationResult(mdxResult)) {
         processedAudio = {
           ...audio,
-          compiledContent: mdxResult.compiled,
-          frontmatter: mdxResult.frontmatter,
-          content: mdxResult.content
+          compiledContent: mdxResult.compiled
         }
-        console.log('processedAudio:', processedAudio)
       } else {
-        // If MDX processing failed, log the error but still return the audio
-        console.warn('Failed to process MDX for audio:', slug, mdxResult.error)
+        // If MDX compilation failed, log the error but still return the audio
+        console.warn('Failed to compile MDX for audio:', slug, mdxResult.error)
       }
     }
 

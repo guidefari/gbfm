@@ -36,8 +36,7 @@ export const selectAudioSchema = createSelectSchema(audioTable).extend({
 })
 
 export const selectMdxCompiledAudioSchema = selectAudioSchema.extend({
-  compiledContent: z.string(),
-  frontmatter: z.record(z.string(), z.any())
+  compiledContent: z.string()
 })
 
 export const insertAudioSchema = createInsertSchema(audioTable).omit({

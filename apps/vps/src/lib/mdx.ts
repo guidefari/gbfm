@@ -1,9 +1,6 @@
 import { compile } from '@mdx-js/mdx'
-import grayMatter from 'gray-matter'
 
-export interface MDXResult<T = Record<string, any>> {
-  frontmatter: T
-  content: string
+export interface MDXCompilationResult {
   compiled: string
 }
 
@@ -13,42 +10,36 @@ export interface MDXError {
 }
 
 /**
- * Processes MDX content with gray matter frontmatter
- * @param mdxContent - Raw MDX content string
- * @returns Object with frontmatter, raw content, and compiled MDX
+ * Compiles MDX content to executable function body
+ * @param mdxContent - Raw MDX content string (without frontmatter)
+ * @returns Compiled MDX or error
  */
-export async function processMDX<T = Record<string, any>>(
+export async function compileMDX(
   mdxContent: string
-): Promise<MDXResult<T> | MDXError> {
+): Promise<MDXCompilationResult | MDXError> {
   try {
-    // Parse frontmatter
-    const matter = grayMatter(mdxContent)
-
-    // Compile MDX content
-    const compiled = await compile(matter.content, {
+    const compiled = await compile(mdxContent, {
       outputFormat: 'function-body'
     })
 
     return {
-      frontmatter: matter.data as T,
-      content: matter.content,
       compiled: compiled.toString()
     }
   } catch (error) {
-    console.error('Error processing MDX:', error)
+    console.error('Error compiling MDX:', error)
     return {
-      error: 'Failed to process MDX content',
+      error: 'Failed to compile MDX content',
       details: error instanceof Error ? error.message : String(error)
     }
   }
 }
 
 /**
- * Type guard to check if MDX processing was successful
+ * Type guard to check if MDX compilation was successful
  */
-export function isMDXResult<T>(
-  result: MDXResult<T> | MDXError
-): result is MDXResult<T> {
+export function isMDXCompilationResult(
+  result: MDXCompilationResult | MDXError
+): result is MDXCompilationResult {
   return !('error' in result)
 }
 
@@ -69,23 +60,4 @@ export async function compileMDXToString(content: string): Promise<string> {
       `Failed to compile MDX: ${error instanceof Error ? error.message : String(error)}`
     )
   }
-}
-
-export interface MixFrontmatter {
-  title: string
-  description?: string
-  date?: string
-  tags?: string[]
-  featured?: boolean
-  duration?: string
-  genre?: string[]
-}
-
-export interface PostFrontmatter {
-  title: string
-  description?: string
-  date?: string
-  author?: string
-  tags?: string[]
-  published?: boolean
 }
