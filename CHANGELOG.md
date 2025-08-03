@@ -1,3 +1,16 @@
+# [0.17.0](https://github.com/guidefari/gbfm/compare/v0.16.0...v0.17.0) (2025-08-03)
+
+
+### Bug Fixes
+
+* grid on single mix page was wonky ([aeb46e8](https://github.com/guidefari/gbfm/commit/aeb46e847ed298a0fda603f4ff4127d1c2e75ae5))
+* remove redundant frontmatter processing ([103b086](https://github.com/guidefari/gbfm/commit/103b0868629a4ec4586fe04e8851f4e2fbff62b7))
+
+
+### Features
+
+* single mix page ([0d23491](https://github.com/guidefari/gbfm/commit/0d23491731de4a9a25202a807681391d801cb47e))
+
 # [0.16.0](https://github.com/guidefari/gbfm/compare/v0.15.0...v0.16.0) (2025-08-01)
 
 
