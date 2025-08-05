@@ -9,19 +9,25 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from '@/components/ui/tooltip'
-import { useAudioPlayerContext } from '@/contexts/AudioPlayer'
 import { useScrollStatus } from '@/lib/useScrollStatus'
 import { formatSeconds } from '@/lib/utils'
+import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
 
 const AudioPlayer = () => {
-  const [
+  const {
     audioRef,
-    handlers,
+    audioSrc,
     isPlaying,
     thumbnailUrl,
     progress,
-    nowPlayingContext
-  ] = useAudioPlayerContext()
+    nowPlayingContext,
+    currentTime,
+    duration
+  } = useAudioPlayerState()
+
+  const { play, pause, jumpForward, jumpBackward, setTimeUsingPercentage } =
+    useAudioPlayerActions()
+
   const router = useRouter()
   const navRef = useRef<HTMLElement>(null)
   const isScrolling = useScrollStatus(1000)
@@ -45,10 +51,10 @@ const AudioPlayer = () => {
 
   const changeRange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target
-    handlers.setTimeUsingPercentage(Number(value))
+    setTimeUsingPercentage(Number(value))
   }
 
-  if (!audioRef?.src) return <></>
+  if (!audioSrc) return <></>
 
   return (
     <nav
@@ -67,18 +73,14 @@ const AudioPlayer = () => {
           data-tooltip-target='tooltip-wallet'
           type='button'
           className='text-xs floating-nav-button'
-          onClick={() => handlers.jumpBackward()}>
+          onClick={() => jumpBackward()}>
           -15s
         </button>
         <button
           type='button'
           className='floating-nav-button'
           title='Play/Pause'
-          onClick={() =>
-            isPlaying
-              ? handlers.pause()
-              : handlers.play({ title: nowPlayingContext.title })
-          }>
+          onClick={() => (isPlaying ? pause() : play(nowPlayingContext.title))}>
           {isPlaying ? (
             <GiPauseButton className='floating-nav-icon' />
           ) : (
@@ -90,7 +92,7 @@ const AudioPlayer = () => {
           type='button'
           className='text-xs floating-nav-button'
           title='+30s'
-          onClick={() => handlers.jumpForward()}>
+          onClick={() => jumpForward()}>
           +30s
         </button>
         <TooltipProvider>
@@ -113,14 +115,14 @@ const AudioPlayer = () => {
         </TooltipProvider>
       </div>
       <div className='flex items-center mx-auto space-x-1 max-w-xl rounded-full'>
-        <p className='text-xs'>{formatSeconds(audioRef?.currentTime || 0)}</p>
+        <p className='text-xs'>{formatSeconds(currentTime)}</p>
         <input
           type='range'
           value={progress}
           className='w-full h-2 rounded-full bg-gb-tomato align-start hover:cursor-pointer'
           onInput={changeRange}
         />
-        <p className='text-xs'>{formatSeconds(audioRef?.duration || 0)}</p>
+        <p className='text-xs'>-{formatSeconds(duration - currentTime)}</p>
       </div>
     </nav>
   )

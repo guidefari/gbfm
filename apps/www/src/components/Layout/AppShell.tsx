@@ -1,7 +1,8 @@
 import type React from 'react'
 import AudioPlayer from '@/components/AudioPlayer'
-import { useAudioPlayerContext } from '@/contexts/AudioPlayer'
+import { useAudioPlayerInitializer } from '@/hooks/useAudioPlayer'
 import { cn } from '@/lib/utils'
+import { useAudioPlayerState } from '@/store/audioPlayer'
 
 // import { HorizontalMenu } from "./HorizontalMenu";
 // import { DesktopSideNav } from "./DesktopSideNav";
@@ -12,8 +13,10 @@ type Props = {
 }
 
 export default function AppShell({ children }: Props) {
-  const [audioRef] = useAudioPlayerContext()
-  const hasActiveAudio = Boolean(audioRef?.src)
+  useAudioPlayerInitializer()
+
+  const { audioSrc } = useAudioPlayerState()
+  const hasActiveAudio = Boolean(audioSrc)
 
   return (
     <div className='flex relative min-h-dvh bg-background'>
@@ -26,9 +29,7 @@ export default function AppShell({ children }: Props) {
         )}>
         {/* <HorizontalMenu /> */}
         <main
-          className={
-            'z-10 flex-1 px-4 mx-auto sm:px-6 md:px-8 lg:px-10 bg-background'
-          }
+          className={'z-10 flex-1 px-4 sm:px-6 md:px-8 lg:px-10 bg-background'}
           style={{
             // lol, the other half of this is at AudioPlayer.tsx
             paddingBottom: hasActiveAudio

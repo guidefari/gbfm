@@ -1,9 +1,9 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useMemo } from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
-import { useAudioPlayerContext } from '@/contexts/AudioPlayer'
 import { useAudioByType } from '@/lib/http'
 import { useUIStore } from '@/store'
+import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
 
 export const Route = createFileRoute('/mixes')({
   component: Component
@@ -12,7 +12,8 @@ export const Route = createFileRoute('/mixes')({
 function Component() {
   const { data } = useAudioByType('mix')
   const { mixesSorting } = useUIStore()
-  const [, handlers, isPlaying, , , nowPlayingContext] = useAudioPlayerContext()
+  const { isPlaying, nowPlayingContext } = useAudioPlayerState()
+  const { loadTrack } = useAudioPlayerActions()
 
   const sortedData = useMemo(() => {
     if (!data) return []
@@ -37,23 +38,17 @@ function Component() {
   }, [data, mixesSorting.sortBy, mixesSorting.sortOrder])
 
   return (
-    <div className='grid gap-2 p-2 min-h-screen font-jetbrains bg-background text-foreground'>
+    <div className='grid gap-2 p-2 max-w-lg min-h-screen font-jetbrains bg-background text-foreground'>
       {sortedData?.map((mix) => {
         const isActive = nowPlayingContext?.title === mix.title
         return (
           <article
             key={mix.id}
-            className={`flex gap-3 items-center p-2  transition-colors ${isActive ? 'ring-2 ring-highlight' : ''}`}>
+            className={`flex gap-3 items-start p-2 transition-colors ${isActive ? 'ring-2 ring-highlight' : ''}`}>
             <button
               type='button'
               className='relative group focus:outline-none'
-              onClick={() =>
-                handlers.handleAlbumArtClick(
-                  mix.url,
-                  mix.thumbnailUrl,
-                  mix.title
-                )
-              }>
+              onClick={() => loadTrack(mix.url, mix.thumbnailUrl, mix.title)}>
               <img
                 src={mix.thumbnailUrl}
                 alt={mix.title}
