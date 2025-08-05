@@ -1,8 +1,9 @@
 'use client'
 import { Link, useRouter } from '@tanstack/react-router'
-import React, { useRef } from 'react'
+import React, { useRef, useEffect } from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
 import { HiHome } from 'react-icons/hi'
+import { HiSpeakerWave, HiSpeakerXMark } from 'react-icons/hi2'
 import {
   Tooltip,
   TooltipContent,
@@ -11,25 +12,36 @@ import {
 } from '@/components/ui/tooltip'
 import { useScrollStatus } from '@/lib/useScrollStatus'
 import { formatSeconds } from '@/lib/utils'
+import { attachVolumeScroll } from '@/lib/volumeScrollHandler'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
 
 const AudioPlayer = () => {
   const {
-    audioRef,
     audioSrc,
     isPlaying,
     thumbnailUrl,
     progress,
     nowPlayingContext,
     currentTime,
-    duration
+    duration,
+    volume,
+    isMuted
   } = useAudioPlayerState()
 
-  const { play, pause, jumpForward, jumpBackward, setTimeUsingPercentage } =
-    useAudioPlayerActions()
+  const {
+    play,
+    pause,
+    jumpForward,
+    jumpBackward,
+    setTimeUsingPercentage,
+    setVolume,
+    toggleMute
+  } = useAudioPlayerActions()
 
   const router = useRouter()
   const navRef = useRef<HTMLElement>(null)
+  const volumeSliderRef = useRef<HTMLInputElement>(null)
+  const volumeButtonRef = useRef<HTMLButtonElement>(null)
   const isScrolling = useScrollStatus(1000)
 
   const navStyles = isScrolling ? 'opacity-95' : 'opacity-100'
@@ -49,9 +61,43 @@ const AudioPlayer = () => {
     }
   }, [])
 
+  // Volume scroll handling
+  useEffect(() => {
+    const elements = [volumeSliderRef.current, volumeButtonRef.current].filter(
+      Boolean
+    ) as HTMLElement[]
+    const cleanupFunctions = elements.map((element) =>
+      attachVolumeScroll(element, {
+        onVolumeChange: setVolume,
+        getCurrentVolume: () => volume,
+        getIsMuted: () => isMuted,
+        volumeStep: 6
+      })
+    )
+
+    return () => {
+      cleanupFunctions.forEach((cleanup) => cleanup())
+    }
+  }, [volume, isMuted, setVolume])
+
   const changeRange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value } = e.target
     setTimeUsingPercentage(Number(value))
+  }
+
+  const changeVolume = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value } = e.target
+    setVolume(Number(value))
+  }
+
+  const getVolumeIcon = () => {
+    if (isMuted || volume === 0) {
+      return <HiSpeakerXMark className='floating-nav-icon' />
+    } else if (volume < 50) {
+      return <HiSpeakerWave className='floating-nav-icon' />
+    } else {
+      return <HiSpeakerWave className='floating-nav-icon' />
+    }
   }
 
   if (!audioSrc) return <></>
@@ -114,15 +160,42 @@ const AudioPlayer = () => {
           </Tooltip>
         </TooltipProvider>
       </div>
-      <div className='flex items-center mx-auto space-x-1 max-w-xl rounded-full'>
-        <p className='text-xs'>{formatSeconds(currentTime)}</p>
+      <div className='flex items-center mx-auto space-x-2 max-w-xl rounded-full'>
+        <p className='text-xs min-w-[2.5rem] text-right'>
+          {formatSeconds(currentTime)}
+        </p>
         <input
           type='range'
           value={progress}
-          className='w-full h-2 rounded-full bg-gb-tomato align-start hover:cursor-pointer'
+          className='flex-1 h-2 rounded-full bg-gb-tomato align-start hover:cursor-pointer'
           onInput={changeRange}
         />
-        <p className='text-xs'>-{formatSeconds(duration - currentTime)}</p>
+        <p className='text-xs min-w-[3rem]'>
+          -{formatSeconds(duration - currentTime)}
+        </p>
+
+        {/* Volume Controls */}
+        <button
+          ref={volumeButtonRef}
+          onClick={toggleMute}
+          className='p-1 floating-nav-button'
+          title={
+            isMuted
+              ? 'Unmute (or scroll to adjust)'
+              : 'Mute (or scroll to adjust)'
+          }>
+          {getVolumeIcon()}
+        </button>
+        <input
+          ref={volumeSliderRef}
+          type='range'
+          min='0'
+          max='100'
+          value={isMuted ? 0 : volume}
+          onChange={changeVolume}
+          className='w-16 h-2 rounded-full bg-gb-tomato align-start hover:cursor-pointer'
+          title={`Volume: ${volume}% (scroll to adjust)`}
+        />
       </div>
     </nav>
   )

@@ -16,6 +16,10 @@ interface AudioPlayerState {
   currentTime: number
   duration: number
 
+  // Volume state (persisted)
+  volume: number // 0-100
+  isMuted: boolean
+
   // Track info (persisted)
   audioSrc: string | null
   thumbnailUrl: string
@@ -36,6 +40,10 @@ interface AudioPlayerActions {
   jumpForward: (seconds?: number) => void
   jumpBackward: (seconds?: number) => void
   setTimeUsingPercentage: (percentage: number) => void
+
+  // Volume controls
+  setVolume: (volume: number) => void
+  toggleMute: () => void
 
   // Track management
   loadTrack: (src: string, thumbnailUrl: string, title: string) => void
@@ -66,6 +74,8 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
         progress: 0,
         currentTime: 0,
         duration: 0,
+        volume: 100, // Default to 100%
+        isMuted: false,
         audioSrc: null,
         thumbnailUrl: '',
         nowPlayingContext: defaultNowPlayingContext,
@@ -172,6 +182,42 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
           )
         },
 
+        setVolume: (volume) => {
+          const { audioRef } = get()
+          if (!audioRef) return
+
+          // Clamp volume between 0 and 100
+          const clampedVolume = Math.max(0, Math.min(100, volume))
+
+          // Set HTML audio volume (0-1 range)
+          audioRef.volume = clampedVolume / 100
+
+          // Update state
+          set(
+            {
+              volume: clampedVolume,
+              isMuted: clampedVolume === 0
+            },
+            false,
+            'audioPlayer/setVolume'
+          )
+        },
+
+        toggleMute: () => {
+          const { audioRef, isMuted, volume } = get()
+          if (!audioRef) return
+
+          if (isMuted) {
+            // Unmute: restore previous volume
+            audioRef.volume = volume / 100
+            set({ isMuted: false }, false, 'audioPlayer/unmute')
+          } else {
+            // Mute: set volume to 0 but keep volume state
+            audioRef.volume = 0
+            set({ isMuted: true }, false, 'audioPlayer/mute')
+          }
+        },
+
         loadTrack: (src, thumbnailUrl, title) => {
           const { audioRef, isPlaying, audioSrc } = get()
           if (!audioRef) return
@@ -245,8 +291,11 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
         },
 
         initialize: () => {
-          const { audioRef, audioSrc, currentTime } = get()
+          const { audioRef, audioSrc, currentTime, volume, isMuted } = get()
           if (!audioRef) return
+
+          // Restore persisted volume
+          audioRef.volume = isMuted ? 0 : volume / 100
 
           // Restore persisted audio source and position
           if (audioSrc) {
@@ -272,6 +321,8 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
           // Only persist these values
           isPlaying: false, // Always start paused on reload
           currentTime: state.currentTime,
+          volume: state.volume,
+          isMuted: state.isMuted,
           audioSrc: state.audioSrc,
           thumbnailUrl: state.thumbnailUrl,
           nowPlayingContext: state.nowPlayingContext
@@ -295,7 +346,9 @@ export const useAudioPlayerActions = () => {
     jumpForward: store.jumpForward,
     jumpBackward: store.jumpBackward,
     loadTrack: store.loadTrack,
-    setTimeUsingPercentage: store.setTimeUsingPercentage
+    setTimeUsingPercentage: store.setTimeUsingPercentage,
+    setVolume: store.setVolume,
+    toggleMute: store.toggleMute
   }
 }
 
@@ -307,6 +360,8 @@ export const useAudioPlayerState = () => {
     progress: store.progress,
     currentTime: store.currentTime,
     duration: store.duration,
+    volume: store.volume,
+    isMuted: store.isMuted,
     audioSrc: store.audioSrc,
     thumbnailUrl: store.thumbnailUrl,
     nowPlayingContext: store.nowPlayingContext,
