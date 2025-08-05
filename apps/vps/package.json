@@ -5,6 +5,7 @@
   },
   "scripts": {
     "dev": "bun run --hot src/index.ts",
+    "start": "bun run src/index.ts",
     "typecheck": "tsc --noEmit",
     "db:studio": "drizzle-kit studio",
     "db:yeet": "drizzle-kit push",

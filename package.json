@@ -38,5 +38,16 @@
   "overrides": {
     "react": "19.1.0",
     "react-dom": "19.1.0"
-  }
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "trustedDependencies": [
+    "@biomejs/biome",
+    "aws-sdk",
+    "esbuild",
+    "ffmpeg-static",
+    "sharp"
+  ]
 }
