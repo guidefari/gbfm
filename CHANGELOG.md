@@ -1,3 +1,10 @@
+# [0.20.0](https://github.com/guidefari/gbfm/compare/v0.19.1...v0.20.0) (2025-08-05)
+
+
+### Features
+
+* volume controls ([da32fc0](https://github.com/guidefari/gbfm/commit/da32fc08f5021290f7ab805b89b61f217abf8114))
+
 ## [0.19.1](https://github.com/guidefari/gbfm/compare/v0.19.0...v0.19.1) (2025-08-05)
 
 
