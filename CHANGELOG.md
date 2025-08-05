@@ -1,3 +1,10 @@
+## [0.19.1](https://github.com/guidefari/gbfm/compare/v0.19.0...v0.19.1) (2025-08-05)
+
+
+### Bug Fixes
+
+* docker entrypoint ([56d3f2b](https://github.com/guidefari/gbfm/commit/56d3f2ba12c9fe39dd07af1183f1eeaf3e52f2dd))
+
 # [0.19.0](https://github.com/guidefari/gbfm/compare/v0.18.0...v0.19.0) (2025-08-05)
 
 
