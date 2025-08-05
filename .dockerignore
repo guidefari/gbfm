@@ -3,11 +3,6 @@ node_modules
 .git
 .env
 *.log
-apps/www
-apps/mobile
-apps/functions
-packages/curl
-packages/email
 packages/scripts
 infra
 docs
