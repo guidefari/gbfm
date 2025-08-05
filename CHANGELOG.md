@@ -1,3 +1,10 @@
+# [0.18.0](https://github.com/guidefari/gbfm/compare/v0.17.0...v0.18.0) (2025-08-05)
+
+
+### Features
+
+* audio player improvements ([5577abe](https://github.com/guidefari/gbfm/commit/5577abed16e359f3ebe5e23e50b49cfb731dff8e))
+
 # [0.17.0](https://github.com/guidefari/gbfm/compare/v0.16.0...v0.17.0) (2025-08-03)
 
 
