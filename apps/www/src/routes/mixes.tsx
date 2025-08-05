@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useMemo } from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
+import { MixesSkeleton } from '@/components/MixesSkeleton'
 import { useAudioByType } from '@/lib/http'
 import { useUIStore } from '@/store'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
@@ -10,7 +11,7 @@ export const Route = createFileRoute('/mixes')({
 })
 
 function Component() {
-  const { data } = useAudioByType('mix')
+  const { data, isPending } = useAudioByType('mix')
   const { mixesSorting } = useUIStore()
   const { isPlaying, nowPlayingContext } = useAudioPlayerState()
   const { loadTrack } = useAudioPlayerActions()
@@ -36,6 +37,10 @@ function Component() {
 
     return sorted
   }, [data, mixesSorting.sortBy, mixesSorting.sortOrder])
+
+  if (isPending) {
+    return <MixesSkeleton />
+  }
 
   return (
     <div className='grid gap-2 p-2 max-w-lg min-h-screen font-jetbrains bg-background text-foreground'>

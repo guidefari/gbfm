@@ -5,3 +5,4 @@
 *db-data
 *.env
 *.DS_Store
+biome-errors.todo
