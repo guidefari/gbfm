@@ -23,16 +23,19 @@ COPY apps/vps ./apps/vps
 FROM base AS release
 WORKDIR /usr/src
 
-# Copy only production dependencies
+# Copy the entire workspace structure with node_modules
 COPY --from=deps /usr/src/app/node_modules ./node_modules
+COPY --from=deps /usr/src/app/package.json ./package.json
+COPY --from=deps /usr/src/app/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=deps /usr/src/app/pnpm-workspace.yaml ./pnpm-workspace.yaml
+COPY --from=deps /usr/src/app/tsconfig.json ./tsconfig.json
 
-# Copy only the required source code and config files
+# Copy the packages and apps
 COPY packages/core ./packages/core
 COPY apps/vps ./apps/vps
-COPY package.json pnpm-lock.yaml tsconfig.json ./
 
 USER bun
 EXPOSE 3003
-# Change working directory to apps/vps and run from there
-WORKDIR /usr/src/apps/vps
-ENTRYPOINT [ "bun", "run", "src/index.ts" ]
+# Run from workspace root using bun to execute the VPS app directly
+WORKDIR /usr/src
+ENTRYPOINT [ "bun", "apps/vps/src/index.ts" ]
