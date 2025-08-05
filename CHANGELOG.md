@@ -1,3 +1,10 @@
+## [0.20.1](https://github.com/guidefari/gbfm/compare/v0.20.0...v0.20.1) (2025-08-05)
+
+
+### Bug Fixes
+
+* deploy script ([4e11b32](https://github.com/guidefari/gbfm/commit/4e11b32d7108aabb898a8c95207336e5aaa9f7a3))
+
 # [0.20.0](https://github.com/guidefari/gbfm/compare/v0.19.1...v0.20.0) (2025-08-05)
 
 
