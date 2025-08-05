@@ -33,4 +33,6 @@ COPY package.json pnpm-lock.yaml tsconfig.json ./
 
 USER bun
 EXPOSE 3003
-ENTRYPOINT [ "bun", "run", "apps/vps/src/index.ts" ]
+# Change working directory to apps/vps and run from there
+WORKDIR /usr/src/apps/vps
+ENTRYPOINT [ "bun", "run", "src/index.ts" ]

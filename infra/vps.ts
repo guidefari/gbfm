@@ -53,7 +53,7 @@ export const service = new sst.aws.Service('gbfm_vps', {
 export const vps_gateway = new sst.aws.ApiGatewayV2('gbfm_vps_gateway', {
   vpc,
   domain: {
-    name: `api.${domain}`,
+    name: `vps.${domain}`,
     dns: sst.cloudflare.dns()
   }
 })
