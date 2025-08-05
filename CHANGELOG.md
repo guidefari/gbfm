@@ -1,3 +1,15 @@
+# [0.19.0](https://github.com/guidefari/gbfm/compare/v0.18.0...v0.19.0) (2025-08-05)
+
+
+### Bug Fixes
+
+* dockerfile ([2a06d02](https://github.com/guidefari/gbfm/commit/2a06d02842177c9bd6146b1ca4f9f6ce2ff91732))
+
+
+### Features
+
+* loading skeleton ([b7c548f](https://github.com/guidefari/gbfm/commit/b7c548fa78e61faceba4718e2d723e7d24aaa964))
+
 # [0.18.0](https://github.com/guidefari/gbfm/compare/v0.17.0...v0.18.0) (2025-08-05)
 
 
