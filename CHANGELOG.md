@@ -1,3 +1,10 @@
+# [0.21.0](https://github.com/guidefari/gbfm/compare/v0.20.2...v0.21.0) (2025-08-06)
+
+
+### Features
+
+* upload audio ([8066e35](https://github.com/guidefari/gbfm/commit/8066e35f9f8db0d37debf78e17081b58ab399883))
+
 ## [0.20.2](https://github.com/guidefari/gbfm/compare/v0.20.1...v0.20.2) (2025-08-05)
 
 
