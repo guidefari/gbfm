@@ -1,23 +1,23 @@
-import { email } from "./email";
-import { database } from "./vps";
+import { email } from './email'
+import { database } from './vps'
 
-new sst.x.DevCommand("Drizzle_Studio", {
-	link: [database, email],
-	dev: {
-		command: "npx drizzle-kit studio",
-		directory: "./apps/vps",
-		autostart: false,
-	},
-});
+new sst.x.DevCommand('Drizzle_Studio', {
+  link: [database, email],
+  dev: {
+    command: 'npx drizzle-kit studio',
+    directory: './apps/vps',
+    autostart: false
+  }
+})
 
-new sst.x.DevCommand("Drizzle_Generate", {
-	link: [database, email],
-	dev: {
-		command: "npx drizzle-kit generate",
-		directory: "./apps/vps",
-		autostart: false,
-	},
-});
+new sst.x.DevCommand('Drizzle_Generate', {
+  link: [database, email],
+  dev: {
+    command: 'npx drizzle-kit generate',
+    directory: './apps/vps',
+    autostart: false
+  }
+})
 // new sst.x.DevCommand("Drizzle_Migrate", {
 // 	link: [database, email],
 // 	dev: {
@@ -34,14 +34,14 @@ new sst.x.DevCommand("Drizzle_Generate", {
 // 		autostart: false,
 // 	},
 // });
-new sst.x.DevCommand("Drizzle_Push", {
-	link: [database, email],
-	dev: {
-		command: "npx drizzle-kit push",
-		directory: "./apps/vps",
-		autostart: false,
-	},
-});
+new sst.x.DevCommand('Drizzle_Push', {
+  link: [database, email],
+  dev: {
+    command: 'npx drizzle-kit push',
+    directory: './apps/vps',
+    autostart: false
+  }
+})
 // new sst.x.DevCommand("rename_to_cdn", {
 // 	link: [database, email],
 // 	dev: {
@@ -51,3 +51,19 @@ new sst.x.DevCommand("Drizzle_Push", {
 // 	},
 // });
 
+new sst.x.DevCommand('Build_Container', {
+  link: [database, email],
+  dev: {
+    command: 'docker build -f apps/vps/Dockerfile -t gbfm_vps .',
+    directory: './',
+    autostart: false
+  }
+})
+new sst.x.DevCommand('Test_Docker', {
+  link: [database, email],
+  dev: {
+    command: 'docker run --rm -p 3003:3003 gbfm_vps',
+    directory: './',
+    autostart: false
+  }
+})

@@ -9,6 +9,7 @@ import {
   Home,
   LockKeyhole,
   LogOut,
+  Music,
   User
 } from 'lucide-react'
 import * as React from 'react'
@@ -61,6 +62,11 @@ export function CommandDialogDemo() {
 
   const routeToHome = React.useCallback(() => {
     router({ to: '/' })
+    closeCommando()
+  }, [router, closeCommando])
+
+  const routeToTracks = React.useCallback(() => {
+    router({ to: '/tracks' })
     closeCommando()
   }, [router, closeCommando])
 
@@ -124,6 +130,10 @@ export function CommandDialogDemo() {
             <Headphones />
             <span>Mixes</span>
             <CommandShortcut>0</CommandShortcut>
+          </CommandItem>
+          <CommandItem onSelect={routeToTracks}>
+            <Music />
+            <span>All Tracks</span>
           </CommandItem>
           {!isAuthenticated && (
             <CommandItem onSelect={routeToLogin}>

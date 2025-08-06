@@ -9,6 +9,7 @@ const router = createRouter()
   .openapi(routes.getAudioByType, handlers.getAudioByType)
   .openapi(routes.getAudioBySlug, handlers.getAudioBySlug)
   .openapi(routes.createMix, handlers.createMix)
+  .openapi(routes.createAudio, handlers.createAudio)
   .openapi(routes.processMixUpload, handlers.processUpload)
 
 export default router
