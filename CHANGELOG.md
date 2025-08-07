@@ -1,3 +1,11 @@
+# [0.22.0](https://github.com/guidefari/gbfm/compare/v0.21.0...v0.22.0) (2025-08-07)
+
+
+### Features
+
+* queue ([314b2e6](https://github.com/guidefari/gbfm/commit/314b2e6db9ba4bf7e70d3cd58fa2d5951ba352ec))
+* refreshed audio player ([38acf73](https://github.com/guidefari/gbfm/commit/38acf7319a85bea45946ccf3f5622c081dc4eb85))
+
 # [0.21.0](https://github.com/guidefari/gbfm/compare/v0.20.2...v0.21.0) (2025-08-06)
 
 
