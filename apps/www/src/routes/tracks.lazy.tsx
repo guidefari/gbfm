@@ -1,15 +1,7 @@
 import { createLazyFileRoute, Link } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
-import {
-  Clock,
-  Calendar,
-  Music,
-  Mic,
-  FileMusic,
-  Filter,
-  Search
-} from 'lucide-react'
+import { Calendar, Music, Mic, FileMusic, Filter, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -22,6 +14,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { MixesSkeleton } from '@/components/MixesSkeleton'
+import { TrackContextMenu } from '@/components/TrackContextMenu'
 import { useAudioByType } from '@/lib/http'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
 
@@ -148,7 +141,7 @@ function TracksPage() {
         <div className='flex flex-col gap-4 sm:flex-row sm:items-center'>
           <div className='flex-1'>
             <div className='relative'>
-              <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gb-default-text/60' />
+              <Search className='absolute left-3 top-1/2 w-4 h-4 transform -translate-y-1/2 text-gb-default-text/60' />
               <Input
                 placeholder='Search tracks, descriptions, tags...'
                 value={searchQuery}
@@ -163,7 +156,7 @@ function TracksPage() {
               value={filterType}
               onValueChange={(value: AudioType) => setFilterType(value)}>
               <SelectTrigger className='w-32 bg-gb-darker-bg border-gb-pastel-green-2/30 text-gb-default-text'>
-                <Filter className='w-4 h-4 mr-2' />
+                <Filter className='mr-2 w-4 h-4' />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
@@ -208,105 +201,105 @@ function TracksPage() {
         {filteredAndSortedData.map((item) => {
           const isActive = nowPlayingContext?.title === item.title
           return (
-            <Card
-              key={item.id}
-              className='bg-gb-darker-bg border-gb-pastel-green-2/20 hover:border-gb-highlight/50 transition-colors'>
-              <CardContent className='p-4'>
-                <div className='flex gap-3'>
-                  <div className='relative flex-shrink-0'>
-                    <button
-                      type='button'
-                      className='relative group focus:outline-none'
-                      onClick={() =>
-                        loadTrack(item.url, item.thumbnailUrl, item.title)
-                      }>
-                      <img
-                        src={item.thumbnailUrl || '/placeholder.svg'}
-                        alt={item.title}
-                        className='w-16 h-16 rounded border object-cover bg-gb-bg border-gb-pastel-green-2/20'
-                      />
-                      <div
-                        className={`absolute inset-0 flex items-center justify-center rounded transition-opacity bg-black/50 ${
-                          isActive
-                            ? 'opacity-100'
-                            : 'opacity-0 group-hover:opacity-100 group-focus:opacity-100'
-                        }`}>
-                        {isActive && isPlaying ? (
-                          <GiPauseButton className='text-2xl text-gb-highlight' />
-                        ) : (
-                          <GiPlayButton className='text-2xl text-gb-highlight' />
-                        )}
-                      </div>
-                    </button>
-                    {isActive && (
-                      <div className='absolute -inset-1 rounded bg-gb-highlight/20 -z-10'></div>
-                    )}
-                  </div>
-
-                  <div className='flex-1 min-w-0'>
-                    <div className='flex items-start justify-between mb-2'>
-                      <Link
-                        to='/read/$archetype/$id'
-                        params={{ archetype: item.type, id: item.slug }}
-                        className='font-bold text-gb-highlight hover:underline line-clamp-2'>
-                        {item.title}
-                      </Link>
+            <TrackContextMenu key={item.id} track={item}>
+              <Card className='transition-colors cursor-pointer bg-gb-darker-bg border-gb-pastel-green-2/20 hover:border-gb-highlight/50'>
+                <CardContent className='p-4'>
+                  <div className='flex gap-3'>
+                    <div className='relative flex-shrink-0'>
+                      <button
+                        type='button'
+                        className='relative group focus:outline-none'
+                        onClick={() =>
+                          loadTrack(item.url, item.thumbnailUrl, item.title)
+                        }>
+                        <img
+                          src={item.thumbnailUrl || '/placeholder.svg'}
+                          alt={item.title}
+                          className='object-cover w-16 h-16 rounded border bg-gb-bg border-gb-pastel-green-2/20'
+                        />
+                        <div
+                          className={`absolute inset-0 flex items-center justify-center rounded transition-opacity bg-black/50 ${
+                            isActive
+                              ? 'opacity-100'
+                              : 'opacity-0 group-hover:opacity-100 group-focus:opacity-100'
+                          }`}>
+                          {isActive && isPlaying ? (
+                            <GiPauseButton className='text-2xl text-gb-highlight' />
+                          ) : (
+                            <GiPlayButton className='text-2xl text-gb-highlight' />
+                          )}
+                        </div>
+                      </button>
+                      {isActive && (
+                        <div className='absolute -inset-1 rounded bg-gb-highlight/20 -z-10'></div>
+                      )}
                     </div>
 
-                    <div className='flex items-center gap-2 mb-2 text-xs text-gb-default-text/70'>
-                      <Badge
-                        variant='secondary'
-                        className='bg-gb-pastel-green-2/20 text-gb-pastel-green-1 border-0'>
-                        <span className='mr-1'>{getTypeIcon(item.type)}</span>
-                        {getTypeLabel(item.type)}
-                      </Badge>
-                      <span className='flex items-center gap-1'>
-                        <Calendar className='w-3 h-3' />
-                        {formatDate(item.createdAt)}
-                      </span>
-                    </div>
-
-                    {item.description && (
-                      <p className='text-sm text-gb-default-text/80 line-clamp-2 mb-2'>
-                        {item.description}
-                      </p>
-                    )}
-
-                    {item.tags && item.tags.length > 0 && (
-                      <div className='flex flex-wrap gap-1'>
-                        {item.tags.slice(0, 3).map((tag) => (
-                          <Badge
-                            key={tag}
-                            variant='outline'
-                            className='text-xs bg-transparent border-gb-pastel-green-2/30 text-gb-default-text/70'>
-                            {tag}
-                          </Badge>
-                        ))}
-                        {item.tags.length > 3 && (
-                          <Badge
-                            variant='outline'
-                            className='text-xs bg-transparent border-gb-pastel-green-2/30 text-gb-default-text/70'>
-                            +{item.tags.length - 3}
-                          </Badge>
-                        )}
+                    <div className='flex-1 min-w-0'>
+                      <div className='flex justify-between items-start mb-2'>
+                        <Link
+                          to='/read/$archetype/$id'
+                          params={{ archetype: item.type, id: item.slug }}
+                          className='font-bold text-gb-highlight hover:underline line-clamp-2'>
+                          {item.title}
+                        </Link>
                       </div>
-                    )}
+
+                      <div className='flex gap-2 items-center mb-2 text-xs text-gb-default-text/70'>
+                        <Badge
+                          variant='secondary'
+                          className='border-0 bg-gb-pastel-green-2/20 text-gb-pastel-green-1'>
+                          <span className='mr-1'>{getTypeIcon(item.type)}</span>
+                          {getTypeLabel(item.type)}
+                        </Badge>
+                        <span className='flex gap-1 items-center'>
+                          <Calendar className='w-3 h-3' />
+                          {formatDate(item.createdAt.toISOString())}
+                        </span>
+                      </div>
+
+                      {item.description && (
+                        <p className='mb-2 text-sm text-gb-default-text/80 line-clamp-2'>
+                          {item.description}
+                        </p>
+                      )}
+
+                      {item.tags && item.tags.length > 0 && (
+                        <div className='flex flex-wrap gap-1'>
+                          {item.tags.slice(0, 3).map((tag) => (
+                            <Badge
+                              key={tag}
+                              variant='outline'
+                              className='text-xs bg-transparent border-gb-pastel-green-2/30 text-gb-default-text/70'>
+                              {tag}
+                            </Badge>
+                          ))}
+                          {item.tags.length > 3 && (
+                            <Badge
+                              variant='outline'
+                              className='text-xs bg-transparent border-gb-pastel-green-2/30 text-gb-default-text/70'>
+                              +{item.tags.length - 3}
+                            </Badge>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </TrackContextMenu>
           )
         })}
       </div>
 
       {/* Empty state */}
       {filteredAndSortedData.length === 0 && !isPending && (
-        <div className='text-center py-12'>
-          <Music className='w-16 h-16 mx-auto mb-4 text-gb-default-text/40' />
-          <h3 className='text-lg font-semibold text-gb-default-text mb-2'>
+        <div className='py-12 text-center'>
+          <Music className='mx-auto mb-4 w-16 h-16 text-gb-default-text/40' />
+          <h3 className='mb-2 text-lg font-semibold text-gb-default-text'>
             No tracks found
           </h3>
-          <p className='text-gb-default-text/70 mb-4'>
+          <p className='mb-4 text-gb-default-text/70'>
             {searchQuery || filterType !== 'all'
               ? 'Try adjusting your search or filters'
               : 'No audio content has been uploaded yet'}

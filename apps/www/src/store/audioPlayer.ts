@@ -1,9 +1,19 @@
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
+import type { SelectMix } from '@gbfm/vps/src/db/mix.schema'
 
 interface NowPlayingContext {
   url: string
   title: string
+}
+
+interface QueueItem {
+  queueId: string // Unique queue entry ID
+  id: string // Original track ID
+  title: string
+  url: string
+  thumbnailUrl: string
+  addedAt: number
 }
 
 interface AudioPlayerState {
@@ -24,6 +34,15 @@ interface AudioPlayerState {
   audioSrc: string | null
   thumbnailUrl: string
   nowPlayingContext: NowPlayingContext
+
+  // Queue state (persisted)
+  queue: QueueItem[]
+  currentIndex: number
+  isQueueVisible: boolean
+  repeatMode: 'none' | 'one' | 'all'
+  isShuffled: boolean
+  shuffledQueue: QueueItem[] // Shuffled version of queue
+  shuffledIndex: number // Current index in shuffled queue
 
   // State management
   isInitialized: boolean
@@ -47,6 +66,18 @@ interface AudioPlayerActions {
 
   // Track management
   loadTrack: (src: string, thumbnailUrl: string, title: string) => void
+
+  // Queue management
+  addToQueue: (mix: SelectMix) => void
+  removeFromQueue: (itemId: string) => void
+  clearQueue: () => void
+  reorderQueue: (fromIndex: number, toIndex: number) => void
+  playFromQueue: (index: number) => void
+  playNext: () => void
+  playPrevious: () => void
+  toggleQueue: () => void
+  toggleRepeat: () => void
+  toggleShuffle: () => void
 
   // State updates (called by audio events)
   updateProgress: () => void
@@ -79,6 +110,16 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
         audioSrc: null,
         thumbnailUrl: '',
         nowPlayingContext: defaultNowPlayingContext,
+
+        // Queue state
+        queue: [],
+        currentIndex: -1,
+        isQueueVisible: false,
+        repeatMode: 'none',
+        isShuffled: false,
+        shuffledQueue: [],
+        shuffledIndex: -1,
+
         isInitialized: false,
 
         // Actions
@@ -88,7 +129,22 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
           if (ref) {
             // Set up event listeners
             ref.onended = () => {
-              get().pause()
+              const { queue, currentIndex, repeatMode } = get()
+
+              if (repeatMode === 'one') {
+                // Replay current track
+                ref.currentTime = 0
+                get().play()
+              } else if (queue.length > 0 && currentIndex < queue.length - 1) {
+                // Play next track in queue
+                get().playNext()
+              } else if (queue.length > 0 && repeatMode === 'all') {
+                // Loop back to first track
+                get().playFromQueue(0)
+              } else {
+                // End of queue, just pause
+                get().pause()
+              }
             }
 
             ref.ontimeupdate = () => {
@@ -313,6 +369,276 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
           }
 
           set({ isInitialized: true }, false, 'audioPlayer/initialize')
+        },
+
+        // Queue management actions
+        addToQueue: (mix) => {
+          const queueItem: QueueItem = {
+            queueId: `queue-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            id: mix.id,
+            title: mix.title,
+            url: mix.url,
+            thumbnailUrl: mix.thumbnailUrl,
+            addedAt: Date.now()
+          }
+
+          set(
+            (state) => ({ queue: [...state.queue, queueItem] }),
+            false,
+            'audioPlayer/addToQueue'
+          )
+        },
+
+        removeFromQueue: (queueId) => {
+          set(
+            (state) => {
+              const newQueue = state.queue.filter(
+                (item) => item.queueId !== queueId
+              )
+              let newCurrentIndex = state.currentIndex
+
+              // Adjust current index if needed
+              const removedIndex = state.queue.findIndex(
+                (item) => item.queueId === queueId
+              )
+              if (removedIndex !== -1 && removedIndex <= state.currentIndex) {
+                newCurrentIndex = Math.max(-1, state.currentIndex - 1)
+              }
+
+              return {
+                queue: newQueue,
+                currentIndex:
+                  newCurrentIndex >= newQueue.length ? -1 : newCurrentIndex
+              }
+            },
+            false,
+            'audioPlayer/removeFromQueue'
+          )
+        },
+
+        clearQueue: () => {
+          set({ queue: [], currentIndex: -1 }, false, 'audioPlayer/clearQueue')
+        },
+
+        reorderQueue: (fromIndex, toIndex) => {
+          set(
+            (state) => {
+              const newQueue = [...state.queue]
+              const [movedItem] = newQueue.splice(fromIndex, 1)
+              newQueue.splice(toIndex, 0, movedItem)
+
+              // Update current index if current track was moved
+              let newCurrentIndex = state.currentIndex
+              if (fromIndex === state.currentIndex) {
+                newCurrentIndex = toIndex
+              } else if (
+                fromIndex < state.currentIndex &&
+                toIndex >= state.currentIndex
+              ) {
+                newCurrentIndex = state.currentIndex - 1
+              } else if (
+                fromIndex > state.currentIndex &&
+                toIndex <= state.currentIndex
+              ) {
+                newCurrentIndex = state.currentIndex + 1
+              }
+
+              return { queue: newQueue, currentIndex: newCurrentIndex }
+            },
+            false,
+            'audioPlayer/reorderQueue'
+          )
+        },
+
+        playFromQueue: (index) => {
+          const { queue } = get()
+          if (index < 0 || index >= queue.length) return
+
+          const item = queue[index]
+          set({ currentIndex: index }, false, 'audioPlayer/setCurrentIndex')
+          get().loadTrack(item.url, item.thumbnailUrl || '', item.title)
+        },
+
+        playNext: () => {
+          const {
+            queue,
+            currentIndex,
+            repeatMode,
+            isShuffled,
+            shuffledQueue,
+            shuffledIndex
+          } = get()
+          if (queue.length === 0) return
+
+          if (isShuffled) {
+            let nextShuffledIndex = shuffledIndex + 1
+
+            if (nextShuffledIndex >= shuffledQueue.length) {
+              if (repeatMode === 'all') {
+                nextShuffledIndex = 0
+              } else {
+                return // End of shuffled queue
+              }
+            }
+
+            const nextTrack = shuffledQueue[nextShuffledIndex]
+            const originalIndex = queue.findIndex(
+              (item) => item.queueId === nextTrack.queueId
+            )
+
+            set(
+              {
+                currentIndex: originalIndex,
+                shuffledIndex: nextShuffledIndex
+              },
+              false,
+              'audioPlayer/playNext'
+            )
+
+            get().loadTrack(
+              nextTrack.url,
+              nextTrack.thumbnailUrl || '',
+              nextTrack.title
+            )
+          } else {
+            let nextIndex = currentIndex + 1
+
+            if (nextIndex >= queue.length) {
+              if (repeatMode === 'all') {
+                nextIndex = 0
+              } else {
+                return // End of queue
+              }
+            }
+
+            get().playFromQueue(nextIndex)
+          }
+        },
+
+        playPrevious: () => {
+          const {
+            queue,
+            currentIndex,
+            isShuffled,
+            shuffledQueue,
+            shuffledIndex
+          } = get()
+          if (queue.length === 0) return
+
+          if (isShuffled) {
+            let prevShuffledIndex = shuffledIndex - 1
+
+            if (prevShuffledIndex < 0) {
+              prevShuffledIndex = shuffledQueue.length - 1
+            }
+
+            const prevTrack = shuffledQueue[prevShuffledIndex]
+            const originalIndex = queue.findIndex(
+              (item) => item.queueId === prevTrack.queueId
+            )
+
+            set(
+              {
+                currentIndex: originalIndex,
+                shuffledIndex: prevShuffledIndex
+              },
+              false,
+              'audioPlayer/playPrevious'
+            )
+
+            get().loadTrack(
+              prevTrack.url,
+              prevTrack.thumbnailUrl || '',
+              prevTrack.title
+            )
+          } else {
+            let prevIndex = currentIndex - 1
+
+            if (prevIndex < 0) {
+              prevIndex = queue.length - 1
+            }
+
+            get().playFromQueue(prevIndex)
+          }
+        },
+
+        toggleQueue: () => {
+          set(
+            (state) => ({ isQueueVisible: !state.isQueueVisible }),
+            false,
+            'audioPlayer/toggleQueue'
+          )
+        },
+
+        toggleRepeat: () => {
+          set(
+            (state) => {
+              const modes: Array<'none' | 'one' | 'all'> = [
+                'none',
+                'one',
+                'all'
+              ]
+              const currentIndex = modes.indexOf(state.repeatMode)
+              const nextMode = modes[(currentIndex + 1) % modes.length]
+              return { repeatMode: nextMode }
+            },
+            false,
+            'audioPlayer/toggleRepeat'
+          )
+        },
+
+        toggleShuffle: () => {
+          set(
+            (state) => {
+              const newIsShuffled = !state.isShuffled
+
+              if (newIsShuffled) {
+                // Create shuffled version of queue
+                const shuffled = [...state.queue].sort(
+                  () => Math.random() - 0.5
+                )
+                const currentTrack =
+                  state.currentIndex >= 0
+                    ? state.queue[state.currentIndex]
+                    : null
+
+                // Find current track in shuffled queue
+                let newShuffledIndex = -1
+                if (currentTrack) {
+                  newShuffledIndex = shuffled.findIndex(
+                    (item) => item.queueId === currentTrack.queueId
+                  )
+                }
+
+                return {
+                  isShuffled: true,
+                  shuffledQueue: shuffled,
+                  shuffledIndex: newShuffledIndex
+                }
+              } else {
+                // Turn off shuffle, find current track in original queue
+                const currentTrack =
+                  state.shuffledIndex >= 0
+                    ? state.shuffledQueue[state.shuffledIndex]
+                    : null
+                let newCurrentIndex = -1
+                if (currentTrack) {
+                  newCurrentIndex = state.queue.findIndex(
+                    (item) => item.queueId === currentTrack.queueId
+                  )
+                }
+
+                return {
+                  isShuffled: false,
+                  shuffledQueue: [],
+                  shuffledIndex: -1,
+                  currentIndex: newCurrentIndex
+                }
+              }
+            },
+            false,
+            'audioPlayer/toggleShuffle'
+          )
         }
       }),
       {
@@ -325,7 +651,15 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
           isMuted: state.isMuted,
           audioSrc: state.audioSrc,
           thumbnailUrl: state.thumbnailUrl,
-          nowPlayingContext: state.nowPlayingContext
+          nowPlayingContext: state.nowPlayingContext,
+          // Queue state
+          queue: state.queue,
+          currentIndex: state.currentIndex,
+          isQueueVisible: state.isQueueVisible,
+          repeatMode: state.repeatMode,
+          isShuffled: state.isShuffled,
+          shuffledQueue: state.shuffledQueue,
+          shuffledIndex: state.shuffledIndex
           // Don't persist audioRef, progress, duration, isInitialized
         })
       }
@@ -348,7 +682,18 @@ export const useAudioPlayerActions = () => {
     loadTrack: store.loadTrack,
     setTimeUsingPercentage: store.setTimeUsingPercentage,
     setVolume: store.setVolume,
-    toggleMute: store.toggleMute
+    toggleMute: store.toggleMute,
+    // Queue actions
+    addToQueue: store.addToQueue,
+    removeFromQueue: store.removeFromQueue,
+    clearQueue: store.clearQueue,
+    reorderQueue: store.reorderQueue,
+    playFromQueue: store.playFromQueue,
+    playNext: store.playNext,
+    playPrevious: store.playPrevious,
+    toggleQueue: store.toggleQueue,
+    toggleRepeat: store.toggleRepeat,
+    toggleShuffle: store.toggleShuffle
   }
 }
 
@@ -365,6 +710,12 @@ export const useAudioPlayerState = () => {
     audioSrc: store.audioSrc,
     thumbnailUrl: store.thumbnailUrl,
     nowPlayingContext: store.nowPlayingContext,
-    audioRef: store.audioRef
+    audioRef: store.audioRef,
+    // Queue state
+    queue: store.queue,
+    currentIndex: store.currentIndex,
+    isQueueVisible: store.isQueueVisible,
+    repeatMode: store.repeatMode,
+    isShuffled: store.isShuffled
   }
 }
