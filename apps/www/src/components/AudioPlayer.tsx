@@ -1,16 +1,26 @@
 'use client'
 import { Link, useRouter } from '@tanstack/react-router'
 import React, { useRef, useEffect } from 'react'
-import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
-import { HiHome } from 'react-icons/hi'
-import { HiSpeakerWave, HiSpeakerXMark } from 'react-icons/hi2'
+import {
+  Play,
+  Pause,
+  SkipBack,
+  SkipForward,
+  Volume2,
+  VolumeX,
+  Shuffle,
+  Repeat,
+  Repeat1,
+  List,
+  Heart
+} from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger
 } from '@/components/ui/tooltip'
-import { useScrollStatus } from '@/lib/useScrollStatus'
 import { formatSeconds } from '@/lib/utils'
 import { attachVolumeScroll } from '@/lib/volumeScrollHandler'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
@@ -25,41 +35,27 @@ const AudioPlayer = () => {
     currentTime,
     duration,
     volume,
-    isMuted
+    isMuted,
+    queue,
+    repeatMode,
+    isShuffled
   } = useAudioPlayerState()
 
   const {
     play,
     pause,
-    jumpForward,
-    jumpBackward,
+    playNext,
+    playPrevious,
     setTimeUsingPercentage,
     setVolume,
-    toggleMute
+    toggleMute,
+    toggleQueue,
+    toggleRepeat,
+    toggleShuffle
   } = useAudioPlayerActions()
 
-  const router = useRouter()
-  const navRef = useRef<HTMLElement>(null)
   const volumeSliderRef = useRef<HTMLInputElement>(null)
   const volumeButtonRef = useRef<HTMLButtonElement>(null)
-  const isScrolling = useScrollStatus(1000)
-
-  const navStyles = isScrolling ? 'opacity-95' : 'opacity-100'
-
-  // lol, the other half of this is at AppShell.tsx
-  React.useEffect(() => {
-    if (navRef.current) {
-      const height = navRef.current.offsetHeight
-      document.documentElement.style.setProperty(
-        '--audio-player-height',
-        `${height}px`
-      )
-    }
-
-    return () => {
-      document.documentElement.style.removeProperty('--audio-player-height')
-    }
-  }, [])
 
   // Volume scroll handling
   useEffect(() => {
@@ -80,124 +76,297 @@ const AudioPlayer = () => {
     }
   }, [volume, isMuted, setVolume])
 
-  const changeRange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = e.target
-    setTimeUsingPercentage(Number(value))
+  const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTimeUsingPercentage(Number(e.target.value))
   }
 
-  const changeVolume = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value } = e.target
-    setVolume(Number(value))
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setVolume(Number(e.target.value))
   }
 
-  const getVolumeIcon = () => {
-    if (isMuted || volume === 0) {
-      return <HiSpeakerXMark className='floating-nav-icon' />
-    } else if (volume < 50) {
-      return <HiSpeakerWave className='floating-nav-icon' />
-    } else {
-      return <HiSpeakerWave className='floating-nav-icon' />
+  const getRepeatIcon = () => {
+    switch (repeatMode) {
+      case 'one':
+        return <Repeat1 className='w-4 h-4' />
+      case 'all':
+        return <Repeat className='w-4 h-4' />
+      default:
+        return <Repeat className='w-4 h-4' />
     }
   }
 
-  if (!audioSrc) return <></>
+  // Create a current track object from the existing state
+  const currentTrack = audioSrc
+    ? {
+        title: nowPlayingContext.title,
+        thumbnailUrl: thumbnailUrl,
+        artist: 'Mix' // Default since we don't have artist field
+      }
+    : null
+
+  if (!currentTrack) return null
 
   return (
-    <nav
-      ref={navRef}
-      className={`fixed bottom-0 z-50 py-2 space-y-1 w-full border-t transition ease-in-out delay-150 bg-background border-border ${navStyles}`}>
-      <div className='grid relative grid-flow-col items-center mx-auto max-w-xs h-full'>
-        <button
-          onClick={() => router.navigate({ to: '/' })}
-          data-tooltip-target='tooltip-home'
-          type='button'
-          className='floating-nav-button'>
-          <HiHome className='floating-nav-icon' />
-        </button>
+    <div className='border-t backdrop-blur-md bg-background/95 border-border flex-shrink-0'>
+      <div className='px-4 py-3 mx-auto max-w-screen-2xl'>
+        {/* Desktop Layout */}
+        <div className='hidden md:grid md:grid-cols-3 md:items-center md:gap-4'>
+          {/* Left: Track Info */}
+          <div className='flex gap-3 items-center min-w-0'>
+            <img
+              src={currentTrack.thumbnailUrl || '/placeholder.svg'}
+              alt={currentTrack.title}
+              className='object-cover flex-shrink-0 w-14 h-14 rounded-lg'
+            />
+            <div className='flex-1 min-w-0'>
+              <h3 className='text-sm font-medium truncate'>
+                {currentTrack.title}
+              </h3>
+              <p className='text-xs truncate text-muted-foreground'>
+                {currentTrack.artist}
+              </p>
+            </div>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant='ghost' size='sm' className='flex-shrink-0'>
+                    <Heart className='w-4 h-4' />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Add to favorites</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
 
-        <button
-          data-tooltip-target='tooltip-wallet'
-          type='button'
-          className='text-xs floating-nav-button'
-          onClick={() => jumpBackward()}>
-          -15s
-        </button>
-        <button
-          type='button'
-          className='floating-nav-button'
-          title='Play/Pause'
-          onClick={() => (isPlaying ? pause() : play(nowPlayingContext.title))}>
-          {isPlaying ? (
-            <GiPauseButton className='floating-nav-icon' />
-          ) : (
-            <GiPlayButton className='floating-nav-icon' />
-          )}
-        </button>
-        <button
-          data-tooltip-target='tooltip-settings'
-          type='button'
-          className='text-xs floating-nav-button'
-          title='+30s'
-          onClick={() => jumpForward()}>
-          +30s
-        </button>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Link to={nowPlayingContext.url}>
-                <img
-                  src={thumbnailUrl}
-                  className='min-w-[45px] w-12 m-auto rounded-md aspect-square'
-                  alt={nowPlayingContext.title}
-                  width={80}
-                  height={80}
-                />
-              </Link>
-            </TooltipTrigger>
-            <TooltipContent side='top'>
-              {nowPlayingContext.title}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-      <div className='flex items-center mx-auto space-x-2 max-w-xl rounded-full'>
-        <p className='text-xs min-w-[2.5rem] text-right'>
-          {formatSeconds(currentTime)}
-        </p>
-        <input
-          type='range'
-          value={progress}
-          className='flex-1 h-2 rounded-full bg-gb-tomato align-start hover:cursor-pointer'
-          onInput={changeRange}
-        />
-        <p className='text-xs min-w-[3rem]'>
-          -{formatSeconds(duration - currentTime)}
-        </p>
+          {/* Center: Controls & Progress */}
+          <div className='flex flex-col gap-2 items-center'>
+            <div className='flex gap-2 items-center'>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      onClick={toggleShuffle}
+                      className={isShuffled ? 'text-primary' : ''}>
+                      <Shuffle className='w-4 h-4' />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {isShuffled ? 'Disable shuffle' : 'Enable shuffle'}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
 
-        {/* Volume Controls */}
-        <button
-          ref={volumeButtonRef}
-          onClick={toggleMute}
-          className='p-1 floating-nav-button'
-          title={
-            isMuted
-              ? 'Unmute (or scroll to adjust)'
-              : 'Mute (or scroll to adjust)'
-          }>
-          {getVolumeIcon()}
-        </button>
-        <input
-          ref={volumeSliderRef}
-          type='range'
-          min='0'
-          max='100'
-          value={isMuted ? 0 : volume}
-          onChange={changeVolume}
-          className='w-16 h-2 rounded-full bg-gb-tomato align-start hover:cursor-pointer'
-          title={`Volume: ${volume}% (scroll to adjust)`}
-        />
+              <Button variant='ghost' size='sm' onClick={playPrevious}>
+                <SkipBack className='w-4 h-4' />
+              </Button>
+
+              <Button
+                variant='default'
+                size='sm'
+                onClick={() =>
+                  isPlaying ? pause() : play(nowPlayingContext.title)
+                }
+                className='w-8 h-8 rounded-full'>
+                {isPlaying ? (
+                  <Pause className='w-4 h-4' />
+                ) : (
+                  <Play className='w-4 h-4 ml-0.5' />
+                )}
+              </Button>
+
+              <Button variant='ghost' size='sm' onClick={playNext}>
+                <SkipForward className='w-4 h-4' />
+              </Button>
+
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant='ghost'
+                      size='sm'
+                      onClick={toggleRepeat}
+                      className={repeatMode !== 'none' ? 'text-primary' : ''}>
+                      {getRepeatIcon()}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {repeatMode === 'none' && 'Enable repeat'}
+                    {repeatMode === 'all' && 'Repeat all'}
+                    {repeatMode === 'one' && 'Repeat one'}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+
+            <div className='flex gap-2 items-center w-full max-w-md'>
+              <span className='text-xs text-muted-foreground min-w-[2.5rem] text-right'>
+                {formatSeconds(currentTime)}
+              </span>
+              <input
+                type='range'
+                value={progress}
+                onChange={handleProgressChange}
+                max={100}
+                step={0.1}
+                className='flex-1 h-2 bg-secondary rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary'
+              />
+              <span className='text-xs text-muted-foreground min-w-[2.5rem]'>
+                {formatSeconds(duration)}
+              </span>
+            </div>
+          </div>
+
+          {/* Right: Volume & Queue */}
+          <div className='flex gap-2 justify-end items-center'>
+            <div className='flex gap-2 items-center'>
+              <Button
+                ref={volumeButtonRef}
+                variant='ghost'
+                size='sm'
+                onClick={toggleMute}
+                title={
+                  isMuted
+                    ? 'Unmute (or scroll to adjust)'
+                    : 'Mute (or scroll to adjust)'
+                }>
+                {isMuted || volume === 0 ? (
+                  <VolumeX className='w-4 h-4' />
+                ) : (
+                  <Volume2 className='w-4 h-4' />
+                )}
+              </Button>
+              <input
+                ref={volumeSliderRef}
+                type='range'
+                min={0}
+                max={100}
+                value={isMuted ? 0 : volume}
+                onChange={handleVolumeChange}
+                className='w-20 h-2 bg-secondary rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary'
+                title={`Volume: ${volume}% (scroll to adjust)`}
+              />
+            </div>
+
+            <Button
+              variant='ghost'
+              size='sm'
+              onClick={toggleQueue}
+              className={queue.length > 0 ? 'relative' : ''}>
+              <List className='w-4 h-4' />
+              {queue.length > 0 && (
+                <span className='flex absolute -top-1 -right-1 justify-center items-center w-5 h-5 text-xs rounded-full bg-primary text-primary-foreground'>
+                  {queue.length}
+                </span>
+              )}
+            </Button>
+          </div>
+        </div>
+
+        {/* Mobile Layout */}
+        <div className='md:hidden'>
+          <div className='flex gap-3 items-center mb-3'>
+            <img
+              src={currentTrack.thumbnailUrl || '/placeholder.svg'}
+              alt={currentTrack.title}
+              className='object-cover w-12 h-12 rounded-lg'
+            />
+            <div className='flex-1 min-w-0'>
+              <h3 className='text-sm font-medium truncate'>
+                {currentTrack.title}
+              </h3>
+              <p className='text-xs truncate text-muted-foreground'>
+                {currentTrack.artist}
+              </p>
+            </div>
+            <Button
+              variant='ghost'
+              size='sm'
+              onClick={toggleQueue}
+              className={queue.length > 0 ? 'relative' : ''}>
+              <List className='w-4 h-4' />
+              {queue.length > 0 && (
+                <span className='flex absolute -top-1 -right-1 justify-center items-center w-5 h-5 text-xs rounded-full bg-primary text-primary-foreground'>
+                  {queue.length}
+                </span>
+              )}
+            </Button>
+          </div>
+
+          <div className='flex gap-2 items-center mb-2'>
+            <span className='text-xs text-muted-foreground min-w-[2.5rem] text-right'>
+              {formatSeconds(currentTime)}
+            </span>
+            <input
+              type='range'
+              value={progress}
+              onChange={handleProgressChange}
+              max={100}
+              step={0.1}
+              className='flex-1 h-2 bg-secondary rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary'
+            />
+            <span className='text-xs text-muted-foreground min-w-[2.5rem]'>
+              {formatSeconds(duration)}
+            </span>
+          </div>
+
+          <div className='flex justify-between items-center'>
+            <div className='flex gap-1 items-center'>
+              <Button
+                variant='ghost'
+                size='sm'
+                onClick={toggleShuffle}
+                className={isShuffled ? 'text-primary' : ''}>
+                <Shuffle className='w-4 h-4' />
+              </Button>
+              <Button
+                variant='ghost'
+                size='sm'
+                onClick={toggleRepeat}
+                className={repeatMode !== 'none' ? 'text-primary' : ''}>
+                {getRepeatIcon()}
+              </Button>
+            </div>
+
+            <div className='flex gap-2 items-center'>
+              <Button variant='ghost' size='sm' onClick={playPrevious}>
+                <SkipBack className='w-5 h-5' />
+              </Button>
+              <Button
+                variant='default'
+                size='sm'
+                onClick={() =>
+                  isPlaying ? pause() : play(nowPlayingContext.title)
+                }
+                className='w-10 h-10 rounded-full'>
+                {isPlaying ? (
+                  <Pause className='w-5 h-5' />
+                ) : (
+                  <Play className='w-5 h-5 ml-0.5' />
+                )}
+              </Button>
+              <Button variant='ghost' size='sm' onClick={playNext}>
+                <SkipForward className='w-5 h-5' />
+              </Button>
+            </div>
+
+            <div className='flex gap-1 items-center'>
+              <Button variant='ghost' size='sm' onClick={toggleMute}>
+                {isMuted || volume === 0 ? (
+                  <VolumeX className='w-4 h-4' />
+                ) : (
+                  <Volume2 className='w-4 h-4' />
+                )}
+              </Button>
+              <Button variant='ghost' size='sm'>
+                <Heart className='w-4 h-4' />
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
-    </nav>
+    </div>
   )
 }
 
