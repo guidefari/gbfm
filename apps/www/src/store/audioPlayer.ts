@@ -46,6 +46,7 @@ interface AudioPlayerState {
 
   // State management
   isInitialized: boolean
+  isFullscreenVisible: boolean
 }
 
 interface AudioPlayerActions {
@@ -78,6 +79,7 @@ interface AudioPlayerActions {
   toggleQueue: () => void
   toggleRepeat: () => void
   toggleShuffle: () => void
+  toggleFullscreen: () => void
 
   // State updates (called by audio events)
   updateProgress: () => void
@@ -121,6 +123,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
         shuffledIndex: -1,
 
         isInitialized: false,
+        isFullscreenVisible: false,
 
         // Actions
         setAudioRef: (ref) => {
@@ -639,6 +642,14 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
             false,
             'audioPlayer/toggleShuffle'
           )
+        },
+
+        toggleFullscreen: () => {
+          set(
+            (state) => ({ isFullscreenVisible: !state.isFullscreenVisible }),
+            false,
+            'audioPlayer/toggleFullscreen'
+          )
         }
       }),
       {
@@ -693,7 +704,8 @@ export const useAudioPlayerActions = () => {
     playPrevious: store.playPrevious,
     toggleQueue: store.toggleQueue,
     toggleRepeat: store.toggleRepeat,
-    toggleShuffle: store.toggleShuffle
+    toggleShuffle: store.toggleShuffle,
+    toggleFullscreen: store.toggleFullscreen
   }
 }
 
@@ -716,6 +728,7 @@ export const useAudioPlayerState = () => {
     currentIndex: store.currentIndex,
     isQueueVisible: store.isQueueVisible,
     repeatMode: store.repeatMode,
-    isShuffled: store.isShuffled
+    isShuffled: store.isShuffled,
+    isFullscreenVisible: store.isFullscreenVisible
   }
 }

@@ -1,5 +1,6 @@
 import type React from 'react'
 import AudioPlayer from '@/components/AudioPlayer'
+import FullscreenAudioPlayer from '@/components/FullscreenAudioPlayer'
 import { QueueColumn } from '@/components/queue/QueueColumn'
 import { useAudioPlayerInitializer } from '@/hooks/useAudioPlayer'
 import { cn } from '@/lib/utils'
@@ -16,37 +17,31 @@ type Props = {
 export default function AppShell({ children }: Props) {
   useAudioPlayerInitializer()
 
-  const { audioSrc, isQueueVisible } = useAudioPlayerState()
+  const { audioSrc, isQueueVisible, isFullscreenVisible } =
+    useAudioPlayerState()
   const hasActiveAudio = Boolean(audioSrc)
 
   return (
-    <div className='flex overflow-hidden flex-col h-screen bg-background'>
-      {/* Main Content - takes available space above audio player */}
-      <div className='flex overflow-hidden flex-1'>
-        {/* Main Content Column */}
-        <div
-          className={cn(
-            'flex flex-col flex-1 transition-all duration-300 ease-in-out',
-            isQueueVisible && 'mr-80'
-          )}>
-          {/* Scrollable Main Content */}
-          <main className='overflow-y-auto flex-1 px-4 sm:px-6 md:px-8 lg:px-10 bg-background'>
-            {children}
-          </main>
-        </div>
+    <div className='grid grid-rows-[minmax(0,1fr)_auto] h-screen bg-background overflow-hidden'>
+      <div
+        className={cn(
+          'grid min-h-0 transition-all duration-300 ease-in-out',
+          isQueueVisible ? 'grid-cols-[1fr_20rem]' : 'grid-cols-[1fr_0px]'
+        )}>
+        <main className='overflow-y-auto px-4 min-h-0 sm:px-6 md:px-8 lg:px-10 bg-background'>
+          {children}
+        </main>
 
-        {/* Queue Column - slides in from the right */}
-        <div
-          className={cn(
-            'h-full transition-transform duration-300 ease-in-out',
-            isQueueVisible ? 'translate-x-0' : 'translate-x-full'
-          )}>
+        <div className='overflow-hidden h-full'>
           <QueueColumn />
         </div>
       </div>
 
       {/* Audio Player - Always at bottom, full width */}
-      {hasActiveAudio && <AudioPlayer />}
+      {hasActiveAudio && !isFullscreenVisible && <AudioPlayer />}
+
+      {/* Fullscreen Audio Player */}
+      <FullscreenAudioPlayer />
     </div>
   )
 }

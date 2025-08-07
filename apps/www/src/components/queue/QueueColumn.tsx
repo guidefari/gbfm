@@ -65,7 +65,7 @@ export const QueueColumn = () => {
   }
 
   return (
-    <div className='flex overflow-hidden flex-col w-80 h-full border-l shadow-lg min-w-80 max-w-80 border-border bg-background'>
+    <div className='flex overflow-hidden flex-col w-full h-full border-l shadow-lg border-border bg-background'>
       {/* Header */}
       <div className='p-4 border-b border-border'>
         <div className='flex justify-between items-center mb-2'>
@@ -111,7 +111,7 @@ export const QueueColumn = () => {
               alt={nowPlayingContext.title}
               className='object-cover flex-shrink-0 w-12 h-12 rounded'
             />
-            <div className='flex-1 min-w-0 max-w-0'>
+            <div className='flex-1'>
               <h4 className='text-sm font-medium truncate text-primary'>
                 {nowPlayingContext.title}
               </h4>

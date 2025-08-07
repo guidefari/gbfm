@@ -54,12 +54,12 @@ export const QueueItem: React.FC<QueueItemProps> = ({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'group flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer overflow-hidden w-full',
-        isCurrentTrack && 'bg-primary/10 border border-primary/20',
+        'group flex items-center gap-3 p-2 hover:bg-muted/50 transition-colors cursor-pointer overflow-hidden w-full',
         isDragging && 'opacity-50 shadow-lg'
       )}
       onClick={handlePlay}>
       {/* Drag Handle */}
+
       <button
         {...attributes}
         {...listeners}
@@ -67,15 +67,6 @@ export const QueueItem: React.FC<QueueItemProps> = ({
         onClick={(e) => e.stopPropagation()}>
         <GripVertical className='w-4 h-4 text-muted-foreground' />
       </button>
-
-      {/* Track Number */}
-      <div className='flex-shrink-0 w-6 text-xs text-center text-muted-foreground'>
-        {isCurrentTrack ? (
-          <div className='mx-auto w-3 h-3 rounded-full animate-pulse bg-primary' />
-        ) : (
-          index + 1
-        )}
-      </div>
 
       {/* Album Art */}
       <img
@@ -85,18 +76,17 @@ export const QueueItem: React.FC<QueueItemProps> = ({
       />
 
       {/* Track Info */}
-      <div className='flex-1 min-w-0'>
-        <h4
-          className={cn(
-            'font-medium text-sm truncate',
-            isCurrentTrack && 'text-primary'
-          )}>
-          {track.title}
-        </h4>
+
+      <div
+        className={cn(
+          'font-medium text-sm flex-1',
+          isCurrentTrack && 'text-white'
+        )}>
+        {track.title}
       </div>
 
       {/* Actions */}
-      <div className='flex gap-1 items-center opacity-0 transition-opacity group-hover:opacity-100'>
+      <div className='flex flex-shrink-0 gap-1 items-center opacity-0 transition-opacity group-hover:opacity-100'>
         <Button
           variant='ghost'
           size='sm'
