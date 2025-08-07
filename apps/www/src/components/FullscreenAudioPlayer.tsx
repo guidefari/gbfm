@@ -36,7 +36,7 @@ import { Button } from '@/components/ui/button'
 import { formatSeconds } from '@/lib/utils'
 import { attachVolumeScroll } from '@/lib/volumeScrollHandler'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
-import { FullscreenQueueItem } from './queue/FullscreenQueueItem'
+import { SharedQueueItem } from './queue/SharedQueueItem'
 import * as ScrollArea from '@radix-ui/react-scroll-area'
 
 const FullscreenAudioPlayer = () => {
@@ -329,11 +329,15 @@ const FullscreenAudioPlayer = () => {
                         items={queue.map((track) => track.queueId)}
                         strategy={verticalListSortingStrategy}>
                         {queue.map((track, index) => (
-                          <FullscreenQueueItem
+                          <SharedQueueItem
                             key={track.queueId}
                             track={track}
                             index={index}
                             isCurrentTrack={index === currentIndex}
+                            variant='fullscreen'
+                            showDragHandle={true}
+                            showContextMenu={true}
+                            showRemoveButton={false}
                           />
                         ))}
                       </SortableContext>
