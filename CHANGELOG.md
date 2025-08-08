@@ -1,3 +1,10 @@
+# [0.23.0](https://github.com/guidefari/gbfm/compare/v0.22.0...v0.23.0) (2025-08-08)
+
+
+### Features
+
+* fullscreen audio player ([d8a1fd0](https://github.com/guidefari/gbfm/commit/d8a1fd07a63de1de8e9795dce2adc428f6100363))
+
 # [0.22.0](https://github.com/guidefari/gbfm/compare/v0.21.0...v0.22.0) (2025-08-07)
 
 
