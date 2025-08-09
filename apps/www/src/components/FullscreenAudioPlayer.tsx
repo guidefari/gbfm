@@ -30,7 +30,8 @@ import {
   Repeat1,
   Star,
   ChevronDown,
-  MoreHorizontal
+  MoreHorizontal,
+  List
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatSeconds } from '@/lib/utils'
@@ -54,7 +55,8 @@ const FullscreenAudioPlayer = () => {
     currentIndex,
     repeatMode,
     isShuffled,
-    isFullscreenVisible
+    isFullscreenVisible,
+    isQueueVisible
   } = useAudioPlayerState()
 
   const {
@@ -68,6 +70,7 @@ const FullscreenAudioPlayer = () => {
     toggleRepeat,
     toggleShuffle,
     toggleFullscreen,
+    toggleQueue,
     reorderQueue
   } = useAudioPlayerActions()
 
@@ -162,12 +165,17 @@ const FullscreenAudioPlayer = () => {
         </Button>
       </div>
 
-      <div className='flex gap-16 px-8 h-[calc(100vh-88px)]'>
+      <div
+        className={`flex h-full px-8 ${isQueueVisible ? 'gap-16' : 'justify-center items-center'}`}>
         {/* Left Panel - Now Playing */}
-        <div className='flex flex-col max-w-md'>
+        <div
+          className={`flex flex-col ${isQueueVisible ? 'max-w-md' : 'max-w-2xl'}`}>
           {/* Album Artwork */}
           <div className='relative mb-8'>
-            <div className='overflow-hidden mx-auto w-4/5 bg-gradient-to-br rounded-3xl shadow-2xl aspect-square from-primary/20 to-accent'>
+            <div
+              className={`overflow-hidden mx-auto bg-gradient-to-br rounded-3xl shadow-2xl aspect-square from-primary/20 to-accent ${
+                isQueueVisible ? 'w-4/5' : 'w-full max-w-md'
+              }`}>
               <img
                 src={currentTrack.thumbnailUrl || '/placeholder.svg'}
                 alt={currentTrack.title}
@@ -188,6 +196,19 @@ const FullscreenAudioPlayer = () => {
                   size='icon'
                   className='text-muted-foreground hover:text-foreground hover:bg-muted'>
                   <Star className='w-5 h-5' />
+                </Button>
+                <Button
+                  variant='ghost'
+                  size='icon'
+                  onClick={toggleQueue}
+                  className={`text-muted-foreground hover:text-foreground hover:bg-muted ${queue.length > 0 ? 'relative' : ''}`}
+                  title='Toggle Queue'>
+                  <List className='w-5 h-5' />
+                  {queue.length > 0 && (
+                    <span className='flex absolute -top-1 -right-1 justify-center items-center w-4 h-4 text-xs rounded-full bg-primary text-primary-foreground'>
+                      {queue.length}
+                    </span>
+                  )}
                 </Button>
                 <Button
                   variant='ghost'
@@ -297,13 +318,13 @@ const FullscreenAudioPlayer = () => {
         </div>
 
         {/* Right Panel - Queue */}
-        <div className='flex flex-col flex-1 min-w-0'>
-          <div className='flex flex-shrink-0 justify-between items-center mb-6'>
-            <h2 className='text-xl font-semibold'>Up Next</h2>
-          </div>
+        {isQueueVisible && (
+          <div className='flex relative flex-col flex-1 min-w-0'>
+            <div className='flex flex-shrink-0 justify-between items-center mb-6'>
+              <h2 className='text-xl font-semibold'>Up Next</h2>
+            </div>
 
-          <div className='flex-1 min-h-0'>
-            <ScrollArea.Root className='h-full'>
+            <ScrollArea.Root className='h-4/5'>
               <ScrollArea.Viewport className='h-full'>
                 {queue.length === 0 ? (
                   <div className='flex flex-col justify-center items-center p-8 h-full text-center'>
@@ -352,7 +373,7 @@ const FullscreenAudioPlayer = () => {
               </ScrollArea.Scrollbar>
             </ScrollArea.Root>
           </div>
-        </div>
+        )}
       </div>
     </div>
   )

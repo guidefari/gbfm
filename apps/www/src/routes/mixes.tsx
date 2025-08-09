@@ -73,13 +73,13 @@ function Component() {
                 <Link
                   to='/read/$archetype/$id'
                   params={{ archetype: 'mix', id: mix.slug }}
-                  className='block font-bold truncate text-highlight hover:underline'>
+                  className='block font-bold leading-none truncate text-highlight hover:underline'>
                   {mix.title}
                 </Link>
                 {mix.description && (
-                  <p className='mt-1 text-sm text-foreground/80 line-clamp-2'>
+                  <div className='text-sm text-foreground/80 line-clamp-2'>
                     {mix.description}
-                  </p>
+                  </div>
                 )}
               </div>
             </article>
