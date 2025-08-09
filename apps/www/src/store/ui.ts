@@ -4,7 +4,7 @@ import { devtools, persist } from 'zustand/middleware'
 export type SortOption = 'date' | 'title'
 
 interface UIState {
-  commando: {
+  Cmd: {
     isOpen: boolean
   }
   mixesSorting: {
@@ -14,9 +14,9 @@ interface UIState {
 }
 
 interface UIActions {
-  openCommando: () => void
-  closeCommando: () => void
-  toggleCommando: () => void
+  openCmd: () => void
+  closeCmd: () => void
+  toggleCmd: () => void
   setSortBy: (sortBy: SortOption) => void
   toggleSortOrder: () => void
 }
@@ -27,36 +27,36 @@ export const useUIStore = create<UIStore>()(
   devtools(
     persist(
       (set) => ({
-        commando: {
+        Cmd: {
           isOpen: false
         },
         mixesSorting: {
           sortBy: 'date',
           sortOrder: 'desc'
         },
-        openCommando: () =>
+        openCmd: () =>
           set(
             (state: UIStore) => ({
-              commando: { ...state.commando, isOpen: true }
+              Cmd: { ...state.Cmd, isOpen: true }
             }),
             false,
-            'ui/commando/open'
+            'ui/Cmd/open'
           ),
-        closeCommando: () =>
+        closeCmd: () =>
           set(
             (state: UIStore) => ({
-              commando: { ...state.commando, isOpen: false }
+              Cmd: { ...state.Cmd, isOpen: false }
             }),
             false,
-            'ui/commando/close'
+            'ui/Cmd/close'
           ),
-        toggleCommando: () =>
+        toggleCmd: () =>
           set(
             (state: UIStore) => ({
-              commando: { ...state.commando, isOpen: !state.commando.isOpen }
+              Cmd: { ...state.Cmd, isOpen: !state.Cmd.isOpen }
             }),
             false,
-            'ui/commando/toggle'
+            'ui/Cmd/toggle'
           ),
         setSortBy: (sortBy: SortOption) =>
           set(
@@ -83,7 +83,7 @@ export const useUIStore = create<UIStore>()(
         name: 'gbfm-ui-store',
         partialize: (state) => ({
           mixesSorting: state.mixesSorting
-          // Don't persist commando state (isOpen should always start as false)
+          // Don't persist Cmd state (isOpen should always start as false)
         })
       }
     ),

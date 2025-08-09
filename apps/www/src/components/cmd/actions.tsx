@@ -13,7 +13,7 @@ import {
 } from 'lucide-react'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
 
-export const useAudioPlayerCommandoActions = (closeCommando: () => void) => {
+export const useAudioPlayerCmdActions = (closeCmd: () => void) => {
   const {
     togglePlayPause,
     jumpForward,
@@ -42,62 +42,62 @@ export const useAudioPlayerCommandoActions = (closeCommando: () => void) => {
 
   const handleTogglePlayPause = () => {
     togglePlayPause()
-    closeCommando()
+    closeCmd()
   }
 
   const handleJumpForward = () => {
     jumpForward(10)
-    closeCommando()
+    closeCmd()
   }
 
   const handleJumpBackward = () => {
     jumpBackward(10)
-    closeCommando()
+    closeCmd()
   }
 
   const handleVolumeUp = () => {
     setVolume(Math.min(100, volume + 10))
-    closeCommando()
+    closeCmd()
   }
 
   const handleVolumeDown = () => {
     setVolume(Math.max(0, volume - 10))
-    closeCommando()
+    closeCmd()
   }
 
   const handleToggleMute = () => {
     toggleMute()
-    closeCommando()
+    closeCmd()
   }
 
   const handleToggleQueue = () => {
     toggleQueue()
-    closeCommando()
+    closeCmd()
   }
 
   const handleToggleFullscreen = () => {
     toggleFullscreen()
-    closeCommando()
+    closeCmd()
   }
 
   const handleToggleShuffle = () => {
     toggleShuffle()
-    closeCommando()
+    closeCmd()
   }
 
   const handleToggleRepeat = () => {
     toggleRepeat()
-    closeCommando()
+    closeCmd()
   }
 
   const handlePlayNext = () => {
     playNext()
-    closeCommando()
+    closeCmd()
   }
 
   const handlePlayPrevious = () => {
     playPrevious()
-    closeCommando()
+    closeCmd()
   }
 
   return {

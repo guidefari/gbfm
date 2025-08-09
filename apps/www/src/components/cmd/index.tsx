@@ -27,7 +27,7 @@ import {
 import { useUIStore } from '@/store'
 import { useAuthStore } from '@/store/auth'
 import { useAudioPlayerState } from '@/store/audioPlayer'
-import { useAudioPlayerCommandoActions } from './actions'
+import { useAudioPlayerCmdActions } from './actions'
 import { useKeyboardShortcuts } from './keyboard-shortcuts'
 import { version } from '../../../../../package.json'
 
@@ -35,67 +35,67 @@ export function CommandDialogDemo() {
   const router = useNavigate()
   const routerState = useRouterState()
   const {
-    commando,
-    openCommando,
-    closeCommando,
-    toggleCommando,
+    Cmd,
+    openCmd,
+    closeCmd,
+    toggleCmd,
     mixesSorting,
     setSortBy,
     toggleSortOrder
   } = useUIStore()
   const { isAuthenticated, clearAuth } = useAuthStore()
   const { audioSrc } = useAudioPlayerState()
-  const audioPlayerActions = useAudioPlayerCommandoActions(closeCommando)
+  const audioPlayerActions = useAudioPlayerCmdActions(closeCmd)
 
   const isOnMixesPage = routerState.location.pathname === '/mixes'
   const isOnHomePage = routerState.location.pathname === '/'
 
   const routeToMixes = React.useCallback(() => {
     router({ to: '/mixes' })
-    closeCommando()
-  }, [router, closeCommando])
+    closeCmd()
+  }, [router, closeCmd])
 
   const routeToLogin = React.useCallback(() => {
     router({ to: '/auth/sign-in' })
-    closeCommando()
-  }, [router, closeCommando])
+    closeCmd()
+  }, [router, closeCmd])
 
   const routeToProfile = React.useCallback(() => {
     router({ to: '/settings/profile' })
-    closeCommando()
-  }, [router, closeCommando])
+    closeCmd()
+  }, [router, closeCmd])
 
   const routeToHome = React.useCallback(() => {
     router({ to: '/' })
-    closeCommando()
-  }, [router, closeCommando])
+    closeCmd()
+  }, [router, closeCmd])
 
   const routeToTracks = React.useCallback(() => {
     router({ to: '/tracks' })
-    closeCommando()
-  }, [router, closeCommando])
+    closeCmd()
+  }, [router, closeCmd])
 
   const sortByDate = React.useCallback(() => {
     setSortBy('date')
-    closeCommando()
-  }, [setSortBy, closeCommando])
+    closeCmd()
+  }, [setSortBy, closeCmd])
 
   const sortByTitle = React.useCallback(() => {
     setSortBy('title')
-    closeCommando()
-  }, [setSortBy, closeCommando])
+    closeCmd()
+  }, [setSortBy, closeCmd])
 
   const toggleSort = React.useCallback(() => {
     toggleSortOrder()
-    closeCommando()
-  }, [toggleSortOrder, closeCommando])
+    closeCmd()
+  }, [toggleSortOrder, closeCmd])
 
   const { setupKeyboardShortcuts } = useKeyboardShortcuts({
     isOnMixesPage,
     toggleSortOrder,
     routeToMixes,
-    toggleCommando,
-    closeCommando,
+    toggleCmd,
+    closeCmd,
     audioSrc
   })
 
@@ -106,8 +106,8 @@ export function CommandDialogDemo() {
 
   return (
     <CommandDialog
-      open={commando.isOpen}
-      onOpenChange={(open) => (open ? openCommando() : closeCommando())}
+      open={Cmd.isOpen}
+      onOpenChange={(open) => (open ? openCmd() : closeCmd())}
       title='Command palette for GBFM'>
       <CommandInput
         className='ring-0 focus-visible:ring-0 focus-visible:ring-offset-0'

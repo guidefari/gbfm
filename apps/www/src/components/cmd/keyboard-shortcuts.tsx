@@ -1,11 +1,11 @@
-import { useAudioPlayerCommandoActions } from './actions'
+import { useAudioPlayerCmdActions } from './actions'
 
 interface KeyboardShortcutsProps {
   isOnMixesPage: boolean
   toggleSortOrder: () => void
   routeToMixes: () => void
-  toggleCommando: () => void
-  closeCommando: () => void
+  toggleCmd: () => void
+  closeCmd: () => void
   audioSrc: string | null
 }
 
@@ -13,17 +13,17 @@ export const useKeyboardShortcuts = ({
   isOnMixesPage,
   toggleSortOrder,
   routeToMixes,
-  toggleCommando,
-  closeCommando,
+  toggleCmd,
+  closeCmd,
   audioSrc
 }: KeyboardShortcutsProps) => {
-  const audioPlayerActions = useAudioPlayerCommandoActions(closeCommando)
+  const audioPlayerActions = useAudioPlayerCmdActions(closeCmd)
 
   const setupKeyboardShortcuts = () => {
     const down = (e: KeyboardEvent) => {
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault()
-        toggleCommando()
+        toggleCmd()
       }
 
       if (e.key === '0') {
