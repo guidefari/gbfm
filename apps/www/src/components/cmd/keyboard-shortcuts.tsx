@@ -1,4 +1,4 @@
-import { useAudioPlayerCmdActions } from './actions'
+import { useAudioPlayerCmdActions } from './audio/actions'
 
 interface KeyboardShortcutsProps {
   isOnMixesPage: boolean
@@ -7,6 +7,8 @@ interface KeyboardShortcutsProps {
   toggleCmd: () => void
   closeCmd: () => void
   audioSrc: string | null
+  isCmdOpen: boolean
+  whitelistedShortcuts?: string[]
 }
 
 export const useKeyboardShortcuts = ({
@@ -15,17 +17,27 @@ export const useKeyboardShortcuts = ({
   routeToMixes,
   toggleCmd,
   closeCmd,
-  audioSrc
+  audioSrc,
+  isCmdOpen,
+  whitelistedShortcuts = ['cmd+k']
 }: KeyboardShortcutsProps) => {
   const audioPlayerActions = useAudioPlayerCmdActions(closeCmd)
 
   const setupKeyboardShortcuts = () => {
     const down = (e: KeyboardEvent) => {
+      // Always allow cmd+k to toggle command dialog
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault()
         toggleCmd()
+        return
       }
 
+      // If command dialog is open, only allow whitelisted shortcuts
+      if (isCmdOpen && !whitelistedShortcuts.includes(e.key)) {
+        return
+      }
+
+      // Only process other shortcuts when command dialog is closed
       if (e.key === '0') {
         e.preventDefault()
         routeToMixes()

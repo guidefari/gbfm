@@ -254,7 +254,7 @@ function TracksPage() {
                         </Badge>
                         <span className='flex gap-1 items-center'>
                           <Calendar className='w-3 h-3' />
-                          {formatDate(item.createdAt.toISOString())}
+                          {formatDate(new Date(item.createdAt).toISOString())}
                         </span>
                       </div>
 
