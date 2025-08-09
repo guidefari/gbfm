@@ -1,3 +1,10 @@
+# [0.24.0](https://github.com/guidefari/gbfm/compare/v0.23.0...v0.24.0) (2025-08-09)
+
+
+### Features
+
+* audio player + keyboard shortcuts ([5abc7bc](https://github.com/guidefari/gbfm/commit/5abc7bc40accfd25303f2587ebcc5837cf4cf1c1))
+
 # [0.23.0](https://github.com/guidefari/gbfm/compare/v0.22.0...v0.23.0) (2025-08-08)
 
 
