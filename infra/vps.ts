@@ -47,7 +47,8 @@ export const service = new sst.aws.Service('gbfm_vps', {
     contentBucket,
     mixesBucket,
     ...allSecrets
-  ]
+  ],
+  capacity: 'spot'
 })
 
 export const vps_gateway = new sst.aws.ApiGatewayV2('gbfm_vps_gateway', {
