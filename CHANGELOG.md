@@ -1,3 +1,11 @@
+# [0.25.0](https://github.com/guidefari/gbfm/compare/v0.24.0...v0.25.0) (2025-09-14)
+
+
+### Features
+
+* db migration ([2172a12](https://github.com/guidefari/gbfm/commit/2172a12867fd97962915399eebc9ad666b1dc5f7))
+* db migration cont ([7663fdc](https://github.com/guidefari/gbfm/commit/7663fdcbb7979f1e20384bbad1ea65332f05be10))
+
 # [0.24.0](https://github.com/guidefari/gbfm/compare/v0.23.0...v0.24.0) (2025-08-09)
 
 
