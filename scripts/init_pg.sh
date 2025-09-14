@@ -2,7 +2,7 @@
 
 # Create directory structure
 mkdir -p config/grafana/{provisioning/datasources,provisioning/dashboards,dashboards}
-mkdir -p scripts backups logs
+mkdir -p backups logs
 
 # 1. PostgreSQL Configuration (config/postgresql.conf)
 cat > config/postgresql.conf << 'EOF'
@@ -321,38 +321,7 @@ providers:
       path: /var/lib/grafana/dashboards
 EOF
 
-# 9. Backup Script (scripts/backup.sh)
-cat > scripts/backup.sh << 'EOF'
-#!/bin/bash
-
-# PostgreSQL Backup Script
-set -e
-
-DB_NAME="${DB_NAME:-myapp}"
-DB_USER="${DB_USER:-appuser}"
-BACKUP_DIR="/backups"
-DATE=$(date +%Y%m%d_%H%M%S)
-BACKUP_FILE="${BACKUP_DIR}/postgres_backup_${DATE}.sql.gz"
-
-echo "Starting backup of database: $DB_NAME"
-
-# Create backup directory if it doesn't exist
-mkdir -p $BACKUP_DIR
-
-# Create the backup
-pg_dump -h postgres -U $DB_USER -d $DB_NAME | gzip > $BACKUP_FILE
-
-echo "Backup completed: $BACKUP_FILE"
-
-# Clean up old backups (keep last 7 days)
-find $BACKUP_DIR -name "postgres_backup_*.sql.gz" -mtime +7 -delete
-
-echo "Old backups cleaned up"
-EOF
-
-chmod +x scripts/backup.sh
-
-# 10. Environment Variables Template (.env)
+# 9. Environment Variables Template (.env)
 cat > .env.example << 'EOF'
 # Database Configuration
 DB_NAME=myapp
@@ -383,4 +352,3 @@ echo "4. Run: docker-compose up -d"
 echo "5. Import your database backup"
 echo "6. Access Grafana at http://your-vps-ip:3000"
 echo "7. Access pgAdmin at http://your-vps-ip:8080"
-EOF
