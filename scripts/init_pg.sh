@@ -4,6 +4,9 @@
 mkdir -p config/grafana/{provisioning/datasources,provisioning/dashboards,dashboards}
 mkdir -p backups logs
 
+ # Set correct permissions for postgres container
+chmod 777 logs
+
 # 1. PostgreSQL Configuration (config/postgresql.conf)
 cat > config/postgresql.conf << 'EOF'
 # PostgreSQL Production Configuration

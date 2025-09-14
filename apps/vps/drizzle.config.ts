@@ -8,16 +8,18 @@ console.log(`🔒 SSL Configuration Reminder
 If you need to connect to the production database from local, 
 uncomment the SSL configuration in ${relativePath} .`);
 
+console.log(JSON.stringify(Resource.FullDatabaseUrl.value))
+
 export default defineConfig({
 	out: "./drizzle",
 	schema: "./src/db/*.schema.ts",
 	dialect: "postgresql",
 	dbCredentials: {
-		host: Resource.gbfm_postgres.host,
-		port: Resource.gbfm_postgres.port,
-		user: Resource.gbfm_postgres.username,
-		password: Resource.gbfm_postgres.password,
-		database: Resource.gbfm_postgres.database,
+		host: Resource.DatabaseHost.value,
+		port: Number(Resource.DatabasePort.value),
+		user: Resource.DatabaseUser.value,
+		password: Resource.DatabasePassword.value,
+		database: Resource.DatabaseName.value,
 		// ssl: {
 		// 	rejectUnauthorized: false,
 		// },

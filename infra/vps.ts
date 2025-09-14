@@ -14,16 +14,16 @@ export const cluster = new sst.aws.Cluster('gbfm_cluster', {
   vpc
 })
 
-export const database = new sst.aws.Postgres('gbfm_postgres', {
-  vpc,
-  version: '16.8',
-  dev: {
-    username: 'user-name',
-    password: 'strong-password',
-    database: 'postgres',
-    port: 5432
-  }
-})
+// export const database = new sst.aws.Postgres('gbfm_postgres', {
+//   vpc,
+//   version: '16.8',
+//   dev: {
+//     username: 'user-name',
+//     password: 'strong-password',
+//     database: 'postgres',
+//     port: 5432
+//   }
+// })
 
 export const service = new sst.aws.Service('gbfm_vps', {
   cluster,
@@ -40,7 +40,7 @@ export const service = new sst.aws.Service('gbfm_vps', {
     dockerfile: 'apps/vps/Dockerfile'
   },
   link: [
-    database,
+    // database,
     email,
     urls,
     fileRouter,

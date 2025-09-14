@@ -3,80 +3,92 @@
 /* eslint-disable */
 /* deno-fmt-ignore-file */
 
-declare module "sst" {
+declare module 'sst' {
   export interface Resource {
-    "ACCESS_TOKEN_SECRET": {
-      "type": "sst.sst.Secret"
-      "value": string
+    ACCESS_TOKEN_SECRET: {
+      type: 'sst.sst.Secret'
+      value: string
     }
-    "Email": {
-      "configSet": string
-      "sender": string
-      "type": "sst.aws.Email"
+    DatabaseHost: {
+      type: 'sst.sst.Secret'
+      value: string
     }
-    "MDX_Bucket": {
-      "name": string
-      "type": "sst.aws.Bucket"
+    DatabaseName: {
+      type: 'sst.sst.Secret'
+      value: string
     }
-    "Mixes": {
-      "name": string
-      "type": "sst.aws.Bucket"
+    DatabasePassword: {
+      type: 'sst.sst.Secret'
+      value: string
     }
-    "REFRESH_TOKEN_SECRET": {
-      "type": "sst.sst.Secret"
-      "value": string
+    DatabasePort: {
+      type: 'sst.sst.Secret'
+      value: string
     }
-    "Router": {
-      "type": "sst.aws.Router"
-      "url": string
+    DatabaseUser: {
+      type: 'sst.sst.Secret'
+      value: string
     }
-    "SpotifyClientId": {
-      "type": "sst.sst.Secret"
-      "value": string
+    Email: {
+      configSet: string
+      sender: string
+      type: 'sst.aws.Email'
     }
-    "SpotifyClientSecret": {
-      "type": "sst.sst.Secret"
-      "value": string
+    FullDatabaseUrl: {
+      type: 'sst.sst.Secret'
+      value: string
     }
-    "SquealDBUrl": {
-      "type": "sst.sst.Secret"
-      "value": string
+    MDX_Bucket: {
+      name: string
+      type: 'sst.aws.Bucket'
     }
-    "Urls": {
-      "site": string
-      "type": "sst.sst.Linkable"
-      "vps": string
+    Mixes: {
+      name: string
+      type: 'sst.aws.Bucket'
     }
-    "User_Content": {
-      "name": string
-      "type": "sst.aws.Bucket"
+    REFRESH_TOKEN_SECRET: {
+      type: 'sst.sst.Secret'
+      value: string
     }
-    "gbfm-www": {
-      "type": "sst.aws.StaticSite"
-      "url": string
+    Router: {
+      type: 'sst.aws.Router'
+      url: string
     }
-    "gbfm_network": {
-      "type": "sst.aws.Vpc"
+    SpotifyClientId: {
+      type: 'sst.sst.Secret'
+      value: string
     }
-    "gbfm_postgres": {
-      "database": string
-      "host": string
-      "password": string
-      "port": number
-      "type": "sst.aws.Postgres"
-      "username": string
+    SpotifyClientSecret: {
+      type: 'sst.sst.Secret'
+      value: string
     }
-    "gbfm_vps": {
-      "service": string
-      "type": "sst.aws.Service"
+    Urls: {
+      site: string
+      type: 'sst.sst.Linkable'
+      vps: string
     }
-    "gbfm_vps_gateway": {
-      "type": "sst.aws.ApiGatewayV2"
-      "url": string
+    User_Content: {
+      name: string
+      type: 'sst.aws.Bucket'
+    }
+    'gbfm-www': {
+      type: 'sst.aws.StaticSite'
+      url: string
+    }
+    gbfm_network: {
+      type: 'sst.aws.Vpc'
+    }
+    gbfm_vps: {
+      service: string
+      type: 'sst.aws.Service'
+    }
+    gbfm_vps_gateway: {
+      type: 'sst.aws.ApiGatewayV2'
+      url: string
     }
   }
 }
 /// <reference path="sst-env.d.ts" />
 
-import "sst"
+import 'sst'
 export {}

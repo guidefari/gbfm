@@ -2,16 +2,16 @@
 
 import { Resource } from "sst";
 
-console.log(Resource.gbfm_postgres);
+console.log(Resource.FullDatabaseUrl.value);
 
 Bun.spawnSync(["psql"], {
 	stdout: "inherit",
 	stderr: "inherit",
 	env: {
 		...process.env,
-		PGPASSWORD: Resource.gbfm_postgres.password,
-		PGUSER: Resource.gbfm_postgres.username,
-		PGHOST: Resource.gbfm_postgres.host,
-		PGDATABASE: Resource.gbfm_postgres.database,
+		PGPASSWORD: Resource.DatabasePassword.value,
+		PGUSER: Resource.DatabaseUser.value,
+		PGHOST: Resource.DatabaseHost.value,
+		PGDATABASE: Resource.DatabaseName.value,
 	},
 });

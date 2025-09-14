@@ -1,26 +1,26 @@
 services:
-  app:
-    build:
-      context: .
-      target: dev
-      dockerfile: vps/Dockerfile
-    container_name: bun_app
-    ports:
-      - "3003:3003"
-    depends_on:
-      - postgres
-    volumes:
-      - ./vps:/app/vps
-      - ./core:/app/core
-      - ./backend:/app/backend
-      - ./web:/app/web
-    working_dir: /app/vps
-    command: bun --hot run src/api/index.ts
+  # app:
+  #   build:
+  #     context: .
+  #     target: dev
+  #     dockerfile: vps/Dockerfile
+  #   container_name: bun_app
+  #   ports:
+  #     - "3003:3003"
+  #   depends_on:
+  #     - postgres
+  #   volumes:
+  #     - ./vps:/app/vps
+  #     - ./core:/app/core
+  #     - ./backend:/app/backend
+  #     - ./web:/app/web
+  #   working_dir: /app/vps
+  #   command: bun --hot run src/api/index.ts
     # networks:
     #   - app-network
 
   postgres:
-    image: postgres:16.8
+    image: postgres:17-alpine
     container_name: gbfm_pgdb
     restart: unless-stopped
     environment:
@@ -126,6 +126,7 @@ services:
     image: grafana/loki:latest
     container_name: loki
     restart: unless-stopped
+    user: "0:0"
     ports:
       - "3100:3100"
     volumes:
@@ -149,26 +150,26 @@ services:
       - postgres_network
 
   # pgAdmin for database administration
-  pgadmin:
-    image: dpage/pgadmin4:latest
-    container_name: pgadmin
-    restart: unless-stopped
-    environment:
-      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@example.com}
-      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
-      PGADMIN_CONFIG_SERVER_MODE: 'False'
-    volumes:
-      - pgadmin_data:/var/lib/pgadmin
-    ports:
-      - "8080:80"
-    depends_on:
-      - postgres
-    networks:
-      - postgres_network
+  # pgadmin:
+  #   image: dpage/pgadmin4:latest
+  #   container_name: pgadmin
+  #   restart: unless-stopped
+  #   environment:
+  #     PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@example.com}
+  #     PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+  #     PGADMIN_CONFIG_SERVER_MODE: 'False'
+  #   volumes:
+  #     - pgadmin_data:/var/lib/pgadmin
+  #   ports:
+  #     - "8080:80"
+  #   depends_on:
+  #     - postgres
+  #   networks:
+  #     - postgres_network
 
   # Backup service
   postgres_backup:
-    image: postgres:16.8
+    image: postgres:17-alpine
     container_name: postgres_backup
     restart: "no"
     environment:

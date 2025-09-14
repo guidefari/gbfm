@@ -1,8 +1,8 @@
 import { email } from './email'
-import { database } from './vps'
+import { allSecrets } from './secret'
 
 new sst.x.DevCommand('Drizzle_Studio', {
-  link: [database, email],
+  link: [...allSecrets, email],
   dev: {
     command: 'npx drizzle-kit studio',
     directory: './apps/vps',
@@ -11,7 +11,7 @@ new sst.x.DevCommand('Drizzle_Studio', {
 })
 
 new sst.x.DevCommand('Drizzle_Generate', {
-  link: [database, email],
+  link: [...allSecrets, email],
   dev: {
     command: 'npx drizzle-kit generate',
     directory: './apps/vps',
@@ -35,7 +35,7 @@ new sst.x.DevCommand('Drizzle_Generate', {
 // 	},
 // });
 new sst.x.DevCommand('Drizzle_Push', {
-  link: [database, email],
+  link: [...allSecrets, email],
   dev: {
     command: 'npx drizzle-kit push',
     directory: './apps/vps',
@@ -52,7 +52,7 @@ new sst.x.DevCommand('Drizzle_Push', {
 // });
 
 new sst.x.DevCommand('Build_Container', {
-  link: [database, email],
+  link: [email, ...allSecrets],
   dev: {
     command: 'docker build -f apps/vps/Dockerfile -t gbfm_vps .',
     directory: './',
@@ -60,7 +60,7 @@ new sst.x.DevCommand('Build_Container', {
   }
 })
 new sst.x.DevCommand('Test_Docker', {
-  link: [database, email],
+  link: [...allSecrets, email],
   dev: {
     command: 'docker run --rm -p 3003:3003 gbfm_vps',
     directory: './',

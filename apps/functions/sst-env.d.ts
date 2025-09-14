@@ -10,10 +10,34 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
+    "DatabaseHost": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "DatabaseName": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "DatabasePassword": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "DatabasePort": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "DatabaseUser": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "Email": {
       "configSet": string
       "sender": string
       "type": "sst.aws.Email"
+    }
+    "FullDatabaseUrl": {
+      "type": "sst.sst.Secret"
+      "value": string
     }
     "MDX_Bucket": {
       "name": string
@@ -39,10 +63,6 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
-    "SquealDBUrl": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
     "Urls": {
       "site": string
       "type": "sst.sst.Linkable"
@@ -58,14 +78,6 @@ declare module "sst" {
     }
     "gbfm_network": {
       "type": "sst.aws.Vpc"
-    }
-    "gbfm_postgres": {
-      "database": string
-      "host": string
-      "password": string
-      "port": number
-      "type": "sst.aws.Postgres"
-      "username": string
     }
     "gbfm_vps": {
       "service": string
