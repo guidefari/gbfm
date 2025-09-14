@@ -1,14 +1,14 @@
-import "dotenv/config";
-import { drizzle } from "drizzle-orm/node-postgres";
-import { Pool } from "pg";
-import { Resource } from "sst";
+import 'dotenv/config'
+import { drizzle } from 'drizzle-orm/node-postgres'
+import { Pool } from 'pg'
+import { Resource } from 'sst'
 
 const pool = new Pool({
-	host: Resource.gbfm_postgres.host,
-	port: Resource.gbfm_postgres.port,
-	user: Resource.gbfm_postgres.username,
-	password: Resource.gbfm_postgres.password,
-	database: Resource.gbfm_postgres.database,
-});
+  host: Resource.DatabaseHost.value,
+  port: Number(Resource.DatabasePort.value),
+  user: Resource.DatabaseUser.value,
+  password: Resource.DatabasePassword.value,
+  database: Resource.DatabaseName.value
+})
 
-export const db = drizzle(pool);
+export const db = drizzle(pool)
