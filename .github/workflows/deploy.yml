@@ -65,6 +65,6 @@ jobs:
           DB_NAME: ${{ secrets.DB_NAME }}
 
         run: |
-          bun run sst unlock --stage=prod
-          bun run sst refresh --stage=prod
+          # bun run sst unlock --stage=prod
+          # bun run sst refresh --stage=prod
           bun run sst deploy --stage=prod
