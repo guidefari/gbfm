@@ -1,3 +1,10 @@
+## [0.25.1](https://github.com/guidefari/gbfm/compare/v0.25.0...v0.25.1) (2025-09-14)
+
+
+### Bug Fixes
+
+* missing secret ([79e047a](https://github.com/guidefari/gbfm/commit/79e047aae66ceb7104068455b409a0158e747f24))
+
 # [0.25.0](https://github.com/guidefari/gbfm/compare/v0.24.0...v0.25.0) (2025-09-14)
 
 
