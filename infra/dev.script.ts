@@ -1,6 +1,15 @@
 import { email } from './email'
 import { allSecrets } from './secret'
 
+new sst.x.DevCommand('raycast', {
+  // link: [...allSecrets, email],
+  dev: {
+    command: 'bun dev',
+    directory: './apps/gbfm-cms',
+    autostart: false
+  }
+})
+
 new sst.x.DevCommand('Drizzle_Studio', {
   link: [...allSecrets, email],
   dev: {

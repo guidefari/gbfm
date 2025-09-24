@@ -1,8 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
+import * as React from 'react'
 import { LongPost } from '@/components/Layout/LongPost'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { fetcher, useAudioBySlug, VPS_BASE_URL } from '@/lib/http'
+import { useContentStore } from '@/store'
 
 export const Route = createFileRoute('/read/$archetype/$id')({
   component: ReadSingle
@@ -10,6 +12,7 @@ export const Route = createFileRoute('/read/$archetype/$id')({
 
 function ReadSingle() {
   const { archetype, id } = Route.useParams()
+  const { setCurrentContent } = useContentStore()
 
   // Handle audio content (mixes, tracks, etc) using the new endpoint
   const audioQuery = useAudioBySlug(archetype as 'mix' | 'track' | 'misc', id)
@@ -35,6 +38,31 @@ function ReadSingle() {
   // Determine which query to use based on archetype
   const isAudioContent = ['mix', 'track', 'misc'].includes(archetype)
   const { data, error, isPending } = isAudioContent ? audioQuery : mdxQuery
+
+  // Update content store when data is available
+  React.useEffect(() => {
+    console.log(
+      'Read page effect - data:',
+      data,
+      'isAudioContent:',
+      isAudioContent
+    )
+    if (data && isAudioContent && data.authors) {
+      const contentInfo = {
+        id,
+        archetype,
+        authorIds: data.authors.map((author: any) => author.id)
+      }
+      console.log('Setting current content:', contentInfo)
+      setCurrentContent(contentInfo)
+    } else if (data && !isAudioContent) {
+      // For MDX content, we'll need to add author info later
+      setCurrentContent(null)
+    }
+
+    // Clear content when leaving the page
+    return () => setCurrentContent(null)
+  }, [data, isAudioContent, id, archetype, setCurrentContent])
 
   if (isPending) return <div>Loading...</div>
   if (error) return <div>Error: {error.message}</div>

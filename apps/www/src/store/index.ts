@@ -5,3 +5,4 @@ export {
 } from './audioPlayer'
 export { useAuthStore } from './auth'
 export { useUIStore } from './ui'
+export { useContentStore } from './content'

@@ -11,6 +11,80 @@ interface KeyboardShortcutsProps {
   whitelistedShortcuts?: string[]
 }
 
+// Elements that should be ignored for keyboard shortcuts when focused
+const TYPING_ELEMENTS = [
+  'INPUT',
+  'TEXTAREA',
+  'SELECT',
+  'DETAILS',
+  'IFRAME' // For rich text editors and embedded content
+]
+
+// Roles that indicate typing elements
+const TYPING_ROLES = [
+  'textbox',
+  'combobox',
+  'searchbox',
+  'search',
+  'listbox',
+  'menuitem',
+  'option'
+]
+
+// Check if the current focused element is a typing element
+const isTypingElement = (element: Element | null): boolean => {
+  if (!element) return false
+
+  // Check if element is a typing element by tag name
+  if (TYPING_ELEMENTS.includes(element.tagName)) {
+    return true
+  }
+
+  // Check if element has contenteditable attribute
+  if (element.getAttribute('contenteditable') === 'true') {
+    return true
+  }
+
+  // Check if element has specific roles
+  const role = element.getAttribute('role')
+  if (role && TYPING_ROLES.includes(role)) {
+    return true
+  }
+
+  // Check if element is inside a typing element (using closest for more reliable checking)
+  const selector = [
+    ...TYPING_ELEMENTS.map((tag) => tag.toLowerCase()),
+    '[contenteditable="true"]',
+    '[contenteditable]',
+    ...TYPING_ROLES.map((role) => `[role="${role}"]`)
+  ].join(',')
+
+  const parentTypingElement = element.closest(selector)
+  if (parentTypingElement) {
+    return true
+  }
+
+  // Additional checks for common rich text editor classes and IDs
+  const isInRichTextEditor = element.closest(
+    [
+      '.ProseMirror',
+      '.ql-editor',
+      '.toastui-editor-contents',
+      '.wysiwyg-editor',
+      '.rich-text-editor',
+      '[data-gramm_editor]',
+      '[class*="editor"]',
+      '[class*="rich-text"]'
+    ].join(',')
+  )
+
+  if (isInRichTextEditor) {
+    return true
+  }
+
+  return false
+}
+
 export const useKeyboardShortcuts = ({
   isOnMixesPage,
   toggleSortOrder,
@@ -25,6 +99,44 @@ export const useKeyboardShortcuts = ({
 
   const setupKeyboardShortcuts = () => {
     const down = (e: KeyboardEvent) => {
+      // Check if user is focused on a typing element
+      const activeElement = document.activeElement
+      if (isTypingElement(activeElement)) {
+        return
+      }
+
+      // Allow browser navigation shortcuts to pass through (only cmd/ctrl + key combinations)
+      const isBrowserNavigation =
+        (e.metaKey || e.ctrlKey) &&
+        [
+          'ArrowLeft', // cmd+left = back
+          'ArrowRight', // cmd+right = forward
+          'r', // cmd+r = reload
+          't', // cmd+t = new tab
+          'w', // cmd+w = close tab
+          'l', // cmd+l = focus address bar
+          'a', // cmd+a = select all
+          'c', // cmd+c = copy
+          'v', // cmd+v = paste
+          'z', // cmd+z = undo
+          'f', // cmd+f = find (conflicts with our fullscreen shortcut, but browser takes precedence)
+          'n', // cmd+n = new window
+          ',', // cmd+, = preferences
+          '1',
+          '2',
+          '3',
+          '4',
+          '5',
+          '6',
+          '7',
+          '8',
+          '9' // cmd+1-9 = switch tabs
+        ].includes(e.key)
+
+      if (isBrowserNavigation) {
+        return // Allow browser shortcuts to work normally
+      }
+
       // Always allow cmd+k to toggle command dialog
       if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault()

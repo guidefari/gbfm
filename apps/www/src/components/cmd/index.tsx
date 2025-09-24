@@ -14,6 +14,7 @@ import {
 import { useUIStore } from '@/store'
 import { useAuthStore } from '@/store/auth'
 import { useAudioPlayerState } from '@/store/audioPlayer'
+import { useContentStore } from '@/store/content'
 import { NavigationCommands } from './navigation/commands'
 import { useNavigationActions } from './navigation/actions'
 import { AudioCommands } from './audio/commands'
@@ -21,6 +22,8 @@ import { SortingCommands } from './sorting/commands'
 import { useSortingActions } from './sorting/actions'
 import { SettingsCommands } from './settings/commands'
 import { useSettingsActions } from './settings/actions'
+import { ContentCommands } from './content/commands'
+import { useContentActions } from './content/actions'
 import { useKeyboardShortcuts } from './keyboard-shortcuts'
 import { version } from '../../../../../package.json'
 
@@ -29,13 +32,28 @@ export function CommandDialogDemo() {
   const { Cmd, openCmd, closeCmd, toggleCmd, mixesSorting } = useUIStore()
   const { isAuthenticated } = useAuthStore()
   const { audioSrc } = useAudioPlayerState()
+  useContentStore()
 
   const navigationActions = useNavigationActions(closeCmd)
   const sortingActions = useSortingActions(closeCmd)
   const settingsActions = useSettingsActions(closeCmd)
+  const contentActions = useContentActions(closeCmd)
 
   const isOnMixesPage = routerState.location.pathname === '/mixes'
   const isOnHomePage = routerState.location.pathname === '/'
+
+  // Check if we're on a read page and can edit current content
+  const readPageMatch = routerState.location.pathname.match(
+    /^\/read\/([^\/]+)\/([^\/]+)$/
+  )
+  const isOnReadPage = Boolean(readPageMatch)
+  const currentArchetype = readPageMatch?.[1]
+  const currentId = readPageMatch?.[2]
+
+  // For now, allow editing for authenticated users on audio content
+  const isAudioContent =
+    currentArchetype && ['mix', 'track', 'misc'].includes(currentArchetype)
+  const canEdit = isAuthenticated && isAudioContent
 
   const { setupKeyboardShortcuts } = useKeyboardShortcuts({
     isOnMixesPage,
@@ -97,6 +115,31 @@ export function CommandDialogDemo() {
             </CommandGroup>
           </>
         )}
+
+        {isOnReadPage && canEdit && (
+          <>
+            <CommandSeparator />
+            <CommandGroup heading='Content Actions'>
+              <ContentCommands
+                canEdit={canEdit}
+                onEditContent={() => {
+                  console.log(
+                    'Edit clicked, archetype:',
+                    currentArchetype,
+                    'id:',
+                    currentId
+                  )
+                  if (currentArchetype && currentId) {
+                    contentActions.editContent(currentArchetype, currentId)
+                  } else {
+                    console.log('No archetype/id available')
+                  }
+                }}
+              />
+            </CommandGroup>
+          </>
+        )}
+
         <CommandSeparator />
         {isAuthenticated && (
           <CommandGroup heading='Settings'>
