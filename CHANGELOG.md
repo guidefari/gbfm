@@ -1,3 +1,10 @@
+# [0.26.0](https://github.com/guidefari/gbfm/compare/v0.25.1...v0.26.0) (2025-09-24)
+
+
+### Features
+
+* content endpoints ([4731b9c](https://github.com/guidefari/gbfm/commit/4731b9cd72928ba2b2935cf70da8e34fe77a50f2))
+
 ## [0.25.1](https://github.com/guidefari/gbfm/compare/v0.25.0...v0.25.1) (2025-09-14)
 
 
