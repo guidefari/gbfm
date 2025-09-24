@@ -1,7 +1,7 @@
 'use client'
 
 import type React from 'react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -27,7 +27,7 @@ import {
   Loader2
 } from 'lucide-react'
 import { createLazyFileRoute, useRouter } from '@tanstack/react-router'
-import { fetcher, VPS_BASE_URL } from '@/lib/http'
+import { fetcher, useAudioBySlug, VPS_BASE_URL } from '@/lib/http'
 import { useMutation } from '@tanstack/react-query'
 import { useAuthStore } from '@/store'
 import { toast } from '@/components/ui/use-toast'
@@ -48,6 +48,18 @@ interface AudioFormData {
 }
 
 function UploadPage() {
+  const search = Route.useSearch()
+  const isEditMode =
+    (search.edit === 'true' || search.edit === true) &&
+    search.archetype &&
+    search.id
+
+  // Load existing content if in edit mode
+  const editQuery = useAudioBySlug(
+    search.archetype as 'mix' | 'track' | 'misc',
+    search.id || ''
+  )
+
   const [formData, setFormData] = useState<AudioFormData>({
     title: '',
     description: '',
@@ -73,6 +85,23 @@ function UploadPage() {
 
   const { user } = useAuthStore()
   const router = useRouter()
+
+  // Populate form data when editing existing content
+  useEffect(() => {
+    if (isEditMode && editQuery.data && !editQuery.isPending) {
+      const data = editQuery.data
+      setFormData({
+        title: data.title,
+        description: data.description,
+        slug: data.slug,
+        type: data.type,
+        content: data.content,
+        thumbnailUrl: data.thumbnailUrl,
+        tags: data.tags || [],
+        draft: data.draft
+      })
+    }
+  }, [isEditMode, editQuery.data, editQuery.isPending])
 
   const generateSlug = (title: string) => {
     return title
@@ -141,31 +170,36 @@ function UploadPage() {
 
       setUploadStep('creating-record')
 
-      // Create audio record
+      // Create or update audio record
       const audioData = {
         title: data.title,
         description: data.description,
         slug: data.slug || generateSlug(data.title),
         content: data.content,
         thumbnailUrl: imageUrl,
-        url: audioUrl,
+        url: audioUrl || editQuery.data?.url, // Keep existing URL if no new audio file
         type: data.type,
         tags: data.tags,
         authorIds: [user?.id]
       }
 
-      const result = await fetcher(`${VPS_BASE_URL}/content/audio`, {
-        method: 'POST',
-        body: JSON.stringify(audioData)
-      })
+      const result = await fetcher(
+        isEditMode
+          ? `${VPS_BASE_URL}/content/audio/${search.archetype}/${search.id}`
+          : `${VPS_BASE_URL}/content/audio`,
+        {
+          method: isEditMode ? 'PATCH' : 'POST',
+          body: JSON.stringify(audioData)
+        }
+      )
 
       setUploadStep('success')
       return result
     },
-    onSuccess: (result) => {
+    onSuccess: () => {
       toast({
-        title: 'Upload successful!',
-        description: `"${formData.title}" has been uploaded successfully.`
+        title: isEditMode ? 'Update successful!' : 'Upload successful!',
+        description: `"${formData.title}" has been ${isEditMode ? 'updated' : 'uploaded'} successfully.`
       })
 
       // Reset form after a brief delay to show success state
@@ -284,7 +318,7 @@ function UploadPage() {
   }
 
   const handleSubmit = async (isDraft: boolean) => {
-    if (!audioFile) {
+    if (!isEditMode && !audioFile) {
       toast({
         title: 'Audio file required',
         description: 'Please select an audio file to upload.',
@@ -376,10 +410,12 @@ Add any relevant information, credits, or notes...`
         <div className='flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-start'>
           <div>
             <h1 className='text-3xl font-bold text-gb-highlight'>
-              Upload Audio
+              {isEditMode ? 'Edit Audio' : 'Upload Audio'}
             </h1>
             <p className='pl-0 mt-1 text-gb-default-text'>
-              Share your mixes, tracks, and audio creations
+              {isEditMode
+                ? 'Update your audio content'
+                : 'Share your mixes, tracks, and audio creations'}
             </p>
           </div>
           <div className='flex items-center space-x-4'>
@@ -399,7 +435,7 @@ Add any relevant information, credits, or notes...`
             </Button>
             <Button
               onClick={() => handleSubmit(false)}
-              disabled={isUploading || !audioFile || uploadStep === 'success'}
+              // disabled={isUploading || !audioFile || uploadStep === 'success'}
               className='bg-gb-pastel-green-2 hover:bg-gb-highlight text-gb-darker-bg'>
               {isUploading ? (
                 <Loader2 className='mr-2 w-4 h-4 animate-spin' />
@@ -556,7 +592,6 @@ Add any relevant information, credits, or notes...`
                   }
                   placeholder={`Brief description of your ${getTypeLabel(formData.type).toLowerCase()}...`}
                   className='bg-gb-bg border-gb-pastel-green-2/30 text-gb-default-text focus:border-gb-highlight'
-                  rows={3}
                 />
               </div>
 

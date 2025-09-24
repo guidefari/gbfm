@@ -11,12 +11,14 @@ import {
   audioToAuthors,
   type SelectMdxCompiledAudio
 } from '@/db/audio.schema'
+import { authorsTable } from '@/db/author.schema'
 import { postsTable, postsToAuthors } from '@/db/post.schema'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
 import type { AppRouteHandler } from '@/lib/types'
 
 import type {
   CreateAudioRoute,
+  UpdateAudioBySlugRoute,
   CreateMixRoute,
   CreatePostRoute,
   GetAudioBySlugRoute,
@@ -151,6 +153,7 @@ export const getAudioBySlug: AppRouteHandler<GetAudioBySlugRoute> = async (
   const { type, slug } = c.req.valid('param')
 
   try {
+    // First get the audio record
     const [audio] = await db
       .select()
       .from(audioTable)
@@ -161,9 +164,25 @@ export const getAudioBySlug: AppRouteHandler<GetAudioBySlugRoute> = async (
       return c.json({ error: 'Audio not found' }, HttpStatusCodes.NOT_FOUND)
     }
 
+    // Then get the authors
+    const authors = await db
+      .select({
+        id: authorsTable.id,
+        name: authorsTable.name,
+        username: authorsTable.username
+      })
+      .from(audioToAuthors)
+      .innerJoin(authorsTable, eq(audioToAuthors.authorId, authorsTable.id))
+      .where(eq(audioToAuthors.audioId, audio.id))
+
     let processedAudio: SelectMdxCompiledAudio = {
       ...audio,
-      compiledContent: ''
+      compiledContent: '',
+      authors: authors.map((author) => ({
+        id: author.id,
+        name: author.name,
+        username: author.username || ''
+      }))
     }
 
     if (audio.content) {
@@ -171,7 +190,7 @@ export const getAudioBySlug: AppRouteHandler<GetAudioBySlugRoute> = async (
 
       if (isMDXCompilationResult(mdxResult)) {
         processedAudio = {
-          ...audio,
+          ...processedAudio,
           compiledContent: mdxResult.compiled
         }
       } else {
@@ -185,6 +204,99 @@ export const getAudioBySlug: AppRouteHandler<GetAudioBySlugRoute> = async (
     console.error('Error fetching audio by slug:', error)
     return c.json(
       { error: 'Failed to fetch audio' },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
+  }
+}
+
+export const updateAudioBySlug: AppRouteHandler<
+  UpdateAudioBySlugRoute
+> = async (c) => {
+  const { type, slug } = c.req.valid('param')
+  const updateData = c.req.valid('json')
+  const user = c.get('user')
+
+  if (!user) {
+    return c.json({ error: 'Unauthorized' }, HttpStatusCodes.UNAUTHORIZED)
+  }
+
+  try {
+    // First check if the audio exists and user is authorized
+    const [existingAudio] = await db
+      .select()
+      .from(audioTable)
+      .where(and(eq(audioTable.type, type), eq(audioTable.slug, slug)))
+      .limit(1)
+
+    if (!existingAudio) {
+      return c.json({ error: 'Audio not found' }, HttpStatusCodes.NOT_FOUND)
+    }
+
+    // Check if user is an author of this content
+    const authorship = await db
+      .select()
+      .from(audioToAuthors)
+      .where(
+        and(
+          eq(audioToAuthors.audioId, existingAudio.id),
+          eq(audioToAuthors.authorId, user.id)
+        )
+      )
+      .limit(1)
+
+    if (authorship.length === 0) {
+      return c.json(
+        {
+          error: 'Not authorized to edit this content'
+        },
+        HttpStatusCodes.UNAUTHORIZED
+      )
+    }
+
+    // Update the audio record
+    const [updatedAudio] = await db
+      .update(audioTable)
+      .set({ ...updateData, updatedAt: new Date() })
+      .where(eq(audioTable.id, existingAudio.id))
+      .returning()
+
+    // Get authors for response
+    const authors = await db
+      .select({
+        id: authorsTable.id,
+        name: authorsTable.name,
+        username: authorsTable.username
+      })
+      .from(audioToAuthors)
+      .innerJoin(authorsTable, eq(audioToAuthors.authorId, authorsTable.id))
+      .where(eq(audioToAuthors.audioId, updatedAudio.id))
+
+    // Compile MDX if content was updated
+    let processedAudio: SelectMdxCompiledAudio = {
+      ...updatedAudio,
+      compiledContent: '',
+      authors: authors.map((author) => ({
+        id: author.id,
+        name: author.name,
+        username: author.username || ''
+      }))
+    }
+
+    if (updatedAudio.content) {
+      const mdxResult = await compileMDX(updatedAudio.content)
+      if (isMDXCompilationResult(mdxResult)) {
+        processedAudio = {
+          ...processedAudio,
+          compiledContent: mdxResult.compiled
+        }
+      }
+    }
+
+    return c.json(processedAudio, HttpStatusCodes.OK)
+  } catch (error) {
+    console.error('Error updating audio:', error)
+    return c.json(
+      { error: 'Failed to update audio' },
       HttpStatusCodes.INTERNAL_SERVER_ERROR
     )
   }

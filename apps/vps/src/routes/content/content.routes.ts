@@ -4,6 +4,7 @@ import { jsonContent, jsonContentRequired } from 'stoker/openapi/helpers'
 import { createErrorSchema } from 'stoker/openapi/schemas'
 import {
   createAudioSchema,
+  insertAudioSchema,
   selectAudioSchema,
   selectMdxCompiledAudioSchema
 } from '@/db/audio.schema'
@@ -207,6 +208,40 @@ export const getAudioBySlug = createRoute({
   }
 })
 
+export const updateAudioBySlug = createRoute({
+  path: '/audio/{type}/{slug}',
+  method: 'patch',
+  request: {
+    params: z.object({
+      type: z.enum(['mix', 'track', 'misc']),
+      slug: z.string()
+    }),
+    body: jsonContentRequired(
+      insertAudioSchema.partial().omit({ type: true }),
+      'The audio data to update'
+    )
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      selectMdxCompiledAudioSchema,
+      'Updated audio item'
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      z.object({ error: z.string() }),
+      'Audio not found'
+    ),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
+      z.object({ error: z.string() }),
+      'Not authorized to edit this content'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to update audio'
+    )
+  }
+})
+
 export const createAudio = createRoute({
   path: '/audio',
   method: 'post',
@@ -242,4 +277,5 @@ export type CreateMixRoute = typeof createMix
 export type ProcessMixUploadRoute = typeof processMixUpload
 export type GetAudioByTypeRoute = typeof getAudioByType
 export type GetAudioBySlugRoute = typeof getAudioBySlug
+export type UpdateAudioBySlugRoute = typeof updateAudioBySlug
 export type CreateAudioRoute = typeof createAudio
