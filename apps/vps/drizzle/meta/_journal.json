@@ -8,6 +8,13 @@
       "when": 1753416979633,
       "tag": "0003_clever_paladin",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1759090789599,
+      "tag": "0004_worthless_white_queen",
+      "breakpoints": true
     }
   ]
 }
