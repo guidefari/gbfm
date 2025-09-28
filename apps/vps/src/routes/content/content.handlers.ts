@@ -29,6 +29,12 @@ import type {
 
 export const createPost: AppRouteHandler<CreatePostRoute> = async (c) => {
   const { authorIds, ...postData } = c.req.valid('json')
+  const user = c.get('user')
+
+  let finalAuthorIds: string[] = authorIds || []
+  if (finalAuthorIds.length === 0) {
+    finalAuthorIds = [user.id]
+  }
 
   try {
     // Start a transaction since we need to insert into two tables
@@ -38,7 +44,7 @@ export const createPost: AppRouteHandler<CreatePostRoute> = async (c) => {
 
       // Insert the post-author relationships
       await tx.insert(postsToAuthors).values(
-        authorIds.map((authorId: string) => ({
+        finalAuthorIds.map((authorId: string) => ({
           postId: newPost.id,
           authorId
         }))
@@ -86,13 +92,19 @@ export const getPostsByTag: AppRouteHandler<GetPostsByTagRoute> = async (c) => {
 // Mix management handlers
 export const createMix: AppRouteHandler<CreateMixRoute> = async (c) => {
   const { authorIds, ...mixData } = c.req.valid('json')
+  const user = c.get('user')
+
+  let finalAuthorIds: string[] = authorIds || []
+  if (finalAuthorIds.length === 0) {
+    finalAuthorIds = [user.id]
+  }
 
   try {
     const result = await db.transaction(async (tx) => {
       const [newMix] = await tx.insert(audioTable).values(mixData).returning()
 
       await tx.insert(audioToAuthors).values(
-        authorIds.map((authorId: string) => ({
+        finalAuthorIds.map((authorId: string) => ({
           audioId: newMix.id,
           authorId
         }))
@@ -216,10 +228,6 @@ export const updateAudioBySlug: AppRouteHandler<
   const updateData = c.req.valid('json')
   const user = c.get('user')
 
-  if (!user) {
-    return c.json({ error: 'Unauthorized' }, HttpStatusCodes.UNAUTHORIZED)
-  }
-
   try {
     // First check if the audio exists and user is authorized
     const [existingAudio] = await db
@@ -304,6 +312,13 @@ export const updateAudioBySlug: AppRouteHandler<
 
 export const createAudio: AppRouteHandler<CreateAudioRoute> = async (c) => {
   const { authorIds, ...audioData } = c.req.valid('json')
+  const user = c.get('user')
+
+  let finalAuthorIds: string[] = authorIds || []
+  if (finalAuthorIds.length === 0) {
+    finalAuthorIds = [user.id]
+  }
+
   try {
     const result = await db.transaction(async (tx) => {
       const [newAudio] = await tx
@@ -311,7 +326,7 @@ export const createAudio: AppRouteHandler<CreateAudioRoute> = async (c) => {
         .values(audioData)
         .returning()
       await tx.insert(audioToAuthors).values(
-        authorIds.map((authorId: string) => ({
+        finalAuthorIds.map((authorId: string) => ({
           audioId: newAudio.id,
           authorId
         }))

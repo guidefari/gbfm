@@ -55,7 +55,7 @@ export const insertAudioSchema = createInsertSchema(audioTable).omit({
 })
 
 export const createAudioSchema = insertAudioSchema.extend({
-  authorIds: z.array(z.string().uuid()).min(1)
+  authorIds: z.array(z.string().uuid()).min(1).optional()
 })
 
 export type InsertAudio = z.infer<typeof insertAudioSchema>

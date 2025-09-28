@@ -6,6 +6,7 @@ import { useAudioByType } from '@/lib/http'
 import { useUIStore } from '@/store'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
 import { TrackContextMenu } from '@/components/TrackContextMenu'
+import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 
 export const Route = createFileRoute('/mixes/')({
   component: Component
@@ -54,9 +55,15 @@ function Component() {
               <button
                 type='button'
                 className='relative group focus:outline-none'
-                onClick={() => loadTrack(mix.url, mix.thumbnailUrl, mix.title)}>
+                onClick={() =>
+                  loadTrack(
+                    mix.url,
+                    mix.thumbnailUrl || DEFAULT_IMAGE_URL,
+                    mix.title
+                  )
+                }>
                 <img
-                  src={mix.thumbnailUrl}
+                  src={mix.thumbnailUrl || DEFAULT_IMAGE_URL}
                   alt={mix.title}
                   className='object-cover w-14 h-14 rounded-lg border border-border bg-background'
                 />

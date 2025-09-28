@@ -11,7 +11,25 @@
     {
       "name": "list-content",
       "title": "List Content",
-      "description": "",
+      "description": "Browse and view content",
+      "mode": "view"
+    },
+    {
+      "name": "create-mix",
+      "title": "Create Mix",
+      "description": "Create a new mix with metadata",
+      "mode": "view"
+    },
+    {
+      "name": "edit-mix",
+      "title": "Edit Mix",
+      "description": "Search and edit existing mixes",
+      "mode": "view"
+    },
+    {
+      "name": "sign-in",
+      "title": "Sign In",
+      "description": "Sign in to get access token",
       "mode": "view"
     }
   ],

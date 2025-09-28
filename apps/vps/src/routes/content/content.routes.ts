@@ -13,6 +13,7 @@ import {
   selectPostSchema,
   tagParamsSchema
 } from '@/db/post.schema'
+import { authenticate } from '@/middlewares/auth.middleware'
 
 const tags = ['Content']
 
@@ -26,6 +27,7 @@ const postResponseSchema = selectPostSchema
 export const createPost = createRoute({
   path: '/post',
   method: 'post',
+  middleware: [authenticate],
   request: {
     body: jsonContentRequired(createPostSchema, 'The post to create')
   },
@@ -34,6 +36,10 @@ export const createPost = createRoute({
     [HttpStatusCodes.CREATED]: jsonContent(
       postResponseSchema,
       'The created post'
+    ),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
+      z.object({ error: z.string() }),
+      'Unauthorized'
     ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
@@ -87,6 +93,7 @@ export const seedMixes = createRoute({
 export const createMix = createRoute({
   path: '/mixes',
   method: 'post',
+  middleware: [authenticate],
   request: {
     body: jsonContentRequired(createAudioSchema, 'The audio to create')
   },
@@ -95,6 +102,10 @@ export const createMix = createRoute({
     [HttpStatusCodes.CREATED]: jsonContent(
       selectAudioSchema,
       'The created audio'
+    ),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
+      z.object({ error: z.string() }),
+      'Unauthorized'
     ),
     [HttpStatusCodes.CONFLICT]: jsonContent(
       z.object({ error: z.string() }),
@@ -211,6 +222,7 @@ export const getAudioBySlug = createRoute({
 export const updateAudioBySlug = createRoute({
   path: '/audio/{type}/{slug}',
   method: 'patch',
+  middleware: [authenticate],
   request: {
     params: z.object({
       type: z.enum(['mix', 'track', 'misc']),
@@ -245,6 +257,7 @@ export const updateAudioBySlug = createRoute({
 export const createAudio = createRoute({
   path: '/audio',
   method: 'post',
+  middleware: [authenticate],
   request: {
     body: jsonContentRequired(createAudioSchema, 'The audio to create')
   },
@@ -253,6 +266,10 @@ export const createAudio = createRoute({
     [HttpStatusCodes.CREATED]: jsonContent(
       selectAudioSchema,
       'The created audio'
+    ),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
+      z.object({ error: z.string() }),
+      'Unauthorized'
     ),
     [HttpStatusCodes.CONFLICT]: jsonContent(
       z.object({ error: z.string() }),
