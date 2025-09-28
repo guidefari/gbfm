@@ -7,7 +7,7 @@ type Props = {
   content: string
   thumbnailUrl: string
   title: string
-  date?: string
+  date?: string | Date
   description?: string
   youtubeId?: string
   mp3Url?: string

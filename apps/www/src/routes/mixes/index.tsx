@@ -7,7 +7,7 @@ import { useUIStore } from '@/store'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
 import { TrackContextMenu } from '@/components/TrackContextMenu'
 
-export const Route = createFileRoute('/mixes')({
+export const Route = createFileRoute('/mixes/')({
   component: Component
 })
 
@@ -71,8 +71,8 @@ function Component() {
               </button>
               <div className='flex-1 min-w-0'>
                 <Link
-                  to='/read/$archetype/$id'
-                  params={{ archetype: 'mix', id: mix.slug }}
+                  to='/mixes/$mixId'
+                  params={{ mixId: mix.slug }}
                   className='block font-bold leading-none truncate text-highlight hover:underline'>
                   {mix.title}
                 </Link>

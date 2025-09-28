@@ -1,4 +1,4 @@
-import { createLazyFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { useMemo, useState } from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
 import { Calendar, Music, Mic, FileMusic, Filter, Search } from 'lucide-react'
@@ -18,7 +18,7 @@ import { TrackContextMenu } from '@/components/TrackContextMenu'
 import { useAudioByType } from '@/lib/http'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
 
-export const Route = createLazyFileRoute('/tracks')({
+export const Route = createFileRoute('/tracks/')({
   component: TracksPage
 })
 
@@ -238,8 +238,20 @@ function TracksPage() {
                     <div className='flex-1 min-w-0'>
                       <div className='flex justify-between items-start mb-2'>
                         <Link
-                          to='/read/$archetype/$id'
-                          params={{ archetype: item.type, id: item.slug }}
+                          to={
+                            item.type === 'mix'
+                              ? '/mixes/$mixId'
+                              : item.type === 'track'
+                                ? '/tracks/$trackId'
+                                : '/misc/$miscId'
+                          }
+                          params={
+                            item.type === 'mix'
+                              ? { mixId: item.slug }
+                              : item.type === 'track'
+                                ? { trackId: item.slug }
+                                : { miscId: item.slug }
+                          }
                           className='font-bold text-gb-highlight hover:underline line-clamp-2'>
                           {item.title}
                         </Link>
