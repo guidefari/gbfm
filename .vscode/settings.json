@@ -4,5 +4,14 @@
     "source.fixAll.biome": "explicit",
     "source.organizeImports.biome": "explicit",
     "source.removeUnused.ts": "explicit"
-  }
+  },
+  "workbench.colorCustomizations": {
+    "titleBar.activeForeground": "#000",
+    "titleBar.inactiveForeground": "#000000CC",
+    "titleBar.activeBackground": "#78b1fbcc",
+    "titleBar.inactiveBackground": "#7abcd780"
+  },
 }
+
+
+
