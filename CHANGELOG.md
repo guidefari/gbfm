@@ -1,3 +1,10 @@
+# [0.27.0](https://github.com/guidefari/gbfm/compare/v0.26.0...v0.27.0) (2025-09-28)
+
+
+### Features
+
+* cms wip ([df8a83e](https://github.com/guidefari/gbfm/commit/df8a83e29d19761ca353a5e411dec65cb9d8743d))
+
 # [0.26.0](https://github.com/guidefari/gbfm/compare/v0.25.1...v0.26.0) (2025-09-24)
 
 
