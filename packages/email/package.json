@@ -1,0 +1,26 @@
+{
+  "name": "@gbfm/email",
+  "type": "module",
+  "exports": {
+    "./*.tsx": "./src/*.tsx",
+    "./*.ts": "./src/*.ts",
+    "./*": "./src/*.ts"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "dev": "npx react-email dev --dir emails",
+    "typecheck": "tsc --noEmit",
+    "test:send": "bun src/test-send.ts"
+  },
+  "devDependencies": {
+    "react-email": "4.0.16",
+    "@react-email/preview-server": "latest"
+  },
+  "dependencies": {
+    "@aws-sdk/client-sesv2": "^3.849.0",
+    "@react-email/components": "0.0.42",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "sst": "3.17.10"
+  }
+}

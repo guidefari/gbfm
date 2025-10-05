@@ -76,3 +76,12 @@ new sst.x.DevCommand('Test_Docker', {
     autostart: false
   }
 })
+
+new sst.x.DevCommand('Email_Preview', {
+  link: [email, ...allSecrets],
+  dev: {
+    command: 'bun dev',
+    directory: './packages/email',
+    autostart: false
+  }
+})
