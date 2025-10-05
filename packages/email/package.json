@@ -17,10 +17,10 @@
     "@react-email/preview-server": "latest"
   },
   "dependencies": {
-    "@aws-sdk/client-sesv2": "^3.849.0",
-    "@react-email/components": "0.0.42",
-    "react": "19.1.0",
-    "react-dom": "19.1.0",
-    "sst": "3.17.10"
+    "@aws-sdk/client-sesv2": "^3.901.0",
+    "@react-email/components": "0.5.5",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "sst": "3.17.14"
   }
 }
