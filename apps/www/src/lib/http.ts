@@ -1,4 +1,3 @@
-import type { MDXArchiveTypes } from '@gbfm/core/mdx/mdx.types'
 import type { SelectAudio, SelectMdxCompiledAudio } from '@gbfm/vps/schemas'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { type User, useAuthStore } from '@/store/auth'
@@ -60,27 +59,6 @@ export async function fetcher<T>(
   } catch (error) {
     console.error(error)
     throw error
-  }
-}
-
-type Response<T> = {
-  result: T
-}
-
-export function useArchetype(type: MDXArchiveTypes.archetype) {
-  const { data, error, isPending } = useQuery<Response<string[]>, Error>({
-    queryKey: ['mdx-archive', type],
-    queryFn: async () =>
-      fetcher(`${VPS_BASE_URL}/mdx-archive/list`, {
-        method: 'POST',
-        body: JSON.stringify({ archetype: type })
-      })
-  })
-
-  return {
-    data: data,
-    error,
-    isPending
   }
 }
 

@@ -5,7 +5,7 @@ new sst.x.DevCommand('raycast', {
   // link: [...allSecrets, email],
   dev: {
     command: 'bun dev',
-    directory: './apps/gbfm-cms',
+    directory: './apps/raycast',
     autostart: false
   }
 })
