@@ -1,3 +1,10 @@
+## [0.28.3](https://github.com/guidefari/gbfm/compare/v0.28.2...v0.28.3) (2025-10-06)
+
+
+### Bug Fixes
+
+* remove redundant typecheck ([55e081c](https://github.com/guidefari/gbfm/commit/55e081c05eb1239a3cc86ee070383c604c046f33))
+
 ## [0.28.2](https://github.com/guidefari/gbfm/compare/v0.28.1...v0.28.2) (2025-10-06)
 
 
