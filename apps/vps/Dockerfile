@@ -7,7 +7,6 @@ FROM base AS deps
 # Copy lockfile and package.json files first for better caching
 COPY bun.lock ./
 COPY package.json ./
-COPY packages/core/package.json ./packages/core/
 COPY apps/vps/package.json ./apps/vps/
 
 # Install dependencies with retry and cache clearing
@@ -15,7 +14,6 @@ RUN bun install --omit dev
 
 # Copy source code after dependencies are installed (exclude node_modules)
 COPY packages/core/src ./packages/core/src
-COPY packages/core/package.json ./packages/core/
 COPY apps/vps/src ./apps/vps/src
 COPY apps/vps/package.json apps/vps/tsconfig.json ./apps/vps/
 COPY tsconfig.json ./
