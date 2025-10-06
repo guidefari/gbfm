@@ -24,22 +24,24 @@ jobs:
       contents: read
 
     steps:
-      - name: Checkout repository to get tags
+      - name: Initial checkout to determine latest tag
+        if: inputs.ref == ''
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Get latest tag
         id: get-latest-tag
+        if: inputs.ref == ''
         run: |
           LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "prod")
           echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
           echo "📌 Latest tag: $LATEST_TAG"
 
-      - name: Show me the deployment ref bossman
+      - name: Determine deployment ref
         id: deployment-ref
         run: |
-          REF="${{ inputs.ref || github.ref_name || steps.get-latest-tag.outputs.latest_tag }}"
+          REF="${{ inputs.ref || steps.get-latest-tag.outputs.latest_tag || github.ref }}"
           echo "ref=$REF" >> $GITHUB_OUTPUT
           echo "🚀 Deploying ref: $REF"
 
