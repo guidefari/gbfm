@@ -1,24 +1,21 @@
-import { Link, type LinkProps } from "@tanstack/react-router";
-
 type Props = {
-	children: React.ReactNode | string;
-	className?: string;
-	as?: string;
-	href: string;
-	target?: string;
-	rel?: string;
-} & LinkProps;
+  children: React.ReactNode | string
+  className?: string
+  href: string
+  target?: string
+  rel?: string
+}
 
 export default function CustomLink({
-	as,
-	href,
-	children,
-	className,
-	...otherProps
+  href,
+  children,
+  className,
+  target,
+  rel
 }: Props) {
-	return (
-		<Link as={as} to={href} className={className} {...otherProps}>
-			{children}
-		</Link>
-	);
+  return (
+    <a href={href} className={className} target={target} rel={rel}>
+      {children}
+    </a>
+  )
 }

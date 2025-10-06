@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
-import type { SelectMix } from '@gbfm/vps/src/db/mix.schema'
+import type { SelectMix } from '@gbfm/vps/schemas'
 
 interface NowPlayingContext {
   url: string
@@ -381,7 +381,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
             id: mix.id,
             title: mix.title,
             url: mix.url,
-            thumbnailUrl: mix.thumbnailUrl,
+            thumbnailUrl: mix.thumbnailUrl || '',
             addedAt: Date.now()
           }
 

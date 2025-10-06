@@ -1,10 +1,12 @@
-import React, { useState, useRef, useEffect } from 'react'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { Heart, MoreHorizontal, Play, Plus, Share, X } from 'lucide-react'
+import type React from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { MoreHorizontal, Play, Plus, Heart, Share, X } from 'lucide-react'
-import { useAudioPlayerActions } from '@/store/audioPlayer'
+import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { cn } from '@/lib/utils'
+import { useAudioPlayerActions } from '@/store/audioPlayer'
 
 interface Track {
   queueId: string
@@ -216,11 +218,11 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
             isFullscreen && 'w-12 h-12 rounded-lg'
           )}>
           <img
-            src={track.thumbnailUrl || '/placeholder.svg'}
+            src={track.thumbnailUrl || DEFAULT_IMAGE_URL}
             alt={track.title}
             className='object-cover w-full h-full'
           />
-          <div className='flex absolute inset-0 justify-center items-center opacity-0 transition-opacity bg-black/40 group-hover:opacity-100'>
+          <div className='absolute inset-0 flex items-center justify-center transition-opacity opacity-0 bg-black/40 group-hover:opacity-100'>
             <Button
               variant='ghost'
               size='sm'
@@ -277,7 +279,7 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
               variant='ghost'
               size='sm'
               onClick={handleRemove}
-              className='p-0 w-8 h-8 hover:text-destructive'>
+              className='w-8 h-8 p-0 hover:text-destructive'>
               <X className='w-3 h-3' />
             </Button>
           )}
@@ -301,21 +303,21 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
       {contextMenu.isOpen && showContextMenu && (
         <div
           ref={menuRef}
-          className='fixed z-50 py-1 rounded-md border shadow-lg min-w-48 bg-background border-border'
+          className='fixed z-50 py-1 border rounded-md shadow-lg min-w-48 bg-background border-border'
           style={{
             left: contextMenu.x,
             top: contextMenu.y
           }}>
           <button
             onClick={handlePlayNow}
-            className='flex gap-2 items-center px-3 py-2 w-full text-sm text-left transition-colors text-foreground hover:bg-muted'>
+            className='flex items-center w-full gap-2 px-3 py-2 text-sm text-left transition-colors text-foreground hover:bg-muted'>
             <Play className='w-4 h-4' />
             Play now
           </button>
 
           <button
             onClick={handleAddToQueue}
-            className='flex gap-2 items-center px-3 py-2 w-full text-sm text-left transition-colors text-foreground hover:bg-muted'>
+            className='flex items-center w-full gap-2 px-3 py-2 text-sm text-left transition-colors text-foreground hover:bg-muted'>
             <Plus className='w-4 h-4' />
             Add to queue
           </button>
@@ -324,14 +326,14 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
 
           <button
             onClick={handleAddToFavorites}
-            className='flex gap-2 items-center px-3 py-2 w-full text-sm text-left transition-colors text-foreground hover:bg-muted'>
+            className='flex items-center w-full gap-2 px-3 py-2 text-sm text-left transition-colors text-foreground hover:bg-muted'>
             <Heart className='w-4 h-4' />
             Add to favorites
           </button>
 
           <button
             onClick={handleShare}
-            className='flex gap-2 items-center px-3 py-2 w-full text-sm text-left transition-colors text-foreground hover:bg-muted'>
+            className='flex items-center w-full gap-2 px-3 py-2 text-sm text-left transition-colors text-foreground hover:bg-muted'>
             <Share className='w-4 h-4' />
             Share
           </button>

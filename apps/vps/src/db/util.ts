@@ -1,5 +1,4 @@
-import { sql } from 'drizzle-orm'
-import { varchar, text, boolean, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { boolean, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
 
 export const defaultContentFields = {
   id: uuid().primaryKey().defaultRandom(),

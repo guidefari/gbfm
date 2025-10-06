@@ -1,44 +1,46 @@
 'use client'
-import React, { useRef, useEffect } from 'react'
 import {
-  DndContext,
   closestCenter,
+  DndContext,
+  type DragEndEvent,
   KeyboardSensor,
   PointerSensor,
   useSensor,
-  useSensors,
-  DragEndEvent
+  useSensors
 } from '@dnd-kit/core'
+import {
+  restrictToParentElement,
+  restrictToVerticalAxis
+} from '@dnd-kit/modifiers'
 import {
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy
 } from '@dnd-kit/sortable'
+import * as ScrollArea from '@radix-ui/react-scroll-area'
 import {
-  restrictToVerticalAxis,
-  restrictToParentElement
-} from '@dnd-kit/modifiers'
-import {
-  Play,
+  ChevronDown,
+  List,
+  MoreHorizontal,
   Pause,
-  SkipBack,
-  SkipForward,
-  Volume2,
-  VolumeX,
-  Shuffle,
+  Play,
   Repeat,
   Repeat1,
+  Shuffle,
+  SkipBack,
+  SkipForward,
   Star,
-  ChevronDown,
-  MoreHorizontal,
-  List
+  Volume2,
+  VolumeX
 } from 'lucide-react'
+import type React from 'react'
+import { useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
+import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { formatSeconds } from '@/lib/utils'
 import { attachVolumeScroll } from '@/lib/volumeScrollHandler'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
 import { SharedQueueItem } from './queue/SharedQueueItem'
-import * as ScrollArea from '@radix-ui/react-scroll-area'
 
 const FullscreenAudioPlayer = () => {
   const {
@@ -149,7 +151,7 @@ const FullscreenAudioPlayer = () => {
         isFullscreenVisible ? 'translate-y-0' : 'translate-y-full'
       }`}>
       {/* Header */}
-      <div className='flex justify-between items-center p-6'>
+      <div className='flex items-center justify-between p-6'>
         <Button
           variant='ghost'
           size='sm'
@@ -177,7 +179,7 @@ const FullscreenAudioPlayer = () => {
                 isQueueVisible ? 'w-4/5' : 'w-full max-w-md'
               }`}>
               <img
-                src={currentTrack.thumbnailUrl || '/placeholder.svg'}
+                src={currentTrack.thumbnailUrl || DEFAULT_IMAGE_URL}
                 alt={currentTrack.title}
                 className='object-cover w-full h-full'
               />
@@ -186,11 +188,11 @@ const FullscreenAudioPlayer = () => {
 
           {/* Track Info */}
           <div className='mb-8'>
-            <div className='flex justify-between items-center mb-2'>
+            <div className='flex items-center justify-between mb-2'>
               <h1 className='pr-4 text-2xl font-semibold leading-tight'>
                 {currentTrack.title}
               </h1>
-              <div className='flex flex-shrink-0 gap-2 items-center'>
+              <div className='flex items-center flex-shrink-0 gap-2'>
                 <Button
                   variant='ghost'
                   size='icon'
@@ -205,7 +207,7 @@ const FullscreenAudioPlayer = () => {
                   title='Toggle Queue'>
                   <List className='w-5 h-5' />
                   {queue.length > 0 && (
-                    <span className='flex absolute -top-1 -right-1 justify-center items-center w-4 h-4 text-xs rounded-full bg-primary text-primary-foreground'>
+                    <span className='absolute flex items-center justify-center w-4 h-4 text-xs rounded-full -top-1 -right-1 bg-primary text-primary-foreground'>
                       {queue.length}
                     </span>
                   )}
@@ -240,7 +242,7 @@ const FullscreenAudioPlayer = () => {
           </div>
 
           {/* Controls */}
-          <div className='flex gap-6 justify-center items-center mb-8'>
+          <div className='flex items-center justify-center gap-6 mb-8'>
             <Button
               variant='ghost'
               size='icon'
@@ -265,7 +267,7 @@ const FullscreenAudioPlayer = () => {
               {isPlaying ? (
                 <Pause className='w-8 h-8' />
               ) : (
-                <Play className='ml-1 w-8 h-8' />
+                <Play className='w-8 h-8 ml-1' />
               )}
             </Button>
             <Button
@@ -285,7 +287,7 @@ const FullscreenAudioPlayer = () => {
           </div>
 
           {/* Volume Control */}
-          <div className='flex gap-4 items-center'>
+          <div className='flex items-center gap-4'>
             <Button
               ref={volumeButtonRef}
               variant='ghost'
@@ -319,16 +321,16 @@ const FullscreenAudioPlayer = () => {
 
         {/* Right Panel - Queue */}
         {isQueueVisible && (
-          <div className='flex relative flex-col flex-1 min-w-0'>
-            <div className='flex flex-shrink-0 justify-between items-center mb-6'>
+          <div className='relative flex flex-col flex-1 min-w-0'>
+            <div className='flex items-center justify-between flex-shrink-0 mb-6'>
               <h2 className='text-xl font-semibold'>Up Next</h2>
             </div>
 
             <ScrollArea.Root className='h-4/5'>
               <ScrollArea.Viewport className='h-full'>
                 {queue.length === 0 ? (
-                  <div className='flex flex-col justify-center items-center p-8 h-full text-center'>
-                    <div className='flex justify-center items-center mb-4 w-16 h-16 rounded-full bg-muted'>
+                  <div className='flex flex-col items-center justify-center h-full p-8 text-center'>
+                    <div className='flex items-center justify-center w-16 h-16 mb-4 rounded-full bg-muted'>
                       <Play className='w-8 h-8 text-muted-foreground' />
                     </div>
                     <h3 className='mb-2 font-medium'>Your queue is empty</h3>

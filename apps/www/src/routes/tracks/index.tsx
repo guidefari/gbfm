@@ -1,8 +1,12 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { Calendar, FileMusic, Filter, Mic, Music, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
-import { Calendar, Music, Mic, FileMusic, Filter, Search } from 'lucide-react'
+import { MixesSkeleton } from '@/components/MixesSkeleton'
+import { TrackContextMenu } from '@/components/TrackContextMenu'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -11,10 +15,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent } from '@/components/ui/card'
-import { MixesSkeleton } from '@/components/MixesSkeleton'
-import { TrackContextMenu } from '@/components/TrackContextMenu'
+import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { useAudioByType } from '@/lib/http'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
 
@@ -141,7 +142,7 @@ function TracksPage() {
         <div className='flex flex-col gap-4 sm:flex-row sm:items-center'>
           <div className='flex-1'>
             <div className='relative'>
-              <Search className='absolute left-3 top-1/2 w-4 h-4 transform -translate-y-1/2 text-gb-default-text/60' />
+              <Search className='absolute w-4 h-4 transform -translate-y-1/2 left-3 top-1/2 text-gb-default-text/60' />
               <Input
                 placeholder='Search tracks, descriptions, tags...'
                 value={searchQuery}
@@ -156,7 +157,7 @@ function TracksPage() {
               value={filterType}
               onValueChange={(value: AudioType) => setFilterType(value)}>
               <SelectTrigger className='w-32 bg-gb-darker-bg border-gb-pastel-green-2/30 text-gb-default-text'>
-                <Filter className='mr-2 w-4 h-4' />
+                <Filter className='w-4 h-4 mr-2' />
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
@@ -210,12 +211,16 @@ function TracksPage() {
                         type='button'
                         className='relative group focus:outline-none'
                         onClick={() =>
-                          loadTrack(item.url, item.thumbnailUrl, item.title)
+                          loadTrack(
+                            item.url,
+                            item.thumbnailUrl || '',
+                            item.title
+                          )
                         }>
                         <img
-                          src={item.thumbnailUrl || '/placeholder.svg'}
+                          src={item.thumbnailUrl || DEFAULT_IMAGE_URL}
                           alt={item.title}
-                          className='object-cover w-16 h-16 rounded border bg-gb-bg border-gb-pastel-green-2/20'
+                          className='object-cover w-16 h-16 border rounded bg-gb-bg border-gb-pastel-green-2/20'
                         />
                         <div
                           className={`absolute inset-0 flex items-center justify-center rounded transition-opacity bg-black/50 ${
@@ -231,40 +236,43 @@ function TracksPage() {
                         </div>
                       </button>
                       {isActive && (
-                        <div className='absolute -inset-1 rounded bg-gb-highlight/20 -z-10'></div>
+                        <div className='absolute rounded -inset-1 bg-gb-highlight/20 -z-10'></div>
                       )}
                     </div>
 
                     <div className='flex-1 min-w-0'>
-                      <div className='flex justify-between items-start mb-2'>
-                        <Link
-                          to={
-                            item.type === 'mix'
-                              ? '/mixes/$mixId'
-                              : item.type === 'track'
-                                ? '/tracks/$trackId'
-                                : '/misc/$miscId'
-                          }
-                          params={
-                            item.type === 'mix'
-                              ? { mixId: item.slug }
-                              : item.type === 'track'
-                                ? { trackId: item.slug }
-                                : { miscId: item.slug }
-                          }
-                          className='font-bold text-gb-highlight hover:underline line-clamp-2'>
-                          {item.title}
-                        </Link>
+                      <div className='flex items-start justify-between mb-2'>
+                        {item.type === 'mix' ? (
+                          <Link
+                            to='/mixes/$mixId'
+                            params={{ mixId: item.slug }}
+                            className='font-bold text-gb-highlight hover:underline line-clamp-2'>
+                            {item.title}
+                          </Link>
+                        ) : item.type === 'track' ? (
+                          <Link
+                            to='/tracks/$trackId'
+                            params={{ trackId: item.slug }}
+                            className='font-bold text-gb-highlight hover:underline line-clamp-2'>
+                            {item.title}
+                          </Link>
+                        ) : (
+                          <a
+                            href={`/misc/${item.slug}`}
+                            className='font-bold text-gb-highlight hover:underline line-clamp-2'>
+                            {item.title}
+                          </a>
+                        )}
                       </div>
 
-                      <div className='flex gap-2 items-center mb-2 text-xs text-gb-default-text/70'>
+                      <div className='flex items-center gap-2 mb-2 text-xs text-gb-default-text/70'>
                         <Badge
                           variant='secondary'
                           className='border-0 bg-gb-pastel-green-2/20 text-gb-pastel-green-1'>
                           <span className='mr-1'>{getTypeIcon(item.type)}</span>
                           {getTypeLabel(item.type)}
                         </Badge>
-                        <span className='flex gap-1 items-center'>
+                        <span className='flex items-center gap-1'>
                           <Calendar className='w-3 h-3' />
                           {formatDate(new Date(item.createdAt).toISOString())}
                         </span>
@@ -307,7 +315,7 @@ function TracksPage() {
       {/* Empty state */}
       {filteredAndSortedData.length === 0 && !isPending && (
         <div className='py-12 text-center'>
-          <Music className='mx-auto mb-4 w-16 h-16 text-gb-default-text/40' />
+          <Music className='w-16 h-16 mx-auto mb-4 text-gb-default-text/40' />
           <h3 className='mb-2 text-lg font-semibold text-gb-default-text'>
             No tracks found
           </h3>

@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react'
 import { Plus, Play, Heart, Share } from 'lucide-react'
 import { useAudioPlayerActions } from '@/store/audioPlayer'
-import type { SelectMix } from '@gbfm/vps/src/db/mix.schema'
+import type { SelectMix } from '@gbfm/vps/schemas'
 
 interface TrackContextMenuProps {
   track: SelectMix
@@ -76,7 +76,7 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
   }
 
   const handlePlayNow = () => {
-    loadTrack(track.url, track.thumbnailUrl, track.title)
+    loadTrack(track.url, track.thumbnailUrl || '', track.title)
     closeContextMenu()
   }
 

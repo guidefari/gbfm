@@ -7,7 +7,7 @@
     "dev": "sst dev --stage=dev",
     "refresh": "sst refresh --stage=dev",
     "sso": "aws sso login --sso-session=terminal --no-browser",
-    "typecheck": "bun --filter=@gbfm/vps --filter=gbfm-cms typecheck",
+    "typecheck": "bun --filter=@gbfm/vps --filter=gbfm-cms --filter=@gbfm/www typecheck",
     "deploy": "sst deploy --stage=dev",
     "deploy:prod": "sst deploy --stage=prod",
     "gen": "cd vps && sst shell drizzle-kit generate",

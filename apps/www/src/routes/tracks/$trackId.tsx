@@ -1,4 +1,3 @@
-import { useQuery } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import * as React from 'react'
 import { LongPost } from '@/components/Layout/LongPost'
@@ -35,9 +34,9 @@ function TrackPage() {
   return (
     <LongPost
       title={data.title}
-      description={data.description}
+      description={data.description ?? ''}
       content={data.compiledContent ?? data.content}
-      thumbnailUrl={data.thumbnailUrl}
+      thumbnailUrl={data.thumbnailUrl ?? ''}
       date={data.createdAt}
       mp3Url={data.url}
     />

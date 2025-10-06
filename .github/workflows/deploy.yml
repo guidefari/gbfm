@@ -36,14 +36,14 @@ jobs:
         run: |
           LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "prod")
           echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
-          echo "📌 Latest tag: $LATEST_TAG"
+          echo "🏷️Latest tag: $LATEST_TAG"
 
       - name: Determine deployment ref
         id: deployment-ref
         run: |
           REF="${{ inputs.ref || steps.get-latest-tag.outputs.latest_tag || github.ref }}"
           echo "ref=$REF" >> $GITHUB_OUTPUT
-          echo "🚀 Deploying ref: $REF"
+          echo "Deploying ref: $REF"
 
       - name: Checkout deployment ref
         uses: actions/checkout@v4

@@ -1,23 +1,24 @@
 import {
-  DndContext,
   closestCenter,
+  DndContext,
+  type DragEndEvent,
   KeyboardSensor,
   PointerSensor,
   useSensor,
-  useSensors,
-  DragEndEvent
+  useSensors
 } from '@dnd-kit/core'
+import {
+  restrictToParentElement,
+  restrictToVerticalAxis
+} from '@dnd-kit/modifiers'
 import {
   SortableContext,
   sortableKeyboardCoordinates,
   verticalListSortingStrategy
 } from '@dnd-kit/sortable'
-import {
-  restrictToVerticalAxis,
-  restrictToParentElement
-} from '@dnd-kit/modifiers'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Play } from 'lucide-react'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
 import { QueueItem } from './QueueItem'
 
@@ -45,18 +46,18 @@ export const QueueColumn = () => {
   }
 
   return (
-    <div className='flex overflow-hidden flex-col w-full h-full border-l shadow-lg border-border bg-background'>
+    <div className='flex flex-col w-full h-full overflow-hidden border-l shadow-lg border-border bg-background'>
       <ScrollArea className='flex-1 w-full h-0'>
         {nowPlayingContext.title !== 'Nothing playing, yet' && (
           <div className='p-4 border-b border-border bg-muted/20'>
             <h3 className='mb-2 text-sm font-medium text-muted-foreground'>
               Now Playing
             </h3>
-            <div className='flex gap-3 items-center'>
+            <div className='flex items-center gap-3'>
               <img
-                src={thumbnailUrl || '/placeholder.svg'}
+                src={thumbnailUrl || DEFAULT_IMAGE_URL}
                 alt={nowPlayingContext.title}
-                className='object-cover flex-shrink-0 w-12 h-12 rounded'
+                className='flex-shrink-0 object-cover w-12 h-12 rounded'
               />
               <div className='flex-1'>
                 <h4 className='text-sm font-medium text-white truncate'>
@@ -68,8 +69,8 @@ export const QueueColumn = () => {
         )}
 
         {queue.length === 0 ? (
-          <div className='flex flex-col justify-center items-center p-8 h-full text-center'>
-            <div className='flex justify-center items-center mb-4 w-16 h-16 rounded-full bg-muted'>
+          <div className='flex flex-col items-center justify-center h-full p-8 text-center'>
+            <div className='flex items-center justify-center w-16 h-16 mb-4 rounded-full bg-muted'>
               <Play className='w-8 h-8 text-muted-foreground' />
             </div>
             <h3 className='mb-2 font-medium'>Your queue is empty</h3>
@@ -78,7 +79,7 @@ export const QueueColumn = () => {
             </p>
           </div>
         ) : (
-          <div className='p-2 w-full'>
+          <div className='w-full p-2'>
             <h3 className='px-2 mb-2 text-sm font-medium text-muted-foreground'>
               Up Next
             </h3>

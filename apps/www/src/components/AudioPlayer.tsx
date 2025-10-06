@@ -1,19 +1,21 @@
 'use client'
-import React, { useRef, useEffect } from 'react'
 import {
-  Play,
+  List,
   Pause,
-  SkipBack,
-  SkipForward,
-  Volume2,
-  VolumeX,
-  Shuffle,
+  Play,
   Repeat,
   Repeat1,
-  List,
-  Star
+  Shuffle,
+  SkipBack,
+  SkipForward,
+  Star,
+  Volume2,
+  VolumeX
 } from 'lucide-react'
+import type React from 'react'
+import { useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
+import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { formatSeconds } from '@/lib/utils'
 import { attachVolumeScroll } from '@/lib/volumeScrollHandler'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
@@ -106,11 +108,11 @@ const AudioPlayer = () => {
         {/* Desktop Layout */}
         <div className='hidden md:grid md:grid-cols-3 md:items-center md:gap-4'>
           {/* Left: Track Info */}
-          <div className='flex gap-3 items-center min-w-0'>
+          <div className='flex items-center min-w-0 gap-3'>
             <img
-              src={currentTrack.thumbnailUrl || '/placeholder.svg'}
+              src={currentTrack.thumbnailUrl || DEFAULT_IMAGE_URL}
               alt={currentTrack.title}
-              className='object-cover flex-shrink-0 w-14 h-14 rounded-lg transition-opacity cursor-pointer hover:opacity-80'
+              className='flex-shrink-0 object-cover transition-opacity rounded-lg cursor-pointer w-14 h-14 hover:opacity-80'
               onClick={toggleFullscreen}
             />
             <div className='flex-1 min-w-0'>
@@ -121,7 +123,7 @@ const AudioPlayer = () => {
                 {currentTrack.artist}
               </p>
             </div>
-            {/* <div className='flex flex-shrink-0 gap-2 items-center'>
+            {/* <div className='flex items-center flex-shrink-0 gap-2'>
               <Button variant='ghost' size='icon' className='text-muted-foreground hover:text-foreground hover:bg-muted'>
                 <Star className='w-4 h-4' />
               </Button>
@@ -132,8 +134,8 @@ const AudioPlayer = () => {
           </div>
 
           {/* Center: Controls & Progress */}
-          <div className='flex flex-col gap-2 items-center'>
-            <div className='flex gap-2 items-center'>
+          <div className='flex flex-col items-center gap-2'>
+            <div className='flex items-center gap-2'>
               <Button
                 variant='ghost'
                 size='icon'
@@ -177,7 +179,7 @@ const AudioPlayer = () => {
               </Button>
             </div>
 
-            <div className='flex gap-2 items-center w-full max-w-md'>
+            <div className='flex items-center w-full max-w-md gap-2'>
               <span className='text-xs text-muted-foreground min-w-[2.5rem] text-right'>
                 {formatSeconds(currentTime)}
               </span>
@@ -196,8 +198,8 @@ const AudioPlayer = () => {
           </div>
 
           {/* Right: Volume & Queue */}
-          <div className='flex gap-2 justify-end items-center'>
-            <div className='flex gap-2 items-center'>
+          <div className='flex items-center justify-end gap-2'>
+            <div className='flex items-center gap-2'>
               <Button
                 ref={volumeButtonRef}
                 variant='ghost'
@@ -234,7 +236,7 @@ const AudioPlayer = () => {
               className={`${queue.length > 0 ? 'relative' : ''} text-muted-foreground hover:text-foreground hover:bg-muted`}>
               <List className='w-4 h-4' />
               {queue.length > 0 && (
-                <span className='flex absolute -top-1 -right-1 justify-center items-center w-5 h-5 text-xs rounded-full bg-primary text-primary-foreground'>
+                <span className='absolute flex items-center justify-center w-5 h-5 text-xs rounded-full -top-1 -right-1 bg-primary text-primary-foreground'>
                   {queue.length}
                 </span>
               )}
@@ -244,11 +246,11 @@ const AudioPlayer = () => {
 
         {/* Mobile Layout */}
         <div className='md:hidden'>
-          <div className='flex gap-3 items-center mb-3'>
+          <div className='flex items-center gap-3 mb-3'>
             <img
-              src={currentTrack.thumbnailUrl || '/placeholder.svg'}
+              src={currentTrack.thumbnailUrl || DEFAULT_IMAGE_URL}
               alt={currentTrack.title}
-              className='object-cover w-12 h-12 rounded-lg transition-opacity cursor-pointer hover:opacity-80'
+              className='object-cover w-12 h-12 transition-opacity rounded-lg cursor-pointer hover:opacity-80'
               onClick={toggleFullscreen}
             />
             <div className='flex-1 min-w-0'>
@@ -266,14 +268,14 @@ const AudioPlayer = () => {
               className={`${queue.length > 0 ? 'relative' : ''} text-muted-foreground hover:text-foreground hover:bg-muted`}>
               <List className='w-4 h-4' />
               {queue.length > 0 && (
-                <span className='flex absolute -top-1 -right-1 justify-center items-center w-5 h-5 text-xs rounded-full bg-primary text-primary-foreground'>
+                <span className='absolute flex items-center justify-center w-5 h-5 text-xs rounded-full -top-1 -right-1 bg-primary text-primary-foreground'>
                   {queue.length}
                 </span>
               )}
             </Button>
           </div>
 
-          <div className='flex gap-2 items-center mb-2'>
+          <div className='flex items-center gap-2 mb-2'>
             <span className='text-xs text-muted-foreground min-w-[2.5rem] text-right'>
               {formatSeconds(currentTime)}
             </span>
@@ -290,8 +292,8 @@ const AudioPlayer = () => {
             </span>
           </div>
 
-          <div className='flex justify-between items-center'>
-            <div className='flex gap-1 items-center'>
+          <div className='flex items-center justify-between'>
+            <div className='flex items-center gap-1'>
               <Button
                 variant='ghost'
                 size='icon'
@@ -308,7 +310,7 @@ const AudioPlayer = () => {
               </Button>
             </div>
 
-            <div className='flex gap-2 items-center'>
+            <div className='flex items-center gap-2'>
               <Button
                 variant='ghost'
                 size='icon'
@@ -338,7 +340,7 @@ const AudioPlayer = () => {
               </Button>
             </div>
 
-            <div className='flex gap-1 items-center'>
+            <div className='flex items-center gap-1'>
               <Button
                 variant='ghost'
                 size='icon'

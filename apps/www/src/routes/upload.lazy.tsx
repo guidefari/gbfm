@@ -1,13 +1,25 @@
 'use client'
 
+import { useMutation } from '@tanstack/react-query'
+import { createLazyFileRoute, useRouter } from '@tanstack/react-router'
+import {
+  CheckCircle,
+  ImageIcon,
+  Loader2,
+  Music,
+  Save,
+  Trash2,
+  Upload,
+  X
+} from 'lucide-react'
 import type React from 'react'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
 import {
   Select,
   SelectContent,
@@ -15,22 +27,11 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
-import {
-  Save,
-  Upload,
-  X,
-  Music,
-  ImageIcon,
-  Trash2,
-  CheckCircle,
-  Loader2
-} from 'lucide-react'
-import { createLazyFileRoute, useRouter } from '@tanstack/react-router'
-import { fetcher, useAudioBySlug, VPS_BASE_URL } from '@/lib/http'
-import { useMutation } from '@tanstack/react-query'
-import { useAuthStore } from '@/store'
+import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/use-toast'
+import { DEFAULT_IMAGE_URL } from '@/lib/constants'
+import { fetcher, useAudioBySlug, VPS_BASE_URL } from '@/lib/http'
+import { useAuthStore } from '@/store'
 
 export const Route = createLazyFileRoute('/upload')({
   component: UploadPage
@@ -48,17 +49,18 @@ interface AudioFormData {
 }
 
 function UploadPage() {
-  const search = Route.useSearch()
+  const search = Route.useSearch() as {
+    edit?: string | boolean
+    archetype?: 'mix' | 'track' | 'misc'
+    id?: string
+  }
   const isEditMode =
     (search.edit === 'true' || search.edit === true) &&
     search.archetype &&
     search.id
 
   // Load existing content if in edit mode
-  const editQuery = useAudioBySlug(
-    search.archetype as 'mix' | 'track' | 'misc',
-    search.id || ''
-  )
+  const editQuery = useAudioBySlug(search.archetype || 'mix', search.id || '')
 
   const [formData, setFormData] = useState<AudioFormData>({
     title: '',
@@ -92,11 +94,11 @@ function UploadPage() {
       const data = editQuery.data
       setFormData({
         title: data.title,
-        description: data.description,
+        description: data.description || '',
         slug: data.slug,
-        type: data.type,
+        type: data.type || 'mix',
         content: data.content,
-        thumbnailUrl: data.thumbnailUrl,
+        thumbnailUrl: data.thumbnailUrl || '',
         tags: data.tags || [],
         draft: data.draft
       })
@@ -425,11 +427,11 @@ Add any relevant information, credits, or notes...`
               disabled={isUploading || !audioFile || uploadStep === 'success'}
               className='border-gb-pastel-green-2/30 text-gb-pastel-green-1 hover:bg-gb-pastel-green-2/20'>
               {isUploading ? (
-                <Loader2 className='mr-2 w-4 h-4 animate-spin' />
+                <Loader2 className='w-4 h-4 mr-2 animate-spin' />
               ) : uploadStep === 'success' ? (
-                <CheckCircle className='mr-2 w-4 h-4' />
+                <CheckCircle className='w-4 h-4 mr-2' />
               ) : (
-                <Save className='mr-2 w-4 h-4' />
+                <Save className='w-4 h-4 mr-2' />
               )}
               {uploadStep === 'success' ? 'Saved!' : 'Save Draft'}
             </Button>
@@ -438,11 +440,11 @@ Add any relevant information, credits, or notes...`
               // disabled={isUploading || !audioFile || uploadStep === 'success'}
               className='bg-gb-pastel-green-2 hover:bg-gb-highlight text-gb-darker-bg'>
               {isUploading ? (
-                <Loader2 className='mr-2 w-4 h-4 animate-spin' />
+                <Loader2 className='w-4 h-4 mr-2 animate-spin' />
               ) : uploadStep === 'success' ? (
-                <CheckCircle className='mr-2 w-4 h-4' />
+                <CheckCircle className='w-4 h-4 mr-2' />
               ) : (
-                <Music className='mr-2 w-4 h-4' />
+                <Music className='w-4 h-4 mr-2' />
               )}
               {uploadStep === 'success'
                 ? 'Published!'
@@ -474,14 +476,14 @@ Add any relevant information, credits, or notes...`
           <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
             <CardHeader>
               <CardTitle className='flex items-center text-gb-pastel-green-1'>
-                <Music className='mr-2 w-5 h-5' />
+                <Music className='w-5 h-5 mr-2' />
                 Audio File
               </CardTitle>
             </CardHeader>
             <CardContent>
               {!audioFile ? (
-                <div className='p-6 text-center rounded-lg border-2 border-dashed transition-colors border-gb-pastel-green-2/30 hover:border-gb-highlight/50'>
-                  <Music className='mx-auto mb-3 w-8 h-8 text-gb-pastel-green-2' />
+                <div className='p-6 text-center transition-colors border-2 border-dashed rounded-lg border-gb-pastel-green-2/30 hover:border-gb-highlight/50'>
+                  <Music className='w-8 h-8 mx-auto mb-3 text-gb-pastel-green-2' />
                   <p className='mb-3 text-sm text-gb-default-text'>
                     Drag and drop your audio file here
                   </p>
@@ -499,7 +501,7 @@ Add any relevant information, credits, or notes...`
                       className='bg-transparent cursor-pointer border-gb-pastel-green-2/30 text-gb-pastel-green-1 hover:bg-gb-pastel-green-2/20'
                       asChild>
                       <span>
-                        <Upload className='mr-2 w-4 h-4' />
+                        <Upload className='w-4 h-4 mr-2' />
                         Choose File
                       </span>
                     </Button>
@@ -510,8 +512,8 @@ Add any relevant information, credits, or notes...`
                 </div>
               ) : (
                 <div className='space-y-3'>
-                  <div className='flex justify-between items-center p-3 rounded-lg bg-gb-bg'>
-                    <div className='flex items-center space-x-3 min-w-0'>
+                  <div className='flex items-center justify-between p-3 rounded-lg bg-gb-bg'>
+                    <div className='flex items-center min-w-0 space-x-3'>
                       <Music className='flex-shrink-0 w-6 h-6 text-gb-highlight' />
                       <div className='min-w-0'>
                         <p className='font-medium leading-tight text-gb-pastel-green-1'>
@@ -619,14 +621,14 @@ Add any relevant information, credits, or notes...`
           <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
             <CardHeader>
               <CardTitle className='flex items-center text-gb-pastel-green-1'>
-                <ImageIcon className='mr-2 w-5 h-5' />
+                <ImageIcon className='w-5 h-5 mr-2' />
                 Artwork
               </CardTitle>
             </CardHeader>
             <CardContent>
               {!artworkFile && !artworkPreview ? (
-                <div className='p-4 text-center rounded-lg border-2 border-dashed transition-colors border-gb-pastel-green-2/30 hover:border-gb-highlight/50'>
-                  <ImageIcon className='mx-auto mb-2 w-6 h-6 text-gb-pastel-green-2' />
+                <div className='p-4 text-center transition-colors border-2 border-dashed rounded-lg border-gb-pastel-green-2/30 hover:border-gb-highlight/50'>
+                  <ImageIcon className='w-6 h-6 mx-auto mb-2 text-gb-pastel-green-2' />
                   <p className='mb-2 text-xs text-gb-default-text'>
                     Upload cover artwork
                   </p>
@@ -644,7 +646,7 @@ Add any relevant information, credits, or notes...`
                       className='bg-transparent cursor-pointer border-gb-pastel-green-2/30 text-gb-pastel-green-1 hover:bg-gb-pastel-green-2/20'
                       asChild>
                       <span>
-                        <Upload className='mr-2 w-4 h-4' />
+                        <Upload className='w-4 h-4 mr-2' />
                         Choose Image
                       </span>
                     </Button>
@@ -655,9 +657,9 @@ Add any relevant information, credits, or notes...`
                 </div>
               ) : (
                 <div className='space-y-3'>
-                  <div className='overflow-hidden relative rounded-lg border aspect-square bg-gb-bg border-gb-pastel-green-2/20'>
+                  <div className='relative overflow-hidden border rounded-lg aspect-square bg-gb-bg border-gb-pastel-green-2/20'>
                     <img
-                      src={artworkPreview || '/placeholder.svg'}
+                      src={artworkPreview || DEFAULT_IMAGE_URL}
                       alt='Artwork preview'
                       className='object-cover w-full h-full'
                     />
@@ -665,7 +667,7 @@ Add any relevant information, credits, or notes...`
                       variant='ghost'
                       size='sm'
                       onClick={removeArtworkFile}
-                      className='absolute top-2 right-2 text-white bg-black/50 hover:bg-black/70'>
+                      className='absolute text-white top-2 right-2 bg-black/50 hover:bg-black/70'>
                       <X className='w-4 h-4' />
                     </Button>
                   </div>
@@ -709,7 +711,7 @@ Add any relevant information, credits, or notes...`
                   <Badge
                     key={tag}
                     variant='secondary'
-                    className='flex gap-1 items-center bg-gb-pastel-green-2/20 text-gb-pastel-green-1'>
+                    className='flex items-center gap-1 bg-gb-pastel-green-2/20 text-gb-pastel-green-1'>
                     {tag}
                     <X
                       className='w-3 h-3 cursor-pointer hover:text-gb-highlight'
@@ -736,12 +738,12 @@ Add any relevant information, credits, or notes...`
                   className={`flex items-center ${uploadStep === 'success' ? 'text-green-400' : 'text-gb-pastel-green-1'}`}>
                   {uploadStep === 'success' ? (
                     <>
-                      <CheckCircle className='mr-2 w-5 h-5' />
+                      <CheckCircle className='w-5 h-5 mr-2' />
                       Upload Complete!
                     </>
                   ) : (
                     <>
-                      <Loader2 className='mr-2 w-5 h-5 animate-spin' />
+                      <Loader2 className='w-5 h-5 mr-2 animate-spin' />
                       {getUploadStepText()}
                     </>
                   )}

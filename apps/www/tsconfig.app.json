@@ -5,6 +5,7 @@
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "module": "ESNext",
     "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
 
     /* Bundler mode */
     "moduleResolution": "bundler",
@@ -21,8 +22,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
-    },
-    "composite": true
+    }
   },
   "include": ["src"]
 }

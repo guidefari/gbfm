@@ -1,15 +1,12 @@
 import {
-  relations,
+  type InferInsertModel,
   type InferSelectModel,
-  type InferInsertModel
+  relations
 } from 'drizzle-orm'
 import { boolean, pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
 import { z } from 'zod/v4'
 import { audioToAuthors } from './audio.schema'
 import { postsToAuthors } from './post.schema'
-import { postsTable } from './post.schema'
-import { publicationPosts } from './publication.schema'
-import { publicationsTable } from './publication.schema'
 
 const usernameSchema = z
   .string()
@@ -175,24 +172,10 @@ export const createUserSchema = z.object({
 })
 
 export const userParamsSchema = z.object({
-  id: z.string().uuid()
+  id: z.uuid()
 })
 
 export const authorsRelations = relations(authorsTable, ({ many }) => ({
   postsToAuthors: many(postsToAuthors),
   audioToAuthors: many(audioToAuthors)
 }))
-
-export const publicationPostsRelations = relations(
-  publicationPosts,
-  ({ one }) => ({
-    publication: one(publicationsTable, {
-      fields: [publicationPosts.publicationId],
-      references: [publicationsTable.id]
-    }),
-    post: one(postsTable, {
-      fields: [publicationPosts.postId],
-      references: [postsTable.id]
-    })
-  })
-)
