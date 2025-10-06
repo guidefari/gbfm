@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "bun run typecheck && vite build",
+    "build": "vite build",
     "bio": "biome lint ./src --write && biome format --write ./src",
     "preview": "vite preview",
     "typecheck": "tsr generate && tsc --noEmit"
