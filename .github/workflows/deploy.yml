@@ -5,7 +5,13 @@ on:
     tags:
       - "v*.*.*"
 
-  workflow_dispatch:  # Allows manual triggering of the workflow
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref (tag, branch, or commit SHA) to deploy'
+        required: true
+        default: 'prod'
+        type: string
 
 
 concurrency: 
@@ -21,6 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.ref || github.ref }}
           fetch-depth: 0
 
       - uses: actions/cache@v4

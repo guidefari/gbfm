@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.1.3/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.2.5/schema.json",
   "assist": {
     "actions": {
       "source": {
@@ -19,11 +19,11 @@
       "infra/**/*",
       "packages/**/*",
       "*.{js,ts,tsx,jsx,json}",
-      "!**/node_modules/**",
-      "!**/dist/**",
-      "!**/build/**",
-      "!**/.next/**",
-      "!**/coverage/**",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/build",
+      "!**/.next",
+      "!**/coverage",
       "!apps/www/src/routeTree.gen.ts",
       "!**/*.gen.ts",
       "!**/*.generated.ts"
