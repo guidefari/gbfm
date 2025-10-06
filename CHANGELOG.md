@@ -1,3 +1,10 @@
+## [0.28.2](https://github.com/guidefari/gbfm/compare/v0.28.1...v0.28.2) (2025-10-06)
+
+
+### Bug Fixes
+
+* dockerfile ([c084277](https://github.com/guidefari/gbfm/commit/c084277b96d9d2eddbb2e136ada4df15023bcebf))
+
 ## [0.28.1](https://github.com/guidefari/gbfm/compare/v0.28.0...v0.28.1) (2025-10-06)
 
 
