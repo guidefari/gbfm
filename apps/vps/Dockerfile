@@ -8,13 +8,17 @@ FROM base AS deps
 COPY bun.lock ./
 COPY package.json ./
 COPY apps/vps/package.json ./apps/vps/
+COPY packages/email/package.json ./packages/email/
 
 # Install dependencies with retry and cache clearing
 RUN bun install --omit dev
 
 # Copy source code after dependencies are installed (exclude node_modules)
+COPY packages/email/src ./packages/email/src
+COPY packages/email/emails ./packages/email/emails
 COPY apps/vps/src ./apps/vps/src
 COPY apps/vps/package.json apps/vps/tsconfig.json ./apps/vps/
+COPY packages/email/package.json packages/email/tsconfig.json ./packages/email/
 COPY tsconfig.json ./
 
 # --- Production stage ---
@@ -26,6 +30,7 @@ COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=deps /usr/src/app/package.json ./package.json
 
 # Copy source code
+COPY --from=deps /usr/src/app/packages/email ./packages/email
 COPY --from=deps /usr/src/app/apps/vps ./apps/vps
 COPY --from=deps /usr/src/app/tsconfig.json ./tsconfig.json
 
