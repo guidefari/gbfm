@@ -1,5 +1,5 @@
 {
-"extends": "@tsconfig/bun/tsconfig.json",
+  "extends": "@tsconfig/bun/tsconfig.json",
   "compilerOptions": {
     "module": "ESNext",
     "moduleResolution": "Bundler",
@@ -7,9 +7,5 @@
     "skipLibCheck": true,
     "downlevelIteration": true
   },
-  "exclude": [
-    ".sst",
-    "packages/core",
-    "apps/functions"
-  ]
+  "exclude": [".sst"]
 }

@@ -75,8 +75,8 @@ jobs:
       - name: deps
         run: bun install
 
-      # - name: typecheck
-      #   run: bun typecheck
+      - name: typecheck
+        run: bun typecheck
 
       - name: Deploy
         env:

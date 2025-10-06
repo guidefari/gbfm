@@ -8,7 +8,7 @@
     "build": "bun run typecheck && vite build",
     "bio": "biome lint ./src --write && biome format --write ./src",
     "preview": "vite preview",
-    "typecheck": "tsc --project tsconfig.app.json --noEmit --skipLibCheck"
+    "typecheck": "tsr generate && tsc --noEmit"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
