@@ -13,7 +13,6 @@ COPY apps/vps/package.json ./apps/vps/
 RUN bun install --omit dev
 
 # Copy source code after dependencies are installed (exclude node_modules)
-COPY packages/core/src ./packages/core/src
 COPY apps/vps/src ./apps/vps/src
 COPY apps/vps/package.json apps/vps/tsconfig.json ./apps/vps/
 COPY tsconfig.json ./
@@ -27,7 +26,6 @@ COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=deps /usr/src/app/package.json ./package.json
 
 # Copy source code
-COPY --from=deps /usr/src/app/packages/core ./packages/core
 COPY --from=deps /usr/src/app/apps/vps ./apps/vps
 COPY --from=deps /usr/src/app/tsconfig.json ./tsconfig.json
 
