@@ -2,80 +2,8 @@
 /* tslint:disable */
 /* eslint-disable */
 /* deno-fmt-ignore-file */
-import "sst"
-declare module "sst" {
-  export interface Resource {
-    "Api": {
-      "name": string
-      "type": "sst.aws.Function"
-      "url": string
-    }
-    "ApiWorker": {
-      "type": "sst.cloudflare.Worker"
-      "url": string
-    }
-    "Auth": {
-      "type": "sst.aws.Auth"
-      "url": string
-    }
-    "AuthWorkerCF": {
-      "type": "sst.cloudflare.Worker"
-      "url": string
-    }
-    "ContentTable": {
-      "name": string
-      "type": "sst.aws.Dynamo"
-    }
-    "Email": {
-      "configSet": string
-      "sender": string
-      "type": "sst.aws.Email"
-    }
-    "MDX_Bucket": {
-      "name": string
-      "type": "sst.aws.Bucket"
-    }
-    "SpotifyClientId": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
-    "SpotifyClientSecret": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
-    "SquealDBUrl": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
-    "UserTable": {
-      "name": string
-      "type": "sst.aws.Dynamo"
-    }
-    "gbfm-www": {
-      "type": "sst.aws.StaticSite"
-      "url": string
-    },
-    "gbfm_postgres": {
-      "database": string,
-      "host": string,
-      "password": string,
-      "port": number,
-      "type": "sst.aws.Postgres",
-      "username": string,
-    },
-    Urls: {
-      site: string,
-      type: "sst.sst.Linkable",
-      vps: string,
-    },
-    Router: {
-      type: "sst.aws.Router",
-      url: string,
-    },
-    User_Content: {
-      name: string,
-      type: "sst.aws.Bucket",
-    },
-  }
-}
 
+/// <reference path="../../sst-env.d.ts" />
+
+import "sst"
+export {}

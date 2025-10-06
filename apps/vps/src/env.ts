@@ -2,7 +2,7 @@ import { Resource } from 'sst'
 import { z } from 'zod'
 
 const envSchema = z.object({
-  DATABASE_URL: z.string().url(),
+  DATABASE_URL: z.url(),
   NODE_ENV: z.string().default('development'),
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
@@ -14,8 +14,6 @@ const envSchema = z.object({
 })
 
 const isProd = Resource.App.stage === 'prod'
-
-console.log(Resource)
 
 function createEnvConfig() {
   const databaseUrl = Resource.FullDatabaseUrl.value
@@ -29,7 +27,6 @@ function createEnvConfig() {
     : process.env.FRONTEND_URL || 'http://localhost:5173'
 
   try {
-    console.log(databaseUrl)
     const config = envSchema.parse({
       ...process.env,
       DATABASE_URL: databaseUrl,

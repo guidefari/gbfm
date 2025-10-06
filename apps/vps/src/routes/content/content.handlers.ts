@@ -42,6 +42,10 @@ export const createPost: AppRouteHandler<CreatePostRoute> = async (c) => {
       // Insert the post first
       const [newPost] = await tx.insert(postsTable).values(postData).returning()
 
+      if (!newPost) {
+        throw new Error('Failed to create post')
+      }
+
       // Insert the post-author relationships
       await tx.insert(postsToAuthors).values(
         finalAuthorIds.map((authorId: string) => ({
@@ -64,7 +68,8 @@ export const createPost: AppRouteHandler<CreatePostRoute> = async (c) => {
 }
 
 export const getPostsByTag: AppRouteHandler<GetPostsByTagRoute> = async (c) => {
-  const { tag } = c.req.valid('param')
+  const params = c.req.valid('param')
+  const tag = params.tag
 
   try {
     const posts = await db
@@ -102,6 +107,10 @@ export const createMix: AppRouteHandler<CreateMixRoute> = async (c) => {
   try {
     const result = await db.transaction(async (tx) => {
       const [newMix] = await tx.insert(audioTable).values(mixData).returning()
+
+      if (!newMix) {
+        throw new Error('Failed to create mix')
+      }
 
       await tx.insert(audioToAuthors).values(
         finalAuthorIds.map((authorId: string) => ({
@@ -268,6 +277,13 @@ export const updateAudioBySlug: AppRouteHandler<
       .where(eq(audioTable.id, existingAudio.id))
       .returning()
 
+    if (!updatedAudio) {
+      return c.json(
+        { error: 'Failed to update audio' },
+        HttpStatusCodes.INTERNAL_SERVER_ERROR
+      )
+    }
+
     // Get authors for response
     const authors = await db
       .select({
@@ -280,7 +296,7 @@ export const updateAudioBySlug: AppRouteHandler<
       .where(eq(audioToAuthors.audioId, updatedAudio.id))
 
     // Compile MDX if content was updated
-    let processedAudio: SelectMdxCompiledAudio = {
+    const baseProcessedAudio: SelectMdxCompiledAudio = {
       ...updatedAudio,
       compiledContent: '',
       authors: authors.map((author) => ({
@@ -293,14 +309,15 @@ export const updateAudioBySlug: AppRouteHandler<
     if (updatedAudio.content) {
       const mdxResult = await compileMDX(updatedAudio.content)
       if (isMDXCompilationResult(mdxResult)) {
-        processedAudio = {
-          ...processedAudio,
+        const processedAudioWithCompiled: SelectMdxCompiledAudio = {
+          ...baseProcessedAudio,
           compiledContent: mdxResult.compiled
         }
+        return c.json(processedAudioWithCompiled, HttpStatusCodes.OK)
       }
     }
 
-    return c.json(processedAudio, HttpStatusCodes.OK)
+    return c.json(baseProcessedAudio, HttpStatusCodes.OK)
   } catch (error) {
     console.error('Error updating audio:', error)
     return c.json(
@@ -325,6 +342,11 @@ export const createAudio: AppRouteHandler<CreateAudioRoute> = async (c) => {
         .insert(audioTable)
         .values(audioData)
         .returning()
+
+      if (!newAudio) {
+        throw new Error('Failed to create audio')
+      }
+
       await tx.insert(audioToAuthors).values(
         finalAuthorIds.map((authorId: string) => ({
           audioId: newAudio.id,
@@ -394,7 +416,6 @@ async function processUploadHelper(c: any): Promise<ProcessedFiles> {
   return { audioPath, imagePath, outputPath, description, artist, album }
 }
 
-// @ts-expect-error - don't really care about this endpoint. will fix when i need to use it🚀
 export const processUpload: AppRouteHandler<ProcessMixUploadRoute> = async (
   c
 ) => {

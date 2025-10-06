@@ -1,293 +1,305 @@
-import { createRoute, z } from "@hono/zod-openapi";
-import * as HttpStatusCodes from "stoker/http-status-codes";
-import { jsonContent, jsonContentRequired } from "stoker/openapi/helpers";
-import { createErrorSchema } from "stoker/openapi/schemas";
+import { createRoute, z } from '@hono/zod-openapi'
+import * as HttpStatusCodes from 'stoker/http-status-codes'
+import { jsonContent, jsonContentRequired } from 'stoker/openapi/helpers'
+import { createErrorSchema } from 'stoker/openapi/schemas'
 
 import {
-  signupSchema,
-  signinSchema,
-  forgotPasswordSchema,
-  resetPasswordSchema,
-  refreshTokenSchema,
-  selectAuthorSchema,
   createUserSchema,
-  updateProfileSchema,
-} from "@/db/author.schema";
+  forgotPasswordSchema,
+  refreshTokenSchema,
+  resetPasswordSchema,
+  selectAuthorSchemaV4,
+  signinSchema,
+  signupSchema,
+  updateProfileSchema
+} from '@/db/author.schema'
 
 const usernameSchema = z
   .string()
-  .min(3, "Username must be at least 3 characters")
-  .max(30, "Username must be less than 30 characters")
-  .regex(/^[a-zA-Z0-9_-]+$/, "Username can only contain letters, numbers, underscores, and hyphens")
-  .regex(/^[a-zA-Z]/, "Username must start with a letter")
-  .regex(/[a-zA-Z0-9]$/, "Username must end with a letter or number");
+  .min(3, 'Username must be at least 3 characters')
+  .max(30, 'Username must be less than 30 characters')
+  .regex(
+    /^[a-zA-Z0-9_-]+$/,
+    'Username can only contain letters, numbers, underscores, and hyphens'
+  )
+  .regex(/^[a-zA-Z]/, 'Username must start with a letter')
+  .regex(/[a-zA-Z0-9]$/, 'Username must end with a letter or number')
 
-import { authenticate } from "@/middlewares/auth.middleware";
+import { authenticate } from '@/middlewares/auth.middleware'
 
-const tags = ["Auth"];
+const tags = ['Auth']
 
 // Response schemas
 const authResponseSchema = z.object({
-  user: selectAuthorSchema.omit({ password: true }),
+  user: selectAuthorSchemaV4.omit({ password: true }),
   accessToken: z.string(),
-  refreshToken: z.string(),
-});
+  refreshToken: z.string()
+})
 
 const messageResponseSchema = z.object({
-  message: z.string(),
-});
+  message: z.string()
+})
 
-const userResponseSchema = selectAuthorSchema.omit({ password: true, updatedAt: true, verified: true, createdAt: true });
+const userResponseSchema = selectAuthorSchemaV4.omit({
+  password: true,
+  updatedAt: true,
+  verified: true,
+  createdAt: true
+})
 
 export const signup = createRoute({
-  path: "/signup",
-  method: "post",
+  path: '/signup',
+  method: 'post',
   request: {
-    body: jsonContentRequired(signupSchema, "User signup data"),
+    body: jsonContentRequired(signupSchema, 'User signup data')
   },
   tags,
   responses: {
     [HttpStatusCodes.CREATED]: jsonContent(
       z.object({
         message: z.string(),
-        user: userResponseSchema,
+        user: userResponseSchema
       }),
-      "User created successfully",
+      'User created successfully'
     ),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(
       z.object({ error: z.string() }),
-      "Username already taken",
+      'Username already taken'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to create user'
     ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
       createErrorSchema(signupSchema),
-      "Validation error",
-    ),
-  },
-});
+      'Validation error'
+    )
+  }
+})
 
 export const signin = createRoute({
-  path: "/signin",
-  method: "post",
+  path: '/signin',
+  method: 'post',
   request: {
-    body: jsonContentRequired(signinSchema, "User signin data"),
+    body: jsonContentRequired(signinSchema, 'User signin data')
   },
   tags,
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
       authResponseSchema,
-      "Successful authentication",
+      'Successful authentication'
     ),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
       z.object({ error: z.string() }),
-      "Invalid credentials",
+      'Invalid credentials'
     ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
       createErrorSchema(signinSchema),
-      "Validation error",
-    ),
-  },
-});
+      'Validation error'
+    )
+  }
+})
 
 export const forgotPassword = createRoute({
-  path: "/forgot-password",
-  method: "post",
+  path: '/forgot-password',
+  method: 'post',
   request: {
-    body: jsonContentRequired(forgotPasswordSchema, "Email for password reset"),
+    body: jsonContentRequired(forgotPasswordSchema, 'Email for password reset')
   },
   tags,
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
       messageResponseSchema,
-      "Password reset email sent",
+      'Password reset email sent'
     ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(
       z.object({ error: z.string() }),
-      "User not found",
+      'User not found'
     ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
       createErrorSchema(forgotPasswordSchema),
-      "Validation error",
-    ),
-  },
-});
+      'Validation error'
+    )
+  }
+})
 
 export const resetPassword = createRoute({
-  path: "/reset-password",
-  method: "post",
+  path: '/reset-password',
+  method: 'post',
   request: {
-    body: jsonContentRequired(resetPasswordSchema, "Password reset data"),
+    body: jsonContentRequired(resetPasswordSchema, 'Password reset data')
   },
   tags,
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
       messageResponseSchema,
-      "Password reset successful",
+      'Password reset successful'
     ),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(
       z.object({ error: z.string() }),
-      "Invalid request",
+      'Invalid request'
     ),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
       z.object({ error: z.string() }),
-      "Invalid or expired token",
+      'Invalid or expired token'
     ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
       createErrorSchema(resetPasswordSchema),
-      "Validation error",
-    ),
-  },
-});
+      'Validation error'
+    )
+  }
+})
 
 export const refreshToken = createRoute({
-  path: "/refresh-token",
-  method: "post",
+  path: '/refresh-token',
+  method: 'post',
   request: {
-    body: jsonContentRequired(refreshTokenSchema, "Refresh token data"),
+    body: jsonContentRequired(refreshTokenSchema, 'Refresh token data')
   },
   tags,
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
       z.object({ accessToken: z.string() }),
-      "New access token",
+      'New access token'
     ),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(
       z.object({ error: z.string() }),
-      "Refresh token required",
+      'Refresh token required'
     ),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
       z.object({ error: z.string() }),
-      "Invalid refresh token",
+      'Invalid refresh token'
     ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(
       z.object({ error: z.string() }),
-      "User not found",
+      'User not found'
     ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
       createErrorSchema(refreshTokenSchema),
-      "Validation error",
-    ),
-  },
-});
+      'Validation error'
+    )
+  }
+})
 
 // User management routes
 export const createUser = createRoute({
-  path: "/users",
-  method: "post",
+  path: '/users',
+  method: 'post',
   request: {
-    body: jsonContentRequired(createUserSchema, "User data"),
+    body: jsonContentRequired(createUserSchema, 'User data')
   },
   tags,
   responses: {
     [HttpStatusCodes.CREATED]: jsonContent(
       userResponseSchema,
-      "User created successfully",
+      'User created successfully'
     ),
     [HttpStatusCodes.CONFLICT]: jsonContent(
       z.object({ error: z.string() }),
-      "Username or email already exists",
+      'Username or email already exists'
     ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
-      "Failed to create user",
+      'Failed to create user'
     ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
       createErrorSchema(createUserSchema),
-      "Validation error",
-    ),
-  },
-});
+      'Validation error'
+    )
+  }
+})
 
 export const listUsers = createRoute({
-  path: "/users",
-  method: "get",
+  path: '/users',
+  method: 'get',
   tags,
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
       z.array(userResponseSchema),
-      "List of users",
-    ),
-  },
-});
+      'List of users'
+    )
+  }
+})
 
 export const updateProfile = createRoute({
-  path: "/profile",
-  method: "patch",
+  path: '/profile',
+  method: 'patch',
   middleware: [authenticate],
   request: {
     body: {
       content: {
-        "application/json": {
-          schema: updateProfileSchema,
+        'application/json': {
+          schema: updateProfileSchema
         },
-        "multipart/form-data": {
+        'multipart/form-data': {
           schema: z.object({
             name: z.string().optional(),
             username: usernameSchema.optional(),
             email: z.string().email().optional(),
             password: z.string().min(8).optional(),
-            avatar: z.instanceof(File).optional(),
-          }),
-        },
-      },
-    },
+            avatar: z.instanceof(File).optional()
+          })
+        }
+      }
+    }
   },
   tags,
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
       userResponseSchema,
-      "Profile updated successfully",
+      'Profile updated successfully'
     ),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(
       z.object({ error: z.string() }),
-      "Invalid input",
+      'Invalid input'
     ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(
       z.object({ error: z.string() }),
-      "User not found",
+      'User not found'
     ),
     [HttpStatusCodes.FORBIDDEN]: jsonContent(
       z.object({ error: z.string() }),
-      "Forbidden - can only update own profile",
+      'Forbidden - can only update own profile'
     ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
-      "Failed to update profile",
+      'Failed to update profile'
     ),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
       z.object({ error: z.string() }),
-      "Unauthorized mf",
-    ),
-  },
-});
+      'Unauthorized mf'
+    )
+  }
+})
 
 export const getProfile = createRoute({
-  path: "/profile",
-  method: "get",
+  path: '/profile',
+  method: 'get',
   middleware: [authenticate],
   tags,
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
       userResponseSchema,
-      "Profile retrieved successfully",
+      'Profile retrieved successfully'
     ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(
       z.object({ error: z.string() }),
-      "User not found",
+      'User not found'
     ),
     [HttpStatusCodes.FORBIDDEN]: jsonContent(
       z.object({ error: z.string() }),
-      "Forbidden - can only get own profile",
-    ),
-  },
-});
+      'Forbidden - can only get own profile'
+    )
+  }
+})
 
 // Export types for handlers
-export type SignupRoute = typeof signup;
-export type SigninRoute = typeof signin;
-export type ForgotPasswordRoute = typeof forgotPassword;
-export type ResetPasswordRoute = typeof resetPassword;
-export type RefreshTokenRoute = typeof refreshToken;
-export type CreateUserRoute = typeof createUser;
-export type ListUsersRoute = typeof listUsers;
-export type UpdateProfileRoute = typeof updateProfile;
-export type GetProfileRoute = typeof getProfile;
+export type SignupRoute = typeof signup
+export type SigninRoute = typeof signin
+export type ForgotPasswordRoute = typeof forgotPassword
+export type ResetPasswordRoute = typeof resetPassword
+export type RefreshTokenRoute = typeof refreshToken
+export type CreateUserRoute = typeof createUser
+export type ListUsersRoute = typeof listUsers
+export type UpdateProfileRoute = typeof updateProfile
+export type GetProfileRoute = typeof getProfile

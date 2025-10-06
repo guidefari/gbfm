@@ -53,7 +53,7 @@ export const signup: AppRouteHandler<SignupRoute> = async (c) => {
 
   const hashedPassword = await Bun.password.hash(validated.password)
 
-  const newAuthor = await db
+  const [newAuthor] = await db
     .insert(authorsTable)
     .values({
       username: validated.username || validated.email,
@@ -63,13 +63,20 @@ export const signup: AppRouteHandler<SignupRoute> = async (c) => {
     })
     .returning()
 
+  if (!newAuthor) {
+    return c.json(
+      { error: 'Failed to create user' },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
+  }
+
   await sendWelcomeEmail({
     to: validated.email,
     username: validated.username || validated.email,
     loginUrl: `${env.FRONTEND_URL}/auth/signin`
   })
 
-  const { password, ...authorWithoutPassword } = newAuthor[0]
+  const { password, ...authorWithoutPassword } = newAuthor
 
   return c.json(
     {
@@ -85,7 +92,7 @@ export const signin: AppRouteHandler<SigninRoute> = async (c) => {
 
   const author = await getAuthorByEmailOrId({ email: validated.email })
 
-  if (author.length === 0 || !author[0].password) {
+  if (author.length === 0 || !author[0]?.password) {
     return c.json(
       { error: 'Invalid username or password' },
       HttpStatusCodes.UNAUTHORIZED
@@ -104,13 +111,14 @@ export const signin: AppRouteHandler<SigninRoute> = async (c) => {
     )
   }
 
-  const { password, ...authorWithoutPassword } = author[0]
+  const currentAuthor = author[0]
+  const { password, ...authorWithoutPassword } = currentAuthor
 
   const now = Math.floor(Date.now() / 1000)
   const accessToken = await sign(
     {
-      sub: author[0].id,
-      email: author[0].email,
+      sub: currentAuthor.id,
+      email: currentAuthor.email,
       type: 'access',
       exp: now + ACCESS_TOKEN_EXPIRES_IN,
       iat: now
@@ -120,8 +128,8 @@ export const signin: AppRouteHandler<SigninRoute> = async (c) => {
 
   const refreshToken = await sign(
     {
-      sub: author[0].id,
-      email: author[0].email,
+      sub: currentAuthor.id,
+      email: currentAuthor.email,
       type: 'refresh',
       exp: now + REFRESH_TOKEN_EXPIRES_IN,
       iat: now
@@ -131,10 +139,10 @@ export const signin: AppRouteHandler<SigninRoute> = async (c) => {
 
   const userAgent = c.req.header('user-agent')
   const forwarded = c.req.header('x-forwarded-for')
-  const ip = forwarded ? forwarded.split(',')[0].trim() : undefined
+  const ip = forwarded ? forwarded.split(',')[0]?.trim() : undefined
 
   await db.insert(authorSessionsTable).values({
-    authorId: author[0].id,
+    authorId: currentAuthor.id,
     refreshToken,
     userAgent,
     ip,
@@ -161,19 +169,21 @@ export const forgotPassword: AppRouteHandler<ForgotPasswordRoute> = async (
     .from(authorsTable)
     .where(eq(authorsTable.email, validated.email))
 
-  if (author.length === 0) {
+  if (author.length === 0 || !author[0]) {
     return c.json({ error: 'User not found' }, HttpStatusCodes.NOT_FOUND)
   }
 
+  const currentAuthor = author[0]
+
   await db
     .delete(authorPasswordResetTokensTable)
-    .where(eq(authorPasswordResetTokensTable.authorId, author[0].id))
+    .where(eq(authorPasswordResetTokensTable.authorId, currentAuthor.id))
 
   const token = randomUUID()
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60)
 
   await db.insert(authorPasswordResetTokensTable).values({
-    authorId: author[0].id,
+    authorId: currentAuthor.id,
     token,
     expiresAt
   })
@@ -202,12 +212,14 @@ export const resetPassword: AppRouteHandler<ResetPasswordRoute> = async (c) => {
     authorId: validated.authorId
   })
 
-  if (author.length === 0) {
+  if (author.length === 0 || !author[0]) {
     return c.json(
       { error: 'Invalid email or authorId' },
       HttpStatusCodes.BAD_REQUEST
     )
   }
+
+  const currentAuthor = author[0]
 
   const tokenRow = await db
     .select()
@@ -215,11 +227,11 @@ export const resetPassword: AppRouteHandler<ResetPasswordRoute> = async (c) => {
     .where(
       and(
         eq(authorPasswordResetTokensTable.token, validated.token),
-        eq(authorPasswordResetTokensTable.authorId, author[0].id)
+        eq(authorPasswordResetTokensTable.authorId, currentAuthor.id)
       )
     )
 
-  if (tokenRow.length === 0) {
+  if (tokenRow.length === 0 || !tokenRow[0]) {
     return c.json(
       { error: 'Invalid or expired token' },
       HttpStatusCodes.UNAUTHORIZED
@@ -270,7 +282,11 @@ export const refreshToken: AppRouteHandler<RefreshTokenRoute> = async (c) => {
     .from(authorSessionsTable)
     .where(eq(authorSessionsTable.refreshToken, refreshToken))
 
-  if (session.length === 0 || new Date(session[0].expiresAt) < new Date()) {
+  if (
+    session.length === 0 ||
+    !session[0] ||
+    new Date(session[0].expiresAt) < new Date()
+  ) {
     return c.json(
       { error: 'Session expired or not found' },
       HttpStatusCodes.UNAUTHORIZED
@@ -285,15 +301,17 @@ export const refreshToken: AppRouteHandler<RefreshTokenRoute> = async (c) => {
 
   const author = await getAuthorByEmailOrId({ authorId })
 
-  if (author.length === 0) {
+  if (author.length === 0 || !author[0]) {
     return c.json({ error: 'User not found' }, HttpStatusCodes.NOT_FOUND)
   }
+
+  const currentAuthor = author[0]
 
   const now = Math.floor(Date.now() / 1000)
   const accessToken = await sign(
     {
-      sub: author[0].id,
-      email: author[0].email,
+      sub: currentAuthor.id,
+      email: currentAuthor.email,
       type: 'access',
       exp: now + ACCESS_TOKEN_EXPIRES_IN,
       iat: now
@@ -315,6 +333,13 @@ export const createUser: AppRouteHandler<CreateUserRoute> = async (c) => {
       .insert(authorsTable)
       .values({ ...validated, password: hashedPassword })
       .returning()
+
+    if (!newAuthor) {
+      return c.json(
+        { error: 'Failed to create user' },
+        HttpStatusCodes.INTERNAL_SERVER_ERROR
+      )
+    }
 
     const { password: _, ...authorWithoutPassword } = newAuthor
     return c.json(authorWithoutPassword, HttpStatusCodes.CREATED)
@@ -392,8 +417,9 @@ export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
       .set(updateData)
       .where(eq(authorsTable.id, user.id))
       .returning()
-    if (!updated)
+    if (!updated) {
       return c.json({ error: 'User not found' }, HttpStatusCodes.NOT_FOUND)
+    }
     const { password, ...authorWithoutPassword } = updated
     return c.json(authorWithoutPassword, HttpStatusCodes.OK)
   } catch (error) {

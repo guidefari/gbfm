@@ -1,4 +1,8 @@
-import { relations } from 'drizzle-orm'
+import {
+  type InferInsertModel,
+  type InferSelectModel,
+  relations
+} from 'drizzle-orm'
 import {
   index,
   pgEnum,
@@ -7,8 +11,7 @@ import {
   uuid,
   varchar
 } from 'drizzle-orm/pg-core'
-import { createInsertSchema, createSelectSchema } from 'drizzle-zod'
-import { z } from 'zod'
+import { z } from 'zod/v4'
 import { authorsTable } from './author.schema'
 import { defaultContentFields } from './util'
 
@@ -24,15 +27,31 @@ export const audioTable = pgTable(
   (table) => [index('audio_slug_idx').on(table.slug)]
 )
 
-export const selectAudioSchema = createSelectSchema(audioTable).extend({
-  createdAt: z
-    .string()
-    .or(z.date())
-    .transform((val) => new Date(val)),
-  updatedAt: z
-    .string()
-    .or(z.date())
-    .transform((val) => new Date(val))
+export type SelectAudio = InferSelectModel<typeof audioTable>
+export type InsertAudio = InferInsertModel<typeof audioTable>
+
+export type SelectMdxCompiledAudio = SelectAudio & {
+  compiledContent: string
+  authors?: Array<{
+    id: string
+    name: string
+    username: string
+  }>
+}
+
+export const selectAudioSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string().nullable(),
+  thumbnailUrl: z.string().nullable(),
+  slug: z.string(),
+  content: z.string(),
+  draft: z.boolean(),
+  tags: z.array(z.string()).nullable(),
+  type: z.enum(['mix', 'track', 'misc']),
+  url: z.string(),
+  createdAt: z.date(),
+  updatedAt: z.date()
 })
 
 export const selectMdxCompiledAudioSchema = selectAudioSchema.extend({
@@ -48,21 +67,23 @@ export const selectMdxCompiledAudioSchema = selectAudioSchema.extend({
     .optional()
 })
 
-export const insertAudioSchema = createInsertSchema(audioTable).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true
+export const insertAudioSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().optional(),
+  thumbnailUrl: z.string().optional(),
+  slug: z.string().min(1),
+  content: z.string(),
+  draft: z.boolean().optional(),
+  tags: z.array(z.string()).optional(),
+  type: z.enum(['mix', 'track', 'misc']),
+  url: z.url()
 })
+
+export const updateAudioSchema = insertAudioSchema.partial()
 
 export const createAudioSchema = insertAudioSchema.extend({
-  authorIds: z.array(z.string().uuid()).min(1).optional()
+  authorIds: z.array(z.uuid()).min(1).optional()
 })
-
-export type InsertAudio = z.infer<typeof insertAudioSchema>
-export type SelectAudio = z.infer<typeof selectAudioSchema>
-export type SelectMdxCompiledAudio = z.infer<
-  typeof selectMdxCompiledAudioSchema
->
 
 export const audioToAuthors = pgTable(
   'audio_to_authors',

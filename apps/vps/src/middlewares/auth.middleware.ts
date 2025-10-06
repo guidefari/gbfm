@@ -28,7 +28,7 @@ protectedRoutes.get('/profile', async (c) => {
  */
 export const authenticate = async (c: Context<AppBindings>, next: Next) => {
   const authHeader = c.req.header('Authorization')
-  
+
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return c.json({ error: 'Authorization header required' }, 401)
   }
@@ -37,7 +37,7 @@ export const authenticate = async (c: Context<AppBindings>, next: Next) => {
 
   try {
     const payload = await verify(token, env.ACCESS_TOKEN_SECRET)
-    
+
     if (payload.type !== 'access') {
       return c.json({ error: 'Invalid token type' }, 401)
     }
@@ -48,11 +48,11 @@ export const authenticate = async (c: Context<AppBindings>, next: Next) => {
     }
 
     const author = await getAuthorByEmailOrId({ authorId })
-    const {password, ...authorWithoutPassword} = author[0]
-    if (author.length === 0) {
+    if (author.length === 0 || !author[0]) {
       return c.json({ error: 'User not found' }, 404)
     }
 
+    const { password, ...authorWithoutPassword } = author[0]
     c.set('user', authorWithoutPassword)
     await next()
   } catch (error) {

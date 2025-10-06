@@ -4,15 +4,11 @@ import { jsonContent, jsonContentRequired } from 'stoker/openapi/helpers'
 import { createErrorSchema } from 'stoker/openapi/schemas'
 import {
   createAudioSchema,
-  insertAudioSchema,
   selectAudioSchema,
-  selectMdxCompiledAudioSchema
+  selectMdxCompiledAudioSchema,
+  updateAudioSchema
 } from '@/db/audio.schema'
-import {
-  createPostSchema,
-  selectPostSchema,
-  tagParamsSchema
-} from '@/db/post.schema'
+import { createPostSchema, selectPostSchema } from '@/db/post.schema'
 import { authenticate } from '@/middlewares/auth.middleware'
 
 const tags = ['Content']
@@ -22,6 +18,9 @@ const tags = ['Content']
 const postResponseSchema = selectPostSchema
 
 // tagParamsSchema imported from database
+const tagParamsSchema = z.object({
+  tag: z.string().min(1)
+})
 
 // Routes
 export const createPost = createRoute({
@@ -229,7 +228,7 @@ export const updateAudioBySlug = createRoute({
       slug: z.string()
     }),
     body: jsonContentRequired(
-      insertAudioSchema.partial().omit({ type: true }),
+      updateAudioSchema.omit({ type: true }),
       'The audio data to update'
     )
   },
