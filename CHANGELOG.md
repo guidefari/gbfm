@@ -1,3 +1,10 @@
+## [0.27.1](https://github.com/guidefari/gbfm/compare/v0.27.0...v0.27.1) (2025-10-06)
+
+
+### Bug Fixes
+
+* vps type fixes ([23cae93](https://github.com/guidefari/gbfm/commit/23cae932408eab4a138aefc4fa65a003bf49bfe3))
+
 # [0.27.0](https://github.com/guidefari/gbfm/compare/v0.26.0...v0.27.0) (2025-09-28)
 
 
