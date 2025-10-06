@@ -9,8 +9,7 @@ on:
     inputs:
       ref:
         description: 'Git ref (tag, branch, or commit SHA) to deploy'
-        required: true
-        default: 'prod'
+        required: false
         type: string
 
 
@@ -25,9 +24,16 @@ jobs:
       contents: read
 
     steps:
+      - name: Get latest tag
+        id: get-latest-tag
+        run: |
+          git fetch --tags
+          LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "prod")
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref || github.ref }}
+          ref: ${{ inputs.ref || github.ref_name || steps.get-latest-tag.outputs.latest_tag }}
           fetch-depth: 0
 
       - uses: actions/cache@v4
