@@ -19,7 +19,7 @@ function MixPage() {
       const contentInfo = {
         id: mixId,
         archetype: 'mix',
-        authorIds: data.authors.map((author: any) => author.id)
+        authorIds: data.authors.map((author) => author.id)
       }
       setCurrentContent(contentInfo)
     }

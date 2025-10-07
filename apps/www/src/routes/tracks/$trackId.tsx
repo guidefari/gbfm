@@ -19,7 +19,7 @@ function TrackPage() {
       const contentInfo = {
         id: trackId,
         archetype: 'track',
-        authorIds: data.authors.map((author: any) => author.id)
+        authorIds: data.authors.map((author) => author.id)
       }
       setCurrentContent(contentInfo)
     }
