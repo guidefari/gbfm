@@ -2,7 +2,7 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Heart, MoreHorizontal, Play, Plus, Share, X } from 'lucide-react'
 import type React from 'react'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { cn } from '@/lib/utils'
@@ -91,9 +91,9 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
     })
   }
 
-  const closeContextMenu = () => {
+  const closeContextMenu = useCallback(() => {
     setContextMenu((prev) => ({ ...prev, isOpen: false }))
-  }
+  }, [])
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -209,7 +209,15 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
           ]
         )}
         onClick={handlePlay}
-        onContextMenu={showContextMenu ? handleContextMenu : undefined}>
+        onContextMenu={showContextMenu ? handleContextMenu : undefined}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            handlePlay()
+          }
+        }}
+        role='button'
+        tabIndex={0}>
         {/* Album Art */}
         <div
           className={cn(
@@ -309,6 +317,7 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
             top: contextMenu.y
           }}>
           <button
+            type='button'
             onClick={handlePlayNow}
             className='flex items-center w-full gap-2 px-3 py-2 text-sm text-left transition-colors text-foreground hover:bg-muted'>
             <Play className='w-4 h-4' />
@@ -316,6 +325,7 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
           </button>
 
           <button
+            type='button'
             onClick={handleAddToQueue}
             className='flex items-center w-full gap-2 px-3 py-2 text-sm text-left transition-colors text-foreground hover:bg-muted'>
             <Plus className='w-4 h-4' />
@@ -325,6 +335,7 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
           <hr className='my-1 border-border' />
 
           <button
+            type='button'
             onClick={handleAddToFavorites}
             className='flex items-center w-full gap-2 px-3 py-2 text-sm text-left transition-colors text-foreground hover:bg-muted'>
             <Heart className='w-4 h-4' />
@@ -332,6 +343,7 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
           </button>
 
           <button
+            type='button'
             onClick={handleShare}
             className='flex items-center w-full gap-2 px-3 py-2 text-sm text-left transition-colors text-foreground hover:bg-muted'>
             <Share className='w-4 h-4' />
