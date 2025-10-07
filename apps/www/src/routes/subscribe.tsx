@@ -1,10 +1,13 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useId } from 'react'
 
 export const Route = createFileRoute('/subscribe')({
   component: Subscribe
 })
 
 function Subscribe() {
+  const emailId = useId()
+
   return (
     <section className='mt-20 mb-8 text-center lg:text-left group'>
       <div className='flex flex-wrap justify-center'>
@@ -28,7 +31,7 @@ function Subscribe() {
                   <input
                     type='email'
                     name='email'
-                    id='bd-email'
+                    id={emailId}
                     className='block w-full px-4 py-2 m-0 mb-2 text-xl font-normal text-gray-700 transition ease-in-out border border-gray-300 border-solid rounded bg-cyan-100 form-control md:mb-0 md:mr-2 bg-clip-padding focus:text-gray-700 focus:bg-bg-cyan-300 focus:border-cyan-600 focus:outline-none'
                     placeholder='Enter your email'
                   />

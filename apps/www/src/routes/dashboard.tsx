@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useRef } from 'react'
+import { useId, useRef } from 'react'
 import { useAuthStore } from '@/store/auth'
 
 export const Route = createFileRoute('/dashboard')({
@@ -9,6 +9,13 @@ export const Route = createFileRoute('/dashboard')({
 function Dashboard() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const formRef = useRef<HTMLFormElement>(null)
+  const titleId = useId()
+  const artistId = useId()
+  const albumId = useId()
+  const descriptionId = useId()
+  const audioFileId = useId()
+  const coverImageId = useId()
+  const outputFormatId = useId()
 
   if (!isAuthenticated) {
     return (
@@ -33,45 +40,45 @@ function Dashboard() {
         encType='multipart/form-data'
         className='space-y-4'>
         <div>
-          <label htmlFor='title' className='block mb-1 font-medium'>
+          <label htmlFor={titleId} className='block mb-1 font-medium'>
             Mix Title
           </label>
           <input
             type='text'
-            id='title'
+            id={titleId}
             name='title'
             required
             className='p-2 w-full rounded border'
           />
         </div>
         <div>
-          <label htmlFor='artist' className='block mb-1 font-medium'>
+          <label htmlFor={artistId} className='block mb-1 font-medium'>
             Artist Name (optional)
           </label>
           <input
             type='text'
-            id='artist'
+            id={artistId}
             name='artist'
             className='p-2 w-full rounded border'
           />
         </div>
         <div>
-          <label htmlFor='album' className='block mb-1 font-medium'>
+          <label htmlFor={albumId} className='block mb-1 font-medium'>
             Album Name (optional)
           </label>
           <input
             type='text'
-            id='album'
+            id={albumId}
             name='album'
             className='p-2 w-full rounded border'
           />
         </div>
         <div>
-          <label htmlFor='description' className='block mb-1 font-medium'>
+          <label htmlFor={descriptionId} className='block mb-1 font-medium'>
             Description
           </label>
           <textarea
-            id='description'
+            id={descriptionId}
             name='description'
             rows={4}
             required
@@ -79,12 +86,12 @@ function Dashboard() {
           />
         </div>
         <div>
-          <label htmlFor='audioFile' className='block mb-1 font-medium'>
+          <label htmlFor={audioFileId} className='block mb-1 font-medium'>
             Audio File
           </label>
           <input
             type='file'
-            id='audioFile'
+            id={audioFileId}
             name='audioFile'
             accept='audio/*'
             required
@@ -92,12 +99,12 @@ function Dashboard() {
           />
         </div>
         <div>
-          <label htmlFor='coverImage' className='block mb-1 font-medium'>
+          <label htmlFor={coverImageId} className='block mb-1 font-medium'>
             Cover Image
           </label>
           <input
             type='file'
-            id='coverImage'
+            id={coverImageId}
             name='coverImage'
             accept='image/*'
             required
@@ -105,11 +112,11 @@ function Dashboard() {
           />
         </div>
         <div>
-          <label htmlFor='outputFormat' className='block mb-1 font-medium'>
+          <label htmlFor={outputFormatId} className='block mb-1 font-medium'>
             Output Format
           </label>
           <select
-            id='outputFormat'
+            id={outputFormatId}
             name='outputFormat'
             required
             className='p-2 w-full rounded border'>

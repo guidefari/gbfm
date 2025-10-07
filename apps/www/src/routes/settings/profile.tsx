@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -13,6 +13,7 @@ export const Route = createFileRoute('/settings/profile')({
 
 export default function Profile() {
   const { data: user } = useUserLOL()
+  const avatarId = useId()
   const { updateProfile } = useUpdateProfile()
 
   const [imagePreview, setImagePreview] = useState<string | null>(null)
@@ -99,11 +100,11 @@ export default function Profile() {
                     height={80}
                   />
                   <label
-                    htmlFor='avatar'
+                    htmlFor={avatarId}
                     className='hidden absolute right-0 bottom-0 px-2 py-1 text-xs rounded-full cursor-pointer group-hover:flex bg-gb-darker-bg'>
                     Change
                     <input
-                      id='avatar'
+                      id={avatarId}
                       type='file'
                       accept='image/*'
                       className='hidden'
