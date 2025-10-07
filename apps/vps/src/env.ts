@@ -41,9 +41,11 @@ function createEnvConfig() {
       console.error('❌ Invalid env:')
       console.error(JSON.stringify(error.flatten().fieldErrors, null, 2))
     }
+    throw new Error('Failed to load environment configuration')
   }
 }
 
+// biome-ignore lint/style/noNonNullAssertion: 👀
 export const env = createEnvConfig()!
 
 export type Env = z.infer<typeof envSchema>

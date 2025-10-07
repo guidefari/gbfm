@@ -385,7 +385,7 @@ export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
       ) {
         avatarFile = value as File
       } else if (typeof value === 'string' && key !== 'avatar') {
-        ;(updateData as any)[key] = value
+        updateData[key as keyof UpdateProfileSchema] = value as never
       }
     }
   } else {

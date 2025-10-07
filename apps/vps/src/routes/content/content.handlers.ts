@@ -4,6 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { and, arrayContains, eq } from 'drizzle-orm'
 import ffmpeg from 'ffmpeg-static'
+import type { Context } from 'hono'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
 import {
@@ -14,7 +15,7 @@ import {
 import { authorsTable } from '@/db/author.schema'
 import { postsTable, postsToAuthors } from '@/db/post.schema'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
-import type { AppRouteHandler } from '@/lib/types'
+import type { AppBindings, AppRouteHandler } from '@/lib/types'
 
 import type {
   CreateAudioRoute,
@@ -389,7 +390,9 @@ interface ProcessedFiles {
 }
 
 // Private helper, not exported
-async function processUploadHelper(c: any): Promise<ProcessedFiles> {
+async function processUploadHelper(
+  c: Context<AppBindings>
+): Promise<ProcessedFiles> {
   const formData = await c.req.formData()
   const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'mix-'))
 
