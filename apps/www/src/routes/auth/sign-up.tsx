@@ -40,7 +40,7 @@ function SignUpPage() {
         setError(data.error || 'Failed to sign up')
         setMessage('')
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to sign up')
       setMessage('')
     }

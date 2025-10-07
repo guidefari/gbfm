@@ -34,7 +34,7 @@ function ForgotPasswordPage() {
         setError(data.error || 'Failed to send reset email')
         setMessage('')
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to send reset email')
       setMessage('')
     }

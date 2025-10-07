@@ -49,7 +49,7 @@ function SignInPage() {
       } else {
         setError(data.error || 'Failed to sign in')
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to sign in')
     }
   }

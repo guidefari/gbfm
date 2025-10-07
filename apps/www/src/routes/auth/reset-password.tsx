@@ -67,7 +67,7 @@ function ResetPasswordPage() {
         setError(data.error || 'Failed to reset password')
         setMessage('')
       }
-    } catch (err) {
+    } catch (_err) {
       setError('Failed to reset password')
       setMessage('')
     }
