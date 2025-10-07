@@ -46,7 +46,7 @@ export function CommandDialogDemo() {
   // For now, allow editing for authenticated users on audio content
   const isAudioContent =
     currentArchetype && ['mix', 'track', 'misc'].includes(currentArchetype)
-  const canEdit = isAuthenticated && isAudioContent
+  const canEdit = isAuthenticated && Boolean(isAudioContent)
 
   // Create command data
   const commandItems = React.useMemo(
