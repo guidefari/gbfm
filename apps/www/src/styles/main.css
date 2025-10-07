@@ -260,8 +260,6 @@
   textarea:focus-visible,
   select:focus-visible {
     @apply ring-2 ring-offset-2;
-    ring-color: var(--highlight);
-    ring-offset-color: var(--bg);
     box-shadow:
       0 0 0 2px var(--bg),
       0 0 0 4px var(--highlight),
