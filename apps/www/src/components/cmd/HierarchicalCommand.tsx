@@ -54,6 +54,22 @@ export function HierarchicalCommand({
   const currentItems = activeSection ? filteredSectionItems : filteredItems
   const isInSection = Boolean(activeSection)
 
+  const handleItemSelect = useCallback(
+    (item: CommandItem | CommandAction) => {
+      if ('type' in item && item.type === 'section') {
+        // Open section
+        setActiveSection(item as CommandSection)
+        setSelectedIndex(0)
+        onSearchChange('') // Clear search when entering section
+        onSectionChange?.(true)
+      } else {
+        // Execute action
+        onItemSelect(item)
+      }
+    },
+    [onItemSelect, onSearchChange, onSectionChange]
+  )
+
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (!currentItems.length) return
@@ -141,19 +157,6 @@ export function HierarchicalCommand({
       onSectionChange
     ]
   )
-
-  const handleItemSelect = (item: CommandItem | CommandAction) => {
-    if ('type' in item && item.type === 'section') {
-      // Open section
-      setActiveSection(item as CommandSection)
-      setSelectedIndex(0)
-      onSearchChange('') // Clear search when entering section
-      onSectionChange?.(true)
-    } else {
-      // Execute action
-      onItemSelect(item)
-    }
-  }
 
   useEffect(() => {
     document.addEventListener('keydown', handleKeyDown)

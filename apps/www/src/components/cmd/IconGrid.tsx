@@ -130,6 +130,7 @@ export function IconGrid({
 
         return (
           <button
+            type='button'
             key={tile.id}
             className={cn(
               'flex flex-col items-center justify-center p-6 rounded-lg border-2 transition-all duration-200',
