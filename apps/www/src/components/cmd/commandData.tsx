@@ -35,7 +35,7 @@ export const createCommandData = (
   contentActions: any,
   audioPlayerCmdActions: any,
   themeActions: any,
-  closeCmd: () => void,
+  _closeCmd: () => void,
   isAuthenticated: boolean,
   isOnMixesPage: boolean,
   canEdit: boolean,

@@ -1,6 +1,6 @@
 import { useTheme } from '@/components/ThemeProvider'
 
-export const useThemeActions = (closeCmd: () => void) => {
+export const useThemeActions = (_closeCmd: () => void) => {
   const { theme, setTheme } = useTheme()
 
   const cycleTheme = () => {

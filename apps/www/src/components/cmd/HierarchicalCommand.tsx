@@ -132,7 +132,14 @@ export function HierarchicalCommand({
           break
       }
     },
-    [selectedIndex, currentItems, searchValue, isInSection]
+    [
+      selectedIndex,
+      currentItems,
+      searchValue,
+      isInSection,
+      handleItemSelect,
+      onSectionChange
+    ]
   )
 
   const handleItemSelect = (item: CommandItem | CommandAction) => {
@@ -156,7 +163,7 @@ export function HierarchicalCommand({
   // Reset selection when items change
   useEffect(() => {
     setSelectedIndex(0)
-  }, [currentItems.length, searchValue])
+  }, [])
 
   // Reset when search is cleared and we're not in a section
   useEffect(() => {

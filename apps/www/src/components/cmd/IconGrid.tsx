@@ -1,14 +1,3 @@
-import {
-  BookOpen,
-  FileText,
-  Headphones,
-  Home,
-  LockKeyhole,
-  Mic,
-  Music,
-  Settings,
-  Upload
-} from 'lucide-react'
 import type React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -131,7 +120,7 @@ export function IconGrid({
   // Reset selection when tiles change
   useEffect(() => {
     setSelectedIndex(0)
-  }, [availableTiles.length])
+  }, [])
 
   return (
     <div ref={gridRef} className={cn('grid grid-cols-4 gap-4 p-4', className)}>
