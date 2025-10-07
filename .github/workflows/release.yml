@@ -1,10 +1,12 @@
 name: Release
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Quality Gate"]
+    types:
+      - completed
     branches:
       - prod
-      - main
 
 concurrency:
   group: release-${{ github.ref }}
@@ -13,6 +15,7 @@ concurrency:
 jobs:
   release:
     runs-on: ubuntu-24.04
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     permissions:
       contents: write
       issues: write
@@ -33,9 +36,6 @@ jobs:
 
       - name: Install dependencies
         run: bun install
-
-      - name: Run type check
-        run: bun typecheck
 
       - name: Release
         env:
