@@ -1,10 +1,8 @@
 import {
   Action,
   ActionPanel,
-  Detail,
   Form,
   List,
-  LocalStorage,
   popToRoot,
   showToast,
   Toast

@@ -270,7 +270,7 @@ export const del = (url: string): Promise<Response> =>
 export const parseJsonResponse = async <T>(response: Response): Promise<T> => {
   try {
     return (await response.json()) as T
-  } catch (error) {
+  } catch (_error) {
     throw new ServerError('Failed to parse JSON response', 500)
   }
 }

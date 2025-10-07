@@ -1,8 +1,5 @@
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
 import '../global.css'
-import { Slot, Stack } from 'expo-router'
-import { StatusBar } from 'expo-status-bar'
-import React, { Fragment } from 'react'
+import { Stack } from 'expo-router'
 
 export default function Layout() {
   return (

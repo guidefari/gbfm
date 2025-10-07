@@ -1,5 +1,4 @@
 import { sql } from 'drizzle-orm'
-import { serveStatic } from 'hono/bun'
 import configureOpenAPI from '@/lib/configure-open-api'
 import createApp from '@/lib/create-app'
 import auth from '@/routes/auth/auth.index'

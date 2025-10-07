@@ -1,9 +1,8 @@
 import { Stack } from 'expo-router'
-import React, { Fragment, useState } from 'react'
+import { useState } from 'react'
 import {
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   Text,
   TextInput,
   TouchableOpacity,
