@@ -1,7 +1,7 @@
 import type { SelectMix } from '@gbfm/vps/schemas'
 import { Heart, Play, Plus, Share } from 'lucide-react'
 import type React from 'react'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAudioPlayerActions } from '@/store/audioPlayer'
 
 interface TrackContextMenuProps {
@@ -42,9 +42,9 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
     })
   }
 
-  const closeContextMenu = () => {
+  const closeContextMenu = useCallback(() => {
     setContextMenu((prev) => ({ ...prev, isOpen: false }))
-  }
+  }, [])
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -95,7 +95,10 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
 
   return (
     <>
-      <div onContextMenu={handleContextMenu} className={className}>
+      <div
+        onContextMenu={handleContextMenu}
+        className={className}
+        role='presentation'>
         {children}
       </div>
 
