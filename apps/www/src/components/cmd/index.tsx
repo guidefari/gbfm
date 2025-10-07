@@ -2,37 +2,29 @@
 
 import { useRouterState } from '@tanstack/react-router'
 import * as React from 'react'
-
-import {
-  CommandDialog,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandList,
-  CommandSeparator
-} from '@/components/ui/command'
-import { useUIStore } from '@/store'
-import { useAuthStore } from '@/store/auth'
-import { useAudioPlayerState } from '@/store/audioPlayer'
-import { useContentStore } from '@/store/content'
-import { NavigationCommands } from './navigation/commands'
-import { useNavigationActions } from './navigation/actions'
-import { AudioCommands } from './audio/commands'
-import { SortingCommands } from './sorting/commands'
-import { useSortingActions } from './sorting/actions'
-import { SettingsCommands } from './settings/commands'
-import { useSettingsActions } from './settings/actions'
-import { ContentCommands } from './content/commands'
-import { useContentActions } from './content/actions'
-import { ThemeCommands } from './theme/commands'
-import { useThemeActions } from './theme/actions'
 import { useTheme } from '@/components/ThemeProvider'
-import { useKeyboardShortcuts } from './keyboard-shortcuts'
+import { CommandDialog, CommandInput } from '@/components/ui/command'
+import { useUIStore } from '@/store'
+import { useAudioPlayerState } from '@/store/audioPlayer'
+import { useAuthStore } from '@/store/auth'
+import { useContentStore } from '@/store/content'
 import { version } from '../../../../../package.json'
+import { useAudioPlayerCmdActions } from './audio/actions'
+import { createCommandData } from './commandData'
+import { useContentActions } from './content/actions'
+import { HierarchicalCommand } from './HierarchicalCommand'
+import { useKeyboardShortcuts } from './keyboard-shortcuts'
+import { useNavigationActions } from './navigation/actions'
+import { useSettingsActions } from './settings/actions'
+import { useSortingActions } from './sorting/actions'
+import { useThemeActions } from './theme/actions'
+import type { CommandAction, CommandItem } from './types'
 
 export function CommandDialogDemo() {
+  const [searchValue, setSearchValue] = React.useState('')
+  const [isInSection, setIsInSection] = React.useState(false)
   const routerState = useRouterState()
-  const { Cmd, openCmd, closeCmd, toggleCmd, mixesSorting } = useUIStore()
+  const { Cmd, openCmd, closeCmd, toggleCmd } = useUIStore()
   const { isAuthenticated } = useAuthStore()
   const { audioSrc } = useAudioPlayerState()
   useContentStore()
@@ -43,15 +35,15 @@ export function CommandDialogDemo() {
   const settingsActions = useSettingsActions(closeCmd)
   const contentActions = useContentActions(closeCmd)
   const themeActions = useThemeActions(closeCmd)
+  const audioPlayerCmdActions = useAudioPlayerCmdActions(closeCmd)
 
   const isOnMixesPage = routerState.location.pathname === '/mixes'
-  const isOnHomePage = routerState.location.pathname === '/'
+  const pathname = routerState.location.pathname
 
   // Check if we're on a read page and can edit current content
   const readPageMatch = routerState.location.pathname.match(
-    /^\/read\/([^\/]+)\/([^\/]+)$/
+    /^\/read\/([^/]+)\/([^/]+)$/
   )
-  const isOnReadPage = Boolean(readPageMatch)
   const currentArchetype = readPageMatch?.[1]
   const currentId = readPageMatch?.[2]
 
@@ -59,6 +51,43 @@ export function CommandDialogDemo() {
   const isAudioContent =
     currentArchetype && ['mix', 'track', 'misc'].includes(currentArchetype)
   const canEdit = isAuthenticated && isAudioContent
+
+  // Create command data
+  const commandItems = React.useMemo(
+    () =>
+      createCommandData(
+        navigationActions,
+        sortingActions,
+        settingsActions,
+        contentActions,
+        audioPlayerCmdActions,
+        themeActions,
+        closeCmd,
+        isAuthenticated,
+        isOnMixesPage,
+        canEdit,
+        currentArchetype,
+        currentId,
+        audioSrc,
+        pathname
+      ),
+    [
+      navigationActions,
+      sortingActions,
+      settingsActions,
+      contentActions,
+      audioPlayerCmdActions,
+      themeActions,
+      closeCmd,
+      isAuthenticated,
+      isOnMixesPage,
+      canEdit,
+      currentArchetype,
+      currentId,
+      audioSrc,
+      pathname
+    ]
+  )
 
   const { setupKeyboardShortcuts } = useKeyboardShortcuts({
     isOnMixesPage,
@@ -76,105 +105,69 @@ export function CommandDialogDemo() {
     return setupKeyboardShortcuts()
   }, [setupKeyboardShortcuts])
 
+  const handleItemSelect = (item: CommandItem | CommandAction) => {
+    if ('onSelect' in item) {
+      item.onSelect()
+    }
+  }
+
+  // Reset search and section when dialog closes
+  React.useEffect(() => {
+    if (!Cmd.isOpen) {
+      setSearchValue('')
+      setIsInSection(false)
+    }
+  }, [Cmd.isOpen])
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault()
+    }
+    if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault()
+      closeCmd()
+    }
+  }
+
+  const handleEscapeKeyDown = (e: KeyboardEvent) => {
+    if (isInSection) {
+      e.preventDefault()
+    }
+  }
+
   return (
     <CommandDialog
       open={Cmd.isOpen}
       onOpenChange={(open) => (open ? openCmd() : closeCmd())}
+      onEscapeKeyDown={handleEscapeKeyDown}
       title='Command palette for GBFM'>
       <CommandInput
         className='ring-0 focus-visible:ring-0 focus-visible:ring-offset-0'
         placeholder='Type a command or search...'
+        value={searchValue}
+        onValueChange={setSearchValue}
+        onKeyDown={handleInputKeyDown}
       />
-      <CommandList>
-        <CommandEmpty>No results found.</CommandEmpty>
 
-        {audioSrc && (
-          <>
-            <AudioCommands closeCmd={closeCmd} />
-            <CommandSeparator />
-          </>
-        )}
+      <div className='overflow-auto max-h-96'>
+        <HierarchicalCommand
+          items={commandItems}
+          onItemSelect={handleItemSelect}
+          isAuthenticated={isAuthenticated}
+          searchValue={searchValue}
+          onSearchChange={setSearchValue}
+          onSectionChange={setIsInSection}
+        />
 
-        <CommandGroup heading='Suggestions'>
-          <NavigationCommands
-            isOnHomePage={isOnHomePage}
-            isAuthenticated={isAuthenticated}
-            onNavigateHome={navigationActions.routeToHome}
-            onNavigateToMixes={navigationActions.routeToMixes}
-            onNavigateToTracks={navigationActions.routeToTracks}
-            onNavigateToLogin={navigationActions.routeToLogin}
-          />
-        </CommandGroup>
-
-        {isOnMixesPage && (
-          <>
-            <CommandSeparator />
-            <CommandGroup heading='Sort Mixes'>
-              <SortingCommands
-                sortBy={mixesSorting.sortBy}
-                sortOrder={mixesSorting.sortOrder}
-                onSortByDate={sortingActions.sortByDate}
-                onSortByTitle={sortingActions.sortByTitle}
-                onToggleSortOrder={sortingActions.toggleSort}
-              />
-            </CommandGroup>
-          </>
-        )}
-
-        {isOnReadPage && canEdit && (
-          <>
-            <CommandSeparator />
-            <CommandGroup heading='Content Actions'>
-              <ContentCommands
-                canEdit={canEdit}
-                onEditContent={() => {
-                  console.log(
-                    'Edit clicked, archetype:',
-                    currentArchetype,
-                    'id:',
-                    currentId
-                  )
-                  if (currentArchetype && currentId) {
-                    contentActions.editContent(currentArchetype, currentId)
-                  } else {
-                    console.log('No archetype/id available')
-                  }
-                }}
-              />
-            </CommandGroup>
-          </>
-        )}
-
-        <CommandSeparator />
-        <CommandGroup heading='Theme'>
-          <ThemeCommands
-            currentTheme={theme}
-            onSetLight={themeActions.setLight}
-            onSetDark={themeActions.setDark}
-            onSetSystem={themeActions.setSystem}
-          />
-        </CommandGroup>
-
-        {isAuthenticated && (
-          <>
-            <CommandSeparator />
-            <CommandGroup heading='Settings'>
-              <SettingsCommands
-                onNavigateToProfile={navigationActions.routeToProfile}
-                onLogout={settingsActions.handleLogout}
-              />
-            </CommandGroup>
-          </>
-        )}
-      </CommandList>
-      <div className='flex justify-center items-center p-2 border-t'>
-        <a
-          href={`https://github.com/guidefari/gbfm/releases/tag/v${version}`}
-          target='_blank'
-          rel='noopener noreferrer'
-          className='text-xs transition-colors text-muted-foreground hover:text-foreground'>
-          v{version}
-        </a>
+        <div className='flex items-center justify-center p-2 border-t'>
+          <a
+            href={`https://github.com/guidefari/gbfm/releases/tag/v${version}`}
+            target='_blank'
+            rel='noopener noreferrer'
+            className='text-xs transition-colors text-muted-foreground hover:text-foreground'>
+            v{version}
+          </a>
+        </div>
       </div>
     </CommandDialog>
   )
