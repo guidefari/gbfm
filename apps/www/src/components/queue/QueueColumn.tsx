@@ -50,7 +50,7 @@ export const QueueColumn = () => {
       <ScrollArea className='flex-1 w-full h-0'>
         {nowPlayingContext.title !== 'Nothing playing, yet' && (
           <div className='p-4 border-b border-border bg-muted/20'>
-            <h3 className='mb-2 text-sm font-medium text-muted-foreground'>
+            <h3 className='mb-2 text-xs font-medium text-muted-foreground'>
               Now Playing
             </h3>
             <div className='flex items-center gap-3'>
@@ -80,7 +80,7 @@ export const QueueColumn = () => {
           </div>
         ) : (
           <div className='w-full p-2'>
-            <h3 className='px-2 mb-2 text-sm font-medium text-muted-foreground'>
+            <h3 className='px-2 mb-2 text-xs font-medium text-muted-foreground'>
               Up Next
             </h3>
             <DndContext

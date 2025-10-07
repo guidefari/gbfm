@@ -24,6 +24,9 @@ import { SettingsCommands } from './settings/commands'
 import { useSettingsActions } from './settings/actions'
 import { ContentCommands } from './content/commands'
 import { useContentActions } from './content/actions'
+import { ThemeCommands } from './theme/commands'
+import { useThemeActions } from './theme/actions'
+import { useTheme } from '@/components/ThemeProvider'
 import { useKeyboardShortcuts } from './keyboard-shortcuts'
 import { version } from '../../../../../package.json'
 
@@ -34,10 +37,12 @@ export function CommandDialogDemo() {
   const { audioSrc } = useAudioPlayerState()
   useContentStore()
 
+  const { theme } = useTheme()
   const navigationActions = useNavigationActions(closeCmd)
   const sortingActions = useSortingActions(closeCmd)
   const settingsActions = useSettingsActions(closeCmd)
   const contentActions = useContentActions(closeCmd)
+  const themeActions = useThemeActions(closeCmd)
 
   const isOnMixesPage = routerState.location.pathname === '/mixes'
   const isOnHomePage = routerState.location.pathname === '/'
@@ -141,13 +146,25 @@ export function CommandDialogDemo() {
         )}
 
         <CommandSeparator />
+        <CommandGroup heading='Theme'>
+          <ThemeCommands
+            currentTheme={theme}
+            onSetLight={themeActions.setLight}
+            onSetDark={themeActions.setDark}
+            onSetSystem={themeActions.setSystem}
+          />
+        </CommandGroup>
+
         {isAuthenticated && (
-          <CommandGroup heading='Settings'>
-            <SettingsCommands
-              onNavigateToProfile={navigationActions.routeToProfile}
-              onLogout={settingsActions.handleLogout}
-            />
-          </CommandGroup>
+          <>
+            <CommandSeparator />
+            <CommandGroup heading='Settings'>
+              <SettingsCommands
+                onNavigateToProfile={navigationActions.routeToProfile}
+                onLogout={settingsActions.handleLogout}
+              />
+            </CommandGroup>
+          </>
         )}
       </CommandList>
       <div className='flex justify-center items-center p-2 border-t'>

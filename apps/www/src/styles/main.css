@@ -47,7 +47,7 @@
     --destructive: hsl(0, 84.2%, 60.2%);
     --destructive-foreground: hsl(194, 52%, 67%);
 
-    --border: hsl(220, 13%, 91%);
+    --border: hsl(215, 27.9%, 16.9%);
     --input: hsl(220, 13%, 91%);
     --ring: hsl(224, 71.4%, 4.1%);
 
@@ -86,7 +86,7 @@
     --destructive: hsl(0, 62.8%, 30.6%);
     --destructive-foreground: hsl(194, 52%, 67%);
 
-    --border: hsl(215, 27.9%, 16.9%);
+    --border: hsl(220, 13%, 91%);
     --input: hsl(215, 27.9%, 16.9%);
     --ring: hsl(216, 12.2%, 83.9%);
   }
@@ -219,7 +219,7 @@
   }
 
   .curated-posts {
-    @apply grid gap-10 px-4 py-16 mx-auto w-full sm:grid-cols-2 lg:grid-cols-3 lg:px-8 lg:py-20;
+    @apply grid w-full gap-10 px-4 py-16 mx-auto sm:grid-cols-2 lg:grid-cols-3 lg:px-8 lg:py-20;
   }
 
   .default-icon {
@@ -229,7 +229,7 @@
 
   /* Enhanced Button Interactions */
   .button-glow {
-    @apply overflow-hidden relative;
+    @apply relative overflow-hidden;
   }
 
   .button-glow::before {
@@ -279,7 +279,7 @@
 
   /* Button Loading State */
   .button-loading {
-    @apply overflow-hidden relative;
+    @apply relative overflow-hidden;
   }
 
   .button-loading::after {

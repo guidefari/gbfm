@@ -119,15 +119,15 @@ const AudioPlayer = () => {
               <h3 className='text-sm font-medium truncate'>
                 {currentTrack.title}
               </h3>
-              <p className='text-xs truncate text-muted-foreground'>
+              <p className='px-0 text-xs truncate text-secondary-foreground'>
                 {currentTrack.artist}
               </p>
             </div>
             {/* <div className='flex items-center flex-shrink-0 gap-2'>
-              <Button variant='ghost' size='icon' className='text-muted-foreground hover:text-foreground hover:bg-muted'>
+              <Button variant='ghost' size='icon' className='text-secondary-foreground hover:text-foreground hover:bg-muted'>
                 <Star className='w-4 h-4' />
               </Button>
-              <Button variant='ghost' size='icon' className='text-muted-foreground hover:text-foreground hover:bg-muted'>
+              <Button variant='ghost' size='icon' className='text-secondary-foreground hover:text-foreground hover:bg-muted'>
                 <MoreHorizontal className='w-4 h-4' />
               </Button>
             </div> */}
@@ -140,7 +140,7 @@ const AudioPlayer = () => {
                 variant='ghost'
                 size='icon'
                 onClick={toggleShuffle}
-                className={`hover:bg-muted ${isShuffled ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+                className={`hover:bg-muted ${isShuffled ? 'text-primary' : 'text-secondary-foreground hover:text-foreground'}`}>
                 <Shuffle className='w-4 h-4' />
               </Button>
               <Button
@@ -174,13 +174,13 @@ const AudioPlayer = () => {
                 variant='ghost'
                 size='icon'
                 onClick={toggleRepeat}
-                className={`hover:bg-muted ${repeatMode !== 'none' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+                className={`hover:bg-muted ${repeatMode !== 'none' ? 'text-primary' : 'text-secondary-foreground hover:text-foreground'}`}>
                 {getRepeatIcon()}
               </Button>
             </div>
 
             <div className='flex items-center w-full max-w-md gap-2'>
-              <span className='text-xs text-muted-foreground min-w-[2.5rem] text-right'>
+              <span className='text-xs text-secondary-foreground min-w-[2.5rem] text-right'>
                 {formatSeconds(currentTime)}
               </span>
               <input
@@ -191,7 +191,7 @@ const AudioPlayer = () => {
                 step={0.1}
                 className='flex-1 h-2 bg-muted rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-lg'
               />
-              <span className='text-xs text-muted-foreground min-w-[2.5rem]'>
+              <span className='text-xs text-secondary-foreground min-w-[2.5rem]'>
                 {formatSeconds(duration)}
               </span>
             </div>
@@ -205,7 +205,7 @@ const AudioPlayer = () => {
                 variant='ghost'
                 size='icon'
                 onClick={toggleMute}
-                className='text-muted-foreground hover:text-foreground hover:bg-muted'
+                className='text-secondary-foreground hover:text-foreground hover:bg-muted'
                 title={
                   isMuted
                     ? 'Unmute (or scroll to adjust)'
@@ -233,7 +233,7 @@ const AudioPlayer = () => {
               variant='ghost'
               size='icon'
               onClick={toggleQueue}
-              className={`${queue.length > 0 ? 'relative' : ''} text-muted-foreground hover:text-foreground hover:bg-muted`}>
+              className={`${queue.length > 0 ? 'relative' : ''} text-secondary-foreground hover:text-foreground hover:bg-muted`}>
               <List className='w-4 h-4' />
               {queue.length > 0 && (
                 <span className='absolute flex items-center justify-center w-5 h-5 text-xs rounded-full -top-1 -right-1 bg-primary text-primary-foreground'>
@@ -257,7 +257,7 @@ const AudioPlayer = () => {
               <h3 className='text-sm font-medium truncate'>
                 {currentTrack.title}
               </h3>
-              <p className='text-xs truncate text-muted-foreground'>
+              <p className='text-xs truncate text-secondary-foreground'>
                 {currentTrack.artist}
               </p>
             </div>
@@ -265,7 +265,7 @@ const AudioPlayer = () => {
               variant='ghost'
               size='icon'
               onClick={toggleQueue}
-              className={`${queue.length > 0 ? 'relative' : ''} text-muted-foreground hover:text-foreground hover:bg-muted`}>
+              className={`${queue.length > 0 ? 'relative' : ''} text-secondary-foreground hover:text-foreground hover:bg-muted`}>
               <List className='w-4 h-4' />
               {queue.length > 0 && (
                 <span className='absolute flex items-center justify-center w-5 h-5 text-xs rounded-full -top-1 -right-1 bg-primary text-primary-foreground'>
@@ -276,7 +276,7 @@ const AudioPlayer = () => {
           </div>
 
           <div className='flex items-center gap-2 mb-2'>
-            <span className='text-xs text-muted-foreground min-w-[2.5rem] text-right'>
+            <span className='text-xs text-secondary-foreground min-w-[2.5rem] text-right'>
               {formatSeconds(currentTime)}
             </span>
             <input
@@ -287,7 +287,7 @@ const AudioPlayer = () => {
               step={0.1}
               className='flex-1 h-2 bg-muted rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-lg'
             />
-            <span className='text-xs text-muted-foreground min-w-[2.5rem]'>
+            <span className='text-xs text-secondary-foreground min-w-[2.5rem]'>
               {formatSeconds(duration)}
             </span>
           </div>
@@ -298,14 +298,14 @@ const AudioPlayer = () => {
                 variant='ghost'
                 size='icon'
                 onClick={toggleShuffle}
-                className={`hover:bg-muted ${isShuffled ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+                className={`hover:bg-muted ${isShuffled ? 'text-primary' : 'text-secondary-foreground hover:text-foreground'}`}>
                 <Shuffle className='w-4 h-4' />
               </Button>
               <Button
                 variant='ghost'
                 size='icon'
                 onClick={toggleRepeat}
-                className={`hover:bg-muted ${repeatMode !== 'none' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
+                className={`hover:bg-muted ${repeatMode !== 'none' ? 'text-primary' : 'text-secondary-foreground hover:text-foreground'}`}>
                 {getRepeatIcon()}
               </Button>
             </div>
@@ -345,7 +345,7 @@ const AudioPlayer = () => {
                 variant='ghost'
                 size='icon'
                 onClick={toggleMute}
-                className='text-muted-foreground hover:text-foreground hover:bg-muted'>
+                className='text-secondary-foreground hover:text-foreground hover:bg-muted'>
                 {isMuted || volume === 0 ? (
                   <VolumeX className='w-4 h-4' />
                 ) : (
@@ -355,7 +355,7 @@ const AudioPlayer = () => {
               <Button
                 variant='ghost'
                 size='icon'
-                className='text-muted-foreground hover:text-foreground hover:bg-muted'>
+                className='text-secondary-foreground hover:text-foreground hover:bg-muted'>
                 <Star className='w-4 h-4' />
               </Button>
             </div>
