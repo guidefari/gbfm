@@ -15,7 +15,7 @@ function TrackPage() {
   const { data, error, isPending } = useAudioBySlug('track', trackId)
 
   React.useEffect(() => {
-    if (data && data.authors) {
+    if (data?.authors) {
       const contentInfo = {
         id: trackId,
         archetype: 'track',
