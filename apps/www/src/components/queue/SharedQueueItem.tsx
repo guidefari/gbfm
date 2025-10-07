@@ -187,6 +187,7 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
 
   return (
     <>
+      {/* biome-ignore lint/a11y/useSemanticElements: Div required for drag-and-drop functionality with @dnd-kit/sortable */}
       <div
         ref={setNodeRef}
         style={style}

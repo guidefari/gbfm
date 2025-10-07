@@ -95,8 +95,14 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
 
   return (
     <>
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: Context menu wrapper requires mouse event handling */}
       <div
         onContextMenu={handleContextMenu}
+        onKeyDown={(e) => {
+          if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) {
+            handleContextMenu(e as unknown as React.MouseEvent)
+          }
+        }}
         className={className}
         role='presentation'>
         {children}

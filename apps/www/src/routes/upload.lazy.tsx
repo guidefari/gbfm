@@ -13,7 +13,7 @@ import {
   X
 } from 'lucide-react'
 import type React from 'react'
-import { useEffect, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -87,6 +87,12 @@ function UploadPage() {
 
   const { user } = useAuthStore()
   const router = useRouter()
+
+  const audioUploadId = useId()
+  const titleId = useId()
+  const descriptionId = useId()
+  const slugId = useId()
+  const artworkUploadId = useId()
 
   // Populate form data when editing existing content
   useEffect(() => {
@@ -492,9 +498,9 @@ Add any relevant information, credits, or notes...`
                     accept='audio/*'
                     onChange={handleAudioFileChange}
                     className='hidden'
-                    id='audio-upload'
+                    id={audioUploadId}
                   />
-                  <label htmlFor='audio-upload'>
+                  <label htmlFor={audioUploadId}>
                     <Button
                       variant='outline'
                       size='sm'
@@ -533,6 +539,7 @@ Add any relevant information, credits, or notes...`
                     </Button>
                   </div>
                   {audioPreview && (
+                    /* biome-ignore lint/a11y/useMediaCaption: Audio preview for upload validation, captions not applicable */
                     <audio controls className='w-full'>
                       <source src={audioPreview} />
                       Your browser does not support the audio element.
@@ -550,11 +557,11 @@ Add any relevant information, credits, or notes...`
             </CardHeader>
             <CardContent className='space-y-4'>
               <div className='space-y-2'>
-                <Label htmlFor='title' className='text-gb-pastel-green-1'>
+                <Label htmlFor={titleId} className='text-gb-pastel-green-1'>
                   Title *
                 </Label>
                 <Input
-                  id='title'
+                  id={titleId}
                   value={formData.title}
                   onChange={(e) => handleInputChange('title', e.target.value)}
                   placeholder='Enter audio title...'
@@ -568,9 +575,7 @@ Add any relevant information, credits, or notes...`
                 </Label>
                 <Select
                   value={formData.type}
-                  onValueChange={(value: any) =>
-                    handleInputChange('type', value)
-                  }>
+                  onValueChange={(value) => handleInputChange('type', value)}>
                   <SelectTrigger className='bg-gb-bg border-gb-pastel-green-2/30 text-gb-default-text'>
                     <SelectValue />
                   </SelectTrigger>
@@ -583,11 +588,13 @@ Add any relevant information, credits, or notes...`
               </div>
 
               <div className='space-y-2'>
-                <Label htmlFor='description' className='text-gb-pastel-green-1'>
+                <Label
+                  htmlFor={descriptionId}
+                  className='text-gb-pastel-green-1'>
                   Description
                 </Label>
                 <Textarea
-                  id='description'
+                  id={descriptionId}
                   value={formData.description}
                   onChange={(e) =>
                     handleInputChange('description', e.target.value)
@@ -598,11 +605,11 @@ Add any relevant information, credits, or notes...`
               </div>
 
               <div className='space-y-2'>
-                <Label htmlFor='slug' className='text-gb-pastel-green-1'>
+                <Label htmlFor={slugId} className='text-gb-pastel-green-1'>
                   URL Slug
                 </Label>
                 <Input
-                  id='slug'
+                  id={slugId}
                   value={formData.slug}
                   onChange={(e) => handleInputChange('slug', e.target.value)}
                   placeholder='url-friendly-slug (auto-generated if empty)'
@@ -637,9 +644,9 @@ Add any relevant information, credits, or notes...`
                     accept='image/*'
                     onChange={handleArtworkFileChange}
                     className='hidden'
-                    id='artwork-upload'
+                    id={artworkUploadId}
                   />
-                  <label htmlFor='artwork-upload'>
+                  <label htmlFor={artworkUploadId}>
                     <Button
                       variant='outline'
                       size='sm'
@@ -694,9 +701,12 @@ Add any relevant information, credits, or notes...`
                   onChange={(e) => setNewTag(e.target.value)}
                   placeholder='Add a tag...'
                   className='bg-gb-bg border-gb-pastel-green-2/30 text-gb-default-text focus:border-gb-highlight'
-                  onKeyPress={(e) =>
-                    e.key === 'Enter' && (e.preventDefault(), addTag())
-                  }
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault()
+                      addTag()
+                    }
+                  }}
                 />
                 <Button
                   onClick={addTag}
