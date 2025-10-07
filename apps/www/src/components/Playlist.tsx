@@ -1,7 +1,7 @@
 'use client'
 import type React from 'react'
-import { MultiTrack } from './MultiTrack'
 import { useSpotifyProxy } from '@/lib/http'
+import { MultiTrack } from './MultiTrack'
 
 interface Props {
   url: string

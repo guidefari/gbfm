@@ -1,4 +1,4 @@
-import { Home, Headphones, Music, LockKeyhole } from 'lucide-react'
+import { Headphones, Home, LockKeyhole, Music } from 'lucide-react'
 import { CommandItem, CommandShortcut } from '@/components/ui/command'
 
 interface NavigationCommandsProps {

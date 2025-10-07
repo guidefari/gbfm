@@ -1,12 +1,12 @@
 import { LocalStorage } from '@raycast/api'
 import { Effect, Runtime } from 'effect'
 import {
-  ApiConfiguration,
-  ApiError,
+  type ApiConfiguration,
+  type ApiError,
   AuthenticationError,
   ConfigurationError,
   NetworkError,
-  RefreshTokenResponse,
+  type RefreshTokenResponse,
   ServerError,
   ValidationError
 } from './types/api'

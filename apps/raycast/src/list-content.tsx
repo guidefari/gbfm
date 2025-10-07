@@ -1,12 +1,12 @@
 import {
+  Action,
   ActionPanel,
   List,
-  Action,
+  LocalStorage,
   showToast,
-  Toast,
-  LocalStorage
+  Toast
 } from '@raycast/api'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import EditMix from './edit-mix'
 
 interface Mix {

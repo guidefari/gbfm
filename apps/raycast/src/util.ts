@@ -1,4 +1,4 @@
-import { Effect, Data, pipe } from 'effect'
+import { Data, Effect, pipe } from 'effect'
 
 const TracklistFormat = {
   DJ_SOFTWARE_EXPORT: 'dj_software_export',

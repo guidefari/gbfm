@@ -1,13 +1,13 @@
 import {
+  Action,
   ActionPanel,
   Form,
-  Action,
-  showToast,
-  Toast,
   LocalStorage,
-  openExtensionPreferences
+  openExtensionPreferences,
+  showToast,
+  Toast
 } from '@raycast/api'
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 
 interface SignInData {
   email: string

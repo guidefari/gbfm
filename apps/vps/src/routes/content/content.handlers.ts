@@ -18,13 +18,13 @@ import type { AppRouteHandler } from '@/lib/types'
 
 import type {
   CreateAudioRoute,
-  UpdateAudioBySlugRoute,
   CreateMixRoute,
   CreatePostRoute,
   GetAudioBySlugRoute,
   GetAudioByTypeRoute,
   GetPostsByTagRoute,
-  ProcessMixUploadRoute
+  ProcessMixUploadRoute,
+  UpdateAudioBySlugRoute
 } from './content.routes'
 
 export const createPost: AppRouteHandler<CreatePostRoute> = async (c) => {
@@ -434,7 +434,7 @@ export const processUpload: AppRouteHandler<ProcessMixUploadRoute> = async (
     return new Response(outputBuffer, {
       headers: {
         'Content-Type': outputFormat === 'mp3' ? 'audio/mpeg' : 'video/mp4',
-        'Content-Disposition': `attachment; filename=\"${safeTitle}.${outputFormat}\"`
+        'Content-Disposition': `attachment; filename="${safeTitle}.${outputFormat}"`
       }
     })
   } catch (error) {

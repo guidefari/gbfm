@@ -1,7 +1,7 @@
 'use client'
 import type React from 'react'
-import { MinimalCard } from './common/MinimalCard'
 import { useSpotifyProxy } from '@/lib/http'
+import { MinimalCard } from './common/MinimalCard'
 
 interface Props {
   url: string

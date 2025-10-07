@@ -1,15 +1,16 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  Home,
+  BookOpen,
+  FileText,
   Headphones,
+  Home,
+  LockKeyhole,
+  Mic,
   Music,
   Settings,
-  Upload,
-  FileText,
-  Mic,
-  BookOpen,
-  LockKeyhole
+  Upload
 } from 'lucide-react'
+import type React from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 
 interface IconTile {
@@ -95,7 +96,7 @@ export function IconGrid({
           }
           break
 
-        case 'ArrowRight':
+        case 'ArrowRight': {
           e.preventDefault()
           const rowEnd = Math.min(
             (currentRow + 1) * cols - 1,
@@ -108,6 +109,7 @@ export function IconGrid({
             setSelectedIndex(currentRow * cols)
           }
           break
+        }
 
         case 'Enter':
         case ' ':

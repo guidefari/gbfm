@@ -1,18 +1,21 @@
-import { eq } from "drizzle-orm";
-import type { AppRouteHandler } from "@/lib/types";
-import { db } from "@/db";
-import { audioTable } from "@/db/audio.schema";
-import type { GetRSSFeedRoute } from "./rss.routes";
+import { eq } from 'drizzle-orm'
+import { db } from '@/db'
+import { audioTable } from '@/db/audio.schema'
+import type { AppRouteHandler } from '@/lib/types'
+import type { GetRSSFeedRoute } from './rss.routes'
 
 export const getRSSFeed: AppRouteHandler<GetRSSFeedRoute> = async (c) => {
   try {
     // Fetch mixes from database
-    const mixes = await db.select().from(audioTable).where(eq(audioTable.type, "mix"));
-    
-    const sortedMixes = mixes.sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    const mixes = await db
+      .select()
+      .from(audioTable)
+      .where(eq(audioTable.type, 'mix'))
 
+    const sortedMixes = mixes.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    )
 
     const rssHtml = `<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" lang="en">
@@ -177,7 +180,9 @@ export const getRSSFeed: AppRouteHandler<GetRSSFeedRoute> = async (c) => {
                 <a class="head_link" target="_blank" href="https://goosebumps.fm">← Go back to goosebumps.fm</a>
             </header>
             <h2>Recent Mixes</h2>
-            ${sortedMixes.map(mix => `
+            ${sortedMixes
+              .map(
+                (mix) => `
             <div class="mix-item">
                 <h3>
                     <a target="_blank" href="https://goosebumps.fm/read/mixes/${mix.slug}">${encodeXML(mix.title)}</a>
@@ -186,30 +191,40 @@ export const getRSSFeed: AppRouteHandler<GetRSSFeedRoute> = async (c) => {
                     Published: ${new Date(mix.createdAt).toUTCString()}
                     • Guide Fari
                 </small>
-                ${mix.description ? `
+                ${
+                  mix.description
+                    ? `
                 <div class="item-description">
                     ${encodeXML(mix.description)}. Get the tracklist and more immersive experience at https://goosebumps.fm/read/mixes/${mix.slug}
-                </div>` : ''}
-                ${mix.url ? `
+                </div>`
+                    : ''
+                }
+                ${
+                  mix.url
+                    ? `
                 <div class="audio-player">
                     <audio controls="controls" preload="none">
                         <source src="${mix.url}" type="audio/mpeg"/>
                         Your browser does not support the audio element.
                     </audio>
-                </div>` : ''}
-            </div>`).join('')}
+                </div>`
+                    : ''
+                }
+            </div>`
+              )
+              .join('')}
         </div>
     </body>
-</html>`;
+</html>`
 
     return c.html(rssHtml, 200, {
-      'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
-    });
+      'Cache-Control': 'public, max-age=3600' // Cache for 1 hour
+    })
   } catch (error) {
-    console.error('Error generating RSS feed:', error);
-    return c.text('Internal Server Error', 500);
+    console.error('Error generating RSS feed:', error)
+    return c.text('Internal Server Error', 500)
   }
-};
+}
 
 function encodeXML(str: string): string {
   return str
@@ -217,6 +232,5 @@ function encodeXML(str: string): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-    .replace(/'/g, '&apos;');
+    .replace(/'/g, '&apos;')
 }
-

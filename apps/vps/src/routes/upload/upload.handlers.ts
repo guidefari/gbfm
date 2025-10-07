@@ -1,7 +1,7 @@
-import * as HttpStatusCodes from 'stoker/http-status-codes'
-import type { AppRouteHandler } from '@/lib/types'
-import { uploadToS3 } from '@/bucket'
 import { Resource } from 'sst'
+import * as HttpStatusCodes from 'stoker/http-status-codes'
+import { uploadToS3 } from '@/bucket'
+import type { AppRouteHandler } from '@/lib/types'
 
 import type { UploadFileRoute } from './upload.routes'
 

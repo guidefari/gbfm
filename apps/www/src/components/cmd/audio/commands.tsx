@@ -1,7 +1,7 @@
 import {
+  CommandGroup,
   CommandItem,
-  CommandShortcut,
-  CommandGroup
+  CommandShortcut
 } from '@/components/ui/command'
 import { useAudioPlayerCmdActions } from './actions'
 

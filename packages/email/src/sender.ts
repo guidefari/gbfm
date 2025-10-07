@@ -1,7 +1,7 @@
 import { render } from '@react-email/components'
-import { renderToStaticMarkup } from 'react-dom/server'
 import React, { type ReactElement } from 'react'
-import { sendTemplate, getFromAddress, sendSimpleEmail } from './ses'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { getFromAddress, sendSimpleEmail, sendTemplate } from './ses'
 
 export interface EmailTemplate {
   subject: string

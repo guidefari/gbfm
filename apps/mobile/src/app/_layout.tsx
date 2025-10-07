@@ -1,17 +1,17 @@
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import "../global.css";
-import { Slot, Stack } from "expo-router";
-import { Fragment } from "react";
-import { StatusBar } from "expo-status-bar";
-import React from "react";
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context'
+import '../global.css'
+import { Slot, Stack } from 'expo-router'
+import { StatusBar } from 'expo-status-bar'
+import React, { Fragment } from 'react'
 
 export default function Layout() {
-	return (
-    <Stack screenOptions={{
-      contentStyle: {
-        backgroundColor: "#16415A"
-      }
-    }}/>
-    
-	);
+  return (
+    <Stack
+      screenOptions={{
+        contentStyle: {
+          backgroundColor: '#16415A'
+        }
+      }}
+    />
+  )
 }

@@ -1,32 +1,32 @@
 .react-mde .image-tip {
-	background-color: transparent;
-	color: inherit;
-	border: none;
-	font-style: italic;
+  background-color: transparent;
+  color: inherit;
+  border: none;
+  font-style: italic;
 }
 
 .mde-header .mde-tabs button.selected {
-	border: none;
-    text-decoration: underline;
+  border: none;
+  text-decoration: underline;
 }
 
 .mde-header .mde-tabs button:not(.selected) {
-	opacity: 0.5;
+  opacity: 0.5;
 }
 
 .mde-header .mde-tabs button:not(.selected):hover {
-	opacity: 1;
+  opacity: 1;
 }
 
 .mde-header .mde-tabs button {
-	transition: opacity 0.2s ease-in-out;
+  transition: opacity 0.2s ease-in-out;
 }
 
 .mde-header ul.mde-header-group li.mde-header-item button {
-	color: inherit;
-    opacity: 0.75;
+  color: inherit;
+  opacity: 0.75;
 }
 
 .mde-header ul.mde-header-group li.mde-header-item button:hover {
-	opacity: 1;
+  opacity: 1;
 }

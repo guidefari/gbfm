@@ -1,5 +1,5 @@
-import type React from 'react'
 import { format, parseISO } from 'date-fns'
+import type React from 'react'
 
 interface Props {
   authorName: string

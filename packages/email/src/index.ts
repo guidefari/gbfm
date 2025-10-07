@@ -1,24 +1,22 @@
-export {
-  sendEmail,
-  sendTestEmail,
-  sendWelcomeEmail,
-  sendPasswordResetEmail,
-  type EmailTemplate,
-  type SendEmailOptions
-} from './sender'
-
-export {
-  send,
-  sendTemplate,
-  sendSimpleEmail,
-  getFromAddress,
-  getToAddresses,
-  type Attachment,
-  type SendEmailProps,
-  type SendTemplateEmailProps,
-  type SimpleSendEmailOptions
-} from './ses'
-
+export { PasswordResetEmail } from '../emails/password-reset'
 export { TestEmail } from '../emails/test-email'
 export { WelcomeEmail } from '../emails/welcome'
-export { PasswordResetEmail } from '../emails/password-reset'
+export {
+  type EmailTemplate,
+  type SendEmailOptions,
+  sendEmail,
+  sendPasswordResetEmail,
+  sendTestEmail,
+  sendWelcomeEmail
+} from './sender'
+export {
+  type Attachment,
+  getFromAddress,
+  getToAddresses,
+  type SendEmailProps,
+  type SendTemplateEmailProps,
+  type SimpleSendEmailOptions,
+  send,
+  sendSimpleEmail,
+  sendTemplate
+} from './ses'

@@ -1,7 +1,7 @@
 import type { Context, Next } from 'hono'
 import { verify } from 'hono/jwt'
-import { env } from '@/env'
 import { getAuthorByEmailOrId } from '@/db/author.repo'
+import { env } from '@/env'
 import type { AppBindings } from '@/lib/types'
 
 /**

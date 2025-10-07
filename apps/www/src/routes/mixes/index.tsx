@@ -2,11 +2,11 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useMemo } from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
 import { MixesSkeleton } from '@/components/MixesSkeleton'
+import { TrackContextMenu } from '@/components/TrackContextMenu'
+import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { useAudioByType } from '@/lib/http'
 import { useUIStore } from '@/store'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
-import { TrackContextMenu } from '@/components/TrackContextMenu'
-import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 
 export const Route = createFileRoute('/mixes/')({
   component: Component

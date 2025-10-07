@@ -1,132 +1,137 @@
-import { createRoute, z } from "@hono/zod-openapi";
-import * as HttpStatusCodes from "stoker/http-status-codes";
-import { jsonContent, jsonContentRequired } from "stoker/openapi/helpers";
-import { createErrorSchema } from "stoker/openapi/schemas";
+import { createRoute, z } from '@hono/zod-openapi'
+import * as HttpStatusCodes from 'stoker/http-status-codes'
+import { jsonContent, jsonContentRequired } from 'stoker/openapi/helpers'
+import { createErrorSchema } from 'stoker/openapi/schemas'
 
-import { createPublicationSchema, updatePublicationSchema, selectPublicationSchema } from "@/db/publication.schema";
+import {
+  createPublicationSchema,
+  selectPublicationSchema,
+  updatePublicationSchema
+} from '@/db/publication.schema'
 
-const tags = ["Publications"];
+const tags = ['Publications']
 
 // Use derived schema from database
-const publicationResponseSchema = selectPublicationSchema;
+const publicationResponseSchema = selectPublicationSchema
 
 // UUID parameter schema for publications
 const publicationParamsSchema = z.object({
-  id: z.string().uuid(),
-});
+  id: z.string().uuid()
+})
 
 // Routes
 export const list = createRoute({
-  path: "/",
-  method: "get",
+  path: '/',
+  method: 'get',
   tags,
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
       z.array(publicationResponseSchema),
-      "List of publications",
-    ),
-  },
-});
+      'List of publications'
+    )
+  }
+})
 
 export const getOne = createRoute({
-  path: "/{id}",
-  method: "get",
+  path: '/{id}',
+  method: 'get',
   request: {
-    params: publicationParamsSchema,
+    params: publicationParamsSchema
   },
   tags,
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
       publicationResponseSchema,
-      "The requested publication",
+      'The requested publication'
     ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(
       z.object({ error: z.string() }),
-      "Publication not found",
+      'Publication not found'
     ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
       createErrorSchema(publicationParamsSchema),
-      "Invalid id error",
-    ),
-  },
-});
+      'Invalid id error'
+    )
+  }
+})
 
 export const create = createRoute({
-  path: "/",
-  method: "post",
+  path: '/',
+  method: 'post',
   request: {
     body: jsonContentRequired(
       createPublicationSchema,
-      "The publication to create",
-    ),
+      'The publication to create'
+    )
   },
   tags,
   responses: {
     [HttpStatusCodes.CREATED]: jsonContent(
       publicationResponseSchema,
-      "The created publication",
+      'The created publication'
     ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
       createErrorSchema(createPublicationSchema),
-      "Validation error",
-    ),
-  },
-});
+      'Validation error'
+    )
+  }
+})
 
 export const patch = createRoute({
-  path: "/{id}",
-  method: "patch",
+  path: '/{id}',
+  method: 'patch',
   request: {
     params: publicationParamsSchema,
     body: jsonContentRequired(
       updatePublicationSchema,
-      "The publication updates",
-    ),
+      'The publication updates'
+    )
   },
   tags,
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
       publicationResponseSchema,
-      "The updated publication",
+      'The updated publication'
     ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(
       z.object({ error: z.string() }),
-      "Publication not found",
+      'Publication not found'
     ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
-      createErrorSchema(updatePublicationSchema)
-        .or(createErrorSchema(publicationParamsSchema)),
-      "Validation error",
-    ),
-  },
-});
+      createErrorSchema(updatePublicationSchema).or(
+        createErrorSchema(publicationParamsSchema)
+      ),
+      'Validation error'
+    )
+  }
+})
 
 export const remove = createRoute({
-  path: "/{id}",
-  method: "delete",
+  path: '/{id}',
+  method: 'delete',
   request: {
-    params: publicationParamsSchema,
+    params: publicationParamsSchema
   },
   tags,
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
       publicationResponseSchema,
-      "The deleted publication",
+      'The deleted publication'
     ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(
       z.object({ error: z.string() }),
-      "Publication not found",
+      'Publication not found'
     ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
       createErrorSchema(publicationParamsSchema),
-      "Invalid id error",
-    ),
-  },
-});
+      'Invalid id error'
+    )
+  }
+})
 
 // Export types
-export type ListRoute = typeof list;
-export type GetOneRoute = typeof getOne;
-export type CreateRoute = typeof create;
-export type PatchRoute = typeof patch;
-export type RemoveRoute = typeof remove;
+export type ListRoute = typeof list
+export type GetOneRoute = typeof getOne
+export type CreateRoute = typeof create
+export type PatchRoute = typeof patch
+export type RemoveRoute = typeof remove
