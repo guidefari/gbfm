@@ -15,6 +15,13 @@
       "when": 1759090789599,
       "tag": "0004_worthless_white_queen",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1759822493673,
+      "tag": "0005_unique_mentor",
+      "breakpoints": true
     }
   ]
 }

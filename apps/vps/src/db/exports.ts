@@ -1,5 +1,6 @@
 export * from './audio.schema.ts'
 export * from './author.schema.ts'
+export * from './label.schema.ts'
 export * from './mix.schema.ts'
 export * from './post.schema.ts'
 export * from './publication.schema.ts'

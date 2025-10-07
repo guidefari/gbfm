@@ -85,3 +85,30 @@ new sst.x.DevCommand('Email_Preview', {
     autostart: false
   }
 })
+
+// new sst.x.DevCommand('Seed_Posts', {
+//   link: [...allSecrets, email],
+//   dev: {
+//     command: 'bun src/archive/seed-posts.ts',
+//     directory: './apps/vps',
+//     autostart: false
+//   }
+// })
+
+// new sst.x.DevCommand('Seed_Micro', {
+//   link: [...allSecrets, email],
+//   dev: {
+//     command: 'bun src/archive/seed-micro.ts',
+//     directory: './apps/vps',
+//     autostart: false
+//   }
+// })
+
+new sst.x.DevCommand('Seed_Labels', {
+  link: [...allSecrets, email],
+  dev: {
+    command: 'bun src/archive/seed-labels.ts',
+    directory: './apps/vps',
+    autostart: false
+  }
+})
