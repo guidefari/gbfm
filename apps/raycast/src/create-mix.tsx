@@ -1,15 +1,15 @@
 import {
+  Action,
   ActionPanel,
   Form,
-  Action,
+  popToRoot,
   showToast,
-  Toast,
-  popToRoot
+  Toast
 } from '@raycast/api'
-import { useState } from 'react'
-import { extractTracklistAsJSXEffect } from './util'
 import { Effect, Runtime } from 'effect'
-import { post, parseJsonResponse } from './api-client'
+import { useState } from 'react'
+import { parseJsonResponse, post } from './api-client'
+import { extractTracklistAsJSXEffect } from './util'
 
 interface MixFormData {
   title: string

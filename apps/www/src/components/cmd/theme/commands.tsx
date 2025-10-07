@@ -1,4 +1,4 @@
-import { Moon, Sun, Monitor } from 'lucide-react'
+import { Monitor, Moon, Sun } from 'lucide-react'
 import { CommandItem, CommandShortcut } from '@/components/ui/command'
 
 interface ThemeCommandsProps {

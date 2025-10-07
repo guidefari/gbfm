@@ -1,7 +1,7 @@
 import type { Context, Next } from 'hono'
 import { verify } from 'hono/jwt'
-import { env } from '@/env'
 import { getAuthorByEmailOrId } from '@/db/author.repo'
+import { env } from '@/env'
 import type { AppBindings } from '@/lib/types'
 
 /**
@@ -55,7 +55,7 @@ export const authenticate = async (c: Context<AppBindings>, next: Next) => {
     const { password, ...authorWithoutPassword } = author[0]
     c.set('user', authorWithoutPassword)
     await next()
-  } catch (error) {
+  } catch (_error) {
     return c.json({ error: 'Invalid or expired token' }, 401)
   }
 }

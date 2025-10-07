@@ -6,13 +6,28 @@
 
 @layer base {
   :root {
-
     --scale-ratio: 1.333;
     --font-size-1: clamp(0.875rem, 1rem, 1rem);
-    --font-size-2: clamp(1.125rem, calc(var(--font-size-1) * var(--scale-ratio)), 1.25rem);
-    --font-size-3: clamp(1.5rem, calc(var(--font-size-2) * var(--scale-ratio)), 1.75rem);
-    --font-size-4: clamp(2rem, calc(var(--font-size-3) * var(--scale-ratio)), 2.25rem);
-    --font-size-5: clamp(2.625rem, calc(var(--font-size-4) * var(--scale-ratio)), 3rem);
+    --font-size-2: clamp(
+      1.125rem,
+      calc(var(--font-size-1) * var(--scale-ratio)),
+      1.25rem
+    );
+    --font-size-3: clamp(
+      1.5rem,
+      calc(var(--font-size-2) * var(--scale-ratio)),
+      1.75rem
+    );
+    --font-size-4: clamp(
+      2rem,
+      calc(var(--font-size-3) * var(--scale-ratio)),
+      2.25rem
+    );
+    --font-size-5: clamp(
+      2.625rem,
+      calc(var(--font-size-4) * var(--scale-ratio)),
+      3rem
+    );
 
     /* my colors */
     --highlight: #9bfd9e;
@@ -58,7 +73,6 @@
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
-
   }
 
   .dark {
@@ -170,14 +184,12 @@
   ul,
   body {
     font-size: var(--font-size-1);
-    line-height: clamp(calc(var(--font-size-1) * 1.5),
-        2rem,
-        3rem);
+    line-height: clamp(calc(var(--font-size-1) * 1.5), 2rem, 3rem);
   }
 
   blockquote {
     @apply p-4 m-4 border-l-8 rounded-md border-highlight bg-[var(--darker-bg)] text-background;
-    quotes: '\201C' '\201D' '\2018' '\2019';
+    quotes: "\201C" "\201D" "\2018" "\2019";
   }
 
   blockquote code {
@@ -190,7 +202,6 @@
     line-height: 0.1em;
     vertical-align: -0.4em;
   }
-
 
   iframe.bandcamp-widget-wide,
   .bww {
@@ -233,7 +244,7 @@
   }
 
   .button-glow::before {
-    content: '';
+    content: "";
     @apply absolute inset-0 bg-gradient-to-r from-transparent to-transparent via-white/10;
     transform: translateX(-100%);
     transition: transform 0.6s ease;
@@ -249,9 +260,10 @@
   textarea:focus-visible,
   select:focus-visible {
     @apply ring-2 ring-offset-2;
-    ring-color: var(--highlight);
-    ring-offset-color: var(--bg);
-    box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--highlight), 0 4px 12px rgba(155, 253, 158, 0.3);
+    box-shadow:
+      0 0 0 2px var(--bg),
+      0 0 0 4px var(--highlight),
+      0 4px 12px rgba(155, 253, 158, 0.3);
   }
 
   /* Smooth Transitions for Interactive Elements */
@@ -283,7 +295,7 @@
   }
 
   .button-loading::after {
-    content: '';
+    content: "";
     @apply absolute inset-0 bg-gradient-to-r from-transparent to-transparent via-white/20;
     animation: shimmer 1.5s infinite;
   }
@@ -304,7 +316,6 @@
   }
 
   @keyframes pulse-highlight {
-
     0%,
     100% {
       box-shadow: 0 0 0 0 rgba(155, 253, 158, 0.4);
@@ -320,11 +331,9 @@
         --font-body: 'JetBrainsMono', monospace !important;
         --baseTextContrast: var(--default-text) !important;
       } */
-
 }
 
 @layer utilities {
-
   /* Custom color utilities for your design system */
   .ring-gb-highlight {
     --tw-ring-color: var(--highlight);

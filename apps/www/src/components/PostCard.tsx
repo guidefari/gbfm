@@ -23,7 +23,7 @@ export const PostCard: React.FC<Props> = ({
       <img
         className='object-cover w-32 transition ease-in-out rounded-md shadow-md sm:w-full sm:col-span-2 aspect-square group-hover:ring-4 ring-gb-highlight'
         src={thumbnailUrl || DEFAULT_IMAGE_URL}
-        alt={`Thumbnail image for post titled - ${title}`}
+        alt={`${title} thumbnail`}
         width={320}
         height={320}
         loading='lazy'

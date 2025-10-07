@@ -1,6 +1,6 @@
+import type { SelectMix } from '@gbfm/vps/schemas'
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
-import type { SelectMix } from '@gbfm/vps/schemas'
 
 interface NowPlayingContext {
   url: string

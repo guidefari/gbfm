@@ -2,12 +2,10 @@
 
 import { useRouterState } from '@tanstack/react-router'
 import * as React from 'react'
-import { useTheme } from '@/components/ThemeProvider'
 import { CommandDialog, CommandInput } from '@/components/ui/command'
 import { useUIStore } from '@/store'
 import { useAudioPlayerState } from '@/store/audioPlayer'
 import { useAuthStore } from '@/store/auth'
-import { useContentStore } from '@/store/content'
 import { version } from '../../../../../package.json'
 import { useAudioPlayerCmdActions } from './audio/actions'
 import { createCommandData } from './commandData'
@@ -27,9 +25,7 @@ export function CommandDialogDemo() {
   const { Cmd, openCmd, closeCmd, toggleCmd } = useUIStore()
   const { isAuthenticated } = useAuthStore()
   const { audioSrc } = useAudioPlayerState()
-  useContentStore()
 
-  const { theme } = useTheme()
   const navigationActions = useNavigationActions(closeCmd)
   const sortingActions = useSortingActions(closeCmd)
   const settingsActions = useSettingsActions(closeCmd)
@@ -50,7 +46,7 @@ export function CommandDialogDemo() {
   // For now, allow editing for authenticated users on audio content
   const isAudioContent =
     currentArchetype && ['mix', 'track', 'misc'].includes(currentArchetype)
-  const canEdit = isAuthenticated && isAudioContent
+  const canEdit = isAuthenticated && Boolean(isAudioContent)
 
   // Create command data
   const commandItems = React.useMemo(
@@ -100,7 +96,6 @@ export function CommandDialogDemo() {
     whitelistedShortcuts: ['cmd+k']
   })
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: 👀
   React.useEffect(() => {
     return setupKeyboardShortcuts()
   }, [setupKeyboardShortcuts])

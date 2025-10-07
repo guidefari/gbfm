@@ -1,31 +1,30 @@
 import { randomUUID } from 'node:crypto'
-import { getAuthorByEmailOrId } from '@/db/author.repo'
-import { env } from '@/env'
-import { sendWelcomeEmail, sendPasswordResetEmail } from '@gbfm/email/index'
+import { sendPasswordResetEmail, sendWelcomeEmail } from '@gbfm/email/index'
 import { and, eq } from 'drizzle-orm'
 import { sign, verify } from 'hono/jwt'
 import type { JWTPayload } from 'hono/utils/jwt/types'
-import type { AppRouteHandler } from '@/lib/types'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
-
 import { db } from '@/db'
+import { getAuthorByEmailOrId } from '@/db/author.repo'
 import {
   authorPasswordResetTokensTable,
   authorSessionsTable,
   authorsTable,
   type UpdateProfileSchema
 } from '@/db/author.schema'
+import { env } from '@/env'
+import type { AppRouteHandler } from '@/lib/types'
 
 import type {
-  SignupRoute,
-  SigninRoute,
-  ForgotPasswordRoute,
-  ResetPasswordRoute,
-  RefreshTokenRoute,
   CreateUserRoute,
+  ForgotPasswordRoute,
+  GetProfileRoute,
   ListUsersRoute,
-  UpdateProfileRoute,
-  GetProfileRoute
+  RefreshTokenRoute,
+  ResetPasswordRoute,
+  SigninRoute,
+  SignupRoute,
+  UpdateProfileRoute
 } from './auth.routes'
 import { isUsernameAvailable, uploadAvatar } from './auth.util'
 
@@ -386,7 +385,7 @@ export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
       ) {
         avatarFile = value as File
       } else if (typeof value === 'string' && key !== 'avatar') {
-        ;(updateData as any)[key] = value
+        updateData[key as keyof UpdateProfileSchema] = value as never
       }
     }
   } else {

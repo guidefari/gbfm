@@ -29,19 +29,21 @@ import {
 import type { CommandItem } from './types'
 
 export const createCommandData = (
-  navigationActions: any,
-  sortingActions: any,
-  settingsActions: any,
-  contentActions: any,
-  audioPlayerCmdActions: any,
-  themeActions: any,
-  closeCmd: () => void,
+  navigationActions: Record<string, () => void>,
+  sortingActions: Record<string, () => void>,
+  settingsActions: Record<string, () => void>,
+  contentActions: { editContent: (archetype: string, id: string) => void },
+  audioPlayerCmdActions: ReturnType<
+    typeof import('./audio/actions').useAudioPlayerCmdActions
+  >,
+  themeActions: { cycleTheme: () => void; currentTheme: string },
+  _closeCmd: () => void,
   isAuthenticated: boolean,
   isOnMixesPage: boolean,
   canEdit: boolean,
   currentArchetype?: string,
   currentId?: string,
-  audioSrc?: string,
+  audioSrc?: string | null,
   pathname?: string
 ): CommandItem[] => {
   const getThemeIcon = () => {
@@ -70,7 +72,7 @@ export const createCommandData = (
     }
   }
 
-  const items: CommandItem[] = [
+  const items: (CommandItem | null)[] = [
     // Direct navigation actions
     pathname !== '/'
       ? {
@@ -359,5 +361,5 @@ export const createCommandData = (
     })
   }
 
-  return items
+  return items.filter((item): item is CommandItem => item !== null)
 }

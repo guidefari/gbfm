@@ -1,15 +1,15 @@
 import {
-  Volume2,
-  VolumeX,
-  Play,
-  Pause,
-  SkipForward,
-  SkipBack,
   List,
   Maximize2,
-  Shuffle,
+  Pause,
+  Play,
   Repeat,
-  Repeat1
+  Repeat1,
+  Shuffle,
+  SkipBack,
+  SkipForward,
+  Volume2,
+  VolumeX
 } from 'lucide-react'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
 

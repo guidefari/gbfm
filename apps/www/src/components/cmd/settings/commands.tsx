@@ -1,4 +1,4 @@
-import { User, LogOut } from 'lucide-react'
+import { LogOut, User } from 'lucide-react'
 import { CommandItem, CommandShortcut } from '@/components/ui/command'
 
 interface SettingsCommandsProps {

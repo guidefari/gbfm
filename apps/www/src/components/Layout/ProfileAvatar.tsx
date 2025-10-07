@@ -1,4 +1,5 @@
 'use client'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -8,7 +9,6 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { useAuthStore } from '@/store/auth'
-import { Link, useNavigate } from '@tanstack/react-router'
 
 const ProfileAvatar = () => {
   const navigate = useNavigate()

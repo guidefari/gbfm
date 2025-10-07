@@ -1,7 +1,7 @@
-import { createRouter } from "@/lib/create-app";
+import { createRouter } from '@/lib/create-app'
 
-import * as handlers from "./auth.handlers";
-import * as routes from "./auth.routes";
+import * as handlers from './auth.handlers'
+import * as routes from './auth.routes'
 
 const router = createRouter()
   .openapi(routes.signup, handlers.signup)
@@ -12,6 +12,6 @@ const router = createRouter()
   .openapi(routes.createUser, handlers.createUser)
   .openapi(routes.listUsers, handlers.listUsers)
   .openapi(routes.updateProfile, handlers.updateProfile)
-  .openapi(routes.getProfile, handlers.getProfile);
+  .openapi(routes.getProfile, handlers.getProfile)
 
-export default router;
+export default router

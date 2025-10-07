@@ -68,7 +68,9 @@ const AudioPlayer = () => {
     )
 
     return () => {
-      cleanupFunctions.forEach((cleanup) => cleanup())
+      for (const cleanup of cleanupFunctions) {
+        cleanup()
+      }
     }
   }, [volume, isMuted, setVolume])
 
@@ -109,12 +111,16 @@ const AudioPlayer = () => {
         <div className='hidden md:grid md:grid-cols-3 md:items-center md:gap-4'>
           {/* Left: Track Info */}
           <div className='flex items-center min-w-0 gap-3'>
-            <img
-              src={currentTrack.thumbnailUrl || DEFAULT_IMAGE_URL}
-              alt={currentTrack.title}
-              className='flex-shrink-0 object-cover transition-opacity rounded-lg cursor-pointer w-14 h-14 hover:opacity-80'
+            <button
+              type='button'
               onClick={toggleFullscreen}
-            />
+              className='flex-shrink-0 p-0 border-0 bg-transparent'>
+              <img
+                src={currentTrack.thumbnailUrl || DEFAULT_IMAGE_URL}
+                alt={currentTrack.title}
+                className='object-cover transition-opacity rounded-lg w-14 h-14 hover:opacity-80'
+              />
+            </button>
             <div className='flex-1 min-w-0'>
               <h3 className='text-sm font-medium truncate'>
                 {currentTrack.title}
@@ -247,12 +253,16 @@ const AudioPlayer = () => {
         {/* Mobile Layout */}
         <div className='md:hidden'>
           <div className='flex items-center gap-3 mb-3'>
-            <img
-              src={currentTrack.thumbnailUrl || DEFAULT_IMAGE_URL}
-              alt={currentTrack.title}
-              className='object-cover w-12 h-12 transition-opacity rounded-lg cursor-pointer hover:opacity-80'
+            <button
+              type='button'
               onClick={toggleFullscreen}
-            />
+              className='flex-shrink-0 p-0 border-0 bg-transparent'>
+              <img
+                src={currentTrack.thumbnailUrl || DEFAULT_IMAGE_URL}
+                alt={currentTrack.title}
+                className='object-cover w-12 h-12 transition-opacity rounded-lg hover:opacity-80'
+              />
+            </button>
             <div className='flex-1 min-w-0'>
               <h3 className='text-sm font-medium truncate'>
                 {currentTrack.title}

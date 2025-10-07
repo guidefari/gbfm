@@ -3,92 +3,92 @@
 /* eslint-disable */
 /* deno-fmt-ignore-file */
 
-declare module "sst" {
+declare module 'sst' {
   export interface Resource {
-    "ACCESS_TOKEN_SECRET": {
-      "type": "sst.sst.Secret"
-      "value": string
+    ACCESS_TOKEN_SECRET: {
+      type: 'sst.sst.Secret'
+      value: string
     }
-    "DatabaseHost": {
-      "type": "sst.sst.Secret"
-      "value": string
+    DatabaseHost: {
+      type: 'sst.sst.Secret'
+      value: string
     }
-    "DatabaseName": {
-      "type": "sst.sst.Secret"
-      "value": string
+    DatabaseName: {
+      type: 'sst.sst.Secret'
+      value: string
     }
-    "DatabasePassword": {
-      "type": "sst.sst.Secret"
-      "value": string
+    DatabasePassword: {
+      type: 'sst.sst.Secret'
+      value: string
     }
-    "DatabasePort": {
-      "type": "sst.sst.Secret"
-      "value": string
+    DatabasePort: {
+      type: 'sst.sst.Secret'
+      value: string
     }
-    "DatabaseUser": {
-      "type": "sst.sst.Secret"
-      "value": string
+    DatabaseUser: {
+      type: 'sst.sst.Secret'
+      value: string
     }
-    "Email": {
-      "configSet": string
-      "sender": string
-      "type": "sst.aws.Email"
+    Email: {
+      configSet: string
+      sender: string
+      type: 'sst.aws.Email'
     }
-    "FullDatabaseUrl": {
-      "type": "sst.sst.Secret"
-      "value": string
+    FullDatabaseUrl: {
+      type: 'sst.sst.Secret'
+      value: string
     }
-    "MDX_Bucket": {
-      "name": string
-      "type": "sst.aws.Bucket"
+    MDX_Bucket: {
+      name: string
+      type: 'sst.aws.Bucket'
     }
-    "Mixes": {
-      "name": string
-      "type": "sst.aws.Bucket"
+    Mixes: {
+      name: string
+      type: 'sst.aws.Bucket'
     }
-    "REFRESH_TOKEN_SECRET": {
-      "type": "sst.sst.Secret"
-      "value": string
+    REFRESH_TOKEN_SECRET: {
+      type: 'sst.sst.Secret'
+      value: string
     }
-    "Router": {
-      "type": "sst.aws.Router"
-      "url": string
+    Router: {
+      type: 'sst.aws.Router'
+      url: string
     }
-    "SpotifyClientId": {
-      "type": "sst.sst.Secret"
-      "value": string
+    SpotifyClientId: {
+      type: 'sst.sst.Secret'
+      value: string
     }
-    "SpotifyClientSecret": {
-      "type": "sst.sst.Secret"
-      "value": string
+    SpotifyClientSecret: {
+      type: 'sst.sst.Secret'
+      value: string
     }
-    "Urls": {
-      "site": string
-      "type": "sst.sst.Linkable"
-      "vps": string
+    Urls: {
+      site: string
+      type: 'sst.sst.Linkable'
+      vps: string
     }
-    "User_Content": {
-      "name": string
-      "type": "sst.aws.Bucket"
+    User_Content: {
+      name: string
+      type: 'sst.aws.Bucket'
     }
-    "gbfm-www": {
-      "type": "sst.aws.StaticSite"
-      "url": string
+    'gbfm-www': {
+      type: 'sst.aws.StaticSite'
+      url: string
     }
-    "gbfm_network": {
-      "type": "sst.aws.Vpc"
+    gbfm_network: {
+      type: 'sst.aws.Vpc'
     }
-    "gbfm_vps": {
-      "service": string
-      "type": "sst.aws.Service"
+    gbfm_vps: {
+      service: string
+      type: 'sst.aws.Service'
     }
-    "gbfm_vps_gateway": {
-      "type": "sst.aws.ApiGatewayV2"
-      "url": string
+    gbfm_vps_gateway: {
+      type: 'sst.aws.ApiGatewayV2'
+      url: string
     }
   }
 }
 /// <reference path="sst-env.d.ts" />
 
-import "sst"
+import 'sst'
 export {}

@@ -1,15 +1,5 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react'
-import {
-  Home,
-  Headphones,
-  Music,
-  Settings,
-  Upload,
-  FileText,
-  Mic,
-  BookOpen,
-  LockKeyhole
-} from 'lucide-react'
+import type React from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 
 interface IconTile {
@@ -95,7 +85,7 @@ export function IconGrid({
           }
           break
 
-        case 'ArrowRight':
+        case 'ArrowRight': {
           e.preventDefault()
           const rowEnd = Math.min(
             (currentRow + 1) * cols - 1,
@@ -108,6 +98,7 @@ export function IconGrid({
             setSelectedIndex(currentRow * cols)
           }
           break
+        }
 
         case 'Enter':
         case ' ':
@@ -129,7 +120,7 @@ export function IconGrid({
   // Reset selection when tiles change
   useEffect(() => {
     setSelectedIndex(0)
-  }, [availableTiles.length])
+  }, [])
 
   return (
     <div ref={gridRef} className={cn('grid grid-cols-4 gap-4 p-4', className)}>
@@ -139,6 +130,7 @@ export function IconGrid({
 
         return (
           <button
+            type='button'
             key={tile.id}
             className={cn(
               'flex flex-col items-center justify-center p-6 rounded-lg border-2 transition-all duration-200',

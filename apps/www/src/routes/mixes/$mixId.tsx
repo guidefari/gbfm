@@ -15,11 +15,11 @@ function MixPage() {
   const { data, error, isPending } = useAudioBySlug('mix', mixId)
 
   React.useEffect(() => {
-    if (data && data.authors) {
+    if (data?.authors) {
       const contentInfo = {
         id: mixId,
         archetype: 'mix',
-        authorIds: data.authors.map((author: any) => author.id)
+        authorIds: data.authors.map((author) => author.id)
       }
       setCurrentContent(contentInfo)
     }

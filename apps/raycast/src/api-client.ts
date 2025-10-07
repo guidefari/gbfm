@@ -1,12 +1,12 @@
 import { LocalStorage } from '@raycast/api'
 import { Effect, Runtime } from 'effect'
 import {
-  ApiConfiguration,
-  ApiError,
+  type ApiConfiguration,
+  type ApiError,
   AuthenticationError,
   ConfigurationError,
   NetworkError,
-  RefreshTokenResponse,
+  type RefreshTokenResponse,
   ServerError,
   ValidationError
 } from './types/api'
@@ -270,7 +270,7 @@ export const del = (url: string): Promise<Response> =>
 export const parseJsonResponse = async <T>(response: Response): Promise<T> => {
   try {
     return (await response.json()) as T
-  } catch (error) {
+  } catch (_error) {
     throw new ServerError('Failed to parse JSON response', 500)
   }
 }

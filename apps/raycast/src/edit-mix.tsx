@@ -1,18 +1,16 @@
 import {
+  Action,
   ActionPanel,
   Form,
-  Action,
-  showToast,
-  Toast,
-  LocalStorage,
   List,
-  Detail,
-  popToRoot
+  popToRoot,
+  showToast,
+  Toast
 } from '@raycast/api'
-import { useState, useEffect } from 'react'
-import { extractTracklistAsJSXEffect } from './util'
 import { Effect, Runtime } from 'effect'
-import { get, patch, parseJsonResponse } from './api-client'
+import { useEffect, useState } from 'react'
+import { get, parseJsonResponse, patch } from './api-client'
+import { extractTracklistAsJSXEffect } from './util'
 
 interface Mix {
   id: string

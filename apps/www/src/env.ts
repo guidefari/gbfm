@@ -1,3 +1,3 @@
 export const env = {
-	isDev: import.meta.env.DEV,
-};
+  isDev: import.meta.env.DEV
+}

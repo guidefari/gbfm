@@ -1,4 +1,4 @@
-import { Calendar, ArrowDownAZ, ArrowUpAZ } from 'lucide-react'
+import { ArrowDownAZ, ArrowUpAZ, Calendar } from 'lucide-react'
 import { CommandItem, CommandShortcut } from '@/components/ui/command'
 
 interface SortingCommandsProps {

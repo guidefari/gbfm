@@ -1,7 +1,7 @@
-import * as runtime from 'react/jsx-runtime'
-import { CustomMDXComponents } from './mdx-components'
 import { run } from '@mdx-js/mdx'
 import { useEffect, useState } from 'react'
+import * as runtime from 'react/jsx-runtime'
+import { CustomMDXComponents } from './mdx-components'
 
 type LoadedContentType = Awaited<ReturnType<typeof run>>['default']
 

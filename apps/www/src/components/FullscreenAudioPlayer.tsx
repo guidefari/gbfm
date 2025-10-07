@@ -112,7 +112,9 @@ const FullscreenAudioPlayer = () => {
     )
 
     return () => {
-      cleanupFunctions.forEach((cleanup) => cleanup())
+      for (const cleanup of cleanupFunctions) {
+        cleanup()
+      }
     }
   }, [volume, isMuted, setVolume])
 
