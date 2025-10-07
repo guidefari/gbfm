@@ -1,3 +1,10 @@
+# [0.29.0](https://github.com/guidefari/gbfm/compare/v0.28.4...v0.29.0) (2025-10-07)
+
+
+### Features
+
+* theming updates ([4ff6944](https://github.com/guidefari/gbfm/commit/4ff6944153f98cf8a64665c028fa4e2bb9f7a4d5))
+
 ## [0.28.4](https://github.com/guidefari/gbfm/compare/v0.28.3...v0.28.4) (2025-10-06)
 
 
