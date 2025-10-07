@@ -108,6 +108,7 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
             top: contextMenu.y
           }}>
           <button
+            type='button'
             onClick={handlePlayNow}
             className='flex gap-2 items-center px-3 py-2 w-full text-sm text-left transition-colors text-foreground hover:bg-muted'>
             <Play className='w-4 h-4' />
@@ -115,6 +116,7 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
           </button>
 
           <button
+            type='button'
             onClick={handleAddToQueue}
             className='flex gap-2 items-center px-3 py-2 w-full text-sm text-left transition-colors text-foreground hover:bg-muted'>
             <Plus className='w-4 h-4' />
@@ -124,6 +126,7 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
           <hr className='my-1 border-border' />
 
           <button
+            type='button'
             onClick={handleAddToFavorites}
             className='flex gap-2 items-center px-3 py-2 w-full text-sm text-left transition-colors text-foreground hover:bg-muted'>
             <Heart className='w-4 h-4' />
@@ -131,6 +134,7 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
           </button>
 
           <button
+            type='button'
             onClick={handleShare}
             className='flex gap-2 items-center px-3 py-2 w-full text-sm text-left transition-colors text-foreground hover:bg-muted'>
             <Share className='w-4 h-4' />

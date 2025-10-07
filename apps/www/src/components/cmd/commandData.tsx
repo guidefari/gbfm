@@ -29,12 +29,12 @@ import {
 import type { CommandItem } from './types'
 
 export const createCommandData = (
-  navigationActions: any,
-  sortingActions: any,
-  settingsActions: any,
-  contentActions: any,
-  audioPlayerCmdActions: any,
-  themeActions: any,
+  navigationActions: Record<string, () => void>,
+  sortingActions: Record<string, () => void>,
+  settingsActions: Record<string, () => void>,
+  contentActions: Record<string, () => void>,
+  audioPlayerCmdActions: Record<string, () => void>,
+  themeActions: Record<string, () => void>,
   _closeCmd: () => void,
   isAuthenticated: boolean,
   isOnMixesPage: boolean,
