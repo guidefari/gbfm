@@ -1,26 +1,21 @@
 import { useTheme } from '@/components/ThemeProvider'
 
 export const useThemeActions = (closeCmd: () => void) => {
-  const { setTheme } = useTheme()
+  const { theme, setTheme } = useTheme()
 
-  const setLight = () => {
-    setTheme('light')
-    closeCmd()
-  }
-
-  const setDark = () => {
-    setTheme('dark')
-    closeCmd()
-  }
-
-  const setSystem = () => {
-    setTheme('system')
-    closeCmd()
+  const cycleTheme = () => {
+    const themeOrder: Array<'light' | 'dark' | 'system'> = [
+      'light',
+      'dark',
+      'system'
+    ]
+    const currentIndex = themeOrder.indexOf(theme)
+    const nextIndex = (currentIndex + 1) % themeOrder.length
+    setTheme(themeOrder[nextIndex])
   }
 
   return {
-    setLight,
-    setDark,
-    setSystem
+    cycleTheme,
+    currentTheme: theme
   }
 }

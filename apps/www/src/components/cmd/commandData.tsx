@@ -1,32 +1,32 @@
 import {
-  Home,
-  Headphones,
-  Music,
-  Settings,
-  Upload,
-  FileText,
-  Mic,
-  BookOpen,
-  LockKeyhole,
-  Play,
-  Pause,
-  SkipForward,
-  SkipBack,
-  Volume2,
-  VolumeX,
-  User,
-  LogOut,
-  SortAsc,
-  SortDesc,
   Calendar,
+  FileText,
+  Headphones,
+  Home,
   LetterTextIcon,
   List,
+  LockKeyhole,
+  LogOut,
   Maximize2,
-  Shuffle,
+  Monitor,
+  Moon,
+  Music,
+  Pause,
+  Play,
   Repeat,
-  Repeat1
+  Repeat1,
+  Settings,
+  Shuffle,
+  SkipBack,
+  SkipForward,
+  SortAsc,
+  SortDesc,
+  Sun,
+  User,
+  Volume2,
+  VolumeX
 } from 'lucide-react'
-import { CommandItem } from './types'
+import type { CommandItem } from './types'
 
 export const createCommandData = (
   navigationActions: any,
@@ -34,51 +34,89 @@ export const createCommandData = (
   settingsActions: any,
   contentActions: any,
   audioPlayerCmdActions: any,
+  themeActions: any,
   closeCmd: () => void,
   isAuthenticated: boolean,
   isOnMixesPage: boolean,
   canEdit: boolean,
   currentArchetype?: string,
   currentId?: string,
-  audioSrc?: string
+  audioSrc?: string,
+  pathname?: string
 ): CommandItem[] => {
+  const getThemeIcon = () => {
+    switch (themeActions.currentTheme) {
+      case 'light':
+        return Sun
+      case 'dark':
+        return Moon
+      case 'system':
+        return Monitor
+      default:
+        return Monitor
+    }
+  }
+
+  const getThemeLabel = () => {
+    switch (themeActions.currentTheme) {
+      case 'light':
+        return 'Theme: Light'
+      case 'dark':
+        return 'Theme: Dark'
+      case 'system':
+        return 'Theme: System'
+      default:
+        return 'Toggle Theme'
+    }
+  }
+
   const items: CommandItem[] = [
     // Direct navigation actions
+    pathname !== '/'
+      ? {
+          id: 'home',
+          label: 'Home',
+          icon: Home,
+          type: 'action',
+          onSelect: navigationActions.routeToHome,
+          requiresAuth: false
+        }
+      : null,
     {
-      id: 'home',
-      label: 'Home',
-      icon: Home,
+      id: 'theme-toggle',
+      label: getThemeLabel(),
+      icon: getThemeIcon(),
       type: 'action',
-      onSelect: navigationActions.routeToHome,
+      onSelect: themeActions.cycleTheme,
       requiresAuth: false
     },
-    {
-      id: 'words',
-      label: 'Words',
-      icon: BookOpen,
-      type: 'action',
-      onSelect: () => {
-        closeCmd()
-        window.location.href = '/words'
-      },
-      requiresAuth: false
-    },
-    {
-      id: 'micro',
-      label: 'Micro',
-      icon: Mic,
-      type: 'action',
-      onSelect: () => {
-        closeCmd()
-        window.location.href = '/micro'
-      },
-      requiresAuth: false
-    },
+    // {
+    //   id: 'words',
+    //   label: 'Words',
+    //   icon: BookOpen,
+    //   type: 'action',
+    //   onSelect: () => {
+    //     closeCmd()
+    //     window.location.href = '/words'
+    //   },
+    //   requiresAuth: false
+    // },
+    // {
+    //   id: 'micro',
+    //   label: 'Micro',
+    //   icon: Mic,
+    //   type: 'action',
+    //   onSelect: () => {
+    //     closeCmd()
+    //     window.location.href = '/micro'
+    //   },
+    //   requiresAuth: false
+    // },
 
     // Music section with sub-items
     {
       id: 'music',
-      label: 'Music',
+      label: 'Explore Music',
       icon: Headphones,
       type: 'section',
       requiresAuth: false,
@@ -97,20 +135,20 @@ export const createCommandData = (
           onSelect: navigationActions.routeToTracks
         }
       ]
-    },
+    }
 
     // Upload section (auth required)
-    {
-      id: 'upload',
-      label: 'Upload',
-      icon: Upload,
-      type: 'action',
-      onSelect: () => {
-        closeCmd()
-        window.location.href = '/upload'
-      },
-      requiresAuth: true
-    }
+    // {
+    //   id: 'upload',
+    //   label: 'Upload',
+    //   icon: Upload,
+    //   type: 'action',
+    //   onSelect: () => {
+    //     closeCmd()
+    //     window.location.href = '/upload'
+    //   },
+    //   requiresAuth: true
+    // }
   ]
 
   // Add audio controls section if audio is playing

@@ -22,8 +22,9 @@ import type { CommandAction, CommandItem } from './types'
 
 export function CommandDialogDemo() {
   const [searchValue, setSearchValue] = React.useState('')
+  const [isInSection, setIsInSection] = React.useState(false)
   const routerState = useRouterState()
-  const { Cmd, openCmd, closeCmd, toggleCmd, mixesSorting } = useUIStore()
+  const { Cmd, openCmd, closeCmd, toggleCmd } = useUIStore()
   const { isAuthenticated } = useAuthStore()
   const { audioSrc } = useAudioPlayerState()
   useContentStore()
@@ -37,13 +38,12 @@ export function CommandDialogDemo() {
   const audioPlayerCmdActions = useAudioPlayerCmdActions(closeCmd)
 
   const isOnMixesPage = routerState.location.pathname === '/mixes'
-  const isOnHomePage = routerState.location.pathname === '/'
+  const pathname = routerState.location.pathname
 
   // Check if we're on a read page and can edit current content
   const readPageMatch = routerState.location.pathname.match(
     /^\/read\/([^/]+)\/([^/]+)$/
   )
-  const isOnReadPage = Boolean(readPageMatch)
   const currentArchetype = readPageMatch?.[1]
   const currentId = readPageMatch?.[2]
 
@@ -61,13 +61,15 @@ export function CommandDialogDemo() {
         settingsActions,
         contentActions,
         audioPlayerCmdActions,
+        themeActions,
         closeCmd,
         isAuthenticated,
         isOnMixesPage,
         canEdit,
         currentArchetype,
         currentId,
-        audioSrc
+        audioSrc,
+        pathname
       ),
     [
       navigationActions,
@@ -75,13 +77,15 @@ export function CommandDialogDemo() {
       settingsActions,
       contentActions,
       audioPlayerCmdActions,
+      themeActions,
       closeCmd,
       isAuthenticated,
       isOnMixesPage,
       canEdit,
       currentArchetype,
       currentId,
-      audioSrc
+      audioSrc,
+      pathname
     ]
   )
 
@@ -107,23 +111,42 @@ export function CommandDialogDemo() {
     }
   }
 
-  // Reset search when dialog closes
+  // Reset search and section when dialog closes
   React.useEffect(() => {
     if (!Cmd.isOpen) {
       setSearchValue('')
+      setIsInSection(false)
     }
   }, [Cmd.isOpen])
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault()
+    }
+    if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault()
+      closeCmd()
+    }
+  }
+
+  const handleEscapeKeyDown = (e: KeyboardEvent) => {
+    if (isInSection) {
+      e.preventDefault()
+    }
+  }
 
   return (
     <CommandDialog
       open={Cmd.isOpen}
       onOpenChange={(open) => (open ? openCmd() : closeCmd())}
+      onEscapeKeyDown={handleEscapeKeyDown}
       title='Command palette for GBFM'>
       <CommandInput
         className='ring-0 focus-visible:ring-0 focus-visible:ring-offset-0'
         placeholder='Type a command or search...'
         value={searchValue}
         onValueChange={setSearchValue}
+        onKeyDown={handleInputKeyDown}
       />
 
       <div className='overflow-auto max-h-96'>
@@ -133,6 +156,7 @@ export function CommandDialogDemo() {
           isAuthenticated={isAuthenticated}
           searchValue={searchValue}
           onSearchChange={setSearchValue}
+          onSectionChange={setIsInSection}
         />
 
         <div className='flex items-center justify-center p-2 border-t'>
