@@ -117,7 +117,7 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
       document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('keydown', handleEscape)
     }
-  }, [contextMenu.isOpen])
+  }, [contextMenu.isOpen, closeContextMenu])
 
   const handlePlayNow = () => {
     loadTrack(track.url, track.thumbnailUrl, track.title)

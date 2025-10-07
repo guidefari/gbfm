@@ -69,7 +69,7 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
       document.removeEventListener('mousedown', handleClickOutside)
       document.removeEventListener('keydown', handleEscape)
     }
-  }, [contextMenu.isOpen])
+  }, [contextMenu.isOpen, closeContextMenu])
 
   const handleAddToQueue = () => {
     addToQueue(track)
