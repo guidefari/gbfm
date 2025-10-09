@@ -22,6 +22,13 @@
       "when": 1759822493673,
       "tag": "0005_unique_mentor",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1759825463737,
+      "tag": "0006_high_green_goblin",
+      "breakpoints": true
     }
   ]
 }
