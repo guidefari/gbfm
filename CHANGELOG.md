@@ -1,3 +1,17 @@
+# [0.30.0](https://github.com/guidefari/gbfm/compare/v0.29.0...v0.30.0) (2025-10-09)
+
+
+### Bug Fixes
+
+* bring back spotify ([fca9856](https://github.com/guidefari/gbfm/commit/fca9856efe951b29474b9e5918c96941f01192f3))
+* build ([4e45eba](https://github.com/guidefari/gbfm/commit/4e45eba9dee4d68cf84e815bf2612b5bd77df969))
+
+
+### Features
+
+* labels. lowkey (highkey) wip tho. ([391ab61](https://github.com/guidefari/gbfm/commit/391ab61e216c06c9f327210843ac49c331a2b94b))
+* raycast wip ([4ad7007](https://github.com/guidefari/gbfm/commit/4ad7007a7089d1e9a887db759283b8c9edb63188))
+
 # [0.29.0](https://github.com/guidefari/gbfm/compare/v0.28.4...v0.29.0) (2025-10-07)
 
 
