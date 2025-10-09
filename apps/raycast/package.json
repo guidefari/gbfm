@@ -1,6 +1,6 @@
 {
   "$schema": "https://www.raycast.com/schemas/extension.json",
-  "name": "@gbfm/raycast",
+  "name": "gbfm",
   "title": "gbfm",
   "description": "",
   "icon": "extension-icon.png",
@@ -24,6 +24,18 @@
       "name": "edit-mix",
       "title": "Edit Mix",
       "description": "Search and edit existing mixes",
+      "mode": "view"
+    },
+    {
+      "name": "create-label",
+      "title": "Create Label",
+      "description": "Create a new record label",
+      "mode": "view"
+    },
+    {
+      "name": "edit-label",
+      "title": "Edit Label",
+      "description": "Edit existing record label",
       "mode": "view"
     },
     {
