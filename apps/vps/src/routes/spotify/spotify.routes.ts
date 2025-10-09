@@ -1,7 +1,7 @@
 import { createRoute, z } from '@hono/zod-openapi'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { jsonContent, jsonContentRequired } from 'stoker/openapi/helpers'
-import { TrackSchema, AlbumSchema, PlaylistSchema } from './spotify.types'
+import { AlbumSchema, PlaylistSchema, TrackSchema } from './spotify.types'
 
 const tags = ['Spotify']
 

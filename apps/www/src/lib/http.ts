@@ -1,4 +1,9 @@
-import type { SelectAudio, SelectMdxCompiledAudio } from '@gbfm/vps/schemas'
+import type {
+  SelectAudio,
+  SelectLabel,
+  SelectMdxCompiledAudio,
+  SelectMdxCompiledLabel
+} from '@gbfm/vps/schemas'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { type User, useAuthStore } from '@/store/auth'
 import type {
@@ -154,6 +159,34 @@ export function useUpdateProfile() {
 
   return {
     updateProfile,
+    isPending
+  }
+}
+
+export function useAllLabels() {
+  const { data, error, isPending } = useQuery<SelectLabel[], Error>({
+    queryKey: ['labels'],
+    queryFn: async () =>
+      fetcher<SelectLabel[]>(`${VPS_BASE_URL}/content/labels`)
+  })
+
+  return {
+    data,
+    error,
+    isPending
+  }
+}
+
+export function useLabelBySlug(slug: string) {
+  const { data, error, isPending } = useQuery<SelectMdxCompiledLabel, Error>({
+    queryKey: ['label', slug],
+    queryFn: async () => fetcher(`${VPS_BASE_URL}/content/labels/${slug}`),
+    enabled: Boolean(slug)
+  })
+
+  return {
+    data,
+    error,
     isPending
   }
 }

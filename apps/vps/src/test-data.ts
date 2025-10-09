@@ -65,7 +65,7 @@ export const posts: Array<z.infer<typeof createPostSchema>> = [
     authorIds: ['1'],
     draft: false,
     tags: ['dnb', 'techno', 'house'],
-    type: 'label',
+    type: 'post',
     publicationId: '1'
   }
 ]
