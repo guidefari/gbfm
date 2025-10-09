@@ -136,6 +136,12 @@ export const createCommandData = (
           icon: Music,
           onSelect: navigationActions.routeToTracks
         }
+        // {
+        //   id: 'labels',
+        //   label: 'Record Labels',
+        //   icon: Music,
+        //   onSelect: navigationActions.routeToLabels
+        // }
       ]
     }
 

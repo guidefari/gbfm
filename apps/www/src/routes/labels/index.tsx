@@ -12,11 +12,12 @@ function Component() {
   if (isPending) {
     return (
       <div className='p-4'>
-        <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4'>
+        <div className='grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'>
           {Array.from({ length: 12 }).map((_, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: not that deep here.
             <div key={i} className='flex flex-col gap-2'>
-              <div className='aspect-square w-full bg-muted/50 rounded-lg animate-pulse' />
-              <div className='h-4 bg-muted/50 rounded animate-pulse' />
+              <div className='w-full rounded-lg aspect-square bg-muted/50 animate-pulse' />
+              <div className='h-4 rounded bg-muted/50 animate-pulse' />
             </div>
           ))}
         </div>
@@ -41,24 +42,24 @@ function Component() {
   }
 
   return (
-    <div className='p-4 max-w-7xl mx-auto'>
-      <h1 className='text-3xl font-bold mb-6 text-foreground'>Record Labels</h1>
-      <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4'>
+    <div className='p-4 mx-auto max-w-7xl'>
+      <h1 className='mb-6 text-3xl font-bold text-foreground'>Record Labels</h1>
+      <div className='grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'>
         {data.map((label) => (
           <Link
             key={label.id}
             to='/labels/$labelSlug'
             params={{ labelSlug: label.slug }}
-            className='group flex flex-col gap-2 transition-transform hover:scale-105'>
-            <div className='aspect-square w-full overflow-hidden rounded-lg border border-border bg-background shadow-sm'>
+            className='flex flex-col gap-2 transition-transform group hover:scale-105'>
+            <div className='w-full overflow-hidden border rounded-lg shadow-sm aspect-square border-border bg-background'>
               <img
                 src={label.thumbnailUrl || DEFAULT_IMAGE_URL}
                 alt={label.title}
-                className='object-cover w-full h-full group-hover:opacity-80 transition-opacity'
+                className='object-cover w-full h-full transition-opacity group-hover:opacity-80'
               />
             </div>
             <div className='flex flex-col gap-1'>
-              <h2 className='font-semibold text-sm leading-tight text-foreground group-hover:text-highlight transition-colors line-clamp-2'>
+              <h2 className='text-sm font-semibold leading-tight transition-colors text-foreground group-hover:text-highlight line-clamp-2'>
                 {label.title}
               </h2>
               {label.genres && label.genres.length > 0 && (
