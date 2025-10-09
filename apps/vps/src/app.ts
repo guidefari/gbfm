@@ -5,6 +5,7 @@ import auth from '@/routes/auth/auth.index'
 import content from '@/routes/content/content.index'
 import publication from '@/routes/publication/publication.index'
 import rss from '@/routes/rss/rss.index'
+import spotify from '@/routes/spotify/spotify.index'
 import upload from '@/routes/upload/upload.index'
 import { db } from './db'
 
@@ -16,8 +17,9 @@ const routes = [
   { path: '/auth', handler: auth },
   { path: '/content', handler: content },
   { path: '/publication', handler: publication },
+  { path: '/spotify', handler: spotify },
   { path: '/upload', handler: upload },
-  { path: '', handler: rss } // RSS at root level
+  { path: '', handler: rss }
 ] as const
 
 routes.forEach((route) => {

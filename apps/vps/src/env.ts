@@ -10,7 +10,9 @@ const envSchema = z.object({
   EMAIL_SENDER: z.string(),
   ACCESS_TOKEN_SECRET: z.string(),
   REFRESH_TOKEN_SECRET: z.string(),
-  FRONTEND_URL: z.string().url()
+  FRONTEND_URL: z.string().url(),
+  SPOTIFY_CLIENT_ID: z.string(),
+  SPOTIFY_CLIENT_SECRET: z.string()
 })
 
 const isProd = Resource.App.stage === 'prod'
@@ -25,6 +27,12 @@ function createEnvConfig() {
   const frontendUrl = isProd
     ? Resource.Urls.site
     : process.env.FRONTEND_URL || 'http://localhost:5173'
+  const spotifyClientId =
+    Resource.SpotifyClientId.value || process.env.SPOTIFY_CLIENT_ID || ''
+  const spotifyClientSecret =
+    Resource.SpotifyClientSecret.value ||
+    process.env.SPOTIFY_CLIENT_SECRET ||
+    ''
 
   try {
     const config = envSchema.parse({
@@ -33,7 +41,9 @@ function createEnvConfig() {
       EMAIL_SENDER: emailSender,
       ACCESS_TOKEN_SECRET: accessTokenSecret,
       REFRESH_TOKEN_SECRET: refreshTokenSecret,
-      FRONTEND_URL: frontendUrl
+      FRONTEND_URL: frontendUrl,
+      SPOTIFY_CLIENT_ID: spotifyClientId,
+      SPOTIFY_CLIENT_SECRET: spotifyClientSecret
     })
     return config
   } catch (error) {
