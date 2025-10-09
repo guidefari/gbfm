@@ -49,17 +49,23 @@ export function MultiTrack({
       </Link>
       <div className='w-full grid-cols-3 gap-4 md:grid'>
         <div className='col-span-1 mb-3 md:mb-0'>
-          <img
-            className={cn(
-              'object-cover max-w-44 md:max-w-full mt-1 mb-0 rounded-md  aspect-square  mx-auto',
-              loading ? 'scale-102 blur-2xl' : 'scale-100 blur-0'
-            )}
-            src={coverImageUrl || DEFAULT_IMAGE_URL}
-            alt={title}
-            width={300}
-            height={300}
-            loading='lazy'
-          />
+          <a
+            href={url}
+            target='_blank'
+            rel='noopener noreferrer'
+            className='block transition-opacity hover:opacity-80'>
+            <img
+              className={cn(
+                'object-cover max-w-44 md:max-w-full mt-1 mb-0 rounded-md  aspect-square  mx-auto',
+                loading ? 'scale-102 blur-2xl' : 'scale-100 blur-0'
+              )}
+              src={coverImageUrl || DEFAULT_IMAGE_URL}
+              alt={title}
+              width={300}
+              height={300}
+              loading='lazy'
+            />
+          </a>
 
           {genres && genres[0] !== '' && (
             <div className='flex flex-wrap mt-6'>
@@ -82,7 +88,6 @@ export function MultiTrack({
                     <div
                       className={clsx(
                         'flex items-center  mb-2 space-x-1 text-white group Tag'
-                        // track.previewUrl?.length > 0 && ' hover:cursor-pointer'
                       )}>
                       {track.previewUrl?.length && (
                         <button
@@ -101,7 +106,19 @@ export function MultiTrack({
                           />
                         </button>
                       )}
-                      {track.title} - {track.artists}
+                      {track.trackUrl ? (
+                        <a
+                          href={track.trackUrl}
+                          target='_blank'
+                          rel='noopener noreferrer'
+                          className='hover:text-gb-tomato hover:underline'>
+                          {track.title} - {track.artists}
+                        </a>
+                      ) : (
+                        <span>
+                          {track.title} - {track.artists}
+                        </span>
+                      )}
                     </div>
                   </li>
                 ))}

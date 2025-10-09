@@ -17,6 +17,7 @@ interface Props {
   genres?: string[] | null
   loading?: boolean
   previewUrl?: string
+  trackUrl?: string
   children?: React.ReactNode
   download?: boolean
   className?: string
@@ -30,6 +31,7 @@ export const MinimalCard: React.FC<Props> = ({
   genres,
   loading,
   previewUrl,
+  trackUrl,
   children,
   artists,
   download = false,
@@ -49,17 +51,37 @@ export const MinimalCard: React.FC<Props> = ({
     <div
       className={`not-prose relative z-10 min-w-64 flex-shrink-0 overflow-hidden max-w-md my-8 border-2 border-t-0 border-l-0 rounded-md md:max-w-xs border-gb-tomato ${className}`}>
       <div className='relative flex-shrink-0 mb-4 sm:mb-0 sm:mr-4 group'>
-        <img
-          className={cn(
-            'object-cover w-full rounded-md aspect-square  mx-auto',
-            loading ? 'scale-102 blur-2xl' : 'scale-100 blur-0'
-          )}
-          src={imageUrl || DEFAULT_IMAGE_URL}
-          alt={title}
-          width={300}
-          height={300}
-          loading='lazy'
-        />
+        {trackUrl ? (
+          <a
+            href={trackUrl}
+            target='_blank'
+            rel='noopener noreferrer'
+            className='block transition-opacity hover:opacity-80'>
+            <img
+              className={cn(
+                'object-cover w-full rounded-md aspect-square  mx-auto',
+                loading ? 'scale-102 blur-2xl' : 'scale-100 blur-0'
+              )}
+              src={imageUrl || DEFAULT_IMAGE_URL}
+              alt={title}
+              width={300}
+              height={300}
+              loading='lazy'
+            />
+          </a>
+        ) : (
+          <img
+            className={cn(
+              'object-cover w-full rounded-md aspect-square  mx-auto',
+              loading ? 'scale-102 blur-2xl' : 'scale-100 blur-0'
+            )}
+            src={imageUrl || DEFAULT_IMAGE_URL}
+            alt={title}
+            width={300}
+            height={300}
+            loading='lazy'
+          />
+        )}
       </div>
       <div className='p-3'>
         {genres && genres.length > 0 && (
@@ -90,13 +112,24 @@ export const MinimalCard: React.FC<Props> = ({
         )}
 
         {!hideTitle && (
-          <button
-            onClick={() => copyToClipboard(artistsAndTitle)}
-            tabIndex={0}
-            className='mt-3 text-sm font-medium leading-6'
-            type='button'>
-            {artistsAndTitle}
-          </button>
+          <div className='mt-3 text-sm font-medium leading-6'>
+            {trackUrl ? (
+              <a
+                href={trackUrl}
+                target='_blank'
+                rel='noopener noreferrer'
+                className='hover:text-gb-tomato hover:underline'>
+                {artistsAndTitle}
+              </a>
+            ) : (
+              <button
+                onClick={() => copyToClipboard(artistsAndTitle)}
+                tabIndex={0}
+                type='button'>
+                {artistsAndTitle}
+              </button>
+            )}
+          </div>
         )}
         {(blurb || children) && (
           <hr className='mx-10 my-4 border-b-2 rounded-full border-gb-pastel-green-2' />
