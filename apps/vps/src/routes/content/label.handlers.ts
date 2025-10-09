@@ -150,7 +150,7 @@ export const updateLabelBySlug: AppRouteHandler<
 > = async (c) => {
   const { slug } = c.req.valid('param')
   const updateData = c.req.valid('json')
-  const user = c.get('user')
+  const _user = c.get('user')
 
   try {
     const [existingLabel] = await db

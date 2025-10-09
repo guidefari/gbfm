@@ -104,11 +104,20 @@ new sst.x.DevCommand('Email_Preview', {
 //   }
 // })
 
-new sst.x.DevCommand('Seed_Labels', {
-  link: [...allSecrets, email],
-  dev: {
-    command: 'bun src/archive/seed-labels.ts',
-    directory: './apps/vps',
-    autostart: false
-  }
-})
+// new sst.x.DevCommand('Seed_Labels', {
+//   link: [...allSecrets, email],
+//   dev: {
+//     command: 'bun src/archive/seed-labels.ts',
+//     directory: './apps/vps',
+//     autostart: false
+//   }
+// })
+
+// new sst.x.DevCommand('Migrate_Labels', {
+//   link: [...allSecrets, email],
+//   dev: {
+//     command: 'bun scripts/migrate-labels.ts',
+//     directory: './apps/vps',
+//     autostart: false
+//   }
+// })

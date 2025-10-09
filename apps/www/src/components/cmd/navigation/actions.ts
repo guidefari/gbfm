@@ -29,11 +29,17 @@ export const useNavigationActions = (closeCmd: () => void) => {
     closeCmd()
   }, [router, closeCmd])
 
+  const routeToLabels = React.useCallback(() => {
+    router({ to: '/labels' })
+    closeCmd()
+  }, [router, closeCmd])
+
   return {
     routeToMixes,
     routeToLogin,
     routeToProfile,
     routeToHome,
-    routeToTracks
+    routeToTracks,
+    routeToLabels
   }
 }

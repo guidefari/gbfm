@@ -21,7 +21,7 @@ function cleanId(id: string): string | null {
     const decodedUrl = decodeURIComponent(id)
     !!new URL(decodedUrl)
     ideez = decodedUrl
-  } catch (error) {
+  } catch (_error) {
     return id
   }
 
@@ -31,7 +31,7 @@ function cleanId(id: string): string | null {
 const getIdFromSpotifyUrl = (url: string): string | null => {
   const regex = /\/(\w+)\?/
   const match = url.match(regex)
-  if (match && match[1]) {
+  if (match?.[1]) {
     return match[1]
   }
   return null
