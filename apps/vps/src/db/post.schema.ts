@@ -9,7 +9,7 @@ import { authorsTable } from './author.schema'
 import { publicationsTable } from './publication.schema'
 import { defaultContentFields } from './util'
 
-export const postTypeEnum = pgEnum('post_type', ['post', 'micro', 'label'])
+export const postTypeEnum = pgEnum('post_type', ['post', 'micro'])
 
 export const postsTable = pgTable(
   'posts',
@@ -49,7 +49,7 @@ export const selectPostSchema = z.object({
   content: z.string(),
   draft: z.boolean(),
   tags: z.array(z.string()).nullable(),
-  type: z.enum(['post', 'micro', 'label']).nullable(),
+  type: z.enum(['post', 'micro']).nullable(),
   publicationId: z.string().nullable(),
   createdAt: z.date(),
   updatedAt: z.date()
@@ -83,7 +83,7 @@ export const insertPostSchema = z.object({
   content: z.string(),
   draft: z.boolean().optional(),
   tags: z.array(z.string()).optional(),
-  type: z.enum(['post', 'micro', 'label']).nullable().optional(),
+  type: z.enum(['post', 'micro']).nullable().optional(),
   publicationId: z.string().uuid().nullable().optional()
 })
 
