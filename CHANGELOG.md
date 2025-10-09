@@ -1,3 +1,10 @@
+## [0.30.1](https://github.com/guidefari/gbfm/compare/v0.30.0...v0.30.1) (2025-10-09)
+
+
+### Bug Fixes
+
+* add links to spotify components ([cf3ef23](https://github.com/guidefari/gbfm/commit/cf3ef2338719f12de83611bc101b02bce8956a07))
+
 # [0.30.0](https://github.com/guidefari/gbfm/compare/v0.29.0...v0.30.0) (2025-10-09)
 
 
