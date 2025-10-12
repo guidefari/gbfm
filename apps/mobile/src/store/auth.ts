@@ -1,4 +1,4 @@
-import type { LoginResponse, FullUser } from '@gbfm/core/api'
+import type { FullUser, LoginResponse } from '@gbfm/core/api'
 import { create } from 'zustand'
 
 type AuthState = {

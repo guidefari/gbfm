@@ -1,6 +1,7 @@
 // todo: there's an infinite loop somewhere in here, LOL
 
 import React from 'react'
+import type { ViewStyle } from 'react-native'
 import { StyleSheet, View } from 'react-native'
 import Svg, { Rect, Text as SvgText } from 'react-native-svg'
 
@@ -16,7 +17,7 @@ export type FPSMeterProps = {
   width?: number
   height?: number
   initialSystemFps?: number
-  style?: any
+  style?: ViewStyle
 }
 
 const FRAME_HIT = Symbol('FRAME_HIT')
@@ -187,7 +188,7 @@ export const FPSMeter: React.FC<FPSMeterProps> = ({
 
           return (
             <Rect
-              key={i}
+              key={`frame-${currentFrameNumber - frames.length + i}`}
               x={x}
               y={0}
               width={frameBarWidth}

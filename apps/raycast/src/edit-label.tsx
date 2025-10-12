@@ -1,4 +1,4 @@
-import { stripEmptyValuesEffect } from '@gbfm/core/utils'
+import { stripEmptyValues } from '@gbfm/core/utils'
 import { Action, ActionPanel, Form, showToast, Toast } from '@raycast/api'
 import { Effect, Runtime } from 'effect'
 import { useEffect, useState } from 'react'
@@ -140,7 +140,7 @@ export default function EditLabel() {
         slug: selectedLabelSlug
       })
 
-      const cleanedValues = yield* stripEmptyValuesEffect(values)
+      const cleanedValues = stripEmptyValues(values)
 
       yield* Effect.logDebug('Cleaned values for update', {
         originalKeys: Object.keys(values),
