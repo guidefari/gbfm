@@ -1,27 +1,10 @@
-import {
-  Action,
-  ActionPanel,
-  Form,
-  popToRoot,
-  showToast,
-  Toast
-} from '@raycast/api'
+import { stripEmptyValuesEffect } from '@gbfm/core/utils'
+import { Action, ActionPanel, Form, showToast, Toast } from '@raycast/api'
 import { Effect, Runtime } from 'effect'
 import { useEffect, useState } from 'react'
 import { get, parseJsonResponse, patch } from './api-client'
 
-interface LabelFormData {
-  title: string
-  description: string
-  thumbnailUrl: string
-  slug: string
-  content: string
-  website: string
-  bandcamp: string
-  discogs: string
-  genres: string[]
-  draft: boolean
-}
+type LabelFormData = Omit<Label, 'id'>
 
 interface Label {
   id: string
@@ -157,8 +140,15 @@ export default function EditLabel() {
         slug: selectedLabelSlug
       })
 
+      const cleanedValues = yield* stripEmptyValuesEffect(values)
+
+      yield* Effect.logDebug('Cleaned values for update', {
+        originalKeys: Object.keys(values),
+        cleanedKeys: Object.keys(cleanedValues)
+      })
+
       const response = yield* Effect.promise(() =>
-        patch(`/content/labels/${selectedLabelSlug}`, values)
+        patch(`/content/labels/${selectedLabelSlug}`, cleanedValues)
       )
 
       const result = yield* Effect.promise(() =>
@@ -183,7 +173,7 @@ export default function EditLabel() {
 
     try {
       await Runtime.runPromise(Runtime.defaultRuntime)(updateLabelEffect)
-      popToRoot()
+      // popToRoot()
     } catch (error) {
       await showToast({
         style: Toast.Style.Failure,
@@ -258,7 +248,7 @@ export default function EditLabel() {
             id='description'
             title='Description'
             placeholder='Short description of the label'
-            value={formData.description}
+            value={formData.description ?? ''}
             onChange={(value) =>
               setFormData((prev) => ({ ...prev, description: value }))
             }
@@ -268,7 +258,7 @@ export default function EditLabel() {
             id='thumbnailUrl'
             title='Thumbnail URL'
             placeholder='URL to label logo/artwork'
-            value={formData.thumbnailUrl}
+            value={formData.thumbnailUrl ?? ''}
             onChange={(value) =>
               setFormData((prev) => ({ ...prev, thumbnailUrl: value }))
             }
@@ -278,7 +268,7 @@ export default function EditLabel() {
             id='website'
             title='Website'
             placeholder='https://label-website.com'
-            value={formData.website}
+            value={formData.website ?? ''}
             onChange={(value) =>
               setFormData((prev) => ({ ...prev, website: value }))
             }
@@ -288,7 +278,7 @@ export default function EditLabel() {
             id='bandcamp'
             title='Bandcamp'
             placeholder='https://label.bandcamp.com'
-            value={formData.bandcamp}
+            value={formData.bandcamp ?? ''}
             onChange={(value) =>
               setFormData((prev) => ({ ...prev, bandcamp: value }))
             }
@@ -298,7 +288,7 @@ export default function EditLabel() {
             id='discogs'
             title='Discogs'
             placeholder='https://www.discogs.com/label/...'
-            value={formData.discogs}
+            value={formData.discogs ?? ''}
             onChange={(value) =>
               setFormData((prev) => ({ ...prev, discogs: value }))
             }
@@ -308,7 +298,7 @@ export default function EditLabel() {
             id='genres'
             title='Genres'
             placeholder='Add genres'
-            value={formData.genres}
+            value={formData.genres ?? []}
             onChange={(value) =>
               setFormData((prev) => ({ ...prev, genres: value }))
             }>

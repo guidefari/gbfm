@@ -70,9 +70,9 @@ export const insertLabelSchema = z.object({
   content: z.string(),
   draft: z.boolean().optional(),
   tags: z.array(z.string()).optional(),
-  website: z.string().url().optional(),
-  discogs: z.string().url().optional(),
-  bandcamp: z.string().url().optional(),
+  website: z.url().optional(),
+  discogs: z.url().optional(),
+  bandcamp: z.url().optional(),
   genres: z.array(z.string()).optional()
 })
 

@@ -1,8 +1,8 @@
+import type { LoginResponse, FullUser } from '@gbfm/core/api'
 import { create } from 'zustand'
-import type { User, LoginResponse } from '@gbfm/core/api'
 
 type AuthState = {
-  user: User | null
+  user: FullUser | null
   accessToken: string | null
   refreshToken: string | null
   setAuth: (data: LoginResponse) => void

@@ -46,6 +46,7 @@
     }
   ],
   "dependencies": {
+    "@gbfm/core": "workspace:*",
     "@raycast/api": "^1.103.2",
     "@raycast/utils": "^2.2.1"
   },

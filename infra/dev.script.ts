@@ -2,10 +2,17 @@ import { email } from './email'
 import { allSecrets } from './secret'
 
 new sst.x.DevCommand('raycast', {
-  // link: [...allSecrets, email],
   dev: {
     command: 'bun dev',
     directory: './apps/raycast',
+    autostart: false
+  }
+})
+
+new sst.x.DevCommand('ios', {
+  dev: {
+    command: 'bun ios',
+    directory: './apps/mobile',
     autostart: false
   }
 })

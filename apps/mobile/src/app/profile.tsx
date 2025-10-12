@@ -1,5 +1,5 @@
 import { Stack } from 'expo-router'
-import { Text, View, ScrollView } from 'react-native'
+import { ScrollView, Text, View } from 'react-native'
 import { useAuthStore } from '@/store/auth'
 
 export default function Profile() {
