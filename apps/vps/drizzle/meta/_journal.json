@@ -29,6 +29,13 @@
       "when": 1759825463737,
       "tag": "0006_high_green_goblin",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1760300641691,
+      "tag": "0007_zippy_black_bird",
+      "breakpoints": true
     }
   ]
 }

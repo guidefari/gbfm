@@ -1,7 +1,12 @@
 import { createRoute, z } from '@hono/zod-openapi'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { jsonContent, jsonContentRequired } from 'stoker/openapi/helpers'
-import { AlbumSchema, PlaylistSchema, TrackSchema } from './spotify.types'
+import {
+  AlbumSchema,
+  PlaylistSchema,
+  SearchAlbumsResponseSchema,
+  TrackSchema
+} from './spotify.types'
 
 const tags = ['Spotify']
 
@@ -74,6 +79,37 @@ export const getPlaylist = createRoute({
   }
 })
 
+export const searchAlbums = createRoute({
+  path: '/search/albums',
+  method: 'post',
+  request: {
+    body: jsonContentRequired(
+      z.object({
+        query: z.string().min(1),
+        limit: z.number().min(1).max(50).optional().default(10),
+        offset: z.number().min(0).optional().default(0)
+      }),
+      'Album search query'
+    )
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      SearchAlbumsResponseSchema,
+      'Search results'
+    ),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
+      z.object({ error: z.string() }),
+      'Invalid search query'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to search albums'
+    )
+  }
+})
+
 export type GetTrackRoute = typeof getTrack
 export type GetAlbumRoute = typeof getAlbum
 export type GetPlaylistRoute = typeof getPlaylist
+export type SearchAlbumsRoute = typeof searchAlbums

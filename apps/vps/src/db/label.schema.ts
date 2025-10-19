@@ -6,6 +6,7 @@ import {
 import { index, pgTable, primaryKey, uuid, varchar } from 'drizzle-orm/pg-core'
 import { z } from 'zod/v4'
 import { authorsTable } from './author.schema'
+import { releasesTable } from './release.schema'
 import { defaultContentFields } from './util'
 
 export const labelsTable = pgTable(
@@ -96,7 +97,8 @@ export const labelsToAuthors = pgTable(
 )
 
 export const labelsRelations = relations(labelsTable, ({ many }) => ({
-  labelsToAuthors: many(labelsToAuthors)
+  labelsToAuthors: many(labelsToAuthors),
+  releases: many(releasesTable)
 }))
 
 export const labelsToAuthorsRelations = relations(

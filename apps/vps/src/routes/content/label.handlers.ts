@@ -75,7 +75,10 @@ export const createLabel: AppRouteHandler<CreateLabelRoute> = async (c) => {
 
 export const getAllLabels: AppRouteHandler<GetAllLabelsRoute> = async (c) => {
   try {
-    const labels = await db.select().from(labelsTable)
+    const labels = await db
+      .select()
+      .from(labelsTable)
+      .where(eq(labelsTable.draft, false))
     return c.json(labels, HttpStatusCodes.OK)
   } catch (error) {
     console.error('Error fetching labels:', error)
@@ -150,7 +153,6 @@ export const updateLabelBySlug: AppRouteHandler<
 > = async (c) => {
   const { slug } = c.req.valid('param')
   const updateData = c.req.valid('json')
-  const _user = c.get('user')
 
   try {
     const [existingLabel] = await db

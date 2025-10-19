@@ -2,7 +2,9 @@ import type {
   SelectAudio,
   SelectLabel,
   SelectMdxCompiledAudio,
-  SelectMdxCompiledLabel
+  SelectMdxCompiledLabel,
+  SelectRelease,
+  SelectMdxCompiledRelease
 } from '@gbfm/vps/schemas'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { type User, useAuthStore } from '@/store/auth'
@@ -181,6 +183,37 @@ export function useLabelBySlug(slug: string) {
   const { data, error, isPending } = useQuery<SelectMdxCompiledLabel, Error>({
     queryKey: ['label', slug],
     queryFn: async () => fetcher(`${VPS_BASE_URL}/content/labels/${slug}`),
+    enabled: Boolean(slug)
+  })
+
+  return {
+    data,
+    error,
+    isPending
+  }
+}
+
+export function useReleasesByLabel(labelSlug: string) {
+  const { data, error, isPending } = useQuery<SelectRelease[], Error>({
+    queryKey: ['releases', 'label', labelSlug],
+    queryFn: async () =>
+      fetcher<SelectRelease[]>(
+        `${VPS_BASE_URL}/content/labels/${labelSlug}/releases`
+      ),
+    enabled: Boolean(labelSlug)
+  })
+
+  return {
+    data,
+    error,
+    isPending
+  }
+}
+
+export function useReleaseBySlug(slug: string) {
+  const { data, error, isPending } = useQuery<SelectMdxCompiledRelease, Error>({
+    queryKey: ['release', slug],
+    queryFn: async () => fetcher(`${VPS_BASE_URL}/content/releases/${slug}`),
     enabled: Boolean(slug)
   })
 

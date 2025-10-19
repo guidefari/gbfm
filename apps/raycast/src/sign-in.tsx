@@ -115,7 +115,7 @@ export default function SignIn() {
       actions={
         <ActionPanel>
           <Action.SubmitForm
-            title='Sign In'
+            title='Sign in'
             onSubmit={handleSubmit}
             icon='🔑'
           />

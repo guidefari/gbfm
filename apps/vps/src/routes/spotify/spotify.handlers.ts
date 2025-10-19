@@ -5,7 +5,8 @@ import type { AppRouteHandler } from '@/lib/types'
 import type {
   GetAlbumRoute,
   GetPlaylistRoute,
-  GetTrackRoute
+  GetTrackRoute,
+  SearchAlbumsRoute
 } from './spotify.routes'
 import * as SpotifyTypes from './spotify.types'
 
@@ -138,6 +139,61 @@ export const getPlaylist: AppRouteHandler<GetPlaylistRoute> = async (c) => {
   } catch (error) {
     if (error instanceof Error) {
       return c.json({ error: error.message }, HttpStatusCodes.NOT_FOUND)
+    }
+    return c.json(
+      { error: 'An unknown error occurred' },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
+  }
+}
+
+export const searchAlbums: AppRouteHandler<SearchAlbumsRoute> = async (c) => {
+  try {
+    const { query, limit = 10, offset = 0 } = c.req.valid('json')
+
+    if (!query || query.trim() === '') {
+      return c.json(
+        { error: 'Search query is required' },
+        HttpStatusCodes.BAD_REQUEST
+      )
+    }
+
+    const data = await client.search(
+      query,
+      ['album', 'track'],
+      undefined,
+      limit,
+      offset
+    )
+
+    if (!data.albums) {
+      return c.json({ error: 'No albums found' }, HttpStatusCodes.NOT_FOUND)
+    }
+
+    const sanitizedData: SpotifyTypes.SearchAlbumsResponse = {
+      albums: data.albums.items.map((album) => ({
+        id: album.id,
+        title: album.name,
+        artists: album.artists.map((artist) => artist.name).join(', '),
+        albumType: album.album_type,
+        releaseDate: album.release_date,
+        albumImageUrl: album.images[0]?.url,
+        albumUrl: album.external_urls.spotify,
+        totalTracks: album.total_tracks
+      })),
+      total: data.albums.total,
+      limit: data.albums.limit,
+      offset: data.albums.offset
+    }
+
+    const result = SpotifyTypes.SearchAlbumsResponseSchema.parse(sanitizedData)
+    return c.json(result, HttpStatusCodes.OK)
+  } catch (error) {
+    if (error instanceof Error) {
+      return c.json(
+        { error: error.message },
+        HttpStatusCodes.INTERNAL_SERVER_ERROR
+      )
     }
     return c.json(
       { error: 'An unknown error occurred' },

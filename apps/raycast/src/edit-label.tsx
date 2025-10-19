@@ -123,7 +123,7 @@ export default function EditLabel() {
       })
   }, [selectedLabelSlug])
 
-  const handleSubmit = async (values: LabelFormData) => {
+  const handleSubmit = async () => {
     if (!selectedLabelSlug) {
       showToast({
         style: Toast.Style.Failure,
@@ -140,10 +140,13 @@ export default function EditLabel() {
         slug: selectedLabelSlug
       })
 
-      const cleanedValues = stripEmptyValues(values)
+      const cleanedValues = yield* Effect.promise(() =>
+        stripEmptyValues(formData)
+      )
+      console.log('cleanedValues:', cleanedValues)
 
       yield* Effect.logDebug('Cleaned values for update', {
-        originalKeys: Object.keys(values),
+        originalKeys: Object.keys(formData),
         cleanedKeys: Object.keys(cleanedValues)
       })
 
@@ -192,7 +195,7 @@ export default function EditLabel() {
         <ActionPanel>
           <Action.SubmitForm
             title='Update Label'
-            onSubmit={handleSubmit}
+            onSubmit={() => handleSubmit()}
             icon='✏️'
           />
         </ActionPanel>

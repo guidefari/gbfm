@@ -2,7 +2,6 @@
   "$schema": "https://www.raycast.com/schemas/extension.json",
   "name": "gbfm",
   "title": "gbfm",
-  "description": "",
   "icon": "extension-icon.png",
   "author": "guide",
   "owner": "guidefari",
@@ -36,6 +35,12 @@
       "name": "edit-label",
       "title": "Edit Label",
       "description": "Edit existing record label",
+      "mode": "view"
+    },
+    {
+      "name": "create-release",
+      "title": "Create Release",
+      "description": "Create a new release for a label",
       "mode": "view"
     },
     {

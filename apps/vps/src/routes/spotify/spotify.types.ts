@@ -41,6 +41,26 @@ export const PlaylistSchema = z.object({
   playlistUrl: z.string()
 })
 
+export const AlbumSearchResultSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  artists: z.string(),
+  albumType: z.string(),
+  releaseDate: z.string(),
+  albumImageUrl: z.string().optional(),
+  albumUrl: z.string(),
+  totalTracks: z.number()
+})
+
+export const SearchAlbumsResponseSchema = z.object({
+  albums: z.array(AlbumSearchResultSchema),
+  total: z.number(),
+  limit: z.number(),
+  offset: z.number()
+})
+
 export type Track = z.infer<typeof TrackSchema>
 export type Album = z.infer<typeof AlbumSchema>
 export type Playlist = z.infer<typeof PlaylistSchema>
+export type AlbumSearchResult = z.infer<typeof AlbumSearchResultSchema>
+export type SearchAlbumsResponse = z.infer<typeof SearchAlbumsResponseSchema>
