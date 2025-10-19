@@ -158,16 +158,28 @@ export const searchAlbums: AppRouteHandler<SearchAlbumsRoute> = async (c) => {
       )
     }
 
+    const validatedLimit = Math.min(Math.max(1, limit), 50) as Parameters<
+      typeof client.search
+    >[3]
+
     const data = await client.search(
       query,
       ['album', 'track'],
       undefined,
-      limit,
+      validatedLimit,
       offset
     )
 
     if (!data.albums) {
-      return c.json({ error: 'No albums found' }, HttpStatusCodes.NOT_FOUND)
+      return c.json(
+        {
+          albums: [],
+          total: 0,
+          limit,
+          offset
+        },
+        HttpStatusCodes.OK
+      )
     }
 
     const sanitizedData: SpotifyTypes.SearchAlbumsResponse = {
