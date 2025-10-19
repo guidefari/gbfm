@@ -169,9 +169,9 @@ export const updateReleaseBySlug: AppRouteHandler<
       .set({
         ...updateData,
         updatedAt: new Date(),
-        releaseDate: new Date(
-          updateData.releaseDate || existingRelease.releaseDate
-        )
+        releaseDate: updateData.releaseDate
+          ? new Date(updateData.releaseDate)
+          : existingRelease.releaseDate
       })
       .where(eq(releasesTable.id, existingRelease.id))
       .returning()
