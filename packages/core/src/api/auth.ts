@@ -169,7 +169,7 @@ export async function login(
     if (isDev) {
       const tempData = z
         .object({
-          user: z.record(z.unknown()).optional(),
+          user: z.record(z.string(), z.unknown()).optional(),
           accessToken: z.unknown().optional(),
           refreshToken: z.unknown().optional()
         })
@@ -266,7 +266,9 @@ export async function refreshAccessToken(
     const data = yield* Effect.tryPromise({
       try: () => response.json(),
       catch: (error) => {
-        logError('Refresh Token Response Parse Failed', error)
+        logError('Refresh Token Response Parse Failed', error, {
+          status: response.status
+        })
         return new AuthError({
           message: 'Failed to parse token refresh response',
           cause: error
