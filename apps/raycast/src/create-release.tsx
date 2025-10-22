@@ -4,6 +4,7 @@ import {
   Detail,
   Form,
   Icon,
+  List,
   popToRoot,
   showToast,
   Toast,
@@ -81,45 +82,38 @@ function SpotifySearch({
   )
   const { pop } = useNavigation()
 
-  const handleSearch = async () => {
-    if (!searchQuery.trim()) {
-      await showToast({
-        style: Toast.Style.Failure,
-        title: 'Error',
-        message: 'Please enter a search query'
-      })
-      return
-    }
+  useEffect(() => {
+    const searchAlbums = async () => {
+      if (!searchQuery.trim()) {
+        setResults([])
+        return
+      }
 
-    setIsSearching(true)
-    try {
-      const response = await post('/spotify/search/albums', {
-        query: searchQuery,
-        limit: 10
-      })
-      const data = await parseJsonResponse<{ albums: AlbumSearchResult[] }>(
-        response
-      )
-      setResults(data.albums)
-
-      if (data.albums.length === 0) {
+      setIsSearching(true)
+      try {
+        const response = await post('/spotify/search/albums', {
+          query: searchQuery,
+          limit: 20
+        })
+        const data = await parseJsonResponse<{ albums: AlbumSearchResult[] }>(
+          response
+        )
+        setResults(data.albums)
+      } catch (error) {
         await showToast({
           style: Toast.Style.Failure,
-          title: 'No Results',
-          message: 'No albums found for this search'
+          title: 'Search Error',
+          message:
+            error instanceof Error ? error.message : 'Failed to search albums'
         })
+        setResults([])
+      } finally {
+        setIsSearching(false)
       }
-    } catch (error) {
-      await showToast({
-        style: Toast.Style.Failure,
-        title: 'Error',
-        message:
-          error instanceof Error ? error.message : 'Failed to search albums'
-      })
-    } finally {
-      setIsSearching(false)
     }
-  }
+
+    searchAlbums()
+  }, [searchQuery])
 
   const handleSelect = (album: AlbumSearchResult) => {
     setSelectedAlbum(album)
@@ -186,43 +180,48 @@ All fields will be editable after import.
   }
 
   return (
-    <Form
-      actions={
-        <ActionPanel>
-          <Action.SubmitForm
-            title='Search Albums'
-            onSubmit={handleSearch}
-            icon={Icon.MagnifyingGlass}
+    <List
+      isLoading={isSearching}
+      onSearchTextChange={setSearchQuery}
+      searchBarPlaceholder='Search for albums by artist or name...'
+      throttle>
+      {results.length === 0 && searchQuery.trim() === '' ? (
+        <List.EmptyView
+          title='Search for Albums'
+          description='Start typing to search Spotify'
+          icon={Icon.MagnifyingGlass}
+        />
+      ) : results.length === 0 && searchQuery.trim() !== '' ? (
+        <List.EmptyView
+          title='No Results'
+          description={`No albums found for "${searchQuery}"`}
+          icon={Icon.XMarkCircle}
+        />
+      ) : (
+        results.map((album) => (
+          <List.Item
+            key={album.id}
+            title={album.title}
+            subtitle={album.artists}
+            icon={{ source: album.albumImageUrl || Icon.Music }}
+            accessories={[
+              { text: album.albumType },
+              { text: album.releaseDate }
+            ]}
+            actions={
+              <ActionPanel>
+                <Action
+                  title='Select Album'
+                  icon={Icon.Check}
+                  onAction={() => handleSelect(album)}
+                />
+                <Action.OpenInBrowser url={album.albumUrl} />
+              </ActionPanel>
+            }
           />
-        </ActionPanel>
-      }
-      isLoading={isSearching}>
-      <Form.TextField
-        id='search'
-        title='Search'
-        placeholder='Artist or album name'
-        value={searchQuery}
-        onChange={setSearchQuery}
-      />
-      {results.length > 0 && (
-        <Form.Dropdown
-          id='results'
-          title='Results'
-          onChange={(value) => {
-            const album = results.find((r) => r.id === value)
-            if (album) handleSelect(album)
-          }}>
-          <Form.Dropdown.Item value='' title='Select an album' />
-          {results.map((album) => (
-            <Form.Dropdown.Item
-              key={album.id}
-              value={album.id}
-              title={`${album.title} - ${album.artists}`}
-            />
-          ))}
-        </Form.Dropdown>
+        ))
       )}
-    </Form>
+    </List>
   )
 }
 

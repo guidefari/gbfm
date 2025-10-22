@@ -7,7 +7,7 @@ import { VPS_BASE_URL } from '@/lib/http'
 
 export const searchSchema = z.object({
   token: z.string(),
-  email: z.string().email()
+  email: z.email()
 })
 
 export const Route = createFileRoute('/auth/reset-password')({

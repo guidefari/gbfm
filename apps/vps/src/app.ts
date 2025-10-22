@@ -23,7 +23,15 @@ const routes = [
 ] as const
 
 routes.forEach((route) => {
-  app.route(route.path, route.handler)
+  try {
+    console.log(`Registering route: ${route.path}`)
+    app.route(route.path, route.handler)
+    console.log(`✓ Successfully registered: ${route.path}`)
+  } catch (error) {
+    console.error(`✗ Failed to register route: ${route.path}`)
+    console.error(error)
+    throw error
+  }
 })
 
 // Health check endpoint

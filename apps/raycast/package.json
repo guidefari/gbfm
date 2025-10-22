@@ -3,6 +3,7 @@
   "name": "gbfm",
   "title": "gbfm",
   "icon": "extension-icon.png",
+  "description": "gbfm cms for the curators",
   "author": "guide",
   "owner": "guidefari",
   "license": "MIT",
@@ -41,6 +42,12 @@
       "name": "create-release",
       "title": "Create Release",
       "description": "Create a new release for a label",
+      "mode": "view"
+    },
+    {
+      "name": "quick-share",
+      "title": "Quick Share",
+      "description": "Quickly share music links with notes",
       "mode": "view"
     },
     {

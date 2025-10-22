@@ -38,7 +38,7 @@ type FormData = z.infer<typeof contentSchema>
 
 const searchSchema = z.object({
   id: z.string().optional(),
-  email: z.string().email().optional(),
+  email: z.email().optional(),
   token: z.string().optional()
 })
 
