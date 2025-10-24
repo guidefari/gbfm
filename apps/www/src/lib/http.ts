@@ -3,8 +3,8 @@ import type {
   SelectLabel,
   SelectMdxCompiledAudio,
   SelectMdxCompiledLabel,
-  SelectRelease,
-  SelectMdxCompiledRelease
+  SelectMdxCompiledRelease,
+  SelectRelease
 } from '@gbfm/vps/schemas'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { type User, useAuthStore } from '@/store/auth'

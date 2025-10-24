@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import * as React from 'react'
-import { ReleasesTable } from '@/components/ReleasesTable'
 import { MDXRendrr } from '@/components/MDXRendrr'
+import { ReleasesTable } from '@/components/ReleasesTable'
 import { useLabelBySlug, useReleasesByLabel } from '@/lib/http'
 import { useContentStore } from '@/store'
 
