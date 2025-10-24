@@ -235,9 +235,9 @@ export const updateProfile = createRoute({
           schema: z.object({
             name: z.string().optional(),
             username: usernameSchema.optional(),
-            email: z.string().email().optional(),
+            email: z.email().optional(),
             password: z.string().min(8).optional(),
-            avatar: z.instanceof(File).optional().openapi({
+            avatar: z.custom<File>().optional().openapi({
               type: 'string',
               format: 'binary',
               description: 'Avatar image file'

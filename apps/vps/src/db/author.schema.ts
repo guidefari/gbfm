@@ -153,13 +153,17 @@ export const refreshTokenSchema = z.object({
 })
 
 export const updateProfileSchema = z.object({
-  id: z.string().uuid().optional(),
+  id: z.uuid().optional(),
   name: z.string().optional(),
-  email: z.string().email().optional(),
+  email: z.email().optional(),
   username: usernameSchema.optional(),
   password: z.string().min(8).optional(),
   avatarUrl: z.string().optional(),
-  avatar: z.instanceof(File).optional()
+  avatar: z.custom<File>().optional().openapi({
+    type: 'string',
+    format: 'binary',
+    description: 'Avatar image file'
+  })
 })
 
 export type UpdateProfileSchema = z.infer<typeof updateProfileSchema>
