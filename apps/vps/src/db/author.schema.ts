@@ -1,10 +1,10 @@
+import { z } from '@hono/zod-openapi'
 import {
   type InferInsertModel,
   type InferSelectModel,
   relations
 } from 'drizzle-orm'
 import { boolean, pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
-import { z } from 'zod/v4'
 import { audioToAuthors } from './audio.schema'
 import { postsToAuthors } from './post.schema'
 
@@ -86,7 +86,7 @@ export const selectAuthorSchema = selectAuthorSchemaV4
 export const insertAuthorSchema = z.object({
   name: z.string(),
   username: z.string().optional(),
-  email: z.string().email(),
+  email: z.email(),
   password: z.string().optional(),
   verified: z.boolean().optional(),
   avatarUrl: z.string().optional()
@@ -101,7 +101,7 @@ export const selectAuthorPasswordResetTokenSchema = z.object({
 })
 
 export const insertAuthorPasswordResetTokenSchema = z.object({
-  authorId: z.string().uuid(),
+  authorId: z.uuid(),
   token: z.string(),
   expiresAt: z.date()
 })
@@ -118,7 +118,7 @@ export const selectAuthorSessionSchema = z.object({
 })
 
 export const insertAuthorSessionSchema = z.object({
-  authorId: z.string().uuid(),
+  authorId: z.uuid(),
   refreshToken: z.string(),
   userAgent: z.string().optional(),
   ip: z.string().optional(),
@@ -127,24 +127,24 @@ export const insertAuthorSessionSchema = z.object({
 
 export const signupSchema = z.object({
   name: z.string(),
-  email: z.string().email(),
+  email: z.email(),
   username: usernameSchema,
   password: z.string().min(8)
 })
 
 export const signinSchema = z.object({
-  email: z.string().email(),
+  email: z.email(),
   password: z.string().min(8)
 })
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().email()
+  email: z.email()
 })
 
 export const resetPasswordSchema = z.object({
-  email: z.string().email().optional(),
+  email: z.email().optional(),
   authorId: z.string().optional(),
-  token: z.string().uuid(),
+  token: z.uuid(),
   password: z.string().min(8)
 })
 
@@ -171,7 +171,7 @@ export type UpdateProfileSchema = z.infer<typeof updateProfileSchema>
 export const createUserSchema = z.object({
   name: z.string(),
   username: usernameSchema,
-  email: z.string().email(),
+  email: z.email(),
   password: z.string().min(8)
 })
 

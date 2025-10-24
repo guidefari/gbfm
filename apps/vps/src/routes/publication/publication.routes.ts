@@ -16,7 +16,7 @@ const publicationResponseSchema = selectPublicationSchema
 
 // UUID parameter schema for publications
 const publicationParamsSchema = z.object({
-  id: z.string().uuid()
+  id: z.uuid()
 })
 
 // Routes

@@ -84,7 +84,7 @@ export const insertPostSchema = z.object({
   draft: z.boolean().optional(),
   tags: z.array(z.string()).optional(),
   type: z.enum(['post', 'micro']).nullable().optional(),
-  publicationId: z.string().uuid().nullable().optional()
+  publicationId: z.uuid().nullable().optional()
 })
 
 export const createPostSchema = insertPostSchema.extend({

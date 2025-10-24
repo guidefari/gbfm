@@ -37,7 +37,7 @@ export const userSchema = z.object({
   id: z.string(),
   name: z.string(),
   username: z.string().nullable(),
-  email: z.string().email(),
+  email: z.email(),
   avatarUrl: z.string().nullable()
 })
 
@@ -52,7 +52,7 @@ export const fullUserSchema = userSchema.extend({
 export type FullUser = z.infer<typeof fullUserSchema>
 
 export const loginRequestSchema = z.object({
-  email: z.string().email(),
+  email: z.email(),
   password: z.string().min(1)
 })
 
