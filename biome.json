@@ -37,7 +37,8 @@
       "!**/coverage",
       "!apps/www/src/routeTree.gen.ts",
       "!**/*.gen.ts",
-      "!**/*.generated.ts"
+      "!**/*.generated.ts",
+      "!**/*sst-env.d.ts"
     ],
     "ignoreUnknown": false
   },

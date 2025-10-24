@@ -85,12 +85,9 @@ export function ReleasesTable({ releases }: ReleasesTableProps) {
                   release.streamingLinks.length > 0 ? (
                     <div className='flex flex-wrap gap-1'>
                       {release.streamingLinks.map(
-                        (
-                          link: { platform: string; url: string },
-                          index: number
-                        ) => (
+                        (link: { platform: string; url: string }) => (
                           <a
-                            key={index}
+                            key={`${link.platform}-${link.url}`}
                             href={link.url}
                             target='_blank'
                             rel='noopener noreferrer'

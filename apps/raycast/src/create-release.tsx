@@ -251,7 +251,7 @@ export default function CreateRelease() {
         const response = await get('/content/labels')
         const labelsData = await parseJsonResponse<Label[]>(response)
         setLabels(labelsData)
-      } catch (error) {
+      } catch (_error) {
         await showToast({
           style: Toast.Style.Failure,
           title: 'Error',
@@ -480,7 +480,7 @@ export default function CreateRelease() {
       {streamingLinkInputs.map((link, index) => (
         <>
           <Form.Dropdown
-            key={`platform-${index}`}
+            key={`${link.platform || 'new'}-platform-${index}`}
             id={`platform-${index}`}
             title={`${getPlatformIcon(link.platform)} Platform ${index + 1}`}
             value={link.platform}
@@ -495,7 +495,7 @@ export default function CreateRelease() {
             ))}
           </Form.Dropdown>
           <Form.TextField
-            key={`url-${index}`}
+            key={`${link.platform || 'new'}-url-${index}`}
             id={`url-${index}`}
             title={`URL ${index + 1}`}
             placeholder='https://...'

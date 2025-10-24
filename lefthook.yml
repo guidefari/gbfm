@@ -3,15 +3,12 @@ pre-commit:
   commands:
     format:
       glob: "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}"
-      run: pnpm biome format --write --no-errors-on-unmatched --files-ignore-unknown=true --colors=off {staged_files}
+      run: bun biome format --write --no-errors-on-unmatched --files-ignore-unknown=true --colors=off {staged_files}
       stage_fixed: true
-    
+
     biome-check:
       glob: "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}"
-      run: pnpm biome check --no-errors-on-unmatched --files-ignore-unknown=true {staged_files} > biome-errors.todo 2>&1 || true
-  
-
-
+      run: bun biome check --no-errors-on-unmatched --files-ignore-unknown=true {staged_files} > biome-errors.todo 2>&1 || true
 # pre-push:
 #   commands:
 #     biome-ci:
