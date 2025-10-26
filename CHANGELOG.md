@@ -1,3 +1,11 @@
+# [0.32.0](https://github.com/guidefari/gbfm/compare/v0.31.0...v0.32.0) (2025-10-26)
+
+
+### Features
+
+* application level query timer ([7349957](https://github.com/guidefari/gbfm/commit/7349957273174e121fa938ea60a5b1ec6650f7af))
+* new mix notification email ([6c69212](https://github.com/guidefari/gbfm/commit/6c69212b2ad7e5f2557c68c0ac3d429560b676ea))
+
 # [0.31.0](https://github.com/guidefari/gbfm/compare/v0.30.1...v0.31.0) (2025-10-26)
 
 
