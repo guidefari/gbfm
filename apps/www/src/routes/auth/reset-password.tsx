@@ -1,5 +1,4 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { zodValidator } from '@tanstack/zod-adapter'
 import { useEffect, useState } from 'react'
 import { z } from 'zod'
 import { GenericAuthForm } from '@/components/Auth/GenericForm'
@@ -12,7 +11,7 @@ export const searchSchema = z.object({
 
 export const Route = createFileRoute('/auth/reset-password')({
   component: ResetPasswordPage,
-  validateSearch: zodValidator(searchSchema)
+  validateSearch: searchSchema
 })
 
 function ResetPasswordPage() {
