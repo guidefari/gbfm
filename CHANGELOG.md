@@ -1,3 +1,26 @@
+# [0.31.0](https://github.com/guidefari/gbfm/compare/v0.30.1...v0.31.0) (2025-10-26)
+
+
+### Bug Fixes
+
+* ci cache hash file ([6a2f2bb](https://github.com/guidefari/gbfm/commit/6a2f2bb8ae7996fdfc230b0bf6c8e358f65ad5b5))
+* date types ([9e44dae](https://github.com/guidefari/gbfm/commit/9e44daeba51249243c54c709cc4e927168abe8c8))
+* ts ([32b0ae3](https://github.com/guidefari/gbfm/commit/32b0ae353749052ebd9bf2e64d5a6fbb083c01b0))
+* ts ([1a6ae1e](https://github.com/guidefari/gbfm/commit/1a6ae1ed8f4079a6ef9e7eea74f598b274bb33b5))
+* ts ([49ca97b](https://github.com/guidefari/gbfm/commit/49ca97bef57dee98f354a5d62a35b0899a43b726))
+* ts. ffs. ([ba9239f](https://github.com/guidefari/gbfm/commit/ba9239f82f63e36238696949878cfdc3cacfe878))
+* validate limit values for spotify pagination ([0f522e7](https://github.com/guidefari/gbfm/commit/0f522e7dc4bdccf1c64c1de902a2cfb6074c964f))
+* **vps:** zod skill issue ([50ed57e](https://github.com/guidefari/gbfm/commit/50ed57ec6a76e188667eaf8c0576e6198b52fecf))
+
+
+### Features
+
+* fetch client (to be replaced by something that's automated pls) ([98bc9eb](https://github.com/guidefari/gbfm/commit/98bc9eb7fd17c7572b848240b2e09987fcff3848))
+* labels admin cms ([d0ce2b8](https://github.com/guidefari/gbfm/commit/d0ce2b860e9b1b8ba5f8bc38b5c1a56dca2843e0))
+* quick share ([d06d62b](https://github.com/guidefari/gbfm/commit/d06d62b3040db2a63b243f144ea10088f0ad313d))
+* release ([d5fd319](https://github.com/guidefari/gbfm/commit/d5fd319a44a9eeab08926cc8b478e699e835c080))
+* wip react-native fps meter ([d9a2be5](https://github.com/guidefari/gbfm/commit/d9a2be543d3944cfc17d2f1c689972b14dbd0b0c))
+
 ## [0.30.1](https://github.com/guidefari/gbfm/compare/v0.30.0...v0.30.1) (2025-10-09)
 
 
