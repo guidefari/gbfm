@@ -14,6 +14,7 @@ import {
 } from '@/db/audio.schema'
 import { authorsTable } from '@/db/author.schema'
 import { postsTable, postsToAuthors } from '@/db/post.schema'
+import { timeQuery } from '@/db/query-timer'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
 import type { AppBindings, AppRouteHandler } from '@/lib/types'
 
@@ -73,10 +74,14 @@ export const getPostsByTag: AppRouteHandler<GetPostsByTagRoute> = async (c) => {
   const tag = params.tag
 
   try {
-    const posts = await db
-      .select()
-      .from(postsTable)
-      .where(arrayContains(postsTable.tags, [tag]))
+    const posts = await timeQuery(
+      () =>
+        db
+          .select()
+          .from(postsTable)
+          .where(arrayContains(postsTable.tags, [tag])),
+      'get-posts-by-tag'
+    )
 
     if (!posts.length) {
       return c.json(
@@ -106,22 +111,29 @@ export const createMix: AppRouteHandler<CreateMixRoute> = async (c) => {
   }
 
   try {
-    const result = await db.transaction(async (tx) => {
-      const [newMix] = await tx.insert(audioTable).values(mixData).returning()
+    const result = await timeQuery(
+      () =>
+        db.transaction(async (tx) => {
+          const [newMix] = await tx
+            .insert(audioTable)
+            .values(mixData)
+            .returning()
 
-      if (!newMix) {
-        throw new Error('Failed to create mix')
-      }
+          if (!newMix) {
+            throw new Error('Failed to create mix')
+          }
 
-      await tx.insert(audioToAuthors).values(
-        finalAuthorIds.map((authorId: string) => ({
-          audioId: newMix.id,
-          authorId
-        }))
-      )
+          await tx.insert(audioToAuthors).values(
+            finalAuthorIds.map((authorId: string) => ({
+              audioId: newMix.id,
+              authorId
+            }))
+          )
 
-      return newMix
-    })
+          return newMix
+        }),
+      'create-mix-transaction'
+    )
 
     return c.json(result, HttpStatusCodes.CREATED)
   } catch (error) {
@@ -155,10 +167,10 @@ export const getAudioByType: AppRouteHandler<GetAudioByTypeRoute> = async (
   const { type } = c.req.valid('param')
 
   try {
-    const audio = await db
-      .select()
-      .from(audioTable)
-      .where(eq(audioTable.type, type))
+    const audio = await timeQuery(
+      () => db.select().from(audioTable).where(eq(audioTable.type, type)),
+      'get-audio-by-type'
+    )
     return c.json(audio, HttpStatusCodes.OK)
   } catch (error) {
     console.error('Error fetching audio by type:', error)
