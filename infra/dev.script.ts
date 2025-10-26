@@ -58,31 +58,31 @@ new sst.x.DevCommand('Drizzle_Push', {
     autostart: false
   }
 })
-// new sst.x.DevCommand("rename_to_cdn", {
-// 	link: [database, email],
-// 	dev: {
-// 		command: "bun scripts/rename-audio-cdn-name.ts",
-// 		directory: "./apps/vps",
-// 		autostart: false,
-// 	},
+// new sst.x.DevCommand("fix_mix_dates", {
+//   link: [...allSecrets, email],
+//   dev: {
+//     command: "bun scripts/fix-mix-created-dates.ts",
+//     directory: "./apps/vps",
+//     autostart: false,
+//   },
 // });
 
-new sst.x.DevCommand('Build_Container', {
-  link: [email, ...allSecrets],
-  dev: {
-    command: 'docker build -f apps/vps/Dockerfile -t gbfm_vps .',
-    directory: './',
-    autostart: false
-  }
-})
-new sst.x.DevCommand('Test_Docker', {
-  link: [...allSecrets, email],
-  dev: {
-    command: 'docker run --rm -p 3003:3003 gbfm_vps',
-    directory: './',
-    autostart: false
-  }
-})
+// new sst.x.DevCommand('Build_Container', {
+//   link: [email, ...allSecrets],
+//   dev: {
+//     command: 'docker build -f apps/vps/Dockerfile -t gbfm_vps .',
+//     directory: './',
+//     autostart: false
+//   }
+// })
+// new sst.x.DevCommand('Test_Docker', {
+//   link: [...allSecrets, email],
+//   dev: {
+//     command: 'docker run --rm -p 3003:3003 gbfm_vps',
+//     directory: './',
+//     autostart: false
+//   }
+// })
 
 new sst.x.DevCommand('Email_Preview', {
   link: [email, ...allSecrets],
