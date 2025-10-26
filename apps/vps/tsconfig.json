@@ -19,7 +19,7 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
-    "types": ["bun-types"],
+    "types": ["@types/bun"],
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]

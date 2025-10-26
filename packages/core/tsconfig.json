@@ -12,7 +12,7 @@
     "noEmit": true,
     "declaration": true,
     "declarationMap": true,
-    "types": ["bun-types"]
+    "types": ["@types/bun"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
