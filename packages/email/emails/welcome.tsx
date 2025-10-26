@@ -76,13 +76,13 @@ export function WelcomeEmail({
 }
 
 const main = {
-  backgroundColor: '#f6f9fc',
+  backgroundColor: '#111827',
   fontFamily:
     "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
 }
 
 const container = {
-  backgroundColor: '#ffffff',
+  backgroundColor: '#1a5368',
   margin: '0 auto',
   padding: '20px 0 48px',
   marginBottom: '64px'
@@ -91,12 +91,12 @@ const container = {
 const header = {
   textAlign: 'center' as const,
   padding: '48px 0',
-  backgroundColor: '#1a1a1a',
+  backgroundColor: '#4e8c71',
   color: '#ffffff'
 }
 
 const h1 = {
-  color: '#ffffff',
+  color: '#9bfd9e',
   fontSize: '32px',
   fontWeight: 'bold',
   margin: '0 0 8px',
@@ -104,7 +104,7 @@ const h1 = {
 }
 
 const subtitle = {
-  color: '#cccccc',
+  color: '#84c9dd',
   fontSize: '16px',
   margin: '0',
   textAlign: 'center' as const
@@ -115,23 +115,23 @@ const content = {
 }
 
 const h2 = {
-  color: '#1a1a1a',
+  color: '#9bfd9e',
   fontSize: '24px',
   fontWeight: 'bold',
   margin: '0 0 16px'
 }
 
 const text = {
-  color: '#333333',
+  color: '#84c9dd',
   fontSize: '16px',
   lineHeight: '24px',
   margin: '0 0 16px'
 }
 
 const button = {
-  backgroundColor: '#1a1a1a',
+  backgroundColor: '#9bfd9e',
   borderRadius: '6px',
-  color: '#ffffff',
+  color: '#111827',
   fontSize: '16px',
   fontWeight: 'bold',
   textDecoration: 'none',
@@ -143,20 +143,20 @@ const button = {
 }
 
 const footer = {
-  borderTop: '1px solid #e6e6e6',
+  borderTop: '1px solid #4e8c71',
   padding: '32px 24px',
   textAlign: 'center' as const
 }
 
 const footerText = {
-  color: '#666666',
+  color: '#84c9dd',
   fontSize: '14px',
   lineHeight: '20px',
   margin: '0 0 8px'
 }
 
 const link = {
-  color: '#1a1a1a',
+  color: '#9bfd9e',
   textDecoration: 'underline'
 }
 
