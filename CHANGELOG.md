@@ -1,3 +1,10 @@
+# [0.33.0](https://github.com/guidefari/gbfm/compare/v0.32.0...v0.33.0) (2025-10-26)
+
+
+### Features
+
+* mix page metadata ([0e2dfea](https://github.com/guidefari/gbfm/commit/0e2dfeaf953b0129a108c312317fec1bb5139259))
+
 # [0.32.0](https://github.com/guidefari/gbfm/compare/v0.31.0...v0.32.0) (2025-10-26)
 
 
