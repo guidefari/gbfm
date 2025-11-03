@@ -1,3 +1,10 @@
+# [0.34.0](https://github.com/guidefari/gbfm/compare/v0.33.0...v0.34.0) (2025-11-03)
+
+
+### Features
+
+* send mix notification ([ab55950](https://github.com/guidefari/gbfm/commit/ab55950f4a628f23f9e1a03678c3d36e784cbb3a))
+
 # [0.33.0](https://github.com/guidefari/gbfm/compare/v0.32.0...v0.33.0) (2025-10-26)
 
 
