@@ -5,8 +5,7 @@ import {
   Head,
   Heading,
   Html,
-  Img,
-  Link,
+  // Img,
   Preview,
   Section,
   Text
@@ -25,11 +24,10 @@ interface NewMixNotificationProps {
 export const NewMixNotification: React.FC<
   Readonly<NewMixNotificationProps>
 > = ({
-  username = 'Music Lover',
-  mixTitle = 'Summer Vibes 2024',
-  artistName = 'DJ Example',
-  mixUrl = 'https://goosebumps.fm/mixes/1',
-  coverImageUrl,
+  username = 'abstractrhythmrecords',
+  mixTitle = 'gb#63',
+  artistName = 'Guide Fari',
+  mixUrl = 'https://goosebumps.fm/mixes/gb63',
   releaseDate = new Date().toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'long',
@@ -40,138 +38,163 @@ export const NewMixNotification: React.FC<
     <Html>
       <Head />
       <Preview>
-        New mix: {mixTitle} by {artistName}
+        New mix alert: {mixTitle} by {artistName} 🎧
       </Preview>
       <Body style={main}>
         <Container style={container}>
+          {/* Header */}
           <Section style={header}>
-            <Heading style={h1}>goosebumps.fm</Heading>
-            <Text style={subtitle}>New Mix Alert</Text>
+            <Text style={logoText}>GOOSEBUMPS</Text>
+            <Text style={tagline}>curated mixes</Text>
           </Section>
 
-          <Section style={content}>
-            <Heading style={h2}>Hey {username}! 🎧</Heading>
-            <Text style={text}>
-              {artistName} just dropped a fresh mix that we think you'll love!
-            </Text>
+          {/* Hero Section */}
+          <Section style={hero}>
+            <Text style={newMixLabel}>NEW MIX</Text>
+            <Heading style={mixTitleStyles}>{mixTitle}</Heading>
+            <Text style={artistText}>{artistName}</Text>
+          </Section>
 
-            {coverImageUrl && (
-              <div style={coverImageContainer}>
+          {/* Cover Image */}
+          {/* {coverImageUrl && (
+              <Section style={imageSection}>
                 <Img
                   src={coverImageUrl}
                   alt={mixTitle}
                   style={coverImage}
-                  width='300'
-                  height='300'
+                  width="560"
+                  height="560"
                 />
-              </div>
-            )}
+              </Section>
+            )} */}
 
-            <Heading style={mixTitleStyles}>{mixTitle}</Heading>
-            <Text style={artistText}>by {artistName}</Text>
-            <Text style={dateText}>Released {releaseDate}</Text>
+          {/* Content */}
+          <Section style={content}>
+            <Text style={greeting}>Hey {username},</Text>
+            <Text style={bodyText}>
+              A new mix just landed on goosebumps.fm. Press play and let the
+              music take you somewhere.
+            </Text>
 
-            <Button style={button} href={mixUrl}>
+            <Button style={ctaButton} href={mixUrl}>
               Listen Now
             </Button>
 
-            <Text style={text}>
-              Get ready to vibe and let us know what you think!
-            </Text>
+            <Text style={dateInfo}>Released {releaseDate}</Text>
           </Section>
 
-          <Section style={footer}>
-            <Text style={footerText}>
-              You're receiving this because you follow {artistName} or have
-              shown interest in similar mixes.
-            </Text>
-            <Text style={footerText}>
-              <Link
-                href='https://goosebumps.fm/settings/notifications'
-                style={link}>
-                Manage notification preferences
-              </Link>
-            </Text>
-            <Text style={footerText}>
-              Best regards,
-              <br />
-              The goosebumps.fm Team
-            </Text>
-            <Text style={footerText}>
-              <Link href='https://goosebumps.fm' style={link}>
-                goosebumps.fm
-              </Link>
-            </Text>
-          </Section>
+          {/* Footer */}
+          {/* <Section style={footer}>
+              <Text style={footerText}>
+                <Link href="https://goosebumps.fm" style={footerLink}>
+                  goosebumps.fm
+                </Link>
+                {' · '}
+                <Link href="https://goosebumps.fm/settings" style={footerLink}>
+                  Settings
+                </Link>
+                {' · '}
+                <Link href="https://goosebumps.fm/unsubscribe" style={footerLink}>
+                  Unsubscribe
+                </Link>
+              </Text>
+              <Text style={footerTextSmall}>
+                You're receiving this because you follow {artistName} on Goosebumps.
+              </Text>
+            </Section> */}
         </Container>
       </Body>
     </Html>
   )
 }
 
+// Styles
 const main = {
-  backgroundColor: '#111827',
+  backgroundColor: '#0a0a0a',
   fontFamily:
-    "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+    '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif'
 }
 
 const container = {
-  backgroundColor: '#1a5368',
+  backgroundColor: '#0a0a0a',
   margin: '0 auto',
-  padding: '20px 0 48px',
-  marginBottom: '64px'
+  padding: '0',
+  maxWidth: '600px'
 }
 
 const header = {
+  padding: '40px 20px 30px',
   textAlign: 'center' as const,
-  padding: '48px 0',
-  backgroundColor: '#4e8c71',
-  color: '#ffffff'
+  borderBottom: '1px solid #1a1a1a'
 }
 
-const h1 = {
-  color: '#9bfd9e',
-  fontSize: '32px',
-  fontWeight: 'bold',
-  margin: '0 0 8px',
-  textAlign: 'center' as const
+const logoText = {
+  fontSize: '20px',
+  fontWeight: '700',
+  letterSpacing: '4px',
+  color: '#ffffff',
+  margin: '0 0 4px',
+  textTransform: 'uppercase' as const
 }
 
-const subtitle = {
-  color: '#84c9dd',
-  fontSize: '16px',
+const tagline = {
+  fontSize: '11px',
+  letterSpacing: '2px',
+  color: '#666666',
   margin: '0',
+  textTransform: 'uppercase' as const
+}
+
+const hero = {
+  padding: '60px 20px',
   textAlign: 'center' as const
+}
+
+const newMixLabel = {
+  fontSize: '11px',
+  letterSpacing: '3px',
+  color: '#999999',
+  margin: '0 0 20px',
+  textTransform: 'uppercase' as const
 }
 
 const content = {
-  padding: '48px 24px'
+  padding: '40px 40px 60px',
+  textAlign: 'center' as const
 }
 
-const h2 = {
-  color: '#9bfd9e',
-  fontSize: '24px',
-  fontWeight: 'bold',
-  margin: '0 0 16px'
+const greeting = {
+  fontSize: '16px',
+  color: '#ffffff',
+  margin: '0 0 16px',
+  fontWeight: '500'
 }
 
-const text = {
-  color: '#84c9dd',
+const bodyText = {
   fontSize: '16px',
   lineHeight: '24px',
-  margin: '0 0 16px'
+  color: '#999999',
+  margin: '0 0 32px'
 }
 
-const coverImageContainer = {
-  textAlign: 'center' as const,
-  margin: '32px 0'
+const ctaButton = {
+  backgroundColor: '#ffffff',
+  color: '#000000',
+  fontSize: '14px',
+  fontWeight: '600',
+  letterSpacing: '1px',
+  textTransform: 'uppercase' as const,
+  padding: '14px 40px',
+  borderRadius: '30px',
+  textDecoration: 'none',
+  display: 'inline-block',
+  margin: '0 0 24px'
 }
 
-const coverImage = {
-  borderRadius: '8px',
-  objectFit: 'cover' as const,
-  maxWidth: '100%',
-  height: 'auto'
+const dateInfo = {
+  fontSize: '13px',
+  color: '#666666',
+  margin: '0'
 }
 
 const mixTitleStyles = {
@@ -187,45 +210,6 @@ const artistText = {
   fontSize: '18px',
   margin: '0 0 8px',
   textAlign: 'center' as const
-}
-
-const dateText = {
-  color: '#84c9dd',
-  fontSize: '14px',
-  margin: '0 0 24px',
-  textAlign: 'center' as const
-}
-
-const button = {
-  backgroundColor: '#9bfd9e',
-  borderRadius: '6px',
-  color: '#111827',
-  fontSize: '16px',
-  fontWeight: 'bold',
-  textDecoration: 'none',
-  textAlign: 'center' as const,
-  display: 'block',
-  width: '200px',
-  padding: '12px',
-  margin: '32px auto'
-}
-
-const footer = {
-  borderTop: '1px solid #4e8c71',
-  padding: '32px 24px',
-  textAlign: 'center' as const
-}
-
-const footerText = {
-  color: '#84c9dd',
-  fontSize: '14px',
-  lineHeight: '20px',
-  margin: '0 0 8px'
-}
-
-const link = {
-  color: '#9bfd9e',
-  textDecoration: 'underline'
 }
 
 export default NewMixNotification

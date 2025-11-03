@@ -1,3 +1,4 @@
+export { NewMixNotification } from '../emails/new-mix-notification'
 export { PasswordResetEmail } from '../emails/password-reset'
 export { TestEmail } from '../emails/test-email'
 export { WelcomeEmail } from '../emails/welcome'

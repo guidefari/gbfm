@@ -51,6 +51,12 @@
       "mode": "view"
     },
     {
+      "name": "send-mix-notification",
+      "title": "Send Mix Notification",
+      "description": "Send mix notification emails with customizable metadata",
+      "mode": "view"
+    },
+    {
       "name": "sign-in",
       "title": "Sign In",
       "description": "Sign in to get access token",

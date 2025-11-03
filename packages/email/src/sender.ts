@@ -121,3 +121,38 @@ export async function sendPasswordResetEmail({
     }
   })
 }
+
+export async function sendMixNotificationEmail({
+  to,
+  username,
+  mixTitle,
+  artistName,
+  mixUrl,
+  coverImageUrl,
+  releaseDate
+}: {
+  to: string | string[]
+  username: string
+  mixTitle: string
+  artistName: string
+  mixUrl: string
+  coverImageUrl?: string | undefined
+  releaseDate?: string | undefined
+}): Promise<void> {
+  const { NewMixNotification } = await import('../emails/new-mix-notification')
+
+  await sendEmail({
+    to,
+    template: {
+      subject: `New mix: ${mixTitle}`,
+      component: React.createElement(NewMixNotification, {
+        username,
+        mixTitle,
+        artistName,
+        mixUrl,
+        coverImageUrl,
+        releaseDate
+      })
+    }
+  })
+}
