@@ -17,7 +17,7 @@ interface MixFormData {
   thumbnailUrl: string
   slug: string
   url: string
-  authorIds: string[]
+  creatorIds: string[]
   tags: string[]
   content: string
   tracklist: string
@@ -31,7 +31,7 @@ export default function CreateMix() {
     thumbnailUrl: '',
     slug: '',
     url: 'https://cdn.goosebumps.fm/mixes/',
-    authorIds: [],
+    creatorIds: [],
     tags: [],
     content: '',
     tracklist: '',
@@ -258,15 +258,15 @@ export default function CreateMix() {
       /> */}
 
       {/* <Form.TagPicker
-        id="authorIds"
-        title="Author IDs"
-        placeholder="Add author UUIDs"
-        value={formData.authorIds}
-        onChange={(value) => setFormData(prev => ({ ...prev, authorIds: value }))}
+        id="creatorIds"
+        title="Creator IDs"
+        placeholder="Add creator UUIDs"
+        value={formData.creatorIds}
+        onChange={(value) => setFormData(prev => ({ ...prev, creatorIds: value }))}
       >
         <Form.TagPicker.Item
           value=""
-          title="Add Author ID..."
+          title="Add Creator ID..."
         />
       </Form.TagPicker> */}
 

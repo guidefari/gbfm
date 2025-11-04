@@ -15,11 +15,11 @@ function TrackPage() {
   const { data, error, isPending } = useAudioBySlug('track', trackId)
 
   React.useEffect(() => {
-    if (data?.authors) {
+    if (data?.creators) {
       const contentInfo = {
         id: trackId,
         archetype: 'track',
-        authorIds: data.authors.map((author) => author.id)
+        creatorIds: data.creators.map((creator) => creator.id)
       }
       setCurrentContent(contentInfo)
     }

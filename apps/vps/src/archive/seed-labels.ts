@@ -13,7 +13,7 @@ const dirs = {
   label: './src/archive/labels'
 }
 
-const DEFAULT_AUTHOR_USERNAME = 'guidefari'
+const DEFAULT_CREATOR_USERNAME = 'guidefari'
 
 export const readLabelsFromFolder = async () => {
   const dir = path.join(process.cwd(), dirs.label)
@@ -57,20 +57,20 @@ export async function seedLabels() {
 
     log(`Seeding ${labels.length} labels...`)
 
-    const guidefariAuthor = await db
+    const guidefariUser = await db
       .select()
-      .from(schema.authors)
-      .where(eq(schema.authors.username, DEFAULT_AUTHOR_USERNAME))
+      .from(schema.users)
+      .where(eq(schema.users.username, DEFAULT_CREATOR_USERNAME))
       .limit(1)
 
-    if (!guidefariAuthor.length) {
+    if (!guidefariUser.length) {
       console.error(
-        `❌ Author '${DEFAULT_AUTHOR_USERNAME}' not found in database.`
+        `❌ User '${DEFAULT_CREATOR_USERNAME}' not found in database.`
       )
       process.exit(1)
     }
 
-    const authorId = guidefariAuthor[0].id
+    const creatorId = guidefariUser[0].id
 
     for (const label of labels) {
       try {
@@ -81,9 +81,9 @@ export async function seedLabels() {
           .returning()
 
         if (insertedPost) {
-          await db.insert(schema.postsToAuthors).values({
+          await db.insert(schema.postCreators).values({
             postId: insertedPost.id,
-            authorId
+            creatorId
           })
           log(`✅ Seeded label: ${label.title}`)
         } else {

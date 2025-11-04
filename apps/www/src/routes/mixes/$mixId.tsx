@@ -97,11 +97,11 @@ function MixPage() {
   const { mix } = Route.useLoaderData()
 
   React.useEffect(() => {
-    if (mix?.authors) {
+    if (mix?.creators) {
       const contentInfo = {
         id: mixId,
         archetype: 'mix',
-        authorIds: mix.authors.map((author) => author.id)
+        creatorIds: mix.creators.map((creator) => creator.id)
       }
       setCurrentContent(contentInfo)
     }

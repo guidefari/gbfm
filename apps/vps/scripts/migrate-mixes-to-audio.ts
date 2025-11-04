@@ -1,6 +1,6 @@
 import { db } from '../src/db';
-import { mixesTable, mixesToAuthors } from '../src/db/mix.schema';
-import { audioTable, audioToAuthors } from '../src/db/audio.schema';
+import { mixesTable, mixCreators } from '../src/db/mix.schema';
+import { audioTable, audioCreators } from '../src/db/audio.schema';
 import { eq } from 'drizzle-orm';
 
 async function migrateMixesToAudio() {
@@ -32,14 +32,14 @@ async function migrateMixesToAudio() {
     // 3. Fetch mix authors
     const mixAuthors = await db
       .select()
-      .from(mixesToAuthors)
-      .where(eq(mixesToAuthors.mixId, mix.id));
+      .from(mixCreators)
+      .where(eq(mixCreators.mixId, mix.id));
 
-    // 4. Insert into audio_to_authors
-    for (const { authorId } of mixAuthors) {
-      await db.insert(audioToAuthors).values({
+    // 4. Insert into audio_creators
+    for (const { creatorId } of mixCreatorsRelations) {
+      await db.insert(audioCreators).values({
         audioId: audio.id,
-        authorId,
+        creatorId,
       });
     }
   }

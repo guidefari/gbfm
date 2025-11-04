@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { db } from '../src/db'
-import { labelsTable, labelsToAuthors } from '../src/db/label.schema'
-import { postsTable, postsToAuthors } from '../src/db/post.schema'
+import { labelsTable, labelCreators } from '../src/db/label.schema'
+import { postsTable, postCreators } from '../src/db/post.schema'
 
 async function migrateLabelsFromPosts() {
   console.log('Starting migration: Moving label posts to labels table...')
@@ -44,22 +44,22 @@ async function migrateLabelsFromPosts() {
 
         console.log(`  Created label: ${newLabel.id}`)
 
-        const postAuthors = await tx
+        const postCreators = await tx
           .select()
-          .from(postsToAuthors)
-          .where(eq(postsToAuthors.postId, post.id))
+          .from(postCreators)
+          .where(eq(postCreators.postId, post.id))
 
-        if (postAuthors.length > 0) {
-          await tx.insert(labelsToAuthors).values(
-            postAuthors.map((pa) => ({
+        if (postCreators.length > 0) {
+          await tx.insert(labelCreators).values(
+            postCreators.map((pc) => ({
               labelId: newLabel.id,
-              authorId: pa.authorId
+              creatorId: pc.creatorId
             }))
           )
-          console.log(`  Migrated ${postAuthors.length} author relationship(s)`)
+          console.log(`  Migrated ${postCreators.length} creator relationship(s)`)
         }
 
-        await tx.delete(postsToAuthors).where(eq(postsToAuthors.postId, post.id))
+        await tx.delete(postCreators).where(eq(postCreators.postId, post.id))
 
         await tx.delete(postsTable).where(eq(postsTable.id, post.id))
 

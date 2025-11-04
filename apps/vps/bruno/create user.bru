@@ -1,11 +1,11 @@
 meta {
-  name: create author
+  name: create user
   type: http
   seq: 4
 }
 
 post {
-  url: {{api_url}}/author
+  url: {{api_url}}/auth/users
   body: json
   auth: none
 }
@@ -14,6 +14,7 @@ body:json {
   {
     "name": "Guide Fari",
     "username": "guidefari",
-    "email": "guide@gb.fm"
+    "email": "guide@gb.fm",
+    "password": "testpassword123"
   }
 }
