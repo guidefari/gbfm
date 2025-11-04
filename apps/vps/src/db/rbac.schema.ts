@@ -5,7 +5,6 @@ import {
   relations
 } from 'drizzle-orm'
 import {
-  pgEnum,
   pgTable,
   primaryKey,
   text,
@@ -14,9 +13,6 @@ import {
   varchar
 } from 'drizzle-orm/pg-core'
 import { usersTable } from './user.schema'
-
-// Role enum for predefined system roles
-export const roleEnum = pgEnum('role', ['admin', 'editor', 'viewer'])
 
 // Roles table
 export const rolesTable = pgTable('roles', {
