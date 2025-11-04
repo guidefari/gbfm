@@ -5,13 +5,13 @@ interface ContentState {
   currentContent: {
     id: string
     archetype: string
-    authorIds: string[]
+    creatorIds: string[]
   } | null
 }
 
 interface ContentActions {
   setCurrentContent: (
-    content: { id: string; archetype: string; authorIds: string[] } | null
+    content: { id: string; archetype: string; creatorIds: string[] } | null
   ) => void
   canEditCurrent: (userId: string) => boolean
 }
@@ -28,7 +28,7 @@ export const useContentStore = create<ContentStore>()(
       canEditCurrent: (userId: string) => {
         const { currentContent } = get()
         if (!currentContent) return false
-        return currentContent.authorIds.includes(userId)
+        return currentContent.creatorIds.includes(userId)
       }
     }),
     {
