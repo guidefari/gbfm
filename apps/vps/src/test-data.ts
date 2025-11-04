@@ -1,5 +1,5 @@
 import type { z } from 'zod'
-import type { insertAuthorSchema } from './db/author.schema'
+import type { insertUserSchema } from './db/user.schema'
 import type { createMixSchema } from './db/mix.schema'
 import type { createPostSchema } from './db/post.schema'
 import type { selectPublicationSchema } from './db/publication.schema'
@@ -18,7 +18,7 @@ export const mixes: Array<z.infer<typeof createMixSchema>> = [
   }
 ]
 
-export const authors: Array<z.infer<typeof insertAuthorSchema>> = [
+export const authors: Array<z.infer<typeof insertUserSchema>> = [
   {
     name: 'Author 1',
     email: 'author1@example.com',

@@ -5,13 +5,13 @@ import { sign, verify } from 'hono/jwt'
 import type { JWTPayload } from 'hono/utils/jwt/types'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
-import { getAuthorByEmailOrId } from '@/db/author.repo'
+import { getUserByEmailOrId } from '@/db/user.repo'
 import {
-  authorPasswordResetTokensTable,
-  authorSessionsTable,
-  authorsTable,
+  userPasswordResetTokensTable,
+  userSessionsTable,
+  usersTable,
   type UpdateProfileSchema
-} from '@/db/author.schema'
+} from '@/db/user.schema'
 import { env } from '@/env'
 import type { AppRouteHandler } from '@/lib/types'
 
@@ -37,8 +37,8 @@ export const signup: AppRouteHandler<SignupRoute> = async (c) => {
   if (validated.username) {
     const existingUser = await db
       .select()
-      .from(authorsTable)
-      .where(eq(authorsTable.username, validated.username))
+      .from(usersTable)
+      .where(eq(usersTable.username, validated.username))
 
     if (existingUser.length > 0) {
       return c.json(
@@ -52,8 +52,8 @@ export const signup: AppRouteHandler<SignupRoute> = async (c) => {
 
   const hashedPassword = await Bun.password.hash(validated.password)
 
-  const [newAuthor] = await db
-    .insert(authorsTable)
+  const [newUser] = await db
+    .insert(usersTable)
     .values({
       username: validated.username || validated.email,
       password: hashedPassword,
@@ -62,7 +62,7 @@ export const signup: AppRouteHandler<SignupRoute> = async (c) => {
     })
     .returning()
 
-  if (!newAuthor) {
+  if (!newUser) {
     return c.json(
       { error: 'Failed to create user' },
       HttpStatusCodes.INTERNAL_SERVER_ERROR
@@ -75,12 +75,12 @@ export const signup: AppRouteHandler<SignupRoute> = async (c) => {
     loginUrl: `${env.FRONTEND_URL}/auth/signin`
   })
 
-  const { password, ...authorWithoutPassword } = newAuthor
+  const { password, ...userWithoutPassword } = newUser
 
   return c.json(
     {
       message: 'Signup successful',
-      user: authorWithoutPassword
+      user: userWithoutPassword
     },
     HttpStatusCodes.CREATED
   )
@@ -89,9 +89,9 @@ export const signup: AppRouteHandler<SignupRoute> = async (c) => {
 export const signin: AppRouteHandler<SigninRoute> = async (c) => {
   const validated = c.req.valid('json')
 
-  const author = await getAuthorByEmailOrId({ email: validated.email })
+  const user = await getUserByEmailOrId({ email: validated.email })
 
-  if (author.length === 0 || !author[0]?.password) {
+  if (user.length === 0 || !user[0]?.password) {
     return c.json(
       { error: 'Invalid username or password' },
       HttpStatusCodes.UNAUTHORIZED
@@ -100,7 +100,7 @@ export const signin: AppRouteHandler<SigninRoute> = async (c) => {
 
   const isPasswordValid = await Bun.password.verify(
     validated.password,
-    author[0].password
+    user[0].password
   )
 
   if (!isPasswordValid) {
@@ -110,14 +110,14 @@ export const signin: AppRouteHandler<SigninRoute> = async (c) => {
     )
   }
 
-  const currentAuthor = author[0]
-  const { password, ...authorWithoutPassword } = currentAuthor
+  const currentUser = user[0]
+  const { password, ...userWithoutPassword } = currentUser
 
   const now = Math.floor(Date.now() / 1000)
   const accessToken = await sign(
     {
-      sub: currentAuthor.id,
-      email: currentAuthor.email,
+      sub: currentUser.id,
+      email: currentUser.email,
       type: 'access',
       exp: now + ACCESS_TOKEN_EXPIRES_IN,
       iat: now
@@ -127,8 +127,8 @@ export const signin: AppRouteHandler<SigninRoute> = async (c) => {
 
   const refreshToken = await sign(
     {
-      sub: currentAuthor.id,
-      email: currentAuthor.email,
+      sub: currentUser.id,
+      email: currentUser.email,
       type: 'refresh',
       exp: now + REFRESH_TOKEN_EXPIRES_IN,
       iat: now
@@ -140,8 +140,8 @@ export const signin: AppRouteHandler<SigninRoute> = async (c) => {
   const forwarded = c.req.header('x-forwarded-for')
   const ip = forwarded ? forwarded.split(',')[0]?.trim() : undefined
 
-  await db.insert(authorSessionsTable).values({
-    authorId: currentAuthor.id,
+  await db.insert(userSessionsTable).values({
+    userId: currentUser.id,
     refreshToken,
     userAgent,
     ip,
@@ -150,7 +150,7 @@ export const signin: AppRouteHandler<SigninRoute> = async (c) => {
 
   return c.json(
     {
-      user: authorWithoutPassword,
+      user: userWithoutPassword,
       accessToken,
       refreshToken
     },
@@ -163,26 +163,26 @@ export const forgotPassword: AppRouteHandler<ForgotPasswordRoute> = async (
 ) => {
   const validated = c.req.valid('json')
 
-  const author = await db
+  const user = await db
     .select()
-    .from(authorsTable)
-    .where(eq(authorsTable.email, validated.email))
+    .from(usersTable)
+    .where(eq(usersTable.email, validated.email))
 
-  if (author.length === 0 || !author[0]) {
+  if (user.length === 0 || !user[0]) {
     return c.json({ error: 'User not found' }, HttpStatusCodes.NOT_FOUND)
   }
 
-  const currentAuthor = author[0]
+  const currentUser = user[0]
 
   await db
-    .delete(authorPasswordResetTokensTable)
-    .where(eq(authorPasswordResetTokensTable.authorId, currentAuthor.id))
+    .delete(userPasswordResetTokensTable)
+    .where(eq(userPasswordResetTokensTable.userId, currentUser.id))
 
   const token = randomUUID()
   const expiresAt = new Date(Date.now() + 1000 * 60 * 60)
 
-  await db.insert(authorPasswordResetTokensTable).values({
-    authorId: currentAuthor.id,
+  await db.insert(userPasswordResetTokensTable).values({
+    userId: currentUser.id,
     token,
     expiresAt
   })
@@ -199,34 +199,34 @@ export const forgotPassword: AppRouteHandler<ForgotPasswordRoute> = async (
 export const resetPassword: AppRouteHandler<ResetPasswordRoute> = async (c) => {
   const validated = c.req.valid('json')
 
-  if (!validated.email && !validated.authorId) {
+  if (!validated.email && !validated.userId) {
     return c.json(
-      { error: 'Email or authorId is required' },
+      { error: 'Email or userId is required' },
       HttpStatusCodes.BAD_REQUEST
     )
   }
 
-  const author = await getAuthorByEmailOrId({
+  const user = await getUserByEmailOrId({
     email: validated.email,
-    authorId: validated.authorId
+    userId: validated.userId
   })
 
-  if (author.length === 0 || !author[0]) {
+  if (user.length === 0 || !user[0]) {
     return c.json(
-      { error: 'Invalid email or authorId' },
+      { error: 'Invalid email or userId' },
       HttpStatusCodes.BAD_REQUEST
     )
   }
 
-  const currentAuthor = author[0]
+  const currentUser = user[0]
 
   const tokenRow = await db
     .select()
-    .from(authorPasswordResetTokensTable)
+    .from(userPasswordResetTokensTable)
     .where(
       and(
-        eq(authorPasswordResetTokensTable.token, validated.token),
-        eq(authorPasswordResetTokensTable.authorId, currentAuthor.id)
+        eq(userPasswordResetTokensTable.token, validated.token),
+        eq(userPasswordResetTokensTable.userId, currentUser.id)
       )
     )
 
@@ -237,7 +237,7 @@ export const resetPassword: AppRouteHandler<ResetPasswordRoute> = async (c) => {
     )
   }
 
-  const { authorId, expiresAt } = tokenRow[0]
+  const { userId, expiresAt } = tokenRow[0]
   if (new Date(expiresAt) < new Date()) {
     return c.json({ error: 'Token expired' }, HttpStatusCodes.UNAUTHORIZED)
   }
@@ -245,13 +245,13 @@ export const resetPassword: AppRouteHandler<ResetPasswordRoute> = async (c) => {
   const hashedPassword = await Bun.password.hash(validated.password)
 
   await db
-    .update(authorsTable)
+    .update(usersTable)
     .set({ password: hashedPassword })
-    .where(eq(authorsTable.id, authorId))
+    .where(eq(usersTable.id, userId))
 
   await db
-    .delete(authorPasswordResetTokensTable)
-    .where(eq(authorPasswordResetTokensTable.authorId, authorId))
+    .delete(userPasswordResetTokensTable)
+    .where(eq(userPasswordResetTokensTable.userId, userId))
 
   return c.json({ message: 'Password reset successful' }, HttpStatusCodes.OK)
 }
@@ -278,8 +278,8 @@ export const refreshToken: AppRouteHandler<RefreshTokenRoute> = async (c) => {
 
   const session = await db
     .select()
-    .from(authorSessionsTable)
-    .where(eq(authorSessionsTable.refreshToken, refreshToken))
+    .from(userSessionsTable)
+    .where(eq(userSessionsTable.refreshToken, refreshToken))
 
   if (
     session.length === 0 ||
@@ -292,25 +292,25 @@ export const refreshToken: AppRouteHandler<RefreshTokenRoute> = async (c) => {
     )
   }
 
-  const authorId = payload.sub
+  const userId = payload.sub
 
-  if (!authorId || typeof authorId !== 'string') {
+  if (!userId || typeof userId !== 'string') {
     return c.json({ error: 'Invalid payload' }, HttpStatusCodes.UNAUTHORIZED)
   }
 
-  const author = await getAuthorByEmailOrId({ authorId })
+  const user = await getUserByEmailOrId({ userId })
 
-  if (author.length === 0 || !author[0]) {
+  if (user.length === 0 || !user[0]) {
     return c.json({ error: 'User not found' }, HttpStatusCodes.NOT_FOUND)
   }
 
-  const currentAuthor = author[0]
+  const currentUser = user[0]
 
   const now = Math.floor(Date.now() / 1000)
   const accessToken = await sign(
     {
-      sub: currentAuthor.id,
-      email: currentAuthor.email,
+      sub: currentUser.id,
+      email: currentUser.email,
       type: 'access',
       exp: now + ACCESS_TOKEN_EXPIRES_IN,
       iat: now
@@ -328,20 +328,20 @@ export const createUser: AppRouteHandler<CreateUserRoute> = async (c) => {
   const hashedPassword = await Bun.password.hash(validated.password)
 
   try {
-    const [newAuthor] = await db
-      .insert(authorsTable)
+    const [newUser] = await db
+      .insert(usersTable)
       .values({ ...validated, password: hashedPassword })
       .returning()
 
-    if (!newAuthor) {
+    if (!newUser) {
       return c.json(
         { error: 'Failed to create user' },
         HttpStatusCodes.INTERNAL_SERVER_ERROR
       )
     }
 
-    const { password: _, ...authorWithoutPassword } = newAuthor
-    return c.json(authorWithoutPassword, HttpStatusCodes.CREATED)
+    const { password: _, ...userWithoutPassword } = newUser
+    return c.json(userWithoutPassword, HttpStatusCodes.CREATED)
   } catch (error) {
     if (error instanceof Error && error.message.includes('unique constraint')) {
       return c.json({ error: error.message }, HttpStatusCodes.CONFLICT)
@@ -355,11 +355,11 @@ export const createUser: AppRouteHandler<CreateUserRoute> = async (c) => {
 }
 
 export const listUsers: AppRouteHandler<ListUsersRoute> = async (c) => {
-  const authors = await db.select().from(authorsTable)
-  const authorsWithoutPasswords = authors.map(
-    ({ password, ...author }) => author
+  const users = await db.select().from(usersTable)
+  const usersWithoutPasswords = users.map(
+    ({ password, ...user }) => user
   )
-  return c.json(authorsWithoutPasswords, HttpStatusCodes.OK)
+  return c.json(usersWithoutPasswords, HttpStatusCodes.OK)
 }
 
 export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
@@ -412,15 +412,15 @@ export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
 
   try {
     const [updated] = await db
-      .update(authorsTable)
+      .update(usersTable)
       .set(updateData)
-      .where(eq(authorsTable.id, user.id))
+      .where(eq(usersTable.id, user.id))
       .returning()
     if (!updated) {
       return c.json({ error: 'User not found' }, HttpStatusCodes.NOT_FOUND)
     }
-    const { password, ...authorWithoutPassword } = updated
-    return c.json(authorWithoutPassword, HttpStatusCodes.OK)
+    const { password, ...userWithoutPassword } = updated
+    return c.json(userWithoutPassword, HttpStatusCodes.OK)
   } catch (error) {
     console.error('error:', error)
     return c.json(

@@ -12,7 +12,7 @@ import {
   varchar
 } from 'drizzle-orm/pg-core'
 import { z } from 'zod/v4'
-import { authorsTable } from './author.schema'
+import { usersTable } from './user.schema'
 import { defaultContentFields } from './util'
 
 export const audioTypeEnum = pgEnum('audio_type', ['mix', 'track', 'misc'])
@@ -93,7 +93,7 @@ export const audioToAuthors = pgTable(
       .references(() => audioTable.id),
     authorId: uuid()
       .notNull()
-      .references(() => authorsTable.id)
+      .references(() => usersTable.id)
   },
   (t) => [primaryKey({ columns: [t.audioId, t.authorId] })]
 )
@@ -107,8 +107,8 @@ export const audioToAuthorsRelations = relations(audioToAuthors, ({ one }) => ({
     fields: [audioToAuthors.audioId],
     references: [audioTable.id]
   }),
-  author: one(authorsTable, {
+  author: one(usersTable, {
     fields: [audioToAuthors.authorId],
-    references: [authorsTable.id]
+    references: [usersTable.id]
   })
 }))

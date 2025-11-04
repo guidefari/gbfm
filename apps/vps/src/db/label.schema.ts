@@ -5,7 +5,7 @@ import {
 } from 'drizzle-orm'
 import { index, pgTable, primaryKey, uuid, varchar } from 'drizzle-orm/pg-core'
 import { z } from 'zod/v4'
-import { authorsTable } from './author.schema'
+import { usersTable } from './user.schema'
 import { releasesTable } from './release.schema'
 import { defaultContentFields } from './util'
 
@@ -91,7 +91,7 @@ export const labelsToAuthors = pgTable(
       .references(() => labelsTable.id),
     authorId: uuid()
       .notNull()
-      .references(() => authorsTable.id)
+      .references(() => usersTable.id)
   },
   (t) => [primaryKey({ columns: [t.labelId, t.authorId] })]
 )
@@ -108,9 +108,9 @@ export const labelsToAuthorsRelations = relations(
       fields: [labelsToAuthors.labelId],
       references: [labelsTable.id]
     }),
-    author: one(authorsTable, {
+    author: one(usersTable, {
       fields: [labelsToAuthors.authorId],
-      references: [authorsTable.id]
+      references: [usersTable.id]
     })
   })
 )

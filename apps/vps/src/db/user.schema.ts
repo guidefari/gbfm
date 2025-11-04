@@ -19,7 +19,7 @@ const usernameSchema = z
   .regex(/^[a-zA-Z]/, 'Username must start with a letter')
   .regex(/[a-zA-Z0-9]$/, 'Username must end with a letter or number')
 
-export const authorsTable = pgTable('authors', {
+export const usersTable = pgTable('users', {
   id: uuid().primaryKey().defaultRandom(),
   name: varchar({ length: 255 }).notNull(),
   username: varchar({ length: 255 }).unique(),
@@ -31,24 +31,24 @@ export const authorsTable = pgTable('authors', {
   avatarUrl: varchar({ length: 255 })
 })
 
-export const authorPasswordResetTokensTable = pgTable(
-  'author_password_reset_tokens',
+export const userPasswordResetTokensTable = pgTable(
+  'user_password_reset_tokens',
   {
     id: uuid().primaryKey().defaultRandom(),
-    authorId: uuid()
+    userId: uuid()
       .notNull()
-      .references(() => authorsTable.id),
+      .references(() => usersTable.id),
     token: varchar({ length: 255 }).notNull().unique(),
     expiresAt: timestamp({ withTimezone: true }).notNull(),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow()
   }
 )
 
-export const authorSessionsTable = pgTable('author_sessions', {
+export const userSessionsTable = pgTable('user_sessions', {
   id: uuid().primaryKey().defaultRandom(),
-  authorId: uuid()
+  userId: uuid()
     .notNull()
-    .references(() => authorsTable.id),
+    .references(() => usersTable.id),
   refreshToken: varchar({ length: 512 }).notNull().unique(),
   userAgent: varchar({ length: 512 }),
   ip: varchar({ length: 64 }),
@@ -57,19 +57,19 @@ export const authorSessionsTable = pgTable('author_sessions', {
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
 })
 
-export type SelectAuthor = InferSelectModel<typeof authorsTable>
-export type InsertAuthor = InferInsertModel<typeof authorsTable>
-export type SelectAuthorPasswordResetToken = InferSelectModel<
-  typeof authorPasswordResetTokensTable
+export type SelectUser = InferSelectModel<typeof usersTable>
+export type InsertUser = InferInsertModel<typeof usersTable>
+export type SelectUserPasswordResetToken = InferSelectModel<
+  typeof userPasswordResetTokensTable
 >
-export type InsertAuthorPasswordResetToken = InferInsertModel<
-  typeof authorPasswordResetTokensTable
+export type InsertUserPasswordResetToken = InferInsertModel<
+  typeof userPasswordResetTokensTable
 >
-export type SelectAuthorSession = InferSelectModel<typeof authorSessionsTable>
-export type InsertAuthorSession = InferInsertModel<typeof authorSessionsTable>
+export type SelectUserSession = InferSelectModel<typeof userSessionsTable>
+export type InsertUserSession = InferInsertModel<typeof userSessionsTable>
 
 // Zod schemas for API validation
-export const selectAuthorSchemaV4 = z.object({
+export const selectUserSchemaV4 = z.object({
   id: z.string(),
   name: z.string(),
   username: z.string().nullable(),
@@ -81,9 +81,9 @@ export const selectAuthorSchemaV4 = z.object({
   avatarUrl: z.string().nullable()
 })
 
-export const selectAuthorSchema = selectAuthorSchemaV4
+export const selectUserSchema = selectUserSchemaV4
 
-export const insertAuthorSchema = z.object({
+export const insertUserSchema = z.object({
   name: z.string(),
   username: z.string().optional(),
   email: z.email(),
@@ -92,23 +92,23 @@ export const insertAuthorSchema = z.object({
   avatarUrl: z.string().optional()
 })
 
-export const selectAuthorPasswordResetTokenSchema = z.object({
+export const selectUserPasswordResetTokenSchema = z.object({
   id: z.string(),
-  authorId: z.string(),
+  userId: z.string(),
   token: z.string(),
   expiresAt: z.date(),
   createdAt: z.date()
 })
 
-export const insertAuthorPasswordResetTokenSchema = z.object({
-  authorId: z.uuid(),
+export const insertUserPasswordResetTokenSchema = z.object({
+  userId: z.uuid(),
   token: z.string(),
   expiresAt: z.date()
 })
 
-export const selectAuthorSessionSchema = z.object({
+export const selectUserSessionSchema = z.object({
   id: z.string(),
-  authorId: z.string(),
+  userId: z.string(),
   refreshToken: z.string(),
   userAgent: z.string().nullable(),
   ip: z.string().nullable(),
@@ -117,8 +117,8 @@ export const selectAuthorSessionSchema = z.object({
   updatedAt: z.date()
 })
 
-export const insertAuthorSessionSchema = z.object({
-  authorId: z.uuid(),
+export const insertUserSessionSchema = z.object({
+  userId: z.uuid(),
   refreshToken: z.string(),
   userAgent: z.string().optional(),
   ip: z.string().optional(),
@@ -143,7 +143,7 @@ export const forgotPasswordSchema = z.object({
 
 export const resetPasswordSchema = z.object({
   email: z.email().optional(),
-  authorId: z.string().optional(),
+  userId: z.string().optional(),
   token: z.uuid(),
   password: z.string().min(8)
 })
@@ -179,7 +179,7 @@ export const userParamsSchema = z.object({
   id: z.uuid()
 })
 
-export const authorsRelations = relations(authorsTable, ({ many }) => ({
+export const usersRelations = relations(usersTable, ({ many }) => ({
   postsToAuthors: many(postsToAuthors),
   audioToAuthors: many(audioToAuthors)
 }))

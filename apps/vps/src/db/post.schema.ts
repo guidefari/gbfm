@@ -5,7 +5,7 @@ import {
 } from 'drizzle-orm'
 import { index, pgEnum, pgTable, primaryKey, uuid } from 'drizzle-orm/pg-core'
 import { z } from 'zod/v4'
-import { authorsTable } from './author.schema'
+import { usersTable } from './user.schema'
 import { publicationsTable } from './publication.schema'
 import { defaultContentFields } from './util'
 
@@ -101,7 +101,7 @@ export const postsToAuthors = pgTable(
       .references(() => postsTable.id),
     authorId: uuid()
       .notNull()
-      .references(() => authorsTable.id)
+      .references(() => usersTable.id)
   },
   (t) => [primaryKey({ columns: [t.postId, t.authorId] })]
 )
@@ -119,8 +119,8 @@ export const postsToAuthorsRelations = relations(postsToAuthors, ({ one }) => ({
     fields: [postsToAuthors.postId],
     references: [postsTable.id]
   }),
-  author: one(authorsTable, {
+  author: one(usersTable, {
     fields: [postsToAuthors.authorId],
-    references: [authorsTable.id]
+    references: [usersTable.id]
   })
 }))

@@ -5,7 +5,7 @@ import {
 } from 'drizzle-orm'
 import { index, pgTable, primaryKey, uuid, varchar } from 'drizzle-orm/pg-core'
 import { z } from 'zod/v4'
-import { authorsTable } from './author.schema'
+import { usersTable } from './user.schema'
 import { defaultContentFields } from './util'
 
 export const mixesTable = pgTable(
@@ -83,7 +83,7 @@ export const mixesToAuthors = pgTable(
       .references(() => mixesTable.id),
     authorId: uuid()
       .notNull()
-      .references(() => authorsTable.id)
+      .references(() => usersTable.id)
   },
   (t) => [primaryKey({ columns: [t.mixId, t.authorId] })]
 )
@@ -97,8 +97,8 @@ export const mixesToAuthorsRelations = relations(mixesToAuthors, ({ one }) => ({
     fields: [mixesToAuthors.mixId],
     references: [mixesTable.id]
   }),
-  author: one(authorsTable, {
+  author: one(usersTable, {
     fields: [mixesToAuthors.authorId],
-    references: [authorsTable.id]
+    references: [usersTable.id]
   })
 }))

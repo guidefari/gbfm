@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
-import { authorsTable } from '@/db/author.schema'
+import { usersTable } from '@/db/user.schema'
 import {
   labelsTable,
   labelsToAuthors,
@@ -107,12 +107,12 @@ export const getLabelBySlug: AppRouteHandler<GetLabelBySlugRoute> = async (
 
     const authors = await db
       .select({
-        id: authorsTable.id,
-        name: authorsTable.name,
-        username: authorsTable.username
+        id: usersTable.id,
+        name: usersTable.name,
+        username: usersTable.username
       })
       .from(labelsToAuthors)
-      .innerJoin(authorsTable, eq(labelsToAuthors.authorId, authorsTable.id))
+      .innerJoin(usersTable, eq(labelsToAuthors.authorId, usersTable.id))
       .where(eq(labelsToAuthors.labelId, label.id))
 
     let processedLabel: SelectMdxCompiledLabel = {
@@ -195,12 +195,12 @@ export const updateLabelBySlug: AppRouteHandler<
 
     const authors = await db
       .select({
-        id: authorsTable.id,
-        name: authorsTable.name,
-        username: authorsTable.username
+        id: usersTable.id,
+        name: usersTable.name,
+        username: usersTable.username
       })
       .from(labelsToAuthors)
-      .innerJoin(authorsTable, eq(labelsToAuthors.authorId, authorsTable.id))
+      .innerJoin(usersTable, eq(labelsToAuthors.authorId, usersTable.id))
       .where(eq(labelsToAuthors.labelId, updatedLabel.id))
 
     const baseProcessedLabel: SelectMdxCompiledLabel = {

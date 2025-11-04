@@ -1,6 +1,6 @@
 import type { Context, Next } from 'hono'
 import { verify } from 'hono/jwt'
-import { getAuthorByEmailOrId } from '@/db/author.repo'
+import { getUserByEmailOrId } from '@/db/user.repo'
 import { env } from '@/env'
 import type { AppBindings } from '@/lib/types'
 
@@ -42,18 +42,18 @@ export const authenticate = async (c: Context<AppBindings>, next: Next) => {
       return c.json({ error: 'Invalid token type' }, 401)
     }
 
-    const authorId = payload.sub
-    if (!authorId || typeof authorId !== 'string') {
+    const userId = payload.sub
+    if (!userId || typeof userId !== 'string') {
       return c.json({ error: 'Invalid token payload' }, 401)
     }
 
-    const author = await getAuthorByEmailOrId({ authorId })
-    if (author.length === 0 || !author[0]) {
+    const user = await getUserByEmailOrId({ userId })
+    if (user.length === 0 || !user[0]) {
       return c.json({ error: 'User not found' }, 404)
     }
 
-    const { password, ...authorWithoutPassword } = author[0]
-    c.set('user', authorWithoutPassword)
+    const { password, ...userWithoutPassword } = user[0]
+    c.set('user', userWithoutPassword)
     await next()
   } catch (_error) {
     return c.json({ error: 'Invalid or expired token' }, 401)

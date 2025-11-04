@@ -1,12 +1,12 @@
 import type { OpenAPIHono, RouteConfig, RouteHandler } from '@hono/zod-openapi'
 import type { Schema } from 'hono'
 import type { PinoLogger } from 'hono-pino'
-import type { SelectAuthor } from '@/db/author.schema'
+import type { SelectUser } from '@/db/user.schema'
 
 export interface AppBindings {
   Variables: {
     logger: PinoLogger
-    user: Omit<SelectAuthor, 'password'>
+    user: Omit<SelectUser, 'password'>
   }
 }
 

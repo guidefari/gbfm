@@ -12,7 +12,7 @@ import {
   audioToAuthors,
   type SelectMdxCompiledAudio
 } from '@/db/audio.schema'
-import { authorsTable } from '@/db/author.schema'
+import { usersTable } from '@/db/user.schema'
 import { postsTable, postsToAuthors } from '@/db/post.schema'
 import { timeQuery } from '@/db/query-timer'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
@@ -201,12 +201,12 @@ export const getAudioBySlug: AppRouteHandler<GetAudioBySlugRoute> = async (
     // Then get the authors
     const authors = await db
       .select({
-        id: authorsTable.id,
-        name: authorsTable.name,
-        username: authorsTable.username
+        id: usersTable.id,
+        name: usersTable.name,
+        username: usersTable.username
       })
       .from(audioToAuthors)
-      .innerJoin(authorsTable, eq(audioToAuthors.authorId, authorsTable.id))
+      .innerJoin(usersTable, eq(audioToAuthors.authorId, usersTable.id))
       .where(eq(audioToAuthors.audioId, audio.id))
 
     let processedAudio: SelectMdxCompiledAudio = {
@@ -300,12 +300,12 @@ export const updateAudioBySlug: AppRouteHandler<
     // Get authors for response
     const authors = await db
       .select({
-        id: authorsTable.id,
-        name: authorsTable.name,
-        username: authorsTable.username
+        id: usersTable.id,
+        name: usersTable.name,
+        username: usersTable.username
       })
       .from(audioToAuthors)
-      .innerJoin(authorsTable, eq(audioToAuthors.authorId, authorsTable.id))
+      .innerJoin(usersTable, eq(audioToAuthors.authorId, usersTable.id))
       .where(eq(audioToAuthors.audioId, updatedAudio.id))
 
     // Compile MDX if content was updated

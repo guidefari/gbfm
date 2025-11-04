@@ -5,7 +5,7 @@ import {
 } from 'drizzle-orm'
 import { pgTable, text, uuid } from 'drizzle-orm/pg-core'
 import { z } from 'zod/v4'
-import { authorsTable } from './author.schema'
+import { usersTable } from './user.schema'
 import { postsTable } from './post.schema'
 
 export const publicationsTable = pgTable('publications', {
@@ -21,7 +21,7 @@ export const publicationAuthors = pgTable('publication_authors', {
     .references(() => publicationsTable.id, { onDelete: 'cascade' }),
   authorId: uuid()
     .notNull()
-    .references(() => authorsTable.id, { onDelete: 'cascade' })
+    .references(() => usersTable.id, { onDelete: 'cascade' })
 })
 
 export const publicationPosts = pgTable('publication_posts', {
@@ -47,9 +47,9 @@ export const publicationAuthorsRelations = relations(
       fields: [publicationAuthors.publicationId],
       references: [publicationsTable.id]
     }),
-    author: one(authorsTable, {
+    author: one(usersTable, {
       fields: [publicationAuthors.authorId],
-      references: [authorsTable.id]
+      references: [usersTable.id]
     })
   })
 )
