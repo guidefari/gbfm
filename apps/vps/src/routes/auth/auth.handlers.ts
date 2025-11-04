@@ -7,10 +7,10 @@ import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
 import { getUserByEmailOrId } from '@/db/user.repo'
 import {
+  type UpdateProfileSchema,
   userPasswordResetTokensTable,
   userSessionsTable,
-  usersTable,
-  type UpdateProfileSchema
+  usersTable
 } from '@/db/user.schema'
 import { env } from '@/env'
 import type { AppRouteHandler } from '@/lib/types'
@@ -356,9 +356,7 @@ export const createUser: AppRouteHandler<CreateUserRoute> = async (c) => {
 
 export const listUsers: AppRouteHandler<ListUsersRoute> = async (c) => {
   const users = await db.select().from(usersTable)
-  const usersWithoutPasswords = users.map(
-    ({ password, ...user }) => user
-  )
+  const usersWithoutPasswords = users.map(({ password, ...user }) => user)
   return c.json(usersWithoutPasswords, HttpStatusCodes.OK)
 }
 

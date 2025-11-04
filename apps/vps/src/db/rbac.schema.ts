@@ -95,7 +95,7 @@ export type InsertUserPermission = InferInsertModel<typeof userPermissionsTable>
 
 // Zod schemas for API validation
 export const selectRoleSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   name: z.string(),
   description: z.string().nullable(),
   createdAt: z.date(),
@@ -110,7 +110,7 @@ export const insertRoleSchema = z.object({
 export const updateRoleSchema = insertRoleSchema.partial()
 
 export const selectPermissionSchema = z.object({
-  id: z.string().uuid(),
+  id: z.uuid(),
   name: z.string(),
   resource: z.string(),
   action: z.string(),
@@ -129,13 +129,13 @@ export const insertPermissionSchema = z.object({
 export const updatePermissionSchema = insertPermissionSchema.partial()
 
 export const assignRoleSchema = z.object({
-  userId: z.string().uuid(),
-  roleId: z.string().uuid()
+  userId: z.uuid(),
+  roleId: z.uuid()
 })
 
 export const assignPermissionSchema = z.object({
-  userId: z.string().uuid(),
-  permissionId: z.string().uuid()
+  userId: z.uuid(),
+  permissionId: z.uuid()
 })
 
 // Relations

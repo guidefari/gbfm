@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
-import { usersTable } from './user.schema'
 import { db } from './index'
+import { usersTable } from './user.schema'
 
 export const getUserByEmail = async (email: string) => {
   const user = await db
@@ -11,10 +11,7 @@ export const getUserByEmail = async (email: string) => {
 }
 
 export const getUserById = async (id: string) => {
-  const user = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.id, id))
+  const user = await db.select().from(usersTable).where(eq(usersTable.id, id))
   return user
 }
 

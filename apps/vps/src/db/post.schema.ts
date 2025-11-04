@@ -5,8 +5,8 @@ import {
 } from 'drizzle-orm'
 import { index, pgEnum, pgTable, primaryKey, uuid } from 'drizzle-orm/pg-core'
 import { z } from 'zod/v4'
-import { usersTable } from './user.schema'
 import { publicationsTable } from './publication.schema'
+import { usersTable } from './user.schema'
 import { defaultContentFields } from './util'
 
 export const postTypeEnum = pgEnum('post_type', ['post', 'micro'])

@@ -1,12 +1,12 @@
 import { eq } from 'drizzle-orm'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
-import { usersTable } from '@/db/user.schema'
 import {
-  labelsTable,
   labelCreators,
+  labelsTable,
   type SelectMdxCompiledLabel
 } from '@/db/label.schema'
+import { usersTable } from '@/db/user.schema'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
 import type { AppRouteHandler } from '@/lib/types'
 

@@ -5,8 +5,8 @@ import {
 } from 'drizzle-orm'
 import { pgTable, text, uuid } from 'drizzle-orm/pg-core'
 import { z } from 'zod/v4'
-import { usersTable } from './user.schema'
 import { postsTable } from './post.schema'
+import { usersTable } from './user.schema'
 
 export const publicationsTable = pgTable('publications', {
   id: uuid().defaultRandom().primaryKey(),
