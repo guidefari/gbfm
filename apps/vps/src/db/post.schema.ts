@@ -28,7 +28,7 @@ export type InsertPost = InferInsertModel<typeof postsTable>
 
 export type SelectMdxCompiledPost = SelectPost & {
   compiledContent: string
-  authors?: Array<{
+  creators?: Array<{
     id: string
     name: string
     username: string
@@ -57,7 +57,7 @@ export const selectPostSchema = z.object({
 
 export const selectMdxCompiledPostSchema = selectPostSchema.extend({
   compiledContent: z.string(),
-  authors: z
+  creators: z
     .array(
       z.object({
         id: z.string(),
@@ -88,39 +88,39 @@ export const insertPostSchema = z.object({
 })
 
 export const createPostSchema = insertPostSchema.extend({
-  authorIds: z.array(z.uuid()).min(1).optional()
+  creatorIds: z.array(z.uuid()).min(1).optional()
 })
 
 export const updatePostSchema = insertPostSchema.partial()
 
-export const postsToAuthors = pgTable(
-  'posts_to_authors',
+export const postCreators = pgTable(
+  'post_creators',
   {
     postId: uuid()
       .notNull()
       .references(() => postsTable.id),
-    authorId: uuid()
+    creatorId: uuid()
       .notNull()
       .references(() => usersTable.id)
   },
-  (t) => [primaryKey({ columns: [t.postId, t.authorId] })]
+  (t) => [primaryKey({ columns: [t.postId, t.creatorId] })]
 )
 
 export const postsRelations = relations(postsTable, ({ many, one }) => ({
-  postsToAuthors: many(postsToAuthors),
+  postCreators: many(postCreators),
   publication: one(publicationsTable, {
     fields: [postsTable.publicationId],
     references: [publicationsTable.id]
   })
 }))
 
-export const postsToAuthorsRelations = relations(postsToAuthors, ({ one }) => ({
+export const postCreatorsRelations = relations(postCreators, ({ one }) => ({
   post: one(postsTable, {
-    fields: [postsToAuthors.postId],
+    fields: [postCreators.postId],
     references: [postsTable.id]
   }),
-  author: one(usersTable, {
-    fields: [postsToAuthors.authorId],
+  creator: one(usersTable, {
+    fields: [postCreators.creatorId],
     references: [usersTable.id]
   })
 }))

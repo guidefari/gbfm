@@ -15,11 +15,11 @@ export const publicationsTable = pgTable('publications', {
   slug: text().notNull().unique()
 })
 
-export const publicationAuthors = pgTable('publication_authors', {
+export const publicationMembers = pgTable('publication_members', {
   publicationId: uuid()
     .notNull()
     .references(() => publicationsTable.id, { onDelete: 'cascade' }),
-  authorId: uuid()
+  userId: uuid()
     .notNull()
     .references(() => usersTable.id, { onDelete: 'cascade' })
 })
@@ -36,19 +36,19 @@ export const publicationPosts = pgTable('publication_posts', {
 export const publicationsRelations = relations(
   publicationsTable,
   ({ many }) => ({
-    publicationAuthors: many(publicationAuthors)
+    publicationMembers: many(publicationMembers)
   })
 )
 
-export const publicationAuthorsRelations = relations(
-  publicationAuthors,
+export const publicationMembersRelations = relations(
+  publicationMembers,
   ({ one }) => ({
     publication: one(publicationsTable, {
-      fields: [publicationAuthors.publicationId],
+      fields: [publicationMembers.publicationId],
       references: [publicationsTable.id]
     }),
-    author: one(usersTable, {
-      fields: [publicationAuthors.authorId],
+    user: one(usersTable, {
+      fields: [publicationMembers.userId],
       references: [usersTable.id]
     })
   })

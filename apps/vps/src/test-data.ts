@@ -11,23 +11,23 @@ export const mixes: Array<z.infer<typeof createMixSchema>> = [
     thumbnailUrl: 'https://example.com/thumbnail1.jpg',
     slug: 'mix-1',
     content: 'Content 1',
-    authorIds: ['1', '2'],
+    creatorIds: ['1', '2'],
     url: 'https://example.com/mix1.mp3',
     draft: false,
     tags: ['dnb', 'techno', 'house']
   }
 ]
 
-export const authors: Array<z.infer<typeof insertUserSchema>> = [
+export const users: Array<z.infer<typeof insertUserSchema>> = [
   {
-    name: 'Author 1',
-    email: 'author1@example.com',
-    username: 'author1'
+    name: 'User 1',
+    email: 'user1@example.com',
+    username: 'user1'
   },
   {
-    name: 'Author 2',
-    email: 'author2@example.com',
-    username: 'author2'
+    name: 'User 2',
+    email: 'user2@example.com',
+    username: 'user2'
   }
 ]
 
@@ -38,7 +38,7 @@ export const posts: Array<z.infer<typeof createPostSchema>> = [
     thumbnailUrl: 'https://example.com/thumbnail1.jpg',
     slug: 'post-1',
     content: 'Content 1',
-    authorIds: ['1', '2'],
+    creatorIds: ['1', '2'],
     draft: false,
     tags: ['dnb', 'techno', 'house'],
     type: 'post',
@@ -50,7 +50,7 @@ export const posts: Array<z.infer<typeof createPostSchema>> = [
     thumbnailUrl: 'https://example.com/thumbnail1.jpg',
     slug: 'micro-1',
     content: 'Content 1',
-    authorIds: ['1'],
+    creatorIds: ['1'],
     draft: false,
     tags: ['dnb', 'techno', 'house'],
     type: 'micro',
@@ -62,7 +62,7 @@ export const posts: Array<z.infer<typeof createPostSchema>> = [
     thumbnailUrl: 'https://example.com/thumbnail1.jpg',
     slug: 'label-1',
     content: 'Content 1',
-    authorIds: ['1'],
+    creatorIds: ['1'],
     draft: false,
     tags: ['dnb', 'techno', 'house'],
     type: 'post',

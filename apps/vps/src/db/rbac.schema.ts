@@ -14,7 +14,7 @@ import {
 } from 'drizzle-orm/pg-core'
 import { usersTable } from './user.schema'
 
-// Roles table
+// Roles table (lookup table approach - no enum)
 export const rolesTable = pgTable('roles', {
   id: uuid().primaryKey().defaultRandom(),
   name: varchar({ length: 50 }).notNull().unique(),

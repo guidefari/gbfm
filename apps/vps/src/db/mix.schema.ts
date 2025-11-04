@@ -22,7 +22,7 @@ export type InsertMix = InferInsertModel<typeof mixesTable>
 
 export type SelectMdxCompiledMix = SelectMix & {
   compiledContent: string
-  authors?: Array<{
+  creators?: Array<{
     id: string
     name: string
     username: string
@@ -47,7 +47,7 @@ export const selectMixSchema = _selectMixSchemaV4
 
 export const selectMdxCompiledMixSchema = _selectMixSchemaV4.extend({
   compiledContent: z.string(),
-  authors: z
+  creators: z
     .array(
       z.object({
         id: z.string(),
@@ -72,33 +72,33 @@ const _insertMixSchemaV4 = z.object({
 export const insertMixSchema = _insertMixSchemaV4
 
 export const createMixSchema = _insertMixSchemaV4.extend({
-  authorIds: z.array(z.uuid()).min(1).optional()
+  creatorIds: z.array(z.uuid()).min(1).optional()
 })
 
-export const mixesToAuthors = pgTable(
-  'mixes_to_authors',
+export const mixCreators = pgTable(
+  'mix_creators',
   {
     mixId: uuid()
       .notNull()
       .references(() => mixesTable.id),
-    authorId: uuid()
+    creatorId: uuid()
       .notNull()
       .references(() => usersTable.id)
   },
-  (t) => [primaryKey({ columns: [t.mixId, t.authorId] })]
+  (t) => [primaryKey({ columns: [t.mixId, t.creatorId] })]
 )
 
 export const mixesRelations = relations(mixesTable, ({ many }) => ({
-  mixesToAuthors: many(mixesToAuthors)
+  mixCreators: many(mixCreators)
 }))
 
-export const mixesToAuthorsRelations = relations(mixesToAuthors, ({ one }) => ({
+export const mixCreatorsRelations = relations(mixCreators, ({ one }) => ({
   mix: one(mixesTable, {
-    fields: [mixesToAuthors.mixId],
+    fields: [mixCreators.mixId],
     references: [mixesTable.id]
   }),
-  author: one(usersTable, {
-    fields: [mixesToAuthors.authorId],
+  creator: one(usersTable, {
+    fields: [mixCreators.creatorId],
     references: [usersTable.id]
   })
 }))

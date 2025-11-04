@@ -9,11 +9,11 @@ import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
 import {
   audioTable,
-  audioToAuthors,
+  audioCreators,
   type SelectMdxCompiledAudio
 } from '@/db/audio.schema'
 import { usersTable } from '@/db/user.schema'
-import { postsTable, postsToAuthors } from '@/db/post.schema'
+import { postsTable, postCreators } from '@/db/post.schema'
 import { timeQuery } from '@/db/query-timer'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
 import type { AppBindings, AppRouteHandler } from '@/lib/types'
@@ -30,12 +30,12 @@ import type {
 } from './content.routes'
 
 export const createPost: AppRouteHandler<CreatePostRoute> = async (c) => {
-  const { authorIds, ...postData } = c.req.valid('json')
+  const { creatorIds, ...postData } = c.req.valid('json')
   const user = c.get('user')
 
-  let finalAuthorIds: string[] = authorIds || []
-  if (finalAuthorIds.length === 0) {
-    finalAuthorIds = [user.id]
+  let finalCreatorIds: string[] = creatorIds || []
+  if (finalCreatorIds.length === 0) {
+    finalCreatorIds = [user.id]
   }
 
   try {
@@ -49,10 +49,10 @@ export const createPost: AppRouteHandler<CreatePostRoute> = async (c) => {
       }
 
       // Insert the post-author relationships
-      await tx.insert(postsToAuthors).values(
-        finalAuthorIds.map((authorId: string) => ({
+      await tx.insert(postCreators).values(
+        finalCreatorIds.map((creatorId: string) => ({
           postId: newPost.id,
-          authorId
+          creatorId
         }))
       )
 
@@ -102,12 +102,12 @@ export const getPostsByTag: AppRouteHandler<GetPostsByTagRoute> = async (c) => {
 
 // Mix management handlers
 export const createMix: AppRouteHandler<CreateMixRoute> = async (c) => {
-  const { authorIds, ...mixData } = c.req.valid('json')
+  const { creatorIds, ...mixData } = c.req.valid('json')
   const user = c.get('user')
 
-  let finalAuthorIds: string[] = authorIds || []
-  if (finalAuthorIds.length === 0) {
-    finalAuthorIds = [user.id]
+  let finalCreatorIds: string[] = creatorIds || []
+  if (finalCreatorIds.length === 0) {
+    finalCreatorIds = [user.id]
   }
 
   try {
@@ -123,10 +123,10 @@ export const createMix: AppRouteHandler<CreateMixRoute> = async (c) => {
             throw new Error('Failed to create mix')
           }
 
-          await tx.insert(audioToAuthors).values(
-            finalAuthorIds.map((authorId: string) => ({
+          await tx.insert(audioCreators).values(
+            finalCreatorIds.map((creatorId: string) => ({
               audioId: newMix.id,
-              authorId
+              creatorId
             }))
           )
 
@@ -199,23 +199,23 @@ export const getAudioBySlug: AppRouteHandler<GetAudioBySlugRoute> = async (
     }
 
     // Then get the authors
-    const authors = await db
+    const creators = await db
       .select({
         id: usersTable.id,
         name: usersTable.name,
         username: usersTable.username
       })
-      .from(audioToAuthors)
-      .innerJoin(usersTable, eq(audioToAuthors.authorId, usersTable.id))
-      .where(eq(audioToAuthors.audioId, audio.id))
+      .from(audioCreators)
+      .innerJoin(usersTable, eq(audioCreators.creatorId, usersTable.id))
+      .where(eq(audioCreators.audioId, audio.id))
 
     let processedAudio: SelectMdxCompiledAudio = {
       ...audio,
       compiledContent: '',
-      authors: authors.map((author) => ({
-        id: author.id,
-        name: author.name,
-        username: author.username || ''
+      creators: creators.map((creator) => ({
+        id: creator.id,
+        name: creator.name,
+        username: creator.username || ''
       }))
     }
 
@@ -265,11 +265,11 @@ export const updateAudioBySlug: AppRouteHandler<
     // Check if user is an author of this content
     const authorship = await db
       .select()
-      .from(audioToAuthors)
+      .from(audioCreators)
       .where(
         and(
-          eq(audioToAuthors.audioId, existingAudio.id),
-          eq(audioToAuthors.authorId, user.id)
+          eq(audioCreators.audioId, existingAudio.id),
+          eq(audioCreators.creatorId, user.id)
         )
       )
       .limit(1)
@@ -298,24 +298,24 @@ export const updateAudioBySlug: AppRouteHandler<
     }
 
     // Get authors for response
-    const authors = await db
+    const creators = await db
       .select({
         id: usersTable.id,
         name: usersTable.name,
         username: usersTable.username
       })
-      .from(audioToAuthors)
-      .innerJoin(usersTable, eq(audioToAuthors.authorId, usersTable.id))
-      .where(eq(audioToAuthors.audioId, updatedAudio.id))
+      .from(audioCreators)
+      .innerJoin(usersTable, eq(audioCreators.creatorId, usersTable.id))
+      .where(eq(audioCreators.audioId, updatedAudio.id))
 
     // Compile MDX if content was updated
     const baseProcessedAudio: SelectMdxCompiledAudio = {
       ...updatedAudio,
       compiledContent: '',
-      authors: authors.map((author) => ({
-        id: author.id,
-        name: author.name,
-        username: author.username || ''
+      creators: creators.map((creator) => ({
+        id: creator.id,
+        name: creator.name,
+        username: creator.username || ''
       }))
     }
 
@@ -341,12 +341,12 @@ export const updateAudioBySlug: AppRouteHandler<
 }
 
 export const createAudio: AppRouteHandler<CreateAudioRoute> = async (c) => {
-  const { authorIds, ...audioData } = c.req.valid('json')
+  const { creatorIds, ...audioData } = c.req.valid('json')
   const user = c.get('user')
 
-  let finalAuthorIds: string[] = authorIds || []
-  if (finalAuthorIds.length === 0) {
-    finalAuthorIds = [user.id]
+  let finalCreatorIds: string[] = creatorIds || []
+  if (finalCreatorIds.length === 0) {
+    finalCreatorIds = [user.id]
   }
 
   try {
@@ -360,10 +360,10 @@ export const createAudio: AppRouteHandler<CreateAudioRoute> = async (c) => {
         throw new Error('Failed to create audio')
       }
 
-      await tx.insert(audioToAuthors).values(
-        finalAuthorIds.map((authorId: string) => ({
+      await tx.insert(audioCreators).values(
+        finalCreatorIds.map((creatorId: string) => ({
           audioId: newAudio.id,
-          authorId
+          creatorId
         }))
       )
       return newAudio

@@ -5,8 +5,8 @@ import {
   relations
 } from 'drizzle-orm'
 import { boolean, pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
-import { audioToAuthors } from './audio.schema'
-import { postsToAuthors } from './post.schema'
+import { audioCreators } from './audio.schema'
+import { postCreators } from './post.schema'
 
 const usernameSchema = z
   .string()
@@ -180,6 +180,6 @@ export const userParamsSchema = z.object({
 })
 
 export const usersRelations = relations(usersTable, ({ many }) => ({
-  postsToAuthors: many(postsToAuthors),
-  audioToAuthors: many(audioToAuthors)
+  postCreators: many(postCreators),
+  audioCreators: many(audioCreators)
 }))

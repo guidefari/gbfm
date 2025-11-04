@@ -32,7 +32,7 @@ export type InsertAudio = InferInsertModel<typeof audioTable>
 
 export type SelectMdxCompiledAudio = SelectAudio & {
   compiledContent: string
-  authors?: Array<{
+  creators?: Array<{
     id: string
     name: string
     username: string
@@ -56,7 +56,7 @@ export const selectAudioSchema = z.object({
 
 export const selectMdxCompiledAudioSchema = selectAudioSchema.extend({
   compiledContent: z.string(),
-  authors: z
+  creators: z
     .array(
       z.object({
         id: z.string(),
@@ -82,33 +82,33 @@ export const insertAudioSchema = z.object({
 export const updateAudioSchema = insertAudioSchema.partial()
 
 export const createAudioSchema = insertAudioSchema.extend({
-  authorIds: z.array(z.uuid()).min(1).optional()
+  creatorIds: z.array(z.uuid()).min(1).optional()
 })
 
-export const audioToAuthors = pgTable(
-  'audio_to_authors',
+export const audioCreators = pgTable(
+  'audio_creators',
   {
     audioId: uuid()
       .notNull()
       .references(() => audioTable.id),
-    authorId: uuid()
+    creatorId: uuid()
       .notNull()
       .references(() => usersTable.id)
   },
-  (t) => [primaryKey({ columns: [t.audioId, t.authorId] })]
+  (t) => [primaryKey({ columns: [t.audioId, t.creatorId] })]
 )
 
 export const audioRelations = relations(audioTable, ({ many }) => ({
-  audioToAuthors: many(audioToAuthors)
+  audioCreators: many(audioCreators)
 }))
 
-export const audioToAuthorsRelations = relations(audioToAuthors, ({ one }) => ({
+export const audioCreatorsRelations = relations(audioCreators, ({ one }) => ({
   audio: one(audioTable, {
-    fields: [audioToAuthors.audioId],
+    fields: [audioCreators.audioId],
     references: [audioTable.id]
   }),
-  author: one(usersTable, {
-    fields: [audioToAuthors.authorId],
+  creator: one(usersTable, {
+    fields: [audioCreators.creatorId],
     references: [usersTable.id]
   })
 }))
