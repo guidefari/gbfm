@@ -1,4 +1,4 @@
-import { contentBucket, fileRouter, mixesBucket } from './bucket'
+import { contentBucket, dbBackupBucket, fileRouter, mixesBucket } from './bucket'
 import { domain, urls } from './dns'
 import { email } from './email'
 import { allSecrets } from './secret'
@@ -46,6 +46,7 @@ export const service = new sst.aws.Service('gbfm_vps', {
     fileRouter,
     contentBucket,
     mixesBucket,
+    dbBackupBucket,
     ...allSecrets
   ],
   capacity: 'spot'

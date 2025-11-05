@@ -1,5 +1,6 @@
 import { email } from './email'
 import { allSecrets } from './secret'
+import { dbBackupBucket } from './bucket'
 
 new sst.x.DevCommand('raycast', {
   dev: {
@@ -128,3 +129,12 @@ new sst.x.DevCommand('Email_Preview', {
 //     autostart: false
 //   }
 // })
+
+new sst.x.DevCommand('Backup_Database', {
+  link: [...allSecrets, email, dbBackupBucket],
+  dev: {
+    command: 'bun scripts/backup-db.ts',
+    directory: './apps/vps',
+    autostart: false
+  }
+})
