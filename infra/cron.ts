@@ -13,16 +13,16 @@ export const dbBackupCron = new sst.aws.Cron('DatabaseBackupCron', {
   job: {
     handler: 'apps/vps/scripts/backup-db-lambda.handler',
     nodejs: {
-      install: ['pg'],
+      install: ['pg']
     },
     timeout: '15 minutes',
     memory: '1024 MB',
-    link: [dbBackupBucket, ...allSecrets],
+    link: [dbBackupBucket, ...allSecrets]
   },
   // Run daily at 2:00 AM UTC
-  schedule: 'cron(0 2 * * ? *)',
+  schedule: 'cron(0 2 * * ? *)'
 })
 
 export const outputs = {
-  dbBackupCron: dbBackupCron.nodes.function.name,
+  dbBackupCron: dbBackupCron.nodes.function.name
 }

@@ -9,6 +9,10 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
+    "DatabaseBackups": {
+      "name": string
+      "type": "sst.aws.Bucket"
+    }
     "DatabaseHost": {
       "type": "sst.sst.Secret"
       "value": string

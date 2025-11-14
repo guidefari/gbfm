@@ -1,4 +1,9 @@
-import { contentBucket, dbBackupBucket, fileRouter, mixesBucket } from './bucket'
+import {
+  contentBucket,
+  dbBackupBucket,
+  fileRouter,
+  mixesBucket
+} from './bucket'
 import { domain, urls } from './dns'
 import { email } from './email'
 import { allSecrets } from './secret'
