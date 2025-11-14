@@ -3,16 +3,18 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { Resource } from "sst";
 import type { ScheduledEvent } from "aws-lambda";
-import { exec } from "node:child_process";
-import { promisify } from "node:util";
-
-const execAsync = promisify(exec);
+import {
+  isPgDumpAvailable,
+  createBackupWithPgDump,
+  createBackupWithPg,
+  type BackupConfig,
+} from "./backup-utils";
 
 /**
  * Database Backup Script
  *
- * This script creates a PostgreSQL database backup using pg_dump
- * and uploads it to an S3 bucket for safekeeping.
+ * This script creates a PostgreSQL database backup and uploads it to S3.
+ * It will automatically use pg_dump if available, or fall back to a pure Node.js approach.
  *
  * Usage:
  *   bun run scripts/backup-db.ts
@@ -35,48 +37,52 @@ async function backupDatabase() {
   const filename = `backup-${timestamp}.sql`;
 
   try {
-    let env: Record<string, string>;
+    let config: BackupConfig;
 
     // Check if LOCAL_DB_URL is provided
     if (process.env.LOCAL_DB_URL) {
       console.log("🔗 Using LOCAL_DB_URL connection string");
       const url = new URL(process.env.LOCAL_DB_URL);
 
-      env = {
-        PGPASSWORD: url.password || "",
-        PGUSER: url.username,
-        PGHOST: url.hostname,
-        PGDATABASE: url.pathname.slice(1), // Remove leading slash
-        PGPORT: url.port || "5432",
+      config = {
+        password: url.password || "",
+        user: url.username,
+        host: url.hostname,
+        database: url.pathname.slice(1), // Remove leading slash
+        port: url.port || "5432",
       };
     } else {
       console.log("🔗 Using SST Resource configuration");
-      env = {
-        PGPASSWORD: Resource.DatabasePassword.value,
-        PGUSER: Resource.DatabaseUser.value,
-        PGHOST: Resource.DatabaseHost.value,
-        PGDATABASE: Resource.DatabaseName.value,
-        PGPORT: Resource.DatabasePort.value,
+      config = {
+        password: Resource.DatabasePassword.value,
+        user: Resource.DatabaseUser.value,
+        host: Resource.DatabaseHost.value,
+        database: Resource.DatabaseName.value,
+        port: Resource.DatabasePort.value,
       };
     }
 
-    console.log(`📦 Creating database dump for ${env.PGDATABASE}...`);
-    console.log(`   Host: ${env.PGHOST}:${env.PGPORT}`);
+    console.log(`📊 Database: ${config.database}`);
+    console.log(`   Host: ${config.host}:${config.port}`);
 
-    const { stdout, stderr } = await execAsync(
-      'pg_dump --no-owner --no-acl --clean --if-exists',
-      {
-        env: { ...process.env, ...env },
-        maxBuffer: 1024 * 1024 * 100, // 100MB max buffer
-      }
-    );
+    // Check if pg_dump is available
+    const hasPgDump = await isPgDumpAvailable();
 
-    if (stderr && !stderr.includes('NOTICE')) {
-      console.warn("⚠️  pg_dump warnings:", stderr);
+    let sqlDump: string;
+    if (hasPgDump) {
+      console.log("✓ Using pg_dump (recommended)");
+      sqlDump = await createBackupWithPgDump(config);
+    } else {
+      console.log("⚠️  pg_dump not found, using pure Node.js backup");
+      console.log("   Install PostgreSQL client tools for better backup quality:");
+      console.log("   - macOS: brew install postgresql");
+      console.log("   - Ubuntu/Debian: sudo apt-get install postgresql-client");
+      console.log("   - Windows: Download from postgresql.org\n");
+      sqlDump = await createBackupWithPg(config);
     }
 
-    const backupData = Buffer.from(stdout);
-    console.log(`✅ Database dump created (${(backupData.length / 1024 / 1024).toFixed(2)} MB)`);
+    const backupData = Buffer.from(sqlDump);
+    console.log(`✅ Backup size: ${(backupData.length / 1024 / 1024).toFixed(2)} MB`);
 
     // Upload to S3
     console.log("☁️  Uploading to S3...");
@@ -90,8 +96,9 @@ async function backupDatabase() {
         ContentType: "application/sql",
         Metadata: {
           timestamp: new Date().toISOString(),
-          database: Resource.DatabaseName.value,
+          database: config.database,
           stage: process.env.SST_STAGE || "dev",
+          method: hasPgDump ? "pg_dump" : "pg-library",
         },
       })
     );
@@ -105,6 +112,7 @@ async function backupDatabase() {
       filename,
       bucket: Resource.DatabaseBackupBucket.name,
       size: backupData.length,
+      method: hasPgDump ? "pg_dump" : "pg-library",
     };
   } catch (error) {
     console.error("❌ Backup failed:", error);

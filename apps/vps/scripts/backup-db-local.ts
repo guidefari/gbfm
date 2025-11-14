@@ -1,19 +1,21 @@
 #!/usr/bin/env bun
 
-import { exec } from "node:child_process";
-import { promisify } from "node:util";
 import { mkdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import path from "node:path";
 import { Resource } from "sst";
-
-const execAsync = promisify(exec);
+import {
+  isPgDumpAvailable,
+  createBackupWithPgDump,
+  createBackupWithPg,
+  type BackupConfig,
+} from "./backup-utils";
 
 /**
  * Local Database Backup Script
  *
- * This script creates a PostgreSQL database backup using pg_dump
- * and saves it to a local directory.
+ * This script creates a PostgreSQL database backup and saves it to a local directory.
+ * It will automatically use pg_dump if available, or fall back to a pure Node.js approach.
  *
  * Usage:
  *   bun run scripts/backup-db-local.ts
@@ -46,60 +48,64 @@ async function backupDatabaseLocal() {
   const backupPath = path.join(backupsDir, filename);
 
   try {
-    let env: Record<string, string>;
+    let config: BackupConfig;
 
     // Check if LOCAL_DB_URL is provided
     if (process.env.LOCAL_DB_URL) {
       console.log("🔗 Using LOCAL_DB_URL connection string");
       const url = new URL(process.env.LOCAL_DB_URL);
 
-      env = {
-        PGPASSWORD: url.password || "",
-        PGUSER: url.username,
-        PGHOST: url.hostname,
-        PGDATABASE: url.pathname.slice(1), // Remove leading slash
-        PGPORT: url.port || "5432",
+      config = {
+        password: url.password || "",
+        user: url.username,
+        host: url.hostname,
+        database: url.pathname.slice(1), // Remove leading slash
+        port: url.port || "5432",
       };
     } else {
       console.log("🔗 Using SST Resource configuration");
-      env = {
-        PGPASSWORD: Resource.DatabasePassword.value,
-        PGUSER: Resource.DatabaseUser.value,
-        PGHOST: Resource.DatabaseHost.value,
-        PGDATABASE: Resource.DatabaseName.value,
-        PGPORT: Resource.DatabasePort.value,
+      config = {
+        password: Resource.DatabasePassword.value,
+        user: Resource.DatabaseUser.value,
+        host: Resource.DatabaseHost.value,
+        database: Resource.DatabaseName.value,
+        port: Resource.DatabasePort.value,
       };
     }
 
-    console.log(`📦 Creating database dump for ${env.PGDATABASE}...`);
-    console.log(`   Host: ${env.PGHOST}:${env.PGPORT}`);
+    console.log(`📊 Database: ${config.database}`);
+    console.log(`   Host: ${config.host}:${config.port}`);
 
-    const { stderr } = await execAsync(
-      `pg_dump --no-owner --no-acl --clean --if-exists --file="${backupPath}"`,
-      {
-        env: { ...process.env, ...env },
-        maxBuffer: 1024 * 1024 * 100, // 100MB max buffer
-      }
-    );
+    // Check if pg_dump is available
+    const hasPgDump = await isPgDumpAvailable();
 
-    if (stderr && !stderr.includes("NOTICE")) {
-      console.warn("⚠️  pg_dump warnings:", stderr);
+    let sqlDump: string;
+    if (hasPgDump) {
+      console.log("✓ Using pg_dump (recommended)");
+      sqlDump = await createBackupWithPgDump(config);
+    } else {
+      console.log("⚠️  pg_dump not found, using pure Node.js backup");
+      console.log("   Install PostgreSQL client tools for better backup quality:");
+      console.log("   - macOS: brew install postgresql");
+      console.log("   - Ubuntu/Debian: sudo apt-get install postgresql-client");
+      console.log("   - Windows: Download from postgresql.org\n");
+      sqlDump = await createBackupWithPg(config);
     }
 
-    // Get file size
-    const { size } = await Bun.file(backupPath).exists().then(() =>
-      Bun.file(backupPath).size
-    );
+    // Write to file
+    await Bun.write(backupPath, sqlDump);
 
-    console.log(`✅ Database dump created (${(size / 1024 / 1024).toFixed(2)} MB)`);
+    const fileSize = (await Bun.file(backupPath).size);
     console.log(`📂 Location: ${backupPath}`);
+    console.log(`📦 Size: ${(fileSize / 1024 / 1024).toFixed(2)} MB`);
     console.log(`🎉 Local backup complete!`);
 
     return {
       success: true,
       filename,
       path: backupPath,
-      size,
+      size: fileSize,
+      method: hasPgDump ? 'pg_dump' : 'pg-library',
     };
   } catch (error) {
     console.error("❌ Backup failed:", error);
