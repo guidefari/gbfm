@@ -14,7 +14,8 @@
     "db:migrate:prod": "bun sst shell --stage=prod bun run src/migrate.ts",
     "db:deets:prod": "bun sst shell --stage=prod bun run ./scripts/db.ts",
     "db:backup": "bun run scripts/backup-db.ts",
-    "db:backup:prod": "bun sst shell --stage=prod bun run scripts/backup-db.ts"
+    "db:backup:prod": "bun sst shell --stage=prod bun run scripts/backup-db.ts",
+    "db:backup:local": "bun run scripts/backup-db-local.ts"
   },
   "devDependencies": {
     "@types/aws-lambda": "8.10.145",

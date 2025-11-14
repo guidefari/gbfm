@@ -20,6 +20,10 @@ const execAsync = promisify(exec);
  * For production:
  *   bun sst shell --stage=prod bun run scripts/backup-db.ts
  *
+ * Environment Variables:
+ *   LOCAL_DB_URL - Optional local database connection string
+ *                  Format: postgres://user:password@host:port/database
+ *
  * As Lambda handler (used by cron):
  *   Automatically invoked by CloudWatch Events
  */
@@ -31,16 +35,33 @@ async function backupDatabase() {
   const filename = `backup-${timestamp}.sql`;
 
   try {
-    // Create pg_dump process
-    console.log("📦 Creating database dump...");
+    let env: Record<string, string>;
 
-    const env = {
-      PGPASSWORD: Resource.DatabasePassword.value,
-      PGUSER: Resource.DatabaseUser.value,
-      PGHOST: Resource.DatabaseHost.value,
-      PGDATABASE: Resource.DatabaseName.value,
-      PGPORT: Resource.DatabasePort.value,
-    };
+    // Check if LOCAL_DB_URL is provided
+    if (process.env.LOCAL_DB_URL) {
+      console.log("🔗 Using LOCAL_DB_URL connection string");
+      const url = new URL(process.env.LOCAL_DB_URL);
+
+      env = {
+        PGPASSWORD: url.password || "",
+        PGUSER: url.username,
+        PGHOST: url.hostname,
+        PGDATABASE: url.pathname.slice(1), // Remove leading slash
+        PGPORT: url.port || "5432",
+      };
+    } else {
+      console.log("🔗 Using SST Resource configuration");
+      env = {
+        PGPASSWORD: Resource.DatabasePassword.value,
+        PGUSER: Resource.DatabaseUser.value,
+        PGHOST: Resource.DatabaseHost.value,
+        PGDATABASE: Resource.DatabaseName.value,
+        PGPORT: Resource.DatabasePort.value,
+      };
+    }
+
+    console.log(`📦 Creating database dump for ${env.PGDATABASE}...`);
+    console.log(`   Host: ${env.PGHOST}:${env.PGPORT}`);
 
     const { stdout, stderr } = await execAsync(
       'pg_dump --no-owner --no-acl --clean --if-exists',
