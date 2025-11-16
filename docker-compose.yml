@@ -167,22 +167,28 @@ services:
   #   networks:
   #     - postgres_network
 
-  # Backup service
-  postgres_backup:
-    image: postgres:17-alpine
-    container_name: postgres_backup
+  # VPS Backup & Restore service (using Bun + PostgreSQL client tools)
+  vps_backup:
+    build:
+      context: .
+      dockerfile: apps/vps/Dockerfile.backup
+    container_name: vps_backup
     restart: "no"
     environment:
-      PGPASSWORD: ${DB_PASSWORD}
+      LOCAL_DB_URL: postgres://${DB_USER:-appuser}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-myapp}
+      SKIP_CONFIRM: ${SKIP_CONFIRM:-0}
     volumes:
-      - ./backups:/backups
-      - ./scripts/backup.sh:/backup.sh
+      - ./apps/vps/backups:/app/backups
+      - ./apps/vps/scripts:/app/scripts
     depends_on:
       - postgres
     networks:
       - postgres_network
     profiles:
       - backup
+    # Usage:
+    # Backup: docker compose run --rm vps_backup bun run scripts/backup-db-local.ts
+    # Restore: docker compose run --rm vps_backup bun run scripts/restore-db.ts /app/backups/backup-2025-11-14.sql
 
 networks:
   postgres_network:

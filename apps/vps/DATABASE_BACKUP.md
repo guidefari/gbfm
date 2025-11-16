@@ -57,6 +57,9 @@ apps/vps/scripts/backup-db-local.ts    # Local backup script
 apps/vps/scripts/backup-db-lambda.ts   # Lambda handler
 apps/vps/scripts/restore-db.ts         # Database restore script
 apps/vps/scripts/backup-utils.ts       # Shared utilities
+apps/vps/scripts/docker-backup.sh      # Docker backup wrapper script
+apps/vps/scripts/docker-restore.sh     # Docker restore wrapper script
+apps/vps/Dockerfile.backup             # Docker image with pg tools
 infra/cron.ts                          # Daily backup cron job
 ```
 
@@ -65,8 +68,9 @@ infra/cron.ts                          # Daily backup cron job
 infra/bucket.ts           # Added DatabaseBackups bucket
 infra/vps.ts              # Linked backup bucket to VPS service
 infra/dev.script.ts       # Added Backup_Database dev command
-apps/vps/package.json     # Added backup npm scripts
+apps/vps/package.json     # Added backup/restore npm scripts
 apps/vps/.gitignore       # Ignored backups/ directory
+docker-compose.yml        # Added vps_backup service
 ```
 
 ## Usage
@@ -175,6 +179,118 @@ Type 'yes' to continue: yes
 🎉 Database restore complete!
 📊 Database: mydb
    Host: localhost:5432
+```
+
+## Docker Usage
+
+If you don't have PostgreSQL client tools (`pg_dump`/`psql`) installed locally, you can use Docker to run backups and restores with all necessary tools pre-installed.
+
+### Using Docker Compose
+
+The recommended approach for local development:
+
+#### Backup with Docker Compose
+
+```bash
+# Build the image (first time only)
+docker compose build vps_backup
+
+# Run a backup
+docker compose run --rm vps_backup bun run scripts/backup-db-local.ts
+
+# Backups are saved to apps/vps/backups/
+```
+
+#### Restore with Docker Compose
+
+```bash
+# Restore from a backup file
+docker compose run --rm vps_backup bun run scripts/restore-db.ts /app/backups/backup-2025-11-14.sql
+
+# Skip confirmation in Docker (if needed)
+SKIP_CONFIRM=1 docker compose run --rm vps_backup bun run scripts/restore-db.ts /app/backups/backup.sql
+```
+
+#### Environment Variables for Docker Compose
+
+Edit your `.env` file or set when running:
+
+```env
+DB_USER=appuser
+DB_PASSWORD=yourpassword
+DB_NAME=myapp
+SKIP_CONFIRM=0
+```
+
+### Using Helper Scripts
+
+Convenient wrapper scripts that handle Docker building and execution:
+
+#### Docker Backup Script
+
+```bash
+# Set your database connection
+export LOCAL_DB_URL=postgres://user:password@host.docker.internal:5432/mydb
+
+# Run the backup (uses Docker)
+./apps/vps/scripts/docker-backup.sh
+
+# Or use npm script
+cd apps/vps
+LOCAL_DB_URL=postgres://user:password@host.docker.internal:5432/mydb bun db:backup:docker
+```
+
+**Note:** Use `host.docker.internal` to connect to your host machine's database from within Docker.
+
+#### Docker Restore Script
+
+```bash
+# Set your database connection
+export LOCAL_DB_URL=postgres://user:password@host.docker.internal:5432/mydb
+
+# Run the restore (uses Docker)
+./apps/vps/scripts/docker-restore.sh backups/backup-2025-11-14.sql
+
+# Or use npm script
+cd apps/vps
+LOCAL_DB_URL=postgres://user:password@host.docker.internal:5432/mydb \
+  bun db:restore:docker backups/backup-2025-11-14.sql
+```
+
+### Docker Image Details
+
+The Docker image (`Dockerfile.backup`) includes:
+- ✅ Bun runtime
+- ✅ PostgreSQL client tools (`pg_dump`, `psql`)
+- ✅ All backup/restore scripts
+- ✅ Node.js dependencies
+
+**Benefits of Docker approach:**
+- No need to install PostgreSQL client tools locally
+- Consistent environment across different machines
+- Works on all platforms (Windows, macOS, Linux)
+- Guaranteed to have latest `pg_dump`/`psql`
+
+### Docker Commands Reference
+
+```bash
+# Build the backup image
+docker compose build vps_backup
+
+# Run backup
+docker compose run --rm vps_backup bun run scripts/backup-db-local.ts
+
+# Run restore with confirmation
+docker compose run --rm vps_backup bun run scripts/restore-db.ts /app/backups/backup.sql
+
+# Run restore without confirmation
+docker compose run --rm -e SKIP_CONFIRM=1 vps_backup bun run scripts/restore-db.ts /app/backups/backup.sql
+
+# Connect to a database on host machine
+docker compose run --rm -e LOCAL_DB_URL=postgres://user:pass@host.docker.internal:5432/db vps_backup bun run scripts/backup-db-local.ts
+
+# Shell into the backup container (for debugging)
+docker compose run --rm vps_backup sh
 ```
 
 ## Environment Variables

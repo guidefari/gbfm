@@ -16,7 +16,9 @@
     "db:backup": "bun run scripts/backup-db.ts",
     "db:backup:prod": "bun sst shell --stage=prod bun run scripts/backup-db.ts",
     "db:backup:local": "bun run scripts/backup-db-local.ts",
-    "db:restore": "bun run scripts/restore-db.ts"
+    "db:backup:docker": "./scripts/docker-backup.sh",
+    "db:restore": "bun run scripts/restore-db.ts",
+    "db:restore:docker": "./scripts/docker-restore.sh"
   },
   "devDependencies": {
     "@types/aws-lambda": "8.10.145",
