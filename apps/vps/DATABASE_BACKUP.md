@@ -4,13 +4,14 @@ This document describes the comprehensive database backup system implemented for
 
 ## Overview
 
-The backup system provides multiple methods for backing up the PostgreSQL database:
+The backup system provides multiple methods for backing up and restoring the PostgreSQL database:
 - **Automated daily backups** to S3 via AWS Lambda cron job
 - **Manual S3 backups** for production and development
 - **Local filesystem backups** for development and testing
-- **Automatic fallback** when `pg_dump` is not available
+- **Database restore** from SQL dump files
+- **Automatic fallback** when `pg_dump`/`psql` are not available
 
-All backups are created using PostgreSQL's `pg_dump` when available, with a pure Node.js fallback for environments without PostgreSQL client tools.
+All backups are created using PostgreSQL's `pg_dump` when available, with a pure Node.js fallback for environments without PostgreSQL client tools. Restores use `psql` when available, with a fallback to pure Node.js execution.
 
 ## Architecture
 
@@ -26,10 +27,11 @@ All backups are created using PostgreSQL's `pg_dump` when available, with a pure
    - Uses Lambda function with 15-minute timeout and 1GB memory
    - Automatically uploads backups to S3
 
-3. **Backup Scripts** (`apps/vps/scripts/`)
+3. **Backup & Restore Scripts** (`apps/vps/scripts/`)
    - `backup-db.ts` - S3 backup script (manual or Lambda)
    - `backup-db-local.ts` - Local filesystem backup script
    - `backup-db-lambda.ts` - Lambda-specific backup handler
+   - `restore-db.ts` - Database restore script
    - `backup-utils.ts` - Shared utilities and fallback logic
 
 ### Backup Methods
@@ -53,6 +55,7 @@ All backups are created using PostgreSQL's `pg_dump` when available, with a pure
 apps/vps/scripts/backup-db.ts          # S3 backup script
 apps/vps/scripts/backup-db-local.ts    # Local backup script
 apps/vps/scripts/backup-db-lambda.ts   # Lambda handler
+apps/vps/scripts/restore-db.ts         # Database restore script
 apps/vps/scripts/backup-utils.ts       # Shared utilities
 infra/cron.ts                          # Daily backup cron job
 ```
@@ -121,11 +124,64 @@ Within `sst dev`:
 sst dev Backup_Database
 ```
 
+### Database Restore
+
+Restore a database from a SQL dump file:
+
+```bash
+# Restore to SST database (will prompt for confirmation)
+bun db:restore backups/backup-2025-11-14T12-30-00-000Z.sql
+
+# Restore to local database
+LOCAL_DB_URL=postgres://user:password@localhost:5432/mydb bun db:restore backup.sql
+
+# Skip confirmation prompt (automated scripts)
+SKIP_CONFIRM=1 bun db:restore backup.sql
+```
+
+**⚠️ Important Warning:**
+- Restore operations are **DESTRUCTIVE**
+- All existing tables will be dropped
+- All current data will be deleted
+- Always backup your current database before restoring
+- You will be prompted for confirmation unless `SKIP_CONFIRM=1` is set
+
+**Output:**
+```
+🔄 Starting database restore...
+📁 Backup file: /path/to/backups/backup-2025-11-14T12-30-00-000Z.sql
+📦 File size: 2.45 MB
+🔗 Using LOCAL_DB_URL connection string
+
+⚠️  WARNING: DESTRUCTIVE OPERATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+This will restore from: /path/to/backup.sql
+Target database: mydb
+Host: localhost:5432
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+This operation will:
+  • DROP existing tables
+  • DELETE all current data
+  • REPLACE with backup data
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Type 'yes' to continue: yes
+
+🚀 Starting restore operation...
+✓ Using psql (recommended)
+📦 Restoring database using psql...
+✅ Database restored successfully using psql
+
+🎉 Database restore complete!
+📊 Database: mydb
+   Host: localhost:5432
+```
+
 ## Environment Variables
 
 ### LOCAL_DB_URL (Optional)
 
-Override the database connection for backup operations:
+Override the database connection for backup and restore operations:
 
 ```bash
 # Format
@@ -136,13 +192,29 @@ LOCAL_DB_URL=postgres://admin:secret123@localhost:5432/myapp
 ```
 
 **When to use:**
-- Testing backups against a local database
-- Backing up a development database
+- Testing backups/restores against a local database
+- Backing up or restoring a development database
 - Working without SST resources configured
 
 **Default behavior:**
 - Uses SST Resource values when `LOCAL_DB_URL` is not set
 - Automatically pulls credentials from SST infrastructure
+
+### SKIP_CONFIRM (Optional)
+
+Skip the confirmation prompt for restore operations:
+
+```bash
+# Skip confirmation (use with caution!)
+SKIP_CONFIRM=1 bun db:restore backup.sql
+```
+
+**When to use:**
+- Automated scripts
+- CI/CD pipelines
+- Non-interactive environments
+
+**⚠️ Warning:** Only use this in trusted environments where you're certain about the restore operation
 
 ## Automated Backups
 
