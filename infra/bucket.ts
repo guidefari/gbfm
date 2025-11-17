@@ -13,7 +13,7 @@ export const mixesBucket = new sst.aws.Bucket('Mixes', {
 })
 
 export const dbBackupBucket = new sst.aws.Bucket('DatabaseBackups', {
-  access: 'private'
+  access: 'cloudfront'
 })
 
 export const fileRouter = new sst.aws.Router('Router', {

@@ -90,7 +90,7 @@ async function backupDatabase() {
 
     await s3Client.send(
       new PutObjectCommand({
-        Bucket: Resource.DatabaseBackupBucket.name,
+        Bucket: Resource.DatabaseBackups.name,
         Key: filename,
         Body: backupData,
         ContentType: "application/sql",
@@ -104,13 +104,13 @@ async function backupDatabase() {
     );
 
     console.log(`✅ Backup uploaded successfully: ${filename}`);
-    console.log(`📊 Bucket: ${Resource.DatabaseBackupBucket.name}`);
+    console.log(`📊 Bucket: ${Resource.DatabaseBackups.name}`);
     console.log(`🎉 Backup complete!`);
 
     return {
       success: true,
       filename,
-      bucket: Resource.DatabaseBackupBucket.name,
+      bucket: Resource.DatabaseBackups.name,
       size: backupData.length,
       method: hasPgDump ? "pg_dump" : "pg-library",
     };

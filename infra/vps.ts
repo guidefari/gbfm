@@ -69,6 +69,19 @@ if (!isLocal) {
   vps_gateway.routePrivate('$default', service.nodes.cloudmapService.arn)
 }
 
+export const dbBackupTask = new sst.aws.Task('DatabaseBackupTask', {
+  cluster,
+  image: {
+    context: './',
+    dockerfile: 'apps/vps/Dockerfile.backup-task'
+  },
+  dev: false,
+  link: [
+    dbBackupBucket,
+    ...allSecrets
+  ],
+})
+
 export const outputs = {
   vps_gateway: vps_gateway.url
 }

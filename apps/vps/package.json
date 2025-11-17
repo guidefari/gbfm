@@ -4,7 +4,8 @@
     "./schemas": "./src/db/exports.ts"
   },
   "scripts": {
-    "dev": "bun run --hot src/index.ts",
+    "dev": "DB_STAGE=dev bun run --hot src/index.ts",
+    "dev:proddb": "DB_STAGE=prod bun run --hot src/index.ts",
     "start": "bun run src/index.ts",
     "typecheck": "tsc --noEmit",
     "db:studio": "drizzle-kit studio",

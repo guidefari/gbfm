@@ -2,7 +2,7 @@ import { Resource } from 'sst'
 import { z } from 'zod'
 
 const envSchema = z.object({
-  DATABASE_URL: z.url(),
+  // DATABASE_URL: z.url(),
   NODE_ENV: z.string().default('development'),
   LOG_LEVEL: z
     .enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent'])
@@ -12,13 +12,14 @@ const envSchema = z.object({
   REFRESH_TOKEN_SECRET: z.string(),
   FRONTEND_URL: z.string().url(),
   SPOTIFY_CLIENT_ID: z.string(),
-  SPOTIFY_CLIENT_SECRET: z.string()
+  SPOTIFY_CLIENT_SECRET: z.string(),
+  DB_STAGE: z.string().optional()
 })
 
 const isProd = Resource.App.stage === 'prod'
 
 function createEnvConfig() {
-  const databaseUrl = Resource.FullDatabaseUrl.value
+  // const databaseUrl = Resource.FullDatabaseUrl.value
   const emailSender = isProd
     ? Resource.Email.sender
     : process.env.EMAIL_SENDER || ''
@@ -37,13 +38,14 @@ function createEnvConfig() {
   try {
     const config = envSchema.parse({
       ...process.env,
-      DATABASE_URL: databaseUrl,
+      // DATABASE_URL: databaseUrl,
       EMAIL_SENDER: emailSender,
       ACCESS_TOKEN_SECRET: accessTokenSecret,
       REFRESH_TOKEN_SECRET: refreshTokenSecret,
       FRONTEND_URL: frontendUrl,
       SPOTIFY_CLIENT_ID: spotifyClientId,
-      SPOTIFY_CLIENT_SECRET: spotifyClientSecret
+      SPOTIFY_CLIENT_SECRET: spotifyClientSecret,
+      DB_STAGE: process.env.DB_STAGE
     })
     return config
   } catch (error) {

@@ -7,7 +7,7 @@ export const secret = {
     'SpotifyClientSecret',
     process.env.SPOTIFY_CLIENT_SECRET
   ),
-  FullDatabaseUrl: new sst.Secret('FullDatabaseUrl', process.env.DATABASE_URL),
+  // FullDatabaseUrl: new sst.Secret('FullDatabaseUrl', process.env.DATABASE_URL),
   AccessTokenSecret: new sst.Secret(
     'ACCESS_TOKEN_SECRET',
     process.env.ACCESS_TOKEN_SECRET

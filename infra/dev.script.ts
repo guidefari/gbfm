@@ -1,4 +1,5 @@
 import { dbBackupBucket } from './bucket'
+// import { dbBackupCron } from './cron'
 import { email } from './email'
 import { allSecrets } from './secret'
 
@@ -134,6 +135,24 @@ new sst.x.DevCommand('Backup_Database', {
   link: [...allSecrets, email, dbBackupBucket],
   dev: {
     command: 'bun scripts/backup-db.ts',
+    directory: './apps/vps',
+    autostart: false
+  }
+})
+
+// new sst.x.DevCommand('Backup_Database_Docker', {
+//   link: [...allSecrets, email, dbBackupBucket],
+//   dev: {
+//     command: './scripts/docker-backup-s3.sh',
+//     directory: './apps/vps',
+//     autostart: false
+//   }
+// })
+
+new sst.x.DevCommand('Restore_Local_Database', {
+  link: [...allSecrets, email, dbBackupBucket],
+  dev: {
+    command: 'bun scripts/restore-db.ts',
     directory: './apps/vps',
     autostart: false
   }

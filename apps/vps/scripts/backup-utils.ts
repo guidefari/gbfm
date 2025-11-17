@@ -1,3 +1,4 @@
+// todo: undo the lambda related stuff from here
 import { Client } from "pg";
 
 /**
@@ -13,17 +14,63 @@ export interface BackupConfig {
 }
 
 /**
- * Check if pg_dump is available on the system
+ * Check if Bun is available on the system
  */
-export async function isPgDumpAvailable(): Promise<boolean> {
+export async function isBunAvailable(): Promise<boolean> {
+  const bunPath = process.env.AWS_LAMBDA_FUNCTION_NAME
+    ? "/opt/bin/bun"
+    : "bun";
+
   try {
-    const proc = Bun.spawn(["which", "pg_dump"], {
+    const proc = Bun.spawn([bunPath, "--version"], {
       stdout: "pipe",
       stderr: "pipe",
     });
     await proc.exited;
-    return proc.exitCode === 0;
-  } catch {
+    const isAvailable = proc.exitCode === 0;
+
+    if (isAvailable) {
+      const version = await new Response(proc.stdout).text();
+      console.log(`✓ Bun runtime detected at ${bunPath}`);
+      console.log(`  Version: ${version.trim()}`);
+    } else {
+      console.log(`⚠️  Bun not found at ${bunPath}`);
+    }
+
+    return isAvailable;
+  } catch (error) {
+    console.log(`⚠️  Bun not available at ${bunPath}`);
+    return false;
+  }
+}
+
+/**
+ * Check if pg_dump is available on the system
+ */
+export async function isPgDumpAvailable(): Promise<boolean> {
+  const pgDumpPath = process.env.AWS_LAMBDA_FUNCTION_NAME
+    ? "/opt/bin/pg_dump"
+    : "pg_dump";
+
+  try {
+    const proc = Bun.spawn([pgDumpPath, "--version"], {
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    await proc.exited;
+    const isAvailable = proc.exitCode === 0;
+
+    if (isAvailable) {
+      const version = await new Response(proc.stdout).text();
+      console.log(`✓ pg_dump found at ${pgDumpPath}`);
+      console.log(`  Version: ${version.trim()}`);
+    } else {
+      console.log(`⚠️  pg_dump not found at ${pgDumpPath}`);
+    }
+
+    return isAvailable;
+  } catch (error) {
+    console.log(`⚠️  pg_dump not available at ${pgDumpPath}`);
     return false;
   }
 }
@@ -136,6 +183,9 @@ export async function createBackupWithPg(config: BackupConfig): Promise<string> 
 export async function createBackupWithPgDump(config: BackupConfig): Promise<string> {
   console.log("📦 Creating database dump using pg_dump...");
 
+  const isLambda = !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+  const pgDumpPath = isLambda ? "/opt/bin/pg_dump" : "pg_dump";
+
   const env = {
     PGPASSWORD: config.password,
     PGUSER: config.user,
@@ -144,7 +194,11 @@ export async function createBackupWithPgDump(config: BackupConfig): Promise<stri
     PGPORT: config.port,
   };
 
-  const proc = Bun.spawn(["pg_dump", "--no-owner", "--no-acl", "--clean", "--if-exists"], {
+  if (isLambda) {
+    env.LD_LIBRARY_PATH = "/opt/lib";
+  }
+
+  const proc = Bun.spawn([pgDumpPath, "--no-owner", "--no-acl", "--clean", "--if-exists"], {
     env: { ...process.env, ...env },
     stdout: "pipe",
     stderr: "pipe",
