@@ -267,9 +267,8 @@ export default function CreateRelease() {
           const response = await get(
             `/content/labels?limit=${limit}&offset=${offset}`
           )
-          const page = await parseJsonResponse<PaginatedResponse<Label>>(
-            response
-          )
+          const page =
+            await parseJsonResponse<PaginatedResponse<Label>>(response)
           allLabels = [...allLabels, ...page.data]
           hasMore = page.pagination.hasMore
           offset += limit
