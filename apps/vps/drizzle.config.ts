@@ -1,9 +1,6 @@
-import path from "node:path";
 import { defineConfig } from "drizzle-kit";
 import { Resource } from "sst";
 import { env } from "./src/env";
-
-const relativePath = path.relative(process.cwd(), __filename);
 
 const localPgConfig = {
 	host: "localhost",
@@ -22,12 +19,6 @@ const prodPgConfig = {
 	database: Resource.DatabaseName.value,
 	ssl: false,
 };
-
-
-
-console.log(`🔒 SSL Configuration Reminder
-If you need to connect to the production database from local, 
-uncomment the SSL configuration in ${relativePath} .`);
 
 console.log('connecting to db stage', env.DB_STAGE || 'prod')
 

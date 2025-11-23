@@ -11,3 +11,6 @@ node_modules/
 
 # backups
 backups/
+
+# temp files
+.tmp/

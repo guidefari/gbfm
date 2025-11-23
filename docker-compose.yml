@@ -24,12 +24,15 @@ services:
     container_name: gbfm_pgdb
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${DB_NAME:-postgres}
-      POSTGRES_USER: ${DB_USER:-postgres}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      # POSTGRES_DB: ${DB_NAME:-postgres}
+      # POSTGRES_USER: ${DB_USER:-postgres}
+      # POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
       POSTGRES_INITDB_ARGS: "--auth-host=md5"
     volumes:
-      - gbfm_pgdb:/var/lib/postgresql/data
+      # - gbfm_pgdb:/var/lib/postgresql/data
       - ./config/postgresql.conf:/etc/postgresql/postgresql.conf
       - ./config/pg_hba.conf:/etc/postgresql/pg_hba.conf
       - ./backups:/backups
@@ -216,7 +219,7 @@ networks:
     driver: bridge
 
 volumes:
-  gbfm_pgdb:
+  # gbfm_pgdb:
   prometheus_data:
   grafana_data:
   loki_data:
