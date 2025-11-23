@@ -1,5 +1,3 @@
-// import { dbBackupBucket } from './bucket'
-// import { allSecrets } from './secret'
 import { dbBackupTask } from './vps'
 
 /**
@@ -12,14 +10,8 @@ import { dbBackupTask } from './vps'
  */
 
 export const dbBackupCron = new sst.aws.Cron('DatabaseBackupCron', {
-  job: {
-    handler: 'apps/vps/scripts/invoke-backup-task.handler',
-    link: [dbBackupTask],
-    timeout: '2 minutes'
-  },
-  // Run daily at 2:00 AM UTC
+  task: dbBackupTask,
   schedule: 'cron(0 2 * * ? *)'
-  // schedule: "rate(1 minute)"
 })
 
 export const testFunction = new sst.aws.Function('BackupTaskInvoker', {

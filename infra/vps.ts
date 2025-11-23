@@ -83,7 +83,7 @@ export const dbBackupTask = new sst.aws.Task('DatabaseBackupTask', {
     DatabasePort: secret.DatabasePort.value,
     DatabaseName: secret.DatabaseName.value
   },
-  link: [dbBackupBucket, ...allSecrets]
+  link: [dbBackupBucket, ...allSecrets],
 })
 
 export const outputs = {
