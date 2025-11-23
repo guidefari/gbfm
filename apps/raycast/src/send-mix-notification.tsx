@@ -29,6 +29,16 @@ interface MixNotificationFormData {
   customReleaseDate: string
 }
 
+interface PaginatedResponse<T> {
+  data: T[]
+  pagination: {
+    total: number
+    limit: number
+    offset: number
+    hasMore: boolean
+  }
+}
+
 export default function SendMixNotification() {
   const [mixes, setMixes] = useState<Mix[]>([])
   const [isLoadingMixes, setIsLoadingMixes] = useState(true)
@@ -50,13 +60,13 @@ export default function SendMixNotification() {
 
         const response = yield* Effect.promise(() => get('/content/audio/mix'))
 
-        const mixList = yield* Effect.promise(() =>
-          parseJsonResponse<Mix[]>(response)
+        const paginatedResponse = yield* Effect.promise(() =>
+          parseJsonResponse<PaginatedResponse<Mix>>(response)
         )
 
-        yield* Effect.logInfo(`Loaded ${mixList.length} mixes`)
+        yield* Effect.logInfo(`Loaded ${paginatedResponse.data.length} mixes`)
 
-        return mixList
+        return paginatedResponse.data
       })
 
       try {

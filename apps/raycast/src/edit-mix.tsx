@@ -25,6 +25,18 @@ interface Mix {
   type: 'mix'
 }
 
+interface PaginationMetadata {
+  total: number
+  limit: number
+  offset: number
+  hasMore: boolean
+}
+
+interface PaginatedResponse<T> {
+  data: T[]
+  pagination: PaginationMetadata
+}
+
 interface EditFormData {
   title: string
   description: string
@@ -48,9 +60,23 @@ function MixSearchList({ onSelectMix }: { onSelectMix: (mix: Mix) => void }) {
 
   const loadMixes = async () => {
     try {
-      const response = await get('/content/audio/mix')
-      const mixesData = await parseJsonResponse<Mix[]>(response)
-      setMixes(mixesData)
+      // Load all pages of mixes
+      let allMixes: Mix[] = []
+      let offset = 0
+      const limit = 20
+      let hasMore = true
+
+      while (hasMore) {
+        const response = await get(
+          `/content/audio/mix?limit=${limit}&offset=${offset}`
+        )
+        const page = await parseJsonResponse<PaginatedResponse<Mix>>(response)
+        allMixes = [...allMixes, ...page.data]
+        hasMore = page.pagination.hasMore
+        offset += limit
+      }
+
+      setMixes(allMixes)
     } catch (error) {
       await showToast({
         style: Toast.Style.Failure,

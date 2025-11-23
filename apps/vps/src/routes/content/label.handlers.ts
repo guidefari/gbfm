@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { count, desc, eq } from 'drizzle-orm'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
 import {
@@ -8,6 +8,7 @@ import {
 } from '@/db/label.schema'
 import { usersTable } from '@/db/user.schema'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
+import { createPaginationMetadata } from '@/lib/pagination'
 import type { AppRouteHandler } from '@/lib/types'
 
 import type {
@@ -74,12 +75,35 @@ export const createLabel: AppRouteHandler<CreateLabelRoute> = async (c) => {
 }
 
 export const getAllLabels: AppRouteHandler<GetAllLabelsRoute> = async (c) => {
+  const { limit, offset } = c.req.valid('query')
+
   try {
-    const labels = await db
+    const whereCondition = eq(labelsTable.draft, false)
+
+    // Get total count
+    const countResult = await db
+      .select({ total: count() })
+      .from(labelsTable)
+      .where(whereCondition)
+
+    const total = countResult[0]?.total ?? 0
+
+    // Get paginated data
+    const data = await db
       .select()
       .from(labelsTable)
-      .where(eq(labelsTable.draft, false))
-    return c.json(labels, HttpStatusCodes.OK)
+      .where(whereCondition)
+      .limit(limit)
+      .offset(offset)
+      .orderBy(desc(labelsTable.createdAt))
+
+    return c.json(
+      {
+        data,
+        pagination: createPaginationMetadata(total, limit, offset)
+      },
+      HttpStatusCodes.OK
+    )
   } catch (error) {
     console.error('Error fetching labels:', error)
     return c.json(

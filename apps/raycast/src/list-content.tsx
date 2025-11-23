@@ -24,6 +24,18 @@ interface Mix {
   updatedAt: string
 }
 
+interface PaginationMetadata {
+  total: number
+  limit: number
+  offset: number
+  hasMore: boolean
+}
+
+interface PaginatedResponse<T> {
+  data: T[]
+  pagination: PaginationMetadata
+}
+
 export default function ListContent() {
   const [mixes, setMixes] = useState<Mix[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -49,19 +61,34 @@ export default function ListContent() {
         return
       }
 
-      const response = await fetch(`${baseUrl}/content/audio/mix`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          'Content-Type': 'application/json'
-        }
-      })
+      // Load all pages of mixes
+      let allMixes: Mix[] = []
+      let offset = 0
+      const limit = 20
+      let hasMore = true
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch mixes: ${response.statusText}`)
+      while (hasMore) {
+        const response = await fetch(
+          `${baseUrl}/content/audio/mix?limit=${limit}&offset=${offset}`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              'Content-Type': 'application/json'
+            }
+          }
+        )
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch mixes: ${response.statusText}`)
+        }
+
+        const page = (await response.json()) as PaginatedResponse<Mix>
+        allMixes = [...allMixes, ...page.data]
+        hasMore = page.pagination.hasMore
+        offset += limit
       }
 
-      const mixesData = (await response.json()) as Mix[]
-      setMixes(mixesData)
+      setMixes(allMixes)
     } catch (error) {
       await showToast({
         style: Toast.Style.Failure,

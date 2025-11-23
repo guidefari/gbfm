@@ -7,7 +7,14 @@ export const Route = createFileRoute('/labels/')({
 })
 
 function Component() {
-  const { data, isPending, error } = useAllLabels()
+  const {
+    data,
+    isPending,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
+  } = useAllLabels()
 
   if (isPending) {
     return (
@@ -71,6 +78,18 @@ function Component() {
           </Link>
         ))}
       </div>
+
+      {hasNextPage && (
+        <div className='flex justify-center mt-8'>
+          <button
+            type='button'
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+            className='px-6 py-3 text-sm font-medium transition-colors rounded-lg bg-muted hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed'>
+            {isFetchingNextPage ? 'Loading...' : 'Load More Labels'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

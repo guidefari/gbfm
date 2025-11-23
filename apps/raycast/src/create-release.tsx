@@ -32,6 +32,16 @@ interface Label {
   slug: string
 }
 
+interface PaginatedResponse<T> {
+  data: T[]
+  pagination: {
+    total: number
+    limit: number
+    offset: number
+    hasMore: boolean
+  }
+}
+
 interface AlbumSearchResult {
   id: string
   title: string
@@ -248,9 +258,23 @@ export default function CreateRelease() {
   useEffect(() => {
     const fetchLabels = async () => {
       try {
-        const response = await get('/content/labels')
-        const labelsData = await parseJsonResponse<Label[]>(response)
-        setLabels(labelsData)
+        let allLabels: Label[] = []
+        let offset = 0
+        const limit = 20
+        let hasMore = true
+
+        while (hasMore) {
+          const response = await get(
+            `/content/labels?limit=${limit}&offset=${offset}`
+          )
+          const page =
+            await parseJsonResponse<PaginatedResponse<Label>>(response)
+          allLabels = [...allLabels, ...page.data]
+          hasMore = page.pagination.hasMore
+          offset += limit
+        }
+
+        setLabels(allLabels)
       } catch (_error) {
         await showToast({
           style: Toast.Style.Failure,

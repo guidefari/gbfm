@@ -60,6 +60,14 @@ declare module "sst" {
       "name": string
       "type": "sst.aws.Bucket"
     }
+    "POSTHOG_HOST": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "POSTHOG_KEY": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "REFRESH_TOKEN_SECRET": {
       "type": "sst.sst.Secret"
       "value": string

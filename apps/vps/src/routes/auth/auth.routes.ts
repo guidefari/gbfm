@@ -13,6 +13,10 @@ import {
   signupSchema,
   updateProfileSchema
 } from '@/db/user.schema'
+import {
+  createPaginatedResponseSchema,
+  paginationQuerySchema
+} from '@/lib/pagination'
 
 const usernameSchema = z
   .string()
@@ -212,11 +216,14 @@ export const createUser = createRoute({
 export const listUsers = createRoute({
   path: '/users',
   method: 'get',
+  request: {
+    query: paginationQuerySchema
+  },
   tags,
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
-      z.array(userResponseSchema),
-      'List of users'
+      createPaginatedResponseSchema(userResponseSchema),
+      'Paginated list of users'
     )
   }
 })

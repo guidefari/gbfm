@@ -13,7 +13,8 @@ export const Route = createFileRoute('/mixes/')({
 })
 
 function Component() {
-  const { data, isPending } = useAudioByType('mix')
+  const { data, isPending, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useAudioByType('mix')
   const { mixesSorting } = useUIStore()
   const { isPlaying, nowPlayingContext } = useAudioPlayerState()
   const { loadTrack } = useAudioPlayerActions()
@@ -93,6 +94,16 @@ function Component() {
           </TrackContextMenu>
         )
       })}
+
+      {hasNextPage && (
+        <button
+          type='button'
+          onClick={() => fetchNextPage()}
+          disabled={isFetchingNextPage}
+          className='p-4 text-sm font-medium transition-colors rounded-lg bg-muted hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed'>
+          {isFetchingNextPage ? 'Loading...' : 'Load More'}
+        </button>
+      )}
     </div>
   )
 }

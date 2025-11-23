@@ -20,6 +20,18 @@ interface Label {
   draft: boolean
 }
 
+interface PaginationMetadata {
+  total: number
+  limit: number
+  offset: number
+  hasMore: boolean
+}
+
+interface PaginatedResponse<T> {
+  data: T[]
+  pagination: PaginationMetadata
+}
+
 export default function EditLabel() {
   const [labels, setLabels] = useState<Label[]>([])
   const [selectedLabelSlug, setSelectedLabelSlug] = useState<string>('')
@@ -43,22 +55,37 @@ export default function EditLabel() {
     const fetchLabelsEffect = Effect.gen(function* () {
       yield* Effect.logInfo('Fetching labels list')
 
-      const response = yield* Effect.promise(() => get('/content/labels'))
+      // Load all pages of labels
+      let allLabels: Label[] = []
+      let offset = 0
+      const limit = 20
+      let hasMore = true
 
-      yield* Effect.logInfo('Labels response received', {
-        status: response.status,
-        ok: response.ok
+      while (hasMore) {
+        const response = yield* Effect.promise(() =>
+          get(`/content/labels?limit=${limit}&offset=${offset}`)
+        )
+
+        yield* Effect.logInfo('Labels response received', {
+          status: response.status,
+          ok: response.ok,
+          offset
+        })
+
+        const page = yield* Effect.promise(() =>
+          parseJsonResponse<PaginatedResponse<Label>>(response)
+        )
+
+        allLabels = [...allLabels, ...page.data]
+        hasMore = page.pagination.hasMore
+        offset += limit
+      }
+
+      yield* Effect.logInfo('All labels loaded successfully', {
+        count: allLabels.length
       })
 
-      const labelsData = yield* Effect.promise(() =>
-        parseJsonResponse<Label[]>(response)
-      )
-
-      yield* Effect.logInfo('Labels parsed successfully', {
-        count: labelsData.length
-      })
-
-      return labelsData
+      return allLabels
     })
 
     Runtime.runPromise(Runtime.defaultRuntime)(fetchLabelsEffect)
