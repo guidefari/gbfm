@@ -6,6 +6,7 @@ import content from '@/routes/content/content.index'
 import email from '@/routes/email/email.index'
 import publication from '@/routes/publication/publication.index'
 import rss from '@/routes/rss/rss.index'
+import share from '@/routes/share/share.index'
 import spotify from '@/routes/spotify/spotify.index'
 import upload from '@/routes/upload/upload.index'
 import { db } from './db'
@@ -19,6 +20,7 @@ const routes = [
   { path: '/content', handler: content },
   { path: '/email', handler: email },
   { path: '/publication', handler: publication },
+  { path: '/share', handler: share },
   { path: '/spotify', handler: spotify },
   { path: '/upload', handler: upload },
   { path: '', handler: rss }
