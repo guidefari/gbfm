@@ -246,7 +246,8 @@ export default function Profile() {
                           System Notifications
                         </Label>
                         <p className='text-sm text-muted-foreground'>
-                          Important updates about your account and system changes
+                          Important updates about your account and system
+                          changes
                         </p>
                       </div>
                       <input
@@ -254,7 +255,10 @@ export default function Profile() {
                         type='checkbox'
                         checked={emailPrefs.systemEnabled}
                         onChange={(e) =>
-                          handleEmailPrefChange('systemEnabled', e.target.checked)
+                          handleEmailPrefChange(
+                            'systemEnabled',
+                            e.target.checked
+                          )
                         }
                         disabled={emailPrefs.globalUnsubscribe}
                         className='h-4 w-4 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary disabled:opacity-50'

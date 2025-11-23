@@ -2,7 +2,10 @@ import { createRoute, z } from '@hono/zod-openapi'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { jsonContent, jsonContentRequired } from 'stoker/openapi/helpers'
 import { createErrorSchema } from 'stoker/openapi/schemas'
-
+import {
+  selectAuthorEmailPreferencesSchema,
+  updateAuthorEmailPreferencesSchema
+} from '@/db/email.schema'
 import {
   createUserSchema,
   forgotPasswordSchema,
@@ -13,10 +16,6 @@ import {
   signupSchema,
   updateProfileSchema
 } from '@/db/user.schema'
-import {
-  selectAuthorEmailPreferencesSchema,
-  updateAuthorEmailPreferencesSchema
-} from '@/db/email.schema'
 import {
   createPaginatedResponseSchema,
   paginationQuerySchema

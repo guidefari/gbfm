@@ -38,9 +38,9 @@ import type {
   ListUsersRoute,
   RefreshTokenRoute,
   ResetPasswordRoute,
-  UpdateEmailPreferencesRoute,
   SigninRoute,
   SignupRoute,
+  UpdateEmailPreferencesRoute,
   UpdateProfileRoute
 } from './auth.routes'
 import { isUsernameAvailable, uploadAvatar } from './auth.util'
@@ -555,7 +555,10 @@ export const updateEmailPreferences: AppRouteHandler<
   const updates = c.req.valid('json')
 
   try {
-    const updatedPreferences = await updateEmailPreferencesRepo(user.id, updates)
+    const updatedPreferences = await updateEmailPreferencesRepo(
+      user.id,
+      updates
+    )
 
     if (!updatedPreferences) {
       return c.json(

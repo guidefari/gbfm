@@ -29,10 +29,7 @@ export async function updateEmailDeliveryLog(
   return result
 }
 
-export async function getEmailDeliveryLogsByUserId(
-  userId: string,
-  limit = 50
-) {
+export async function getEmailDeliveryLogsByUserId(userId: string, limit = 50) {
   return db
     .select()
     .from(emailDeliveryLogsTable)
