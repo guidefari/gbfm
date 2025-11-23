@@ -1,3 +1,10 @@
+## [0.36.1](https://github.com/guidefari/gbfm/compare/v0.36.0...v0.36.1) (2025-11-23)
+
+
+### Bug Fixes
+
+* posthog configs ([25e082b](https://github.com/guidefari/gbfm/commit/25e082b4597d9748c363b4aef635b24bcd1192fa))
+
 # [0.36.0](https://github.com/guidefari/gbfm/compare/v0.35.0...v0.36.0) (2025-11-23)
 
 
