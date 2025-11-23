@@ -1,11 +1,21 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useId, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger
+} from '@/components/ui/accordion'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useUpdateProfile, useUserLOL } from '@/lib/http'
-import type { User } from '@/store/auth'
+import {
+  useEmailPreferences,
+  useUpdateEmailPreferences,
+  useUpdateProfile,
+  useUserLOL
+} from '@/lib/http'
 
 export const Route = createFileRoute('/settings/profile')({
   component: Profile
@@ -15,10 +25,29 @@ export default function Profile() {
   const { data: user } = useUserLOL()
   const avatarId = useId()
   const { updateProfile } = useUpdateProfile()
+  const { data: emailPreferences } = useEmailPreferences()
+  const { updateEmailPreferences } = useUpdateEmailPreferences()
 
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [emailPrefs, setEmailPrefs] = useState({
+    mixReleaseEnabled: emailPreferences?.mixReleaseEnabled ?? true,
+    promotionalEnabled: emailPreferences?.promotionalEnabled ?? true,
+    systemEnabled: emailPreferences?.systemEnabled ?? true,
+    globalUnsubscribe: emailPreferences?.globalUnsubscribe ?? false
+  })
+
+  useEffect(() => {
+    if (emailPreferences) {
+      setEmailPrefs({
+        mixReleaseEnabled: emailPreferences.mixReleaseEnabled,
+        promotionalEnabled: emailPreferences.promotionalEnabled,
+        systemEnabled: emailPreferences.systemEnabled,
+        globalUnsubscribe: emailPreferences.globalUnsubscribe
+      })
+    }
+  }, [emailPreferences])
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -30,6 +59,15 @@ export default function Profile() {
       }
       reader.readAsDataURL(file)
     }
+  }
+
+  const handleEmailPrefChange = (
+    key: keyof typeof emailPrefs,
+    value: boolean
+  ) => {
+    const newPrefs = { ...emailPrefs, [key]: value }
+    setEmailPrefs(newPrefs)
+    updateEmailPreferences(newPrefs)
   }
 
   const fields = [
@@ -69,7 +107,7 @@ export default function Profile() {
         formData.append('avatar', selectedFile)
       }
 
-      updateProfile(formData as unknown as User)
+      updateProfile(formData)
 
       setSelectedFile(null)
     } catch (error) {
@@ -142,6 +180,121 @@ export default function Profile() {
                 </Button>
               </div>
             </form>
+
+            <Accordion type='single' collapsible className='w-full mt-6'>
+              <AccordionItem value='email-preferences'>
+                <AccordionTrigger>Email Preferences</AccordionTrigger>
+                <AccordionContent>
+                  <div className='space-y-4'>
+                    <div className='flex items-center justify-between'>
+                      <div className='flex-1'>
+                        <Label
+                          htmlFor='mixReleaseEnabled'
+                          className='text-sm font-medium'>
+                          Mix Release Notifications
+                        </Label>
+                        <p className='text-sm text-muted-foreground'>
+                          Get notified when new mixes are released
+                        </p>
+                      </div>
+                      <input
+                        id='mixReleaseEnabled'
+                        type='checkbox'
+                        checked={emailPrefs.mixReleaseEnabled}
+                        onChange={(e) =>
+                          handleEmailPrefChange(
+                            'mixReleaseEnabled',
+                            e.target.checked
+                          )
+                        }
+                        disabled={emailPrefs.globalUnsubscribe}
+                        className='h-4 w-4 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary disabled:opacity-50'
+                      />
+                    </div>
+
+                    <div className='flex items-center justify-between'>
+                      <div className='flex-1'>
+                        <Label
+                          htmlFor='promotionalEnabled'
+                          className='text-sm font-medium'>
+                          Promotional Emails
+                        </Label>
+                        <p className='text-sm text-muted-foreground'>
+                          Receive updates about new features and promotions
+                        </p>
+                      </div>
+                      <input
+                        id='promotionalEnabled'
+                        type='checkbox'
+                        checked={emailPrefs.promotionalEnabled}
+                        onChange={(e) =>
+                          handleEmailPrefChange(
+                            'promotionalEnabled',
+                            e.target.checked
+                          )
+                        }
+                        disabled={emailPrefs.globalUnsubscribe}
+                        className='h-4 w-4 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary disabled:opacity-50'
+                      />
+                    </div>
+
+                    <div className='flex items-center justify-between'>
+                      <div className='flex-1'>
+                        <Label
+                          htmlFor='systemEnabled'
+                          className='text-sm font-medium'>
+                          System Notifications
+                        </Label>
+                        <p className='text-sm text-muted-foreground'>
+                          Important updates about your account and system
+                          changes
+                        </p>
+                      </div>
+                      <input
+                        id='systemEnabled'
+                        type='checkbox'
+                        checked={emailPrefs.systemEnabled}
+                        onChange={(e) =>
+                          handleEmailPrefChange(
+                            'systemEnabled',
+                            e.target.checked
+                          )
+                        }
+                        disabled={emailPrefs.globalUnsubscribe}
+                        className='h-4 w-4 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary disabled:opacity-50'
+                      />
+                    </div>
+
+                    <div className='border-t pt-4'>
+                      <div className='flex items-center justify-between'>
+                        <div className='flex-1'>
+                          <Label
+                            htmlFor='globalUnsubscribe'
+                            className='text-sm font-medium text-destructive'>
+                            Unsubscribe from All
+                          </Label>
+                          <p className='text-sm text-muted-foreground'>
+                            Opt out of all non-transactional emails
+                          </p>
+                        </div>
+                        <input
+                          id='globalUnsubscribe'
+                          type='checkbox'
+                          checked={emailPrefs.globalUnsubscribe}
+                          onChange={(e) =>
+                            handleEmailPrefChange(
+                              'globalUnsubscribe',
+                              e.target.checked
+                            )
+                          }
+                          className='h-4 w-4 rounded border-gray-300 text-destructive focus:ring-2 focus:ring-destructive'
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </CardContent>
         </Card>
       </div>

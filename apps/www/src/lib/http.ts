@@ -43,14 +43,16 @@ export async function fetcher<T>(
   const jwt = init.token || accessToken
 
   try {
+    const isFormData = init.body instanceof FormData
     const headers = {
-      'Content-Type': 'application/json',
+      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
       ...(jwt
         ? {
             Authorization: `Bearer ${jwt}`,
             'Refresh-Token': refreshToken || ''
           }
-        : {})
+        : {}),
+      ...init.headers
     }
 
     let res = await fetch(input, {
@@ -65,8 +67,10 @@ export async function fetcher<T>(
 
       if (newToken) {
         const retryHeaders = {
-          ...headers,
-          Authorization: `Bearer ${newToken}`
+          ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+          Authorization: `Bearer ${newToken}`,
+          'Refresh-Token': refreshToken || '',
+          ...init.headers
         }
         res = await fetch(input, {
           ...init,
@@ -181,16 +185,64 @@ export function useUserLOL() {
 }
 
 export function useUpdateProfile() {
-  const { mutate: updateProfile, isPending } = useMutation<User, Error, User>({
-    mutationFn: async (user) =>
+  const { mutate: updateProfile, isPending } = useMutation<
+    User,
+    Error,
+    FormData | User
+  >({
+    mutationFn: async (data) =>
       fetcher(`${VPS_BASE_URL}/auth/profile`, {
         method: 'PATCH',
-        body: JSON.stringify(user)
+        body: data instanceof FormData ? data : JSON.stringify(data)
       })
   })
 
   return {
     updateProfile,
+    isPending
+  }
+}
+
+export type EmailPreferences = {
+  id: string
+  userId: string
+  mixReleaseEnabled: boolean
+  promotionalEnabled: boolean
+  systemEnabled: boolean
+  globalUnsubscribe: boolean
+  unsubscribeToken: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export function useEmailPreferences() {
+  const { data, error, isPending } = useQuery<EmailPreferences, Error>({
+    queryKey: ['email-preferences'],
+    queryFn: async () => fetcher(`${VPS_BASE_URL}/auth/email-preferences`)
+  })
+
+  return {
+    data,
+    error,
+    isPending
+  }
+}
+
+export function useUpdateEmailPreferences() {
+  const { mutate: updateEmailPreferences, isPending } = useMutation<
+    EmailPreferences,
+    Error,
+    Partial<EmailPreferences>
+  >({
+    mutationFn: async (preferences) =>
+      fetcher(`${VPS_BASE_URL}/auth/email-preferences`, {
+        method: 'PATCH',
+        body: JSON.stringify(preferences)
+      })
+  })
+
+  return {
+    updateEmailPreferences,
     isPending
   }
 }

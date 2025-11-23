@@ -5,6 +5,10 @@ import { sign, verify } from 'hono/jwt'
 import type { JWTPayload } from 'hono/utils/jwt/types'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
+import {
+  EMAIL_DELIVERY_STATUSES,
+  EMAIL_NOTIFICATION_TYPES
+} from '@/db/email.schema'
 import { getUserByEmailOrId } from '@/db/user.repo'
 import {
   type UpdateProfileSchema,
@@ -15,16 +19,28 @@ import {
 import { env } from '@/env'
 import { createPaginationMetadata } from '@/lib/pagination'
 import type { AppRouteHandler } from '@/lib/types'
+import {
+  createEmailDeliveryLog,
+  markEmailDeliveryLogAsFailed,
+  markEmailDeliveryLogAsSent
+} from '@/repositories/email-delivery-log.repository'
+
+import {
+  getOrCreateEmailPreferencesByUserId,
+  updateEmailPreferences as updateEmailPreferencesRepo
+} from '@/repositories/email-preferences.repository'
 
 import type {
   CreateUserRoute,
   ForgotPasswordRoute,
+  GetEmailPreferencesRoute,
   GetProfileRoute,
   ListUsersRoute,
   RefreshTokenRoute,
   ResetPasswordRoute,
   SigninRoute,
   SignupRoute,
+  UpdateEmailPreferencesRoute,
   UpdateProfileRoute
 } from './auth.routes'
 import { isUsernameAvailable, uploadAvatar } from './auth.util'
@@ -70,11 +86,33 @@ export const signup: AppRouteHandler<SignupRoute> = async (c) => {
     )
   }
 
-  await sendWelcomeEmail({
-    to: validated.email,
-    username: validated.username || validated.email,
-    loginUrl: `${env.FRONTEND_URL}/auth/signin`
+  // Create email delivery log for welcome email
+  const username = validated.username || validated.email
+  const subject = `Welcome to goosebumps.fm, ${username}! 🎵`
+  const welcomeEmailLog = await createEmailDeliveryLog({
+    userId: newUser.id,
+    recipientEmail: validated.email,
+    recipientName: username,
+    emailType: EMAIL_NOTIFICATION_TYPES.TRANSACTIONAL,
+    templateName: 'welcome',
+    subject,
+    status: EMAIL_DELIVERY_STATUSES.PENDING
   })
+
+  try {
+    await sendWelcomeEmail({
+      to: validated.email,
+      username,
+      loginUrl: `${env.FRONTEND_URL}/auth/signin`
+    })
+    await markEmailDeliveryLogAsSent(welcomeEmailLog.id)
+  } catch (emailError) {
+    console.error('Failed to send welcome email:', emailError)
+    await markEmailDeliveryLogAsFailed(
+      welcomeEmailLog.id,
+      emailError instanceof Error ? emailError.message : 'Unknown error'
+    )
+  }
 
   const { password, ...userWithoutPassword } = newUser
 
@@ -188,11 +226,34 @@ export const forgotPassword: AppRouteHandler<ForgotPasswordRoute> = async (
     expiresAt
   })
 
-  await sendPasswordResetEmail({
-    to: validated.email,
-    resetUrl: `${env.FRONTEND_URL}/auth/reset-password?token=${token}&email=${validated.email}`,
-    expiresIn: '1 hour'
+  // Create email delivery log for password reset email
+  const resetEmailLog = await createEmailDeliveryLog({
+    userId: currentUser.id,
+    recipientEmail: validated.email,
+    recipientName: currentUser.name,
+    emailType: EMAIL_NOTIFICATION_TYPES.TRANSACTIONAL,
+    templateName: 'password-reset',
+    subject: 'Reset your goosebumps.fm password',
+    status: EMAIL_DELIVERY_STATUSES.PENDING,
+    metadata: {
+      tokenId: token
+    }
   })
+
+  try {
+    await sendPasswordResetEmail({
+      to: validated.email,
+      resetUrl: `${env.FRONTEND_URL}/auth/reset-password?token=${token}&email=${validated.email}`,
+      expiresIn: '1 hour'
+    })
+    await markEmailDeliveryLogAsSent(resetEmailLog.id)
+  } catch (emailError) {
+    console.error('Failed to send password reset email:', emailError)
+    await markEmailDeliveryLogAsFailed(
+      resetEmailLog.id,
+      emailError instanceof Error ? emailError.message : 'Unknown error'
+    )
+  }
 
   return c.json({ message: 'Password reset email sent' }, HttpStatusCodes.OK)
 }
@@ -413,7 +474,7 @@ export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
     updateData = { ...c.req.valid('json') }
   }
 
-  if (updateData.username) {
+  if (updateData.username && updateData.username !== user.username) {
     const isAvailable = await isUsernameAvailable(updateData.username)
     if (!isAvailable) {
       return c.json(
@@ -459,4 +520,59 @@ export const getProfile: AppRouteHandler<GetProfileRoute> = async (c) => {
   }
 
   return c.json(user, HttpStatusCodes.OK)
+}
+
+export const getEmailPreferences: AppRouteHandler<
+  GetEmailPreferencesRoute
+> = async (c) => {
+  const user = c.get('user')
+
+  if (!user) {
+    return c.json({ error: 'Unauthorized' }, HttpStatusCodes.UNAUTHORIZED)
+  }
+
+  try {
+    const preferences = await getOrCreateEmailPreferencesByUserId(user.id)
+    return c.json(preferences, HttpStatusCodes.OK)
+  } catch (error) {
+    console.error('Failed to get email preferences:', error)
+    return c.json(
+      { error: 'Failed to get email preferences' },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
+  }
+}
+
+export const updateEmailPreferences: AppRouteHandler<
+  UpdateEmailPreferencesRoute
+> = async (c) => {
+  const user = c.get('user')
+
+  if (!user) {
+    return c.json({ error: 'Unauthorized' }, HttpStatusCodes.UNAUTHORIZED)
+  }
+
+  const updates = c.req.valid('json')
+
+  try {
+    const updatedPreferences = await updateEmailPreferencesRepo(
+      user.id,
+      updates
+    )
+
+    if (!updatedPreferences) {
+      return c.json(
+        { error: 'Failed to update email preferences' },
+        HttpStatusCodes.INTERNAL_SERVER_ERROR
+      )
+    }
+
+    return c.json(updatedPreferences, HttpStatusCodes.OK)
+  } catch (error) {
+    console.error('Failed to update email preferences:', error)
+    return c.json(
+      { error: 'Failed to update email preferences' },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
+  }
 }

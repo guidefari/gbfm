@@ -2,7 +2,10 @@ import { createRoute, z } from '@hono/zod-openapi'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { jsonContent, jsonContentRequired } from 'stoker/openapi/helpers'
 import { createErrorSchema } from 'stoker/openapi/schemas'
-
+import {
+  selectAuthorEmailPreferencesSchema,
+  updateAuthorEmailPreferencesSchema
+} from '@/db/email.schema'
 import {
   createUserSchema,
   forgotPasswordSchema,
@@ -304,6 +307,66 @@ export const getProfile = createRoute({
   }
 })
 
+export const getEmailPreferences = createRoute({
+  path: '/email-preferences',
+  method: 'get',
+  middleware: [authenticate],
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      selectAuthorEmailPreferencesSchema,
+      'Email preferences retrieved successfully'
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      z.object({ error: z.string() }),
+      'Email preferences not found'
+    ),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
+      z.object({ error: z.string() }),
+      'Unauthorized'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Internal server error'
+    )
+  }
+})
+
+export const updateEmailPreferences = createRoute({
+  path: '/email-preferences',
+  method: 'patch',
+  middleware: [authenticate],
+  request: {
+    body: jsonContentRequired(
+      updateAuthorEmailPreferencesSchema,
+      'Email preferences to update'
+    )
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      selectAuthorEmailPreferencesSchema,
+      'Email preferences updated successfully'
+    ),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
+      z.object({ error: z.string() }),
+      'Invalid input'
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      z.object({ error: z.string() }),
+      'User not found'
+    ),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
+      z.object({ error: z.string() }),
+      'Unauthorized'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to update email preferences'
+    )
+  }
+})
+
 // Export types for handlers
 export type SignupRoute = typeof signup
 export type SigninRoute = typeof signin
@@ -314,3 +377,5 @@ export type CreateUserRoute = typeof createUser
 export type ListUsersRoute = typeof listUsers
 export type UpdateProfileRoute = typeof updateProfile
 export type GetProfileRoute = typeof getProfile
+export type GetEmailPreferencesRoute = typeof getEmailPreferences
+export type UpdateEmailPreferencesRoute = typeof updateEmailPreferences

@@ -13,5 +13,7 @@ const router = createRouter()
   .openapi(routes.listUsers, handlers.listUsers)
   .openapi(routes.updateProfile, handlers.updateProfile)
   .openapi(routes.getProfile, handlers.getProfile)
+  .openapi(routes.getEmailPreferences, handlers.getEmailPreferences)
+  .openapi(routes.updateEmailPreferences, handlers.updateEmailPreferences)
 
 export default router
