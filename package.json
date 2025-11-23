@@ -19,7 +19,9 @@
     "biome:ci": "biome ci"
   },
   "dependencies": {
-    "effect": "3.18.2",
+    "@effect/cli": "^0.72.1",
+    "@effect/platform": "^0.93.3",
+    "effect": "3.19.6",
     "gray-matter": "4.0.3",
     "sst": "3.17.23",
     "vitest": "3.2.4",

@@ -9,6 +9,20 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
+    "BackupTaskInvoker": {
+      "name": string
+      "type": "sst.aws.Function"
+      "url": string
+    }
+    "DatabaseBackupTask": {
+      "assignPublicIp": boolean
+      "cluster": string
+      "containers": any
+      "securityGroups": any
+      "subnets": any
+      "taskDefinition": string
+      "type": "sst.aws.Task"
+    }
     "DatabaseBackups": {
       "name": string
       "type": "sst.aws.Bucket"
@@ -37,10 +51,6 @@ declare module "sst" {
       "configSet": string
       "sender": string
       "type": "sst.aws.Email"
-    }
-    "FullDatabaseUrl": {
-      "type": "sst.sst.Secret"
-      "value": string
     }
     "MDX_Bucket": {
       "name": string

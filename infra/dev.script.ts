@@ -1,7 +1,7 @@
 import { dbBackupBucket } from './bucket'
 // import { dbBackupCron } from './cron'
 import { email } from './email'
-import { allSecrets } from './secret'
+import { allSecrets, secret } from './secret'
 
 new sst.x.DevCommand('raycast', {
   dev: {
@@ -137,7 +137,16 @@ new sst.x.DevCommand('Backup_Database', {
     command: 'bun scripts/backup-db.ts',
     directory: './apps/vps',
     autostart: false
-  }
+  },
+  environment: {
+    DATABASE_BACKUP_BUCKET: dbBackupBucket.name,
+    DatabaseHost: secret.DatabaseHost.value,
+    DatabaseUser: secret.DatabaseUser.value,
+    DatabasePassword: secret.DatabasePassword.value,
+    DatabasePort: secret.DatabasePort.value,
+    DatabaseName: secret.DatabaseName.value,
+  },
+
 })
 
 // new sst.x.DevCommand('Backup_Database_Docker', {

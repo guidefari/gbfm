@@ -6,7 +6,7 @@ import {
 } from './bucket'
 import { domain, urls } from './dns'
 import { email } from './email'
-import { allSecrets } from './secret'
+import { allSecrets, secret } from './secret'
 
 const isLocal = ['local', 'dev'].includes($app.stage)
 
@@ -75,7 +75,14 @@ export const dbBackupTask = new sst.aws.Task('DatabaseBackupTask', {
     context: './',
     dockerfile: 'apps/vps/Dockerfile.backup-task'
   },
-  dev: false,
+  environment: {
+    DATABASE_BACKUP_BUCKET: dbBackupBucket.name,
+    DatabaseHost: secret.DatabaseHost.value,
+    DatabaseUser: secret.DatabaseUser.value,
+    DatabasePassword: secret.DatabasePassword.value,
+    DatabasePort: secret.DatabasePort.value,
+    DatabaseName: secret.DatabaseName.value,
+  },
   link: [
     dbBackupBucket,
     ...allSecrets
