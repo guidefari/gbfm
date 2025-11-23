@@ -4,7 +4,8 @@
     "./schemas": "./src/db/exports.ts"
   },
   "scripts": {
-    "dev": "bun run --hot src/index.ts",
+    "dev": "DB_STAGE=dev bun run --hot src/index.ts",
+    "dev:proddb": "DB_STAGE=prod bun run --hot src/index.ts",
     "start": "bun run src/index.ts",
     "typecheck": "tsc --noEmit",
     "db:studio": "drizzle-kit studio",
@@ -12,7 +13,13 @@
     "db:migrate": "drizzle-kit migrate",
     "db:gen": "drizzle-kit generate",
     "db:migrate:prod": "bun sst shell --stage=prod bun run src/migrate.ts",
-    "db:deets:prod": "bun sst shell --stage=prod bun run ./scripts/db.ts"
+    "db:deets:prod": "bun sst shell --stage=prod bun run ./scripts/db.ts",
+    "db:backup": "bun run scripts/backup-db.ts",
+    "db:backup:prod": "bun sst shell --stage=prod bun run scripts/backup-db.ts",
+    "db:backup:local": "bun run scripts/backup-db-local.ts",
+    "db:backup:docker": "./scripts/docker-backup.sh",
+    "db:restore": "bun run scripts/restore-db.ts",
+    "db:restore:docker": "./scripts/docker-restore.sh"
   },
   "devDependencies": {
     "@types/aws-lambda": "8.10.145",
@@ -25,6 +32,9 @@
     "@aws-sdk/client-s3": "^3.901.0",
     "@aws-sdk/lib-storage": "^3.903.0",
     "@aws-sdk/s3-request-presigner": "^3.901.0",
+    "@effect/cli": "^0.72.1",
+    "@effect/platform": "^0.93.3",
+    "@effect/platform-bun": "^0.84.0",
     "@gbfm/email": "workspace:*",
     "@hono/zod-openapi": "^1.1.3",
     "@hono/zod-validator": "^0.7.3",
@@ -34,6 +44,7 @@
     "dotenv": "^17.2.3",
     "dotenv-expand": "^12.0.3",
     "drizzle-orm": "0.44.6",
+    "effect": "^3.19.6",
     "ffmpeg-static": "^5.2.0",
     "gray-matter": "4.0.3",
     "hono": "4.9.10",

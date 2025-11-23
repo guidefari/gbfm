@@ -1,6 +1,16 @@
 import { SESv2Client, SendEmailCommand } from '@aws-sdk/client-sesv2'
 import { Resource } from 'sst'
 
+declare module 'sst' {
+  interface Resource {
+    Email: {
+      configSet: string
+      sender: string
+      type: string
+    }
+  }
+}
+
 export const sesClient = new SESv2Client({})
 
 export interface Attachment {

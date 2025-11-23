@@ -1,5 +1,7 @@
+import { dbBackupBucket } from './bucket'
+// import { dbBackupCron } from './cron'
 import { email } from './email'
-import { allSecrets } from './secret'
+import { allSecrets, secret } from './secret'
 
 new sst.x.DevCommand('raycast', {
   dev: {
@@ -20,7 +22,7 @@ new sst.x.DevCommand('ios', {
 new sst.x.DevCommand('Drizzle_Studio', {
   link: [...allSecrets, email],
   dev: {
-    command: 'npx drizzle-kit studio',
+    command: 'bun scripts/drizzle-studio.ts',
     directory: './apps/vps',
     autostart: false
   }
@@ -128,3 +130,41 @@ new sst.x.DevCommand('Email_Preview', {
 //     autostart: false
 //   }
 // })
+
+new sst.x.DevCommand('Backup_Database', {
+  link: [...allSecrets, email, dbBackupBucket],
+  dev: {
+    command: 'bun scripts/backup-db.ts',
+    directory: './apps/vps',
+    autostart: false
+  },
+  environment: {
+    DATABASE_BACKUP_BUCKET: dbBackupBucket.name,
+    DatabaseHost: secret.DatabaseHost.value,
+    DatabaseUser: secret.DatabaseUser.value,
+    DatabasePassword: secret.DatabasePassword.value,
+    DatabasePort: secret.DatabasePort.value,
+    DatabaseName: secret.DatabaseName.value
+  }
+})
+
+// new sst.x.DevCommand('Backup_Database_Docker', {
+//   link: [...allSecrets, email, dbBackupBucket],
+//   dev: {
+//     command: './scripts/docker-backup-s3.sh',
+//     directory: './apps/vps',
+//     autostart: false
+//   }
+// })
+
+new sst.x.DevCommand('Restore_Local_Database', {
+  link: [...allSecrets, email, dbBackupBucket],
+  dev: {
+    command: 'bun scripts/restore-db.ts',
+    directory: './apps/vps',
+    autostart: false
+  },
+  environment: {
+    LOCAL_DB_URL: process.env.LOCAL_DB_URL || ''
+  }
+})

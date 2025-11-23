@@ -8,3 +8,9 @@ node_modules/
 *.env*
 
 **.DS_Store
+
+# backups
+backups/
+
+# temp files
+.tmp/

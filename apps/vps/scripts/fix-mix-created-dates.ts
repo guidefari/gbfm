@@ -45,11 +45,13 @@ function parseDate(dateString: string): Date {
   }
 
   const match = dateString.match(/^(\w+)\s+(\d{1,2})\s+(\d{4})$/)
-  if (!match) {
+  if (!match || !match[1] || !match[2] || !match[3]) {
     throw new Error(`Invalid date format: ${dateString}`)
   }
 
-  const [, monthStr, day, year] = match
+  const monthStr = match[1]
+  const day = match[2]
+  const year = match[3]
   const month = months[monthStr.toLowerCase()]
 
   if (month === undefined) {

@@ -25,6 +25,10 @@ async function migrateMixesToAudio() {
       })
       .returning();
 
+    if (!audio) {
+      throw new Error(`Failed to insert audio for mix ${mix.id}`);
+    }
+
     // 3. Fetch mix authors
     const mixAuthors = await db
       .select()

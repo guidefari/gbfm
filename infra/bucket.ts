@@ -12,6 +12,10 @@ export const mixesBucket = new sst.aws.Bucket('Mixes', {
   access: 'cloudfront'
 })
 
+export const dbBackupBucket = new sst.aws.Bucket('DatabaseBackups', {
+  access: 'cloudfront'
+})
+
 export const fileRouter = new sst.aws.Router('Router', {
   domain: {
     name: `cdn.${domain}`,

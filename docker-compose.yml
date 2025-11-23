@@ -16,32 +16,39 @@ services:
   #     - ./web:/app/web
   #   working_dir: /app/vps
   #   command: bun --hot run src/api/index.ts
-    # networks:
-    #   - app-network
+  # networks:
+  #   - app-network
 
   postgres:
     image: postgres:17-alpine
     container_name: gbfm_pgdb
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${DB_NAME:-myapp}
-      POSTGRES_USER: ${DB_USER:-appuser}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      # POSTGRES_DB: ${DB_NAME:-postgres}
+      # POSTGRES_USER: ${DB_USER:-postgres}
+      # POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
       POSTGRES_INITDB_ARGS: "--auth-host=md5"
     volumes:
-      - gbfm_pgdb:/var/lib/postgresql/data
+      # - gbfm_pgdb:/var/lib/postgresql/data
       - ./config/postgresql.conf:/etc/postgresql/postgresql.conf
       - ./config/pg_hba.conf:/etc/postgresql/pg_hba.conf
       - ./backups:/backups
       - ./logs:/var/log/postgresql
     ports:
-      - "6996:5432"
+      - "5432:5432"
     command: >
       postgres 
       -c config_file=/etc/postgresql/postgresql.conf
       -c hba_file=/etc/postgresql/pg_hba.conf
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-appuser} -d ${DB_NAME:-myapp}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-postgres}",
+        ]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -59,12 +66,12 @@ services:
       - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
     command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=90d'
-      - '--web.enable-lifecycle'
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.console.libraries=/etc/prometheus/console_libraries"
+      - "--web.console.templates=/etc/prometheus/consoles"
+      - "--storage.tsdb.retention.time=90d"
+      - "--web.enable-lifecycle"
     networks:
       - postgres_network
 
@@ -97,10 +104,10 @@ services:
       - /sys:/host/sys:ro
       - /:/rootfs:ro
     command:
-      - '--path.procfs=/host/proc'
-      - '--path.rootfs=/rootfs'
-      - '--path.sysfs=/host/sys'
-      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+      - "--path.procfs=/host/proc"
+      - "--path.rootfs=/rootfs"
+      - "--path.sysfs=/host/sys"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
     networks:
       - postgres_network
 
@@ -184,12 +191,35 @@ services:
     profiles:
       - backup
 
+  # VPS Backup & Restore service (using Bun + PostgreSQL client tools)
+  # vps_backup:
+  #   build:
+  #     context: .
+  #     dockerfile: apps/vps/Dockerfile.backup
+  #   container_name: vps_backup
+  #   restart: "no"
+  #   environment:
+  #     LOCAL_DB_URL: postgres://${DB_USER:-appuser}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-myapp}
+  #     SKIP_CONFIRM: ${SKIP_CONFIRM:-0}
+  #   volumes:
+  #     - ./apps/vps/backups:/app/backups
+  #     - ./apps/vps/scripts:/app/scripts
+  #   depends_on:
+  #     - postgres
+  #   networks:
+  #     - postgres_network
+  #   profiles:
+  #     - backup
+  # Usage:
+  # Backup: docker compose run --rm vps_backup bun run scripts/backup-db-local.ts
+  # Restore: docker compose run --rm vps_backup bun run scripts/restore-db.ts /app/backups/backup-2025-11-14.sql
+
 networks:
   postgres_network:
     driver: bridge
 
 volumes:
-  gbfm_pgdb:
+  # gbfm_pgdb:
   prometheus_data:
   grafana_data:
   loki_data:
