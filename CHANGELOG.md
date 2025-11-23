@@ -1,3 +1,10 @@
+# [0.35.0](https://github.com/guidefari/gbfm/compare/v0.34.0...v0.35.0) (2025-11-23)
+
+
+### Features
+
+* Create database backup scripts ([#64](https://github.com/guidefari/gbfm/issues/64)) ([467afaa](https://github.com/guidefari/gbfm/commit/467afaa39904a04cf9e7821a4af9458e1ff5f315))
+
 # [0.34.0](https://github.com/guidefari/gbfm/compare/v0.33.0...v0.34.0) (2025-11-03)
 
 
