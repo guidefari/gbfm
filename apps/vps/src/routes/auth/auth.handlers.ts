@@ -15,6 +15,7 @@ import {
 import { env } from '@/env'
 import { createPaginationMetadata } from '@/lib/pagination'
 import type { AppRouteHandler } from '@/lib/types'
+import { EmailDeliveryLogRepository } from '@/repositories/email-delivery-log.repository'
 
 import type {
   CreateUserRoute,
@@ -70,11 +71,33 @@ export const signup: AppRouteHandler<SignupRoute> = async (c) => {
     )
   }
 
-  await sendWelcomeEmail({
-    to: validated.email,
-    username: validated.username || validated.email,
-    loginUrl: `${env.FRONTEND_URL}/auth/signin`
+  // Create email delivery log for welcome email
+  const username = validated.username || validated.email
+  const subject = `Welcome to goosebumps.fm, ${username}! 🎵`
+  const welcomeEmailLog = await EmailDeliveryLogRepository.create({
+    authorId: newAuthor.id,
+    recipientEmail: validated.email,
+    recipientName: username,
+    emailType: 'TRANSACTIONAL',
+    templateName: 'welcome',
+    subject,
+    status: 'PENDING'
   })
+
+  try {
+    await sendWelcomeEmail({
+      to: validated.email,
+      username,
+      loginUrl: `${env.FRONTEND_URL}/auth/signin`
+    })
+    await EmailDeliveryLogRepository.markAsSent(welcomeEmailLog.id)
+  } catch (emailError) {
+    console.error('Failed to send welcome email:', emailError)
+    await EmailDeliveryLogRepository.markAsFailed(
+      welcomeEmailLog.id,
+      emailError instanceof Error ? emailError.message : 'Unknown error'
+    )
+  }
 
   const { password, ...userWithoutPassword } = newUser
 
@@ -188,11 +211,34 @@ export const forgotPassword: AppRouteHandler<ForgotPasswordRoute> = async (
     expiresAt
   })
 
-  await sendPasswordResetEmail({
-    to: validated.email,
-    resetUrl: `${env.FRONTEND_URL}/auth/reset-password?token=${token}&email=${validated.email}`,
-    expiresIn: '1 hour'
+  // Create email delivery log for password reset email
+  const resetEmailLog = await EmailDeliveryLogRepository.create({
+    authorId: currentAuthor.id,
+    recipientEmail: validated.email,
+    recipientName: currentAuthor.name,
+    emailType: 'TRANSACTIONAL',
+    templateName: 'password-reset',
+    subject: 'Reset your goosebumps.fm password',
+    status: 'PENDING',
+    metadata: {
+      tokenId: token
+    }
   })
+
+  try {
+    await sendPasswordResetEmail({
+      to: validated.email,
+      resetUrl: `${env.FRONTEND_URL}/auth/reset-password?token=${token}&email=${validated.email}`,
+      expiresIn: '1 hour'
+    })
+    await EmailDeliveryLogRepository.markAsSent(resetEmailLog.id)
+  } catch (emailError) {
+    console.error('Failed to send password reset email:', emailError)
+    await EmailDeliveryLogRepository.markAsFailed(
+      resetEmailLog.id,
+      emailError instanceof Error ? emailError.message : 'Unknown error'
+    )
+  }
 
   return c.json({ message: 'Password reset email sent' }, HttpStatusCodes.OK)
 }

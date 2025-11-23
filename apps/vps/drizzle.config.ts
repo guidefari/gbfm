@@ -1,6 +1,6 @@
 import { defineConfig } from "drizzle-kit";
-import { Resource } from "sst";
 import { env } from "./src/env";
+import { Resource } from "sst";
 
 const localPgConfig = {
 	host: "localhost",
@@ -11,14 +11,16 @@ const localPgConfig = {
 	ssl: false,
 };
 
-const prodPgConfig = {
-	host: Resource.DatabaseHost.value,
-	port: Number(Resource.DatabasePort.value),
-	user: Resource.DatabaseUser.value,
-	password: Resource.DatabasePassword.value,
-	database: Resource.DatabaseName.value,
-	ssl: false,
-};
+
+
+	const prodPgConfig = {
+		host: Resource.DatabaseHost.value,
+		port: Number(Resource.DatabasePort.value),
+		user: Resource.DatabaseUser.value,
+		password: Resource.DatabasePassword.value,
+		database: Resource.DatabaseName.value,
+		ssl: false,
+	};
 
 const dbStage = env.DB_STAGE || "dev";
 
@@ -30,4 +32,4 @@ export default defineConfig({
 	dialect: "postgresql",
 	dbCredentials: env.DB_STAGE === "dev" ? localPgConfig : prodPgConfig,
 	// dbCredentials: localPgConfig,
-});
+})

@@ -3,7 +3,10 @@ import { and, eq } from 'drizzle-orm'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
+import { authorsTable } from '@/db/author.schema'
 import type { AppRouteHandler } from '@/lib/types'
+import { EmailDeliveryLogRepository } from '@/repositories/email-delivery-log.repository'
+import { EmailPreferencesRepository } from '@/repositories/email-preferences.repository'
 
 import type { SendMixNotificationRoute } from './email.routes'
 
@@ -43,32 +46,92 @@ export const sendMixNotification: AppRouteHandler<
         }))
 
   const sentTo: string[] = []
+  const skipped: string[] = []
   const errors: string[] = []
+  const emailIds: string[] = []
 
   try {
     for (const recipient of recipients) {
       const username =
         metadata?.username || recipient.split('@')[0] || 'listener'
 
+      // Look up author by email to check preferences
+      const [author] = await db
+        .select()
+        .from(authorsTable)
+        .where(eq(authorsTable.email, recipient))
+        .limit(1)
+
+      // Check email preferences if author exists
+      if (author) {
+        const canReceive = await EmailPreferencesRepository.canReceiveEmail(
+          author.id,
+          'MIX_RELEASE'
+        )
+
+        if (!canReceive) {
+          console.log(
+            `Skipping ${recipient}: email preferences disabled for mix releases`
+          )
+          skipped.push(recipient)
+          continue
+        }
+      }
+
+      const mixTitle = metadata?.mixTitle || mix.title
+      const subject = `New mix: ${mixTitle}`
+
+      // Create email delivery log entry
+      const deliveryLog = await EmailDeliveryLogRepository.create({
+        authorId: author?.id,
+        recipientEmail: recipient,
+        recipientName: username,
+        emailType: 'MIX_RELEASE',
+        templateName: 'mix-notification',
+        subject,
+        status: 'PENDING',
+        metadata: {
+          mixId: mix.id,
+          mixSlug: mix.slug,
+          mixTitle,
+          artistName: metadata?.artistName || 'Guide Fari',
+          coverImageUrl,
+          releaseDate
+        }
+      })
+
       try {
         await sendMixNotificationEmail({
           to: recipient,
           username,
-          mixTitle: metadata?.mixTitle || mix.title,
+          mixTitle,
           artistName: metadata?.artistName || 'Guide Fari',
           mixUrl,
           coverImageUrl,
           releaseDate
         })
 
+        // Mark as sent in the log
+        await EmailDeliveryLogRepository.markAsSent(deliveryLog.id)
+
         sentTo.push(recipient)
+        emailIds.push(deliveryLog.id)
       } catch (emailError) {
         console.error(`Failed to send to ${recipient}:`, emailError)
+
+        // Mark as failed in the log
+        await EmailDeliveryLogRepository.markAsFailed(
+          deliveryLog.id,
+          emailError instanceof Error
+            ? emailError.message
+            : 'Unknown error occurred'
+        )
+
         errors.push(recipient)
       }
     }
 
-    if (sentTo.length === 0) {
+    if (sentTo.length === 0 && skipped.length === 0) {
       return c.json(
         { error: 'Failed to send any emails' },
         HttpStatusCodes.INTERNAL_SERVER_ERROR
@@ -79,8 +142,12 @@ export const sendMixNotification: AppRouteHandler<
       {
         success: true,
         sentTo,
-        emailIds: sentTo.map(() => 'ses-sent'),
-        message: `Successfully sent ${sentTo.length} notification(s)${errors.length > 0 ? ` (${errors.length} failed)` : ''}`
+        emailIds,
+        message: `Successfully sent ${sentTo.length} notification(s)${
+          skipped.length > 0
+            ? ` (${skipped.length} skipped due to preferences)`
+            : ''
+        }${errors.length > 0 ? ` (${errors.length} failed)` : ''}`
       },
       HttpStatusCodes.OK
     )

@@ -36,6 +36,13 @@
       "when": 1760300641691,
       "tag": "0007_zippy_black_bird",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1763909420533,
+      "tag": "0008_loud_red_wolf",
+      "breakpoints": true
     }
   ]
 }
