@@ -8,11 +8,11 @@ import {
   selectReleaseSchema,
   updateReleaseSchema
 } from '@/db/release.schema'
-import { authenticate } from '@/middlewares/auth.middleware'
 import {
-  paginationQuerySchema,
-  createPaginatedResponseSchema
+  createPaginatedResponseSchema,
+  paginationQuerySchema
 } from '@/lib/pagination'
+import { authenticate } from '@/middlewares/auth.middleware'
 
 const tags = ['Releases']
 

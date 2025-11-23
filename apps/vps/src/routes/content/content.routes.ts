@@ -9,11 +9,11 @@ import {
   updateAudioSchema
 } from '@/db/audio.schema'
 import { createPostSchema, selectPostSchema } from '@/db/post.schema'
-import { authenticate } from '@/middlewares/auth.middleware'
 import {
-  paginationQuerySchema,
-  createPaginatedResponseSchema
+  createPaginatedResponseSchema,
+  paginationQuerySchema
 } from '@/lib/pagination'
+import { authenticate } from '@/middlewares/auth.middleware'
 
 const tags = ['Content']
 

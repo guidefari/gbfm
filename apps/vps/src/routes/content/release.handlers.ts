@@ -89,10 +89,12 @@ export const getReleasesByLabel: AppRouteHandler<
     const whereCondition = eq(releasesTable.labelId, label.id)
 
     // Get total count
-    const [{ total }] = await db
+    const countResult = await db
       .select({ total: count() })
       .from(releasesTable)
       .where(whereCondition)
+
+    const total = countResult[0]?.total ?? 0
 
     // Get paginated data
     const data = await db
@@ -103,10 +105,13 @@ export const getReleasesByLabel: AppRouteHandler<
       .offset(offset)
       .orderBy(desc(releasesTable.createdAt))
 
-    return c.json({
-      data,
-      pagination: createPaginationMetadata(total, limit, offset)
-    }, HttpStatusCodes.OK)
+    return c.json(
+      {
+        data,
+        pagination: createPaginationMetadata(total, limit, offset)
+      },
+      HttpStatusCodes.OK
+    )
   } catch (error) {
     console.error('Error fetching releases by label:', error)
     return c.json(

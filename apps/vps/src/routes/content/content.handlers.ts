@@ -79,14 +79,13 @@ export const getPostsByTag: AppRouteHandler<GetPostsByTagRoute> = async (c) => {
     const whereCondition = arrayContains(postsTable.tags, [tag])
 
     // Get total count
-    const [{ total }] = await timeQuery(
+    const countResult = await timeQuery(
       () =>
-        db
-          .select({ total: count() })
-          .from(postsTable)
-          .where(whereCondition),
+        db.select({ total: count() }).from(postsTable).where(whereCondition),
       'get-posts-by-tag-count'
     )
+
+    const total = countResult[0]?.total ?? 0
 
     // Get paginated data
     const data = await timeQuery(
@@ -101,10 +100,13 @@ export const getPostsByTag: AppRouteHandler<GetPostsByTagRoute> = async (c) => {
       'get-posts-by-tag-data'
     )
 
-    return c.json({
-      data,
-      pagination: createPaginationMetadata(total, limit, offset)
-    }, HttpStatusCodes.OK)
+    return c.json(
+      {
+        data,
+        pagination: createPaginationMetadata(total, limit, offset)
+      },
+      HttpStatusCodes.OK
+    )
   } catch (error) {
     console.error('Error fetching posts by tag:', error)
     return c.json(
@@ -185,10 +187,13 @@ export const getAudioByType: AppRouteHandler<GetAudioByTypeRoute> = async (
     const whereCondition = eq(audioTable.type, type)
 
     // Get total count
-    const [{ total }] = await timeQuery(
-      () => db.select({ total: count() }).from(audioTable).where(whereCondition),
+    const countResult = await timeQuery(
+      () =>
+        db.select({ total: count() }).from(audioTable).where(whereCondition),
       'get-audio-by-type-count'
     )
+
+    const total = countResult[0]?.total ?? 0
 
     // Get paginated data
     const data = await timeQuery(

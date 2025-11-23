@@ -1,9 +1,9 @@
-import { count, desc, eq } from 'drizzle-orm'
+import { count, eq } from 'drizzle-orm'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
 import { publicationsTable } from '@/db/publication.schema'
-import type { AppRouteHandler } from '@/lib/types'
 import { createPaginationMetadata } from '@/lib/pagination'
+import type { AppRouteHandler } from '@/lib/types'
 
 import type {
   CreateRoute,
@@ -17,22 +17,27 @@ export const list: AppRouteHandler<ListRoute> = async (c) => {
   const { limit, offset } = c.req.valid('query')
 
   // Get total count
-  const [{ total }] = await db
+  const countResult = await db
     .select({ total: count() })
     .from(publicationsTable)
 
-  // Get paginated data
+  const total = countResult[0]?.total ?? 0
+
+  // Get paginated data (order by name since createdAt doesn't exist)
   const data = await db
     .select()
     .from(publicationsTable)
     .limit(limit)
     .offset(offset)
-    .orderBy(desc(publicationsTable.createdAt))
+    .orderBy(publicationsTable.name)
 
-  return c.json({
-    data,
-    pagination: createPaginationMetadata(total, limit, offset)
-  }, HttpStatusCodes.OK)
+  return c.json(
+    {
+      data,
+      pagination: createPaginationMetadata(total, limit, offset)
+    },
+    HttpStatusCodes.OK
+  )
 }
 
 export const getOne: AppRouteHandler<GetOneRoute> = async (c) => {

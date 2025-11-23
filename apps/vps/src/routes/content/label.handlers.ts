@@ -1,4 +1,4 @@
-import { and, count, desc, eq } from 'drizzle-orm'
+import { count, desc, eq } from 'drizzle-orm'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
 import {
@@ -81,10 +81,12 @@ export const getAllLabels: AppRouteHandler<GetAllLabelsRoute> = async (c) => {
     const whereCondition = eq(labelsTable.draft, false)
 
     // Get total count
-    const [{ total }] = await db
+    const countResult = await db
       .select({ total: count() })
       .from(labelsTable)
       .where(whereCondition)
+
+    const total = countResult[0]?.total ?? 0
 
     // Get paginated data
     const data = await db
@@ -95,10 +97,13 @@ export const getAllLabels: AppRouteHandler<GetAllLabelsRoute> = async (c) => {
       .offset(offset)
       .orderBy(desc(labelsTable.createdAt))
 
-    return c.json({
-      data,
-      pagination: createPaginationMetadata(total, limit, offset)
-    }, HttpStatusCodes.OK)
+    return c.json(
+      {
+        data,
+        pagination: createPaginationMetadata(total, limit, offset)
+      },
+      HttpStatusCodes.OK
+    )
   } catch (error) {
     console.error('Error fetching labels:', error)
     return c.json(

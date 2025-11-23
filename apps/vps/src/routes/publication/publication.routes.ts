@@ -9,8 +9,8 @@ import {
   updatePublicationSchema
 } from '@/db/publication.schema'
 import {
-  paginationQuerySchema,
-  createPaginatedResponseSchema
+  createPaginatedResponseSchema,
+  paginationQuerySchema
 } from '@/lib/pagination'
 
 const tags = ['Publications']

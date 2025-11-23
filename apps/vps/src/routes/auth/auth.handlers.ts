@@ -13,8 +13,8 @@ import {
   usersTable
 } from '@/db/user.schema'
 import { env } from '@/env'
-import type { AppRouteHandler } from '@/lib/types'
 import { createPaginationMetadata } from '@/lib/pagination'
+import type { AppRouteHandler } from '@/lib/types'
 
 import type {
   CreateUserRoute,
@@ -359,9 +359,9 @@ export const listUsers: AppRouteHandler<ListUsersRoute> = async (c) => {
   const { limit, offset } = c.req.valid('query')
 
   // Get total count
-  const [{ total }] = await db
-    .select({ total: count() })
-    .from(usersTable)
+  const countResult = await db.select({ total: count() }).from(usersTable)
+
+  const total = countResult[0]?.total ?? 0
 
   // Get paginated data
   const users = await db
@@ -374,10 +374,13 @@ export const listUsers: AppRouteHandler<ListUsersRoute> = async (c) => {
   // Remove passwords from response
   const data = users.map(({ password, ...user }) => user)
 
-  return c.json({
-    data,
-    pagination: createPaginationMetadata(total, limit, offset)
-  }, HttpStatusCodes.OK)
+  return c.json(
+    {
+      data,
+      pagination: createPaginationMetadata(total, limit, offset)
+    },
+    HttpStatusCodes.OK
+  )
 }
 
 export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {

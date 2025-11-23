@@ -6,7 +6,7 @@ import { z } from 'zod'
  */
 export const paginationQuerySchema = z.object({
   limit: z.coerce.number().min(1).max(100).optional().default(20),
-  offset: z.coerce.number().min(0).optional().default(0),
+  offset: z.coerce.number().min(0).optional().default(0)
 })
 
 /**
@@ -17,7 +17,7 @@ export const paginationMetadataSchema = z.object({
   total: z.number(),
   limit: z.number(),
   offset: z.number(),
-  hasMore: z.boolean(),
+  hasMore: z.boolean()
 })
 
 /**
@@ -30,10 +30,12 @@ export const paginationMetadataSchema = z.object({
  * @example
  * const publicationListSchema = createPaginatedResponseSchema(publicationSchema)
  */
-export function createPaginatedResponseSchema<T extends z.ZodType>(dataSchema: T) {
+export function createPaginatedResponseSchema<T extends z.ZodType>(
+  dataSchema: T
+) {
   return z.object({
     data: z.array(dataSchema),
-    pagination: paginationMetadataSchema,
+    pagination: paginationMetadataSchema
   })
 }
 
@@ -67,7 +69,11 @@ export type PaginatedResponse<T> = {
  * const hasMore = calculateHasMore(100, 20, 20) // true (items 40-99 remain)
  * const hasMore = calculateHasMore(100, 90, 20) // false (only 10 items remain)
  */
-export function calculateHasMore(total: number, offset: number, limit: number): boolean {
+export function calculateHasMore(
+  total: number,
+  offset: number,
+  limit: number
+): boolean {
   return offset + limit < total
 }
 
@@ -86,12 +92,12 @@ export function calculateHasMore(total: number, offset: number, limit: number): 
 export function createPaginationMetadata(
   total: number,
   limit: number,
-  offset: number,
+  offset: number
 ): PaginationMetadata {
   return {
     total,
     limit,
     offset,
-    hasMore: calculateHasMore(total, offset, limit),
+    hasMore: calculateHasMore(total, offset, limit)
   }
 }

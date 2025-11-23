@@ -8,11 +8,11 @@ import {
   selectMdxCompiledLabelSchema,
   updateLabelSchema
 } from '@/db/label.schema'
-import { authenticate } from '@/middlewares/auth.middleware'
 import {
-  paginationQuerySchema,
-  createPaginatedResponseSchema
+  createPaginatedResponseSchema,
+  paginationQuerySchema
 } from '@/lib/pagination'
+import { authenticate } from '@/middlewares/auth.middleware'
 
 const tags = ['Labels']
 

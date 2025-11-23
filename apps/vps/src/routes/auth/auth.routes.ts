@@ -14,8 +14,8 @@ import {
   updateProfileSchema
 } from '@/db/user.schema'
 import {
-  paginationQuerySchema,
-  createPaginatedResponseSchema
+  createPaginatedResponseSchema,
+  paginationQuerySchema
 } from '@/lib/pagination'
 
 const usernameSchema = z
