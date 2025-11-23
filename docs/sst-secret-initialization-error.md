@@ -131,6 +131,8 @@ bun dev
 ```
 
 ### Option 2: Use SST's Built-in Secret Management
+>
+>I want to try this one out, move from setting the values via `process.env`
 
 Instead of passing values at initialization, set secrets using SST CLI:
 
@@ -328,4 +330,3 @@ All secrets are currently initialized with `process.env.*` values, making them s
 | Date | Change | Author |
 |------|--------|--------|
 | 2025-11-23 | Initial documentation | Claude |
-
