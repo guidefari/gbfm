@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/guidefari/gbfm/compare/v1.1.0...v1.1.1) (2025-11-23)
+
+
+### Bug Fixes
+
+* share url ([764ee25](https://github.com/guidefari/gbfm/commit/764ee25bf6ce4be4dcc75a4562d2289231ddcefd))
+
 # [1.1.0](https://github.com/guidefari/gbfm/compare/v1.0.0...v1.1.0) (2025-11-23)
 
 
