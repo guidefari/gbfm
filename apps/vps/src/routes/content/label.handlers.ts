@@ -1,12 +1,12 @@
 import { eq } from 'drizzle-orm'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
-import { authorsTable } from '@/db/author.schema'
 import {
+  labelCreators,
   labelsTable,
-  labelsToAuthors,
   type SelectMdxCompiledLabel
 } from '@/db/label.schema'
+import { usersTable } from '@/db/user.schema'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
 import type { AppRouteHandler } from '@/lib/types'
 
@@ -18,12 +18,12 @@ import type {
 } from './label.routes'
 
 export const createLabel: AppRouteHandler<CreateLabelRoute> = async (c) => {
-  const { authorIds, ...labelData } = c.req.valid('json')
+  const { creatorIds, ...labelData } = c.req.valid('json')
   const user = c.get('user')
 
-  let finalAuthorIds: string[] = authorIds || []
-  if (finalAuthorIds.length === 0) {
-    finalAuthorIds = [user.id]
+  let finalCreatorIds: string[] = creatorIds || []
+  if (finalCreatorIds.length === 0) {
+    finalCreatorIds = [user.id]
   }
 
   try {
@@ -37,10 +37,10 @@ export const createLabel: AppRouteHandler<CreateLabelRoute> = async (c) => {
         throw new Error('Failed to create label')
       }
 
-      await tx.insert(labelsToAuthors).values(
-        finalAuthorIds.map((authorId: string) => ({
+      await tx.insert(labelCreators).values(
+        finalCreatorIds.map((creatorId: string) => ({
           labelId: newLabel.id,
-          authorId
+          creatorId
         }))
       )
 
@@ -61,7 +61,7 @@ export const createLabel: AppRouteHandler<CreateLabelRoute> = async (c) => {
       error.message.includes('foreign key constraint')
     ) {
       return c.json(
-        { error: 'You may have entered a non-existent author id' },
+        { error: 'You may have entered a non-existent creator id' },
         HttpStatusCodes.CONFLICT
       )
     }
@@ -105,23 +105,23 @@ export const getLabelBySlug: AppRouteHandler<GetLabelBySlugRoute> = async (
       return c.json({ error: 'Label not found' }, HttpStatusCodes.NOT_FOUND)
     }
 
-    const authors = await db
+    const creators = await db
       .select({
-        id: authorsTable.id,
-        name: authorsTable.name,
-        username: authorsTable.username
+        id: usersTable.id,
+        name: usersTable.name,
+        username: usersTable.username
       })
-      .from(labelsToAuthors)
-      .innerJoin(authorsTable, eq(labelsToAuthors.authorId, authorsTable.id))
-      .where(eq(labelsToAuthors.labelId, label.id))
+      .from(labelCreators)
+      .innerJoin(usersTable, eq(labelCreators.creatorId, usersTable.id))
+      .where(eq(labelCreators.labelId, label.id))
 
     let processedLabel: SelectMdxCompiledLabel = {
       ...label,
       compiledContent: '',
-      authors: authors.map((author) => ({
-        id: author.id,
-        name: author.name,
-        username: author.username || ''
+      creators: creators.map((creator) => ({
+        id: creator.id,
+        name: creator.name,
+        username: creator.username || ''
       }))
     }
 
@@ -167,8 +167,8 @@ export const updateLabelBySlug: AppRouteHandler<
 
     const authorship = await db
       .select()
-      .from(labelsToAuthors)
-      .where(eq(labelsToAuthors.labelId, existingLabel.id))
+      .from(labelCreators)
+      .where(eq(labelCreators.labelId, existingLabel.id))
       .limit(1)
 
     if (authorship.length === 0) {
@@ -193,23 +193,23 @@ export const updateLabelBySlug: AppRouteHandler<
       )
     }
 
-    const authors = await db
+    const creators = await db
       .select({
-        id: authorsTable.id,
-        name: authorsTable.name,
-        username: authorsTable.username
+        id: usersTable.id,
+        name: usersTable.name,
+        username: usersTable.username
       })
-      .from(labelsToAuthors)
-      .innerJoin(authorsTable, eq(labelsToAuthors.authorId, authorsTable.id))
-      .where(eq(labelsToAuthors.labelId, updatedLabel.id))
+      .from(labelCreators)
+      .innerJoin(usersTable, eq(labelCreators.creatorId, usersTable.id))
+      .where(eq(labelCreators.labelId, updatedLabel.id))
 
     const baseProcessedLabel: SelectMdxCompiledLabel = {
       ...updatedLabel,
       compiledContent: '',
-      authors: authors.map((author) => ({
-        id: author.id,
-        name: author.name,
-        username: author.username || ''
+      creators: creators.map((creator) => ({
+        id: creator.id,
+        name: creator.name,
+        username: creator.username || ''
       }))
     }
 

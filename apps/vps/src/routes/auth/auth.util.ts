@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { Resource } from 'sst'
 import { db } from '@/db'
-import { authorsTable } from '@/db/author.schema'
+import { usersTable } from '@/db/user.schema'
 
 type CDN_URL = string
 
@@ -25,7 +25,7 @@ export async function uploadAvatar(file: File): Promise<CDN_URL> {
 export async function isUsernameAvailable(username: string) {
   const existingUser = await db
     .select()
-    .from(authorsTable)
-    .where(eq(authorsTable.username, username))
+    .from(usersTable)
+    .where(eq(usersTable.username, username))
   return existingUser.length === 0
 }

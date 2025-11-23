@@ -20,11 +20,14 @@ const prodPgConfig = {
 	ssl: false,
 };
 
-console.log('connecting to db stage', env.DB_STAGE || 'prod')
+const dbStage = env.DB_STAGE || "dev";
+
+console.log('connecting to db stage', dbStage)
 
 export default defineConfig({
 	out: "./drizzle",
 	schema: "./src/db/*.schema.ts",
 	dialect: "postgresql",
 	dbCredentials: env.DB_STAGE === "dev" ? localPgConfig : prodPgConfig,
+	// dbCredentials: localPgConfig,
 });

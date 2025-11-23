@@ -8,11 +8,11 @@ import {
   forgotPasswordSchema,
   refreshTokenSchema,
   resetPasswordSchema,
-  selectAuthorSchemaV4,
+  selectUserSchemaV4,
   signinSchema,
   signupSchema,
   updateProfileSchema
-} from '@/db/author.schema'
+} from '@/db/user.schema'
 
 const usernameSchema = z
   .string()
@@ -31,7 +31,7 @@ const tags = ['Auth']
 
 // Response schemas
 const authResponseSchema = z.object({
-  user: selectAuthorSchemaV4.omit({ password: true }),
+  user: selectUserSchemaV4.omit({ password: true }),
   accessToken: z.string(),
   refreshToken: z.string()
 })
@@ -40,7 +40,7 @@ const messageResponseSchema = z.object({
   message: z.string()
 })
 
-const userResponseSchema = selectAuthorSchemaV4.omit({
+const userResponseSchema = selectUserSchemaV4.omit({
   password: true,
   updatedAt: true,
   verified: true,

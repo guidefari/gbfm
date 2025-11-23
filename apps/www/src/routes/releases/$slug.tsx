@@ -19,7 +19,7 @@ function ReleasePage() {
       const contentInfo = {
         id: slug,
         archetype: 'release',
-        authorIds: [] // Releases don't have authors directly
+        creatorIds: [] // Releases don't have creators directly
       }
       setCurrentContent(contentInfo)
     }

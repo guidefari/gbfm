@@ -21,11 +21,11 @@ function LabelPage() {
   } = useReleasesByLabel(labelSlug)
 
   React.useEffect(() => {
-    if (data?.authors) {
+    if (data?.creators) {
       const contentInfo = {
         id: labelSlug,
         archetype: 'label',
-        authorIds: data.authors.map((author) => author.id)
+        creatorIds: data.creators.map((creator) => creator.id)
       }
       setCurrentContent(contentInfo)
     }

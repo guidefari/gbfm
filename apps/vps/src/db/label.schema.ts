@@ -5,8 +5,8 @@ import {
 } from 'drizzle-orm'
 import { index, pgTable, primaryKey, uuid, varchar } from 'drizzle-orm/pg-core'
 import { z } from 'zod/v4'
-import { authorsTable } from './author.schema'
 import { releasesTable } from './release.schema'
+import { usersTable } from './user.schema'
 import { defaultContentFields } from './util'
 
 export const labelsTable = pgTable(
@@ -26,7 +26,7 @@ export type InsertLabel = InferInsertModel<typeof labelsTable>
 
 export type SelectMdxCompiledLabel = SelectLabel & {
   compiledContent: string
-  authors?: Array<{
+  creators?: Array<{
     id: string
     name: string
     username: string
@@ -52,7 +52,7 @@ export const selectLabelSchema = z.object({
 
 export const selectMdxCompiledLabelSchema = selectLabelSchema.extend({
   compiledContent: z.string(),
-  authors: z
+  creators: z
     .array(
       z.object({
         id: z.string(),
@@ -78,39 +78,36 @@ export const insertLabelSchema = z.object({
 })
 
 export const createLabelSchema = insertLabelSchema.extend({
-  authorIds: z.array(z.uuid()).min(1).optional()
+  creatorIds: z.array(z.uuid()).min(1).optional()
 })
 
 export const updateLabelSchema = insertLabelSchema.partial()
 
-export const labelsToAuthors = pgTable(
-  'labels_to_authors',
+export const labelCreators = pgTable(
+  'label_creators',
   {
     labelId: uuid()
       .notNull()
       .references(() => labelsTable.id),
-    authorId: uuid()
+    creatorId: uuid()
       .notNull()
-      .references(() => authorsTable.id)
+      .references(() => usersTable.id)
   },
-  (t) => [primaryKey({ columns: [t.labelId, t.authorId] })]
+  (t) => [primaryKey({ columns: [t.labelId, t.creatorId] })]
 )
 
 export const labelsRelations = relations(labelsTable, ({ many }) => ({
-  labelsToAuthors: many(labelsToAuthors),
+  labelCreators: many(labelCreators),
   releases: many(releasesTable)
 }))
 
-export const labelsToAuthorsRelations = relations(
-  labelsToAuthors,
-  ({ one }) => ({
-    label: one(labelsTable, {
-      fields: [labelsToAuthors.labelId],
-      references: [labelsTable.id]
-    }),
-    author: one(authorsTable, {
-      fields: [labelsToAuthors.authorId],
-      references: [authorsTable.id]
-    })
+export const labelCreatorsRelations = relations(labelCreators, ({ one }) => ({
+  label: one(labelsTable, {
+    fields: [labelCreators.labelId],
+    references: [labelsTable.id]
+  }),
+  creator: one(usersTable, {
+    fields: [labelCreators.creatorId],
+    references: [usersTable.id]
   })
-)
+}))

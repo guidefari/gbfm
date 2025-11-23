@@ -5,8 +5,8 @@ import {
 } from 'drizzle-orm'
 import { pgTable, text, uuid } from 'drizzle-orm/pg-core'
 import { z } from 'zod/v4'
-import { authorsTable } from './author.schema'
 import { postsTable } from './post.schema'
+import { usersTable } from './user.schema'
 
 export const publicationsTable = pgTable('publications', {
   id: uuid().defaultRandom().primaryKey(),
@@ -15,13 +15,13 @@ export const publicationsTable = pgTable('publications', {
   slug: text().notNull().unique()
 })
 
-export const publicationAuthors = pgTable('publication_authors', {
+export const publicationMembers = pgTable('publication_members', {
   publicationId: uuid()
     .notNull()
     .references(() => publicationsTable.id, { onDelete: 'cascade' }),
-  authorId: uuid()
+  userId: uuid()
     .notNull()
-    .references(() => authorsTable.id, { onDelete: 'cascade' })
+    .references(() => usersTable.id, { onDelete: 'cascade' })
 })
 
 export const publicationPosts = pgTable('publication_posts', {
@@ -36,20 +36,20 @@ export const publicationPosts = pgTable('publication_posts', {
 export const publicationsRelations = relations(
   publicationsTable,
   ({ many }) => ({
-    publicationAuthors: many(publicationAuthors)
+    publicationMembers: many(publicationMembers)
   })
 )
 
-export const publicationAuthorsRelations = relations(
-  publicationAuthors,
+export const publicationMembersRelations = relations(
+  publicationMembers,
   ({ one }) => ({
     publication: one(publicationsTable, {
-      fields: [publicationAuthors.publicationId],
+      fields: [publicationMembers.publicationId],
       references: [publicationsTable.id]
     }),
-    author: one(authorsTable, {
-      fields: [publicationAuthors.authorId],
-      references: [authorsTable.id]
+    user: one(usersTable, {
+      fields: [publicationMembers.userId],
+      references: [usersTable.id]
     })
   })
 )

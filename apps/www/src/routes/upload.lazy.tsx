@@ -188,7 +188,7 @@ function UploadPage() {
         url: audioUrl || editQuery.data?.url, // Keep existing URL if no new audio file
         type: data.type,
         tags: data.tags,
-        authorIds: [user?.id]
+        creatorIds: [user?.id]
       }
 
       const result = await fetcher(
