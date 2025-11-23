@@ -42,7 +42,7 @@ export const emailDeliveryLogsTable = pgTable(
   'email_delivery_logs',
   {
     id: uuid().primaryKey().defaultRandom(),
-    authorId: uuid().references(() => usersTable.id), // null for non-user emails
+    userId: uuid().references(() => usersTable.id), // null for non-user emails
     recipientEmail: varchar({ length: 255 }).notNull(),
     recipientName: varchar({ length: 255 }),
     emailType: varchar({ length: 50 }).notNull(),
@@ -60,7 +60,7 @@ export const emailDeliveryLogsTable = pgTable(
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
   },
   (table) => [
-    index('email_delivery_logs_authorId_idx').on(table.authorId),
+    index('email_delivery_logs_userId_idx').on(table.userId),
     index('email_delivery_logs_recipientEmail_idx').on(table.recipientEmail),
     index('email_delivery_logs_status_idx').on(table.status),
     index('email_delivery_logs_createdAt_idx').on(table.createdAt)
@@ -103,7 +103,7 @@ export type InsertAuthorEmailPreferences = InferInsertModel<
 // Zod schemas for API validation
 export const selectEmailDeliveryLogSchema = z.object({
   id: z.string(),
-  authorId: z.string().nullable(),
+  userId: z.string().nullable(),
   recipientEmail: z.string(),
   recipientName: z.string().nullable(),
   emailType: z.enum(['TRANSACTIONAL', 'MIX_RELEASE', 'PROMOTIONAL', 'SYSTEM']),
@@ -129,7 +129,7 @@ export const selectEmailDeliveryLogSchema = z.object({
 })
 
 export const insertEmailDeliveryLogSchema = z.object({
-  authorId: z.string().uuid().optional(),
+  userId: z.string().uuid().optional(),
   recipientEmail: z.string().email(),
   recipientName: z.string().optional(),
   emailType: z.enum(['TRANSACTIONAL', 'MIX_RELEASE', 'PROMOTIONAL', 'SYSTEM']),
@@ -179,8 +179,8 @@ export const updateAuthorEmailPreferencesSchema = z.object({
 export const emailDeliveryLogsRelations = relations(
   emailDeliveryLogsTable,
   ({ one }) => ({
-    author: one(usersTable, {
-      fields: [emailDeliveryLogsTable.authorId],
+    user: one(usersTable, {
+      fields: [emailDeliveryLogsTable.userId],
       references: [usersTable.id]
     })
   })
@@ -189,7 +189,7 @@ export const emailDeliveryLogsRelations = relations(
 export const authorEmailPreferencesRelations = relations(
   userEmailPreferencesTable,
   ({ one }) => ({
-    author: one(usersTable, {
+    user: one(usersTable, {
       fields: [userEmailPreferencesTable.userId],
       references: [usersTable.id]
     })

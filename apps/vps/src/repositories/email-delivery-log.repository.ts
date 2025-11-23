@@ -29,14 +29,14 @@ export async function updateEmailDeliveryLog(
   return result
 }
 
-export async function getEmailDeliveryLogsByAuthorId(
-  authorId: string,
+export async function getEmailDeliveryLogsByUserId(
+  userId: string,
   limit = 50
 ) {
   return db
     .select()
     .from(emailDeliveryLogsTable)
-    .where(eq(emailDeliveryLogsTable.authorId, authorId))
+    .where(eq(emailDeliveryLogsTable.userId, userId))
     .orderBy(emailDeliveryLogsTable.createdAt)
     .limit(limit)
 }

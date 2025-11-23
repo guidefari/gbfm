@@ -64,16 +64,16 @@ export const sendMixNotification: AppRouteHandler<
         metadata?.username || recipient.split('@')[0] || 'listener'
 
       // Look up user by email to check preferences
-      const [author] = await db
+      const [user] = await db
         .select()
         .from(usersTable)
         .where(eq(usersTable.email, recipient))
         .limit(1)
 
       // Check email preferences if author exists
-      if (author) {
+      if (user) {
         const canReceive = await canReceiveEmail(
-          author.id,
+          user.id,
           EMAIL_NOTIFICATION_TYPES.MIX_RELEASE
         )
 
@@ -91,7 +91,7 @@ export const sendMixNotification: AppRouteHandler<
 
       // Create email delivery log entry
       const deliveryLog = await createEmailDeliveryLog({
-        authorId: author?.id,
+        userId: user?.id,
         recipientEmail: recipient,
         recipientName: username,
         emailType: EMAIL_NOTIFICATION_TYPES.MIX_RELEASE,
