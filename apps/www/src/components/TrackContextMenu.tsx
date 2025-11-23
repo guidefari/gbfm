@@ -2,6 +2,7 @@ import type { SelectMix } from '@gbfm/vps/schemas'
 import { Heart, Play, Plus, Share } from 'lucide-react'
 import type React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { toast } from '@/components/ui/use-toast'
 import { useAudioPlayerActions } from '@/store/audioPlayer'
 
 interface TrackContextMenuProps {
@@ -87,9 +88,24 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
     closeContextMenu()
   }
 
-  const handleShare = () => {
-    // TODO: Implement share functionality
-    console.log('Share:', track.title)
+  const handleShare = async () => {
+    const shareUrl = `https://vps.goosebumps.fm/mixes/${track.slug}`
+
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      toast({
+        title: 'Link copied!',
+        description: 'Share URL copied to clipboard'
+      })
+    } catch (error) {
+      console.error('Failed to copy link to clipboard:', error)
+      toast({
+        title: 'Failed to copy',
+        description: 'Could not copy link to clipboard',
+        variant: 'destructive'
+      })
+    }
+
     closeContextMenu()
   }
 
@@ -111,7 +127,7 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
       {contextMenu.isOpen && (
         <div
           ref={menuRef}
-          className='fixed z-50 py-1 rounded-md border shadow-lg min-w-48 bg-background border-border'
+          className='fixed z-50 py-1 border rounded-md shadow-lg min-w-48 bg-background border-border'
           style={{
             left: contextMenu.x,
             top: contextMenu.y
@@ -119,7 +135,7 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
           <button
             type='button'
             onClick={handlePlayNow}
-            className='flex gap-2 items-center px-3 py-2 w-full text-sm text-left transition-colors text-foreground hover:bg-muted'>
+            className='flex items-center w-full gap-2 px-3 py-2 text-sm text-left transition-colors text-foreground hover:bg-muted'>
             <Play className='w-4 h-4' />
             Play now
           </button>
@@ -127,7 +143,7 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
           <button
             type='button'
             onClick={handleAddToQueue}
-            className='flex gap-2 items-center px-3 py-2 w-full text-sm text-left transition-colors text-foreground hover:bg-muted'>
+            className='flex items-center w-full gap-2 px-3 py-2 text-sm text-left transition-colors text-foreground hover:bg-muted'>
             <Plus className='w-4 h-4' />
             Add to queue
           </button>
@@ -137,7 +153,7 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
           <button
             type='button'
             onClick={handleAddToFavorites}
-            className='flex gap-2 items-center px-3 py-2 w-full text-sm text-left transition-colors text-foreground hover:bg-muted'>
+            className='flex items-center w-full gap-2 px-3 py-2 text-sm text-left transition-colors text-foreground hover:bg-muted'>
             <Heart className='w-4 h-4' />
             Add to favorites
           </button>
@@ -145,7 +161,7 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
           <button
             type='button'
             onClick={handleShare}
-            className='flex gap-2 items-center px-3 py-2 w-full text-sm text-left transition-colors text-foreground hover:bg-muted'>
+            className='flex items-center w-full gap-2 px-3 py-2 text-sm text-left transition-colors text-foreground hover:bg-muted'>
             <Share className='w-4 h-4' />
             Share
           </button>
