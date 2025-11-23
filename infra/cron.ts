@@ -23,6 +23,6 @@ export const testFunction = new sst.aws.Function('BackupTaskInvoker', {
 })
 
 export const outputs = {
-  dbBackupCron: dbBackupCron.nodes.function.name,
+  dbBackupCronRule: dbBackupCron.nodes.rule.name,
   testFunction: testFunction.url
 }
