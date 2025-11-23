@@ -89,7 +89,7 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
   }
 
   const handleShare = async () => {
-    const shareUrl = `https://vps.goosebumps.fm/mixes/${track.slug}`
+    const shareUrl = `https://vps.goosebumps.fm/share/mix/${track.slug}`
 
     try {
       await navigator.clipboard.writeText(shareUrl)
