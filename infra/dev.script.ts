@@ -25,7 +25,7 @@ new sst.x.DevCommand('Drizzle_Studio', {
     command: 'bun scripts/drizzle-studio.ts --target=prod',
     directory: './apps/vps',
     autostart: false
-  },
+  }
 })
 
 new sst.x.DevCommand('Drizzle_Generate', {
