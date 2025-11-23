@@ -5,6 +5,10 @@ import { sign, verify } from 'hono/jwt'
 import type { JWTPayload } from 'hono/utils/jwt/types'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
+import {
+  EMAIL_DELIVERY_STATUSES,
+  EMAIL_NOTIFICATION_TYPES
+} from '@/db/email.schema'
 import { getUserByEmailOrId } from '@/db/user.repo'
 import {
   type UpdateProfileSchema,
@@ -21,13 +25,20 @@ import {
   markEmailDeliveryLogAsSent
 } from '@/repositories/email-delivery-log.repository'
 
+import {
+  getOrCreateEmailPreferencesByUserId,
+  updateEmailPreferences as updateEmailPreferencesRepo
+} from '@/repositories/email-preferences.repository'
+
 import type {
   CreateUserRoute,
   ForgotPasswordRoute,
+  GetEmailPreferencesRoute,
   GetProfileRoute,
   ListUsersRoute,
   RefreshTokenRoute,
   ResetPasswordRoute,
+  UpdateEmailPreferencesRoute,
   SigninRoute,
   SignupRoute,
   UpdateProfileRoute
@@ -82,10 +93,10 @@ export const signup: AppRouteHandler<SignupRoute> = async (c) => {
     authorId: newUser.id,
     recipientEmail: validated.email,
     recipientName: username,
-    emailType: 'TRANSACTIONAL',
+    emailType: EMAIL_NOTIFICATION_TYPES.TRANSACTIONAL,
     templateName: 'welcome',
     subject,
-    status: 'PENDING'
+    status: EMAIL_DELIVERY_STATUSES.PENDING
   })
 
   try {
@@ -220,10 +231,10 @@ export const forgotPassword: AppRouteHandler<ForgotPasswordRoute> = async (
     authorId: currentUser.id,
     recipientEmail: validated.email,
     recipientName: currentUser.name,
-    emailType: 'TRANSACTIONAL',
+    emailType: EMAIL_NOTIFICATION_TYPES.TRANSACTIONAL,
     templateName: 'password-reset',
     subject: 'Reset your goosebumps.fm password',
-    status: 'PENDING',
+    status: EMAIL_DELIVERY_STATUSES.PENDING,
     metadata: {
       tokenId: token
     }
@@ -509,4 +520,56 @@ export const getProfile: AppRouteHandler<GetProfileRoute> = async (c) => {
   }
 
   return c.json(user, HttpStatusCodes.OK)
+}
+
+export const getEmailPreferences: AppRouteHandler<
+  GetEmailPreferencesRoute
+> = async (c) => {
+  const user = c.get('user')
+
+  if (!user) {
+    return c.json({ error: 'Unauthorized' }, HttpStatusCodes.UNAUTHORIZED)
+  }
+
+  try {
+    const preferences = await getOrCreateEmailPreferencesByUserId(user.id)
+    return c.json(preferences, HttpStatusCodes.OK)
+  } catch (error) {
+    console.error('Failed to get email preferences:', error)
+    return c.json(
+      { error: 'Failed to get email preferences' },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
+  }
+}
+
+export const updateEmailPreferences: AppRouteHandler<
+  UpdateEmailPreferencesRoute
+> = async (c) => {
+  const user = c.get('user')
+
+  if (!user) {
+    return c.json({ error: 'Unauthorized' }, HttpStatusCodes.UNAUTHORIZED)
+  }
+
+  const updates = c.req.valid('json')
+
+  try {
+    const updatedPreferences = await updateEmailPreferencesRepo(user.id, updates)
+
+    if (!updatedPreferences) {
+      return c.json(
+        { error: 'Failed to update email preferences' },
+        HttpStatusCodes.INTERNAL_SERVER_ERROR
+      )
+    }
+
+    return c.json(updatedPreferences, HttpStatusCodes.OK)
+  } catch (error) {
+    console.error('Failed to update email preferences:', error)
+    return c.json(
+      { error: 'Failed to update email preferences' },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
+  }
 }

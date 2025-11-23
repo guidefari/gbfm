@@ -3,6 +3,10 @@ import { and, eq } from 'drizzle-orm'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
+import {
+  EMAIL_DELIVERY_STATUSES,
+  EMAIL_NOTIFICATION_TYPES
+} from '@/db/email.schema'
 import { usersTable } from '@/db/user.schema'
 import type { AppRouteHandler } from '@/lib/types'
 import {
@@ -68,7 +72,10 @@ export const sendMixNotification: AppRouteHandler<
 
       // Check email preferences if author exists
       if (author) {
-        const canReceive = await canReceiveEmail(author.id, 'MIX_RELEASE')
+        const canReceive = await canReceiveEmail(
+          author.id,
+          EMAIL_NOTIFICATION_TYPES.MIX_RELEASE
+        )
 
         if (!canReceive) {
           console.log(
@@ -87,10 +94,10 @@ export const sendMixNotification: AppRouteHandler<
         authorId: author?.id,
         recipientEmail: recipient,
         recipientName: username,
-        emailType: 'MIX_RELEASE',
+        emailType: EMAIL_NOTIFICATION_TYPES.MIX_RELEASE,
         templateName: 'mix-notification',
         subject,
-        status: 'PENDING',
+        status: EMAIL_DELIVERY_STATUSES.PENDING,
         metadata: {
           mixId: mix.id,
           mixSlug: mix.slug,

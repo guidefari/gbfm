@@ -1,18 +1,20 @@
 import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import {
-  authorEmailPreferencesTable,
+  EMAIL_NOTIFICATION_TYPES,
+  type EmailNotificationType,
   type InsertAuthorEmailPreferences,
-  type SelectAuthorEmailPreferences
+  type SelectAuthorEmailPreferences,
+  userEmailPreferencesTable
 } from '@/db/email.schema'
 
-export async function getOrCreateEmailPreferencesByAuthorId(
-  authorId: string
+export async function getOrCreateEmailPreferencesByUserId(
+  userId: string
 ): Promise<SelectAuthorEmailPreferences> {
   const [existing] = await db
     .select()
-    .from(authorEmailPreferencesTable)
-    .where(eq(authorEmailPreferencesTable.authorId, authorId))
+    .from(userEmailPreferencesTable)
+    .where(eq(userEmailPreferencesTable.userId, userId))
     .limit(1)
 
   if (existing) {
@@ -20,9 +22,9 @@ export async function getOrCreateEmailPreferencesByAuthorId(
   }
 
   const [newPreferences] = await db
-    .insert(authorEmailPreferencesTable)
+    .insert(userEmailPreferencesTable)
     .values({
-      authorId,
+      userId: userId,
       mixReleaseEnabled: true,
       promotionalEnabled: true,
       systemEnabled: true,
@@ -39,45 +41,45 @@ export async function getOrCreateEmailPreferencesByAuthorId(
 }
 
 export async function updateEmailPreferences(
-  authorId: string,
+  userId: string,
   updates: Partial<InsertAuthorEmailPreferences>
 ) {
   const [result] = await db
-    .update(authorEmailPreferencesTable)
+    .update(userEmailPreferencesTable)
     .set({ ...updates, updatedAt: new Date() })
-    .where(eq(authorEmailPreferencesTable.authorId, authorId))
+    .where(eq(userEmailPreferencesTable.userId, userId))
     .returning()
   return result
 }
 
 export async function canReceiveEmail(
-  authorId: string,
-  emailType: 'MIX_RELEASE' | 'PROMOTIONAL' | 'SYSTEM' | 'TRANSACTIONAL'
+  userId: string,
+  emailType: EmailNotificationType
 ): Promise<boolean> {
-  if (emailType === 'TRANSACTIONAL') {
+  if (emailType === EMAIL_NOTIFICATION_TYPES.TRANSACTIONAL) {
     return true
   }
 
-  const preferences = await getOrCreateEmailPreferencesByAuthorId(authorId)
+  const preferences = await getOrCreateEmailPreferencesByUserId(userId)
 
   if (preferences.globalUnsubscribe) {
     return false
   }
 
   switch (emailType) {
-    case 'MIX_RELEASE':
+    case EMAIL_NOTIFICATION_TYPES.MIX_RELEASE:
       return preferences.mixReleaseEnabled
-    case 'PROMOTIONAL':
+    case EMAIL_NOTIFICATION_TYPES.PROMOTIONAL:
       return preferences.promotionalEnabled
-    case 'SYSTEM':
+    case EMAIL_NOTIFICATION_TYPES.SYSTEM:
       return preferences.systemEnabled
     default:
       return false
   }
 }
 
-export async function globalUnsubscribe(authorId: string) {
-  return updateEmailPreferences(authorId, {
+export async function globalUnsubscribe(userId: string) {
+  return updateEmailPreferences(userId, {
     globalUnsubscribe: true,
     mixReleaseEnabled: false,
     promotionalEnabled: false,
@@ -88,8 +90,8 @@ export async function globalUnsubscribe(authorId: string) {
 export async function getEmailPreferencesByUnsubscribeToken(token: string) {
   const [preferences] = await db
     .select()
-    .from(authorEmailPreferencesTable)
-    .where(eq(authorEmailPreferencesTable.unsubscribeToken, token))
+    .from(userEmailPreferencesTable)
+    .where(eq(userEmailPreferencesTable.unsubscribeToken, token))
     .limit(1)
   return preferences
 }

@@ -68,9 +68,9 @@ export const emailDeliveryLogsTable = pgTable(
 )
 
 // Author email preferences table - manages user notification settings
-export const authorEmailPreferencesTable = pgTable('author_email_preferences', {
+export const userEmailPreferencesTable = pgTable('user_email_preferences', {
   id: uuid().primaryKey().defaultRandom(),
-  authorId: uuid()
+  userId: uuid()
     .notNull()
     .unique()
     .references(() => usersTable.id),
@@ -94,10 +94,10 @@ export type InsertEmailDeliveryLog = InferInsertModel<
   typeof emailDeliveryLogsTable
 >
 export type SelectAuthorEmailPreferences = InferSelectModel<
-  typeof authorEmailPreferencesTable
+  typeof userEmailPreferencesTable
 >
 export type InsertAuthorEmailPreferences = InferInsertModel<
-  typeof authorEmailPreferencesTable
+  typeof userEmailPreferencesTable
 >
 
 // Zod schemas for API validation
@@ -149,7 +149,7 @@ export const insertEmailDeliveryLogSchema = z.object({
 
 export const selectAuthorEmailPreferencesSchema = z.object({
   id: z.string(),
-  authorId: z.string(),
+  userId: z.string(),
   mixReleaseEnabled: z.boolean(),
   promotionalEnabled: z.boolean(),
   systemEnabled: z.boolean(),
@@ -160,7 +160,7 @@ export const selectAuthorEmailPreferencesSchema = z.object({
 })
 
 export const insertAuthorEmailPreferencesSchema = z.object({
-  authorId: z.string().uuid(),
+  userId: z.string().uuid(),
   mixReleaseEnabled: z.boolean().optional(),
   promotionalEnabled: z.boolean().optional(),
   systemEnabled: z.boolean().optional(),
@@ -187,10 +187,10 @@ export const emailDeliveryLogsRelations = relations(
 )
 
 export const authorEmailPreferencesRelations = relations(
-  authorEmailPreferencesTable,
+  userEmailPreferencesTable,
   ({ one }) => ({
     author: one(usersTable, {
-      fields: [authorEmailPreferencesTable.authorId],
+      fields: [userEmailPreferencesTable.userId],
       references: [usersTable.id]
     })
   })

@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { db } from '@/db'
 import {
+  EMAIL_DELIVERY_STATUSES,
   emailDeliveryLogsTable,
   type InsertEmailDeliveryLog
 } from '@/db/email.schema'
@@ -57,7 +58,7 @@ export async function markEmailDeliveryLogAsSent(
   sesMessageId?: string
 ) {
   return updateEmailDeliveryLog(id, {
-    status: 'SENT',
+    status: EMAIL_DELIVERY_STATUSES.SENT,
     sentAt: new Date(),
     sesMessageId
   })
@@ -68,7 +69,7 @@ export async function markEmailDeliveryLogAsFailed(
   errorMessage: string
 ) {
   return updateEmailDeliveryLog(id, {
-    status: 'FAILED',
+    status: EMAIL_DELIVERY_STATUSES.FAILED,
     errorMessage
   })
 }
@@ -82,7 +83,7 @@ export async function markEmailDeliveryLogAsDelivered(sesMessageId: string) {
 
   if (log) {
     return updateEmailDeliveryLog(log.id, {
-      status: 'DELIVERED',
+      status: EMAIL_DELIVERY_STATUSES.DELIVERED,
       deliveredAt: new Date()
     })
   }
@@ -97,7 +98,7 @@ export async function markEmailDeliveryLogAsBounced(sesMessageId: string) {
 
   if (log) {
     return updateEmailDeliveryLog(log.id, {
-      status: 'BOUNCED',
+      status: EMAIL_DELIVERY_STATUSES.BOUNCED,
       bouncedAt: new Date()
     })
   }
@@ -112,7 +113,7 @@ export async function markEmailDeliveryLogAsComplained(sesMessageId: string) {
 
   if (log) {
     return updateEmailDeliveryLog(log.id, {
-      status: 'COMPLAINED',
+      status: EMAIL_DELIVERY_STATUSES.COMPLAINED,
       complainedAt: new Date()
     })
   }

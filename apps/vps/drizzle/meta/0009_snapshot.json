@@ -1,5 +1,5 @@
 {
-  "id": "7dfc1457-0c60-4cee-bf11-7b484b5c2b5d",
+  "id": "a350526a-35cc-43d3-9177-b18111fc2b0a",
   "prevId": "c96a1bad-c1fe-48e2-abb7-411c623c9de9",
   "version": "7",
   "dialect": "postgresql",
@@ -166,109 +166,6 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.author_email_preferences": {
-      "name": "author_email_preferences",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "authorId": {
-          "name": "authorId",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "mixReleaseEnabled": {
-          "name": "mixReleaseEnabled",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "promotionalEnabled": {
-          "name": "promotionalEnabled",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "systemEnabled": {
-          "name": "systemEnabled",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": true
-        },
-        "globalUnsubscribe": {
-          "name": "globalUnsubscribe",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
-        },
-        "unsubscribeToken": {
-          "name": "unsubscribeToken",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "updatedAt": {
-          "name": "updatedAt",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "author_email_preferences_authorId_users_id_fk": {
-          "name": "author_email_preferences_authorId_users_id_fk",
-          "tableFrom": "author_email_preferences",
-          "tableTo": "users",
-          "columnsFrom": [
-            "authorId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "author_email_preferences_authorId_unique": {
-          "name": "author_email_preferences_authorId_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "authorId"
-          ]
-        },
-        "author_email_preferences_unsubscribeToken_unique": {
-          "name": "author_email_preferences_unsubscribeToken_unique",
-          "nullsNotDistinct": false,
-          "columns": [
-            "unsubscribeToken"
-          ]
-        }
-      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
@@ -463,6 +360,109 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.user_email_preferences": {
+      "name": "user_email_preferences",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "userId": {
+          "name": "userId",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mixReleaseEnabled": {
+          "name": "mixReleaseEnabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "promotionalEnabled": {
+          "name": "promotionalEnabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "systemEnabled": {
+          "name": "systemEnabled",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "globalUnsubscribe": {
+          "name": "globalUnsubscribe",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "unsubscribeToken": {
+          "name": "unsubscribeToken",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updatedAt": {
+          "name": "updatedAt",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "user_email_preferences_userId_users_id_fk": {
+          "name": "user_email_preferences_userId_users_id_fk",
+          "tableFrom": "user_email_preferences",
+          "tableTo": "users",
+          "columnsFrom": [
+            "userId"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "user_email_preferences_userId_unique": {
+          "name": "user_email_preferences_userId_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "userId"
+          ]
+        },
+        "user_email_preferences_unsubscribeToken_unique": {
+          "name": "user_email_preferences_unsubscribeToken_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "unsubscribeToken"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
