@@ -6,7 +6,7 @@ import type {
   SelectMdxCompiledRelease,
   SelectRelease
 } from '@gbfm/vps/schemas'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
 import { type User, useAuthStore } from '@/store/auth'
 import type {
   AlbumApiResponse,
@@ -16,6 +16,19 @@ import type {
 
 export const VPS_BASE_URL = import.meta.env.VITE_VPS_BASE_URL
 export const AUTH_BASE_URL = `${VPS_BASE_URL}/auth`
+
+// Pagination types
+export type PaginationMetadata = {
+  total: number
+  limit: number
+  offset: number
+  hasMore: boolean
+}
+
+export type PaginatedResponse<T> = {
+  data: T[]
+  pagination: PaginationMetadata
+}
 
 type CustomRequestInit = RequestInit & {
   skipAuth?: boolean
@@ -70,16 +83,33 @@ export async function fetcher<T>(
 }
 
 export function useAudioByType(type: 'mix' | 'track' | 'misc') {
-  const { data, error, isPending } = useQuery<SelectAudio[], Error>({
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isPending
+  } = useInfiniteQuery<PaginatedResponse<SelectAudio>, Error>({
     queryKey: ['audio', type],
-    queryFn: async () =>
-      fetcher<SelectAudio[]>(`${VPS_BASE_URL}/content/audio/${type}`)
+    queryFn: async ({ pageParam = 0 }) =>
+      fetcher<PaginatedResponse<SelectAudio>>(
+        `${VPS_BASE_URL}/content/audio/${type}?limit=20&offset=${pageParam}`
+      ),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.hasMore
+        ? lastPage.pagination.offset + lastPage.pagination.limit
+        : undefined
   })
 
   return {
-    data,
+    data: data?.pages.flatMap((page) => page.data) ?? [],
     error,
-    isPending
+    isPending,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
   }
 }
 
@@ -166,16 +196,33 @@ export function useUpdateProfile() {
 }
 
 export function useAllLabels() {
-  const { data, error, isPending } = useQuery<SelectLabel[], Error>({
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isPending
+  } = useInfiniteQuery<PaginatedResponse<SelectLabel>, Error>({
     queryKey: ['labels'],
-    queryFn: async () =>
-      fetcher<SelectLabel[]>(`${VPS_BASE_URL}/content/labels`)
+    queryFn: async ({ pageParam = 0 }) =>
+      fetcher<PaginatedResponse<SelectLabel>>(
+        `${VPS_BASE_URL}/content/labels?limit=20&offset=${pageParam}`
+      ),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.hasMore
+        ? lastPage.pagination.offset + lastPage.pagination.limit
+        : undefined
   })
 
   return {
-    data,
+    data: data?.pages.flatMap((page) => page.data) ?? [],
     error,
-    isPending
+    isPending,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
   }
 }
 
@@ -194,19 +241,34 @@ export function useLabelBySlug(slug: string) {
 }
 
 export function useReleasesByLabel(labelSlug: string) {
-  const { data, error, isPending } = useQuery<SelectRelease[], Error>({
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isPending
+  } = useInfiniteQuery<PaginatedResponse<SelectRelease>, Error>({
     queryKey: ['releases', 'label', labelSlug],
-    queryFn: async () =>
-      fetcher<SelectRelease[]>(
-        `${VPS_BASE_URL}/content/labels/${labelSlug}/releases`
+    queryFn: async ({ pageParam = 0 }) =>
+      fetcher<PaginatedResponse<SelectRelease>>(
+        `${VPS_BASE_URL}/content/labels/${labelSlug}/releases?limit=20&offset=${pageParam}`
       ),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.hasMore
+        ? lastPage.pagination.offset + lastPage.pagination.limit
+        : undefined,
     enabled: Boolean(labelSlug)
   })
 
   return {
-    data,
+    data: data?.pages.flatMap((page) => page.data) ?? [],
     error,
-    isPending
+    isPending,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
   }
 }
 

@@ -34,9 +34,29 @@ function TracksPage() {
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc')
 
   // Fetch data for all types
-  const { data: mixesData, isPending: mixesPending } = useAudioByType('mix')
-  const { data: tracksData, isPending: tracksPending } = useAudioByType('track')
-  const { data: miscData, isPending: miscPending } = useAudioByType('misc')
+  const {
+    data: mixesData,
+    isPending: mixesPending,
+    fetchNextPage: fetchNextMixes,
+    hasNextPage: hasNextMixes,
+    isFetchingNextPage: isFetchingNextMixes
+  } = useAudioByType('mix')
+
+  const {
+    data: tracksData,
+    isPending: tracksPending,
+    fetchNextPage: fetchNextTracks,
+    hasNextPage: hasNextTracks,
+    isFetchingNextPage: isFetchingNextTracks
+  } = useAudioByType('track')
+
+  const {
+    data: miscData,
+    isPending: miscPending,
+    fetchNextPage: fetchNextMisc,
+    hasNextPage: hasNextMisc,
+    isFetchingNextPage: isFetchingNextMisc
+  } = useAudioByType('misc')
 
   const { isPlaying, nowPlayingContext } = useAudioPlayerState()
   const { loadTrack } = useAudioPlayerActions()
@@ -311,6 +331,67 @@ function TracksPage() {
           )
         })}
       </div>
+
+      {/* Load More Buttons */}
+      {filteredAndSortedData.length > 0 && (
+        <div className='flex flex-col gap-3 mt-8'>
+          {filterType === 'all' ? (
+            <>
+              {hasNextMixes && (
+                <Button
+                  variant='outline'
+                  onClick={() => fetchNextMixes()}
+                  disabled={isFetchingNextMixes}
+                  className='bg-gb-darker-bg border-gb-pastel-green-2/30 text-gb-default-text hover:bg-gb-pastel-green-2/20 disabled:opacity-50'>
+                  {isFetchingNextMixes ? 'Loading...' : 'Load More Mixes'}
+                </Button>
+              )}
+              {hasNextTracks && (
+                <Button
+                  variant='outline'
+                  onClick={() => fetchNextTracks()}
+                  disabled={isFetchingNextTracks}
+                  className='bg-gb-darker-bg border-gb-pastel-green-2/30 text-gb-default-text hover:bg-gb-pastel-green-2/20 disabled:opacity-50'>
+                  {isFetchingNextTracks ? 'Loading...' : 'Load More Tracks'}
+                </Button>
+              )}
+              {hasNextMisc && (
+                <Button
+                  variant='outline'
+                  onClick={() => fetchNextMisc()}
+                  disabled={isFetchingNextMisc}
+                  className='bg-gb-darker-bg border-gb-pastel-green-2/30 text-gb-default-text hover:bg-gb-pastel-green-2/20 disabled:opacity-50'>
+                  {isFetchingNextMisc ? 'Loading...' : 'Load More Other'}
+                </Button>
+              )}
+            </>
+          ) : filterType === 'mix' && hasNextMixes ? (
+            <Button
+              variant='outline'
+              onClick={() => fetchNextMixes()}
+              disabled={isFetchingNextMixes}
+              className='bg-gb-darker-bg border-gb-pastel-green-2/30 text-gb-default-text hover:bg-gb-pastel-green-2/20 disabled:opacity-50'>
+              {isFetchingNextMixes ? 'Loading...' : 'Load More Mixes'}
+            </Button>
+          ) : filterType === 'track' && hasNextTracks ? (
+            <Button
+              variant='outline'
+              onClick={() => fetchNextTracks()}
+              disabled={isFetchingNextTracks}
+              className='bg-gb-darker-bg border-gb-pastel-green-2/30 text-gb-default-text hover:bg-gb-pastel-green-2/20 disabled:opacity-50'>
+              {isFetchingNextTracks ? 'Loading...' : 'Load More Tracks'}
+            </Button>
+          ) : filterType === 'misc' && hasNextMisc ? (
+            <Button
+              variant='outline'
+              onClick={() => fetchNextMisc()}
+              disabled={isFetchingNextMisc}
+              className='bg-gb-darker-bg border-gb-pastel-green-2/30 text-gb-default-text hover:bg-gb-pastel-green-2/20 disabled:opacity-50'>
+              {isFetchingNextMisc ? 'Loading...' : 'Load More Other'}
+            </Button>
+          ) : null}
+        </div>
+      )}
 
       {/* Empty state */}
       {filteredAndSortedData.length === 0 && !isPending && (

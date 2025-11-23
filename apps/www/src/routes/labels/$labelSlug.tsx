@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import * as React from 'react'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { ReleasesTable } from '@/components/ReleasesTable'
+import { Button } from '@/components/ui/button'
 import { useLabelBySlug, useReleasesByLabel } from '@/lib/http'
 import { useContentStore } from '@/store'
 
@@ -17,7 +18,10 @@ function LabelPage() {
   const {
     data: releases,
     error: releasesError,
-    isPending: releasesPending
+    isPending: releasesPending,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
   } = useReleasesByLabel(labelSlug)
 
   React.useEffect(() => {
@@ -121,7 +125,20 @@ function LabelPage() {
               Error loading releases: {releasesError.message}
             </div>
           ) : (
-            <ReleasesTable releases={releases || []} />
+            <>
+              <ReleasesTable releases={releases || []} />
+              {hasNextPage && (
+                <div className='flex justify-center mt-6'>
+                  <Button
+                    variant='outline'
+                    onClick={() => fetchNextPage()}
+                    disabled={isFetchingNextPage}
+                    className='px-6 py-3 text-sm font-medium transition-colors'>
+                    {isFetchingNextPage ? 'Loading...' : 'Load More Releases'}
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
