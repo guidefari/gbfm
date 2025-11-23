@@ -36,7 +36,7 @@ async function migrateMixesToAudio() {
       .where(eq(mixCreators.mixId, mix.id));
 
     // 4. Insert into audio_creators
-    for (const { creatorId } of mixCreatorsRelations) {
+    for (const { creatorId } of mixAuthors) {
       await db.insert(audioCreators).values({
         audioId: audio.id,
         creatorId,

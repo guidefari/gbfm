@@ -48,7 +48,7 @@ export const createPost: AppRouteHandler<CreatePostRoute> = async (c) => {
         throw new Error('Failed to create post')
       }
 
-      // Insert the post-author relationships
+      // Insert the post-creator relationships
       await tx.insert(postCreators).values(
         finalCreatorIds.map((creatorId: string) => ({
           postId: newPost.id,
@@ -149,7 +149,7 @@ export const createMix: AppRouteHandler<CreateMixRoute> = async (c) => {
       error.message.includes('foreign key constraint')
     ) {
       return c.json(
-        { error: 'You may have entered a non-existent author id' },
+        { error: 'You may have entered a non-existent creator id' },
         HttpStatusCodes.CONFLICT
       )
     }
@@ -198,7 +198,7 @@ export const getAudioBySlug: AppRouteHandler<GetAudioBySlugRoute> = async (
       return c.json({ error: 'Audio not found' }, HttpStatusCodes.NOT_FOUND)
     }
 
-    // Then get the authors
+    // Then get the creators
     const creators = await db
       .select({
         id: usersTable.id,
@@ -262,7 +262,7 @@ export const updateAudioBySlug: AppRouteHandler<
       return c.json({ error: 'Audio not found' }, HttpStatusCodes.NOT_FOUND)
     }
 
-    // Check if user is an author of this content
+    // Check if user is a creator of this content
     const authorship = await db
       .select()
       .from(audioCreators)
@@ -297,7 +297,7 @@ export const updateAudioBySlug: AppRouteHandler<
       )
     }
 
-    // Get authors for response
+    // Get creators for response
     const creators = await db
       .select({
         id: usersTable.id,
@@ -381,7 +381,7 @@ export const createAudio: AppRouteHandler<CreateAudioRoute> = async (c) => {
       error.message.includes('foreign key constraint')
     ) {
       return c.json(
-        { error: 'You may have entered a non-existent author id' },
+        { error: 'You may have entered a non-existent creator id' },
         HttpStatusCodes.CONFLICT
       )
     }

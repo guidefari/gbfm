@@ -61,7 +61,7 @@ export const createLabel: AppRouteHandler<CreateLabelRoute> = async (c) => {
       error.message.includes('foreign key constraint')
     ) {
       return c.json(
-        { error: 'You may have entered a non-existent author id' },
+        { error: 'You may have entered a non-existent creator id' },
         HttpStatusCodes.CONFLICT
       )
     }

@@ -31,7 +31,7 @@ export const createLabel = createRoute({
     ),
     [HttpStatusCodes.CONFLICT]: jsonContent(
       z.object({ error: z.string() }),
-      'Label with this slug already exists or invalid author id'
+      'Label with this slug already exists or invalid creator id'
     ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),

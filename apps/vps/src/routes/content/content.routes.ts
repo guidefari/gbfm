@@ -108,7 +108,7 @@ export const createMix = createRoute({
     ),
     [HttpStatusCodes.CONFLICT]: jsonContent(
       z.object({ error: z.string() }),
-      'Mix with this slug already exists or invalid author id'
+      'Mix with this slug already exists or invalid creator id'
     ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
@@ -272,7 +272,7 @@ export const createAudio = createRoute({
     ),
     [HttpStatusCodes.CONFLICT]: jsonContent(
       z.object({ error: z.string() }),
-      'Audio with this slug already exists or invalid author id'
+      'Audio with this slug already exists or invalid creator id'
     ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),

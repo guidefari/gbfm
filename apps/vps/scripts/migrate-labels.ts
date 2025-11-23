@@ -44,19 +44,19 @@ async function migrateLabelsFromPosts() {
 
         console.log(`  Created label: ${newLabel.id}`)
 
-        const postCreators = await tx
+        const existingPostCreators = await tx
           .select()
           .from(postCreators)
           .where(eq(postCreators.postId, post.id))
 
-        if (postCreators.length > 0) {
+        if (existingPostCreators.length > 0) {
           await tx.insert(labelCreators).values(
-            postCreators.map((pc) => ({
+            existingPostCreators.map((pc) => ({
               labelId: newLabel.id,
               creatorId: pc.creatorId
             }))
           )
-          console.log(`  Migrated ${postCreators.length} creator relationship(s)`)
+          console.log(`  Migrated ${existingPostCreators.length} creator relationship(s)`)
         }
 
         await tx.delete(postCreators).where(eq(postCreators.postId, post.id))
