@@ -9,6 +9,10 @@ import {
   updateReleaseSchema
 } from '@/db/release.schema'
 import { authenticate } from '@/middlewares/auth.middleware'
+import {
+  paginationQuerySchema,
+  createPaginatedResponseSchema
+} from '@/lib/pagination'
 
 const tags = ['Releases']
 
@@ -54,13 +58,14 @@ export const getReleasesByLabel = createRoute({
   request: {
     params: z.object({
       labelSlug: z.string()
-    })
+    }),
+    query: paginationQuerySchema
   },
   tags,
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
-      z.array(selectReleaseSchema),
-      'List of releases for the label'
+      createPaginatedResponseSchema(selectReleaseSchema),
+      'Paginated list of releases for the label'
     ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(
       z.object({ error: z.string() }),

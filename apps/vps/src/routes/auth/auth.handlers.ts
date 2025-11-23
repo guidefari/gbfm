@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { sendPasswordResetEmail, sendWelcomeEmail } from '@gbfm/email/index'
-import { and, eq } from 'drizzle-orm'
+import { and, count, desc, eq } from 'drizzle-orm'
 import { sign, verify } from 'hono/jwt'
 import type { JWTPayload } from 'hono/utils/jwt/types'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
@@ -14,6 +14,7 @@ import {
 } from '@/db/user.schema'
 import { env } from '@/env'
 import type { AppRouteHandler } from '@/lib/types'
+import { createPaginationMetadata } from '@/lib/pagination'
 
 import type {
   CreateUserRoute,
@@ -355,9 +356,28 @@ export const createUser: AppRouteHandler<CreateUserRoute> = async (c) => {
 }
 
 export const listUsers: AppRouteHandler<ListUsersRoute> = async (c) => {
-  const users = await db.select().from(usersTable)
-  const usersWithoutPasswords = users.map(({ password, ...user }) => user)
-  return c.json(usersWithoutPasswords, HttpStatusCodes.OK)
+  const { limit, offset } = c.req.valid('query')
+
+  // Get total count
+  const [{ total }] = await db
+    .select({ total: count() })
+    .from(usersTable)
+
+  // Get paginated data
+  const users = await db
+    .select()
+    .from(usersTable)
+    .limit(limit)
+    .offset(offset)
+    .orderBy(desc(usersTable.createdAt))
+
+  // Remove passwords from response
+  const data = users.map(({ password, ...user }) => user)
+
+  return c.json({
+    data,
+    pagination: createPaginationMetadata(total, limit, offset)
+  }, HttpStatusCodes.OK)
 }
 
 export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {

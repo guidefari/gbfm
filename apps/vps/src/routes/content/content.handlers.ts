@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { and, arrayContains, eq } from 'drizzle-orm'
+import { and, arrayContains, count, desc, eq } from 'drizzle-orm'
 import ffmpeg from 'ffmpeg-static'
 import type { Context } from 'hono'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
@@ -16,6 +16,7 @@ import { postCreators, postsTable } from '@/db/post.schema'
 import { timeQuery } from '@/db/query-timer'
 import { usersTable } from '@/db/user.schema'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
+import { createPaginationMetadata } from '@/lib/pagination'
 import type { AppBindings, AppRouteHandler } from '@/lib/types'
 
 import type {
@@ -72,25 +73,38 @@ export const createPost: AppRouteHandler<CreatePostRoute> = async (c) => {
 export const getPostsByTag: AppRouteHandler<GetPostsByTagRoute> = async (c) => {
   const params = c.req.valid('param')
   const tag = params.tag
+  const { limit, offset } = c.req.valid('query')
 
   try {
-    const posts = await timeQuery(
+    const whereCondition = arrayContains(postsTable.tags, [tag])
+
+    // Get total count
+    const [{ total }] = await timeQuery(
+      () =>
+        db
+          .select({ total: count() })
+          .from(postsTable)
+          .where(whereCondition),
+      'get-posts-by-tag-count'
+    )
+
+    // Get paginated data
+    const data = await timeQuery(
       () =>
         db
           .select()
           .from(postsTable)
-          .where(arrayContains(postsTable.tags, [tag])),
-      'get-posts-by-tag'
+          .where(whereCondition)
+          .limit(limit)
+          .offset(offset)
+          .orderBy(desc(postsTable.createdAt)),
+      'get-posts-by-tag-data'
     )
 
-    if (!posts.length) {
-      return c.json(
-        { posts: [], message: 'No posts found with this tag' },
-        HttpStatusCodes.OK
-      )
-    }
-
-    return c.json({ posts }, HttpStatusCodes.OK)
+    return c.json({
+      data,
+      pagination: createPaginationMetadata(total, limit, offset)
+    }, HttpStatusCodes.OK)
   } catch (error) {
     console.error('Error fetching posts by tag:', error)
     return c.json(
@@ -165,13 +179,37 @@ export const getAudioByType: AppRouteHandler<GetAudioByTypeRoute> = async (
   c
 ) => {
   const { type } = c.req.valid('param')
+  const { limit, offset } = c.req.valid('query')
 
   try {
-    const audio = await timeQuery(
-      () => db.select().from(audioTable).where(eq(audioTable.type, type)),
-      'get-audio-by-type'
+    const whereCondition = eq(audioTable.type, type)
+
+    // Get total count
+    const [{ total }] = await timeQuery(
+      () => db.select({ total: count() }).from(audioTable).where(whereCondition),
+      'get-audio-by-type-count'
     )
-    return c.json(audio, HttpStatusCodes.OK)
+
+    // Get paginated data
+    const data = await timeQuery(
+      () =>
+        db
+          .select()
+          .from(audioTable)
+          .where(whereCondition)
+          .limit(limit)
+          .offset(offset)
+          .orderBy(desc(audioTable.createdAt)),
+      'get-audio-by-type-data'
+    )
+
+    return c.json(
+      {
+        data,
+        pagination: createPaginationMetadata(total, limit, offset)
+      },
+      HttpStatusCodes.OK
+    )
   } catch (error) {
     console.error('Error fetching audio by type:', error)
     return c.json(

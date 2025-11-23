@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { count, desc, eq } from 'drizzle-orm'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
 import { labelsTable } from '@/db/label.schema'
@@ -7,6 +7,7 @@ import {
   type SelectMdxCompiledRelease
 } from '@/db/release.schema'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
+import { createPaginationMetadata } from '@/lib/pagination'
 import type { AppRouteHandler } from '@/lib/types'
 
 import type {
@@ -72,6 +73,7 @@ export const getReleasesByLabel: AppRouteHandler<
   GetReleasesByLabelRoute
 > = async (c) => {
   const { labelSlug } = c.req.valid('param')
+  const { limit, offset } = c.req.valid('query')
 
   try {
     const [label] = await db
@@ -84,12 +86,27 @@ export const getReleasesByLabel: AppRouteHandler<
       return c.json({ error: 'Label not found' }, HttpStatusCodes.NOT_FOUND)
     }
 
-    const releases = await db
+    const whereCondition = eq(releasesTable.labelId, label.id)
+
+    // Get total count
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(releasesTable)
+      .where(whereCondition)
+
+    // Get paginated data
+    const data = await db
       .select()
       .from(releasesTable)
-      .where(eq(releasesTable.labelId, label.id))
+      .where(whereCondition)
+      .limit(limit)
+      .offset(offset)
+      .orderBy(desc(releasesTable.createdAt))
 
-    return c.json(releases, HttpStatusCodes.OK)
+    return c.json({
+      data,
+      pagination: createPaginationMetadata(total, limit, offset)
+    }, HttpStatusCodes.OK)
   } catch (error) {
     console.error('Error fetching releases by label:', error)
     return c.json(

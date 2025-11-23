@@ -10,6 +10,10 @@ import {
 } from '@/db/audio.schema'
 import { createPostSchema, selectPostSchema } from '@/db/post.schema'
 import { authenticate } from '@/middlewares/auth.middleware'
+import {
+  paginationQuerySchema,
+  createPaginatedResponseSchema
+} from '@/lib/pagination'
 
 const tags = ['Content']
 
@@ -55,16 +59,14 @@ export const getPostsByTag = createRoute({
   path: '/tag/{tag}',
   method: 'get',
   request: {
-    params: tagParamsSchema
+    params: tagParamsSchema,
+    query: paginationQuerySchema
   },
   tags,
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
-      z.object({
-        posts: z.array(postResponseSchema),
-        message: z.string().optional()
-      }),
-      'Posts filtered by tag'
+      createPaginatedResponseSchema(postResponseSchema),
+      'Paginated posts filtered by tag'
     ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
@@ -177,13 +179,14 @@ export const getAudioByType = createRoute({
   path: '/audio/{type}',
   method: 'get',
   request: {
-    params: z.object({ type: z.enum(['mix', 'track', 'misc']) })
+    params: z.object({ type: z.enum(['mix', 'track', 'misc']) }),
+    query: paginationQuerySchema
   },
   tags,
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
-      z.array(selectAudioSchema),
-      'List of audio'
+      createPaginatedResponseSchema(selectAudioSchema),
+      'Paginated list of audio'
     ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),

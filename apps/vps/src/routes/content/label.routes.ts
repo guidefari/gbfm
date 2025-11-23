@@ -9,6 +9,10 @@ import {
   updateLabelSchema
 } from '@/db/label.schema'
 import { authenticate } from '@/middlewares/auth.middleware'
+import {
+  paginationQuerySchema,
+  createPaginatedResponseSchema
+} from '@/lib/pagination'
 
 const tags = ['Labels']
 
@@ -47,11 +51,14 @@ export const createLabel = createRoute({
 export const getAllLabels = createRoute({
   path: '/labels',
   method: 'get',
+  request: {
+    query: paginationQuerySchema
+  },
   tags,
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
-      z.array(selectLabelSchema),
-      'List of labels'
+      createPaginatedResponseSchema(selectLabelSchema),
+      'Paginated list of labels'
     ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),

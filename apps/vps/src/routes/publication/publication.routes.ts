@@ -8,6 +8,10 @@ import {
   selectPublicationSchema,
   updatePublicationSchema
 } from '@/db/publication.schema'
+import {
+  paginationQuerySchema,
+  createPaginatedResponseSchema
+} from '@/lib/pagination'
 
 const tags = ['Publications']
 
@@ -23,11 +27,14 @@ const publicationParamsSchema = z.object({
 export const list = createRoute({
   path: '/',
   method: 'get',
+  request: {
+    query: paginationQuerySchema
+  },
   tags,
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
-      z.array(publicationResponseSchema),
-      'List of publications'
+      createPaginatedResponseSchema(publicationResponseSchema),
+      'Paginated list of publications'
     )
   }
 })
