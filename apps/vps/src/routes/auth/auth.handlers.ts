@@ -90,7 +90,7 @@ export const signup: AppRouteHandler<SignupRoute> = async (c) => {
   const username = validated.username || validated.email
   const subject = `Welcome to goosebumps.fm, ${username}! 🎵`
   const welcomeEmailLog = await createEmailDeliveryLog({
-    authorId: newUser.id,
+    userId: newUser.id,
     recipientEmail: validated.email,
     recipientName: username,
     emailType: EMAIL_NOTIFICATION_TYPES.TRANSACTIONAL,
@@ -228,7 +228,7 @@ export const forgotPassword: AppRouteHandler<ForgotPasswordRoute> = async (
 
   // Create email delivery log for password reset email
   const resetEmailLog = await createEmailDeliveryLog({
-    authorId: currentUser.id,
+    userId: currentUser.id,
     recipientEmail: validated.email,
     recipientName: currentUser.name,
     emailType: EMAIL_NOTIFICATION_TYPES.TRANSACTIONAL,
@@ -474,7 +474,7 @@ export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
     updateData = { ...c.req.valid('json') }
   }
 
-  if (updateData.username) {
+  if (updateData.username && updateData.username !== user.username) {
     const isAvailable = await isUsernameAvailable(updateData.username)
     if (!isAvailable) {
       return c.json(
