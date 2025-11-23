@@ -144,9 +144,8 @@ new sst.x.DevCommand('Backup_Database', {
     DatabaseUser: secret.DatabaseUser.value,
     DatabasePassword: secret.DatabasePassword.value,
     DatabasePort: secret.DatabasePort.value,
-    DatabaseName: secret.DatabaseName.value,
-  },
-
+    DatabaseName: secret.DatabaseName.value
+  }
 })
 
 // new sst.x.DevCommand('Backup_Database_Docker', {
@@ -166,6 +165,6 @@ new sst.x.DevCommand('Restore_Local_Database', {
     autostart: false
   },
   environment: {
-    LOCAL_DB_URL: process.env.LOCAL_DB_URL || "",
+    LOCAL_DB_URL: process.env.LOCAL_DB_URL || ''
   }
 })

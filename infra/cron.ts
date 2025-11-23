@@ -22,13 +22,13 @@ export const dbBackupCron = new sst.aws.Cron('DatabaseBackupCron', {
   // schedule: "rate(1 minute)"
 })
 
-export const testFunction = new sst.aws.Function("BackupTaskInvoker", {
-  handler: "apps/vps/scripts/invoke-backup-task.handler",
+export const testFunction = new sst.aws.Function('BackupTaskInvoker', {
+  handler: 'apps/vps/scripts/invoke-backup-task.handler',
   dev: false,
   url: true,
   link: [dbBackupTask],
   timeout: '2 minutes'
-});
+})
 
 export const outputs = {
   dbBackupCron: dbBackupCron.nodes.function.name,
