@@ -185,7 +185,7 @@ export function useUserLOL() {
 }
 
 export function useUpdateProfile() {
-  const { mutate: updateProfile, isPending } = useMutation<
+  const { mutateAsync: updateProfile, isPending } = useMutation<
     User,
     Error,
     FormData | User
@@ -229,7 +229,7 @@ export function useEmailPreferences() {
 }
 
 export function useUpdateEmailPreferences() {
-  const { mutate: updateEmailPreferences, isPending } = useMutation<
+  const { mutateAsync: updateEmailPreferences, isPending } = useMutation<
     EmailPreferences,
     Error,
     Partial<EmailPreferences>
