@@ -2,7 +2,10 @@
 
 import { Resource } from "sst";
 
-console.log(Resource.FullDatabaseUrl.value);
+console.log(Resource.DatabasePassword.value);
+console.log(Resource.DatabaseUser.value);
+console.log(Resource.DatabaseHost.value);
+console.log(Resource.DatabaseName.value);
 
 Bun.spawnSync(["psql"], {
 	stdout: "inherit",

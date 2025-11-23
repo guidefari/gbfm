@@ -19,7 +19,6 @@ const envSchema = z.object({
 const isProd = Resource.App.stage === 'prod'
 
 function createEnvConfig() {
-  // const databaseUrl = Resource.FullDatabaseUrl.value
   const emailSender = isProd
     ? Resource.Email.sender
     : process.env.EMAIL_SENDER || ''
