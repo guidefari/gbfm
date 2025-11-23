@@ -24,13 +24,12 @@ export const Route = createFileRoute('/settings/profile')({
 export default function Profile() {
   const { data: user } = useUserLOL()
   const avatarId = useId()
-  const { updateProfile } = useUpdateProfile()
+  const { updateProfile, isPending: isUpdatingProfile } = useUpdateProfile()
   const { data: emailPreferences } = useEmailPreferences()
   const { updateEmailPreferences } = useUpdateEmailPreferences()
 
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [emailPrefs, setEmailPrefs] = useState({
     mixReleaseEnabled: emailPreferences?.mixReleaseEnabled ?? true,
     promotionalEnabled: emailPreferences?.promotionalEnabled ?? true,
@@ -61,13 +60,18 @@ export default function Profile() {
     }
   }
 
-  const handleEmailPrefChange = (
+  const handleEmailPrefChange = async (
     key: keyof typeof emailPrefs,
     value: boolean
   ) => {
     const newPrefs = { ...emailPrefs, [key]: value }
     setEmailPrefs(newPrefs)
-    updateEmailPreferences(newPrefs)
+    try {
+      await updateEmailPreferences(newPrefs)
+    } catch (error) {
+      console.error('Error updating email preferences:', error)
+      setEmailPrefs(emailPrefs)
+    }
   }
 
   const fields = [
@@ -98,8 +102,6 @@ export default function Profile() {
     e.preventDefault()
     if (!user?.id) return
 
-    setIsSubmitting(true)
-
     try {
       const formData = new FormData(e.currentTarget)
 
@@ -107,13 +109,12 @@ export default function Profile() {
         formData.append('avatar', selectedFile)
       }
 
-      updateProfile(formData)
+      await updateProfile(formData)
 
       setSelectedFile(null)
+      setImagePreview(null)
     } catch (error) {
       console.error('Error updating profile:', error)
-    } finally {
-      setIsSubmitting(false)
     }
   }
 
@@ -175,8 +176,8 @@ export default function Profile() {
                 <Button
                   type='submit'
                   className='w-full'
-                  disabled={isSubmitting}>
-                  {isSubmitting ? 'Saving...' : 'Save Profile'}
+                  disabled={isUpdatingProfile}>
+                  {isUpdatingProfile ? 'Saving...' : 'Save Profile'}
                 </Button>
               </div>
             </form>

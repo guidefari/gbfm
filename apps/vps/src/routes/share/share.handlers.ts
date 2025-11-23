@@ -19,6 +19,27 @@ const escapeHtml = (text: string): string => {
 export const shareMix = async (c: Context) => {
   const { slug } = c.req.param()
 
+  if (!slug) {
+    return c.html(
+      `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invalid URL | goosebumps.fm</title>
+</head>
+<body>
+  <h1>Invalid URL</h1>
+  <p>The URL is missing a mix slug.</p>
+  <a href="https://goosebumps.fm">Go to goosebumps.fm</a>
+</body>
+</html>
+      `,
+      400
+    )
+  }
+
   try {
     // Fetch the mix data
     const [audio] = await db
@@ -69,7 +90,8 @@ export const shareMix = async (c: Context) => {
       audio.description || `Listen to ${audio.title || slug} on goosebumps.fm`
     )
     const image =
-      audio.thumbnailUrl || 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'
+      audio.thumbnailUrl ||
+      'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'
     const creatorNames = escapeHtml(creators.map((c) => c.name).join(', '))
 
     // Return HTML with rich OG tags

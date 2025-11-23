@@ -22,10 +22,10 @@ new sst.x.DevCommand('ios', {
 new sst.x.DevCommand('Drizzle_Studio', {
   link: [...allSecrets, email],
   dev: {
-    command: 'bun scripts/drizzle-studio.ts',
+    command: 'bun scripts/drizzle-studio.ts --target=prod',
     directory: './apps/vps',
     autostart: false
-  }
+  },
 })
 
 new sst.x.DevCommand('Drizzle_Generate', {
@@ -134,7 +134,7 @@ new sst.x.DevCommand('Email_Preview', {
 new sst.x.DevCommand('Backup_Database', {
   link: [...allSecrets, email, dbBackupBucket],
   dev: {
-    command: 'bun scripts/backup-db.ts',
+    command: 'bun scripts/backup-db.ts --source=local',
     directory: './apps/vps',
     autostart: false
   },
@@ -144,7 +144,8 @@ new sst.x.DevCommand('Backup_Database', {
     DatabaseUser: secret.DatabaseUser.value,
     DatabasePassword: secret.DatabasePassword.value,
     DatabasePort: secret.DatabasePort.value,
-    DatabaseName: secret.DatabaseName.value
+    DatabaseName: secret.DatabaseName.value,
+    LOCAL_DB_URL: process.env.LOCAL_DB_URL || ''
   }
 })
 
@@ -160,7 +161,7 @@ new sst.x.DevCommand('Backup_Database', {
 new sst.x.DevCommand('Restore_Local_Database', {
   link: [...allSecrets, email, dbBackupBucket],
   dev: {
-    command: 'bun scripts/restore-db.ts',
+    command: 'bun scripts/restore-db.ts --destination=remote',
     directory: './apps/vps',
     autostart: false
   },

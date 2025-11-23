@@ -15,28 +15,14 @@ const app = createApp()
 
 configureOpenAPI(app)
 
-const routes = [
-  { path: '/auth', handler: auth },
-  { path: '/content', handler: content },
-  { path: '/email', handler: email },
-  { path: '/publication', handler: publication },
-  { path: '/share', handler: share },
-  { path: '/spotify', handler: spotify },
-  { path: '/upload', handler: upload },
-  { path: '', handler: rss }
-] as const
-
-routes.forEach((route) => {
-  try {
-    console.log(`Registering route: ${route.path}`)
-    app.route(route.path, route.handler)
-    console.log(`✓ Successfully registered: ${route.path}`)
-  } catch (error) {
-    console.error(`✗ Failed to register route: ${route.path}`)
-    console.error(error)
-    throw error
-  }
-})
+app.route('/auth', auth)
+app.route('/content', content)
+app.route('/email', email)
+app.route('/publication', publication)
+app.route('/share', share)
+app.route('/spotify', spotify)
+app.route('/upload', upload)
+app.route('', rss)
 
 // Health check endpoint
 app.get('/health', async (c) => {
@@ -48,6 +34,6 @@ app.get('/health', async (c) => {
   }
 })
 
-export type AppType = (typeof routes)[number]
+export type AppType = typeof app
 
 export default app
