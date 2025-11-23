@@ -22,7 +22,7 @@ new sst.x.DevCommand('ios', {
 new sst.x.DevCommand('Drizzle_Studio', {
   link: [...allSecrets, email],
   dev: {
-    command: 'npx drizzle-kit studio',
+    command: 'bun scripts/drizzle-studio.ts',
     directory: './apps/vps',
     autostart: false
   }
@@ -164,5 +164,8 @@ new sst.x.DevCommand('Restore_Local_Database', {
     command: 'bun scripts/restore-db.ts',
     directory: './apps/vps',
     autostart: false
+  },
+  environment: {
+    LOCAL_DB_URL: process.env.LOCAL_DB_URL || "",
   }
 })
