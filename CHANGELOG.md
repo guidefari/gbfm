@@ -1,3 +1,10 @@
+# [1.1.0](https://github.com/guidefari/gbfm/compare/v1.0.0...v1.1.0) (2025-11-23)
+
+
+### Features
+
+* Add Open Graph meta tags for link sharing ([#70](https://github.com/guidefari/gbfm/issues/70)) ([9161d49](https://github.com/guidefari/gbfm/commit/9161d490cb1d9329538978b81cee51ccc217d23f))
+
 # [1.0.0](https://github.com/guidefari/gbfm/compare/v0.36.1...v1.0.0) (2025-11-23)
 
 
