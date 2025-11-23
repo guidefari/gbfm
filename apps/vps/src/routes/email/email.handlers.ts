@@ -3,10 +3,14 @@ import { and, eq } from 'drizzle-orm'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
-import { authorsTable } from '@/db/author.schema'
+import { usersTable } from '@/db/user.schema'
 import type { AppRouteHandler } from '@/lib/types'
-import { EmailDeliveryLogRepository } from '@/repositories/email-delivery-log.repository'
-import { EmailPreferencesRepository } from '@/repositories/email-preferences.repository'
+import {
+  createEmailDeliveryLog,
+  markEmailDeliveryLogAsFailed,
+  markEmailDeliveryLogAsSent
+} from '@/repositories/email-delivery-log.repository'
+import { canReceiveEmail } from '@/repositories/email-preferences.repository'
 
 import type { SendMixNotificationRoute } from './email.routes'
 
@@ -55,19 +59,16 @@ export const sendMixNotification: AppRouteHandler<
       const username =
         metadata?.username || recipient.split('@')[0] || 'listener'
 
-      // Look up author by email to check preferences
+      // Look up user by email to check preferences
       const [author] = await db
         .select()
-        .from(authorsTable)
-        .where(eq(authorsTable.email, recipient))
+        .from(usersTable)
+        .where(eq(usersTable.email, recipient))
         .limit(1)
 
       // Check email preferences if author exists
       if (author) {
-        const canReceive = await EmailPreferencesRepository.canReceiveEmail(
-          author.id,
-          'MIX_RELEASE'
-        )
+        const canReceive = await canReceiveEmail(author.id, 'MIX_RELEASE')
 
         if (!canReceive) {
           console.log(
@@ -82,7 +83,7 @@ export const sendMixNotification: AppRouteHandler<
       const subject = `New mix: ${mixTitle}`
 
       // Create email delivery log entry
-      const deliveryLog = await EmailDeliveryLogRepository.create({
+      const deliveryLog = await createEmailDeliveryLog({
         authorId: author?.id,
         recipientEmail: recipient,
         recipientName: username,
@@ -112,7 +113,7 @@ export const sendMixNotification: AppRouteHandler<
         })
 
         // Mark as sent in the log
-        await EmailDeliveryLogRepository.markAsSent(deliveryLog.id)
+        await markEmailDeliveryLogAsSent(deliveryLog.id)
 
         sentTo.push(recipient)
         emailIds.push(deliveryLog.id)
@@ -120,7 +121,7 @@ export const sendMixNotification: AppRouteHandler<
         console.error(`Failed to send to ${recipient}:`, emailError)
 
         // Mark as failed in the log
-        await EmailDeliveryLogRepository.markAsFailed(
+        await markEmailDeliveryLogAsFailed(
           deliveryLog.id,
           emailError instanceof Error
             ? emailError.message

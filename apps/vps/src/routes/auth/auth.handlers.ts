@@ -15,7 +15,11 @@ import {
 import { env } from '@/env'
 import { createPaginationMetadata } from '@/lib/pagination'
 import type { AppRouteHandler } from '@/lib/types'
-import { EmailDeliveryLogRepository } from '@/repositories/email-delivery-log.repository'
+import {
+  createEmailDeliveryLog,
+  markEmailDeliveryLogAsFailed,
+  markEmailDeliveryLogAsSent
+} from '@/repositories/email-delivery-log.repository'
 
 import type {
   CreateUserRoute,
@@ -74,8 +78,8 @@ export const signup: AppRouteHandler<SignupRoute> = async (c) => {
   // Create email delivery log for welcome email
   const username = validated.username || validated.email
   const subject = `Welcome to goosebumps.fm, ${username}! 🎵`
-  const welcomeEmailLog = await EmailDeliveryLogRepository.create({
-    authorId: newAuthor.id,
+  const welcomeEmailLog = await createEmailDeliveryLog({
+    authorId: newUser.id,
     recipientEmail: validated.email,
     recipientName: username,
     emailType: 'TRANSACTIONAL',
@@ -90,10 +94,10 @@ export const signup: AppRouteHandler<SignupRoute> = async (c) => {
       username,
       loginUrl: `${env.FRONTEND_URL}/auth/signin`
     })
-    await EmailDeliveryLogRepository.markAsSent(welcomeEmailLog.id)
+    await markEmailDeliveryLogAsSent(welcomeEmailLog.id)
   } catch (emailError) {
     console.error('Failed to send welcome email:', emailError)
-    await EmailDeliveryLogRepository.markAsFailed(
+    await markEmailDeliveryLogAsFailed(
       welcomeEmailLog.id,
       emailError instanceof Error ? emailError.message : 'Unknown error'
     )
@@ -212,10 +216,10 @@ export const forgotPassword: AppRouteHandler<ForgotPasswordRoute> = async (
   })
 
   // Create email delivery log for password reset email
-  const resetEmailLog = await EmailDeliveryLogRepository.create({
-    authorId: currentAuthor.id,
+  const resetEmailLog = await createEmailDeliveryLog({
+    authorId: currentUser.id,
     recipientEmail: validated.email,
-    recipientName: currentAuthor.name,
+    recipientName: currentUser.name,
     emailType: 'TRANSACTIONAL',
     templateName: 'password-reset',
     subject: 'Reset your goosebumps.fm password',
@@ -231,10 +235,10 @@ export const forgotPassword: AppRouteHandler<ForgotPasswordRoute> = async (
       resetUrl: `${env.FRONTEND_URL}/auth/reset-password?token=${token}&email=${validated.email}`,
       expiresIn: '1 hour'
     })
-    await EmailDeliveryLogRepository.markAsSent(resetEmailLog.id)
+    await markEmailDeliveryLogAsSent(resetEmailLog.id)
   } catch (emailError) {
     console.error('Failed to send password reset email:', emailError)
-    await EmailDeliveryLogRepository.markAsFailed(
+    await markEmailDeliveryLogAsFailed(
       resetEmailLog.id,
       emailError instanceof Error ? emailError.message : 'Unknown error'
     )

@@ -8,45 +8,47 @@ import {
   boolean,
   index,
   jsonb,
-  pgEnum,
   pgTable,
   text,
   timestamp,
   uuid,
   varchar
 } from 'drizzle-orm/pg-core'
-import { authorsTable } from './author.schema'
+import { usersTable } from './user.schema'
 
-// Email notification types
-export const emailNotificationTypeEnum = pgEnum('email_notification_type', [
-  'TRANSACTIONAL', // Critical emails: signup, password reset (always send)
-  'MIX_RELEASE', // New mix/track release notifications
-  'PROMOTIONAL', // Marketing and promotional content
-  'SYSTEM' // System updates and announcements
-])
+export const EMAIL_NOTIFICATION_TYPES = {
+  TRANSACTIONAL: 'TRANSACTIONAL',
+  MIX_RELEASE: 'MIX_RELEASE',
+  PROMOTIONAL: 'PROMOTIONAL',
+  SYSTEM: 'SYSTEM'
+} as const
 
-// Email delivery status
-export const emailDeliveryStatusEnum = pgEnum('email_delivery_status', [
-  'PENDING', // Queued for sending
-  'SENT', // Successfully sent to SES
-  'DELIVERED', // Confirmed delivery (via webhook)
-  'BOUNCED', // Email bounced
-  'COMPLAINED', // Spam complaint
-  'FAILED' // Failed to send
-])
+export const EMAIL_DELIVERY_STATUSES = {
+  PENDING: 'PENDING',
+  SENT: 'SENT',
+  DELIVERED: 'DELIVERED',
+  BOUNCED: 'BOUNCED',
+  COMPLAINED: 'COMPLAINED',
+  FAILED: 'FAILED'
+} as const
+
+export type EmailNotificationType =
+  (typeof EMAIL_NOTIFICATION_TYPES)[keyof typeof EMAIL_NOTIFICATION_TYPES]
+export type EmailDeliveryStatus =
+  (typeof EMAIL_DELIVERY_STATUSES)[keyof typeof EMAIL_DELIVERY_STATUSES]
 
 // Email delivery logs table - tracks all email sending attempts
 export const emailDeliveryLogsTable = pgTable(
   'email_delivery_logs',
   {
     id: uuid().primaryKey().defaultRandom(),
-    authorId: uuid().references(() => authorsTable.id), // null for non-user emails
+    authorId: uuid().references(() => usersTable.id), // null for non-user emails
     recipientEmail: varchar({ length: 255 }).notNull(),
     recipientName: varchar({ length: 255 }),
-    emailType: emailNotificationTypeEnum('email_type').notNull(),
+    emailType: varchar({ length: 50 }).notNull(),
     templateName: varchar({ length: 100 }).notNull(), // e.g., 'welcome', 'mix-notification'
     subject: varchar({ length: 500 }).notNull(),
-    status: emailDeliveryStatusEnum('status').notNull().default('PENDING'),
+    status: varchar({ length: 50 }).notNull().default('PENDING'),
     sesMessageId: varchar({ length: 255 }), // SES response message ID
     metadata: jsonb(), // Additional context (mix ID, etc.)
     errorMessage: text(), // Error details if failed
@@ -71,7 +73,7 @@ export const authorEmailPreferencesTable = pgTable('author_email_preferences', {
   authorId: uuid()
     .notNull()
     .unique()
-    .references(() => authorsTable.id),
+    .references(() => usersTable.id),
   // Notification preferences
   mixReleaseEnabled: boolean().notNull().default(true),
   promotionalEnabled: boolean().notNull().default(true),
@@ -116,7 +118,7 @@ export const selectEmailDeliveryLogSchema = z.object({
     'FAILED'
   ]),
   sesMessageId: z.string().nullable(),
-  metadata: z.record(z.unknown()).nullable(),
+  metadata: z.record(z.string(), z.unknown()).nullable(),
   errorMessage: z.string().nullable(),
   sentAt: z.date().nullable(),
   deliveredAt: z.date().nullable(),
@@ -137,7 +139,7 @@ export const insertEmailDeliveryLogSchema = z.object({
     .enum(['PENDING', 'SENT', 'DELIVERED', 'BOUNCED', 'COMPLAINED', 'FAILED'])
     .optional(),
   sesMessageId: z.string().optional(),
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   errorMessage: z.string().optional(),
   sentAt: z.date().optional(),
   deliveredAt: z.date().optional(),
@@ -177,9 +179,9 @@ export const updateAuthorEmailPreferencesSchema = z.object({
 export const emailDeliveryLogsRelations = relations(
   emailDeliveryLogsTable,
   ({ one }) => ({
-    author: one(authorsTable, {
+    author: one(usersTable, {
       fields: [emailDeliveryLogsTable.authorId],
-      references: [authorsTable.id]
+      references: [usersTable.id]
     })
   })
 )
@@ -187,9 +189,9 @@ export const emailDeliveryLogsRelations = relations(
 export const authorEmailPreferencesRelations = relations(
   authorEmailPreferencesTable,
   ({ one }) => ({
-    author: one(authorsTable, {
+    author: one(usersTable, {
       fields: [authorEmailPreferencesTable.authorId],
-      references: [authorsTable.id]
+      references: [usersTable.id]
     })
   })
 )
