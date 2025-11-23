@@ -1,3 +1,49 @@
+# [1.0.0](https://github.com/guidefari/gbfm/compare/v0.36.1...v1.0.0) (2025-11-23)
+
+
+* Add default pagination to VPS GET endpoints ([#68](https://github.com/guidefari/gbfm/issues/68)) ([77fa9d6](https://github.com/guidefari/gbfm/commit/77fa9d6b0caf963465a2ef00d81963a5621e7fde))
+
+
+### BREAKING CHANGES
+
+* Response format changed from arrays to paginated objects
+
+* chore: Remove migration 0008 for regeneration
+
+Removed migration 0008_next_echo.sql to regenerate it cleanly.
+This ensures the migration is properly generated from the current schema state after rebasing with prod.
+
+* fix: Handle count query result properly and fix TypeScript errors
+
+- Fix count() result destructuring - handle potentially undefined first element
+- Remove unused 'desc' import from publication handlers (orders by name not createdAt)
+- Remove unused 'and' import from label handlers
+- All pagination queries now properly handle count results with nullish coalescing
+- Publications table orders by name instead of non-existent createdAt field
+- Pass typecheck and biome checks
+
+* feat: Update UI clients to support pagination
+
+- Updated www app API client (http.ts) to use useInfiniteQuery for paginated endpoints
+- Added pagination controls to mixes, tracks, and labels list pages
+- Added "Load More" functionality to label detail page releases
+- Updated Raycast extension to automatically load all pages on mount
+- All clients now support the new paginated API response format
+
+Changes:
+- apps/www/src/lib/http.ts: Converted useAudioByType, useAllLabels, useReleasesByLabel to useInfiniteQuery
+- apps/www/src/routes/mixes/index.tsx: Added "Load More" button
+- apps/www/src/routes/labels/index.tsx: Added "Load More Labels" button
+- apps/www/src/routes/tracks/index.tsx: Added conditional "Load More" buttons for each audio type
+- apps/www/src/routes/labels/$labelSlug.tsx: Added "Load More Releases" button
+- apps/raycast/src/list-content.tsx: Auto-load all pages of mixes
+- apps/raycast/src/edit-mix.tsx: Auto-load all pages of mixes in dropdown
+- apps/raycast/src/edit-label.tsx: Auto-load all pages of labels in dropdown
+
+* wip
+
+* format
+
 ## [0.36.1](https://github.com/guidefari/gbfm/compare/v0.36.0...v0.36.1) (2025-11-23)
 
 
