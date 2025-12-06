@@ -149,11 +149,11 @@ const FullscreenAudioPlayer = () => {
 
   return (
     <div
-      className={`fixed inset-0 z-50 bg-gradient-to-br from-background via-card to-secondary text-foreground transition-transform duration-500 ease-out ${
+      className={`fixed inset-0 z-50 bg-gradient-to-br from-background via-card to-secondary text-foreground transition-transform duration-500 ease-out flex flex-col ${
         isFullscreenVisible ? 'translate-y-0' : 'translate-y-full'
       }`}>
       {/* Header */}
-      <div className='flex items-center justify-between p-6'>
+      <div className='flex items-center justify-between p-6 flex-shrink-0'>
         <Button
           variant='ghost'
           size='sm'
@@ -170,7 +170,7 @@ const FullscreenAudioPlayer = () => {
       </div>
 
       <div
-        className={`flex h-full px-8 ${isQueueVisible ? 'gap-16' : 'justify-center items-center'}`}>
+        className={`flex flex-1 min-h-0 px-8 pb-8 ${isQueueVisible ? 'gap-16' : 'justify-center items-center'}`}>
         {/* Left Panel - Now Playing */}
         <div
           className={`flex flex-col ${isQueueVisible ? 'max-w-md' : 'max-w-2xl'}`}>

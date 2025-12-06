@@ -132,67 +132,83 @@ function Component() {
   }
 
   return (
-    <div className='grid gap-2 p-2 max-w-lg min-h-screen font-jetbrains bg-background text-foreground'>
-      {sortedData?.map((mix) => {
-        const isActive = nowPlayingContext?.title === mix.title
-        return (
-          <TrackContextMenu key={mix.id} track={mix}>
-            <article
-              className={`flex gap-3 items-start p-2 transition-colors cursor-pointer hover:bg-muted/50 rounded-lg ${isActive ? 'ring-2 ring-highlight bg-primary/5' : ''}`}>
-              <button
-                type='button'
-                className='relative group focus:outline-none'
-                onClick={() =>
-                  loadTrack(
-                    mix.url,
-                    mix.thumbnailUrl || DEFAULT_IMAGE_URL,
-                    mix.title
-                  )
-                }>
-                <img
-                  src={mix.thumbnailUrl || DEFAULT_IMAGE_URL}
-                  alt={mix.title}
-                  className='object-cover w-14 h-14 rounded-lg border border-border bg-background'
-                />
-                <span
-                  className={`absolute inset-0 flex items-center justify-center transition-opacity rounded-lg bg-black/50 ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus:opacity-100'}`}>
-                  {isActive && isPlaying ? (
-                    <GiPauseButton className='text-2xl drop-shadow text-highlight' />
-                  ) : (
-                    <GiPlayButton className='text-2xl drop-shadow text-highlight' />
-                  )}
-                </span>
-              </button>
-              <div className='flex-1 min-w-0'>
-                <div className='flex items-start justify-between gap-2'>
-                  <Link
-                    to='/mixes/$mixId'
-                    params={{ mixId: mix.slug }}
-                    className='flex-1 block font-bold leading-none truncate text-highlight hover:underline'>
-                    {mix.title}
-                  </Link>
-                  <MixMenu mix={mix} />
-                </div>
-                {mix.description && (
-                  <div className='text-sm text-foreground/80 line-clamp-2'>
-                    {mix.description}
-                  </div>
-                )}
-              </div>
-            </article>
-          </TrackContextMenu>
-        )
-      })}
+    <div className='grid h-full grid-cols-3 gap-4 p-4 font-jetbrains bg-background text-foreground'>
+      {/* Left Column - Dummy Content */}
+      <div className='p-4 overflow-y-auto border-2 border-dashed rounded-lg border-muted-foreground/30'>
+        <h2 className='mb-4 text-lg font-bold'>Audio player</h2>
+      </div>
 
-      {hasNextPage && (
-        <button
-          type='button'
-          onClick={() => fetchNextPage()}
-          disabled={isFetchingNextPage}
-          className='p-4 text-sm font-medium transition-colors rounded-lg bg-muted hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed'>
-          {isFetchingNextPage ? 'Loading...' : 'Load More'}
-        </button>
-      )}
+      {/* Middle Column - Dummy Content */}
+      <div className='p-4 overflow-y-auto border-2 border-dashed rounded-lg border-muted-foreground/30'>
+        <h2 className='mb-4 text-lg font-bold'>Single Mix details</h2>
+      </div>
+
+      {/* Right Column - Mixes List */}
+      <div className='p-4 overflow-y-auto border-2 border-dashed rounded-lg border-muted-foreground/30'>
+        <h2 className='mb-4 text-lg font-bold'>Mixes</h2>
+        <div className='grid gap-2'>
+          {sortedData?.map((mix) => {
+            const isActive = nowPlayingContext?.title === mix.title
+            return (
+              <TrackContextMenu key={mix.id} track={mix}>
+                <article
+                  className={`flex gap-3 items-start p-2 transition-colors cursor-pointer hover:bg-muted/50 rounded-lg ${isActive ? 'ring-2 ring-highlight bg-primary/5' : ''}`}>
+                  <button
+                    type='button'
+                    className='relative group focus:outline-none'
+                    onClick={() =>
+                      loadTrack(
+                        mix.url,
+                        mix.thumbnailUrl || DEFAULT_IMAGE_URL,
+                        mix.title
+                      )
+                    }>
+                    <img
+                      src={mix.thumbnailUrl || DEFAULT_IMAGE_URL}
+                      alt={mix.title}
+                      className='object-cover border rounded-lg w-14 h-14 border-border bg-background'
+                    />
+                    <span
+                      className={`absolute inset-0 flex items-center justify-center transition-opacity rounded-lg bg-black/50 ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus:opacity-100'}`}>
+                      {isActive && isPlaying ? (
+                        <GiPauseButton className='text-2xl drop-shadow text-highlight' />
+                      ) : (
+                        <GiPlayButton className='text-2xl drop-shadow text-highlight' />
+                      )}
+                    </span>
+                  </button>
+                  <div className='flex-1 min-w-0'>
+                    <div className='flex items-start justify-between gap-2'>
+                      <Link
+                        to='/mixes/$mixId'
+                        params={{ mixId: mix.slug }}
+                        className='flex-1 block font-bold leading-none truncate text-highlight hover:underline'>
+                        {mix.title}
+                      </Link>
+                      <MixMenu mix={mix} />
+                    </div>
+                    {mix.description && (
+                      <div className='text-sm text-foreground/80 line-clamp-2'>
+                        {mix.description}
+                      </div>
+                    )}
+                  </div>
+                </article>
+              </TrackContextMenu>
+            )
+          })}
+
+          {hasNextPage && (
+            <button
+              type='button'
+              onClick={() => fetchNextPage()}
+              disabled={isFetchingNextPage}
+              className='p-4 text-sm font-medium transition-colors rounded-lg bg-muted hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed'>
+              {isFetchingNextPage ? 'Loading...' : 'Load More'}
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   )
 }
