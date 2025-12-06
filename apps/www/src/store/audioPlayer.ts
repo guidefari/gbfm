@@ -80,6 +80,7 @@ interface AudioPlayerActions {
   toggleRepeat: () => void
   toggleShuffle: () => void
   toggleFullscreen: () => void
+  closeFullscreen: () => void
 
   // State updates (called by audio events)
   updateProgress: () => void
@@ -649,6 +650,14 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
             (state) => ({ isFullscreenVisible: !state.isFullscreenVisible }),
             false,
             'audioPlayer/toggleFullscreen'
+          )
+        },
+
+        closeFullscreen: () => {
+          set(
+            (state) => ({ isFullscreenVisible: false }),
+            false,
+            'audioPlayer/closeFullscreen'
           )
         }
       }),

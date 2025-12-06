@@ -1,8 +1,9 @@
 import type { SelectMix } from '@gbfm/vps/schemas'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { Heart, MoreVertical, Play, Plus, Share } from 'lucide-react'
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
+import { BaseAudioPlayer } from '@/components/common/BaseAudioPlayer'
 import { MixesSkeleton } from '@/components/MixesSkeleton'
 import { TrackContextMenu } from '@/components/TrackContextMenu'
 import {
@@ -98,6 +99,21 @@ function MixMenu({ mix }: MixMenuProps) {
   )
 }
 
+// Compact Audio Player Component
+function CompactAudioPlayer() {
+  return (
+    <BaseAudioPlayer
+      variant='compact'
+      showVolume={false}
+      showShuffle={false}
+      showRepeat={false}
+      showQueue={false}
+      showTrackActions={false}
+      showFullscreenToggle={false}
+    />
+  )
+}
+
 function Component() {
   const { data, isPending, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useAudioByType('mix')
@@ -127,15 +143,27 @@ function Component() {
     return sorted
   }, [data, mixesSorting.sortBy, mixesSorting.sortOrder])
 
+  // Auto-load the latest mix when data is available and no track is currently playing
+  useEffect(() => {
+    if (sortedData.length > 0 && !nowPlayingContext.title) {
+      const latestMix = sortedData[0] // First item is the latest due to sorting
+      loadTrack(
+        latestMix.url,
+        latestMix.thumbnailUrl || DEFAULT_IMAGE_URL,
+        latestMix.title
+      )
+    }
+  }, [sortedData, nowPlayingContext.title, loadTrack])
+
   if (isPending) {
     return <MixesSkeleton />
   }
 
   return (
     <div className='grid h-full grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 font-jetbrains bg-background text-foreground'>
-      {/* Left Column - Dummy Content */}
+      {/* Left Column - Audio Player */}
       <div className='p-4 overflow-y-auto border-2 border-dashed rounded-lg border-muted-foreground/30'>
-        <h2 className='mb-4 text-lg font-bold'>Audio player</h2>
+        <CompactAudioPlayer />
       </div>
 
       {/* Middle Column - Dummy Content */}

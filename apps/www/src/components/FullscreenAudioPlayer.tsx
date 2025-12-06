@@ -77,20 +77,6 @@ const FullscreenAudioPlayer = () => {
     }
   }, [volume, isMuted, setVolume])
 
-  // Escape key handling
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        toggleFullscreen()
-      }
-    }
-
-    document.addEventListener('keydown', handleKeyDown)
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown)
-    }
-  }, [toggleFullscreen])
-
   const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTimeUsingPercentage(Number(e.target.value))
   }

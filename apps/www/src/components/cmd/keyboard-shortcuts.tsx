@@ -220,6 +220,11 @@ export const useKeyboardShortcuts = ({
           audioPlayerActions.actions.toggleFullscreen()
         }
 
+        if (e.key === 'Escape') {
+          e.preventDefault()
+          audioPlayerActions.actions.toggleFullscreen()
+        }
+
         if (e.key === 's' || e.key === 'S') {
           if (!e.altKey || !isOnMixesPage) {
             e.preventDefault()
