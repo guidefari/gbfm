@@ -24,7 +24,7 @@ export default function AppShell({ children }: Props) {
 
   return (
     <div className='flex flex-col h-screen bg-background'>
-      <main className='flex-1 px-4 overflow-y-auto sm:px-6 md:px-8 lg:px-10 bg-background'>
+      <main className='flex-1 overflow-y-auto bg-background'>
         {children}
       </main>
 
