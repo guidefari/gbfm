@@ -194,7 +194,7 @@ export const handler = async (event: ScheduledEvent) => {
   try {
     const result = await Effect.runPromise(
       createBackupEffect("s3", "remote").pipe(
-        Effect.provide(BunFileSystem.layer)
+        Effect.provideLayer(BunFileSystem.layer)
       )
     );
 
