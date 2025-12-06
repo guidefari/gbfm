@@ -1,24 +1,5 @@
 'use client'
 import {
-  closestCenter,
-  DndContext,
-  type DragEndEvent,
-  KeyboardSensor,
-  PointerSensor,
-  useSensor,
-  useSensors
-} from '@dnd-kit/core'
-import {
-  restrictToParentElement,
-  restrictToVerticalAxis
-} from '@dnd-kit/modifiers'
-import {
-  SortableContext,
-  sortableKeyboardCoordinates,
-  verticalListSortingStrategy
-} from '@dnd-kit/sortable'
-import * as ScrollArea from '@radix-ui/react-scroll-area'
-import {
   ChevronDown,
   List,
   MoreHorizontal,
@@ -40,7 +21,6 @@ import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { formatSeconds } from '@/lib/utils'
 import { attachVolumeScroll } from '@/lib/volumeScrollHandler'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
-import { SharedQueueItem } from './queue/SharedQueueItem'
 
 const FullscreenAudioPlayer = () => {
   const {
@@ -54,11 +34,9 @@ const FullscreenAudioPlayer = () => {
     volume,
     isMuted,
     queue,
-    currentIndex,
     repeatMode,
     isShuffled,
     isFullscreenVisible,
-    isQueueVisible
   } = useAudioPlayerState()
 
   const {
@@ -73,29 +51,12 @@ const FullscreenAudioPlayer = () => {
     toggleShuffle,
     toggleFullscreen,
     toggleQueue,
-    reorderQueue
   } = useAudioPlayerActions()
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates
-    })
-  )
 
   const volumeSliderRef = useRef<HTMLInputElement>(null)
   const volumeButtonRef = useRef<HTMLButtonElement>(null)
 
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event
-
-    if (over && active.id !== over.id) {
-      const oldIndex = queue.findIndex((track) => track.queueId === active.id)
-      const newIndex = queue.findIndex((track) => track.queueId === over.id)
-
-      reorderQueue(oldIndex, newIndex)
-    }
-  }
 
   // Volume scroll handling
   useEffect(() => {
@@ -117,6 +78,20 @@ const FullscreenAudioPlayer = () => {
       }
     }
   }, [volume, isMuted, setVolume])
+
+  // Escape key handling
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        toggleFullscreen()
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [toggleFullscreen])
 
   const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setTimeUsingPercentage(Number(e.target.value))
@@ -153,7 +128,7 @@ const FullscreenAudioPlayer = () => {
         isFullscreenVisible ? 'translate-y-0' : 'translate-y-full'
       }`}>
       {/* Header */}
-      <div className='flex items-center justify-between p-6 flex-shrink-0'>
+      <div className='flex items-center justify-between flex-shrink-0 p-6'>
         <Button
           variant='ghost'
           size='sm'
@@ -169,17 +144,12 @@ const FullscreenAudioPlayer = () => {
         </Button>
       </div>
 
-      <div
-        className={`flex flex-1 min-h-0 px-8 pb-8 ${isQueueVisible ? 'gap-16' : 'justify-center items-center'}`}>
+      <div className='flex items-center justify-center flex-1 min-h-0 px-8 pb-8'>
         {/* Left Panel - Now Playing */}
-        <div
-          className={`flex flex-col ${isQueueVisible ? 'max-w-md' : 'max-w-2xl'}`}>
+        <div className='flex flex-col max-w-2xl'>
           {/* Album Artwork */}
           <div className='relative mb-8'>
-            <div
-              className={`overflow-hidden mx-auto bg-gradient-to-br rounded-3xl shadow-2xl aspect-square from-primary/20 to-accent ${
-                isQueueVisible ? 'w-4/5' : 'w-full max-w-md'
-              }`}>
+            <div className='w-full max-w-md mx-auto overflow-hidden shadow-2xl bg-gradient-to-br rounded-3xl aspect-square from-primary/20 to-accent'>
               <img
                 src={currentTrack.thumbnailUrl || DEFAULT_IMAGE_URL}
                 alt={currentTrack.title}
@@ -321,63 +291,6 @@ const FullscreenAudioPlayer = () => {
           </div>
         </div>
 
-        {/* Right Panel - Queue */}
-        {isQueueVisible && (
-          <div className='relative flex flex-col flex-1 min-w-0'>
-            <div className='flex items-center justify-between flex-shrink-0 mb-6'>
-              <h2 className='text-xl font-semibold'>Up Next</h2>
-            </div>
-
-            <ScrollArea.Root className='h-4/5'>
-              <ScrollArea.Viewport className='h-full'>
-                {queue.length === 0 ? (
-                  <div className='flex flex-col items-center justify-center h-full p-8 text-center'>
-                    <div className='flex items-center justify-center w-16 h-16 mb-4 rounded-full bg-muted'>
-                      <Play className='w-8 h-8 text-muted-foreground' />
-                    </div>
-                    <h3 className='mb-2 font-medium'>Your queue is empty</h3>
-                    <p className='text-sm text-muted-foreground'>
-                      Add some tracks to get started
-                    </p>
-                  </div>
-                ) : (
-                  <div className='pr-4 space-y-2'>
-                    <DndContext
-                      sensors={sensors}
-                      collisionDetection={closestCenter}
-                      onDragEnd={handleDragEnd}
-                      modifiers={[
-                        restrictToVerticalAxis,
-                        restrictToParentElement
-                      ]}>
-                      <SortableContext
-                        items={queue.map((track) => track.queueId)}
-                        strategy={verticalListSortingStrategy}>
-                        {queue.map((track, index) => (
-                          <SharedQueueItem
-                            key={track.queueId}
-                            track={track}
-                            index={index}
-                            isCurrentTrack={index === currentIndex}
-                            variant='fullscreen'
-                            showDragHandle={true}
-                            showContextMenu={true}
-                            showRemoveButton={false}
-                          />
-                        ))}
-                      </SortableContext>
-                    </DndContext>
-                  </div>
-                )}
-              </ScrollArea.Viewport>
-              <ScrollArea.Scrollbar
-                className='flex h-2 select-none touch-none'
-                orientation='vertical'>
-                <ScrollArea.Thumb className='flex-1 rounded-full bg-primary/50' />
-              </ScrollArea.Scrollbar>
-            </ScrollArea.Root>
-          </div>
-        )}
       </div>
     </div>
   )
