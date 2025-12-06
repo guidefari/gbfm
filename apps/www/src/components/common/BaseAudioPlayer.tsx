@@ -3,9 +3,6 @@ import {
   List,
   Pause,
   Play,
-  Repeat,
-  Repeat1,
-  Shuffle,
   SkipBack,
   SkipForward,
   Star,
@@ -23,8 +20,6 @@ import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
 interface BaseAudioPlayerProps {
   variant?: 'full' | 'compact'
   showVolume?: boolean
-  showShuffle?: boolean
-  showRepeat?: boolean
   showQueue?: boolean
   showTrackActions?: boolean
   showFullscreenToggle?: boolean
@@ -35,8 +30,6 @@ interface BaseAudioPlayerProps {
 export function BaseAudioPlayer({
   variant = 'full',
   showVolume = true,
-  showShuffle = true,
-  showRepeat = true,
   showQueue = true,
   showTrackActions = true,
   showFullscreenToggle = true,
@@ -53,9 +46,7 @@ export function BaseAudioPlayer({
     duration,
     volume,
     isMuted,
-    queue,
-    repeatMode,
-    isShuffled
+    queue
   } = useAudioPlayerState()
 
   const {
@@ -66,9 +57,7 @@ export function BaseAudioPlayer({
     setTimeUsingPercentage,
     setVolume,
     toggleMute,
-    toggleQueue,
-    toggleRepeat,
-    toggleShuffle
+    toggleQueue
   } = useAudioPlayerActions()
 
   const volumeSliderRef = useRef<HTMLInputElement>(null)
@@ -103,17 +92,6 @@ export function BaseAudioPlayer({
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setVolume(Number(e.target.value))
-  }
-
-  const getRepeatIcon = () => {
-    switch (repeatMode) {
-      case 'one':
-        return <Repeat1 className='w-4 h-4' />
-      case 'all':
-        return <Repeat className='w-4 h-4' />
-      default:
-        return <Repeat className='w-4 h-4' />
-    }
   }
 
   // Create a current track object from the existing state
@@ -255,15 +233,6 @@ export function BaseAudioPlayer({
           {/* Center: Controls & Progress */}
           <div className='flex flex-col items-center gap-2'>
             <div className='flex items-center gap-2'>
-              {showShuffle && (
-                <Button
-                  variant='ghost'
-                  size='icon'
-                  onClick={toggleShuffle}
-                  className={`hover:bg-muted ${isShuffled ? 'text-primary' : 'text-secondary-foreground hover:text-foreground'}`}>
-                  <Shuffle className='w-4 h-4' />
-                </Button>
-              )}
               <Button
                 variant='ghost'
                 size='icon'
@@ -291,15 +260,6 @@ export function BaseAudioPlayer({
                 className='text-foreground hover:bg-muted'>
                 <SkipForward className='w-4 h-4' />
               </Button>
-              {showRepeat && (
-                <Button
-                  variant='ghost'
-                  size='icon'
-                  onClick={toggleRepeat}
-                  className={`hover:bg-muted ${repeatMode !== 'none' ? 'text-primary' : 'text-secondary-foreground hover:text-foreground'}`}>
-                  {getRepeatIcon()}
-                </Button>
-              )}
             </div>
 
             <div className='flex items-center w-full max-w-md gap-2'>
@@ -428,27 +388,6 @@ export function BaseAudioPlayer({
           </div>
 
           <div className='flex items-center justify-between'>
-            <div className='flex items-center gap-1'>
-              {showShuffle && (
-                <Button
-                  variant='ghost'
-                  size='icon'
-                  onClick={toggleShuffle}
-                  className={`hover:bg-muted ${isShuffled ? 'text-primary' : 'text-secondary-foreground hover:text-foreground'}`}>
-                  <Shuffle className='w-4 h-4' />
-                </Button>
-              )}
-              {showRepeat && (
-                <Button
-                  variant='ghost'
-                  size='icon'
-                  onClick={toggleRepeat}
-                  className={`hover:bg-muted ${repeatMode !== 'none' ? 'text-primary' : 'text-secondary-foreground hover:text-foreground'}`}>
-                  {getRepeatIcon()}
-                </Button>
-              )}
-            </div>
-
             <div className='flex items-center gap-2'>
               <Button
                 variant='ghost'

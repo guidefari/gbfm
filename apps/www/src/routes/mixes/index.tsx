@@ -105,8 +105,6 @@ function CompactAudioPlayer() {
     <BaseAudioPlayer
       variant='compact'
       showVolume={false}
-      showShuffle={false}
-      showRepeat={false}
       showQueue={false}
       showTrackActions={false}
       showFullscreenToggle={false}

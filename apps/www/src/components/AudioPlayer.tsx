@@ -9,8 +9,6 @@ const AudioPlayer = () => {
     <BaseAudioPlayer
       variant='full'
       showVolume={true}
-      showShuffle={true}
-      showRepeat={true}
       showQueue={true}
       showTrackActions={true}
       showFullscreenToggle={true}

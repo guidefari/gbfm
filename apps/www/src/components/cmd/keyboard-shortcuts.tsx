@@ -99,6 +99,20 @@ export const useKeyboardShortcuts = ({
 
   const setupKeyboardShortcuts = () => {
     const down = (e: KeyboardEvent) => {
+      // Handle Escape key specially - always close command dialog if open, regardless of focus
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        if (isCmdOpen) {
+          closeCmd()
+          return
+        }
+        if (audioSrc && audioPlayerActions.isFullscreenVisible) {
+          audioPlayerActions.actions.closeFullscreen()
+          return
+        }
+        return
+      }
+
       // Check if user is focused on a typing element
       const activeElement = document.activeElement
       if (isTypingElement(activeElement)) {
@@ -218,23 +232,6 @@ export const useKeyboardShortcuts = ({
         if (e.key === 'f' || e.key === 'F') {
           e.preventDefault()
           audioPlayerActions.actions.toggleFullscreen()
-        }
-
-        if (e.key === 'Escape') {
-          e.preventDefault()
-          audioPlayerActions.actions.toggleFullscreen()
-        }
-
-        if (e.key === 's' || e.key === 'S') {
-          if (!e.altKey || !isOnMixesPage) {
-            e.preventDefault()
-            audioPlayerActions.actions.toggleShuffle()
-          }
-        }
-
-        if (e.key === 'r' || e.key === 'R') {
-          e.preventDefault()
-          audioPlayerActions.actions.toggleRepeat()
         }
       }
     }

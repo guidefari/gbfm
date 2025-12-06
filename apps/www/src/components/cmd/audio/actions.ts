@@ -3,9 +3,6 @@ import {
   Maximize2,
   Pause,
   Play,
-  Repeat,
-  Repeat1,
-  Shuffle,
   SkipBack,
   SkipForward,
   Volume2,
@@ -22,8 +19,7 @@ export const useAudioPlayerCmdActions = (closeCmd: () => void) => {
     toggleMute,
     toggleQueue,
     toggleFullscreen,
-    toggleShuffle,
-    toggleRepeat,
+    closeFullscreen,
     playNext,
     playPrevious
   } = useAudioPlayerActions()
@@ -34,8 +30,6 @@ export const useAudioPlayerCmdActions = (closeCmd: () => void) => {
     isMuted,
     isQueueVisible,
     isFullscreenVisible,
-    repeatMode,
-    isShuffled,
     queue,
     currentIndex
   } = useAudioPlayerState()
@@ -80,13 +74,8 @@ export const useAudioPlayerCmdActions = (closeCmd: () => void) => {
     closeCmd()
   }
 
-  const handleToggleShuffle = () => {
-    toggleShuffle()
-    closeCmd()
-  }
-
-  const handleToggleRepeat = () => {
-    toggleRepeat()
+  const handleCloseFullscreen = () => {
+    closeFullscreen()
     closeCmd()
   }
 
@@ -106,8 +95,6 @@ export const useAudioPlayerCmdActions = (closeCmd: () => void) => {
     isMuted,
     isQueueVisible,
     isFullscreenVisible,
-    repeatMode,
-    isShuffled,
     hasQueue: queue.length > 0,
     canPlayNext: currentIndex < queue.length - 1,
     canPlayPrevious: currentIndex > 0,
@@ -120,8 +107,7 @@ export const useAudioPlayerCmdActions = (closeCmd: () => void) => {
       toggleMute: handleToggleMute,
       toggleQueue: handleToggleQueue,
       toggleFullscreen: handleToggleFullscreen,
-      toggleShuffle: handleToggleShuffle,
-      toggleRepeat: handleToggleRepeat,
+      closeFullscreen: handleCloseFullscreen,
       playNext: handlePlayNext,
       playPrevious: handlePlayPrevious
     },
@@ -133,10 +119,7 @@ export const useAudioPlayerCmdActions = (closeCmd: () => void) => {
       Volume2,
       VolumeX,
       List,
-      Maximize2,
-      Shuffle,
-      Repeat,
-      Repeat1
+      Maximize2
     }
   }
 }

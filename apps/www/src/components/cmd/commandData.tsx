@@ -12,10 +12,7 @@ import {
   Music,
   Pause,
   Play,
-  Repeat,
-  Repeat1,
   Settings,
-  Shuffle,
   SkipBack,
   SkipForward,
   SortAsc,
@@ -174,9 +171,7 @@ export const createCommandData = (
       canPlayNext,
       canPlayPrevious,
       isQueueVisible,
-      isFullscreenVisible,
-      isShuffled,
-      repeatMode
+      isFullscreenVisible
     } = audioPlayerCmdActions
 
     items.push({
@@ -263,25 +258,6 @@ export const createCommandData = (
           icon: Maximize2,
           onSelect: actions.toggleFullscreen,
           shortcut: 'F'
-        },
-        {
-          id: 'toggle-shuffle',
-          label: `${isShuffled ? 'Disable' : 'Enable'} Shuffle`,
-          icon: Shuffle,
-          onSelect: actions.toggleShuffle,
-          shortcut: 'S'
-        },
-        {
-          id: 'toggle-repeat',
-          label:
-            repeatMode === 'none'
-              ? 'Enable Repeat'
-              : repeatMode === 'one'
-                ? 'Repeat One'
-                : 'Repeat All',
-          icon: repeatMode === 'one' ? Repeat1 : Repeat,
-          onSelect: actions.toggleRepeat,
-          shortcut: 'R'
         }
       ]
     })

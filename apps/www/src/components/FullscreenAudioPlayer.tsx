@@ -5,9 +5,6 @@ import {
   MoreHorizontal,
   Pause,
   Play,
-  Repeat,
-  Repeat1,
-  Shuffle,
   SkipBack,
   SkipForward,
   Star,
@@ -34,8 +31,6 @@ const FullscreenAudioPlayer = () => {
     volume,
     isMuted,
     queue,
-    repeatMode,
-    isShuffled,
     isFullscreenVisible
   } = useAudioPlayerState()
 
@@ -47,8 +42,6 @@ const FullscreenAudioPlayer = () => {
     setTimeUsingPercentage,
     setVolume,
     toggleMute,
-    toggleRepeat,
-    toggleShuffle,
     toggleFullscreen,
     toggleQueue
   } = useAudioPlayerActions()
@@ -83,17 +76,6 @@ const FullscreenAudioPlayer = () => {
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setVolume(Number(e.target.value))
-  }
-
-  const getRepeatIcon = () => {
-    switch (repeatMode) {
-      case 'one':
-        return <Repeat1 className='w-6 h-6' />
-      case 'all':
-        return <Repeat className='w-6 h-6' />
-      default:
-        return <Repeat className='w-6 h-6' />
-    }
   }
 
   const currentTrack = audioSrc
@@ -202,13 +184,6 @@ const FullscreenAudioPlayer = () => {
             <Button
               variant='ghost'
               size='icon'
-              onClick={toggleShuffle}
-              className={`hover:bg-muted ${isShuffled ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
-              <Shuffle className='w-6 h-6' />
-            </Button>
-            <Button
-              variant='ghost'
-              size='icon'
               onClick={playPrevious}
               className='text-foreground hover:bg-muted'>
               <SkipBack className='w-7 h-7' />
@@ -232,13 +207,6 @@ const FullscreenAudioPlayer = () => {
               onClick={playNext}
               className='text-foreground hover:bg-muted'>
               <SkipForward className='w-7 h-7' />
-            </Button>
-            <Button
-              variant='ghost'
-              size='icon'
-              onClick={toggleRepeat}
-              className={`hover:bg-muted ${repeatMode !== 'none' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}`}>
-              {getRepeatIcon()}
             </Button>
           </div>
 

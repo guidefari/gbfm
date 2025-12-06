@@ -39,10 +39,6 @@ interface AudioPlayerState {
   queue: QueueItem[]
   currentIndex: number
   isQueueVisible: boolean
-  repeatMode: 'none' | 'one' | 'all'
-  isShuffled: boolean
-  shuffledQueue: QueueItem[] // Shuffled version of queue
-  shuffledIndex: number // Current index in shuffled queue
 
   // State management
   isInitialized: boolean
@@ -77,8 +73,6 @@ interface AudioPlayerActions {
   playNext: () => void
   playPrevious: () => void
   toggleQueue: () => void
-  toggleRepeat: () => void
-  toggleShuffle: () => void
   toggleFullscreen: () => void
   closeFullscreen: () => void
 
@@ -118,10 +112,6 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
         queue: [],
         currentIndex: -1,
         isQueueVisible: false,
-        repeatMode: 'none',
-        isShuffled: false,
-        shuffledQueue: [],
-        shuffledIndex: -1,
 
         isInitialized: false,
         isFullscreenVisible: false,
@@ -133,18 +123,11 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
           if (ref) {
             // Set up event listeners
             ref.onended = () => {
-              const { queue, currentIndex, repeatMode } = get()
+              const { queue, currentIndex } = get()
 
-              if (repeatMode === 'one') {
-                // Replay current track
-                ref.currentTime = 0
-                get().play()
-              } else if (queue.length > 0 && currentIndex < queue.length - 1) {
+              if (queue.length > 0 && currentIndex < queue.length - 1) {
                 // Play next track in queue
                 get().playNext()
-              } else if (queue.length > 0 && repeatMode === 'all') {
-                // Loop back to first track
-                get().playFromQueue(0)
               } else {
                 // End of queue, just pause
                 get().pause()
@@ -464,106 +447,25 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
         },
 
         playNext: () => {
-          const {
-            queue,
-            currentIndex,
-            repeatMode,
-            isShuffled,
-            shuffledQueue,
-            shuffledIndex
-          } = get()
+          const { queue, currentIndex } = get()
           if (queue.length === 0) return
 
-          if (isShuffled) {
-            let nextShuffledIndex = shuffledIndex + 1
+          const nextIndex = currentIndex + 1
 
-            if (nextShuffledIndex >= shuffledQueue.length) {
-              if (repeatMode === 'all') {
-                nextShuffledIndex = 0
-              } else {
-                return // End of shuffled queue
-              }
-            }
-
-            const nextTrack = shuffledQueue[nextShuffledIndex]
-            const originalIndex = queue.findIndex(
-              (item) => item.queueId === nextTrack.queueId
-            )
-
-            set(
-              {
-                currentIndex: originalIndex,
-                shuffledIndex: nextShuffledIndex
-              },
-              false,
-              'audioPlayer/playNext'
-            )
-
-            get().loadTrack(
-              nextTrack.url,
-              nextTrack.thumbnailUrl || '',
-              nextTrack.title
-            )
-          } else {
-            let nextIndex = currentIndex + 1
-
-            if (nextIndex >= queue.length) {
-              if (repeatMode === 'all') {
-                nextIndex = 0
-              } else {
-                return // End of queue
-              }
-            }
-
-            get().playFromQueue(nextIndex)
+          if (nextIndex >= queue.length) {
+            return // End of queue
           }
+
+          get().playFromQueue(nextIndex)
         },
 
         playPrevious: () => {
-          const {
-            queue,
-            currentIndex,
-            isShuffled,
-            shuffledQueue,
-            shuffledIndex
-          } = get()
+          const { queue, currentIndex } = get()
           if (queue.length === 0) return
 
-          if (isShuffled) {
-            let prevShuffledIndex = shuffledIndex - 1
+          const prevIndex = currentIndex - 1 < 0 ? queue.length - 1 : currentIndex - 1
 
-            if (prevShuffledIndex < 0) {
-              prevShuffledIndex = shuffledQueue.length - 1
-            }
-
-            const prevTrack = shuffledQueue[prevShuffledIndex]
-            const originalIndex = queue.findIndex(
-              (item) => item.queueId === prevTrack.queueId
-            )
-
-            set(
-              {
-                currentIndex: originalIndex,
-                shuffledIndex: prevShuffledIndex
-              },
-              false,
-              'audioPlayer/playPrevious'
-            )
-
-            get().loadTrack(
-              prevTrack.url,
-              prevTrack.thumbnailUrl || '',
-              prevTrack.title
-            )
-          } else {
-            let prevIndex = currentIndex - 1
-
-            if (prevIndex < 0) {
-              prevIndex = queue.length - 1
-            }
-
-            get().playFromQueue(prevIndex)
-          }
+          get().playFromQueue(prevIndex)
         },
 
         toggleQueue: () => {
@@ -571,77 +473,6 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
             (state) => ({ isQueueVisible: !state.isQueueVisible }),
             false,
             'audioPlayer/toggleQueue'
-          )
-        },
-
-        toggleRepeat: () => {
-          set(
-            (state) => {
-              const modes: Array<'none' | 'one' | 'all'> = [
-                'none',
-                'one',
-                'all'
-              ]
-              const currentIndex = modes.indexOf(state.repeatMode)
-              const nextMode = modes[(currentIndex + 1) % modes.length]
-              return { repeatMode: nextMode }
-            },
-            false,
-            'audioPlayer/toggleRepeat'
-          )
-        },
-
-        toggleShuffle: () => {
-          set(
-            (state) => {
-              const newIsShuffled = !state.isShuffled
-
-              if (newIsShuffled) {
-                // Create shuffled version of queue
-                const shuffled = [...state.queue].sort(
-                  () => Math.random() - 0.5
-                )
-                const currentTrack =
-                  state.currentIndex >= 0
-                    ? state.queue[state.currentIndex]
-                    : null
-
-                // Find current track in shuffled queue
-                let newShuffledIndex = -1
-                if (currentTrack) {
-                  newShuffledIndex = shuffled.findIndex(
-                    (item) => item.queueId === currentTrack.queueId
-                  )
-                }
-
-                return {
-                  isShuffled: true,
-                  shuffledQueue: shuffled,
-                  shuffledIndex: newShuffledIndex
-                }
-              } else {
-                // Turn off shuffle, find current track in original queue
-                const currentTrack =
-                  state.shuffledIndex >= 0
-                    ? state.shuffledQueue[state.shuffledIndex]
-                    : null
-                let newCurrentIndex = -1
-                if (currentTrack) {
-                  newCurrentIndex = state.queue.findIndex(
-                    (item) => item.queueId === currentTrack.queueId
-                  )
-                }
-
-                return {
-                  isShuffled: false,
-                  shuffledQueue: [],
-                  shuffledIndex: -1,
-                  currentIndex: newCurrentIndex
-                }
-              }
-            },
-            false,
-            'audioPlayer/toggleShuffle'
           )
         },
 
@@ -655,7 +486,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
 
         closeFullscreen: () => {
           set(
-            (state) => ({ isFullscreenVisible: false }),
+            { isFullscreenVisible: false },
             false,
             'audioPlayer/closeFullscreen'
           )
@@ -675,11 +506,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
           // Queue state
           queue: state.queue,
           currentIndex: state.currentIndex,
-          isQueueVisible: state.isQueueVisible,
-          repeatMode: state.repeatMode,
-          isShuffled: state.isShuffled,
-          shuffledQueue: state.shuffledQueue,
-          shuffledIndex: state.shuffledIndex
+          isQueueVisible: state.isQueueVisible
           // Don't persist audioRef, progress, duration, isInitialized
         })
       }
@@ -712,9 +539,8 @@ export const useAudioPlayerActions = () => {
     playNext: store.playNext,
     playPrevious: store.playPrevious,
     toggleQueue: store.toggleQueue,
-    toggleRepeat: store.toggleRepeat,
-    toggleShuffle: store.toggleShuffle,
-    toggleFullscreen: store.toggleFullscreen
+    toggleFullscreen: store.toggleFullscreen,
+    closeFullscreen: store.closeFullscreen
   }
 }
 
@@ -736,8 +562,6 @@ export const useAudioPlayerState = () => {
     queue: store.queue,
     currentIndex: store.currentIndex,
     isQueueVisible: store.isQueueVisible,
-    repeatMode: store.repeatMode,
-    isShuffled: store.isShuffled,
     isFullscreenVisible: store.isFullscreenVisible
   }
 }
