@@ -36,7 +36,7 @@ const FullscreenAudioPlayer = () => {
     queue,
     repeatMode,
     isShuffled,
-    isFullscreenVisible,
+    isFullscreenVisible
   } = useAudioPlayerState()
 
   const {
@@ -50,13 +50,11 @@ const FullscreenAudioPlayer = () => {
     toggleRepeat,
     toggleShuffle,
     toggleFullscreen,
-    toggleQueue,
+    toggleQueue
   } = useAudioPlayerActions()
-
 
   const volumeSliderRef = useRef<HTMLInputElement>(null)
   const volumeButtonRef = useRef<HTMLButtonElement>(null)
-
 
   // Volume scroll handling
   useEffect(() => {
@@ -290,7 +288,6 @@ const FullscreenAudioPlayer = () => {
             <Volume2 className='w-5 h-5 text-muted-foreground' />
           </div>
         </div>
-
       </div>
     </div>
   )
