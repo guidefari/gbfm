@@ -23,6 +23,11 @@ interface Mix {
   content: string
   draft: boolean
   type: 'mix'
+  creators?: Array<{
+    id: string
+    name: string
+    username: string
+  }>
 }
 
 interface PaginationMetadata {

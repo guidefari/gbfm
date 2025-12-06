@@ -210,6 +210,20 @@ export const authenticatedFetch = async (
       return retryResponse
     }
 
+    if (response.status === 403) {
+      const errorData = (await response
+        .json()
+        .catch(() => ({ error: 'Forbidden' }))) as ApiError
+
+      Runtime.runSync(Runtime.defaultRuntime)(
+        Effect.logError('Forbidden response', {
+          status: response.status,
+          errorData
+        })
+      )
+      throw new ValidationError(errorData.error, errorData.details)
+    }
+
     if (response.status >= 400 && response.status < 500) {
       const errorData = (await response
         .json()

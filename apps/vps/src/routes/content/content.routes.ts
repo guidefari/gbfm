@@ -249,6 +249,10 @@ export const updateAudioBySlug = createRoute({
       z.object({ error: z.string() }),
       'Not authorized to edit this content'
     ),
+    [HttpStatusCodes.FORBIDDEN]: jsonContent(
+      z.object({ error: z.string() }),
+      'Forbidden.'
+    ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to update audio'

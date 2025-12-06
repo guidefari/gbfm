@@ -320,9 +320,9 @@ export const updateAudioBySlug: AppRouteHandler<
     if (authorship.length === 0) {
       return c.json(
         {
-          error: 'Not authorized to edit this content'
+          error: 'Forbidden, brethren.'
         },
-        HttpStatusCodes.UNAUTHORIZED
+        HttpStatusCodes.FORBIDDEN
       )
     }
 
