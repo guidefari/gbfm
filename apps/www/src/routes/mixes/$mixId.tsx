@@ -1,7 +1,7 @@
 import type { SelectMdxCompiledAudio } from '@gbfm/vps/schemas'
 import { createFileRoute } from '@tanstack/react-router'
 import * as React from 'react'
-import { LongPost } from '@/components/Layout/LongPost'
+import { MDXRendrr } from '@/components/MDXRendrr'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
 import { useContentStore } from '@/store'
 
@@ -111,15 +111,31 @@ function MixPage() {
 
   if (!mix) return <div>No data</div>
 
+  return <MixDetails mix={mix} />
+}
+
+function MixDetails({ mix }: { mix: any }) {
   return (
-    <LongPost
-      title={mix.title}
-      description={mix.description ?? ''}
-      content={mix.compiledContent ?? mix.content}
-      thumbnailUrl={mix.thumbnailUrl ?? ''}
-      date={mix.createdAt}
-      mp3Url={mix.url}
-      slug={mix.slug}
-    />
+    <div className='space-y-4'>
+      <div>
+        <h2 className='mb-2 text-2xl font-bold'>{mix.title}</h2>
+        {mix.description && (
+          <p className='text-sm text-muted-foreground'>{mix.description}</p>
+        )}
+        {mix.createdAt && (
+          <p className='mt-2 text-xs text-muted-foreground'>
+            {new Date(mix.createdAt).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })}
+          </p>
+        )}
+      </div>
+
+      <div className='prose prose-sm dark:prose-invert max-w-none'>
+        <MDXRendrr mdxString={mix.compiledContent ?? mix.content} />
+      </div>
+    </div>
   )
 }
