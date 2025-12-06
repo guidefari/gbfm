@@ -1,5 +1,5 @@
-import type React from 'react'
 import { Share } from 'lucide-react'
+import type React from 'react'
 import { MdOutlineDownloading } from 'react-icons/md'
 import { toast } from '@/components/ui/use-toast'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'

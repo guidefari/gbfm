@@ -1,7 +1,6 @@
 import {
   Calendar,
   FileText,
-  Headphones,
   Home,
   LetterTextIcon,
   List,
@@ -116,33 +115,40 @@ export const createCommandData = (
     // },
 
     // Music section with sub-items
+    // {
+    //   id: 'music',
+    //   label: 'Explore Music',
+    //   icon: Headphones,
+    //   type: 'section',
+    //   requiresAuth: false,
+    //   items: [
+    //     {
+    //       id: 'mixes',
+    //       label: 'Mixes',
+    //       icon: Headphones,
+    //       onSelect: navigationActions.routeToMixes,
+    //       shortcut: '0'
+    //     },
+    //     {
+    //       id: 'tracks',
+    //       label: 'All Tracks',
+    //       icon: Music,
+    //       onSelect: navigationActions.routeToTracks
+    //     }
+    //     // {
+    //     //   id: 'labels',
+    //     //   label: 'Record Labels',
+    //     //   icon: Music,
+    //     //   onSelect: navigationActions.routeToLabels
+    //     // }
+    //   ]
+    // }
     {
-      id: 'music',
-      label: 'Explore Music',
-      icon: Headphones,
-      type: 'section',
-      requiresAuth: false,
-      items: [
-        {
-          id: 'mixes',
-          label: 'Mixes',
-          icon: Headphones,
-          onSelect: navigationActions.routeToMixes,
-          shortcut: '0'
-        },
-        {
-          id: 'tracks',
-          label: 'All Tracks',
-          icon: Music,
-          onSelect: navigationActions.routeToTracks
-        }
-        // {
-        //   id: 'labels',
-        //   label: 'Record Labels',
-        //   icon: Music,
-        //   onSelect: navigationActions.routeToLabels
-        // }
-      ]
+      id: 'mixes',
+      label: 'Mixes',
+      icon: Music,
+      type: 'action',
+      onSelect: navigationActions.routeToMixes
     }
 
     // Upload section (auth required)

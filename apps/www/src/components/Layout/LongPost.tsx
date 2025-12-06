@@ -24,7 +24,9 @@ export const LongPost = ({
   mp3Url,
   slug
 }: Props) => {
-  const shareUrl = slug ? `https://vps.goosebumps.fm/share/mix/${slug}` : undefined
+  const shareUrl = slug
+    ? `https://vps.goosebumps.fm/share/mix/${slug}`
+    : undefined
 
   return (
     <div className='relative grid grid-flow-row lg:grid-flow-col lg:grid-cols-[auto_1fr] lg:gap-5'>
@@ -48,9 +50,7 @@ export const LongPost = ({
             loading='lazy'
           />
         )}
-        <h4 className='text-left lg:mx-0 text-gb-pastel-green-2'>
-          {title}
-        </h4>
+        <h4 className='text-left lg:mx-0 text-gb-pastel-green-2'>{title}</h4>
         {date && <LilDate date={date} />}
         {youtubeId && (
           <iframe
