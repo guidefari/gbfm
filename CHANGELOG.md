@@ -1,3 +1,11 @@
+## [1.1.2](https://github.com/guidefari/gbfm/compare/v1.1.1...v1.1.2) (2025-12-06)
+
+
+### Bug Fixes
+
+* layer merging ([a1c2f52](https://github.com/guidefari/gbfm/commit/a1c2f52238f9b735ff64c48a2aa61364044795ad))
+* queue on full screen audio player ([12e26c8](https://github.com/guidefari/gbfm/commit/12e26c806f236ba4a8dcf2ad457ae34f30b11cb2))
+
 ## [1.1.1](https://github.com/guidefari/gbfm/compare/v1.1.0...v1.1.1) (2025-11-23)
 
 
