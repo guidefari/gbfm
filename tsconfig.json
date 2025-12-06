@@ -1,11 +1,27 @@
 {
   "extends": "@tsconfig/bun/tsconfig.json",
   "compilerOptions": {
-    "module": "ESNext",
+    "target": "ES2022",
+    "module": "NodeNext",
     "moduleResolution": "Bundler",
     "isolatedModules": true,
     "skipLibCheck": true,
-    "downlevelIteration": true
+    "downlevelIteration": true,
+    "verbatimModuleSyntax": true,
+    "rewriteRelativeImportExtensions": true,
+    "strict": true,
+    "exactOptionalPropertyTypes": true,
+    "noUnusedLocals": true,
+    "noImplicitOverride": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "incremental": true,
+    "composite": true,
+    "plugins": [
+      {
+        "name": "@effect/language-service"
+      }
+    ]
   },
   "exclude": [".sst"]
 }

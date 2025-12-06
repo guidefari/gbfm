@@ -94,7 +94,10 @@ export async function sendWelcomeEmail({
     to,
     template: {
       subject: `Welcome to goosebumps.fm, ${username}! 🎵`,
-      component: React.createElement(WelcomeEmail, { username, loginUrl })
+      component: React.createElement(WelcomeEmail, {
+        username,
+        ...(loginUrl && { loginUrl })
+      })
     }
   })
 }
@@ -150,8 +153,8 @@ export async function sendMixNotificationEmail({
         mixTitle,
         artistName,
         mixUrl,
-        coverImageUrl,
-        releaseDate
+        ...(coverImageUrl && { coverImageUrl }),
+        ...(releaseDate && { releaseDate })
       })
     }
   })

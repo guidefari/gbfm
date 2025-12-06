@@ -189,8 +189,8 @@ export async function sendTemplate({
     to: toAddresses,
     subject,
     html,
-    text,
-    attachments
+    ...(text && { text }),
+    ...(attachments && { attachments })
   })
 
   await sesClient.send(

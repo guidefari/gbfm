@@ -4,6 +4,8 @@
   "include": ["src", "emails", "sst-env.d.ts", "../../sst-env.d.ts"],
   "exclude": ["dist", "build", "node_modules"],
   "compilerOptions": {
+    "module": "preserve",
+    "moduleResolution": "bundler",
     "strict": true,
     "jsx": "react-jsx",
     "noEmit": true
