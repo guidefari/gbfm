@@ -1,6 +1,6 @@
 import { Command, Options } from "@effect/cli";
-import { BunContext, BunRuntime } from "@effect/platform-bun";
-import { Effect, Console } from "effect";
+import { BunContext, BunRuntime, BunFileSystem } from "@effect/platform-bun";
+import { Effect, Console, Layer } from "effect";
 import { spawnSync } from "child_process";
 
 type Target = "local" | "prod";
@@ -63,5 +63,6 @@ const cli = Command.run(studioCommand, {
 });
 
 if (import.meta.main) {
-	cli(process.argv).pipe(Effect.provide(BunContext.layer), BunRuntime.runMain);
+	const layers = Layer.merge(BunFileSystem.layer, BunContext.layer);
+	cli(process.argv).pipe(Effect.provide(layers), BunRuntime.runMain);
 }

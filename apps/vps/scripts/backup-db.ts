@@ -7,7 +7,7 @@ import { Command, Options } from "@effect/cli";
 import { BunContext, BunRuntime } from "@effect/platform-bun";
 import { BunFileSystem } from "@effect/platform-bun";
 import { FileSystem } from "@effect/platform";
-import { Effect, Console } from "effect";
+import { Effect, Console, Layer } from "effect";
 import {
   isPgDumpAvailable,
   createBackupWithPgDump,
@@ -194,7 +194,7 @@ export const handler = async (event: ScheduledEvent) => {
   try {
     const result = await Effect.runPromise(
       createBackupEffect("s3", "remote").pipe(
-        Effect.provideLayer(BunFileSystem.layer)
+        Effect.provide(BunFileSystem.layer)
       )
     );
 
@@ -212,9 +212,9 @@ export const handler = async (event: ScheduledEvent) => {
 };
 
 if (import.meta.main) {
+  const layers = Layer.merge(BunFileSystem.layer, BunContext.layer);
   cli(process.argv).pipe(
-    Effect.provide(BunFileSystem.layer),
-    Effect.provide(BunContext.layer),
+    Effect.provide(layers),
     BunRuntime.runMain
   );
 }

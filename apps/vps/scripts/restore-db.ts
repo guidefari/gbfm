@@ -5,7 +5,7 @@ import { Resource } from "sst";
 import { Command, Options } from "@effect/cli";
 import { BunContext, BunRuntime } from "@effect/platform-bun";
 import { BunFileSystem } from "@effect/platform-bun";
-import { Effect, Console } from "effect";
+import { Effect, Console, Layer } from "effect";
 import { existsSync } from "node:fs";
 import path from "node:path";
 
@@ -331,9 +331,9 @@ const cli = Command.run(restoreCommand, {
 });
 
 if (import.meta.main) {
+  const layers = Layer.merge(BunFileSystem.layer, BunContext.layer);
   cli(process.argv).pipe(
-    Effect.provide(BunFileSystem.layer),
-    Effect.provide(BunContext.layer),
+    Effect.provide(layers),
     BunRuntime.runMain
   );
 }
