@@ -114,7 +114,7 @@ function MixPage() {
   return <MixDetails mix={mix} />
 }
 
-function MixDetails({ mix }: { mix: any }) {
+function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
   return (
     <div className='space-y-4'>
       <div>
