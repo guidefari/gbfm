@@ -17,13 +17,13 @@ import {
   verticalListSortingStrategy
 } from '@dnd-kit/sortable'
 import { Play } from 'lucide-react'
+import { ScrollArea } from '@/components/ui/scroll-area'
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle
 } from '@/components/ui/sheet'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
 import { QueueItem } from './QueueItem'

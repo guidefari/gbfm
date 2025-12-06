@@ -132,7 +132,7 @@ function Component() {
   }
 
   return (
-    <div className='grid h-full grid-cols-3 gap-4 p-4 font-jetbrains bg-background text-foreground'>
+    <div className='grid h-full grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4 font-jetbrains bg-background text-foreground'>
       {/* Left Column - Dummy Content */}
       <div className='p-4 overflow-y-auto border-2 border-dashed rounded-lg border-muted-foreground/30'>
         <h2 className='mb-4 text-lg font-bold'>Audio player</h2>
