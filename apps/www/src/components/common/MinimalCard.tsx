@@ -1,5 +1,7 @@
 import type React from 'react'
+import { Share } from 'lucide-react'
 import { MdOutlineDownloading } from 'react-icons/md'
+import { toast } from '@/components/ui/use-toast'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { cn, copyToClipboard } from '@/lib/utils'
 import { PlayPauseButton } from '../PlayPauseButton'
@@ -22,6 +24,7 @@ interface Props {
   download?: boolean
   className?: string
   hideTitle?: boolean
+  shareUrl?: string
 }
 
 export const MinimalCard: React.FC<Props> = ({
@@ -36,13 +39,33 @@ export const MinimalCard: React.FC<Props> = ({
   artists,
   download = false,
   className,
-  hideTitle
+  hideTitle,
+  shareUrl
 }) => {
   const constructUrl = () => {
     if (!previewUrl) return
     const safeTitle = encodeURIComponent(title)
     const safeDlUrl = encodeURIComponent(previewUrl)
     return `/api/dl?fileUrl=${safeDlUrl}&title=${safeTitle}`
+  }
+
+  const handleShare = async () => {
+    if (!shareUrl) return
+
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      toast({
+        title: 'Link copied!',
+        description: 'Share URL copied to clipboard'
+      })
+    } catch (error) {
+      console.error('Failed to copy link to clipboard:', error)
+      toast({
+        title: 'Failed to copy',
+        description: 'Could not copy link to clipboard',
+        variant: 'destructive'
+      })
+    }
   }
 
   const artistsAndTitle = `${artists ?? null} ${' - '} ${title ?? null}`
@@ -107,6 +130,15 @@ export const MinimalCard: React.FC<Props> = ({
               <a type='button' title='Download' href={constructUrl()}>
                 <MdOutlineDownloading className='py-0.5 default-icon' />
               </a>
+            )}
+            {shareUrl && (
+              <button
+                type='button'
+                title='Share'
+                onClick={handleShare}
+                className='flex-shrink-0 p-1 transition-colors rounded hover:bg-muted focus:outline-none focus:ring-2 focus:ring-highlight'>
+                <Share className='w-5 h-5 text-foreground/60 hover:text-foreground' />
+              </button>
             )}
           </div>
         )}

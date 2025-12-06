@@ -11,6 +11,7 @@ type Props = {
   description?: string
   youtubeId?: string
   mp3Url?: string
+  slug?: string
 }
 
 export const LongPost = ({
@@ -20,8 +21,11 @@ export const LongPost = ({
   content,
   date,
   youtubeId,
-  mp3Url
+  mp3Url,
+  slug
 }: Props) => {
+  const shareUrl = slug ? `https://vps.goosebumps.fm/share/mix/${slug}` : undefined
+
   return (
     <div className='relative grid grid-flow-row lg:grid-flow-col lg:grid-cols-[auto_1fr] lg:gap-5'>
       <div className='px-2 mt-6 break-words rounded-md w-fit lg:mx-auto lg:sticky lg:top-6 lg:self-start lg:col-span-1'>
@@ -32,6 +36,7 @@ export const LongPost = ({
             imageUrl={thumbnailUrl ?? DEFAULT_IMAGE_URL}
             download
             hideTitle
+            shareUrl={shareUrl}
           />
         ) : (
           <img
@@ -43,7 +48,9 @@ export const LongPost = ({
             loading='lazy'
           />
         )}
-        <h4 className='text-left lg:mx-0 text-gb-pastel-green-2'>{title}</h4>
+        <h4 className='text-left lg:mx-0 text-gb-pastel-green-2'>
+          {title}
+        </h4>
         {date && <LilDate date={date} />}
         {youtubeId && (
           <iframe

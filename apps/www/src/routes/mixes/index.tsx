@@ -1,8 +1,18 @@
+import type { SelectMix } from '@gbfm/vps/schemas'
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { Heart, MoreVertical, Play, Plus, Share } from 'lucide-react'
 import { useMemo } from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
 import { MixesSkeleton } from '@/components/MixesSkeleton'
 import { TrackContextMenu } from '@/components/TrackContextMenu'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
+import { toast } from '@/components/ui/use-toast'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { useAudioByType } from '@/lib/http'
 import { useUIStore } from '@/store'
@@ -11,6 +21,82 @@ import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
 export const Route = createFileRoute('/mixes/')({
   component: Component
 })
+
+interface MixMenuProps {
+  mix: SelectMix
+}
+
+function MixMenu({ mix }: MixMenuProps) {
+  const { addToQueue, loadTrack } = useAudioPlayerActions()
+
+  const handleShare = async () => {
+    const shareUrl = `https://vps.goosebumps.fm/share/mix/${mix.slug}`
+
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      toast({
+        title: 'Link copied!',
+        description: 'Share URL copied to clipboard'
+      })
+    } catch (error) {
+      console.error('Failed to copy link to clipboard:', error)
+      toast({
+        title: 'Failed to copy',
+        description: 'Could not copy link to clipboard',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  const handlePlayNow = () => {
+    loadTrack(mix.url, mix.thumbnailUrl || DEFAULT_IMAGE_URL, mix.title)
+  }
+
+  const handleAddToQueue = () => {
+    addToQueue(mix)
+  }
+
+  const handleAddToFavorites = () => {
+    console.log('Add to favorites:', mix.title)
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type='button'
+          onClick={(e) => e.stopPropagation()}
+          className='flex-shrink-0 p-1 transition-colors rounded hover:bg-muted focus:outline-none focus:ring-2 focus:ring-highlight'
+          aria-label='More actions'>
+          <MoreVertical className='w-4 h-4 text-foreground/60 hover:text-foreground' />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align='start'>
+        <DropdownMenuItem onClick={handlePlayNow}>
+          <Play className='w-4 h-4' />
+          Play now
+        </DropdownMenuItem>
+
+        <DropdownMenuItem onClick={handleAddToQueue}>
+          <Plus className='w-4 h-4' />
+          Add to queue
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem onClick={handleAddToFavorites}>
+          <Heart className='w-4 h-4' />
+          Add to favorites
+        </DropdownMenuItem>
+
+        <DropdownMenuItem onClick={handleShare}>
+          <Share className='w-4 h-4' />
+          Share
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
 
 function Component() {
   const { data, isPending, fetchNextPage, hasNextPage, isFetchingNextPage } =
@@ -78,12 +164,15 @@ function Component() {
                 </span>
               </button>
               <div className='flex-1 min-w-0'>
-                <Link
-                  to='/mixes/$mixId'
-                  params={{ mixId: mix.slug }}
-                  className='block font-bold leading-none truncate text-highlight hover:underline'>
-                  {mix.title}
-                </Link>
+                <div className='flex items-start justify-between gap-2'>
+                  <Link
+                    to='/mixes/$mixId'
+                    params={{ mixId: mix.slug }}
+                    className='flex-1 block font-bold leading-none truncate text-highlight hover:underline'>
+                    {mix.title}
+                  </Link>
+                  <MixMenu mix={mix} />
+                </div>
                 {mix.description && (
                   <div className='text-sm text-foreground/80 line-clamp-2'>
                     {mix.description}

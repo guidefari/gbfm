@@ -119,6 +119,7 @@ function MixPage() {
       thumbnailUrl={mix.thumbnailUrl ?? ''}
       date={mix.createdAt}
       mp3Url={mix.url}
+      slug={mix.slug}
     />
   )
 }
