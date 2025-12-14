@@ -24,9 +24,7 @@ export default function AppShell({ children }: Props) {
 
   return (
     <div className='flex flex-col h-screen bg-background'>
-      <main className='flex-1 overflow-y-auto bg-background'>
-        {children}
-      </main>
+      <main className='flex-1 overflow-y-auto bg-background'>{children}</main>
 
       {/* Audio Player - Fixed at bottom, full width */}
       {hasActiveAudio && !isFullscreenVisible && !isOnMixesPage && (

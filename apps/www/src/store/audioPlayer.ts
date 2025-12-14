@@ -463,7 +463,8 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
           const { queue, currentIndex } = get()
           if (queue.length === 0) return
 
-          const prevIndex = currentIndex - 1 < 0 ? queue.length - 1 : currentIndex - 1
+          const prevIndex =
+            currentIndex - 1 < 0 ? queue.length - 1 : currentIndex - 1
 
           get().playFromQueue(prevIndex)
         },
