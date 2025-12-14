@@ -1,3 +1,18 @@
+# [1.2.0](https://github.com/guidefari/gbfm/compare/v1.1.2...v1.2.0) (2025-12-14)
+
+
+### Bug Fixes
+
+* remove any ([0e49ef0](https://github.com/guidefari/gbfm/commit/0e49ef03da9b407a7519a50e5f5c9881df8c77e4))
+
+
+### Features
+
+* audio player wip ([e1c8bab](https://github.com/guidefari/gbfm/commit/e1c8bab50d3b0ca0b7c986fe6b49ed5966b60a20))
+* remove shuffle and repeat ([69be785](https://github.com/guidefari/gbfm/commit/69be7851a3e99cf24f170ca6cd3cd958ae12960e))
+* render markdown ([c24b019](https://github.com/guidefari/gbfm/commit/c24b01942104aca80db8427b289b0d262c42243a))
+* seed rbac ([e2f4a99](https://github.com/guidefari/gbfm/commit/e2f4a99d62f2734520215f21c8d464ef390fac4a))
+
 ## [1.1.2](https://github.com/guidefari/gbfm/compare/v1.1.1...v1.1.2) (2025-12-06)
 
 
