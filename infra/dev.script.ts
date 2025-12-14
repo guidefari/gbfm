@@ -19,10 +19,18 @@ new sst.x.DevCommand('ios', {
   }
 })
 
-new sst.x.DevCommand('Drizzle_Studio', {
+new sst.x.DevCommand('Studio_prod', {
   link: [...allSecrets, email],
   dev: {
     command: 'bun scripts/drizzle-studio.ts --target=prod',
+    directory: './apps/vps',
+    autostart: false
+  }
+})
+new sst.x.DevCommand('Studio_local', {
+  link: [...allSecrets, email],
+  dev: {
+    command: 'bun scripts/drizzle-studio.ts --target=local',
     directory: './apps/vps',
     autostart: false
   }
@@ -34,6 +42,18 @@ new sst.x.DevCommand('Drizzle_Generate', {
     command: 'npx drizzle-kit generate',
     directory: './apps/vps',
     autostart: false
+  }
+})
+
+new sst.x.DevCommand('Seed_RBAC', {
+  link: [...allSecrets, email],
+  dev: {
+    command: 'bun run ./scripts/seed-rbac.ts',
+    directory: './apps/vps',
+    autostart: false
+  },
+  environment: {
+    DB_STAGE: 'prod'
   }
 })
 // new sst.x.DevCommand("Drizzle_Migrate", {
