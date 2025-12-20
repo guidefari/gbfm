@@ -8,11 +8,30 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
+import { useSession, signOut } from '@/lib/auth-client'
 import { useAuthStore } from '@/store/auth'
 
 const ProfileAvatar = () => {
   const navigate = useNavigate()
-  const { isAuthenticated, clearAuth } = useAuthStore()
+  const { data: session, isPending } = useSession()
+  const { clearAuth } = useAuthStore()
+
+  const handleSignOut = async () => {
+    await signOut()
+    clearAuth()
+    navigate({ to: '/' })
+  }
+
+  if (isPending) {
+    return (
+      <Button
+        variant='outline'
+        size='icon'
+        className='overflow-hidden rounded-full'
+        disabled
+      />
+    )
+  }
 
   return (
     <DropdownMenu>
@@ -21,18 +40,11 @@ const ProfileAvatar = () => {
           variant='outline'
           size='icon'
           className='overflow-hidden rounded-full'>
-          {/* {user} */}
-          {/* <img
-						src="/fav.png"
-						width={36}
-						height={36}
-						alt="Avatar"
-						className="overflow-hidden rounded-full"
-					/> */}
+          {session?.user?.name?.[0]?.toUpperCase() || '?'}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end'>
-        {!isAuthenticated ? (
+        {!session ? (
           <DropdownMenuItem
             className='hover:cursor-pointer'
             onClick={() => navigate({ to: '/auth/sign-in' })}>
@@ -44,7 +56,7 @@ const ProfileAvatar = () => {
               <Link to='/settings/profile'>Profile</Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => clearAuth()}>
+            <DropdownMenuItem onClick={handleSignOut}>
               Logout
             </DropdownMenuItem>
           </>

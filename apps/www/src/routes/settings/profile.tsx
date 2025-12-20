@@ -13,16 +13,17 @@ import { Label } from '@/components/ui/label'
 import {
   useEmailPreferences,
   useUpdateEmailPreferences,
-  useUpdateProfile,
-  useUserLOL
+  useUpdateProfile
 } from '@/lib/http'
+import { useSession } from '@/lib/auth-client'
 
 export const Route = createFileRoute('/settings/profile')({
   component: Profile
 })
 
 export default function Profile() {
-  const { data: user } = useUserLOL()
+  const { data: session, isPending: isLoadingSession } = useSession()
+  const user = session?.user
   const avatarId = useId()
   const { updateProfile, isPending: isUpdatingProfile } = useUpdateProfile()
   const { data: emailPreferences } = useEmailPreferences()
@@ -76,11 +77,11 @@ export default function Profile() {
 
   const fields = [
     {
-      name: 'username',
-      label: 'Username',
+      name: 'name',
+      label: 'Name',
       type: 'text',
-      placeholder: user?.username || 'Silly Goose',
-      value: user?.username || ''
+      placeholder: user?.name || 'Silly Goose',
+      value: user?.name || ''
     },
     {
       name: 'email',
@@ -89,13 +90,6 @@ export default function Profile() {
       placeholder: user?.email || 'silly@goose.fm',
       value: user?.email || ''
     }
-    // {
-    // 	name: "password",
-    // 	label: "Password",
-    // 	type: "password",
-    // 	placeholder: "••••••••",
-    // 	value: "",
-    // },
   ]
 
   const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -118,6 +112,22 @@ export default function Profile() {
     }
   }
 
+  if (isLoadingSession) {
+    return (
+      <div className='flex min-h-[65dvh] flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8'>
+        <div>Loading...</div>
+      </div>
+    )
+  }
+
+  if (!session) {
+    return (
+      <div className='flex min-h-[65dvh] flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8'>
+        <div>Please sign in to view your profile</div>
+      </div>
+    )
+  }
+
   return (
     <div className='flex min-h-[65dvh] flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8'>
       <div className='mx-auto space-y-8 w-full max-w-md'>
@@ -132,7 +142,7 @@ export default function Profile() {
               <div className='flex justify-center mb-6'>
                 <div className='relative mr-4 w-20 h-20 rounded-full group'>
                   <img
-                    src={imagePreview || user?.avatarUrl || '/placeholder.svg'}
+                    src={imagePreview || user?.image || '/placeholder.svg'}
                     alt='User Avatar'
                     className='rounded-full cursor-pointer'
                     width={80}

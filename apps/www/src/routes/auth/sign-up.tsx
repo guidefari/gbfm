@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { GenericAuthForm } from '@/components/Auth/GenericForm'
-import { VPS_BASE_URL } from '@/lib/http'
+import { signUp } from '@/lib/auth-client'
+import { useAuthStore } from '@/store/auth'
 
 export const Route = createFileRoute('/auth/sign-up')({
   component: SignUpPage
@@ -11,33 +12,31 @@ function SignUpPage() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const navigate = Route.useNavigate()
+  const { setUser } = useAuthStore()
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
-    const email = formData.get('email')
-    const password = formData.get('password')
-    const username = formData.get('username')
+    const email = formData.get('email') as string
+    const password = formData.get('password') as string
+    const name = formData.get('name') as string
 
     try {
-      const response = await fetch(`${VPS_BASE_URL}/auth/signup`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email, password, username })
+      const result = await signUp.email({
+        email,
+        password,
+        name
       })
 
-      const data = await response.json()
-
-      if (response.ok) {
-        setMessage('Sign up successful! Redirecting to sign in...')
+      if (result.data) {
+        setMessage('Sign up successful! Redirecting to home...')
         setError('')
+        setUser(result.data.user)
         setTimeout(() => {
-          navigate({ to: '/auth/sign-in' })
+          navigate({ to: '/' })
         }, 1500)
-      } else {
-        setError(data.error || 'Failed to sign up')
+      } else if (result.error) {
+        setError(result.error.message || 'Failed to sign up')
         setMessage('')
       }
     } catch (_err) {
@@ -70,10 +69,10 @@ function SignUpPage() {
               required: true
             },
             {
-              name: 'username',
-              label: 'Username',
+              name: 'name',
+              label: 'Name',
               type: 'text',
-              placeholder: 'Enter your username',
+              placeholder: 'Enter your name',
               required: true
             },
             {

@@ -36,26 +36,47 @@ new sst.x.DevCommand('Studio_local', {
   }
 })
 
-new sst.x.DevCommand('Drizzle_Generate', {
+new sst.x.DevCommand('Drizzle_Generate_Local', {
   link: [...allSecrets, email],
   dev: {
-    command: 'npx drizzle-kit generate',
+    command: 'npx drizzle-kit generate --config drizzle.config.local.ts',
     directory: './apps/vps',
     autostart: false
   }
 })
 
-new sst.x.DevCommand('Seed_RBAC', {
+new sst.x.DevCommand('Drizzle_Generate_Prod', {
   link: [...allSecrets, email],
   dev: {
-    command: 'bun run ./scripts/seed-rbac.ts',
+    command: 'npx drizzle-kit generate --config drizzle.config.prod.ts',
+    directory: './apps/vps',
+    autostart: false
+  }
+})
+
+new sst.x.DevCommand('betterAuthGen', {
+  link: [...allSecrets, email],
+  dev: {
+    command: 'bunx @better-auth/cli@latest generate',
     directory: './apps/vps',
     autostart: false
   },
   environment: {
-    DB_STAGE: 'prod'
+    BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET || ""
   }
 })
+
+// new sst.x.DevCommand('Seed_RBAC', {
+//   link: [...allSecrets, email],
+//   dev: {
+//     command: 'bun run ./scripts/seed-rbac.ts',
+//     directory: './apps/vps',
+//     autostart: false
+//   },
+//   environment: {
+//     DB_STAGE: 'prod'
+//   }
+// })
 // new sst.x.DevCommand("Drizzle_Migrate", {
 // 	link: [database, email],
 // 	dev: {
@@ -72,10 +93,19 @@ new sst.x.DevCommand('Seed_RBAC', {
 // 		autostart: false,
 // 	},
 // });
-new sst.x.DevCommand('Drizzle_Push', {
+new sst.x.DevCommand('Drizzle_Push_Local', {
   link: [...allSecrets, email],
   dev: {
-    command: 'npx drizzle-kit push',
+    command: 'npx drizzle-kit push --config drizzle.config.local.ts',
+    directory: './apps/vps',
+    autostart: false
+  }
+})
+
+new sst.x.DevCommand('Drizzle_Push_Prod', {
+  link: [...allSecrets, email],
+  dev: {
+    command: 'npx drizzle-kit push --config drizzle.config.prod.ts',
     directory: './apps/vps',
     autostart: false
   }
@@ -177,6 +207,14 @@ new sst.x.DevCommand('Backup_Database', {
 //     autostart: false
 //   }
 // })
+new sst.x.DevCommand('migrateUsers', {
+  link: [...allSecrets, email, dbBackupBucket],
+  dev: {
+    command: 'bun run scripts/migrate-users-to-better-auth.ts',
+    directory: './apps/vps',
+    autostart: false
+  }
+})
 
 new sst.x.DevCommand('Restore_Local_Database', {
   link: [...allSecrets, email, dbBackupBucket],

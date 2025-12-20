@@ -1,12 +1,12 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { z } from 'zod'
 import { GenericAuthForm } from '@/components/Auth/GenericForm'
-import { VPS_BASE_URL } from '@/lib/http'
+import { authClient } from '@/lib/auth-client'
 
 export const searchSchema = z.object({
-  token: z.string(),
-  email: z.email()
+  token: z.string().optional(),
+  error: z.string().optional()
 })
 
 export const Route = createFileRoute('/auth/reset-password')({
@@ -15,18 +15,23 @@ export const Route = createFileRoute('/auth/reset-password')({
 })
 
 function ResetPasswordPage() {
-  const { token, email } = Route.useSearch()
+  const search = Route.useSearch()
+  const navigate = useNavigate()
   const [message, setMessage] = useState<string>('')
   const [error, setError] = useState<string>('')
   const [isValidToken, setIsValidToken] = useState<boolean>(false)
 
   useEffect(() => {
-    if (!token) {
+    if (search.error) {
+      setError('Invalid or expired reset link. Please request a new password reset.')
+      return
+    }
+    if (!search.token) {
       setError('Invalid reset link. Please request a new password reset.')
       return
     }
     setIsValidToken(true)
-  }, [token])
+  }, [search.token, search.error])
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -39,32 +44,28 @@ function ResetPasswordPage() {
       return
     }
 
+    if (!search.token) {
+      setError('Invalid reset token')
+      return
+    }
+
     try {
-      const response = await fetch(`${VPS_BASE_URL}/auth/reset-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          token,
-          password,
-          email
-        })
+      const result = await authClient.resetPassword({
+        newPassword: password,
+        token: search.token
       })
 
-      const data = await response.json()
-
-      if (response.ok) {
+      if (result.error) {
+        setError(result.error.message || 'Failed to reset password')
+        setMessage('')
+      } else {
         setMessage(
           'Password reset successful! You can now log in with your new password.'
         )
-        setTimeout(() => {
-          window.location.href = '/auth/signin'
-        }, 1500)
         setError('')
-      } else {
-        setError(data.error || 'Failed to reset password')
-        setMessage('')
+        setTimeout(() => {
+          navigate({ to: '/auth/sign-in' })
+        }, 1500)
       }
     } catch (_err) {
       setError('Failed to reset password')

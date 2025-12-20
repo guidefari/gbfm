@@ -9,6 +9,14 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
+    "BETTER_AUTH_SECRET": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "BETTER_AUTH_URL": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "BackupTaskInvoker": {
       "name": string
       "type": "sst.aws.Function"

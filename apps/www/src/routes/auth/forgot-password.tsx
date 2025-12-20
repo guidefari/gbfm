@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useState } from 'react'
 import { GenericAuthForm } from '@/components/Auth/GenericForm'
-import { VPS_BASE_URL } from '@/lib/http'
+import { authClient } from '@/lib/auth-client'
 
 export const Route = createFileRoute('/auth/forgot-password')({
   component: ForgotPasswordPage
@@ -17,22 +17,17 @@ function ForgotPasswordPage() {
     const email = formData.get('email') as string
 
     try {
-      const response = await fetch(`${VPS_BASE_URL}/auth/forgot-password`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email })
+      const result = await authClient.requestPasswordReset({
+        email,
+        redirectTo: `${window.location.origin}/auth/reset-password`
       })
 
-      const data = await response.json()
-
-      if (response.ok) {
+      if (result.error) {
+        setError(result.error.message || 'Failed to send reset email')
+        setMessage('')
+      } else {
         setMessage('Password reset email sent! Check your inbox.')
         setError('')
-      } else {
-        setError(data.error || 'Failed to send reset email')
-        setMessage('')
       }
     } catch (_err) {
       setError('Failed to send reset email')

@@ -30,53 +30,27 @@ export type PaginatedResponse<T> = {
   pagination: PaginationMetadata
 }
 
-type CustomRequestInit = RequestInit & {
-  skipAuth?: boolean
-  token?: string
-}
-
 export async function fetcher<T>(
   input: RequestInfo,
-  init: CustomRequestInit = { skipAuth: true }
+  init: RequestInit = {}
 ) {
-  const { accessToken, refreshToken } = useAuthStore.getState()
-  const jwt = init.token || accessToken
-
   try {
     const isFormData = init.body instanceof FormData
     const headers = {
       ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-      ...(jwt
-        ? {
-            Authorization: `Bearer ${jwt}`,
-            'Refresh-Token': refreshToken || ''
-          }
-        : {}),
       ...init.headers
     }
 
-    let res = await fetch(input, {
+    const res = await fetch(input, {
       ...init,
-      headers
+      headers,
+      credentials: 'include'
     })
 
     if (res.status === 401) {
-      console.log('401, attempting to refresh token')
-      const { refreshAccessToken } = useAuthStore.getState()
-      const newToken = await refreshAccessToken()
-
-      if (newToken) {
-        const retryHeaders = {
-          ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-          Authorization: `Bearer ${newToken}`,
-          'Refresh-Token': refreshToken || '',
-          ...init.headers
-        }
-        res = await fetch(input, {
-          ...init,
-          headers: retryHeaders
-        })
-      }
+      const { clearAuth } = useAuthStore.getState()
+      clearAuth()
+      window.location.href = '/auth/sign-in'
     }
 
     return res.json() as Promise<T>

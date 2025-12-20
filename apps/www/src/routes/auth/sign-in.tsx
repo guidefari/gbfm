@@ -2,7 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { useState } from 'react'
 import { GenericAuthForm } from '@/components/Auth/GenericForm'
 import { toast } from '@/components/ui/use-toast'
-import { VPS_BASE_URL } from '@/lib/http'
+import { signIn } from '@/lib/auth-client'
 import { useAuthStore } from '@/store/auth'
 
 export const Route = createFileRoute('/auth/sign-in')({
@@ -12,7 +12,7 @@ export const Route = createFileRoute('/auth/sign-in')({
 function SignInPage() {
   const [error, setError] = useState<string>('')
   const navigate = Route.useNavigate()
-  const { setAuth } = useAuthStore()
+  const { setUser } = useAuthStore()
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -21,33 +21,22 @@ function SignInPage() {
     const password = formData.get('password') as string
 
     try {
-      const response = await fetch(`${VPS_BASE_URL}/auth/signin`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ email, password })
+      const result = await signIn.email({
+        email,
+        password
       })
 
-      const data = await response.json()
-
-      if (response.ok) {
+      if (result.data) {
         toast({
           title: 'Sign in successful!',
           description: 'Redirecting to home page...',
           variant: 'default'
         })
         setError('')
-
-        setAuth({
-          user: data.user,
-          accessToken: data.accessToken,
-          refreshToken: data.refreshToken
-        })
-
+        setUser(result.data.user)
         navigate({ to: '/' })
-      } else {
-        setError(data.error || 'Failed to sign in')
+      } else if (result.error) {
+        setError(result.error.message || 'Failed to sign in')
       }
     } catch (_err) {
       setError('Failed to sign in')

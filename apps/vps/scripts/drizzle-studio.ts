@@ -14,21 +14,16 @@ const targetOption = Options.choice("target", ["local", "prod"]).pipe(
 
 const createStudioEffect = (target: Target) =>
 	Effect.gen(function* (_) {
-		const dbStage = target === "local" ? "dev" : "prod";
+		const configFile = target === "local" ? "drizzle.config.local.ts" : "drizzle.config.prod.ts";
 		const displayTarget = target === "local" ? "Local" : "Production";
 
 		yield* _(
 			Console.log(`\n🔌 Starting Drizzle Studio for ${displayTarget} database...`),
 		);
-		yield* _(Console.log(`   DB_STAGE: ${dbStage}\n`));
+		yield* _(Console.log(`   Config: ${configFile}\n`));
 
-		const env = {
-			...process.env,
-			DB_STAGE: dbStage,
-		};
-
-		const result = spawnSync("npx", ["drizzle-kit", "studio"], {
-			env,
+		const result = spawnSync("npx", ["drizzle-kit", "studio", "--config", configFile], {
+			env: process.env,
 			stdio: "inherit",
 			shell: true,
 		});

@@ -2,8 +2,9 @@
   "extends": "@tsconfig/bun/tsconfig.json",
   "compilerOptions": {
     "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "Bundler",
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
     "isolatedModules": true,
     "skipLibCheck": true,
     "downlevelIteration": true,

@@ -33,6 +33,7 @@ const usernameSchema = z
   .regex(/[a-zA-Z0-9]$/, 'Username must end with a letter or number')
 
 import { authenticate } from '@/middlewares/auth.middleware'
+import { betterAuthMiddleware } from '@/middlewares/better-auth.middleware'
 
 const tags = ['Auth']
 
@@ -234,7 +235,7 @@ export const listUsers = createRoute({
 export const updateProfile = createRoute({
   path: '/profile',
   method: 'patch',
-  middleware: [authenticate],
+  middleware: [betterAuthMiddleware],
   request: {
     body: {
       content: {
@@ -289,7 +290,7 @@ export const updateProfile = createRoute({
 export const getProfile = createRoute({
   path: '/profile',
   method: 'get',
-  middleware: [authenticate],
+  middleware: [betterAuthMiddleware],
   tags,
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
@@ -310,7 +311,7 @@ export const getProfile = createRoute({
 export const getEmailPreferences = createRoute({
   path: '/email-preferences',
   method: 'get',
-  middleware: [authenticate],
+  middleware: [betterAuthMiddleware],
   tags,
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
@@ -335,7 +336,7 @@ export const getEmailPreferences = createRoute({
 export const updateEmailPreferences = createRoute({
   path: '/email-preferences',
   method: 'patch',
-  middleware: [authenticate],
+  middleware: [betterAuthMiddleware],
   request: {
     body: jsonContentRequired(
       updateAuthorEmailPreferencesSchema,

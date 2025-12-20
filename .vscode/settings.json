@@ -11,6 +11,8 @@
     "titleBar.activeBackground": "#78b1fbcc",
     "titleBar.inactiveBackground": "#7abcd780"
   },
+  "typescript.tsdk": "./node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true
 }
 
 

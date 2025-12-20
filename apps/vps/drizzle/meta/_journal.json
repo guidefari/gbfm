@@ -57,6 +57,13 @@
       "when": 1763934318411,
       "tag": "0010_mean_micromacro",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1766259918479,
+      "tag": "0011_amazing_scorpion",
+      "breakpoints": true
     }
   ]
 }

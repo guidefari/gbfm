@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm'
 import configureOpenAPI from '@/lib/configure-open-api'
 import createApp from '@/lib/create-app'
 import auth from '@/routes/auth/auth.index'
+import betterAuthRoutes from '@/routes/auth/better-auth.routes'
 import content from '@/routes/content/content.index'
 import email from '@/routes/email/email.index'
 import publication from '@/routes/publication/publication.index'
@@ -15,6 +16,7 @@ const app = createApp()
 
 configureOpenAPI(app)
 
+app.route('/api/auth', betterAuthRoutes)
 app.route('/auth', auth)
 app.route('/content', content)
 app.route('/email', email)
