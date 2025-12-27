@@ -11,7 +11,7 @@ COPY apps/vps/package.json ./apps/vps/
 COPY packages/email/package.json ./packages/email/
 
 # Install dependencies with retry and cache clearing
-RUN bun install --omit dev
+RUN bun install --omit dev --ignore-scripts
 
 # Copy source code after dependencies are installed (exclude node_modules)
 COPY packages/email/src ./packages/email/src
