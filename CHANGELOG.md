@@ -1,3 +1,11 @@
+# [1.5.0](https://github.com/guidefari/gbfm/compare/v1.4.0...v1.5.0) (2025-12-27)
+
+
+### Features
+
+* layout ([835ab9b](https://github.com/guidefari/gbfm/commit/835ab9b4285a2e654ec7e2baa89a10e9f1c7e5ff))
+* nav ([#74](https://github.com/guidefari/gbfm/issues/74)) ([baa5421](https://github.com/guidefari/gbfm/commit/baa5421a6d70951b7ecc21505fd3f7390e459627))
+
 # [1.4.0](https://github.com/guidefari/gbfm/compare/v1.3.0...v1.4.0) (2025-12-27)
 
 
