@@ -7,6 +7,7 @@ import { useAudioPlayerInitializer } from '@/hooks/useAudioPlayer'
 import { useAudioPlayerState } from '@/store/audioPlayer'
 
 import { DesktopSideNav } from './DesktopSideNav'
+import { FloatingMenu } from './FloatingMenu'
 
 type Props = {
   children: React.ReactNode
@@ -30,7 +31,7 @@ export default function AppShell({ children }: Props) {
         <main className='flex-1 overflow-y-auto bg-background'>{children}</main>
 
         {hasActiveAudio && !isFullscreenVisible && !isOnMixesPage && (
-          <div className='flex-shrink-0'>
+          <div className='flex-shrink-0 hidden sm:block'>
             <AudioPlayer />
           </div>
         )}
@@ -39,6 +40,8 @@ export default function AppShell({ children }: Props) {
 
         <FullscreenAudioPlayer />
       </div>
+
+      <FloatingMenu className='fixed bottom-4 right-4 sm:hidden' />
     </div>
   )
 }
