@@ -1,3 +1,10 @@
+# [1.4.0](https://github.com/guidefari/gbfm/compare/v1.3.0...v1.4.0) (2025-12-27)
+
+
+### Features
+
+* emanual version bump ([5f32431](https://github.com/guidefari/gbfm/commit/5f324311c18b1651861eb0b36e3c2976d573e2f4))
+
 # [1.3.0](https://github.com/guidefari/gbfm/compare/v1.2.0...v1.3.0) (2025-12-27)
 
 
