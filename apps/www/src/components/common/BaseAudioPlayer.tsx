@@ -107,7 +107,7 @@ export function BaseAudioPlayer({
     if (variant === 'compact') {
       return (
         <div className='flex flex-col items-center justify-center h-32 text-center'>
-          <div className='w-12 h-12 mb-2 rounded-full bg-muted flex items-center justify-center'>
+          <div className='w-12 h-12 mb-2 rounded-sm bg-muted flex items-center justify-center'>
             <Play className='w-6 h-6 text-muted-foreground' />
           </div>
           <p className='text-sm text-muted-foreground'>No track playing</p>
@@ -147,7 +147,7 @@ export function BaseAudioPlayer({
             onChange={handleProgressChange}
             max={100}
             step={0.1}
-            className='w-full h-2 bg-muted rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary'
+            className='w-full h-2 bg-muted rounded-sm appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:bg-primary'
           />
           <div className='flex justify-between text-xs text-muted-foreground'>
             <span>{formatSeconds(currentTime)}</span>
@@ -206,7 +206,7 @@ export function BaseAudioPlayer({
                 <img
                   src={currentTrack.thumbnailUrl || DEFAULT_IMAGE_URL}
                   alt={currentTrack.title}
-                  className='object-cover transition-opacity rounded-lg w-14 h-14 hover:opacity-80'
+                  className='object-cover transition-opacity rounded-sm w-14 h-14 hover:opacity-80'
                 />
               </button>
             )}
@@ -243,7 +243,7 @@ export function BaseAudioPlayer({
               <Button
                 variant='ghost'
                 size='icon'
-                className='w-8 h-8 rounded-full backdrop-blur-sm bg-primary/20 hover:bg-primary/30'
+                className='w-8 h-8 rounded-sm backdrop-blur-sm bg-primary/20 hover:bg-primary/30'
                 onClick={() =>
                   isPlaying ? pause() : play(nowPlayingContext.title)
                 }>
@@ -272,7 +272,7 @@ export function BaseAudioPlayer({
                 onChange={handleProgressChange}
                 max={100}
                 step={0.1}
-                className='flex-1 h-2 bg-muted rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-lg'
+                className='flex-1 h-2 bg-muted rounded-sm appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-lg'
               />
               <span className='text-xs text-secondary-foreground min-w-[2.5rem]'>
                 {formatSeconds(duration)}
@@ -308,7 +308,7 @@ export function BaseAudioPlayer({
                   max={100}
                   value={isMuted ? 0 : volume}
                   onChange={handleVolumeChange}
-                  className='w-20 h-2 bg-muted rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-lg'
+                  className='w-20 h-2 bg-muted rounded-sm appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-lg'
                   title={`Volume: ${volume}% (scroll to adjust)`}
                 />
               </div>
@@ -322,7 +322,7 @@ export function BaseAudioPlayer({
                 className={`${queue.length > 0 ? 'relative' : ''} text-secondary-foreground hover:text-foreground hover:bg-muted`}>
                 <List className='w-4 h-4' />
                 {queue.length > 0 && (
-                  <span className='absolute flex items-center justify-center w-5 h-5 text-xs rounded-full -top-1 -right-1 bg-primary text-primary-foreground'>
+                  <span className='absolute flex items-center justify-center w-5 h-5 text-xs rounded-sm -top-1 -right-1 bg-primary text-primary-foreground'>
                     {queue.length}
                   </span>
                 )}
@@ -342,7 +342,7 @@ export function BaseAudioPlayer({
                 <img
                   src={currentTrack.thumbnailUrl || DEFAULT_IMAGE_URL}
                   alt={currentTrack.title}
-                  className='object-cover w-12 h-12 transition-opacity rounded-lg hover:opacity-80'
+                  className='object-cover w-12 h-12 transition-opacity rounded-sm hover:opacity-80'
                 />
               </button>
             )}
@@ -362,7 +362,7 @@ export function BaseAudioPlayer({
                 className={`${queue.length > 0 ? 'relative' : ''} text-secondary-foreground hover:text-foreground hover:bg-muted`}>
                 <List className='w-4 h-4' />
                 {queue.length > 0 && (
-                  <span className='absolute flex items-center justify-center w-5 h-5 text-xs rounded-full -top-1 -right-1 bg-primary text-primary-foreground'>
+                  <span className='absolute flex items-center justify-center w-5 h-5 text-xs rounded-sm -top-1 -right-1 bg-primary text-primary-foreground'>
                     {queue.length}
                   </span>
                 )}
@@ -380,7 +380,7 @@ export function BaseAudioPlayer({
               onChange={handleProgressChange}
               max={100}
               step={0.1}
-              className='flex-1 h-2 bg-muted rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-lg'
+              className='flex-1 h-2 bg-muted rounded-sm appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-lg'
             />
             <span className='text-xs text-secondary-foreground min-w-[2.5rem]'>
               {formatSeconds(duration)}
@@ -402,7 +402,7 @@ export function BaseAudioPlayer({
                 onClick={() =>
                   isPlaying ? pause() : play(nowPlayingContext.title)
                 }
-                className='w-10 h-10 rounded-full backdrop-blur-sm bg-primary/20 hover:bg-primary/30'>
+                className='w-10 h-10 rounded-sm backdrop-blur-sm bg-primary/20 hover:bg-primary/30'>
                 {isPlaying ? (
                   <Pause className='w-5 h-5' />
                 ) : (

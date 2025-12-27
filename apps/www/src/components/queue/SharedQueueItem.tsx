@@ -204,7 +204,7 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
           ],
           // Fullscreen variant
           isFullscreen && [
-            'gap-4 p-3 rounded-xl hover:bg-muted/50 cursor-pointer',
+            'gap-4 p-3 rounded-sm hover:bg-muted/50 cursor-pointer',
             isCurrentTrack && 'bg-primary/10 border border-primary/20',
             isDragging && 'opacity-50 shadow-lg'
           ]
@@ -224,7 +224,7 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
           className={cn(
             'overflow-hidden relative flex-shrink-0 rounded',
             isCompact && 'w-10 h-10',
-            isFullscreen && 'w-12 h-12 rounded-lg'
+            isFullscreen && 'w-12 h-12 rounded-sm'
           )}>
           <img
             src={track.thumbnailUrl || DEFAULT_IMAGE_URL}

@@ -65,7 +65,7 @@ export const QueueColumn = () => {
 
         <ScrollArea className='flex-1 px-4'>
           {nowPlayingContext.title !== 'Nothing playing, yet' && (
-            <div className='p-4 mb-4 border-b rounded-lg border-border bg-muted/20'>
+            <div className='p-4 mb-4 border-b rounded-sm border-border bg-muted/20'>
               <h3 className='mb-2 text-xs font-medium text-muted-foreground'>
                 Now Playing
               </h3>
@@ -86,7 +86,7 @@ export const QueueColumn = () => {
 
           {queue.length === 0 ? (
             <div className='flex flex-col items-center justify-center p-8 text-center'>
-              <div className='flex items-center justify-center w-16 h-16 mb-4 rounded-full bg-muted'>
+              <div className='flex items-center justify-center w-16 h-16 mb-4 rounded-sm bg-muted'>
                 <Play className='w-8 h-8 text-muted-foreground' />
               </div>
               <h3 className='mb-2 font-medium'>Your queue is empty</h3>

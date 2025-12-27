@@ -41,7 +41,7 @@ export function MultiTrack({
   }
 
   return (
-    <section className='p-3 my-5 border-2 rounded-lg not-prose min-w-fit border-gb-pastel-green-2 md:px-7 '>
+    <section className='p-3 my-5 border-2 rounded-sm not-prose min-w-fit border-gb-pastel-green-2 md:px-7 '>
       <Link to={url}>
         <h5 className='my-2'>
           {artists} - {title}
@@ -72,7 +72,7 @@ export function MultiTrack({
               {genres.map((genre) => (
                 <span
                   key={genre}
-                  className='p-1 px-2 m-1 mr-2 text-sm rounded-full bg-gb-darker-bg'>
+                  className='p-1 px-2 m-1 mr-2 text-sm rounded-sm bg-gb-darker-bg'>
                   {genre}
                 </span>
               ))}

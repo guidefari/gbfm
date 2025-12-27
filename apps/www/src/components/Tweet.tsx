@@ -38,7 +38,7 @@ export const Tweet: React.FC<Props> = ({
                 src={avatarUrl}
                 width={48}
                 height={48}
-                className='rounded-full'
+                className='rounded-sm'
               />
             </a>
             <a href={`/curator/${handle}`} className='flex flex-col ml-4'>
@@ -68,7 +68,7 @@ export const Tweet: React.FC<Props> = ({
 				)} */}
       </div>
       {underline && (
-        <hr className='my-4 border-b-2 rounded-full border-gb-darker-bg border-opacity-60' />
+        <hr className='my-4 border-b-2 rounded-sm border-gb-darker-bg border-opacity-60' />
       )}
     </div>
   )

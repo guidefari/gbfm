@@ -57,7 +57,7 @@ export function SimpleMarkdownEditor({
   return (
     <div className='space-y-4'>
       {/* Embed Buttons */}
-      <div className='flex flex-wrap gap-2 p-3 rounded-lg border bg-gb-bg border-gb-pastel-green-2/20'>
+      <div className='flex flex-wrap gap-2 p-3 rounded-sm border bg-gb-bg border-gb-pastel-green-2/20'>
         <div className='flex gap-1 items-center'>
           <Button
             type='button'
@@ -128,7 +128,7 @@ export function SimpleMarkdownEditor({
         }}
         classes={{
           textArea:
-            'focus:outline-none bg-transparent label:rounded-lg min-h-[80dvh] h-full',
+            'focus:outline-none bg-transparent label:rounded-sm min-h-[80dvh] h-full',
           toolbar: 'bg-transparent border-none',
           reactMde: 'focus:outline-none border-none'
         }}

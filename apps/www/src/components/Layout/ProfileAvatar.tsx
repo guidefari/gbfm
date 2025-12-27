@@ -27,7 +27,7 @@ const ProfileAvatar = () => {
       <Button
         variant='outline'
         size='icon'
-        className='overflow-hidden rounded-full'
+        className='overflow-hidden rounded-sm'
         disabled
       />
     )
@@ -39,7 +39,7 @@ const ProfileAvatar = () => {
         <Button
           variant='outline'
           size='icon'
-          className='overflow-hidden rounded-full'>
+          className='overflow-hidden rounded-sm'>
           {session?.user?.name?.[0]?.toUpperCase() || '?'}
         </Button>
       </DropdownMenuTrigger>

@@ -67,7 +67,7 @@
     --input: hsl(220, 13%, 91%);
     --ring: hsl(224, 71.4%, 4.1%);
 
-    --radius: 0.5rem;
+    --radius: 0px;
 
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
@@ -141,7 +141,7 @@
   }
 
   p {
-    @apply p-2 rounded-sm w-fit;
+    @apply p-2 w-fit;
   }
 
   h1,
@@ -189,7 +189,7 @@
   }
 
   blockquote {
-    @apply p-4 m-4 border-l-8 rounded-md border-highlight bg-[var(--darker-bg)] text-background;
+    @apply p-4 m-4 border-l-8 border-highlight bg-[var(--darker-bg)] text-background;
     quotes: "\201C" "\201D" "\2018" "\2019";
   }
 

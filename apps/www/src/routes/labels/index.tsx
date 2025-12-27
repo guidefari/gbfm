@@ -23,7 +23,7 @@ function Component() {
           {Array.from({ length: 12 }).map((_, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: not that deep here.
             <div key={i} className='flex flex-col gap-2'>
-              <div className='w-full rounded-lg aspect-square bg-muted/50 animate-pulse' />
+              <div className='w-full rounded-sm aspect-square bg-muted/50 animate-pulse' />
               <div className='h-4 rounded bg-muted/50 animate-pulse' />
             </div>
           ))}
@@ -58,7 +58,7 @@ function Component() {
             to='/labels/$labelSlug'
             params={{ labelSlug: label.slug }}
             className='flex flex-col gap-2 transition-transform group hover:scale-105'>
-            <div className='w-full overflow-hidden border rounded-lg shadow-sm aspect-square border-border bg-background'>
+            <div className='w-full overflow-hidden border rounded-sm shadow-sm aspect-square border-border bg-background'>
               <img
                 src={label.thumbnailUrl || DEFAULT_IMAGE_URL}
                 alt={label.title}
@@ -85,7 +85,7 @@ function Component() {
             type='button'
             onClick={() => fetchNextPage()}
             disabled={isFetchingNextPage}
-            className='px-6 py-3 text-sm font-medium transition-colors rounded-lg bg-muted hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed'>
+            className='px-6 py-3 text-sm font-medium transition-colors rounded-sm bg-muted hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed'>
             {isFetchingNextPage ? 'Loading...' : 'Load More Labels'}
           </button>
         </div>

@@ -141,17 +141,17 @@ export default function Profile() {
           <CardContent>
             <form onSubmit={onSubmit}>
               <div className='flex justify-center mb-6'>
-                <div className='relative mr-4 w-20 h-20 rounded-full group'>
+                <div className='relative mr-4 w-20 h-20 rounded-sm group'>
                   <img
                     src={imagePreview || user?.image || '/placeholder.svg'}
                     alt='User Avatar'
-                    className='rounded-full cursor-pointer'
+                    className='rounded-sm cursor-pointer'
                     width={80}
                     height={80}
                   />
                   <label
                     htmlFor={avatarId}
-                    className='hidden absolute right-0 bottom-0 px-2 py-1 text-xs rounded-full cursor-pointer group-hover:flex bg-gb-darker-bg'>
+                    className='hidden absolute right-0 bottom-0 px-2 py-1 text-xs rounded-sm cursor-pointer group-hover:flex bg-gb-darker-bg'>
                     Change
                     <input
                       id={avatarId}
@@ -206,7 +206,7 @@ export default function Profile() {
                 <button
                   type='button'
                   onClick={() => setPreferredPlayerType('full')}
-                  className={`flex-1 px-4 py-3 rounded-lg border transition-all text-left ${
+                  className={`flex-1 px-4 py-3 rounded-sm border transition-all text-left ${
                     preferredPlayerType === 'full'
                       ? 'border-primary bg-primary/10'
                       : 'border-border hover:border-primary/50'
@@ -219,7 +219,7 @@ export default function Profile() {
                 <button
                   type='button'
                   onClick={() => setPreferredPlayerType('compact')}
-                  className={`flex-1 px-4 py-3 rounded-lg border transition-all text-left ${
+                  className={`flex-1 px-4 py-3 rounded-sm border transition-all text-left ${
                     preferredPlayerType === 'compact'
                       ? 'border-primary bg-primary/10'
                       : 'border-border hover:border-primary/50'

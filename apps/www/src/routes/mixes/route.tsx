@@ -181,14 +181,14 @@ function Component() {
     <div className='relative h-full font-jetbrains bg-background text-foreground'>
       <div className='grid h-full grid-cols-1 gap-4 p-4 md:grid-cols-2'>
         {/* Left Column - Mix Details (Outlet) */}
-        <div className='p-4 overflow-y-auto border-2 border-dashed rounded-lg border-muted-foreground/30 bg-card/10'>
+        <div className='p-4 overflow-y-auto border-2 border-dashed rounded-sm border-muted-foreground/30 bg-card/10'>
           <Outlet />
         </div>
 
         {/* Right Column - Mixes List */}
-        <div className='p-4 overflow-y-auto border-2 border-dashed rounded-lg border-muted-foreground/30 bg-card/10'>
+        <div className='p-4 overflow-y-auto border-2 border-dashed rounded-sm border-muted-foreground/30 bg-card/10'>
           <h2 className='flex items-center gap-2 mb-4 text-lg font-bold'>
-            <div className='w-2 h-2 rounded-full bg-foreground/30' />
+            <div className='w-2 h-2 rounded-sm bg-foreground/30' />
             Mixes
           </h2>
           <div className='grid gap-2'>
@@ -198,7 +198,7 @@ function Component() {
                 <TrackContextMenu key={mix.id} track={mix}>
                   <article
                     className={cn(
-                      'flex gap-3 items-start p-2 transition-all duration-300 cursor-pointer hover:bg-muted/50 rounded-lg group',
+                      'flex gap-3 items-start p-2 transition-all duration-300 cursor-pointer hover:bg-muted/50 rounded-sm group',
                       isActive && 'ring-1 ring-border bg-accent/5 shadow-sm'
                     )}>
                     <button
@@ -214,11 +214,11 @@ function Component() {
                       <img
                         src={mix.thumbnailUrl || DEFAULT_IMAGE_URL}
                         alt={mix.title}
-                        className='object-cover transition-transform duration-300 border rounded-lg w-14 h-14 border-border bg-background group-hover:scale-105'
+                        className='object-cover transition-transform duration-300 border rounded-sm w-14 h-14 border-border bg-background group-hover:scale-105'
                       />
                       <span
                         className={cn(
-                          'absolute inset-0 flex items-center justify-center transition-all duration-300 rounded-lg bg-black/50',
+                          'absolute inset-0 flex items-center justify-center transition-all duration-300 rounded-sm bg-black/50',
                           isActive
                             ? 'opacity-100'
                             : 'opacity-0 group-hover:opacity-100 group-focus:opacity-100'
@@ -256,7 +256,7 @@ function Component() {
                 type='button'
                 onClick={() => fetchNextPage()}
                 disabled={isFetchingNextPage}
-                className='p-4 mt-2 text-sm font-medium transition-all duration-300 border rounded-lg bg-muted hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed border-border/50'>
+                className='p-4 mt-2 text-sm font-medium transition-all duration-300 border rounded-sm bg-muted hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed border-border/50'>
                 {isFetchingNextPage ? 'Loading...' : 'Load More'}
               </button>
             )}
@@ -274,14 +274,14 @@ function Component() {
             exit={{ opacity: 0, y: 50, scale: 0.9, x: -20 }}
             transition={{ type: 'keyframes', damping: 20, stiffness: 300 }}
             onKeyDown={handleFocusTrap}
-            className='fixed bottom-6 left-20 z-50 hidden md:block w-[320px] p-6 overflow-hidden border border-border/50 rounded-xl bg-background/95 backdrop-blur-md shadow-2xl border-solid'>
+            className='fixed bottom-6 left-20 z-50 hidden md:block w-[320px] p-6 overflow-hidden border border-border/50 rounded-sm bg-background/95 backdrop-blur-md shadow-2xl border-solid'>
             <button
               type='button'
               ref={(node) => {
                 if (node && showCompactPlayer) node.focus()
               }}
               onClick={toggleCompactPlayer}
-              className='absolute z-10 p-1 transition-colors rounded-full top-3 right-3 hover:bg-muted'
+              className='absolute z-10 p-1 transition-colors rounded-sm top-3 right-3 hover:bg-muted'
               aria-label='Close player'>
               <X className='w-4 h-4 text-foreground/50 hover:text-foreground' />
             </button>

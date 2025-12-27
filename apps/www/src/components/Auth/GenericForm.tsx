@@ -47,7 +47,7 @@ export const GenericAuthForm = ({
     <div className='flex-col justify-center items-center sm:px-6 lg:px-8'>
       <div className='mx-auto space-y-8 w-full max-w-md'>
         <div className='flex flex-col justify-center items-center space-y-2'>
-          <div className='inline-flex items-center px-3 py-1 text-sm font-medium rounded-full bg-primary text-primary-foreground'>
+          <div className='inline-flex items-center px-3 py-1 text-sm font-medium rounded-sm bg-primary text-primary-foreground'>
             <LockIcon className='mr-2 w-4 h-4' />
             {formTitle}
           </div>

@@ -1,13 +1,17 @@
 'use client'
 
 import { useMutation } from '@tanstack/react-query'
-import { createLazyFileRoute, useRouter } from '@tanstack/react-router'
+import { createLazyFileRoute, Link, useRouter } from '@tanstack/react-router'
 import {
+  ArrowRight,
   CheckCircle,
+  Disc3,
   ImageIcon,
+  List,
   Loader2,
   Music,
   Save,
+  Sparkles,
   Trash2,
   Upload,
   X
@@ -20,13 +24,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/use-toast'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
@@ -37,21 +34,51 @@ export const Route = createLazyFileRoute('/upload')({
   component: UploadPage
 })
 
+type ContentType = 'mix' | 'track' | 'misc'
+
 interface AudioFormData {
   title: string
   description: string
   slug: string
-  type: 'mix' | 'track' | 'misc'
+  type: ContentType
   content: string
   thumbnailUrl: string
   tags: string[]
   draft: boolean
 }
 
+const CONTENT_TYPE_CONFIG = {
+  mix: {
+    icon: Disc3,
+    title: 'DJ Mix',
+    description: 'A continuous set blending multiple tracks together',
+    features: [
+      'Tracklist timestamps',
+      'Seamless transitions',
+      'Long-form content'
+    ],
+    color: 'gb-highlight'
+  },
+  track: {
+    icon: Music,
+    title: 'Track',
+    description: 'A single song or production',
+    features: ['Production credits', 'BPM & key info', 'Short-form content'],
+    color: 'gb-pastel-green-1'
+  },
+  misc: {
+    icon: Sparkles,
+    title: 'Other',
+    description: 'Podcasts, samples, sound design, etc.',
+    features: ['Flexible format', 'Any audio type', 'Custom metadata'],
+    color: 'gb-pastel-green-2'
+  }
+}
+
 function UploadPage() {
   const search = Route.useSearch() as {
     edit?: string | boolean
-    archetype?: 'mix' | 'track' | 'misc'
+    archetype?: ContentType
     id?: string
   }
   const isEditMode =
@@ -59,14 +86,16 @@ function UploadPage() {
     search.archetype &&
     search.id
 
-  // Load existing content if in edit mode
   const editQuery = useAudioBySlug(search.archetype || 'mix', search.id || '')
 
+  const [selectedType, setSelectedType] = useState<ContentType | null>(
+    isEditMode ? (search.archetype as ContentType) : null
+  )
   const [formData, setFormData] = useState<AudioFormData>({
     title: '',
     description: '',
     slug: '',
-    type: 'mix',
+    type: 'track',
     content: '',
     thumbnailUrl: '',
     tags: [],
@@ -94,7 +123,6 @@ function UploadPage() {
   const slugId = useId()
   const artworkUploadId = useId()
 
-  // Populate form data when editing existing content
   useEffect(() => {
     if (isEditMode && editQuery.data && !editQuery.isPending) {
       const data = editQuery.data
@@ -108,6 +136,7 @@ function UploadPage() {
         tags: data.tags || [],
         draft: data.draft
       })
+      setSelectedType(data.type || 'mix')
     }
   }, [isEditMode, editQuery.data, editQuery.isPending])
 
@@ -132,10 +161,8 @@ function UploadPage() {
 
       setUploadStep('uploading-audio')
 
-      // Create form data for file uploads
       const uploadFormData = new FormData()
 
-      // Upload audio file if present
       let audioUrl = ''
       if (data.audioFile) {
         uploadFormData.append('audioFile', data.audioFile)
@@ -156,7 +183,6 @@ function UploadPage() {
 
       setUploadStep('uploading-image')
 
-      // Upload image file if present
       let imageUrl = data.thumbnailUrl
       if (data.artworkFile) {
         const imageFormData = new FormData()
@@ -178,14 +204,13 @@ function UploadPage() {
 
       setUploadStep('creating-record')
 
-      // Create or update audio record
       const audioData = {
         title: data.title,
         description: data.description,
         slug: data.slug || generateSlug(data.title),
         content: data.content,
         thumbnailUrl: imageUrl,
-        url: audioUrl || editQuery.data?.url, // Keep existing URL if no new audio file
+        url: audioUrl || editQuery.data?.url,
         type: data.type,
         tags: data.tags,
         creatorIds: [user?.id]
@@ -210,14 +235,12 @@ function UploadPage() {
         description: `"${formData.title}" has been ${isEditMode ? 'updated' : 'uploaded'} successfully.`
       })
 
-      // Reset form after a brief delay to show success state
       setTimeout(() => {
-        // Reset all form data
         setFormData({
           title: '',
           description: '',
           slug: '',
-          type: 'mix',
+          type: 'track',
           content: '',
           thumbnailUrl: '',
           tags: [],
@@ -228,8 +251,8 @@ function UploadPage() {
         setAudioPreview(null)
         setArtworkPreview(null)
         setUploadStep('idle')
+        setSelectedType(null)
 
-        // Navigate to tracks page or the created track
         router.navigate({ to: '/tracks' })
       }, 2000)
     },
@@ -249,16 +272,10 @@ function UploadPage() {
 
   const handleInputChange = (field: keyof AudioFormData, value: string) => {
     setFormData((prev) => {
-      const updated = {
-        ...prev,
-        [field]: value
-      }
-
-      // Auto-generate slug if it's empty and title is being updated
+      const updated = { ...prev, [field]: value }
       if (field === 'title' && !prev.slug) {
         updated.slug = generateSlug(value)
       }
-
       return updated
     })
   }
@@ -272,9 +289,8 @@ function UploadPage() {
       const url = URL.createObjectURL(file)
       setAudioPreview(url)
 
-      // Auto-fill title if empty
       if (!formData.title) {
-        const fileName = file.name.replace(/\.[^/.]+$/, '') // Remove extension
+        const fileName = file.name.replace(/\.[^/.]+$/, '')
         const cleanTitle = fileName
           .replace(/[-_]/g, ' ')
           .replace(/\b\w/g, (l) => l.toUpperCase())
@@ -339,6 +355,11 @@ function UploadPage() {
     uploadMutation.mutate(submitData)
   }
 
+  const handleSelectType = (type: ContentType) => {
+    setSelectedType(type)
+    setFormData((prev) => ({ ...prev, type }))
+  }
+
   const getUploadStepText = () => {
     switch (uploadStep) {
       case 'uploading-audio':
@@ -357,16 +378,7 @@ function UploadPage() {
   const isUploading = uploadStep !== 'idle' && uploadStep !== 'success'
 
   const getTypeLabel = (type: string) => {
-    switch (type) {
-      case 'mix':
-        return 'DJ Mix'
-      case 'track':
-        return 'Track'
-      case 'misc':
-        return 'Other'
-      default:
-        return type
-    }
+    return CONTENT_TYPE_CONFIG[type as ContentType]?.title || type
   }
 
   const getPlaceholderContent = (type: string) => {
@@ -391,14 +403,14 @@ Add any technical details, equipment used, or special techniques...`
 Tell the story behind your track, the inspiration, and creative process...
 
 ## Production Notes
-- DAW: 
-- Key: 
-- BPM: 
-- Genre: 
+- DAW:
+- Key:
+- BPM:
+- Genre:
 
 ## Credits
-- Produced by: 
-- Mixed by: 
+- Produced by:
+- Mixed by:
 - Mastered by:`
       default:
         return `# ${formData.title || 'Your Audio Title'}
@@ -411,26 +423,121 @@ Add any relevant information, credits, or notes...`
     }
   }
 
+  if (!selectedType && !isEditMode) {
+    return (
+      <div className='px-4 py-8 mx-auto max-w-4xl sm:px-6 lg:px-8'>
+        <div className='mb-8 text-center'>
+          <h1 className='text-3xl font-bold text-gb-highlight'>Upload Audio</h1>
+          <p className='mt-2 text-gb-default-text'>
+            What type of content are you uploading?
+          </p>
+        </div>
+
+        <div className='grid gap-6 md:grid-cols-3'>
+          {(
+            Object.entries(CONTENT_TYPE_CONFIG) as [
+              ContentType,
+              typeof CONTENT_TYPE_CONFIG.mix
+            ][]
+          ).map(([type, config]) => {
+            const Icon = config.icon
+            return (
+              <button
+                key={type}
+                type='button'
+                onClick={() => handleSelectType(type)}
+                className='p-6 text-left transition-all border rounded-sm group bg-gb-darker-bg border-gb-pastel-green-2/20 hover:border-gb-highlight/50 hover:shadow-lg hover:-translate-y-1'>
+                <div
+                  className={`flex items-center justify-center w-12 h-12 mb-4 rounded-sm bg-${config.color}/20 group-hover:bg-${config.color}/30 transition-colors`}>
+                  <Icon className={`w-6 h-6 text-${config.color}`} />
+                </div>
+                <h3 className='mb-2 text-lg font-bold text-gb-pastel-green-1'>
+                  {config.title}
+                </h3>
+                <p className='mb-4 text-sm text-muted-foreground'>
+                  {config.description}
+                </p>
+                <ul className='space-y-1'>
+                  {config.features.map((feature) => (
+                    <li
+                      key={feature}
+                      className='flex items-center gap-2 text-xs text-gb-default-text'>
+                      <CheckCircle className='w-3 h-3 text-gb-pastel-green-2' />
+                      {feature}
+                    </li>
+                  ))}
+                </ul>
+              </button>
+            )
+          })}
+        </div>
+
+        <div className='p-6 mt-8 border rounded-sm bg-gb-darker-bg border-gb-highlight/30'>
+          <div className='flex items-start gap-4'>
+            <div className='flex items-center justify-center flex-shrink-0 w-12 h-12 rounded-sm bg-gb-highlight/20'>
+              <List className='w-6 h-6 text-gb-highlight' />
+            </div>
+            <div className='flex-1'>
+              <h3 className='mb-1 text-lg font-bold text-gb-highlight'>
+                Uploading a DJ Mix?
+              </h3>
+              <p className='mb-3 text-sm text-gb-default-text'>
+                Use our dedicated mix uploader to automatically mark tracklist
+                timestamps as you play through your set.
+              </p>
+              <Link to='/mix-upload'>
+                <Button className='bg-gb-highlight hover:bg-gb-pastel-green-1 text-gb-darker-bg'>
+                  Go to Mix Uploader
+                  <ArrowRight className='w-4 h-4 ml-2' />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className='px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8'>
-      {/* Header */}
       <div className='mb-8'>
         <div className='flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-start'>
           <div>
+            <div className='flex items-center gap-3 mb-2'>
+              {!isEditMode && (
+                <button
+                  type='button'
+                  onClick={() => setSelectedType(null)}
+                  className='text-sm transition-colors text-muted-foreground hover:text-gb-pastel-green-1'>
+                  ← Change type
+                </button>
+              )}
+              <Badge
+                variant='outline'
+                className='border-gb-pastel-green-2/50 text-gb-pastel-green-1'>
+                {getTypeLabel(formData.type)}
+              </Badge>
+            </div>
             <h1 className='text-3xl font-bold text-gb-highlight'>
-              {isEditMode ? 'Edit Audio' : 'Upload Audio'}
+              {isEditMode
+                ? 'Edit Audio'
+                : `Upload ${getTypeLabel(formData.type)}`}
             </h1>
             <p className='pl-0 mt-1 text-gb-default-text'>
               {isEditMode
                 ? 'Update your audio content'
-                : 'Share your mixes, tracks, and audio creations'}
+                : `Share your ${getTypeLabel(formData.type).toLowerCase()} with the world`}
             </p>
           </div>
           <div className='flex items-center space-x-4'>
             <Button
               variant='outline'
               onClick={() => handleSubmit(true)}
-              disabled={isUploading || !audioFile || uploadStep === 'success'}
+              disabled={
+                isUploading ||
+                (!isEditMode && !audioFile) ||
+                uploadStep === 'success'
+              }
               className='border-gb-pastel-green-2/30 text-gb-pastel-green-1 hover:bg-gb-pastel-green-2/20'>
               {isUploading ? (
                 <Loader2 className='w-4 h-4 mr-2 animate-spin' />
@@ -443,7 +550,7 @@ Add any relevant information, credits, or notes...`
             </Button>
             <Button
               onClick={() => handleSubmit(false)}
-              // disabled={isUploading || !audioFile || uploadStep === 'success'}
+              disabled={isUploading || uploadStep === 'success'}
               className='bg-gb-pastel-green-2 hover:bg-gb-highlight text-gb-darker-bg'>
               {isUploading ? (
                 <Loader2 className='w-4 h-4 mr-2 animate-spin' />
@@ -462,8 +569,24 @@ Add any relevant information, credits, or notes...`
         </div>
       </div>
 
+      {formData.type === 'mix' && !isEditMode && (
+        <div className='p-4 mb-6 border rounded-sm bg-gb-highlight/10 border-gb-highlight/30'>
+          <div className='flex items-center gap-3'>
+            <List className='w-5 h-5 text-gb-highlight' />
+            <p className='text-sm text-gb-default-text'>
+              <span className='font-medium text-gb-highlight'>Tip:</span> Want
+              to mark tracklist timestamps as you listen?{' '}
+              <Link
+                to='/mix-upload'
+                className='font-medium underline text-gb-highlight hover:text-gb-pastel-green-1'>
+                Use the dedicated mix uploader
+              </Link>
+            </p>
+          </div>
+        </div>
+      )}
+
       <div className='grid gap-8 lg:grid-cols-12'>
-        {/* Main Content - Markdown Editor */}
         <div className='lg:col-span-8'>
           <Card className='h-full bg-gb-darker-bg border-gb-pastel-green-2/20'>
             <CardContent className=''>
@@ -476,9 +599,7 @@ Add any relevant information, credits, or notes...`
           </Card>
         </div>
 
-        {/* Sidebar - All Metadata */}
         <div className='space-y-6 lg:col-span-4'>
-          {/* Audio Upload */}
           <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
             <CardHeader>
               <CardTitle className='flex items-center text-gb-pastel-green-1'>
@@ -488,7 +609,7 @@ Add any relevant information, credits, or notes...`
             </CardHeader>
             <CardContent>
               {!audioFile ? (
-                <div className='p-6 text-center transition-colors border-2 border-dashed rounded-lg border-gb-pastel-green-2/30 hover:border-gb-highlight/50'>
+                <div className='p-6 text-center transition-colors border-2 border-dashed rounded-sm border-gb-pastel-green-2/30 hover:border-gb-highlight/50'>
                   <Music className='w-8 h-8 mx-auto mb-3 text-gb-pastel-green-2' />
                   <p className='mb-3 text-sm text-gb-default-text'>
                     Drag and drop your audio file here
@@ -518,7 +639,7 @@ Add any relevant information, credits, or notes...`
                 </div>
               ) : (
                 <div className='space-y-3'>
-                  <div className='flex items-center justify-between p-3 rounded-lg bg-gb-bg'>
+                  <div className='flex items-center justify-between p-3 rounded-sm bg-gb-bg'>
                     <div className='flex items-center min-w-0 space-x-3'>
                       <Music className='flex-shrink-0 w-6 h-6 text-gb-highlight' />
                       <div className='min-w-0'>
@@ -550,7 +671,6 @@ Add any relevant information, credits, or notes...`
             </CardContent>
           </Card>
 
-          {/* Basic Details */}
           <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
             <CardHeader>
               <CardTitle className='text-gb-pastel-green-1'>Details</CardTitle>
@@ -567,24 +687,6 @@ Add any relevant information, credits, or notes...`
                   placeholder='Enter audio title...'
                   className='bg-gb-bg border-gb-pastel-green-2/30 text-gb-default-text focus:border-gb-highlight'
                 />
-              </div>
-
-              <div className='space-y-2'>
-                <Label htmlFor='type' className='text-gb-pastel-green-1'>
-                  Type *
-                </Label>
-                <Select
-                  value={formData.type}
-                  onValueChange={(value) => handleInputChange('type', value)}>
-                  <SelectTrigger className='bg-gb-bg border-gb-pastel-green-2/30 text-gb-default-text'>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
-                    <SelectItem value='mix'>DJ Mix</SelectItem>
-                    <SelectItem value='track'>Track</SelectItem>
-                    <SelectItem value='misc'>Other</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
 
               <div className='space-y-2'>
@@ -624,7 +726,6 @@ Add any relevant information, credits, or notes...`
             </CardContent>
           </Card>
 
-          {/* Artwork Upload */}
           <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
             <CardHeader>
               <CardTitle className='flex items-center text-gb-pastel-green-1'>
@@ -634,7 +735,7 @@ Add any relevant information, credits, or notes...`
             </CardHeader>
             <CardContent>
               {!artworkFile && !artworkPreview ? (
-                <div className='p-4 text-center transition-colors border-2 border-dashed rounded-lg border-gb-pastel-green-2/30 hover:border-gb-highlight/50'>
+                <div className='p-4 text-center transition-colors border-2 border-dashed rounded-sm border-gb-pastel-green-2/30 hover:border-gb-highlight/50'>
                   <ImageIcon className='w-6 h-6 mx-auto mb-2 text-gb-pastel-green-2' />
                   <p className='mb-2 text-xs text-gb-default-text'>
                     Upload cover artwork
@@ -664,7 +765,7 @@ Add any relevant information, credits, or notes...`
                 </div>
               ) : (
                 <div className='space-y-3'>
-                  <div className='relative overflow-hidden border rounded-lg aspect-square bg-gb-bg border-gb-pastel-green-2/20'>
+                  <div className='relative overflow-hidden border rounded-sm aspect-square bg-gb-bg border-gb-pastel-green-2/20'>
                     <img
                       src={artworkPreview || DEFAULT_IMAGE_URL}
                       alt='Artwork preview'
@@ -689,7 +790,6 @@ Add any relevant information, credits, or notes...`
             </CardContent>
           </Card>
 
-          {/* Tags */}
           <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
             <CardHeader>
               <CardTitle className='text-gb-pastel-green-1'>Tags</CardTitle>
@@ -701,7 +801,7 @@ Add any relevant information, credits, or notes...`
                   onChange={(e) => setNewTag(e.target.value)}
                   placeholder='Add a tag...'
                   className='bg-gb-bg border-gb-pastel-green-2/30 text-gb-default-text focus:border-gb-highlight'
-                  onKeyPress={(e) => {
+                  onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault()
                       addTag()
@@ -740,7 +840,6 @@ Add any relevant information, credits, or notes...`
             </CardContent>
           </Card>
 
-          {/* Upload Progress */}
           {(isUploading || uploadStep === 'success') && (
             <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
               <CardHeader>
@@ -761,9 +860,9 @@ Add any relevant information, credits, or notes...`
               </CardHeader>
               <CardContent>
                 <div className='space-y-3'>
-                  <div className='w-full h-2 rounded-full bg-gb-bg'>
+                  <div className='w-full h-2 rounded-sm bg-gb-bg'>
                     <div
-                      className={`h-2 rounded-full transition-all duration-500 ${
+                      className={`h-2 rounded-sm transition-all duration-500 ${
                         uploadStep === 'success'
                           ? 'bg-green-400'
                           : 'bg-gb-highlight animate-pulse'
@@ -779,7 +878,8 @@ Add any relevant information, credits, or notes...`
                                 : uploadStep === 'uploading-audio'
                                   ? '30%'
                                   : '10%'
-                      }}></div>
+                      }}
+                    />
                   </div>
                   <p className='text-sm text-gb-default-text'>
                     {uploadStep === 'success'

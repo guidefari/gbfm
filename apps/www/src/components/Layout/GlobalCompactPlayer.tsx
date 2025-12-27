@@ -64,11 +64,11 @@ export function GlobalCompactPlayer() {
       animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
       exit={{ opacity: 0, y: 50, scale: 0.9, x: -20 }}
       transition={{ type: 'keyframes', damping: 20, stiffness: 300 }}
-      className='fixed bottom-6 left-20 z-50 hidden md:block w-[320px] p-6 overflow-hidden border border-border rounded-xl bg-background/95 backdrop-blur-md shadow-2xl border-solid'>
+      className='fixed bottom-6 left-20 z-50 hidden md:block w-[320px] p-6 overflow-hidden border border-border rounded-sm bg-background/95 backdrop-blur-md shadow-2xl border-solid'>
       <button
         type='button'
         onClick={toggleCompactPlayer}
-        className='absolute z-10 p-1 transition-colors rounded-full top-3 right-3 hover:bg-muted'
+        className='absolute z-10 p-1 transition-colors rounded-sm top-3 right-3 hover:bg-muted'
         aria-label='Close player'>
         <X className='w-4 h-4 text-foreground/50 hover:text-foreground' />
       </button>

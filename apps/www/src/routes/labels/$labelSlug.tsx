@@ -54,7 +54,7 @@ function LabelPage() {
           <div className='sticky top-6'>
             <div className='mb-6'>
               <img
-                className='w-full rounded-lg'
+                className='w-full rounded-sm'
                 src={data.thumbnailUrl || '/fav.png'}
                 alt={`Thumbnail for ${data.title}`}
                 width={400}
@@ -79,7 +79,7 @@ function LabelPage() {
                         href={data.website}
                         target='_blank'
                         rel='noopener noreferrer'
-                        className='px-4 py-2 text-sm font-medium rounded-lg transition-colors bg-primary/10 hover:bg-primary/20'>
+                        className='px-4 py-2 text-sm font-medium rounded-sm transition-colors bg-primary/10 hover:bg-primary/20'>
                         Website
                       </a>
                     )}
@@ -88,7 +88,7 @@ function LabelPage() {
                         href={data.bandcamp}
                         target='_blank'
                         rel='noopener noreferrer'
-                        className='px-4 py-2 text-sm font-medium rounded-lg transition-colors bg-primary/10 hover:bg-primary/20'>
+                        className='px-4 py-2 text-sm font-medium rounded-sm transition-colors bg-primary/10 hover:bg-primary/20'>
                         Bandcamp
                       </a>
                     )}
@@ -97,7 +97,7 @@ function LabelPage() {
                         href={data.discogs}
                         target='_blank'
                         rel='noopener noreferrer'
-                        className='px-4 py-2 text-sm font-medium rounded-lg transition-colors bg-primary/10 hover:bg-primary/20'>
+                        className='px-4 py-2 text-sm font-medium rounded-sm transition-colors bg-primary/10 hover:bg-primary/20'>
                         Discogs
                       </a>
                     )}

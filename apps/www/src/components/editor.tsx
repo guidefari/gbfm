@@ -156,7 +156,7 @@ export function Editor() {
             saveImage: save
           }}
           classes={{
-            textArea: 'focus:outline-none bg-transparent label:rounded-lg ',
+            textArea: 'focus:outline-none bg-transparent label:rounded-sm ',
             toolbar: 'bg-transparent border-none',
             reactMde: 'focus:outline-none border-none'
           }}

@@ -133,7 +133,7 @@ export function IconGrid({
             type='button'
             key={tile.id}
             className={cn(
-              'flex flex-col items-center justify-center p-6 rounded-lg border-2 transition-all duration-200',
+              'flex flex-col items-center justify-center p-6 rounded-sm border-2 transition-all duration-200',
               'hover:bg-accent hover:border-accent-foreground/20 focus:outline-none',
               isSelected
                 ? 'bg-accent border-accent-foreground/40 shadow-lg'

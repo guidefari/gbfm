@@ -192,7 +192,7 @@ export function HierarchicalCommand({
                 type='button'
                 key={item.id}
                 className={cn(
-                  'flex flex-col items-center justify-center p-6 rounded-lg border-2 transition-all duration-200',
+                  'flex flex-col items-center justify-center p-6 rounded-sm border-2 transition-all duration-200',
                   'hover:bg-accent hover:border-accent-foreground/20 focus:outline-none',
                   isSelected
                     ? 'border-background bg-accent shadow-lg'

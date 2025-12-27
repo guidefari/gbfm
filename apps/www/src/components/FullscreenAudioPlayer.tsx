@@ -115,7 +115,7 @@ const FullscreenAudioPlayer = () => {
         <div className='flex flex-col max-w-2xl'>
           {/* Album Artwork */}
           <div className='relative mb-8'>
-            <div className='w-full max-w-md mx-auto overflow-hidden shadow-2xl bg-gradient-to-br rounded-3xl aspect-square from-primary/20 to-accent'>
+            <div className='w-full max-w-md mx-auto overflow-hidden shadow-2xl bg-gradient-to-br rounded-sm aspect-square from-primary/20 to-accent'>
               <img
                 src={currentTrack.thumbnailUrl || DEFAULT_IMAGE_URL}
                 alt={currentTrack.title}
@@ -145,7 +145,7 @@ const FullscreenAudioPlayer = () => {
                   title='Toggle Queue'>
                   <List className='w-5 h-5' />
                   {queue.length > 0 && (
-                    <span className='absolute flex items-center justify-center w-4 h-4 text-xs rounded-full -top-1 -right-1 bg-primary text-primary-foreground'>
+                    <span className='absolute flex items-center justify-center w-4 h-4 text-xs rounded-sm -top-1 -right-1 bg-primary text-primary-foreground'>
                       {queue.length}
                     </span>
                   )}
@@ -171,7 +171,7 @@ const FullscreenAudioPlayer = () => {
               onChange={handleProgressChange}
               max={100}
               step={0.1}
-              className='w-full h-2 bg-muted rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-6 [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-lg'
+              className='w-full h-2 bg-muted rounded-sm appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-6 [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-lg'
             />
             <div className='flex justify-between mt-2 text-sm text-muted-foreground'>
               <span>{formatSeconds(currentTime)}</span>
@@ -191,7 +191,7 @@ const FullscreenAudioPlayer = () => {
             <Button
               variant='ghost'
               size='icon'
-              className='w-16 h-16 rounded-full backdrop-blur-sm bg-primary/20 hover:bg-primary/30'
+              className='w-16 h-16 rounded-sm backdrop-blur-sm bg-primary/20 hover:bg-primary/30'
               onClick={() =>
                 isPlaying ? pause() : play(nowPlayingContext.title)
               }>
@@ -236,7 +236,7 @@ const FullscreenAudioPlayer = () => {
               max={100}
               value={isMuted ? 0 : volume}
               onChange={handleVolumeChange}
-              className='flex-1 h-2 bg-muted rounded-full appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-lg'
+              className='flex-1 h-2 bg-muted rounded-sm appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-5 [&::-webkit-slider-thumb]:w-5 [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-lg'
               title={`Volume: ${volume}% (scroll to adjust)`}
             />
             <Volume2 className='w-5 h-5 text-muted-foreground' />

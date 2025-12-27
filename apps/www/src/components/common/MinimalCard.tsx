@@ -112,7 +112,7 @@ export const MinimalCard: React.FC<Props> = ({
             {genres.map((genre) => (
               <span
                 key={genre}
-                className='p-1 px-2 text-sm rounded-full bg-gb-darker-bg'>
+                className='p-1 px-2 text-sm rounded-sm bg-gb-darker-bg'>
                 {genre}
               </span>
             ))}
@@ -164,7 +164,7 @@ export const MinimalCard: React.FC<Props> = ({
           </div>
         )}
         {(blurb || children) && (
-          <hr className='mx-10 my-4 border-b-2 rounded-full border-gb-pastel-green-2' />
+          <hr className='mx-10 my-4 border-b-2 rounded-sm border-gb-pastel-green-2' />
         )}
         <div className='mt-2 '>{children || blurb || <br />}</div>
       </div>

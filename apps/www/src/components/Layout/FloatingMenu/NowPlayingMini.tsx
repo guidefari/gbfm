@@ -19,14 +19,14 @@ export function NowPlayingMini({ onClose }: NowPlayingMiniProps) {
   return (
     <div
       className={cn(
-        'flex items-center gap-3 p-3 rounded-2xl',
+        'flex items-center gap-3 p-3 rounded-sm',
         'bg-card border border-border shadow-xl',
         'min-w-[280px]'
       )}>
       <button
         type='button'
         onClick={handleOpenFullscreen}
-        className='relative flex-shrink-0 overflow-hidden rounded-lg focus:outline-none focus:ring-2 focus:ring-ring'>
+        className='relative flex-shrink-0 overflow-hidden rounded-sm focus:outline-none focus:ring-2 focus:ring-ring'>
         {thumbnailUrl ? (
           <img
             src={thumbnailUrl}
@@ -57,7 +57,7 @@ export function NowPlayingMini({ onClose }: NowPlayingMiniProps) {
           type='button'
           onClick={playPrevious}
           className={cn(
-            'p-2 rounded-full transition-colors',
+            'p-2 rounded-sm transition-colors',
             'hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring'
           )}
           aria-label='Previous track'>
@@ -68,7 +68,7 @@ export function NowPlayingMini({ onClose }: NowPlayingMiniProps) {
           type='button'
           onClick={togglePlayPause}
           className={cn(
-            'p-2 rounded-full transition-colors',
+            'p-2 rounded-sm transition-colors',
             'bg-primary text-primary-foreground',
             'hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring'
           )}
@@ -84,7 +84,7 @@ export function NowPlayingMini({ onClose }: NowPlayingMiniProps) {
           type='button'
           onClick={playNext}
           className={cn(
-            'p-2 rounded-full transition-colors',
+            'p-2 rounded-sm transition-colors',
             'hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring'
           )}
           aria-label='Next track'>

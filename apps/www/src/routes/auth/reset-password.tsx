@@ -91,7 +91,7 @@ function ResetPasswordPage() {
     <div className='flex min-h-[65dvh] flex-col items-center justify-center px-4 py-12 sm:px-6 lg:px-8'>
       <div className='w-full max-w-md mx-auto space-y-8'>
         <div className='flex flex-col items-center justify-center space-y-2'>
-          <div className='inline-flex items-center px-3 py-1 text-sm font-medium rounded-full bg-primary text-primary-foreground'>
+          <div className='inline-flex items-center px-3 py-1 text-sm font-medium rounded-sm bg-primary text-primary-foreground'>
             Reset Password
           </div>
         </div>

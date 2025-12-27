@@ -162,7 +162,7 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
                 const content = (
                   <div
                     className={cn(
-                      'flex flex-col items-center justify-center gap-2 py-4 rounded-2xl',
+                      'flex flex-col items-center justify-center gap-2 py-4 rounded-sm',
                       'bg-card/50 border border-border/50',
                       'active:scale-95 active:bg-card transition-transform'
                     )}>
@@ -184,7 +184,7 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
                     key={item.id}
                     onClick={item.action}
                     className={cn(
-                      'flex flex-col items-center justify-center gap-2 py-4 rounded-2xl',
+                      'flex flex-col items-center justify-center gap-2 py-4 rounded-sm',
                       'bg-card/50 border border-border/50',
                       'active:scale-95 active:bg-card transition-transform'
                     )}>
@@ -208,7 +208,7 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
                     key={action.id}
                     onClick={action.action}
                     className={cn(
-                      'flex items-center gap-2 px-4 py-3 rounded-full',
+                      'flex items-center gap-2 px-4 py-3 rounded-sm',
                       'bg-card border border-border',
                       'active:scale-95 active:bg-accent transition-transform'
                     )}>
@@ -225,7 +225,7 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
       <motion.button
         onClick={toggleMenu}
         className={cn(
-          'relative z-50 flex items-center justify-center rounded-full shadow-lg',
+          'relative z-50 flex items-center justify-center rounded-sm shadow-lg',
           'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
           'active:scale-95 transition-transform',
           isOpen
