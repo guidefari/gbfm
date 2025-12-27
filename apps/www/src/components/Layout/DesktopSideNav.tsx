@@ -10,7 +10,7 @@ import ProfileAvatar from './ProfileAvatar'
 
 export const DesktopSideNav = () => {
   return (
-    <aside className='fixed inset-y-0 left-0 z-30 flex-col hidden w-14  sm:flex'>
+    <aside className='z-30 flex-col flex w-14 h-screen sticky top-0'>
       <nav className='flex flex-col items-center gap-4 px-2 sm:py-5'>
         {pagesAndPages.map((page) => {
           if (page.CustomComponent) {
