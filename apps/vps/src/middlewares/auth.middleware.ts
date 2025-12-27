@@ -52,8 +52,7 @@ export const authenticate = async (c: Context<AppBindings>, next: Next) => {
       return c.json({ error: 'User not found' }, 404)
     }
 
-    const { password, ...userWithoutPassword } = user[0]
-    c.set('user', userWithoutPassword)
+    c.set('user', user[0])
     await next()
   } catch (_error) {
     return c.json({ error: 'Invalid or expired token' }, 401)

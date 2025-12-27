@@ -1,12 +1,12 @@
 import { count, desc, eq } from 'drizzle-orm'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
+import { user as usersTable } from '@/db/auth.schema'
 import {
   labelCreators,
   labelsTable,
   type SelectMdxCompiledLabel
 } from '@/db/label.schema'
-import { usersTable } from '@/db/user.schema'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
 import { createPaginationMetadata } from '@/lib/pagination'
 import type { AppRouteHandler } from '@/lib/types'
@@ -132,8 +132,7 @@ export const getLabelBySlug: AppRouteHandler<GetLabelBySlugRoute> = async (
     const creators = await db
       .select({
         id: usersTable.id,
-        name: usersTable.name,
-        username: usersTable.username
+        name: usersTable.name
       })
       .from(labelCreators)
       .innerJoin(usersTable, eq(labelCreators.creatorId, usersTable.id))
@@ -144,8 +143,7 @@ export const getLabelBySlug: AppRouteHandler<GetLabelBySlugRoute> = async (
       compiledContent: '',
       creators: creators.map((creator) => ({
         id: creator.id,
-        name: creator.name,
-        username: creator.username || ''
+        name: creator.name
       }))
     }
 
@@ -220,8 +218,7 @@ export const updateLabelBySlug: AppRouteHandler<
     const creators = await db
       .select({
         id: usersTable.id,
-        name: usersTable.name,
-        username: usersTable.username
+        name: usersTable.name
       })
       .from(labelCreators)
       .innerJoin(usersTable, eq(labelCreators.creatorId, usersTable.id))
@@ -232,8 +229,7 @@ export const updateLabelBySlug: AppRouteHandler<
       compiledContent: '',
       creators: creators.map((creator) => ({
         id: creator.id,
-        name: creator.name,
-        username: creator.username || ''
+        name: creator.name
       }))
     }
 

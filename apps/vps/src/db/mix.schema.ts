@@ -3,9 +3,9 @@ import {
   type InferSelectModel,
   relations
 } from 'drizzle-orm'
-import { index, pgTable, primaryKey, uuid, varchar } from 'drizzle-orm/pg-core'
+import { index, pgTable, primaryKey, text, uuid, varchar } from 'drizzle-orm/pg-core'
 import { z } from 'zod/v4'
-import { usersTable } from './user.schema'
+import { user } from './auth.schema'
 import { defaultContentFields } from './util'
 
 export const mixesTable = pgTable(
@@ -25,7 +25,6 @@ export type SelectMdxCompiledMix = SelectMix & {
   creators?: Array<{
     id: string
     name: string
-    username: string
   }>
 }
 
@@ -51,8 +50,7 @@ export const selectMdxCompiledMixSchema = _selectMixSchemaV4.extend({
     .array(
       z.object({
         id: z.string(),
-        name: z.string(),
-        username: z.string()
+        name: z.string()
       })
     )
     .optional()
@@ -72,7 +70,7 @@ const _insertMixSchemaV4 = z.object({
 export const insertMixSchema = _insertMixSchemaV4
 
 export const createMixSchema = _insertMixSchemaV4.extend({
-  creatorIds: z.array(z.uuid()).min(1).optional()
+  creatorIds: z.array(z.string()).min(1).optional()
 })
 
 export const mixCreators = pgTable(
@@ -81,9 +79,9 @@ export const mixCreators = pgTable(
     mixId: uuid()
       .notNull()
       .references(() => mixesTable.id),
-    creatorId: uuid()
+    creatorId: text()
       .notNull()
-      .references(() => usersTable.id)
+      .references(() => user.id)
   },
   (t) => [primaryKey({ columns: [t.mixId, t.creatorId] })]
 )
@@ -97,8 +95,8 @@ export const mixCreatorsRelations = relations(mixCreators, ({ one }) => ({
     fields: [mixCreators.mixId],
     references: [mixesTable.id]
   }),
-  creator: one(usersTable, {
+  creator: one(user, {
     fields: [mixCreators.creatorId],
-    references: [usersTable.id]
+    references: [user.id]
   })
 }))

@@ -1,17 +1,17 @@
 import { eq } from 'drizzle-orm'
+import { user as userTable } from './auth.schema'
 import { db } from './index'
-import { usersTable } from './user.schema'
 
 export const getUserByEmail = async (email: string) => {
   const user = await db
     .select()
-    .from(usersTable)
-    .where(eq(usersTable.email, email))
+    .from(userTable)
+    .where(eq(userTable.email, email))
   return user
 }
 
 export const getUserById = async (id: string) => {
-  const user = await db.select().from(usersTable).where(eq(usersTable.id, id))
+  const user = await db.select().from(userTable).where(eq(userTable.id, id))
   return user
 }
 
@@ -23,8 +23,7 @@ export const getUserByEmailOrId = async ({
   userId?: string
 }) => {
   if (email)
-    return db.select().from(usersTable).where(eq(usersTable.email, email))
-  if (userId)
-    return db.select().from(usersTable).where(eq(usersTable.id, userId))
+    return db.select().from(userTable).where(eq(userTable.email, email))
+  if (userId) return db.select().from(userTable).where(eq(userTable.id, userId))
   return Promise.resolve([])
 }

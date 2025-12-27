@@ -1,8 +1,8 @@
 import type { z } from 'zod'
+import type { insertUserSchema } from './db/auth.schema'
 import type { createMixSchema } from './db/mix.schema'
 import type { createPostSchema } from './db/post.schema'
 import type { selectPublicationSchema } from './db/publication.schema'
-import type { insertUserSchema } from './db/user.schema'
 
 export const mixes: Array<z.infer<typeof createMixSchema>> = [
   {
@@ -21,13 +21,11 @@ export const mixes: Array<z.infer<typeof createMixSchema>> = [
 export const users: Array<z.infer<typeof insertUserSchema>> = [
   {
     name: 'User 1',
-    email: 'user1@example.com',
-    username: 'user1'
+    email: 'user1@example.com'
   },
   {
     name: 'User 2',
-    email: 'user2@example.com',
-    username: 'user2'
+    email: 'user2@example.com'
   }
 ]
 

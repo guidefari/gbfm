@@ -3,10 +3,17 @@ import {
   type InferSelectModel,
   relations
 } from 'drizzle-orm'
-import { index, pgTable, primaryKey, uuid, varchar } from 'drizzle-orm/pg-core'
+import {
+  index,
+  pgTable,
+  primaryKey,
+  text,
+  uuid,
+  varchar
+} from 'drizzle-orm/pg-core'
 import { z } from 'zod/v4'
+import { user } from './auth.schema'
 import { releasesTable } from './release.schema'
-import { usersTable } from './user.schema'
 import { defaultContentFields } from './util'
 
 export const labelsTable = pgTable(
@@ -29,7 +36,6 @@ export type SelectMdxCompiledLabel = SelectLabel & {
   creators?: Array<{
     id: string
     name: string
-    username: string
   }>
 }
 
@@ -56,8 +62,7 @@ export const selectMdxCompiledLabelSchema = selectLabelSchema.extend({
     .array(
       z.object({
         id: z.string(),
-        name: z.string(),
-        username: z.string()
+        name: z.string()
       })
     )
     .optional()
@@ -78,7 +83,7 @@ export const insertLabelSchema = z.object({
 })
 
 export const createLabelSchema = insertLabelSchema.extend({
-  creatorIds: z.array(z.uuid()).min(1).optional()
+  creatorIds: z.array(z.string()).min(1).optional()
 })
 
 export const updateLabelSchema = insertLabelSchema.partial()
@@ -89,9 +94,9 @@ export const labelCreators = pgTable(
     labelId: uuid()
       .notNull()
       .references(() => labelsTable.id),
-    creatorId: uuid()
+    creatorId: text()
       .notNull()
-      .references(() => usersTable.id)
+      .references(() => user.id)
   },
   (t) => [primaryKey({ columns: [t.labelId, t.creatorId] })]
 )
@@ -106,8 +111,8 @@ export const labelCreatorsRelations = relations(labelCreators, ({ one }) => ({
     fields: [labelCreators.labelId],
     references: [labelsTable.id]
   }),
-  creator: one(usersTable, {
+  creator: one(user, {
     fields: [labelCreators.creatorId],
-    references: [usersTable.id]
+    references: [user.id]
   })
 }))

@@ -92,7 +92,7 @@ export async function login(
   return Effect.gen(function* () {
     const response = yield* Effect.tryPromise({
       try: () =>
-        fetch(`${baseUrl}/auth/signin`, {
+        fetch(`${baseUrl}/api/auth/sign-in-email`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
@@ -186,25 +186,54 @@ export async function login(
       })
     }
 
-    const parseResult = loginResponseSchema.safeParse(data)
+    // Map Better Auth response to legacy format
+    const validatedData = z.object({
+      user: z.object({
+        id: z.string(),
+        name: z.string(),
+        email: z.string(),
+        emailVerified: z.boolean(),
+        image: z.string().nullable().optional(),
+        createdAt: z.string().or(z.date()),
+        updatedAt: z.string().or(z.date()),
+      }),
+      token: z.string()
+    }).safeParse(data)
 
-    if (!parseResult.success) {
-      logError('Login Response Validation Failed', parseResult.error, {
+    if (!validatedData.success) {
+      logError('Login Response Validation Failed', validatedData.error, {
         receivedData: data
       })
       return yield* Effect.fail(
         new AuthError({
-          message: 'Invalid login response format',
-          cause: parseResult.error
+          message: 'Invalid login response format from Better Auth',
+          cause: validatedData.error
         })
       )
+    }
+
+    const { user: baUser, token } = validatedData.data
+
+    const mappedResponse: LoginResponse = {
+      user: {
+        id: baUser.id,
+        name: baUser.name,
+        username: baUser.name,
+        email: baUser.email,
+        avatarUrl: baUser.image || null,
+        verified: baUser.emailVerified,
+        createdAt: typeof baUser.createdAt === 'string' ? baUser.createdAt : baUser.createdAt.toISOString(),
+        updatedAt: typeof baUser.updatedAt === 'string' ? baUser.updatedAt : baUser.updatedAt.toISOString(),
+      },
+      accessToken: token,
+      refreshToken: token
     }
 
     if (isDev) {
       console.log('[Auth - Login Success]')
     }
 
-    return parseResult.data
+    return mappedResponse
   }).pipe(Effect.runPromise)
 }
 

@@ -54,6 +54,24 @@ new sst.x.DevCommand('Drizzle_Generate_Prod', {
   }
 })
 
+new sst.x.DevCommand('Drizzle_Migrate_Local', {
+  link: [...allSecrets, email],
+  dev: {
+    command: 'npx drizzle-kit migrate --config drizzle.config.local.ts',
+    directory: './apps/vps',
+    autostart: false
+  }
+})
+
+new sst.x.DevCommand('Drizzle_Migrate_Prod', {
+  link: [...allSecrets, email],
+  dev: {
+    command: 'npx drizzle-kit migrate --config drizzle.config.prod.ts',
+    directory: './apps/vps',
+    autostart: false
+  }
+})
+
 new sst.x.DevCommand('betterAuthGen', {
   link: [...allSecrets, email],
   dev: {
@@ -77,22 +95,7 @@ new sst.x.DevCommand('betterAuthGen', {
 //     DB_STAGE: 'prod'
 //   }
 // })
-// new sst.x.DevCommand("Drizzle_Migrate", {
-// 	link: [database, email],
-// 	dev: {
-// 		command: "npx drizzle-kit migrate",
-// 		directory: "./apps/vps",
-// 		autostart: false,
-// 	},
-// });
-// new sst.x.DevCommand("Drizzle_Check", {
-// 	link: [database, email],
-// 	dev: {
-// 		command: "npx drizzle-kit check",
-// 		directory: "./apps/vps",
-// 		autostart: false,
-// 	},
-// });
+
 new sst.x.DevCommand('Drizzle_Push_Local', {
   link: [...allSecrets, email],
   dev: {
@@ -106,6 +109,24 @@ new sst.x.DevCommand('Drizzle_Push_Prod', {
   link: [...allSecrets, email],
   dev: {
     command: 'npx drizzle-kit push --config drizzle.config.prod.ts',
+    directory: './apps/vps',
+    autostart: false
+  }
+})
+
+new sst.x.DevCommand('Drizzle_Check_Local', {
+  link: [...allSecrets, email],
+  dev: {
+    command: 'npx drizzle-kit check --config drizzle.config.local.ts',
+    directory: './apps/vps',
+    autostart: false
+  }
+})
+
+new sst.x.DevCommand('Drizzle_Check_Prod', {
+  link: [...allSecrets, email],
+  dev: {
+    command: 'npx drizzle-kit check --config drizzle.config.prod.ts',
     directory: './apps/vps',
     autostart: false
   }

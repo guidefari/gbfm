@@ -12,9 +12,9 @@ import {
   audioTable,
   type SelectMdxCompiledAudio
 } from '@/db/audio.schema'
+import { user as usersTable } from '@/db/auth.schema'
 import { postCreators, postsTable } from '@/db/post.schema'
 import { timeQuery } from '@/db/query-timer'
-import { usersTable } from '@/db/user.schema'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
 import { createPaginationMetadata } from '@/lib/pagination'
 import type { AppBindings, AppRouteHandler } from '@/lib/types'
@@ -245,8 +245,7 @@ export const getAudioBySlug: AppRouteHandler<GetAudioBySlugRoute> = async (
     const creators = await db
       .select({
         id: usersTable.id,
-        name: usersTable.name,
-        username: usersTable.username
+        name: usersTable.name
       })
       .from(audioCreators)
       .innerJoin(usersTable, eq(audioCreators.creatorId, usersTable.id))
@@ -257,8 +256,7 @@ export const getAudioBySlug: AppRouteHandler<GetAudioBySlugRoute> = async (
       compiledContent: '',
       creators: creators.map((creator) => ({
         id: creator.id,
-        name: creator.name,
-        username: creator.username || ''
+        name: creator.name
       }))
     }
 
@@ -344,8 +342,7 @@ export const updateAudioBySlug: AppRouteHandler<
     const creators = await db
       .select({
         id: usersTable.id,
-        name: usersTable.name,
-        username: usersTable.username
+        name: usersTable.name
       })
       .from(audioCreators)
       .innerJoin(usersTable, eq(audioCreators.creatorId, usersTable.id))
@@ -357,8 +354,7 @@ export const updateAudioBySlug: AppRouteHandler<
       compiledContent: '',
       creators: creators.map((creator) => ({
         id: creator.id,
-        name: creator.name,
-        username: creator.username || ''
+        name: creator.name
       }))
     }
 

@@ -3,11 +3,11 @@ import { and, eq } from 'drizzle-orm'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
+import { user as usersTable } from '@/db/auth.schema'
 import {
   EMAIL_DELIVERY_STATUSES,
   EMAIL_NOTIFICATION_TYPES
 } from '@/db/email.schema'
-import { usersTable } from '@/db/user.schema'
 import type { AppRouteHandler } from '@/lib/types'
 import {
   createEmailDeliveryLog,
@@ -60,15 +60,15 @@ export const sendMixNotification: AppRouteHandler<
 
   try {
     for (const recipient of recipients) {
-      const username =
-        metadata?.username || recipient.split('@')[0] || 'listener'
-
       // Look up user by email to check preferences
       const [user] = await db
         .select()
         .from(usersTable)
         .where(eq(usersTable.email, recipient))
         .limit(1)
+
+      const username =
+        user?.name || metadata?.username || recipient.split('@')[0] || 'listener'
 
       // Check email preferences if author exists
       if (user) {

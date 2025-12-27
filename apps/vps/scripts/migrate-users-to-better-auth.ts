@@ -1,5 +1,5 @@
 import { db } from '../src/db'
-import { usersTable } from '../src/db/user.schema'
+import { sql } from 'drizzle-orm'
 import { user as betterAuthUser, account as betterAuthAccount } from '../src/db/auth.schema'
 import { Effect, Console } from 'effect'
 import { BunRuntime } from '@effect/platform-bun'
@@ -7,9 +7,17 @@ import { BunRuntime } from '@effect/platform-bun'
 const migrateUsers = Effect.gen(function* () {
   yield* Console.log('🔄 Starting user migration from old auth to Better Auth...')
 
-  const existingUsers = yield* Effect.promise(() =>
-    db.select().from(usersTable)
-  )
+  const result = yield* Effect.tryPromise({
+    try: () => db.execute(sql`SELECT * FROM "users"`),
+    catch: (error) => error
+  })
+
+  if (result instanceof Error) {
+    yield* Console.error('✗ Failed to fetch existing users:', result.message)
+    return
+  }
+
+  const existingUsers = result.rows as unknown as any[]
 
   yield* Console.log(`Found ${existingUsers.length} users to migrate`)
 
@@ -21,17 +29,17 @@ const migrateUsers = Effect.gen(function* () {
 
     yield* Console.log(`Migrating user: ${oldUser.email} (${userId})`)
 
-    const result = yield* Effect.tryPromise({
+    const migrationResult = yield* Effect.tryPromise({
       try: async () => {
         await db.transaction(async (tx) => {
           await tx.insert(betterAuthUser).values({
             id: userId,
-            name: oldUser.name,
+            name: oldUser.name || '',
             email: oldUser.email,
-            emailVerified: oldUser.verified,
-            image: oldUser.avatarUrl,
-            createdAt: oldUser.createdAt,
-            updatedAt: oldUser.updatedAt
+            emailVerified: Boolean(oldUser.verified || oldUser.email_verified),
+            image: oldUser.avatar_url || oldUser.image || null,
+            createdAt: oldUser.created_at || oldUser.createdAt || new Date(),
+            updatedAt: oldUser.updated_at || oldUser.updatedAt || new Date()
           })
 
           if (oldUser.password) {
@@ -59,10 +67,11 @@ const migrateUsers = Effect.gen(function* () {
       })
     )
 
-    if (result.success) {
+    if (migrationResult.success) {
       yield* Console.log(`✓ Successfully migrated ${oldUser.email}`)
     } else {
-      yield* Console.error(`✗ Failed to migrate ${oldUser.email}:`, result.error)
+      const err = (migrationResult as any).error
+      yield* Console.error(`✗ Failed to migrate ${oldUser.email}:`, err instanceof Error ? err.message : err)
     }
   }
 

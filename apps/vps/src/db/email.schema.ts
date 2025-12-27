@@ -14,7 +14,7 @@ import {
   uuid,
   varchar
 } from 'drizzle-orm/pg-core'
-import { usersTable } from './user.schema'
+import { user } from './auth.schema'
 
 export const EMAIL_NOTIFICATION_TYPES = {
   TRANSACTIONAL: 'TRANSACTIONAL',
@@ -42,7 +42,7 @@ export const emailDeliveryLogsTable = pgTable(
   'email_delivery_logs',
   {
     id: uuid().primaryKey().defaultRandom(),
-    userId: uuid().references(() => usersTable.id), // null for non-user emails
+    userId: text().references(() => user.id), // null for non-user emails
     recipientEmail: varchar({ length: 255 }).notNull(),
     recipientName: varchar({ length: 255 }),
     emailType: varchar({ length: 50 }).notNull(),
@@ -70,10 +70,10 @@ export const emailDeliveryLogsTable = pgTable(
 // Author email preferences table - manages user notification settings
 export const userEmailPreferencesTable = pgTable('user_email_preferences', {
   id: uuid().primaryKey().defaultRandom(),
-  userId: uuid()
+  userId: text()
     .notNull()
     .unique()
-    .references(() => usersTable.id),
+    .references(() => user.id),
   // Notification preferences
   mixReleaseEnabled: boolean().notNull().default(true),
   promotionalEnabled: boolean().notNull().default(true),
@@ -129,7 +129,7 @@ export const selectEmailDeliveryLogSchema = z.object({
 })
 
 export const insertEmailDeliveryLogSchema = z.object({
-  userId: z.string().uuid().optional(),
+  userId: z.string().optional(),
   recipientEmail: z.string().email(),
   recipientName: z.string().optional(),
   emailType: z.enum(['TRANSACTIONAL', 'MIX_RELEASE', 'PROMOTIONAL', 'SYSTEM']),
@@ -160,12 +160,12 @@ export const selectAuthorEmailPreferencesSchema = z.object({
 })
 
 export const insertAuthorEmailPreferencesSchema = z.object({
-  userId: z.string().uuid(),
+  userId: z.string(),
   mixReleaseEnabled: z.boolean().optional(),
   promotionalEnabled: z.boolean().optional(),
   systemEnabled: z.boolean().optional(),
   globalUnsubscribe: z.boolean().optional(),
-  unsubscribeToken: z.string().uuid().optional()
+  unsubscribeToken: z.string().optional()
 })
 
 export const updateAuthorEmailPreferencesSchema = z.object({
@@ -179,9 +179,9 @@ export const updateAuthorEmailPreferencesSchema = z.object({
 export const emailDeliveryLogsRelations = relations(
   emailDeliveryLogsTable,
   ({ one }) => ({
-    user: one(usersTable, {
+    user: one(user, {
       fields: [emailDeliveryLogsTable.userId],
-      references: [usersTable.id]
+      references: [user.id]
     })
   })
 )
@@ -189,9 +189,9 @@ export const emailDeliveryLogsRelations = relations(
 export const authorEmailPreferencesRelations = relations(
   userEmailPreferencesTable,
   ({ one }) => ({
-    user: one(usersTable, {
+    user: one(user, {
       fields: [userEmailPreferencesTable.userId],
-      references: [usersTable.id]
+      references: [user.id]
     })
   })
 )

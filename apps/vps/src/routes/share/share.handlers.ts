@@ -2,7 +2,7 @@ import { and, eq } from 'drizzle-orm'
 import type { Context } from 'hono'
 import { db } from '@/db'
 import { audioCreators, audioTable } from '@/db/audio.schema'
-import { usersTable } from '@/db/user.schema'
+import { user as usersTable } from '@/db/auth.schema'
 
 // Helper function to escape HTML special characters
 const escapeHtml = (text: string): string => {
@@ -73,8 +73,7 @@ export const shareMix = async (c: Context) => {
     const creators = await db
       .select({
         id: usersTable.id,
-        name: usersTable.name,
-        username: usersTable.username
+        name: usersTable.name
       })
       .from(audioCreators)
       .innerJoin(usersTable, eq(audioCreators.creatorId, usersTable.id))

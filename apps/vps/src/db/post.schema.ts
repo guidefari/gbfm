@@ -3,10 +3,17 @@ import {
   type InferSelectModel,
   relations
 } from 'drizzle-orm'
-import { index, pgEnum, pgTable, primaryKey, uuid } from 'drizzle-orm/pg-core'
+import {
+  index,
+  pgEnum,
+  pgTable,
+  primaryKey,
+  text,
+  uuid
+} from 'drizzle-orm/pg-core'
 import { z } from 'zod/v4'
+import { user } from './auth.schema'
 import { publicationsTable } from './publication.schema'
-import { usersTable } from './user.schema'
 import { defaultContentFields } from './util'
 
 export const postTypeEnum = pgEnum('post_type', ['post', 'micro'])
@@ -31,7 +38,6 @@ export type SelectMdxCompiledPost = SelectPost & {
   creators?: Array<{
     id: string
     name: string
-    username: string
   }>
   publication?: {
     id: string
@@ -61,8 +67,7 @@ export const selectMdxCompiledPostSchema = selectPostSchema.extend({
     .array(
       z.object({
         id: z.string(),
-        name: z.string(),
-        username: z.string()
+        name: z.string()
       })
     )
     .optional(),
@@ -88,7 +93,7 @@ export const insertPostSchema = z.object({
 })
 
 export const createPostSchema = insertPostSchema.extend({
-  creatorIds: z.array(z.uuid()).min(1).optional()
+  creatorIds: z.array(z.string()).min(1).optional()
 })
 
 export const updatePostSchema = insertPostSchema.partial()
@@ -99,9 +104,9 @@ export const postCreators = pgTable(
     postId: uuid()
       .notNull()
       .references(() => postsTable.id),
-    creatorId: uuid()
+    creatorId: text()
       .notNull()
-      .references(() => usersTable.id)
+      .references(() => user.id)
   },
   (t) => [primaryKey({ columns: [t.postId, t.creatorId] })]
 )
@@ -119,8 +124,8 @@ export const postCreatorsRelations = relations(postCreators, ({ one }) => ({
     fields: [postCreators.postId],
     references: [postsTable.id]
   }),
-  creator: one(usersTable, {
+  creator: one(user, {
     fields: [postCreators.creatorId],
-    references: [usersTable.id]
+    references: [user.id]
   })
 }))

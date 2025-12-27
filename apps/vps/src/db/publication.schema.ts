@@ -5,8 +5,8 @@ import {
 } from 'drizzle-orm'
 import { pgTable, text, uuid } from 'drizzle-orm/pg-core'
 import { z } from 'zod/v4'
+import { user } from './auth.schema'
 import { postsTable } from './post.schema'
-import { usersTable } from './user.schema'
 
 export const publicationsTable = pgTable('publications', {
   id: uuid().defaultRandom().primaryKey(),
@@ -19,9 +19,9 @@ export const publicationMembers = pgTable('publication_members', {
   publicationId: uuid()
     .notNull()
     .references(() => publicationsTable.id, { onDelete: 'cascade' }),
-  userId: uuid()
+  userId: text()
     .notNull()
-    .references(() => usersTable.id, { onDelete: 'cascade' })
+    .references(() => user.id, { onDelete: 'cascade' })
 })
 
 export const publicationPosts = pgTable('publication_posts', {
@@ -47,9 +47,9 @@ export const publicationMembersRelations = relations(
       fields: [publicationMembers.publicationId],
       references: [publicationsTable.id]
     }),
-    user: one(usersTable, {
+    user: one(user, {
       fields: [publicationMembers.userId],
-      references: [usersTable.id]
+      references: [user.id]
     })
   })
 )

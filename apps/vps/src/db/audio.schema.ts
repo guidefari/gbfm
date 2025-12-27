@@ -8,11 +8,12 @@ import {
   pgEnum,
   pgTable,
   primaryKey,
+  text,
   uuid,
   varchar
 } from 'drizzle-orm/pg-core'
 import { z } from 'zod/v4'
-import { usersTable } from './user.schema'
+import { user } from './auth.schema'
 import { defaultContentFields } from './util'
 
 export const audioTypeEnum = pgEnum('audio_type', ['mix', 'track', 'misc'])
@@ -35,7 +36,6 @@ export type SelectMdxCompiledAudio = SelectAudio & {
   creators?: Array<{
     id: string
     name: string
-    username: string
   }>
 }
 
@@ -60,8 +60,7 @@ export const selectMdxCompiledAudioSchema = selectAudioSchema.extend({
     .array(
       z.object({
         id: z.string(),
-        name: z.string(),
-        username: z.string()
+        name: z.string()
       })
     )
     .optional()
@@ -82,7 +81,7 @@ export const insertAudioSchema = z.object({
 export const updateAudioSchema = insertAudioSchema.partial()
 
 export const createAudioSchema = insertAudioSchema.extend({
-  creatorIds: z.array(z.uuid()).min(1).optional()
+  creatorIds: z.array(z.string()).min(1).optional()
 })
 
 export const audioCreators = pgTable(
@@ -91,9 +90,9 @@ export const audioCreators = pgTable(
     audioId: uuid()
       .notNull()
       .references(() => audioTable.id),
-    creatorId: uuid()
+    creatorId: text()
       .notNull()
-      .references(() => usersTable.id)
+      .references(() => user.id)
   },
   (t) => [primaryKey({ columns: [t.audioId, t.creatorId] })]
 )
@@ -107,8 +106,8 @@ export const audioCreatorsRelations = relations(audioCreators, ({ one }) => ({
     fields: [audioCreators.audioId],
     references: [audioTable.id]
   }),
-  creator: one(usersTable, {
+  creator: one(user, {
     fields: [audioCreators.creatorId],
-    references: [usersTable.id]
+    references: [user.id]
   })
 }))

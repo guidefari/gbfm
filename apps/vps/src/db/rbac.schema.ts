@@ -12,7 +12,7 @@ import {
   uuid,
   varchar
 } from 'drizzle-orm/pg-core'
-import { usersTable } from './user.schema'
+import { user } from './auth.schema'
 
 // Roles table (lookup table approach - no enum)
 export const rolesTable = pgTable('roles', {
@@ -38,14 +38,14 @@ export const permissionsTable = pgTable('permissions', {
 export const userRolesTable = pgTable(
   'user_roles',
   {
-    userId: uuid()
+    userId: text()
       .notNull()
-      .references(() => usersTable.id, { onDelete: 'cascade' }),
+      .references(() => user.id, { onDelete: 'cascade' }),
     roleId: uuid()
       .notNull()
       .references(() => rolesTable.id, { onDelete: 'cascade' }),
     assignedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-    assignedBy: uuid().references(() => usersTable.id)
+    assignedBy: text().references(() => user.id)
   },
   (t) => [primaryKey({ columns: [t.userId, t.roleId] })]
 )
@@ -69,14 +69,14 @@ export const rolePermissionsTable = pgTable(
 export const userPermissionsTable = pgTable(
   'user_permissions',
   {
-    userId: uuid()
+    userId: text()
       .notNull()
-      .references(() => usersTable.id, { onDelete: 'cascade' }),
+      .references(() => user.id, { onDelete: 'cascade' }),
     permissionId: uuid()
       .notNull()
       .references(() => permissionsTable.id, { onDelete: 'cascade' }),
     grantedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
-    grantedBy: uuid().references(() => usersTable.id)
+    grantedBy: text().references(() => user.id)
   },
   (t) => [primaryKey({ columns: [t.userId, t.permissionId] })]
 )
@@ -129,12 +129,12 @@ export const insertPermissionSchema = z.object({
 export const updatePermissionSchema = insertPermissionSchema.partial()
 
 export const assignRoleSchema = z.object({
-  userId: z.uuid(),
+  userId: z.string(),
   roleId: z.uuid()
 })
 
 export const assignPermissionSchema = z.object({
-  userId: z.uuid(),
+  userId: z.string(),
   permissionId: z.uuid()
 })
 
@@ -150,9 +150,9 @@ export const permissionsRelations = relations(permissionsTable, ({ many }) => ({
 }))
 
 export const userRolesRelations = relations(userRolesTable, ({ one }) => ({
-  user: one(usersTable, {
+  user: one(user, {
     fields: [userRolesTable.userId],
-    references: [usersTable.id]
+    references: [user.id]
   }),
   role: one(rolesTable, {
     fields: [userRolesTable.roleId],
@@ -177,9 +177,9 @@ export const rolePermissionsRelations = relations(
 export const userPermissionsRelations = relations(
   userPermissionsTable,
   ({ one }) => ({
-    user: one(usersTable, {
+    user: one(user, {
       fields: [userPermissionsTable.userId],
-      references: [usersTable.id]
+      references: [user.id]
     }),
     permission: one(permissionsTable, {
       fields: [userPermissionsTable.permissionId],

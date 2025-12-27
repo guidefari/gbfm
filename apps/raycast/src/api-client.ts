@@ -6,7 +6,6 @@ import {
   AuthenticationError,
   ConfigurationError,
   NetworkError,
-  type RefreshTokenResponse,
   ServerError,
   ValidationError
 } from './types/api'
@@ -39,7 +38,7 @@ const refreshAccessToken = async (
     Effect.logInfo('Attempting to refresh access token')
   )
 
-  const response = await fetch(`${baseUrl}/auth/refresh-token`, {
+  const response = await fetch(`${baseUrl}/api/auth/refresh-session`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -65,7 +64,16 @@ const refreshAccessToken = async (
     throw new ServerError('Token refresh failed', response.status)
   }
 
-  const result = (await response.json()) as RefreshTokenResponse
+  const data = (await response.json()) as { token?: string; session?: { token: string } }
+  const accessToken = data.token || data.session?.token
+
+  if (!accessToken) {
+    throw new ServerError('No access token in refresh response', response.status)
+  }
+
+  const result = {
+    accessToken
+  }
 
   Runtime.runSync(Runtime.defaultRuntime)(
     Effect.logInfo('Access token refreshed successfully')

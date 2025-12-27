@@ -64,6 +64,27 @@
       "when": 1766259918479,
       "tag": "0011_amazing_scorpion",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1766830321479,
+      "tag": "0012_minor_monster_badoon",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1766831954371,
+      "tag": "0013_curvy_adam_warlock",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1766835654808,
+      "tag": "0014_absent_hellion",
+      "breakpoints": true
     }
   ]
 }

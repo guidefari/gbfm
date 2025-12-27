@@ -9,7 +9,7 @@ import {
   rolesTable,
   userRolesTable
 } from '../src/db/rbac.schema'
-import { usersTable } from '../src/db/user.schema'
+import { user as usersTable } from '../src/db/auth.schema'
 
 const roles: InsertRole[] = [
   {

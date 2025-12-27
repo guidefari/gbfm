@@ -57,7 +57,7 @@ export default function SignIn() {
     setIsLoading(true)
 
     try {
-      const response = await fetch(`${values.baseUrl}/auth/signin`, {
+      const response = await fetch(`${values.baseUrl}/api/auth/sign-in/email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -73,10 +73,18 @@ export default function SignIn() {
         throw new Error(error.error || 'Sign in failed')
       }
 
-      const result = (await response.json()) as {
-        accessToken: string
-        refreshToken: string
-        user: { name?: string; email: string }
+      const data = (await response.json()) as {
+        user: { name: string; email: string };
+        token: string;
+      }
+      
+      const result = {
+        accessToken: data.token,
+        refreshToken: data.token,
+        user: {
+          name: data.user.name,
+          email: data.user.email
+        }
       }
 
       await Promise.all([

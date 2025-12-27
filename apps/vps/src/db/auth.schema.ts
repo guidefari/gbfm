@@ -1,5 +1,19 @@
-import { relations } from 'drizzle-orm'
+import { z } from '@hono/zod-openapi'
+import {
+  type InferInsertModel,
+  type InferSelectModel,
+  relations
+} from 'drizzle-orm'
 import { boolean, index, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
+import { audioCreators } from './audio.schema'
+import {
+  emailDeliveryLogsTable,
+  userEmailPreferencesTable
+} from './email.schema'
+import { mixCreators } from './mix.schema'
+import { postCreators } from './post.schema'
+import { publicationMembers } from './publication.schema'
+import { userPermissionsTable, userRolesTable } from './rbac.schema'
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
@@ -73,10 +87,39 @@ export const verification = pgTable(
   (table) => [index('verification_identifier_idx').on(table.identifier)]
 )
 
-export const userRelations = relations(user, ({ many }) => ({
+// Custom user session and password reset tables removed in favor of Better Auth standard tables
+
+export const userRelations = relations(user, ({ many, one }) => ({
   sessions: many(session),
-  accounts: many(account)
+  accounts: many(account),
+  postCreators: many(postCreators),
+  audioCreators: many(audioCreators),
+  userRoles: many(userRolesTable),
+  userPermissions: many(userPermissionsTable),
+  emailDeliveryLogs: many(emailDeliveryLogsTable),
+  userEmailPreferences: one(userEmailPreferencesTable),
+  publicationMembers: many(publicationMembers),
+  mixCreators: many(mixCreators)
 }))
+
+export type SelectUser = InferSelectModel<typeof user>
+export type InsertUser = InferInsertModel<typeof user>
+
+export const selectUserSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  email: z.string(),
+  emailVerified: z.boolean(),
+  image: z.string().nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date()
+})
+
+export const insertUserSchema = z.object({
+  name: z.string(),
+  email: z.string().email(),
+  image: z.string().optional()
+})
 
 export const sessionRelations = relations(session, ({ one }) => ({
   user: one(user, {
