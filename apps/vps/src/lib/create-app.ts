@@ -8,6 +8,20 @@ import { notFound, onError, serveEmojiFavicon } from 'stoker/middlewares'
 import { pinoLogger } from '@/middlewares/pino-logger'
 import type { AppBindings, AppOpenAPI } from './types'
 
+export const corsConfig = {
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:4173',
+    'http://localhost:3003',
+    'https://www.goosebumps.fm',
+    'https://goosebumps.fm'
+  ],
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowHeaders: ['Content-Type', 'Authorization', 'Cookie', 'Refresh-Token'],
+  exposeHeaders: ['Set-Cookie'],
+  credentials: true
+}
+
 export function createRouter() {
   return new OpenAPIHono<AppBindings>({
     strict: false,
@@ -30,27 +44,7 @@ export function createRouter() {
 export default function createApp() {
   const app = createRouter()
 
-  app.use(
-    '*',
-    cors({
-      origin: [
-        'http://localhost:5173',
-        'http://localhost:4173',
-        'http://localhost:3003',
-        'https://www.goosebumps.fm',
-        'https://goosebumps.fm'
-      ],
-      allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-      allowHeaders: [
-        'Content-Type',
-        'Authorization',
-        'Cookie',
-        'Refresh-Token'
-      ],
-      exposeHeaders: ['Set-Cookie'],
-      credentials: true
-    })
-  )
+  app.use('*', cors(corsConfig))
 
   app.use(requestId()).use(serveEmojiFavicon('🪿')).use(pinoLogger())
 
