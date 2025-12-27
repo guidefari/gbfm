@@ -6,8 +6,8 @@ import { QueueColumn } from '@/components/queue/QueueColumn'
 import { useAudioPlayerInitializer } from '@/hooks/useAudioPlayer'
 import { useAudioPlayerState } from '@/store/audioPlayer'
 
-// import { HorizontalMenu } from "./HorizontalMenu";
-// import { DesktopSideNav } from "./DesktopSideNav";
+import { DesktopSideNav } from './DesktopSideNav'
+import { FloatingMenu } from './FloatingMenu'
 
 type Props = {
   children: React.ReactNode
@@ -23,21 +23,25 @@ export default function AppShell({ children }: Props) {
   const isOnMixesPage = location.pathname.startsWith('/mixes')
 
   return (
-    <div className='flex flex-col h-screen bg-background'>
-      <main className='flex-1 overflow-y-auto bg-background'>{children}</main>
+    <div className='grid sm:grid-cols-[auto_1fr] h-screen w-full bg-background'>
+      <div className='hidden sm:block'>
+        <DesktopSideNav />
+      </div>
+      <div className='flex flex-col h-screen overflow-hidden'>
+        <main className='flex-1 overflow-y-auto bg-background'>{children}</main>
 
-      {/* Audio Player - Fixed at bottom, full width */}
-      {hasActiveAudio && !isFullscreenVisible && !isOnMixesPage && (
-        <div className='flex-shrink-0'>
-          <AudioPlayer />
-        </div>
-      )}
+        {hasActiveAudio && !isFullscreenVisible && !isOnMixesPage && (
+          <div className='flex-shrink-0 hidden sm:block'>
+            <AudioPlayer />
+          </div>
+        )}
 
-      {/* Queue Drawer */}
-      <QueueColumn />
+        <QueueColumn />
 
-      {/* Fullscreen Audio Player */}
-      <FullscreenAudioPlayer />
+        <FullscreenAudioPlayer />
+      </div>
+
+      <FloatingMenu className='fixed bottom-4 right-4 sm:hidden' />
     </div>
   )
 }
