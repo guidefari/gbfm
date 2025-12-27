@@ -130,8 +130,7 @@ export function useSpotifyProxy<T extends SpotifyContentType>({
     queryFn: async () =>
       fetcher(`${VPS_BASE_URL}/spotify/${spotifyContentType}`, {
         method: 'POST',
-        body: JSON.stringify({ id }),
-        skipAuth: true
+        body: JSON.stringify({ id })
       }),
     staleTime: 15 * 60 * 1000
   })
