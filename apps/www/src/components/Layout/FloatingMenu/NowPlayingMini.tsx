@@ -21,9 +21,10 @@ export function NowPlayingMini({ onClose }: NowPlayingMiniProps) {
       className={cn(
         'flex items-center gap-3 p-3 rounded-2xl',
         'bg-card border border-border shadow-xl',
-        'min-w-[280px] max-w-[320px]'
+        'min-w-[280px]'
       )}>
       <button
+        type='button'
         onClick={handleOpenFullscreen}
         className='relative flex-shrink-0 overflow-hidden rounded-lg focus:outline-none focus:ring-2 focus:ring-ring'>
         {thumbnailUrl ? (
@@ -41,6 +42,7 @@ export function NowPlayingMini({ onClose }: NowPlayingMiniProps) {
 
       <div className='flex-1 min-w-0'>
         <button
+          type='button'
           onClick={handleOpenFullscreen}
           className='block w-full text-left focus:outline-none'>
           <p className='text-sm font-medium truncate text-foreground'>
@@ -52,6 +54,7 @@ export function NowPlayingMini({ onClose }: NowPlayingMiniProps) {
 
       <div className='flex items-center gap-1'>
         <button
+          type='button'
           onClick={playPrevious}
           className={cn(
             'p-2 rounded-full transition-colors',
@@ -62,6 +65,7 @@ export function NowPlayingMini({ onClose }: NowPlayingMiniProps) {
         </button>
 
         <button
+          type='button'
           onClick={togglePlayPause}
           className={cn(
             'p-2 rounded-full transition-colors',
@@ -77,6 +81,7 @@ export function NowPlayingMini({ onClose }: NowPlayingMiniProps) {
         </button>
 
         <button
+          type='button'
           onClick={playNext}
           className={cn(
             'p-2 rounded-full transition-colors',

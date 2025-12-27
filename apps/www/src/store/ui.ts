@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 
 export type SortOption = 'date' | 'title'
+export type PlayerType = 'full' | 'compact'
 
 interface UIState {
   Cmd: {
@@ -11,6 +12,8 @@ interface UIState {
     sortBy: SortOption
     sortOrder: 'asc' | 'desc'
   }
+  showCompactPlayer: boolean
+  preferredPlayerType: PlayerType
 }
 
 interface UIActions {
@@ -19,6 +22,8 @@ interface UIActions {
   toggleCmd: () => void
   setSortBy: (sortBy: SortOption) => void
   toggleSortOrder: () => void
+  toggleCompactPlayer: () => void
+  setPreferredPlayerType: (playerType: PlayerType) => void
 }
 
 type UIStore = UIState & UIActions
@@ -34,6 +39,8 @@ export const useUIStore = create<UIStore>()(
           sortBy: 'date',
           sortOrder: 'desc'
         },
+        showCompactPlayer: false,
+        preferredPlayerType: 'full',
         openCmd: () =>
           set(
             (state: UIStore) => ({
@@ -77,13 +84,31 @@ export const useUIStore = create<UIStore>()(
             }),
             false,
             'ui/mixesSorting/toggleSortOrder'
+          ),
+        toggleCompactPlayer: () =>
+          set(
+            (state: UIStore) => ({
+              showCompactPlayer: !state.showCompactPlayer
+            }),
+            false,
+            'ui/toggleCompactPlayer'
+          ),
+        setPreferredPlayerType: (playerType: PlayerType) =>
+          set(
+            () => ({
+              preferredPlayerType: playerType,
+              showCompactPlayer: playerType === 'compact'
+            }),
+            false,
+            'ui/setPreferredPlayerType'
           )
       }),
       {
         name: 'gbfm-ui-store',
         partialize: (state) => ({
-          mixesSorting: state.mixesSorting
-          // Don't persist Cmd state (isOpen should always start as false)
+          mixesSorting: state.mixesSorting,
+          showCompactPlayer: state.showCompactPlayer,
+          preferredPlayerType: state.preferredPlayerType
         })
       }
     ),

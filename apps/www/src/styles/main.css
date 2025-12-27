@@ -31,6 +31,7 @@
 
     /* my colors */
     --highlight: #9bfd9e;
+    --highlight-rgb: 155, 253, 158;
     --bg: hsl(202, 61%, 22%);
     --darker-bg: #111827;
     --pastel-green-1: #b6fadf;

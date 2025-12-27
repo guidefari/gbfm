@@ -1,6 +1,6 @@
 import {
   FileTextIcon,
-  HomeIcon,
+  HomeIcon
   // Pencil2Icon,
   // TwitterLogoIcon
 } from '@radix-ui/react-icons'
@@ -54,7 +54,7 @@ export const pagesAndPages: lol[] = [
     slug: '/labels',
     icon: <BiSolidCameraHome className={iconSytles} />
   },
-  
+
   {
     name: 'Subscribe',
     slug: '/subscribe',
@@ -78,7 +78,7 @@ export const pagesAndPages: lol[] = [
         <TfiYoutube />
       </a>
     )
-  },
+  }
   // {
   //   icon: <Pencil2Icon className={iconSytles} />,
   //   name: 'New Post',

@@ -50,7 +50,9 @@ export const auth = betterAuth({
   trustedOrigins: [
     env.FRONTEND_URL,
     'http://localhost:5173',
-    'http://localhost:3003'
+    'http://localhost:3003',
+    'https://www.goosebumps.fm',
+    'https://goosebumps.fm'
   ],
   secret: env.BETTER_AUTH_SECRET,
   baseURL: env.BETTER_AUTH_URL,

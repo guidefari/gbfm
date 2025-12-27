@@ -1,16 +1,24 @@
 import { Link } from '@tanstack/react-router'
+import { Music } from 'lucide-react'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger
 } from '@/components/ui/tooltip'
+import { useUIStore } from '@/store'
 import { pagesAndPages } from './NavLinks'
 import ProfileAvatar from './ProfileAvatar'
 
 export const DesktopSideNav = () => {
+  const { showCompactPlayer, toggleCompactPlayer, preferredPlayerType } =
+    useUIStore()
+
+  const isCompactMode = preferredPlayerType === 'compact'
+  const isPlayerVisible = isCompactMode && showCompactPlayer
+
   return (
-    <aside className='z-30 flex-col flex w-14 h-screen sticky top-0'>
+    <aside className='sticky top-0 z-30 flex flex-col h-screen border-r w-14 border-border bg-background'>
       <nav className='flex flex-col items-center gap-4 px-2 sm:py-5'>
         {pagesAndPages.map((page) => {
           if (page.CustomComponent) {
@@ -34,6 +42,28 @@ export const DesktopSideNav = () => {
         })}
       </nav>
       <nav className='flex flex-col items-center gap-4 px-2 mt-auto sm:py-5'>
+        {isCompactMode && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type='button'
+                  onClick={toggleCompactPlayer}
+                  className={`flex items-center justify-center transition-all rounded-lg h-9 w-9 md:h-8 md:w-8 ${
+                    isPlayerVisible
+                      ? 'bg-white text-gb-bg shadow-sm'
+                      : 'text-gb-bg hover:text-white hover:bg-muted'
+                  }`}
+                  aria-label='Toggle player'>
+                  <Music className='w-4 h-4' />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side='right'>
+                {isPlayerVisible ? 'Hide Player' : 'Show Player'}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
         <ProfileAvatar />
       </nav>
     </aside>

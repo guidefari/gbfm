@@ -1,21 +1,10 @@
 import { Link } from '@tanstack/react-router'
+import { Building2, Disc3, Home, Menu, Moon, Sun, User, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useState } from 'react'
-import {
-  Home,
-  Menu,
-  Moon,
-  Search,
-  Sun,
-  User,
-  X,
-  Disc3,
-  Building2
-} from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { useUIStore } from '@/store'
-import { useAudioPlayerState } from '@/store/audioPlayer'
 import { useTheme } from '@/components/ThemeProvider'
+import { cn } from '@/lib/utils'
+import { useAudioPlayerState } from '@/store/audioPlayer'
 import { NowPlayingMini } from './NowPlayingMini'
 
 type MenuItemConfig = {
@@ -31,8 +20,7 @@ type FloatingMenuProps = {
 
 export function FloatingMenu({ className }: FloatingMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const { openCmd } = useUIStore()
-  const { theme, setTheme } = useTheme()
+  const { resolvedTheme, setTheme } = useTheme()
   const { audioSrc } = useAudioPlayerState()
 
   const hasActiveAudio = Boolean(audioSrc)
@@ -61,14 +49,9 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
     }
   }, [isOpen])
 
-  const handleSearch = useCallback(() => {
-    closeMenu()
-    openCmd()
-  }, [closeMenu, openCmd])
-
   const handleThemeToggle = useCallback(() => {
-    setTheme(theme === 'dark' ? 'light' : 'dark')
-  }, [theme, setTheme])
+    setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')
+  }, [resolvedTheme, setTheme])
 
   const navItems: MenuItemConfig[] = [
     {
@@ -99,20 +82,14 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
 
   const quickActions: MenuItemConfig[] = [
     {
-      id: 'search',
-      icon: <Search className='w-5 h-5' />,
-      label: 'Search',
-      action: handleSearch
-    },
-    {
       id: 'theme',
       icon:
-        theme === 'dark' ? (
+        resolvedTheme === 'dark' ? (
           <Sun className='w-5 h-5' />
         ) : (
           <Moon className='w-5 h-5' />
         ),
-      label: theme === 'dark' ? 'Light' : 'Dark',
+      label: resolvedTheme === 'dark' ? 'Light' : 'Dark',
       action: handleThemeToggle
     }
   ]
@@ -163,7 +140,6 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
                 const route = getItemRoute(item.id)
                 const content = (
                   <div
-                    onClick={item.action}
                     className={cn(
                       'flex flex-col items-center justify-center gap-2 py-4 rounded-2xl',
                       'bg-card/50 border border-border/50',
@@ -181,7 +157,20 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
                     </Link>
                   )
                 }
-                return <div key={item.id}>{content}</div>
+                return (
+                  <button
+                    type='button'
+                    key={item.id}
+                    onClick={item.action}
+                    className={cn(
+                      'flex flex-col items-center justify-center gap-2 py-4 rounded-2xl',
+                      'bg-card/50 border border-border/50',
+                      'active:scale-95 active:bg-card transition-transform'
+                    )}>
+                    {item.icon}
+                    <span className='text-xs font-medium'>{item.label}</span>
+                  </button>
+                )
               })}
             </motion.nav>
 
@@ -194,6 +183,7 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
               <div className='flex items-center gap-3'>
                 {quickActions.map((action) => (
                   <button
+                    type='button'
                     key={action.id}
                     onClick={action.action}
                     className={cn(

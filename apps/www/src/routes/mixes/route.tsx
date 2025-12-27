@@ -1,7 +1,8 @@
 import type { SelectMix } from '@gbfm/vps/schemas'
 import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
-import { Heart, MoreVertical, Play, Plus, Share } from 'lucide-react'
-import { useMemo } from 'react'
+import { Heart, MoreVertical, Play, Plus, Share, X } from 'lucide-react'
+import { AnimatePresence, motion } from 'motion/react'
+import { useMemo, useRef } from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
 import { BaseAudioPlayer } from '@/components/common/BaseAudioPlayer'
 import { MixesSkeleton } from '@/components/MixesSkeleton'
@@ -16,6 +17,7 @@ import {
 import { toast } from '@/components/ui/use-toast'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { useAudioByType } from '@/lib/http'
+import { cn } from '@/lib/utils'
 import { useUIStore } from '@/store'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
 
@@ -114,7 +116,7 @@ function CompactAudioPlayer() {
 function Component() {
   const { data, isPending, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useAudioByType('mix')
-  const { mixesSorting } = useUIStore()
+  const { mixesSorting, showCompactPlayer, toggleCompactPlayer } = useUIStore()
   const { isPlaying, nowPlayingContext } = useAudioPlayerState()
   const { loadTrack } = useAudioPlayerActions()
 
@@ -140,88 +142,153 @@ function Component() {
     return sorted
   }, [data, mixesSorting.sortBy, mixesSorting.sortOrder])
 
+  const playerRef = useRef<HTMLDivElement>(null)
+
+  const handleFocusTrap = (e: React.KeyboardEvent) => {
+    if (e.key === 'Tab' && playerRef.current) {
+      const focusableElements = Array.from(
+        playerRef.current.querySelectorAll(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      ) as HTMLElement[]
+
+      if (focusableElements.length === 0) return
+
+      const firstElement = focusableElements[0]
+      const lastElement = focusableElements[focusableElements.length - 1]
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstElement) {
+          e.preventDefault()
+          lastElement.focus()
+        }
+      } else {
+        if (document.activeElement === lastElement) {
+          e.preventDefault()
+          firstElement.focus()
+        }
+      }
+    } else if (e.key === 'Escape') {
+      toggleCompactPlayer()
+    }
+  }
+
   if (isPending) {
     return <MixesSkeleton />
   }
 
   return (
-    <div className='grid h-full grid-cols-1 gap-4 p-2 md:grid-cols-2 lg:grid-cols-3 font-jetbrains bg-background text-foreground'>
-      {/* Left Column - Audio Player */}
-      <div className='self-end p-4 overflow-y-auto border-2 border-dashed rounded-lg border-muted-foreground/30'>
-        <CompactAudioPlayer />
-      </div>
+    <div className='relative h-full font-jetbrains bg-background text-foreground'>
+      <div className='grid h-full grid-cols-1 gap-4 p-4 md:grid-cols-2'>
+        {/* Left Column - Mix Details (Outlet) */}
+        <div className='p-4 overflow-y-auto border-2 border-dashed rounded-lg border-muted-foreground/30 bg-card/10'>
+          <Outlet />
+        </div>
 
-      {/* Middle Column - Mix Details (Outlet) */}
-      <div className='p-4 overflow-y-auto border-2 border-dashed rounded-lg border-muted-foreground/30'>
-        <Outlet />
-      </div>
-
-      {/* Right Column - Mixes List */}
-      <div className='p-4 overflow-y-auto border-2 border-dashed rounded-lg border-muted-foreground/30'>
-        <h2 className='mb-4 text-lg font-bold'>Mixes</h2>
-        <div className='grid gap-2'>
-          {sortedData?.map((mix) => {
-            const isActive = nowPlayingContext?.title === mix.title
-            return (
-              <TrackContextMenu key={mix.id} track={mix}>
-                <article
-                  className={`flex gap-3 items-start p-2 transition-colors cursor-pointer hover:bg-muted/50 rounded-lg ${isActive ? 'ring-2 ring-highlight bg-primary/5' : ''}`}>
-                  <button
-                    type='button'
-                    className='relative group focus:outline-none'
-                    onClick={() =>
-                      loadTrack(
-                        mix.url,
-                        mix.thumbnailUrl || DEFAULT_IMAGE_URL,
-                        mix.title
-                      )
-                    }>
-                    <img
-                      src={mix.thumbnailUrl || DEFAULT_IMAGE_URL}
-                      alt={mix.title}
-                      className='object-cover border rounded-lg w-14 h-14 border-border bg-background'
-                    />
-                    <span
-                      className={`absolute inset-0 flex items-center justify-center transition-opacity rounded-lg bg-black/50 ${isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100 group-focus:opacity-100'}`}>
-                      {isActive && isPlaying ? (
-                        <GiPauseButton className='text-2xl drop-shadow text-highlight' />
-                      ) : (
-                        <GiPlayButton className='text-2xl drop-shadow text-highlight' />
-                      )}
-                    </span>
-                  </button>
-                  <div className='flex-1 min-w-0'>
-                    <div className='flex items-start justify-between gap-2'>
-                      <Link
-                        to='/mixes/$mixId'
-                        params={{ mixId: mix.slug }}
-                        className='flex-1 block font-bold leading-none truncate text-highlight hover:underline'>
-                        {mix.title}
-                      </Link>
-                      <MixMenu mix={mix} />
-                    </div>
-                    {mix.description && (
-                      <div className='text-sm text-foreground/80 line-clamp-2'>
-                        {mix.description}
+        {/* Right Column - Mixes List */}
+        <div className='p-4 overflow-y-auto border-2 border-dashed rounded-lg border-muted-foreground/30 bg-card/10'>
+          <h2 className='flex items-center gap-2 mb-4 text-lg font-bold'>
+            <div className='w-2 h-2 rounded-full bg-foreground/30' />
+            Mixes
+          </h2>
+          <div className='grid gap-2'>
+            {sortedData?.map((mix) => {
+              const isActive = nowPlayingContext?.title === mix.title
+              return (
+                <TrackContextMenu key={mix.id} track={mix}>
+                  <article
+                    className={cn(
+                      'flex gap-3 items-start p-2 transition-all duration-300 cursor-pointer hover:bg-muted/50 rounded-lg group',
+                      isActive && 'ring-1 ring-border bg-accent/5 shadow-sm'
+                    )}>
+                    <button
+                      type='button'
+                      className='relative flex-shrink-0 focus:outline-none'
+                      onClick={() =>
+                        loadTrack(
+                          mix.url,
+                          mix.thumbnailUrl || DEFAULT_IMAGE_URL,
+                          mix.title
+                        )
+                      }>
+                      <img
+                        src={mix.thumbnailUrl || DEFAULT_IMAGE_URL}
+                        alt={mix.title}
+                        className='object-cover transition-transform duration-300 border rounded-lg w-14 h-14 border-border bg-background group-hover:scale-105'
+                      />
+                      <span
+                        className={cn(
+                          'absolute inset-0 flex items-center justify-center transition-all duration-300 rounded-lg bg-black/50',
+                          isActive
+                            ? 'opacity-100'
+                            : 'opacity-0 group-hover:opacity-100 group-focus:opacity-100'
+                        )}>
+                        {isActive && isPlaying ? (
+                          <GiPauseButton className='text-2xl text-white drop-shadow' />
+                        ) : (
+                          <GiPlayButton className='text-2xl text-white drop-shadow' />
+                        )}
+                      </span>
+                    </button>
+                    <div className='flex-1 min-w-0'>
+                      <div className='flex items-start justify-between gap-2'>
+                        <Link
+                          to='/mixes/$mixId'
+                          params={{ mixId: mix.slug }}
+                          className='flex-1 block font-bold leading-none truncate text-foreground hover:underline decoration-foreground/30 underline-offset-4'>
+                          {mix.title}
+                        </Link>
+                        <MixMenu mix={mix} />
                       </div>
-                    )}
-                  </div>
-                </article>
-              </TrackContextMenu>
-            )
-          })}
+                      {mix.description && (
+                        <div className='mt-1 text-sm leading-relaxed text-foreground/60 line-clamp-2'>
+                          {mix.description}
+                        </div>
+                      )}
+                    </div>
+                  </article>
+                </TrackContextMenu>
+              )
+            })}
 
-          {hasNextPage && (
-            <button
-              type='button'
-              onClick={() => fetchNextPage()}
-              disabled={isFetchingNextPage}
-              className='p-4 text-sm font-medium transition-colors rounded-lg bg-muted hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed'>
-              {isFetchingNextPage ? 'Loading...' : 'Load More'}
-            </button>
-          )}
+            {hasNextPage && (
+              <button
+                type='button'
+                onClick={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+                className='p-4 mt-2 text-sm font-medium transition-all duration-300 border rounded-lg bg-muted hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed border-border/50'>
+                {isFetchingNextPage ? 'Loading...' : 'Load More'}
+              </button>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Floating Audio Player */}
+      <AnimatePresence>
+        {showCompactPlayer && (
+          <motion.div
+            ref={playerRef}
+            initial={{ opacity: 0, y: 50, scale: 0.9, x: -20 }}
+            animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
+            exit={{ opacity: 0, y: 50, scale: 0.9, x: -20 }}
+            transition={{ type: 'keyframes', damping: 20, stiffness: 300 }}
+            onKeyDown={handleFocusTrap}
+            className='fixed bottom-6 left-20 z-50 hidden md:block w-[320px] p-6 overflow-hidden border border-border/50 rounded-xl bg-background/95 backdrop-blur-md shadow-2xl border-solid'>
+            <button
+              type='button'
+              ref={(node) => {
+                if (node && showCompactPlayer) node.focus()
+              }}
+              onClick={toggleCompactPlayer}
+              className='absolute z-10 p-1 transition-colors rounded-full top-3 right-3 hover:bg-muted'
+              aria-label='Close player'>
+              <X className='w-4 h-4 text-foreground/50 hover:text-foreground' />
+            </button>
+            <CompactAudioPlayer />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
