@@ -24,9 +24,7 @@ export default function AppShell({ children }: Props) {
   const hasActiveAudio = Boolean(audioSrc)
 
   const shouldShowFullPlayer =
-    hasActiveAudio &&
-    !isFullscreenVisible &&
-    preferredPlayerType === 'full'
+    hasActiveAudio && !isFullscreenVisible && preferredPlayerType === 'full'
 
   const shouldShowCompactPlayer =
     hasActiveAudio &&
