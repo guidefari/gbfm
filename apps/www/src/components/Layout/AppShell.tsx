@@ -1,4 +1,3 @@
-import { useLocation } from '@tanstack/react-router'
 import { AnimatePresence } from 'motion/react'
 import type React from 'react'
 import AudioPlayer from '@/components/AudioPlayer'
@@ -22,14 +21,11 @@ export default function AppShell({ children }: Props) {
 
   const { audioSrc, isFullscreenVisible } = useAudioPlayerState()
   const { preferredPlayerType, showCompactPlayer } = useUIStore()
-  const location = useLocation()
   const hasActiveAudio = Boolean(audioSrc)
-  const isOnMixesPage = location.pathname.startsWith('/mixes')
 
   const shouldShowFullPlayer =
     hasActiveAudio &&
     !isFullscreenVisible &&
-    !isOnMixesPage &&
     preferredPlayerType === 'full'
 
   const shouldShowCompactPlayer =
