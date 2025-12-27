@@ -38,6 +38,17 @@ jobs:
         run: bun install
 
       - name: Release
+        id: release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: bunx semantic-release
+        run: |
+          bunx semantic-release
+
+      - name: Trigger Prod Deployment
+        if: steps.release.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LATEST_TAG=$(git describe --tags --abbrev=0)
+          gh workflow run deploy.yml --ref="$LATEST_TAG"
+          echo "🚀 Triggered deployment for tag: $LATEST_TAG"
