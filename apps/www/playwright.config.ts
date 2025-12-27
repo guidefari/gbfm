@@ -9,12 +9,13 @@ export default defineConfig({
   reporter: 'html',
   use: {
     baseURL: 'http://localhost:5173',
-    trace: 'on-first-retry'
+    trace: 'on-first-retry',
+    colorScheme: 'dark'
   },
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'] }
+      name: 'Mobile Chrome',
+      use: { ...devices['Pixel 5'], colorScheme: 'dark' }
     }
   ],
   webServer: {

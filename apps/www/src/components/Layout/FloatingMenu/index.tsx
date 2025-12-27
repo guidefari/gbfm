@@ -1,10 +1,21 @@
 import { Link } from '@tanstack/react-router'
-import { Building2, Disc3, Home, Menu, Moon, Sun, User, X } from 'lucide-react'
+import {
+  Building2,
+  Disc3,
+  Home,
+  LogIn,
+  Menu,
+  Moon,
+  Sun,
+  User,
+  X
+} from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useState } from 'react'
 import { useTheme } from '@/components/ThemeProvider'
 import { cn } from '@/lib/utils'
 import { useAudioPlayerState } from '@/store/audioPlayer'
+import { useAuthStore } from '@/store/auth'
 import { NowPlayingMini } from './NowPlayingMini'
 
 type MenuItemConfig = {
@@ -22,6 +33,7 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const { resolvedTheme, setTheme } = useTheme()
   const { audioSrc } = useAudioPlayerState()
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
   const hasActiveAudio = Boolean(audioSrc)
 
@@ -72,13 +84,20 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
       label: 'Labels',
       action: closeMenu
     },
-    {
-      id: 'profile',
-      icon: <User className='w-6 h-6' />,
-      label: 'Profile',
-      action: closeMenu
-    }
-  ]
+    isAuthenticated
+      ? {
+          id: 'profile',
+          icon: <User className='w-6 h-6' />,
+          label: 'Profile',
+          action: closeMenu
+        }
+      : {
+          id: 'login',
+          icon: <LogIn className='w-6 h-6' />,
+          label: 'Login',
+          action: closeMenu
+        }
+  ].filter(Boolean)
 
   const quickActions: MenuItemConfig[] = [
     {
@@ -104,6 +123,8 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
         return '/labels'
       case 'profile':
         return '/settings/profile'
+      case 'login':
+        return '/auth/sign-in'
       default:
         return null
     }
@@ -152,7 +173,7 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
 
                 if (route) {
                   return (
-                    <Link key={item.id} to={route}>
+                    <Link key={item.id} to={route} onClick={item.action}>
                       {content}
                     </Link>
                   )
