@@ -1,3 +1,15 @@
+# [1.6.0](https://github.com/guidefari/gbfm/compare/v1.5.0...v1.6.0) (2025-12-27)
+
+
+### Bug Fixes
+
+* formating ([00ce618](https://github.com/guidefari/gbfm/commit/00ce61850cca4cd263e9696fd298b0840aa349a4))
+
+
+### Features
+
+* fix player layout on mixes page ([1ffe28f](https://github.com/guidefari/gbfm/commit/1ffe28f6641024159ad8b78db4d17cd6903ba216))
+
 # [1.5.0](https://github.com/guidefari/gbfm/compare/v1.4.0...v1.5.0) (2025-12-27)
 
 
