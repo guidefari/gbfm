@@ -1,3 +1,10 @@
+## [1.6.2](https://github.com/guidefari/gbfm/compare/v1.6.1...v1.6.2) (2025-12-27)
+
+
+### Bug Fixes
+
+* better auth cors ([bc4503b](https://github.com/guidefari/gbfm/commit/bc4503b1d95e570525f043ecbcb6a77d5efe102f))
+
 ## [1.6.1](https://github.com/guidefari/gbfm/compare/v1.6.0...v1.6.1) (2025-12-27)
 
 
