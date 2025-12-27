@@ -23,7 +23,9 @@ function ResetPasswordPage() {
 
   useEffect(() => {
     if (search.error) {
-      setError('Invalid or expired reset link. Please request a new password reset.')
+      setError(
+        'Invalid or expired reset link. Please request a new password reset.'
+      )
       return
     }
     if (!search.token) {

@@ -187,18 +187,20 @@ export async function login(
     }
 
     // Map Better Auth response to legacy format
-    const validatedData = z.object({
-      user: z.object({
-        id: z.string(),
-        name: z.string(),
-        email: z.string(),
-        emailVerified: z.boolean(),
-        image: z.string().nullable().optional(),
-        createdAt: z.string().or(z.date()),
-        updatedAt: z.string().or(z.date()),
-      }),
-      token: z.string()
-    }).safeParse(data)
+    const validatedData = z
+      .object({
+        user: z.object({
+          id: z.string(),
+          name: z.string(),
+          email: z.string(),
+          emailVerified: z.boolean(),
+          image: z.string().nullable().optional(),
+          createdAt: z.string().or(z.date()),
+          updatedAt: z.string().or(z.date())
+        }),
+        token: z.string()
+      })
+      .safeParse(data)
 
     if (!validatedData.success) {
       logError('Login Response Validation Failed', validatedData.error, {
@@ -222,8 +224,14 @@ export async function login(
         email: baUser.email,
         avatarUrl: baUser.image || null,
         verified: baUser.emailVerified,
-        createdAt: typeof baUser.createdAt === 'string' ? baUser.createdAt : baUser.createdAt.toISOString(),
-        updatedAt: typeof baUser.updatedAt === 'string' ? baUser.updatedAt : baUser.updatedAt.toISOString(),
+        createdAt:
+          typeof baUser.createdAt === 'string'
+            ? baUser.createdAt
+            : baUser.createdAt.toISOString(),
+        updatedAt:
+          typeof baUser.updatedAt === 'string'
+            ? baUser.updatedAt
+            : baUser.updatedAt.toISOString()
       },
       accessToken: token,
       refreshToken: token

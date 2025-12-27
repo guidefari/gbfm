@@ -10,12 +10,12 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useSession } from '@/lib/auth-client'
 import {
   useEmailPreferences,
   useUpdateEmailPreferences,
   useUpdateProfile
 } from '@/lib/http'
-import { useSession } from '@/lib/auth-client'
 
 export const Route = createFileRoute('/settings/profile')({
   component: Profile

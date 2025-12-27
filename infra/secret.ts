@@ -22,8 +22,14 @@ export const secret = {
   DatabaseName: new sst.Secret('DatabaseName', process.env.DB_NAME),
   POSTHOG_KEY: new sst.Secret('POSTHOG_KEY', process.env.POSTHOG_KEY),
   POSTHOG_HOST: new sst.Secret('POSTHOG_HOST', process.env.POSTHOG_HOST),
-  BETTER_AUTH_SECRET: new sst.Secret('BETTER_AUTH_SECRET', process.env.BETTER_AUTH_SECRET),
-  BETTER_AUTH_URL: new sst.Secret('BETTER_AUTH_URL', process.env.BETTER_AUTH_URL)
+  BETTER_AUTH_SECRET: new sst.Secret(
+    'BETTER_AUTH_SECRET',
+    process.env.BETTER_AUTH_SECRET
+  ),
+  BETTER_AUTH_URL: new sst.Secret(
+    'BETTER_AUTH_URL',
+    process.env.BETTER_AUTH_URL
+  )
 }
 
 export const allSecrets = Object.values(secret)

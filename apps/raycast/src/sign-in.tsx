@@ -74,10 +74,10 @@ export default function SignIn() {
       }
 
       const data = (await response.json()) as {
-        user: { name: string; email: string };
-        token: string;
+        user: { name: string; email: string }
+        token: string
       }
-      
+
       const result = {
         accessToken: data.token,
         refreshToken: data.token,

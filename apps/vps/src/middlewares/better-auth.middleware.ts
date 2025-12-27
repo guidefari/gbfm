@@ -2,7 +2,10 @@ import type { Context, Next } from 'hono'
 import { auth } from '@/lib/auth'
 import type { AppBindings } from '@/lib/types'
 
-export const betterAuthMiddleware = async (c: Context<AppBindings>, next: Next) => {
+export const betterAuthMiddleware = async (
+  c: Context<AppBindings>,
+  next: Next
+) => {
   const session = await auth.api.getSession({
     headers: c.req.raw.headers
   })

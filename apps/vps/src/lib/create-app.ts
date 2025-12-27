@@ -41,7 +41,12 @@ export default function createApp() {
         'https://goosebumps.fm'
       ],
       allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-      allowHeaders: ['Content-Type', 'Authorization', 'Cookie', 'Refresh-Token'],
+      allowHeaders: [
+        'Content-Type',
+        'Authorization',
+        'Cookie',
+        'Refresh-Token'
+      ],
       exposeHeaders: ['Set-Cookie'],
       credentials: true
     })

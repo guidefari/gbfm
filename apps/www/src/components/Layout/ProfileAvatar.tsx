@@ -8,7 +8,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { useSession, signOut } from '@/lib/auth-client'
+import { signOut, useSession } from '@/lib/auth-client'
 import { useAuthStore } from '@/store/auth'
 
 const ProfileAvatar = () => {
@@ -56,9 +56,7 @@ const ProfileAvatar = () => {
               <Link to='/settings/profile'>Profile</Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleSignOut}>
-              Logout
-            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleSignOut}>Logout</DropdownMenuItem>
           </>
         )}
       </DropdownMenuContent>

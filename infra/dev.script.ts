@@ -80,7 +80,7 @@ new sst.x.DevCommand('betterAuthGen', {
     autostart: false
   },
   environment: {
-    BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET || ""
+    BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET || ''
   }
 })
 
@@ -246,5 +246,22 @@ new sst.x.DevCommand('Restore_Local_Database', {
   },
   environment: {
     LOCAL_DB_URL: process.env.LOCAL_DB_URL || ''
+  }
+})
+
+new sst.x.DevCommand('Quality_Gate', {
+  dev: {
+    command:
+      'bun run biome:ci && bun typecheck && cd apps/www && bun run build',
+    directory: './',
+    autostart: false
+  }
+})
+
+new sst.x.DevCommand('Lint_Format', {
+  dev: {
+    command: 'bunx biome check --write .',
+    directory: './',
+    autostart: false
   }
 })

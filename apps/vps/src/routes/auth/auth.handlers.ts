@@ -1,9 +1,7 @@
 import { eq } from 'drizzle-orm'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
-import {
-  user as userTable
-} from '@/db/auth.schema'
+import { user as userTable } from '@/db/auth.schema'
 import type { AppRouteHandler } from '@/lib/types'
 
 import {
@@ -18,7 +16,6 @@ import type {
   UpdateProfileRoute
 } from './auth.routes'
 import { uploadAvatar } from './auth.util'
-
 
 export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
   const user = c.get('user')

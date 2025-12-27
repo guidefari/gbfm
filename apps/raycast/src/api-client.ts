@@ -64,11 +64,17 @@ const refreshAccessToken = async (
     throw new ServerError('Token refresh failed', response.status)
   }
 
-  const data = (await response.json()) as { token?: string; session?: { token: string } }
+  const data = (await response.json()) as {
+    token?: string
+    session?: { token: string }
+  }
   const accessToken = data.token || data.session?.token
 
   if (!accessToken) {
-    throw new ServerError('No access token in refresh response', response.status)
+    throw new ServerError(
+      'No access token in refresh response',
+      response.status
+    )
   }
 
   const result = {

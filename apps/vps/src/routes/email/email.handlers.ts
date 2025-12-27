@@ -68,7 +68,10 @@ export const sendMixNotification: AppRouteHandler<
         .limit(1)
 
       const username =
-        user?.name || metadata?.username || recipient.split('@')[0] || 'listener'
+        user?.name ||
+        metadata?.username ||
+        recipient.split('@')[0] ||
+        'listener'
 
       // Check email preferences if author exists
       if (user) {

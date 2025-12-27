@@ -3,7 +3,14 @@ import {
   type InferSelectModel,
   relations
 } from 'drizzle-orm'
-import { index, pgTable, primaryKey, text, uuid, varchar } from 'drizzle-orm/pg-core'
+import {
+  index,
+  pgTable,
+  primaryKey,
+  text,
+  uuid,
+  varchar
+} from 'drizzle-orm/pg-core'
 import { z } from 'zod/v4'
 import { user } from './auth.schema'
 import { defaultContentFields } from './util'

@@ -26,8 +26,10 @@ function createEnvConfig() {
     : process.env.EMAIL_SENDER || ''
   const accessTokenSecret = process.env.ACCESS_TOKEN_SECRET || 'secret'
   const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET || 'secret'
-  const betterAuthSecret = process.env.BETTER_AUTH_SECRET || Resource.BETTER_AUTH_SECRET.value
-  const betterAuthUrl = process.env.BETTER_AUTH_URL || Resource.BETTER_AUTH_URL.value
+  const betterAuthSecret =
+    process.env.BETTER_AUTH_SECRET || Resource.BETTER_AUTH_SECRET.value
+  const betterAuthUrl =
+    process.env.BETTER_AUTH_URL || Resource.BETTER_AUTH_URL.value
   const frontendUrl = isProd
     ? Resource.Urls.site
     : process.env.FRONTEND_URL || 'http://localhost:5173'

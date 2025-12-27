@@ -30,10 +30,7 @@ export type PaginatedResponse<T> = {
   pagination: PaginationMetadata
 }
 
-export async function fetcher<T>(
-  input: RequestInfo,
-  init: RequestInit = {}
-) {
+export async function fetcher<T>(input: RequestInfo, init: RequestInit = {}) {
   try {
     const isFormData = init.body instanceof FormData
     const headers = {
