@@ -1,3 +1,10 @@
+# [1.3.0](https://github.com/guidefari/gbfm/compare/v1.2.0...v1.3.0) (2025-12-27)
+
+
+### Features
+
+* better auth migration ([0ad61fc](https://github.com/guidefari/gbfm/commit/0ad61fc595dc80b66f9234997d7a445072d4bef0))
+
 # [1.2.0](https://github.com/guidefari/gbfm/compare/v1.1.2...v1.2.0) (2025-12-14)
 
 
