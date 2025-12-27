@@ -1,3 +1,16 @@
+# [1.7.0](https://github.com/guidefari/gbfm/compare/v1.6.2...v1.7.0) (2025-12-27)
+
+
+### Bug Fixes
+
+* cors ([19ac9d6](https://github.com/guidefari/gbfm/commit/19ac9d6e365155420fac995708993b85e8400f82))
+
+
+### Features
+
+* new mix upload page ([9cf3b54](https://github.com/guidefari/gbfm/commit/9cf3b541e1b2b1337afff97a79b820642a3e8733))
+* style www to be a bit more brutalist ([83a3fc4](https://github.com/guidefari/gbfm/commit/83a3fc407d61d816d69358c805db50a9f20fe163))
+
 ## [1.6.2](https://github.com/guidefari/gbfm/compare/v1.6.1...v1.6.2) (2025-12-27)
 
 
