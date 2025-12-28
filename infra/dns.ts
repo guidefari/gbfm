@@ -8,8 +8,7 @@ export const urls = new sst.Linkable('Urls', {
   properties: {
     //   api: `https://api.${domain}`,
     //   openapi: `https://api.${domain}/doc`,
-    site:
-      $app.stage === 'dev' ? 'http://localhost:5173' : `https://${domain}`,
+    site: $app.stage === 'dev' ? 'http://localhost:5173' : `https://${domain}`,
     vps:
       $app.stage === 'dev' ? 'http://localhost:3003' : `https://vps.${domain}`
   }
