@@ -1,3 +1,15 @@
+# [1.8.0](https://github.com/guidefari/gbfm/compare/v1.7.0...v1.8.0) (2025-12-28)
+
+
+### Bug Fixes
+
+* format ([0f86753](https://github.com/guidefari/gbfm/commit/0f86753bfe37ac74844719897eebdc8728e9f667))
+
+
+### Features
+
+* Dynamically configure CORS origin with `FRONTEND_URL` and remove `www` subdomain from production site URL. ([542f72c](https://github.com/guidefari/gbfm/commit/542f72c8d8cbca9584657ad326ed59e40ed43bbc))
+
 # [1.7.0](https://github.com/guidefari/gbfm/compare/v1.6.2...v1.7.0) (2025-12-27)
 
 
