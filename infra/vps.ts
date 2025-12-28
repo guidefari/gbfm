@@ -64,7 +64,7 @@ export const service = new sst.aws.Service('gbfm_vps', {
 export const vps_gateway = new sst.aws.ApiGatewayV2('gbfm_vps_gateway', {
   vpc,
   cors: {
-    allowOrigins: [domain, `https://www.${domain}`],
+    allowOrigins: [`https://${domain}`, `https://www.${domain}`],
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowHeaders: ['Content-Type', 'Authorization', 'Cookie', 'Refresh-Token'],
     exposeHeaders: ['Set-Cookie'],
