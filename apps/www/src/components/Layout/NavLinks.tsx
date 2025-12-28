@@ -1,7 +1,7 @@
 import {
   FileTextIcon,
-  HomeIcon
-  // Pencil2Icon,
+  HomeIcon,
+  Pencil2Icon
   // TwitterLogoIcon
 } from '@radix-ui/react-icons'
 import { BiSolidCameraHome } from 'react-icons/bi'
@@ -15,6 +15,7 @@ type BaseLink = {
   name: string
   external?: { link: string }
   icon: React.ReactNode
+  adminOnly?: boolean
 }
 
 type lol =
@@ -78,10 +79,16 @@ export const pagesAndPages: lol[] = [
         <TfiYoutube />
       </a>
     )
-  }
+  },
   // {
   //   icon: <Pencil2Icon className={iconSytles} />,
   //   name: 'New Post',
   //   slug: '/post'
   // }
+  {
+    name: 'Admin',
+    slug: '/admin',
+    icon: <Pencil2Icon className={iconSytles} />,
+    adminOnly: true
+  }
 ]

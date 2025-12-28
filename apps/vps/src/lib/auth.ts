@@ -1,7 +1,8 @@
 import { sendPasswordResetEmail, sendWelcomeEmail } from '@gbfm/email/index'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
-import { bearer } from 'better-auth/plugins'
+import { admin, bearer } from 'better-auth/plugins'
+
 import { db } from '@/db'
 import * as authSchema from '@/db/auth.schema'
 import {
@@ -14,6 +15,13 @@ import {
   markEmailDeliveryLogAsFailed,
   markEmailDeliveryLogAsSent
 } from '@/repositories/email-delivery-log.repository'
+import {
+  ac,
+  admin as adminRole,
+  creator,
+  editor,
+  userRole
+} from './auth-permissions'
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -28,7 +36,7 @@ export const auth = betterAuth({
         to: user.email,
         resetUrl: url,
         expiresIn: '1 hour'
-      }).catch((err) => {
+      }).catch((err: Error) => {
         console.error('Failed to send password reset email:', err)
       })
     }
@@ -89,7 +97,18 @@ export const auth = betterAuth({
       }
     }
   },
-  plugins: [bearer()]
+  plugins: [
+    bearer(),
+    admin({
+      ac,
+      roles: {
+        admin: adminRole,
+        editor,
+        creator,
+        user: userRole
+      }
+    })
+  ]
 })
 
 export type AuthSession = typeof auth.$Infer.Session

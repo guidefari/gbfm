@@ -8,7 +8,18 @@ import { PostHogProvider } from 'posthog-js/react'
 import { ThemeProvider } from './components/ThemeProvider'
 import { env } from './env'
 
-const router = createRouter({ routeTree })
+import { useAuthStore } from './store/auth'
+
+const router = createRouter({
+  routeTree,
+  defaultPreload: 'intent',
+  context: {
+    auth: {
+      user: null,
+      isAuthenticated: false,
+    }
+  }
+})
 
 declare module '@tanstack/react-router' {
   interface Register {
@@ -25,10 +36,12 @@ const queryClient = new QueryClient({
 })
 
 function App() {
+  const auth = useAuthStore()
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme='dark' storageKey='vite-ui-theme'>
-        <RouterProvider router={router} />
+        <RouterProvider router={router} context={{ auth }} />
       </ThemeProvider>
     </QueryClientProvider>
   )

@@ -21,6 +21,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as TracksIndexRouteImport } from './routes/tracks/index'
 import { Route as MixesIndexRouteImport } from './routes/mixes/index'
 import { Route as LabelsIndexRouteImport } from './routes/labels/index'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as TracksTrackIdRouteImport } from './routes/tracks/$trackId'
 import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
 import { Route as ReleasesSlugRouteImport } from './routes/releases/$slug'
@@ -94,6 +95,11 @@ const LabelsIndexRoute = LabelsIndexRouteImport.update({
   path: '/',
   getParentRoute: () => LabelsRouteRoute,
 } as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/admin/',
+  path: '/admin/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TracksTrackIdRoute = TracksTrackIdRouteImport.update({
   id: '/$trackId',
   path: '/$trackId',
@@ -159,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/releases/$slug': typeof ReleasesSlugRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
+  '/admin': typeof AdminIndexRoute
   '/labels/': typeof LabelsIndexRoute
   '/mixes/': typeof MixesIndexRoute
   '/tracks/': typeof TracksIndexRoute
@@ -179,6 +186,7 @@ export interface FileRoutesByTo {
   '/releases/$slug': typeof ReleasesSlugRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
+  '/admin': typeof AdminIndexRoute
   '/labels': typeof LabelsIndexRoute
   '/mixes': typeof MixesIndexRoute
   '/tracks': typeof TracksIndexRoute
@@ -203,6 +211,7 @@ export interface FileRoutesById {
   '/releases/$slug': typeof ReleasesSlugRoute
   '/settings/profile': typeof SettingsProfileRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
+  '/admin/': typeof AdminIndexRoute
   '/labels/': typeof LabelsIndexRoute
   '/mixes/': typeof MixesIndexRoute
   '/tracks/': typeof TracksIndexRoute
@@ -228,6 +237,7 @@ export interface FileRouteTypes {
     | '/releases/$slug'
     | '/settings/profile'
     | '/tracks/$trackId'
+    | '/admin'
     | '/labels/'
     | '/mixes/'
     | '/tracks/'
@@ -248,6 +258,7 @@ export interface FileRouteTypes {
     | '/releases/$slug'
     | '/settings/profile'
     | '/tracks/$trackId'
+    | '/admin'
     | '/labels'
     | '/mixes'
     | '/tracks'
@@ -271,6 +282,7 @@ export interface FileRouteTypes {
     | '/releases/$slug'
     | '/settings/profile'
     | '/tracks/$trackId'
+    | '/admin/'
     | '/labels/'
     | '/mixes/'
     | '/tracks/'
@@ -292,6 +304,7 @@ export interface RootRouteChildren {
   AuthSignUpRoute: typeof AuthSignUpRoute
   ReleasesSlugRoute: typeof ReleasesSlugRoute
   SettingsProfileRoute: typeof SettingsProfileRoute
+  AdminIndexRoute: typeof AdminIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -379,6 +392,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/labels/'
       preLoaderRoute: typeof LabelsIndexRouteImport
       parentRoute: typeof LabelsRouteRoute
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/tracks/$trackId': {
       id: '/tracks/$trackId'
@@ -504,6 +524,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthSignUpRoute: AuthSignUpRoute,
   ReleasesSlugRoute: ReleasesSlugRoute,
   SettingsProfileRoute: SettingsProfileRoute,
+  AdminIndexRoute: AdminIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -7,10 +7,20 @@ import {
   TooltipTrigger
 } from '@/components/ui/tooltip'
 import { useUIStore } from '@/store'
+import { useAuthStore } from '@/store/auth'
 import { pagesAndPages } from './NavLinks'
 import ProfileAvatar from './ProfileAvatar'
 
 export const DesktopSideNav = () => {
+  const { user } = useAuthStore()
+  console.log(user)
+  const isAdmin = user?.role === 'admin'
+
+  const filteredPages = pagesAndPages.filter((page) => {
+    if (page.adminOnly && !isAdmin) return false
+    return true
+  })
+
   const { showCompactPlayer, toggleCompactPlayer, preferredPlayerType } =
     useUIStore()
 
@@ -20,7 +30,7 @@ export const DesktopSideNav = () => {
   return (
     <aside className='sticky top-0 z-30 flex flex-col h-screen border-r w-14 border-border bg-background'>
       <nav className='flex flex-col items-center gap-4 px-2 sm:py-5'>
-        {pagesAndPages.map((page) => {
+        {filteredPages.map((page) => {
           if (page.CustomComponent) {
             return <div key={page.name}>{page.CustomComponent}</div>
           }

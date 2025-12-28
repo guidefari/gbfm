@@ -13,7 +13,6 @@ import {
 import { mixCreators } from './mix.schema'
 import { postCreators } from './post.schema'
 import { publicationMembers } from './publication.schema'
-import { userPermissionsTable, userRolesTable } from './rbac.schema'
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
@@ -25,7 +24,11 @@ export const user = pgTable('user', {
   updatedAt: timestamp('updated_at')
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
-    .notNull()
+    .notNull(),
+  role: text('role').default('user').notNull(),
+  banned: boolean('banned').default(false).notNull(),
+  banReason: text('ban_reason'),
+  banExpires: timestamp('ban_expires')
 })
 
 export const session = pgTable(
@@ -42,7 +45,8 @@ export const session = pgTable(
     userAgent: text('user_agent'),
     userId: text('user_id')
       .notNull()
-      .references(() => user.id, { onDelete: 'cascade' })
+      .references(() => user.id, { onDelete: 'cascade' }),
+    impersonatedBy: text('impersonated_by')
   },
   (table) => [index('session_userId_idx').on(table.userId)]
 )
@@ -94,8 +98,6 @@ export const userRelations = relations(user, ({ many, one }) => ({
   accounts: many(account),
   postCreators: many(postCreators),
   audioCreators: many(audioCreators),
-  userRoles: many(userRolesTable),
-  userPermissions: many(userPermissionsTable),
   emailDeliveryLogs: many(emailDeliveryLogsTable),
   userEmailPreferences: one(userEmailPreferencesTable),
   publicationMembers: many(publicationMembers),
@@ -112,13 +114,18 @@ export const selectUserSchema = z.object({
   emailVerified: z.boolean(),
   image: z.string().nullable(),
   createdAt: z.date(),
-  updatedAt: z.date()
+  updatedAt: z.date(),
+  role: z.string(),
+  banned: z.boolean(),
+  banReason: z.string().nullable(),
+  banExpires: z.date().nullable()
 })
 
 export const insertUserSchema = z.object({
   name: z.string(),
   email: z.string().email(),
-  image: z.string().optional()
+  image: z.string().optional(),
+  role: z.string().optional()
 })
 
 export const sessionRelations = relations(session, ({ one }) => ({

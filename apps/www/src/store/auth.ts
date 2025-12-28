@@ -7,12 +7,16 @@ export interface User {
   name: string
   email: string
   emailVerified: boolean
-  image?: string | null | undefined
+  image?: string | null
   createdAt: Date
   updatedAt: Date
+  role?: string | null
+  banned?: boolean | null
+  banReason?: string | null
+  banExpires?: Date | null
 }
 
-interface AuthState {
+export interface AuthState {
   user: User | null
   isAuthenticated: boolean
 }

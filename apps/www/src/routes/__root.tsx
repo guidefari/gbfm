@@ -1,12 +1,21 @@
 import { FPSMeter } from '@overengineering/fps-meter'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { createRootRoute, HeadContent, Outlet } from '@tanstack/react-router'
+import {
+  createRootRouteWithContext,
+  HeadContent,
+  Outlet
+} from '@tanstack/react-router'
 import { Suspense } from 'react'
 import { CommandDialogDemo } from '@/components/cmd'
 import AppShell from '@/components/Layout/AppShell'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { Toaster } from '@/components/ui/toaster'
 import { env } from '@/env'
+import type { AuthState } from '@/store/auth'
+
+export interface MyRouterContext {
+  auth: AuthState
+}
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -18,7 +27,7 @@ const queryClient = new QueryClient({
   }
 })
 
-export const Route = createRootRoute({
+export const Route = createRootRouteWithContext<MyRouterContext>()({
   head: () => ({
     meta: [
       {
