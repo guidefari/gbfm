@@ -1,3 +1,10 @@
+## [1.8.1](https://github.com/guidefari/gbfm/compare/v1.8.0...v1.8.1) (2025-12-28)
+
+
+### Bug Fixes
+
+* undo gateway cors change ([4fa1ece](https://github.com/guidefari/gbfm/commit/4fa1ece3057f7229f616a1bde862969403fa520c))
+
 # [1.8.0](https://github.com/guidefari/gbfm/compare/v1.7.0...v1.8.0) (2025-12-28)
 
 
