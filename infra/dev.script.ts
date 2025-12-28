@@ -201,3 +201,12 @@ new sst.x.DevCommand('Restore_Local_Database', {
     LOCAL_DB_URL: process.env.LOCAL_DB_URL || ''
   }
 })
+
+new sst.x.DevCommand('Assign_All_Relations_To_User', {
+  link: [...allSecrets, email],
+  dev: {
+    command: 'bun scripts/assign-all-relations-to-user.ts',
+    directory: './apps/vps',
+    autostart: false
+  }
+})

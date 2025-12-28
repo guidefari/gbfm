@@ -1,5 +1,5 @@
 import type { SelectMix } from '@gbfm/vps/schemas'
-import { Heart, Play, Plus, Share } from 'lucide-react'
+import { Heart, Play, Plus, Share2 } from 'lucide-react'
 import type React from 'react'
 import {
   ContextMenu,
@@ -77,7 +77,7 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
         </ContextMenuItem>
 
         <ContextMenuItem onClick={handleShare}>
-          <Share className='w-4 h-4' />
+          <Share2 className='w-4 h-4' />
           Share
         </ContextMenuItem>
       </ContextMenuContent>

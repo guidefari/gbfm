@@ -1,6 +1,6 @@
 import type { SelectMix } from '@gbfm/vps/schemas'
 import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
-import { Heart, MoreVertical, Play, Plus, Share, X } from 'lucide-react'
+import { Heart, MoreVertical, Play, Plus, Share2, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useMemo, useRef } from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
@@ -93,7 +93,7 @@ function MixMenu({ mix }: MixMenuProps) {
         </DropdownMenuItem>
 
         <DropdownMenuItem onClick={handleShare}>
-          <Share className='w-4 h-4' />
+          <Share2 className='w-4 h-4' />
           Share
         </DropdownMenuItem>
       </DropdownMenuContent>

@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { and, arrayContains, count, desc, eq } from 'drizzle-orm'
+import { and, arrayContains, count, desc, eq, inArray } from 'drizzle-orm'
 import ffmpeg from 'ffmpeg-static'
 import type { Context } from 'hono'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
@@ -186,7 +186,6 @@ export const getAudioByType: AppRouteHandler<GetAudioByTypeRoute> = async (
   try {
     const whereCondition = eq(audioTable.type, type)
 
-    // Get total count
     const countResult = await timeQuery(
       () =>
         db.select({ total: count() }).from(audioTable).where(whereCondition),
@@ -195,8 +194,7 @@ export const getAudioByType: AppRouteHandler<GetAudioByTypeRoute> = async (
 
     const total = countResult[0]?.total ?? 0
 
-    // Get paginated data
-    const data = await timeQuery(
+    const audioItems = await timeQuery(
       () =>
         db
           .select()
@@ -207,6 +205,41 @@ export const getAudioByType: AppRouteHandler<GetAudioByTypeRoute> = async (
           .orderBy(desc(audioTable.createdAt)),
       'get-audio-by-type-data'
     )
+
+    const audioIds = audioItems.map((a) => a.id)
+
+    const creatorsData =
+      audioIds.length > 0
+        ? await db
+            .select({
+              audioId: audioCreators.audioId,
+              creatorId: usersTable.id,
+              creatorName: usersTable.name
+            })
+            .from(audioCreators)
+            .innerJoin(usersTable, eq(audioCreators.creatorId, usersTable.id))
+            .where(inArray(audioCreators.audioId, audioIds))
+        : []
+
+    const creatorsByAudioId: Record<
+      string,
+      Array<{ id: string; name: string }>
+    > = {}
+    for (const row of creatorsData) {
+      const existing = creatorsByAudioId[row.audioId]
+      if (existing) {
+        existing.push({ id: row.creatorId, name: row.creatorName })
+      } else {
+        creatorsByAudioId[row.audioId] = [
+          { id: row.creatorId, name: row.creatorName }
+        ]
+      }
+    }
+
+    const data = audioItems.map((audio) => ({
+      ...audio,
+      creators: creatorsByAudioId[audio.id] || []
+    }))
 
     return c.json(
       {

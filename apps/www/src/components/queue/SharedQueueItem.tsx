@@ -1,6 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import { Heart, MoreHorizontal, Play, Plus, Share, X } from 'lucide-react'
+import { Heart, MoreHorizontal, Play, Plus, Share2, X } from 'lucide-react'
 import type React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -347,7 +347,7 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
             type='button'
             onClick={handleShare}
             className='flex items-center w-full gap-2 px-3 py-2 text-sm text-left transition-colors text-foreground hover:bg-muted'>
-            <Share className='w-4 h-4' />
+            <Share2 className='w-4 h-4' />
             Share
           </button>
         </div>
