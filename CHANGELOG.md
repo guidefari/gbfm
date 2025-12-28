@@ -1,3 +1,10 @@
+# [1.9.0](https://github.com/guidefari/gbfm/compare/v1.8.3...v1.9.0) (2025-12-28)
+
+
+### Features
+
+* better auth roles ([0c971af](https://github.com/guidefari/gbfm/commit/0c971af299a5006257f70e717b0ea9a89bf8967e))
+
 ## [1.8.3](https://github.com/guidefari/gbfm/compare/v1.8.2...v1.8.3) (2025-12-28)
 
 
