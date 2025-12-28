@@ -1,3 +1,11 @@
+## [1.8.2](https://github.com/guidefari/gbfm/compare/v1.8.1...v1.8.2) (2025-12-28)
+
+
+### Bug Fixes
+
+* explicit cors on gateway ([c0d64cb](https://github.com/guidefari/gbfm/commit/c0d64cbe25cbb3e9ad28f25b0ad3efa870f1887b))
+* infta files formatting ([8984fd0](https://github.com/guidefari/gbfm/commit/8984fd075b8a358273e7733a66b4e20f9643fe56))
+
 ## [1.8.1](https://github.com/guidefari/gbfm/compare/v1.8.0...v1.8.1) (2025-12-28)
 
 
