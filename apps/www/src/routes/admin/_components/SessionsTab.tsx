@@ -32,7 +32,9 @@ interface UserSearchResult {
 export function SessionsTab() {
   const queryClient = useQueryClient()
   const [userEmail, setUserEmail] = useState('')
-  const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(null)
+  const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(
+    null
+  )
   const [revokeAllDialog, setRevokeAllDialog] = useState(false)
 
   const { data: usersData, isPending: searchPending } = useQuery({
@@ -100,8 +102,11 @@ export function SessionsTab() {
   return (
     <div className='space-y-6'>
       <div className='space-y-2'>
-        <label className='text-sm font-medium'>Search User by Email</label>
+        <label htmlFor='user-email-search' className='text-sm font-medium'>
+          Search User by Email
+        </label>
         <Input
+          id='user-email-search'
           placeholder='Enter user email...'
           value={userEmail}
           onChange={(e) => {
@@ -120,8 +125,7 @@ export function SessionsTab() {
                 type='button'
                 key={user.id}
                 className='block w-full rounded-sm px-2 py-1 text-left text-sm hover:bg-muted'
-                onClick={() => setSelectedUser(user)}
-              >
+                onClick={() => setSelectedUser(user)}>
                 <span className='font-medium'>{user.name}</span>
                 <span className='ml-2 text-muted-foreground'>{user.email}</span>
               </button>
@@ -134,23 +138,23 @@ export function SessionsTab() {
         <div className='space-y-4'>
           <div className='flex items-center justify-between'>
             <div>
-              <h3 className='font-medium'>
-                Sessions for {selectedUser.name}
-              </h3>
+              <h3 className='font-medium'>Sessions for {selectedUser.name}</h3>
               <p className='text-sm text-muted-foreground'>
                 {selectedUser.email}
               </p>
             </div>
             <div className='flex gap-2'>
-              <Button variant='outline' size='sm' onClick={() => setSelectedUser(null)}>
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={() => setSelectedUser(null)}>
                 Clear
               </Button>
               {sessions.length > 0 && (
                 <Button
                   variant='destructive'
                   size='sm'
-                  onClick={() => setRevokeAllDialog(true)}
-                >
+                  onClick={() => setRevokeAllDialog(true)}>
                   Revoke All
                 </Button>
               )}
@@ -203,8 +207,7 @@ export function SessionsTab() {
                           onClick={() =>
                             revokeSessionMutation.mutate(session.token)
                           }
-                          disabled={revokeSessionMutation.isPending}
-                        >
+                          disabled={revokeSessionMutation.isPending}>
                           Revoke
                         </Button>
                       </td>
@@ -242,8 +245,7 @@ export function SessionsTab() {
                 selectedUser &&
                 revokeAllSessionsMutation.mutate(selectedUser.id)
               }
-              disabled={revokeAllSessionsMutation.isPending}
-            >
+              disabled={revokeAllSessionsMutation.isPending}>
               {revokeAllSessionsMutation.isPending
                 ? 'Revoking...'
                 : 'Revoke All Sessions'}

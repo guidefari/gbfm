@@ -180,12 +180,7 @@ function Component() {
   return (
     <div className='relative h-full font-jetbrains bg-background text-foreground'>
       <div className='grid h-full grid-cols-1 gap-4 p-4 md:grid-cols-2'>
-        {/* Left Column - Mix Details (Outlet) */}
-        <div className='p-4 overflow-y-auto border-2 border-dashed rounded-sm border-muted-foreground/30 bg-card/10'>
-          <Outlet />
-        </div>
-
-        {/* Right Column - Mixes List */}
+        {/* Left Column - Mixes List */}
         <div className='p-4 overflow-y-auto border-2 border-dashed rounded-sm border-muted-foreground/30 bg-card/10'>
           <h2 className='flex items-center gap-2 mb-4 text-lg font-bold'>
             <div className='w-2 h-2 rounded-sm bg-foreground/30' />
@@ -261,6 +256,11 @@ function Component() {
               </button>
             )}
           </div>
+        </div>
+
+        {/* Right Column - Mix Details (Outlet) */}
+        <div className='p-4 overflow-y-auto border-2 border-dashed rounded-sm border-muted-foreground/30 bg-card/10'>
+          <Outlet />
         </div>
       </div>
 

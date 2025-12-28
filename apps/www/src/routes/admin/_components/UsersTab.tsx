@@ -75,7 +75,13 @@ export function UsersTab() {
   })
 
   const setRoleMutation = useMutation({
-    mutationFn: async ({ userId, role }: { userId: string; role: UserRole }) => {
+    mutationFn: async ({
+      userId,
+      role
+    }: {
+      userId: string
+      role: UserRole
+    }) => {
       return authClient.admin.setRole({
         userId,
         role: role as 'admin' | 'user'
@@ -86,12 +92,22 @@ export function UsersTab() {
       toast({ title: 'Role updated successfully' })
     },
     onError: (err: Error) => {
-      toast({ title: 'Failed to update role', description: err.message, variant: 'destructive' })
+      toast({
+        title: 'Failed to update role',
+        description: err.message,
+        variant: 'destructive'
+      })
     }
   })
 
   const banMutation = useMutation({
-    mutationFn: async ({ userId, banReason }: { userId: string; banReason?: string }) => {
+    mutationFn: async ({
+      userId,
+      banReason
+    }: {
+      userId: string
+      banReason?: string
+    }) => {
       return authClient.admin.banUser({ userId, banReason })
     },
     onSuccess: () => {
@@ -101,7 +117,11 @@ export function UsersTab() {
       toast({ title: 'User banned successfully' })
     },
     onError: (err: Error) => {
-      toast({ title: 'Failed to ban user', description: err.message, variant: 'destructive' })
+      toast({
+        title: 'Failed to ban user',
+        description: err.message,
+        variant: 'destructive'
+      })
     }
   })
 
@@ -114,7 +134,11 @@ export function UsersTab() {
       toast({ title: 'User unbanned successfully' })
     },
     onError: (err: Error) => {
-      toast({ title: 'Failed to unban user', description: err.message, variant: 'destructive' })
+      toast({
+        title: 'Failed to unban user',
+        description: err.message,
+        variant: 'destructive'
+      })
     }
   })
 
@@ -128,7 +152,11 @@ export function UsersTab() {
       toast({ title: 'User deleted successfully' })
     },
     onError: (err: Error) => {
-      toast({ title: 'Failed to delete user', description: err.message, variant: 'destructive' })
+      toast({
+        title: 'Failed to delete user',
+        description: err.message,
+        variant: 'destructive'
+      })
     }
   })
 
@@ -146,7 +174,9 @@ export function UsersTab() {
       </div>
 
       {isPending ? (
-        <div className='py-8 text-center text-muted-foreground'>Loading users...</div>
+        <div className='py-8 text-center text-muted-foreground'>
+          Loading users...
+        </div>
       ) : (
         <div className='overflow-x-auto rounded-sm border'>
           <table className='w-full text-sm'>
@@ -163,14 +193,15 @@ export function UsersTab() {
               {users.map((user) => (
                 <tr key={user.id} className='border-b hover:bg-muted/50'>
                   <td className='px-4 py-3'>{user.name}</td>
-                  <td className='px-4 py-3 text-muted-foreground'>{user.email}</td>
+                  <td className='px-4 py-3 text-muted-foreground'>
+                    {user.email}
+                  </td>
                   <td className='px-4 py-3'>
                     <Select
                       value={user.role ?? 'user'}
                       onValueChange={(role: UserRole) =>
                         setRoleMutation.mutate({ userId: user.id, role })
-                      }
-                    >
+                      }>
                       <SelectTrigger className='w-28'>
                         <SelectValue />
                       </SelectTrigger>
@@ -196,8 +227,7 @@ export function UsersTab() {
                           variant='outline'
                           size='sm'
                           onClick={() => unbanMutation.mutate(user.id)}
-                          disabled={unbanMutation.isPending}
-                        >
+                          disabled={unbanMutation.isPending}>
                           Unban
                         </Button>
                       ) : (
@@ -205,9 +235,12 @@ export function UsersTab() {
                           variant='outline'
                           size='sm'
                           onClick={() =>
-                            setBanDialog({ open: true, userId: user.id, userName: user.name })
-                          }
-                        >
+                            setBanDialog({
+                              open: true,
+                              userId: user.id,
+                              userName: user.name
+                            })
+                          }>
                           Ban
                         </Button>
                       )}
@@ -215,9 +248,12 @@ export function UsersTab() {
                         variant='destructive'
                         size='sm'
                         onClick={() =>
-                          setDeleteDialog({ open: true, userId: user.id, userName: user.name })
-                        }
-                      >
+                          setDeleteDialog({
+                            open: true,
+                            userId: user.id,
+                            userName: user.name
+                          })
+                        }>
                         Delete
                       </Button>
                     </div>
@@ -226,7 +262,9 @@ export function UsersTab() {
               ))}
               {users.length === 0 && (
                 <tr>
-                  <td colSpan={5} className='px-4 py-8 text-center text-muted-foreground'>
+                  <td
+                    colSpan={5}
+                    className='px-4 py-8 text-center text-muted-foreground'>
                     No users found
                   </td>
                 </tr>
@@ -236,12 +274,15 @@ export function UsersTab() {
         </div>
       )}
 
-      <Dialog open={banDialog.open} onOpenChange={(open) => setBanDialog((prev) => ({ ...prev, open }))}>
+      <Dialog
+        open={banDialog.open}
+        onOpenChange={(open) => setBanDialog((prev) => ({ ...prev, open }))}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Ban User</DialogTitle>
             <DialogDescription>
-              Are you sure you want to ban {banDialog.userName}? This will revoke all their sessions.
+              Are you sure you want to ban {banDialog.userName}? This will
+              revoke all their sessions.
             </DialogDescription>
           </DialogHeader>
           <div className='py-4'>
@@ -252,37 +293,51 @@ export function UsersTab() {
             />
           </div>
           <DialogFooter>
-            <Button variant='outline' onClick={() => setBanDialog({ open: false, userId: '', userName: '' })}>
+            <Button
+              variant='outline'
+              onClick={() =>
+                setBanDialog({ open: false, userId: '', userName: '' })
+              }>
               Cancel
             </Button>
             <Button
               variant='destructive'
-              onClick={() => banMutation.mutate({ userId: banDialog.userId, banReason: banReason || undefined })}
-              disabled={banMutation.isPending}
-            >
+              onClick={() =>
+                banMutation.mutate({
+                  userId: banDialog.userId,
+                  banReason: banReason || undefined
+                })
+              }
+              disabled={banMutation.isPending}>
               {banMutation.isPending ? 'Banning...' : 'Ban User'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Dialog open={deleteDialog.open} onOpenChange={(open) => setDeleteDialog((prev) => ({ ...prev, open }))}>
+      <Dialog
+        open={deleteDialog.open}
+        onOpenChange={(open) => setDeleteDialog((prev) => ({ ...prev, open }))}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Delete User</DialogTitle>
             <DialogDescription>
-              Are you sure you want to permanently delete {deleteDialog.userName}? This action cannot be undone.
+              Are you sure you want to permanently delete{' '}
+              {deleteDialog.userName}? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant='outline' onClick={() => setDeleteDialog({ open: false, userId: '', userName: '' })}>
+            <Button
+              variant='outline'
+              onClick={() =>
+                setDeleteDialog({ open: false, userId: '', userName: '' })
+              }>
               Cancel
             </Button>
             <Button
               variant='destructive'
               onClick={() => deleteMutation.mutate(deleteDialog.userId)}
-              disabled={deleteMutation.isPending}
-            >
+              disabled={deleteMutation.isPending}>
               {deleteMutation.isPending ? 'Deleting...' : 'Delete User'}
             </Button>
           </DialogFooter>

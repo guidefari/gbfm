@@ -16,7 +16,7 @@ const router = createRouter({
   context: {
     auth: {
       user: null,
-      isAuthenticated: false,
+      isAuthenticated: false
     }
   }
 })
