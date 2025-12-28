@@ -57,8 +57,19 @@ export const service = new sst.aws.Service('gbfm_vps', {
   capacity: 'spot'
 })
 
+// disabling cors on gateway and handling via app instead.
+// Sources:
+// - https://sst.dev/docs/component/aws/apigatewayv2/
+// - https://www.dpklabs.com/blog/avoiding-cors-issues-with-hono-sst-and-api-gateway
 export const vps_gateway = new sst.aws.ApiGatewayV2('gbfm_vps_gateway', {
   vpc,
+cors: {
+    allowOrigins: [domain, `https://www.${domain}`],
+    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowHeaders: ['Content-Type', 'Authorization', 'Cookie', 'Refresh-Token'],
+    exposeHeaders: ['Set-Cookie'],
+    allowCredentials: true,
+  },
   domain: {
     name: `vps.${domain}`,
     dns: sst.cloudflare.dns()
