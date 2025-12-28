@@ -54,24 +54,6 @@ new sst.x.DevCommand('Drizzle_Generate_Prod', {
   }
 })
 
-new sst.x.DevCommand('Drizzle_Migrate_Local', {
-  link: [...allSecrets, email],
-  dev: {
-    command: 'npx drizzle-kit migrate --config drizzle.config.local.ts',
-    directory: './apps/vps',
-    autostart: false
-  }
-})
-
-new sst.x.DevCommand('Drizzle_Migrate_Prod', {
-  link: [...allSecrets, email],
-  dev: {
-    command: 'npx drizzle-kit migrate --config drizzle.config.prod.ts',
-    directory: './apps/vps',
-    autostart: false
-  }
-})
-
 new sst.x.DevCommand('betterAuthGen', {
   link: [...allSecrets, email],
   dev: {
@@ -83,18 +65,6 @@ new sst.x.DevCommand('betterAuthGen', {
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET || ''
   }
 })
-
-// new sst.x.DevCommand('Seed_RBAC', {
-//   link: [...allSecrets, email],
-//   dev: {
-//     command: 'bun run ./scripts/seed-rbac.ts',
-//     directory: './apps/vps',
-//     autostart: false
-//   },
-//   environment: {
-//     DB_STAGE: 'prod'
-//   }
-// })
 
 new sst.x.DevCommand('Drizzle_Push_Local', {
   link: [...allSecrets, email],
@@ -109,15 +79,6 @@ new sst.x.DevCommand('Drizzle_Push_Prod', {
   link: [...allSecrets, email],
   dev: {
     command: 'npx drizzle-kit push --config drizzle.config.prod.ts',
-    directory: './apps/vps',
-    autostart: false
-  }
-})
-
-new sst.x.DevCommand('Drizzle_Check_Local', {
-  link: [...allSecrets, email],
-  dev: {
-    command: 'npx drizzle-kit check --config drizzle.config.local.ts',
     directory: './apps/vps',
     autostart: false
   }
@@ -228,14 +189,6 @@ new sst.x.DevCommand('Backup_Database', {
 //     autostart: false
 //   }
 // })
-new sst.x.DevCommand('migrateUsers', {
-  link: [...allSecrets, email, dbBackupBucket],
-  dev: {
-    command: 'bun run scripts/migrate-users-to-better-auth.ts',
-    directory: './apps/vps',
-    autostart: false
-  }
-})
 
 new sst.x.DevCommand('Restore_Local_Database', {
   link: [...allSecrets, email, dbBackupBucket],
@@ -246,22 +199,5 @@ new sst.x.DevCommand('Restore_Local_Database', {
   },
   environment: {
     LOCAL_DB_URL: process.env.LOCAL_DB_URL || ''
-  }
-})
-
-new sst.x.DevCommand('Quality_Gate', {
-  dev: {
-    command:
-      'bun run biome:ci && bun typecheck && cd apps/www && bun run build',
-    directory: './',
-    autostart: false
-  }
-})
-
-new sst.x.DevCommand('Lint_Format', {
-  dev: {
-    command: 'bunx biome check --write .',
-    directory: './',
-    autostart: false
   }
 })

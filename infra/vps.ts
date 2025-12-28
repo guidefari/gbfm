@@ -63,12 +63,12 @@ export const service = new sst.aws.Service('gbfm_vps', {
 // - https://www.dpklabs.com/blog/avoiding-cors-issues-with-hono-sst-and-api-gateway
 export const vps_gateway = new sst.aws.ApiGatewayV2('gbfm_vps_gateway', {
   vpc,
-cors: {
+  cors: {
     allowOrigins: [domain, `https://www.${domain}`],
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     allowHeaders: ['Content-Type', 'Authorization', 'Cookie', 'Refresh-Token'],
     exposeHeaders: ['Set-Cookie'],
-    allowCredentials: true,
+    allowCredentials: true
   },
   domain: {
     name: `vps.${domain}`,
