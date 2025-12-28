@@ -1,3 +1,10 @@
+## [1.8.3](https://github.com/guidefari/gbfm/compare/v1.8.2...v1.8.3) (2025-12-28)
+
+
+### Bug Fixes
+
+* vps cors def ([deb9940](https://github.com/guidefari/gbfm/commit/deb9940f0d478ed4f3c9ee1901b9c4ca970d0d8d))
+
 ## [1.8.2](https://github.com/guidefari/gbfm/compare/v1.8.1...v1.8.2) (2025-12-28)
 
 
