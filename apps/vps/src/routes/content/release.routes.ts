@@ -12,14 +12,14 @@ import {
   createPaginatedResponseSchema,
   paginationQuerySchema
 } from '@/lib/pagination'
-import { authenticate } from '@/middlewares/auth.middleware'
+import { betterAuthMiddleware } from '@/middlewares/better-auth.middleware'
 
 const tags = ['Releases']
 
 export const createRelease = createRoute({
   path: '/releases',
   method: 'post',
-  middleware: [authenticate],
+  middleware: [betterAuthMiddleware],
   request: {
     body: jsonContentRequired(createReleaseSchema, 'The release to create')
   },
@@ -106,7 +106,7 @@ export const getReleaseBySlug = createRoute({
 export const updateReleaseBySlug = createRoute({
   path: '/releases/{slug}',
   method: 'patch',
-  middleware: [authenticate],
+  middleware: [betterAuthMiddleware],
   request: {
     params: z.object({
       slug: z.string()
@@ -137,7 +137,7 @@ export const updateReleaseBySlug = createRoute({
 export const deleteReleaseBySlug = createRoute({
   path: '/releases/{slug}',
   method: 'delete',
-  middleware: [authenticate],
+  middleware: [betterAuthMiddleware],
   request: {
     params: z.object({
       slug: z.string()

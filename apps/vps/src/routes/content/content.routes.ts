@@ -13,7 +13,7 @@ import {
   createPaginatedResponseSchema,
   paginationQuerySchema
 } from '@/lib/pagination'
-import { authenticate } from '@/middlewares/auth.middleware'
+import { betterAuthMiddleware } from '@/middlewares/better-auth.middleware'
 
 const tags = ['Content']
 
@@ -30,7 +30,7 @@ const tagParamsSchema = z.object({
 export const createPost = createRoute({
   path: '/post',
   method: 'post',
-  middleware: [authenticate],
+  middleware: [betterAuthMiddleware],
   request: {
     body: jsonContentRequired(createPostSchema, 'The post to create')
   },
@@ -94,7 +94,7 @@ export const seedMixes = createRoute({
 export const createMix = createRoute({
   path: '/mixes',
   method: 'post',
-  middleware: [authenticate],
+  middleware: [betterAuthMiddleware],
   request: {
     body: jsonContentRequired(createAudioSchema, 'The audio to create')
   },
@@ -180,7 +180,9 @@ export const getAudioByType = createRoute({
   method: 'get',
   request: {
     params: z.object({ type: z.enum(['mix', 'track', 'misc']) }),
-    query: paginationQuerySchema
+    query: paginationQuerySchema.extend({
+      tag: z.string().optional()
+    })
   },
   tags,
   responses: {
@@ -224,7 +226,7 @@ export const getAudioBySlug = createRoute({
 export const updateAudioBySlug = createRoute({
   path: '/audio/{type}/{slug}',
   method: 'patch',
-  middleware: [authenticate],
+  middleware: [betterAuthMiddleware],
   request: {
     params: z.object({
       type: z.enum(['mix', 'track', 'misc']),
@@ -263,7 +265,7 @@ export const updateAudioBySlug = createRoute({
 export const createAudio = createRoute({
   path: '/audio',
   method: 'post',
-  middleware: [authenticate],
+  middleware: [betterAuthMiddleware],
   request: {
     body: jsonContentRequired(createAudioSchema, 'The audio to create')
   },
