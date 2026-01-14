@@ -1,4 +1,4 @@
-import type { SelectMix } from '@gbfm/vps/schemas'
+import type { SelectAudio } from '@gbfm/vps/schemas'
 import { Heart, Play, Plus, Share2 } from 'lucide-react'
 import type React from 'react'
 import {
@@ -12,7 +12,7 @@ import { toast } from '@/components/ui/use-toast'
 import { useAudioPlayerActions } from '@/store/audioPlayer'
 
 interface TrackContextMenuProps {
-  track: SelectMix
+  track: SelectAudio
   children: React.ReactNode
   className?: string
 }

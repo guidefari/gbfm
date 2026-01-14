@@ -1,4 +1,4 @@
-import type { SelectMix } from '@gbfm/vps/schemas'
+import type { SelectAudio } from '@gbfm/vps/schemas'
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 
@@ -65,7 +65,7 @@ interface AudioPlayerActions {
   loadTrack: (src: string, thumbnailUrl: string, title: string) => void
 
   // Queue management
-  addToQueue: (mix: SelectMix) => void
+  addToQueue: (mix: SelectAudio) => void
   removeFromQueue: (itemId: string) => void
   clearQueue: () => void
   reorderQueue: (fromIndex: number, toIndex: number) => void
