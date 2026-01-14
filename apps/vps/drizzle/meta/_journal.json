@@ -92,6 +92,13 @@
       "when": 1766884003493,
       "tag": "0015_regular_switch",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1766888542817,
+      "tag": "0016_lyrical_the_renegades",
+      "breakpoints": true
     }
   ]
 }

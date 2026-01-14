@@ -10,7 +10,6 @@ import {
   emailDeliveryLogsTable,
   userEmailPreferencesTable
 } from './email.schema'
-import { mixCreators } from './mix.schema'
 import { postCreators } from './post.schema'
 import { publicationMembers } from './publication.schema'
 
@@ -101,7 +100,6 @@ export const userRelations = relations(user, ({ many, one }) => ({
   emailDeliveryLogs: many(emailDeliveryLogsTable),
   userEmailPreferences: one(userEmailPreferencesTable),
   publicationMembers: many(publicationMembers),
-  mixCreators: many(mixCreators)
 }))
 
 export type SelectUser = InferSelectModel<typeof user>
