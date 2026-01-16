@@ -86,6 +86,7 @@ export const useAuthStore = create<AuthStore>()(
           isAuthenticated: state.isAuthenticated
         })
       }
-    )
+    ),
+    { name: 'AuthStore' }
   )
 )
