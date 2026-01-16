@@ -19,9 +19,14 @@ const tags = ['Publications']
 const publicationResponseSchema = selectPublicationSchema
 
 // UUID parameter schema for publications
-const publicationParamsSchema = z.object({
-  id: z.uuid()
-})
+const publicationParamsSchema = z
+  .object({
+    id: z.string().uuid().openapi({
+      description: 'Publication ID',
+      example: '123e4567-e89b-12d3-a456-426614174000'
+    })
+  })
+  .openapi('PublicationParams')
 
 // Routes
 export const list = createRoute({

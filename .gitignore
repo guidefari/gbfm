@@ -11,3 +11,4 @@ biome-errors.todo
 audio-player-with-queue
 premium-music-player
 logs
+packages/email/tsconfig.tsbuildinfo

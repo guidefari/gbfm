@@ -10,7 +10,6 @@ import {
   emailDeliveryLogsTable,
   userEmailPreferencesTable
 } from './email.schema'
-import { mixCreators } from './mix.schema'
 import { postCreators } from './post.schema'
 import { publicationMembers } from './publication.schema'
 
@@ -100,33 +99,55 @@ export const userRelations = relations(user, ({ many, one }) => ({
   audioCreators: many(audioCreators),
   emailDeliveryLogs: many(emailDeliveryLogsTable),
   userEmailPreferences: one(userEmailPreferencesTable),
-  publicationMembers: many(publicationMembers),
-  mixCreators: many(mixCreators)
+  publicationMembers: many(publicationMembers)
 }))
 
 export type SelectUser = InferSelectModel<typeof user>
 export type InsertUser = InferInsertModel<typeof user>
 
-export const selectUserSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  email: z.string(),
-  emailVerified: z.boolean(),
-  image: z.string().nullable(),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-  role: z.string(),
-  banned: z.boolean(),
-  banReason: z.string().nullable(),
-  banExpires: z.date().nullable()
-})
+export const selectUserSchema = z
+  .object({
+    id: z.string().openapi({ description: 'Unique identifier for the user' }),
+    name: z.string().openapi({ description: 'Display name of the user' }),
+    email: z.string().openapi({ description: 'Email address of the user' }),
+    emailVerified: z
+      .boolean()
+      .openapi({ description: 'Whether the email is verified' }),
+    image: z.string().nullable().openapi({ description: 'Profile image URL' }),
+    createdAt: z.date().openapi({ description: 'Account creation timestamp' }),
+    updatedAt: z
+      .date()
+      .openapi({ description: 'Last account update timestamp' }),
+    role: z.string().openapi({ description: 'User role', example: 'user' }),
+    banned: z.boolean().openapi({ description: 'Whether the user is banned' }),
+    banReason: z
+      .string()
+      .nullable()
+      .openapi({ description: 'Reason for ban if applicable' }),
+    banExpires: z
+      .date()
+      .nullable()
+      .openapi({ description: 'Ban expiration date if applicable' })
+  })
+  .openapi('User')
 
-export const insertUserSchema = z.object({
-  name: z.string(),
-  email: z.string().email(),
-  image: z.string().optional(),
-  role: z.string().optional()
-})
+export const insertUserSchema = z
+  .object({
+    name: z.string().openapi({
+      description: 'Display name of the user',
+      example: 'John Doe'
+    }),
+    email: z.string().email().openapi({
+      description: 'Email address of the user',
+      example: 'john@example.com'
+    }),
+    image: z.string().optional().openapi({ description: 'Profile image URL' }),
+    role: z
+      .string()
+      .optional()
+      .openapi({ description: 'User role', default: 'user' })
+  })
+  .openapi('InsertUser')
 
 export const sessionRelations = relations(session, ({ one }) => ({
   user: one(user, {

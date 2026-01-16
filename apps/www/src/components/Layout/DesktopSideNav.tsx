@@ -13,7 +13,6 @@ import ProfileAvatar from './ProfileAvatar'
 
 export const DesktopSideNav = () => {
   const { user } = useAuthStore()
-  console.log(user)
   const isAdmin = user?.role === 'admin'
 
   const filteredPages = pagesAndPages.filter((page) => {

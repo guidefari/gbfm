@@ -12,14 +12,14 @@ import {
   createPaginatedResponseSchema,
   paginationQuerySchema
 } from '@/lib/pagination'
-import { authenticate } from '@/middlewares/auth.middleware'
+import { betterAuthMiddleware } from '@/middlewares/better-auth.middleware'
 
 const tags = ['Releases']
 
 export const createRelease = createRoute({
   path: '/releases',
   method: 'post',
-  middleware: [authenticate],
+  middleware: [betterAuthMiddleware],
   request: {
     body: jsonContentRequired(createReleaseSchema, 'The release to create')
   },
@@ -30,19 +30,27 @@ export const createRelease = createRoute({
       'The created release'
     ),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
+      z
+        .object({ error: z.string().openapi({ description: 'Error message' }) })
+        .openapi('ErrorResponse'),
       'Unauthorized'
     ),
     [HttpStatusCodes.CONFLICT]: jsonContent(
-      z.object({ error: z.string() }),
+      z
+        .object({ error: z.string().openapi({ description: 'Error message' }) })
+        .openapi('ErrorResponse'),
       'Release with this slug already exists'
     ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
+      z
+        .object({ error: z.string().openapi({ description: 'Error message' }) })
+        .openapi('ErrorResponse'),
       'Label not found'
     ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      z.object({ error: z.string() }),
+      z
+        .object({ error: z.string().openapi({ description: 'Error message' }) })
+        .openapi('ErrorResponse'),
       'Failed to create release'
     ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
@@ -106,7 +114,7 @@ export const getReleaseBySlug = createRoute({
 export const updateReleaseBySlug = createRoute({
   path: '/releases/{slug}',
   method: 'patch',
-  middleware: [authenticate],
+  middleware: [betterAuthMiddleware],
   request: {
     params: z.object({
       slug: z.string()
@@ -137,7 +145,7 @@ export const updateReleaseBySlug = createRoute({
 export const deleteReleaseBySlug = createRoute({
   path: '/releases/{slug}',
   method: 'delete',
-  middleware: [authenticate],
+  middleware: [betterAuthMiddleware],
   request: {
     params: z.object({
       slug: z.string()

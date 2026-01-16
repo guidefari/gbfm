@@ -1,12 +1,14 @@
-import type { SelectMix } from '@gbfm/vps/schemas'
+import type { SelectAudio } from '@gbfm/vps/schemas'
 import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
-import { Heart, MoreVertical, Play, Plus, Share2, X } from 'lucide-react'
+import { Heart, MoreVertical, Play, Plus, Share2, Tag, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useMemo, useRef } from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
+import { z } from 'zod'
 import { BaseAudioPlayer } from '@/components/common/BaseAudioPlayer'
 import { MixesSkeleton } from '@/components/MixesSkeleton'
 import { TrackContextMenu } from '@/components/TrackContextMenu'
+import { Badge } from '@/components/ui/badge'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,6 +16,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
 import { toast } from '@/components/ui/use-toast'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { useAudioByType } from '@/lib/http'
@@ -21,12 +30,17 @@ import { cn } from '@/lib/utils'
 import { useUIStore } from '@/store'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
 
+const searchSchema = z.object({
+  tag: z.string().optional()
+})
+
 export const Route = createFileRoute('/mixes')({
-  component: Component
+  component: Component,
+  validateSearch: searchSchema
 })
 
 interface MixMenuProps {
-  mix: SelectMix
+  mix: SelectAudio
 }
 
 function MixMenu({ mix }: MixMenuProps) {
@@ -114,11 +128,31 @@ function CompactAudioPlayer() {
 }
 
 function Component() {
+  const { tag } = Route.useSearch()
+  const navigate = Route.useNavigate()
   const { data, isPending, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useAudioByType('mix')
+    useAudioByType('mix', tag)
+  const { data: allMixesForTags } = useAudioByType('mix')
   const { mixesSorting, showCompactPlayer, toggleCompactPlayer } = useUIStore()
   const { isPlaying, nowPlayingContext } = useAudioPlayerState()
   const { loadTrack } = useAudioPlayerActions()
+
+  const allTags = useMemo(() => {
+    if (!allMixesForTags) return []
+    const tagSet = new Set<string>()
+    allMixesForTags.forEach((mix) => {
+      mix.tags?.forEach((t) => {
+        tagSet.add(t)
+      })
+    })
+    return Array.from(tagSet).sort()
+  }, [allMixesForTags])
+
+  const handleTagChange = (newTag: string) => {
+    navigate({
+      search: newTag === 'all' ? {} : { tag: newTag }
+    })
+  }
 
   const sortedData = useMemo(() => {
     if (!data) return []
@@ -182,16 +216,61 @@ function Component() {
       <div className='grid h-full grid-cols-1 gap-4 p-4 md:grid-cols-2'>
         {/* Left Column - Mixes List */}
         <div className='p-4 overflow-y-auto border-2 border-dashed rounded-sm border-muted-foreground/30 bg-card/10'>
-          <h2 className='flex items-center gap-2 mb-4 text-lg font-bold'>
-            <div className='w-2 h-2 rounded-sm bg-foreground/30' />
-            Mixes
-          </h2>
+          <div className='flex items-center justify-between gap-4 mb-4'>
+            <h2 className='flex items-center gap-2 text-lg font-bold'>
+              <div className='w-2 h-2 rounded-sm bg-foreground/30' />
+              Mixes
+            </h2>
+            {allTags.length > 0 && (
+              <Select value={tag || 'all'} onValueChange={handleTagChange}>
+                <SelectTrigger
+                  className='w-40 h-8 text-sm'
+                  data-testid='tag-filter-select'>
+                  <Tag className='w-3 h-3 mr-2' />
+                  <SelectValue placeholder='Filter by tag' />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='all' data-testid='tag-option-all'>
+                    All tags
+                  </SelectItem>
+                  {allTags.map((t) => (
+                    <SelectItem
+                      key={t}
+                      value={t}
+                      data-testid={`tag-option-${t}`}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
+          {tag && (
+            <div className='flex items-center gap-2 mb-3'>
+              <Badge
+                variant='secondary'
+                className='gap-1'
+                data-testid='active-tag-badge'>
+                <Tag className='w-3 h-3' />
+                {tag}
+                <button
+                  type='button'
+                  onClick={() => navigate({ search: {} })}
+                  className='ml-1 hover:text-foreground'
+                  data-testid='remove-tag-filter'
+                  aria-label='Remove tag filter'>
+                  <X className='w-3 h-3' />
+                </button>
+              </Badge>
+            </div>
+          )}
           <div className='grid gap-2'>
             {sortedData?.map((mix) => {
               const isActive = nowPlayingContext?.title === mix.title
               return (
                 <TrackContextMenu key={mix.id} track={mix}>
                   <article
+                    data-testid='mix-item'
                     className={cn(
                       'flex gap-3 items-start p-2 transition-all duration-300 cursor-pointer hover:bg-muted/50 rounded-sm group',
                       isActive && 'ring-1 ring-border bg-accent/5 shadow-sm'

@@ -57,7 +57,7 @@ export async function fetcher<T>(input: RequestInfo, init: RequestInit = {}) {
   }
 }
 
-export function useAudioByType(type: 'mix' | 'track' | 'misc') {
+export function useAudioByType(type: 'mix' | 'track' | 'misc', tag?: string) {
   const {
     data,
     error,
@@ -66,11 +66,14 @@ export function useAudioByType(type: 'mix' | 'track' | 'misc') {
     isFetchingNextPage,
     isPending
   } = useInfiniteQuery<PaginatedResponse<SelectAudio>, Error>({
-    queryKey: ['audio', type],
-    queryFn: async ({ pageParam = 0 }) =>
-      fetcher<PaginatedResponse<SelectAudio>>(
-        `${VPS_BASE_URL}/content/audio/${type}?limit=20&offset=${pageParam}`
-      ),
+    queryKey: ['audio', type, tag].filter(Boolean),
+    queryFn: async ({ pageParam = 0 }) => {
+      const url = new URL(`${VPS_BASE_URL}/content/audio/${type}`)
+      url.searchParams.set('limit', '20')
+      url.searchParams.set('offset', String(pageParam))
+      if (tag) url.searchParams.set('tag', tag)
+      return fetcher<PaginatedResponse<SelectAudio>>(url.toString())
+    },
     initialPageParam: 0,
     getNextPageParam: (lastPage) =>
       lastPage.pagination.hasMore

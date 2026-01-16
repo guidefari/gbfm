@@ -12,14 +12,14 @@ import {
   createPaginatedResponseSchema,
   paginationQuerySchema
 } from '@/lib/pagination'
-import { authenticate } from '@/middlewares/auth.middleware'
+import { betterAuthMiddleware } from '@/middlewares/better-auth.middleware'
 
 const tags = ['Labels']
 
 export const createLabel = createRoute({
   path: '/labels',
   method: 'post',
-  middleware: [authenticate],
+  middleware: [betterAuthMiddleware],
   request: {
     body: jsonContentRequired(createLabelSchema, 'The label to create')
   },
@@ -30,15 +30,21 @@ export const createLabel = createRoute({
       'The created label'
     ),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
+      z
+        .object({ error: z.string().openapi({ description: 'Error message' }) })
+        .openapi('ErrorResponse'),
       'Unauthorized'
     ),
     [HttpStatusCodes.CONFLICT]: jsonContent(
-      z.object({ error: z.string() }),
+      z
+        .object({ error: z.string().openapi({ description: 'Error message' }) })
+        .openapi('ErrorResponse'),
       'Label with this slug already exists or invalid creator id'
     ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      z.object({ error: z.string() }),
+      z
+        .object({ error: z.string().openapi({ description: 'Error message' }) })
+        .openapi('ErrorResponse'),
       'Failed to create label'
     ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
@@ -95,7 +101,7 @@ export const getLabelBySlug = createRoute({
 export const updateLabelBySlug = createRoute({
   path: '/labels/{slug}',
   method: 'patch',
-  middleware: [authenticate],
+  middleware: [betterAuthMiddleware],
   request: {
     params: z.object({
       slug: z.string()

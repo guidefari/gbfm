@@ -1,22 +1,7 @@
 import type { z } from 'zod'
 import type { insertUserSchema } from './db/auth.schema'
-import type { createMixSchema } from './db/mix.schema'
 import type { createPostSchema } from './db/post.schema'
 import type { selectPublicationSchema } from './db/publication.schema'
-
-export const mixes: Array<z.infer<typeof createMixSchema>> = [
-  {
-    title: 'Mix 1',
-    description: 'Description 1',
-    thumbnailUrl: 'https://example.com/thumbnail1.jpg',
-    slug: 'mix-1',
-    content: 'Content 1',
-    creatorIds: ['1', '2'],
-    url: 'https://example.com/mix1.mp3',
-    draft: false,
-    tags: ['dnb', 'techno', 'house']
-  }
-]
 
 export const users: Array<z.infer<typeof insertUserSchema>> = [
   {

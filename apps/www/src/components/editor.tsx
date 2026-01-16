@@ -7,12 +7,12 @@ import 'react-mde/lib/styles/css/react-mde-toolbar.css'
 import 'react-mde/lib/styles/css/react-mde.css'
 import 'react-mde/lib/styles/css/react-mde-editor.css'
 import './editor.css'
-import { zodResolver } from '@hookform/resolvers/zod'
+
 import { compile } from '@mdx-js/mdx'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useSearch } from '@tanstack/react-router'
 import { useForm } from 'react-hook-form'
-import { z } from 'zod'
+import { z } from 'zod/v4'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
 import { Button } from './ui/button'
 
@@ -74,7 +74,7 @@ export function Editor() {
   }
 
   const form = useForm<FormData>({
-    resolver: zodResolver(contentSchema),
+    // resolver: zodResolver(contentSchema), // Temporarily disabled due to zod version compatibility
     defaultValues: {
       content: '',
       dateCreated: Date.now(),

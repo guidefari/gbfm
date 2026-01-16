@@ -3,7 +3,6 @@ import { db } from '../src/db'
 import { audioCreators, audioTable } from '../src/db/audio.schema'
 import { user } from '../src/db/auth.schema'
 import { labelCreators, labelsTable } from '../src/db/label.schema'
-import { mixCreators, mixesTable } from '../src/db/mix.schema'
 import { postCreators, postsTable } from '../src/db/post.schema'
 import {
   publicationMembers,
@@ -138,40 +137,6 @@ async function assignAllRelationsToUser() {
     totalUpdated += wrongLabelCreators.length
   }
 
-  const mixes = await db.select({ id: mixesTable.id }).from(mixesTable)
-  const existingMixCreators = await db
-    .select({ mixId: mixCreators.mixId })
-    .from(mixCreators)
-  const mixIdsWithCreators = new Set(existingMixCreators.map((r) => r.mixId))
-  const mixesWithoutCreators = mixes.filter((m) => !mixIdsWithCreators.has(m.id))
-
-  console.log(`\nMixes (legacy): ${mixes.length} total, ${mixesWithoutCreators.length} without creators`)
-  if (mixesWithoutCreators.length > 0) {
-    await db.insert(mixCreators).values(
-      mixesWithoutCreators.map((m) => ({
-        mixId: m.id,
-        creatorId: targetUser.id
-      }))
-    )
-    console.log(`  ✅ Created ${mixesWithoutCreators.length} mix_creators entries`)
-    totalCreated += mixesWithoutCreators.length
-  }
-
-  const wrongMixCreators = await db
-    .select()
-    .from(mixCreators)
-    .where(notInArray(mixCreators.creatorId, [targetUser.id]))
-  if (wrongMixCreators.length > 0) {
-    await db.delete(mixCreators).where(notInArray(mixCreators.creatorId, [targetUser.id]))
-    await db.insert(mixCreators).values(
-      wrongMixCreators.map((r) => ({
-        mixId: r.mixId,
-        creatorId: targetUser.id
-      }))
-    ).onConflictDoNothing()
-    console.log(`  ✅ Reassigned ${wrongMixCreators.length} mix_creators to target user`)
-    totalUpdated += wrongMixCreators.length
-  }
 
   const publications = await db
     .select({ id: publicationsTable.id })

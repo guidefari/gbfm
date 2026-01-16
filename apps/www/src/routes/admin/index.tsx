@@ -7,6 +7,7 @@ import { UsersTab } from './_components/UsersTab'
 
 export const Route = createFileRoute('/admin/')({
   beforeLoad: ({ context }) => {
+    console.log('context:', context)
     if (!context.auth.isAuthenticated || context.auth.user?.role !== 'admin') {
       throw redirect({
         to: '/'

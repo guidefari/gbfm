@@ -181,10 +181,12 @@ export const getAudioByType: AppRouteHandler<GetAudioByTypeRoute> = async (
   c
 ) => {
   const { type } = c.req.valid('param')
-  const { limit, offset } = c.req.valid('query')
+  const { limit, offset, tag } = c.req.valid('query')
 
   try {
-    const whereCondition = eq(audioTable.type, type)
+    const whereCondition = tag
+      ? and(eq(audioTable.type, type), arrayContains(audioTable.tags, [tag]))
+      : eq(audioTable.type, type)
 
     const countResult = await timeQuery(
       () =>
@@ -336,25 +338,27 @@ export const updateAudioBySlug: AppRouteHandler<
       return c.json({ error: 'Audio not found' }, HttpStatusCodes.NOT_FOUND)
     }
 
-    // Check if user is a creator of this content
-    const authorship = await db
-      .select()
-      .from(audioCreators)
-      .where(
-        and(
-          eq(audioCreators.audioId, existingAudio.id),
-          eq(audioCreators.creatorId, user.id)
+    const isAdmin = user.role === 'admin'
+    if (!isAdmin) {
+      const authorship = await db
+        .select()
+        .from(audioCreators)
+        .where(
+          and(
+            eq(audioCreators.audioId, existingAudio.id),
+            eq(audioCreators.creatorId, user.id)
+          )
         )
-      )
-      .limit(1)
+        .limit(1)
 
-    if (authorship.length === 0) {
-      return c.json(
-        {
-          error: 'Forbidden, brethren.'
-        },
-        HttpStatusCodes.FORBIDDEN
-      )
+      if (authorship.length === 0) {
+        return c.json(
+          {
+            error: 'Forbidden, brethren.'
+          },
+          HttpStatusCodes.FORBIDDEN
+        )
+      }
     }
 
     // Update the audio record
