@@ -7,9 +7,8 @@ import './styles/main.css'
 import { PostHogProvider } from 'posthog-js/react'
 import { ThemeProvider } from './components/ThemeProvider'
 import { env } from './env'
-
-import { useAuthStore } from './store/auth'
 import { useAuthSync } from './hooks/useAuthSync'
+import { useAuthStore } from './store/auth'
 
 const router = createRouter({
   routeTree,

@@ -3,8 +3,6 @@ import type { insertUserSchema } from './db/auth.schema'
 import type { createPostSchema } from './db/post.schema'
 import type { selectPublicationSchema } from './db/publication.schema'
 
-
-
 export const users: Array<z.infer<typeof insertUserSchema>> = [
   {
     name: 'User 1',

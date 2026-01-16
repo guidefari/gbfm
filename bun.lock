@@ -5,24 +5,24 @@
     "": {
       "name": "gbfm",
       "dependencies": {
-        "@effect/cli": "latest",
-        "@effect/platform": "latest",
-        "effect": "latest",
-        "gray-matter": "latest",
-        "sst": "latest",
-        "vitest": "latest",
-        "zod": "latest",
+        "@effect/cli": "0.73.0",
+        "@effect/platform": "0.94.1",
+        "effect": "3.19.14",
+        "gray-matter": "4.0.3",
+        "sst": "3.17.25",
+        "vitest": "4.0.17",
+        "zod": "4.3.5",
       },
       "devDependencies": {
-        "@biomejs/biome": "latest",
-        "@effect/language-service": "latest",
-        "@semantic-release/changelog": "latest",
-        "@semantic-release/git": "latest",
-        "@semantic-release/github": "latest",
-        "@tsconfig/bun": "latest",
-        "lefthook": "latest",
-        "semantic-release": "latest",
-        "typescript": "latest",
+        "@biomejs/biome": "2.3.11",
+        "@effect/language-service": "^0.67.0",
+        "@semantic-release/changelog": "^6.0.3",
+        "@semantic-release/git": "^10.0.1",
+        "@semantic-release/github": "^12.0.2",
+        "@tsconfig/bun": "1.0.10",
+        "lefthook": "^2.0.15",
+        "semantic-release": "^25.0.2",
+        "typescript": "5.9.3",
       },
     },
     "apps/mobile": {
@@ -3709,6 +3709,8 @@
     "@gbfm/vps/effect": ["effect@3.19.8", "", { "dependencies": { "@standard-schema/spec": "^1.0.0", "fast-check": "^3.23.1" } }, "sha512-OmLw8EfH02vdmyU2fO4uY9He/wepwKI5E/JNpE2pseaWWUbaYOK9UlxIiKP20ZEqQr+S/jSqRDGmpiqD/2DeCQ=="],
 
     "@gbfm/www/@types/react": ["@types/react@19.1.8", "", { "dependencies": { "csstype": "^3.0.2" } }, "sha512-AwAfQ2Wa5bCx9WP8nZL2uMZWod7J7/JSplxbTmBQ5ms6QpqNYm672H0Vu9ZVKVngQ+ii4R/byguVEUZQyeg44g=="],
+
+    "@hono/zod-openapi/@hono/zod-validator": ["@hono/zod-validator@0.7.6", "", { "peerDependencies": { "hono": ">=3.9.0", "zod": "^3.25.0 || ^4.0.0" } }, "sha512-Io1B6d011Gj1KknV4rXYz4le5+5EubcWEU/speUjuw9XMMIaP3n78yXLhjd2A3PXaXaUwEAluOiAyLqhBEJgsw=="],
 
     "@inquirer/checkbox/ansi-escapes": ["ansi-escapes@4.3.2", "", { "dependencies": { "type-fest": "^0.21.3" } }, "sha512-gKXj5ALrKWQLsYG9jlTRmR/xKluxHV+Z9QEwNIgCfM1/uwPMCuzVVnh5mwTd+OuBZcwSIMbqssNWRm1lE51QaQ=="],
 

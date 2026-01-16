@@ -99,7 +99,7 @@ export const userRelations = relations(user, ({ many, one }) => ({
   audioCreators: many(audioCreators),
   emailDeliveryLogs: many(emailDeliveryLogsTable),
   userEmailPreferences: one(userEmailPreferencesTable),
-  publicationMembers: many(publicationMembers),
+  publicationMembers: many(publicationMembers)
 }))
 
 export type SelectUser = InferSelectModel<typeof user>

@@ -127,7 +127,12 @@ export function ContentTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'mixes'] })
       queryClient.invalidateQueries({ queryKey: ['audio', 'mix'] })
-      setEditDialog({ open: false, mix: null, selectedTags: [], inputValue: '' })
+      setEditDialog({
+        open: false,
+        mix: null,
+        selectedTags: [],
+        inputValue: ''
+      })
       toast({ title: 'Tags updated successfully' })
     },
     onError: (err: Error) => {
@@ -187,7 +192,9 @@ export function ContentTab() {
   const allExistingTags = useMemo(() => {
     const tagSet = new Set<string>()
     mixes.forEach((mix) => {
-      mix.tags?.forEach((t) => tagSet.add(t))
+      mix.tags?.forEach((t) => {
+        tagSet.add(t)
+      })
     })
     return Array.from(tagSet).sort()
   }, [mixes])
@@ -204,7 +211,9 @@ export function ContentTab() {
   const showAddNew =
     editDialog.inputValue.trim() &&
     !allExistingTags.includes(editDialog.inputValue.trim().toLowerCase()) &&
-    !editDialog.selectedTags.includes(editDialog.inputValue.trim().toLowerCase())
+    !editDialog.selectedTags.includes(
+      editDialog.inputValue.trim().toLowerCase()
+    )
 
   return (
     <div className='space-y-4'>
