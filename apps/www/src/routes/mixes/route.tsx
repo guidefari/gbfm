@@ -6,6 +6,7 @@ import { useMemo, useRef } from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
 import { z } from 'zod'
 import { BaseAudioPlayer } from '@/components/common/BaseAudioPlayer'
+import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
 import { MixesSkeleton } from '@/components/MixesSkeleton'
 import { TrackContextMenu } from '@/components/TrackContextMenu'
 import { Badge } from '@/components/ui/badge'
@@ -325,15 +326,11 @@ function Component() {
               )
             })}
 
-            {hasNextPage && (
-              <button
-                type='button'
-                onClick={() => fetchNextPage()}
-                disabled={isFetchingNextPage}
-                className='p-4 mt-2 text-sm font-medium transition-all duration-300 border rounded-sm bg-muted hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed border-border/50'>
-                {isFetchingNextPage ? 'Loading...' : 'Load More'}
-              </button>
-            )}
+            <LoadMoreTrigger
+              onLoadMore={fetchNextPage}
+              hasNextPage={hasNextPage}
+              isFetchingNextPage={isFetchingNextPage}
+            />
           </div>
         </div>
 

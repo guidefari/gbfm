@@ -12,3 +12,5 @@ audio-player-with-queue
 premium-music-player
 logs
 packages/email/tsconfig.tsbuildinfo
+apps/www/test-results/
+apps/www/playwright-report
