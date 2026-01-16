@@ -30,15 +30,21 @@ export const createLabel = createRoute({
       'The created label'
     ),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
+      z
+        .object({ error: z.string().openapi({ description: 'Error message' }) })
+        .openapi('ErrorResponse'),
       'Unauthorized'
     ),
     [HttpStatusCodes.CONFLICT]: jsonContent(
-      z.object({ error: z.string() }),
+      z
+        .object({ error: z.string().openapi({ description: 'Error message' }) })
+        .openapi('ErrorResponse'),
       'Label with this slug already exists or invalid creator id'
     ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      z.object({ error: z.string() }),
+      z
+        .object({ error: z.string().openapi({ description: 'Error message' }) })
+        .openapi('ErrorResponse'),
       'Failed to create label'
     ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(

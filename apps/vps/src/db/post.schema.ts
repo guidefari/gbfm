@@ -1,3 +1,4 @@
+import { z } from '@hono/zod-openapi'
 import {
   type InferInsertModel,
   type InferSelectModel,
@@ -11,7 +12,6 @@ import {
   text,
   uuid
 } from 'drizzle-orm/pg-core'
-import { z } from 'zod/v4'
 import { user } from './auth.schema'
 import { publicationsTable } from './publication.schema'
 import { defaultContentFields } from './util'
@@ -46,57 +46,119 @@ export type SelectMdxCompiledPost = SelectPost & {
   }
 }
 
-export const selectPostSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  description: z.string().nullable(),
-  thumbnailUrl: z.string().nullable(),
-  slug: z.string(),
-  content: z.string(),
-  draft: z.boolean(),
-  tags: z.array(z.string()).nullable(),
-  type: z.enum(['post', 'micro']).nullable(),
-  publicationId: z.string().nullable(),
-  createdAt: z.date(),
-  updatedAt: z.date()
-})
+export const selectPostSchema = z
+  .object({
+    id: z.string().openapi({ description: 'Unique identifier for the post' }),
+    title: z.string().openapi({ description: 'Title of the post' }),
+    description: z
+      .string()
+      .nullable()
+      .openapi({ description: 'Description of the post' }),
+    thumbnailUrl: z
+      .string()
+      .nullable()
+      .openapi({ description: 'Thumbnail URL for the post' }),
+    slug: z.string().openapi({ description: 'URL slug for the post' }),
+    content: z.string().openapi({ description: 'Content of the post' }),
+    draft: z.boolean().openapi({ description: 'Whether the post is a draft' }),
+    tags: z
+      .array(z.string())
+      .nullable()
+      .openapi({ description: 'Tags associated with the post' }),
+    type: z
+      .enum(['post', 'micro'])
+      .nullable()
+      .openapi({ description: 'Type of the post' }),
+    publicationId: z
+      .string()
+      .nullable()
+      .openapi({ description: 'ID of the publication this post belongs to' }),
+    createdAt: z.date().openapi({ description: 'Creation timestamp' }),
+    updatedAt: z.date().openapi({ description: 'Last update timestamp' })
+  })
+  .openapi('Post')
 
-export const selectMdxCompiledPostSchema = selectPostSchema.extend({
-  compiledContent: z.string(),
-  creators: z
-    .array(
-      z.object({
-        id: z.string(),
-        name: z.string()
+export const selectMdxCompiledPostSchema = selectPostSchema
+  .extend({
+    compiledContent: z
+      .string()
+      .openapi({ description: 'Compiled MDX content' }),
+    creators: z
+      .array(
+        z
+          .object({
+            id: z.string().openapi({ description: 'Creator ID' }),
+            name: z.string().openapi({ description: 'Creator name' })
+          })
+          .openapi('Creator')
+      )
+      .optional()
+      .openapi({ description: 'List of creators for this post' }),
+    publication: z
+      .object({
+        id: z.string().openapi({ description: 'Publication ID' }),
+        name: z.string().openapi({ description: 'Publication name' }),
+        slug: z.string().openapi({ description: 'Publication slug' })
       })
-    )
-    .optional(),
-  publication: z
-    .object({
-      id: z.string(),
-      name: z.string(),
-      slug: z.string()
-    })
-    .optional()
-})
+      .optional()
+      .openapi({ description: 'Publication information' })
+  })
+  .openapi('CompiledPost')
 
-export const insertPostSchema = z.object({
-  title: z.string().min(1),
-  description: z.string().optional(),
-  thumbnailUrl: z.string().optional(),
-  slug: z.string().min(1),
-  content: z.string(),
-  draft: z.boolean().optional(),
-  tags: z.array(z.string()).optional(),
-  type: z.enum(['post', 'micro']).nullable().optional(),
-  publicationId: z.uuid().nullable().optional()
-})
+export const insertPostSchema = z
+  .object({
+    title: z
+      .string()
+      .min(1)
+      .openapi({ description: 'Title of the post', example: 'My Blog Post' }),
+    description: z
+      .string()
+      .optional()
+      .openapi({ description: 'Description of the post' }),
+    thumbnailUrl: z
+      .string()
+      .optional()
+      .openapi({ description: 'Thumbnail URL for the post' }),
+    slug: z.string().min(1).openapi({
+      description: 'URL slug for the post',
+      example: 'my-blog-post'
+    }),
+    content: z.string().openapi({ description: 'Content of the post' }),
+    draft: z
+      .boolean()
+      .optional()
+      .openapi({ description: 'Whether this is a draft', default: false }),
+    tags: z
+      .array(z.string())
+      .optional()
+      .openapi({ description: 'Tags for the post' }),
+    type: z
+      .enum(['post', 'micro'])
+      .nullable()
+      .optional()
+      .openapi({ description: 'Type of the post' }),
+    publicationId: z
+      .string()
+      .uuid()
+      .nullable()
+      .optional()
+      .openapi({ description: 'Publication ID' })
+  })
+  .openapi('InsertPost')
 
-export const createPostSchema = insertPostSchema.extend({
-  creatorIds: z.array(z.string()).min(1).optional()
-})
+export const createPostSchema = insertPostSchema
+  .extend({
+    creatorIds: z
+      .array(z.string())
+      .min(1)
+      .optional()
+      .openapi({ description: 'IDs of post creators' })
+  })
+  .openapi('CreatePostRequest')
 
-export const updatePostSchema = insertPostSchema.partial()
+export const updatePostSchema = insertPostSchema
+  .partial()
+  .openapi('UpdatePostRequest')
 
 export const postCreators = pgTable(
   'post_creators',

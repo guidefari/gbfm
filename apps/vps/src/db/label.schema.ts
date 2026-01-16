@@ -1,3 +1,4 @@
+import { z } from '@hono/zod-openapi'
 import {
   type InferInsertModel,
   type InferSelectModel,
@@ -11,7 +12,6 @@ import {
   uuid,
   varchar
 } from 'drizzle-orm/pg-core'
-import { z } from 'zod/v4'
 import { user } from './auth.schema'
 import { releasesTable } from './release.schema'
 import { defaultContentFields } from './util'
@@ -39,54 +39,127 @@ export type SelectMdxCompiledLabel = SelectLabel & {
   }>
 }
 
-export const selectLabelSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  description: z.string().nullable(),
-  thumbnailUrl: z.string().nullable(),
-  slug: z.string(),
-  content: z.string(),
-  draft: z.boolean(),
-  tags: z.array(z.string()).nullable(),
-  website: z.string().nullable(),
-  discogs: z.string().nullable(),
-  bandcamp: z.string().nullable(),
-  genres: z.array(z.string()).nullable(),
-  createdAt: z.date(),
-  updatedAt: z.date()
-})
+export const selectLabelSchema = z
+  .object({
+    id: z.string().openapi({ description: 'Unique identifier for the label' }),
+    title: z.string().openapi({ description: 'Title of the label' }),
+    description: z
+      .string()
+      .nullable()
+      .openapi({ description: 'Description of the label' }),
+    thumbnailUrl: z
+      .string()
+      .nullable()
+      .openapi({ description: 'Thumbnail URL for the label' }),
+    slug: z.string().openapi({ description: 'URL slug for the label' }),
+    content: z.string().openapi({ description: 'Content of the label' }),
+    draft: z.boolean().openapi({ description: 'Whether the label is a draft' }),
+    tags: z
+      .array(z.string())
+      .nullable()
+      .openapi({ description: 'Tags associated with the label' }),
+    website: z
+      .string()
+      .nullable()
+      .openapi({ description: 'Website URL for the label' }),
+    discogs: z
+      .string()
+      .nullable()
+      .openapi({ description: 'Discogs URL for the label' }),
+    bandcamp: z
+      .string()
+      .nullable()
+      .openapi({ description: 'Bandcamp URL for the label' }),
+    genres: z
+      .array(z.string())
+      .nullable()
+      .openapi({ description: 'Genres associated with the label' }),
+    createdAt: z.date().openapi({ description: 'Creation timestamp' }),
+    updatedAt: z.date().openapi({ description: 'Last update timestamp' })
+  })
+  .openapi('Label')
 
-export const selectMdxCompiledLabelSchema = selectLabelSchema.extend({
-  compiledContent: z.string(),
-  creators: z
-    .array(
-      z.object({
-        id: z.string(),
-        name: z.string()
-      })
-    )
-    .optional()
-})
+export const selectMdxCompiledLabelSchema = selectLabelSchema
+  .extend({
+    compiledContent: z
+      .string()
+      .openapi({ description: 'Compiled MDX content' }),
+    creators: z
+      .array(
+        z
+          .object({
+            id: z.string().openapi({ description: 'Creator ID' }),
+            name: z.string().openapi({ description: 'Creator name' })
+          })
+          .openapi('Creator')
+      )
+      .optional()
+      .openapi({ description: 'List of creators for this label' })
+  })
+  .openapi('CompiledLabel')
 
-export const insertLabelSchema = z.object({
-  title: z.string().min(1),
-  description: z.string().optional(),
-  thumbnailUrl: z.string().optional(),
-  slug: z.string().min(1),
-  content: z.string(),
-  draft: z.boolean().optional(),
-  tags: z.array(z.string()).optional(),
-  website: z.url().optional(),
-  discogs: z.url().optional(),
-  bandcamp: z.url().optional(),
-  genres: z.array(z.string()).optional()
-})
+export const insertLabelSchema = z
+  .object({
+    title: z
+      .string()
+      .min(1)
+      .openapi({ description: 'Title of the label', example: 'Indie Records' }),
+    description: z
+      .string()
+      .optional()
+      .openapi({ description: 'Description of the label' }),
+    thumbnailUrl: z
+      .string()
+      .optional()
+      .openapi({ description: 'Thumbnail URL for the label' }),
+    slug: z.string().min(1).openapi({
+      description: 'URL slug for the label',
+      example: 'indie-records'
+    }),
+    content: z.string().openapi({ description: 'Content of the label' }),
+    draft: z
+      .boolean()
+      .optional()
+      .openapi({ description: 'Whether this is a draft', default: false }),
+    tags: z
+      .array(z.string())
+      .optional()
+      .openapi({ description: 'Tags for the label' }),
+    website: z
+      .string()
+      .url()
+      .optional()
+      .openapi({ description: 'Website URL' }),
+    discogs: z
+      .string()
+      .url()
+      .optional()
+      .openapi({ description: 'Discogs URL' }),
+    bandcamp: z
+      .string()
+      .url()
+      .optional()
+      .openapi({ description: 'Bandcamp URL' }),
+    genres: z
+      .array(z.string())
+      .optional()
+      .openapi({ description: 'Genres for the label' })
+  })
+  .openapi('InsertLabel')
 
-export const createLabelSchema = insertLabelSchema.extend({
-  creatorIds: z.array(z.string()).min(1).optional()
-})
+export const createLabelSchema = insertLabelSchema
+  .extend({
+    creatorIds: z
+      .array(z.string())
+      .min(1)
+      .optional()
+      .openapi({ description: 'IDs of label creators' })
+  })
+  .openapi('CreateLabelRequest')
 
-export const updateLabelSchema = insertLabelSchema.partial()
+export const updateLabelSchema = insertLabelSchema
+  .partial()
+  .openapi('UpdateLabelRequest')
 
 export const labelCreators = pgTable(
   'label_creators',

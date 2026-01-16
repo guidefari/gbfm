@@ -1,10 +1,10 @@
+import { z } from '@hono/zod-openapi'
 import {
   type InferInsertModel,
   type InferSelectModel,
   relations
 } from 'drizzle-orm'
 import { pgTable, text, uuid } from 'drizzle-orm/pg-core'
-import { z } from 'zod/v4'
 import { user } from './auth.schema'
 import { postsTable } from './post.schema'
 
@@ -71,31 +71,77 @@ export const publicationPostsRelations = relations(
 export type SelectPublication = InferSelectModel<typeof publicationsTable>
 export type InsertPublication = InferInsertModel<typeof publicationsTable>
 
-export const selectPublicationSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  description: z.string().nullable(),
-  slug: z.string()
-})
+export const selectPublicationSchema = z
+  .object({
+    id: z
+      .string()
+      .openapi({ description: 'Unique identifier for the publication' }),
+    name: z.string().openapi({ description: 'Name of the publication' }),
+    description: z
+      .string()
+      .nullable()
+      .openapi({ description: 'Description of the publication' }),
+    slug: z.string().openapi({ description: 'URL slug for the publication' })
+  })
+  .openapi('Publication')
 
-export const insertPublicationSchema = z.object({
-  name: z.string().min(1),
-  description: z.string().optional(),
-  slug: z.string()
-})
+export const insertPublicationSchema = z
+  .object({
+    name: z
+      .string()
+      .min(1)
+      .openapi({ description: 'Name of the publication', example: 'My Blog' }),
+    description: z
+      .string()
+      .optional()
+      .openapi({ description: 'Description of the publication' }),
+    slug: z.string().openapi({
+      description: 'URL slug for the publication',
+      example: 'my-blog'
+    })
+  })
+  .openapi('InsertPublication')
 
-export const createPublicationSchema = z.object({
-  name: z.string().min(1),
-  description: z.string().optional(),
-  slug: z.string()
-})
+export const createPublicationSchema = z
+  .object({
+    name: z
+      .string()
+      .min(1)
+      .openapi({ description: 'Name of the publication', example: 'My Blog' }),
+    description: z
+      .string()
+      .optional()
+      .openapi({ description: 'Description of the publication' }),
+    slug: z.string().openapi({
+      description: 'URL slug for the publication',
+      example: 'my-blog'
+    })
+  })
+  .openapi('CreatePublicationRequest')
 
-export const updatePublicationSchema = z.object({
-  name: z.string().min(1).optional(),
-  description: z.string().optional(),
-  slug: z.string().optional()
-})
+export const updatePublicationSchema = z
+  .object({
+    name: z
+      .string()
+      .min(1)
+      .optional()
+      .openapi({ description: 'Name of the publication' }),
+    description: z
+      .string()
+      .optional()
+      .openapi({ description: 'Description of the publication' }),
+    slug: z
+      .string()
+      .optional()
+      .openapi({ description: 'URL slug for the publication' })
+  })
+  .openapi('UpdatePublicationRequest')
 
-export const publicationParamsSchema = z.object({
-  id: z.uuid()
-})
+export const publicationParamsSchema = z
+  .object({
+    id: z.string().uuid().openapi({
+      description: 'Publication ID',
+      example: '123e4567-e89b-12d3-a456-426614174000'
+    })
+  })
+  .openapi('PublicationParams')

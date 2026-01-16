@@ -1,3 +1,4 @@
+import { z } from '@hono/zod-openapi'
 import {
   type InferInsertModel,
   type InferSelectModel,
@@ -12,7 +13,6 @@ import {
   uuid,
   varchar
 } from 'drizzle-orm/pg-core'
-import { z } from 'zod/v4'
 import { user } from './auth.schema'
 import { defaultContentFields } from './util'
 
@@ -39,50 +39,103 @@ export type SelectMdxCompiledAudio = SelectAudio & {
   }>
 }
 
-export const selectAudioSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  description: z.string().nullable(),
-  thumbnailUrl: z.string().nullable(),
-  slug: z.string(),
-  content: z.string(),
-  draft: z.boolean(),
-  tags: z.array(z.string()).nullable(),
-  type: z.enum(['mix', 'track', 'misc']),
-  url: z.string(),
-  createdAt: z.date(),
-  updatedAt: z.date()
-})
+export const selectAudioSchema = z
+  .object({
+    id: z.string().openapi({ description: 'Unique identifier for the audio' }),
+    title: z.string().openapi({ description: 'Title of the audio' }),
+    description: z
+      .string()
+      .nullable()
+      .openapi({ description: 'Description of the audio' }),
+    thumbnailUrl: z
+      .string()
+      .nullable()
+      .openapi({ description: 'Thumbnail URL for the audio' }),
+    slug: z.string().openapi({ description: 'URL slug for the audio' }),
+    content: z.string().openapi({ description: 'Content of the audio' }),
+    draft: z.boolean().openapi({ description: 'Whether the audio is a draft' }),
+    tags: z
+      .array(z.string())
+      .nullable()
+      .openapi({ description: 'Tags associated with the audio' }),
+    type: z
+      .enum(['mix', 'track', 'misc'])
+      .openapi({ description: 'Type of audio content' }),
+    url: z.string().openapi({ description: 'Audio URL' }),
+    createdAt: z.date().openapi({ description: 'Creation timestamp' }),
+    updatedAt: z.date().openapi({ description: 'Last update timestamp' })
+  })
+  .openapi('Audio')
 
-export const selectMdxCompiledAudioSchema = selectAudioSchema.extend({
-  compiledContent: z.string(),
-  creators: z
-    .array(
-      z.object({
-        id: z.string(),
-        name: z.string()
-      })
-    )
-    .optional()
-})
+export const selectMdxCompiledAudioSchema = selectAudioSchema
+  .extend({
+    compiledContent: z
+      .string()
+      .openapi({ description: 'Compiled MDX content' }),
+    creators: z
+      .array(
+        z
+          .object({
+            id: z.string().openapi({ description: 'Creator ID' }),
+            name: z.string().openapi({ description: 'Creator name' })
+          })
+          .openapi('Creator')
+      )
+      .optional()
+      .openapi({ description: 'List of creators for this audio' })
+  })
+  .openapi('CompiledAudio')
 
-export const insertAudioSchema = z.object({
-  title: z.string().min(1),
-  description: z.string().optional(),
-  thumbnailUrl: z.string().optional(),
-  slug: z.string().min(1),
-  content: z.string(),
-  draft: z.boolean().optional(),
-  tags: z.array(z.string()).optional(),
-  type: z.enum(['mix', 'track', 'misc']),
-  url: z.url()
-})
+export const insertAudioSchema = z
+  .object({
+    title: z
+      .string()
+      .min(1)
+      .openapi({ description: 'Title of the audio', example: 'My Mix' }),
+    description: z
+      .string()
+      .optional()
+      .openapi({ description: 'Description of the audio' }),
+    thumbnailUrl: z
+      .string()
+      .optional()
+      .openapi({ description: 'Thumbnail URL for the audio' }),
+    slug: z
+      .string()
+      .min(1)
+      .openapi({ description: 'URL slug for the audio', example: 'my-mix' }),
+    content: z.string().openapi({ description: 'Content of the audio' }),
+    draft: z
+      .boolean()
+      .optional()
+      .openapi({ description: 'Whether this is a draft', default: false }),
+    tags: z
+      .array(z.string())
+      .optional()
+      .openapi({ description: 'Tags for the audio' }),
+    type: z
+      .enum(['mix', 'track', 'misc'])
+      .openapi({ description: 'Type of audio content', example: 'mix' }),
+    url: z.string().url().openapi({
+      description: 'Audio URL',
+      example: 'https://example.com/audio.mp3'
+    })
+  })
+  .openapi('InsertAudio')
 
-export const updateAudioSchema = insertAudioSchema.partial()
+export const updateAudioSchema = insertAudioSchema
+  .partial()
+  .openapi('UpdateAudioRequest')
 
-export const createAudioSchema = insertAudioSchema.extend({
-  creatorIds: z.array(z.string()).min(1).optional()
-})
+export const createAudioSchema = insertAudioSchema
+  .extend({
+    creatorIds: z
+      .array(z.string())
+      .min(1)
+      .optional()
+      .openapi({ description: 'IDs of audio creators' })
+  })
+  .openapi('CreateAudioRequest')
 
 export const audioCreators = pgTable(
   'audio_creators',

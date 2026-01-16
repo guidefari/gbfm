@@ -22,9 +22,14 @@ const tags = ['Content']
 const postResponseSchema = selectPostSchema
 
 // tagParamsSchema imported from database
-const tagParamsSchema = z.object({
-  tag: z.string().min(1)
-})
+const tagParamsSchema = z
+  .object({
+    tag: z
+      .string()
+      .min(1)
+      .openapi({ description: 'Tag to filter by', example: 'javascript' })
+  })
+  .openapi('TagParams')
 
 // Routes
 export const createPost = createRoute({
@@ -41,11 +46,15 @@ export const createPost = createRoute({
       'The created post'
     ),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
+      z
+        .object({ error: z.string().openapi({ description: 'Error message' }) })
+        .openapi('ErrorResponse'),
       'Unauthorized'
     ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      z.object({ error: z.string() }),
+      z
+        .object({ error: z.string().openapi({ description: 'Error message' }) })
+        .openapi('ErrorResponse'),
       'Failed to create post'
     ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(

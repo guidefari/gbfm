@@ -30,19 +30,27 @@ export const createRelease = createRoute({
       'The created release'
     ),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
+      z
+        .object({ error: z.string().openapi({ description: 'Error message' }) })
+        .openapi('ErrorResponse'),
       'Unauthorized'
     ),
     [HttpStatusCodes.CONFLICT]: jsonContent(
-      z.object({ error: z.string() }),
+      z
+        .object({ error: z.string().openapi({ description: 'Error message' }) })
+        .openapi('ErrorResponse'),
       'Release with this slug already exists'
     ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
+      z
+        .object({ error: z.string().openapi({ description: 'Error message' }) })
+        .openapi('ErrorResponse'),
       'Label not found'
     ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      z.object({ error: z.string() }),
+      z
+        .object({ error: z.string().openapi({ description: 'Error message' }) })
+        .openapi('ErrorResponse'),
       'Failed to create release'
     ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(

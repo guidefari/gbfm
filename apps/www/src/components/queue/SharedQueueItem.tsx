@@ -135,6 +135,7 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
       tags: [],
       content: '',
       draft: false,
+      type: 'track' as const,
       createdAt: new Date(),
       updatedAt: new Date()
     }
