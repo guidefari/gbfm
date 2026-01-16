@@ -9,6 +9,7 @@ import { ThemeProvider } from './components/ThemeProvider'
 import { env } from './env'
 
 import { useAuthStore } from './store/auth'
+import { useAuthSync } from './hooks/useAuthSync'
 
 const router = createRouter({
   routeTree,
@@ -37,6 +38,7 @@ const queryClient = new QueryClient({
 
 function App() {
   const auth = useAuthStore()
+  useAuthSync()
 
   return (
     <QueryClientProvider client={queryClient}>

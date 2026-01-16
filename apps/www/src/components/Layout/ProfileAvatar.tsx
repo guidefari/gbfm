@@ -8,29 +8,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
-import { signOut, useSession } from '@/lib/auth-client'
+import { signOut } from '@/lib/auth-client'
 import { useAuthStore } from '@/store/auth'
 
 const ProfileAvatar = () => {
   const navigate = useNavigate()
-  const { data: session, isPending } = useSession()
-  const { clearAuth } = useAuthStore()
+  const { user, isAuthenticated, clearAuth } = useAuthStore()
 
   const handleSignOut = async () => {
     await signOut()
     clearAuth()
     navigate({ to: '/' })
-  }
-
-  if (isPending) {
-    return (
-      <Button
-        variant='outline'
-        size='icon'
-        className='overflow-hidden rounded-sm'
-        disabled
-      />
-    )
   }
 
   return (
@@ -40,11 +28,19 @@ const ProfileAvatar = () => {
           variant='outline'
           size='icon'
           className='overflow-hidden rounded-sm'>
-          {session?.user?.name?.[0]?.toUpperCase() || '?'}
+          {user?.image ? (
+            <img
+              src={user.image}
+              alt={user.name}
+              className='h-full w-full object-cover'
+            />
+          ) : (
+            user?.name?.[0]?.toUpperCase() || '?'
+          )}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align='end'>
-        {!session ? (
+        {!isAuthenticated ? (
           <DropdownMenuItem
             className='hover:cursor-pointer'
             onClick={() => navigate({ to: '/auth/sign-in' })}>
