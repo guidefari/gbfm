@@ -141,7 +141,9 @@ function Component() {
     if (!allMixesForTags) return []
     const tagSet = new Set<string>()
     allMixesForTags.forEach((mix) => {
-      mix.tags?.forEach((t) => tagSet.add(t))
+      mix.tags?.forEach((t) => {
+        tagSet.add(t)
+      })
     })
     return Array.from(tagSet).sort()
   }, [allMixesForTags])
@@ -221,14 +223,21 @@ function Component() {
             </h2>
             {allTags.length > 0 && (
               <Select value={tag || 'all'} onValueChange={handleTagChange}>
-                <SelectTrigger className='w-40 h-8 text-sm'>
+                <SelectTrigger
+                  className='w-40 h-8 text-sm'
+                  data-testid='tag-filter-select'>
                   <Tag className='w-3 h-3 mr-2' />
                   <SelectValue placeholder='Filter by tag' />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value='all'>All tags</SelectItem>
+                  <SelectItem value='all' data-testid='tag-option-all'>
+                    All tags
+                  </SelectItem>
                   {allTags.map((t) => (
-                    <SelectItem key={t} value={t}>
+                    <SelectItem
+                      key={t}
+                      value={t}
+                      data-testid={`tag-option-${t}`}>
                       {t}
                     </SelectItem>
                   ))}
@@ -238,13 +247,18 @@ function Component() {
           </div>
           {tag && (
             <div className='flex items-center gap-2 mb-3'>
-              <Badge variant='secondary' className='gap-1'>
+              <Badge
+                variant='secondary'
+                className='gap-1'
+                data-testid='active-tag-badge'>
                 <Tag className='w-3 h-3' />
                 {tag}
                 <button
                   type='button'
                   onClick={() => navigate({ search: {} })}
-                  className='ml-1 hover:text-foreground'>
+                  className='ml-1 hover:text-foreground'
+                  data-testid='remove-tag-filter'
+                  aria-label='Remove tag filter'>
                   <X className='w-3 h-3' />
                 </button>
               </Badge>
@@ -256,6 +270,7 @@ function Component() {
               return (
                 <TrackContextMenu key={mix.id} track={mix}>
                   <article
+                    data-testid='mix-item'
                     className={cn(
                       'flex gap-3 items-start p-2 transition-all duration-300 cursor-pointer hover:bg-muted/50 rounded-sm group',
                       isActive && 'ring-1 ring-border bg-accent/5 shadow-sm'
