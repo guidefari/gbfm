@@ -13,11 +13,13 @@ import {
   Pause,
   Play,
   Settings,
+  Shield,
   SkipBack,
   SkipForward,
   SortAsc,
   SortDesc,
   Sun,
+  Upload,
   User,
   Volume2,
   VolumeX
@@ -37,6 +39,7 @@ export const createCommandData = (
   isAuthenticated: boolean,
   isOnMixesPage: boolean,
   canEdit: boolean,
+  isAdmin: boolean,
   currentArchetype?: string,
   currentId?: string,
   audioSrc?: string | null,
@@ -146,20 +149,17 @@ export const createCommandData = (
       icon: Music,
       type: 'action',
       onSelect: navigationActions.routeToMixes
-    }
+    },
 
     // Upload section (auth required)
-    // {
-    //   id: 'upload',
-    //   label: 'Upload',
-    //   icon: Upload,
-    //   type: 'action',
-    //   onSelect: () => {
-    //     closeCmd()
-    //     window.location.href = '/upload'
-    //   },
-    //   requiresAuth: true
-    // }
+    {
+      id: 'upload',
+      label: 'Upload Mix',
+      icon: Upload,
+      type: 'action',
+      onSelect: navigationActions.routeToUpload,
+      requiresAuth: true
+    }
   ]
 
   // Add audio controls section if audio is playing
@@ -316,26 +316,39 @@ export const createCommandData = (
 
   // Add settings section for authenticated users
   if (isAuthenticated) {
+    const settingsItems = [
+      {
+        id: 'profile',
+        label: 'Profile',
+        icon: User,
+        onSelect: navigationActions.routeToProfile
+      }
+    ]
+
+    // Add admin option for admin users
+    if (isAdmin) {
+      settingsItems.unshift({
+        id: 'admin',
+        label: 'Admin Dashboard',
+        icon: Shield,
+        onSelect: navigationActions.routeToAdmin
+      })
+    }
+
+    settingsItems.push({
+      id: 'logout',
+      label: 'Logout',
+      icon: LogOut,
+      onSelect: settingsActions.handleLogout
+    })
+
     items.push({
       id: 'settings',
       label: 'Settings',
       icon: Settings,
       type: 'section',
       requiresAuth: true,
-      items: [
-        {
-          id: 'profile',
-          label: 'Profile',
-          icon: User,
-          onSelect: navigationActions.routeToProfile
-        },
-        {
-          id: 'logout',
-          label: 'Logout',
-          icon: LogOut,
-          onSelect: settingsActions.handleLogout
-        }
-      ]
+      items: settingsItems
     })
   } else {
     // Add login action for non-authenticated users

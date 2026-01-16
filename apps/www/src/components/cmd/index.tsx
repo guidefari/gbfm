@@ -23,8 +23,9 @@ export function CommandDialogDemo() {
   const [isInSection, setIsInSection] = React.useState(false)
   const routerState = useRouterState()
   const { Cmd, openCmd, closeCmd, toggleCmd } = useUIStore()
-  const { isAuthenticated } = useAuthStore()
+  const { user, isAuthenticated } = useAuthStore()
   const { audioSrc } = useAudioPlayerState()
+  const isAdmin = user?.role === 'admin'
 
   const navigationActions = useNavigationActions(closeCmd)
   const sortingActions = useSortingActions(closeCmd)
@@ -62,6 +63,7 @@ export function CommandDialogDemo() {
         isAuthenticated,
         isOnMixesPage,
         canEdit,
+        isAdmin,
         currentArchetype,
         currentId,
         audioSrc,
@@ -78,6 +80,7 @@ export function CommandDialogDemo() {
       isAuthenticated,
       isOnMixesPage,
       canEdit,
+      isAdmin,
       currentArchetype,
       currentId,
       audioSrc,

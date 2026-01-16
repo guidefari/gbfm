@@ -1,9 +1,12 @@
 import type { SelectMdxCompiledAudio } from '@gbfm/vps/schemas'
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Edit } from 'lucide-react'
 import * as React from 'react'
 import { MDXRendrr } from '@/components/MDXRendrr'
+import { Button } from '@/components/ui/button'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
 import { useContentStore } from '@/store'
+import { useAuthStore } from '@/store/auth'
 
 export const Route = createFileRoute('/mixes/$mixId')({
   component: MixPage,
@@ -115,21 +118,51 @@ function MixPage() {
 }
 
 function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
+  const { user } = useAuthStore()
+  const navigate = useNavigate()
+  const isAdmin = user?.role === 'admin'
+
+  const handleEdit = () => {
+    navigate({
+      to: '/mix-upload',
+      search: {
+        edit: mix.slug,
+        title: mix.title,
+        description: mix.description || '',
+        content: mix.content || '',
+        thumbnailUrl: mix.thumbnailUrl || '',
+        tags: mix.tags || []
+      }
+    })
+  }
+
   return (
     <div className='space-y-4'>
-      <div>
-        <h2 className='mb-2 text-2xl font-bold'>{mix.title}</h2>
-        {mix.description && (
-          <p className='text-sm text-muted-foreground'>{mix.description}</p>
-        )}
-        {mix.createdAt && (
-          <p className='mt-2 text-xs text-muted-foreground'>
-            {new Date(mix.createdAt).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            })}
-          </p>
+      <div className='flex items-start justify-between'>
+        <div className='flex-1'>
+          <h2 className='mb-2 text-2xl font-bold'>{mix.title}</h2>
+          {mix.description && (
+            <p className='text-sm text-muted-foreground'>{mix.description}</p>
+          )}
+          {mix.createdAt && (
+            <p className='mt-2 text-xs text-muted-foreground'>
+              {new Date(mix.createdAt).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </p>
+          )}
+        </div>
+        {isAdmin && (
+          <Button
+            onClick={handleEdit}
+            variant='outline'
+            size='sm'
+            className='flex items-center gap-2'>
+            <Edit className='w-4 h-4' />
+            Edit Mix
+          </Button>
         )}
       </div>
 

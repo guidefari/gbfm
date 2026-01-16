@@ -34,12 +34,24 @@ export const useNavigationActions = (closeCmd: () => void) => {
     closeCmd()
   }, [router, closeCmd])
 
+  const routeToUpload = React.useCallback(() => {
+    router({ to: '/mix-upload' })
+    closeCmd()
+  }, [router, closeCmd])
+
+  const routeToAdmin = React.useCallback(() => {
+    router({ to: '/admin' })
+    closeCmd()
+  }, [router, closeCmd])
+
   return {
     routeToMixes,
     routeToLogin,
     routeToProfile,
     routeToHome,
     routeToTracks,
-    routeToLabels
+    routeToLabels,
+    routeToUpload,
+    routeToAdmin
   }
 }

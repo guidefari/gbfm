@@ -13,7 +13,6 @@ import {
   Upload,
   X
 } from 'lucide-react'
-import type React from 'react'
 import { useId, useRef, useState } from 'react'
 import {
   type TrackEntry,
@@ -59,16 +58,26 @@ interface MixFormData {
 }
 
 function MixUploadPage() {
-  const [formData, setFormData] = useState<MixFormData>({
-    title: '',
-    description: '',
-    slug: '',
-    content: '',
-    thumbnailUrl: '',
-    tags: [],
+  const search = Route.useSearch() as {
+    edit?: string
+    title?: string
+    description?: string
+    content?: string
+    thumbnailUrl?: string
+    tags?: string[]
+  }
+  const isEditMode = !!search.edit
+
+  const [formData, setFormData] = useState<MixFormData>(() => ({
+    title: search.title || '',
+    description: search.description || '',
+    slug: search.edit || '', // Use the edit slug as the base slug
+    content: search.content || '',
+    thumbnailUrl: search.thumbnailUrl || '',
+    tags: search.tags || [],
     tracklist: [],
     draft: true
-  })
+  }))
   const [newTag, setNewTag] = useState('')
   const [uploadStep, setUploadStep] = useState<
     | 'idle'
@@ -112,7 +121,9 @@ function MixUploadPage() {
 
       const uploadFormData = new FormData()
 
-      let audioUrl = ''
+      let audioUrl = data.audioFile
+        ? ''
+        : (data as MixFormData & { url?: string }).url || '' // Keep existing URL if no new file
       if (data.audioFile) {
         uploadFormData.append('audioFile', data.audioFile)
         uploadFormData.append('fileType', 'audio')
@@ -155,9 +166,9 @@ function MixUploadPage() {
 
       const tracklistMarkdown =
         data.tracklist.length > 0
-          ? `\n\n## Tracklist\n${data.tracklist
+          ? `\\n\\n## Tracklist\\n${data.tracklist
               .map((t, i) => `${i + 1}. ${t.title} (${formatTime(t.time)})`)
-              .join('\n')}`
+              .join('\\n')}`
           : ''
 
       const audioData = {
@@ -172,8 +183,14 @@ function MixUploadPage() {
         creatorIds: [user?.id]
       }
 
-      const result = await fetcher(`${VPS_BASE_URL}/content/audio`, {
-        method: 'POST',
+      const endpoint = isEditMode
+        ? `${VPS_BASE_URL}/content/audio/mix/${search.edit}`
+        : `${VPS_BASE_URL}/content/audio`
+
+      const method = isEditMode ? 'PATCH' : 'POST'
+
+      const result = await fetcher(endpoint, {
+        method,
         body: JSON.stringify(audioData)
       })
 
@@ -182,28 +199,30 @@ function MixUploadPage() {
     },
     onSuccess: () => {
       toast({
-        title: 'Upload successful!',
-        description: `"${formData.title}" has been uploaded successfully.`
+        title: isEditMode ? 'Update successful!' : 'Upload successful!',
+        description: `"${formData.title}" has been ${isEditMode ? 'updated' : 'uploaded'} successfully.`
       })
 
       setTimeout(() => {
-        setFormData({
-          title: '',
-          description: '',
-          slug: '',
-          content: '',
-          thumbnailUrl: '',
-          tags: [],
-          tracklist: [],
-          draft: true
-        })
-        setAudioFile(null)
-        setArtworkFile(null)
-        setAudioPreview(null)
-        setArtworkPreview(null)
+        if (!isEditMode) {
+          setFormData({
+            title: '',
+            description: '',
+            slug: '',
+            content: '',
+            thumbnailUrl: '',
+            tags: [],
+            tracklist: [],
+            draft: true
+          })
+          setAudioFile(null)
+          setArtworkFile(null)
+          setAudioPreview(null)
+          setArtworkPreview(null)
+        }
         setUploadStep('idle')
 
-        router.navigate({ to: '/mixes' })
+        router.navigate({ to: isEditMode ? `/mixes/${search.edit}` : '/mixes' })
       }, 2000)
     },
     onError: (error) => {
@@ -330,7 +349,7 @@ function MixUploadPage() {
   }
 
   const handleSubmit = async (isDraft: boolean) => {
-    if (!audioFile) {
+    if (!isEditMode && !audioFile) {
       toast({
         title: 'Audio file required',
         description: 'Please select an audio file to upload.',
@@ -339,7 +358,12 @@ function MixUploadPage() {
       return
     }
 
-    const submitData = { ...formData, draft: isDraft, audioFile, artworkFile }
+    const submitData = {
+      ...formData,
+      draft: isDraft,
+      audioFile: isEditMode ? null : audioFile, // Don't require audio file for edits
+      artworkFile
+    }
     uploadMutation.mutate(submitData)
   }
 
@@ -371,10 +395,12 @@ function MixUploadPage() {
         <div className='flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-start'>
           <div>
             <h1 className='text-3xl font-bold text-gb-highlight'>
-              Upload DJ Mix
+              {isEditMode ? 'Edit DJ Mix' : 'Upload DJ Mix'}
             </h1>
             <p className='pl-0 mt-1 text-gb-default-text'>
-              Share your mix with tracklist timestamps for easy navigation.
+              {isEditMode
+                ? 'Update your mix details and content.'
+                : 'Share your mix with tracklist timestamps for easy navigation.'}
             </p>
           </div>
           {isUploading && (
@@ -405,7 +431,7 @@ function MixUploadPage() {
         </div>
       </header>
 
-      {!audioFile ? (
+      {!audioFile && !isEditMode ? (
         <div className='relative p-12 text-center transition-colors border-2 border-dashed cursor-pointer group rounded-sm bg-gb-darker-bg border-gb-pastel-green-2/30 hover:border-gb-highlight/50'>
           <input
             type='file'
@@ -650,10 +676,13 @@ Add any technical details, equipment used, or special techniques...`}
                     <Music className='flex-shrink-0 w-6 h-6 text-gb-highlight' />
                     <div className='min-w-0'>
                       <p className='font-medium leading-tight text-gb-pastel-green-1'>
-                        {audioFile.name}
+                        {audioFile?.name || 'Unknown file'}
                       </p>
                       <p className='text-xs text-muted-foreground'>
-                        {(audioFile.size / (1024 * 1024)).toFixed(2)} MB
+                        {audioFile
+                          ? (audioFile.size / (1024 * 1024)).toFixed(2)
+                          : '0'}{' '}
+                        MB
                       </p>
                     </div>
                   </div>
