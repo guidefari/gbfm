@@ -11,7 +11,8 @@ interface ExpensiveService {
   readonly doWork: () => Effect.Effect<string>
 }
 
-const ExpensiveService = Context.Tag<ExpensiveService>('@example/ExpensiveService')
+const ExpensiveService =
+  Context.GenericTag<ExpensiveService>('ExpensiveService')
 
 let initCount = 0
 let disposeCount = 0
@@ -21,16 +22,11 @@ const ExpensiveServiceLive = Layer.effect(
   Effect.gen(function* () {
     // Simulate expensive initialization (database connections, etc.)
     console.log(`[${++initCount}] Initializing service... (expensive!)`)
-    yield* Effect.sleep('100 millis')  // Simulates connection setup
+    yield* Effect.sleep('100 millis') // Simulates connection setup
 
     return {
       doWork: () => Effect.succeed('work done')
     }
-  })
-).pipe(
-  Layer.withDispose(() => {
-    console.log(`[${++disposeCount}] Disposing service... (cleanup!)`)
-    return Effect.void
   })
 )
 
@@ -42,15 +38,13 @@ const myEffect = Effect.gen(function* () {
 // ==========================================
 // APPROACH 1: Direct Effect.runPromise
 // ==========================================
-async function approachWithoutRuntime() {
+async function _approachWithoutRuntime() {
   console.log('\n=== WITHOUT ManagedRuntime ===')
   const start = performance.now()
 
   // Run 10 times (like your cron job running 10 times)
   for (let i = 0; i < 10; i++) {
-    await Effect.runPromise(
-      myEffect.pipe(Effect.provide(ExpensiveServiceLive))
-    )
+    await Effect.runPromise(myEffect.pipe(Effect.provide(ExpensiveServiceLive)))
     // Service is created and destroyed EVERY TIME!
   }
 
@@ -62,7 +56,7 @@ async function approachWithoutRuntime() {
 // ==========================================
 // APPROACH 2: ManagedRuntime
 // ==========================================
-async function approachWithRuntime() {
+async function _approachWithRuntime() {
   console.log('\n=== WITH ManagedRuntime ===')
   initCount = 0
   disposeCount = 0
@@ -87,30 +81,15 @@ async function approachWithRuntime() {
 }
 
 // ==========================================
-// Run comparison
+// Example Usage
 // ==========================================
-async function main() {
-  await approachWithoutRuntime()
-  // Output:
-  // [1] Initializing service... (expensive!)
-  // [1] Disposing service... (cleanup!)
-  // [2] Initializing service... (expensive!)
-  // [2] Disposing service... (cleanup!)
-  // ... 10 times total
-  // Time: ~1000ms
-  // Initializations: 10, Disposals: 10
-
-  await approachWithRuntime()
-  // Output:
-  // [1] Initializing service... (expensive!)
-  // ... runs 10 times with no more init ...
-  // [1] Disposing service... (cleanup!)
-  // Time: ~100ms
-  // Initializations: 1, Disposals: 1
-
-  console.log('\n=== RESULT ===')
-  console.log('ManagedRuntime is ~10x faster and uses 1/10th the resources!')
-}
-
-// Uncomment to run:
-// main()
+//
+// To run the comparison yourself:
+//
+// await _approachWithoutRuntime()
+// // Expected output: 10 initializations, ~1000ms
+//
+// await _approachWithRuntime()
+// // Expected output: 1 initialization, ~100ms
+//
+// Result: ManagedRuntime is ~10x faster and uses 1/10th the resources!

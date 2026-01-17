@@ -8,9 +8,8 @@ export interface DatabaseService {
   readonly db: typeof db
 }
 
-export const DatabaseService = Context.Tag<DatabaseService>(
-  '@gbfm/DatabaseService'
-)
+export const DatabaseService =
+  Context.GenericTag<DatabaseService>('DatabaseService')
 
 export const DatabaseServiceLive = Layer.succeed(DatabaseService, {
   db

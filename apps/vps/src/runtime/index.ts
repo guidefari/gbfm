@@ -1,4 +1,4 @@
-import { Effect, ManagedRuntime } from 'effect'
+import { type Effect, ManagedRuntime } from 'effect'
 import { AppLayer } from './services'
 
 /**
