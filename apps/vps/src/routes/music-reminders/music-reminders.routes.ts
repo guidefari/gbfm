@@ -23,6 +23,7 @@ export const musicReminderSchema = z.object({
   albumCoverUrl: z.string().nullable(),
   reminderDate: z.string(),
   notes: z.string().nullable(),
+  status: z.enum(['pending', 'processing', 'sent', 'failed']),
   isSent: z.boolean(),
   createdAt: z.string(),
   updatedAt: z.string()
@@ -97,6 +98,10 @@ export const getMusicReminders = createRoute({
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
       z.object({ error: z.string() }),
       'Authentication required'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to fetch reminders'
     )
   },
   tags
@@ -159,6 +164,10 @@ export const deleteMusicReminder = createRoute({
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
       z.object({ error: z.string() }),
       'Authentication required'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to delete reminder'
     )
   },
   tags

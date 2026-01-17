@@ -1,10 +1,12 @@
 import { and, eq } from 'drizzle-orm'
+import { Effect } from 'effect'
 import type { Context } from 'hono'
 import { db } from '@/db'
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { user as usersTable } from '@/db/auth.schema'
+import { DatabaseError } from '@/errors'
+import { runApp } from '@/runtime'
 
-// Helper function to escape HTML special characters
 const escapeHtml = (text: string): string => {
   const map: Record<string, string> = {
     '&': '&amp;',
@@ -15,6 +17,41 @@ const escapeHtml = (text: string): string => {
   }
   return text.replace(/[&<>"']/g, (char) => map[char] || char)
 }
+
+const fetchMixBySlug = (slug: string) =>
+  Effect.tryPromise({
+    try: () =>
+      db
+        .select()
+        .from(audioTable)
+        .where(and(eq(audioTable.type, 'mix'), eq(audioTable.slug, slug)))
+        .limit(1),
+    catch: (error) =>
+      new DatabaseError({
+        message: String(error),
+        operation: 'select',
+        table: 'audio'
+      })
+  })
+
+const fetchCreators = (audioId: string) =>
+  Effect.tryPromise({
+    try: () =>
+      db
+        .select({
+          id: usersTable.id,
+          name: usersTable.name
+        })
+        .from(audioCreators)
+        .innerJoin(usersTable, eq(audioCreators.creatorId, usersTable.id))
+        .where(eq(audioCreators.audioId, audioId)),
+    catch: (error) =>
+      new DatabaseError({
+        message: String(error),
+        operation: 'select',
+        table: 'audio_creators'
+      })
+  })
 
 export const shareMix = async (c: Context) => {
   const { slug } = c.req.param()
@@ -40,17 +77,44 @@ export const shareMix = async (c: Context) => {
     )
   }
 
-  try {
-    // Fetch the mix data
-    const [audio] = await db
-      .select()
-      .from(audioTable)
-      .where(and(eq(audioTable.type, 'mix'), eq(audioTable.slug, slug)))
-      .limit(1)
-
+  const program = Effect.gen(function* () {
+    const [audio] = yield* fetchMixBySlug(slug)
     if (!audio) {
-      return c.html(
-        `
+      return { found: false } as const
+    }
+
+    const creators = yield* fetchCreators(audio.id)
+    return { found: true, audio, creators } as const
+  })
+
+  const result = await runApp(program.pipe(Effect.either))
+
+  if (result._tag === 'Left') {
+    console.error('Error fetching mix for share:', result.left)
+    return c.html(
+      `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Error | goosebumps.fm</title>
+</head>
+<body>
+  <h1>Error</h1>
+  <p>Something went wrong while loading this mix.</p>
+  <a href="https://goosebumps.fm">Go to goosebumps.fm</a>
+</body>
+</html>
+      `,
+      500
+    )
+  }
+
+  const data = result.right
+  if (!data.found) {
+    return c.html(
+      `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -65,36 +129,25 @@ export const shareMix = async (c: Context) => {
 </body>
 </html>
       `,
-        404
-      )
-    }
-
-    // Get the creators
-    const creators = await db
-      .select({
-        id: usersTable.id,
-        name: usersTable.name
-      })
-      .from(audioCreators)
-      .innerJoin(usersTable, eq(audioCreators.creatorId, usersTable.id))
-      .where(eq(audioCreators.audioId, audio.id))
-
-    // Build the metadata
-    const siteUrl = 'https://goosebumps.fm'
-    const mixUrl = `${siteUrl}/mixes/${slug}`
-    const shareUrl = `${siteUrl}/share/mix/${slug}`
-
-    const title = escapeHtml(audio.title || slug)
-    const description = escapeHtml(
-      audio.description || `Listen to ${audio.title || slug} on goosebumps.fm`
+      404
     )
-    const image =
-      audio.thumbnailUrl ||
-      'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'
-    const creatorNames = escapeHtml(creators.map((c) => c.name).join(', '))
+  }
 
-    // Return HTML with rich OG tags
-    const html = `
+  const { audio, creators } = data
+
+  const siteUrl = 'https://goosebumps.fm'
+  const mixUrl = `${siteUrl}/mixes/${slug}`
+  const shareUrl = `${siteUrl}/share/mix/${slug}`
+
+  const title = escapeHtml(audio.title || slug)
+  const description = escapeHtml(
+    audio.description || `Listen to ${audio.title || slug} on goosebumps.fm`
+  )
+  const image =
+    audio.thumbnailUrl || 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'
+  const creatorNames = escapeHtml(creators.map((c) => c.name).join(', '))
+
+  const html = `
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -197,28 +250,7 @@ export const shareMix = async (c: Context) => {
   </script>
 </body>
 </html>
-    `
+  `
 
-    return c.html(html)
-  } catch (error) {
-    console.error('Error fetching mix for share:', error)
-    return c.html(
-      `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Error | goosebumps.fm</title>
-</head>
-<body>
-  <h1>Error</h1>
-  <p>Something went wrong while loading this mix.</p>
-  <a href="https://goosebumps.fm">Go to goosebumps.fm</a>
-</body>
-</html>
-      `,
-      500
-    )
-  }
+  return c.html(html)
 }

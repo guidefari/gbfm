@@ -40,6 +40,10 @@ export const list = createRoute({
     [HttpStatusCodes.OK]: jsonContent(
       createPaginatedResponseSchema(publicationResponseSchema),
       'Paginated list of publications'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to fetch publications'
     )
   }
 })
@@ -63,6 +67,10 @@ export const getOne = createRoute({
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
       createErrorSchema(publicationParamsSchema),
       'Invalid id error'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to fetch publication'
     )
   }
 })
@@ -82,9 +90,17 @@ export const create = createRoute({
       publicationResponseSchema,
       'The created publication'
     ),
+    [HttpStatusCodes.CONFLICT]: jsonContent(
+      z.object({ error: z.string() }),
+      'Publication with this slug already exists'
+    ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
       createErrorSchema(createPublicationSchema),
       'Validation error'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to create publication'
     )
   }
 })
@@ -114,6 +130,10 @@ export const patch = createRoute({
         createErrorSchema(publicationParamsSchema)
       ),
       'Validation error'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to update publication'
     )
   }
 })
@@ -137,6 +157,10 @@ export const remove = createRoute({
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
       createErrorSchema(publicationParamsSchema),
       'Invalid id error'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to delete publication'
     )
   }
 })

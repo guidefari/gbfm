@@ -70,7 +70,6 @@ export const createMusicReminder: AppRouteHandler<
   )
 }
 
-// @ts-expect-error - OpenAPI type system creates strict union types that don't match Hono's flexible return types
 export const getMusicReminders: AppRouteHandler<
   GetMusicRemindersRoute
 > = async (c) => {
@@ -98,14 +97,16 @@ export const getMusicReminders: AppRouteHandler<
     updatedAt: reminder.updatedAt.toISOString()
   }))
 
-  return c.json({
-    success: true,
-    reminders: formattedReminders,
-    total: reminders.length
-  })
+  return c.json(
+    {
+      success: true,
+      reminders: formattedReminders,
+      total: reminders.length
+    },
+    HttpStatusCodes.OK
+  )
 }
 
-// @ts-expect-error - OpenAPI type system creates strict union types that don't match Hono's flexible return types
 export const updateMusicReminder: AppRouteHandler<
   UpdateMusicReminderRoute
 > = async (c) => {
@@ -147,19 +148,21 @@ export const updateMusicReminder: AppRouteHandler<
   }
 
   const updatedReminder = result.right
-  return c.json({
-    success: true,
-    reminder: {
-      ...updatedReminder,
-      reminderDate: updatedReminder.reminderDate.toISOString(),
-      createdAt: updatedReminder.createdAt.toISOString(),
-      updatedAt: updatedReminder.updatedAt.toISOString()
+  return c.json(
+    {
+      success: true,
+      reminder: {
+        ...updatedReminder,
+        reminderDate: updatedReminder.reminderDate.toISOString(),
+        createdAt: updatedReminder.createdAt.toISOString(),
+        updatedAt: updatedReminder.updatedAt.toISOString()
+      },
+      message: 'Music reminder updated successfully'
     },
-    message: 'Music reminder updated successfully'
-  })
+    HttpStatusCodes.OK
+  )
 }
 
-// @ts-expect-error - OpenAPI type system creates strict union types that don't match Hono's flexible return types
 export const deleteMusicReminder: AppRouteHandler<
   DeleteMusicReminderRoute
 > = async (c) => {
@@ -190,8 +193,11 @@ export const deleteMusicReminder: AppRouteHandler<
     )
   }
 
-  return c.json({
-    success: true,
-    message: 'Music reminder deleted successfully'
-  })
+  return c.json(
+    {
+      success: true,
+      message: 'Music reminder deleted successfully'
+    },
+    HttpStatusCodes.OK
+  )
 }

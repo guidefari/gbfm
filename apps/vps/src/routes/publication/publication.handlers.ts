@@ -1,9 +1,10 @@
-import { count, eq } from 'drizzle-orm'
+import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
-import { db } from '@/db'
-import { publicationsTable } from '@/db/publication.schema'
+import { ConflictError, NotFoundError } from '@/errors'
 import { createPaginationMetadata } from '@/lib/pagination'
 import type { AppRouteHandler } from '@/lib/types'
+import { runApp } from '@/runtime'
+import { PublicationService } from '@/services/publication.service'
 
 import type {
   CreateRoute,
@@ -16,21 +17,21 @@ import type {
 export const list: AppRouteHandler<ListRoute> = async (c) => {
   const { limit, offset } = c.req.valid('query')
 
-  // Get total count
-  const countResult = await db
-    .select({ total: count() })
-    .from(publicationsTable)
+  const program = Effect.gen(function* () {
+    const service = yield* PublicationService
+    return yield* service.getPublications(limit, offset)
+  })
 
-  const total = countResult[0]?.total ?? 0
+  const result = await runApp(program.pipe(Effect.either))
 
-  // Get paginated data (order by name since createdAt doesn't exist)
-  const data = await db
-    .select()
-    .from(publicationsTable)
-    .limit(limit)
-    .offset(offset)
-    .orderBy(publicationsTable.name)
+  if (result._tag === 'Left') {
+    return c.json(
+      { error: 'Failed to fetch publications' },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
+  }
 
+  const { data, total } = result.right
   return c.json(
     {
       data,
@@ -42,56 +43,109 @@ export const list: AppRouteHandler<ListRoute> = async (c) => {
 
 export const getOne: AppRouteHandler<GetOneRoute> = async (c) => {
   const { id } = c.req.valid('param')
-  const publication = await db
-    .select()
-    .from(publicationsTable)
-    .where(eq(publicationsTable.id, id))
 
-  if (!publication.length) {
-    return c.json({ error: 'Publication not found' }, HttpStatusCodes.NOT_FOUND)
+  const program = Effect.gen(function* () {
+    const service = yield* PublicationService
+    return yield* service.getPublicationById(id)
+  })
+
+  const result = await runApp(program.pipe(Effect.either))
+
+  if (result._tag === 'Left') {
+    const error = result.left
+    if (error instanceof NotFoundError) {
+      return c.json(
+        { error: 'Publication not found' },
+        HttpStatusCodes.NOT_FOUND
+      )
+    }
+    return c.json(
+      { error: 'Failed to fetch publication' },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
   }
 
-  return c.json(publication[0], HttpStatusCodes.OK)
+  return c.json(result.right, HttpStatusCodes.OK)
 }
 
 export const create: AppRouteHandler<CreateRoute> = async (c) => {
   const validated = c.req.valid('json')
 
-  const newPublication = await db
-    .insert(publicationsTable)
-    .values(validated)
-    .returning()
+  const program = Effect.gen(function* () {
+    const service = yield* PublicationService
+    return yield* service.createPublication(validated)
+  })
 
-  return c.json(newPublication[0], HttpStatusCodes.CREATED)
+  const result = await runApp(program.pipe(Effect.either))
+
+  if (result._tag === 'Left') {
+    const error = result.left
+    if (error instanceof ConflictError) {
+      return c.json(
+        { error: 'Publication with this slug already exists' },
+        HttpStatusCodes.CONFLICT
+      )
+    }
+    return c.json(
+      { error: 'Failed to create publication' },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
+  }
+
+  return c.json(result.right, HttpStatusCodes.CREATED)
 }
 
 export const patch: AppRouteHandler<PatchRoute> = async (c) => {
   const { id } = c.req.valid('param')
   const validated = c.req.valid('json')
 
-  const updated = await db
-    .update(publicationsTable)
-    .set(validated)
-    .where(eq(publicationsTable.id, id))
-    .returning()
+  const program = Effect.gen(function* () {
+    const service = yield* PublicationService
+    return yield* service.updatePublication(id, validated)
+  })
 
-  if (!updated.length) {
-    return c.json({ error: 'Publication not found' }, HttpStatusCodes.NOT_FOUND)
+  const result = await runApp(program.pipe(Effect.either))
+
+  if (result._tag === 'Left') {
+    const error = result.left
+    if (error instanceof NotFoundError) {
+      return c.json(
+        { error: 'Publication not found' },
+        HttpStatusCodes.NOT_FOUND
+      )
+    }
+    return c.json(
+      { error: 'Failed to update publication' },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
   }
 
-  return c.json(updated[0], HttpStatusCodes.OK)
+  return c.json(result.right, HttpStatusCodes.OK)
 }
 
 export const remove: AppRouteHandler<RemoveRoute> = async (c) => {
   const { id } = c.req.valid('param')
-  const deleted = await db
-    .delete(publicationsTable)
-    .where(eq(publicationsTable.id, id))
-    .returning()
 
-  if (!deleted.length) {
-    return c.json({ error: 'Publication not found' }, HttpStatusCodes.NOT_FOUND)
+  const program = Effect.gen(function* () {
+    const service = yield* PublicationService
+    return yield* service.deletePublication(id)
+  })
+
+  const result = await runApp(program.pipe(Effect.either))
+
+  if (result._tag === 'Left') {
+    const error = result.left
+    if (error instanceof NotFoundError) {
+      return c.json(
+        { error: 'Publication not found' },
+        HttpStatusCodes.NOT_FOUND
+      )
+    }
+    return c.json(
+      { error: 'Failed to delete publication' },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
   }
 
-  return c.json(deleted[0], HttpStatusCodes.OK)
+  return c.json(result.right, HttpStatusCodes.OK)
 }

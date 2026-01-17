@@ -45,11 +45,17 @@ This document tracks the systematic migration of the VPS backend from imperative
 - **PublicationService**: Content publication workflow with member and post management
 - **UserService**: Authentication and user management operations
 
-### 🔄 **Phase 6: Handler Migration** - In Progress
+### ✅ **Phase 6: Handler Migration** - Complete
 - ✅ Content handlers migrated to use AudioService, PostService (7/8 routes)
 - ✅ Label handlers migrated to use LabelService (4/4 routes)
 - ✅ Release handlers migrated to use ReleaseService (5/5 routes)
-- Read-only routes (RSS, Share) - low priority
+- ✅ Upload handlers migrated to use S3Service (1/1 routes)
+- ✅ Publication handlers migrated to use PublicationService (5/5 routes)
+- ✅ User handlers migrated to use UserService (4/4 routes)
+- ✅ RSS handler migrated to Effect
+- ✅ Share handler migrated to Effect
+- ✅ Health check endpoint migrated to Effect
+- ✅ All `@ts-expect-error` comments removed by adding proper response schemas
 
 ## Technical Achievements
 
@@ -105,7 +111,7 @@ await runApp(program)  // ✅ Runtime provides service
 ### OpenAPI Strict Typing Conflict
 **Problem**: Stoker's strict route typing conflicted with flexible Effect error handling.
 
-**Solution**: Modified route schemas to use union types, allowing both success and error responses while maintaining OpenAPI compliance.
+**Solution**: Modified route schemas to include all possible response status codes (including 500 for internal errors), allowing both success and error responses while maintaining OpenAPI compliance.
 
 ### Service Environment Dependencies
 **Problem**: Effects requiring services in their environment caused type conflicts.
@@ -134,15 +140,14 @@ await runApp(program)  // ✅ Runtime provides service
 - [x] `/content/*` (7 routes migrated - createPost, getPostsByTag, createMix, createAudio, getAudioByType, getAudioBySlug, updateAudioBySlug)
 - [x] `/labels/*` (4 routes migrated - createLabel, getAllLabels, getLabelBySlug, updateLabelBySlug)
 - [x] `/releases/*` (5 routes migrated - createRelease, getReleasesByLabel, getReleaseBySlug, updateReleaseBySlug, deleteReleaseBySlug)
-- [x] `/auth/*` (4 routes migrated - getProfile, updateProfile, getEmailPreferences, updateEmailPreferences)
+- [x] `/user/*` (4 routes migrated - getProfile, updateProfile, getEmailPreferences, updateEmailPreferences) - renamed from `/auth`
+- [x] `/upload/*` (1 route migrated - uploadFile)
+- [x] `/publication/*` (5 routes migrated - list, getOne, create, patch, remove)
+- [x] `/rss/*` (1 route migrated - getRSSFeed)
+- [x] `/share/*` (1 route migrated - shareMix)
 
-### Routes to Migrate (handlers can adopt new services)
+### Routes Remaining
 - [ ] `/content/*` (1 route remaining - processMixUpload - complex ffmpeg processing)
-- [x] `/auth/*` (4 routes migrated - getProfile, updateProfile, getEmailPreferences, updateEmailPreferences)
-- [ ] `/upload/*` (3 routes)
-- [ ] `/publication/*` (4 routes)
-- [ ] `/rss/*` (read-only, low priority)
-- [ ] `/share/*` (read-only, low priority)
 
 ## Implementation Patterns
 
@@ -206,20 +211,11 @@ if (error instanceof ConflictError) return c.json({ error }, 409)
 
 ## Next Steps
 
-### Immediate (Phase 6 - Handler Migration)
-1. **Migrate upload handlers** to use S3Service
-2. **Migrate publication handlers** to use PublicationService
-
-### Short Term (Complete Handler Migration)
-1. **Migrate auth handlers** to use UserService
-2. **Migrate upload handlers** to use S3Service
-3. **Migrate publication handlers** to use PublicationService
-4. **Migrate RSS and Share handlers** (read-only, low priority)
-
 ### Long Term (Advanced Patterns)
 1. **Circuit breakers and retries** for external API calls
 2. **Observability and monitoring** with Effect
 3. **Testing infrastructure** with Effect-based test runtimes
+4. **Migrate processMixUpload** (complex ffmpeg processing)
 
 ## Success Metrics
 
@@ -253,12 +249,22 @@ apps/vps/src/
 │   └── favorites.handlers.ts # ✅ Migrated (Phase 2)
 ├── routes/spotify/
 │   └── spotify.handlers.ts   # ✅ Migrated (Phase 3)
-└── routes/music-reminders/
-    └── music-reminders.handlers.ts # ✅ Migrated (Phase 2b)
+├── routes/music-reminders/
+│   └── music-reminders.handlers.ts # ✅ Migrated (Phase 2b)
+├── routes/user/              # Renamed from /auth
+│   └── user.handlers.ts      # ✅ Migrated (Phase 6)
+├── routes/upload/
+│   └── upload.handlers.ts    # ✅ Migrated (Phase 6)
+├── routes/publication/
+│   └── publication.handlers.ts # ✅ Migrated (Phase 6)
+├── routes/rss/
+│   └── rss.handlers.ts       # ✅ Migrated (Phase 6)
+└── routes/share/
+    └── share.handlers.ts     # ✅ Migrated (Phase 6)
 ```
 
 ---
 
 **Last Updated**: January 18, 2026
-**Current Phase**: 5 Complete, Phase 6 In Progress
-**Migration Progress**: 11/11 services complete (100%), 32/40 routes migrated (80%)
+**Current Phase**: 6 Complete
+**Migration Progress**: 11/11 services complete (100%), 40/41 routes migrated (98%)
