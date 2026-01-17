@@ -15,7 +15,7 @@ export interface EmailService {
 }
 
 // Service tag for dependency injection
-export const EmailService = Context.Tag<EmailService>()
+export const EmailService = Context.GenericTag<EmailService>('EmailService')
 
 // Implementation
 export const EmailServiceLive = Layer.effect(
@@ -58,7 +58,7 @@ const sendReminderEmail = (reminder: MusicReminder) =>
 
     const userRecord = userRecords[0]
 
-    if (!userRecord.email) {
+    if (!userRecord?.email) {
       return yield* Effect.fail(
         new EmailError({
           message: `User email not found for reminder ${reminder.id}`,
@@ -67,6 +67,8 @@ const sendReminderEmail = (reminder: MusicReminder) =>
       )
     }
 
+    const userEmail = userRecord.email
+
     // Create email log entry
     const logEntries = yield* Effect.tryPromise({
       try: () =>
@@ -74,7 +76,7 @@ const sendReminderEmail = (reminder: MusicReminder) =>
           .insert(emailDeliveryLogsTable)
           .values({
             userId: reminder.userId,
-            recipientEmail: userRecord.email,
+            recipientEmail: userEmail,
             emailType: 'music_reminder',
             templateName: 'music-reminder',
             subject: `🎵 Time to listen: ${reminder.musicTitle} by ${reminder.artistName}`,
@@ -105,25 +107,35 @@ const sendReminderEmail = (reminder: MusicReminder) =>
 
     const logEntry = logEntries[0]
 
+    if (!logEntry?.id) {
+      return yield* Effect.fail(
+        new DatabaseError({
+          message: `Failed to create email log entry`,
+          operation: 'insert',
+          table: 'email_delivery_logs'
+        })
+      )
+    }
+
     try {
       // Send the actual email
       yield* Effect.tryPromise({
         try: () =>
           sendMusicReminderEmail({
-            to: userRecord.email,
-            username: userRecord.email.split('@')[0],
+            to: userEmail,
+            username: userEmail.split('@')[0] || 'user',
             musicTitle: reminder.musicTitle,
             artistName: reminder.artistName,
             musicUrl: reminder.musicUrl,
             reminderDate: reminder.reminderDate.toISOString(),
-            notes: reminder.notes,
-            albumCoverUrl: reminder.albumCoverUrl
+            notes: reminder.notes || undefined,
+            albumCoverUrl: reminder.albumCoverUrl || undefined
           }),
         catch: (error) =>
           new EmailError({
             message: `Failed to send email: ${(error as Error).message}`,
             reminderId: reminder.id,
-            emailAddress: userRecord.email
+            emailAddress: userEmail
           })
       })
 
@@ -147,7 +159,7 @@ const sendReminderEmail = (reminder: MusicReminder) =>
 
       yield* Effect.logInfo(`Successfully sent music reminder email`, {
         reminderId: reminder.id,
-        email: userRecord.email,
+        email: userEmail,
         musicTitle: reminder.musicTitle
       })
     } catch (sendError: unknown) {

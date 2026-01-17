@@ -337,7 +337,7 @@ export const enrichTrackFromUrl: AppRouteHandler<
       title: string
       artist: string
       url: string
-      platform: 'spotify' | 'youtube' | 'apple-music'
+      platform: 'spotify' | 'youtube' | 'apple_music' | 'other'
       thumbnailUrl?: string
       album?: string
       duration?: number
