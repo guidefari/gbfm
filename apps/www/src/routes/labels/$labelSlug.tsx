@@ -1,10 +1,12 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Edit } from 'lucide-react'
 import * as React from 'react'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { ReleasesTable } from '@/components/ReleasesTable'
 import { Button } from '@/components/ui/button'
 import { useLabelBySlug, useReleasesByLabel } from '@/lib/http'
 import { useContentStore } from '@/store'
+import { useAuthStore } from '@/store/auth'
 
 export const Route = createFileRoute('/labels/$labelSlug')({
   component: LabelPage
@@ -13,8 +15,27 @@ export const Route = createFileRoute('/labels/$labelSlug')({
 function LabelPage() {
   const { labelSlug } = Route.useParams()
   const { setCurrentContent } = useContentStore()
+  const { user } = useAuthStore()
+  const navigate = useNavigate()
+  const isAdmin = user?.role === 'admin'
 
   const { data, error, isPending } = useLabelBySlug(labelSlug)
+
+  const handleEdit = () => {
+    navigate({
+      to: '/label-upload',
+      search: {
+        edit: labelSlug,
+        title: data?.title || '',
+        description: data?.description || '',
+        content: data?.content || '',
+        thumbnailUrl: data?.thumbnailUrl || '',
+        website: data?.website || '',
+        bandcamp: data?.bandcamp || '',
+        discogs: data?.discogs || ''
+      }
+    })
+  }
   const {
     data: releases,
     error: releasesError,
@@ -64,7 +85,19 @@ function LabelPage() {
             </div>
 
             <div className='space-y-4'>
-              <h1 className='text-2xl font-bold'>{data.title}</h1>
+              <div className='flex items-start justify-between'>
+                <h1 className='text-2xl font-bold'>{data.title}</h1>
+                {isAdmin && (
+                  <Button
+                    onClick={handleEdit}
+                    variant='outline'
+                    size='sm'
+                    className='flex items-center gap-2'>
+                    <Edit className='w-4 h-4' />
+                    Edit Label
+                  </Button>
+                )}
+              </div>
 
               {data.description && (
                 <p className='text-muted-foreground'>{data.description}</p>

@@ -159,6 +159,16 @@ export const createCommandData = (
       type: 'action',
       onSelect: navigationActions.routeToUpload,
       requiresAuth: true
+    },
+
+    // Upload label section (admin required)
+    {
+      id: 'upload-label',
+      label: 'Upload Label',
+      icon: FileText,
+      type: 'action',
+      onSelect: navigationActions.routeToLabelUpload,
+      requiresAuth: true
     }
   ]
 

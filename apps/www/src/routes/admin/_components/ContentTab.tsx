@@ -39,6 +39,12 @@ interface LabelItem {
   id: string
   name: string
   slug: string
+  description: string | null
+  content: string
+  thumbnailUrl: string | null
+  website: string | null
+  bandcamp: string | null
+  discogs: string | null
   createdAt: string
 }
 
@@ -323,13 +329,23 @@ export function ContentTab() {
                         {new Date(label.createdAt).toLocaleDateString()}
                       </td>
                       <td className='px-4 py-3'>
-                        <Button variant='outline' size='sm' asChild>
-                          <Link
-                            to='/labels/$labelSlug'
-                            params={{ labelSlug: label.slug }}>
-                            View
-                          </Link>
-                        </Button>
+                        <div className='flex gap-2'>
+                          <Button variant='outline' size='sm' asChild>
+                            <Link
+                              to='/labels/$labelSlug'
+                              params={{ labelSlug: label.slug }}>
+                              View
+                            </Link>
+                          </Button>
+                          <Button
+                            variant='outline'
+                            size='sm'
+                            onClick={() => {
+                              window.location.href = `/label-upload?edit=${encodeURIComponent(label.slug)}&title=${encodeURIComponent(label.name || '')}&description=${encodeURIComponent(label.description || '')}&content=${encodeURIComponent(label.content || '')}&thumbnailUrl=${encodeURIComponent(label.thumbnailUrl || '')}`
+                            }}>
+                            Edit
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
