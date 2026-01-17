@@ -1,4 +1,5 @@
 import { count, desc, eq } from 'drizzle-orm'
+import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
 import { labelsTable } from '@/db/label.schema'
@@ -6,9 +7,12 @@ import {
   releasesTable,
   type SelectMdxCompiledRelease
 } from '@/db/release.schema'
+import { ConflictError, DatabaseError, NotFoundError } from '@/errors'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
 import { createPaginationMetadata } from '@/lib/pagination'
 import type { AppRouteHandler } from '@/lib/types'
+import { AppRuntime } from '@/runtime'
+import { ReleaseService } from '@/services/release.service'
 
 import type {
   CreateReleaseRoute,
@@ -21,52 +25,40 @@ import type {
 export const createRelease: AppRouteHandler<CreateReleaseRoute> = async (c) => {
   const releaseData = c.req.valid('json')
 
-  try {
-    const [label] = await db
-      .select()
-      .from(labelsTable)
-      .where(eq(labelsTable.id, releaseData.labelId))
-      .limit(1)
-
-    if (!label) {
-      return c.json({ error: 'Label not found' }, HttpStatusCodes.NOT_FOUND)
-    }
-
-    console.log({ label })
-
-    const [newRelease] = await db
-      .insert(releasesTable)
-      .values({
-        ...releaseData,
-        releaseDate: new Date(releaseData.releaseDate)
-      })
-      .returning()
-
-    console.log('newRelease:', newRelease)
-
-    if (!newRelease) {
-      return c.json(
-        { error: 'Failed to create release' },
-        HttpStatusCodes.INTERNAL_SERVER_ERROR
-      )
-    }
-
-    return c.json(newRelease, HttpStatusCodes.CREATED)
-  } catch (error) {
-    console.error(error)
-
-    if (error instanceof Error && error.message.includes('unique constraint')) {
-      return c.json(
-        { error: 'Release with this slug already exists' },
-        HttpStatusCodes.CONFLICT
-      )
-    }
-
-    return c.json(
-      { error: `Failed to create release: ${error}` },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
+  const program = Effect.gen(function* () {
+    const releaseService = yield* ReleaseService
+    return yield* releaseService.create({
+      ...releaseData,
+      releaseDate: new Date(releaseData.releaseDate)
+    })
+  }).pipe(
+    Effect.catchTag('NotFoundError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('ConflictError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
     )
+  )
+
+  const result = await AppRuntime.runPromise(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
+
+  return c.json(result, HttpStatusCodes.CREATED)
 }
 
 export const getReleasesByLabel: AppRouteHandler<
@@ -75,50 +67,31 @@ export const getReleasesByLabel: AppRouteHandler<
   const { labelSlug } = c.req.valid('param')
   const { limit, offset } = c.req.valid('query')
 
-  try {
-    const [label] = await db
-      .select()
-      .from(labelsTable)
-      .where(eq(labelsTable.slug, labelSlug))
-      .limit(1)
-
-    if (!label) {
-      return c.json({ error: 'Label not found' }, HttpStatusCodes.NOT_FOUND)
-    }
-
-    const whereCondition = eq(releasesTable.labelId, label.id)
-
-    // Get total count
-    const countResult = await db
-      .select({ total: count() })
-      .from(releasesTable)
-      .where(whereCondition)
-
-    const total = countResult[0]?.total ?? 0
-
-    // Get paginated data
-    const data = await db
-      .select()
-      .from(releasesTable)
-      .where(whereCondition)
-      .limit(limit)
-      .offset(offset)
-      .orderBy(desc(releasesTable.createdAt))
-
-    return c.json(
-      {
-        data,
-        pagination: createPaginationMetadata(total, limit, offset)
-      },
-      HttpStatusCodes.OK
+  const program = Effect.gen(function* () {
+    const releaseService = yield* ReleaseService
+    return yield* releaseService.getByLabelSlug(labelSlug, { limit, offset })
+  }).pipe(
+    Effect.catchTag('NotFoundError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
     )
-  } catch (error) {
-    console.error('Error fetching releases by label:', error)
-    return c.json(
-      { error: 'Failed to fetch releases' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
-    )
+  )
+
+  const result = await AppRuntime.runPromise(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
+
+  return c.json(result, HttpStatusCodes.OK)
 }
 
 export const getReleaseBySlug: AppRouteHandler<GetReleaseBySlugRoute> = async (
@@ -126,47 +99,31 @@ export const getReleaseBySlug: AppRouteHandler<GetReleaseBySlugRoute> = async (
 ) => {
   const { slug } = c.req.valid('param')
 
-  try {
-    const [release] = await db
-      .select()
-      .from(releasesTable)
-      .where(eq(releasesTable.slug, slug))
-      .limit(1)
-
-    if (!release) {
-      return c.json({ error: 'Release not found' }, HttpStatusCodes.NOT_FOUND)
-    }
-
-    let processedRelease: SelectMdxCompiledRelease = {
-      ...release,
-      compiledContent: ''
-    }
-
-    if (release.content) {
-      const mdxResult = await compileMDX(release.content)
-
-      if (isMDXCompilationResult(mdxResult)) {
-        processedRelease = {
-          ...processedRelease,
-          compiledContent: mdxResult.compiled
-        }
-      } else {
-        console.warn(
-          'Failed to compile MDX for release:',
-          slug,
-          mdxResult.error
-        )
-      }
-    }
-
-    return c.json(processedRelease, HttpStatusCodes.OK)
-  } catch (error) {
-    console.error('Error fetching release by slug:', error)
-    return c.json(
-      { error: 'Failed to fetch release' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
+  const program = Effect.gen(function* () {
+    const releaseService = yield* ReleaseService
+    return yield* releaseService.getBySlug(slug)
+  }).pipe(
+    Effect.catchTag('NotFoundError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
     )
+  )
+
+  const result = await AppRuntime.runPromise(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
+
+  return c.json(result, HttpStatusCodes.OK)
 }
 
 export const updateReleaseBySlug: AppRouteHandler<
@@ -175,60 +132,36 @@ export const updateReleaseBySlug: AppRouteHandler<
   const { slug } = c.req.valid('param')
   const updateData = c.req.valid('json')
 
-  try {
-    const [existingRelease] = await db
-      .select()
-      .from(releasesTable)
-      .where(eq(releasesTable.slug, slug))
-      .limit(1)
-
-    if (!existingRelease) {
-      return c.json({ error: 'Release not found' }, HttpStatusCodes.NOT_FOUND)
-    }
-
-    const [updatedRelease] = await db
-      .update(releasesTable)
-      .set({
-        ...updateData,
-        updatedAt: new Date(),
-        releaseDate: updateData.releaseDate
-          ? new Date(updateData.releaseDate)
-          : existingRelease.releaseDate
-      })
-      .where(eq(releasesTable.id, existingRelease.id))
-      .returning()
-
-    if (!updatedRelease) {
-      return c.json(
-        { error: 'Failed to update release' },
-        HttpStatusCodes.INTERNAL_SERVER_ERROR
-      )
-    }
-
-    const baseProcessedRelease: SelectMdxCompiledRelease = {
-      ...updatedRelease,
-      compiledContent: ''
-    }
-
-    if (updatedRelease.content) {
-      const mdxResult = await compileMDX(updatedRelease.content)
-      if (isMDXCompilationResult(mdxResult)) {
-        const processedReleaseWithCompiled: SelectMdxCompiledRelease = {
-          ...baseProcessedRelease,
-          compiledContent: mdxResult.compiled
-        }
-        return c.json(processedReleaseWithCompiled, HttpStatusCodes.OK)
-      }
-    }
-
-    return c.json(baseProcessedRelease, HttpStatusCodes.OK)
-  } catch (error) {
-    console.error('Error updating release:', error)
-    return c.json(
-      { error: 'Failed to update release' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
+  const program = Effect.gen(function* () {
+    const releaseService = yield* ReleaseService
+    return yield* releaseService.update(slug, {
+      ...updateData,
+      releaseDate: updateData.releaseDate
+        ? new Date(updateData.releaseDate)
+        : undefined
+    })
+  }).pipe(
+    Effect.catchTag('NotFoundError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
     )
+  )
+
+  const result = await AppRuntime.runPromise(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
+
+  return c.json(result, HttpStatusCodes.OK)
 }
 
 export const deleteReleaseBySlug: AppRouteHandler<
@@ -236,30 +169,30 @@ export const deleteReleaseBySlug: AppRouteHandler<
 > = async (c) => {
   const { slug } = c.req.valid('param')
 
-  try {
-    const [existingRelease] = await db
-      .select()
-      .from(releasesTable)
-      .where(eq(releasesTable.slug, slug))
-      .limit(1)
-
-    if (!existingRelease) {
-      return c.json({ error: 'Release not found' }, HttpStatusCodes.NOT_FOUND)
-    }
-
-    await db
-      .delete(releasesTable)
-      .where(eq(releasesTable.id, existingRelease.id))
-
-    return c.json(
-      { message: 'Release deleted successfully' },
-      HttpStatusCodes.OK
+  const program = Effect.gen(function* () {
+    const releaseService = yield* ReleaseService
+    yield* releaseService.delete(slug)
+    return { message: 'Release deleted successfully' } as const
+  }).pipe(
+    Effect.catchTag('NotFoundError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
     )
-  } catch (error) {
-    console.error('Error deleting release:', error)
-    return c.json(
-      { error: 'Failed to delete release' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
-    )
+  )
+
+  const result = await AppRuntime.runPromise(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
+
+  return c.json(result, HttpStatusCodes.OK)
 }

@@ -133,10 +133,11 @@ await runApp(program)  // ✅ Runtime provides service
 - [x] `/music-reminders/*` (4 routes - complete)
 - [x] `/content/*` (7 routes migrated - createPost, getPostsByTag, createMix, createAudio, getAudioByType, getAudioBySlug, updateAudioBySlug)
 - [x] `/labels/*` (4 routes migrated - createLabel, getAllLabels, getLabelBySlug, updateLabelBySlug)
+- [x] `/releases/*` (5 routes migrated - createRelease, getReleasesByLabel, getReleaseBySlug, updateReleaseBySlug, deleteReleaseBySlug)
 
 ### Routes to Migrate (handlers can adopt new services)
 - [ ] `/content/*` (1 route remaining - processMixUpload - complex ffmpeg processing)
-- [ ] `/releases/*` (5 routes) - services ready, handlers pending
+- [x] `/releases/*` (5 routes migrated - createRelease, getReleasesByLabel, getReleaseBySlug, updateReleaseBySlug, deleteReleaseBySlug)
 - [ ] `/auth/*` (4 routes)
 - [ ] `/upload/*` (3 routes)
 - [ ] `/publication/*` (4 routes)
@@ -261,4 +262,4 @@ apps/vps/src/
 
 **Last Updated**: January 18, 2026
 **Current Phase**: 5 Complete, Phase 6 In Progress
-**Migration Progress**: 11/11 services complete (100%), 23/40 routes migrated (58%)
+**Migration Progress**: 11/11 services complete (100%), 28/40 routes migrated (70%)
