@@ -2,6 +2,7 @@ import { Context, Layer } from 'effect'
 import { db } from '@/db'
 import { EmailServiceLive } from '@/services/email.service'
 import { FavoriteServiceLive } from '@/services/favorite.service'
+import { SpotifyServiceLive } from '@/services/spotify.service'
 
 // Database Service
 // Provides access to the Drizzle database instance
@@ -21,5 +22,6 @@ export const DatabaseServiceLive = Layer.succeed(DatabaseService, {
 export const AppLayer = Layer.mergeAll(
   DatabaseServiceLive,
   EmailServiceLive,
-  FavoriteServiceLive
+  FavoriteServiceLive,
+  SpotifyServiceLive
 )

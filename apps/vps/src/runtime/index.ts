@@ -1,13 +1,18 @@
 import { type Effect, ManagedRuntime } from 'effect'
 import type { EmailService } from '@/services/email.service'
 import type { FavoriteService } from '@/services/favorite.service'
+import type { SpotifyService } from '@/services/spotify.service'
 import type { DatabaseService } from './services'
 import { AppLayer } from './services'
 
 /**
  * Union type of all services provided by the AppLayer
  */
-type AppServices = DatabaseService | EmailService | FavoriteService
+type AppServices =
+  | DatabaseService
+  | EmailService
+  | FavoriteService
+  | SpotifyService
 
 /**
  * Main application runtime
