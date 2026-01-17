@@ -1,8 +1,9 @@
-import { eq } from 'drizzle-orm'
+import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
-import { db } from '@/db'
-import { musicReminder } from '@/db/music-reminder.schema'
+import { DatabaseError, NotFoundError, UnauthorizedError } from '@/errors'
 import type { AppRouteHandler } from '@/lib/types'
+import { runApp } from '@/runtime'
+import { MusicReminderService } from '@/services/music-reminder.service'
 
 import type {
   CreateMusicReminderRoute,
@@ -15,7 +16,6 @@ export const createMusicReminder: AppRouteHandler<
   CreateMusicReminderRoute
 > = async (c) => {
   const user = c.get('user')
-
   const {
     musicTitle,
     artistName,
@@ -25,9 +25,9 @@ export const createMusicReminder: AppRouteHandler<
     notes
   } = c.req.valid('json')
 
-  const [newReminder] = await db
-    .insert(musicReminder)
-    .values({
+  const program = Effect.gen(function* () {
+    const service = yield* MusicReminderService
+    return yield* service.create({
       userId: user.id,
       musicTitle,
       artistName,
@@ -36,15 +36,25 @@ export const createMusicReminder: AppRouteHandler<
       reminderDate: new Date(reminderDate),
       notes: notes || null
     })
-    .returning()
+  })
 
-  if (!newReminder) {
+  const result = await runApp(program.pipe(Effect.either))
+
+  if (result._tag === 'Left') {
+    const error = result.left
+    if (error instanceof DatabaseError) {
+      return c.json(
+        { error: 'Failed to create reminder' },
+        HttpStatusCodes.INTERNAL_SERVER_ERROR
+      )
+    }
     return c.json(
-      { error: 'Failed to create reminder' },
+      { error: 'An unexpected error occurred' },
       HttpStatusCodes.INTERNAL_SERVER_ERROR
     )
   }
 
+  const newReminder = result.right
   return c.json(
     {
       success: true,
@@ -65,14 +75,22 @@ export const getMusicReminders: AppRouteHandler<
   GetMusicRemindersRoute
 > = async (c) => {
   const user = c.get('user')
-  console.log('user:', user)
 
-  const reminders = await db
-    .select()
-    .from(musicReminder)
-    .where(eq(musicReminder.userId, user.id))
-    .orderBy(musicReminder.reminderDate)
+  const program = Effect.gen(function* () {
+    const service = yield* MusicReminderService
+    return yield* service.getByUserId(user.id)
+  })
 
+  const result = await runApp(program.pipe(Effect.either))
+
+  if (result._tag === 'Left') {
+    return c.json(
+      { error: 'Failed to fetch reminders' },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
+  }
+
+  const reminders = result.right
   const formattedReminders = reminders.map((reminder) => ({
     ...reminder,
     reminderDate: reminder.reminderDate.toISOString(),
@@ -92,55 +110,43 @@ export const updateMusicReminder: AppRouteHandler<
   UpdateMusicReminderRoute
 > = async (c) => {
   const user = c.get('user')
-
   const { id } = c.req.valid('param')
   const updateData = c.req.valid('json')
 
-  // First check if the reminder exists and belongs to the user
-  const [existingReminder] = await db
-    .select()
-    .from(musicReminder)
-    .where(eq(musicReminder.id, id))
-    .limit(1)
+  const program = Effect.gen(function* () {
+    const service = yield* MusicReminderService
+    return yield* service.update(id, user.id, {
+      musicTitle: updateData.musicTitle,
+      artistName: updateData.artistName,
+      musicUrl: updateData.musicUrl,
+      albumCoverUrl: updateData.albumCoverUrl,
+      reminderDate: updateData.reminderDate
+        ? new Date(updateData.reminderDate)
+        : undefined,
+      notes: updateData.notes
+    })
+  })
 
-  if (!existingReminder) {
-    return c.json(
-      { error: 'Music reminder not found' },
-      HttpStatusCodes.NOT_FOUND
-    )
-  }
+  const result = await runApp(program.pipe(Effect.either))
 
-  if (existingReminder.userId !== user.id) {
-    return c.json({ error: 'Unauthorized' }, HttpStatusCodes.UNAUTHORIZED)
-  }
-
-  const updateValues: Partial<typeof musicReminder.$inferInsert> = {}
-
-  if (updateData.musicTitle !== undefined)
-    updateValues.musicTitle = updateData.musicTitle
-  if (updateData.artistName !== undefined)
-    updateValues.artistName = updateData.artistName
-  if (updateData.musicUrl !== undefined)
-    updateValues.musicUrl = updateData.musicUrl
-  if (updateData.albumCoverUrl !== undefined)
-    updateValues.albumCoverUrl = updateData.albumCoverUrl
-  if (updateData.reminderDate !== undefined)
-    updateValues.reminderDate = new Date(updateData.reminderDate)
-  if (updateData.notes !== undefined) updateValues.notes = updateData.notes
-
-  const [updatedReminder] = await db
-    .update(musicReminder)
-    .set(updateValues)
-    .where(eq(musicReminder.id, id))
-    .returning()
-
-  if (!updatedReminder) {
+  if (result._tag === 'Left') {
+    const error = result.left
+    if (error instanceof NotFoundError) {
+      return c.json(
+        { error: 'Music reminder not found' },
+        HttpStatusCodes.NOT_FOUND
+      )
+    }
+    if (error instanceof UnauthorizedError) {
+      return c.json({ error: 'Unauthorized' }, HttpStatusCodes.UNAUTHORIZED)
+    }
     return c.json(
       { error: 'Failed to update reminder' },
       HttpStatusCodes.INTERNAL_SERVER_ERROR
     )
   }
 
+  const updatedReminder = result.right
   return c.json({
     success: true,
     reminder: {
@@ -158,28 +164,31 @@ export const deleteMusicReminder: AppRouteHandler<
   DeleteMusicReminderRoute
 > = async (c) => {
   const user = c.get('user')
-
   const { id } = c.req.valid('param')
 
-  // First check if the reminder exists and belongs to the user
-  const [existingReminder] = await db
-    .select()
-    .from(musicReminder)
-    .where(eq(musicReminder.id, id))
-    .limit(1)
+  const program = Effect.gen(function* () {
+    const service = yield* MusicReminderService
+    return yield* service.delete(id, user.id)
+  })
 
-  if (!existingReminder) {
+  const result = await runApp(program.pipe(Effect.either))
+
+  if (result._tag === 'Left') {
+    const error = result.left
+    if (error instanceof NotFoundError) {
+      return c.json(
+        { error: 'Music reminder not found' },
+        HttpStatusCodes.NOT_FOUND
+      )
+    }
+    if (error instanceof UnauthorizedError) {
+      return c.json({ error: 'Unauthorized' }, HttpStatusCodes.UNAUTHORIZED)
+    }
     return c.json(
-      { error: 'Music reminder not found' },
-      HttpStatusCodes.NOT_FOUND
+      { error: 'Failed to delete reminder' },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
     )
   }
-
-  if (existingReminder.userId !== user.id) {
-    return c.json({ error: 'Unauthorized' }, HttpStatusCodes.UNAUTHORIZED)
-  }
-
-  await db.delete(musicReminder).where(eq(musicReminder.id, id))
 
   return c.json({
     success: true,

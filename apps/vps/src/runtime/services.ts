@@ -1,11 +1,14 @@
 import { Context, Layer } from 'effect'
 import { db } from '@/db'
+import { AudioServiceLive } from '@/services/audio.service'
 import { EmailServiceLive } from '@/services/email.service'
 import { FavoriteServiceLive } from '@/services/favorite.service'
+import { LabelServiceLive } from '@/services/label.service'
+import { MusicReminderServiceLive } from '@/services/music-reminder.service'
+import { PostServiceLive } from '@/services/post.service'
+import { ReleaseServiceLive } from '@/services/release.service'
 import { SpotifyServiceLive } from '@/services/spotify.service'
 
-// Database Service
-// Provides access to the Drizzle database instance
 export interface DatabaseService {
   readonly db: typeof db
 }
@@ -17,11 +20,14 @@ export const DatabaseServiceLive = Layer.succeed(DatabaseService, {
   db
 })
 
-// Application Layer - combines all services
-// This is the main layer that provides all dependencies for the application
 export const AppLayer = Layer.mergeAll(
   DatabaseServiceLive,
   EmailServiceLive,
   FavoriteServiceLive,
-  SpotifyServiceLive
+  SpotifyServiceLive,
+  MusicReminderServiceLive,
+  AudioServiceLive,
+  PostServiceLive,
+  LabelServiceLive,
+  ReleaseServiceLive
 )
