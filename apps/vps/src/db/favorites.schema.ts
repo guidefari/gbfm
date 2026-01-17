@@ -46,8 +46,13 @@ export const selectFavoriteSchema = z
       .uuid()
       .openapi({ description: 'Unique identifier for the favorite' }),
     userId: z.string().openapi({ description: 'User ID who favorited' }),
-    audioId: z.string().uuid().openapi({ description: 'Audio ID that was favorited' }),
-    createdAt: z.date().openapi({ description: 'When the favorite was created' })
+    audioId: z
+      .string()
+      .uuid()
+      .openapi({ description: 'Audio ID that was favorited' }),
+    createdAt: z
+      .date()
+      .openapi({ description: 'When the favorite was created' })
   })
   .openapi('Favorite')
 

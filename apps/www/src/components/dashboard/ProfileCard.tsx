@@ -114,7 +114,10 @@ export function ProfileCard({ user }: ProfileCardProps) {
                 />
               </div>
             ))}
-            <Button type='submit' className='w-full' disabled={isUpdatingProfile}>
+            <Button
+              type='submit'
+              className='w-full'
+              disabled={isUpdatingProfile}>
               {isUpdatingProfile ? 'Saving...' : 'Save Profile'}
             </Button>
           </div>

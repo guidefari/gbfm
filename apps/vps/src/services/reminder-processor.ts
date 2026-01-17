@@ -46,7 +46,9 @@ export const processPendingReminders = Effect.gen(function* () {
     return
   }
 
-  yield* Effect.logInfo(`Processing ${claimedReminders.length} claimed reminders`)
+  yield* Effect.logInfo(
+    `Processing ${claimedReminders.length} claimed reminders`
+  )
 
   // Process reminders in batches with concurrency control
   yield* Effect.forEach(
@@ -152,7 +154,10 @@ export const getReminderStats = Effect.gen(function* () {
               )
             )
           ),
-          processing: db.$count(musicReminder, eq(musicReminder.status, 'processing'))
+          processing: db.$count(
+            musicReminder,
+            eq(musicReminder.status, 'processing')
+          )
         })
         .from(musicReminder),
     catch: (error) =>

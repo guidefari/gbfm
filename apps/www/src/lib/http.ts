@@ -368,7 +368,10 @@ export type FavoritesResponse = {
 }
 
 export function useFavorites() {
-  const { data, error, isPending, refetch } = useQuery<FavoritesResponse, Error>({
+  const { data, error, isPending, refetch } = useQuery<
+    FavoritesResponse,
+    Error
+  >({
     queryKey: ['favorites'],
     queryFn: async () => fetcher(`${VPS_BASE_URL}/favorites`)
   })
