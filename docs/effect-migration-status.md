@@ -45,8 +45,10 @@ This document tracks the systematic migration of the VPS backend from imperative
 - **PublicationService**: Content publication workflow with member and post management
 - **UserService**: Authentication and user management operations
 
-### 📋 **Phase 6: Handler Migration** - Planned
-- Content handlers can now be migrated to use AudioService, PostService, LabelService, ReleaseService
+### 🔄 **Phase 6: Handler Migration** - In Progress
+- ✅ Content handlers migrated to use AudioService, PostService
+- Label handlers can now be migrated to use LabelService
+- Release handlers can now be migrated to use ReleaseService
 - Read-only routes (RSS, Share) - low priority
 
 ## Technical Achievements
@@ -129,9 +131,10 @@ await runApp(program)  // ✅ Runtime provides service
 - [x] `/favorites/*` (3 routes - complete)
 - [x] `/spotify/*` (5 routes - complete)
 - [x] `/music-reminders/*` (4 routes - complete)
+- [x] `/content/*` (5 routes migrated - createPost, getPostsByTag, createMix, getAudioByType, getAudioBySlug)
 
 ### Routes to Migrate (handlers can adopt new services)
-- [ ] `/content/*` (8 routes) - services ready, handlers pending
+- [ ] `/content/*` (3 routes remaining - update, delete, processMixUpload)
 - [ ] `/labels/*` (4 routes) - services ready, handlers pending
 - [ ] `/releases/*` (5 routes) - services ready, handlers pending
 - [ ] `/auth/*` (4 routes)
