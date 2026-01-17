@@ -40,10 +40,10 @@ This document tracks the systematic migration of the VPS backend from imperative
 - **ReleaseService**: `getByLabelSlug`, `getBySlug`, `create`, `update`, `delete`
 - **Transaction Patterns**: Multi-table operations with Effect
 
-### 📋 **Phase 5: Remaining Services** - Planned
-- **S3Service**: File upload/storage operations
-- **PublicationService**: Content publication workflow
-- **UserService**: Authentication and user management
+### ✅ **Phase 5: Remaining Services** - Complete
+- **S3Service**: File upload/storage operations with Effect-based error handling
+- **PublicationService**: Content publication workflow with member and post management
+- **UserService**: Authentication and user management operations
 
 ### 📋 **Phase 6: Handler Migration** - Planned
 - Content handlers can now be migrated to use AudioService, PostService, LabelService, ReleaseService
@@ -121,11 +121,9 @@ await runApp(program)  // ✅ Runtime provides service
 - [x] PostService (Phase 4)
 - [x] LabelService (Phase 4)
 - [x] ReleaseService (Phase 4)
-
-### Services Remaining
-- [ ] S3Service (Phase 5)
-- [ ] PublicationService (Phase 5)
-- [ ] UserService (Phase 5)
+- [x] S3Service (Phase 5)
+- [x] PublicationService (Phase 5)
+- [x] UserService (Phase 5)
 
 ### Routes Migrated
 - [x] `/favorites/*` (3 routes - complete)
@@ -204,19 +202,20 @@ if (error instanceof ConflictError) return c.json({ error }, 409)
 
 ## Next Steps
 
-### Immediate (Phase 5)
-1. **Implement S3Service** for file upload operations
-2. **Implement PublicationService** for content workflow
-3. **Implement UserService** for auth operations
-
-### Short Term (Phase 6 - Handler Migration)
+### Immediate (Phase 6 - Handler Migration)
 1. **Migrate content handlers** to use AudioService, PostService
 2. **Migrate label handlers** to use LabelService
 3. **Migrate release handlers** to use ReleaseService
 
-### Long Term (Complete Migration)
-1. **Remaining handlers** (auth, upload, publication)
-2. **Advanced patterns**: Circuit breakers, retries, observability
+### Short Term (Complete Handler Migration)
+1. **Migrate auth handlers** to use UserService
+2. **Migrate upload handlers** to use S3Service
+3. **Migrate publication handlers** to use PublicationService
+4. **Migrate RSS and Share handlers** (read-only, low priority)
+
+### Long Term (Advanced Patterns)
+1. **Circuit breakers and retries** for external API calls
+2. **Observability and monitoring** with Effect
 3. **Testing infrastructure** with Effect-based test runtimes
 
 ## Success Metrics
@@ -232,7 +231,7 @@ if (error instanceof ConflictError) return c.json({ error }, 409)
 ```
 apps/vps/src/
 ├── runtime/
-│   ├── index.ts              # ManagedRuntime & runApp (9 services)
+│   ├── index.ts              # ManagedRuntime & runApp (12 services)
 │   └── services.ts           # AppLayer composition
 ├── services/
 │   ├── email.service.ts      # ✅ Complete (existing)
@@ -242,7 +241,10 @@ apps/vps/src/
 │   ├── audio.service.ts      # ✅ Complete (Phase 4)
 │   ├── post.service.ts       # ✅ Complete (Phase 4)
 │   ├── label.service.ts      # ✅ Complete (Phase 4)
-│   └── release.service.ts    # ✅ Complete (Phase 4)
+│   ├── release.service.ts    # ✅ Complete (Phase 4)
+│   ├── s3.service.ts         # ✅ Complete (Phase 5)
+│   ├── publication.service.ts # ✅ Complete (Phase 5)
+│   └── user.service.ts       # ✅ Complete (Phase 5)
 ├── errors.ts                 # Extended error types
 ├── routes/favorites/
 │   └── favorites.handlers.ts # ✅ Migrated (Phase 2)
@@ -255,5 +257,5 @@ apps/vps/src/
 ---
 
 **Last Updated**: January 18, 2026
-**Current Phase**: 4 Complete, Phase 5 Next
-**Migration Progress**: 8/11 services complete (73%)
+**Current Phase**: 5 Complete, Phase 6 Next
+**Migration Progress**: 11/11 services complete (100%)
