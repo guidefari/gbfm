@@ -5,6 +5,7 @@ import {
   Head,
   Heading,
   Html,
+  Img,
   Link,
   Preview,
   Section,
@@ -19,6 +20,7 @@ interface MusicReminderEmailProps {
   musicUrl: string
   reminderDate: string
   notes?: string
+  albumCoverUrl?: string
 }
 
 export const MusicReminderEmail: React.FC<
@@ -33,7 +35,8 @@ export const MusicReminderEmail: React.FC<
     month: 'long',
     day: 'numeric'
   }),
-  notes
+  notes,
+  albumCoverUrl
 }) => {
   return (
     <Html>
@@ -51,6 +54,17 @@ export const MusicReminderEmail: React.FC<
 
           {/* Hero Section */}
           <Section style={hero}>
+            {albumCoverUrl && (
+              <Section style={albumCoverWrapper}>
+                <Img
+                  src={albumCoverUrl}
+                  alt={`${musicTitle} cover`}
+                  width='300'
+                  height='300'
+                  style={albumCover}
+                />
+              </Section>
+            )}
             <Text style={reminderLabel}>MUSIC REMINDER</Text>
             <Heading style={musicTitleStyles}>{musicTitle}</Heading>
             <Text style={artistText}>{artistName}</Text>
@@ -201,6 +215,18 @@ const artistText = {
   fontSize: '18px',
   margin: '0 0 8px',
   textAlign: 'center' as const
+}
+
+const albumCoverWrapper = {
+  marginBottom: '32px',
+  textAlign: 'center' as const
+}
+
+const albumCover = {
+  margin: '0 auto',
+  borderRadius: '12px',
+  border: '1px solid #1a1a1a',
+  boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.5)'
 }
 
 const footer = {

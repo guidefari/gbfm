@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq, lte, or } from 'drizzle-orm'
 import { Chunk, Effect, Schedule } from 'effect'
 import { db } from '@/db'
 import { musicReminder } from '@/db/music-reminder.schema'
@@ -7,38 +7,50 @@ import { sendMusicReminderEmailEffect } from './email.service'
 
 // Process all pending music reminders
 export const processPendingReminders = Effect.gen(function* () {
-  // Query pending reminders (reminderDate <= now AND isSent = false)
-  const pendingReminders = yield* Effect.tryPromise({
+  const now = new Date()
+  const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000)
+
+  // Atomically claim pending reminders (or stalled ones)
+  const claimedReminders = yield* Effect.tryPromise({
     try: () =>
       db
-        .select()
-        .from(musicReminder)
-        .where(eq(musicReminder.isSent, false))
-        .orderBy(musicReminder.reminderDate),
+        .update(musicReminder)
+        .set({
+          status: 'processing',
+          updatedAt: new Date()
+        })
+        .where(
+          and(
+            lte(musicReminder.reminderDate, now),
+            or(
+              eq(musicReminder.status, 'pending'),
+              and(
+                eq(musicReminder.status, 'processing'),
+                lte(musicReminder.updatedAt, fiveMinutesAgo)
+              ),
+              eq(musicReminder.status, 'failed')
+            )
+          )
+        )
+        .returning(),
     catch: (error) =>
       new ReminderProcessingError({
-        message: `Failed to query pending reminders: ${(error as Error).message}`,
+        message: `Failed to claim pending reminders: ${(error as Error).message}`,
         reminderId: 'batch',
         stage: 'query'
       })
   })
 
-  // Filter reminders that are due (reminderDate <= now)
-  const now = new Date()
-  const dueReminders = pendingReminders.filter(
-    (reminder) => reminder.reminderDate <= now
-  )
-
-  if (dueReminders.length === 0) {
+  if (claimedReminders.length === 0) {
     yield* Effect.logInfo('No pending reminders to process')
     return
   }
 
-  yield* Effect.logInfo(`Processing ${dueReminders.length} due reminders`)
+  yield* Effect.logInfo(`Processing ${claimedReminders.length} claimed reminders`)
 
   // Process reminders in batches with concurrency control
   yield* Effect.forEach(
-    Chunk.fromIterable(dueReminders),
+    Chunk.fromIterable(claimedReminders),
     (reminder) =>
       processSingleReminder(reminder).pipe(
         Effect.retry(
@@ -46,11 +58,13 @@ export const processPendingReminders = Effect.gen(function* () {
         ),
         Effect.catchAll((error) =>
           Effect.logError(
-            `Failed to process reminder ${reminder.id}: ${error.message}`
+            `Failed to process reminder ${reminder.id} after retries: ${
+              error instanceof Error ? error.message : String(error)
+            }`
           )
         )
       ),
-    { concurrency: 3 } // Process 3 reminders concurrently
+    { concurrency: 3 }
   )
 })
 
@@ -66,11 +80,15 @@ const processSingleReminder = (reminder: typeof musicReminder.$inferSelect) =>
         try: () =>
           db
             .update(musicReminder)
-            .set({ isSent: true })
+            .set({
+              status: 'sent',
+              isSent: true,
+              updatedAt: new Date()
+            })
             .where(eq(musicReminder.id, reminder.id)),
         catch: (error) =>
           new ReminderProcessingError({
-            message: `Failed to update reminder status: ${(error as Error).message}`,
+            message: `Failed to update reminder status to sent: ${(error as Error).message}`,
             reminderId: reminder.id,
             stage: 'update'
           })
@@ -82,19 +100,34 @@ const processSingleReminder = (reminder: typeof musicReminder.$inferSelect) =>
         artistName: reminder.artistName
       })
     } catch (error) {
-      // Log the failure but don't re-throw - we want to continue processing other reminders
+      // Log the failure
       yield* Effect.logError(`Failed to send reminder ${reminder.id}`, {
         error: error instanceof Error ? error.message : 'Unknown error',
         reminderId: reminder.id,
         musicTitle: reminder.musicTitle
       })
 
-      // Don't mark as sent if email failed - will be retried on next run
+      // Mark as failed so it can be picked up later (or retry immediately if we want)
+      yield* Effect.tryPromise({
+        try: () =>
+          db
+            .update(musicReminder)
+            .set({
+              status: 'failed',
+              updatedAt: new Date()
+            })
+            .where(eq(musicReminder.id, reminder.id)),
+        catch: () => {
+          /* ignore update failure in error handler */
+        }
+      })
+
       return yield* Effect.fail(error as Error)
     }
   })
 
 // Get statistics about pending reminders (for monitoring)
+// not using this anywhere yet👀
 export const getReminderStats = Effect.gen(function* () {
   const now = new Date()
 
@@ -102,11 +135,26 @@ export const getReminderStats = Effect.gen(function* () {
     try: () =>
       db
         .select({
-          totalPending: db.$count(musicReminder),
-          dueNow: db.$count(musicReminder, eq(musicReminder.isSent, false))
+          totalPending: db.$count(
+            musicReminder,
+            or(
+              eq(musicReminder.status, 'pending'),
+              eq(musicReminder.status, 'failed')
+            )
+          ),
+          dueNow: db.$count(
+            musicReminder,
+            and(
+              lte(musicReminder.reminderDate, now),
+              or(
+                eq(musicReminder.status, 'pending'),
+                eq(musicReminder.status, 'failed')
+              )
+            )
+          ),
+          processing: db.$count(musicReminder, eq(musicReminder.status, 'processing'))
         })
-        .from(musicReminder)
-        .where(eq(musicReminder.isSent, false)),
+        .from(musicReminder),
     catch: (error) =>
       new ReminderProcessingError({
         message: `Failed to get reminder stats: ${(error as Error).message}`,
