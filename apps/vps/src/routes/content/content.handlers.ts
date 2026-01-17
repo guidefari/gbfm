@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { Effect } from 'effect'
+import { Effect, Schema } from 'effect'
 import ffmpeg from 'ffmpeg-static'
 import type { Context } from 'hono'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
@@ -21,6 +21,30 @@ import type {
   ProcessMixUploadRoute,
   UpdateAudioBySlugRoute
 } from './content.routes'
+
+// Error types for upload processing
+class ValidationError extends Schema.TaggedError<ValidationError>()(
+  'ValidationError',
+  {
+    message: Schema.String
+  }
+) {}
+
+class ProcessingError extends Schema.TaggedError<ProcessingError>()(
+  'ProcessingError',
+  {
+    message: Schema.String,
+    code: Schema.optional(Schema.Number)
+  }
+) {}
+
+class FileSystemError extends Schema.TaggedError<FileSystemError>()(
+  'FileSystemError',
+  {
+    message: Schema.String,
+    path: Schema.optional(Schema.String)
+  }
+) {}
 
 export const createPost: AppRouteHandler<CreatePostRoute> = async (c) => {
   const { creatorIds, ...postData } = c.req.valid('json')
@@ -276,65 +300,153 @@ interface ProcessedFiles {
 }
 
 // Private helper, not exported
-async function processUploadHelper(
+function processUploadHelper(
   c: Context<AppBindings>
-): Promise<ProcessedFiles> {
-  const formData = await c.req.formData()
-  const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'mix-'))
+): Effect.Effect<ProcessedFiles, ValidationError | FileSystemError> {
+  return Effect.gen(function* () {
+    const formData = yield* Effect.tryPromise({
+      try: () => c.req.formData(),
+      catch: (error) =>
+        FileSystemError.make({
+          message: `Failed to parse form data: ${error instanceof Error ? error.message : 'Unknown error'}`
+        })
+    })
 
-  const audioFile = formData.get('audioFile') as File
-  const imageFile = formData.get('coverImage') as File
-  const outputFormat = formData.get('outputFormat') as string
-  const description = formData.get('description') as string
-  const artist = formData.get('artist') as string
-  const album = formData.get('album') as string
-  if (!audioFile || !imageFile) {
-    throw new Error('Missing required files')
-  }
+    const tmpDir = yield* Effect.tryPromise({
+      try: () => fs.mkdtemp(path.join(os.tmpdir(), 'mix-')),
+      catch: (error) =>
+        FileSystemError.make({
+          message: `Failed to create temp directory: ${error instanceof Error ? error.message : 'Unknown error'}`
+        })
+    })
 
-  const audioBuffer = await audioFile.arrayBuffer()
-  const imageBuffer = await imageFile.arrayBuffer()
+    const audioFile = formData.get('audioFile') as File
+    const imageFile = formData.get('coverImage') as File
+    const outputFormat = formData.get('outputFormat') as string
+    const description = formData.get('description') as string
+    const artist = formData.get('artist') as string
+    const album = formData.get('album') as string
 
-  const audioPath = path.join(tmpDir, 'audio.mp3')
-  const imagePath = path.join(tmpDir, 'cover.jpg')
-  const outputPath = path.join(tmpDir, `output.${outputFormat}`)
+    if (!audioFile || !imageFile) {
+      return yield* ValidationError.make({
+        message: 'Missing required files: audioFile and coverImage are required'
+      })
+    }
 
-  await fs.writeFile(audioPath, Buffer.from(audioBuffer))
-  await fs.writeFile(imagePath, Buffer.from(imageBuffer))
+    const audioBuffer = yield* Effect.tryPromise({
+      try: () => audioFile.arrayBuffer(),
+      catch: (error) =>
+        FileSystemError.make({
+          message: `Failed to read audio file: ${error instanceof Error ? error.message : 'Unknown error'}`
+        })
+    })
 
-  return { audioPath, imagePath, outputPath, description, artist, album }
+    const imageBuffer = yield* Effect.tryPromise({
+      try: () => imageFile.arrayBuffer(),
+      catch: (error) =>
+        FileSystemError.make({
+          message: `Failed to read image file: ${error instanceof Error ? error.message : 'Unknown error'}`
+        })
+    })
+
+    const audioPath = path.join(tmpDir, 'audio.mp3')
+    const imagePath = path.join(tmpDir, 'cover.jpg')
+    const outputPath = path.join(tmpDir, `output.${outputFormat}`)
+
+    yield* Effect.tryPromise({
+      try: () => fs.writeFile(audioPath, Buffer.from(audioBuffer)),
+      catch: (error) =>
+        FileSystemError.make({
+          message: `Failed to write audio file: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          path: audioPath
+        })
+    })
+
+    yield* Effect.tryPromise({
+      try: () => fs.writeFile(imagePath, Buffer.from(imageBuffer)),
+      catch: (error) =>
+        FileSystemError.make({
+          message: `Failed to write image file: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          path: imagePath
+        })
+    })
+
+    return { audioPath, imagePath, outputPath, description, artist, album }
+  })
 }
 
 export const processUpload: AppRouteHandler<ProcessMixUploadRoute> = async (
   c
 ) => {
-  try {
-    const formData = await c.req.formData()
-    const files = await processUploadHelper(c)
+  const program = Effect.gen(function* () {
+    const formData = yield* Effect.tryPromise({
+      try: () => c.req.formData(),
+      catch: (error) =>
+        FileSystemError.make({
+          message: `Failed to parse form data: ${error instanceof Error ? error.message : 'Unknown error'}`
+        })
+    })
+
+    const files = yield* processUploadHelper(c)
     const outputFormat = (formData.get('outputFormat') as string) || 'mp4'
-    const title = formData.get('title') as string // <-- fix: extract title
+    const title = formData.get('title') as string
+
     const safeTitle = title.replace(/[^a-z0-9]/gi, '_').toLowerCase()
 
-    const outputPath = await createAudioOrVideo(files, outputFormat)
-    const outputBuffer = await fs.readFile(outputPath)
-
-    await cleanup(files)
-
-    return new Response(outputBuffer, {
-      headers: {
-        'Content-Type': outputFormat === 'mp3' ? 'audio/mpeg' : 'video/mp4',
-        'Content-Disposition': `attachment; filename="${safeTitle}.${outputFormat}"`
-      }
+    const outputPath = yield* createAudioOrVideo(files, outputFormat)
+    const outputBuffer = yield* Effect.tryPromise({
+      try: () => fs.readFile(outputPath),
+      catch: (error) =>
+        FileSystemError.make({
+          message: `Failed to read output file: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          path: outputPath
+        })
     })
-  } catch (error) {
-    if (error instanceof Error) {
-      return c.json({ error: error.message }, HttpStatusCodes.BAD_REQUEST)
-    }
-    return c.json(
-      { error: 'Failed to process upload' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
+
+    yield* cleanup(files)
+
+    return { outputBuffer, outputFormat, safeTitle }
+  }).pipe(
+    Effect.catchTag('ValidationError', (error) =>
+      Effect.succeed({
+        error: error.message,
+        status: HttpStatusCodes.BAD_REQUEST
+      } as const)
+    ),
+    Effect.catchTag('ProcessingError', (error) =>
+      Effect.succeed({
+        error: error.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    ),
+    Effect.catchTag('FileSystemError', (error) =>
+      Effect.succeed({
+        error: error.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    ),
+    Effect.catchAll((_error) =>
+      Effect.succeed({
+        error: 'Failed to process upload',
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
     )
+  )
+
+  const result = await AppRuntime.runPromise(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
+
+  // Return file response for successful processing
+  return new Response(result.outputBuffer, {
+    headers: {
+      'Content-Type':
+        result.outputFormat === 'mp3' ? 'audio/mpeg' : 'video/mp4',
+      'Content-Disposition': `attachment; filename="${result.safeTitle}.${result.outputFormat}"`
+    }
+  })
 }
 
 function formatTracklist(tracklist: string): string {
@@ -351,13 +463,13 @@ function formatTracklist(tracklist: string): string {
     .join('\n')
 }
 
-async function createAudioOrVideo(
+function createAudioOrVideo(
   files: ProcessedFiles,
   outputFormat: string
-): Promise<string> {
-  const formattedTracklist = formatTracklist(files.description)
+): Effect.Effect<string, ProcessingError> {
+  return Effect.gen(function* () {
+    const formattedTracklist = formatTracklist(files.description)
 
-  return new Promise((resolve, reject) => {
     const ffmpegArgs =
       outputFormat === 'mp3'
         ? [
@@ -387,13 +499,13 @@ async function createAudioOrVideo(
             '-metadata',
             `album=${files.album || 'GBFM'}`,
             '-metadata',
-            `description=Tracklist:\n${formattedTracklist}`,
+            `description=Tracklist:\\n${formattedTracklist}`,
             '-metadata',
-            `comment=Tracklist:\n${formattedTracklist}`,
+            `comment=Tracklist:\\n${formattedTracklist}`,
             '-metadata',
-            `lyrics=Tracklist:\n${formattedTracklist}`,
+            `lyrics=Tracklist:\\n${formattedTracklist}`,
             '-metadata',
-            `USLT=Tracklist:\n${formattedTracklist}`,
+            `USLT=Tracklist:\\n${formattedTracklist}`,
             '-id3v2_version',
             '3',
             files.outputPath
@@ -429,29 +541,61 @@ async function createAudioOrVideo(
             files.outputPath
           ]
 
-    const ffmpegProcess = spawn(ffmpeg as string, ffmpegArgs)
+    yield* Effect.tryPromise({
+      try: () =>
+        new Promise<void>((resolve, reject) => {
+          const ffmpegProcess = spawn(ffmpeg as string, ffmpegArgs)
 
-    ffmpegProcess.on('close', (code) => {
-      if (code === 0) {
-        resolve(files.outputPath)
-      } else {
-        reject(new Error(`FFmpeg process exited with code ${code}`))
-      }
+          ffmpegProcess.on('close', (code) => {
+            if (code === 0) {
+              resolve()
+            } else {
+              reject(new Error(`FFmpeg process exited with code ${code}`))
+            }
+          })
+
+          ffmpegProcess.on('error', (error) => {
+            reject(error)
+          })
+
+          ffmpegProcess.stderr.on('data', (data) => {
+            console.log(`FFmpeg: ${data}`)
+          })
+        }),
+      catch: (error) =>
+        ProcessingError.make({
+          message: `FFmpeg processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          code:
+            error instanceof Error &&
+            'code' in error &&
+            typeof (error as { code?: unknown }).code === 'number'
+              ? (error as { code: number }).code
+              : undefined
+        })
     })
 
-    ffmpegProcess.stderr.on('data', (data) => {
-      console.log(`FFmpeg: ${data}`)
-    })
+    return files.outputPath
   })
 }
 
-async function cleanup(files: ProcessedFiles) {
-  try {
-    await fs.unlink(files.audioPath)
-    await fs.unlink(files.imagePath)
-    await fs.unlink(files.outputPath)
-    await fs.rmdir(path.dirname(files.audioPath))
-  } catch (error) {
-    console.error('Cleanup error:', error)
-  }
+function cleanup(files: ProcessedFiles): Effect.Effect<void> {
+  return Effect.gen(function* () {
+    yield* Effect.tryPromise(() => fs.unlink(files.audioPath)).pipe(
+      Effect.catchAll(() => Effect.succeed(void 0)) // Ignore cleanup errors
+    )
+
+    yield* Effect.tryPromise(() => fs.unlink(files.imagePath)).pipe(
+      Effect.catchAll(() => Effect.succeed(void 0)) // Ignore cleanup errors
+    )
+
+    yield* Effect.tryPromise(() => fs.unlink(files.outputPath)).pipe(
+      Effect.catchAll(() => Effect.succeed(void 0)) // Ignore cleanup errors
+    )
+
+    yield* Effect.tryPromise(() =>
+      fs.rmdir(path.dirname(files.audioPath))
+    ).pipe(
+      Effect.catchAll(() => Effect.succeed(void 0)) // Ignore cleanup errors
+    )
+  })
 }
