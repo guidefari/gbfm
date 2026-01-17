@@ -92,7 +92,7 @@ export async function login(
   return Effect.gen(function* () {
     const response = yield* Effect.tryPromise({
       try: () =>
-        fetch(`${baseUrl}/api/auth/sign-in-email`, {
+        fetch(`${baseUrl}/auth/sign-in-email`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json'
