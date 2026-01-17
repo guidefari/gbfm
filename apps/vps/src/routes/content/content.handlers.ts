@@ -2,23 +2,10 @@ import { spawn } from 'node:child_process'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { and, arrayContains, count, desc, eq, inArray } from 'drizzle-orm'
 import { Effect } from 'effect'
 import ffmpeg from 'ffmpeg-static'
 import type { Context } from 'hono'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
-import { db } from '@/db'
-import {
-  audioCreators,
-  audioTable,
-  type SelectMdxCompiledAudio
-} from '@/db/audio.schema'
-import { user as usersTable } from '@/db/auth.schema'
-import { postCreators, postsTable } from '@/db/post.schema'
-import { timeQuery } from '@/db/query-timer'
-import { ConflictError, DatabaseError, NotFoundError } from '@/errors'
-import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
-import { createPaginationMetadata } from '@/lib/pagination'
 import type { AppBindings, AppRouteHandler } from '@/lib/types'
 import { AppRuntime } from '@/runtime'
 import { AudioService } from '@/services/audio.service'
@@ -204,94 +191,43 @@ export const updateAudioBySlug: AppRouteHandler<
   const updateData = c.req.valid('json')
   const user = c.get('user')
 
-  try {
-    // First check if the audio exists and user is authorized
-    const [existingAudio] = await db
-      .select()
-      .from(audioTable)
-      .where(and(eq(audioTable.type, type), eq(audioTable.slug, slug)))
-      .limit(1)
-
-    if (!existingAudio) {
-      return c.json({ error: 'Audio not found' }, HttpStatusCodes.NOT_FOUND)
-    }
-
-    const isAdmin = user.role === 'admin'
-    if (!isAdmin) {
-      const authorship = await db
-        .select()
-        .from(audioCreators)
-        .where(
-          and(
-            eq(audioCreators.audioId, existingAudio.id),
-            eq(audioCreators.creatorId, user.id)
-          )
-        )
-        .limit(1)
-
-      if (authorship.length === 0) {
-        return c.json(
-          {
-            error: 'Forbidden, brethren.'
-          },
-          HttpStatusCodes.FORBIDDEN
-        )
-      }
-    }
-
-    // Update the audio record
-    const [updatedAudio] = await db
-      .update(audioTable)
-      .set({ ...updateData, updatedAt: new Date() })
-      .where(eq(audioTable.id, existingAudio.id))
-      .returning()
-
-    if (!updatedAudio) {
-      return c.json(
-        { error: 'Failed to update audio' },
-        HttpStatusCodes.INTERNAL_SERVER_ERROR
-      )
-    }
-
-    // Get creators for response
-    const creators = await db
-      .select({
-        id: usersTable.id,
-        name: usersTable.name
-      })
-      .from(audioCreators)
-      .innerJoin(usersTable, eq(audioCreators.creatorId, usersTable.id))
-      .where(eq(audioCreators.audioId, updatedAudio.id))
-
-    // Compile MDX if content was updated
-    const baseProcessedAudio: SelectMdxCompiledAudio = {
-      ...updatedAudio,
-      compiledContent: '',
-      creators: creators.map((creator) => ({
-        id: creator.id,
-        name: creator.name
-      }))
-    }
-
-    if (updatedAudio.content) {
-      const mdxResult = await compileMDX(updatedAudio.content)
-      if (isMDXCompilationResult(mdxResult)) {
-        const processedAudioWithCompiled: SelectMdxCompiledAudio = {
-          ...baseProcessedAudio,
-          compiledContent: mdxResult.compiled
-        }
-        return c.json(processedAudioWithCompiled, HttpStatusCodes.OK)
-      }
-    }
-
-    return c.json(baseProcessedAudio, HttpStatusCodes.OK)
-  } catch (error) {
-    console.error('Error updating audio:', error)
-    return c.json(
-      { error: 'Failed to update audio' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
+  const program = Effect.gen(function* () {
+    const audioService = yield* AudioService
+    return yield* audioService.update(
+      type as 'mix' | 'track' | 'misc',
+      slug,
+      user.id,
+      user.role || 'user',
+      updateData
     )
+  }).pipe(
+    Effect.catchTag('NotFoundError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('UnauthorizedError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.FORBIDDEN
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    )
+  )
+
+  const result = await AppRuntime.runPromise(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
+
+  return c.json(result, HttpStatusCodes.OK)
 }
 
 export const createAudio: AppRouteHandler<CreateAudioRoute> = async (c) => {
@@ -303,47 +239,31 @@ export const createAudio: AppRouteHandler<CreateAudioRoute> = async (c) => {
     finalCreatorIds = [user.id]
   }
 
-  try {
-    const result = await db.transaction(async (tx) => {
-      const [newAudio] = await tx
-        .insert(audioTable)
-        .values(audioData)
-        .returning()
-
-      if (!newAudio) {
-        throw new Error('Failed to create audio')
-      }
-
-      await tx.insert(audioCreators).values(
-        finalCreatorIds.map((creatorId: string) => ({
-          audioId: newAudio.id,
-          creatorId
-        }))
-      )
-      return newAudio
-    })
-    return c.json(result, HttpStatusCodes.CREATED)
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('unique constraint')) {
-      return c.json(
-        { error: 'Audio with this slug already exists' },
-        HttpStatusCodes.CONFLICT
-      )
-    }
-    if (
-      error instanceof Error &&
-      error.message.includes('foreign key constraint')
-    ) {
-      return c.json(
-        { error: 'You may have entered a non-existent creator id' },
-        HttpStatusCodes.CONFLICT
-      )
-    }
-    return c.json(
-      { error: `Failed to create audio: ${error}` },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
+  const program = Effect.gen(function* () {
+    const audioService = yield* AudioService
+    return yield* audioService.create(audioData, finalCreatorIds)
+  }).pipe(
+    Effect.catchTag('ConflictError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
     )
+  )
+
+  const result = await AppRuntime.runPromise(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
+
+  return c.json(result, HttpStatusCodes.CREATED)
 }
 
 interface ProcessedFiles {

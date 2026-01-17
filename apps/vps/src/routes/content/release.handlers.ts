@@ -1,15 +1,5 @@
-import { count, desc, eq } from 'drizzle-orm'
 import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
-import { db } from '@/db'
-import { labelsTable } from '@/db/label.schema'
-import {
-  releasesTable,
-  type SelectMdxCompiledRelease
-} from '@/db/release.schema'
-import { ConflictError, DatabaseError, NotFoundError } from '@/errors'
-import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
-import { createPaginationMetadata } from '@/lib/pagination'
 import type { AppRouteHandler } from '@/lib/types'
 import { AppRuntime } from '@/runtime'
 import { ReleaseService } from '@/services/release.service'
