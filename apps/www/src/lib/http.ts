@@ -6,7 +6,12 @@ import type {
   SelectMdxCompiledRelease,
   SelectRelease
 } from '@gbfm/vps/schemas'
-import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient
+} from '@tanstack/react-query'
 import type { User } from '@/store/auth'
 import type {
   AlbumApiResponse,
@@ -335,6 +340,89 @@ export function useReleaseBySlug(slug: string) {
   return {
     data,
     error,
+    isPending
+  }
+}
+
+export type FavoriteAudio = {
+  id: string
+  title: string
+  slug: string
+  thumbnailUrl: string | null
+  type: 'mix' | 'track' | 'misc'
+  url: string
+}
+
+export type Favorite = {
+  id: string
+  userId: string
+  audioId: string
+  createdAt: string
+  audio: FavoriteAudio
+}
+
+export type FavoritesResponse = {
+  success: boolean
+  favorites: Favorite[]
+  total: number
+}
+
+export function useFavorites() {
+  const { data, error, isPending, refetch } = useQuery<FavoritesResponse, Error>({
+    queryKey: ['favorites'],
+    queryFn: async () => fetcher(`${VPS_BASE_URL}/favorites`)
+  })
+
+  return {
+    data: data?.favorites ?? [],
+    total: data?.total ?? 0,
+    error,
+    isPending,
+    refetch
+  }
+}
+
+export function useAddFavorite() {
+  const queryClient = useQueryClient()
+  const { mutateAsync: addFavorite, isPending } = useMutation<
+    { success: boolean; message: string },
+    Error,
+    { audioId: string }
+  >({
+    mutationFn: async ({ audioId }) =>
+      fetcher(`${VPS_BASE_URL}/favorites`, {
+        method: 'POST',
+        body: JSON.stringify({ audioId })
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['favorites'] })
+    }
+  })
+
+  return {
+    addFavorite,
+    isPending
+  }
+}
+
+export function useRemoveFavorite() {
+  const queryClient = useQueryClient()
+  const { mutateAsync: removeFavorite, isPending } = useMutation<
+    { success: boolean; message: string },
+    Error,
+    { audioId: string }
+  >({
+    mutationFn: async ({ audioId }) =>
+      fetcher(`${VPS_BASE_URL}/favorites/${audioId}`, {
+        method: 'DELETE'
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['favorites'] })
+    }
+  })
+
+  return {
+    removeFavorite,
     isPending
   }
 }

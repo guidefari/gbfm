@@ -120,7 +120,7 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
   }, [contextMenu.isOpen, closeContextMenu])
 
   const handlePlayNow = () => {
-    loadTrack(track.url, track.thumbnailUrl, track.title)
+    loadTrack(track.url, track.thumbnailUrl, track.title, track.id)
     closeContextMenu()
   }
 

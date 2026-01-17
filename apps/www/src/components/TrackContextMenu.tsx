@@ -1,5 +1,5 @@
 import type { SelectAudio } from '@gbfm/vps/schemas'
-import { Heart, Play, Plus, Share2 } from 'lucide-react'
+import { Heart, HeartOff, Play, Plus, Share2 } from 'lucide-react'
 import type React from 'react'
 import {
   ContextMenu,
@@ -9,6 +9,7 @@ import {
   ContextMenuTrigger
 } from '@/components/ui/context-menu'
 import { toast } from '@/components/ui/use-toast'
+import { useAddFavorite, useFavorites, useRemoveFavorite } from '@/lib/http'
 import { useAudioPlayerActions } from '@/store/audioPlayer'
 
 interface TrackContextMenuProps {
@@ -23,17 +24,42 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
   className = ''
 }) => {
   const { addToQueue, loadTrack } = useAudioPlayerActions()
+  const { data: favorites } = useFavorites()
+  const { addFavorite } = useAddFavorite()
+  const { removeFavorite } = useRemoveFavorite()
+
+  const isFavorited = favorites.some((f) => f.audioId === track.id)
 
   const handleAddToQueue = () => {
     addToQueue(track)
   }
 
   const handlePlayNow = () => {
-    loadTrack(track.url, track.thumbnailUrl || '', track.title)
+    loadTrack(track.url, track.thumbnailUrl || '', track.title, track.id)
   }
 
-  const handleAddToFavorites = () => {
-    console.log('Add to favorites:', track.title)
+  const handleToggleFavorite = async () => {
+    try {
+      if (isFavorited) {
+        await removeFavorite({ audioId: track.id })
+        toast({
+          title: 'Removed from favorites',
+          description: `${track.title} removed from your favorites`
+        })
+      } else {
+        await addFavorite({ audioId: track.id })
+        toast({
+          title: 'Added to favorites',
+          description: `${track.title} added to your favorites`
+        })
+      }
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Failed to update favorites',
+        variant: 'destructive'
+      })
+    }
   }
 
   const handleShare = async () => {
@@ -71,9 +97,18 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
 
         <ContextMenuSeparator />
 
-        <ContextMenuItem onClick={handleAddToFavorites}>
-          <Heart className='w-4 h-4' />
-          Add to favorites
+        <ContextMenuItem onClick={handleToggleFavorite}>
+          {isFavorited ? (
+            <>
+              <HeartOff className='w-4 h-4' />
+              Remove from favorites
+            </>
+          ) : (
+            <>
+              <Heart className='w-4 h-4' />
+              Add to favorites
+            </>
+          )}
         </ContextMenuItem>
 
         <ContextMenuItem onClick={handleShare}>

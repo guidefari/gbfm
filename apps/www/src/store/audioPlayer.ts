@@ -34,6 +34,7 @@ interface AudioPlayerState {
   audioSrc: string | null
   thumbnailUrl: string
   nowPlayingContext: NowPlayingContext
+  currentTrackId: string | null
 
   // Queue state (persisted)
   queue: QueueItem[]
@@ -62,7 +63,12 @@ interface AudioPlayerActions {
   toggleMute: () => void
 
   // Track management
-  loadTrack: (src: string, thumbnailUrl: string, title: string) => void
+  loadTrack: (
+    src: string,
+    thumbnailUrl: string,
+    title: string,
+    trackId?: string
+  ) => void
 
   // Queue management
   addToQueue: (mix: SelectAudio) => void
@@ -107,6 +113,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
         audioSrc: null,
         thumbnailUrl: '',
         nowPlayingContext: defaultNowPlayingContext,
+        currentTrackId: null,
 
         // Queue state
         queue: [],
@@ -261,7 +268,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
           }
         },
 
-        loadTrack: (src, thumbnailUrl, title) => {
+        loadTrack: (src, thumbnailUrl, title, trackId) => {
           const { audioRef, isPlaying, audioSrc } = get()
           if (!audioRef) return
 
@@ -293,6 +300,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
                 url:
                   typeof window !== 'undefined' ? window.location.pathname : '/'
               },
+              currentTrackId: trackId || null,
               currentTime: 0,
               progress: 0
             },
@@ -443,7 +451,12 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
 
           const item = queue[index]
           set({ currentIndex: index }, false, 'audioPlayer/setCurrentIndex')
-          get().loadTrack(item.url, item.thumbnailUrl || '', item.title)
+          get().loadTrack(
+            item.url,
+            item.thumbnailUrl || '',
+            item.title,
+            item.id
+          )
         },
 
         playNext: () => {
@@ -504,6 +517,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
           audioSrc: state.audioSrc,
           thumbnailUrl: state.thumbnailUrl,
           nowPlayingContext: state.nowPlayingContext,
+          currentTrackId: state.currentTrackId,
           // Queue state
           queue: state.queue,
           currentIndex: state.currentIndex,
@@ -558,6 +572,7 @@ export const useAudioPlayerState = () => {
     audioSrc: store.audioSrc,
     thumbnailUrl: store.thumbnailUrl,
     nowPlayingContext: store.nowPlayingContext,
+    currentTrackId: store.currentTrackId,
     audioRef: store.audioRef,
     // Queue state
     queue: store.queue,

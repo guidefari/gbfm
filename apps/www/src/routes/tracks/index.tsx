@@ -234,7 +234,8 @@ function TracksPage() {
                           loadTrack(
                             item.url,
                             item.thumbnailUrl || '',
-                            item.title
+                            item.title,
+                            item.id
                           )
                         }>
                         <img

@@ -7,6 +7,7 @@ import auth from '@/routes/auth/auth.index'
 import betterAuthRoutes from '@/routes/auth/better-auth.routes'
 import content from '@/routes/content/content.index'
 import email from '@/routes/email/email.index'
+import favorites from '@/routes/favorites/favorites.index'
 import musicReminders from '@/routes/music-reminders/music-reminders.index'
 import publication from '@/routes/publication/publication.index'
 import rss from '@/routes/rss/rss.index'
@@ -23,6 +24,7 @@ const app = createApp()
 configureOpenAPI(app)
 
 app.route('/api/auth', betterAuthRoutes)
+app.route('/favorites', favorites)
 app.route('/auth', auth)
 app.route('/content', content)
 app.route('/email', email)

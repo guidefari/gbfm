@@ -106,6 +106,13 @@
       "when": 1768644671981,
       "tag": "0017_thick_the_fury",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1768650847412,
+      "tag": "0018_mute_stryfe",
+      "breakpoints": true
     }
   ]
 }

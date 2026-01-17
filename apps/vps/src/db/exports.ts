@@ -1,6 +1,7 @@
 export * from './audio.schema.ts'
 export * from './auth.schema.ts'
 export * from './email.schema.ts'
+export * from './favorites.schema.ts'
 export * from './label.schema.ts'
 export * from './music-reminder.schema.ts'
 export * from './post.schema.ts'

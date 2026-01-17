@@ -11,6 +11,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UploadOldRouteImport } from './routes/upload-old'
 import { Route as SubscribeRouteImport } from './routes/subscribe'
 import { Route as RemindersRouteImport } from './routes/reminders'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -52,6 +53,11 @@ const LabelUploadLazyRoute = LabelUploadLazyRouteImport.update({
   path: '/label-upload',
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() => import('./routes/label-upload.lazy').then((d) => d.Route))
+const UploadOldRoute = UploadOldRouteImport.update({
+  id: '/upload-old',
+  path: '/upload-old',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SubscribeRoute = SubscribeRouteImport.update({
   id: '/subscribe',
   path: '/subscribe',
@@ -167,6 +173,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/reminders': typeof RemindersRoute
   '/subscribe': typeof SubscribeRoute
+  '/upload-old': typeof UploadOldRoute
   '/label-upload': typeof LabelUploadLazyRoute
   '/mix-upload': typeof MixUploadLazyRoute
   '/upload': typeof UploadLazyRoute
@@ -190,6 +197,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/reminders': typeof RemindersRoute
   '/subscribe': typeof SubscribeRoute
+  '/upload-old': typeof UploadOldRoute
   '/label-upload': typeof LabelUploadLazyRoute
   '/mix-upload': typeof MixUploadLazyRoute
   '/upload': typeof UploadLazyRoute
@@ -217,6 +225,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/reminders': typeof RemindersRoute
   '/subscribe': typeof SubscribeRoute
+  '/upload-old': typeof UploadOldRoute
   '/label-upload': typeof LabelUploadLazyRoute
   '/mix-upload': typeof MixUploadLazyRoute
   '/upload': typeof UploadLazyRoute
@@ -245,6 +254,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/reminders'
     | '/subscribe'
+    | '/upload-old'
     | '/label-upload'
     | '/mix-upload'
     | '/upload'
@@ -268,6 +278,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/reminders'
     | '/subscribe'
+    | '/upload-old'
     | '/label-upload'
     | '/mix-upload'
     | '/upload'
@@ -294,6 +305,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/reminders'
     | '/subscribe'
+    | '/upload-old'
     | '/label-upload'
     | '/mix-upload'
     | '/upload'
@@ -321,6 +333,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   RemindersRoute: typeof RemindersRoute
   SubscribeRoute: typeof SubscribeRoute
+  UploadOldRoute: typeof UploadOldRoute
   LabelUploadLazyRoute: typeof LabelUploadLazyRoute
   MixUploadLazyRoute: typeof MixUploadLazyRoute
   UploadLazyRoute: typeof UploadLazyRoute
@@ -354,6 +367,13 @@ declare module '@tanstack/react-router' {
       path: '/label-upload'
       fullPath: '/label-upload'
       preLoaderRoute: typeof LabelUploadLazyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/upload-old': {
+      id: '/upload-old'
+      path: '/upload-old'
+      fullPath: '/upload-old'
+      preLoaderRoute: typeof UploadOldRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/subscribe': {
@@ -557,6 +577,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   RemindersRoute: RemindersRoute,
   SubscribeRoute: SubscribeRoute,
+  UploadOldRoute: UploadOldRoute,
   LabelUploadLazyRoute: LabelUploadLazyRoute,
   MixUploadLazyRoute: MixUploadLazyRoute,
   UploadLazyRoute: UploadLazyRoute,

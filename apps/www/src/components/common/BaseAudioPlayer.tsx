@@ -13,6 +13,7 @@ import type React from 'react'
 import { useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
+import { useAddFavorite, useFavorites, useRemoveFavorite } from '@/lib/http'
 import { formatSeconds } from '@/lib/utils'
 import { attachVolumeScroll } from '@/lib/volumeScrollHandler'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
@@ -46,8 +47,17 @@ export function BaseAudioPlayer({
     duration,
     volume,
     isMuted,
-    queue
+    queue,
+    currentTrackId
   } = useAudioPlayerState()
+
+  // Favourites
+  const { data: favorites } = useFavorites()
+  const { addFavorite } = useAddFavorite()
+  const { removeFavorite } = useRemoveFavorite()
+  const isFavorited = currentTrackId
+    ? favorites.some((f) => f.audioId === currentTrackId)
+    : false
 
   const {
     play,
@@ -92,6 +102,20 @@ export function BaseAudioPlayer({
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setVolume(Number(e.target.value))
+  }
+
+  const handleToggleFavorite = async () => {
+    if (!currentTrackId) return
+
+    try {
+      if (isFavorited) {
+        await removeFavorite({ audioId: currentTrackId })
+      } else {
+        await addFavorite({ audioId: currentTrackId })
+      }
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error)
+    }
   }
 
   // Create a current track object from the existing state
@@ -223,8 +247,11 @@ export function BaseAudioPlayer({
                 <Button
                   variant='ghost'
                   size='icon'
-                  className='text-secondary-foreground hover:text-foreground hover:bg-muted'>
-                  <Star className='w-4 h-4' />
+                  onClick={handleToggleFavorite}
+                  className={`text-secondary-foreground hover:text-foreground hover:bg-muted ${isFavorited ? 'text-yellow-500' : ''}`}>
+                  <Star
+                    className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`}
+                  />
                 </Button>
               </div>
             )}
@@ -436,8 +463,11 @@ export function BaseAudioPlayer({
                 <Button
                   variant='ghost'
                   size='icon'
-                  className='text-secondary-foreground hover:text-foreground hover:bg-muted'>
-                  <Star className='w-4 h-4' />
+                  onClick={handleToggleFavorite}
+                  className={`text-secondary-foreground hover:text-foreground hover:bg-muted ${isFavorited ? 'text-yellow-500' : ''}`}>
+                  <Star
+                    className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`}
+                  />
                 </Button>
               )}
             </div>

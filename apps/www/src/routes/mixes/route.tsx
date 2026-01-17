@@ -1,6 +1,15 @@
 import type { SelectAudio } from '@gbfm/vps/schemas'
 import { createFileRoute, Link, Outlet } from '@tanstack/react-router'
-import { Heart, MoreVertical, Play, Plus, Share2, Tag, X } from 'lucide-react'
+import {
+  Heart,
+  HeartOff,
+  MoreVertical,
+  Play,
+  Plus,
+  Share2,
+  Tag,
+  X
+} from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useMemo, useRef } from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
@@ -26,7 +35,12 @@ import {
 } from '@/components/ui/select'
 import { toast } from '@/components/ui/use-toast'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
-import { useAudioByType } from '@/lib/http'
+import {
+  useAddFavorite,
+  useAudioByType,
+  useFavorites,
+  useRemoveFavorite
+} from '@/lib/http'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/store'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
@@ -46,6 +60,11 @@ interface MixMenuProps {
 
 function MixMenu({ mix }: MixMenuProps) {
   const { addToQueue, loadTrack } = useAudioPlayerActions()
+  const { data: favorites } = useFavorites()
+  const { addFavorite } = useAddFavorite()
+  const { removeFavorite } = useRemoveFavorite()
+
+  const isFavorited = favorites.some((f) => f.audioId === mix.id)
 
   const handleShare = async () => {
     const shareUrl = `https://vps.goosebumps.fm/share/mix/${mix.slug}`
@@ -67,15 +86,35 @@ function MixMenu({ mix }: MixMenuProps) {
   }
 
   const handlePlayNow = () => {
-    loadTrack(mix.url, mix.thumbnailUrl || DEFAULT_IMAGE_URL, mix.title)
+    loadTrack(mix.url, mix.thumbnailUrl || DEFAULT_IMAGE_URL, mix.title, mix.id)
   }
 
   const handleAddToQueue = () => {
     addToQueue(mix)
   }
 
-  const handleAddToFavorites = () => {
-    console.log('Add to favorites:', mix.title)
+  const handleToggleFavorite = async () => {
+    try {
+      if (isFavorited) {
+        await removeFavorite({ audioId: mix.id })
+        toast({
+          title: 'Removed from favorites',
+          description: `${mix.title} removed from your favorites`
+        })
+      } else {
+        await addFavorite({ audioId: mix.id })
+        toast({
+          title: 'Added to favorites',
+          description: `${mix.title} added to your favorites`
+        })
+      }
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Failed to update favorites',
+        variant: 'destructive'
+      })
+    }
   }
 
   return (
@@ -102,9 +141,18 @@ function MixMenu({ mix }: MixMenuProps) {
 
         <DropdownMenuSeparator />
 
-        <DropdownMenuItem onClick={handleAddToFavorites}>
-          <Heart className='w-4 h-4' />
-          Add to favorites
+        <DropdownMenuItem onClick={handleToggleFavorite}>
+          {isFavorited ? (
+            <>
+              <HeartOff className='w-4 h-4' />
+              Remove from favorites
+            </>
+          ) : (
+            <>
+              <Heart className='w-4 h-4' />
+              Add to favorites
+            </>
+          )}
         </DropdownMenuItem>
 
         <DropdownMenuItem onClick={handleShare}>
@@ -283,7 +331,8 @@ function Component() {
                         loadTrack(
                           mix.url,
                           mix.thumbnailUrl || DEFAULT_IMAGE_URL,
-                          mix.title
+                          mix.title,
+                          mix.id
                         )
                       }>
                       <img
