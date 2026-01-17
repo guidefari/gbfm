@@ -3,6 +3,7 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { and, arrayContains, count, desc, eq, inArray } from 'drizzle-orm'
+import { Effect } from 'effect'
 import ffmpeg from 'ffmpeg-static'
 import type { Context } from 'hono'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
@@ -15,9 +16,13 @@ import {
 import { user as usersTable } from '@/db/auth.schema'
 import { postCreators, postsTable } from '@/db/post.schema'
 import { timeQuery } from '@/db/query-timer'
+import { ConflictError, DatabaseError, NotFoundError } from '@/errors'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
 import { createPaginationMetadata } from '@/lib/pagination'
 import type { AppBindings, AppRouteHandler } from '@/lib/types'
+import { AppRuntime } from '@/runtime'
+import { AudioService } from '@/services/audio.service'
+import { PostService } from '@/services/post.service'
 
 import type {
   CreateAudioRoute,
@@ -39,35 +44,31 @@ export const createPost: AppRouteHandler<CreatePostRoute> = async (c) => {
     finalCreatorIds = [user.id]
   }
 
-  try {
-    // Start a transaction since we need to insert into two tables
-    const result = await db.transaction(async (tx) => {
-      // Insert the post first
-      const [newPost] = await tx.insert(postsTable).values(postData).returning()
-
-      if (!newPost) {
-        throw new Error('Failed to create post')
-      }
-
-      // Insert the post-creator relationships
-      await tx.insert(postCreators).values(
-        finalCreatorIds.map((creatorId: string) => ({
-          postId: newPost.id,
-          creatorId
-        }))
-      )
-
-      return newPost
-    })
-
-    return c.json(result, HttpStatusCodes.CREATED)
-  } catch (error) {
-    console.error('Error creating post:', error)
-    return c.json(
-      { error: `Failed to create post: ${error}` },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
+  const program = Effect.gen(function* () {
+    const postService = yield* PostService
+    return yield* postService.create(postData, finalCreatorIds)
+  }).pipe(
+    Effect.catchTag('ConflictError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
     )
+  )
+
+  const result = await AppRuntime.runPromise(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
+
+  return c.json(result, HttpStatusCodes.CREATED)
 }
 
 export const getPostsByTag: AppRouteHandler<GetPostsByTagRoute> = async (c) => {
@@ -75,45 +76,25 @@ export const getPostsByTag: AppRouteHandler<GetPostsByTagRoute> = async (c) => {
   const tag = params.tag
   const { limit, offset } = c.req.valid('query')
 
-  try {
-    const whereCondition = arrayContains(postsTable.tags, [tag])
-
-    // Get total count
-    const countResult = await timeQuery(
-      () =>
-        db.select({ total: count() }).from(postsTable).where(whereCondition),
-      'get-posts-by-tag-count'
+  const program = Effect.gen(function* () {
+    const postService = yield* PostService
+    return yield* postService.getByTag(tag, { limit, offset })
+  }).pipe(
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
     )
+  )
 
-    const total = countResult[0]?.total ?? 0
+  const result = await AppRuntime.runPromise(program)
 
-    // Get paginated data
-    const data = await timeQuery(
-      () =>
-        db
-          .select()
-          .from(postsTable)
-          .where(whereCondition)
-          .limit(limit)
-          .offset(offset)
-          .orderBy(desc(postsTable.createdAt)),
-      'get-posts-by-tag-data'
-    )
-
-    return c.json(
-      {
-        data,
-        pagination: createPaginationMetadata(total, limit, offset)
-      },
-      HttpStatusCodes.OK
-    )
-  } catch (error) {
-    console.error('Error fetching posts by tag:', error)
-    return c.json(
-      { error: 'Failed to fetch posts' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
-    )
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
+
+  return c.json(result, HttpStatusCodes.OK)
 }
 
 // Mix management handlers
@@ -126,55 +107,31 @@ export const createMix: AppRouteHandler<CreateMixRoute> = async (c) => {
     finalCreatorIds = [user.id]
   }
 
-  try {
-    const result = await timeQuery(
-      () =>
-        db.transaction(async (tx) => {
-          const [newMix] = await tx
-            .insert(audioTable)
-            .values(mixData)
-            .returning()
-
-          if (!newMix) {
-            throw new Error('Failed to create mix')
-          }
-
-          await tx.insert(audioCreators).values(
-            finalCreatorIds.map((creatorId: string) => ({
-              audioId: newMix.id,
-              creatorId
-            }))
-          )
-
-          return newMix
-        }),
-      'create-mix-transaction'
+  const program = Effect.gen(function* () {
+    const audioService = yield* AudioService
+    return yield* audioService.create(mixData, finalCreatorIds)
+  }).pipe(
+    Effect.catchTag('ConflictError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
     )
+  )
 
-    return c.json(result, HttpStatusCodes.CREATED)
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('unique constraint')) {
-      return c.json(
-        { error: 'Mix with this slug already exists' },
-        HttpStatusCodes.CONFLICT
-      )
-    }
+  const result = await AppRuntime.runPromise(program)
 
-    if (
-      error instanceof Error &&
-      error.message.includes('foreign key constraint')
-    ) {
-      return c.json(
-        { error: 'You may have entered a non-existent creator id' },
-        HttpStatusCodes.CONFLICT
-      )
-    }
-
-    return c.json(
-      { error: `Failed to create mix: ${error}` },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
-    )
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
+
+  return c.json(result, HttpStatusCodes.CREATED)
 }
 
 export const getAudioByType: AppRouteHandler<GetAudioByTypeRoute> = async (
@@ -183,80 +140,29 @@ export const getAudioByType: AppRouteHandler<GetAudioByTypeRoute> = async (
   const { type } = c.req.valid('param')
   const { limit, offset, tag } = c.req.valid('query')
 
-  try {
-    const whereCondition = tag
-      ? and(eq(audioTable.type, type), arrayContains(audioTable.tags, [tag]))
-      : eq(audioTable.type, type)
-
-    const countResult = await timeQuery(
-      () =>
-        db.select({ total: count() }).from(audioTable).where(whereCondition),
-      'get-audio-by-type-count'
+  const program = Effect.gen(function* () {
+    const audioService = yield* AudioService
+    return yield* audioService.getByType(type as 'mix' | 'track' | 'misc', {
+      limit,
+      offset,
+      tag
+    })
+  }).pipe(
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
     )
+  )
 
-    const total = countResult[0]?.total ?? 0
+  const result = await AppRuntime.runPromise(program)
 
-    const audioItems = await timeQuery(
-      () =>
-        db
-          .select()
-          .from(audioTable)
-          .where(whereCondition)
-          .limit(limit)
-          .offset(offset)
-          .orderBy(desc(audioTable.createdAt)),
-      'get-audio-by-type-data'
-    )
-
-    const audioIds = audioItems.map((a) => a.id)
-
-    const creatorsData =
-      audioIds.length > 0
-        ? await db
-            .select({
-              audioId: audioCreators.audioId,
-              creatorId: usersTable.id,
-              creatorName: usersTable.name
-            })
-            .from(audioCreators)
-            .innerJoin(usersTable, eq(audioCreators.creatorId, usersTable.id))
-            .where(inArray(audioCreators.audioId, audioIds))
-        : []
-
-    const creatorsByAudioId: Record<
-      string,
-      Array<{ id: string; name: string }>
-    > = {}
-    for (const row of creatorsData) {
-      const existing = creatorsByAudioId[row.audioId]
-      if (existing) {
-        existing.push({ id: row.creatorId, name: row.creatorName })
-      } else {
-        creatorsByAudioId[row.audioId] = [
-          { id: row.creatorId, name: row.creatorName }
-        ]
-      }
-    }
-
-    const data = audioItems.map((audio) => ({
-      ...audio,
-      creators: creatorsByAudioId[audio.id] || []
-    }))
-
-    return c.json(
-      {
-        data,
-        pagination: createPaginationMetadata(total, limit, offset)
-      },
-      HttpStatusCodes.OK
-    )
-  } catch (error) {
-    console.error('Error fetching audio by type:', error)
-    return c.json(
-      { error: 'Failed to fetch audio by type' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
-    )
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
+
+  return c.json(result, HttpStatusCodes.OK)
 }
 
 export const getAudioBySlug: AppRouteHandler<GetAudioBySlugRoute> = async (
@@ -264,59 +170,31 @@ export const getAudioBySlug: AppRouteHandler<GetAudioBySlugRoute> = async (
 ) => {
   const { type, slug } = c.req.valid('param')
 
-  try {
-    // First get the audio record
-    const [audio] = await db
-      .select()
-      .from(audioTable)
-      .where(and(eq(audioTable.type, type), eq(audioTable.slug, slug)))
-      .limit(1)
-
-    if (!audio) {
-      return c.json({ error: 'Audio not found' }, HttpStatusCodes.NOT_FOUND)
-    }
-
-    // Then get the creators
-    const creators = await db
-      .select({
-        id: usersTable.id,
-        name: usersTable.name
-      })
-      .from(audioCreators)
-      .innerJoin(usersTable, eq(audioCreators.creatorId, usersTable.id))
-      .where(eq(audioCreators.audioId, audio.id))
-
-    let processedAudio: SelectMdxCompiledAudio = {
-      ...audio,
-      compiledContent: '',
-      creators: creators.map((creator) => ({
-        id: creator.id,
-        name: creator.name
-      }))
-    }
-
-    if (audio.content) {
-      const mdxResult = await compileMDX(audio.content)
-
-      if (isMDXCompilationResult(mdxResult)) {
-        processedAudio = {
-          ...processedAudio,
-          compiledContent: mdxResult.compiled
-        }
-      } else {
-        // If MDX compilation failed, log the error but still return the audio
-        console.warn('Failed to compile MDX for audio:', slug, mdxResult.error)
-      }
-    }
-
-    return c.json(processedAudio, HttpStatusCodes.OK)
-  } catch (error) {
-    console.error('Error fetching audio by slug:', error)
-    return c.json(
-      { error: 'Failed to fetch audio' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
+  const program = Effect.gen(function* () {
+    const audioService = yield* AudioService
+    return yield* audioService.getBySlug(type as 'mix' | 'track' | 'misc', slug)
+  }).pipe(
+    Effect.catchTag('NotFoundError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
     )
+  )
+
+  const result = await AppRuntime.runPromise(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
+
+  return c.json(result, HttpStatusCodes.OK)
 }
 
 export const updateAudioBySlug: AppRouteHandler<
