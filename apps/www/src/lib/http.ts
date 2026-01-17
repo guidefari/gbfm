@@ -20,7 +20,6 @@ import type {
 } from '@/types'
 
 export const VPS_BASE_URL = import.meta.env.VITE_VPS_BASE_URL
-export const AUTH_BASE_URL = `${VPS_BASE_URL}/auth`
 
 // Pagination types
 export type PaginationMetadata = {

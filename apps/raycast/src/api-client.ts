@@ -38,7 +38,7 @@ const refreshAccessToken = async (
     Effect.logInfo('Attempting to refresh access token')
   )
 
-  const response = await fetch(`${baseUrl}/api/auth/refresh-session`, {
+  const response = await fetch(`${baseUrl}/auth/refresh-session`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'

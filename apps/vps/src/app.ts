@@ -22,7 +22,7 @@ const app = createApp()
 
 configureOpenAPI(app)
 
-app.route('/api/auth', betterAuthRoutes)
+app.route('/auth', betterAuthRoutes)
 app.route('/favorites', favorites)
 app.route('/user', user)
 app.route('/content', content)

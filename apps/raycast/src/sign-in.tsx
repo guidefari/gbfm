@@ -57,7 +57,7 @@ export default function SignIn() {
     setIsLoading(true)
 
     try {
-      const response = await fetch(`${values.baseUrl}/api/auth/sign-in/email`, {
+      const response = await fetch(`${values.baseUrl}/auth/sign-in/email`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
