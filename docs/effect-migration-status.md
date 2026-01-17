@@ -134,10 +134,11 @@ await runApp(program)  // ✅ Runtime provides service
 - [x] `/content/*` (7 routes migrated - createPost, getPostsByTag, createMix, createAudio, getAudioByType, getAudioBySlug, updateAudioBySlug)
 - [x] `/labels/*` (4 routes migrated - createLabel, getAllLabels, getLabelBySlug, updateLabelBySlug)
 - [x] `/releases/*` (5 routes migrated - createRelease, getReleasesByLabel, getReleaseBySlug, updateReleaseBySlug, deleteReleaseBySlug)
+- [x] `/auth/*` (4 routes migrated - getProfile, updateProfile, getEmailPreferences, updateEmailPreferences)
 
 ### Routes to Migrate (handlers can adopt new services)
 - [ ] `/content/*` (1 route remaining - processMixUpload - complex ffmpeg processing)
-- [ ] `/auth/*` (4 routes)
+- [x] `/auth/*` (4 routes migrated - getProfile, updateProfile, getEmailPreferences, updateEmailPreferences)
 - [ ] `/upload/*` (3 routes)
 - [ ] `/publication/*` (4 routes)
 - [ ] `/rss/*` (read-only, low priority)
@@ -206,9 +207,8 @@ if (error instanceof ConflictError) return c.json({ error }, 409)
 ## Next Steps
 
 ### Immediate (Phase 6 - Handler Migration)
-1. **Migrate auth handlers** to use UserService
-2. **Migrate upload handlers** to use S3Service
-3. **Migrate publication handlers** to use PublicationService
+1. **Migrate upload handlers** to use S3Service
+2. **Migrate publication handlers** to use PublicationService
 
 ### Short Term (Complete Handler Migration)
 1. **Migrate auth handlers** to use UserService
@@ -261,4 +261,4 @@ apps/vps/src/
 
 **Last Updated**: January 18, 2026
 **Current Phase**: 5 Complete, Phase 6 In Progress
-**Migration Progress**: 11/11 services complete (100%), 28/40 routes migrated (70%)
+**Migration Progress**: 11/11 services complete (100%), 32/40 routes migrated (80%)
