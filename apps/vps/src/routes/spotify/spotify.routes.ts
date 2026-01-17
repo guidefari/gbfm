@@ -109,7 +109,48 @@ export const searchAlbums = createRoute({
   }
 })
 
+export const enrichTrackFromUrl = createRoute({
+  path: '/enrich',
+  method: 'post',
+  request: {
+    body: jsonContentRequired(
+      z.object({
+        url: z.string().url('Must be a valid URL')
+      }),
+      'URL to enrich track details from'
+    )
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.object({
+        title: z.string(),
+        artist: z.string(),
+        url: z.string(),
+        platform: z.enum(['spotify', 'youtube', 'apple_music', 'other']),
+        thumbnailUrl: z.string().optional(),
+        duration: z.number().optional(),
+        album: z.string().optional()
+      }),
+      'Enriched track details'
+    ),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
+      z.object({ error: z.string() }),
+      'Invalid URL or unsupported platform'
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      z.object({ error: z.string() }),
+      'Track not found'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to enrich track details'
+    )
+  }
+})
+
 export type GetTrackRoute = typeof getTrack
 export type GetAlbumRoute = typeof getAlbum
 export type GetPlaylistRoute = typeof getPlaylist
 export type SearchAlbumsRoute = typeof searchAlbums
+export type EnrichTrackFromUrlRoute = typeof enrichTrackFromUrl

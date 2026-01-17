@@ -99,6 +99,13 @@
       "when": 1766888542817,
       "tag": "0016_lyrical_the_renegades",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1768644671981,
+      "tag": "0017_thick_the_fury",
+      "breakpoints": true
     }
   ]
 }

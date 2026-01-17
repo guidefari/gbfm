@@ -44,6 +44,16 @@ export const useNavigationActions = (closeCmd: () => void) => {
     closeCmd()
   }, [router, closeCmd])
 
+  const routeToLabelUpload = React.useCallback(() => {
+    router({ to: '/label-upload' })
+    closeCmd()
+  }, [router, closeCmd])
+
+  const routeToReminders = React.useCallback(() => {
+    router({ to: '/reminders' })
+    closeCmd()
+  }, [router, closeCmd])
+
   return {
     routeToMixes,
     routeToLogin,
@@ -52,6 +62,8 @@ export const useNavigationActions = (closeCmd: () => void) => {
     routeToTracks,
     routeToLabels,
     routeToUpload,
-    routeToAdmin
+    routeToAdmin,
+    routeToLabelUpload,
+    routeToReminders
   }
 }

@@ -8,5 +8,6 @@ const router = createRouter()
   .openapi(routes.getAlbum, handlers.getAlbum)
   .openapi(routes.getPlaylist, handlers.getPlaylist)
   .openapi(routes.searchAlbums, handlers.searchAlbums)
+  .openapi(routes.enrichTrackFromUrl, handlers.enrichTrackFromUrl)
 
 export default router

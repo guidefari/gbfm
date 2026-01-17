@@ -150,6 +150,14 @@ export const createCommandData = (
       type: 'action',
       onSelect: navigationActions.routeToMixes
     },
+    {
+      id: 'reminders',
+      label: 'Music Reminders',
+      icon: Calendar,
+      type: 'action',
+      onSelect: navigationActions.routeToReminders,
+      requiresAuth: true
+    },
 
     // Upload section (auth required)
     {

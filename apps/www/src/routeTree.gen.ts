@@ -12,6 +12,7 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SubscribeRouteImport } from './routes/subscribe'
+import { Route as RemindersRouteImport } from './routes/reminders'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ChangelogRouteImport } from './routes/changelog'
 import { Route as TracksRouteRouteImport } from './routes/tracks/route'
@@ -34,6 +35,7 @@ import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-pas
 
 const UploadLazyRouteImport = createFileRoute('/upload')()
 const MixUploadLazyRouteImport = createFileRoute('/mix-upload')()
+const LabelUploadLazyRouteImport = createFileRoute('/label-upload')()
 
 const UploadLazyRoute = UploadLazyRouteImport.update({
   id: '/upload',
@@ -45,9 +47,19 @@ const MixUploadLazyRoute = MixUploadLazyRouteImport.update({
   path: '/mix-upload',
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() => import('./routes/mix-upload.lazy').then((d) => d.Route))
+const LabelUploadLazyRoute = LabelUploadLazyRouteImport.update({
+  id: '/label-upload',
+  path: '/label-upload',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() => import('./routes/label-upload.lazy').then((d) => d.Route))
 const SubscribeRoute = SubscribeRouteImport.update({
   id: '/subscribe',
   path: '/subscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RemindersRoute = RemindersRouteImport.update({
+  id: '/reminders',
+  path: '/reminders',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -153,7 +165,9 @@ export interface FileRoutesByFullPath {
   '/tracks': typeof TracksRouteRouteWithChildren
   '/changelog': typeof ChangelogRoute
   '/dashboard': typeof DashboardRoute
+  '/reminders': typeof RemindersRoute
   '/subscribe': typeof SubscribeRoute
+  '/label-upload': typeof LabelUploadLazyRoute
   '/mix-upload': typeof MixUploadLazyRoute
   '/upload': typeof UploadLazyRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -174,7 +188,9 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/changelog': typeof ChangelogRoute
   '/dashboard': typeof DashboardRoute
+  '/reminders': typeof RemindersRoute
   '/subscribe': typeof SubscribeRoute
+  '/label-upload': typeof LabelUploadLazyRoute
   '/mix-upload': typeof MixUploadLazyRoute
   '/upload': typeof UploadLazyRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -199,7 +215,9 @@ export interface FileRoutesById {
   '/tracks': typeof TracksRouteRouteWithChildren
   '/changelog': typeof ChangelogRoute
   '/dashboard': typeof DashboardRoute
+  '/reminders': typeof RemindersRoute
   '/subscribe': typeof SubscribeRoute
+  '/label-upload': typeof LabelUploadLazyRoute
   '/mix-upload': typeof MixUploadLazyRoute
   '/upload': typeof UploadLazyRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -225,7 +243,9 @@ export interface FileRouteTypes {
     | '/tracks'
     | '/changelog'
     | '/dashboard'
+    | '/reminders'
     | '/subscribe'
+    | '/label-upload'
     | '/mix-upload'
     | '/upload'
     | '/auth/forgot-password'
@@ -246,7 +266,9 @@ export interface FileRouteTypes {
     | '/'
     | '/changelog'
     | '/dashboard'
+    | '/reminders'
     | '/subscribe'
+    | '/label-upload'
     | '/mix-upload'
     | '/upload'
     | '/auth/forgot-password'
@@ -270,7 +292,9 @@ export interface FileRouteTypes {
     | '/tracks'
     | '/changelog'
     | '/dashboard'
+    | '/reminders'
     | '/subscribe'
+    | '/label-upload'
     | '/mix-upload'
     | '/upload'
     | '/auth/forgot-password'
@@ -295,7 +319,9 @@ export interface RootRouteChildren {
   TracksRouteRoute: typeof TracksRouteRouteWithChildren
   ChangelogRoute: typeof ChangelogRoute
   DashboardRoute: typeof DashboardRoute
+  RemindersRoute: typeof RemindersRoute
   SubscribeRoute: typeof SubscribeRoute
+  LabelUploadLazyRoute: typeof LabelUploadLazyRoute
   MixUploadLazyRoute: typeof MixUploadLazyRoute
   UploadLazyRoute: typeof UploadLazyRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
@@ -323,11 +349,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MixUploadLazyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/label-upload': {
+      id: '/label-upload'
+      path: '/label-upload'
+      fullPath: '/label-upload'
+      preLoaderRoute: typeof LabelUploadLazyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/subscribe': {
       id: '/subscribe'
       path: '/subscribe'
       fullPath: '/subscribe'
       preLoaderRoute: typeof SubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reminders': {
+      id: '/reminders'
+      path: '/reminders'
+      fullPath: '/reminders'
+      preLoaderRoute: typeof RemindersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -515,7 +555,9 @@ const rootRouteChildren: RootRouteChildren = {
   TracksRouteRoute: TracksRouteRouteWithChildren,
   ChangelogRoute: ChangelogRoute,
   DashboardRoute: DashboardRoute,
+  RemindersRoute: RemindersRoute,
   SubscribeRoute: SubscribeRoute,
+  LabelUploadLazyRoute: LabelUploadLazyRoute,
   MixUploadLazyRoute: MixUploadLazyRoute,
   UploadLazyRoute: UploadLazyRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,

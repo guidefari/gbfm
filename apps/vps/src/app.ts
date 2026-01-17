@@ -1,16 +1,22 @@
 import { sql } from 'drizzle-orm'
+import { Effect } from 'effect'
+import cron from 'node-cron'
 import configureOpenAPI from '@/lib/configure-open-api'
 import createApp from '@/lib/create-app'
 import auth from '@/routes/auth/auth.index'
 import betterAuthRoutes from '@/routes/auth/better-auth.routes'
 import content from '@/routes/content/content.index'
 import email from '@/routes/email/email.index'
+import musicReminders from '@/routes/music-reminders/music-reminders.index'
 import publication from '@/routes/publication/publication.index'
 import rss from '@/routes/rss/rss.index'
 import share from '@/routes/share/share.index'
 import spotify from '@/routes/spotify/spotify.index'
 import upload from '@/routes/upload/upload.index'
 import { db } from './db'
+import { processPendingReminders } from './services/reminder-processor'
+
+// import { processPendingReminders } from './services/reminder-processor'
 
 const app = createApp()
 
@@ -24,6 +30,7 @@ app.route('/publication', publication)
 app.route('/share', share)
 app.route('/spotify', spotify)
 app.route('/upload', upload)
+app.route('/music-reminders', musicReminders)
 app.route('', rss)
 
 // Health check endpoint
@@ -35,6 +42,27 @@ app.get('/health', async (c) => {
     return c.json({ dbConnected: false }, 500)
   }
 })
+
+// Initialize cron job for music reminder emails
+// Runs every minute
+cron.schedule('* * * * *', async () => {
+  console.log('🎵 Running music reminder processor...')
+
+  try {
+    await Effect.runPromise(
+      processPendingReminders.pipe(
+        Effect.catchAll((error) =>
+          Effect.logError(`Cron job failed: ${error.message}`)
+        )
+      )
+    )
+    console.log('✅ Music reminder processing completed')
+  } catch (error) {
+    console.error('❌ Critical cron error:', error)
+  }
+})
+
+console.log('🎵 Music reminder cron job initialized (runs every minute)')
 
 export type AppType = typeof app
 

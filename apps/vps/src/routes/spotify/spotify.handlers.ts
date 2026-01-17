@@ -1,8 +1,10 @@
 import { SpotifyApi as SpotifyApiClient } from '@spotify/web-api-ts-sdk'
+import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { env } from '@/env'
 import type { AppRouteHandler } from '@/lib/types'
 import type {
+  EnrichTrackFromUrlRoute,
   GetAlbumRoute,
   GetPlaylistRoute,
   GetTrackRoute,
@@ -209,6 +211,175 @@ export const searchAlbums: AppRouteHandler<SearchAlbumsRoute> = async (c) => {
     }
     return c.json(
       { error: 'An unknown error occurred' },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
+  }
+}
+
+// Platform detection and URL parsing utilities
+const isSpotifyUrl = (url: string): boolean => {
+  return url.includes('spotify.com') || url.includes('spotify.link')
+}
+
+const isYouTubeUrl = (url: string): boolean => {
+  return url.includes('youtube.com') || url.includes('youtu.be')
+}
+
+const isAppleMusicUrl = (url: string): boolean => {
+  return url.includes('music.apple.com')
+}
+
+const extractSpotifyId = (url: string): string | null => {
+  // Handle various Spotify URL formats
+  const patterns = [
+    /spotify\.com\/track\/([a-zA-Z0-9]+)/,
+    /spotify\.com\/album\/([a-zA-Z0-9]+)/,
+    /spotify\.com\/playlist\/([a-zA-Z0-9]+)/,
+    /spotify\.link\/([a-zA-Z0-9]+)/
+  ]
+
+  for (const pattern of patterns) {
+    const match = url.match(pattern)
+    if (match?.[1]) {
+      return match[1]
+    }
+  }
+
+  return null
+}
+
+const extractYouTubeId = (url: string): string | null => {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/,
+    /youtube\.com\/embed\/([a-zA-Z0-9_-]+)/
+  ]
+
+  for (const pattern of patterns) {
+    const match = url.match(pattern)
+    if (match?.[1]) {
+      return match[1]
+    }
+  }
+
+  return null
+}
+
+// Effect-based enrichment functions
+const enrichSpotifyTrack = (trackId: string) =>
+  Effect.gen(function* () {
+    try {
+      const data = yield* Effect.tryPromise({
+        try: () => client.tracks.get(trackId),
+        catch: (error) => error as Error
+      })
+
+      if (data instanceof Error) {
+        return yield* Effect.fail(data)
+      }
+
+      return {
+        title: data.name,
+        artist: data.artists.map((artist) => artist.name).join(', '),
+        url: data.external_urls.spotify,
+        platform: 'spotify' as const,
+        thumbnailUrl: data.album.images[0]?.url,
+        album: data.album.name,
+        duration: Math.floor(data.duration_ms / 1000) // Convert to seconds
+      }
+    } catch (error) {
+      return yield* Effect.fail(error as Error)
+    }
+  })
+
+const enrichYouTubeTrack = (videoId: string) =>
+  Effect.gen(function* () {
+    // For YouTube, we'll do basic parsing since we don't have an API key
+    // In a real implementation, you'd use the YouTube Data API
+    return yield* Effect.succeed({
+      title: 'YouTube Video',
+      artist: 'Unknown Artist',
+      url: `https://www.youtube.com/watch?v=${videoId}`,
+      platform: 'youtube' as const,
+      thumbnailUrl: `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
+    })
+  })
+
+const enrichAppleMusicTrack = (url: string) =>
+  Effect.gen(function* () {
+    // For Apple Music, we'll do basic parsing
+    // In a real implementation, you'd use the Apple Music API
+    return yield* Effect.succeed({
+      title: 'Apple Music Track',
+      artist: 'Unknown Artist',
+      url: url,
+      platform: 'apple_music' as const
+    })
+  })
+
+const enrichGenericUrl = (url: string) =>
+  Effect.gen(function* () {
+    // For unsupported platforms, return basic info
+    return yield* Effect.succeed({
+      title: 'External Track',
+      artist: 'Unknown Artist',
+      url: url,
+      platform: 'other' as const
+    })
+  })
+
+export const enrichTrackFromUrl: AppRouteHandler<
+  EnrichTrackFromUrlRoute
+> = async (c) => {
+  const enrichTrack = Effect.gen(function* () {
+    const { url } = c.req.valid('json')
+
+    let enrichmentResult: {
+      title: string
+      artist: string
+      url: string
+      platform: 'spotify' | 'youtube' | 'apple-music'
+      thumbnailUrl?: string
+      album?: string
+      duration?: number
+    }
+
+    if (isSpotifyUrl(url)) {
+      const trackId = extractSpotifyId(url)
+      if (!trackId) {
+        return yield* Effect.fail(new Error('Invalid Spotify URL'))
+      }
+      enrichmentResult = yield* enrichSpotifyTrack(trackId)
+    } else if (isYouTubeUrl(url)) {
+      const videoId = extractYouTubeId(url)
+      if (!videoId) {
+        return yield* Effect.fail(new Error('Invalid YouTube URL'))
+      }
+      enrichmentResult = yield* enrichYouTubeTrack(videoId)
+    } else if (isAppleMusicUrl(url)) {
+      enrichmentResult = yield* enrichAppleMusicTrack(url)
+    } else {
+      enrichmentResult = yield* enrichGenericUrl(url)
+    }
+
+    return enrichmentResult
+  })
+
+  try {
+    const result = await Effect.runPromise(enrichTrack)
+
+    return c.json(result, HttpStatusCodes.OK)
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes('Invalid') || error.message.includes('URL')) {
+        return c.json({ error: error.message }, HttpStatusCodes.BAD_REQUEST)
+      }
+      return c.json(
+        { error: 'Track not found or access denied' },
+        HttpStatusCodes.NOT_FOUND
+      )
+    }
+    return c.json(
+      { error: 'Failed to enrich track details' },
       HttpStatusCodes.INTERNAL_SERVER_ERROR
     )
   }

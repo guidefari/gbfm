@@ -159,3 +159,41 @@ export async function sendMixNotificationEmail({
     }
   })
 }
+
+export async function sendMusicReminderEmail({
+  to,
+  username,
+  musicTitle,
+  artistName,
+  musicUrl,
+  reminderDate,
+  notes,
+  albumCoverUrl
+}: {
+  to: string | string[]
+  username: string
+  musicTitle: string
+  artistName: string
+  musicUrl: string
+  reminderDate: string
+  notes?: string | null
+  albumCoverUrl?: string | null
+}): Promise<void> {
+  const { MusicReminderEmail } = await import('../emails/music-reminder')
+
+  await sendEmail({
+    to,
+    template: {
+      subject: `🎵 Time to listen: ${musicTitle} by ${artistName}`,
+      component: React.createElement(MusicReminderEmail, {
+        username,
+        musicTitle,
+        artistName,
+        musicUrl,
+        reminderDate,
+        ...(notes && { notes }),
+        ...(albumCoverUrl && { albumCoverUrl })
+      })
+    }
+  })
+}

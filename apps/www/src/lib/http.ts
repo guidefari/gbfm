@@ -7,7 +7,7 @@ import type {
   SelectRelease
 } from '@gbfm/vps/schemas'
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
-import { type User, useAuthStore } from '@/store/auth'
+import type { User } from '@/store/auth'
 import type {
   AlbumApiResponse,
   PlaylistApiResponse,
@@ -45,8 +45,8 @@ export async function fetcher<T>(input: RequestInfo, init: RequestInit = {}) {
     })
 
     if (res.status === 401) {
-      const { clearAuth } = useAuthStore.getState()
-      clearAuth()
+      // const { clearAuth } = useAuthStore.getState()
+      // clearAuth()
       window.location.href = '/auth/sign-in'
     }
 
@@ -139,6 +139,34 @@ export function useSpotifyProxy<T extends SpotifyContentType>({
   })
   return {
     data: data,
+    isLoading,
+    error
+  }
+}
+
+export type EnrichedTrack = {
+  title: string
+  artist: string
+  url: string
+  platform: 'spotify' | 'youtube' | 'apple_music' | 'other'
+  thumbnailUrl?: string
+  duration?: number
+  album?: string
+}
+
+export function useEnrichTrackFromUrl(url: string) {
+  const { data, error, isLoading } = useQuery<EnrichedTrack>({
+    queryKey: ['spotify/enrich', url],
+    queryFn: async () =>
+      fetcher(`${VPS_BASE_URL}/spotify/enrich`, {
+        method: 'POST',
+        body: JSON.stringify({ url })
+      }),
+    enabled: !!url && url.length > 10, // Only run if URL is reasonably long
+    staleTime: 15 * 60 * 1000
+  })
+  return {
+    data,
     isLoading,
     error
   }

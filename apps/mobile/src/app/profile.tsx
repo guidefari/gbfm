@@ -1,9 +1,10 @@
-import { Stack } from 'expo-router'
-import { ScrollView, Text, View } from 'react-native'
+import { Stack, useRouter } from 'expo-router'
+import { ScrollView, Text, TouchableOpacity, View } from 'react-native'
 import { useAuthStore } from '@/store/auth'
 
 export default function Profile() {
   const user = useAuthStore((state) => state.user)
+  const router = useRouter()
 
   if (!user) {
     return (
@@ -33,6 +34,26 @@ export default function Profile() {
             {user.name}
           </Text>
           <Text className='text-lg text-gray-300'>@{user.username}</Text>
+        </View>
+
+        <View className='mt-8'>
+          <Text className='text-xl font-bold text-white mb-4'>Features</Text>
+
+          <TouchableOpacity
+            onPress={() => router.push('/music-reminders')}
+            className='bg-gray-800 rounded-lg p-4 mb-4'>
+            <View className='flex-row items-center justify-between'>
+              <View>
+                <Text className='text-white font-semibold text-lg'>
+                  Music Reminders
+                </Text>
+                <Text className='text-gray-300 text-sm mt-1'>
+                  Never forget to listen to your favorite tracks
+                </Text>
+              </View>
+              <Text className='text-gray-400 text-xl'>🎵</Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
         <View className='space-y-4'>

@@ -1,18 +1,13 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useId, useRef } from 'react'
+import { useAuthStore } from '@/store/auth'
 
 export const Route = createFileRoute('/dashboard')({
-  beforeLoad: ({ context }) => {
-    if (!context.auth.isAuthenticated) {
-      throw redirect({
-        to: '/auth/sign-in'
-      })
-    }
-  },
   component: Dashboard
 })
 
 function Dashboard() {
+  const { isAuthenticated } = useAuthStore()
   const formRef = useRef<HTMLFormElement>(null)
   const titleId = useId()
   const artistId = useId()
@@ -21,6 +16,23 @@ function Dashboard() {
   const audioFileId = useId()
   const coverImageId = useId()
   const outputFormatId = useId()
+
+  if (!isAuthenticated) {
+    return (
+      <div className='flex items-center justify-center min-h-screen p-4'>
+        <div className='text-center'>
+          <p className='text-lg text-gray-600 mb-4'>
+            Please sign in to access the dashboard
+          </p>
+          <a
+            href='/auth/sign-in'
+            className='inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90'>
+            Sign In
+          </a>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className='p-4 mx-auto max-w-xl'>
