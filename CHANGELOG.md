@@ -1,3 +1,23 @@
+# [1.10.0](https://github.com/guidefari/gbfm/compare/v1.9.0...v1.10.0) (2026-01-17)
+
+
+### Bug Fixes
+
+* mutex when processing music reminders ([95826e3](https://github.com/guidefari/gbfm/commit/95826e36ca1ad979b4e3fe1ae337f1315e2e9afa))
+* ts errors ([c359120](https://github.com/guidefari/gbfm/commit/c3591207e82add33fca2cbace9044069a0f9689f))
+* update nvmrc to current lts ([5916ec2](https://github.com/guidefari/gbfm/commit/5916ec22fbe52bd394013945e82342892660dbe8))
+
+
+### Features
+
+* admin edit mix ([aa8a04f](https://github.com/guidefari/gbfm/commit/aa8a04f8c65b01d1a5764d80585df69bf319d12f))
+* create label ([9872c19](https://github.com/guidefari/gbfm/commit/9872c19860e5a0c0ad7fab79f9cc7b182d14b16d))
+* dashboard & profile update ([8291c78](https://github.com/guidefari/gbfm/commit/8291c78c4d2a580653736a167fda0fa0b88c7687))
+* favourites ([47bffdd](https://github.com/guidefari/gbfm/commit/47bffdd84aaa06dc76269e87151244f75c2bf8c0))
+* lazy scroll ([a023518](https://github.com/guidefari/gbfm/commit/a023518221461f3d879928e0fd8295845da5b20d)), closes [#72](https://github.com/guidefari/gbfm/issues/72)
+* music reminder ([a3a1bf8](https://github.com/guidefari/gbfm/commit/a3a1bf8eac0d169a5cade584cf08e950c03c9ac0))
+* redirect from auth pages if logged in ([4236b2c](https://github.com/guidefari/gbfm/commit/4236b2cc25f8ebf719479e71825efd2b5c36654b))
+
 # [1.9.0](https://github.com/guidefari/gbfm/compare/v1.8.3...v1.9.0) (2025-12-28)
 
 
