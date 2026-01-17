@@ -48,7 +48,7 @@ This document tracks the systematic migration of the VPS backend from imperative
 ### 🔄 **Phase 6: Handler Migration** - In Progress
 - ✅ Content handlers migrated to use AudioService, PostService (7/8 routes)
 - ✅ Label handlers migrated to use LabelService (4/4 routes)
-- Release handlers can now be migrated to use ReleaseService
+- ✅ Release handlers migrated to use ReleaseService (5/5 routes)
 - Read-only routes (RSS, Share) - low priority
 
 ## Technical Achievements
@@ -137,7 +137,6 @@ await runApp(program)  // ✅ Runtime provides service
 
 ### Routes to Migrate (handlers can adopt new services)
 - [ ] `/content/*` (1 route remaining - processMixUpload - complex ffmpeg processing)
-- [x] `/releases/*` (5 routes migrated - createRelease, getReleasesByLabel, getReleaseBySlug, updateReleaseBySlug, deleteReleaseBySlug)
 - [ ] `/auth/*` (4 routes)
 - [ ] `/upload/*` (3 routes)
 - [ ] `/publication/*` (4 routes)
@@ -207,9 +206,9 @@ if (error instanceof ConflictError) return c.json({ error }, 409)
 ## Next Steps
 
 ### Immediate (Phase 6 - Handler Migration)
-1. **Migrate content handlers** to use AudioService, PostService
-2. **Migrate label handlers** to use LabelService
-3. **Migrate release handlers** to use ReleaseService
+1. **Migrate auth handlers** to use UserService
+2. **Migrate upload handlers** to use S3Service
+3. **Migrate publication handlers** to use PublicationService
 
 ### Short Term (Complete Handler Migration)
 1. **Migrate auth handlers** to use UserService
