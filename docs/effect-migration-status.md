@@ -46,8 +46,8 @@ This document tracks the systematic migration of the VPS backend from imperative
 - **UserService**: Authentication and user management operations
 
 ### 🔄 **Phase 6: Handler Migration** - In Progress
-- ✅ Content handlers migrated to use AudioService, PostService
-- Label handlers can now be migrated to use LabelService
+- ✅ Content handlers migrated to use AudioService, PostService (7/8 routes)
+- ✅ Label handlers migrated to use LabelService (4/4 routes)
 - Release handlers can now be migrated to use ReleaseService
 - Read-only routes (RSS, Share) - low priority
 
@@ -131,11 +131,11 @@ await runApp(program)  // ✅ Runtime provides service
 - [x] `/favorites/*` (3 routes - complete)
 - [x] `/spotify/*` (5 routes - complete)
 - [x] `/music-reminders/*` (4 routes - complete)
-- [x] `/content/*` (5 routes migrated - createPost, getPostsByTag, createMix, getAudioByType, getAudioBySlug)
+- [x] `/content/*` (7 routes migrated - createPost, getPostsByTag, createMix, createAudio, getAudioByType, getAudioBySlug, updateAudioBySlug)
+- [x] `/labels/*` (4 routes migrated - createLabel, getAllLabels, getLabelBySlug, updateLabelBySlug)
 
 ### Routes to Migrate (handlers can adopt new services)
-- [ ] `/content/*` (3 routes remaining - update, delete, processMixUpload)
-- [ ] `/labels/*` (4 routes) - services ready, handlers pending
+- [ ] `/content/*` (1 route remaining - processMixUpload - complex ffmpeg processing)
 - [ ] `/releases/*` (5 routes) - services ready, handlers pending
 - [ ] `/auth/*` (4 routes)
 - [ ] `/upload/*` (3 routes)
@@ -260,5 +260,5 @@ apps/vps/src/
 ---
 
 **Last Updated**: January 18, 2026
-**Current Phase**: 5 Complete, Phase 6 Next
-**Migration Progress**: 11/11 services complete (100%)
+**Current Phase**: 5 Complete, Phase 6 In Progress
+**Migration Progress**: 11/11 services complete (100%), 23/40 routes migrated (58%)
