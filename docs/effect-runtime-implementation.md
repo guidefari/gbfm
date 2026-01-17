@@ -802,6 +802,85 @@ Simple CRUD endpoints or one-off utilities can stay imperative if they work fine
 - Graceful shutdown handlers added but not tested yet
 - Consider creating a PR for review before merging
 
+## Workflow Simplification (Apply from Desktop)
+
+The GitHub Actions deployment workflow needs simplification but couldn't be pushed due to GitHub App permissions. Apply this change from your desktop:
+
+**File:** `.github/workflows/deploy.yml`
+
+**Current Issues:**
+- Complex ref determination logic (3 conditional steps)
+- Triggers on tag push but not on GitHub Release
+- Conditional checkouts make workflow hard to follow
+
+**Simplified Version:**
+
+Replace lines 1-52 with:
+
+```yaml
+name: Prod Deployment
+
+on:
+  # Trigger automatically when a new release is published
+  release:
+    types: [published]
+
+  # Allow manual deployments
+  workflow_dispatch:
+
+concurrency:
+  group: prod-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ... rest of the workflow stays the same (cache, setup, deploy steps)
+```
+
+**What Changes:**
+- ❌ Remove: Complex ref determination logic (3 steps removed)
+- ❌ Remove: `push.tags` trigger
+- ✅ Add: `release.types: [published]` trigger
+- ✅ Simplify: Single checkout step
+- ✅ Improve: Stable concurrency group name
+
+**Benefits:**
+1. **Automatic deployment on release** - Create a GitHub Release, deployment starts automatically
+2. **Simpler workflow** - 26 fewer lines, easier to understand
+3. **Still allows manual deployment** - workflow_dispatch still works
+4. **Better concurrency control** - Stable group name instead of dynamic ref
+
+**To Apply:**
+
+```bash
+# From your desktop
+git checkout claude/effect-runtime-vps-jxz0r
+
+# Edit .github/workflows/deploy.yml with the changes above
+
+git add .github/workflows/deploy.yml
+git commit -m "ci: simplify deployment to trigger on releases"
+git push origin claude/effect-runtime-vps-jxz0r
+```
+
+**Release Workflow After Change:**
+
+1. Create a new release on GitHub (e.g., v1.2.3)
+2. Workflow automatically triggers
+3. Deploys the release tag to production
+4. Done! 🚀
+
 ## Git Commands for Desktop
 
 ```bash
@@ -812,6 +891,9 @@ git checkout claude/effect-runtime-vps-jxz0r
 # Verify changes
 git log --oneline -5
 git diff main...claude/effect-runtime-vps-jxz0r
+
+# Apply workflow simplification (see section above)
+# Edit .github/workflows/deploy.yml manually
 
 # Test locally
 cd apps/vps
@@ -825,3 +907,5 @@ gh pr create --title "feat: implement Effect ManagedRuntime for VPS services" \
 ---
 
 **Summary:** Successfully implemented Effect ManagedRuntime for VPS package. The runtime provides significant performance benefits (60x fewer service initializations), automatic resource management, and better architecture for testing and maintenance. Ready for testing in dev environment.
+
+**Action Required:** Apply the workflow simplification from desktop (GitHub App permissions prevent pushing workflow changes).
