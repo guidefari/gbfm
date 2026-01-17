@@ -6,8 +6,11 @@ import { FavoriteServiceLive } from '@/services/favorite.service'
 import { LabelServiceLive } from '@/services/label.service'
 import { MusicReminderServiceLive } from '@/services/music-reminder.service'
 import { PostServiceLive } from '@/services/post.service'
+import { PublicationServiceLive } from '@/services/publication.service'
 import { ReleaseServiceLive } from '@/services/release.service'
+import { S3ServiceLive } from '@/services/s3.service'
 import { SpotifyServiceLive } from '@/services/spotify.service'
+import { UserServiceLive } from '@/services/user.service'
 
 export interface DatabaseService {
   readonly db: typeof db
@@ -29,5 +32,8 @@ export const AppLayer = Layer.mergeAll(
   AudioServiceLive,
   PostServiceLive,
   LabelServiceLive,
-  ReleaseServiceLive
+  PublicationServiceLive,
+  ReleaseServiceLive,
+  S3ServiceLive,
+  UserServiceLive
 )
