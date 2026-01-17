@@ -1,0 +1,20 @@
+{
+  "description": "Add these dependencies to apps/vps/package.json",
+  "dependencies": {
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/sdk-node": "^1.28.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.52.1",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.55.0",
+    "@opentelemetry/exporter-metrics-otlp-http": "^0.55.0",
+    "@opentelemetry/sdk-metrics": "^1.28.0",
+    "@opentelemetry/resources": "^1.28.0",
+    "@opentelemetry/semantic-conventions": "^1.28.0",
+    "@opentelemetry/sdk-trace-base": "^1.28.0",
+    "@opentelemetry/instrumentation-http": "^0.55.0",
+    "@opentelemetry/instrumentation-pg": "^0.48.0",
+    "@opentelemetry/instrumentation-aws-sdk": "^0.46.0",
+    "@opentelemetry/instrumentation-dns": "^0.39.0",
+    "@opentelemetry/instrumentation-net": "^0.39.0"
+  },
+  "installation": "cd apps/vps && bun add @opentelemetry/api @opentelemetry/sdk-node @opentelemetry/auto-instrumentations-node @opentelemetry/exporter-trace-otlp-http @opentelemetry/exporter-metrics-otlp-http @opentelemetry/sdk-metrics @opentelemetry/resources @opentelemetry/semantic-conventions @opentelemetry/sdk-trace-base"
+}

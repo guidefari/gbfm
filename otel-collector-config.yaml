@@ -1,0 +1,228 @@
+# OpenTelemetry Collector Configuration
+# This collector receives telemetry from your applications and exports to multiple backends
+
+receivers:
+  # OTLP receiver for traces, metrics, and logs
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - "http://*"
+            - "https://*"
+
+  # Prometheus receiver for scraping metrics
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: 'otel-collector'
+          scrape_interval: 10s
+          static_configs:
+            - targets: ['localhost:8888']
+
+processors:
+  # Batch processor - reduces number of outgoing connections
+  batch:
+    timeout: 10s
+    send_batch_size: 1024
+    send_batch_max_size: 2048
+
+  # Memory limiter prevents OOM
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+
+  # Resource detection for cloud environment
+  resourcedetection:
+    detectors: [env, system, docker, ecs]
+    timeout: 5s
+    override: false
+
+  # Add resource attributes
+  resource:
+    attributes:
+      - key: service.name
+        value: gbfm-vps
+        action: upsert
+      - key: deployment.environment
+        from_attribute: DEPLOYMENT_ENVIRONMENT
+        action: upsert
+      - key: service.version
+        from_attribute: APP_VERSION
+        action: upsert
+
+  # Tail sampling - keep all errors, sample successful requests
+  tail_sampling:
+    policies:
+      # Always sample errors
+      - name: error-traces
+        type: status_code
+        status_code:
+          status_codes: [ERROR]
+
+      # Always sample slow requests (>1s)
+      - name: slow-traces
+        type: latency
+        latency:
+          threshold_ms: 1000
+
+      # Sample 10% of successful requests
+      - name: probabilistic-policy
+        type: probabilistic
+        probabilistic:
+          sampling_percentage: 10
+
+  # Filter out noisy metrics
+  filter/healthcheck:
+    traces:
+      span:
+        - 'attributes["http.target"] == "/health"'
+        - 'attributes["http.route"] == "/health"'
+
+  # Attributes processor for PII redaction
+  attributes/redact:
+    actions:
+      - key: http.url
+        pattern: '([?&]token=)[^&]*'
+        action: update
+        value: '$1***REDACTED***'
+      - key: http.url
+        pattern: '([?&]api_key=)[^&]*'
+        action: update
+        value: '$1***REDACTED***'
+
+exporters:
+  # Logging exporter for debugging
+  logging:
+    verbosity: detailed
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+  # OTLP exporter for Jaeger (self-hosted)
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+
+  # Prometheus exporter
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    namespace: gbfm
+    const_labels:
+      environment: ${env:DEPLOYMENT_ENVIRONMENT}
+
+  # Honeycomb exporter (if you choose Honeycomb)
+  otlp/honeycomb:
+    endpoint: api.honeycomb.io:443
+    headers:
+      x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
+      x-honeycomb-dataset: ${env:HONEYCOMB_DATASET}
+
+  # Grafana Cloud exporter (if you choose Grafana)
+  otlphttp/grafana:
+    endpoint: ${env:GRAFANA_OTLP_ENDPOINT}
+    headers:
+      authorization: Basic ${env:GRAFANA_API_TOKEN}
+
+  # New Relic exporter (if you choose New Relic)
+  otlp/newrelic:
+    endpoint: otlp.nr-data.net:4317
+    headers:
+      api-key: ${env:NEW_RELIC_LICENSE_KEY}
+
+  # Datadog exporter (if you choose Datadog)
+  datadog:
+    api:
+      key: ${env:DATADOG_API_KEY}
+      site: datadoghq.com
+
+  # Generic OTLP exporter (for any OTLP-compatible backend)
+  otlp/generic:
+    endpoint: ${env:OTLP_ENDPOINT}
+    headers:
+      authorization: Bearer ${env:OTLP_AUTH_TOKEN}
+
+  # CloudWatch exporter (for AWS metrics/logs, optional)
+  awscloudwatch:
+    region: ${env:AWS_REGION}
+    namespace: GBFM/Custom
+    log_group_name: /ecs/otel-collector
+
+service:
+  # Enable telemetry for the collector itself
+  telemetry:
+    logs:
+      level: info
+    metrics:
+      address: 0.0.0.0:8888
+
+  # Configure pipelines
+  pipelines:
+    # Traces pipeline
+    traces:
+      receivers: [otlp]
+      processors:
+        - memory_limiter
+        - resourcedetection
+        - resource
+        - attributes/redact
+        - filter/healthcheck
+        - tail_sampling
+        - batch
+      exporters:
+        - logging
+        # Uncomment the backends you want to use:
+        # - otlp/jaeger
+        # - otlp/honeycomb
+        # - otlphttp/grafana
+        # - otlp/newrelic
+        # - datadog
+
+    # Metrics pipeline
+    metrics:
+      receivers: [otlp, prometheus]
+      processors:
+        - memory_limiter
+        - resourcedetection
+        - resource
+        - batch
+      exporters:
+        - logging
+        - prometheus
+        # Uncomment the backends you want to use:
+        # - otlp/honeycomb
+        # - otlphttp/grafana
+        # - otlp/newrelic
+        # - datadog
+        # - awscloudwatch
+
+    # Logs pipeline
+    logs:
+      receivers: [otlp]
+      processors:
+        - memory_limiter
+        - resourcedetection
+        - resource
+        - batch
+      exporters:
+        - logging
+        # Uncomment the backends you want to use:
+        # - otlp/honeycomb
+        # - otlphttp/grafana
+        # - otlp/newrelic
+        # - awscloudwatch
+
+  # Extensions for health checking and debugging
+  extensions: [health_check, pprof, zpages]
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+  pprof:
+    endpoint: 0.0.0.0:1777
+  zpages:
+    endpoint: 0.0.0.0:55679

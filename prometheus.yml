@@ -1,0 +1,29 @@
+# Prometheus Configuration for GBFM
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'gbfm'
+    environment: 'production'
+
+# Scrape configurations
+scrape_configs:
+  # Scrape the OTEL Collector's own metrics
+  - job_name: 'otel-collector'
+    static_configs:
+      - targets: ['otel-collector.local:8888']
+        labels:
+          service: 'otel-collector'
+
+  # Scrape the Prometheus exporter from OTEL Collector
+  - job_name: 'otel-metrics'
+    static_configs:
+      - targets: ['otel-collector.local:8889']
+        labels:
+          source: 'otel-collector'
+
+  # Scrape Prometheus itself
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
