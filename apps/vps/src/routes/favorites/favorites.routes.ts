@@ -9,21 +9,26 @@ import { betterAuthMiddleware } from '@/middlewares/better-auth.middleware'
 
 const tags = ['Favorites']
 
-export const getFavoritesResponseSchema = z.object({
-  success: z.boolean(),
-  favorites: z.array(favoriteWithAudioSchema),
-  total: z.number()
-})
+export const getFavoritesResponseSchema = z.union([
+  z.object({
+    success: z.boolean(),
+    favorites: z.array(favoriteWithAudioSchema),
+    total: z.number()
+  }),
+  z.object({
+    error: z.string()
+  })
+])
 
-export const addFavoriteResponseSchema = z.object({
-  success: z.boolean(),
-  message: z.string()
-})
-
-export const removeFavoriteResponseSchema = z.object({
-  success: z.boolean(),
-  message: z.string()
-})
+export const favoriteResponseSchema = z.union([
+  z.object({
+    success: z.boolean(),
+    message: z.string()
+  }),
+  z.object({
+    error: z.string()
+  })
+])
 
 export const addFavorite = createRoute({
   path: '/',
@@ -34,20 +39,24 @@ export const addFavorite = createRoute({
   },
   responses: {
     [HttpStatusCodes.CREATED]: jsonContent(
-      addFavoriteResponseSchema,
+      favoriteResponseSchema,
       'Favorite added successfully'
     ),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
+      favoriteResponseSchema,
       'Authentication required'
     ),
     [HttpStatusCodes.CONFLICT]: jsonContent(
-      z.object({ error: z.string() }),
+      favoriteResponseSchema,
       'Already favorited'
     ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
+      favoriteResponseSchema,
       'Audio not found'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      favoriteResponseSchema,
+      'Internal server error'
     )
   },
   tags
@@ -62,16 +71,20 @@ export const removeFavorite = createRoute({
   },
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
-      removeFavoriteResponseSchema,
+      favoriteResponseSchema,
       'Favorite removed successfully'
     ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
+      favoriteResponseSchema,
       'Favorite not found'
     ),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
+      favoriteResponseSchema,
       'Authentication required'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      favoriteResponseSchema,
+      'Internal server error'
     )
   },
   tags
@@ -93,8 +106,12 @@ export const getFavorites = createRoute({
       'Favorites retrieved successfully'
     ),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
+      getFavoritesResponseSchema,
       'Authentication required'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      getFavoritesResponseSchema,
+      'Internal server error'
     )
   },
   tags

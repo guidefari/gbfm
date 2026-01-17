@@ -1,5 +1,13 @@
 import { type Effect, ManagedRuntime } from 'effect'
+import type { EmailService } from '@/services/email.service'
+import type { FavoriteService } from '@/services/favorite.service'
+import type { DatabaseService } from './services'
 import { AppLayer } from './services'
+
+/**
+ * Union type of all services provided by the AppLayer
+ */
+type AppServices = DatabaseService | EmailService | FavoriteService
 
 /**
  * Main application runtime
@@ -28,8 +36,9 @@ export const AppRuntime = ManagedRuntime.make(AppLayer)
  * await runApp(processPendingReminders)
  * ```
  */
-export const runApp = <A, E>(effect: Effect.Effect<A, E>) =>
-  AppRuntime.runPromise(effect)
+export const runApp = <A, E, R extends AppServices>(
+  effect: Effect.Effect<A, E, R>
+) => AppRuntime.runPromise(effect)
 
 /**
  * Run an effect synchronously (blocking)
@@ -41,8 +50,9 @@ export const runApp = <A, E>(effect: Effect.Effect<A, E>) =>
  * const config = runAppSync(loadConfig)
  * ```
  */
-export const runAppSync = <A, E>(effect: Effect.Effect<A, E>) =>
-  AppRuntime.runSync(effect)
+export const runAppSync = <A, E, R extends AppServices>(
+  effect: Effect.Effect<A, E, R>
+) => AppRuntime.runSync(effect)
 
 /**
  * Fork an effect to run in the background
@@ -56,8 +66,9 @@ export const runAppSync = <A, E>(effect: Effect.Effect<A, E>) =>
  * await fiber.await()
  * ```
  */
-export const runAppFork = <A, E>(effect: Effect.Effect<A, E>) =>
-  AppRuntime.runFork(effect)
+export const runAppFork = <A, E, R extends AppServices>(
+  effect: Effect.Effect<A, E, R>
+) => AppRuntime.runFork(effect)
 
 /**
  * Dispose of the runtime and clean up all resources
