@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
 import { GenericAuthForm } from '@/components/Auth/GenericForm'
 import { toast } from '@/components/ui/use-toast'
@@ -6,6 +6,13 @@ import { signIn } from '@/lib/auth-client'
 import { useAuthStore } from '@/store/auth'
 
 export const Route = createFileRoute('/auth/sign-in')({
+  beforeLoad: ({ context }) => {
+    if (context.auth.isAuthenticated) {
+      throw redirect({
+        to: '/'
+      })
+    }
+  },
   component: SignInPage
 })
 
