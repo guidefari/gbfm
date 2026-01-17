@@ -15,9 +15,8 @@ import share from '@/routes/share/share.index'
 import spotify from '@/routes/spotify/spotify.index'
 import upload from '@/routes/upload/upload.index'
 import { db } from './db'
+import { runApp } from './runtime'
 import { processPendingReminders } from './services/reminder-processor'
-
-// import { processPendingReminders } from './services/reminder-processor'
 
 const app = createApp()
 
@@ -51,7 +50,7 @@ cron.schedule('* * * * *', async () => {
   console.log('🎵 Running music reminder processor...')
 
   try {
-    await Effect.runPromise(
+    await runApp(
       processPendingReminders.pipe(
         Effect.catchAll((error) =>
           Effect.logError(`Cron job failed: ${error.message}`)
@@ -65,6 +64,28 @@ cron.schedule('* * * * *', async () => {
 })
 
 console.log('🎵 Music reminder cron job initialized (runs every minute)')
+
+// Graceful shutdown handler
+// Ensures proper cleanup of resources (database connections, etc.) on shutdown
+const shutdown = async (signal: string) => {
+  console.log(`\n${signal} received. Shutting down gracefully...`)
+
+  try {
+    // Import disposeRuntime to clean up all services
+    const { disposeRuntime } = await import('./runtime')
+    await disposeRuntime()
+    console.log('✅ Runtime disposed successfully')
+  } catch (error) {
+    console.error('❌ Error during shutdown:', error)
+    process.exit(1)
+  }
+
+  process.exit(0)
+}
+
+// Register shutdown handlers
+process.on('SIGTERM', () => shutdown('SIGTERM'))
+process.on('SIGINT', () => shutdown('SIGINT'))
 
 export type AppType = typeof app
 
