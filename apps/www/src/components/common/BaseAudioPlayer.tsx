@@ -12,11 +12,13 @@ import {
 import type React from 'react'
 import { useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
+import { toast } from '@/components/ui/use-toast'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { useAddFavorite, useFavorites, useRemoveFavorite } from '@/lib/http'
 import { formatSeconds } from '@/lib/utils'
 import { attachVolumeScroll } from '@/lib/volumeScrollHandler'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
+import { useAuthStore } from '@/store/auth'
 
 interface BaseAudioPlayerProps {
   variant?: 'full' | 'compact'
@@ -51,6 +53,8 @@ export function BaseAudioPlayer({
     currentTrackId
   } = useAudioPlayerState()
 
+  const { isAuthenticated } = useAuthStore()
+
   // Favourites
   const { data: favorites } = useFavorites()
   const { addFavorite } = useAddFavorite()
@@ -58,6 +62,12 @@ export function BaseAudioPlayer({
   const isFavorited = currentTrackId
     ? favorites.some((f) => f.audioId === currentTrackId)
     : false
+
+  console.log('BaseAudioPlayer state', {
+    currentTrackId,
+    favorites: favorites.length,
+    isFavorited
+  })
 
   const {
     play,
@@ -105,16 +115,43 @@ export function BaseAudioPlayer({
   }
 
   const handleToggleFavorite = async () => {
-    if (!currentTrackId) return
+    if (!isAuthenticated) {
+      toast({
+        title: 'Authentication required',
+        description: 'Please sign in to add favorites'
+      })
+      return
+    }
+
+    if (!currentTrackId) {
+      toast({
+        title: 'No track playing',
+        description: 'Play a track first to add it to favorites'
+      })
+      return
+    }
 
     try {
       if (isFavorited) {
         await removeFavorite({ audioId: currentTrackId })
+        toast({
+          title: 'Removed from favorites',
+          description: 'Track removed from your favorites'
+        })
       } else {
         await addFavorite({ audioId: currentTrackId })
+        toast({
+          title: 'Added to favorites',
+          description: 'Track added to your favorites'
+        })
       }
     } catch (error) {
       console.error('Failed to toggle favorite:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to update favorites',
+        variant: 'destructive'
+      })
     }
   }
 

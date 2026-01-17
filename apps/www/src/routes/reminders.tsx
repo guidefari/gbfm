@@ -123,7 +123,7 @@ function MusicReminders() {
     return (
       <div className='flex items-center justify-center min-h-screen p-4'>
         <div className='text-center'>
-          <p className='text-lg text-gray-600 mb-4'>
+          <p className='text-lg text-muted-foreground mb-4'>
             Please sign in to access music reminders
           </p>
           <a
@@ -139,7 +139,7 @@ function MusicReminders() {
   return (
     <div className='p-4 mx-auto max-w-4xl'>
       <h1 className='mb-6 text-3xl font-bold'>Music Reminders</h1>
-      <p className='mb-8 text-gray-600'>
+      <p className='mb-8 text-muted-foreground'>
         Add links to music you want to be reminded to listen to later. We'll
         send you an email when the date comes!
       </p>
