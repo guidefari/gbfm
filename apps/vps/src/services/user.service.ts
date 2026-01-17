@@ -2,6 +2,10 @@ import { eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { user as userTable } from '@/db/auth.schema'
+import type {
+  InsertAuthorEmailPreferences,
+  SelectAuthorEmailPreferences
+} from '@/db/email.schema'
 import { DatabaseError, NotFoundError } from '@/errors'
 import {
   getOrCreateEmailPreferencesByUserId,
@@ -53,12 +57,12 @@ export interface UserService {
 
   readonly getUserEmailPreferences: (
     userId: string
-  ) => Effect.Effect<any, DatabaseError>
+  ) => Effect.Effect<SelectAuthorEmailPreferences, DatabaseError>
 
   readonly updateUserEmailPreferences: (
     userId: string,
-    preferences: any
-  ) => Effect.Effect<any, DatabaseError>
+    preferences: Partial<InsertAuthorEmailPreferences>
+  ) => Effect.Effect<SelectAuthorEmailPreferences, DatabaseError>
 }
 
 // Service tag for dependency injection
@@ -145,15 +149,32 @@ const getUserEmailPreferencesEffect = (userId: string) =>
       })
   })
 
-const updateUserEmailPreferencesEffect = (userId: string, preferences: any) =>
-  Effect.tryPromise({
-    try: () => updateEmailPreferencesRepo(userId, preferences),
-    catch: (error) =>
-      new DatabaseError({
-        message: `Failed to update user email preferences: ${(error as Error).message}`,
-        operation: 'update',
-        table: 'user_email_preferences'
-      })
+const updateUserEmailPreferencesEffect = (
+  userId: string,
+  preferences: Partial<InsertAuthorEmailPreferences>
+) =>
+  Effect.gen(function* () {
+    const result = yield* Effect.tryPromise({
+      try: () => updateEmailPreferencesRepo(userId, preferences),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to update user email preferences: ${(error as Error).message}`,
+          operation: 'update',
+          table: 'user_email_preferences'
+        })
+    })
+
+    if (!result) {
+      return yield* Effect.fail(
+        new DatabaseError({
+          message: 'Failed to update email preferences - no rows affected',
+          operation: 'update',
+          table: 'user_email_preferences'
+        })
+      )
+    }
+
+    return result
   })
 
 // Implementation - simple layer that provides access to the Effects

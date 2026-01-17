@@ -1,13 +1,16 @@
 import { eq } from 'drizzle-orm'
+import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
 import { user as userTable } from '@/db/auth.schema'
+import { DatabaseError, NotFoundError } from '@/errors'
 import type { AppRouteHandler } from '@/lib/types'
-
 import {
   getOrCreateEmailPreferencesByUserId,
   updateEmailPreferences as updateEmailPreferencesRepo
 } from '@/repositories/email-preferences.repository'
+import { AppRuntime } from '@/runtime'
+import { UserService } from '@/services/user.service'
 
 import type {
   GetEmailPreferencesRoute,
@@ -56,23 +59,31 @@ export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
     updateData.image = await uploadAvatar(avatarFile)
   }
 
-  try {
-    const [updated] = await db
-      .update(userTable)
-      .set(updateData)
-      .where(eq(userTable.id, user.id))
-      .returning()
-    if (!updated) {
-      return c.json({ error: 'User not found' }, HttpStatusCodes.NOT_FOUND)
-    }
-    return c.json(updated, HttpStatusCodes.OK)
-  } catch (error) {
-    console.error('error:', error)
-    return c.json(
-      { error: 'Failed to update profile' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
+  const program = Effect.gen(function* () {
+    const userService = yield* UserService
+    return yield* userService.updateUserProfile(user.id, updateData)
+  }).pipe(
+    Effect.catchTag('NotFoundError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
     )
+  )
+
+  const result = await AppRuntime.runPromise(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
+
+  return c.json(result, HttpStatusCodes.OK)
 }
 
 export const getProfile: AppRouteHandler<GetProfileRoute> = async (c) => {
@@ -82,14 +93,38 @@ export const getProfile: AppRouteHandler<GetProfileRoute> = async (c) => {
     return c.json({ error: 'Unauthorized' }, HttpStatusCodes.NOT_FOUND)
   }
 
+  const program = Effect.gen(function* () {
+    const userService = yield* UserService
+    return yield* userService.getUserById(user.id)
+  }).pipe(
+    Effect.catchTag('NotFoundError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    )
+  )
+
+  const result = await AppRuntime.runPromise(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
+  }
+
   return c.json(
     {
-      ...user,
-      username: user.name,
-      avatarUrl: user.image ?? null,
-      image: user.image ?? null,
-      verified: user.emailVerified,
-      emailVerified: user.emailVerified
+      ...result,
+      username: result.name,
+      avatarUrl: result.image,
+      image: result.image,
+      verified: result.emailVerified,
+      emailVerified: result.emailVerified
     },
     HttpStatusCodes.OK
   )
@@ -104,16 +139,25 @@ export const getEmailPreferences: AppRouteHandler<
     return c.json({ error: 'Unauthorized' }, HttpStatusCodes.UNAUTHORIZED)
   }
 
-  try {
-    const preferences = await getOrCreateEmailPreferencesByUserId(user.id)
-    return c.json(preferences, HttpStatusCodes.OK)
-  } catch (error) {
-    console.error('Failed to get email preferences:', error)
-    return c.json(
-      { error: 'Failed to get email preferences' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
+  const program = Effect.gen(function* () {
+    const userService = yield* UserService
+    return yield* userService.getUserEmailPreferences(user.id)
+  }).pipe(
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
     )
+  )
+
+  const result = await AppRuntime.runPromise(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
+
+  return c.json(result, HttpStatusCodes.OK)
 }
 
 export const updateEmailPreferences: AppRouteHandler<
@@ -127,25 +171,23 @@ export const updateEmailPreferences: AppRouteHandler<
 
   const updates = c.req.valid('json')
 
-  try {
-    const updatedPreferences = await updateEmailPreferencesRepo(
-      user.id,
-      updates
+  const program = Effect.gen(function* () {
+    const userService = yield* UserService
+    return yield* userService.updateUserEmailPreferences(user.id, updates)
+  }).pipe(
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
     )
+  )
 
-    if (!updatedPreferences) {
-      return c.json(
-        { error: 'Failed to update email preferences' },
-        HttpStatusCodes.INTERNAL_SERVER_ERROR
-      )
-    }
+  const result = await AppRuntime.runPromise(program)
 
-    return c.json(updatedPreferences, HttpStatusCodes.OK)
-  } catch (error) {
-    console.error('Failed to update email preferences:', error)
-    return c.json(
-      { error: 'Failed to update email preferences' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
-    )
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
+
+  return c.json(result, HttpStatusCodes.OK)
 }
