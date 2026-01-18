@@ -1,4 +1,5 @@
 import { compile } from '@mdx-js/mdx'
+import { Effect } from 'effect'
 
 export interface MDXCompilationResult {
   compiled: string
@@ -26,7 +27,10 @@ export async function compileMDX(
       compiled: compiled.toString()
     }
   } catch (error) {
-    console.error('Error compiling MDX:', error)
+    Effect.logError('[MDX] Error compiling MDX content', {
+      error: error instanceof Error ? error.message : String(error)
+    }).pipe(Effect.runPromise)
+
     return {
       error: 'Failed to compile MDX content',
       details: error instanceof Error ? error.message : String(error)
@@ -55,7 +59,10 @@ export async function compileMDXToString(content: string): Promise<string> {
     })
     return compiled.toString()
   } catch (error) {
-    console.error('Error compiling MDX:', error)
+    Effect.logError('[MDX] Error compiling MDX content', {
+      error: error instanceof Error ? error.message : String(error)
+    }).pipe(Effect.runPromise)
+
     throw new Error(
       `Failed to compile MDX: ${error instanceof Error ? error.message : String(error)}`
     )

@@ -41,6 +41,7 @@
     "@hono/zod-openapi": "1.2.0",
     "@hono/zod-validator": "0.7.6",
     "@mdx-js/mdx": "3.1.1",
+    "@effect/opentelemetry": "^0.34.0",
     "@scalar/hono-api-reference": "0.9.34",
     "@spotify/web-api-ts-sdk": "1.2.0",
     "better-auth": "^1.4.13",

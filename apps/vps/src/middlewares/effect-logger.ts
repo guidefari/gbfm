@@ -103,8 +103,8 @@ export function effectLogger(): MiddlewareHandler {
       if (env.NODE_ENV === 'production') {
         await Effect.runPromise(logEffect)
       } else {
-        console.log(
-          `🪿 ${c.req.method} ${c.req.path} ${c.res.status} - ${duration}ms`
+        Effect.logInfo(
+          `[HTTP] ${c.req.method} ${c.req.path} ${c.res.status} - ${duration}ms`
         )
       }
     } catch (error) {
@@ -125,9 +125,11 @@ export function effectLogger(): MiddlewareHandler {
       if (env.NODE_ENV === 'production') {
         await Effect.runPromise(logEffect)
       } else {
-        console.error(
-          `❌ ${c.req.method} ${c.req.path} - ${duration}ms -`,
-          error
+        Effect.logError(
+          `[HTTP] ${c.req.method} ${c.req.path} failed - ${duration}ms`,
+          {
+            error: error instanceof Error ? error.message : String(error)
+          }
         )
       }
 

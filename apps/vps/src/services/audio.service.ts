@@ -288,6 +288,10 @@ const createEffect = (data: InsertAudio, creatorIds: string[]) =>
       }
     })
 
+    yield* Effect.annotateCurrentSpan('audioId', result.id)
+    yield* Effect.annotateCurrentSpan('audioType', result.type)
+    yield* Effect.annotateCurrentSpan('creatorCount', creatorIds.length)
+
     yield* Effect.logInfo('[Content] Audio created', {
       audioId: result.id,
       type: result.type,

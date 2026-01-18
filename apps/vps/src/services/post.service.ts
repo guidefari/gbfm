@@ -79,6 +79,10 @@ const getByTagEffect = (
         })
     })
 
+    yield* Effect.annotateCurrentSpan('tag', tag)
+    yield* Effect.annotateCurrentSpan('resultCount', data.length)
+    yield* Effect.annotateCurrentSpan('totalCount', total)
+
     yield* Effect.logInfo('[Content] Posts retrieved by tag', {
       tag,
       count: data.length,
@@ -134,6 +138,11 @@ const createEffect = (data: InsertPost, creatorIds: string[]) =>
         })
       }
     })
+
+    yield* Effect.annotateCurrentSpan('postId', result.id)
+    yield* Effect.annotateCurrentSpan('postType', result.type)
+    yield* Effect.annotateCurrentSpan('creatorCount', creatorIds.length)
+    yield* Effect.annotateCurrentSpan('tagCount', result.tags?.length || 0)
 
     yield* Effect.logInfo('[Content] Post created', {
       postId: result.id,

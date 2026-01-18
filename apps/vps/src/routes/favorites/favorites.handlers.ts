@@ -14,6 +14,12 @@ export const addFavorite: AppRouteHandler<AddFavoriteRoute> = async (c) => {
   const user = c.get('user')
   const { audioId } = c.req.valid('json')
 
+  Effect.annotateCurrentSpan('userId', user.id).pipe(Effect.runPromise)
+  Effect.annotateCurrentSpan('audioId', audioId).pipe(Effect.runPromise)
+  Effect.annotateCurrentSpan('operation', 'add-favorite').pipe(
+    Effect.runPromise
+  )
+
   Effect.logInfo('[API] Add favorite requested', {
     userId: user.id,
     audioId

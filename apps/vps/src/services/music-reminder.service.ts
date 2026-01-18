@@ -35,36 +35,46 @@ export const MusicReminderService = Context.GenericTag<MusicReminderService>(
 
 const createEffect = (data: NewMusicReminder) =>
   Effect.gen(function* () {
-    const records = yield* Effect.tryPromise({
-      try: () => db.insert(musicReminder).values(data).returning(),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to create music reminder: ${(error as Error).message}`,
-          operation: 'insert',
-          table: 'music_reminder'
+    return yield* Effect.withSpan('music-reminder.create', {
+      attributes: {
+        userId: data.userId,
+        musicTitle: data.musicTitle,
+        artistName: data.artistName
+      }
+    })(
+      Effect.gen(function* () {
+        const records = yield* Effect.tryPromise({
+          try: () => db.insert(musicReminder).values(data).returning(),
+          catch: (error) =>
+            new DatabaseError({
+              message: `Failed to create music reminder: ${(error as Error).message}`,
+              operation: 'insert',
+              table: 'music_reminder'
+            })
         })
-    })
 
-    const record = records[0]
-    if (!record) {
-      return yield* Effect.fail(
-        new DatabaseError({
-          message: 'Failed to create music reminder',
-          operation: 'insert',
-          table: 'music_reminder'
+        const record = records[0]
+        if (!record) {
+          return yield* Effect.fail(
+            new DatabaseError({
+              message: 'Failed to create music reminder',
+              operation: 'insert',
+              table: 'music_reminder'
+            })
+          )
+        }
+
+        yield* Effect.logInfo('[MusicReminder] Reminder created', {
+          userId: record.userId,
+          reminderId: record.id,
+          musicTitle: record.musicTitle,
+          artistName: record.artistName,
+          reminderDate: record.reminderDate.toISOString()
         })
-      )
-    }
 
-    yield* Effect.logInfo('[MusicReminder] Reminder created', {
-      userId: record.userId,
-      reminderId: record.id,
-      musicTitle: record.musicTitle,
-      artistName: record.artistName,
-      reminderDate: record.reminderDate.toISOString()
-    })
-
-    return record
+        return record
+      })
+    )
   })
 
 const getByUserIdEffect = (userId: string) =>

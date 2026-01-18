@@ -25,18 +25,31 @@ export const createMusicReminder: AppRouteHandler<
     notes
   } = c.req.valid('json')
 
-  const program = Effect.gen(function* () {
-    const service = yield* MusicReminderService
-    return yield* service.create({
+  const program = Effect.withSpan('api.music-reminder.create', {
+    attributes: {
       userId: user.id,
       musicTitle,
       artistName,
-      musicUrl,
-      albumCoverUrl: albumCoverUrl || null,
-      reminderDate: new Date(reminderDate),
-      notes: notes || null
+      method: 'POST',
+      path: '/music-reminders'
+    }
+  })(
+    Effect.gen(function* () {
+      // Add additional span annotations
+      yield* Effect.annotateCurrentSpan('hasAlbumCover', !!albumCoverUrl)
+      yield* Effect.annotateCurrentSpan('hasNotes', !!notes)
+      const service = yield* MusicReminderService
+      return yield* service.create({
+        userId: user.id,
+        musicTitle,
+        artistName,
+        musicUrl,
+        albumCoverUrl: albumCoverUrl || null,
+        reminderDate: new Date(reminderDate),
+        notes: notes || null
+      })
     })
-  })
+  )
 
   const result = await runApp(program.pipe(Effect.either))
 

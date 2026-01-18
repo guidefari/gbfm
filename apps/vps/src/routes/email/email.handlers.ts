@@ -82,14 +82,20 @@ export const sendMixNotification: AppRouteHandler<
         )
 
         if (!canReceive) {
-          Effect.logInfo(
-            '[Email] Skipping recipient due to email preferences',
-            {
-              recipient,
-              userId: user.id,
-              reason: 'mix releases disabled'
-            }
+          Effect.annotateCurrentSpan('totalRecipients', recipients.length).pipe(
+            Effect.runPromise
+          )
+          Effect.annotateCurrentSpan('mixSlug', mixSlug).pipe(Effect.runPromise)
+          Effect.annotateCurrentSpan(
+            'mixTitle',
+            metadata?.mixTitle || mix.title
           ).pipe(Effect.runPromise)
+
+          Effect.logInfo('[Email] Sending mix notification emails', {
+            totalRecipients: recipients.length,
+            mixSlug,
+            mixTitle: metadata?.mixTitle || mix.title
+          }).pipe(Effect.runPromise)
           skipped.push(recipient)
           continue
         }

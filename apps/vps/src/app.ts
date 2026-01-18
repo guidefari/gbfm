@@ -77,14 +77,16 @@ const mainEffect = Effect.gen(function* () {
 
 const setupGracefulShutdown = () => {
   const shutdown = async (signal: string) => {
-    console.log(`\n${signal} received. Shutting down gracefully...`)
+    Effect.logInfo(`Graceful shutdown initiated via ${signal}`)
 
     try {
       const { disposeRuntime } = await import('./runtime')
       await disposeRuntime()
-      console.log('✅ Runtime disposed successfully')
+      Effect.logInfo('Runtime disposed successfully')
     } catch (error) {
-      console.error('❌ Error during shutdown:', error)
+      Effect.logError('Error during shutdown', {
+        error: error instanceof Error ? error.message : String(error)
+      })
       process.exit(1)
     }
 
