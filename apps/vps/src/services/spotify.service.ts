@@ -138,6 +138,72 @@ export const extractBandcampId = (url: string): string | null => {
   return match?.[1] || null
 }
 
+// Fallback HTML parsing for Bandcamp pages
+const parseBandcampHtml = (html: string, url: string) =>
+  Effect.gen(function* () {
+    const metadata: BandcampAlbum = {
+      '@type': 'MusicAlbum',
+      name: '',
+      byArtist: { name: '' },
+      image: '',
+      datePublished: new Date().toISOString()
+    }
+
+    // Extract title from #name-section h2.trackTitle
+    const titleMatch = html.match(
+      /<div[^>]*id="name-section"[^>]*>[\s\S]*?<h2[^>]*class="trackTitle"[^>]*>([^<]+)<\/h2>/
+    )
+    if (titleMatch && titleMatch[1]) {
+      metadata.name = titleMatch[1].trim()
+    } else {
+      return yield* Effect.fail(
+        new SpotifyError({
+          message: 'Could not extract title from Bandcamp page',
+          operation: 'parseBandcampHtml',
+          statusCode: 500
+        })
+      )
+    }
+
+    // Extract artist from #name-section h3 (text after "by ")
+    const artistMatch = html.match(
+      /<div[^>]*id="name-section"[^>]*>[\s\S]*?<h3[^>]*>([\s\S]*?)<\/h3>/
+    )
+    if (artistMatch && artistMatch[1]) {
+      const artistText = artistMatch[1].replace(/<[^>]+>/g, '').trim() // Remove HTML tags
+      const byMatch = artistText.match(/by\s+(.+)/i)
+      if (byMatch && byMatch[1]) {
+        metadata.byArtist = { name: byMatch[1].trim() }
+      }
+    }
+
+    // Extract image from a.popupImage href
+    const imageMatch = html.match(
+      /<a[^>]*class="popupImage"[^>]*href="([^"]+)"/
+    )
+    if (imageMatch && imageMatch[1]) {
+      metadata.image = imageMatch[1]
+    }
+
+    // Extract release date if available (look for patterns like "released" or date formats)
+    const dateMatch = html.match(
+      /(?:released|release date)[^>]*(\d{1,2}\s+\w+\s+\d{4}|\w+\s+\d{1,2},?\s+\d{4}|\d{4}-\d{2}-\d{2})/i
+    )
+    if (dateMatch && dateMatch[1]) {
+      // Try to parse the date, fallback to current date if parsing fails
+      try {
+        const parsedDate = new Date(dateMatch[1])
+        if (!isNaN(parsedDate.getTime())) {
+          metadata.datePublished = parsedDate.toISOString()
+        }
+      } catch (_error) {
+        // Keep default date
+      }
+    }
+
+    return metadata
+  })
+
 // Bandcamp metadata extraction with caching
 const getBandcampMetadata = (url: string) =>
   Effect.gen(function* () {
@@ -184,31 +250,23 @@ const getBandcampMetadata = (url: string) =>
         })
     })
 
-    // Extract JSON-LD structured data
+    let metadata: BandcampAlbum | undefined
+
+    // Try JSON-LD structured data first
     const jsonLdMatch = html.match(
       /<script type="application\/ld\+json">([\s\S]*?)<\/script>/
     )
-    if (!jsonLdMatch || !jsonLdMatch[1]) {
-      return yield* Effect.fail(
-        new SpotifyError({
-          message: 'No structured data found on Bandcamp page',
-          operation: 'getBandcampMetadata',
-          statusCode: 500
-        })
-      )
+    if (jsonLdMatch && jsonLdMatch[1]) {
+      try {
+        metadata = JSON.parse(jsonLdMatch[1])
+      } catch (_error) {
+        // Fall through to HTML parsing
+      }
     }
 
-    let metadata: BandcampAlbum
-    try {
-      metadata = JSON.parse(jsonLdMatch[1])
-    } catch (_error) {
-      return yield* Effect.fail(
-        new SpotifyError({
-          message: 'Failed to parse Bandcamp structured data',
-          operation: 'getBandcampMetadata',
-          statusCode: 500
-        })
-      )
+    // If JSON-LD failed or wasn't found, parse HTML directly
+    if (!metadata) {
+      metadata = yield* parseBandcampHtml(html, url)
     }
 
     // Cache the result
