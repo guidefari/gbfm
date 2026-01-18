@@ -1,6 +1,16 @@
 import { Context, Effect, Layer } from 'effect'
 import type { MiddlewareHandler } from 'hono'
 import { env } from '@/env'
+import {
+  checkPerformanceHealth,
+  recordRequest
+} from '@/lib/performance-monitoring'
+
+// Performance thresholds for request monitoring
+const SLOW_REQUEST_THRESHOLD = 500 // ms - warning
+const VERY_SLOW_REQUEST_THRESHOLD = 2000 // ms - error
+const MEMORY_CHECK_INTERVAL = 60000 // 1 minute
+let lastMemoryCheck = 0
 
 export interface LoggerService {
   readonly log: (
@@ -42,7 +52,50 @@ export function effectLogger(): MiddlewareHandler {
       await next()
       const duration = Date.now() - start
 
-      // Log with Effect logger
+      // Performance monitoring
+      if (duration > VERY_SLOW_REQUEST_THRESHOLD) {
+        Effect.logError('[Performance] Very slow request detected', {
+          method: c.req.method,
+          path: c.req.path,
+          status: c.res.status,
+          duration,
+          threshold: VERY_SLOW_REQUEST_THRESHOLD,
+          severity: 'critical',
+          userAgent: c.req.header('user-agent'),
+          ip: c.req.header('x-forwarded-for') || c.req.header('x-real-ip')
+        }).pipe(Effect.runPromise)
+      } else if (duration > SLOW_REQUEST_THRESHOLD) {
+        Effect.logWarning('[Performance] Slow request detected', {
+          method: c.req.method,
+          path: c.req.path,
+          status: c.res.status,
+          duration,
+          threshold: SLOW_REQUEST_THRESHOLD,
+          severity: 'warning'
+        }).pipe(Effect.runPromise)
+      }
+
+      // Periodic memory usage monitoring
+      const now = Date.now()
+      if (now - lastMemoryCheck > MEMORY_CHECK_INTERVAL) {
+        const memUsage = process.memoryUsage()
+        Effect.logInfo('[Performance] Memory usage check', {
+          rss: Math.round(memUsage.rss / 1024 / 1024), // MB
+          heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024), // MB
+          heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024), // MB
+          external: Math.round(memUsage.external / 1024 / 1024), // MB
+          uptime: Math.round(process.uptime()) // seconds
+        }).pipe(Effect.runPromise)
+        lastMemoryCheck = now
+      }
+
+      // Record request metrics
+      recordRequest(duration, c.res.status >= 400)
+
+      // Periodic health checks
+      checkPerformanceHealth().pipe(Effect.runPromise)
+
+      // Standard request logging
       const logEffect = Effect.log(
         `[INFO] ${c.req.method} ${c.req.path} ${c.res.status} - ${duration}ms`
       )
@@ -56,6 +109,14 @@ export function effectLogger(): MiddlewareHandler {
       }
     } catch (error) {
       const duration = Date.now() - start
+
+      Effect.logError('[Performance] Request failed', {
+        method: c.req.method,
+        path: c.req.path,
+        duration,
+        error: error instanceof Error ? error.message : String(error),
+        severity: 'error'
+      }).pipe(Effect.runPromise)
 
       const logEffect = Effect.logError(
         `[ERROR] ${c.req.method} ${c.req.path} - ${duration}ms - ${error}`
