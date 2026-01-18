@@ -1,3 +1,4 @@
+import { Effect } from 'effect'
 import { env } from '@/env'
 import 'dotenv/config'
 import { drizzle } from 'drizzle-orm/node-postgres'
@@ -21,7 +22,11 @@ const prodPgConfig = {
 }
 
 const config = env.DB_STAGE === 'dev' ? localPgConfig : prodPgConfig
-console.log('connecting to db stage', env.DB_STAGE || 'prod')
+Effect.logInfo('[DB] Connecting to database', {
+  stage: env.DB_STAGE || 'prod',
+  host: config.host,
+  database: config.database
+}).pipe(Effect.runPromise)
 
 const pool = new Pool(config)
 

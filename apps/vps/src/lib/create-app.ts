@@ -1,6 +1,5 @@
 import { OpenAPIHono } from '@hono/zod-openapi'
 import { Effect } from 'effect'
-import type { Schema } from 'hono'
 import { cors } from 'hono/cors'
 import { requestId } from 'hono/request-id'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
@@ -8,7 +7,7 @@ import { notFound, onError, serveEmojiFavicon } from 'stoker/middlewares'
 
 import { env } from '@/env'
 import { effectLogger } from '@/middlewares/effect-logger'
-import type { AppBindings, AppOpenAPI } from './types'
+import type { AppBindings } from './types'
 
 export const corsConfig = {
   origin: (origin: string) => {
@@ -50,18 +49,6 @@ export function createRouter() {
   })
 }
 
-export default function createApp() {
-  const app = createRouter()
-
-  app.use('*', cors(corsConfig))
-
-  app.use(requestId()).use(serveEmojiFavicon('🪿')).use(effectLogger())
-
-  app.notFound(notFound)
-  app.onError(onError)
-  return app
-}
-
 export const createAppEffect = Effect.sync(() => {
   const app = createRouter()
 
@@ -73,7 +60,3 @@ export const createAppEffect = Effect.sync(() => {
 
   return app
 })
-
-export function createTestApp<S extends Schema>(router: AppOpenAPI<S>) {
-  return createApp().route('/', router)
-}

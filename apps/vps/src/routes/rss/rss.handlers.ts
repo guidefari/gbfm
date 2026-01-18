@@ -30,7 +30,10 @@ export const getRSSFeed: AppRouteHandler<GetRSSFeedRoute> = async (c) => {
   const result = await runApp(fetchMixesEffect.pipe(Effect.either))
 
   if (result._tag === 'Left') {
-    console.error('Error generating RSS feed:', result.left)
+    Effect.logError('[RSS] Error generating RSS feed', {
+      error:
+        result.left instanceof Error ? result.left.message : String(result.left)
+    }).pipe(Effect.runPromise)
     return c.text('Internal Server Error', 500)
   }
 

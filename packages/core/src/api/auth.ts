@@ -1,26 +1,24 @@
 import { Data, Effect } from 'effect'
 import { z } from 'zod'
 
-const isDev = process.env.NODE_ENV === 'development'
-
-function logError(
-  context: string,
-  error: unknown,
+function logAuthEvent(
+  level: 'info' | 'warn' | 'error',
+  message: string,
   details?: Record<string, unknown>
 ) {
-  if (!isDev) return
-
-  console.error(`[Auth Error - ${context}]`, {
-    error:
-      error instanceof Error
-        ? {
-            message: error.message,
-            name: error.name,
-            stack: error.stack
-          }
-        : error,
+  const logData = {
+    message,
+    context: 'auth',
     ...details
-  })
+  }
+
+  if (level === 'error') {
+    Effect.logError(`[Auth] ${message}`, logData).pipe(Effect.runPromise)
+  } else if (level === 'warn') {
+    Effect.logWarning(`[Auth] ${message}`, logData).pipe(Effect.runPromise)
+  } else {
+    Effect.logInfo(`[Auth] ${message}`, logData).pipe(Effect.runPromise)
+  }
 }
 
 class AuthError extends Data.TaggedError('AuthError')<{
@@ -82,12 +80,10 @@ export async function login(
   baseUrl: string,
   credentials: LoginRequest
 ): Promise<LoginResponse> {
-  if (isDev) {
-    console.log('[Auth - Login]', {
-      url: `${baseUrl}/auth/signin`,
-      email: credentials.email
-    })
-  }
+  logAuthEvent('info', 'Login attempt', {
+    url: `${baseUrl}/auth/signin`,
+    email: credentials.email
+  })
 
   return Effect.gen(function* () {
     const response = yield* Effect.tryPromise({
@@ -100,9 +96,10 @@ export async function login(
           body: JSON.stringify(credentials)
         }),
       catch: (error) => {
-        logError('Login Fetch Failed', error, {
+        logAuthEvent('error', 'Login fetch failed', {
           url: `${baseUrl}/auth/signin`,
-          email: credentials.email
+          email: credentials.email,
+          error: error instanceof Error ? error.message : String(error)
         })
         return new NetworkError({
           message:
@@ -114,19 +111,17 @@ export async function login(
       }
     })
 
-    if (isDev) {
-      console.log('[Auth - Login Response]', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok
-      })
-    }
+    logAuthEvent('info', 'Login response received', {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok
+    })
 
     if (!response.ok) {
       const errorData = yield* Effect.tryPromise({
         try: () => response.json(),
         catch: () => {
-          logError('Login Error Response Parse Failed', null, {
+          logAuthEvent('error', 'Login error response parse failed', {
             status: response.status,
             statusText: response.statusText
           })
@@ -136,9 +131,7 @@ export async function login(
         }
       })
 
-      if (isDev) {
-        console.error('[Auth - Login Error Response]', errorData)
-      }
+      logAuthEvent('warn', 'Login error response', { errorData })
 
       const errorMessage = z
         .object({ message: z.string() })
@@ -156,8 +149,9 @@ export async function login(
     const data = yield* Effect.tryPromise({
       try: () => response.json(),
       catch: (error) => {
-        logError('Login Response Parse Failed', error, {
-          status: response.status
+        logAuthEvent('error', 'Login response parse failed', {
+          status: response.status,
+          error: error instanceof Error ? error.message : String(error)
         })
         return new AuthError({
           message: 'Failed to parse login response',
@@ -166,25 +160,7 @@ export async function login(
       }
     })
 
-    if (isDev) {
-      const tempData = z
-        .object({
-          user: z.record(z.string(), z.unknown()).optional(),
-          accessToken: z.unknown().optional(),
-          refreshToken: z.unknown().optional()
-        })
-        .safeParse(data)
-
-      console.log('[Auth - Login Data]', {
-        hasUser: tempData.success && !!tempData.data.user,
-        hasAccessToken: tempData.success && !!tempData.data.accessToken,
-        hasRefreshToken: tempData.success && !!tempData.data.refreshToken,
-        userKeys:
-          tempData.success && tempData.data.user
-            ? Object.keys(tempData.data.user)
-            : []
-      })
-    }
+    logAuthEvent('info', 'Login data parsed successfully')
 
     // Map Better Auth response to legacy format
     const validatedData = z
@@ -203,8 +179,9 @@ export async function login(
       .safeParse(data)
 
     if (!validatedData.success) {
-      logError('Login Response Validation Failed', validatedData.error, {
-        receivedData: data
+      logAuthEvent('error', 'Login response validation failed', {
+        receivedData: data,
+        validationError: validatedData.error.message
       })
       return yield* Effect.fail(
         new AuthError({
@@ -237,9 +214,10 @@ export async function login(
       refreshToken: token
     }
 
-    if (isDev) {
-      console.log('[Auth - Login Success]')
-    }
+    logAuthEvent('info', 'Login successful', {
+      userId: mappedResponse.user.id,
+      email: mappedResponse.user.email
+    })
 
     return mappedResponse
   }).pipe(Effect.runPromise)
@@ -249,12 +227,10 @@ export async function refreshAccessToken(
   baseUrl: string,
   refreshToken: string
 ): Promise<RefreshTokenResponse> {
-  if (isDev) {
-    console.log('[Auth - Refresh Token]', {
-      url: `${baseUrl}/auth/refresh-token`,
-      tokenLength: refreshToken.length
-    })
-  }
+  logAuthEvent('info', 'Token refresh attempt', {
+    url: `${baseUrl}/auth/refresh-token`,
+    tokenLength: refreshToken.length
+  })
 
   return Effect.gen(function* () {
     const response = yield* Effect.tryPromise({
@@ -267,8 +243,9 @@ export async function refreshAccessToken(
           body: JSON.stringify({ refreshToken })
         }),
       catch: (error) => {
-        logError('Refresh Token Fetch Failed', error, {
-          url: `${baseUrl}/auth/refresh-token`
+        logAuthEvent('error', 'Refresh token fetch failed', {
+          url: `${baseUrl}/auth/refresh-token`,
+          error: error instanceof Error ? error.message : String(error)
         })
         return new NetworkError({
           message:
@@ -280,16 +257,14 @@ export async function refreshAccessToken(
       }
     })
 
-    if (isDev) {
-      console.log('[Auth - Refresh Token Response]', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok
-      })
-    }
+    logAuthEvent('info', 'Token refresh response received', {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok
+    })
 
     if (!response.ok) {
-      logError('Refresh Token Failed', null, {
+      logAuthEvent('warn', 'Refresh token failed', {
         status: response.status,
         statusText: response.statusText
       })
@@ -303,8 +278,9 @@ export async function refreshAccessToken(
     const data = yield* Effect.tryPromise({
       try: () => response.json(),
       catch: (error) => {
-        logError('Refresh Token Response Parse Failed', error, {
-          status: response.status
+        logAuthEvent('error', 'Refresh token response parse failed', {
+          status: response.status,
+          error: error instanceof Error ? error.message : String(error)
         })
         return new AuthError({
           message: 'Failed to parse token refresh response',
@@ -313,23 +289,14 @@ export async function refreshAccessToken(
       }
     })
 
-    if (isDev) {
-      const tempData = z
-        .object({
-          accessToken: z.unknown().optional()
-        })
-        .safeParse(data)
-
-      console.log('[Auth - Refresh Token Data]', {
-        hasAccessToken: tempData.success && !!tempData.data.accessToken
-      })
-    }
+    logAuthEvent('info', 'Token refresh data parsed successfully')
 
     const parseResult = refreshTokenResponseSchema.safeParse(data)
 
     if (!parseResult.success) {
-      logError('Refresh Token Response Validation Failed', parseResult.error, {
-        receivedData: data
+      logAuthEvent('error', 'Refresh token response validation failed', {
+        receivedData: data,
+        validationError: parseResult.error.message
       })
       return yield* Effect.fail(
         new AuthError({
@@ -339,9 +306,7 @@ export async function refreshAccessToken(
       )
     }
 
-    if (isDev) {
-      console.log('[Auth - Refresh Token Success]')
-    }
+    logAuthEvent('info', 'Token refresh successful')
 
     return parseResult.data
   }).pipe(Effect.runPromise)
@@ -351,12 +316,10 @@ export async function getProfile(
   baseUrl: string,
   accessToken: string
 ): Promise<User> {
-  if (isDev) {
-    console.log('[Auth - Get Profile]', {
-      url: `${baseUrl}/auth/profile`,
-      tokenLength: accessToken.length
-    })
-  }
+  logAuthEvent('info', 'Profile fetch attempt', {
+    url: `${baseUrl}/auth/profile`,
+    tokenLength: accessToken.length
+  })
 
   return Effect.gen(function* () {
     const response = yield* Effect.tryPromise({
@@ -369,8 +332,9 @@ export async function getProfile(
           }
         }),
       catch: (error) => {
-        logError('Get Profile Fetch Failed', error, {
-          url: `${baseUrl}/auth/profile`
+        logAuthEvent('error', 'Get profile fetch failed', {
+          url: `${baseUrl}/auth/profile`,
+          error: error instanceof Error ? error.message : String(error)
         })
         return new NetworkError({
           message:
@@ -382,16 +346,14 @@ export async function getProfile(
       }
     })
 
-    if (isDev) {
-      console.log('[Auth - Get Profile Response]', {
-        status: response.status,
-        statusText: response.statusText,
-        ok: response.ok
-      })
-    }
+    logAuthEvent('info', 'Profile fetch response received', {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok
+    })
 
     if (!response.ok) {
-      logError('Get Profile Failed', null, {
+      logAuthEvent('warn', 'Get profile failed', {
         status: response.status,
         statusText: response.statusText
       })
@@ -405,7 +367,9 @@ export async function getProfile(
     const data = yield* Effect.tryPromise({
       try: () => response.json(),
       catch: (error) => {
-        logError('Get Profile Response Parse Failed', error)
+        logAuthEvent('error', 'Get profile response parse failed', {
+          error: error instanceof Error ? error.message : String(error)
+        })
         return new AuthError({
           message: 'Failed to parse profile response',
           cause: error
@@ -413,19 +377,14 @@ export async function getProfile(
       }
     })
 
-    if (isDev) {
-      const isObject = typeof data === 'object' && data !== null
-      console.log('[Auth - Get Profile Raw Data]', {
-        hasUser: isObject && 'user' in data,
-        dataKeys: isObject ? Object.keys(data) : []
-      })
-    }
+    logAuthEvent('info', 'Profile data parsed successfully')
 
     const profileData = z.object({ user: z.unknown() }).safeParse(data)
 
     if (!profileData.success) {
-      logError('Get Profile Response Structure Invalid', profileData.error, {
-        receivedData: data
+      logAuthEvent('error', 'Get profile response structure invalid', {
+        receivedData: data,
+        validationError: profileData.error.message
       })
       return yield* Effect.fail(
         new AuthError({
@@ -438,8 +397,9 @@ export async function getProfile(
     const userParseResult = userSchema.safeParse(profileData.data.user)
 
     if (!userParseResult.success) {
-      logError('Get Profile User Data Invalid', userParseResult.error, {
-        receivedUser: profileData.data.user
+      logAuthEvent('error', 'Get profile user data invalid', {
+        receivedUser: profileData.data.user,
+        validationError: userParseResult.error.message
       })
       return yield* Effect.fail(
         new AuthError({
@@ -449,12 +409,10 @@ export async function getProfile(
       )
     }
 
-    if (isDev) {
-      console.log('[Auth - Get Profile Success]', {
-        userId: userParseResult.data.id,
-        username: userParseResult.data.username
-      })
-    }
+    logAuthEvent('info', 'Profile fetch successful', {
+      userId: userParseResult.data.id,
+      username: userParseResult.data.username
+    })
 
     return userParseResult.data
   }).pipe(Effect.runPromise)

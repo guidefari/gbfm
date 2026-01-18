@@ -75,7 +75,12 @@ export const uploadFile: AppRouteHandler<UploadFileRoute> = async (c) => {
   if (result._tag === 'Left') {
     const error = result.left
     if (error instanceof S3Error) {
-      console.error('File upload error:', error.message)
+      Effect.logError('[Upload] File upload error', {
+        fileName,
+        fileType,
+        fileSize: file.size,
+        error: error.message
+      }).pipe(Effect.runPromise)
     }
     return c.json(
       { error: 'Failed to upload file' },

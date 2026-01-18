@@ -1,3 +1,4 @@
+import { Effect } from 'effect'
 import { Resource } from 'sst'
 import { z } from 'zod'
 
@@ -58,8 +59,9 @@ function createEnvConfig() {
     return config
   } catch (error) {
     if (error instanceof z.ZodError) {
-      console.error('❌ Invalid env:')
-      console.error(JSON.stringify(error.flatten().fieldErrors, null, 2))
+      Effect.logError('[Env] Invalid environment configuration', {
+        fieldErrors: error.flatten().fieldErrors
+      }).pipe(Effect.runPromise)
     }
     throw new Error('Failed to load environment configuration')
   }

@@ -1,4 +1,5 @@
 import { render } from '@react-email/components'
+import { Effect } from 'effect'
 import React, { type ReactElement } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { sendTemplate } from './ses'
@@ -19,38 +20,51 @@ export async function sendEmail({
   from = 'noreply',
   template
 }: SendEmailOptions): Promise<void> {
-  console.log('🔍 Debug: About to render component:', template.component)
+  Effect.logInfo('[Email] Starting template render', {
+    subject: template.subject
+  }).pipe(Effect.runPromise)
 
   let html: string
   try {
     // Try React Email render first
     html = await render(template.component)
-    console.log('✅ React Email render worked, HTML length:', html.length)
+    Effect.logInfo('[Email] React Email render successful', {
+      htmlLength: html.length
+    }).pipe(Effect.runPromise)
   } catch (error) {
-    console.log('❌ React Email render failed:', error)
-    console.log('🔄 Falling back to React DOM server rendering...')
+    Effect.logWarning('[Email] React Email render failed, trying fallback', {
+      error: error instanceof Error ? error.message : String(error)
+    }).pipe(Effect.runPromise)
 
     // Fallback to React DOM server rendering
     try {
       html = renderToStaticMarkup(template.component)
-      console.log(
-        '✅ React DOM server render worked, HTML length:',
-        html.length
-      )
+      Effect.logInfo('[Email] React DOM fallback render successful', {
+        htmlLength: html.length
+      }).pipe(Effect.runPromise)
     } catch (fallbackError) {
-      console.log('❌ React DOM server render also failed:', fallbackError)
+      Effect.logError(
+        '[Email] Both React Email and React DOM rendering failed',
+        {
+          reactEmailError:
+            error instanceof Error ? error.message : String(error),
+          reactDomError:
+            fallbackError instanceof Error
+              ? fallbackError.message
+              : String(fallbackError)
+        }
+      ).pipe(Effect.runPromise)
       throw new Error(
         `Both React Email and React DOM rendering failed: ${error}, ${fallbackError}`
       )
     }
   }
 
-  console.log(
-    '🔍 Debug: First 200 chars of rendered HTML:',
-    html.substring(0, 200)
-  )
-  console.log('🔍 Debug: HTML contains DOCTYPE?', html.includes('<!DOCTYPE'))
-  console.log('🔍 Debug: HTML contains <html>?', html.includes('<html'))
+  Effect.logInfo('[Email] Template render complete', {
+    htmlLength: html.length,
+    hasDoctype: html.includes('<!DOCTYPE'),
+    hasHtmlTag: html.includes('<html>')
+  }).pipe(Effect.runPromise)
 
   await sendTemplate({
     from,

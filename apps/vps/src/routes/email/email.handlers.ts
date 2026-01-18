@@ -1,5 +1,6 @@
 import { sendMixNotificationEmail } from '@gbfm/email/sender'
 import { and, eq } from 'drizzle-orm'
+import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
@@ -81,9 +82,14 @@ export const sendMixNotification: AppRouteHandler<
         )
 
         if (!canReceive) {
-          console.log(
-            `Skipping ${recipient}: email preferences disabled for mix releases`
-          )
+          Effect.logInfo(
+            '[Email] Skipping recipient due to email preferences',
+            {
+              recipient,
+              userId: user.id,
+              reason: 'mix releases disabled'
+            }
+          ).pipe(Effect.runPromise)
           skipped.push(recipient)
           continue
         }
@@ -128,7 +134,17 @@ export const sendMixNotification: AppRouteHandler<
         sentTo.push(recipient)
         emailIds.push(deliveryLog.id)
       } catch (emailError) {
-        console.error(`Failed to send to ${recipient}:`, emailError)
+        Effect.logError('[Email] Failed to send mix notification email', {
+          recipient,
+          userId: user?.id,
+          mixSlug,
+          mixTitle: metadata?.mixTitle || mix.title,
+          emailLogId: deliveryLog.id,
+          error:
+            emailError instanceof Error
+              ? emailError.message
+              : String(emailError)
+        }).pipe(Effect.runPromise)
 
         // Mark as failed in the log
         await markEmailDeliveryLogAsFailed(

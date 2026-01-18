@@ -2,6 +2,7 @@ import { sendPasswordResetEmail, sendWelcomeEmail } from '@gbfm/email/index'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { admin, bearer } from 'better-auth/plugins'
+import { Effect } from 'effect'
 
 import { db } from '@/db'
 import * as authSchema from '@/db/auth.schema'
@@ -37,14 +38,22 @@ export const auth = betterAuth({
         resetUrl: url,
         expiresIn: '1 hour'
       }).catch((err: Error) => {
-        console.error('Failed to send password reset email:', err)
+        Effect.logError('[Auth] Failed to send password reset email', {
+          userId: user.id,
+          email: user.email,
+          error: err.message
+        }).pipe(Effect.runPromise)
       })
     }
   },
   emailVerification: {
     sendOnSignUp: false,
     sendVerificationEmail: async ({ user, url }) => {
-      console.log('Verification email for:', user.email, 'URL:', url)
+      Effect.logInfo('[Auth] Verification email requested', {
+        userId: user.id,
+        email: user.email,
+        verificationUrl: url
+      }).pipe(Effect.runPromise)
     }
   },
   session: {
@@ -88,7 +97,15 @@ export const auth = betterAuth({
             })
             await markEmailDeliveryLogAsSent(welcomeEmailLog.id)
           } catch (emailError) {
-            console.error('Failed to send welcome email:', emailError)
+            Effect.logError('[Auth] Failed to send welcome email', {
+              userId: user.id,
+              email: user.email,
+              emailLogId: welcomeEmailLog.id,
+              error:
+                emailError instanceof Error
+                  ? emailError.message
+                  : 'Unknown error'
+            }).pipe(Effect.runPromise)
             await markEmailDeliveryLogAsFailed(
               welcomeEmailLog.id,
               emailError instanceof Error ? emailError.message : 'Unknown error'

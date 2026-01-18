@@ -90,7 +90,11 @@ export const shareMix = async (c: Context) => {
   const result = await runApp(program.pipe(Effect.either))
 
   if (result._tag === 'Left') {
-    console.error('Error fetching mix for share:', result.left)
+    Effect.logError('[Share] Error fetching mix for share', {
+      slug,
+      error:
+        result.left instanceof Error ? result.left.message : String(result.left)
+    }).pipe(Effect.runPromise)
     return c.html(
       `
 <!DOCTYPE html>

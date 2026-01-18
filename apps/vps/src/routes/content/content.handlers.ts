@@ -559,7 +559,9 @@ function createAudioOrVideo(
           })
 
           ffmpegProcess.stderr.on('data', (data) => {
-            console.log(`FFmpeg: ${data}`)
+            Effect.logInfo('[Content] FFmpeg processing', {
+              output: data.toString().trim()
+            }).pipe(Effect.runPromise)
           })
         }),
       catch: (error) =>
