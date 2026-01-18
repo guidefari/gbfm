@@ -139,7 +139,7 @@ export const extractBandcampId = (url: string): string | null => {
 }
 
 // Fallback HTML parsing for Bandcamp pages
-const parseBandcampHtml = (html: string, url: string) =>
+const parseBandcampHtml = (html: string, _url: string) =>
   Effect.gen(function* () {
     const metadata: BandcampAlbum = {
       '@type': 'MusicAlbum',
@@ -153,7 +153,7 @@ const parseBandcampHtml = (html: string, url: string) =>
     const titleMatch = html.match(
       /<div[^>]*id="name-section"[^>]*>[\s\S]*?<h2[^>]*class="trackTitle"[^>]*>([^<]+)<\/h2>/
     )
-    if (titleMatch && titleMatch[1]) {
+    if (titleMatch?.[1]) {
       metadata.name = titleMatch[1].trim()
     } else {
       return yield* Effect.fail(
@@ -169,10 +169,10 @@ const parseBandcampHtml = (html: string, url: string) =>
     const artistMatch = html.match(
       /<div[^>]*id="name-section"[^>]*>[\s\S]*?<h3[^>]*>([\s\S]*?)<\/h3>/
     )
-    if (artistMatch && artistMatch[1]) {
+    if (artistMatch?.[1]) {
       const artistText = artistMatch[1].replace(/<[^>]+>/g, '').trim() // Remove HTML tags
       const byMatch = artistText.match(/by\s+(.+)/i)
-      if (byMatch && byMatch[1]) {
+      if (byMatch?.[1]) {
         metadata.byArtist = { name: byMatch[1].trim() }
       }
     }
@@ -181,7 +181,7 @@ const parseBandcampHtml = (html: string, url: string) =>
     const imageMatch = html.match(
       /<a[^>]*class="popupImage"[^>]*href="([^"]+)"/
     )
-    if (imageMatch && imageMatch[1]) {
+    if (imageMatch?.[1]) {
       metadata.image = imageMatch[1]
     }
 
@@ -189,11 +189,11 @@ const parseBandcampHtml = (html: string, url: string) =>
     const dateMatch = html.match(
       /(?:released|release date)[^>]*(\d{1,2}\s+\w+\s+\d{4}|\w+\s+\d{1,2},?\s+\d{4}|\d{4}-\d{2}-\d{2})/i
     )
-    if (dateMatch && dateMatch[1]) {
+    if (dateMatch?.[1]) {
       // Try to parse the date, fallback to current date if parsing fails
       try {
         const parsedDate = new Date(dateMatch[1])
-        if (!isNaN(parsedDate.getTime())) {
+        if (!Number.isNaN(parsedDate.getTime())) {
           metadata.datePublished = parsedDate.toISOString()
         }
       } catch (_error) {
@@ -256,7 +256,7 @@ const getBandcampMetadata = (url: string) =>
     const jsonLdMatch = html.match(
       /<script type="application\/ld\+json">([\s\S]*?)<\/script>/
     )
-    if (jsonLdMatch && jsonLdMatch[1]) {
+    if (jsonLdMatch?.[1]) {
       try {
         metadata = JSON.parse(jsonLdMatch[1])
       } catch (_error) {
