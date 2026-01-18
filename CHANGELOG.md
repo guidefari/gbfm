@@ -1,3 +1,40 @@
+# [2.0.0](https://github.com/guidefari/gbfm/compare/v1.10.0...v2.0.0) (2026-01-18)
+
+
+### Bug Fixes
+
+* update core auth login to use /auth endpoint ([6687db7](https://github.com/guidefari/gbfm/commit/6687db79c7d71b17b63412700e6e3a268b2aa8e4))
+
+
+### Documentation
+
+* update Effect migration status for Phase 6 content/label handler completion ([040f252](https://github.com/guidefari/gbfm/commit/040f25229d79a00f869cf4dd4bf91ae90dc45655))
+
+
+### Features
+
+* Add new Effect-based services for labels, audio, music reminders, posts, and releases, and refactor music reminder handlers to use the new service layer. ([09c2d21](https://github.com/guidefari/gbfm/commit/09c2d21952105c97c0512b00e316eabd4ba1a57b))
+* complete Phase 5 Effect migration - implement remaining services ([66a0f73](https://github.com/guidefari/gbfm/commit/66a0f73246832b62bf7d84f20881167bbc7ebcf3))
+* enhance remaining routes and update migration documentation ([384148d](https://github.com/guidefari/gbfm/commit/384148d30dc6cdd726e74d9262070ff669ff35d4))
+* migrate auth handlers to use UserService ([c6cabb7](https://github.com/guidefari/gbfm/commit/c6cabb798019b4ac56ef93441c01b30e71ecde6e))
+* migrate auth routes to user routes and update routing ([de02785](https://github.com/guidefari/gbfm/commit/de02785ad5f99a015981bc5ed4c224ec3111f8aa))
+* migrate content handlers to use Effect services ([429224f](https://github.com/guidefari/gbfm/commit/429224feaeac464a43eb9931fd8e2fd6a73b8c32))
+* migrate processUpload handler to Effect ([8934835](https://github.com/guidefari/gbfm/commit/8934835ed1e51792bb32cafed57ffbc6b2ff291a))
+* migrate release handlers to use ReleaseService ([1eafe08](https://github.com/guidefari/gbfm/commit/1eafe080b78d70600348c98986865b2521df7d10))
+* update runtime to include new Effect services ([df248b5](https://github.com/guidefari/gbfm/commit/df248b51f3cb7ddeaac3caaaf53f42ace7a6ab97))
+
+
+### BREAKING CHANGES
+
+* Route improvements may affect internal handler structure
+* Runtime now includes additional services that may affect service resolution
+* Auth API endpoints moved from /auth to /user
+* Auth handlers now use Effect-based services instead of direct database operations
+* Release handlers now use Effect-based services instead of direct database operations
+* Handler migration continues with type-safe service adoption
+* Content handlers now use Effect-based services instead of direct database operations
+* Services now use Effect-based functional programming
+
 # [1.10.0](https://github.com/guidefari/gbfm/compare/v1.9.0...v1.10.0) (2026-01-17)
 
 
