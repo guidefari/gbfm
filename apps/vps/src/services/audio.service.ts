@@ -288,6 +288,14 @@ const createEffect = (data: InsertAudio, creatorIds: string[]) =>
       }
     })
 
+    yield* Effect.logInfo('[Content] Audio created', {
+      audioId: result.id,
+      type: result.type,
+      title: result.title,
+      slug: result.slug,
+      creatorCount: creatorIds.length
+    })
+
     return result
   })
 

@@ -56,23 +56,40 @@ const createEffect = (data: NewMusicReminder) =>
       )
     }
 
+    yield* Effect.logInfo('[MusicReminder] Reminder created', {
+      userId: record.userId,
+      reminderId: record.id,
+      musicTitle: record.musicTitle,
+      artistName: record.artistName,
+      reminderDate: record.reminderDate.toISOString()
+    })
+
     return record
   })
 
 const getByUserIdEffect = (userId: string) =>
-  Effect.tryPromise({
-    try: () =>
-      db
-        .select()
-        .from(musicReminder)
-        .where(eq(musicReminder.userId, userId))
-        .orderBy(musicReminder.reminderDate),
-    catch: (error) =>
-      new DatabaseError({
-        message: `Failed to fetch music reminders: ${(error as Error).message}`,
-        operation: 'select',
-        table: 'music_reminder'
-      })
+  Effect.gen(function* () {
+    const reminders = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select()
+          .from(musicReminder)
+          .where(eq(musicReminder.userId, userId))
+          .orderBy(musicReminder.reminderDate),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch music reminders: ${(error as Error).message}`,
+          operation: 'select',
+          table: 'music_reminder'
+        })
+    })
+
+    yield* Effect.logInfo('[MusicReminder] Reminders retrieved', {
+      userId,
+      count: reminders.length
+    })
+
+    return reminders
   })
 
 const updateEffect = (
@@ -152,6 +169,13 @@ const updateEffect = (
       )
     }
 
+    yield* Effect.logInfo('[MusicReminder] Reminder updated', {
+      userId,
+      reminderId: updated.id,
+      musicTitle: updated.musicTitle,
+      artistName: updated.artistName
+    })
+
     return updated
   })
 
@@ -200,6 +224,11 @@ const deleteEffect = (id: string, userId: string) =>
           operation: 'delete',
           table: 'music_reminder'
         })
+    })
+
+    yield* Effect.logInfo('[MusicReminder] Reminder deleted', {
+      userId,
+      reminderId: id
     })
   })
 

@@ -79,6 +79,14 @@ const getByTagEffect = (
         })
     })
 
+    yield* Effect.logInfo('[Content] Posts retrieved by tag', {
+      tag,
+      count: data.length,
+      total,
+      limit,
+      offset
+    })
+
     return {
       data,
       pagination: createPaginationMetadata(total, limit, offset)
@@ -125,6 +133,15 @@ const createEffect = (data: InsertPost, creatorIds: string[]) =>
           table: 'posts'
         })
       }
+    })
+
+    yield* Effect.logInfo('[Content] Post created', {
+      postId: result.id,
+      title: result.title,
+      slug: result.slug,
+      type: result.type,
+      creatorCount: creatorIds.length,
+      tags: result.tags
     })
 
     return result

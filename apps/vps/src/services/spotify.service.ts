@@ -459,8 +459,8 @@ const enrichTrackFromUrlEffect = (url: string) =>
     }
 
     if (isSpotifyUrl(url)) {
-      const trackId = extractSpotifyId(url)
-      if (!trackId) {
+      const id = extractSpotifyId(url)
+      if (!id) {
         return yield* Effect.fail(
           new SpotifyError({
             message: 'Invalid Spotify URL',
@@ -470,24 +470,52 @@ const enrichTrackFromUrlEffect = (url: string) =>
         )
       }
 
-      const data = yield* Effect.tryPromise({
-        try: () => spotifyClient.tracks.get(trackId),
-        catch: (error) =>
-          new SpotifyError({
-            message: `Failed to fetch Spotify track: ${(error as Error).message}`,
-            operation: 'enrichTrackFromUrl',
-            statusCode: 500
-          })
-      })
+      // Check if this is an album URL
+      if (url.includes('/album/')) {
+        const data = yield* Effect.tryPromise({
+          try: () => spotifyClient.albums.get(id),
+          catch: (error) =>
+            new SpotifyError({
+              message: `Failed to fetch Spotify album: ${(error as Error).message}`,
+              operation: 'enrichTrackFromUrl',
+              statusCode: 500
+            })
+        })
 
-      result = {
-        title: data.name,
-        artist: data.artists.map((artist) => artist.name).join(', '),
-        url: data.external_urls.spotify,
-        platform: 'spotify',
-        thumbnailUrl: data.album.images[0]?.url,
-        album: data.album.name,
-        duration: Math.floor(data.duration_ms / 1000)
+        result = {
+          title: data.name,
+          artist: data.artists.map((artist) => artist.name).join(', '),
+          url: data.external_urls.spotify,
+          platform: 'spotify',
+          thumbnailUrl: data.images[0]?.url,
+          album: data.name, // Album title is the album name
+          duration:
+            data.tracks.items.reduce(
+              (total, track) => total + track.duration_ms,
+              0
+            ) / 1000 // Total duration of all tracks
+        }
+      } else {
+        // Handle as track
+        const data = yield* Effect.tryPromise({
+          try: () => spotifyClient.tracks.get(id),
+          catch: (error) =>
+            new SpotifyError({
+              message: `Failed to fetch Spotify track: ${(error as Error).message}`,
+              operation: 'enrichTrackFromUrl',
+              statusCode: 500
+            })
+        })
+
+        result = {
+          title: data.name,
+          artist: data.artists.map((artist) => artist.name).join(', '),
+          url: data.external_urls.spotify,
+          platform: 'spotify',
+          thumbnailUrl: data.album.images[0]?.url,
+          album: data.album.name,
+          duration: Math.floor(data.duration_ms / 1000)
+        }
       }
     } else if (isYouTubeUrl(url)) {
       const videoId = extractYouTubeId(url)

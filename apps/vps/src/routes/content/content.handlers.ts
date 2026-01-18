@@ -378,6 +378,13 @@ function processUploadHelper(
 export const processUpload: AppRouteHandler<ProcessMixUploadRoute> = async (
   c
 ) => {
+  const user = c.get('user')
+
+  Effect.logInfo('[Content] File processing started', {
+    userId: user.id,
+    email: user.email
+  }).pipe(Effect.runPromise)
+
   const program = Effect.gen(function* () {
     const formData = yield* Effect.tryPromise({
       try: () => c.req.formData(),
@@ -440,6 +447,13 @@ export const processUpload: AppRouteHandler<ProcessMixUploadRoute> = async (
   }
 
   // Return file response for successful processing
+  Effect.logInfo('[Content] File processing completed successfully', {
+    userId: user.id,
+    title: result.safeTitle,
+    outputFormat: result.outputFormat,
+    outputSize: result.outputBuffer.length
+  }).pipe(Effect.runPromise)
+
   return new Response(result.outputBuffer, {
     headers: {
       'Content-Type':

@@ -140,6 +140,12 @@ const addFavoriteEffect = (userId: string, audioId: string) =>
       )
     }
 
+    yield* Effect.logInfo('[Favorites] Favorite added', {
+      userId,
+      audioId,
+      favoriteId: favorite.id
+    })
+
     return favorite
   })
 
@@ -194,38 +200,54 @@ const removeFavoriteEffect = (userId: string, audioId: string) =>
           table: 'favorites'
         })
     })
+
+    yield* Effect.logInfo('[Favorites] Favorite removed', {
+      userId,
+      audioId
+    })
   })
 
 const getFavoritesEffect = (userId: string, limit = 20, offset = 0) =>
-  Effect.tryPromise({
-    try: () =>
-      db
-        .select({
-          id: favoritesTable.id,
-          userId: favoritesTable.userId,
-          audioId: favoritesTable.audioId,
-          createdAt: favoritesTable.createdAt,
-          audio: {
-            id: audioTable.id,
-            title: audioTable.title,
-            slug: audioTable.slug,
-            thumbnailUrl: audioTable.thumbnailUrl,
-            type: audioTable.type,
-            url: audioTable.url
-          }
+  Effect.gen(function* () {
+    const favorites = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select({
+            id: favoritesTable.id,
+            userId: favoritesTable.userId,
+            audioId: favoritesTable.audioId,
+            createdAt: favoritesTable.createdAt,
+            audio: {
+              id: audioTable.id,
+              title: audioTable.title,
+              slug: audioTable.slug,
+              thumbnailUrl: audioTable.thumbnailUrl,
+              type: audioTable.type,
+              url: audioTable.url
+            }
+          })
+          .from(favoritesTable)
+          .innerJoin(audioTable, eq(favoritesTable.audioId, audioTable.id))
+          .where(eq(favoritesTable.userId, userId))
+          .orderBy(favoritesTable.createdAt)
+          .limit(limit)
+          .offset(offset),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to get favorites: ${(error as Error).message}`,
+          operation: 'select',
+          table: 'favorites'
         })
-        .from(favoritesTable)
-        .innerJoin(audioTable, eq(favoritesTable.audioId, audioTable.id))
-        .where(eq(favoritesTable.userId, userId))
-        .orderBy(favoritesTable.createdAt)
-        .limit(limit)
-        .offset(offset),
-    catch: (error) =>
-      new DatabaseError({
-        message: `Failed to get favorites: ${(error as Error).message}`,
-        operation: 'select',
-        table: 'favorites'
-      })
+    })
+
+    yield* Effect.logInfo('[Favorites] Favorites retrieved', {
+      userId,
+      count: favorites.length,
+      limit,
+      offset
+    })
+
+    return favorites
   })
 
 // Implementation - simple layer that provides access to the Effects

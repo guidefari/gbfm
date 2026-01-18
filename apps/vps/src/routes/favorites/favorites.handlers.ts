@@ -14,6 +14,11 @@ export const addFavorite: AppRouteHandler<AddFavoriteRoute> = async (c) => {
   const user = c.get('user')
   const { audioId } = c.req.valid('json')
 
+  Effect.logInfo('[API] Add favorite requested', {
+    userId: user.id,
+    audioId
+  }).pipe(Effect.runPromise)
+
   const program = Effect.gen(function* () {
     const favoriteService = yield* FavoriteService
     yield* favoriteService.addFavorite(user.id, audioId)
@@ -42,6 +47,12 @@ export const addFavorite: AppRouteHandler<AddFavoriteRoute> = async (c) => {
   const result = await AppRuntime.runPromise(program)
 
   if ('error' in result) {
+    Effect.logWarning('[API] Add favorite failed', {
+      userId: user.id,
+      audioId,
+      error: result.error,
+      statusCode: result.status
+    }).pipe(Effect.runPromise)
     return c.json({ error: result.error }, result.status)
   }
 
@@ -53,6 +64,11 @@ export const removeFavorite: AppRouteHandler<RemoveFavoriteRoute> = async (
 ) => {
   const user = c.get('user')
   const { audioId } = c.req.valid('param')
+
+  Effect.logInfo('[API] Remove favorite requested', {
+    userId: user.id,
+    audioId
+  }).pipe(Effect.runPromise)
 
   const program = Effect.gen(function* () {
     const favoriteService = yield* FavoriteService
