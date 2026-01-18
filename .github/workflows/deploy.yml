@@ -98,5 +98,5 @@ jobs:
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
 
         run: |
-          bun run sst refresh --stage=prod
+          # bun run sst refresh --stage=prod
           bun run sst deploy --stage=prod
