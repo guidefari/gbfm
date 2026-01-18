@@ -126,7 +126,7 @@ export function BaseAudioPlayer({
     if (!currentTrackId) {
       toast({
         title: 'No track playing',
-        description: 'Play a track first to add it to favorites'
+        description: 'Play a track from the library to add it to favorites'
       })
       return
     }

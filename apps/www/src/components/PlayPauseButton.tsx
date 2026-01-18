@@ -7,18 +7,20 @@ type PlayPauseButtonProps = {
   url: string
   thumbnailUrl?: string
   title: string
+  trackId?: string
 }
 
 export const PlayPauseButton = ({
   url,
   thumbnailUrl,
-  title
+  title,
+  trackId
 }: PlayPauseButtonProps) => {
   const { audioSrc, isPlaying } = useAudioPlayerState()
   const { loadTrack } = useAudioPlayerActions()
 
   const handleClick = () =>
-    loadTrack(url, thumbnailUrl || DEFAULT_IMAGE_URL, title)
+    loadTrack(url, thumbnailUrl || DEFAULT_IMAGE_URL, title, trackId)
 
   if (url !== audioSrc)
     return <GiPlayButton className='default-icon' onClick={handleClick} />

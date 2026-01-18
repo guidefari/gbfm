@@ -53,6 +53,7 @@ export function FavoritesSection() {
                     url={favorite.audio.url}
                     thumbnailUrl={favorite.audio.thumbnailUrl || ''}
                     title={favorite.audio.title}
+                    trackId={favorite.audio.id}
                   />
                 </div>
               </div>

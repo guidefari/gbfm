@@ -58,6 +58,7 @@ export function RecentMixesSection() {
                     url={mix.url}
                     thumbnailUrl={mix.thumbnailUrl || ''}
                     title={mix.title}
+                    trackId={mix.id}
                   />
                 </div>
               </div>
