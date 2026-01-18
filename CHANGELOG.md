@@ -1,3 +1,16 @@
+# [2.1.0](https://github.com/guidefari/gbfm/compare/v2.0.2...v2.1.0) (2026-01-18)
+
+
+### Bug Fixes
+
+* Remove system-wide Pulumi binaries in deploy workflow to prevent conflicts with SST Ion. ([545966c](https://github.com/guidefari/gbfm/commit/545966caa556ce40a306071fc9e8e269b3f81b2b))
+
+
+### Features
+
+* add Bandcamp URL support to Spotify service ([0a0160f](https://github.com/guidefari/gbfm/commit/0a0160f15bf1c6b37b2bb3d5a874e92e710372fa))
+* add HTML fallback parsing for Bandcamp metadata ([f5a1d30](https://github.com/guidefari/gbfm/commit/f5a1d30b13ac893bac0c25c41b576f6ce5e1bdc5))
+
 ## [2.0.2](https://github.com/guidefari/gbfm/compare/v2.0.1...v2.0.2) (2026-01-18)
 
 
