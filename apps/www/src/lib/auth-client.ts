@@ -4,6 +4,7 @@ import { ac, admin, creator, editor, userRole } from './auth-permissions'
 
 export const authClient = createAuthClient({
   baseURL: import.meta.env.VITE_VPS_BASE_URL || 'http://localhost:3003',
+  basePath: '/auth',
   plugins: [
     adminClient({
       ac,
