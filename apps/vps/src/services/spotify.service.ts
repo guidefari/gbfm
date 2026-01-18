@@ -9,6 +9,32 @@ import type {
   Track
 } from '../routes/spotify/spotify.types'
 
+// Bandcamp metadata types
+interface BandcampAlbum {
+  '@type': 'MusicAlbum'
+  name: string
+  byArtist: { name: string } | { name: string }[]
+  image: string
+  datePublished: string
+  track?: {
+    itemListElement: Array<{
+      item: {
+        name: string
+        duration: string
+        '@id': string
+      }
+    }>
+  }
+  description?: string
+}
+
+// Simple in-memory cache for Bandcamp data
+const bandcampCache = new Map<
+  string,
+  { data: BandcampAlbum; timestamp: number }
+>()
+const CACHE_DURATION = 24 * 60 * 60 * 1000 // 24 hours
+
 // Service interface
 export interface SpotifyService {
   readonly getTrack: (id: string) => Effect.Effect<Track, SpotifyError>
@@ -24,7 +50,7 @@ export interface SpotifyService {
       title: string
       artist: string
       url: string
-      platform: 'spotify' | 'youtube' | 'apple_music' | 'other'
+      platform: 'spotify' | 'youtube' | 'apple_music' | 'bandcamp' | 'other'
       thumbnailUrl?: string
       album?: string
       duration?: number
@@ -68,6 +94,9 @@ export const isYouTubeUrl = (url: string): boolean =>
 export const isAppleMusicUrl = (url: string): boolean =>
   url.includes('music.apple.com')
 
+export const isBandcampUrl = (url: string): boolean =>
+  url.includes('bandcamp.com')
+
 export const extractSpotifyId = (url: string): string | null => {
   const patterns = [
     /spotify\.com\/track\/([a-zA-Z0-9]+)/,
@@ -101,6 +130,92 @@ export const extractYouTubeId = (url: string): string | null => {
 
   return null
 }
+
+export const extractBandcampId = (url: string): string | null => {
+  const match =
+    url.match(/bandcamp\.com\/album\/([^/?]+)/) ||
+    url.match(/bandcamp\.com\/track\/([^/?]+)/)
+  return match?.[1] || null
+}
+
+// Bandcamp metadata extraction with caching
+const getBandcampMetadata = (url: string) =>
+  Effect.gen(function* () {
+    // Check cache first
+    const cacheKey = url
+    const cached = bandcampCache.get(cacheKey)
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      return cached.data
+    }
+
+    // Fetch the Bandcamp page
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch(url, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (compatible; MusicMetadataBot/1.0)'
+          }
+        }),
+      catch: (error) =>
+        new SpotifyError({
+          message: `Failed to fetch Bandcamp page: ${(error as Error).message}`,
+          operation: 'getBandcampMetadata',
+          statusCode: 500
+        })
+    })
+
+    if (!response.ok) {
+      return yield* Effect.fail(
+        new SpotifyError({
+          message: `Bandcamp page returned ${response.status}`,
+          operation: 'getBandcampMetadata',
+          statusCode: response.status
+        })
+      )
+    }
+
+    const html = yield* Effect.tryPromise({
+      try: () => response.text(),
+      catch: (error) =>
+        new SpotifyError({
+          message: `Failed to read Bandcamp page content: ${(error as Error).message}`,
+          operation: 'getBandcampMetadata',
+          statusCode: 500
+        })
+    })
+
+    // Extract JSON-LD structured data
+    const jsonLdMatch = html.match(
+      /<script type="application\/ld\+json">([\s\S]*?)<\/script>/
+    )
+    if (!jsonLdMatch || !jsonLdMatch[1]) {
+      return yield* Effect.fail(
+        new SpotifyError({
+          message: 'No structured data found on Bandcamp page',
+          operation: 'getBandcampMetadata',
+          statusCode: 500
+        })
+      )
+    }
+
+    let metadata: BandcampAlbum
+    try {
+      metadata = JSON.parse(jsonLdMatch[1])
+    } catch (_error) {
+      return yield* Effect.fail(
+        new SpotifyError({
+          message: 'Failed to parse Bandcamp structured data',
+          operation: 'getBandcampMetadata',
+          statusCode: 500
+        })
+      )
+    }
+
+    // Cache the result
+    bandcampCache.set(cacheKey, { data: metadata, timestamp: Date.now() })
+
+    return metadata
+  })
 
 // Core service logic - pure Effects with no service dependencies
 const getTrackEffect = (id: string) =>
@@ -279,7 +394,7 @@ const enrichTrackFromUrlEffect = (url: string) =>
       title: string
       artist: string
       url: string
-      platform: 'spotify' | 'youtube' | 'apple_music' | 'other'
+      platform: 'spotify' | 'youtube' | 'apple_music' | 'bandcamp' | 'other'
       thumbnailUrl?: string
       album?: string
       duration?: number
@@ -341,6 +456,47 @@ const enrichTrackFromUrlEffect = (url: string) =>
         artist: 'Unknown Artist',
         url: url,
         platform: 'apple_music'
+      }
+    } else if (isBandcampUrl(url)) {
+      const metadata = yield* getBandcampMetadata(url)
+
+      // Extract artist name (handle both single artist and multiple artists)
+      const artist = Array.isArray(metadata.byArtist)
+        ? metadata.byArtist.map((a: { name: string }) => a.name).join(', ')
+        : metadata.byArtist.name
+
+      // Calculate total duration from tracks if available
+      let totalDuration: number | undefined
+      if (metadata.track?.itemListElement) {
+        totalDuration = metadata.track.itemListElement.reduce(
+          (total: number, track: { item: { duration: string } }) => {
+            const duration = track.item.duration
+            if (duration) {
+              // Parse ISO 8601 duration (e.g., "P00H19M53S")
+              const match = duration.match(
+                /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/
+              )
+              if (match) {
+                const hours = parseInt(match[1] || '0', 10)
+                const minutes = parseInt(match[2] || '0', 10)
+                const seconds = parseInt(match[3] || '0', 10)
+                return total + hours * 3600 + minutes * 60 + seconds
+              }
+            }
+            return total
+          },
+          0
+        )
+      }
+
+      result = {
+        title: metadata.name,
+        artist: artist,
+        url: url,
+        platform: 'bandcamp',
+        thumbnailUrl: metadata.image,
+        album: metadata.name, // For albums, title and album are the same
+        duration: totalDuration
       }
     } else {
       result = {

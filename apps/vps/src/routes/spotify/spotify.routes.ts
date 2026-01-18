@@ -127,7 +127,13 @@ export const enrichTrackFromUrl = createRoute({
         title: z.string(),
         artist: z.string(),
         url: z.string(),
-        platform: z.enum(['spotify', 'youtube', 'apple_music', 'other']),
+        platform: z.enum([
+          'spotify',
+          'youtube',
+          'apple_music',
+          'bandcamp',
+          'other'
+        ]),
         thumbnailUrl: z.string().optional(),
         duration: z.number().optional(),
         album: z.string().optional()
