@@ -1,3 +1,10 @@
+## [2.0.2](https://github.com/guidefari/gbfm/compare/v2.0.1...v2.0.2) (2026-01-18)
+
+
+### Bug Fixes
+
+* version bump ([d0cd6c7](https://github.com/guidefari/gbfm/commit/d0cd6c74935e1c456fa62501f99e62b0c359dc0e))
+
 ## [2.0.1](https://github.com/guidefari/gbfm/compare/v2.0.0...v2.0.1) (2026-01-18)
 
 
