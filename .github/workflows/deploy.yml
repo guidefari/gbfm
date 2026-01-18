@@ -76,6 +76,8 @@ jobs:
       - name: deps
         run: bun install
 
+      # SST Ion manages its own Pulumi binaries. The system-wide ones pre-installed in
+      # the GH Actions runner can be outdated and cause "flag provided but not defined: -root" errors.
       - name: Remove system-wide Pulumi
         run: sudo rm -f /usr/local/bin/pulumi*
 
