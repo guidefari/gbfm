@@ -1,3 +1,10 @@
+## [2.0.1](https://github.com/guidefari/gbfm/compare/v2.0.0...v2.0.1) (2026-01-18)
+
+
+### Bug Fixes
+
+* auth client ([b653694](https://github.com/guidefari/gbfm/commit/b653694cd74a7d1fa0c6e0a6467ed0d2377b919d))
+
 # [2.0.0](https://github.com/guidefari/gbfm/compare/v1.10.0...v2.0.0) (2026-01-18)
 
 
