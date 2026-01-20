@@ -2,6 +2,22 @@ import type { SelectAudio } from '@gbfm/vps/schemas'
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 
+let lastPersistTime = 0
+const PERSIST_INTERVAL = 5000
+
+const persistTimeToStorage = (time: number) => {
+  try {
+    const stored = localStorage.getItem('audio-player-store')
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      parsed.state.currentTime = time
+      localStorage.setItem('audio-player-store', JSON.stringify(parsed))
+    }
+  } catch {
+    // Ignore storage errors
+  }
+}
+
 interface NowPlayingContext {
   url: string
   title: string
@@ -128,15 +144,12 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
           set({ audioRef: ref }, false, 'audioPlayer/setAudioRef')
 
           if (ref) {
-            // Set up event listeners
             ref.onended = () => {
               const { queue, currentIndex } = get()
 
               if (queue.length > 0 && currentIndex < queue.length - 1) {
-                // Play next track in queue
                 get().playNext()
               } else {
-                // End of queue, just pause
                 get().pause()
               }
             }
@@ -153,7 +166,18 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
               )
             }
 
-            // Initialize with persisted state
+            const handleVisibilityChange = () => {
+              if (document.hidden) {
+                const { currentTime } = get()
+                if (currentTime > 0) {
+                  persistTimeToStorage(currentTime)
+                  lastPersistTime = Date.now()
+                }
+              }
+            }
+
+            document.addEventListener('visibilitychange', handleVisibilityChange)
+
             if (!get().isInitialized) {
               get().initialize()
             }
@@ -186,11 +210,15 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
         },
 
         pause: () => {
-          const { audioRef } = get()
+          const { audioRef, currentTime } = get()
           if (!audioRef) return
 
           audioRef.pause()
           set({ isPlaying: false }, false, 'audioPlayer/pause')
+          if (currentTime > 0) {
+            persistTimeToStorage(currentTime)
+            lastPersistTime = Date.now()
+          }
         },
 
         togglePlayPause: () => {
@@ -269,7 +297,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
         },
 
         loadTrack: (src, thumbnailUrl, title, trackId) => {
-          const { audioRef, isPlaying, audioSrc } = get()
+          const { audioRef, isPlaying, audioSrc, currentTime } = get()
           if (!audioRef) return
 
           if (!src) {
@@ -277,19 +305,20 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
             return
           }
 
-          // If same track and currently paused, just play
           if (src === audioSrc && !isPlaying) {
             get().play(title)
             return
           }
 
-          // If same track and playing, pause
           if (src === audioSrc && isPlaying) {
             get().pause()
             return
           }
 
-          // Load new track
+          if (audioSrc && currentTime > 0) {
+            persistTimeToStorage(currentTime)
+          }
+
           audioRef.src = src
           set(
             {
@@ -316,6 +345,8 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
           if (!audioRef) return
 
           const progress = (audioRef.currentTime / audioRef.duration) * 100 || 0
+          const now = Date.now()
+
           set(
             {
               progress,
@@ -325,6 +356,11 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
             false,
             'audioPlayer/updateProgress'
           )
+
+          if (now - lastPersistTime >= PERSIST_INTERVAL) {
+            lastPersistTime = now
+            persistTimeToStorage(audioRef.currentTime)
+          }
         },
 
         updatePlayingState: (playing) => {
@@ -342,21 +378,30 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
         },
 
         initialize: () => {
-          const { audioRef, audioSrc, currentTime, volume, isMuted } = get()
+          const { audioRef, audioSrc, volume, isMuted } = get()
           if (!audioRef) return
 
-          // Restore persisted volume
           audioRef.volume = isMuted ? 0 : volume / 100
 
-          // Restore persisted audio source and position
+          let persistedTime = 0
+          try {
+            const stored = localStorage.getItem('audio-player-store')
+            if (stored) {
+              const parsed = JSON.parse(stored)
+              persistedTime = parsed.state?.currentTime || 0
+            }
+          } catch {
+            // Ignore storage errors
+          }
+
           if (audioSrc) {
             audioRef.src = audioSrc
-            if (currentTime > 0) {
-              // Set currentTime after loadedmetadata event to ensure it works
+            if (persistedTime > 0) {
               audioRef.addEventListener(
                 'loadedmetadata',
                 () => {
-                  audioRef.currentTime = currentTime
+                  audioRef.currentTime = persistedTime
+                  set({ currentTime: persistedTime }, false, 'audioPlayer/restoreTime')
                 },
                 { once: true }
               )
@@ -509,20 +554,16 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
       {
         name: 'audio-player-store',
         partialize: (state) => ({
-          // Only persist these values
-          isPlaying: false, // Always start paused on reload
-          currentTime: state.currentTime,
+          isPlaying: false,
           volume: state.volume,
           isMuted: state.isMuted,
           audioSrc: state.audioSrc,
           thumbnailUrl: state.thumbnailUrl,
           nowPlayingContext: state.nowPlayingContext,
           currentTrackId: state.currentTrackId,
-          // Queue state
           queue: state.queue,
           currentIndex: state.currentIndex,
           isQueueVisible: state.isQueueVisible
-          // Don't persist audioRef, progress, duration, isInitialized
         })
       }
     ),

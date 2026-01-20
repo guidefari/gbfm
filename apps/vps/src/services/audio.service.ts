@@ -64,6 +64,10 @@ const getByTypeEffect = (
 ) =>
   Effect.gen(function* () {
     const { limit, offset, tag } = options
+    yield* Effect.annotateCurrentSpan('audio.type', type)
+    yield* Effect.annotateCurrentSpan('audio.limit', limit)
+    yield* Effect.annotateCurrentSpan('audio.offset', offset)
+    if (tag) yield* Effect.annotateCurrentSpan('audio.tag', tag)
     const whereCondition = tag
       ? and(eq(audioTable.type, type), arrayContains(audioTable.tags, [tag]))
       : eq(audioTable.type, type)
