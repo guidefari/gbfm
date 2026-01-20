@@ -14,7 +14,7 @@ import upload from '@/routes/upload/upload.index'
 import betterAuthRoutes from '@/routes/user/better-auth.routes'
 import user from '@/routes/user/user.index'
 import { db } from './db'
-import { runApp } from './runtime'
+import { runApp, runAppFork } from './runtime'
 import { processPendingReminders } from './services/reminder-processor'
 
 const healthCheckEffect = Effect.tryPromise({
@@ -61,16 +61,11 @@ const cronJobEffect = processPendingReminders.pipe(
       `Cron job failed: ${error instanceof Error ? error.message : String(error)}`
     )
   ),
-  // Repeat every minute
-  Effect.repeat(Schedule.spaced('1 minute'))
+  // Repeat every 30 seconds
+  Effect.repeat(Schedule.spaced('30 seconds'))
 )
 
 const mainEffect = Effect.gen(function* () {
-  yield* Effect.log('🎵 Starting music reminder cron job...')
-
-  // Start cron job in background
-  yield* Effect.fork(cronJobEffect)
-
   // Setup and return app
   return yield* setupRoutesEffect
 })
@@ -100,6 +95,8 @@ const setupGracefulShutdown = () => {
 // Initialize app with Effect
 const initializeApp = async () => {
   setupGracefulShutdown()
+
+  runAppFork(cronJobEffect)
 
   return await runApp(
     mainEffect.pipe(
