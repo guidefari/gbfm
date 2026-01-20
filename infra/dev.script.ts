@@ -210,3 +210,11 @@ new sst.x.DevCommand('Assign_All_Relations_To_User', {
     autostart: false
   }
 })
+
+new sst.x.DevCommand('Otel_Stack', {
+  dev: {
+    command: 'docker compose up tempo grafana prometheus loki promtail -d',
+    directory: './',
+    autostart: false
+  }
+})

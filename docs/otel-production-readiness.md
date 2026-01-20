@@ -93,13 +93,24 @@ The imperative approach (`NodeTracerProvider` initialization) works correctly wi
 
 ### Testing Locally
 
+**Option 1: Console output (default)**
 1. Run the dev server: `bun dev`
 2. Make API requests
 3. Observe span output in console (with `ConsoleSpanExporter`)
 
-For visual tracing, start a local OTEL backend:
-```bash
-docker run -p 3000:3000 -p 4317:4317 -p 4318:4318 docker.io/grafana/otel-lgtm
-```
+**Option 2: Visual tracing with Grafana Tempo**
 
-Then set `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318` and access Grafana at `http://localhost:3000`.
+The project includes a pre-configured observability stack with Grafana Tempo for trace visualization.
+
+1. Start the observability stack from SST dev console: Run `Otel_Stack`
+   - Or manually: `docker compose up tempo grafana prometheus loki promtail -d`
+2. Set the environment variable: `OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318`
+3. Start the VPS app: `bun dev`
+4. Make API requests to generate traces
+5. View traces at http://localhost:3000 (Grafana) → Explore → Select "Tempo" datasource
+
+The stack includes:
+- **Tempo** (port 3200): Trace storage and query backend
+- **Grafana** (port 3000): Visualization UI (default password: admin123)
+- **Prometheus** (port 9090): Metrics collection
+- **Loki** (port 3100): Log aggregation

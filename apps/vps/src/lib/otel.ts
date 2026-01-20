@@ -12,7 +12,7 @@ const isProduction = process.env.NODE_ENV === 'production'
 const otelExporterUrl = process.env.OTEL_EXPORTER_OTLP_ENDPOINT
 
 const createSpanProcessor = () => {
-  if (isProduction && otelExporterUrl) {
+  if (otelExporterUrl) {
     return new BatchSpanProcessor(
       new OTLPTraceExporter({
         url: `${otelExporterUrl}/v1/traces`
