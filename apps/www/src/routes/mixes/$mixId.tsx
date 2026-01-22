@@ -1,6 +1,6 @@
 import type { SelectMdxCompiledAudio } from '@gbfm/vps/schemas'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { Edit } from 'lucide-react'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { ArrowLeft, Edit } from 'lucide-react'
 import * as React from 'react'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { Button } from '@/components/ui/button'
@@ -114,7 +114,17 @@ function MixPage() {
 
   if (!mix) return <div>No data</div>
 
-  return <MixDetails mix={mix} />
+  return (
+    <div className='max-w-3xl mx-auto px-4 py-6'>
+      <Link
+        to='/mixes'
+        className='inline-flex items-center gap-1 mb-4 text-sm text-muted-foreground hover:text-foreground transition-colors'>
+        <ArrowLeft className='w-4 h-4' />
+        Mixes
+      </Link>
+      <MixDetails mix={mix} />
+    </div>
+  )
 }
 
 function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {

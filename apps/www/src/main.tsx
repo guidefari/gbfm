@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createRouter, RouterProvider } from '@tanstack/react-router'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
+import { MAIN_SCROLL_CONTAINER_ID } from './lib/constants'
 import { routeTree } from './routeTree.gen'
 import './styles/main.css'
 import { PostHogProvider } from 'posthog-js/react'
@@ -13,6 +14,8 @@ import { useAuthStore } from './store/auth'
 const router = createRouter({
   routeTree,
   defaultPreload: 'intent',
+  scrollRestoration: true,
+  scrollToTopSelectors: [() => document.getElementById(MAIN_SCROLL_CONTAINER_ID)],
   context: {
     auth: {
       user: null,

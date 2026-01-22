@@ -4,6 +4,7 @@ import AudioPlayer from '@/components/AudioPlayer'
 import FullscreenAudioPlayer from '@/components/FullscreenAudioPlayer'
 import { QueueColumn } from '@/components/queue/QueueColumn'
 import { useAudioPlayerInitializer } from '@/hooks/useAudioPlayer'
+import { MAIN_SCROLL_CONTAINER_ID } from '@/lib/constants'
 import { useUIStore } from '@/store'
 import { useAudioPlayerState } from '@/store/audioPlayer'
 
@@ -38,7 +39,7 @@ export default function AppShell({ children }: Props) {
         <DesktopSideNav />
       </div>
       <div className='flex flex-col h-screen overflow-hidden'>
-        <main className='flex-1 overflow-y-auto bg-background'>{children}</main>
+        <main id={MAIN_SCROLL_CONTAINER_ID} className='flex-1 overflow-y-auto bg-background'>{children}</main>
 
         {shouldShowFullPlayer && (
           <div className='flex-shrink-0 hidden sm:block'>
