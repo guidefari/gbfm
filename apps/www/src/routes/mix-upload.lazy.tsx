@@ -1,6 +1,6 @@
 'use client'
 
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { createLazyFileRoute, useRouter } from '@tanstack/react-router'
 import {
   FileText,
@@ -13,7 +13,7 @@ import {
   Upload,
   X
 } from 'lucide-react'
-import { useId, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import {
   type TrackEntry,
   TracklistEditor
@@ -28,23 +28,12 @@ import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/use-toast'
-import { fetcher, VPS_BASE_URL } from '@/lib/http'
+import { fetcher, useAudioBySlug, useAudioByType, VPS_BASE_URL } from '@/lib/http'
 import { useAuthStore } from '@/store'
 
 export const Route = createLazyFileRoute('/mix-upload')({
   component: MixUploadPage
 })
-
-const INITIAL_TAGS = [
-  'House',
-  'Techno',
-  'Ambient',
-  'Drum & Bass',
-  'Garage',
-  'Disco',
-  'Deep House',
-  'Afro House'
-]
 
 interface MixFormData {
   title: string
@@ -67,6 +56,17 @@ function MixUploadPage() {
     tags?: string[]
   }
   const isEditMode = !!search.edit
+
+  const { data: allMixes } = useAudioByType('mix')
+  const availableTags = useMemo(() => {
+    const tagSet = new Set<string>()
+    allMixes?.forEach((mix) => {
+      mix.tags?.forEach((t: string) => tagSet.add(t))
+    })
+    return Array.from(tagSet).sort()
+  }, [allMixes])
+
+  const { data: existingMix, isPending: mixLoading } = useAudioBySlug('mix', search.edit || '')
 
   const [formData, setFormData] = useState<MixFormData>(() => ({
     title: search.title || '',
@@ -95,6 +95,44 @@ function MixUploadPage() {
   const audioRef = useRef<HTMLAudioElement>(null)
   const { user } = useAuthStore()
   const router = useRouter()
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    if (existingMix && isEditMode) {
+      setFormData((prev) => ({
+        ...prev,
+        title: existingMix.title || prev.title,
+        description: existingMix.description || prev.description,
+        slug: existingMix.slug || prev.slug,
+        content: existingMix.content || prev.content,
+        thumbnailUrl: existingMix.thumbnailUrl || prev.thumbnailUrl,
+        tags: existingMix.tags || prev.tags
+      }))
+      if (existingMix.thumbnailUrl) {
+        setArtworkPreview(existingMix.thumbnailUrl)
+      }
+    }
+  }, [existingMix, isEditMode])
+
+  const updateTagsMutation = useMutation({
+    mutationFn: (tags: string[]) =>
+      fetcher(`${VPS_BASE_URL}/content/audio/mix/${search.edit}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ tags })
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['audio', 'mix'] })
+      queryClient.invalidateQueries({ queryKey: ['audio', 'mix', search.edit] })
+      toast({ title: 'Tags updated' })
+    },
+    onError: (err: Error) => {
+      toast({
+        title: 'Failed to update tags',
+        description: err.message,
+        variant: 'destructive'
+      })
+    }
+  })
 
   const artworkUploadId = useId()
 
@@ -295,12 +333,17 @@ function MixUploadPage() {
   }
 
   const toggleTag = (tag: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      tags: prev.tags.includes(tag)
+    setFormData((prev) => {
+      const newTags = prev.tags.includes(tag)
         ? prev.tags.filter((t) => t !== tag)
         : [...prev.tags, tag]
-    }))
+
+      if (isEditMode) {
+        updateTagsMutation.mutate(newTags)
+      }
+
+      return { ...prev, tags: newTags }
+    })
   }
 
   const addNewTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -388,6 +431,14 @@ function MixUploadPage() {
   }
 
   const isUploading = uploadStep !== 'idle' && uploadStep !== 'success'
+
+  if (mixLoading && isEditMode) {
+    return (
+      <div className='flex items-center justify-center min-h-[50vh]'>
+        <Loader2 className='w-8 h-8 animate-spin text-gb-highlight' />
+      </div>
+    )
+  }
 
   return (
     <div className='px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8'>
@@ -523,9 +574,12 @@ function MixUploadPage() {
                     <div className='space-y-2'>
                       <Label className='text-gb-pastel-green-1'>
                         Genre Tags
+                        {updateTagsMutation.isPending && isEditMode && (
+                          <Loader2 className='inline w-3 h-3 ml-2 animate-spin' />
+                        )}
                       </Label>
                       <div className='flex flex-wrap gap-2 mb-4'>
-                        {INITIAL_TAGS.map((tag) => (
+                        {availableTags.map((tag) => (
                           <button
                             key={tag}
                             type='button'
@@ -552,7 +606,7 @@ function MixUploadPage() {
                       {formData.tags.length > 0 && (
                         <div className='flex flex-wrap gap-2 mt-3'>
                           {formData.tags
-                            .filter((tag) => !INITIAL_TAGS.includes(tag))
+                            .filter((tag) => !availableTags.includes(tag))
                             .map((tag) => (
                               <Badge
                                 key={tag}
