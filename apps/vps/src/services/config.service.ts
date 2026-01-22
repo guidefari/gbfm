@@ -42,7 +42,7 @@ function getResourceValue<T extends string | number>(
             ? Number(resourceValue)
             : fallback
 
-      if (isNaN(numValue)) {
+      if (Number.isNaN(numValue)) {
         throw new Error(
           `Invalid number value for ${resourcePath}: ${resourceValue}`
         )
