@@ -1,20 +1,20 @@
 #!/usr/bin/env bun
 
-import { Resource } from "sst";
+import { config } from "../src/services/config.service";
 
-console.log(Resource.DatabasePassword.value);
-console.log(Resource.DatabaseUser.value);
-console.log(Resource.DatabaseHost.value);
-console.log(Resource.DatabaseName.value);
+console.log(config.database.password);
+console.log(config.database.user);
+console.log(config.database.host);
+console.log(config.database.name);
 
 Bun.spawnSync(["psql"], {
 	stdout: "inherit",
 	stderr: "inherit",
 	env: {
 		...process.env,
-		PGPASSWORD: Resource.DatabasePassword.value,
-		PGUSER: Resource.DatabaseUser.value,
-		PGHOST: Resource.DatabaseHost.value,
-		PGDATABASE: Resource.DatabaseName.value,
+		PGPASSWORD: config.database.password,
+		PGUSER: config.database.user,
+		PGHOST: config.database.host,
+		PGDATABASE: config.database.name,
 	},
 });

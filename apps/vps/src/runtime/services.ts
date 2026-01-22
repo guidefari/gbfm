@@ -2,6 +2,7 @@ import { Context, Layer } from 'effect'
 import { db } from '@/db'
 import { LoggerServiceLive } from '@/middlewares/effect-logger'
 import { AudioServiceLive } from '@/services/audio.service'
+import { ConfigServiceLive } from '@/services/config.service'
 import { EmailServiceLive } from '@/services/email.service'
 import { FavoriteServiceLive } from '@/services/favorite.service'
 import { LabelServiceLive } from '@/services/label.service'
@@ -25,6 +26,7 @@ export const DatabaseServiceLive = Layer.succeed(DatabaseService, {
 })
 
 export const AppLayer = Layer.mergeAll(
+  ConfigServiceLive,
   DatabaseServiceLive,
   LoggerServiceLive,
   EmailServiceLive,

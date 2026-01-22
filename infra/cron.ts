@@ -15,7 +15,7 @@ export const dbBackupCron = new sst.aws.Cron('DatabaseBackupCron', {
 })
 
 export const testFunction = new sst.aws.Function('BackupTaskInvoker', {
-  handler: 'apps/vps/scripts/invoke-backup-task.handler',
+  handler: 'apps/cron/invoke-backup-task.handler',
   dev: false,
   url: true,
   link: [dbBackupTask],

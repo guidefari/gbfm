@@ -100,9 +100,7 @@ const initializeApp = async () => {
 
   return await runApp(
     mainEffect.pipe(
-      Effect.tap(() =>
-        Effect.log('🎵 Music reminder cron job initialized (runs every minute)')
-      ),
+      Effect.tap(() => Effect.log('App initialized successfully')),
       Effect.tapError((error) =>
         Effect.logError(`❌ Failed to initialize app: ${error}`)
       )

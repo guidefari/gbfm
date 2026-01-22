@@ -1,5 +1,6 @@
 import { type Effect, ManagedRuntime } from 'effect'
 import type { AudioService } from '@/services/audio.service'
+import type { ConfigService } from '@/services/config.service'
 import type { EmailService } from '@/services/email.service'
 import type { FavoriteService } from '@/services/favorite.service'
 import type { LabelService } from '@/services/label.service'
@@ -14,6 +15,7 @@ import type { DatabaseService } from './services'
 import { AppLayer } from './services'
 
 type AppServices =
+  | ConfigService
   | DatabaseService
   | EmailService
   | FavoriteService

@@ -4,9 +4,8 @@ import { cors } from 'hono/cors'
 import { requestId } from 'hono/request-id'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { notFound, onError, serveEmojiFavicon } from 'stoker/middlewares'
-
-import { env } from '@/env'
 import { effectLogger } from '@/middlewares/effect-logger'
+import { config } from '@/services/config.service'
 import type { AppBindings } from './types'
 
 export const corsConfig = {
@@ -17,7 +16,7 @@ export const corsConfig = {
       'http://localhost:3003',
       'https://www.goosebumps.fm',
       'https://goosebumps.fm',
-      env.FRONTEND_URL
+      config.urls.frontend
     ]
     if (allowedOrigins.includes(origin)) {
       return origin

@@ -2,14 +2,14 @@ import { Effect } from 'effect'
 import pino from 'pino'
 import pretty from 'pino-pretty'
 
-import { env } from '@/env'
+import { config } from '@/services/config.service'
 
 const logger = pino(
   {
-    level: env.LOG_LEVEL || 'info',
+    level: config.app.logLevel || 'info',
     name: 'db-query'
   },
-  env.NODE_ENV === 'production' ? undefined : pretty()
+  config.app.nodeEnv === 'production' ? undefined : pretty()
 )
 
 // Performance thresholds

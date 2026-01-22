@@ -1,7 +1,7 @@
 import { SpotifyApi as SpotifyApiClient } from '@spotify/web-api-ts-sdk'
 import { Context, Effect, Layer } from 'effect'
-import { env } from '@/env'
 import { SpotifyError } from '@/errors'
+import { config } from '@/services/config.service'
 import type {
   Album,
   Playlist,
@@ -65,8 +65,8 @@ export const SpotifyService =
 
 // Spotify client instance
 const spotifyClient = SpotifyApiClient.withClientCredentials(
-  env.SPOTIFY_CLIENT_ID,
-  env.SPOTIFY_CLIENT_SECRET
+  config.spotify.clientId,
+  config.spotify.clientSecret
 )
 
 export const getIdFromSpotifyUrl = (url: string): string | null => {

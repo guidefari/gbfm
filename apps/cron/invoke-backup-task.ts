@@ -23,8 +23,8 @@ export const handler = async () => {
       body: JSON.stringify({
         success: true,
         message: "Database backup task started",
-        taskArn: result.arn
-      })
+        taskArn: result.arn,
+      }),
     };
   } catch (error) {
     console.error("❌ Failed to invoke backup task:", error);
@@ -34,8 +34,8 @@ export const handler = async () => {
       body: JSON.stringify({
         success: false,
         error: String(error),
-        message: error instanceof Error ? error.message : "Unknown error"
-      })
+        message: error instanceof Error ? error.message : "Unknown error",
+      }),
     };
   }
 };

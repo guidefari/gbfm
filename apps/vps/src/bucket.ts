@@ -24,7 +24,7 @@ export async function uploadToS3({
     })
   )
   // Don't return the direct S3 URL, as it won't work with the router
-  // The actual URL will be constructed in the calling code using Resource.BucketRouter.url
+  // The actual URL will be constructed in the calling code using env.BUCKET_ROUTER_URL
   return key
 }
 

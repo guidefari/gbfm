@@ -71,7 +71,7 @@ const deleteFileEffect = (key: string, bucketName: string) =>
       })
   })
 
-// Implementation - simple layer that provides access to the Effects
+// Implementation - simple layer (effects are pure functions)
 export const S3ServiceLive = Layer.succeed(S3Service, {
   uploadFile: uploadFileEffect,
   deleteFile: deleteFileEffect

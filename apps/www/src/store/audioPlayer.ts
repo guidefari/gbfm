@@ -176,7 +176,10 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
               }
             }
 
-            document.addEventListener('visibilitychange', handleVisibilityChange)
+            document.addEventListener(
+              'visibilitychange',
+              handleVisibilityChange
+            )
 
             if (!get().isInitialized) {
               get().initialize()
@@ -401,7 +404,11 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
                 'loadedmetadata',
                 () => {
                   audioRef.currentTime = persistedTime
-                  set({ currentTime: persistedTime }, false, 'audioPlayer/restoreTime')
+                  set(
+                    { currentTime: persistedTime },
+                    false,
+                    'audioPlayer/restoreTime'
+                  )
                 },
                 { once: true }
               )

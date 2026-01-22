@@ -2,15 +2,15 @@ import { pinoLogger as logger } from 'hono-pino'
 import pino from 'pino'
 import pretty from 'pino-pretty'
 
-import { env } from '@/env'
+import { config } from '@/services/config.service'
 
 export function pinoLogger() {
   return logger({
     pino: pino(
       {
-        level: env.LOG_LEVEL || 'info'
+        level: config.app.logLevel || 'info'
       },
-      env.NODE_ENV === 'production' ? undefined : pretty()
+      config.app.nodeEnv === 'production' ? undefined : pretty()
     )
   })
 }

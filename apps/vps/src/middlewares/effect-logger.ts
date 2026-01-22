@@ -1,10 +1,10 @@
 import { Context, Effect, Layer } from 'effect'
 import type { MiddlewareHandler } from 'hono'
-import { env } from '@/env'
 import {
   checkPerformanceHealth,
   recordRequest
 } from '@/lib/performance-monitoring'
+import { config } from '@/services/config.service'
 
 // Performance thresholds for request monitoring
 const SLOW_REQUEST_THRESHOLD = 500 // ms - warning
@@ -100,7 +100,7 @@ export function effectLogger(): MiddlewareHandler {
         `[INFO] ${c.req.method} ${c.req.path} ${c.res.status} - ${duration}ms`
       )
 
-      if (env.NODE_ENV === 'production') {
+      if (config.app.nodeEnv === 'production') {
         await Effect.runPromise(logEffect)
       } else {
         Effect.logInfo(
@@ -122,7 +122,7 @@ export function effectLogger(): MiddlewareHandler {
         `[ERROR] ${c.req.method} ${c.req.path} - ${duration}ms - ${error}`
       )
 
-      if (env.NODE_ENV === 'production') {
+      if (config.app.nodeEnv === 'production') {
         await Effect.runPromise(logEffect)
       } else {
         Effect.logError(

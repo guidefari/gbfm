@@ -2,7 +2,7 @@ import { log } from 'node:console'
 import { readdir } from 'node:fs/promises'
 import path from 'node:path'
 import grayMatter from 'gray-matter'
-import { Resource } from 'sst'
+import { config } from '../services/config.service'
 
 // Stub type to avoid import issues
 type ContentPrefixes = 'microPost' | 'post' | 'mix' | 'label' | 'user'
@@ -47,7 +47,7 @@ export const readContentsOfFilesInFolder = async (
         slug,
         thumbnailUrl: gray.data.thumbnailUrl || fallbackThumbnailUrl,
         draft: gray.data.draft || false,
-        url: `${Resource.Router.url}/mixes/${mp3Name}`
+        url: `${config.urls.router}/mixes/${mp3Name}`
       }
 
       // InsertMixSchema.parse(obj);

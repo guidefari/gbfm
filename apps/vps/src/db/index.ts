@@ -1,33 +1,22 @@
 import { Effect } from 'effect'
-import { env } from '@/env'
+import { config } from '@/services/config.service'
 import 'dotenv/config'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
-import { Resource } from 'sst'
 
-const localPgConfig = {
-  host: 'localhost',
-  port: 5432,
-  user: 'postgres',
-  password: 'postgres',
-  database: 'postgres'
+const dbConfig = {
+  host: config.database.host,
+  port: config.database.port,
+  user: config.database.user,
+  password: config.database.password,
+  database: config.database.name
 }
-
-const prodPgConfig = {
-  host: Resource.DatabaseHost.value,
-  port: Number(Resource.DatabasePort.value),
-  user: Resource.DatabaseUser.value,
-  password: Resource.DatabasePassword.value,
-  database: Resource.DatabaseName.value
-}
-
-const config = env.DB_STAGE === 'dev' ? localPgConfig : prodPgConfig
 Effect.logInfo('[DB] Connecting to database', {
-  stage: env.DB_STAGE || 'prod',
-  host: config.host,
-  database: config.database
+  stage: config.app.dbStage || 'prod',
+  host: dbConfig.host,
+  database: dbConfig.database
 }).pipe(Effect.runPromise)
 
-const pool = new Pool(config)
+const pool = new Pool(dbConfig)
 
 export const db = drizzle(pool)

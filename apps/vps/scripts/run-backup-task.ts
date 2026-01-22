@@ -1,5 +1,5 @@
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { Resource } from "sst";
+import { config } from "../src/services/config.service";
 import {
   isPgDumpAvailable,
   createBackupWithPgDump,
@@ -23,18 +23,18 @@ async function runBackup() {
   const filename = `backup-${timestamp}.sql`;
 
   try {
-    const config: BackupConfig = {
-      password: Resource.DatabasePassword.value,
-      user: Resource.DatabaseUser.value,
-      host: Resource.DatabaseHost.value,
-      database: Resource.DatabaseName.value,
-      port: Resource.DatabasePort.value,
+    const backupConfig: BackupConfig = {
+      password: config.database.password,
+      user: config.database.user,
+      host: config.database.host,
+      database: config.database.name,
+      port: config.database.port.toString(),
     };
 
     console.log(`📊 Database Configuration:`);
-    console.log(`   Database: ${config.database}`);
-    console.log(`   Host: ${config.host}:${config.port}`);
-    console.log(`   User: ${config.user}`);
+    console.log(`   Database: ${backupConfig.database}`);
+    console.log(`   Host: ${backupConfig.host}:${backupConfig.port}`);
+    console.log(`   User: ${backupConfig.user}`);
 
     console.log("\n🔍 Checking for backup tools...");
     const hasPgDump = await isPgDumpAvailable();
@@ -44,7 +44,7 @@ async function runBackup() {
     }
 
     console.log("\n📦 Using pg_dump for backup");
-    const sqlDump = await createBackupWithPgDump(config);
+    const sqlDump = await createBackupWithPgDump(backupConfig);
 
     const backupData = Buffer.from(sqlDump);
     const backupSizeMB = (backupData.length / 1024 / 1024).toFixed(2);
@@ -57,13 +57,13 @@ async function runBackup() {
 
     await s3Client.send(
       new PutObjectCommand({
-        Bucket: Resource.DatabaseBackups.name,
+        Bucket: config.buckets.databaseBackups,
         Key: filename,
         Body: backupData,
         ContentType: "application/sql",
         Metadata: {
           timestamp: new Date().toISOString(),
-          database: config.database,
+          database: backupConfig.database,
           stage: process.env.SST_STAGE || "dev",
           method: "pg_dump",
           source: "ecs-task"
@@ -72,7 +72,7 @@ async function runBackup() {
     );
 
     console.log(`\n✅ Upload successful!`);
-    console.log(`   Bucket: ${Resource.DatabaseBackups.name}`);
+    console.log(`   Bucket: ${config.buckets.databaseBackups}`);
     console.log(`   Key: ${filename}`);
     console.log(`   Size: ${backupSizeMB} MB`);
 

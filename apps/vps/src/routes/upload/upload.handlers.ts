@@ -1,9 +1,9 @@
 import { Effect } from 'effect'
-import { Resource } from 'sst'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { S3Error } from '@/errors'
 import type { AppRouteHandler } from '@/lib/types'
 import { runApp } from '@/runtime'
+import { ConfigService } from '@/services/config.service'
 import { S3Service } from '@/services/s3.service'
 
 import type { UploadFileRoute } from './upload.routes'
@@ -53,11 +53,12 @@ export const uploadFile: AppRouteHandler<UploadFileRoute> = async (c) => {
   const fileName = `${fileType}_${timestamp}_${sanitizedName}`
 
   const program = Effect.gen(function* () {
+    const config = yield* ConfigService
     const s3Service = yield* S3Service
     const fileBuffer = Buffer.from(
       yield* Effect.promise(() => file.arrayBuffer())
     )
-    const bucketName = Resource.User_Content.name
+    const bucketName = config.buckets.userContent
 
     const key = yield* s3Service.uploadFile(
       fileName,
@@ -66,7 +67,7 @@ export const uploadFile: AppRouteHandler<UploadFileRoute> = async (c) => {
       bucketName
     )
 
-    const publicUrl = `${Resource.Router.url}/user-content/${key}`
+    const publicUrl = `${config.urls.router}/user-content/${key}`
     return { url: publicUrl, key }
   })
 

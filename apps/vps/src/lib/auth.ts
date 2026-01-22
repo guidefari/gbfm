@@ -10,12 +10,12 @@ import {
   EMAIL_DELIVERY_STATUSES,
   EMAIL_NOTIFICATION_TYPES
 } from '@/db/email.schema'
-import { env } from '@/env'
 import {
   createEmailDeliveryLog,
   markEmailDeliveryLogAsFailed,
   markEmailDeliveryLogAsSent
 } from '@/repositories/email-delivery-log.repository'
+import { config } from '@/services/config.service'
 import {
   ac,
   admin as adminRole,
@@ -65,14 +65,14 @@ export const auth = betterAuth({
     }
   },
   trustedOrigins: [
-    env.FRONTEND_URL,
+    config.urls.frontend,
     'http://localhost:5173',
     'http://localhost:3003',
     'https://www.goosebumps.fm',
     'https://goosebumps.fm'
   ],
-  secret: env.BETTER_AUTH_SECRET,
-  baseURL: env.BETTER_AUTH_URL,
+  secret: config.auth.betterAuthSecret,
+  baseURL: config.auth.betterAuthUrl,
   basePath: '/auth',
   databaseHooks: {
     user: {
@@ -93,7 +93,7 @@ export const auth = betterAuth({
             await sendWelcomeEmail({
               to: user.email,
               username: user.name,
-              loginUrl: `${env.FRONTEND_URL}/auth/signin`
+              loginUrl: `${config.urls.frontend}/auth/signin`
             })
             await markEmailDeliveryLogAsSent(welcomeEmailLog.id)
           } catch (emailError) {
