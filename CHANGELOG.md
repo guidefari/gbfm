@@ -1,3 +1,20 @@
+# [2.2.0](https://github.com/guidefari/gbfm/compare/v2.1.0...v2.2.0) (2026-01-22)
+
+
+### Bug Fixes
+
+* cron job initialisation ([d920a30](https://github.com/guidefari/gbfm/commit/d920a302dfeedbf4b61b037564d97ddd083a7953))
+* favouriting tracks ([6e5789c](https://github.com/guidefari/gbfm/commit/6e5789c943bb42c4e3e6fc05d25ca657a4f5486c))
+* warning ([2e8ae12](https://github.com/guidefari/gbfm/commit/2e8ae1274891c01e37732855e5611336afeaac91))
+
+
+### Features
+
+* Add structured Effect logging to services and API handlers, and document implementation progress. ([b0e3740](https://github.com/guidefari/gbfm/commit/b0e3740bbe54f5dc7de7ebce22259a858e18b7bc))
+* Implement comprehensive performance monitoring for database queries and HTTP requests with severity-based logging and health checks. ([5cf2da1](https://github.com/guidefari/gbfm/commit/5cf2da1e3e32af3b98583d9bbacc8ec5170a87fd))
+* Integrate OpenTelemetry distributed tracing with Effect and add initial service spans. ([47101fb](https://github.com/guidefari/gbfm/commit/47101fb3f5f46e16fd84654085b0efcd5934822b))
+* Introduce Effect-based logging middleware and integrate it across the application services. ([27381c1](https://github.com/guidefari/gbfm/commit/27381c14b740db5d526b0af84ae80e18bb5f13f7))
+
 # [2.1.0](https://github.com/guidefari/gbfm/compare/v2.0.2...v2.1.0) (2026-01-18)
 
 
