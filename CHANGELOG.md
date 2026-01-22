@@ -1,3 +1,10 @@
+## [2.2.1](https://github.com/guidefari/gbfm/compare/v2.2.0...v2.2.1) (2026-01-22)
+
+
+### Bug Fixes
+
+* only fetch favourites when logged in ([1163f92](https://github.com/guidefari/gbfm/commit/1163f928fd35642a29412e5760619388e03fc63c))
+
 # [2.2.0](https://github.com/guidefari/gbfm/compare/v2.1.0...v2.2.0) (2026-01-22)
 
 
