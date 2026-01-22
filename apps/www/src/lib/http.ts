@@ -13,6 +13,7 @@ import {
   useQueryClient
 } from '@tanstack/react-query'
 import type { User } from '@/store/auth'
+import { useAuthStore } from '@/store/auth'
 import type {
   AlbumApiResponse,
   PlaylistApiResponse,
@@ -367,12 +368,14 @@ export type FavoritesResponse = {
 }
 
 export function useFavorites() {
+  const { isAuthenticated } = useAuthStore()
   const { data, error, isPending, refetch } = useQuery<
     FavoritesResponse,
     Error
   >({
     queryKey: ['favorites'],
-    queryFn: async () => fetcher(`${VPS_BASE_URL}/favorites`)
+    queryFn: async () => fetcher(`${VPS_BASE_URL}/favorites`),
+    enabled: isAuthenticated
   })
 
   return {
