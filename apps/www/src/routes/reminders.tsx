@@ -3,6 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { fetcher, useEnrichTrackFromUrl, VPS_BASE_URL } from '@/lib/http'
 import { useAuthStore } from '@/store'
+import { useToast } from '@/components/ui/use-toast'
 
 interface MusicReminder {
   id: string
@@ -38,6 +39,7 @@ function MusicReminders() {
   const [albumCoverUrl, setAlbumCoverUrl] = useState('')
   const [notes, setNotes] = useState('')
   const [reminderDate, setReminderDate] = useState('')
+  const { toast } = useToast()
 
   // Enrich track details when URL changes
   const { data: enrichedTrack, isLoading: isEnriching } =
@@ -88,12 +90,18 @@ function MusicReminders() {
       // Invalidate queries to refresh the reminders list
       queryClient.invalidateQueries({ queryKey: ['reminders'] })
 
-      // Show success message (you might want to add a toast notification here)
-      alert('Reminder created successfully!')
+      toast({
+        title: 'Reminder created',
+        description: 'We will send you an email when the time comes!'
+      })
     },
     onError: (error) => {
       console.error('Failed to create reminder:', error)
-      alert('Failed to create reminder. Please try again.')
+      toast({
+        variant: 'destructive',
+        title: 'Failed to create reminder',
+        description: 'Please try again later.'
+      })
     }
   })
 
@@ -101,7 +109,11 @@ function MusicReminders() {
     e.preventDefault()
 
     if (!musicTitle || !artistName || !musicUrl || !reminderDate) {
-      alert('Please fill in all required fields')
+      toast({
+        variant: 'destructive',
+        title: 'Missing information',
+        description: 'Please fill in all required fields'
+      })
       return
     }
 
@@ -288,7 +300,13 @@ function MusicReminders() {
             </div>
           ) : reminders?.reminders && reminders?.reminders?.length > 0 ? (
             <div className='space-y-4'>
-              {reminders?.reminders.map((reminder: MusicReminder) => (
+              {reminders?.reminders
+                .sort(
+                  (a, b) =>
+                    new Date(b.reminderDate).getTime() -
+                    new Date(a.reminderDate).getTime()
+                )
+                .map((reminder: MusicReminder) => (
                 <div
                   key={reminder.id}
                   className='flex items-center justify-between p-4 border rounded-lg'>

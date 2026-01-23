@@ -32,8 +32,8 @@ export function RemindersCard() {
       .filter((r) => !r.isSent)
       .sort(
         (a, b) =>
-          new Date(a.reminderDate).getTime() -
-          new Date(b.reminderDate).getTime()
+          new Date(b.reminderDate).getTime() -
+          new Date(a.reminderDate).getTime()
       ) ?? []
 
   const historyReminders =
