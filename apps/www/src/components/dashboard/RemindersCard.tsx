@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { Bell, History, LucideIcon } from 'lucide-react'
+import { Bell, History, type LucideIcon } from 'lucide-react'
 import { useState } from 'react'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
 
@@ -51,21 +51,21 @@ export function RemindersCard() {
       : historyReminders.slice(0, 5)
 
   return (
-    <div className='flex flex-col h-full bg-card/30 rounded-xl border border-border overflow-hidden'>
-      <div className='p-4 border-b border-border bg-muted/20'>
-        <div className='flex items-center justify-between mb-4'>
-          <h3 className='flex items-center gap-2 text-sm font-semibold text-foreground uppercase tracking-wider'>
-            <Bell className='w-4 h-4 text-primary' />
+    <div className='flex flex-col h-full bg-card/20 rounded-none border border-border overflow-hidden'>
+      <div className='p-5 border-b border-border bg-muted/10'>
+        <div className='flex items-center justify-between mb-6'>
+          <h3 className='flex items-center gap-2 text-xs font-bold text-foreground uppercase tracking-widest'>
+            <Bell className='w-3.5 h-3.5 text-primary' />
             Reminders
           </h3>
           <Link
             to='/reminders'
-            className='text-xs font-medium text-muted-foreground hover:text-primary transition-colors'>
-            Manage all
+            className='text-[10px] font-bold uppercase tracking-widest text-muted-foreground hover:text-primary transition-colors'>
+            Manage
           </Link>
         </div>
 
-        <div className='flex gap-1 p-1 bg-muted/50 rounded-lg'>
+        <div className='flex gap-0 border border-border'>
           <TabButton
             active={activeTab === 'upcoming'}
             onClick={() => setActiveTab('upcoming')}
@@ -83,44 +83,37 @@ export function RemindersCard() {
         </div>
       </div>
 
-      <div className='flex-1 p-4'>
+      <div className='flex-1 p-5'>
         {isPending ? (
-          <div className='flex flex-col gap-3'>
+          <div className='flex flex-col gap-4'>
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className='h-12 w-full animate-pulse bg-muted rounded-lg'
+                className='h-12 w-full animate-pulse bg-muted rounded-none'
               />
             ))}
           </div>
         ) : displayedReminders.length === 0 ? (
-          <div className='flex flex-col items-center justify-center py-8 text-center'>
-            <p className='text-sm text-muted-foreground mb-3'>
-              {activeTab === 'upcoming'
-                ? 'No upcoming reminders'
-                : 'No reminder history'}
+          <div className='flex flex-col items-center justify-center py-12 text-center'>
+            <p className='text-xs font-medium text-muted-foreground mb-4 uppercase tracking-wider'>
+              {activeTab === 'upcoming' ? 'No upcoming' : 'No history'}
             </p>
             {activeTab === 'upcoming' && (
               <Link
                 to='/reminders'
-                className='text-xs font-semibold px-4 py-1.5 rounded-full border border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all'>
-                Create Reminder
+                className='text-[10px] font-bold uppercase tracking-widest px-6 py-2 rounded-none border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all'>
+                Create
               </Link>
             )}
           </div>
         ) : (
-          <div className='space-y-3'>
+          <div className='space-y-4'>
             {displayedReminders.map((reminder) => (
               <ReminderItem key={reminder.id} reminder={reminder} />
             ))}
             {activeTab === 'upcoming' && upcomingReminders.length > 5 && (
-              <p className='text-[10px] text-center text-muted-foreground pt-1'>
-                + {upcomingReminders.length - 5} more upcoming
-              </p>
-            )}
-            {activeTab === 'history' && historyReminders.length > 5 && (
-              <p className='text-[10px] text-center text-muted-foreground pt-1'>
-                + {historyReminders.length - 5} more in history
+              <p className='text-[10px] text-center font-bold uppercase tracking-widest text-muted-foreground pt-2'>
+                + {upcomingReminders.length - 5} more
               </p>
             )}
           </div>
@@ -145,22 +138,23 @@ function TabButton({
 }) {
   return (
     <button
+      type='button'
       onClick={onClick}
       className={`
-        flex-1 flex items-center justify-center gap-2 py-1.5 text-xs font-medium rounded-md transition-all duration-200
+        flex-1 flex items-center justify-center gap-2 py-2.5 text-[10px] font-bold uppercase tracking-widest transition-all duration-200
         ${
           active
-            ? 'bg-background text-foreground shadow-sm'
-            : 'text-muted-foreground hover:text-foreground hover:bg-background/50'
+            ? 'bg-primary text-primary-foreground'
+            : 'text-muted-foreground hover:text-foreground hover:bg-muted'
         }
       `}>
-      <Icon className={`w-3.5 h-3.5 ${active ? 'text-primary' : ''}`} />
+      <Icon className='w-3 h-3' />
       {label}
       {count > 0 && (
         <span
           className={`
-          ml-0.5 px-1.5 py-0.5 rounded-full text-[10px]
-          ${active ? 'bg-primary/10 text-primary' : 'bg-muted-foreground/10 text-muted-foreground'}
+          ml-1 px-1.5 py-0.5 rounded-none text-[9px]
+          ${active ? 'bg-primary-foreground/20 text-primary-foreground' : 'bg-muted-foreground/10 text-muted-foreground'}
         `}>
           {count}
         </span>
@@ -171,34 +165,34 @@ function TabButton({
 
 function ReminderItem({ reminder }: { reminder: MusicReminder }) {
   return (
-    <div className='flex items-center gap-3 p-2 rounded-lg hover:bg-accent/50 transition-colors group border border-transparent hover:border-border'>
+    <div className='flex items-center gap-4 p-2 rounded-none hover:bg-muted/50 transition-colors group border-b border-border/30 last:border-0 pb-4'>
       <div className='relative flex-shrink-0'>
         {reminder.albumCoverUrl ? (
           <img
             src={reminder.albumCoverUrl}
             alt={reminder.musicTitle}
-            className='w-10 h-10 rounded-md object-cover ring-1 ring-border'
+            className='w-12 h-12 rounded-none object-cover border border-border'
           />
         ) : (
-          <div className='w-10 h-10 rounded-md bg-muted flex items-center justify-center ring-1 ring-border'>
-            <Bell className='w-4 h-4 text-muted-foreground' />
+          <div className='w-12 h-12 rounded-none bg-muted flex items-center justify-center border border-border'>
+            <Bell className='w-5 h-5 text-muted-foreground' />
           </div>
         )}
         {reminder.isSent && (
-          <div className='absolute -top-1 -right-1 w-3.5 h-3.5 bg-background rounded-full flex items-center justify-center ring-1 ring-border'>
-            <div className='w-2 h-2 bg-green-500 rounded-full' />
+          <div className='absolute -top-1 -right-1 w-4 h-4 bg-background rounded-none flex items-center justify-center border border-border'>
+            <div className='w-2 h-2 bg-green-500 rounded-none' />
           </div>
         )}
       </div>
       <div className='flex-1 min-w-0'>
-        <p className='text-sm font-semibold truncate group-hover:text-primary transition-colors'>
+        <p className='text-sm font-bold uppercase tracking-tight truncate group-hover:text-primary transition-colors'>
           {reminder.musicTitle}
         </p>
-        <p className='text-xs text-muted-foreground truncate'>
+        <p className='text-xs text-muted-foreground truncate font-medium'>
           {reminder.artistName}
         </p>
       </div>
-      <span className='text-[10px] font-medium text-muted-foreground bg-muted/30 px-2 py-1 rounded border border-border/50'>
+      <span className='text-[9px] font-bold uppercase text-muted-foreground border border-border px-2 py-1'>
         {new Date(reminder.reminderDate).toLocaleDateString(undefined, {
           month: 'short',
           day: 'numeric'

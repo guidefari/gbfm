@@ -15,7 +15,9 @@ const router = createRouter({
   routeTree,
   defaultPreload: 'intent',
   scrollRestoration: true,
-  scrollToTopSelectors: [() => document.getElementById(MAIN_SCROLL_CONTAINER_ID)],
+  scrollToTopSelectors: [
+    () => document.getElementById(MAIN_SCROLL_CONTAINER_ID)
+  ],
   context: {
     auth: {
       user: null,

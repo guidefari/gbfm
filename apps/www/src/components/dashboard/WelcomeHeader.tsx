@@ -13,7 +13,7 @@ export function WelcomeHeader({ user }: WelcomeHeaderProps) {
         <img
           src={user.image}
           alt={user.name || 'User avatar'}
-          className='w-16 h-16 rounded-full object-cover ring-2 ring-border'
+          className='w-16 h-16 rounded-none object-cover border-2 border-border'
         />
       )}
       <div>

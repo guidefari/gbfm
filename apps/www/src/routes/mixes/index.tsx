@@ -103,10 +103,7 @@ function MixesListPage() {
                 All tags
               </SelectItem>
               {allTags.map((t) => (
-                <SelectItem
-                  key={t}
-                  value={t}
-                  data-testid={`tag-option-${t}`}>
+                <SelectItem key={t} value={t} data-testid={`tag-option-${t}`}>
                   {t}
                 </SelectItem>
               ))}

@@ -9,11 +9,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { toast } from '@/components/ui/use-toast'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
-import {
-  useAddFavorite,
-  useFavorites,
-  useRemoveFavorite
-} from '@/lib/http'
+import { useAddFavorite, useFavorites, useRemoveFavorite } from '@/lib/http'
 import { useAudioPlayerActions } from '@/store/audioPlayer'
 
 interface MixMenuProps {

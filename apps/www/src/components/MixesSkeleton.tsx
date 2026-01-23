@@ -13,9 +13,7 @@ export function MixesSkeleton() {
       <div className='grid gap-2'>
         {Array.from({ length: 8 }, (_, index) => `skeleton-${index}`).map(
           (id) => (
-            <article
-              key={id}
-              className='flex gap-3 items-start p-2 rounded-sm'>
+            <article key={id} className='flex gap-3 items-start p-2 rounded-sm'>
               <Skeleton className='w-14 h-14 rounded-sm flex-shrink-0' />
               <div className='flex-1 min-w-0'>
                 <div className='flex items-start justify-between gap-2'>

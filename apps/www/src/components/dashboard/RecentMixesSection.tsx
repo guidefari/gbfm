@@ -34,16 +34,16 @@ export function RecentMixesSection() {
           View all
         </Link>
       </div>
-      <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3'>
+      <div className='grid gap-8 sm:grid-cols-2 lg:grid-cols-3'>
         {recentMixes.map((mix) => (
           <div
             key={mix.id}
-            className='flex flex-col gap-3 p-3 rounded-xl border border-border bg-card/50 hover:bg-accent transition-all duration-200 group'>
-            <div className='relative aspect-square w-full overflow-hidden rounded-lg'>
+            className='flex flex-col gap-4 p-4 rounded-none border border-border bg-card/30 hover:bg-accent transition-all duration-300 group'>
+            <div className='relative aspect-square w-full overflow-hidden rounded-none border border-border'>
               <img
                 src={mix.thumbnailUrl || DEFAULT_IMAGE_URL}
                 alt={mix.title}
-                className='w-full h-full object-cover transition-transform duration-300 group-hover:scale-105'
+                className='w-full h-full object-cover grayscale-[0.5] group-hover:grayscale-0 transition-all duration-500'
               />
               <div className='absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity'>
                 <PlayPauseButton
@@ -54,11 +54,11 @@ export function RecentMixesSection() {
                 />
               </div>
             </div>
-            <div className='space-y-1'>
+            <div className='space-y-2'>
               <Link
                 to='/mixes/$mixId'
                 params={{ mixId: mix.slug }}
-                className='text-sm font-semibold truncate block hover:text-primary transition-colors'>
+                className='text-sm font-bold uppercase tracking-widest truncate block hover:text-primary transition-colors'>
                 {mix.title}
               </Link>
               {mix.description && (

@@ -20,7 +20,6 @@ import {
   SortDesc,
   Sun,
   Upload,
-  User,
   Volume2,
   VolumeX
 } from 'lucide-react'
@@ -149,6 +148,14 @@ export const createCommandData = (
       icon: Music,
       type: 'action',
       onSelect: navigationActions.routeToMixes
+    },
+    {
+      id: 'dashboard',
+      label: 'Dashboard',
+      icon: List,
+      type: 'action',
+      onSelect: navigationActions.routeToDashboard,
+      requiresAuth: true
     },
     {
       id: 'reminders',
@@ -336,10 +343,10 @@ export const createCommandData = (
   if (isAuthenticated) {
     const settingsItems = [
       {
-        id: 'profile',
-        label: 'Profile',
-        icon: User,
-        onSelect: navigationActions.routeToProfile
+        id: 'settings',
+        label: 'Settings',
+        icon: Settings,
+        onSelect: navigationActions.routeToSettings
       }
     ]
 

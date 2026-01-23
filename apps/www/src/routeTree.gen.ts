@@ -13,6 +13,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UploadOldRouteImport } from './routes/upload-old'
 import { Route as SubscribeRouteImport } from './routes/subscribe'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RemindersRouteImport } from './routes/reminders'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ChangelogRouteImport } from './routes/changelog'
@@ -25,7 +26,6 @@ import { Route as MixesIndexRouteImport } from './routes/mixes/index'
 import { Route as LabelsIndexRouteImport } from './routes/labels/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as TracksTrackIdRouteImport } from './routes/tracks/$trackId'
-import { Route as SettingsProfileRouteImport } from './routes/settings/profile'
 import { Route as ReleasesSlugRouteImport } from './routes/releases/$slug'
 import { Route as MixesMixIdRouteImport } from './routes/mixes/$mixId'
 import { Route as LabelsLabelSlugRouteImport } from './routes/labels/$labelSlug'
@@ -61,6 +61,11 @@ const UploadOldRoute = UploadOldRouteImport.update({
 const SubscribeRoute = SubscribeRouteImport.update({
   id: '/subscribe',
   path: '/subscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RemindersRoute = RemindersRouteImport.update({
@@ -123,11 +128,6 @@ const TracksTrackIdRoute = TracksTrackIdRouteImport.update({
   path: '/$trackId',
   getParentRoute: () => TracksRouteRoute,
 } as any)
-const SettingsProfileRoute = SettingsProfileRouteImport.update({
-  id: '/settings/profile',
-  path: '/settings/profile',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ReleasesSlugRoute = ReleasesSlugRouteImport.update({
   id: '/releases/$slug',
   path: '/releases/$slug',
@@ -172,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/changelog': typeof ChangelogRoute
   '/dashboard': typeof DashboardRoute
   '/reminders': typeof RemindersRoute
+  '/settings': typeof SettingsRoute
   '/subscribe': typeof SubscribeRoute
   '/upload-old': typeof UploadOldRoute
   '/label-upload': typeof LabelUploadLazyRoute
@@ -184,7 +185,6 @@ export interface FileRoutesByFullPath {
   '/labels/$labelSlug': typeof LabelsLabelSlugRoute
   '/mixes/$mixId': typeof MixesMixIdRoute
   '/releases/$slug': typeof ReleasesSlugRoute
-  '/settings/profile': typeof SettingsProfileRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
   '/admin': typeof AdminIndexRoute
   '/labels/': typeof LabelsIndexRoute
@@ -196,6 +196,7 @@ export interface FileRoutesByTo {
   '/changelog': typeof ChangelogRoute
   '/dashboard': typeof DashboardRoute
   '/reminders': typeof RemindersRoute
+  '/settings': typeof SettingsRoute
   '/subscribe': typeof SubscribeRoute
   '/upload-old': typeof UploadOldRoute
   '/label-upload': typeof LabelUploadLazyRoute
@@ -208,7 +209,6 @@ export interface FileRoutesByTo {
   '/labels/$labelSlug': typeof LabelsLabelSlugRoute
   '/mixes/$mixId': typeof MixesMixIdRoute
   '/releases/$slug': typeof ReleasesSlugRoute
-  '/settings/profile': typeof SettingsProfileRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
   '/admin': typeof AdminIndexRoute
   '/labels': typeof LabelsIndexRoute
@@ -224,6 +224,7 @@ export interface FileRoutesById {
   '/changelog': typeof ChangelogRoute
   '/dashboard': typeof DashboardRoute
   '/reminders': typeof RemindersRoute
+  '/settings': typeof SettingsRoute
   '/subscribe': typeof SubscribeRoute
   '/upload-old': typeof UploadOldRoute
   '/label-upload': typeof LabelUploadLazyRoute
@@ -236,7 +237,6 @@ export interface FileRoutesById {
   '/labels/$labelSlug': typeof LabelsLabelSlugRoute
   '/mixes/$mixId': typeof MixesMixIdRoute
   '/releases/$slug': typeof ReleasesSlugRoute
-  '/settings/profile': typeof SettingsProfileRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
   '/admin/': typeof AdminIndexRoute
   '/labels/': typeof LabelsIndexRoute
@@ -253,6 +253,7 @@ export interface FileRouteTypes {
     | '/changelog'
     | '/dashboard'
     | '/reminders'
+    | '/settings'
     | '/subscribe'
     | '/upload-old'
     | '/label-upload'
@@ -265,7 +266,6 @@ export interface FileRouteTypes {
     | '/labels/$labelSlug'
     | '/mixes/$mixId'
     | '/releases/$slug'
-    | '/settings/profile'
     | '/tracks/$trackId'
     | '/admin'
     | '/labels/'
@@ -277,6 +277,7 @@ export interface FileRouteTypes {
     | '/changelog'
     | '/dashboard'
     | '/reminders'
+    | '/settings'
     | '/subscribe'
     | '/upload-old'
     | '/label-upload'
@@ -289,7 +290,6 @@ export interface FileRouteTypes {
     | '/labels/$labelSlug'
     | '/mixes/$mixId'
     | '/releases/$slug'
-    | '/settings/profile'
     | '/tracks/$trackId'
     | '/admin'
     | '/labels'
@@ -304,6 +304,7 @@ export interface FileRouteTypes {
     | '/changelog'
     | '/dashboard'
     | '/reminders'
+    | '/settings'
     | '/subscribe'
     | '/upload-old'
     | '/label-upload'
@@ -316,7 +317,6 @@ export interface FileRouteTypes {
     | '/labels/$labelSlug'
     | '/mixes/$mixId'
     | '/releases/$slug'
-    | '/settings/profile'
     | '/tracks/$trackId'
     | '/admin/'
     | '/labels/'
@@ -332,6 +332,7 @@ export interface RootRouteChildren {
   ChangelogRoute: typeof ChangelogRoute
   DashboardRoute: typeof DashboardRoute
   RemindersRoute: typeof RemindersRoute
+  SettingsRoute: typeof SettingsRoute
   SubscribeRoute: typeof SubscribeRoute
   UploadOldRoute: typeof UploadOldRoute
   LabelUploadLazyRoute: typeof LabelUploadLazyRoute
@@ -342,7 +343,6 @@ export interface RootRouteChildren {
   AuthSignInRoute: typeof AuthSignInRoute
   AuthSignUpRoute: typeof AuthSignUpRoute
   ReleasesSlugRoute: typeof ReleasesSlugRoute
-  SettingsProfileRoute: typeof SettingsProfileRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
@@ -381,6 +381,13 @@ declare module '@tanstack/react-router' {
       path: '/subscribe'
       fullPath: '/subscribe'
       preLoaderRoute: typeof SubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reminders': {
@@ -466,13 +473,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/tracks/$trackId'
       preLoaderRoute: typeof TracksTrackIdRouteImport
       parentRoute: typeof TracksRouteRoute
-    }
-    '/settings/profile': {
-      id: '/settings/profile'
-      path: '/settings/profile'
-      fullPath: '/settings/profile'
-      preLoaderRoute: typeof SettingsProfileRouteImport
-      parentRoute: typeof rootRouteImport
     }
     '/releases/$slug': {
       id: '/releases/$slug'
@@ -576,6 +576,7 @@ const rootRouteChildren: RootRouteChildren = {
   ChangelogRoute: ChangelogRoute,
   DashboardRoute: DashboardRoute,
   RemindersRoute: RemindersRoute,
+  SettingsRoute: SettingsRoute,
   SubscribeRoute: SubscribeRoute,
   UploadOldRoute: UploadOldRoute,
   LabelUploadLazyRoute: LabelUploadLazyRoute,
@@ -586,7 +587,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthSignInRoute: AuthSignInRoute,
   AuthSignUpRoute: AuthSignUpRoute,
   ReleasesSlugRoute: ReleasesSlugRoute,
-  SettingsProfileRoute: SettingsProfileRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 export const routeTree = rootRouteImport

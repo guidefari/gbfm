@@ -24,23 +24,23 @@ export function FavoritesSection() {
   }
 
   return (
-    <div className='flex flex-col h-full bg-card/30 rounded-xl border border-border overflow-hidden p-4'>
-      <h3 className='flex items-center gap-2 text-sm font-semibold text-foreground uppercase tracking-wider mb-4'>
-        <Heart className='w-4 h-4 text-red-500' />
+    <div className='flex flex-col h-full bg-card/10 rounded-none border border-border overflow-hidden p-5'>
+      <h3 className='flex items-center gap-2 text-xs font-bold text-foreground uppercase tracking-widest mb-6'>
+        <Heart className='w-3.5 h-3.5 text-red-500' />
         Favorites
       </h3>
-      <div className='space-y-2'>
+      <div className='space-y-4'>
         {favorites.slice(0, 6).map((favorite) => (
           <div
             key={favorite.id}
-            className='flex items-center gap-3 p-2 rounded-lg hover:bg-accent/50 transition-all duration-200 group border border-transparent hover:border-border'>
+            className='flex items-center gap-4 p-2 rounded-none hover:bg-muted/50 transition-all duration-300 group border-b border-border/30 last:border-0 pb-4'>
             <div className='relative flex-shrink-0'>
               <img
                 src={favorite.audio.thumbnailUrl || DEFAULT_IMAGE_URL}
                 alt={favorite.audio.title}
-                className='w-10 h-10 rounded-md object-cover ring-1 ring-border'
+                className='w-12 h-12 rounded-none object-cover border border-border'
               />
-              <div className='absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity rounded-md'>
+              <div className='absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity'>
                 <PlayPauseButton
                   url={favorite.audio.url}
                   thumbnailUrl={favorite.audio.thumbnailUrl || ''}
@@ -54,22 +54,22 @@ export function FavoritesSection() {
                 <Link
                   to='/mixes/$mixId'
                   params={{ mixId: favorite.audio.slug }}
-                  className='text-sm font-medium truncate block hover:text-primary transition-colors'>
+                  className='text-sm font-bold uppercase tracking-tight truncate block hover:text-primary transition-colors'>
                   {favorite.audio.title}
                 </Link>
               ) : favorite.audio.type === 'track' ? (
                 <Link
                   to='/tracks/$trackId'
                   params={{ trackId: favorite.audio.slug }}
-                  className='text-sm font-medium truncate block hover:text-primary transition-colors'>
+                  className='text-sm font-bold uppercase tracking-tight truncate block hover:text-primary transition-colors'>
                   {favorite.audio.title}
                 </Link>
               ) : (
-                <span className='text-sm font-medium truncate block'>
+                <span className='text-sm font-bold uppercase tracking-tight truncate block'>
                   {favorite.audio.title}
                 </span>
               )}
-              <p className='text-[10px] text-muted-foreground uppercase tracking-tighter'>
+              <p className='text-[9px] font-bold uppercase tracking-widest text-muted-foreground mt-1'>
                 {favorite.audio.type}
               </p>
             </div>

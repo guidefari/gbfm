@@ -360,7 +360,8 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
               thumbnailUrl,
               nowPlayingContext: {
                 title,
-                url: typeof window !== 'undefined' ? window.location.pathname : '/'
+                url:
+                  typeof window !== 'undefined' ? window.location.pathname : '/'
               },
               currentTrackId: trackId || null,
               currentTime: 0,

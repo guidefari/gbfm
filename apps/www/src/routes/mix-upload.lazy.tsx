@@ -28,7 +28,12 @@ import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/use-toast'
-import { fetcher, useAudioBySlug, useAudioByType, VPS_BASE_URL } from '@/lib/http'
+import {
+  fetcher,
+  useAudioBySlug,
+  useAudioByType,
+  VPS_BASE_URL
+} from '@/lib/http'
 import { useAuthStore } from '@/store'
 
 export const Route = createLazyFileRoute('/mix-upload')({
@@ -61,12 +66,17 @@ function MixUploadPage() {
   const availableTags = useMemo(() => {
     const tagSet = new Set<string>()
     allMixes?.forEach((mix) => {
-      mix.tags?.forEach((t: string) => tagSet.add(t))
+      mix.tags?.forEach((t: string) => {
+        tagSet.add(t)
+      })
     })
     return Array.from(tagSet).sort()
   }, [allMixes])
 
-  const { data: existingMix, isPending: mixLoading } = useAudioBySlug('mix', search.edit || '')
+  const { data: existingMix, isPending: mixLoading } = useAudioBySlug(
+    'mix',
+    search.edit || ''
+  )
 
   const [formData, setFormData] = useState<MixFormData>(() => ({
     title: search.title || '',

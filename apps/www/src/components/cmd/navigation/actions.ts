@@ -14,8 +14,13 @@ export const useNavigationActions = (closeCmd: () => void) => {
     closeCmd()
   }, [router, closeCmd])
 
-  const routeToProfile = React.useCallback(() => {
-    router({ to: '/settings/profile' })
+  const routeToSettings = React.useCallback(() => {
+    router({ to: '/settings' })
+    closeCmd()
+  }, [router, closeCmd])
+
+  const routeToDashboard = React.useCallback(() => {
+    router({ to: '/dashboard' })
     closeCmd()
   }, [router, closeCmd])
 
@@ -57,7 +62,8 @@ export const useNavigationActions = (closeCmd: () => void) => {
   return {
     routeToMixes,
     routeToLogin,
-    routeToProfile,
+    routeToSettings,
+    routeToDashboard,
     routeToHome,
     routeToTracks,
     routeToLabels,

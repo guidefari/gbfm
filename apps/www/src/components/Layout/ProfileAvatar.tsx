@@ -49,7 +49,14 @@ const ProfileAvatar = () => {
         ) : (
           <>
             <DropdownMenuItem asChild>
-              <Link to='/settings/profile'>Profile</Link>
+              <Link to='/dashboard' className='w-full'>
+                Dashboard
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to='/settings' className='w-full'>
+                Settings
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleSignOut}>Logout</DropdownMenuItem>
