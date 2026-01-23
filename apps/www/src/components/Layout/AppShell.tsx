@@ -4,6 +4,7 @@ import AudioPlayer from '@/components/AudioPlayer'
 import FullscreenAudioPlayer from '@/components/FullscreenAudioPlayer'
 import { QueueColumn } from '@/components/queue/QueueColumn'
 import { useAudioPlayerInitializer } from '@/hooks/useAudioPlayer'
+import { useDefaultTrackPreloader } from '@/hooks/useDefaultTrackPreloader'
 import { MAIN_SCROLL_CONTAINER_ID } from '@/lib/constants'
 import { useUIStore } from '@/store'
 import { useAudioPlayerState } from '@/store/audioPlayer'
@@ -19,6 +20,7 @@ type Props = {
 
 export default function AppShell({ children }: Props) {
   useAudioPlayerInitializer()
+  useDefaultTrackPreloader()
 
   const { audioSrc, isFullscreenVisible } = useAudioPlayerState()
   const { preferredPlayerType, showCompactPlayer } = useUIStore()

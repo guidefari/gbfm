@@ -85,6 +85,12 @@ interface AudioPlayerActions {
     title: string,
     trackId?: string
   ) => void
+  preloadTrack: (
+    src: string,
+    thumbnailUrl: string,
+    title: string,
+    trackId?: string
+  ) => void
 
   // Queue management
   addToQueue: (mix: SelectAudio) => void
@@ -343,6 +349,28 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
           get().play(title)
         },
 
+        preloadTrack: (src, thumbnailUrl, title, trackId) => {
+          const { audioRef } = get()
+          if (!audioRef || !src) return
+
+          audioRef.src = src
+          set(
+            {
+              audioSrc: src,
+              thumbnailUrl,
+              nowPlayingContext: {
+                title,
+                url: typeof window !== 'undefined' ? window.location.pathname : '/'
+              },
+              currentTrackId: trackId || null,
+              currentTime: 0,
+              progress: 0
+            },
+            false,
+            'audioPlayer/preloadTrack'
+          )
+        },
+
         updateProgress: () => {
           const { audioRef } = get()
           if (!audioRef) return
@@ -590,6 +618,7 @@ export const useAudioPlayerActions = () => {
     jumpForward: store.jumpForward,
     jumpBackward: store.jumpBackward,
     loadTrack: store.loadTrack,
+    preloadTrack: store.preloadTrack,
     setTimeUsingPercentage: store.setTimeUsingPercentage,
     setVolume: store.setVolume,
     toggleMute: store.toggleMute,
@@ -626,6 +655,7 @@ export const useAudioPlayerState = () => {
     queue: store.queue,
     currentIndex: store.currentIndex,
     isQueueVisible: store.isQueueVisible,
-    isFullscreenVisible: store.isFullscreenVisible
+    isFullscreenVisible: store.isFullscreenVisible,
+    isInitialized: store.isInitialized
   }
 }
