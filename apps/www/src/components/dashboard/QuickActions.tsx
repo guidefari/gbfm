@@ -3,18 +3,18 @@ import { Bell, Upload } from 'lucide-react'
 
 export function QuickActions() {
   return (
-    <div className='flex gap-3'>
+    <div className='flex gap-2'>
       <Link
         to='/upload'
-        className='flex items-center gap-2 px-4 py-2 rounded-md border border-border bg-card hover:bg-accent transition-colors'>
+        className='flex items-center gap-2.5 px-5 py-2.5 text-sm font-medium rounded-lg border-2 border-border hover:bg-accent hover:border-accent transition-all duration-200'>
         <Upload className='w-4 h-4' />
-        <span>Upload Mix</span>
+        Upload Mix
       </Link>
       <Link
         to='/reminders'
-        className='flex items-center gap-2 px-4 py-2 rounded-md border border-border bg-card hover:bg-accent transition-colors'>
+        className='flex items-center gap-2.5 px-5 py-2.5 text-sm font-medium rounded-lg border-2 border-border hover:bg-accent hover:border-accent transition-all duration-200'>
         <Bell className='w-4 h-4' />
-        <span>Create Reminder</span>
+        Create Reminder
       </Link>
     </div>
   )
