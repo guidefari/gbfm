@@ -1,3 +1,17 @@
+# [2.3.0](https://github.com/guidefari/gbfm/compare/v2.2.1...v2.3.0) (2026-01-24)
+
+
+### Features
+
+* **backup:** extract LogCapture to shared utilities with idiomatic Effect ([e7507dc](https://github.com/guidefari/gbfm/commit/e7507dc0eff43bffd46351a6fafc164a0272f07c))
+* preload track ([95a6d22](https://github.com/guidefari/gbfm/commit/95a6d22d24099fdc754a263ddfd43469036bbbb6))
+* remiinders styling ([207ed8d](https://github.com/guidefari/gbfm/commit/207ed8d5f161afd8356428b6fb0ed9b992697962))
+* **seo:** add SEO to index pages and create sitemap/robots.txt ([c71ca4c](https://github.com/guidefari/gbfm/commit/c71ca4c39895fc410d204d2b6d1542902a1ac144))
+* **seo:** add SEO utilities and metadata to dynamic routes ([ea906c4](https://github.com/guidefari/gbfm/commit/ea906c468271833ee6d3edf010132dc86d74b249))
+* settngs and dashboard ([eb7e817](https://github.com/guidefari/gbfm/commit/eb7e8170768823e3e8c9250b046a44e78be4a0f0))
+* update mixes layout ([4063e27](https://github.com/guidefari/gbfm/commit/4063e276441247f7b2dc8d6790acc149105d5578))
+* updateTagsMutation ([3ef1277](https://github.com/guidefari/gbfm/commit/3ef1277b6be8da6d8d50f9bec3fbcdf6df671416))
+
 ## [2.2.1](https://github.com/guidefari/gbfm/compare/v2.2.0...v2.2.1) (2026-01-22)
 
 
