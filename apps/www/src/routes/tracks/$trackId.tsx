@@ -2,10 +2,44 @@ import { createFileRoute } from '@tanstack/react-router'
 import * as React from 'react'
 import { LongPost } from '@/components/Layout/LongPost'
 import { useAudioBySlug } from '@/lib/http'
+import { generateSEOMeta, generateTrackSEO } from '@/lib/seo'
 import { useContentStore } from '@/store'
 
 export const Route = createFileRoute('/tracks/$trackId')({
-  component: TrackPage
+  component: TrackPage,
+  loader: async ({ params }) => {
+    const response = await fetch(
+      `${import.meta.env.VITE_VPS_BASE_URL}/content/audio/track/${params.trackId}`,
+      {
+        credentials: 'include'
+      }
+    )
+    if (!response.ok) {
+      throw new Error('Track not found')
+    }
+    const track = await response.json()
+    return { track }
+  },
+  head: ({ loaderData, params }) => {
+    if (!loaderData?.track) {
+      return {
+        meta: [
+          {
+            title: 'Track | goosebumps.fm'
+          },
+          {
+            name: 'description',
+            content: 'Listen to individual tracks on goosebumps.fm'
+          }
+        ]
+      }
+    }
+
+    const seoData = generateTrackSEO(loaderData.track, params.trackId)
+    return {
+      meta: generateSEOMeta(seoData)
+    }
+  }
 })
 
 function TrackPage() {

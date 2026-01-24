@@ -5,11 +5,46 @@ import { MDXRendrr } from '@/components/MDXRendrr'
 import { ReleasesTable } from '@/components/ReleasesTable'
 import { Button } from '@/components/ui/button'
 import { useLabelBySlug, useReleasesByLabel } from '@/lib/http'
+import { generateLabelSEO, generateSEOMeta } from '@/lib/seo'
 import { useContentStore } from '@/store'
 import { useAuthStore } from '@/store/auth'
 
 export const Route = createFileRoute('/labels/$labelSlug')({
-  component: LabelPage
+  component: LabelPage,
+  loader: async ({ params }) => {
+    // We need to fetch the data for SEO head function
+    const response = await fetch(
+      `${import.meta.env.VITE_VPS_BASE_URL}/content/labels/${params.labelSlug}`,
+      {
+        credentials: 'include'
+      }
+    )
+    if (!response.ok) {
+      throw new Error('Label not found')
+    }
+    const label = await response.json()
+    return { label }
+  },
+  head: ({ loaderData, params }) => {
+    if (!loaderData?.label) {
+      return {
+        meta: [
+          {
+            title: 'Label | goosebumps.fm'
+          },
+          {
+            name: 'description',
+            content: 'Explore music labels on goosebumps.fm'
+          }
+        ]
+      }
+    }
+
+    const seoData = generateLabelSEO(loaderData.label, params.labelSlug)
+    return {
+      meta: generateSEOMeta(seoData)
+    }
+  }
 })
 
 function LabelPage() {
