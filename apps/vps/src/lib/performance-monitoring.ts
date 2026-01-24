@@ -1,104 +1,54 @@
-import { Effect } from 'effect'
+import { Effect, Metric } from 'effect'
 
-// Performance monitoring utilities
-export interface PerformanceMetrics {
-  requestCount: number
-  errorCount: number
-  averageResponseTime: number
-  slowRequests: number
-  memoryUsage: NodeJS.MemoryUsage
-  uptime: number
-}
+const requestCount = Metric.counter("request_count", {
+  description: "Total number of requests"
+})
 
-// Simple in-memory metrics (in production, this would be persisted or sent to monitoring service)
-let metrics = {
-  requestCount: 0,
-  errorCount: 0,
-  totalResponseTime: 0,
-  slowRequests: 0,
-  lastReset: Date.now()
-}
+const errorCount = Metric.counter("error_count", {
+  description: "Total number of errors"
+})
 
-const METRICS_RESET_INTERVAL = 300000 // 5 minutes
+const slowRequestCount = Metric.counter("slow_request_count", {
+  description: "Total number of slow requests (>500ms)"
+})
 
-export function recordRequest(duration: number, isError = false) {
-  metrics.requestCount++
+const responseTime = Metric.gauge("response_time_ms", {
+  description: "Most recent response time in milliseconds"
+})
 
-  if (isError) {
-    metrics.errorCount++
-  }
+const heapUsed = Metric.gauge("heap_used_mb", {
+  description: "Current heap memory usage in MB"
+})
 
-  metrics.totalResponseTime += duration
+const uptime = Metric.gauge("uptime_seconds", {
+  description: "Process uptime in seconds"
+})
 
-  if (duration > 500) {
-    // Slow request threshold
-    metrics.slowRequests++
-  }
+const SLOW_REQUEST_THRESHOLD = 500
 
-  // Reset metrics periodically
-  if (Date.now() - metrics.lastReset > METRICS_RESET_INTERVAL) {
-    Effect.logInfo('[Performance] Metrics summary', {
-      period: '5 minutes',
-      requests: metrics.requestCount,
-      errors: metrics.errorCount,
-      slowRequests: metrics.slowRequests
-    }).pipe(Effect.runPromise)
+export const recordRequest = (duration: number, isError = false) =>
+  Effect.gen(function* () {
+    yield* requestCount(Effect.succeed(1))
+    yield* responseTime(Effect.succeed(duration))
 
-    // Reset metrics
-    metrics = {
-      requestCount: 0,
-      errorCount: 0,
-      totalResponseTime: 0,
-      slowRequests: 0,
-      lastReset: Date.now()
-    }
-  }
-}
-
-export function getCurrentMetrics(): PerformanceMetrics {
-  const avgResponseTime =
-    metrics.requestCount > 0
-      ? metrics.totalResponseTime / metrics.requestCount
-      : 0
-
-  return {
-    requestCount: metrics.requestCount,
-    errorCount: metrics.errorCount,
-    averageResponseTime: Math.round(avgResponseTime * 100) / 100,
-    slowRequests: metrics.slowRequests,
-    memoryUsage: process.memoryUsage(),
-    uptime: Math.round(process.uptime())
-  }
-}
-
-export function checkPerformanceHealth(): Effect.Effect<void> {
-  return Effect.gen(function* () {
-    const currentMetrics = getCurrentMetrics()
-    const errorRate =
-      currentMetrics.requestCount > 0
-        ? (currentMetrics.errorCount / currentMetrics.requestCount) * 100
-        : 0
-
-    // Alert on high error rates
-    if (errorRate > 10) {
-      // More than 10% error rate
-      yield* Effect.logError('[Performance] High error rate detected', {
-        errorRate: `${errorRate.toFixed(2)}%`,
-        totalRequests: currentMetrics.requestCount,
-        totalErrors: currentMetrics.errorCount,
-        severity: 'critical'
-      })
+    if (isError) {
+      yield* errorCount(Effect.succeed(1))
     }
 
-    // Alert on high memory usage
-    const heapUsedMB = currentMetrics.memoryUsage.heapUsed / 1024 / 1024
-    if (heapUsedMB > 500) {
-      // More than 500MB heap usage
-      yield* Effect.logWarning('[Performance] High memory usage detected', {
-        heapUsed: `${Math.round(heapUsedMB)}MB`,
-        uptime: `${currentMetrics.uptime}s`,
-        severity: 'warning'
-      })
+    if (duration > SLOW_REQUEST_THRESHOLD) {
+      yield* slowRequestCount(Effect.succeed(1))
     }
   })
-}
+
+export const checkPerformanceHealth = Effect.gen(function* () {
+  const heapUsedMB = process.memoryUsage().heapUsed / 1024 / 1024
+  yield* heapUsed(Effect.succeed(heapUsedMB))
+  yield* uptime(Effect.succeed(process.uptime()))
+
+  if (heapUsedMB > 500) {
+    yield* Effect.logWarning('[Performance] High memory usage detected', {
+      heapUsed: `${Math.round(heapUsedMB)}MB`,
+      uptime: `${Math.round(process.uptime())}s`
+    })
+  }
+})
