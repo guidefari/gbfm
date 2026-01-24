@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { useAudioByType } from '@/lib/http'
+import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'
 import { cn } from '@/lib/utils'
 import { useUIStore } from '@/store'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
@@ -27,7 +28,10 @@ const searchSchema = z.object({
 
 export const Route = createFileRoute('/mixes/')({
   component: MixesListPage,
-  validateSearch: searchSchema
+  validateSearch: searchSchema,
+  head: () => ({
+    meta: generateSEOMeta(STATIC_PAGE_SEO.mixes)
+  })
 })
 
 function MixesListPage() {

@@ -8,9 +8,13 @@ import {
   WelcomeHeader
 } from '@/components/dashboard'
 import { useSession } from '@/lib/auth-client'
+import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'
 
 export const Route = createFileRoute('/dashboard')({
-  component: Dashboard
+  component: Dashboard,
+  head: () => ({
+    meta: generateSEOMeta(STATIC_PAGE_SEO.dashboard)
+  })
 })
 
 function Dashboard() {

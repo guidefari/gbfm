@@ -1,0 +1,11 @@
+# https://www.robotstxt.org/robotstxt.html
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://goosebumps.fm/sitemap.xml
+
+# Disallow admin and auth routes
+Disallow: /admin/
+Disallow: /auth/
+Disallow: /settings/

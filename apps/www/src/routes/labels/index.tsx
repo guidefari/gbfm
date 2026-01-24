@@ -1,9 +1,13 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { useAllLabels } from '@/lib/http'
+import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'
 
 export const Route = createFileRoute('/labels/')({
-  component: Component
+  component: Component,
+  head: () => ({
+    meta: generateSEOMeta(STATIC_PAGE_SEO.labels)
+  })
 })
 
 function Component() {

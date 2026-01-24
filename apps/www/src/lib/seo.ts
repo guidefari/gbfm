@@ -171,3 +171,44 @@ export function generateReleaseSEO(
     type: 'music.album'
   }
 }
+
+export function generateStaticPageSEO(
+  title: string,
+  description: string,
+  path: string
+): SEOHeadData {
+  return {
+    title,
+    description,
+    url: `${SITE_URL}${path}`,
+    type: 'website'
+  }
+}
+
+export const STATIC_PAGE_SEO = {
+  home: generateStaticPageSEO(
+    'goosebumps.fm',
+    'Discover curated music mixes, tracks, and releases. Your destination for deep house, electronic, and soulful sounds.',
+    '/'
+  ),
+  mixes: generateStaticPageSEO(
+    'Browse Mixes',
+    'Explore curated DJ mixes featuring deep house, electronic, ambient, and more. Stream or download your favorites.',
+    '/mixes'
+  ),
+  tracks: generateStaticPageSEO(
+    'All Tracks',
+    'Browse and stream individual tracks, mixes, and audio content on goosebumps.fm.',
+    '/tracks'
+  ),
+  labels: generateStaticPageSEO(
+    'Record Labels',
+    'Discover independent record labels and their music catalogs on goosebumps.fm.',
+    '/labels'
+  ),
+  dashboard: generateStaticPageSEO(
+    'Dashboard',
+    'Your personal dashboard on goosebumps.fm. Access your favorites, recent plays, and reminders.',
+    '/dashboard'
+  )
+} as const

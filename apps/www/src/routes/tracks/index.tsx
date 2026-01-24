@@ -17,10 +17,14 @@ import {
 } from '@/components/ui/select'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { useAudioByType } from '@/lib/http'
+import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
 
 export const Route = createFileRoute('/tracks/')({
-  component: TracksPage
+  component: TracksPage,
+  head: () => ({
+    meta: generateSEOMeta(STATIC_PAGE_SEO.tracks)
+  })
 })
 
 type AudioType = 'all' | 'mix' | 'track' | 'misc'
