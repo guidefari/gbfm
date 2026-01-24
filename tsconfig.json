@@ -18,11 +18,7 @@
     "sourceMap": true,
     "incremental": true,
     "composite": true,
-    "plugins": [
-      {
-        "name": "@effect/language-service"
-      }
-    ]
+    "plugins": [{ "name": "@effect/language-service" }]
   },
   "exclude": [".sst"]
 }

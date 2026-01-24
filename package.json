@@ -19,12 +19,12 @@
     "biome:ci": "biome ci",
     "precommit": "bun run format && bun run check && bun run typecheck",
     "ci": "bun run biome:ci && bun run typecheck && cd apps/www && bun run build",
-    "prepare": "effect-language-service patch"
+    "prepare": "echo 'Skipping effect-language-service patch (diagnostics config not working yet)'"
   },
   "dependencies": {
     "@effect/cli": "0.73.0",
-    "@effect/platform": "0.94.1",
-    "effect": "3.19.14",
+    "@effect/platform": "0.94.2",
+    "effect": "3.19.15",
     "gray-matter": "4.0.3",
     "sst": "3.17.25",
     "vitest": "4.0.17",
@@ -44,7 +44,8 @@
   },
   "overrides": {
     "react": "19.2.0",
-    "react-dom": "19.2.0"
+    "react-dom": "19.2.0",
+    "effect": "3.19.15"
   },
   "workspaces": [
     "packages/*",
