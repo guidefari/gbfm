@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
+import { useToast } from '@/components/ui/use-toast'
 import { fetcher, useEnrichTrackFromUrl, VPS_BASE_URL } from '@/lib/http'
 import { useAuthStore } from '@/store'
-import { useToast } from '@/components/ui/use-toast'
 
 interface MusicReminder {
   id: string
@@ -307,39 +307,39 @@ function MusicReminders() {
                     new Date(a.reminderDate).getTime()
                 )
                 .map((reminder: MusicReminder) => (
-                <div
-                  key={reminder.id}
-                  className='flex items-center justify-between p-4 border rounded-lg'>
-                  <div className='flex items-center gap-3'>
-                    {reminder.albumCoverUrl && (
-                      <img
-                        src={reminder.albumCoverUrl}
-                        alt={`${reminder.musicTitle} cover`}
-                        className='w-10 h-10 rounded object-cover'
-                      />
-                    )}
-                    <div>
-                      <p className='font-medium'>{reminder.musicTitle}</p>
-                      <p className='text-sm text-muted-foreground'>
-                        by {reminder.artistName}
-                      </p>
-                      <p className='text-xs text-muted-foreground'>
-                        {new Date(reminder.reminderDate).toLocaleString()}
-                      </p>
+                  <div
+                    key={reminder.id}
+                    className='flex items-center justify-between p-4 border rounded-lg'>
+                    <div className='flex items-center gap-3'>
+                      {reminder.albumCoverUrl && (
+                        <img
+                          src={reminder.albumCoverUrl}
+                          alt={`${reminder.musicTitle} cover`}
+                          className='w-10 h-10 rounded object-cover'
+                        />
+                      )}
+                      <div>
+                        <p className='font-medium'>{reminder.musicTitle}</p>
+                        <p className='text-sm text-muted-foreground'>
+                          by {reminder.artistName}
+                        </p>
+                        <p className='text-xs text-muted-foreground'>
+                          {new Date(reminder.reminderDate).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className='text-right'>
+                      <span
+                        className={`text-xs px-2 py-1 rounded ${
+                          reminder.isSent
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                        {reminder.isSent ? 'Sent' : 'Pending'}
+                      </span>
                     </div>
                   </div>
-                  <div className='text-right'>
-                    <span
-                      className={`text-xs px-2 py-1 rounded ${
-                        reminder.isSent
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                      {reminder.isSent ? 'Sent' : 'Pending'}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                ))}
             </div>
           ) : (
             <div className='text-center text-muted-foreground py-8'>
