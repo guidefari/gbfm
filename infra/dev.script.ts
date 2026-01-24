@@ -181,6 +181,23 @@ new sst.x.DevCommand('Backup_Database', {
   }
 })
 
+new sst.x.DevCommand('Backup_Database_Prod', {
+  link: [...allSecrets, email, dbBackupBucket],
+  dev: {
+    command: 'bun scripts/backup-db.ts --source=remote --destination=s3',
+    directory: './apps/vps',
+    autostart: false
+  },
+  environment: {
+    DATABASE_BACKUP_BUCKET: dbBackupBucket.name,
+    DatabaseHost: secret.DatabaseHost.value,
+    DatabaseUser: secret.DatabaseUser.value,
+    DatabasePassword: secret.DatabasePassword.value,
+    DatabasePort: secret.DatabasePort.value,
+    DatabaseName: secret.DatabaseName.value
+  }
+})
+
 // new sst.x.DevCommand('Backup_Database_Docker', {
 //   link: [...allSecrets, email, dbBackupBucket],
 //   dev: {

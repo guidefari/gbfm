@@ -211,3 +211,68 @@ export async function sendMusicReminderEmail({
     }
   })
 }
+
+export async function sendBackupNotificationEmail({
+  to,
+  status,
+  timestamp,
+  database,
+  host,
+  filename,
+  fileSize,
+  errorMessage,
+  stackTrace,
+  logContent,
+  stage
+}: {
+  to: string | string[]
+  status: 'success' | 'failure'
+  timestamp?: string
+  database?: string
+  host?: string
+  filename?: string
+  fileSize?: string
+  errorMessage?: string
+  stackTrace?: string
+  logContent?: string
+  stage?: string
+}): Promise<void> {
+  const { BackupNotification } = await import('../emails/backup-notification')
+
+  const subject =
+    status === 'success'
+      ? `✅ Database Backup Successful - ${stage?.toUpperCase() || 'DEV'}`
+      : `❌ Database Backup Failed - ${stage?.toUpperCase() || 'DEV'}`
+
+  const props: {
+    status: 'success' | 'failure'
+    timestamp?: string
+    database?: string
+    host?: string
+    filename?: string
+    fileSize?: string
+    errorMessage?: string
+    stackTrace?: string
+    logContent?: string
+    stage?: string
+  } = {
+    status,
+    ...(timestamp && { timestamp }),
+    ...(database && { database }),
+    ...(host && { host }),
+    ...(filename && { filename }),
+    ...(fileSize && { fileSize }),
+    ...(errorMessage && { errorMessage }),
+    ...(stackTrace && { stackTrace }),
+    ...(logContent && { logContent }),
+    ...(stage && { stage })
+  }
+
+  await sendEmail({
+    to,
+    template: {
+      subject,
+      component: React.createElement(BackupNotification, props)
+    }
+  })
+}
