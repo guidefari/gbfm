@@ -1,3 +1,4 @@
+import { DevTools } from '@effect/experimental'
 import { Context, Layer } from 'effect'
 import { db } from '@/db'
 import { LoggerServiceLive } from '@/middlewares/effect-logger'
@@ -25,6 +26,9 @@ export const DatabaseServiceLive = Layer.succeed(DatabaseService, {
   db
 })
 
+const DevToolsLive: Layer.Layer<never> =
+  process.env.NODE_ENV === 'production' ? Layer.empty : DevTools.layer()
+
 export const AppLayer = Layer.mergeAll(
   ConfigServiceLive,
   DatabaseServiceLive,
@@ -39,5 +43,6 @@ export const AppLayer = Layer.mergeAll(
   PublicationServiceLive,
   ReleaseServiceLive,
   S3ServiceLive,
-  UserServiceLive
+  UserServiceLive,
+  DevToolsLive
 )
