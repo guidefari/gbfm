@@ -1,27 +1,27 @@
 import { Effect, Metric } from 'effect'
 
-const requestCount = Metric.counter("request_count", {
-  description: "Total number of requests"
+const requestCount = Metric.counter('request_count', {
+  description: 'Total number of requests'
 })
 
-const errorCount = Metric.counter("error_count", {
-  description: "Total number of errors"
+const errorCount = Metric.counter('error_count', {
+  description: 'Total number of errors'
 })
 
-const slowRequestCount = Metric.counter("slow_request_count", {
-  description: "Total number of slow requests (>500ms)"
+const slowRequestCount = Metric.counter('slow_request_count', {
+  description: 'Total number of slow requests (>500ms)'
 })
 
-const responseTime = Metric.gauge("response_time_ms", {
-  description: "Most recent response time in milliseconds"
+const responseTime = Metric.gauge('response_time_ms', {
+  description: 'Most recent response time in milliseconds'
 })
 
-const heapUsed = Metric.gauge("heap_used_mb", {
-  description: "Current heap memory usage in MB"
+const heapUsed = Metric.gauge('heap_used_mb', {
+  description: 'Current heap memory usage in MB'
 })
 
-const uptime = Metric.gauge("uptime_seconds", {
-  description: "Process uptime in seconds"
+const uptime = Metric.gauge('uptime_seconds', {
+  description: 'Process uptime in seconds'
 })
 
 const SLOW_REQUEST_THRESHOLD = 500
