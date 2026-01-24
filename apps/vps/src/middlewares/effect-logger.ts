@@ -90,11 +90,8 @@ export function effectLogger(): MiddlewareHandler {
         lastMemoryCheck = now
       }
 
-      // Record request metrics
-      recordRequest(duration, c.res.status >= 400)
-
-      // Periodic health checks
-      checkPerformanceHealth().pipe(Effect.runPromise)
+      recordRequest(duration, c.res.status >= 400).pipe(Effect.runPromise)
+      checkPerformanceHealth.pipe(Effect.runPromise)
 
       // Standard request logging
       const logEffect = Effect.log(
@@ -104,7 +101,7 @@ export function effectLogger(): MiddlewareHandler {
       if (config.app.nodeEnv === 'production') {
         await Effect.runPromise(logEffect)
       } else {
-        Effect.logInfo(
+        console.log(
           `[HTTP] ${c.req.method} ${c.req.path} ${c.res.status} - ${duration}ms`
         )
       }
@@ -126,7 +123,7 @@ export function effectLogger(): MiddlewareHandler {
       if (config.app.nodeEnv === 'production') {
         await Effect.runPromise(logEffect)
       } else {
-        Effect.logError(
+        console.error(
           `[HTTP] ${c.req.method} ${c.req.path} failed - ${duration}ms`,
           {
             error: error instanceof Error ? error.message : String(error)

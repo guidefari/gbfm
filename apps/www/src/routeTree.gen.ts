@@ -186,7 +186,7 @@ export interface FileRoutesByFullPath {
   '/mixes/$mixId': typeof MixesMixIdRoute
   '/releases/$slug': typeof ReleasesSlugRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
-  '/admin': typeof AdminIndexRoute
+  '/admin/': typeof AdminIndexRoute
   '/labels/': typeof LabelsIndexRoute
   '/mixes/': typeof MixesIndexRoute
   '/tracks/': typeof TracksIndexRoute
@@ -267,7 +267,7 @@ export interface FileRouteTypes {
     | '/mixes/$mixId'
     | '/releases/$slug'
     | '/tracks/$trackId'
-    | '/admin'
+    | '/admin/'
     | '/labels/'
     | '/mixes/'
     | '/tracks/'
@@ -463,7 +463,7 @@ declare module '@tanstack/react-router' {
     '/admin/': {
       id: '/admin/'
       path: '/admin'
-      fullPath: '/admin'
+      fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }

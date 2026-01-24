@@ -167,7 +167,9 @@ export const getAudioByType: AppRouteHandler<GetAudioByTypeRoute> = async (
     )
   )
 
-  const result = await AppRuntime.runPromise(program)
+  const instrumented = program.pipe(Effect.withSpan('getAudioByType'))
+
+  const result = await AppRuntime.runPromise(instrumented)
 
   if ('error' in result) {
     return c.json({ error: result.error }, result.status)
@@ -199,7 +201,9 @@ export const getAudioBySlug: AppRouteHandler<GetAudioBySlugRoute> = async (
     )
   )
 
-  const result = await AppRuntime.runPromise(program)
+  const instrumented = program.pipe(Effect.withSpan('getAudioBySlug'))
+
+  const result = await AppRuntime.runPromise(instrumented)
 
   if ('error' in result) {
     return c.json({ error: result.error }, result.status)
@@ -245,7 +249,9 @@ export const updateAudioBySlug: AppRouteHandler<
     )
   )
 
-  const result = await AppRuntime.runPromise(program)
+  const instrumented = program.pipe(Effect.withSpan('updateAudioBySlug'))
+
+  const result = await AppRuntime.runPromise(instrumented)
 
   if ('error' in result) {
     return c.json({ error: result.error }, result.status)
