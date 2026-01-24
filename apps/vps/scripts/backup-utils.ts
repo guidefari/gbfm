@@ -1,3 +1,5 @@
+import { Effect, Ref } from "effect";
+
 /**
  * Shared backup utilities
  */
@@ -151,3 +153,63 @@ export async function createBackupWithPgDump(config: BackupConfig): Promise<stri
   console.log(`✅ Database dump created (${(stdout.length / 1024).toFixed(2)} KB)`);
   return stdout;
 }
+
+/**
+ * Log capture service for collecting console output during operations.
+ * Uses Effect's Ref for state management and acquireRelease for cleanup.
+ */
+export interface LogCapture {
+  readonly getLogs: Effect.Effect<string>;
+}
+
+export const makeLogCapture = Effect.gen(function* (_) {
+  const logs = yield* _(Ref.make<string[]>([]));
+
+  const originalConsole = {
+    log: console.log,
+    error: console.error,
+    warn: console.warn,
+  };
+
+  const captureLog = (level: "log" | "error" | "warn", ...args: unknown[]) => {
+    const timestamp = new Date().toISOString();
+    const message = args
+      .map((arg) =>
+        typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
+      )
+      .join(" ");
+
+    const logEntry = `[${timestamp}] [${level.toUpperCase()}] ${message}`;
+
+    Effect.runSync(Ref.update(logs, (current) => [...current, logEntry]));
+    originalConsole[level](...args);
+  };
+
+  console.log = (...args) => captureLog("log", ...args);
+  console.error = (...args) => captureLog("error", ...args);
+  console.warn = (...args) => captureLog("warn", ...args);
+
+  const restore = () => {
+    console.log = originalConsole.log;
+    console.error = originalConsole.error;
+    console.warn = originalConsole.warn;
+  };
+
+  return {
+    getLogs: Ref.get(logs).pipe(Effect.map((entries) => entries.join("\n"))),
+    restore,
+  };
+});
+
+/**
+ * Scoped log capture that automatically restores console on scope close.
+ * Usage: Effect.scoped(withLogCapture((capture) => yourEffect))
+ */
+export const withLogCapture = <A, E, R>(
+  fn: (capture: { getLogs: Effect.Effect<string> }) => Effect.Effect<A, E, R>
+): Effect.Effect<A, E, R> =>
+  Effect.acquireUseRelease(
+    makeLogCapture,
+    (capture) => fn({ getLogs: capture.getLogs }),
+    (capture) => Effect.sync(() => capture.restore())
+  );
