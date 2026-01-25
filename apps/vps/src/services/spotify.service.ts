@@ -1,6 +1,11 @@
 import { SpotifyApi as SpotifyApiClient } from '@spotify/web-api-ts-sdk'
 import { Context, Effect, Layer } from 'effect'
 import { SpotifyError } from '@/errors'
+import {
+  recordCacheAccess,
+  recordExternalApiCall
+} from '@/lib/metrics'
+import { withServiceSpan } from '@/lib/tracing'
 import { config } from '@/services/config.service'
 import type {
   Album,
@@ -206,249 +211,322 @@ const parseBandcampHtml = (html: string, _url: string) =>
 
 // Bandcamp metadata extraction with caching
 const getBandcampMetadata = (url: string) =>
-  Effect.gen(function* () {
-    // Check cache first
-    const cacheKey = url
-    const cached = bandcampCache.get(cacheKey)
-    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      return cached.data
-    }
-
-    // Fetch the Bandcamp page
-    const response = yield* Effect.tryPromise({
-      try: () =>
-        fetch(url, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; MusicMetadataBot/1.0)'
-          }
-        }),
-      catch: (error) =>
-        new SpotifyError({
-          message: `Failed to fetch Bandcamp page: ${(error as Error).message}`,
-          operation: 'getBandcampMetadata',
-          statusCode: 500
-        })
-    })
-
-    if (!response.ok) {
-      return yield* Effect.fail(
-        new SpotifyError({
-          message: `Bandcamp page returned ${response.status}`,
-          operation: 'getBandcampMetadata',
-          statusCode: response.status
-        })
-      )
-    }
-
-    const html = yield* Effect.tryPromise({
-      try: () => response.text(),
-      catch: (error) =>
-        new SpotifyError({
-          message: `Failed to read Bandcamp page content: ${(error as Error).message}`,
-          operation: 'getBandcampMetadata',
-          statusCode: 500
-        })
-    })
-
-    let metadata: BandcampAlbum | undefined
-
-    // Try JSON-LD structured data first
-    const jsonLdMatch = html.match(
-      /<script type="application\/ld\+json">([\s\S]*?)<\/script>/
-    )
-    if (jsonLdMatch?.[1]) {
-      try {
-        metadata = JSON.parse(jsonLdMatch[1])
-      } catch (_parseError) {
-        // Fall through to HTML parsing
+  withServiceSpan('bandcamp', 'getMetadata', { url })(
+    Effect.gen(function* () {
+      // Check cache first
+      const cacheKey = url
+      const cached = bandcampCache.get(cacheKey)
+      if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+        yield* recordCacheAccess('bandcamp', true, bandcampCache.size)
+        yield* Effect.annotateCurrentSpan('cache.hit', true)
+        return cached.data
       }
-    }
 
-    // If JSON-LD failed or wasn't found, parse HTML directly
-    if (!metadata) {
-      metadata = yield* parseBandcampHtml(html, url)
-    }
+      yield* recordCacheAccess('bandcamp', false, bandcampCache.size)
+      yield* Effect.annotateCurrentSpan('cache.hit', false)
 
-    // Cache the result
-    bandcampCache.set(cacheKey, { data: metadata, timestamp: Date.now() })
+      // Fetch the Bandcamp page
+      const fetchStart = performance.now()
+      const response = yield* Effect.tryPromise({
+        try: () =>
+          fetch(url, {
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (compatible; MusicMetadataBot/1.0)'
+            }
+          }),
+        catch: (error) =>
+          new SpotifyError({
+            message: `Failed to fetch Bandcamp page: ${(error as Error).message}`,
+            operation: 'getBandcampMetadata',
+            statusCode: 500
+          })
+      })
+      const fetchDuration = performance.now() - fetchStart
+      yield* recordExternalApiCall(
+        'bandcamp',
+        'fetch',
+        fetchDuration,
+        !response.ok
+      )
 
-    return metadata
-  })
+      if (!response.ok) {
+        return yield* Effect.fail(
+          new SpotifyError({
+            message: `Bandcamp page returned ${response.status}`,
+            operation: 'getBandcampMetadata',
+            statusCode: response.status
+          })
+        )
+      }
+
+      const html = yield* Effect.tryPromise({
+        try: () => response.text(),
+        catch: (error) =>
+          new SpotifyError({
+            message: `Failed to read Bandcamp page content: ${(error as Error).message}`,
+            operation: 'getBandcampMetadata',
+            statusCode: 500
+          })
+      })
+
+      let metadata: BandcampAlbum | undefined
+
+      // Try JSON-LD structured data first
+      const jsonLdMatch = html.match(
+        /<script type="application\/ld\+json">([\s\S]*?)<\/script>/
+      )
+      if (jsonLdMatch?.[1]) {
+        try {
+          metadata = JSON.parse(jsonLdMatch[1])
+          yield* Effect.annotateCurrentSpan('parse.method', 'json-ld')
+        } catch (_parseError) {
+          // Fall through to HTML parsing
+        }
+      }
+
+      // If JSON-LD failed or wasn't found, parse HTML directly
+      if (!metadata) {
+        metadata = yield* parseBandcampHtml(html, url)
+        yield* Effect.annotateCurrentSpan('parse.method', 'html')
+      }
+
+      // Cache the result
+      bandcampCache.set(cacheKey, { data: metadata, timestamp: Date.now() })
+
+      return metadata
+    })
+  )
 
 // Core service logic - pure Effects with no service dependencies
 const getTrackEffect = (id: string) =>
-  Effect.gen(function* () {
-    const sanitizedId = cleanId(id)
+  withServiceSpan('spotify', 'getTrack', { trackId: id })(
+    Effect.gen(function* () {
+      const sanitizedId = cleanId(id)
 
-    if (!id || !sanitizedId) {
-      return yield* Effect.fail(
-        new SpotifyError({
-          message: 'Invalid track ID provided',
-          operation: 'getTrack',
-          statusCode: 400
-        })
+      if (!id || !sanitizedId) {
+        return yield* Effect.fail(
+          new SpotifyError({
+            message: 'Invalid track ID provided',
+            operation: 'getTrack',
+            statusCode: 400
+          })
+        )
+      }
+
+      const apiStart = performance.now()
+      const data = yield* Effect.tryPromise({
+        try: () => spotifyClient.tracks.get(sanitizedId),
+        catch: (error) =>
+          new SpotifyError({
+            message: `Failed to fetch track: ${(error as Error).message}`,
+            operation: 'getTrack',
+            statusCode: 500
+          })
+      })
+      yield* recordExternalApiCall(
+        'spotify',
+        'tracks.get',
+        performance.now() - apiStart,
+        false
       )
-    }
 
-    const data = yield* Effect.tryPromise({
-      try: () => spotifyClient.tracks.get(sanitizedId),
-      catch: (error) =>
-        new SpotifyError({
-          message: `Failed to fetch track: ${(error as Error).message}`,
-          operation: 'getTrack',
-          statusCode: 500
-        })
+      const track: Track = {
+        albumType: data.album?.album_type,
+        albumImageUrl: data.album?.images[0]?.url,
+        title: data.name,
+        artists: data.artists.map((artist) => artist.name).join(', '),
+        trackUrl: data.external_urls.spotify,
+        previewUrl: data.preview_url ?? undefined
+      }
+
+      return track
     })
-
-    const track: Track = {
-      albumType: data.album?.album_type,
-      albumImageUrl: data.album?.images[0]?.url,
-      title: data.name,
-      artists: data.artists.map((artist) => artist.name).join(', '),
-      trackUrl: data.external_urls.spotify,
-      previewUrl: data.preview_url ?? undefined
-    }
-
-    return track
-  })
+  )
 
 const getAlbumEffect = (id: string) =>
-  Effect.gen(function* () {
-    const sanitizedId = cleanId(id)
+  withServiceSpan('spotify', 'getAlbum', { albumId: id })(
+    Effect.gen(function* () {
+      const sanitizedId = cleanId(id)
 
-    if (!id || !sanitizedId) {
-      return yield* Effect.fail(
-        new SpotifyError({
-          message: 'Invalid album ID provided',
-          operation: 'getAlbum',
-          statusCode: 400
-        })
+      if (!id || !sanitizedId) {
+        return yield* Effect.fail(
+          new SpotifyError({
+            message: 'Invalid album ID provided',
+            operation: 'getAlbum',
+            statusCode: 400
+          })
+        )
+      }
+
+      const apiStart = performance.now()
+      const data = yield* Effect.tryPromise({
+        try: () => spotifyClient.albums.get(sanitizedId),
+        catch: (error) =>
+          new SpotifyError({
+            message: `Failed to fetch album: ${(error as Error).message}`,
+            operation: 'getAlbum',
+            statusCode: 500
+          })
+      })
+      yield* recordExternalApiCall(
+        'spotify',
+        'albums.get',
+        performance.now() - apiStart,
+        false
       )
-    }
 
-    const data = yield* Effect.tryPromise({
-      try: () => spotifyClient.albums.get(sanitizedId),
-      catch: (error) =>
-        new SpotifyError({
-          message: `Failed to fetch album: ${(error as Error).message}`,
-          operation: 'getAlbum',
-          statusCode: 500
-        })
+      const album: Album = {
+        albumType: data.album_type,
+        albumImageUrl: data.images[0]?.url,
+        title: data.name,
+        artists: data.artists.map((artist) => artist.name).join(', '),
+        tracks: data.tracks.items.map((track) => ({
+          title: track.name,
+          artists: track.artists.map((artist) => artist.name).join(', '),
+          previewUrl: track.preview_url ?? undefined,
+          trackUrl: track.external_urls.spotify
+        })),
+        albumUrl: data.external_urls.spotify
+      }
+
+      yield* Effect.annotateCurrentSpan('album.trackCount', data.tracks.total)
+
+      return album
     })
-
-    const album: Album = {
-      albumType: data.album_type,
-      albumImageUrl: data.images[0]?.url,
-      title: data.name,
-      artists: data.artists.map((artist) => artist.name).join(', '),
-      tracks: data.tracks.items.map((track) => ({
-        title: track.name,
-        artists: track.artists.map((artist) => artist.name).join(', '),
-        previewUrl: track.preview_url ?? undefined,
-        trackUrl: track.external_urls.spotify
-      })),
-      albumUrl: data.external_urls.spotify
-    }
-
-    return album
-  })
+  )
 
 const getPlaylistEffect = (id: string) =>
-  Effect.gen(function* () {
-    const sanitizedId = cleanId(id)
+  withServiceSpan('spotify', 'getPlaylist', { playlistId: id })(
+    Effect.gen(function* () {
+      const sanitizedId = cleanId(id)
 
-    if (!id || !sanitizedId) {
-      return yield* Effect.fail(
-        new SpotifyError({
-          message: 'Invalid playlist ID provided',
-          operation: 'getPlaylist',
-          statusCode: 400
-        })
+      if (!id || !sanitizedId) {
+        return yield* Effect.fail(
+          new SpotifyError({
+            message: 'Invalid playlist ID provided',
+            operation: 'getPlaylist',
+            statusCode: 400
+          })
+        )
+      }
+
+      const apiStart = performance.now()
+      const data = yield* Effect.tryPromise({
+        try: () => spotifyClient.playlists.getPlaylist(sanitizedId),
+        catch: (error) =>
+          new SpotifyError({
+            message: `Failed to fetch playlist: ${(error as Error).message}`,
+            operation: 'getPlaylist',
+            statusCode: 500
+          })
+      })
+      yield* recordExternalApiCall(
+        'spotify',
+        'playlists.get',
+        performance.now() - apiStart,
+        false
       )
-    }
 
-    const data = yield* Effect.tryPromise({
-      try: () => spotifyClient.playlists.getPlaylist(sanitizedId),
-      catch: (error) =>
-        new SpotifyError({
-          message: `Failed to fetch playlist: ${(error as Error).message}`,
-          operation: 'getPlaylist',
-          statusCode: 500
-        })
+      const playlist: Playlist = {
+        coverImageUrl: data.images[0]?.url,
+        title: data.name,
+        description: data.description,
+        tracks: data.tracks.items.map(({ track }) => ({
+          title: track.name,
+          artists: track.artists.map((artist) => artist.name).join(', '),
+          previewUrl: track.preview_url ?? undefined,
+          trackUrl: track.external_urls.spotify
+        })),
+        ownerName: data.owner.display_name,
+        playlistUrl: data.external_urls.spotify
+      }
+
+      yield* Effect.annotateCurrentSpan('playlist.trackCount', data.tracks.total)
+
+      return playlist
     })
-
-    const playlist: Playlist = {
-      coverImageUrl: data.images[0]?.url,
-      title: data.name,
-      description: data.description,
-      tracks: data.tracks.items.map(({ track }) => ({
-        title: track.name,
-        artists: track.artists.map((artist) => artist.name).join(', '),
-        previewUrl: track.preview_url ?? undefined,
-        trackUrl: track.external_urls.spotify
-      })),
-      ownerName: data.owner.display_name,
-      playlistUrl: data.external_urls.spotify
-    }
-
-    return playlist
-  })
+  )
 
 const searchAlbumsEffect = (query: string, limit = 10, offset = 0) =>
-  Effect.gen(function* () {
-    if (!query || query.trim() === '') {
-      return yield* Effect.fail(
-        new SpotifyError({
-          message: 'Search query is required',
-          operation: 'searchAlbums',
-          statusCode: 400
-        })
+  withServiceSpan('spotify', 'searchAlbums', { query, limit, offset })(
+    Effect.gen(function* () {
+      if (!query || query.trim() === '') {
+        return yield* Effect.fail(
+          new SpotifyError({
+            message: 'Search query is required',
+            operation: 'searchAlbums',
+            statusCode: 400
+          })
+        )
+      }
+
+      const validatedLimit = Math.min(Math.max(1, limit), 50) as Parameters<
+        typeof spotifyClient.search
+      >[3]
+
+      const apiStart = performance.now()
+      const data = yield* Effect.tryPromise({
+        try: () =>
+          spotifyClient.search(
+            query,
+            ['album'],
+            undefined,
+            validatedLimit,
+            offset
+          ),
+        catch: (error) =>
+          new SpotifyError({
+            message: `Failed to search albums: ${(error as Error).message}`,
+            operation: 'searchAlbums',
+            statusCode: 500
+          })
+      })
+      yield* recordExternalApiCall(
+        'spotify',
+        'search',
+        performance.now() - apiStart,
+        false
       )
-    }
 
-    const validatedLimit = Math.min(Math.max(1, limit), 50) as Parameters<
-      typeof spotifyClient.search
-    >[3]
+      const searchResponse: SearchAlbumsResponse = {
+        albums: (data.albums?.items || []).map((album) => ({
+          id: album.id,
+          title: album.name,
+          artists: album.artists.map((artist) => artist.name).join(', '),
+          albumType: album.album_type,
+          releaseDate: album.release_date,
+          albumImageUrl: album.images[0]?.url,
+          albumUrl: album.external_urls.spotify,
+          totalTracks: album.total_tracks
+        })),
+        total: data.albums?.total || 0,
+        limit: data.albums?.limit ?? validatedLimit,
+        offset: data.albums?.offset ?? offset
+      }
 
-    const data = yield* Effect.tryPromise({
-      try: () =>
-        spotifyClient.search(
-          query,
-          ['album'],
-          undefined,
-          validatedLimit,
-          offset
-        ),
-      catch: (error) =>
-        new SpotifyError({
-          message: `Failed to search albums: ${(error as Error).message}`,
-          operation: 'searchAlbums',
-          statusCode: 500
-        })
+      yield* Effect.annotateCurrentSpan('search.resultCount', searchResponse.albums.length)
+      yield* Effect.annotateCurrentSpan('search.totalResults', searchResponse.total)
+
+      return searchResponse
     })
-
-    const searchResponse: SearchAlbumsResponse = {
-      albums: (data.albums?.items || []).map((album) => ({
-        id: album.id,
-        title: album.name,
-        artists: album.artists.map((artist) => artist.name).join(', '),
-        albumType: album.album_type,
-        releaseDate: album.release_date,
-        albumImageUrl: album.images[0]?.url,
-        albumUrl: album.external_urls.spotify,
-        totalTracks: album.total_tracks
-      })),
-      total: data.albums?.total || 0,
-      limit: data.albums?.limit ?? validatedLimit,
-      offset: data.albums?.offset ?? offset
-    }
-
-    return searchResponse
-  })
+  )
 
 const enrichTrackFromUrlEffect = (url: string) =>
-  Effect.gen(function* () {
-    let result: {
+  withServiceSpan('spotify', 'enrichTrackFromUrl', { url })(
+    Effect.gen(function* () {
+      // Determine platform for span annotation
+      const platform = isSpotifyUrl(url)
+        ? 'spotify'
+        : isYouTubeUrl(url)
+          ? 'youtube'
+          : isAppleMusicUrl(url)
+            ? 'apple_music'
+            : isBandcampUrl(url)
+              ? 'bandcamp'
+              : 'other'
+      yield* Effect.annotateCurrentSpan('platform', platform)
+
+      let result: {
       title: string
       artist: string
       url: string
@@ -594,7 +672,8 @@ const enrichTrackFromUrlEffect = (url: string) =>
     }
 
     return result
-  })
+    })
+  )
 
 // Implementation - simple layer that provides access to the Effects
 export const SpotifyServiceLive = Layer.succeed(SpotifyService, {

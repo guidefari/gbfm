@@ -1,10 +1,7 @@
 import { Context, Effect, Layer } from 'effect'
 import type { MiddlewareHandler } from 'hono'
 import { LoggerError } from '@/errors'
-import {
-  checkPerformanceHealth,
-  recordRequest
-} from '@/lib/performance-monitoring'
+import { recordHttpRequest, recordSystemHealth } from '@/lib/metrics'
 import { config } from '@/services/config.service'
 
 // Performance thresholds for request monitoring
@@ -66,6 +63,7 @@ export function effectLogger(): MiddlewareHandler {
 
       // Performance monitoring effects
       const performanceEffects = [
+        // Slow request logging
         duration > VERY_SLOW_REQUEST_THRESHOLD
           ? Effect.logError('[Performance] Very slow request detected', {
               method: c.req.method,
@@ -88,8 +86,11 @@ export function effectLogger(): MiddlewareHandler {
               })
             : Effect.void,
 
-        recordRequest(duration, c.res.status >= 400),
-        checkPerformanceHealth,
+        // Record HTTP request metrics with endpoint breakdown
+        recordHttpRequest(c.req.method, c.req.path, c.res.status, duration),
+
+        // System health metrics (sampled - only run occasionally)
+        Math.random() < 0.1 ? recordSystemHealth : Effect.void,
 
         // Standard request logging
         Effect.log(
