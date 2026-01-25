@@ -5,6 +5,11 @@ import {
   selectAuthorEmailPreferencesSchema,
   updateAuthorEmailPreferencesSchema
 } from '@/db/email.schema'
+import { subscriptionWithShowSchema } from '@/db/show.schema'
+import {
+  createPaginatedResponseSchema,
+  paginationQuerySchema
+} from '@/lib/pagination'
 
 // Better Auth compatible schemas
 const selectUserSchema = z.object({
@@ -178,7 +183,32 @@ export const updateEmailPreferences = createRoute({
   }
 })
 
+export const getUserSubscriptions = createRoute({
+  path: '/subscriptions',
+  method: 'get',
+  middleware: [betterAuthMiddleware],
+  request: {
+    query: paginationQuerySchema
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      createPaginatedResponseSchema(subscriptionWithShowSchema),
+      'User subscriptions'
+    ),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
+      z.object({ error: z.string() }),
+      'Unauthorized'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to fetch subscriptions'
+    )
+  }
+})
+
 export type UpdateProfileRoute = typeof updateProfile
 export type GetProfileRoute = typeof getProfile
 export type GetEmailPreferencesRoute = typeof getEmailPreferences
 export type UpdateEmailPreferencesRoute = typeof updateEmailPreferences
+export type GetUserSubscriptionsRoute = typeof getUserSubscriptions

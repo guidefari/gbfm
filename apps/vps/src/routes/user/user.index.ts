@@ -8,5 +8,6 @@ const router = createRouter()
   .openapi(routes.getProfile, handlers.getProfile)
   .openapi(routes.getEmailPreferences, handlers.getEmailPreferences)
   .openapi(routes.updateEmailPreferences, handlers.updateEmailPreferences)
+  .openapi(routes.getUserSubscriptions, handlers.getUserSubscriptions)
 
 export default router

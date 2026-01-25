@@ -10,7 +10,6 @@ import type {
   GetAllShowsRoute,
   GetShowBySlugRoute,
   GetShowEpisodesRoute,
-  GetUserSubscriptionsRoute,
   SubscribeToShowRoute,
   UnsubscribeFromShowRoute,
   UpdateShowBySlugRoute
@@ -287,31 +286,4 @@ export const unsubscribeFromShow: AppRouteHandler<
   }
 
   return c.body(null, HttpStatusCodes.NO_CONTENT)
-}
-
-export const getUserSubscriptions: AppRouteHandler<
-  GetUserSubscriptionsRoute
-> = async (c) => {
-  const { limit, offset } = c.req.valid('query')
-  const user = c.get('user')
-
-  const program = Effect.gen(function* () {
-    const showService = yield* ShowService
-    return yield* showService.getUserSubscriptions(user.id, { limit, offset })
-  }).pipe(
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
-
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
 }

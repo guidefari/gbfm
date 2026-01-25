@@ -1,12 +1,15 @@
 import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import type { AppRouteHandler } from '@/lib/types'
+import { AppRuntime } from '@/runtime'
 import { runApp } from '@/runtime'
+import { ShowService } from '@/services/show.service'
 import { UserService } from '@/services/user.service'
 
 import type {
   GetEmailPreferencesRoute,
   GetProfileRoute,
+  GetUserSubscriptionsRoute,
   UpdateEmailPreferencesRoute,
   UpdateProfileRoute
 } from './user.routes'
@@ -162,4 +165,31 @@ export const updateEmailPreferences: AppRouteHandler<
   }
 
   return c.json(result.right, HttpStatusCodes.OK)
+}
+
+export const getUserSubscriptions: AppRouteHandler<
+  GetUserSubscriptionsRoute
+> = async (c) => {
+  const { limit, offset } = c.req.valid('query')
+  const user = c.get('user')
+
+  const program = Effect.gen(function* () {
+    const showService = yield* ShowService
+    return yield* showService.getUserSubscriptions(user.id, { limit, offset })
+  }).pipe(
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    )
+  )
+
+  const result = await AppRuntime.runPromise(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
+  }
+
+  return c.json(result, HttpStatusCodes.OK)
 }

@@ -8,7 +8,6 @@ import {
   selectMdxCompiledShowSchema,
   selectShowSchema,
   selectSubscriptionSchema,
-  subscriptionWithShowSchema,
   updateShowSchema
 } from '@/db/show.schema'
 import {
@@ -33,7 +32,7 @@ const showWithHostsSchema = selectShowSchema
   .openapi('ShowWithHosts')
 
 export const getAllShows = createRoute({
-  path: '/shows',
+  path: '/',
   method: 'get',
   request: {
     query: paginationQuerySchema
@@ -52,7 +51,7 @@ export const getAllShows = createRoute({
 })
 
 export const getShowBySlug = createRoute({
-  path: '/shows/{slug}',
+  path: '/{slug}',
   method: 'get',
   request: {
     params: z.object({
@@ -77,7 +76,7 @@ export const getShowBySlug = createRoute({
 })
 
 export const createShow = createRoute({
-  path: '/shows',
+  path: '/',
   method: 'post',
   middleware: [betterAuthMiddleware],
   request: {
@@ -109,7 +108,7 @@ export const createShow = createRoute({
 })
 
 export const updateShowBySlug = createRoute({
-  path: '/shows/{slug}',
+  path: '/{slug}',
   method: 'patch',
   middleware: [betterAuthMiddleware],
   request: {
@@ -140,7 +139,7 @@ export const updateShowBySlug = createRoute({
 })
 
 export const deleteShowBySlug = createRoute({
-  path: '/shows/{slug}',
+  path: '/{slug}',
   method: 'delete',
   middleware: [betterAuthMiddleware],
   request: {
@@ -169,7 +168,7 @@ export const deleteShowBySlug = createRoute({
 })
 
 export const getShowEpisodes = createRoute({
-  path: '/shows/{slug}/episodes',
+  path: '/{slug}/episodes',
   method: 'get',
   request: {
     params: z.object({
@@ -195,7 +194,7 @@ export const getShowEpisodes = createRoute({
 })
 
 export const subscribeToShow = createRoute({
-  path: '/shows/{id}/subscribe',
+  path: '/{id}/subscribe',
   method: 'post',
   middleware: [betterAuthMiddleware],
   request: {
@@ -225,7 +224,7 @@ export const subscribeToShow = createRoute({
 })
 
 export const unsubscribeFromShow = createRoute({
-  path: '/shows/{id}/unsubscribe',
+  path: '/{id}/unsubscribe',
   method: 'delete',
   middleware: [betterAuthMiddleware],
   request: {
@@ -253,30 +252,6 @@ export const unsubscribeFromShow = createRoute({
   }
 })
 
-export const getUserSubscriptions = createRoute({
-  path: '/user/subscriptions',
-  method: 'get',
-  middleware: [betterAuthMiddleware],
-  request: {
-    query: paginationQuerySchema
-  },
-  tags,
-  responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      createPaginatedResponseSchema(subscriptionWithShowSchema),
-      'User subscriptions'
-    ),
-    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
-      'Unauthorized'
-    ),
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      z.object({ error: z.string() }),
-      'Failed to fetch subscriptions'
-    )
-  }
-})
-
 export type GetAllShowsRoute = typeof getAllShows
 export type GetShowBySlugRoute = typeof getShowBySlug
 export type CreateShowRoute = typeof createShow
@@ -285,4 +260,3 @@ export type DeleteShowBySlugRoute = typeof deleteShowBySlug
 export type GetShowEpisodesRoute = typeof getShowEpisodes
 export type SubscribeToShowRoute = typeof subscribeToShow
 export type UnsubscribeFromShowRoute = typeof unsubscribeFromShow
-export type GetUserSubscriptionsRoute = typeof getUserSubscriptions

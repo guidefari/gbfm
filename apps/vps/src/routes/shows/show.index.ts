@@ -12,6 +12,5 @@ const router = createRouter()
   .openapi(routes.getShowEpisodes, handlers.getShowEpisodes)
   .openapi(routes.subscribeToShow, handlers.subscribeToShow)
   .openapi(routes.unsubscribeFromShow, handlers.unsubscribeFromShow)
-  .openapi(routes.getUserSubscriptions, handlers.getUserSubscriptions)
 
 export default router

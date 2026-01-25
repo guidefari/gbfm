@@ -4,7 +4,10 @@ import type {
   SelectMdxCompiledAudio,
   SelectMdxCompiledLabel,
   SelectMdxCompiledRelease,
-  SelectRelease
+  SelectMdxCompiledShow,
+  SelectRelease,
+  SelectShow,
+  SelectShowSubscription
 } from '@gbfm/vps/schemas'
 import {
   useInfiniteQuery,
@@ -428,6 +431,156 @@ export function useRemoveFavorite() {
 
   return {
     removeFavorite,
+    isPending
+  }
+}
+
+export type ShowWithHosts = SelectShow & {
+  hosts: Array<{ id: string; name: string }>
+}
+
+export function useAllShows() {
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isPending
+  } = useInfiniteQuery<PaginatedResponse<ShowWithHosts>, Error>({
+    queryKey: ['shows'],
+    queryFn: async ({ pageParam = 0 }) =>
+      fetcher<PaginatedResponse<ShowWithHosts>>(
+        `${VPS_BASE_URL}/shows?limit=20&offset=${pageParam}`
+      ),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.hasMore
+        ? lastPage.pagination.offset + lastPage.pagination.limit
+        : undefined
+  })
+
+  return {
+    data: data?.pages.flatMap((page) => page.data) ?? [],
+    error,
+    isPending,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
+  }
+}
+
+export function useShowBySlug(slug: string) {
+  const { data, error, isPending } = useQuery<SelectMdxCompiledShow, Error>({
+    queryKey: ['show', slug],
+    queryFn: async () => fetcher(`${VPS_BASE_URL}/shows/${slug}`),
+    enabled: Boolean(slug)
+  })
+
+  return {
+    data,
+    error,
+    isPending
+  }
+}
+
+export function useShowEpisodes(slug: string) {
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isPending
+  } = useInfiniteQuery<PaginatedResponse<SelectAudio>, Error>({
+    queryKey: ['show-episodes', slug],
+    queryFn: async ({ pageParam = 0 }) =>
+      fetcher<PaginatedResponse<SelectAudio>>(
+        `${VPS_BASE_URL}/shows/${slug}/episodes?limit=20&offset=${pageParam}`
+      ),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.hasMore
+        ? lastPage.pagination.offset + lastPage.pagination.limit
+        : undefined,
+    enabled: Boolean(slug)
+  })
+
+  return {
+    data: data?.pages.flatMap((page) => page.data) ?? [],
+    error,
+    isPending,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
+  }
+}
+
+export type SubscriptionWithShow = SelectShowSubscription & {
+  show: SelectShow
+}
+
+export function useUserSubscriptions() {
+  const { isAuthenticated } = useAuthStore()
+  const { data, error, isPending } = useQuery<
+    PaginatedResponse<SubscriptionWithShow>,
+    Error
+  >({
+    queryKey: ['user-subscriptions'],
+    queryFn: async () =>
+      fetcher<PaginatedResponse<SubscriptionWithShow>>(
+        `${VPS_BASE_URL}/user/subscriptions`
+      ),
+    enabled: isAuthenticated
+  })
+
+  return {
+    data: data?.data ?? [],
+    error,
+    isPending
+  }
+}
+
+export function useSubscribeToShow() {
+  const queryClient = useQueryClient()
+  const { mutateAsync: subscribe, isPending } = useMutation<
+    SelectShowSubscription,
+    Error,
+    { showId: string }
+  >({
+    mutationFn: async ({ showId }) =>
+      fetcher(`${VPS_BASE_URL}/shows/${showId}/subscribe`, {
+        method: 'POST'
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-subscriptions'] })
+    }
+  })
+
+  return {
+    subscribe,
+    isPending
+  }
+}
+
+export function useUnsubscribeFromShow() {
+  const queryClient = useQueryClient()
+  const { mutateAsync: unsubscribe, isPending } = useMutation<
+    void,
+    Error,
+    { showId: string }
+  >({
+    mutationFn: async ({ showId }) =>
+      fetcher(`${VPS_BASE_URL}/shows/${showId}/unsubscribe`, {
+        method: 'DELETE'
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-subscriptions'] })
+    }
+  })
+
+  return {
+    unsubscribe,
     isPending
   }
 }

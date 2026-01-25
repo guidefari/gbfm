@@ -1,7 +1,8 @@
 import type {
   SelectMdxCompiledAudio,
   SelectMdxCompiledLabel,
-  SelectMdxCompiledRelease
+  SelectMdxCompiledRelease,
+  SelectMdxCompiledShow
 } from '@gbfm/vps/schemas'
 
 export const SITE_URL = 'https://goosebumps.fm'
@@ -172,6 +173,29 @@ export function generateReleaseSEO(
   }
 }
 
+export function generateShowSEO(
+  show: SelectMdxCompiledShow,
+  slug: string
+): SEOHeadData {
+  const title = show.title || slug
+  const hostNames = show.hosts?.map((h) => h.name).join(', ')
+  const description =
+    show.description ||
+    (hostNames
+      ? `${title} hosted by ${hostNames} on goosebumps.fm`
+      : `Listen to ${title} on goosebumps.fm`)
+  const url = `${SITE_URL}/shows/${slug}`
+  const image = show.thumbnailUrl || DEFAULT_OG_IMAGE
+
+  return {
+    title,
+    description,
+    url,
+    image,
+    type: 'website'
+  }
+}
+
 export function generateStaticPageSEO(
   title: string,
   description: string,
@@ -205,6 +229,11 @@ export const STATIC_PAGE_SEO = {
     'Record Labels',
     'Discover independent record labels and their music catalogs on goosebumps.fm.',
     '/labels'
+  ),
+  shows: generateStaticPageSEO(
+    'Radio Shows',
+    'Discover radio shows and residencies on goosebumps.fm. Subscribe to get notified of new episodes.',
+    '/shows'
   ),
   dashboard: generateStaticPageSEO(
     'Dashboard',

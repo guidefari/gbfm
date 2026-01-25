@@ -22,10 +22,12 @@ import { Route as MixesRouteRouteImport } from './routes/mixes/route'
 import { Route as LabelsRouteRouteImport } from './routes/labels/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TracksIndexRouteImport } from './routes/tracks/index'
+import { Route as ShowsIndexRouteImport } from './routes/shows/index'
 import { Route as MixesIndexRouteImport } from './routes/mixes/index'
 import { Route as LabelsIndexRouteImport } from './routes/labels/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as TracksTrackIdRouteImport } from './routes/tracks/$trackId'
+import { Route as ShowsShowSlugRouteImport } from './routes/shows/$showSlug'
 import { Route as ReleasesSlugRouteImport } from './routes/releases/$slug'
 import { Route as MixesMixIdRouteImport } from './routes/mixes/$mixId'
 import { Route as LabelsLabelSlugRouteImport } from './routes/labels/$labelSlug'
@@ -108,6 +110,11 @@ const TracksIndexRoute = TracksIndexRouteImport.update({
   path: '/',
   getParentRoute: () => TracksRouteRoute,
 } as any)
+const ShowsIndexRoute = ShowsIndexRouteImport.update({
+  id: '/shows/',
+  path: '/shows/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MixesIndexRoute = MixesIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -127,6 +134,11 @@ const TracksTrackIdRoute = TracksTrackIdRouteImport.update({
   id: '/$trackId',
   path: '/$trackId',
   getParentRoute: () => TracksRouteRoute,
+} as any)
+const ShowsShowSlugRoute = ShowsShowSlugRouteImport.update({
+  id: '/shows/$showSlug',
+  path: '/shows/$showSlug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ReleasesSlugRoute = ReleasesSlugRouteImport.update({
   id: '/releases/$slug',
@@ -185,10 +197,12 @@ export interface FileRoutesByFullPath {
   '/labels/$labelSlug': typeof LabelsLabelSlugRoute
   '/mixes/$mixId': typeof MixesMixIdRoute
   '/releases/$slug': typeof ReleasesSlugRoute
+  '/shows/$showSlug': typeof ShowsShowSlugRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
   '/admin/': typeof AdminIndexRoute
   '/labels/': typeof LabelsIndexRoute
   '/mixes/': typeof MixesIndexRoute
+  '/shows/': typeof ShowsIndexRoute
   '/tracks/': typeof TracksIndexRoute
 }
 export interface FileRoutesByTo {
@@ -209,10 +223,12 @@ export interface FileRoutesByTo {
   '/labels/$labelSlug': typeof LabelsLabelSlugRoute
   '/mixes/$mixId': typeof MixesMixIdRoute
   '/releases/$slug': typeof ReleasesSlugRoute
+  '/shows/$showSlug': typeof ShowsShowSlugRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
   '/admin': typeof AdminIndexRoute
   '/labels': typeof LabelsIndexRoute
   '/mixes': typeof MixesIndexRoute
+  '/shows': typeof ShowsIndexRoute
   '/tracks': typeof TracksIndexRoute
 }
 export interface FileRoutesById {
@@ -237,10 +253,12 @@ export interface FileRoutesById {
   '/labels/$labelSlug': typeof LabelsLabelSlugRoute
   '/mixes/$mixId': typeof MixesMixIdRoute
   '/releases/$slug': typeof ReleasesSlugRoute
+  '/shows/$showSlug': typeof ShowsShowSlugRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
   '/admin/': typeof AdminIndexRoute
   '/labels/': typeof LabelsIndexRoute
   '/mixes/': typeof MixesIndexRoute
+  '/shows/': typeof ShowsIndexRoute
   '/tracks/': typeof TracksIndexRoute
 }
 export interface FileRouteTypes {
@@ -266,10 +284,12 @@ export interface FileRouteTypes {
     | '/labels/$labelSlug'
     | '/mixes/$mixId'
     | '/releases/$slug'
+    | '/shows/$showSlug'
     | '/tracks/$trackId'
     | '/admin/'
     | '/labels/'
     | '/mixes/'
+    | '/shows/'
     | '/tracks/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -290,10 +310,12 @@ export interface FileRouteTypes {
     | '/labels/$labelSlug'
     | '/mixes/$mixId'
     | '/releases/$slug'
+    | '/shows/$showSlug'
     | '/tracks/$trackId'
     | '/admin'
     | '/labels'
     | '/mixes'
+    | '/shows'
     | '/tracks'
   id:
     | '__root__'
@@ -317,10 +339,12 @@ export interface FileRouteTypes {
     | '/labels/$labelSlug'
     | '/mixes/$mixId'
     | '/releases/$slug'
+    | '/shows/$showSlug'
     | '/tracks/$trackId'
     | '/admin/'
     | '/labels/'
     | '/mixes/'
+    | '/shows/'
     | '/tracks/'
   fileRoutesById: FileRoutesById
 }
@@ -343,7 +367,9 @@ export interface RootRouteChildren {
   AuthSignInRoute: typeof AuthSignInRoute
   AuthSignUpRoute: typeof AuthSignUpRoute
   ReleasesSlugRoute: typeof ReleasesSlugRoute
+  ShowsShowSlugRoute: typeof ShowsShowSlugRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  ShowsIndexRoute: typeof ShowsIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -446,6 +472,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TracksIndexRouteImport
       parentRoute: typeof TracksRouteRoute
     }
+    '/shows/': {
+      id: '/shows/'
+      path: '/shows'
+      fullPath: '/shows/'
+      preLoaderRoute: typeof ShowsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mixes/': {
       id: '/mixes/'
       path: '/'
@@ -473,6 +506,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/tracks/$trackId'
       preLoaderRoute: typeof TracksTrackIdRouteImport
       parentRoute: typeof TracksRouteRoute
+    }
+    '/shows/$showSlug': {
+      id: '/shows/$showSlug'
+      path: '/shows/$showSlug'
+      fullPath: '/shows/$showSlug'
+      preLoaderRoute: typeof ShowsShowSlugRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/releases/$slug': {
       id: '/releases/$slug'
@@ -587,7 +627,9 @@ const rootRouteChildren: RootRouteChildren = {
   AuthSignInRoute: AuthSignInRoute,
   AuthSignUpRoute: AuthSignUpRoute,
   ReleasesSlugRoute: ReleasesSlugRoute,
+  ShowsShowSlugRoute: ShowsShowSlugRoute,
   AdminIndexRoute: AdminIndexRoute,
+  ShowsIndexRoute: ShowsIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
