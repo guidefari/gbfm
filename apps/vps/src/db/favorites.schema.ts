@@ -76,7 +76,7 @@ export const favoriteWithAudioSchema = z
       title: z.string(),
       slug: z.string(),
       thumbnailUrl: z.string().nullable(),
-      type: z.enum(['mix', 'track', 'misc']),
+      type: z.enum(['mix', 'track', 'misc', 'radio_show']),
       url: z.string()
     })
   })

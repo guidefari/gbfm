@@ -12,6 +12,7 @@ import { PostServiceLive } from '@/services/post.service'
 import { PublicationServiceLive } from '@/services/publication.service'
 import { ReleaseServiceLive } from '@/services/release.service'
 import { S3ServiceLive } from '@/services/s3.service'
+import { ShowServiceLive } from '@/services/show.service'
 import { SpotifyServiceLive } from '@/services/spotify.service'
 import { UserServiceLive } from '@/services/user.service'
 
@@ -43,6 +44,7 @@ export const AppLayer = Layer.mergeAll(
   PublicationServiceLive,
   ReleaseServiceLive,
   S3ServiceLive,
+  ShowServiceLive,
   UserServiceLive,
   DevToolsLive
 )

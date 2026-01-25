@@ -11,6 +11,7 @@ import {
 import { user as usersTable } from '@/db/auth.schema'
 import { timeQuery } from '@/db/query-timer'
 import {
+  AudioServiceError,
   ConflictError,
   DatabaseError,
   NotFoundError,
@@ -22,7 +23,7 @@ import {
   type PaginationMetadata
 } from '@/lib/pagination'
 
-type AudioType = 'mix' | 'track' | 'misc'
+type AudioType = 'mix' | 'track' | 'misc' | 'radio_show'
 
 type AudioWithCreators = SelectAudio & {
   creators: Array<{ id: string; name: string }>
@@ -83,11 +84,17 @@ const getByTypeEffect = (
           'get-audio-by-type-count'
         ),
       catch: (error) =>
-        new DatabaseError({
-          message: `Failed to count audio: ${(error as Error).message}`,
-          operation: 'select',
-          table: 'audio'
-        })
+        error instanceof Error
+          ? new DatabaseError({
+              message: `Failed to count audio: ${error.message}`,
+              operation: 'select',
+              table: 'audio'
+            })
+          : new DatabaseError({
+              message: `Failed to count audio: Unknown error: ${String(error)}`,
+              operation: 'select',
+              table: 'audio'
+            })
     })
 
     const total = countResult[0]?.total ?? 0

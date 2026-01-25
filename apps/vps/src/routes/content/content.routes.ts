@@ -188,7 +188,7 @@ export const getAudioByType = createRoute({
   path: '/audio/{type}',
   method: 'get',
   request: {
-    params: z.object({ type: z.enum(['mix', 'track', 'misc']) }),
+    params: z.object({ type: z.enum(['mix', 'track', 'misc', 'radio_show']) }),
     query: paginationQuerySchema.extend({
       tag: z.string().optional()
     })
@@ -211,7 +211,7 @@ export const getAudioBySlug = createRoute({
   method: 'get',
   request: {
     params: z.object({
-      type: z.enum(['mix', 'track', 'misc']),
+      type: z.enum(['mix', 'track', 'misc', 'radio_show']),
       slug: z.string()
     })
   },
@@ -238,7 +238,7 @@ export const updateAudioBySlug = createRoute({
   middleware: [betterAuthMiddleware],
   request: {
     params: z.object({
-      type: z.enum(['mix', 'track', 'misc']),
+      type: z.enum(['mix', 'track', 'misc', 'radio_show']),
       slug: z.string()
     }),
     body: jsonContentRequired(

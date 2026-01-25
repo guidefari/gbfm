@@ -6,6 +6,7 @@ import {
 } from 'drizzle-orm'
 import {
   index,
+  integer,
   pgEnum,
   pgTable,
   primaryKey,
@@ -14,18 +15,29 @@ import {
   varchar
 } from 'drizzle-orm/pg-core'
 import { user } from './auth.schema'
+import { showsTable } from './show.schema'
 import { defaultContentFields } from './util'
 
-export const audioTypeEnum = pgEnum('audio_type', ['mix', 'track', 'misc'])
+export const audioTypeEnum = pgEnum('audio_type', [
+  'mix',
+  'track',
+  'misc',
+  'radio_show'
+])
 
 export const audioTable = pgTable(
   'audio',
   {
     ...defaultContentFields,
     type: audioTypeEnum().notNull(),
-    url: varchar({ length: 255 }).notNull()
+    url: varchar({ length: 255 }).notNull(),
+    showId: uuid().references(() => showsTable.id, { onDelete: 'set null' }),
+    episodeNumber: integer()
   },
-  (table) => [index('audio_slug_idx').on(table.slug)]
+  (table) => [
+    index('audio_slug_idx').on(table.slug),
+    index('audio_show_idx').on(table.showId)
+  ]
 )
 
 export type SelectAudio = InferSelectModel<typeof audioTable>
@@ -59,9 +71,17 @@ export const selectAudioSchema = z
       .nullable()
       .openapi({ description: 'Tags associated with the audio' }),
     type: z
-      .enum(['mix', 'track', 'misc'])
+      .enum(['mix', 'track', 'misc', 'radio_show'])
       .openapi({ description: 'Type of audio content' }),
     url: z.string().openapi({ description: 'Audio URL' }),
+    showId: z
+      .string()
+      .nullable()
+      .openapi({ description: 'ID of the associated show (for radio_show type)' }),
+    episodeNumber: z
+      .number()
+      .nullable()
+      .openapi({ description: 'Episode number (for radio_show type)' }),
     createdAt: z.date().openapi({ description: 'Creation timestamp' }),
     updatedAt: z.date().openapi({ description: 'Last update timestamp' })
   })
@@ -114,12 +134,23 @@ export const insertAudioSchema = z
       .optional()
       .openapi({ description: 'Tags for the audio' }),
     type: z
-      .enum(['mix', 'track', 'misc'])
+      .enum(['mix', 'track', 'misc', 'radio_show'])
       .openapi({ description: 'Type of audio content', example: 'mix' }),
     url: z.string().url().openapi({
       description: 'Audio URL',
       example: 'https://example.com/audio.mp3'
-    })
+    }),
+    showId: z
+      .string()
+      .uuid()
+      .optional()
+      .openapi({ description: 'ID of the associated show (for radio_show type)' }),
+    episodeNumber: z
+      .number()
+      .int()
+      .positive()
+      .optional()
+      .openapi({ description: 'Episode number (for radio_show type)' })
   })
   .openapi('InsertAudio')
 
@@ -150,8 +181,12 @@ export const audioCreators = pgTable(
   (t) => [primaryKey({ columns: [t.audioId, t.creatorId] })]
 )
 
-export const audioRelations = relations(audioTable, ({ many }) => ({
-  audioCreators: many(audioCreators)
+export const audioRelations = relations(audioTable, ({ many, one }) => ({
+  audioCreators: many(audioCreators),
+  show: one(showsTable, {
+    fields: [audioTable.showId],
+    references: [showsTable.id]
+  })
 }))
 
 export const audioCreatorsRelations = relations(audioCreators, ({ one }) => ({

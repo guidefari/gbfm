@@ -33,7 +33,7 @@ export interface FavoriteService {
         title: string
         slug: string
         thumbnailUrl: string | null
-        type: 'mix' | 'track' | 'misc'
+        type: 'mix' | 'track' | 'misc' | 'radio_show'
         url: string
       }
     }[],

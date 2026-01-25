@@ -9,6 +9,7 @@ import musicReminders from '@/routes/music-reminders/music-reminders.index'
 import publication from '@/routes/publication/publication.index'
 import rss from '@/routes/rss/rss.index'
 import share from '@/routes/share/share.index'
+import shows from '@/routes/shows/show.index'
 import spotify from '@/routes/spotify/spotify.index'
 import upload from '@/routes/upload/upload.index'
 import betterAuthRoutes from '@/routes/user/better-auth.routes'
@@ -34,6 +35,7 @@ const setupRoutesEffect = Effect.gen(function* () {
   app.route('/email', email)
   app.route('/publication', publication)
   app.route('/share', share)
+  app.route('/shows', shows)
   app.route('/spotify', spotify)
   app.route('/upload', upload)
   app.route('/music-reminders', musicReminders)

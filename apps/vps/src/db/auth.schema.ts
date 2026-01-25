@@ -12,6 +12,7 @@ import {
 } from './email.schema'
 import { postCreators } from './post.schema'
 import { publicationMembers } from './publication.schema'
+import { showCreators, showSubscriptionsTable } from './show.schema'
 
 export const user = pgTable('user', {
   id: text('id').primaryKey(),
@@ -90,8 +91,6 @@ export const verification = pgTable(
   (table) => [index('verification_identifier_idx').on(table.identifier)]
 )
 
-// Custom user session and password reset tables removed in favor of Better Auth standard tables
-
 export const userRelations = relations(user, ({ many, one }) => ({
   sessions: many(session),
   accounts: many(account),
@@ -99,7 +98,9 @@ export const userRelations = relations(user, ({ many, one }) => ({
   audioCreators: many(audioCreators),
   emailDeliveryLogs: many(emailDeliveryLogsTable),
   userEmailPreferences: one(userEmailPreferencesTable),
-  publicationMembers: many(publicationMembers)
+  publicationMembers: many(publicationMembers),
+  showCreators: many(showCreators),
+  showSubscriptions: many(showSubscriptionsTable)
 }))
 
 export type SelectUser = InferSelectModel<typeof user>
