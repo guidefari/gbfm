@@ -122,7 +122,7 @@ const processSingleReminder = (reminder: typeof musicReminder.$inferSelect) =>
           catch: () => undefined // ignore update failure in error handler
         }).pipe(Effect.ignore)
 
-        return yield* Effect.fail(error)
+        return yield* error
       })
     )
   )

@@ -137,7 +137,9 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
       draft: false,
       type: 'track' as const,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      showId: null,
+      episodeNumber: null
     }
     addToQueue(mixData)
     closeContextMenu()

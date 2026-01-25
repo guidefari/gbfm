@@ -2,6 +2,7 @@ import { createRoute, z } from '@hono/zod-openapi'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { jsonContent, jsonContentRequired } from 'stoker/openapi/helpers'
 import { createErrorSchema } from 'stoker/openapi/schemas'
+import { selectAudioSchema } from '@/db/audio.schema'
 import {
   createShowSchema,
   selectMdxCompiledShowSchema,
@@ -15,7 +16,6 @@ import {
   paginationQuerySchema
 } from '@/lib/pagination'
 import { betterAuthMiddleware } from '@/middlewares/better-auth.middleware'
-import { selectAudioSchema } from '@/db/audio.schema'
 
 const tags = ['Shows']
 

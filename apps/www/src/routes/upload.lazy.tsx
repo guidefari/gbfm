@@ -126,17 +126,19 @@ function UploadPage() {
   useEffect(() => {
     if (isEditMode && editQuery.data && !editQuery.isPending) {
       const data = editQuery.data
+      const audioType: ContentType =
+        data.type === 'radio_show' ? 'misc' : (data.type ?? 'mix')
       setFormData({
         title: data.title,
         description: data.description || '',
         slug: data.slug,
-        type: data.type || 'mix',
+        type: audioType,
         content: data.content,
         thumbnailUrl: data.thumbnailUrl || '',
         tags: data.tags || [],
         draft: data.draft
       })
-      setSelectedType(data.type || 'mix')
+      setSelectedType(audioType)
     }
   }, [isEditMode, editQuery.data, editQuery.isPending])
 

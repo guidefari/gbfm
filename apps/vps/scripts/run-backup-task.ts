@@ -8,6 +8,7 @@ import {
   isPgDumpAvailable,
   withLogCapture,
 } from "./backup-utils";
+import { EmailError } from "../src/errors";
 
 /**
  * Task Entrypoint for Database Backup
@@ -40,7 +41,16 @@ const sendNotificationEmail = (
         logContent: logs,
         stage: process.env.SST_STAGE || "dev",
       }),
-    catch: (error) => new Error(`Failed to send email: ${error}`),
+    catch: (error) => 
+      error instanceof Error 
+        ? new EmailError({ 
+            message: `Failed to send email: ${error.message}`, 
+            emailAddress: "guidefari@icloud.com" 
+          })
+        : new EmailError({ 
+            message: `Failed to send email: Unknown error: ${String(error)}`, 
+            emailAddress: "guidefari@icloud.com" 
+          }),
   }).pipe(
     Effect.tap(() => Console.log(`📧 Notification email sent (${status})`)),
     Effect.catchAll((error) =>

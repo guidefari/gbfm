@@ -54,3 +54,86 @@ export class SpotifyError extends Data.TaggedError('SpotifyError')<{
   readonly operation: string
   readonly statusCode?: number
 }> {}
+
+// Service-specific tagged errors
+export class AudioServiceError extends Data.TaggedError('AudioServiceError')<{
+  readonly message: string
+  readonly operation: string
+  readonly audioId?: string
+  readonly slug?: string
+}> {}
+
+export class FavoriteServiceError extends Data.TaggedError(
+  'FavoriteServiceError'
+)<{
+  readonly message: string
+  readonly operation: string
+  readonly userId?: string
+  readonly favoriteId?: string
+}> {}
+
+export class UserServiceError extends Data.TaggedError('UserServiceError')<{
+  readonly message: string
+  readonly operation: string
+  readonly userId?: string
+  readonly email?: string
+}> {}
+
+export class PostServiceError extends Data.TaggedError('PostServiceError')<{
+  readonly message: string
+  readonly operation: string
+  readonly postId?: string
+}> {}
+
+export class PublicationServiceError extends Data.TaggedError(
+  'PublicationServiceError'
+)<{
+  readonly message: string
+  readonly operation: string
+  readonly publicationId?: string
+}> {}
+
+export class ReleaseServiceError extends Data.TaggedError(
+  'ReleaseServiceError'
+)<{
+  readonly message: string
+  readonly operation: string
+  readonly releaseId?: string
+}> {}
+
+export class LabelServiceError extends Data.TaggedError('LabelServiceError')<{
+  readonly message: string
+  readonly operation: string
+  readonly labelId?: string
+}> {}
+
+export class MusicReminderServiceError extends Data.TaggedError(
+  'MusicReminderServiceError'
+)<{
+  readonly message: string
+  readonly operation: string
+  readonly reminderId?: string
+}> {}
+
+export class ConfigServiceError extends Data.TaggedError('ConfigServiceError')<{
+  readonly message: string
+  readonly operation: string
+  readonly configKey?: string
+}> {}
+
+export class BackupError extends Data.TaggedError('BackupError')<{
+  readonly message: string
+  readonly operation: string
+  readonly filename?: string
+}> {}
+
+export class RestoreError extends Data.TaggedError('RestoreError')<{
+  readonly message: string
+  readonly operation: string
+  readonly filename?: string
+}> {}
+
+export class LoggerError extends Data.TaggedError('LoggerError')<{
+  readonly message: string
+  readonly operation: string
+}> {}

@@ -259,7 +259,7 @@ const getBandcampMetadata = (url: string) =>
     if (jsonLdMatch?.[1]) {
       try {
         metadata = JSON.parse(jsonLdMatch[1])
-      } catch (_error) {
+      } catch (_parseError) {
         // Fall through to HTML parsing
       }
     }

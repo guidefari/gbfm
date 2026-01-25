@@ -9,8 +9,8 @@ import {
   type SelectShow,
   type SelectShowSubscription,
   showCreators,
-  showsTable,
-  showSubscriptionsTable
+  showSubscriptionsTable,
+  showsTable
 } from '@/db/show.schema'
 import {
   ConflictError,
@@ -65,7 +65,10 @@ export interface ShowService {
     showSlug: string,
     options: { limit: number; offset: number }
   ) => Effect.Effect<
-    { data: typeof audioTable.$inferSelect[]; pagination: PaginationMetadata },
+    {
+      data: (typeof audioTable.$inferSelect)[]
+      pagination: PaginationMetadata
+    },
     DatabaseError | NotFoundError
   >
   readonly subscribe: (
@@ -93,10 +96,7 @@ export interface ShowService {
 
 export const ShowService = Context.GenericTag<ShowService>('ShowService')
 
-const getAllEffect = (options: {
-  limit: number
-  offset: number
-}) =>
+const getAllEffect = (options: { limit: number; offset: number }) =>
   Effect.gen(function* () {
     const { limit, offset } = options
 
@@ -145,7 +145,10 @@ const getAllEffect = (options: {
                   hostName: usersTable.name
                 })
                 .from(showCreators)
-                .innerJoin(usersTable, eq(showCreators.creatorId, usersTable.id))
+                .innerJoin(
+                  usersTable,
+                  eq(showCreators.creatorId, usersTable.id)
+                )
                 .where(inArray(showCreators.showId, showIds)),
             catch: (error) =>
               new DatabaseError({
@@ -156,7 +159,10 @@ const getAllEffect = (options: {
           })
         : []
 
-    const hostsByShowId: Record<string, Array<{ id: string; name: string }>> = {}
+    const hostsByShowId: Record<
+      string,
+      Array<{ id: string; name: string }>
+    > = {}
     for (const row of hostsData) {
       const existing = hostsByShowId[row.showId]
       if (existing) {
@@ -181,11 +187,7 @@ const getBySlugEffect = (slug: string) =>
   Effect.gen(function* () {
     const showRecords = yield* Effect.tryPromise({
       try: () =>
-        db
-          .select()
-          .from(showsTable)
-          .where(eq(showsTable.slug, slug))
-          .limit(1),
+        db.select().from(showsTable).where(eq(showsTable.slug, slug)).limit(1),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to fetch show: ${(error as Error).message}`,
@@ -259,10 +261,7 @@ const createEffect = (data: InsertShow, hostIds: string[]) =>
     const result = yield* Effect.tryPromise({
       try: () =>
         db.transaction(async (tx) => {
-          const [newShow] = await tx
-            .insert(showsTable)
-            .values(data)
-            .returning()
+          const [newShow] = await tx.insert(showsTable).values(data).returning()
 
           if (!newShow) {
             throw new Error('Failed to create show')
@@ -313,11 +312,7 @@ const updateEffect = (
   Effect.gen(function* () {
     const existingRecords = yield* Effect.tryPromise({
       try: () =>
-        db
-          .select()
-          .from(showsTable)
-          .where(eq(showsTable.slug, slug))
-          .limit(1),
+        db.select().from(showsTable).where(eq(showsTable.slug, slug)).limit(1),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to check show existence: ${(error as Error).message}`,
@@ -448,11 +443,7 @@ const deleteEffect = (slug: string, userId: string, userRole: string) =>
   Effect.gen(function* () {
     const existingRecords = yield* Effect.tryPromise({
       try: () =>
-        db
-          .select()
-          .from(showsTable)
-          .where(eq(showsTable.slug, slug))
-          .limit(1),
+        db.select().from(showsTable).where(eq(showsTable.slug, slug)).limit(1),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to check show existence: ${(error as Error).message}`,
@@ -505,7 +496,8 @@ const deleteEffect = (slug: string, userId: string, userRole: string) =>
     }
 
     yield* Effect.tryPromise({
-      try: () => db.delete(showsTable).where(eq(showsTable.id, existingShow.id)),
+      try: () =>
+        db.delete(showsTable).where(eq(showsTable.id, existingShow.id)),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to delete show: ${(error as Error).message}`,
@@ -700,7 +692,10 @@ const getUserSubscriptionsEffect = (
             show: showsTable
           })
           .from(showSubscriptionsTable)
-          .innerJoin(showsTable, eq(showSubscriptionsTable.showId, showsTable.id))
+          .innerJoin(
+            showsTable,
+            eq(showSubscriptionsTable.showId, showsTable.id)
+          )
           .where(whereCondition)
           .limit(limit)
           .offset(offset)
@@ -730,7 +725,10 @@ const getSubscribersEffect = (showId: string) =>
             name: usersTable.name
           })
           .from(showSubscriptionsTable)
-          .innerJoin(usersTable, eq(showSubscriptionsTable.userId, usersTable.id))
+          .innerJoin(
+            usersTable,
+            eq(showSubscriptionsTable.userId, usersTable.id)
+          )
           .where(eq(showSubscriptionsTable.showId, showId)),
       catch: (error) =>
         new DatabaseError({

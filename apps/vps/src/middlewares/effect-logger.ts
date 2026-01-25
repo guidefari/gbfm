@@ -1,5 +1,6 @@
 import { Context, Effect, Layer } from 'effect'
 import type { MiddlewareHandler } from 'hono'
+import { LoggerError } from '@/errors'
 import {
   checkPerformanceHealth,
   recordRequest
@@ -9,8 +10,6 @@ import { config } from '@/services/config.service'
 // Performance thresholds for request monitoring
 const SLOW_REQUEST_THRESHOLD = 500 // ms - warning
 const VERY_SLOW_REQUEST_THRESHOLD = 2000 // ms - error
-const MEMORY_CHECK_INTERVAL = 60000 // 1 minute
-let lastMemoryCheck = 0
 
 export interface LoggerService {
   readonly log: (
@@ -48,90 +47,103 @@ export function effectLogger(): MiddlewareHandler {
   return async (c, next) => {
     const start = Date.now()
 
-    try {
-      await next()
+    const loggingEffect = Effect.gen(function* () {
+      yield* Effect.tryPromise({
+        try: () => next(),
+        catch: (error) =>
+          error instanceof Error
+            ? new LoggerError({
+                message: `Request failed: ${error.message}`,
+                operation: 'middleware-next'
+              })
+            : new LoggerError({
+                message: `Request failed: Unknown error: ${String(error)}`,
+                operation: 'middleware-next'
+              })
+      })
+
       const duration = Date.now() - start
 
-      // Performance monitoring
-      if (duration > VERY_SLOW_REQUEST_THRESHOLD) {
-        Effect.logError('[Performance] Very slow request detected', {
-          method: c.req.method,
-          path: c.req.path,
-          status: c.res.status,
-          duration,
-          threshold: VERY_SLOW_REQUEST_THRESHOLD,
-          severity: 'critical',
-          userAgent: c.req.header('user-agent'),
-          ip: c.req.header('x-forwarded-for') || c.req.header('x-real-ip')
-        }).pipe(Effect.runPromise)
-      } else if (duration > SLOW_REQUEST_THRESHOLD) {
-        Effect.logWarning('[Performance] Slow request detected', {
-          method: c.req.method,
-          path: c.req.path,
-          status: c.res.status,
-          duration,
-          threshold: SLOW_REQUEST_THRESHOLD,
-          severity: 'warning'
-        }).pipe(Effect.runPromise)
-      }
+      // Performance monitoring effects
+      const performanceEffects = [
+        duration > VERY_SLOW_REQUEST_THRESHOLD
+          ? Effect.logError('[Performance] Very slow request detected', {
+              method: c.req.method,
+              path: c.req.path,
+              status: c.res.status,
+              duration,
+              threshold: VERY_SLOW_REQUEST_THRESHOLD,
+              severity: 'critical',
+              userAgent: c.req.header('user-agent'),
+              ip: c.req.header('x-forwarded-for') || c.req.header('x-real-ip')
+            })
+          : duration > SLOW_REQUEST_THRESHOLD
+            ? Effect.logWarning('[Performance] Slow request detected', {
+                method: c.req.method,
+                path: c.req.path,
+                status: c.res.status,
+                duration,
+                threshold: SLOW_REQUEST_THRESHOLD,
+                severity: 'warning'
+              })
+            : Effect.void,
 
-      // Periodic memory usage monitoring
-      const now = Date.now()
-      if (now - lastMemoryCheck > MEMORY_CHECK_INTERVAL) {
-        const memUsage = process.memoryUsage()
-        Effect.logInfo('[Performance] Memory usage check', {
-          rssMB: Math.round(memUsage.rss / 1024 / 1024),
-          heapUsedMB: Math.round(memUsage.heapUsed / 1024 / 1024),
-          heapTotalMB: Math.round(memUsage.heapTotal / 1024 / 1024),
-          externalMB: Math.round(memUsage.external / 1024 / 1024),
-          totalMB: Math.round(memUsage.rss / 1024 / 1024),
-          uptimeSeconds: Math.round(process.uptime())
-        }).pipe(Effect.runPromise)
-        lastMemoryCheck = now
-      }
+        recordRequest(duration, c.res.status >= 400),
+        checkPerformanceHealth,
 
-      recordRequest(duration, c.res.status >= 400).pipe(Effect.runPromise)
-      checkPerformanceHealth.pipe(Effect.runPromise)
+        // Standard request logging
+        Effect.log(
+          `[INFO] ${c.req.method} ${c.req.path} ${c.res.status} - ${duration}ms`
+        )
+      ]
 
-      // Standard request logging
-      const logEffect = Effect.log(
-        `[INFO] ${c.req.method} ${c.req.path} ${c.res.status} - ${duration}ms`
-      )
+      // Run all logging effects in parallel
+      yield* Effect.all(performanceEffects, { concurrency: 'unbounded' })
 
+      // Handle different logging environments
       if (config.app.nodeEnv === 'production') {
-        await Effect.runPromise(logEffect)
+        // Effects already logged above
+        return
       } else {
         console.log(
           `[HTTP] ${c.req.method} ${c.req.path} ${c.res.status} - ${duration}ms`
         )
+        return
       }
-    } catch (error) {
-      const duration = Date.now() - start
+    })
 
-      Effect.logError('[Performance] Request failed', {
-        method: c.req.method,
-        path: c.req.path,
-        duration,
-        error: error instanceof Error ? error.message : String(error),
-        severity: 'error'
-      }).pipe(Effect.runPromise)
+    // Run the entire logging effect
+    await Effect.runPromise(
+      loggingEffect.pipe(
+        Effect.catchAll((error) => {
+          const duration = Date.now() - start
 
-      const logEffect = Effect.logError(
-        `[ERROR] ${c.req.method} ${c.req.path} - ${duration}ms - ${error}`
-      )
-
-      if (config.app.nodeEnv === 'production') {
-        await Effect.runPromise(logEffect)
-      } else {
-        console.error(
-          `[HTTP] ${c.req.method} ${c.req.path} failed - ${duration}ms`,
-          {
-            error: error instanceof Error ? error.message : String(error)
+          // Fallback logging if Effect logging fails
+          if (config.app.nodeEnv === 'production') {
+            console.error(
+              `[ERROR] ${c.req.method} ${c.req.path} failed - ${duration}ms - ${error._tag}: ${error.message}`
+            )
+          } else {
+            console.error(
+              `[HTTP] ${c.req.method} ${c.req.path} failed - ${duration}ms`,
+              {
+                error: error._tag,
+                message: error.message
+              }
+            )
           }
-        )
-      }
 
-      throw error
-    }
+          // Re-throw the original error if it was a LoggerError, otherwise throw the logging error
+          return Effect.fail(
+            error instanceof LoggerError
+              ? error
+              : new LoggerError({
+                  message: `Logging failed: ${String(error)}`,
+                  operation: 'middleware-logging'
+                })
+          )
+        })
+      )
+    )
   }
 }

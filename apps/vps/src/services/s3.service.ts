@@ -45,11 +45,17 @@ const uploadFileEffect = (
       return key
     },
     catch: (error) =>
-      new S3Error({
-        message: `Failed to upload file to S3: ${(error as Error).message}`,
-        operation: 'upload',
-        key
-      })
+      error instanceof Error
+        ? new S3Error({
+            message: `Failed to upload file to S3: ${error.message}`,
+            operation: 'upload',
+            key
+          })
+        : new S3Error({
+            message: `Failed to upload file to S3: Unknown error: ${String(error)}`,
+            operation: 'upload',
+            key
+          })
   })
 
 const deleteFileEffect = (key: string, bucketName: string) =>
@@ -64,11 +70,17 @@ const deleteFileEffect = (key: string, bucketName: string) =>
       )
     },
     catch: (error) =>
-      new S3Error({
-        message: `Failed to delete file from S3: ${(error as Error).message}`,
-        operation: 'delete',
-        key
-      })
+      error instanceof Error
+        ? new S3Error({
+            message: `Failed to delete file from S3: ${error.message}`,
+            operation: 'delete',
+            key
+          })
+        : new S3Error({
+            message: `Failed to delete file from S3: Unknown error: ${String(error)}`,
+            operation: 'delete',
+            key
+          })
   })
 
 // Implementation - simple layer (effects are pure functions)

@@ -11,20 +11,17 @@ import {
   text,
   timestamp,
   unique,
-  uuid,
+  uuid
 } from 'drizzle-orm/pg-core'
 import { user } from './auth.schema'
 import { defaultContentFields } from './util'
 
-
 export const showsTable = pgTable(
   'shows',
   {
-    ...defaultContentFields,
+    ...defaultContentFields
   },
-  (table) => [
-    index('shows_slug_idx').on(table.slug)
-  ]
+  (table) => [index('shows_slug_idx').on(table.slug)]
 )
 
 export type SelectShow = InferSelectModel<typeof showsTable>
@@ -64,7 +61,10 @@ export const showSubscriptionsTable = pgTable(
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow()
   },
   (table) => [
-    unique('show_subscriptions_user_show_unique').on(table.userId, table.showId),
+    unique('show_subscriptions_user_show_unique').on(
+      table.userId,
+      table.showId
+    ),
     index('show_subscriptions_user_idx').on(table.userId),
     index('show_subscriptions_show_idx').on(table.showId)
   ]
@@ -152,10 +152,10 @@ export const selectMdxCompiledShowSchema = selectShowSchema
 
 export const insertShowSchema = z
   .object({
-    title: z
-      .string()
-      .min(1)
-      .openapi({ description: 'Title of the show', example: 'Friday Sessions' }),
+    title: z.string().min(1).openapi({
+      description: 'Title of the show',
+      example: 'Friday Sessions'
+    }),
     description: z
       .string()
       .optional()
@@ -176,7 +176,7 @@ export const insertShowSchema = z
     tags: z
       .array(z.string())
       .optional()
-      .openapi({ description: 'Tags for the show' }),
+      .openapi({ description: 'Tags for the show' })
   })
   .openapi('InsertShow')
 

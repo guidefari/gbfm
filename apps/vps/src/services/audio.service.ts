@@ -11,7 +11,6 @@ import {
 import { user as usersTable } from '@/db/auth.schema'
 import { timeQuery } from '@/db/query-timer'
 import {
-  AudioServiceError,
   ConflictError,
   DatabaseError,
   NotFoundError,

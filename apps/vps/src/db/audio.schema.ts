@@ -74,10 +74,9 @@ export const selectAudioSchema = z
       .enum(['mix', 'track', 'misc', 'radio_show'])
       .openapi({ description: 'Type of audio content' }),
     url: z.string().openapi({ description: 'Audio URL' }),
-    showId: z
-      .string()
-      .nullable()
-      .openapi({ description: 'ID of the associated show (for radio_show type)' }),
+    showId: z.string().nullable().openapi({
+      description: 'ID of the associated show (for radio_show type)'
+    }),
     episodeNumber: z
       .number()
       .nullable()
@@ -140,11 +139,9 @@ export const insertAudioSchema = z
       description: 'Audio URL',
       example: 'https://example.com/audio.mp3'
     }),
-    showId: z
-      .string()
-      .uuid()
-      .optional()
-      .openapi({ description: 'ID of the associated show (for radio_show type)' }),
+    showId: z.string().uuid().optional().openapi({
+      description: 'ID of the associated show (for radio_show type)'
+    }),
     episodeNumber: z
       .number()
       .int()

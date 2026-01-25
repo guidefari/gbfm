@@ -184,7 +184,7 @@ const sendReminderEmail = (reminder: MusicReminder) =>
           })
       })
 
-      return yield* Effect.fail(sendError as EmailError)
+      return yield* sendError as EmailError
     }
   })
 

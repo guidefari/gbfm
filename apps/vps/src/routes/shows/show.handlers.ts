@@ -106,16 +106,21 @@ export const createShow: AppRouteHandler<CreateShowRoute> = async (c) => {
   return c.json(result, HttpStatusCodes.CREATED)
 }
 
-export const updateShowBySlug: AppRouteHandler<
-  UpdateShowBySlugRoute
-> = async (c) => {
+export const updateShowBySlug: AppRouteHandler<UpdateShowBySlugRoute> = async (
+  c
+) => {
   const { slug } = c.req.valid('param')
   const updateData = c.req.valid('json')
   const user = c.get('user')
 
   const program = Effect.gen(function* () {
     const showService = yield* ShowService
-    return yield* showService.update(slug, user.id, user.role || 'user', updateData)
+    return yield* showService.update(
+      slug,
+      user.id,
+      user.role || 'user',
+      updateData
+    )
   }).pipe(
     Effect.catchTag('NotFoundError', (e) =>
       Effect.succeed({
@@ -146,9 +151,9 @@ export const updateShowBySlug: AppRouteHandler<
   return c.json(result, HttpStatusCodes.OK)
 }
 
-export const deleteShowBySlug: AppRouteHandler<
-  DeleteShowBySlugRoute
-> = async (c) => {
+export const deleteShowBySlug: AppRouteHandler<DeleteShowBySlugRoute> = async (
+  c
+) => {
   const { slug } = c.req.valid('param')
   const user = c.get('user')
 
