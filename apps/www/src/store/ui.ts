@@ -24,6 +24,7 @@ interface UIActions {
   toggleSortOrder: () => void
   toggleCompactPlayer: () => void
   setPreferredPlayerType: (playerType: PlayerType) => void
+  resetUI: () => void
 }
 
 type UIStore = UIState & UIActions
@@ -101,6 +102,16 @@ export const useUIStore = create<UIStore>()(
             }),
             false,
             'ui/setPreferredPlayerType'
+          ),
+        resetUI: () =>
+          set(
+            {
+              mixesSorting: { sortBy: 'date', sortOrder: 'desc' },
+              showCompactPlayer: false,
+              preferredPlayerType: 'full'
+            },
+            false,
+            'ui/reset'
           )
       }),
       {

@@ -12,6 +12,7 @@ import {
   Music,
   Pause,
   Play,
+  RotateCcw,
   Settings,
   Shield,
   SkipBack,
@@ -19,10 +20,13 @@ import {
   SortAsc,
   SortDesc,
   Sun,
+  Trash2,
   Upload,
   Volume2,
-  VolumeX
+  VolumeX,
+  Wrench
 } from 'lucide-react'
+import { env } from '@/env'
 import type { CommandItem } from './types'
 
 export const createCommandData = (
@@ -34,6 +38,11 @@ export const createCommandData = (
     typeof import('./audio/actions').useAudioPlayerCmdActions
   >,
   themeActions: { cycleTheme: () => void; currentTheme: string },
+  devActions: {
+    resetUIState: () => void
+    resetAudioPlayer: () => void
+    resetAll: () => void
+  },
   _closeCmd: () => void,
   isAuthenticated: boolean,
   isOnMixesPage: boolean,
@@ -384,6 +393,37 @@ export const createCommandData = (
       type: 'action',
       onSelect: navigationActions.routeToLogin,
       requiresAuth: false
+    })
+  }
+
+  // Add dev tools in development mode only
+  if (env.isDev) {
+    items.push({
+      id: 'dev-tools',
+      label: 'Dev Tools',
+      icon: Wrench,
+      type: 'section',
+      requiresAuth: false,
+      items: [
+        {
+          id: 'reset-ui',
+          label: 'Reset UI State',
+          icon: RotateCcw,
+          onSelect: devActions.resetUIState
+        },
+        {
+          id: 'reset-audio',
+          label: 'Reset Audio Player',
+          icon: RotateCcw,
+          onSelect: devActions.resetAudioPlayer
+        },
+        {
+          id: 'reset-all',
+          label: 'Reset Everything',
+          icon: Trash2,
+          onSelect: devActions.resetAll
+        }
+      ]
     })
   }
 

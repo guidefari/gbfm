@@ -10,6 +10,7 @@ import { version } from '../../../../../package.json'
 import { useAudioPlayerCmdActions } from './audio/actions'
 import { createCommandData } from './commandData'
 import { useContentActions } from './content/actions'
+import { useDevActions } from './dev/actions'
 import { HierarchicalCommand } from './HierarchicalCommand'
 import { useKeyboardShortcuts } from './keyboard-shortcuts'
 import { useNavigationActions } from './navigation/actions'
@@ -33,6 +34,7 @@ export function CommandDialogDemo() {
   const contentActions = useContentActions(closeCmd)
   const themeActions = useThemeActions(closeCmd)
   const audioPlayerCmdActions = useAudioPlayerCmdActions(closeCmd)
+  const devActions = useDevActions(closeCmd)
 
   const isOnMixesPage = routerState.location.pathname === '/mixes'
   const pathname = routerState.location.pathname
@@ -59,6 +61,7 @@ export function CommandDialogDemo() {
         contentActions,
         audioPlayerCmdActions,
         themeActions,
+        devActions,
         closeCmd,
         isAuthenticated,
         isOnMixesPage,
@@ -76,6 +79,7 @@ export function CommandDialogDemo() {
       contentActions,
       audioPlayerCmdActions,
       themeActions,
+      devActions,
       closeCmd,
       isAuthenticated,
       isOnMixesPage,
