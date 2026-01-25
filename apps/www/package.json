@@ -50,6 +50,7 @@
     "lucide-react": "^0.544.0",
     "motion": "^12.23.22",
     "posthog-js": "^1.297.2",
+    "effect": "^3.19.15",
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "react-hook-form": "^7.64.0",

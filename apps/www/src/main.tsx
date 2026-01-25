@@ -5,11 +5,12 @@ import { createRoot } from 'react-dom/client'
 import { MAIN_SCROLL_CONTAINER_ID } from './lib/constants'
 import { routeTree } from './routeTree.gen'
 import './styles/main.css'
-import { PostHogProvider } from 'posthog-js/react'
 import { ThemeProvider } from './components/ThemeProvider'
-import { env } from './env'
 import { useAuthSync } from './hooks/useAuthSync'
+import { useIdentifyUser } from './hooks/useAnalytics'
 import { useAuthStore } from './store/auth'
+// Initialize analytics runtime (side-effect import)
+import '@/services/analytics/runtime'
 
 const router = createRouter({
   routeTree,
@@ -44,6 +45,12 @@ function App() {
   const auth = useAuthStore()
   useAuthSync()
 
+  // Identify user for analytics when authenticated
+  useIdentifyUser(auth.user?.id, {
+    email: auth.user?.email,
+    name: auth.user?.name
+  })
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme='dark' storageKey='vite-ui-theme'>
@@ -60,16 +67,7 @@ if (container) {
 
   root.render(
     <React.StrictMode>
-      <PostHogProvider
-        apiKey={import.meta.env.VITE_PUBLIC_POSTHOG_KEY}
-        options={{
-          api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
-          defaults: '2025-05-24',
-          capture_exceptions: true, // This enables capturing exceptions using Error Tracking, set to false if you don't want this
-          debug: env.isDev
-        }}>
-        <App />
-      </PostHogProvider>
+      <App />
     </React.StrictMode>
   )
 } else {
