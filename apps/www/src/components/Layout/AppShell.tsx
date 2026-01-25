@@ -4,7 +4,6 @@ import AudioPlayer from '@/components/AudioPlayer'
 import FullscreenAudioPlayer from '@/components/FullscreenAudioPlayer'
 import { QueueColumn } from '@/components/queue/QueueColumn'
 import { useAudioPlayerInitializer } from '@/hooks/useAudioPlayer'
-import { useDefaultTrackPreloader } from '@/hooks/useDefaultTrackPreloader'
 import { MAIN_SCROLL_CONTAINER_ID } from '@/lib/constants'
 import { useUIStore } from '@/store'
 import { useAudioPlayerState } from '@/store/audioPlayer'
@@ -20,14 +19,11 @@ type Props = {
 
 export default function AppShell({ children }: Props) {
   useAudioPlayerInitializer()
-  useDefaultTrackPreloader()
 
   const { audioSrc, isFullscreenVisible } = useAudioPlayerState()
   const { preferredPlayerType, showCompactPlayer } = useUIStore()
   const hasActiveAudio = Boolean(audioSrc)
-
-  const shouldShowFullPlayer =
-    hasActiveAudio && !isFullscreenVisible && preferredPlayerType === 'full'
+  const showFullPlayer = !isFullscreenVisible && preferredPlayerType === 'full'
 
   const shouldShowCompactPlayer =
     hasActiveAudio &&
@@ -47,8 +43,9 @@ export default function AppShell({ children }: Props) {
           {children}
         </main>
 
-        {shouldShowFullPlayer && (
-          <div className='flex-shrink-0 hidden sm:block'>
+        {showFullPlayer && (
+          <div
+            className={`flex-shrink-0 hidden sm:block transition-opacity ${hasActiveAudio ? 'opacity-100' : 'opacity-5 pointer-events-none'}`}>
             <AudioPlayer />
           </div>
         )}

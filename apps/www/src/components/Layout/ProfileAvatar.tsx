@@ -10,14 +10,17 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { signOut } from '@/lib/auth-client'
 import { useAuthStore } from '@/store/auth'
+import { useUIStore } from '@/store/ui'
 
 const ProfileAvatar = () => {
   const navigate = useNavigate()
   const { user, isAuthenticated, clearAuth } = useAuthStore()
+  const resetUI = useUIStore((s) => s.resetUI)
 
   const handleSignOut = async () => {
     await signOut()
     clearAuth()
+    resetUI()
     navigate({ to: '/' })
   }
 

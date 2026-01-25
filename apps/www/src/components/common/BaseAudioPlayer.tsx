@@ -9,6 +9,7 @@ import {
   Volume2,
   VolumeX
 } from 'lucide-react'
+import { motion } from 'motion/react'
 import type React from 'react'
 import { useEffect, useRef } from 'react'
 import { Button } from '@/components/ui/button'
@@ -168,14 +169,18 @@ export function BaseAudioPlayer({
     if (variant === 'compact') {
       return (
         <div className='flex flex-col items-center justify-center h-32 text-center'>
-          <div className='w-12 h-12 mb-2 rounded-sm bg-muted flex items-center justify-center'>
+          <div className='flex items-center justify-center w-12 h-12 mb-2 rounded-sm bg-muted'>
             <Play className='w-6 h-6 text-muted-foreground' />
           </div>
           <p className='text-sm text-muted-foreground'>No track playing</p>
         </div>
       )
     }
-    return null
+    return (
+      <div
+        className={`flex-shrink-0 border-t border-transparent min-h-[104px] ${className}`}
+      />
+    )
   }
 
   if (variant === 'compact') {
@@ -252,8 +257,11 @@ export function BaseAudioPlayer({
 
   // Full variant (desktop layout)
   return (
-    <div
-      className={`flex-shrink-0 border-t backdrop-blur-md bg-background/95 border-border ${className}`}>
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      className={`flex-shrink-0 border-t backdrop-blur-md bg-background/95 border-border min-h-[104px] ${className}`}>
       <div className='px-4 py-3 mx-auto max-w-screen-2xl'>
         {/* Desktop Layout */}
         <div className='hidden md:grid md:grid-cols-3 md:items-center md:gap-4'>
@@ -263,7 +271,7 @@ export function BaseAudioPlayer({
               <button
                 type='button'
                 onClick={onFullscreenToggle}
-                className='flex-shrink-0 p-0 border-0 bg-transparent'>
+                className='flex-shrink-0 p-0 bg-transparent border-0'>
                 <img
                   src={currentTrack.thumbnailUrl || DEFAULT_IMAGE_URL}
                   alt={currentTrack.title}
@@ -402,7 +410,7 @@ export function BaseAudioPlayer({
               <button
                 type='button'
                 onClick={onFullscreenToggle}
-                className='flex-shrink-0 p-0 border-0 bg-transparent'>
+                className='flex-shrink-0 p-0 bg-transparent border-0'>
                 <img
                   src={currentTrack.thumbnailUrl || DEFAULT_IMAGE_URL}
                   alt={currentTrack.title}
@@ -511,6 +519,6 @@ export function BaseAudioPlayer({
           </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
