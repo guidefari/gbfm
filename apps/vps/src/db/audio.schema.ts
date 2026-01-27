@@ -152,6 +152,13 @@ export const insertAudioSchema = z
   .openapi('InsertAudio')
 
 export const updateAudioSchema = insertAudioSchema
+  .extend({
+    creatorIds: z
+      .array(z.string())
+      .min(1)
+      .optional()
+      .openapi({ description: 'IDs of audio creators' })
+  })
   .partial()
   .openapi('UpdateAudioRequest')
 

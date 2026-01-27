@@ -50,7 +50,7 @@ export interface AudioService {
     slug: string,
     userId: string,
     userRole: string,
-    data: Partial<InsertAudio>
+    data: Partial<InsertAudio> & { creatorIds?: string[] }
   ) => Effect.Effect<
     SelectMdxCompiledAudio,
     DatabaseError | NotFoundError | UnauthorizedError
@@ -319,7 +319,7 @@ const updateEffect = (
   slug: string,
   userId: string,
   userRole: string,
-  data: Partial<InsertAudio>
+  data: Partial<InsertAudio> & { creatorIds?: string[] }
 ) =>
   Effect.gen(function* () {
     const existingRecords = yield* Effect.tryPromise({
@@ -376,27 +376,56 @@ const updateEffect = (
       }
     }
 
-    const updatedRecords = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .update(audioTable)
-          .set({ ...data, updatedAt: new Date() })
-          .where(eq(audioTable.id, existingAudio.id))
-          .returning(),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to update audio: ${(error as Error).message}`,
+    const { creatorIds, ...updateData } = data
+    let updatedAudio = existingAudio
+
+    if (Object.keys(updateData).length > 0) {
+      const updatedRecords = yield* Effect.tryPromise({
+        try: () =>
+          db
+            .update(audioTable)
+            .set({ ...updateData, updatedAt: new Date() })
+            .where(eq(audioTable.id, existingAudio.id))
+            .returning(),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to update audio: ${(error as Error).message}`,
+            operation: 'update',
+            table: 'audio'
+          })
+      })
+
+      if (!updatedRecords[0]) {
+        return yield* new DatabaseError({
+          message: 'Failed to update audio',
           operation: 'update',
           table: 'audio'
         })
-    })
+      }
+      updatedAudio = updatedRecords[0]
+    }
 
-    const updatedAudio = updatedRecords[0]
-    if (!updatedAudio) {
-      return yield* new DatabaseError({
-        message: 'Failed to update audio',
-        operation: 'update',
-        table: 'audio'
+    if (creatorIds && creatorIds.length > 0) {
+      yield* Effect.tryPromise({
+        try: () =>
+          db.transaction(async (tx) => {
+            await tx
+              .delete(audioCreators)
+              .where(eq(audioCreators.audioId, updatedAudio.id))
+
+            await tx.insert(audioCreators).values(
+              creatorIds.map((creatorId) => ({
+                audioId: updatedAudio.id,
+                creatorId
+              }))
+            )
+          }),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to update creators: ${(error as Error).message}`,
+            operation: 'transaction',
+            table: 'audio_creators'
+          })
       })
     }
 
