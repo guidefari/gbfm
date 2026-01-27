@@ -1,3 +1,27 @@
+# [2.4.0](https://github.com/guidefari/gbfm/compare/v2.3.0...v2.4.0) (2026-01-27)
+
+
+### Bug Fixes
+
+* effect devtools packages ([59e317e](https://github.com/guidefari/gbfm/commit/59e317e5e0efaee4ae3e066703e21376fb61d17f))
+* effect lsp errors ([8375ab2](https://github.com/guidefari/gbfm/commit/8375ab20f298dfdf8e0b847203801c3c0d85a08f))
+* effect type errors ([593c21f](https://github.com/guidefari/gbfm/commit/593c21f9debd2dc0669d8e281216988b415749b0))
+* export shows schema ([e720e4a](https://github.com/guidefari/gbfm/commit/e720e4aaede3ae07d29e17bae006e90d9fc9fc1b))
+* formatting ([6dfabcf](https://github.com/guidefari/gbfm/commit/6dfabcf3af9c3ef8e42903da642e3d1d6bad8f3f))
+* more errors highlighted by effect lsp ([01b7536](https://github.com/guidefari/gbfm/commit/01b7536de89ae39ae07fdb800cd530b25ff5b1e0))
+
+
+### Features
+
+* dev tools ([dfceb5d](https://github.com/guidefari/gbfm/commit/dfceb5d04457cbdebb7a2ac9f79516c49634ed47))
+* effect devtools ([189c9b2](https://github.com/guidefari/gbfm/commit/189c9b2a08ada7545426aca9da9e7afc2f247d67))
+* landing page ([a08c37d](https://github.com/guidefari/gbfm/commit/a08c37de7f34d22aa87c1a59e64d03f47222870b))
+* memory gauge ([db32940](https://github.com/guidefari/gbfm/commit/db32940d7991d15e275853e7e40611ba78cffbec))
+* shows backend ([0436146](https://github.com/guidefari/gbfm/commit/0436146c041ba41e8cd284f9472f5a12006a9fd6))
+* spans ([3525b47](https://github.com/guidefari/gbfm/commit/3525b470c1785615258a2c5a9ee62a01a2736e23))
+* username and public profile ([dca8d78](https://github.com/guidefari/gbfm/commit/dca8d78c2104611db64177fa0676f6d6b19e6842))
+* **wip:** Implement show listing, detail pages, and user subscription management for shows. ([132fabf](https://github.com/guidefari/gbfm/commit/132fabf973b96811baadc3f853725acd691b78a9))
+
 # [2.3.0](https://github.com/guidefari/gbfm/compare/v2.2.1...v2.3.0) (2026-01-24)
 
 
