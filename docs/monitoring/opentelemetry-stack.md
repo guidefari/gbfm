@@ -88,19 +88,34 @@ OTEL_SAMPLING_RATE=0.1               // Production sampling (10%)
 #### Services with Full Span Coverage:
 - `favorite.service.ts` - Complete `Effect.withSpan` implementation
 - `music-reminder.service.ts` - Complete `Effect.withSpan` implementation
+- `spotify.service.ts` - Full span coverage for all operations:
+  - `spotify.getTrack` - Attributes: `spotify.id`, `external.system`
+  - `spotify.getAlbum` - Attributes: `spotify.id`, `external.system`
+  - `spotify.getPlaylist` - Attributes: `spotify.id`, `external.system`
+  - `spotify.searchAlbums` - Attributes: `spotify.query_length`, `spotify.limit`, `spotify.offset`
+  - `spotify.enrichTrackFromUrl` - Attributes: `music.platform`, `url.type`, `spotify.id`
+  - `bandcamp.getMetadata` - Attributes: `cache.hit`, `http.status_code`, `external.system`
+- `s3.service.ts` - Full span coverage:
+  - `aws.s3.putObject` - Attributes: `aws.service`, `s3.bucket`, `s3.key_prefix`, `content.type`, `payload.size_bytes`
+  - `aws.s3.deleteObject` - Attributes: `aws.service`, `s3.bucket`, `s3.key_prefix`
+- `email.service.ts` - Full span coverage:
+  - `email.send` - Attributes: `email.type`, `email.template`, `reminder.id`, `user.id`, `external.system`
+- `label.service.ts` - Full span coverage:
+  - `label.getAll` - Attributes: `pagination.limit`, `pagination.offset`
+  - `label.getBySlug` - Attributes: `label.slug`
+  - `label.create` - Attributes: `label.slug`, `creatorIds.count`
+  - `label.update` - Attributes: `label.slug`, `fields.updated`
 
 #### Services with Span Annotations:
 - `audio.service.ts` - Partial annotations in create operations
 - `post.service.ts` - Annotations in tag and create operations
 
 #### Remaining Services (To Be Implemented):
-- `label.service.ts`
 - `release.service.ts`
-- `spotify.service.ts`
-- `s3.service.ts`
 - `publication.service.ts`
 - `user.service.ts`
-- `email.service.ts`
+- `show.service.ts`
+- `profile.service.ts`
 
 ## Docker Compose Configuration
 

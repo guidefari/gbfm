@@ -4,6 +4,10 @@ import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
 import { favoritesTable, type SelectFavorite } from '@/db/favorites.schema'
 import { ConflictError, DatabaseError, NotFoundError } from '@/errors'
+import {
+  recordFavoriteAdd,
+  recordFavoriteRemove
+} from '@/lib/performance-monitoring'
 
 // Service interface
 export interface FavoriteService {
@@ -145,6 +149,8 @@ const addFavoriteEffect = (userId: string, audioId: string) =>
         favoriteId: favorite.id
       })
 
+      yield* recordFavoriteAdd()
+
       return favorite
     })
   )
@@ -201,6 +207,8 @@ const removeFavoriteEffect = (userId: string, audioId: string) =>
             table: 'favorites'
           })
       })
+
+      yield* recordFavoriteRemove()
 
       yield* Effect.logInfo('[Favorites] Favorite removed', {
         userId,

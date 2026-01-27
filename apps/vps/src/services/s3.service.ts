@@ -24,6 +24,12 @@ export interface S3Service {
 // Service tag for dependency injection
 export const S3Service = Context.GenericTag<S3Service>('S3Service')
 
+// Helper to extract key prefix (first segment) for safe logging
+const getKeyPrefix = (key: string): string => {
+  const parts = key.split('/')
+  return (parts.length > 1 ? parts[0] : 'root') ?? 'root'
+}
+
 // Core service logic - pure Effects with no service dependencies
 const uploadFileEffect = (
   key: string,
@@ -56,7 +62,25 @@ const uploadFileEffect = (
             operation: 'upload',
             key
           })
-  })
+  }).pipe(
+    Effect.tap(() =>
+      Effect.annotateCurrentSpan('aws.service', 's3').pipe(
+        Effect.andThen(Effect.annotateCurrentSpan('s3.bucket', bucketName)),
+        Effect.andThen(
+          Effect.annotateCurrentSpan('s3.key_prefix', getKeyPrefix(key))
+        ),
+        Effect.andThen(Effect.annotateCurrentSpan('content.type', contentType)),
+        Effect.andThen(
+          body instanceof Buffer
+            ? Effect.annotateCurrentSpan('payload.size_bytes', body.length)
+            : typeof body === 'string'
+              ? Effect.annotateCurrentSpan('payload.size_bytes', body.length)
+              : Effect.void
+        )
+      )
+    ),
+    Effect.withSpan('aws.s3.putObject')
+  )
 
 const deleteFileEffect = (key: string, bucketName: string) =>
   Effect.tryPromise({
@@ -81,7 +105,15 @@ const deleteFileEffect = (key: string, bucketName: string) =>
             operation: 'delete',
             key
           })
-  })
+  }).pipe(
+    Effect.withSpan('aws.s3.deleteObject', {
+      attributes: {
+        'aws.service': 's3',
+        's3.bucket': bucketName,
+        's3.key_prefix': getKeyPrefix(key)
+      }
+    })
+  )
 
 // Implementation - simple layer (effects are pure functions)
 export const S3ServiceLive = Layer.succeed(S3Service, {

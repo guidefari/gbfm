@@ -63,7 +63,9 @@ export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
     return yield* userService.updateUserProfile(user.id, updateData)
   })
 
-  const result = await runApp(program.pipe(Effect.either))
+  const result = await runApp(
+    program.pipe(Effect.withSpan('api.user.updateProfile'), Effect.either)
+  )
 
   if (result._tag === 'Left') {
     const error = result.left
@@ -91,7 +93,9 @@ export const getProfile: AppRouteHandler<GetProfileRoute> = async (c) => {
     return yield* userService.getUserById(user.id)
   })
 
-  const result = await runApp(program.pipe(Effect.either))
+  const result = await runApp(
+    program.pipe(Effect.withSpan('api.user.getProfile'), Effect.either)
+  )
 
   if (result._tag === 'Left') {
     const error = result.left
@@ -131,7 +135,9 @@ export const getEmailPreferences: AppRouteHandler<
     return yield* userService.getUserEmailPreferences(user.id)
   })
 
-  const result = await runApp(program.pipe(Effect.either))
+  const result = await runApp(
+    program.pipe(Effect.withSpan('api.user.getEmailPreferences'), Effect.either)
+  )
 
   if (result._tag === 'Left') {
     return c.json(
@@ -159,7 +165,12 @@ export const updateEmailPreferences: AppRouteHandler<
     return yield* userService.updateUserEmailPreferences(user.id, updates)
   })
 
-  const result = await runApp(program.pipe(Effect.either))
+  const result = await runApp(
+    program.pipe(
+      Effect.withSpan('api.user.updateEmailPreferences'),
+      Effect.either
+    )
+  )
 
   if (result._tag === 'Left') {
     return c.json(
@@ -186,7 +197,8 @@ export const getUserSubscriptions: AppRouteHandler<
         error: e.message,
         status: HttpStatusCodes.INTERNAL_SERVER_ERROR
       } as const)
-    )
+    ),
+    Effect.withSpan('api.user.getSubscriptions')
   )
 
   const result = await AppRuntime.runPromise(program)

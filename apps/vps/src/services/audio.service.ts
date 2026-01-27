@@ -21,6 +21,7 @@ import {
   createPaginationMetadata,
   type PaginationMetadata
 } from '@/lib/pagination'
+import { recordAudioCreate } from '@/lib/performance-monitoring'
 
 type AudioType = 'mix' | 'track' | 'misc' | 'radio_show'
 
@@ -300,6 +301,8 @@ const createEffect = (data: InsertAudio, creatorIds: string[]) =>
     yield* Effect.annotateCurrentSpan('audioType', result.type)
     yield* Effect.annotateCurrentSpan('creatorCount', creatorIds.length)
 
+    yield* recordAudioCreate()
+
     yield* Effect.logInfo('[Content] Audio created', {
       audioId: result.id,
       type: result.type,
@@ -447,8 +450,18 @@ const updateEffect = (
   })
 
 export const AudioServiceLive = Layer.succeed(AudioService, {
-  getByType: getByTypeEffect,
-  getBySlug: getBySlugEffect,
-  create: createEffect,
-  update: updateEffect
+  getByType: (type, options) =>
+    getByTypeEffect(type, options).pipe(
+      Effect.withSpan('audio.getByType', { attributes: { type } })
+    ),
+  getBySlug: (type, slug) =>
+    getBySlugEffect(type, slug).pipe(
+      Effect.withSpan('audio.getBySlug', { attributes: { type, slug } })
+    ),
+  create: (data, creatorIds) =>
+    createEffect(data, creatorIds).pipe(Effect.withSpan('audio.create')),
+  update: (type, slug, userId, userRole, data) =>
+    updateEffect(type, slug, userId, userRole, data).pipe(
+      Effect.withSpan('audio.update', { attributes: { type, slug } })
+    )
 })

@@ -23,6 +23,10 @@ import {
   createPaginationMetadata,
   type PaginationMetadata
 } from '@/lib/pagination'
+import {
+  recordShowSubscribe,
+  recordShowUnsubscribe
+} from '@/lib/performance-monitoring'
 
 type ShowWithHosts = SelectShow & {
   hosts: Array<{ id: string; name: string }>
@@ -606,6 +610,8 @@ const subscribeEffect = (userId: string, showId: string) =>
       })
     }
 
+    yield* recordShowSubscribe()
+
     return subscription
   })
 
@@ -636,6 +642,8 @@ const unsubscribeEffect = (userId: string, showId: string) =>
         resource: 'show_subscription'
       })
     }
+
+    yield* recordShowUnsubscribe()
   })
 
 const getUserSubscriptionsEffect = (
@@ -724,14 +732,40 @@ const getSubscribersEffect = (showId: string) =>
   })
 
 export const ShowServiceLive = Layer.succeed(ShowService, {
-  getAll: getAllEffect,
-  getBySlug: getBySlugEffect,
-  create: createEffect,
-  update: updateEffect,
-  delete: deleteEffect,
-  getEpisodes: getEpisodesEffect,
-  subscribe: subscribeEffect,
-  unsubscribe: unsubscribeEffect,
-  getUserSubscriptions: getUserSubscriptionsEffect,
-  getSubscribers: getSubscribersEffect
+  getAll: (options) =>
+    getAllEffect(options).pipe(Effect.withSpan('show.getAll')),
+  getBySlug: (slug) =>
+    getBySlugEffect(slug).pipe(
+      Effect.withSpan('show.getBySlug', { attributes: { slug } })
+    ),
+  create: (data, hostIds) =>
+    createEffect(data, hostIds).pipe(Effect.withSpan('show.create')),
+  update: (slug, userId, userRole, data) =>
+    updateEffect(slug, userId, userRole, data).pipe(
+      Effect.withSpan('show.update', { attributes: { slug } })
+    ),
+  delete: (slug, userId, userRole) =>
+    deleteEffect(slug, userId, userRole).pipe(
+      Effect.withSpan('show.delete', { attributes: { slug } })
+    ),
+  getEpisodes: (showSlug, options) =>
+    getEpisodesEffect(showSlug, options).pipe(
+      Effect.withSpan('show.getEpisodes', { attributes: { showSlug } })
+    ),
+  subscribe: (userId, showId) =>
+    subscribeEffect(userId, showId).pipe(
+      Effect.withSpan('show.subscribe', { attributes: { showId } })
+    ),
+  unsubscribe: (userId, showId) =>
+    unsubscribeEffect(userId, showId).pipe(
+      Effect.withSpan('show.unsubscribe', { attributes: { showId } })
+    ),
+  getUserSubscriptions: (userId, options) =>
+    getUserSubscriptionsEffect(userId, options).pipe(
+      Effect.withSpan('show.getUserSubscriptions', { attributes: { userId } })
+    ),
+  getSubscribers: (showId) =>
+    getSubscribersEffect(showId).pipe(
+      Effect.withSpan('show.getSubscribers', { attributes: { showId } })
+    )
 })

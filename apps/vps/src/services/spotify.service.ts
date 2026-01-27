@@ -204,8 +204,10 @@ const getBandcampMetadata = (url: string) =>
     const cacheKey = url
     const cached = bandcampCache.get(cacheKey)
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      yield* Effect.annotateCurrentSpan('cache.hit', true)
       return cached.data
     }
+    yield* Effect.annotateCurrentSpan('cache.hit', false)
 
     // Fetch the Bandcamp page
     const response = yield* Effect.tryPromise({
@@ -222,6 +224,8 @@ const getBandcampMetadata = (url: string) =>
           statusCode: 500
         })
     })
+
+    yield* Effect.annotateCurrentSpan('http.status_code', response.status)
 
     if (!response.ok) {
       return yield* new SpotifyError({
@@ -431,8 +435,61 @@ const searchAlbumsEffect = (query: string, limit = 10, offset = 0) =>
     return searchResponse
   })
 
-const enrichTrackFromUrlEffect = (url: string) =>
+// Wrapped effects with spans
+const getTrackWithSpan = (id: string) =>
+  getTrackEffect(id).pipe(
+    Effect.withSpan('spotify.getTrack', {
+      attributes: { 'spotify.id': id, 'external.system': 'spotify' }
+    })
+  )
+
+const getAlbumWithSpan = (id: string) =>
+  getAlbumEffect(id).pipe(
+    Effect.withSpan('spotify.getAlbum', {
+      attributes: { 'spotify.id': id, 'external.system': 'spotify' }
+    })
+  )
+
+const getPlaylistWithSpan = (id: string) =>
+  getPlaylistEffect(id).pipe(
+    Effect.withSpan('spotify.getPlaylist', {
+      attributes: { 'spotify.id': id, 'external.system': 'spotify' }
+    })
+  )
+
+const searchAlbumsWithSpan = (query: string, limit = 10, offset = 0) =>
+  searchAlbumsEffect(query, limit, offset).pipe(
+    Effect.withSpan('spotify.searchAlbums', {
+      attributes: {
+        'spotify.query_length': query.length,
+        'spotify.limit': limit,
+        'spotify.offset': offset,
+        'external.system': 'spotify'
+      }
+    })
+  )
+
+const getBandcampMetadataWithSpan = (url: string) =>
+  getBandcampMetadata(url).pipe(
+    Effect.withSpan('bandcamp.getMetadata', {
+      attributes: { 'external.system': 'bandcamp' }
+    })
+  )
+
+const enrichTrackFromUrlWithSpan = (url: string) =>
   Effect.gen(function* () {
+    const platform = isSpotifyUrl(url)
+      ? 'spotify'
+      : isYouTubeUrl(url)
+        ? 'youtube'
+        : isAppleMusicUrl(url)
+          ? 'apple_music'
+          : isBandcampUrl(url)
+            ? 'bandcamp'
+            : 'other'
+
+    yield* Effect.annotateCurrentSpan('music.platform', platform)
+
     let result: {
       title: string
       artist: string
@@ -453,7 +510,12 @@ const enrichTrackFromUrlEffect = (url: string) =>
         })
       }
 
-      // Check if this is an album URL
+      yield* Effect.annotateCurrentSpan('spotify.id', id)
+      yield* Effect.annotateCurrentSpan(
+        'url.type',
+        url.includes('/album/') ? 'album' : 'track'
+      )
+
       if (url.includes('/album/')) {
         const data = yield* Effect.tryPromise({
           try: () => spotifyClient.albums.get(id),
@@ -471,15 +533,14 @@ const enrichTrackFromUrlEffect = (url: string) =>
           url: data.external_urls.spotify,
           platform: 'spotify',
           thumbnailUrl: data.images[0]?.url,
-          album: data.name, // Album title is the album name
+          album: data.name,
           duration:
             data.tracks.items.reduce(
               (total, track) => total + track.duration_ms,
               0
-            ) / 1000 // Total duration of all tracks
+            ) / 1000
         }
       } else {
-        // Handle as track
         const data = yield* Effect.tryPromise({
           try: () => spotifyClient.tracks.get(id),
           catch: (error) =>
@@ -525,21 +586,18 @@ const enrichTrackFromUrlEffect = (url: string) =>
         platform: 'apple_music'
       }
     } else if (isBandcampUrl(url)) {
-      const metadata = yield* getBandcampMetadata(url)
+      const metadata = yield* getBandcampMetadataWithSpan(url)
 
-      // Extract artist name (handle both single artist and multiple artists)
       const artist = Array.isArray(metadata.byArtist)
         ? metadata.byArtist.map((a: { name: string }) => a.name).join(', ')
         : metadata.byArtist.name
 
-      // Calculate total duration from tracks if available
       let totalDuration: number | undefined
       if (metadata.track?.itemListElement) {
         totalDuration = metadata.track.itemListElement.reduce(
           (total: number, track: { item: { duration: string } }) => {
             const duration = track.item.duration
             if (duration) {
-              // Parse ISO 8601 duration (e.g., "P00H19M53S")
               const match = duration.match(
                 /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/
               )
@@ -562,7 +620,7 @@ const enrichTrackFromUrlEffect = (url: string) =>
         url: url,
         platform: 'bandcamp',
         thumbnailUrl: metadata.image,
-        album: metadata.name, // For albums, title and album are the same
+        album: metadata.name,
         duration: totalDuration
       }
     } else {
@@ -575,13 +633,17 @@ const enrichTrackFromUrlEffect = (url: string) =>
     }
 
     return result
-  })
+  }).pipe(
+    Effect.withSpan('spotify.enrichTrackFromUrl', {
+      attributes: { 'external.system': 'music-metadata' }
+    })
+  )
 
 // Implementation - simple layer that provides access to the Effects
 export const SpotifyServiceLive = Layer.succeed(SpotifyService, {
-  getTrack: getTrackEffect,
-  getAlbum: getAlbumEffect,
-  getPlaylist: getPlaylistEffect,
-  searchAlbums: searchAlbumsEffect,
-  enrichTrackFromUrl: enrichTrackFromUrlEffect
+  getTrack: getTrackWithSpan,
+  getAlbum: getAlbumWithSpan,
+  getPlaylist: getPlaylistWithSpan,
+  searchAlbums: searchAlbumsWithSpan,
+  enrichTrackFromUrl: enrichTrackFromUrlWithSpan
 })

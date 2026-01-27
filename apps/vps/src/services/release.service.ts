@@ -354,9 +354,21 @@ const deleteEffect = (slug: string) =>
   })
 
 export const ReleaseServiceLive = Layer.succeed(ReleaseService, {
-  getByLabelSlug: getByLabelSlugEffect,
-  getBySlug: getBySlugEffect,
-  create: createEffect,
-  update: updateEffect,
-  delete: deleteEffect
+  getByLabelSlug: (labelSlug, options) =>
+    getByLabelSlugEffect(labelSlug, options).pipe(
+      Effect.withSpan('release.getByLabelSlug', { attributes: { labelSlug } })
+    ),
+  getBySlug: (slug) =>
+    getBySlugEffect(slug).pipe(
+      Effect.withSpan('release.getBySlug', { attributes: { slug } })
+    ),
+  create: (data) => createEffect(data).pipe(Effect.withSpan('release.create')),
+  update: (slug, data) =>
+    updateEffect(slug, data).pipe(
+      Effect.withSpan('release.update', { attributes: { slug } })
+    ),
+  delete: (slug) =>
+    deleteEffect(slug).pipe(
+      Effect.withSpan('release.delete', { attributes: { slug } })
+    )
 })

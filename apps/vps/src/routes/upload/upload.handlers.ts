@@ -71,7 +71,14 @@ export const uploadFile: AppRouteHandler<UploadFileRoute> = async (c) => {
     return { url: publicUrl, key }
   })
 
-  const result = await runApp(program.pipe(Effect.either))
+  const result = await runApp(
+    program.pipe(
+      Effect.withSpan('api.upload.file', {
+        attributes: { fileType, fileName }
+      }),
+      Effect.either
+    )
+  )
 
   if (result._tag === 'Left') {
     const error = result.left

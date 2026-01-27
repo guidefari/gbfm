@@ -515,15 +515,56 @@ const removePublicationPostEffect = (publicationId: string, postId: string) =>
 
 // Implementation - simple layer that provides access to the Effects
 export const PublicationServiceLive = Layer.succeed(PublicationService, {
-  createPublication: createPublicationEffect,
-  getPublicationById: getPublicationByIdEffect,
-  getPublicationBySlug: getPublicationBySlugEffect,
-  getPublications: getPublicationsEffect,
-  updatePublication: updatePublicationEffect,
-  deletePublication: deletePublicationEffect,
-  addPublicationMember: addPublicationMemberEffect,
-  removePublicationMember: removePublicationMemberEffect,
-  getPublicationMembers: getPublicationMembersEffect,
-  addPublicationPost: addPublicationPostEffect,
-  removePublicationPost: removePublicationPostEffect
+  createPublication: (data) =>
+    createPublicationEffect(data).pipe(Effect.withSpan('publication.create')),
+  getPublicationById: (id) =>
+    getPublicationByIdEffect(id).pipe(
+      Effect.withSpan('publication.getById', { attributes: { id } })
+    ),
+  getPublicationBySlug: (slug) =>
+    getPublicationBySlugEffect(slug).pipe(
+      Effect.withSpan('publication.getBySlug', { attributes: { slug } })
+    ),
+  getPublications: (limit, offset) =>
+    getPublicationsEffect(limit, offset).pipe(
+      Effect.withSpan('publication.getAll')
+    ),
+  updatePublication: (id, data) =>
+    updatePublicationEffect(id, data).pipe(
+      Effect.withSpan('publication.update', { attributes: { id } })
+    ),
+  deletePublication: (id) =>
+    deletePublicationEffect(id).pipe(
+      Effect.withSpan('publication.delete', { attributes: { id } })
+    ),
+  addPublicationMember: (publicationId, userId) =>
+    addPublicationMemberEffect(publicationId, userId).pipe(
+      Effect.withSpan('publication.addMember', {
+        attributes: { publicationId }
+      })
+    ),
+  removePublicationMember: (publicationId, userId) =>
+    removePublicationMemberEffect(publicationId, userId).pipe(
+      Effect.withSpan('publication.removeMember', {
+        attributes: { publicationId }
+      })
+    ),
+  getPublicationMembers: (publicationId) =>
+    getPublicationMembersEffect(publicationId).pipe(
+      Effect.withSpan('publication.getMembers', {
+        attributes: { publicationId }
+      })
+    ),
+  addPublicationPost: (publicationId, postId) =>
+    addPublicationPostEffect(publicationId, postId).pipe(
+      Effect.withSpan('publication.addPost', {
+        attributes: { publicationId, postId }
+      })
+    ),
+  removePublicationPost: (publicationId, postId) =>
+    removePublicationPostEffect(publicationId, postId).pipe(
+      Effect.withSpan('publication.removePost', {
+        attributes: { publicationId, postId }
+      })
+    )
 })

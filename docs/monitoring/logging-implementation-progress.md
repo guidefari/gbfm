@@ -156,15 +156,19 @@ This document tracks the implementation of comprehensive logging across the Goos
 
 ### ⚠️ Partially Covered
 
-- Content operations (posts, labels, releases)
-- API error responses (validation, database errors)
 - Background task execution details
+- Post service operations
 
-### ❌ Not Covered
+### ✅ Recently Added
 
-- Performance monitoring (slow queries, memory usage)
-- External API interactions (Spotify metadata fetching)
-- Business metrics (user activity rates, content engagement)
+- **AudioService**: Full span coverage (getByType, getBySlug, create, update)
+- **UserService**: Full span coverage (getById, updateProfile, email preferences)
+- **ShowService**: Full span coverage (all 10 operations including subscriptions)
+- **ProfileService**: Full span coverage (getPublicProfile)
+- **ReleaseService**: Full span coverage (all CRUD operations)
+- **PublicationService**: Full span coverage (all 11 operations)
+- **API Route Handlers**: Spans for shows, users, profiles, spotify, uploads
+- **Business Metrics**: Counters for favorites, subscriptions, audio creation, emails
 
 ## Implementation Patterns
 
@@ -281,6 +285,25 @@ Effect.logError("[Component] Operation failed", {
 
 ---
 
-_Last updated: January 18, 2026_
-_Status: Phase 4 fully complete, Phase 3 fully complete, Phase 2 fully complete, Phase 1 fully complete_</content>
+_Last updated: January 27, 2026_
+_Status: Phase 4 fully complete, Phase 3 fully complete, Phase 2 fully complete, Phase 1 fully complete_
+
+## Summary of Recent Improvements
+
+### Services with Spans
+| Service | Spans Added |
+|---------|------------|
+| AudioService | `audio.getByType`, `audio.getBySlug`, `audio.create`, `audio.update` |
+| UserService | `user.getById`, `user.updateProfile`, `user.getEmailPreferences`, `user.updateEmailPreferences` |
+| ShowService | `show.getAll`, `show.getBySlug`, `show.create`, `show.update`, `show.delete`, `show.getEpisodes`, `show.subscribe`, `show.unsubscribe`, `show.getUserSubscriptions`, `show.getSubscribers` |
+| ProfileService | `profile.getPublic` |
+| ReleaseService | `release.getByLabelSlug`, `release.getBySlug`, `release.create`, `release.update`, `release.delete` |
+| PublicationService | `publication.create`, `publication.getById`, `publication.getBySlug`, `publication.getAll`, `publication.update`, `publication.delete`, `publication.addMember`, `publication.removeMember`, `publication.getMembers`, `publication.addPost`, `publication.removePost` |
+
+### Business Metrics Added
+- `favorite_add_count` / `favorite_remove_count`
+- `show_subscribe_count` / `show_unsubscribe_count`
+- `audio_create_count`
+- `email_send_count` / `email_fail_count`
+- `db_query_duration_ms` gauge</content>
 <parameter name="filePath">docs/logging-implementation-progress.md

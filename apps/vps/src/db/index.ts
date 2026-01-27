@@ -23,4 +23,5 @@ Effect.logInfo("[DB] Connecting to database", {
 
 const pool = new Pool(dbConfig);
 
+export { pool };
 export const db = drizzle(pool);

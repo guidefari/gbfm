@@ -27,7 +27,8 @@ export const getAllShows: AppRouteHandler<GetAllShowsRoute> = async (c) => {
         error: e.message,
         status: HttpStatusCodes.INTERNAL_SERVER_ERROR
       } as const)
-    )
+    ),
+    Effect.withSpan('api.show.getAll')
   )
 
   const result = await AppRuntime.runPromise(program)
@@ -57,7 +58,8 @@ export const getShowBySlug: AppRouteHandler<GetShowBySlugRoute> = async (c) => {
         error: e.message,
         status: HttpStatusCodes.INTERNAL_SERVER_ERROR
       } as const)
-    )
+    ),
+    Effect.withSpan('api.show.getBySlug', { attributes: { slug } })
   )
 
   const result = await AppRuntime.runPromise(program)
@@ -93,7 +95,8 @@ export const createShow: AppRouteHandler<CreateShowRoute> = async (c) => {
         error: e.message,
         status: HttpStatusCodes.INTERNAL_SERVER_ERROR
       } as const)
-    )
+    ),
+    Effect.withSpan('api.show.create')
   )
 
   const result = await AppRuntime.runPromise(program)
@@ -138,7 +141,8 @@ export const updateShowBySlug: AppRouteHandler<UpdateShowBySlugRoute> = async (
         error: e.message,
         status: HttpStatusCodes.INTERNAL_SERVER_ERROR
       } as const)
-    )
+    ),
+    Effect.withSpan('api.show.update', { attributes: { slug } })
   )
 
   const result = await AppRuntime.runPromise(program)
@@ -177,7 +181,8 @@ export const deleteShowBySlug: AppRouteHandler<DeleteShowBySlugRoute> = async (
         error: e.message,
         status: HttpStatusCodes.INTERNAL_SERVER_ERROR
       } as const)
-    )
+    ),
+    Effect.withSpan('api.show.delete', { attributes: { slug } })
   )
 
   const result = await AppRuntime.runPromise(program)
@@ -210,7 +215,8 @@ export const getShowEpisodes: AppRouteHandler<GetShowEpisodesRoute> = async (
         error: e.message,
         status: HttpStatusCodes.INTERNAL_SERVER_ERROR
       } as const)
-    )
+    ),
+    Effect.withSpan('api.show.getEpisodes', { attributes: { slug } })
   )
 
   const result = await AppRuntime.runPromise(program)
@@ -243,7 +249,8 @@ export const subscribeToShow: AppRouteHandler<SubscribeToShowRoute> = async (
         error: e.message,
         status: HttpStatusCodes.INTERNAL_SERVER_ERROR
       } as const)
-    )
+    ),
+    Effect.withSpan('api.show.subscribe', { attributes: { showId } })
   )
 
   const result = await AppRuntime.runPromise(program)
@@ -276,7 +283,8 @@ export const unsubscribeFromShow: AppRouteHandler<
         error: e.message,
         status: HttpStatusCodes.INTERNAL_SERVER_ERROR
       } as const)
-    )
+    ),
+    Effect.withSpan('api.show.unsubscribe', { attributes: { showId } })
   )
 
   const result = await AppRuntime.runPromise(program)

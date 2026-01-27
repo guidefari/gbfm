@@ -29,7 +29,11 @@ export const getPublicProfile: AppRouteHandler<GetPublicProfileRoute> = async (
     )
   )
 
-  const result = await AppRuntime.runPromise(program)
+  const result = await AppRuntime.runPromise(
+    program.pipe(
+      Effect.withSpan('api.profile.getPublic', { attributes: { username } })
+    )
+  )
 
   if ('error' in result) {
     return c.json({ error: result.error }, result.status)

@@ -6,6 +6,7 @@ import { user } from '@/db/auth.schema'
 import { emailDeliveryLogsTable } from '@/db/email.schema'
 import type { MusicReminder } from '@/db/music-reminder.schema'
 import { DatabaseError, EmailError } from '@/errors'
+import { recordEmailFail, recordEmailSend } from '@/lib/performance-monitoring'
 
 // Service interface
 export interface EmailService {
@@ -31,6 +32,10 @@ export const EmailServiceLive = Layer.effect(
 // Core email sending logic with Effect
 const sendReminderEmail = (reminder: MusicReminder) =>
   Effect.gen(function* () {
+    yield* Effect.annotateCurrentSpan('email.type', 'music_reminder')
+    yield* Effect.annotateCurrentSpan('reminder.id', reminder.id)
+    yield* Effect.annotateCurrentSpan('user.id', reminder.userId)
+
     // Get user email address
     const userRecords = yield* Effect.tryPromise({
       try: () =>
@@ -148,6 +153,7 @@ const sendReminderEmail = (reminder: MusicReminder) =>
             })
         })
       ),
+      Effect.andThen(() => recordEmailSend()),
       Effect.andThen(() =>
         Effect.logInfo(`Successfully sent music reminder email`, {
           reminderId: reminder.id,
@@ -175,7 +181,10 @@ const sendReminderEmail = (reminder: MusicReminder) =>
               operation: 'update',
               table: 'email_delivery_logs'
             })
-        }).pipe(Effect.andThen(() => Effect.fail(sendError as EmailError)))
+        }).pipe(
+          Effect.andThen(() => recordEmailFail()),
+          Effect.andThen(() => Effect.fail(sendError as EmailError))
+        )
       })
     )
   })
@@ -184,4 +193,11 @@ const sendReminderEmail = (reminder: MusicReminder) =>
 export const sendMusicReminderEmailEffect = (
   reminder: MusicReminder
 ): Effect.Effect<void, EmailError | DatabaseError> =>
-  sendReminderEmail(reminder)
+  sendReminderEmail(reminder).pipe(
+    Effect.withSpan('email.send', {
+      attributes: {
+        'email.template': 'music-reminder',
+        'external.system': 'email'
+      }
+    })
+  )

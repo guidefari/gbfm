@@ -30,7 +30,11 @@ export const getTrack: AppRouteHandler<GetTrackRoute> = async (c) => {
     )
   )
 
-  const result = await AppRuntime.runPromise(program)
+  const result = await AppRuntime.runPromise(
+    program.pipe(
+      Effect.withSpan('api.spotify.getTrack', { attributes: { id } })
+    )
+  )
 
   if ('error' in result) {
     return c.json({ error: result.error }, result.status)
@@ -58,7 +62,11 @@ export const getAlbum: AppRouteHandler<GetAlbumRoute> = async (c) => {
     )
   )
 
-  const result = await AppRuntime.runPromise(program)
+  const result = await AppRuntime.runPromise(
+    program.pipe(
+      Effect.withSpan('api.spotify.getAlbum', { attributes: { id } })
+    )
+  )
 
   if ('error' in result) {
     return c.json({ error: result.error }, result.status)
@@ -86,7 +94,11 @@ export const getPlaylist: AppRouteHandler<GetPlaylistRoute> = async (c) => {
     )
   )
 
-  const result = await AppRuntime.runPromise(program)
+  const result = await AppRuntime.runPromise(
+    program.pipe(
+      Effect.withSpan('api.spotify.getPlaylist', { attributes: { id } })
+    )
+  )
 
   if ('error' in result) {
     return c.json({ error: result.error }, result.status)
@@ -118,7 +130,11 @@ export const searchAlbums: AppRouteHandler<SearchAlbumsRoute> = async (c) => {
     )
   )
 
-  const result = await AppRuntime.runPromise(program)
+  const result = await AppRuntime.runPromise(
+    program.pipe(
+      Effect.withSpan('api.spotify.searchAlbums', { attributes: { query } })
+    )
+  )
 
   if ('error' in result) {
     return c.json({ error: result.error }, result.status)
@@ -150,7 +166,11 @@ export const enrichTrackFromUrl: AppRouteHandler<
     )
   )
 
-  const result = await AppRuntime.runPromise(program)
+  const result = await AppRuntime.runPromise(
+    program.pipe(
+      Effect.withSpan('api.spotify.enrichTrackFromUrl', { attributes: { url } })
+    )
+  )
 
   if ('error' in result) {
     return c.json({ error: result.error }, result.status)

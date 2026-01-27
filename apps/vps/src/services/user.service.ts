@@ -179,8 +179,20 @@ const updateUserEmailPreferencesEffect = (
 
 // Implementation - simple layer that provides access to the Effects
 export const UserServiceLive = Layer.succeed(UserService, {
-  getUserById: getUserByIdEffect,
-  updateUserProfile: updateUserProfileEffect,
-  getUserEmailPreferences: getUserEmailPreferencesEffect,
-  updateUserEmailPreferences: updateUserEmailPreferencesEffect
+  getUserById: (userId) =>
+    getUserByIdEffect(userId).pipe(
+      Effect.withSpan('user.getById', { attributes: { userId } })
+    ),
+  updateUserProfile: (userId, data) =>
+    updateUserProfileEffect(userId, data).pipe(
+      Effect.withSpan('user.updateProfile', { attributes: { userId } })
+    ),
+  getUserEmailPreferences: (userId) =>
+    getUserEmailPreferencesEffect(userId).pipe(
+      Effect.withSpan('user.getEmailPreferences', { attributes: { userId } })
+    ),
+  updateUserEmailPreferences: (userId, preferences) =>
+    updateUserEmailPreferencesEffect(userId, preferences).pipe(
+      Effect.withSpan('user.updateEmailPreferences', { attributes: { userId } })
+    )
 })

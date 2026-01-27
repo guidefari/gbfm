@@ -50,6 +50,8 @@ export const LabelService = Context.GenericTag<LabelService>('LabelService')
 const getAllEffect = (options: { limit: number; offset: number }) =>
   Effect.gen(function* () {
     const { limit, offset } = options
+    yield* Effect.annotateCurrentSpan('pagination.limit', limit)
+    yield* Effect.annotateCurrentSpan('pagination.offset', offset)
     const whereCondition = eq(labelsTable.draft, false)
 
     const countResult = yield* Effect.tryPromise({
@@ -90,6 +92,7 @@ const getAllEffect = (options: { limit: number; offset: number }) =>
 
 const getBySlugEffect = (slug: string) =>
   Effect.gen(function* () {
+    yield* Effect.annotateCurrentSpan('label.slug', slug)
     const labelRecords = yield* Effect.tryPromise({
       try: () =>
         db
@@ -165,6 +168,8 @@ const getBySlugEffect = (slug: string) =>
 
 const createEffect = (data: InsertLabel, creatorIds: string[]) =>
   Effect.gen(function* () {
+    yield* Effect.annotateCurrentSpan('label.slug', data.slug)
+    yield* Effect.annotateCurrentSpan('creatorIds.count', creatorIds.length)
     const result = yield* Effect.tryPromise({
       try: () =>
         db.transaction(async (tx) => {
@@ -213,6 +218,11 @@ const createEffect = (data: InsertLabel, creatorIds: string[]) =>
 
 const updateEffect = (slug: string, data: Partial<InsertLabel>) =>
   Effect.gen(function* () {
+    yield* Effect.annotateCurrentSpan('label.slug', slug)
+    yield* Effect.annotateCurrentSpan(
+      'fields.updated',
+      Object.keys(data).join(',')
+    )
     const existingRecords = yield* Effect.tryPromise({
       try: () =>
         db
@@ -331,9 +341,22 @@ const updateEffect = (slug: string, data: Partial<InsertLabel>) =>
     return baseProcessedLabel
   })
 
+// Wrapped effects with spans
+const getAllWithSpan = (options: { limit: number; offset: number }) =>
+  getAllEffect(options).pipe(Effect.withSpan('label.getAll'))
+
+const getBySlugWithSpan = (slug: string) =>
+  getBySlugEffect(slug).pipe(Effect.withSpan('label.getBySlug'))
+
+const createWithSpan = (data: InsertLabel, creatorIds: string[]) =>
+  createEffect(data, creatorIds).pipe(Effect.withSpan('label.create'))
+
+const updateWithSpan = (slug: string, data: Partial<InsertLabel>) =>
+  updateEffect(slug, data).pipe(Effect.withSpan('label.update'))
+
 export const LabelServiceLive = Layer.succeed(LabelService, {
-  getAll: getAllEffect,
-  getBySlug: getBySlugEffect,
-  create: createEffect,
-  update: updateEffect
+  getAll: getAllWithSpan,
+  getBySlug: getBySlugWithSpan,
+  create: createWithSpan,
+  update: updateWithSpan
 })

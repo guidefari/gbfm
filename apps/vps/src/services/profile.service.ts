@@ -138,5 +138,8 @@ const getPublicProfileEffect = (username: string) =>
   })
 
 export const ProfileServiceLive = Layer.succeed(ProfileService, {
-  getPublicProfile: getPublicProfileEffect
+  getPublicProfile: (username) =>
+    getPublicProfileEffect(username).pipe(
+      Effect.withSpan('profile.getPublic', { attributes: { username } })
+    )
 })
