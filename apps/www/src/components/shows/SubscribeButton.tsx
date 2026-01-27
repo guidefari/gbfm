@@ -2,7 +2,11 @@ import { useNavigate } from '@tanstack/react-router'
 import { Bell, BellOff, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/use-toast'
-import { useSubscribeToShow, useUnsubscribeFromShow, useUserSubscriptions } from '@/lib/http'
+import {
+  useSubscribeToShow,
+  useUnsubscribeFromShow,
+  useUserSubscriptions
+} from '@/lib/http'
 import { useAuthStore } from '@/store/auth'
 
 interface SubscribeButtonProps {

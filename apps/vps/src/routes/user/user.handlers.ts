@@ -1,8 +1,7 @@
 import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import type { AppRouteHandler } from '@/lib/types'
-import { AppRuntime } from '@/runtime'
-import { runApp } from '@/runtime'
+import { AppRuntime, runApp } from '@/runtime'
 import { ShowService } from '@/services/show.service'
 import { UserService } from '@/services/user.service'
 
