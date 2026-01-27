@@ -4,12 +4,15 @@ import 'dotenv/config'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
 
+const isProd = config.app.stage === 'prod'
+
 const dbConfig = {
   host: config.database.host,
   port: config.database.port,
   user: config.database.user,
   password: config.database.password,
-  database: config.database.name
+  database: config.database.name,
+  ssl: isProd ? true : { rejectUnauthorized: false }
 }
 Effect.logInfo('[DB] Connecting to database', {
   stage: config.app.dbStage || 'prod',
