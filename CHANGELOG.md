@@ -1,3 +1,10 @@
+# [2.5.0](https://github.com/guidefari/gbfm/compare/v2.4.0...v2.5.0) (2026-01-27)
+
+
+### Features
+
+* observability improvements ([3723b98](https://github.com/guidefari/gbfm/commit/3723b98bb6a8a953e91125fb9667069b51600fb4))
+
 # [2.4.0](https://github.com/guidefari/gbfm/compare/v2.3.0...v2.4.0) (2026-01-27)
 
 
