@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import { ProfileContentGrid } from '@/components/profile/ProfileContentGrid'
 import { ProfileHeader } from '@/components/profile/ProfileHeader'
 import { type PublicProfile, usePublicProfile, VPS_BASE_URL } from '@/lib/http'
@@ -12,17 +12,12 @@ export const Route = createFileRoute('/profile/$username')({
         `${VPS_BASE_URL}/profile/${params.username}`,
         { credentials: 'include' }
       )
-      if (!response.ok) {
-        throw redirect({ to: '/', search: { notFound: params.username } })
-      }
+      if (!response.ok) return { profile: null }
       const profile: PublicProfile = await response.json()
-      if (!profile?.id) {
-        throw redirect({ to: '/', search: { notFound: params.username } })
-      }
+      if (!profile?.id) return { profile: null }
       return { profile }
-    } catch (e) {
-      if (e instanceof Response || (e && typeof e === 'object' && 'to' in e)) throw e
-      throw redirect({ to: '/', search: { notFound: params.username } })
+    } catch {
+      return { profile: null }
     }
   },
   head: ({ loaderData, params }) => {
@@ -30,7 +25,10 @@ export const Route = createFileRoute('/profile/$username')({
       return {
         meta: [
           { title: 'Profile not found | goosebumps.fm' },
-          { name: 'description', content: 'This profile does not exist on goosebumps.fm' }
+          {
+            name: 'description',
+            content: 'This profile does not exist on goosebumps.fm'
+          }
         ]
       }
     }
@@ -39,6 +37,31 @@ export const Route = createFileRoute('/profile/$username')({
     return { meta: generateSEOMeta(seoData) }
   }
 })
+
+function ProfileNotFound({ username }: { username: string }) {
+  return (
+    <div className='mx-auto max-w-md px-4 py-16 text-center'>
+      <h1 className='text-3xl font-bold text-foreground'>Account not found</h1>
+      <p className='mt-3 text-muted-foreground'>
+        The account{' '}
+        <span className='font-medium text-foreground'>@{username}</span> doesn't
+        exist.
+      </p>
+      <div className='mt-6 flex justify-center gap-3'>
+        <Link
+          to='/'
+          className='rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90'>
+          Go home
+        </Link>
+        <Link
+          to='/mixes'
+          className='rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted'>
+          Browse mixes
+        </Link>
+      </div>
+    </div>
+  )
+}
 
 function ProfilePage() {
   const { username } = Route.useParams()
@@ -57,10 +80,10 @@ function ProfilePage() {
             <div className='h-4 w-24 animate-pulse rounded bg-muted' />
           </div>
         </div>
-        <div className='mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4'>
-          {Array.from({ length: 4 }).map((_, i) => (
+        <div>
+          {Array.from({ length: 4 }).map((_, _i) => (
             <div
-              key={i}
+              key={crypto.randomUUID()}
               className='aspect-square animate-pulse rounded-md bg-muted'
             />
           ))}
@@ -69,26 +92,8 @@ function ProfilePage() {
     )
   }
 
-  if (error && !profile) {
-    return (
-      <div className='mx-auto max-w-6xl px-4 py-6 text-center'>
-        <h1 className='text-2xl font-bold text-foreground'>Profile not found</h1>
-        <p className='mt-2 text-muted-foreground'>
-          The user @{username} doesn't exist or their profile is unavailable.
-        </p>
-      </div>
-    )
-  }
-
-  if (!profile) {
-    return (
-      <div className='mx-auto max-w-6xl px-4 py-6 text-center'>
-        <h1 className='text-2xl font-bold text-foreground'>Profile not found</h1>
-        <p className='mt-2 text-muted-foreground'>
-          The user @{username} doesn't exist or their profile is unavailable.
-        </p>
-      </div>
-    )
+  if (!profile || error) {
+    return <ProfileNotFound username={username} />
   }
 
   return (

@@ -48,23 +48,19 @@ const sendReminderEmail = (reminder: MusicReminder) =>
     })
 
     if (userRecords.length === 0) {
-      return yield* Effect.fail(
-        new EmailError({
-          message: `User not found for reminder ${reminder.id}`,
-          reminderId: reminder.id
-        })
-      )
+      return yield* new EmailError({
+        message: `User not found for reminder ${reminder.id}`,
+        reminderId: reminder.id
+      })
     }
 
     const userRecord = userRecords[0]
 
     if (!userRecord?.email) {
-      return yield* Effect.fail(
-        new EmailError({
-          message: `User email not found for reminder ${reminder.id}`,
-          reminderId: reminder.id
-        })
-      )
+      return yield* new EmailError({
+        message: `User email not found for reminder ${reminder.id}`,
+        reminderId: reminder.id
+      })
     }
 
     const userEmail = userRecord.email
@@ -97,95 +93,91 @@ const sendReminderEmail = (reminder: MusicReminder) =>
     })
 
     if (logEntries.length === 0) {
-      return yield* Effect.fail(
-        new EmailError({
-          message: `Failed to create email log entry`,
-          reminderId: reminder.id
-        })
-      )
+      return yield* new EmailError({
+        message: `Failed to create email log entry`,
+        reminderId: reminder.id
+      })
     }
 
     const logEntry = logEntries[0]
 
     if (!logEntry?.id) {
-      return yield* Effect.fail(
-        new DatabaseError({
-          message: `Failed to create email log entry`,
-          operation: 'insert',
-          table: 'email_delivery_logs'
+      return yield* new DatabaseError({
+        message: `Failed to create email log entry`,
+        operation: 'insert',
+        table: 'email_delivery_logs'
+      })
+    }
+
+    // Send the actual email and handle success/failure with Effect composition
+    yield* Effect.tryPromise({
+      try: () =>
+        sendMusicReminderEmail({
+          to: userEmail,
+          username: userEmail.split('@')[0] || 'user',
+          musicTitle: reminder.musicTitle,
+          artistName: reminder.artistName,
+          musicUrl: reminder.musicUrl,
+          reminderDate: reminder.reminderDate.toISOString(),
+          notes: reminder.notes || undefined,
+          albumCoverUrl: reminder.albumCoverUrl || undefined
+        }),
+      catch: (error) =>
+        new EmailError({
+          message: `Failed to send email: ${(error as Error).message}`,
+          reminderId: reminder.id,
+          emailAddress: userEmail
         })
-      )
-    }
-
-    try {
-      // Send the actual email
-      yield* Effect.tryPromise({
-        try: () =>
-          sendMusicReminderEmail({
-            to: userEmail,
-            username: userEmail.split('@')[0] || 'user',
-            musicTitle: reminder.musicTitle,
-            artistName: reminder.artistName,
-            musicUrl: reminder.musicUrl,
-            reminderDate: reminder.reminderDate.toISOString(),
-            notes: reminder.notes || undefined,
-            albumCoverUrl: reminder.albumCoverUrl || undefined
-          }),
-        catch: (error) =>
-          new EmailError({
-            message: `Failed to send email: ${(error as Error).message}`,
-            reminderId: reminder.id,
-            emailAddress: userEmail
-          })
-      })
-
-      // Update log on success
-      yield* Effect.tryPromise({
-        try: () =>
-          db
-            .update(emailDeliveryLogsTable)
-            .set({
-              status: 'sent',
-              sentAt: new Date()
+    }).pipe(
+      Effect.andThen(() =>
+        // Update log on success
+        Effect.tryPromise({
+          try: () =>
+            db
+              .update(emailDeliveryLogsTable)
+              .set({
+                status: 'sent',
+                sentAt: new Date()
+              })
+              .where(eq(emailDeliveryLogsTable.id, logEntry.id)),
+          catch: (error) =>
+            new DatabaseError({
+              message: `Failed to update email log: ${(error as Error).message}`,
+              operation: 'update',
+              table: 'email_delivery_logs'
             })
-            .where(eq(emailDeliveryLogsTable.id, logEntry.id)),
-        catch: (error) =>
-          new DatabaseError({
-            message: `Failed to update email log: ${(error as Error).message}`,
-            operation: 'update',
-            table: 'email_delivery_logs'
-          })
-      })
+        })
+      ),
+      Effect.andThen(() =>
+        Effect.logInfo(`Successfully sent music reminder email`, {
+          reminderId: reminder.id,
+          email: userEmail,
+          musicTitle: reminder.musicTitle
+        })
+      ),
+      Effect.catchAll((sendError) => {
+        // Update log on failure
+        const errorMessage =
+          sendError instanceof EmailError ? sendError.message : 'Unknown error'
 
-      yield* Effect.logInfo(`Successfully sent music reminder email`, {
-        reminderId: reminder.id,
-        email: userEmail,
-        musicTitle: reminder.musicTitle
-      })
-    } catch (sendError: unknown) {
-      // Update log on failure
-      const errorMessage =
-        sendError instanceof EmailError ? sendError.message : 'Unknown error'
-
-      yield* Effect.tryPromise({
-        try: () =>
-          db
-            .update(emailDeliveryLogsTable)
-            .set({
-              status: 'failed',
-              errorMessage
+        return Effect.tryPromise({
+          try: () =>
+            db
+              .update(emailDeliveryLogsTable)
+              .set({
+                status: 'failed',
+                errorMessage
+              })
+              .where(eq(emailDeliveryLogsTable.id, logEntry.id)),
+          catch: (logError) =>
+            new DatabaseError({
+              message: `Failed to update email log on failure: ${(logError as Error).message}`,
+              operation: 'update',
+              table: 'email_delivery_logs'
             })
-            .where(eq(emailDeliveryLogsTable.id, logEntry.id)),
-        catch: (logError) =>
-          new DatabaseError({
-            message: `Failed to update email log on failure: ${(logError as Error).message}`,
-            operation: 'update',
-            table: 'email_delivery_logs'
-          })
+        }).pipe(Effect.andThen(() => Effect.fail(sendError as EmailError)))
       })
-
-      return yield* sendError as EmailError
-    }
+    )
   })
 
 // Main function to send music reminder emails

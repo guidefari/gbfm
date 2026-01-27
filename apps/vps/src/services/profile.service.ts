@@ -64,13 +64,11 @@ const getPublicProfileEffect = (username: string) =>
 
     const foundUser = userRecords[0]
     if (!foundUser || foundUser.banned) {
-      return yield* Effect.fail(
-        new NotFoundError({
-          message: 'User not found',
-          resource: 'user',
-          id: username
-        })
-      )
+      return yield* new NotFoundError({
+        message: 'User not found',
+        resource: 'user',
+        id: username
+      })
     }
 
     const userMixes = yield* Effect.tryPromise({

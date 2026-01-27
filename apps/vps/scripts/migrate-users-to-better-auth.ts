@@ -1,21 +1,24 @@
 import { db } from '../src/db'
 import { sql } from 'drizzle-orm'
 import { user as betterAuthUser, account as betterAuthAccount } from '../src/db/auth.schema'
-import { Effect, Console } from 'effect'
+import { Effect, Console, Data } from 'effect'
 import { BunRuntime } from '@effect/platform-bun'
+
+class FetchUsersError extends Data.TaggedError("FetchUsersError")<{
+  readonly cause: unknown
+}> {}
+
+class MigrationError extends Data.TaggedError("MigrationError")<{
+  readonly cause: unknown
+}> {}
 
 const migrateUsers = Effect.gen(function* () {
   yield* Console.log('🔄 Starting user migration from old auth to Better Auth...')
 
   const result = yield* Effect.tryPromise({
     try: () => db.execute(sql`SELECT * FROM "users"`),
-    catch: (error) => error
+    catch: (cause) => new FetchUsersError({ cause })
   })
-
-  if (result instanceof Error) {
-    yield* Console.error('✗ Failed to fetch existing users:', result.message)
-    return
-  }
 
   const existingUsers = result.rows as unknown as any[]
 
@@ -53,7 +56,7 @@ const migrateUsers = Effect.gen(function* () {
           }
         })
       },
-      catch: (error) => error
+      catch: (cause) => new MigrationError({ cause })
     }).pipe(
       Effect.match({
         onFailure: (error) => {
@@ -71,7 +74,7 @@ const migrateUsers = Effect.gen(function* () {
       yield* Console.log(`✓ Successfully migrated ${oldUser.email}`)
     } else {
       const err = (migrationResult as any).error
-      yield* Console.error(`✗ Failed to migrate ${oldUser.email}:`, err instanceof Error ? err.message : err)
+      yield* Console.error(`✗ Failed to migrate ${oldUser.email}:`, err instanceof MigrationError ? String(err.cause) : err)
     }
   }
 

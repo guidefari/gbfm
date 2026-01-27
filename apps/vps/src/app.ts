@@ -21,7 +21,7 @@ import { processPendingReminders } from './services/reminder-processor'
 
 const healthCheckEffect = Effect.tryPromise({
   try: () => db.execute(sql.raw('SELECT 1')),
-  catch: () => new Error('Database connection failed')
+  catch: () => Effect.die('Database connection failed')
 })
 
 const setupRoutesEffect = Effect.gen(function* () {
@@ -69,10 +69,7 @@ const cronJobEffect = processPendingReminders.pipe(
   Effect.repeat(Schedule.spaced('30 seconds'))
 )
 
-const mainEffect = Effect.gen(function* () {
-  // Setup and return app
-  return yield* setupRoutesEffect
-})
+const mainEffect = setupRoutesEffect
 
 const setupGracefulShutdown = () => {
   const shutdown = async (signal: string) => {

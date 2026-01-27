@@ -1,4 +1,4 @@
-import { Context, Effect, Layer, Schema } from 'effect'
+import { Context, Layer, Schema } from 'effect'
 
 // Conditionally import Resource to avoid failures when running outside SST
 let Resource: { [key: string]: unknown } | null = null
@@ -242,7 +242,5 @@ export const config = createConfig()
 
 export const ConfigServiceLive = Layer.effect(
   ConfigService,
-  Effect.gen(function* () {
-    return yield* Schema.decodeUnknown(ConfigSchema)(config)
-  })
+  Schema.decodeUnknown(ConfigSchema)(config)
 )

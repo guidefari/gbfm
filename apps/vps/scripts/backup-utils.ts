@@ -1,4 +1,4 @@
-import { Effect, Ref } from "effect";
+import { Effect } from "effect";
 
 /**
  * Shared backup utilities
@@ -162,8 +162,8 @@ export interface LogCapture {
   readonly getLogs: Effect.Effect<string>;
 }
 
-export const makeLogCapture = Effect.gen(function* (_) {
-  const logs = yield* _(Ref.make<string[]>([]));
+export const makeLogCapture = Effect.sync(() => {
+  const logs: string[] = [];
 
   const originalConsole = {
     log: console.log,
@@ -181,7 +181,7 @@ export const makeLogCapture = Effect.gen(function* (_) {
 
     const logEntry = `[${timestamp}] [${level.toUpperCase()}] ${message}`;
 
-    Effect.runSync(Ref.update(logs, (current) => [...current, logEntry]));
+    logs.push(logEntry);
     originalConsole[level](...args);
   };
 
@@ -196,7 +196,7 @@ export const makeLogCapture = Effect.gen(function* (_) {
   };
 
   return {
-    getLogs: Ref.get(logs).pipe(Effect.map((entries) => entries.join("\n"))),
+    getLogs: Effect.sync(() => logs.join("\n")),
     restore,
   };
 });

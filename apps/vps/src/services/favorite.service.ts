@@ -47,230 +47,214 @@ export const FavoriteService =
 
 // Core service logic - pure Effects with no service dependencies
 const addFavoriteEffect = (userId: string, audioId: string) =>
-  Effect.gen(function* () {
-    return yield* Effect.withSpan('favorite.add', {
-      attributes: { userId, audioId }
-    })(
-      Effect.gen(function* () {
-        // Check if audio exists
-        const audioRecords = yield* Effect.tryPromise({
-          try: () =>
-            db
-              .select()
-              .from(audioTable)
-              .where(eq(audioTable.id, audioId))
-              .limit(1),
-          catch: (error) =>
-            new DatabaseError({
-              message: `Failed to check audio existence: ${(error as Error).message}`,
-              operation: 'select',
-              table: 'audio'
-            })
-        })
-
-        if (audioRecords.length === 0) {
-          return yield* Effect.fail(
-            new NotFoundError({
-              message: 'Audio not found',
-              resource: 'audio',
-              id: audioId
-            })
-          )
-        }
-
-        // Check if already favorited
-        const existingRecords = yield* Effect.tryPromise({
-          try: () =>
-            db
-              .select()
-              .from(favoritesTable)
-              .where(
-                and(
-                  eq(favoritesTable.userId, userId),
-                  eq(favoritesTable.audioId, audioId)
-                )
-              )
-              .limit(1),
-          catch: (error) =>
-            new DatabaseError({
-              message: `Failed to check existing favorite: ${(error as Error).message}`,
-              operation: 'select',
-              table: 'favorites'
-            })
-        })
-
-        if (existingRecords.length > 0) {
-          return yield* Effect.fail(
-            new ConflictError({
-              message: 'Already favorited',
-              resource: 'favorite',
-              id: `${userId}-${audioId}`
-            })
-          )
-        }
-
-        // Add favorite
-        const insertedRecords = yield* Effect.tryPromise({
-          try: () =>
-            db
-              .insert(favoritesTable)
-              .values({
-                userId,
-                audioId
-              })
-              .returning(),
-          catch: (error) =>
-            new DatabaseError({
-              message: `Failed to add favorite: ${(error as Error).message}`,
-              operation: 'insert',
-              table: 'favorites'
-            })
-        })
-
-        if (insertedRecords.length === 0) {
-          return yield* Effect.fail(
-            new DatabaseError({
-              message: 'Failed to create favorite record',
-              operation: 'insert',
-              table: 'favorites'
-            })
-          )
-        }
-
-        const favorite = insertedRecords[0]
-        if (!favorite) {
-          return yield* Effect.fail(
-            new DatabaseError({
-              message: 'Failed to create favorite record',
-              operation: 'insert',
-              table: 'favorites'
-            })
-          )
-        }
-
-        yield* Effect.logInfo('[Favorites] Favorite added', {
-          userId,
-          audioId,
-          favoriteId: favorite.id
-        })
-
-        return favorite
+  Effect.withSpan('favorite.add', {
+    attributes: { userId, audioId }
+  })(
+    Effect.gen(function* () {
+      // Check if audio exists
+      const audioRecords = yield* Effect.tryPromise({
+        try: () =>
+          db
+            .select()
+            .from(audioTable)
+            .where(eq(audioTable.id, audioId))
+            .limit(1),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to check audio existence: ${(error as Error).message}`,
+            operation: 'select',
+            table: 'audio'
+          })
       })
-    )
-  })
+
+      if (audioRecords.length === 0) {
+        return yield* new NotFoundError({
+          message: 'Audio not found',
+          resource: 'audio',
+          id: audioId
+        })
+      }
+
+      // Check if already favorited
+      const existingRecords = yield* Effect.tryPromise({
+        try: () =>
+          db
+            .select()
+            .from(favoritesTable)
+            .where(
+              and(
+                eq(favoritesTable.userId, userId),
+                eq(favoritesTable.audioId, audioId)
+              )
+            )
+            .limit(1),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to check existing favorite: ${(error as Error).message}`,
+            operation: 'select',
+            table: 'favorites'
+          })
+      })
+
+      if (existingRecords.length > 0) {
+        return yield* new ConflictError({
+          message: 'Already favorited',
+          resource: 'favorite',
+          id: `${userId}-${audioId}`
+        })
+      }
+
+      // Add favorite
+      const insertedRecords = yield* Effect.tryPromise({
+        try: () =>
+          db
+            .insert(favoritesTable)
+            .values({
+              userId,
+              audioId
+            })
+            .returning(),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to add favorite: ${(error as Error).message}`,
+            operation: 'insert',
+            table: 'favorites'
+          })
+      })
+
+      if (insertedRecords.length === 0) {
+        return yield* new DatabaseError({
+          message: 'Failed to create favorite record',
+          operation: 'insert',
+          table: 'favorites'
+        })
+      }
+
+      const favorite = insertedRecords[0]
+      if (!favorite) {
+        return yield* new DatabaseError({
+          message: 'Failed to create favorite record',
+          operation: 'insert',
+          table: 'favorites'
+        })
+      }
+
+      yield* Effect.logInfo('[Favorites] Favorite added', {
+        userId,
+        audioId,
+        favoriteId: favorite.id
+      })
+
+      return favorite
+    })
+  )
 
 const removeFavoriteEffect = (userId: string, audioId: string) =>
-  Effect.gen(function* () {
-    return yield* Effect.withSpan('favorite.remove', {
-      attributes: { userId, audioId }
-    })(
-      Effect.gen(function* () {
-        // Check if favorite exists
-        const existingRecords = yield* Effect.tryPromise({
-          try: () =>
-            db
-              .select()
-              .from(favoritesTable)
-              .where(
-                and(
-                  eq(favoritesTable.userId, userId),
-                  eq(favoritesTable.audioId, audioId)
-                )
+  Effect.withSpan('favorite.remove', {
+    attributes: { userId, audioId }
+  })(
+    Effect.gen(function* () {
+      // Check if favorite exists
+      const existingRecords = yield* Effect.tryPromise({
+        try: () =>
+          db
+            .select()
+            .from(favoritesTable)
+            .where(
+              and(
+                eq(favoritesTable.userId, userId),
+                eq(favoritesTable.audioId, audioId)
               )
-              .limit(1),
-          catch: (error) =>
-            new DatabaseError({
-              message: `Failed to check favorite existence: ${(error as Error).message}`,
-              operation: 'select',
-              table: 'favorites'
-            })
-        })
-
-        if (existingRecords.length === 0) {
-          return yield* Effect.fail(
-            new NotFoundError({
-              message: 'Favorite not found',
-              resource: 'favorite',
-              id: `${userId}-${audioId}`
-            })
-          )
-        }
-
-        // Remove favorite
-        yield* Effect.tryPromise({
-          try: () =>
-            db
-              .delete(favoritesTable)
-              .where(
-                and(
-                  eq(favoritesTable.userId, userId),
-                  eq(favoritesTable.audioId, audioId)
-                )
-              ),
-          catch: (error) =>
-            new DatabaseError({
-              message: `Failed to remove favorite: ${(error as Error).message}`,
-              operation: 'delete',
-              table: 'favorites'
-            })
-        })
-
-        yield* Effect.logInfo('[Favorites] Favorite removed', {
-          userId,
-          audioId
-        })
+            )
+            .limit(1),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to check favorite existence: ${(error as Error).message}`,
+            operation: 'select',
+            table: 'favorites'
+          })
       })
-    )
-  })
+
+      if (existingRecords.length === 0) {
+        return yield* new NotFoundError({
+          message: 'Favorite not found',
+          resource: 'favorite',
+          id: `${userId}-${audioId}`
+        })
+      }
+
+      // Remove favorite
+      yield* Effect.tryPromise({
+        try: () =>
+          db
+            .delete(favoritesTable)
+            .where(
+              and(
+                eq(favoritesTable.userId, userId),
+                eq(favoritesTable.audioId, audioId)
+              )
+            ),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to remove favorite: ${(error as Error).message}`,
+            operation: 'delete',
+            table: 'favorites'
+          })
+      })
+
+      yield* Effect.logInfo('[Favorites] Favorite removed', {
+        userId,
+        audioId
+      })
+    })
+  )
 
 const getFavoritesEffect = (userId: string, limit = 20, offset = 0) =>
-  Effect.gen(function* () {
-    return yield* Effect.withSpan('favorite.get', {
-      attributes: { userId, limit, offset }
-    })(
-      Effect.gen(function* () {
-        const favorites = yield* Effect.tryPromise({
-          try: () =>
-            db
-              .select({
-                id: favoritesTable.id,
-                userId: favoritesTable.userId,
-                audioId: favoritesTable.audioId,
-                createdAt: favoritesTable.createdAt,
-                audio: {
-                  id: audioTable.id,
-                  title: audioTable.title,
-                  slug: audioTable.slug,
-                  thumbnailUrl: audioTable.thumbnailUrl,
-                  type: audioTable.type,
-                  url: audioTable.url
-                }
-              })
-              .from(favoritesTable)
-              .innerJoin(audioTable, eq(favoritesTable.audioId, audioTable.id))
-              .where(eq(favoritesTable.userId, userId))
-              .orderBy(favoritesTable.createdAt)
-              .limit(limit)
-              .offset(offset),
-          catch: (error) =>
-            new DatabaseError({
-              message: `Failed to get favorites: ${(error as Error).message}`,
-              operation: 'select',
-              table: 'favorites'
+  Effect.withSpan('favorite.get', {
+    attributes: { userId, limit, offset }
+  })(
+    Effect.gen(function* () {
+      const favorites = yield* Effect.tryPromise({
+        try: () =>
+          db
+            .select({
+              id: favoritesTable.id,
+              userId: favoritesTable.userId,
+              audioId: favoritesTable.audioId,
+              createdAt: favoritesTable.createdAt,
+              audio: {
+                id: audioTable.id,
+                title: audioTable.title,
+                slug: audioTable.slug,
+                thumbnailUrl: audioTable.thumbnailUrl,
+                type: audioTable.type,
+                url: audioTable.url
+              }
             })
-        })
-
-        yield* Effect.logInfo('[Favorites] Favorites retrieved', {
-          userId,
-          count: favorites.length,
-          limit,
-          offset
-        })
-
-        return favorites
+            .from(favoritesTable)
+            .innerJoin(audioTable, eq(favoritesTable.audioId, audioTable.id))
+            .where(eq(favoritesTable.userId, userId))
+            .orderBy(favoritesTable.createdAt)
+            .limit(limit)
+            .offset(offset),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to get favorites: ${(error as Error).message}`,
+            operation: 'select',
+            table: 'favorites'
+          })
       })
-    )
-  })
+
+      yield* Effect.logInfo('[Favorites] Favorites retrieved', {
+        userId,
+        count: favorites.length,
+        limit,
+        offset
+      })
+
+      return favorites
+    })
+  )
 
 // Implementation - simple layer that provides access to the Effects
 export const FavoriteServiceLive = Layer.succeed(FavoriteService, {

@@ -107,13 +107,11 @@ const getBySlugEffect = (slug: string) =>
 
     const label = labelRecords[0]
     if (!label) {
-      return yield* Effect.fail(
-        new NotFoundError({
-          message: 'Label not found',
-          resource: 'label',
-          id: slug
-        })
-      )
+      return yield* new NotFoundError({
+        message: 'Label not found',
+        resource: 'label',
+        id: slug
+      })
     }
 
     const creators = yield* Effect.tryPromise({
@@ -232,13 +230,11 @@ const updateEffect = (slug: string, data: Partial<InsertLabel>) =>
 
     const existingLabel = existingRecords[0]
     if (!existingLabel) {
-      return yield* Effect.fail(
-        new NotFoundError({
-          message: 'Label not found',
-          resource: 'label',
-          id: slug
-        })
-      )
+      return yield* new NotFoundError({
+        message: 'Label not found',
+        resource: 'label',
+        id: slug
+      })
     }
 
     const authorship = yield* Effect.tryPromise({
@@ -257,11 +253,9 @@ const updateEffect = (slug: string, data: Partial<InsertLabel>) =>
     })
 
     if (authorship.length === 0) {
-      return yield* Effect.fail(
-        new UnauthorizedError({
-          message: 'Not authorized to edit this content'
-        })
-      )
+      return yield* new UnauthorizedError({
+        message: 'Not authorized to edit this content'
+      })
     }
 
     const updatedRecords = yield* Effect.tryPromise({
@@ -281,13 +275,11 @@ const updateEffect = (slug: string, data: Partial<InsertLabel>) =>
 
     const updatedLabel = updatedRecords[0]
     if (!updatedLabel) {
-      return yield* Effect.fail(
-        new DatabaseError({
-          message: 'Failed to update label',
-          operation: 'update',
-          table: 'labels'
-        })
-      )
+      return yield* new DatabaseError({
+        message: 'Failed to update label',
+        operation: 'update',
+        table: 'labels'
+      })
     }
 
     const creators = yield* Effect.tryPromise({

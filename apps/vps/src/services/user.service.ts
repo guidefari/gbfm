@@ -89,13 +89,11 @@ const getUserByIdEffect = (userId: string) =>
 
     const user = userRecords[0]
     if (!user) {
-      return yield* Effect.fail(
-        new NotFoundError({
-          message: 'User not found',
-          resource: 'user',
-          id: userId
-        })
-      )
+      return yield* new NotFoundError({
+        message: 'User not found',
+        resource: 'user',
+        id: userId
+      })
     }
 
     return user
@@ -132,13 +130,11 @@ const updateUserProfileEffect = (
 
     const user = updatedRecords[0]
     if (!user) {
-      return yield* Effect.fail(
-        new NotFoundError({
-          message: 'User not found',
-          resource: 'user',
-          id: userId
-        })
-      )
+      return yield* new NotFoundError({
+        message: 'User not found',
+        resource: 'user',
+        id: userId
+      })
     }
 
     return user
@@ -171,13 +167,11 @@ const updateUserEmailPreferencesEffect = (
     })
 
     if (!result) {
-      return yield* Effect.fail(
-        new DatabaseError({
-          message: 'Failed to update email preferences - no rows affected',
-          operation: 'update',
-          table: 'user_email_preferences'
-        })
-      )
+      return yield* new DatabaseError({
+        message: 'Failed to update email preferences - no rows affected',
+        operation: 'update',
+        table: 'user_email_preferences'
+      })
     }
 
     return result

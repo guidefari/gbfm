@@ -68,13 +68,11 @@ const getByLabelSlugEffect = (
 
     const label = labelRecords[0]
     if (!label) {
-      return yield* Effect.fail(
-        new NotFoundError({
-          message: 'Label not found',
-          resource: 'label',
-          id: labelSlug
-        })
-      )
+      return yield* new NotFoundError({
+        message: 'Label not found',
+        resource: 'label',
+        id: labelSlug
+      })
     }
 
     const whereCondition = eq(releasesTable.labelId, label.id)
@@ -134,13 +132,11 @@ const getBySlugEffect = (slug: string) =>
 
     const release = releaseRecords[0]
     if (!release) {
-      return yield* Effect.fail(
-        new NotFoundError({
-          message: 'Release not found',
-          resource: 'release',
-          id: slug
-        })
-      )
+      return yield* new NotFoundError({
+        message: 'Release not found',
+        resource: 'release',
+        id: slug
+      })
     }
 
     let processedRelease: SelectMdxCompiledRelease = {
@@ -189,13 +185,11 @@ const createEffect = (data: InsertRelease & { releaseDate: Date }) =>
 
     const label = labelRecords[0]
     if (!label) {
-      return yield* Effect.fail(
-        new NotFoundError({
-          message: 'Label not found',
-          resource: 'label',
-          id: data.labelId
-        })
-      )
+      return yield* new NotFoundError({
+        message: 'Label not found',
+        resource: 'label',
+        id: data.labelId
+      })
     }
 
     const insertedRecords = yield* Effect.tryPromise({
@@ -225,13 +219,11 @@ const createEffect = (data: InsertRelease & { releaseDate: Date }) =>
 
     const newRelease = insertedRecords[0]
     if (!newRelease) {
-      return yield* Effect.fail(
-        new DatabaseError({
-          message: 'Failed to create release',
-          operation: 'insert',
-          table: 'releases'
-        })
-      )
+      return yield* new DatabaseError({
+        message: 'Failed to create release',
+        operation: 'insert',
+        table: 'releases'
+      })
     }
 
     return newRelease
@@ -259,13 +251,11 @@ const updateEffect = (
 
     const existingRelease = existingRecords[0]
     if (!existingRelease) {
-      return yield* Effect.fail(
-        new NotFoundError({
-          message: 'Release not found',
-          resource: 'release',
-          id: slug
-        })
-      )
+      return yield* new NotFoundError({
+        message: 'Release not found',
+        resource: 'release',
+        id: slug
+      })
     }
 
     const updatedRecords = yield* Effect.tryPromise({
@@ -289,13 +279,11 @@ const updateEffect = (
 
     const updatedRelease = updatedRecords[0]
     if (!updatedRelease) {
-      return yield* Effect.fail(
-        new DatabaseError({
-          message: 'Failed to update release',
-          operation: 'update',
-          table: 'releases'
-        })
-      )
+      return yield* new DatabaseError({
+        message: 'Failed to update release',
+        operation: 'update',
+        table: 'releases'
+      })
     }
 
     const baseProcessedRelease: SelectMdxCompiledRelease = {
@@ -344,13 +332,11 @@ const deleteEffect = (slug: string) =>
 
     const existingRelease = existingRecords[0]
     if (!existingRelease) {
-      return yield* Effect.fail(
-        new NotFoundError({
-          message: 'Release not found',
-          resource: 'release',
-          id: slug
-        })
-      )
+      return yield* new NotFoundError({
+        message: 'Release not found',
+        resource: 'release',
+        id: slug
+      })
     }
 
     yield* Effect.tryPromise({

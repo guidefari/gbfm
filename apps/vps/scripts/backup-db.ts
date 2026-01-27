@@ -84,17 +84,13 @@ function createBackupEffect(
   backupSource: BackupSource
 ) {
   return withLogCapture((capture) =>
-    Effect.gen(function* (_) {
-      yield* _(Console.log("🔄 Starting database backup..."));
-      yield* _(Console.log(`   Source: ${backupSource} database`));
-      yield* _(
-        Console.log(
-          `   Destination: ${destination === "s3" ? "S3 bucket" : "local filesystem"}`
-        )
+    Effect.gen(function* () {
+      yield* Console.log("🔄 Starting database backup...");
+      yield* Console.log(`   Source: ${backupSource} database`);
+      yield* Console.log(
+        `   Destination: ${destination === "s3" ? "S3 bucket" : "local filesystem"}`
       );
-      yield* _(
-        Console.log("   💡 Run with --help to see all available options\n")
-      );
+      yield* Console.log("   💡 Run with --help to see all available options\n");
 
       const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
       const filename = `backup-${timestamp}.sql`;
@@ -104,23 +100,17 @@ function createBackupEffect(
       if (backupSource === "local") {
         const localDbUrl = process.env.LOCAL_DB_URL;
         if (!localDbUrl) {
-          yield* _(
-            Console.error(
-              "❌ LOCAL_DB_URL environment variable is required when using --source=local"
-            )
+          yield* Console.error(
+            "❌ LOCAL_DB_URL environment variable is required when using --source=local"
           );
-          yield* _(
-            Console.error("   Format: postgres://user:password@host:port/database")
+          yield* Console.error("   Format: postgres://user:password@host:port/database");
+          yield* Console.error(
+            '\nExample: LOCAL_DB_URL="postgres://user:pass@localhost:5432/mydb" bun run scripts/backup-db.ts --source=local'
           );
-          yield* _(
-            Console.error(
-              '\nExample: LOCAL_DB_URL="postgres://user:pass@localhost:5432/mydb" bun run scripts/backup-db.ts --source=local'
-            )
-          );
-          return yield* _(Effect.fail(new Error("LOCAL_DB_URL not set")));
+          return yield* Effect.die(new Error("LOCAL_DB_URL not set"));
         }
 
-        yield* _(Console.log("🔗 Using LOCAL_DB_URL connection string"));
+        yield* Console.log("🔗 Using LOCAL_DB_URL connection string");
         const url = new URL(localDbUrl);
 
         backupConfig = {
@@ -131,7 +121,7 @@ function createBackupEffect(
           port: url.port || "5432",
         };
       } else {
-        yield* _(Console.log("🔗 Using SST Resource configuration"));
+        yield* Console.log("🔗 Using SST Resource configuration");
 
         const getResourceOrEnv = (
           resourceKey: string,
@@ -159,41 +149,35 @@ function createBackupEffect(
         };
       }
 
-      yield* _(Console.log(`📊 Database: ${backupConfig.database}`));
-      yield* _(Console.log(`   Host: ${backupConfig.host}:${backupConfig.port}`));
+      yield* Console.log(`📊 Database: ${backupConfig.database}`);
+      yield* Console.log(`   Host: ${backupConfig.host}:${backupConfig.port}`);
 
-      const hasPgDump = yield* _(Effect.promise(() => isPgDumpAvailable()));
+      const hasPgDump = yield* Effect.promise(() => isPgDumpAvailable());
 
       if (!hasPgDump) {
-        yield* _(Console.error("⚠️  pg_dump not found, exiting"));
-        const logs = yield* _(capture.getLogs);
-        yield* _(
-          sendNotificationEmail(
-            "failure",
-            backupConfig,
-            filename,
-            0,
-            logs,
-            "pg_dump not available"
-          )
+        yield* Console.error("⚠️  pg_dump not found, exiting");
+        const logs = yield* capture.getLogs;
+        yield* sendNotificationEmail(
+          "failure",
+          backupConfig,
+          filename,
+          0,
+          logs,
+          "pg_dump not available"
         );
-        return yield* _(Effect.fail(new Error("pg_dump not available")));
+        return yield* Effect.die(new Error("pg_dump not available"));
       }
 
-      yield* _(Console.log("✓ Using pg_dump (recommended)"));
-      const sqlDump = yield* _(
-        Effect.promise(() => createBackupWithPgDump(backupConfig))
-      );
+      yield* Console.log("✓ Using pg_dump (recommended)");
+      const sqlDump = yield* Effect.promise(() => createBackupWithPgDump(backupConfig));
 
       const backupData = Buffer.from(sqlDump);
-      yield* _(
-        Console.log(
-          `✅ Backup size: ${(backupData.length / 1024 / 1024).toFixed(2)} MB`
-        )
+      yield* Console.log(
+        `✅ Backup size: ${(backupData.length / 1024 / 1024).toFixed(2)} MB`
       );
 
       if (destination === "s3") {
-        yield* _(Console.log("☁️  Uploading to S3..."));
+        yield* Console.log("☁️  Uploading to S3...");
         const s3Client = new S3Client({});
 
         const getBucketName = (): string => {
@@ -211,38 +195,34 @@ function createBackupEffect(
 
         const bucketName = getBucketName();
 
-        yield* _(
-          Effect.promise(() =>
-            s3Client.send(
-              new PutObjectCommand({
-                Bucket: bucketName,
-                Key: filename,
-                Body: backupData,
-                ContentType: "application/sql",
-                Metadata: {
-                  timestamp: new Date().toISOString(),
-                  database: backupConfig.database,
-                  stage: process.env.SST_STAGE || "dev",
-                  method: "pg_dump",
-                },
-              })
-            )
+        yield* Effect.promise(() =>
+          s3Client.send(
+            new PutObjectCommand({
+              Bucket: bucketName,
+              Key: filename,
+              Body: backupData,
+              ContentType: "application/sql",
+              Metadata: {
+                timestamp: new Date().toISOString(),
+                database: backupConfig.database,
+                stage: process.env.SST_STAGE || "dev",
+                method: "pg_dump",
+              },
+            })
           )
         );
 
-        yield* _(Console.log(`✅ Backup uploaded successfully: ${filename}`));
-        yield* _(Console.log(`📊 Bucket: ${bucketName}`));
-        yield* _(Console.log("🎉 Backup complete!"));
+        yield* Console.log(`✅ Backup uploaded successfully: ${filename}`);
+        yield* Console.log(`📊 Bucket: ${bucketName}`);
+        yield* Console.log("🎉 Backup complete!");
 
-        const logs = yield* _(capture.getLogs);
-        yield* _(
-          sendNotificationEmail(
-            "success",
-            backupConfig,
-            filename,
-            backupData.length,
-            logs
-          )
+        const logs = yield* capture.getLogs;
+        yield* sendNotificationEmail(
+          "success",
+          backupConfig,
+          filename,
+          backupData.length,
+          logs
         );
 
         return {
@@ -253,27 +233,25 @@ function createBackupEffect(
           method: "pg_dump",
         } as BackupResult;
       }
-      const fs = yield* _(FileSystem.FileSystem);
+      const fs = yield* FileSystem.FileSystem;
       const backupsDir = `${process.cwd()}/backups`;
       const filePath = `${backupsDir}/${filename}`;
 
-      yield* _(Console.log("💾 Saving to local filesystem..."));
-      yield* _(fs.makeDirectory(backupsDir, { recursive: true }));
-      yield* _(fs.writeFile(filePath, backupData));
+      yield* Console.log("💾 Saving to local filesystem...");
+      yield* fs.makeDirectory(backupsDir, { recursive: true });
+      yield* fs.writeFile(filePath, backupData);
 
-      yield* _(Console.log(`✅ Backup saved successfully: ${filePath}`));
-      yield* _(Console.log(`📊 Directory: ${backupsDir}`));
-      yield* _(Console.log("🎉 Backup complete!"));
+      yield* Console.log(`✅ Backup saved successfully: ${filePath}`);
+      yield* Console.log(`📊 Directory: ${backupsDir}`);
+      yield* Console.log("🎉 Backup complete!");
 
-      const logs = yield* _(capture.getLogs);
-      yield* _(
-        sendNotificationEmail(
-          "success",
-          backupConfig,
-          filename,
-          backupData.length,
-          logs
-        )
+      const logs = yield* capture.getLogs;
+      yield* sendNotificationEmail(
+        "success",
+        backupConfig,
+        filename,
+        backupData.length,
+        logs
       );
 
       return {
@@ -285,24 +263,22 @@ function createBackupEffect(
       } as BackupResult;
     }).pipe(
       Effect.tapError((error) =>
-        Effect.gen(function* (_) {
-          const logs = yield* _(capture.getLogs);
-          yield* _(
-            sendNotificationEmail(
-              "failure",
-              {
-                password: "",
-                user: "unknown",
-                host: "unknown",
-                database: "unknown",
-                port: "5432",
-              },
-              "",
-              0,
-              logs,
-              error instanceof Error ? error.message : String(error),
-              error instanceof Error ? error.stack : undefined
-            )
+        Effect.gen(function* () {
+          const logs = yield* capture.getLogs;
+          yield* sendNotificationEmail(
+            "failure",
+            {
+              password: "",
+              user: "unknown",
+              host: "unknown",
+              database: "unknown",
+              port: "5432",
+            },
+            "",
+            0,
+            logs,
+            error instanceof Error ? error.message : String(error),
+            error instanceof Error ? error.stack : undefined
           );
         })
       ),

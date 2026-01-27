@@ -437,12 +437,6 @@ export const processUpload: AppRouteHandler<ProcessMixUploadRoute> = async (
         error: error.message,
         status: HttpStatusCodes.INTERNAL_SERVER_ERROR
       } as const)
-    ),
-    Effect.catchAll((_error) =>
-      Effect.succeed({
-        error: 'Failed to process upload',
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
     )
   )
 
@@ -603,21 +597,19 @@ function createAudioOrVideo(
 function cleanup(files: ProcessedFiles): Effect.Effect<void> {
   return Effect.gen(function* () {
     yield* Effect.tryPromise(() => fs.unlink(files.audioPath)).pipe(
-      Effect.catchAll(() => Effect.succeed(void 0)) // Ignore cleanup errors
+      Effect.catchAll(() => Effect.void)
     )
 
     yield* Effect.tryPromise(() => fs.unlink(files.imagePath)).pipe(
-      Effect.catchAll(() => Effect.succeed(void 0)) // Ignore cleanup errors
+      Effect.catchAll(() => Effect.void)
     )
 
     yield* Effect.tryPromise(() => fs.unlink(files.outputPath)).pipe(
-      Effect.catchAll(() => Effect.succeed(void 0)) // Ignore cleanup errors
+      Effect.catchAll(() => Effect.void)
     )
 
     yield* Effect.tryPromise(() =>
       fs.rmdir(path.dirname(files.audioPath))
-    ).pipe(
-      Effect.catchAll(() => Effect.succeed(void 0)) // Ignore cleanup errors
-    )
+    ).pipe(Effect.catchAll(() => Effect.void))
   })
 }

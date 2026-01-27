@@ -198,6 +198,18 @@ new sst.x.DevCommand('Backup_Database_Prod', {
 //   }
 // })
 
+new sst.x.DevCommand('Restore_Planetscale_Database', {
+  link: [...allSecrets, email, dbBackupBucket],
+  dev: {
+    command: 'bun scripts/restore-db.ts --source=s3 --destination=planetscale',
+    directory: './apps/vps',
+    autostart: false
+  },
+  environment: {
+    PLANETSCALE_DB_URL: process.env.PLANETSCALE_DB_URL || ''
+  }
+})
+
 // new sst.x.DevCommand('Restore_Local_Database', {
 //   link: [...allSecrets, email, dbBackupBucket],
 //   dev: {

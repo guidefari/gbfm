@@ -191,13 +191,11 @@ const getBySlugEffect = (type: AudioType, slug: string) =>
 
     const audio = audioRecords[0]
     if (!audio) {
-      return yield* Effect.fail(
-        new NotFoundError({
-          message: 'Audio not found',
-          resource: 'audio',
-          id: slug
-        })
-      )
+      return yield* new NotFoundError({
+        message: 'Audio not found',
+        resource: 'audio',
+        id: slug
+      })
     }
 
     const creators = yield* Effect.tryPromise({
@@ -338,13 +336,11 @@ const updateEffect = (
 
     const existingAudio = existingRecords[0]
     if (!existingAudio) {
-      return yield* Effect.fail(
-        new NotFoundError({
-          message: 'Audio not found',
-          resource: 'audio',
-          id: slug
-        })
-      )
+      return yield* new NotFoundError({
+        message: 'Audio not found',
+        resource: 'audio',
+        id: slug
+      })
     }
 
     const isAdmin = userRole === 'admin'
@@ -370,12 +366,10 @@ const updateEffect = (
       })
 
       if (authorship.length === 0) {
-        return yield* Effect.fail(
-          new UnauthorizedError({
-            message: 'Forbidden, brethren.',
-            userId
-          })
-        )
+        return yield* new UnauthorizedError({
+          message: 'Forbidden, brethren.',
+          userId
+        })
       }
     }
 
@@ -396,13 +390,11 @@ const updateEffect = (
 
     const updatedAudio = updatedRecords[0]
     if (!updatedAudio) {
-      return yield* Effect.fail(
-        new DatabaseError({
-          message: 'Failed to update audio',
-          operation: 'update',
-          table: 'audio'
-        })
-      )
+      return yield* new DatabaseError({
+        message: 'Failed to update audio',
+        operation: 'update',
+        table: 'audio'
+      })
     }
 
     const creators = yield* Effect.tryPromise({

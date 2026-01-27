@@ -48,11 +48,9 @@ const DatabaseServiceLive = Layer.effect(
     if (!process.env.PROD_DB_URL) {
       console.log(process.env);
 
-      return yield* Effect.fail(
-        new DatabaseError({
-          cause: "PROD_DB_URL environment variable is required",
-        }),
-      );
+      return yield* new DatabaseError({
+        cause: "PROD_DB_URL environment variable is required",
+      });
     }
 
     const pool = new Pool({

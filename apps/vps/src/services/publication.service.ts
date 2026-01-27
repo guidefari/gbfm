@@ -97,13 +97,11 @@ const createPublicationEffect = (data: InsertPublication) =>
     })
 
     if (existingRecords.length > 0) {
-      return yield* Effect.fail(
-        new ConflictError({
-          message: 'Publication with this slug already exists',
-          resource: 'publication',
-          id: data.slug
-        })
-      )
+      return yield* new ConflictError({
+        message: 'Publication with this slug already exists',
+        resource: 'publication',
+        id: data.slug
+      })
     }
 
     // Create publication
@@ -119,13 +117,11 @@ const createPublicationEffect = (data: InsertPublication) =>
 
     const publication = insertedRecords[0]
     if (!publication) {
-      return yield* Effect.fail(
-        new DatabaseError({
-          message: 'Failed to create publication record',
-          operation: 'insert',
-          table: 'publications'
-        })
-      )
+      return yield* new DatabaseError({
+        message: 'Failed to create publication record',
+        operation: 'insert',
+        table: 'publications'
+      })
     }
 
     return publication
@@ -150,13 +146,11 @@ const getPublicationByIdEffect = (id: string) =>
 
     const publication = records[0]
     if (!publication) {
-      return yield* Effect.fail(
-        new NotFoundError({
-          message: 'Publication not found',
-          resource: 'publication',
-          id
-        })
-      )
+      return yield* new NotFoundError({
+        message: 'Publication not found',
+        resource: 'publication',
+        id
+      })
     }
 
     return publication
@@ -181,13 +175,11 @@ const getPublicationBySlugEffect = (slug: string) =>
 
     const publication = records[0]
     if (!publication) {
-      return yield* Effect.fail(
-        new NotFoundError({
-          message: 'Publication not found',
-          resource: 'publication',
-          id: slug
-        })
-      )
+      return yield* new NotFoundError({
+        message: 'Publication not found',
+        resource: 'publication',
+        id: slug
+      })
     }
 
     return publication
@@ -254,13 +246,11 @@ const updatePublicationEffect = (
 
     const publication = updatedRecords[0]
     if (!publication) {
-      return yield* Effect.fail(
-        new NotFoundError({
-          message: 'Publication not found',
-          resource: 'publication',
-          id
-        })
-      )
+      return yield* new NotFoundError({
+        message: 'Publication not found',
+        resource: 'publication',
+        id
+      })
     }
 
     return publication
@@ -288,13 +278,11 @@ const deletePublicationEffect = (id: string) =>
 
     const publication = deletedRecords[0]
     if (!publication) {
-      return yield* Effect.fail(
-        new DatabaseError({
-          message: 'Failed to delete publication record',
-          operation: 'delete',
-          table: 'publications'
-        })
-      )
+      return yield* new DatabaseError({
+        message: 'Failed to delete publication record',
+        operation: 'delete',
+        table: 'publications'
+      })
     }
 
     return publication
@@ -327,13 +315,11 @@ const addPublicationMemberEffect = (publicationId: string, userId: string) =>
     })
 
     if (existingRecords.length > 0) {
-      return yield* Effect.fail(
-        new ConflictError({
-          message: 'User is already a member of this publication',
-          resource: 'publication_member',
-          id: `${publicationId}-${userId}`
-        })
-      )
+      return yield* new ConflictError({
+        message: 'User is already a member of this publication',
+        resource: 'publication_member',
+        id: `${publicationId}-${userId}`
+      })
     }
 
     // Add member
@@ -376,13 +362,11 @@ const removePublicationMemberEffect = (publicationId: string, userId: string) =>
     })
 
     if (existingRecords.length === 0) {
-      return yield* Effect.fail(
-        new NotFoundError({
-          message: 'Publication member not found',
-          resource: 'publication_member',
-          id: `${publicationId}-${userId}`
-        })
-      )
+      return yield* new NotFoundError({
+        message: 'Publication member not found',
+        resource: 'publication_member',
+        id: `${publicationId}-${userId}`
+      })
     }
 
     // Remove member
@@ -455,13 +439,11 @@ const addPublicationPostEffect = (publicationId: string, postId: string) =>
     })
 
     if (existingRecords.length > 0) {
-      return yield* Effect.fail(
-        new ConflictError({
-          message: 'Post is already associated with this publication',
-          resource: 'publication_post',
-          id: `${publicationId}-${postId}`
-        })
-      )
+      return yield* new ConflictError({
+        message: 'Post is already associated with this publication',
+        resource: 'publication_post',
+        id: `${publicationId}-${postId}`
+      })
     }
 
     // Add association
@@ -504,13 +486,11 @@ const removePublicationPostEffect = (publicationId: string, postId: string) =>
     })
 
     if (existingRecords.length === 0) {
-      return yield* Effect.fail(
-        new NotFoundError({
-          message: 'Publication post association not found',
-          resource: 'publication_post',
-          id: `${publicationId}-${postId}`
-        })
-      )
+      return yield* new NotFoundError({
+        message: 'Publication post association not found',
+        resource: 'publication_post',
+        id: `${publicationId}-${postId}`
+      })
     }
 
     // Remove association

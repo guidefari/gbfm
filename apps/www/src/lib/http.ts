@@ -611,8 +611,17 @@ export type PublicProfile = {
 export function usePublicProfile(username: string) {
   const { data, error, isPending } = useQuery<PublicProfile, Error>({
     queryKey: ['profile', username],
-    queryFn: async () => fetcher(`${VPS_BASE_URL}/profile/${username}`),
-    enabled: Boolean(username)
+    queryFn: async () => {
+      const res = await fetch(`${VPS_BASE_URL}/profile/${username}`, {
+        credentials: 'include'
+      })
+      if (!res.ok) throw new Error('Profile not found')
+      const profile: PublicProfile = await res.json()
+      if (!profile?.id) throw new Error('Profile not found')
+      return profile
+    },
+    enabled: Boolean(username),
+    retry: false
   })
 
   return {

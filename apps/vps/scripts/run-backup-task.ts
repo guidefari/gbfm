@@ -59,11 +59,11 @@ const sendNotificationEmail = (
   );
 
 const createBackupEffect = withLogCapture((capture) =>
-  Effect.gen(function* (_) {
-    yield* _(Console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"));
-    yield* _(Console.log("🚀 Database Backup Task Started"));
-    yield* _(Console.log(`   Timestamp: ${new Date().toISOString()}`));
-    yield* _(Console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n"));
+  Effect.gen(function* () {
+    yield* Console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    yield* Console.log("🚀 Database Backup Task Started");
+    yield* Console.log(`   Timestamp: ${new Date().toISOString()}`);
+    yield* Console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
 
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
     const filename = `backup-${timestamp}.sql`;
@@ -76,84 +76,76 @@ const createBackupEffect = withLogCapture((capture) =>
       port: config.database.port.toString(),
     };
 
-    yield* _(Console.log("📊 Database Configuration:"));
-    yield* _(Console.log(`   Database: ${backupConfig.database}`));
-    yield* _(Console.log(`   Host: ${backupConfig.host}:${backupConfig.port}`));
-    yield* _(Console.log(`   User: ${backupConfig.user}`));
+    yield* Console.log("📊 Database Configuration:");
+    yield* Console.log(`   Database: ${backupConfig.database}`);
+    yield* Console.log(`   Host: ${backupConfig.host}:${backupConfig.port}`);
+    yield* Console.log(`   User: ${backupConfig.user}`);
 
-    yield* _(Console.log("\n🔍 Checking for backup tools..."));
-    const hasPgDump = yield* _(Effect.promise(() => isPgDumpAvailable()));
+    yield* Console.log("\n🔍 Checking for backup tools...");
+    const hasPgDump = yield* Effect.promise(() => isPgDumpAvailable());
 
     if (!hasPgDump) {
       const error = new Error("pg_dump not found in Docker container");
-      const logs = yield* _(capture.getLogs);
-      yield* _(
-        sendNotificationEmail(
-          "failure",
-          backupConfig,
-          filename,
-          0,
-          logs,
-          error.message,
-          error.stack
-        )
+      const logs = yield* capture.getLogs;
+      yield* sendNotificationEmail(
+        "failure",
+        backupConfig,
+        filename,
+        0,
+        logs,
+        error.message,
+        error.stack
       );
-      return yield* _(Effect.fail(error));
+      return yield* Effect.die(error);
     }
 
-    yield* _(Console.log("\n📦 Using pg_dump for backup"));
-    const sqlDump = yield* _(
-      Effect.promise(() => createBackupWithPgDump(backupConfig))
-    );
+    yield* Console.log("\n📦 Using pg_dump for backup");
+    const sqlDump = yield* Effect.promise(() => createBackupWithPgDump(backupConfig));
 
     const backupData = Buffer.from(sqlDump);
     const backupSizeMB = (backupData.length / 1024 / 1024).toFixed(2);
-    yield* _(Console.log(`\n✅ Backup created successfully`));
-    yield* _(Console.log(`   Size: ${backupSizeMB} MB`));
-    yield* _(Console.log(`   Filename: ${filename}`));
+    yield* Console.log(`\n✅ Backup created successfully`);
+    yield* Console.log(`   Size: ${backupSizeMB} MB`);
+    yield* Console.log(`   Filename: ${filename}`);
 
-    yield* _(Console.log("\n☁️  Uploading to S3..."));
+    yield* Console.log("\n☁️  Uploading to S3...");
     const s3Client = new S3Client({});
     const bucketName = config.buckets.databaseBackups;
 
-    yield* _(
-      Effect.promise(() =>
-        s3Client.send(
-          new PutObjectCommand({
-            Bucket: bucketName,
-            Key: filename,
-            Body: backupData,
-            ContentType: "application/sql",
-            Metadata: {
-              timestamp: new Date().toISOString(),
-              database: backupConfig.database,
-              stage: process.env.SST_STAGE || "dev",
-              method: "pg_dump",
-              source: "ecs-task",
-            },
-          })
-        )
+    yield* Effect.promise(() =>
+      s3Client.send(
+        new PutObjectCommand({
+          Bucket: bucketName,
+          Key: filename,
+          Body: backupData,
+          ContentType: "application/sql",
+          Metadata: {
+            timestamp: new Date().toISOString(),
+            database: backupConfig.database,
+            stage: process.env.SST_STAGE || "dev",
+            method: "pg_dump",
+            source: "ecs-task",
+          },
+        })
       )
     );
 
-    yield* _(Console.log(`\n✅ Upload successful!`));
-    yield* _(Console.log(`   Bucket: ${bucketName}`));
-    yield* _(Console.log(`   Key: ${filename}`));
-    yield* _(Console.log(`   Size: ${backupSizeMB} MB`));
+    yield* Console.log(`\n✅ Upload successful!`);
+    yield* Console.log(`   Bucket: ${bucketName}`);
+    yield* Console.log(`   Key: ${filename}`);
+    yield* Console.log(`   Size: ${backupSizeMB} MB`);
 
-    yield* _(Console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"));
-    yield* _(Console.log("✅ Backup Task Completed Successfully"));
-    yield* _(Console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"));
+    yield* Console.log("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    yield* Console.log("✅ Backup Task Completed Successfully");
+    yield* Console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
-    const logs = yield* _(capture.getLogs);
-    yield* _(
-      sendNotificationEmail(
-        "success",
-        backupConfig,
-        filename,
-        backupData.length,
-        logs
-      )
+    const logs = yield* capture.getLogs;
+    yield* sendNotificationEmail(
+      "success",
+      backupConfig,
+      filename,
+      backupData.length,
+      logs
     );
 
     return {
@@ -163,17 +155,7 @@ const createBackupEffect = withLogCapture((capture) =>
       size: backupData.length,
       method: "pg_dump",
     };
-  }).pipe(
-    Effect.catchAll((error) =>
-      Effect.gen(function* (_) {
-        yield* _(Console.error("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"));
-        yield* _(Console.error("❌ Backup Task Failed"));
-        yield* _(Console.error("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"));
-        yield* _(Console.error(`Error details: ${error}`));
-        return yield* _(Effect.fail(error));
-      })
-    )
-  )
+  })
 );
 
 const program = createBackupEffect.pipe(

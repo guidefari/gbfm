@@ -1,5 +1,5 @@
 import { SpotifyApi as SpotifyApiClient } from '@spotify/web-api-ts-sdk'
-import { Context, Effect, Layer } from 'effect'
+import { Context, Effect, Layer, Option } from 'effect'
 import { SpotifyError } from '@/errors'
 import { config } from '@/services/config.service'
 import type {
@@ -156,13 +156,11 @@ const parseBandcampHtml = (html: string, _url: string) =>
     if (titleMatch?.[1]) {
       metadata.name = titleMatch[1].trim()
     } else {
-      return yield* Effect.fail(
-        new SpotifyError({
-          message: 'Could not extract title from Bandcamp page',
-          operation: 'parseBandcampHtml',
-          statusCode: 500
-        })
-      )
+      return yield* new SpotifyError({
+        message: 'Could not extract title from Bandcamp page',
+        operation: 'parseBandcampHtml',
+        statusCode: 500
+      })
     }
 
     // Extract artist from #name-section h3 (text after "by ")
@@ -190,14 +188,9 @@ const parseBandcampHtml = (html: string, _url: string) =>
       /(?:released|release date)[^>]*(\d{1,2}\s+\w+\s+\d{4}|\w+\s+\d{1,2},?\s+\d{4}|\d{4}-\d{2}-\d{2})/i
     )
     if (dateMatch?.[1]) {
-      // Try to parse the date, fallback to current date if parsing fails
-      try {
-        const parsedDate = new Date(dateMatch[1])
-        if (!Number.isNaN(parsedDate.getTime())) {
-          metadata.datePublished = parsedDate.toISOString()
-        }
-      } catch (_error) {
-        // Keep default date
+      const parsedDate = new Date(dateMatch[1])
+      if (!Number.isNaN(parsedDate.getTime())) {
+        metadata.datePublished = parsedDate.toISOString()
       }
     }
 
@@ -231,13 +224,11 @@ const getBandcampMetadata = (url: string) =>
     })
 
     if (!response.ok) {
-      return yield* Effect.fail(
-        new SpotifyError({
-          message: `Bandcamp page returned ${response.status}`,
-          operation: 'getBandcampMetadata',
-          statusCode: response.status
-        })
-      )
+      return yield* new SpotifyError({
+        message: `Bandcamp page returned ${response.status}`,
+        operation: 'getBandcampMetadata',
+        statusCode: response.status
+      })
     }
 
     const html = yield* Effect.tryPromise({
@@ -257,10 +248,12 @@ const getBandcampMetadata = (url: string) =>
       /<script type="application\/ld\+json">([\s\S]*?)<\/script>/
     )
     if (jsonLdMatch?.[1]) {
-      try {
-        metadata = JSON.parse(jsonLdMatch[1])
-      } catch (_parseError) {
-        // Fall through to HTML parsing
+      const parseResult = Effect.sync(() => {
+        return JSON.parse(jsonLdMatch[1] || '')
+      }).pipe(Effect.option)
+      const parsed = yield* parseResult
+      if (Option.isSome(parsed)) {
+        metadata = parsed.value
       }
     }
 
@@ -281,13 +274,11 @@ const getTrackEffect = (id: string) =>
     const sanitizedId = cleanId(id)
 
     if (!id || !sanitizedId) {
-      return yield* Effect.fail(
-        new SpotifyError({
-          message: 'Invalid track ID provided',
-          operation: 'getTrack',
-          statusCode: 400
-        })
-      )
+      return yield* new SpotifyError({
+        message: 'Invalid track ID provided',
+        operation: 'getTrack',
+        statusCode: 400
+      })
     }
 
     const data = yield* Effect.tryPromise({
@@ -317,13 +308,11 @@ const getAlbumEffect = (id: string) =>
     const sanitizedId = cleanId(id)
 
     if (!id || !sanitizedId) {
-      return yield* Effect.fail(
-        new SpotifyError({
-          message: 'Invalid album ID provided',
-          operation: 'getAlbum',
-          statusCode: 400
-        })
-      )
+      return yield* new SpotifyError({
+        message: 'Invalid album ID provided',
+        operation: 'getAlbum',
+        statusCode: 400
+      })
     }
 
     const data = yield* Effect.tryPromise({
@@ -358,13 +347,11 @@ const getPlaylistEffect = (id: string) =>
     const sanitizedId = cleanId(id)
 
     if (!id || !sanitizedId) {
-      return yield* Effect.fail(
-        new SpotifyError({
-          message: 'Invalid playlist ID provided',
-          operation: 'getPlaylist',
-          statusCode: 400
-        })
-      )
+      return yield* new SpotifyError({
+        message: 'Invalid playlist ID provided',
+        operation: 'getPlaylist',
+        statusCode: 400
+      })
     }
 
     const data = yield* Effect.tryPromise({
@@ -397,13 +384,11 @@ const getPlaylistEffect = (id: string) =>
 const searchAlbumsEffect = (query: string, limit = 10, offset = 0) =>
   Effect.gen(function* () {
     if (!query || query.trim() === '') {
-      return yield* Effect.fail(
-        new SpotifyError({
-          message: 'Search query is required',
-          operation: 'searchAlbums',
-          statusCode: 400
-        })
-      )
+      return yield* new SpotifyError({
+        message: 'Search query is required',
+        operation: 'searchAlbums',
+        statusCode: 400
+      })
     }
 
     const validatedLimit = Math.min(Math.max(1, limit), 50) as Parameters<
@@ -461,13 +446,11 @@ const enrichTrackFromUrlEffect = (url: string) =>
     if (isSpotifyUrl(url)) {
       const id = extractSpotifyId(url)
       if (!id) {
-        return yield* Effect.fail(
-          new SpotifyError({
-            message: 'Invalid Spotify URL',
-            operation: 'enrichTrackFromUrl',
-            statusCode: 400
-          })
-        )
+        return yield* new SpotifyError({
+          message: 'Invalid Spotify URL',
+          operation: 'enrichTrackFromUrl',
+          statusCode: 400
+        })
       }
 
       // Check if this is an album URL
@@ -520,13 +503,11 @@ const enrichTrackFromUrlEffect = (url: string) =>
     } else if (isYouTubeUrl(url)) {
       const videoId = extractYouTubeId(url)
       if (!videoId) {
-        return yield* Effect.fail(
-          new SpotifyError({
-            message: 'Invalid YouTube URL',
-            operation: 'enrichTrackFromUrl',
-            statusCode: 400
-          })
-        )
+        return yield* new SpotifyError({
+          message: 'Invalid YouTube URL',
+          operation: 'enrichTrackFromUrl',
+          statusCode: 400
+        })
       }
 
       result = {

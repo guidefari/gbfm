@@ -198,13 +198,11 @@ const getBySlugEffect = (slug: string) =>
 
     const show = showRecords[0]
     if (!show) {
-      return yield* Effect.fail(
-        new NotFoundError({
-          message: 'Show not found',
-          resource: 'show',
-          id: slug
-        })
-      )
+      return yield* new NotFoundError({
+        message: 'Show not found',
+        resource: 'show',
+        id: slug
+      })
     }
 
     const hosts = yield* Effect.tryPromise({
@@ -323,13 +321,11 @@ const updateEffect = (
 
     const existingShow = existingRecords[0]
     if (!existingShow) {
-      return yield* Effect.fail(
-        new NotFoundError({
-          message: 'Show not found',
-          resource: 'show',
-          id: slug
-        })
-      )
+      return yield* new NotFoundError({
+        message: 'Show not found',
+        resource: 'show',
+        id: slug
+      })
     }
 
     const isAdmin = userRole === 'admin'
@@ -355,12 +351,10 @@ const updateEffect = (
       })
 
       if (authorship.length === 0) {
-        return yield* Effect.fail(
-          new UnauthorizedError({
-            message: 'Forbidden, brethren.',
-            userId
-          })
-        )
+        return yield* new UnauthorizedError({
+          message: 'Forbidden, brethren.',
+          userId
+        })
       }
     }
 
@@ -381,13 +375,11 @@ const updateEffect = (
 
     const updatedShow = updatedRecords[0]
     if (!updatedShow) {
-      return yield* Effect.fail(
-        new DatabaseError({
-          message: 'Failed to update show',
-          operation: 'update',
-          table: 'shows'
-        })
-      )
+      return yield* new DatabaseError({
+        message: 'Failed to update show',
+        operation: 'update',
+        table: 'shows'
+      })
     }
 
     const hosts = yield* Effect.tryPromise({
@@ -454,13 +446,11 @@ const deleteEffect = (slug: string, userId: string, userRole: string) =>
 
     const existingShow = existingRecords[0]
     if (!existingShow) {
-      return yield* Effect.fail(
-        new NotFoundError({
-          message: 'Show not found',
-          resource: 'show',
-          id: slug
-        })
-      )
+      return yield* new NotFoundError({
+        message: 'Show not found',
+        resource: 'show',
+        id: slug
+      })
     }
 
     const isAdmin = userRole === 'admin'
@@ -486,12 +476,10 @@ const deleteEffect = (slug: string, userId: string, userRole: string) =>
       })
 
       if (authorship.length === 0) {
-        return yield* Effect.fail(
-          new UnauthorizedError({
-            message: 'Forbidden, brethren.',
-            userId
-          })
-        )
+        return yield* new UnauthorizedError({
+          message: 'Forbidden, brethren.',
+          userId
+        })
       }
     }
 
@@ -531,13 +519,11 @@ const getEpisodesEffect = (
 
     const show = showRecords[0]
     if (!show) {
-      return yield* Effect.fail(
-        new NotFoundError({
-          message: 'Show not found',
-          resource: 'show',
-          id: showSlug
-        })
-      )
+      return yield* new NotFoundError({
+        message: 'Show not found',
+        resource: 'show',
+        id: showSlug
+      })
     }
 
     const whereCondition = and(
@@ -613,13 +599,11 @@ const subscribeEffect = (userId: string, showId: string) =>
 
     const subscription = result[0]
     if (!subscription) {
-      return yield* Effect.fail(
-        new DatabaseError({
-          message: 'Failed to create subscription',
-          operation: 'insert',
-          table: 'show_subscriptions'
-        })
-      )
+      return yield* new DatabaseError({
+        message: 'Failed to create subscription',
+        operation: 'insert',
+        table: 'show_subscriptions'
+      })
     }
 
     return subscription
@@ -647,12 +631,10 @@ const unsubscribeEffect = (userId: string, showId: string) =>
     })
 
     if (result.length === 0) {
-      return yield* Effect.fail(
-        new NotFoundError({
-          message: 'Subscription not found',
-          resource: 'show_subscription'
-        })
-      )
+      return yield* new NotFoundError({
+        message: 'Subscription not found',
+        resource: 'show_subscription'
+      })
     }
   })
 
