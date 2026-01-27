@@ -19,7 +19,7 @@
     "biome:ci": "biome ci",
     "precommit": "bun run format && bun run check && bun run typecheck",
     "ci": "bun run biome:ci && bun run typecheck && cd apps/www && bun run build",
-    "prepare": "echo 'Skipping effect-language-service patch (diagnostics config not working yet)'"
+    "prepare": "effect-language-service patch"
   },
   "dependencies": {
     "@effect/cli": "0.73.0",
