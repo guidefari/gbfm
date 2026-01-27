@@ -22,7 +22,7 @@ export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
   }
 
   const updateData: Partial<{
-    name?: string
+    displayUsername?: string
     email?: string
     image?: string
     username?: string
@@ -42,14 +42,18 @@ export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
       ) {
         avatarFile = value as File
       } else if (typeof value === 'string' && key !== 'avatar') {
-        if (key === 'name' || key === 'email' || key === 'username') {
+        if (
+          key === 'displayUsername' ||
+          key === 'email' ||
+          key === 'username'
+        ) {
           updateData[key] = value
         }
       }
     }
   } else {
     const body = c.req.valid('json')
-    if (body.name) updateData.name = body.name
+    if (body.displayUsername) updateData.displayUsername = body.displayUsername
     if (body.email) updateData.email = body.email
     if (body.username) updateData.username = body.username
   }

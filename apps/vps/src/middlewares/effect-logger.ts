@@ -113,7 +113,8 @@ export function effectLogger(): MiddlewareHandler {
     })
 
     // Run the entire logging effect
-    await Effect.runPromise(
+    const { AppRuntime } = await import('@/runtime')
+    await AppRuntime.runPromise(
       loggingEffect.pipe(
         Effect.catchAll((error) => {
           const duration = Date.now() - start

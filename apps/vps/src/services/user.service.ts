@@ -36,7 +36,7 @@ export interface UserService {
   readonly updateUserProfile: (
     userId: string,
     data: {
-      name?: string
+      displayUsername?: string
       email?: string
       image?: string
       username?: string
@@ -102,7 +102,7 @@ const getUserByIdEffect = (userId: string) =>
 const updateUserProfileEffect = (
   userId: string,
   data: {
-    name?: string
+    displayUsername?: string
     email?: string
     image?: string
     username?: string

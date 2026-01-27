@@ -587,7 +587,7 @@ export function useUnsubscribeFromShow() {
 
 export type PublicProfile = {
   id: string
-  name: string
+  displayUsername: string | null
   username: string | null
   image: string | null
   createdAt: string

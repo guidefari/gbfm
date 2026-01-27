@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Edit, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -11,6 +12,7 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -27,6 +29,7 @@ type UserRole = (typeof ROLES)[number]
 interface AdminUser {
   id: string
   name: string
+  displayUsername?: string | null
   email: string
   role: string | null
   banned: boolean | null
@@ -60,6 +63,23 @@ export function UsersTab() {
     userId: '',
     userName: ''
   })
+  const [createUserDialog, setCreateUserDialog] = useState(false)
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'user' as UserRole
+  })
+  const [editUserDialog, setEditUserDialog] = useState(false)
+  const [editUser, setEditUser] = useState<{
+    id: string
+    name: string
+    email: string
+  }>({
+    id: '',
+    name: '',
+    email: ''
+  })
 
   const { data, isPending } = useQuery({
     queryKey: ['admin', 'users', search],
@@ -71,6 +91,59 @@ export function UsersTab() {
         }
       })
       return result
+    }
+  })
+
+  const createUserMutation = useMutation({
+    mutationFn: async () => {
+      return authClient.admin.createUser({
+        email: newUser.email,
+        password: newUser.password,
+        name: newUser.name,
+        role: newUser.role
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
+      setCreateUserDialog(false)
+      setNewUser({
+        name: '',
+        email: '',
+        password: '',
+        role: 'user'
+      })
+      toast({ title: 'User created successfully' })
+    },
+    onError: (err: Error) => {
+      toast({
+        title: 'Failed to create user',
+        description: err.message,
+        variant: 'destructive'
+      })
+    }
+  })
+
+  const updateUserMutation = useMutation({
+    mutationFn: async () => {
+      return authClient.admin.updateUser({
+        userId: editUser.id,
+        data: {
+          name: editUser.name,
+          email: editUser.email
+        }
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
+      setEditUserDialog(false)
+      toast({ title: 'User updated successfully' })
+    },
+    onError: (err: Error) => {
+      toast({
+        title: 'Failed to update user',
+        description: err.message,
+        variant: 'destructive'
+      })
     }
   })
 
@@ -171,6 +244,10 @@ export function UsersTab() {
           onChange={(e) => setSearch(e.target.value)}
           className='max-w-sm'
         />
+        <Button onClick={() => setCreateUserDialog(true)}>
+          <Plus className='w-4 h-4 mr-2' />
+          Create User
+        </Button>
       </div>
 
       {isPending ? (
@@ -192,7 +269,9 @@ export function UsersTab() {
             <tbody>
               {users.map((user) => (
                 <tr key={user.id} className='border-b hover:bg-muted/50'>
-                  <td className='px-4 py-3'>{user.name}</td>
+                  <td className='px-4 py-3'>
+                    {user.displayUsername || user.name}
+                  </td>
                   <td className='px-4 py-3 text-muted-foreground'>
                     {user.email}
                   </td>
@@ -222,6 +301,20 @@ export function UsersTab() {
                   </td>
                   <td className='px-4 py-3'>
                     <div className='flex items-center gap-2'>
+                      <Button
+                        variant='outline'
+                        size='sm'
+                        onClick={() => {
+                          setEditUser({
+                            id: user.id,
+                            name: user.displayUsername || user.name,
+                            email: user.email
+                          })
+                          setEditUserDialog(true)
+                        }}>
+                        <Edit className='w-4 h-4' />
+                        <span className='sr-only'>Edit</span>
+                      </Button>
                       {user.banned ? (
                         <Button
                           variant='outline'
@@ -238,7 +331,7 @@ export function UsersTab() {
                             setBanDialog({
                               open: true,
                               userId: user.id,
-                              userName: user.name
+                              userName: user.displayUsername || user.name
                             })
                           }>
                           Ban
@@ -251,7 +344,7 @@ export function UsersTab() {
                           setDeleteDialog({
                             open: true,
                             userId: user.id,
-                            userName: user.name
+                            userName: user.displayUsername || user.name
                           })
                         }>
                         Delete
@@ -273,6 +366,142 @@ export function UsersTab() {
           </table>
         </div>
       )}
+
+      <Dialog open={createUserDialog} onOpenChange={setCreateUserDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New User</DialogTitle>
+            <DialogDescription>
+              Manually add a new user to the system.
+            </DialogDescription>
+          </DialogHeader>
+          <div className='space-y-4 py-4'>
+            <div className='space-y-2'>
+              <Label htmlFor='name'>Name</Label>
+              <Input
+                id='name'
+                value={newUser.name}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, name: e.target.value })
+                }
+                placeholder='John Doe'
+              />
+            </div>
+            <div className='space-y-2'>
+              <Label htmlFor='email'>Email</Label>
+              <Input
+                id='email'
+                type='email'
+                value={newUser.email}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, email: e.target.value })
+                }
+                placeholder='john@example.com'
+              />
+            </div>
+            <div className='space-y-2'>
+              <Label htmlFor='password'>Password</Label>
+              <Input
+                id='password'
+                type='password'
+                value={newUser.password}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, password: e.target.value })
+                }
+                placeholder='••••••••'
+              />
+            </div>
+            <div className='space-y-2'>
+              <Label htmlFor='role'>Role</Label>
+              <Select
+                value={newUser.role}
+                onValueChange={(role: UserRole) =>
+                  setNewUser({ ...newUser, role })
+                }>
+                <SelectTrigger id='role'>
+                  <SelectValue placeholder='Select role' />
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLES.map((role) => (
+                    <SelectItem key={role} value={role}>
+                      {role.charAt(0).toUpperCase() + role.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant='outline'
+              onClick={() => setCreateUserDialog(false)}
+              disabled={createUserMutation.isPending}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => createUserMutation.mutate()}
+              disabled={
+                createUserMutation.isPending ||
+                !newUser.name ||
+                !newUser.email ||
+                !newUser.password
+              }>
+              {createUserMutation.isPending ? 'Creating...' : 'Create User'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editUserDialog} onOpenChange={setEditUserDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+            <DialogDescription>Update user details.</DialogDescription>
+          </DialogHeader>
+          <div className='space-y-4 py-4'>
+            <div className='space-y-2'>
+              <Label htmlFor='edit-name'>Name</Label>
+              <Input
+                id='edit-name'
+                value={editUser.name}
+                onChange={(e) =>
+                  setEditUser({ ...editUser, name: e.target.value })
+                }
+                placeholder='John Doe'
+              />
+            </div>
+            <div className='space-y-2'>
+              <Label htmlFor='edit-email'>Email</Label>
+              <Input
+                id='edit-email'
+                type='email'
+                value={editUser.email}
+                onChange={(e) =>
+                  setEditUser({ ...editUser, email: e.target.value })
+                }
+                placeholder='john@example.com'
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant='outline'
+              onClick={() => setEditUserDialog(false)}
+              disabled={updateUserMutation.isPending}>
+              Cancel
+            </Button>
+            <Button
+              onClick={() => updateUserMutation.mutate()}
+              disabled={
+                updateUserMutation.isPending ||
+                !editUser.name ||
+                !editUser.email
+              }>
+              {updateUserMutation.isPending ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={banDialog.open}

@@ -132,17 +132,16 @@ export function createConfig(): ConfigService {
 
   // Database configuration
   const databaseHost =
-    process.env.DATABASE_HOST || getResourceValue('DatabaseHost', 'localhost')
+    process.env.DB_HOST || getResourceValue('DatabaseHost', 'localhost')
   const databasePort =
-    Number(process.env.DATABASE_PORT) ||
+    Number(process.env.DB_PORT) ||
     Number(getResourceValue('DatabasePort', 5432))
   const databaseUser =
-    process.env.DATABASE_USER || getResourceValue('DatabaseUser', 'postgres')
+    process.env.DB_USER || getResourceValue('DatabaseUser', 'postgres')
   const databasePassword =
-    process.env.DATABASE_PASSWORD ||
-    getResourceValue('DatabasePassword', 'postgres')
+    process.env.DB_PASSWORD || getResourceValue('DatabasePassword', 'postgres')
   const databaseName =
-    process.env.DATABASE_NAME || getResourceValue('DatabaseName', 'postgres')
+    process.env.DB_NAME || getResourceValue('DatabaseName', 'postgres')
 
   // URLs
   const frontendUrl = isProd

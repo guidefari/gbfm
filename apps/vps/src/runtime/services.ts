@@ -1,6 +1,7 @@
 import { DevTools } from '@effect/experimental'
 import { Context, Layer } from 'effect'
 import { db } from '@/db'
+import { OtlpLive } from '@/lib/otel'
 import { LoggerServiceLive } from '@/middlewares/effect-logger'
 import { AudioServiceLive } from '@/services/audio.service'
 import { ConfigServiceLive } from '@/services/config.service'
@@ -32,6 +33,7 @@ const DevToolsLive: Layer.Layer<never> =
   process.env.NODE_ENV === 'production' ? Layer.empty : DevTools.layer()
 
 export const AppLayer = Layer.mergeAll(
+  OtlpLive,
   ConfigServiceLive,
   DatabaseServiceLive,
   LoggerServiceLive,

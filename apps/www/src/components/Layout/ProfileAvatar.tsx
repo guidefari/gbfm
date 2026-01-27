@@ -34,11 +34,11 @@ const ProfileAvatar = () => {
           {user?.image ? (
             <img
               src={user.image}
-              alt={user.name}
+              alt={user.displayUsername || user.name}
               className='h-full w-full object-cover'
             />
           ) : (
-            user?.name?.[0]?.toUpperCase() || '?'
+            (user?.displayUsername || user?.name)?.[0]?.toUpperCase() || '?'
           )}
         </Button>
       </DropdownMenuTrigger>

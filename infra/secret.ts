@@ -29,6 +29,14 @@ export const secret = {
   BETTER_AUTH_URL: new sst.Secret(
     'BETTER_AUTH_URL',
     process.env.BETTER_AUTH_URL
+  ),
+  OTEL_EXPORTER_OTLP_ENDPOINT: new sst.Secret(
+    'OTEL_EXPORTER_OTLP_ENDPOINT',
+    process.env.OTEL_EXPORTER_OTLP_ENDPOINT
+  ),
+  GRAFANA_OTLP_TOKEN: new sst.Secret(
+    'GRAFANA_OTLP_TOKEN',
+    process.env.GRAFANA_OTLP_TOKEN
   )
 }
 

@@ -214,18 +214,19 @@ export function generateProfileSEO(
   profile: PublicProfile,
   username: string
 ): SEOHeadData {
+  const displayName = profile.displayUsername || username
   const contentCount =
     (profile.content?.mixes?.length ?? 0) +
     (profile.content?.shows?.length ?? 0)
   const description =
     contentCount > 0
-      ? `${profile.name} has ${contentCount} ${contentCount === 1 ? 'contribution' : 'contributions'} on goosebumps.fm`
-      : `${profile.name}'s profile on goosebumps.fm`
+      ? `${displayName} has ${contentCount} ${contentCount === 1 ? 'contribution' : 'contributions'} on goosebumps.fm`
+      : `${displayName}'s profile on goosebumps.fm`
   const url = `${SITE_URL}/profile/${username}`
   const image = profile.image || DEFAULT_OG_IMAGE
 
   return {
-    title: profile.name,
+    title: displayName,
     description,
     url,
     image,

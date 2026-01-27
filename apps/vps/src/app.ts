@@ -15,6 +15,7 @@ import spotify from '@/routes/spotify/spotify.index'
 import upload from '@/routes/upload/upload.index'
 import betterAuthRoutes from '@/routes/user/better-auth.routes'
 import user from '@/routes/user/user.index'
+// import { backfillDisplayUsername } from './data-migrations/backfill-display-username'
 import { db } from './db'
 import { runApp, runAppFork } from './runtime'
 import { processPendingReminders } from './services/reminder-processor'
@@ -96,6 +97,14 @@ const setupGracefulShutdown = () => {
 // Initialize app with Effect
 const initializeApp = async () => {
   setupGracefulShutdown()
+
+  // await runApp(
+  //   backfillDisplayUsername.pipe(
+  //     Effect.catchAll((error) =>
+  //       Effect.logError(`Backfill displayUsername failed: ${error}`),
+  //     ),
+  //   ),
+  // );
 
   runAppFork(cronJobEffect)
 

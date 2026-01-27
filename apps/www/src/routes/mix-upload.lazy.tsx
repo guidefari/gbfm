@@ -1,6 +1,6 @@
 'use client'
 
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createLazyFileRoute, useRouter } from '@tanstack/react-router'
 import {
   FileText,
@@ -25,9 +25,17 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/use-toast'
+import { authClient } from '@/lib/auth-client'
 import {
   fetcher,
   useAudioBySlug,
@@ -49,9 +57,12 @@ interface MixFormData {
   tags: string[]
   tracklist: TrackEntry[]
   draft: boolean
+  creatorId?: string
+  url?: string
 }
 
 function MixUploadPage() {
+  const { user } = useAuthStore()
   const search = Route.useSearch() as {
     edit?: string
     title?: string
@@ -86,7 +97,9 @@ function MixUploadPage() {
     thumbnailUrl: search.thumbnailUrl || '',
     tags: search.tags || [],
     tracklist: [],
-    draft: true
+    draft: true,
+    creatorId: undefined,
+    url: undefined
   }))
   const [newTag, setNewTag] = useState('')
   const [uploadStep, setUploadStep] = useState<
@@ -103,9 +116,22 @@ function MixUploadPage() {
   const [currentTime, setCurrentTime] = useState(0)
 
   const audioRef = useRef<HTMLAudioElement>(null)
-  const { user } = useAuthStore()
   const router = useRouter()
   const queryClient = useQueryClient()
+
+  const isAdmin = user?.role === 'admin'
+
+  const { data: usersData } = useQuery({
+    queryKey: ['admin', 'users'],
+    queryFn: async () => {
+      return authClient.admin.listUsers({
+        query: { limit: 100 }
+      })
+    },
+    enabled: isAdmin
+  })
+
+  const usersList = usersData?.data?.users || []
 
   useEffect(() => {
     if (existingMix && isEditMode) {
@@ -116,10 +142,15 @@ function MixUploadPage() {
         slug: existingMix.slug || prev.slug,
         content: existingMix.content || prev.content,
         thumbnailUrl: existingMix.thumbnailUrl || prev.thumbnailUrl,
-        tags: existingMix.tags || prev.tags
+        tags: existingMix.tags || prev.tags,
+        creatorId: existingMix.creators?.[0]?.id || prev.creatorId,
+        url: existingMix.url || prev.url
       }))
       if (existingMix.thumbnailUrl) {
         setArtworkPreview(existingMix.thumbnailUrl)
+      }
+      if (existingMix.url) {
+        setAudioPreview(existingMix.url)
       }
     }
   }, [existingMix, isEditMode])
@@ -132,7 +163,9 @@ function MixUploadPage() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['audio', 'mix'] })
-      queryClient.invalidateQueries({ queryKey: ['audio', 'mix', search.edit] })
+      queryClient.invalidateQueries({
+        queryKey: ['audio', 'mix', search.edit]
+      })
       toast({ title: 'Tags updated' })
     },
     onError: (err: Error) => {
@@ -169,9 +202,7 @@ function MixUploadPage() {
 
       const uploadFormData = new FormData()
 
-      let audioUrl = data.audioFile
-        ? ''
-        : (data as MixFormData & { url?: string }).url || '' // Keep existing URL if no new file
+      let audioUrl = data.url || ''
       if (data.audioFile) {
         uploadFormData.append('audioFile', data.audioFile)
         uploadFormData.append('fileType', 'audio')
@@ -228,7 +259,9 @@ function MixUploadPage() {
         url: audioUrl,
         type: 'mix',
         tags: data.tags,
-        creatorIds: [user?.id]
+        creatorIds: [
+          data.creatorId === 'current' ? user?.id : data.creatorId || user?.id
+        ].filter(Boolean)
       }
 
       const endpoint = isEditMode
@@ -261,7 +294,9 @@ function MixUploadPage() {
             thumbnailUrl: '',
             tags: [],
             tracklist: [],
-            draft: true
+            draft: true,
+            creatorId: undefined,
+            url: undefined
           })
           setAudioFile(null)
           setArtworkFile(null)
@@ -270,7 +305,9 @@ function MixUploadPage() {
         }
         setUploadStep('idle')
 
-        router.navigate({ to: isEditMode ? `/mixes/${search.edit}` : '/mixes' })
+        router.navigate({
+          to: isEditMode ? `/mixes/${search.edit}` : '/mixes'
+        })
       }, 2000)
     },
     onError: (error) => {
@@ -327,18 +364,24 @@ function MixUploadPage() {
 
   const removeAudioFile = () => {
     setAudioFile(null)
-    if (audioPreview) {
+    if (audioPreview && !formData.url) {
       URL.revokeObjectURL(audioPreview)
       setAudioPreview(null)
+    } else if (formData.url) {
+      setAudioPreview(null)
+      setFormData((prev) => ({ ...prev, url: undefined }))
     }
     setFormData((prev) => ({ ...prev, tracklist: [] }))
   }
 
   const removeArtworkFile = () => {
     setArtworkFile(null)
-    if (artworkPreview) {
+    if (artworkPreview && !formData.thumbnailUrl) {
       URL.revokeObjectURL(artworkPreview)
       setArtworkPreview(null)
+    } else if (formData.thumbnailUrl) {
+      setArtworkPreview(null)
+      setFormData((prev) => ({ ...prev, thumbnailUrl: '' }))
     }
   }
 
@@ -414,7 +457,7 @@ function MixUploadPage() {
     const submitData = {
       ...formData,
       draft: isDraft,
-      audioFile: isEditMode ? null : audioFile, // Don't require audio file for edits
+      audioFile: audioFile,
       artworkFile
     }
     uploadMutation.mutate(submitData)
@@ -429,7 +472,9 @@ function MixUploadPage() {
       thumbnailUrl: '',
       tags: [],
       tracklist: [],
-      draft: true
+      draft: true,
+      creatorId: undefined,
+      url: undefined
     })
     setAudioFile(null)
     setArtworkFile(null)
@@ -492,7 +537,7 @@ function MixUploadPage() {
         </div>
       </header>
 
-      {!audioFile && !isEditMode ? (
+      {!audioPreview && !isEditMode ? (
         <div className='relative p-12 text-center transition-colors border-2 border-dashed cursor-pointer group rounded-sm bg-gb-darker-bg border-gb-pastel-green-2/30 hover:border-gb-highlight/50'>
           <input
             type='file'
@@ -580,6 +625,36 @@ function MixUploadPage() {
                         </p>
                       )}
                     </div>
+
+                    {isAdmin && (
+                      <div className='space-y-2'>
+                        <Label className='text-gb-pastel-green-1'>
+                          Creator
+                        </Label>
+                        <Select
+                          value={formData.creatorId}
+                          onValueChange={(value) =>
+                            handleInputChange('creatorId', value)
+                          }>
+                          <SelectTrigger className='bg-gb-bg border-gb-pastel-green-2/30'>
+                            <SelectValue placeholder='Select creator' />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={user?.id || 'current'}>
+                              {user?.displayUsername || user?.name} (Me)
+                            </SelectItem>
+                            {usersList
+                              .filter((u) => u.id !== user?.id)
+                              .map((u) => (
+                                <SelectItem key={u.id} value={u.id}>
+                                  {(u as { displayUsername?: string })
+                                    .displayUsername || u.name}
+                                </SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
 
                     <div className='space-y-2'>
                       <Label className='text-gb-pastel-green-1'>
@@ -740,7 +815,10 @@ Add any technical details, equipment used, or special techniques...`}
                     <Music className='flex-shrink-0 w-6 h-6 text-gb-highlight' />
                     <div className='min-w-0'>
                       <p className='font-medium leading-tight text-gb-pastel-green-1'>
-                        {audioFile?.name || 'Unknown file'}
+                        {audioFile?.name ||
+                          (formData.url
+                            ? formData.url.split('/').pop()
+                            : 'Unknown file')}
                       </p>
                       <p className='text-xs text-muted-foreground'>
                         {audioFile

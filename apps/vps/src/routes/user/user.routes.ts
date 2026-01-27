@@ -27,7 +27,7 @@ const selectUserSchema = z.object({
 })
 
 const updateProfileSchema = z.object({
-  name: z.string().optional(),
+  displayUsername: z.string().optional(),
   email: z.email().optional(),
   password: z.string().min(8).optional(),
   image: z.string().optional(),
@@ -62,7 +62,7 @@ export const updateProfile = createRoute({
         },
         'multipart/form-data': {
           schema: z.object({
-            name: z.string().optional(),
+            displayUsername: z.string().optional(),
             email: z.email().optional(),
             password: z.string().min(8).optional(),
             username: z.string().optional(),

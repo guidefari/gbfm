@@ -1,4 +1,3 @@
-import '@/lib/otel'
 import app from './app'
 
 export const localVPSPort = 3003

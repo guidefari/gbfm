@@ -26,6 +26,7 @@ interface Session {
 interface UserSearchResult {
   id: string
   name: string
+  displayUsername?: string | null
   email: string
 }
 
@@ -126,7 +127,9 @@ export function SessionsTab() {
                 key={user.id}
                 className='block w-full rounded-sm px-2 py-1 text-left text-sm hover:bg-muted'
                 onClick={() => setSelectedUser(user)}>
-                <span className='font-medium'>{user.name}</span>
+                <span className='font-medium'>
+                  {user.displayUsername || user.name}
+                </span>
                 <span className='ml-2 text-muted-foreground'>{user.email}</span>
               </button>
             ))}
@@ -138,7 +141,9 @@ export function SessionsTab() {
         <div className='space-y-4'>
           <div className='flex items-center justify-between'>
             <div>
-              <h3 className='font-medium'>Sessions for {selectedUser.name}</h3>
+              <h3 className='font-medium'>
+                Sessions for {selectedUser.displayUsername || selectedUser.name}
+              </h3>
               <p className='text-sm text-muted-foreground'>
                 {selectedUser.email}
               </p>
@@ -232,7 +237,8 @@ export function SessionsTab() {
             <DialogTitle>Revoke All Sessions</DialogTitle>
             <DialogDescription>
               Are you sure you want to revoke all sessions for{' '}
-              {selectedUser?.name}? They will be logged out from all devices.
+              {selectedUser?.displayUsername || selectedUser?.name}? They will
+              be logged out from all devices.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

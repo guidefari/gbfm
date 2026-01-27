@@ -2,6 +2,7 @@ import { sendPasswordResetEmail, sendWelcomeEmail } from '@gbfm/email/index'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { admin, bearer, username } from 'better-auth/plugins'
+import { eq } from 'drizzle-orm'
 import { Effect } from 'effect'
 
 import { db } from '@/db'
@@ -78,6 +79,17 @@ export const auth = betterAuth({
     user: {
       create: {
         after: async (user) => {
+          await db
+            .update(authSchema.user)
+            .set({ displayUsername: user.name })
+            .where(eq(authSchema.user.id, user.id))
+            .catch((err) =>
+              console.error(
+                `Failed to set displayUsername for user ${user.id}:`,
+                err
+              )
+            )
+
           const subject = `Welcome to goosebumps.fm, ${user.name}! 🎵`
           const welcomeEmailLog = await createEmailDeliveryLog({
             userId: user.id,

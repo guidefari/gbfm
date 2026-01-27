@@ -60,6 +60,10 @@ declare module "sst" {
       "sender": string
       "type": "sst.aws.Email"
     }
+    "GRAFANA_OTLP_TOKEN": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "MDX_Bucket": {
       "name": string
       "type": "sst.aws.Bucket"
@@ -67,6 +71,10 @@ declare module "sst" {
     "Mixes": {
       "name": string
       "type": "sst.aws.Bucket"
+    }
+    "OTEL_EXPORTER_OTLP_ENDPOINT": {
+      "type": "sst.sst.Secret"
+      "value": string
     }
     "POSTHOG_HOST": {
       "type": "sst.sst.Secret"
