@@ -1,3 +1,10 @@
+# [2.7.0](https://github.com/guidefari/gbfm/compare/v2.6.0...v2.7.0) (2026-01-27)
+
+
+### Features
+
+* update audio creatorId ([d7eef10](https://github.com/guidefari/gbfm/commit/d7eef1057198757a4716facd0eeb7b5dcf301f4a))
+
 # [2.6.0](https://github.com/guidefari/gbfm/compare/v2.5.0...v2.6.0) (2026-01-27)
 
 
