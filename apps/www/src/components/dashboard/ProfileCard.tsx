@@ -37,6 +37,13 @@ export function ProfileCard({ user }: ProfileCardProps) {
       value: user?.name || ''
     },
     {
+      name: 'username',
+      label: 'Username',
+      type: 'text',
+      placeholder: 'Choose a username',
+      value: user?.username || ''
+    },
+    {
       name: 'email',
       label: 'Email',
       type: 'email',

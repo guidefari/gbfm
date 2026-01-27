@@ -19,6 +19,7 @@ const selectUserSchema = z.object({
   emailVerified: z.boolean(),
   image: z.string().nullable(),
   username: z.string().nullable().optional(),
+  displayUsername: z.string().nullable().optional(),
   avatarUrl: z.string().nullable().optional(),
   verified: z.boolean().optional(),
   createdAt: z.date(),
@@ -30,6 +31,7 @@ const updateProfileSchema = z.object({
   email: z.email().optional(),
   password: z.string().min(8).optional(),
   image: z.string().optional(),
+  username: z.string().optional(),
   avatar: z.custom<File>().optional().openapi({
     type: 'string',
     format: 'binary',
@@ -63,6 +65,7 @@ export const updateProfile = createRoute({
             name: z.string().optional(),
             email: z.email().optional(),
             password: z.string().min(8).optional(),
+            username: z.string().optional(),
             avatar: z.custom<File>().optional().openapi({
               type: 'string',
               format: 'binary',

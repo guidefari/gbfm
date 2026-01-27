@@ -1,7 +1,7 @@
 import { sendPasswordResetEmail, sendWelcomeEmail } from '@gbfm/email/index'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
-import { admin, bearer } from 'better-auth/plugins'
+import { admin, bearer, username } from 'better-auth/plugins'
 import { Effect } from 'effect'
 
 import { db } from '@/db'
@@ -117,6 +117,7 @@ export const auth = betterAuth({
   },
   plugins: [
     bearer(),
+    username(),
     admin({
       ac,
       roles: {

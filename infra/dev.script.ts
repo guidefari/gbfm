@@ -36,16 +36,7 @@ new sst.x.DevCommand('Studio_local', {
   }
 })
 
-new sst.x.DevCommand('Drizzle_Generate_Local', {
-  link: [...allSecrets, email],
-  dev: {
-    command: 'npx drizzle-kit generate --config drizzle.config.local.ts',
-    directory: './apps/vps',
-    autostart: false
-  }
-})
-
-new sst.x.DevCommand('Drizzle_Generate_Prod', {
+new sst.x.DevCommand('db_gen', {
   link: [...allSecrets, email],
   dev: {
     command: 'npx drizzle-kit generate --config drizzle.config.prod.ts',
@@ -66,7 +57,7 @@ new sst.x.DevCommand('betterAuthGen', {
   }
 })
 
-new sst.x.DevCommand('Drizzle_Push_Local', {
+new sst.x.DevCommand('db_pushLocal', {
   link: [...allSecrets, email],
   dev: {
     command: 'npx drizzle-kit push --config drizzle.config.local.ts',
@@ -75,7 +66,7 @@ new sst.x.DevCommand('Drizzle_Push_Local', {
   }
 })
 
-new sst.x.DevCommand('Drizzle_Push_Prod', {
+new sst.x.DevCommand('db_pushProd', {
   link: [...allSecrets, email],
   dev: {
     command: 'npx drizzle-kit push --config drizzle.config.prod.ts',
@@ -84,14 +75,14 @@ new sst.x.DevCommand('Drizzle_Push_Prod', {
   }
 })
 
-new sst.x.DevCommand('Drizzle_Check_Prod', {
-  link: [...allSecrets, email],
-  dev: {
-    command: 'npx drizzle-kit check --config drizzle.config.prod.ts',
-    directory: './apps/vps',
-    autostart: false
-  }
-})
+// new sst.x.DevCommand('Drizzle_Check_Prod', {
+//   link: [...allSecrets, email],
+//   dev: {
+//     command: 'npx drizzle-kit check --config drizzle.config.prod.ts',
+//     directory: './apps/vps',
+//     autostart: false
+//   }
+// })
 // new sst.x.DevCommand("fix_mix_dates", {
 //   link: [...allSecrets, email],
 //   dev: {
@@ -163,23 +154,23 @@ new sst.x.DevCommand('Email_Preview', {
 //   }
 // })
 
-new sst.x.DevCommand('Backup_Database', {
-  link: [...allSecrets, email, dbBackupBucket],
-  dev: {
-    command: 'bun scripts/backup-db.ts --source=local',
-    directory: './apps/vps',
-    autostart: false
-  },
-  environment: {
-    DATABASE_BACKUP_BUCKET: dbBackupBucket.name,
-    DatabaseHost: secret.DatabaseHost.value,
-    DatabaseUser: secret.DatabaseUser.value,
-    DatabasePassword: secret.DatabasePassword.value,
-    DatabasePort: secret.DatabasePort.value,
-    DatabaseName: secret.DatabaseName.value,
-    LOCAL_DB_URL: process.env.LOCAL_DB_URL || ''
-  }
-})
+// new sst.x.DevCommand('Backup_Database', {
+//   link: [...allSecrets, email, dbBackupBucket],
+//   dev: {
+//     command: 'bun scripts/backup-db.ts --source=local',
+//     directory: './apps/vps',
+//     autostart: false
+//   },
+//   environment: {
+//     DATABASE_BACKUP_BUCKET: dbBackupBucket.name,
+//     DatabaseHost: secret.DatabaseHost.value,
+//     DatabaseUser: secret.DatabaseUser.value,
+//     DatabasePassword: secret.DatabasePassword.value,
+//     DatabasePort: secret.DatabasePort.value,
+//     DatabaseName: secret.DatabaseName.value,
+//     LOCAL_DB_URL: process.env.LOCAL_DB_URL || ''
+//   }
+// })
 
 new sst.x.DevCommand('Backup_Database_Prod', {
   link: [...allSecrets, email, dbBackupBucket],
@@ -207,26 +198,26 @@ new sst.x.DevCommand('Backup_Database_Prod', {
 //   }
 // })
 
-new sst.x.DevCommand('Restore_Local_Database', {
-  link: [...allSecrets, email, dbBackupBucket],
-  dev: {
-    command: 'bun scripts/restore-db.ts --destination=remote',
-    directory: './apps/vps',
-    autostart: false
-  },
-  environment: {
-    LOCAL_DB_URL: process.env.LOCAL_DB_URL || ''
-  }
-})
+// new sst.x.DevCommand('Restore_Local_Database', {
+//   link: [...allSecrets, email, dbBackupBucket],
+//   dev: {
+//     command: 'bun scripts/restore-db.ts --destination=remote',
+//     directory: './apps/vps',
+//     autostart: false
+//   },
+//   environment: {
+//     LOCAL_DB_URL: process.env.LOCAL_DB_URL || ''
+//   }
+// })
 
-new sst.x.DevCommand('Assign_All_Relations_To_User', {
-  link: [...allSecrets, email],
-  dev: {
-    command: 'bun scripts/assign-all-relations-to-user.ts',
-    directory: './apps/vps',
-    autostart: false
-  }
-})
+// new sst.x.DevCommand('Assign_All_Relations_To_User', {
+//   link: [...allSecrets, email],
+//   dev: {
+//     command: 'bun scripts/assign-all-relations-to-user.ts',
+//     directory: './apps/vps',
+//     autostart: false
+//   }
+// })
 
 new sst.x.DevCommand('Otel_Stack', {
   dev: {

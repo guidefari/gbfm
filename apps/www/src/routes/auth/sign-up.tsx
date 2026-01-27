@@ -27,12 +27,14 @@ function SignUpPage() {
     const email = formData.get('email') as string
     const password = formData.get('password') as string
     const name = formData.get('name') as string
+    const username = formData.get('username') as string
 
     try {
       const result = await signUp.email({
         email,
         password,
-        name
+        name,
+        username
       })
 
       if (result.data) {
@@ -80,6 +82,13 @@ function SignUpPage() {
               label: 'Name',
               type: 'text',
               placeholder: 'Enter your name',
+              required: true
+            },
+            {
+              name: 'username',
+              label: 'Username',
+              type: 'text',
+              placeholder: 'Choose a username',
               required: true
             },
             {

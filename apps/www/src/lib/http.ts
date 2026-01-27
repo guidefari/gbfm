@@ -183,7 +183,7 @@ export function useEnrichTrackFromUrl(url: string) {
 export function useUserLOL() {
   const { data, error, isPending } = useQuery<User, Error>({
     queryKey: ['user'],
-    queryFn: async () => fetcher(`${VPS_BASE_URL}/auth/profile`)
+    queryFn: async () => fetcher(`${VPS_BASE_URL}/user/profile`)
   })
 
   return {
@@ -200,7 +200,7 @@ export function useUpdateProfile() {
     FormData | User
   >({
     mutationFn: async (data) =>
-      fetcher(`${VPS_BASE_URL}/auth/profile`, {
+      fetcher(`${VPS_BASE_URL}/user/profile`, {
         method: 'PATCH',
         body: data instanceof FormData ? data : JSON.stringify(data)
       })
@@ -227,7 +227,7 @@ export type EmailPreferences = {
 export function useEmailPreferences() {
   const { data, error, isPending } = useQuery<EmailPreferences, Error>({
     queryKey: ['email-preferences'],
-    queryFn: async () => fetcher(`${VPS_BASE_URL}/auth/email-preferences`)
+    queryFn: async () => fetcher(`${VPS_BASE_URL}/user/email-preferences`)
   })
 
   return {
@@ -244,7 +244,7 @@ export function useUpdateEmailPreferences() {
     Partial<EmailPreferences>
   >({
     mutationFn: async (preferences) =>
-      fetcher(`${VPS_BASE_URL}/auth/email-preferences`, {
+      fetcher(`${VPS_BASE_URL}/user/email-preferences`, {
         method: 'PATCH',
         body: JSON.stringify(preferences)
       })
@@ -581,6 +581,43 @@ export function useUnsubscribeFromShow() {
 
   return {
     unsubscribe,
+    isPending
+  }
+}
+
+export type PublicProfile = {
+  id: string
+  name: string
+  username: string | null
+  image: string | null
+  createdAt: string
+  content: {
+    mixes: Array<{
+      id: string
+      title: string
+      slug: string
+      thumbnailUrl: string | null
+      type: 'mix' | 'track' | 'misc' | 'radio_show'
+    }>
+    shows: Array<{
+      id: string
+      title: string
+      slug: string
+      thumbnailUrl: string | null
+    }>
+  }
+}
+
+export function usePublicProfile(username: string) {
+  const { data, error, isPending } = useQuery<PublicProfile, Error>({
+    queryKey: ['profile', username],
+    queryFn: async () => fetcher(`${VPS_BASE_URL}/profile/${username}`),
+    enabled: Boolean(username)
+  })
+
+  return {
+    data,
+    error,
     isPending
   }
 }

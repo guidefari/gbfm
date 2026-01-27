@@ -6,6 +6,7 @@ import type { FavoriteService } from '@/services/favorite.service'
 import type { LabelService } from '@/services/label.service'
 import type { MusicReminderService } from '@/services/music-reminder.service'
 import type { PostService } from '@/services/post.service'
+import type { ProfileService } from '@/services/profile.service'
 import type { PublicationService } from '@/services/publication.service'
 import type { ReleaseService } from '@/services/release.service'
 import type { S3Service } from '@/services/s3.service'
@@ -24,6 +25,7 @@ type AppServices =
   | AudioService
   | PostService
   | LabelService
+  | ProfileService
   | ReleaseService
   | S3Service
   | PublicationService

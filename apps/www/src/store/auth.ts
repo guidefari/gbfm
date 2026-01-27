@@ -8,6 +8,8 @@ export interface User {
   email: string
   emailVerified: boolean
   image?: string | null
+  username?: string | null
+  displayUsername?: string | null
   createdAt: Date
   updatedAt: Date
   role?: string | null

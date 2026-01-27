@@ -25,6 +25,8 @@ export const user = pgTable('user', {
     .defaultNow()
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
+  username: text('username').unique(),
+  displayUsername: text('display_username').unique(),
   role: text('role').default('user').notNull(),
   banned: boolean('banned').default(false).notNull(),
   banReason: text('ban_reason'),
@@ -110,6 +112,14 @@ export const selectUserSchema = z
   .object({
     id: z.string().openapi({ description: 'Unique identifier for the user' }),
     name: z.string().openapi({ description: 'Display name of the user' }),
+    username: z
+      .string()
+      .nullable()
+      .openapi({ description: 'Username of the user' }),
+    displayUsername: z
+      .string()
+      .nullable()
+      .openapi({ description: 'Display username of the user' }),
     email: z.string().openapi({ description: 'Email address of the user' }),
     emailVerified: z
       .boolean()
@@ -137,6 +147,14 @@ export const insertUserSchema = z
     name: z.string().openapi({
       description: 'Display name of the user',
       example: 'John Doe'
+    }),
+    username: z.string().optional().openapi({
+      description: 'Username of the user',
+      example: 'johndoe'
+    }),
+    displayUsername: z.string().optional().openapi({
+      description: 'Display username of the user',
+      example: 'JohnDoe123'
     }),
     email: z.string().email().openapi({
       description: 'Email address of the user',

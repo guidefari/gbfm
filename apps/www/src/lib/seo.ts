@@ -4,6 +4,7 @@ import type {
   SelectMdxCompiledRelease,
   SelectMdxCompiledShow
 } from '@gbfm/vps/schemas'
+import type { PublicProfile } from './http'
 
 export const SITE_URL = 'https://goosebumps.fm'
 export const DEFAULT_OG_IMAGE =
@@ -206,6 +207,29 @@ export function generateStaticPageSEO(
     description,
     url: `${SITE_URL}${path}`,
     type: 'website'
+  }
+}
+
+export function generateProfileSEO(
+  profile: PublicProfile,
+  username: string
+): SEOHeadData {
+  const contentCount =
+    (profile.content?.mixes?.length ?? 0) +
+    (profile.content?.shows?.length ?? 0)
+  const description =
+    contentCount > 0
+      ? `${profile.name} has ${contentCount} ${contentCount === 1 ? 'contribution' : 'contributions'} on goosebumps.fm`
+      : `${profile.name}'s profile on goosebumps.fm`
+  const url = `${SITE_URL}/profile/${username}`
+  const image = profile.image || DEFAULT_OG_IMAGE
+
+  return {
+    title: profile.name,
+    description,
+    url,
+    image,
+    type: 'profile'
   }
 }
 

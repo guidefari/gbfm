@@ -21,6 +21,8 @@ export interface UserService {
       email: string
       emailVerified: boolean
       image: string | null
+      username: string | null
+      displayUsername: string | null
       role: string
       banned: boolean
       banReason: string | null
@@ -37,6 +39,7 @@ export interface UserService {
       name?: string
       email?: string
       image?: string
+      username?: string
     }
   ) => Effect.Effect<
     {
@@ -45,6 +48,8 @@ export interface UserService {
       email: string
       emailVerified: boolean
       image: string | null
+      username: string | null
+      displayUsername: string | null
       role: string
       banned: boolean
       banReason: string | null
@@ -102,6 +107,7 @@ const updateUserProfileEffect = (
     name?: string
     email?: string
     image?: string
+    username?: string
   }
 ) =>
   Effect.gen(function* () {

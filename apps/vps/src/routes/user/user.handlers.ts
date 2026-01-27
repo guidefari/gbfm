@@ -21,8 +21,12 @@ export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
     return c.json({ error: 'Unauthorized' }, HttpStatusCodes.UNAUTHORIZED)
   }
 
-  const updateData: Partial<{ name?: string; email?: string; image?: string }> =
-    {}
+  const updateData: Partial<{
+    name?: string
+    email?: string
+    image?: string
+    username?: string
+  }> = {}
   let avatarFile: File | null = null
   const contentType = c.req.header('content-type') || ''
 
@@ -38,7 +42,7 @@ export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
       ) {
         avatarFile = value as File
       } else if (typeof value === 'string' && key !== 'avatar') {
-        if (key === 'name' || key === 'email') {
+        if (key === 'name' || key === 'email' || key === 'username') {
           updateData[key] = value
         }
       }
@@ -47,6 +51,7 @@ export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
     const body = c.req.valid('json')
     if (body.name) updateData.name = body.name
     if (body.email) updateData.email = body.email
+    if (body.username) updateData.username = body.username
   }
 
   if (avatarFile) {
@@ -102,7 +107,7 @@ export const getProfile: AppRouteHandler<GetProfileRoute> = async (c) => {
   return c.json(
     {
       ...result.right,
-      username: result.right.name,
+      username: result.right.username,
       avatarUrl: result.right.image,
       image: result.right.image,
       verified: result.right.emailVerified,

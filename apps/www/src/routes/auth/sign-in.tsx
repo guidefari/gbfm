@@ -24,14 +24,14 @@ function SignInPage() {
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
-    const email = formData.get('email') as string
+    const identifier = formData.get('identifier') as string
     const password = formData.get('password') as string
 
     try {
-      const result = await signIn.email({
-        email,
-        password
-      })
+      const isEmail = identifier.includes('@')
+      const result = isEmail
+        ? await signIn.email({ email: identifier, password })
+        : await signIn.username({ username: identifier, password })
 
       if (result.data) {
         toast({
@@ -63,10 +63,10 @@ function SignInPage() {
           formTitle='Sign In'
           fields={[
             {
-              name: 'email',
-              label: 'Email',
-              type: 'email',
-              placeholder: 'name@example.com',
+              name: 'identifier',
+              label: 'Email or Username',
+              type: 'text',
+              placeholder: 'name@example.com or username',
               required: true
             },
             {

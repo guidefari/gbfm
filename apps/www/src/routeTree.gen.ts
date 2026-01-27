@@ -29,6 +29,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as TracksTrackIdRouteImport } from './routes/tracks/$trackId'
 import { Route as ShowsShowSlugRouteImport } from './routes/shows/$showSlug'
 import { Route as ReleasesSlugRouteImport } from './routes/releases/$slug'
+import { Route as ProfileUsernameRouteImport } from './routes/profile/$username'
 import { Route as MixesMixIdRouteImport } from './routes/mixes/$mixId'
 import { Route as LabelsLabelSlugRouteImport } from './routes/labels/$labelSlug'
 import { Route as AuthSignUpRouteImport } from './routes/auth/sign-up'
@@ -145,6 +146,11 @@ const ReleasesSlugRoute = ReleasesSlugRouteImport.update({
   path: '/releases/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileUsernameRoute = ProfileUsernameRouteImport.update({
+  id: '/profile/$username',
+  path: '/profile/$username',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MixesMixIdRoute = MixesMixIdRouteImport.update({
   id: '/$mixId',
   path: '/$mixId',
@@ -196,6 +202,7 @@ export interface FileRoutesByFullPath {
   '/auth/sign-up': typeof AuthSignUpRoute
   '/labels/$labelSlug': typeof LabelsLabelSlugRoute
   '/mixes/$mixId': typeof MixesMixIdRoute
+  '/profile/$username': typeof ProfileUsernameRoute
   '/releases/$slug': typeof ReleasesSlugRoute
   '/shows/$showSlug': typeof ShowsShowSlugRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
@@ -222,6 +229,7 @@ export interface FileRoutesByTo {
   '/auth/sign-up': typeof AuthSignUpRoute
   '/labels/$labelSlug': typeof LabelsLabelSlugRoute
   '/mixes/$mixId': typeof MixesMixIdRoute
+  '/profile/$username': typeof ProfileUsernameRoute
   '/releases/$slug': typeof ReleasesSlugRoute
   '/shows/$showSlug': typeof ShowsShowSlugRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
@@ -252,6 +260,7 @@ export interface FileRoutesById {
   '/auth/sign-up': typeof AuthSignUpRoute
   '/labels/$labelSlug': typeof LabelsLabelSlugRoute
   '/mixes/$mixId': typeof MixesMixIdRoute
+  '/profile/$username': typeof ProfileUsernameRoute
   '/releases/$slug': typeof ReleasesSlugRoute
   '/shows/$showSlug': typeof ShowsShowSlugRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
@@ -283,6 +292,7 @@ export interface FileRouteTypes {
     | '/auth/sign-up'
     | '/labels/$labelSlug'
     | '/mixes/$mixId'
+    | '/profile/$username'
     | '/releases/$slug'
     | '/shows/$showSlug'
     | '/tracks/$trackId'
@@ -309,6 +319,7 @@ export interface FileRouteTypes {
     | '/auth/sign-up'
     | '/labels/$labelSlug'
     | '/mixes/$mixId'
+    | '/profile/$username'
     | '/releases/$slug'
     | '/shows/$showSlug'
     | '/tracks/$trackId'
@@ -338,6 +349,7 @@ export interface FileRouteTypes {
     | '/auth/sign-up'
     | '/labels/$labelSlug'
     | '/mixes/$mixId'
+    | '/profile/$username'
     | '/releases/$slug'
     | '/shows/$showSlug'
     | '/tracks/$trackId'
@@ -366,6 +378,7 @@ export interface RootRouteChildren {
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute
   AuthSignInRoute: typeof AuthSignInRoute
   AuthSignUpRoute: typeof AuthSignUpRoute
+  ProfileUsernameRoute: typeof ProfileUsernameRoute
   ReleasesSlugRoute: typeof ReleasesSlugRoute
   ShowsShowSlugRoute: typeof ShowsShowSlugRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -521,6 +534,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReleasesSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile/$username': {
+      id: '/profile/$username'
+      path: '/profile/$username'
+      fullPath: '/profile/$username'
+      preLoaderRoute: typeof ProfileUsernameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mixes/$mixId': {
       id: '/mixes/$mixId'
       path: '/$mixId'
@@ -626,6 +646,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthResetPasswordRoute: AuthResetPasswordRoute,
   AuthSignInRoute: AuthSignInRoute,
   AuthSignUpRoute: AuthSignUpRoute,
+  ProfileUsernameRoute: ProfileUsernameRoute,
   ReleasesSlugRoute: ReleasesSlugRoute,
   ShowsShowSlugRoute: ShowsShowSlugRoute,
   AdminIndexRoute: AdminIndexRoute,
