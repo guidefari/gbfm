@@ -1,3 +1,10 @@
+# [2.6.0](https://github.com/guidefari/gbfm/compare/v2.5.0...v2.6.0) (2026-01-27)
+
+
+### Features
+
+* Implement user display names and admin user creation/management. ([3ff6b33](https://github.com/guidefari/gbfm/commit/3ff6b3328fc7e79cac402687f8977ee95bb46385))
+
 # [2.5.0](https://github.com/guidefari/gbfm/compare/v2.4.0...v2.5.0) (2026-01-27)
 
 
