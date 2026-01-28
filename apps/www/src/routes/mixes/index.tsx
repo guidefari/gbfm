@@ -156,11 +156,11 @@ function MixesListPage() {
                       mix.id
                     )
                   }>
-                    <img
-                      src={mix.thumbnailUrl || DEFAULT_IMAGE_URL}
-                      alt={mix.title}
-                      className='object-cover transition-transform duration-300 border rounded-sm w-16 h-16 sm:w-20 sm:h-20 border-border bg-background group-hover:scale-105'
-                    />
+                  <img
+                    src={mix.thumbnailUrl || DEFAULT_IMAGE_URL}
+                    alt={mix.title}
+                    className='object-cover transition-transform duration-300 border rounded-sm w-16 h-16 sm:w-20 sm:h-20 border-border bg-background group-hover:scale-105'
+                  />
                   <span
                     className={cn(
                       'absolute inset-0 flex items-center justify-center transition-all duration-300 rounded-sm bg-black/50',
@@ -177,12 +177,12 @@ function MixesListPage() {
                 </button>
                 <div className='flex-1 min-w-0'>
                   <div className='flex items-start justify-between gap-2'>
-                      <Link
-                        to='/mixes/$mixId'
-                        params={{ mixId: mix.slug }}
-                        className='flex-1 block font-bold leading-tight line-clamp-2 text-foreground hover:underline decoration-foreground/30 underline-offset-4'>
-                        {mix.title}
-                      </Link>
+                    <Link
+                      to='/mixes/$mixId'
+                      params={{ mixId: mix.slug }}
+                      className='flex-1 block font-bold leading-tight line-clamp-2 text-foreground hover:underline decoration-foreground/30 underline-offset-4'>
+                      {mix.title}
+                    </Link>
                     <MixMenu mix={mix} />
                   </div>
                   {mix.description && (
