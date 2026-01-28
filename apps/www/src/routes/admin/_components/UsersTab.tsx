@@ -3,6 +3,7 @@ import { Check, Edit, ExternalLink, Plus, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import {
   Dialog,
   DialogContent,
@@ -22,6 +23,7 @@ import {
 } from '@/components/ui/select'
 import { toast } from '@/components/ui/use-toast'
 import { authClient } from '@/lib/auth-client'
+import { ImageUploadField } from './ImageUploadField'
 
 const ROLES = ['admin', 'editor', 'creator', 'user'] as const
 type UserRole = (typeof ROLES)[number]
@@ -29,8 +31,11 @@ type UserRole = (typeof ROLES)[number]
 interface AdminUser {
   id: string
   name: string
+  username?: string | null
   displayUsername?: string | null
   email: string
+  emailVerified?: boolean
+  image?: string | null
   role: string | null
   banned: boolean | null
   banReason: string | null
@@ -77,11 +82,21 @@ export function UsersTab() {
     id: string
     name: string
     email: string
+    username: string
+    displayUsername: string
+    image: string
+    emailVerified: boolean
   }>({
     id: '',
     name: '',
-    email: ''
+    email: '',
+    username: '',
+    displayUsername: '',
+    image: '',
+    emailVerified: false
   })
+  const [debouncedEditUsername, setDebouncedEditUsername] = useState('')
+  const [originalUsername, setOriginalUsername] = useState('')
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -89,6 +104,13 @@ export function UsersTab() {
     }, 300)
     return () => clearTimeout(timer)
   }, [newUser.username])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedEditUsername(editUser.username)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [editUser.username])
 
   const { data, isPending } = useQuery({
     queryKey: ['admin', 'users', search],
@@ -113,6 +135,20 @@ export function UsersTab() {
     },
     enabled: debouncedUsername.length >= 2
   })
+
+  const { data: editUsernameAvailability, isPending: checkingEditUsername } =
+    useQuery({
+      queryKey: ['username', 'availability', debouncedEditUsername],
+      queryFn: async () => {
+        const result = await authClient.isUsernameAvailable({
+          username: debouncedEditUsername
+        })
+        return result.data
+      },
+      enabled:
+        debouncedEditUsername.length >= 2 &&
+        debouncedEditUsername !== originalUsername
+    })
 
   const createUserMutation = useMutation({
     mutationFn: async () => {
@@ -158,7 +194,11 @@ export function UsersTab() {
         userId: editUser.id,
         data: {
           name: editUser.name,
-          email: editUser.email
+          email: editUser.email,
+          username: editUser.username || undefined,
+          displayUsername: editUser.displayUsername || undefined,
+          image: editUser.image || undefined,
+          emailVerified: editUser.emailVerified
         }
       })
     },
@@ -347,9 +387,14 @@ export function UsersTab() {
                         onClick={() => {
                           setEditUser({
                             id: user.id,
-                            name: user.displayUsername || user.name,
-                            email: user.email
+                            name: user.name,
+                            email: user.email,
+                            username: user.username || '',
+                            displayUsername: user.displayUsername || '',
+                            image: user.image || '',
+                            emailVerified: user.emailVerified ?? false
                           })
+                          setOriginalUsername(user.username || '')
                           setEditUserDialog(true)
                         }}>
                         <Edit className='w-4 h-4' />
@@ -528,12 +573,17 @@ export function UsersTab() {
       </Dialog>
 
       <Dialog open={editUserDialog} onOpenChange={setEditUserDialog}>
-        <DialogContent>
+        <DialogContent className='max-h-[90vh] overflow-y-auto'>
           <DialogHeader>
             <DialogTitle>Edit User</DialogTitle>
             <DialogDescription>Update user details.</DialogDescription>
           </DialogHeader>
           <div className='py-4 space-y-4'>
+            <ImageUploadField
+              label='Profile Image'
+              value={editUser.image}
+              onChange={(url) => setEditUser({ ...editUser, image: url })}
+            />
             <div className='space-y-2'>
               <Label htmlFor='edit-name'>Name</Label>
               <Input
@@ -546,6 +596,57 @@ export function UsersTab() {
               />
             </div>
             <div className='space-y-2'>
+              <Label htmlFor='edit-username'>Username</Label>
+              <div className='relative'>
+                <Input
+                  id='edit-username'
+                  value={editUser.username}
+                  onChange={(e) =>
+                    setEditUser({
+                      ...editUser,
+                      username: e.target.value.toLowerCase().replace(/\s/g, '')
+                    })
+                  }
+                  placeholder='johndoe'
+                  className='pr-8'
+                />
+                {editUser.username.length >= 2 &&
+                  editUser.username !== originalUsername && (
+                    <div className='absolute -translate-y-1/2 right-2 top-1/2'>
+                      {checkingEditUsername ? (
+                        <div className='w-4 h-4 border-2 rounded-full animate-spin border-muted-foreground border-t-transparent' />
+                      ) : editUsernameAvailability?.available ? (
+                        <Check className='w-4 h-4 text-green-500' />
+                      ) : (
+                        <X className='w-4 h-4 text-destructive' />
+                      )}
+                    </div>
+                  )}
+              </div>
+              {editUser.username.length >= 2 &&
+                editUser.username !== originalUsername &&
+                !checkingEditUsername &&
+                !editUsernameAvailability?.available && (
+                  <p className='text-xs text-destructive'>
+                    Username is already taken
+                  </p>
+                )}
+            </div>
+            <div className='space-y-2'>
+              <Label htmlFor='edit-display-username'>Display Username</Label>
+              <Input
+                id='edit-display-username'
+                value={editUser.displayUsername}
+                onChange={(e) =>
+                  setEditUser({ ...editUser, displayUsername: e.target.value })
+                }
+                placeholder='JohnDoe123'
+              />
+              <p className='text-xs text-muted-foreground'>
+                Case-preserved version shown in URLs and profiles
+              </p>
+            </div>
+            <div className='space-y-2'>
               <Label htmlFor='edit-email'>Email</Label>
               <Input
                 id='edit-email'
@@ -556,6 +657,18 @@ export function UsersTab() {
                 }
                 placeholder='john@example.com'
               />
+            </div>
+            <div className='flex items-center space-x-2'>
+              <Checkbox
+                id='edit-email-verified'
+                checked={editUser.emailVerified}
+                onCheckedChange={(checked) =>
+                  setEditUser({ ...editUser, emailVerified: checked === true })
+                }
+              />
+              <Label htmlFor='edit-email-verified' className='cursor-pointer'>
+                Email Verified
+              </Label>
             </div>
           </div>
           <DialogFooter>
@@ -570,7 +683,10 @@ export function UsersTab() {
               disabled={
                 updateUserMutation.isPending ||
                 !editUser.name ||
-                !editUser.email
+                !editUser.email ||
+                (editUser.username.length >= 2 &&
+                  editUser.username !== originalUsername &&
+                  !editUsernameAvailability?.available)
               }>
               {updateUserMutation.isPending ? 'Saving...' : 'Save Changes'}
             </Button>
