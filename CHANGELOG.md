@@ -1,3 +1,10 @@
+## [2.7.2](https://github.com/guidefari/gbfm/compare/v2.7.1...v2.7.2) (2026-01-28)
+
+
+### Bug Fixes
+
+* revert to absolute positioning for music player ([cbbc976](https://github.com/guidefari/gbfm/commit/cbbc9769b60f8021af653e3a64edc2866c179099))
+
 ## [2.7.1](https://github.com/guidefari/gbfm/compare/v2.7.0...v2.7.1) (2026-01-28)
 
 
