@@ -29,7 +29,7 @@
       "apps/*/src/**/*",
       "infra/**/*",
       "packages/**/*",
-      "*.{js,ts,tsx,jsx,json}",
+      "*.{js,ts,tsx,jsx,json,css}",
       "!**/node_modules",
       "!**/dist",
       "!**/build",
