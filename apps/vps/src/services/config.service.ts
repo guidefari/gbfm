@@ -115,6 +115,10 @@ const ConfigSchema = Schema.Struct({
     nodeEnv: Schema.String,
     dbStage: Schema.optional(Schema.String),
     logLevel: Schema.optional(Schema.String)
+  }),
+  otel: Schema.Struct({
+    endpoint: Schema.optional(Schema.String),
+    token: Schema.optional(Schema.String)
   })
 })
 
@@ -193,6 +197,13 @@ export function createConfig(): ConfigService {
   const dbStage = process.env.DB_STAGE
   const logLevel = process.env.LOG_LEVEL
 
+  // OpenTelemetry
+  const otelEndpoint =
+    process.env.OTEL_EXPORTER_OTLP_ENDPOINT ||
+    getResourceValue('OTEL_EXPORTER_OTLP_ENDPOINT', '')
+  const otelToken =
+    process.env.GRAFANA_OTLP_TOKEN || getResourceValue('GRAFANA_OTLP_TOKEN', '')
+
   return {
     database: {
       host: databaseHost,
@@ -229,6 +240,10 @@ export function createConfig(): ConfigService {
       nodeEnv,
       dbStage,
       logLevel
+    },
+    otel: {
+      endpoint: otelEndpoint,
+      token: otelToken
     },
     resources: {
       available: Resource !== null
