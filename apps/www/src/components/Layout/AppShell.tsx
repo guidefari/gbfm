@@ -36,16 +36,15 @@ export default function AppShell({ children }: Props) {
       <div className='hidden sm:block'>
         <DesktopSideNav />
       </div>
-      <div className='flex flex-col h-screen overflow-hidden'>
+      <div className='relative flex flex-col h-screen overflow-hidden'>
         <main
           id={MAIN_SCROLL_CONTAINER_ID}
-          className='flex-1 overflow-y-auto bg-background'>
+          className='flex-1 overflow-y-auto bg-background pb-28 sm:pb-32'>
           {children}
         </main>
 
-        {showFullPlayer && (
-          <div
-            className={`flex-shrink-0 hidden sm:block transition-opacity ${hasActiveAudio ? 'opacity-100' : 'opacity-5 pointer-events-none'}`}>
+        {showFullPlayer && hasActiveAudio && (
+          <div className='absolute bottom-0 left-0 right-0 z-20 hidden sm:block'>
             <AudioPlayer />
           </div>
         )}
