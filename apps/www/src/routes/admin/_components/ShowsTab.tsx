@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/use-toast'
 import { fetcher, type PaginatedResponse, VPS_BASE_URL } from '@/lib/http'
+import { ImageUploadField } from './ImageUploadField'
 import { UserSearch } from './UserSearch'
 
 interface ShowItem {
@@ -25,6 +26,7 @@ interface ShowItem {
   description: string | null
   content: string
   thumbnailUrl: string | null
+  bannerImageUrl: string | null
   draft: boolean
   tags: string[] | null
   createdAt: string
@@ -48,6 +50,7 @@ interface ShowFormState {
   description: string
   content: string
   thumbnailUrl: string
+  bannerImageUrl: string
   draft: boolean
   tags: string
   hosts: SelectedHost[]
@@ -59,6 +62,7 @@ const initialFormState: ShowFormState = {
   description: '',
   content: '',
   thumbnailUrl: '',
+  bannerImageUrl: '',
   draft: false,
   tags: '',
   hosts: []
@@ -93,6 +97,7 @@ export function ShowsTab() {
           slug: data.slug,
           description: data.description || undefined,
           thumbnailUrl: data.thumbnailUrl || undefined,
+          bannerImageUrl: data.bannerImageUrl || undefined,
           draft: data.draft,
           tags: data.tags
             ? data.tags.split(',').map((t) => t.trim())
@@ -126,6 +131,7 @@ export function ShowsTab() {
           slug: data.slug,
           description: data.description || undefined,
           thumbnailUrl: data.thumbnailUrl || undefined,
+          bannerImageUrl: data.bannerImageUrl || undefined,
           draft: data.draft,
           tags: data.tags
             ? data.tags.split(',').map((t) => t.trim())
@@ -175,6 +181,7 @@ export function ShowsTab() {
       description: show.description || '',
       content: show.content,
       thumbnailUrl: show.thumbnailUrl || '',
+      bannerImageUrl: show.bannerImageUrl || '',
       draft: show.draft,
       tags: show.tags ? show.tags.join(', ') : '',
       hosts: show.hosts || []
@@ -330,28 +337,33 @@ export function ShowsTab() {
               />
             </div>
             <div className='grid grid-cols-2 gap-4'>
-              <div className='space-y-2'>
-                <Label htmlFor='create-thumbnail'>Thumbnail URL</Label>
-                <Input
-                  id='create-thumbnail'
-                  value={formData.thumbnailUrl}
-                  onChange={(e) =>
-                    setFormData({ ...formData, thumbnailUrl: e.target.value })
-                  }
-                  placeholder='https://...'
-                />
-              </div>
-              <div className='space-y-2'>
-                <Label htmlFor='create-tags'>Tags (comma separated)</Label>
-                <Input
-                  id='create-tags'
-                  value={formData.tags}
-                  onChange={(e) =>
-                    setFormData({ ...formData, tags: e.target.value })
-                  }
-                  placeholder='techno, house, ambient'
-                />
-              </div>
+              <ImageUploadField
+                label='Thumbnail (Square)'
+                value={formData.thumbnailUrl}
+                onChange={(url) =>
+                  setFormData({ ...formData, thumbnailUrl: url })
+                }
+                aspectRatio='square'
+              />
+              <ImageUploadField
+                label='Banner (Landscape)'
+                value={formData.bannerImageUrl}
+                onChange={(url) =>
+                  setFormData({ ...formData, bannerImageUrl: url })
+                }
+                aspectRatio='landscape'
+              />
+            </div>
+            <div className='space-y-2'>
+              <Label htmlFor='create-tags'>Tags (comma separated)</Label>
+              <Input
+                id='create-tags'
+                value={formData.tags}
+                onChange={(e) =>
+                  setFormData({ ...formData, tags: e.target.value })
+                }
+                placeholder='techno, house, ambient'
+              />
             </div>
             <UserSearch
               selectedUsers={formData.hosts}
@@ -418,8 +430,9 @@ export function ShowsTab() {
                 <Input
                   id='edit-slug'
                   value={formData.slug}
-                  disabled // Slug changes usually require redirects or complex handling, disabling for simplicity
-                  className='bg-muted'
+                  onChange={(e) =>
+                    setFormData({ ...formData, slug: e.target.value })
+                  }
                 />
               </div>
             </div>
@@ -445,26 +458,32 @@ export function ShowsTab() {
               />
             </div>
             <div className='grid grid-cols-2 gap-4'>
-              <div className='space-y-2'>
-                <Label htmlFor='edit-thumbnail'>Thumbnail URL</Label>
-                <Input
-                  id='edit-thumbnail'
-                  value={formData.thumbnailUrl}
-                  onChange={(e) =>
-                    setFormData({ ...formData, thumbnailUrl: e.target.value })
-                  }
-                />
-              </div>
-              <div className='space-y-2'>
-                <Label htmlFor='edit-tags'>Tags (comma separated)</Label>
-                <Input
-                  id='edit-tags'
-                  value={formData.tags}
-                  onChange={(e) =>
-                    setFormData({ ...formData, tags: e.target.value })
-                  }
-                />
-              </div>
+              <ImageUploadField
+                label='Thumbnail (Square)'
+                value={formData.thumbnailUrl}
+                onChange={(url) =>
+                  setFormData({ ...formData, thumbnailUrl: url })
+                }
+                aspectRatio='square'
+              />
+              <ImageUploadField
+                label='Banner (Landscape)'
+                value={formData.bannerImageUrl}
+                onChange={(url) =>
+                  setFormData({ ...formData, bannerImageUrl: url })
+                }
+                aspectRatio='landscape'
+              />
+            </div>
+            <div className='space-y-2'>
+              <Label htmlFor='edit-tags'>Tags (comma separated)</Label>
+              <Input
+                id='edit-tags'
+                value={formData.tags}
+                onChange={(e) =>
+                  setFormData({ ...formData, tags: e.target.value })
+                }
+              />
             </div>
             <UserSearch
               selectedUsers={formData.hosts}

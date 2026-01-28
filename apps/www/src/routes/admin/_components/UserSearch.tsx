@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { X } from 'lucide-react'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -30,6 +30,7 @@ export function UserSearch({
   onSelectionChange,
   label = 'Hosts'
 }: UserSearchProps) {
+  const inputId = useId()
   const [searchQuery, setSearchQuery] = useState('')
   const [showResults, setShowResults] = useState(false)
 
@@ -63,7 +64,9 @@ export function UserSearch({
 
   return (
     <div className='space-y-2'>
-      <label className='text-sm font-medium'>{label}</label>
+      <label htmlFor={inputId} className='text-sm font-medium'>
+        {label}
+      </label>
 
       {selectedUsers.length > 0 && (
         <div className='flex flex-wrap gap-2 mb-2'>
@@ -85,6 +88,7 @@ export function UserSearch({
 
       <div className='relative'>
         <Input
+          id={inputId}
           placeholder='Search by username or display name...'
           value={searchQuery}
           onChange={(e) => {

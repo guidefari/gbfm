@@ -38,7 +38,7 @@ type ShowData = {
   description: string | null
   thumbnailUrl: string | null
   compiledContent: string | null
-  hosts: Array<{ id: string; name: string }>
+  hosts: Array<{ id: string; name: string; username: string | null }>
 }
 
 export type ResolveResult =
@@ -180,7 +180,8 @@ const resolveEffect = (slug: string) =>
           db
             .select({
               id: userTable.id,
-              name: userTable.displayUsername
+              name: userTable.displayUsername,
+              username: userTable.username
             })
             .from(showCreators)
             .innerJoin(userTable, eq(showCreators.creatorId, userTable.id))
@@ -195,13 +196,15 @@ const resolveEffect = (slug: string) =>
 
       const hosts = hostsRaw.map((h) => ({
         id: h.id,
-        name: h.name ?? 'Unknown'
+        name: h.name ?? 'Unknown',
+        username: h.username
       }))
 
       let compiledContent: string | null = null
-      if (foundShow.content) {
+      const contentToCompile = foundShow.content
+      if (contentToCompile) {
         const compiled = yield* Effect.tryPromise({
-          try: () => compileMDX(foundShow.content!),
+          try: () => compileMDX(contentToCompile),
           catch: () =>
             new DatabaseError({
               message: 'Failed to compile MDX content',

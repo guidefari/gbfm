@@ -119,6 +119,10 @@ export const selectShowSchema = z
       .string()
       .nullable()
       .openapi({ description: 'Thumbnail URL for the show' }),
+    bannerImageUrl: z
+      .string()
+      .nullable()
+      .openapi({ description: 'Banner/landscape image URL for the show' }),
     slug: z.string().openapi({ description: 'URL slug for the show' }),
     content: z.string().openapi({ description: 'Content of the show' }),
     draft: z.boolean().openapi({ description: 'Whether the show is a draft' }),
@@ -164,6 +168,10 @@ export const insertShowSchema = z
       .string()
       .optional()
       .openapi({ description: 'Thumbnail URL for the show' }),
+    bannerImageUrl: z
+      .string()
+      .optional()
+      .openapi({ description: 'Banner/landscape image URL for the show' }),
     slug: z.string().min(1).openapi({
       description: 'URL slug for the show',
       example: 'friday-sessions'

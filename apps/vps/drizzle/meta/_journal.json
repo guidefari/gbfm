@@ -141,6 +141,13 @@
       "when": 1769628601704,
       "tag": "0022_wonderful_magik",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1769631859922,
+      "tag": "0023_parallel_switch",
+      "breakpoints": true
     }
   ]
 }

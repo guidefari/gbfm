@@ -622,7 +622,7 @@ export type ResolvedShow = {
     description: string | null
     thumbnailUrl: string | null
     compiledContent: string | null
-    hosts: Array<{ id: string; name: string }>
+    hosts: Array<{ id: string; name: string; username: string | null }>
   }
 }
 

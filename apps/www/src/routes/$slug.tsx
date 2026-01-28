@@ -95,8 +95,6 @@ function ShowView({
 }: {
   show: NonNullable<Extract<ResolveResult, { type: 'show' }>>['data']
 }) {
-  const hostNames = show.hosts?.map((h) => h.name).join(', ')
-
   return (
     <div className='mx-auto max-w-6xl px-4 py-6'>
       <div className='grid grid-cols-1 lg:grid-cols-3 gap-8'>
@@ -116,8 +114,25 @@ function ShowView({
             <div className='space-y-4'>
               <h1 className='text-2xl font-bold'>{show.title}</h1>
 
-              {hostNames && (
-                <p className='text-muted-foreground'>Hosted by {hostNames}</p>
+              {show.hosts && show.hosts.length > 0 && (
+                <p className='text-muted-foreground'>
+                  Hosted by{' '}
+                  {show.hosts.map((host, index) => (
+                    <span key={host.id}>
+                      {host.username ? (
+                        <Link
+                          to='/$slug'
+                          params={{ slug: host.username }}
+                          className='text-foreground hover:underline'>
+                          {host.name}
+                        </Link>
+                      ) : (
+                        host.name
+                      )}
+                      {index < show.hosts.length - 1 && ', '}
+                    </span>
+                  ))}
+                </p>
               )}
 
               {show.description && (
