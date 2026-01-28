@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, Edit, Plus, X } from 'lucide-react'
+import { Check, Edit, ExternalLink, Plus, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -330,6 +330,17 @@ export function UsersTab() {
                   </td>
                   <td className='px-4 py-3'>
                     <div className='flex items-center gap-2'>
+                      {user.displayUsername && (
+                        <Button variant='outline' size='sm' asChild>
+                          <a
+                            href={`/${user.displayUsername}`}
+                            target='_blank'
+                            rel='noopener noreferrer'>
+                            <ExternalLink className='w-4 h-4' />
+                            <span className='sr-only'>View Profile</span>
+                          </a>
+                        </Button>
+                      )}
                       <Button
                         variant='outline'
                         size='sm'

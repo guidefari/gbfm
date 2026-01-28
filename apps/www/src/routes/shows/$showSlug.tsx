@@ -75,8 +75,8 @@ function ShowPage() {
   const hostNames = data.hosts?.map((h) => h.name).join(', ')
 
   return (
-    <div className='mx-auto max-w-6xl px-4 py-6'>
-      <div className='grid grid-cols-1 lg:grid-cols-3 gap-8'>
+    <div className='max-w-6xl px-4 py-6 mx-auto'>
+      <div className='grid grid-cols-1 gap-8 lg:grid-cols-3'>
         <div className='lg:col-span-1'>
           <div className='sticky top-6'>
             <div className='mb-6'>
@@ -106,7 +106,7 @@ function ShowPage() {
           </div>
         </div>
 
-        <div className='lg:col-span-2 space-y-8'>
+        <div className='space-y-8 lg:col-span-2'>
           {data.compiledContent && (
             <div className='prose prose-neutral dark:prose-invert max-w-none'>
               <MDXRendrr mdxString={data.compiledContent} />

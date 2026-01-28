@@ -37,6 +37,9 @@ type ShowData = {
   slug: string
   description: string | null
   thumbnailUrl: string | null
+  bannerImageUrl: string | null
+  tags: string[] | null
+  createdAt: Date
   compiledContent: string | null
   hosts: Array<{ id: string; name: string; username: string | null }>
 }
@@ -225,6 +228,9 @@ const resolveEffect = (slug: string) =>
           slug: foundShow.slug,
           description: foundShow.description,
           thumbnailUrl: foundShow.thumbnailUrl,
+          bannerImageUrl: foundShow.bannerImageUrl,
+          tags: foundShow.tags,
+          createdAt: foundShow.createdAt,
           compiledContent,
           hosts
         }

@@ -11,8 +11,8 @@ export function ShowCard({ show }: ShowCardProps) {
 
   return (
     <Link
-      to='/shows/$showSlug'
-      params={{ showSlug: show.slug }}
+      to='/$slug'
+      params={{ slug: show.slug }}
       className='flex flex-col gap-2 transition-transform group hover:scale-105'>
       <div className='w-full overflow-hidden border rounded-sm shadow-sm aspect-square border-border bg-background'>
         <img

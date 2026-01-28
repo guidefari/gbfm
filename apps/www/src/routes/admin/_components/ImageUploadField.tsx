@@ -9,14 +9,12 @@ interface ImageUploadFieldProps {
   label: string
   value: string
   onChange: (url: string) => void
-  aspectRatio?: 'square' | 'landscape'
 }
 
 export function ImageUploadField({
   label,
   value,
-  onChange,
-  aspectRatio = 'square'
+  onChange
 }: ImageUploadFieldProps) {
   const inputId = useId()
   const [isUploading, setIsUploading] = useState(false)
@@ -69,16 +67,12 @@ export function ImageUploadField({
     onChange('')
   }
 
-  const aspectClass =
-    aspectRatio === 'landscape' ? 'aspect-video' : 'aspect-square'
-
   return (
     <div className='space-y-2'>
       <Label>{label}</Label>
       {displayUrl ? (
         <div className='relative'>
-          <div
-            className={`${aspectClass} overflow-hidden rounded-sm border bg-muted`}>
+          <div className='h-24 overflow-hidden rounded-sm border bg-muted'>
             <img
               src={displayUrl}
               alt={label}
@@ -86,23 +80,22 @@ export function ImageUploadField({
             />
             {isUploading && (
               <div className='absolute inset-0 flex items-center justify-center bg-black/50'>
-                <Loader2 className='h-6 w-6 animate-spin text-white' />
+                <Loader2 className='h-5 w-5 animate-spin text-white' />
               </div>
             )}
           </div>
           <Button
             type='button'
             variant='destructive'
-            size='sm'
-            className='absolute right-2 top-2'
+            size='icon'
+            className='absolute right-1 top-1 h-6 w-6'
             onClick={handleRemove}
             disabled={isUploading}>
-            <Trash2 className='h-4 w-4' />
+            <Trash2 className='h-3 w-3' />
           </Button>
         </div>
       ) : (
-        <div
-          className={`${aspectClass} relative flex items-center justify-center rounded-sm border-2 border-dashed bg-muted/50 transition-colors hover:border-primary/50`}>
+        <div className='relative flex h-24 items-center justify-center rounded-sm border-2 border-dashed bg-muted/50 transition-colors hover:border-primary/50'>
           <input
             type='file'
             accept='image/*'
@@ -113,13 +106,13 @@ export function ImageUploadField({
           />
           <label
             htmlFor={inputId}
-            className='flex cursor-pointer flex-col items-center gap-2 p-4'>
+            className='flex cursor-pointer flex-col items-center gap-1'>
             {isUploading ? (
-              <Loader2 className='h-8 w-8 animate-spin text-muted-foreground' />
+              <Loader2 className='h-5 w-5 animate-spin text-muted-foreground' />
             ) : (
               <>
-                <ImageIcon className='h-8 w-8 text-muted-foreground' />
-                <span className='text-sm text-muted-foreground'>
+                <ImageIcon className='h-5 w-5 text-muted-foreground' />
+                <span className='text-xs text-muted-foreground'>
                   Click to upload
                 </span>
               </>

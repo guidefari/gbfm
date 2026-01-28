@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Edit, Plus, Trash } from 'lucide-react'
+import { Edit, ExternalLink, Plus, Trash } from 'lucide-react'
 import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -247,6 +247,15 @@ export function ShowsTab() {
                   </td>
                   <td className='px-4 py-3'>
                     <div className='flex gap-2'>
+                      <Button variant='outline' size='sm' asChild>
+                        <a
+                          href={`/${show.slug}`}
+                          target='_blank'
+                          rel='noopener noreferrer'>
+                          <ExternalLink className='w-4 h-4' />
+                          <span className='sr-only'>View Show</span>
+                        </a>
+                      </Button>
                       <Button
                         variant='outline'
                         size='sm'
@@ -343,7 +352,6 @@ export function ShowsTab() {
                 onChange={(url) =>
                   setFormData({ ...formData, thumbnailUrl: url })
                 }
-                aspectRatio='square'
               />
               <ImageUploadField
                 label='Banner (Landscape)'
@@ -351,7 +359,6 @@ export function ShowsTab() {
                 onChange={(url) =>
                   setFormData({ ...formData, bannerImageUrl: url })
                 }
-                aspectRatio='landscape'
               />
             </div>
             <div className='space-y-2'>
@@ -464,7 +471,6 @@ export function ShowsTab() {
                 onChange={(url) =>
                   setFormData({ ...formData, thumbnailUrl: url })
                 }
-                aspectRatio='square'
               />
               <ImageUploadField
                 label='Banner (Landscape)'
@@ -472,7 +478,6 @@ export function ShowsTab() {
                 onChange={(url) =>
                   setFormData({ ...formData, bannerImageUrl: url })
                 }
-                aspectRatio='landscape'
               />
             </div>
             <div className='space-y-2'>

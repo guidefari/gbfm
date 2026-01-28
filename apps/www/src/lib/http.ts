@@ -621,6 +621,9 @@ export type ResolvedShow = {
     slug: string
     description: string | null
     thumbnailUrl: string | null
+    bannerImageUrl: string | null
+    tags: string[] | null
+    createdAt: string
     compiledContent: string | null
     hosts: Array<{ id: string; name: string; username: string | null }>
   }
