@@ -1,3 +1,10 @@
+# [2.8.0](https://github.com/guidefari/gbfm/compare/v2.7.3...v2.8.0) (2026-01-28)
+
+
+### Features
+
+* Add 'Radio Shows' navigation, enhance mix details with queueing and creator links, and introduce show skeleton loading. ([eba130d](https://github.com/guidefari/gbfm/commit/eba130dc863cf7e0d5c22d7b28c295719deb75b2))
+
 ## [2.7.3](https://github.com/guidefari/gbfm/compare/v2.7.2...v2.7.3) (2026-01-28)
 
 
