@@ -1,3 +1,11 @@
+## [2.7.1](https://github.com/guidefari/gbfm/compare/v2.7.0...v2.7.1) (2026-01-28)
+
+
+### Bug Fixes
+
+* formatting ([b9451e1](https://github.com/guidefari/gbfm/commit/b9451e183334f3acaf77fcd225306657fe05965b))
+* mobile responsive mixes page ([d1ae448](https://github.com/guidefari/gbfm/commit/d1ae448c4191e92aab8b5dd5fafb21ff775df32f))
+
 # [2.7.0](https://github.com/guidefari/gbfm/compare/v2.6.0...v2.7.0) (2026-01-27)
 
 
