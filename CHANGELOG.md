@@ -1,3 +1,10 @@
+## [2.7.3](https://github.com/guidefari/gbfm/compare/v2.7.2...v2.7.3) (2026-01-28)
+
+
+### Bug Fixes
+
+* play mix button ([da3c9a3](https://github.com/guidefari/gbfm/commit/da3c9a3a2bea2a51c481cc5be4efc7c6a9468425))
+
 ## [2.7.2](https://github.com/guidefari/gbfm/compare/v2.7.1...v2.7.2) (2026-01-28)
 
 
