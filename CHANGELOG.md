@@ -1,3 +1,10 @@
+# [2.10.0](https://github.com/guidefari/gbfm/compare/v2.9.0...v2.10.0) (2026-01-28)
+
+
+### Features
+
+* Enhance admin user editing to include username, display name, profile image, email verification, and real-time username availability checks. ([fd308bd](https://github.com/guidefari/gbfm/commit/fd308bd206ac5322c6f5c89c947cbd32f51d7bcd))
+
 # [2.9.0](https://github.com/guidefari/gbfm/compare/v2.8.0...v2.9.0) (2026-01-28)
 
 
