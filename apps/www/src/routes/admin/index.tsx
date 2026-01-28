@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuthStore } from '@/store/auth'
 import { ContentTab } from './_components/ContentTab'
 import { SessionsTab } from './_components/SessionsTab'
+import { ShowsTab } from './_components/ShowsTab'
 import { UsersTab } from './_components/UsersTab'
 
 export const Route = createFileRoute('/admin/')({
@@ -45,6 +46,7 @@ function AdminDashboard() {
             <TabsList className='mb-4'>
               <TabsTrigger value='users'>Users</TabsTrigger>
               <TabsTrigger value='content'>Content</TabsTrigger>
+              <TabsTrigger value='shows'>Shows</TabsTrigger>
               <TabsTrigger value='sessions'>Sessions</TabsTrigger>
             </TabsList>
 
@@ -54,6 +56,10 @@ function AdminDashboard() {
 
             <TabsContent value='content'>
               <ContentTab />
+            </TabsContent>
+
+            <TabsContent value='shows'>
+              <ShowsTab />
             </TabsContent>
 
             <TabsContent value='sessions'>

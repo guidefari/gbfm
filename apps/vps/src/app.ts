@@ -6,6 +6,7 @@ import content from '@/routes/content/content.index'
 import email from '@/routes/email/email.index'
 import favorites from '@/routes/favorites/favorites.index'
 import musicReminders from '@/routes/music-reminders/music-reminders.index'
+import newsletter from '@/routes/newsletter/newsletter.index'
 import profile from '@/routes/profile/profile.index'
 import publication from '@/routes/publication/publication.index'
 import rss from '@/routes/rss/rss.index'
@@ -36,6 +37,7 @@ const setupRoutesEffect = Effect.gen(function* () {
   app.route('/user', user)
   app.route('/content', content)
   app.route('/email', email)
+  app.route('/newsletter', newsletter)
   app.route('/publication', publication)
   app.route('/share', share)
   app.route('/shows', shows)

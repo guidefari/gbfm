@@ -4,7 +4,7 @@ import { useMemo } from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
 import { z } from 'zod'
 import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
-import { MixesSkeleton } from '@/components/MixesSkeleton'
+import { MixesSkeleton, MixesListSkeleton } from '@/components/MixesSkeleton'
 import { MixMenu } from '@/components/MixMenu'
 import { TrackContextMenu } from '@/components/TrackContextMenu'
 import { Badge } from '@/components/ui/badge'
@@ -83,7 +83,7 @@ function MixesListPage() {
     return sorted
   }, [data, mixesSorting.sortBy, mixesSorting.sortOrder])
 
-  if (isPending) {
+  if (isPending && !tag) {
     return <MixesSkeleton />
   }
 
@@ -143,66 +143,70 @@ function MixesListPage() {
         </div>
       )}
       <div className='grid gap-2'>
-        {sortedData?.map((mix) => {
-          const isActive = nowPlayingContext?.title === mix.title
-          return (
-            <TrackContextMenu key={mix.id} track={mix}>
-              <article
-                data-testid='mix-item'
-                className={cn(
-                  'flex gap-3 items-start p-2 transition-all duration-300 cursor-pointer hover:bg-muted/50 rounded-sm group',
-                  isActive && 'ring-1 ring-border bg-accent/5 shadow-sm'
-                )}>
-                <button
-                  type='button'
-                  className='relative flex-shrink-0 focus:outline-none'
-                  onClick={() =>
-                    loadTrack(
-                      mix.url,
-                      mix.thumbnailUrl || DEFAULT_IMAGE_URL,
-                      mix.title,
-                      mix.id
-                    )
-                  }>
-                  <img
-                    src={mix.thumbnailUrl || DEFAULT_IMAGE_URL}
-                    alt={mix.title}
-                    className='object-cover transition-transform duration-300 border rounded-sm w-16 h-16 sm:w-20 sm:h-20 border-border bg-background group-hover:scale-105'
-                  />
-                  <span
-                    className={cn(
-                      'absolute inset-0 flex items-center justify-center transition-all duration-300 rounded-sm bg-black/50',
-                      isActive
-                        ? 'opacity-100'
-                        : 'opacity-0 group-hover:opacity-100 group-focus:opacity-100'
-                    )}>
-                    {isActive && isPlaying ? (
-                      <GiPauseButton className='text-2xl text-white drop-shadow' />
-                    ) : (
-                      <GiPlayButton className='text-2xl text-white drop-shadow' />
-                    )}
-                  </span>
-                </button>
-                <div className='flex-1 min-w-0'>
-                  <div className='flex items-start justify-between gap-2'>
-                    <Link
-                      to='/mixes/$mixId'
-                      params={{ mixId: mix.slug }}
-                      className='flex-1 block font-bold leading-tight line-clamp-2 text-foreground hover:underline decoration-foreground/30 underline-offset-4'>
-                      {mix.title}
-                    </Link>
-                    <MixMenu mix={mix} />
-                  </div>
-                  {mix.description && (
-                    <div className='mt-1 text-sm leading-relaxed text-foreground/60 line-clamp-2'>
-                      {mix.description}
+        {isPending && tag ? (
+          <MixesListSkeleton />
+        ) : (
+          sortedData?.map((mix) => {
+            const isActive = nowPlayingContext?.title === mix.title
+            return (
+              <TrackContextMenu key={mix.id} track={mix}>
+                <article
+                  data-testid='mix-item'
+                  className={cn(
+                    'flex gap-3 items-start p-2 transition-all duration-300 cursor-pointer hover:bg-muted/50 rounded-sm group',
+                    isActive && 'ring-1 ring-border bg-accent/5 shadow-sm'
+                  )}>
+                  <button
+                    type='button'
+                    className='relative flex-shrink-0 focus:outline-none'
+                    onClick={() =>
+                      loadTrack(
+                        mix.url,
+                        mix.thumbnailUrl || DEFAULT_IMAGE_URL,
+                        mix.title,
+                        mix.id
+                      )
+                    }>
+                    <img
+                      src={mix.thumbnailUrl || DEFAULT_IMAGE_URL}
+                      alt={mix.title}
+                      className='object-cover transition-transform duration-300 border rounded-sm w-16 h-16 sm:w-20 sm:h-20 border-border bg-background group-hover:scale-105'
+                    />
+                    <span
+                      className={cn(
+                        'absolute inset-0 flex items-center justify-center transition-all duration-300 rounded-sm bg-black/50',
+                        isActive
+                          ? 'opacity-100'
+                          : 'opacity-0 group-hover:opacity-100 group-focus:opacity-100'
+                      )}>
+                      {isActive && isPlaying ? (
+                        <GiPauseButton className='text-2xl text-white drop-shadow' />
+                      ) : (
+                        <GiPlayButton className='text-2xl text-white drop-shadow' />
+                      )}
+                    </span>
+                  </button>
+                  <div className='flex-1 min-w-0'>
+                    <div className='flex items-start justify-between gap-2'>
+                      <Link
+                        to='/mixes/$mixId'
+                        params={{ mixId: mix.slug }}
+                        className='flex-1 block font-bold leading-tight line-clamp-2 text-foreground hover:underline decoration-foreground/30 underline-offset-4'>
+                        {mix.title}
+                      </Link>
+                      <MixMenu mix={mix} />
                     </div>
-                  )}
-                </div>
-              </article>
-            </TrackContextMenu>
-          )
-        })}
+                    {mix.description && (
+                      <div className='mt-1 text-sm leading-relaxed text-foreground/60 line-clamp-2'>
+                        {mix.description}
+                      </div>
+                    )}
+                  </div>
+                </article>
+              </TrackContextMenu>
+            )
+          })
+        )}
 
         <LoadMoreTrigger
           onLoadMore={fetchNextPage}

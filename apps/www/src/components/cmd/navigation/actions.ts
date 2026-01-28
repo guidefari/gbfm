@@ -9,6 +9,11 @@ export const useNavigationActions = (closeCmd: () => void) => {
     closeCmd()
   }, [router, closeCmd])
 
+  const routeToShows = React.useCallback(() => {
+    router({ to: '/shows' })
+    closeCmd()
+  }, [router, closeCmd])
+
   const routeToLogin = React.useCallback(() => {
     router({ to: '/auth/sign-in' })
     closeCmd()
@@ -61,6 +66,7 @@ export const useNavigationActions = (closeCmd: () => void) => {
 
   return {
     routeToMixes,
+    routeToShows,
     routeToLogin,
     routeToSettings,
     routeToDashboard,

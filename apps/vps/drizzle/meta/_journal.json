@@ -134,6 +134,13 @@
       "when": 1769542154393,
       "tag": "0021_slippery_wrecker",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1769628601704,
+      "tag": "0022_wonderful_magik",
+      "breakpoints": true
     }
   ]
 }

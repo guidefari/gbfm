@@ -630,3 +630,21 @@ export function usePublicProfile(username: string) {
     isPending
   }
 }
+
+type NewsletterSubscribeResponse = {
+  subscribed: boolean
+  email: string
+}
+
+export function useNewsletterSubscribe() {
+  return useMutation<NewsletterSubscribeResponse, Error, { email: string }>({
+    mutationFn: async ({ email }) =>
+      fetcher<NewsletterSubscribeResponse>(
+        `${VPS_BASE_URL}/newsletter/subscribe`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ email, source: 'subscribe_page' })
+        }
+      )
+  })
+}

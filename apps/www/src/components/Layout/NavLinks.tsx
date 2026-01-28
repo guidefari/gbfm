@@ -1,13 +1,4 @@
-import {
-  FileTextIcon,
-  HomeIcon,
-  Pencil2Icon
-  // TwitterLogoIcon
-} from '@radix-ui/react-icons'
-import { BiSolidCameraHome } from 'react-icons/bi'
-import { IoIosMailOpen } from 'react-icons/io'
-import { PiVinylRecordLight } from 'react-icons/pi'
-// import { SiWritedotas } from 'react-icons/si'
+import { Disc3, Home, Mail, Radio, Rss, Settings, Tag } from 'lucide-react'
 import { TfiYoutube } from 'react-icons/tfi'
 import { RSS } from '@/components/RSS'
 
@@ -29,71 +20,46 @@ export const pagesAndPages: lol[] = [
   {
     name: 'Home',
     slug: '/',
-    icon: <HomeIcon className={iconSytles} />
+    icon: <Home className={iconSytles} />
   },
   {
     name: 'Mixes',
     slug: '/mixes',
-    icon: <PiVinylRecordLight className={iconSytles} />
+    icon: <Disc3 className={iconSytles} />
   },
   {
     name: 'Radio Shows',
     slug: '/shows',
-    icon: <PiVinylRecordLight className={iconSytles} />
+    icon: <Radio className={iconSytles} />
   },
-  // {
-  //   name: 'Words',
-  //   slug: '/words',
-  //   icon: <SiWritedotas className={iconSytles} />
-  // },
-  // {
-  //   name: 'Not Tweets👀',
-  //   slug: '/micro',
-  //   icon: (
-  //     <div className='flex items-center gap-1 -ml-4 text-sm sm:ml-0'>
-  //       !<TwitterLogoIcon className={iconSytles} />
-  //     </div>
-  //   )
-  // },
   {
     name: 'Record Labels',
     slug: '/labels',
-    icon: <BiSolidCameraHome className={iconSytles} />
+    icon: <Tag className={iconSytles} />
   },
-
   {
     name: 'Subscribe',
     slug: '/subscribe',
-    icon: <IoIosMailOpen className={iconSytles} />
+    icon: <Mail className={iconSytles} />
   },
-  // {
-  // 	icon: <GiPerspectiveDiceSixFacesRandom className={iconSytles} />,
-  // 	name: "RSP",
-  // 	slug: "/rsp",
-  // },
   {
-    icon: <FileTextIcon className={iconSytles} />,
+    icon: <Rss className={iconSytles} />,
     name: 'Mixes via RSS',
     CustomComponent: <RSS />
   },
   {
-    icon: <FileTextIcon className={iconSytles} />,
+    icon: <TfiYoutube className={iconSytles} />,
     name: 'Mixes via Youtube',
     CustomComponent: (
       <a href='https://youtube.com/@goosebumpsfm' className='text-inherit'>
-        <TfiYoutube />
+        <TfiYoutube className={iconSytles} />
       </a>
     )
   },
-  // {
-  //   icon: <Pencil2Icon className={iconSytles} />,
-  //   name: 'New Post',
-  //   slug: '/post'
-  // }
   {
     name: 'Admin',
     slug: '/admin',
-    icon: <Pencil2Icon className={iconSytles} />,
+    icon: <Settings className={iconSytles} />,
     adminOnly: true
   }
 ]

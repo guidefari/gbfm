@@ -1,5 +1,6 @@
 import {
   Calendar,
+  Disc3,
   FileText,
   Home,
   LetterTextIcon,
@@ -9,9 +10,9 @@ import {
   Maximize2,
   Monitor,
   Moon,
-  Music,
   Pause,
   Play,
+  Radio,
   RotateCcw,
   Settings,
   Shield,
@@ -154,9 +155,16 @@ export const createCommandData = (
     {
       id: 'mixes',
       label: 'Mixes',
-      icon: Music,
+      icon: Disc3,
       type: 'action',
       onSelect: navigationActions.routeToMixes
+    },
+    {
+      id: 'shows',
+      label: 'Radio Shows',
+      icon: Radio,
+      type: 'action',
+      onSelect: navigationActions.routeToShows
     },
     {
       id: 'dashboard',

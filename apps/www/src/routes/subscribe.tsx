@@ -1,53 +1,86 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useId } from 'react'
+import { CheckCircle, Loader2, Mail } from 'lucide-react'
+import { useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { useNewsletterSubscribe } from '@/lib/http'
 
 export const Route = createFileRoute('/subscribe')({
   component: Subscribe
 })
 
 function Subscribe() {
-  const emailId = useId()
+  const [email, setEmail] = useState('')
+  const { mutate, isPending, isSuccess, isError, error, data } =
+    useNewsletterSubscribe()
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (email.trim()) {
+      mutate({ email: email.trim() })
+    }
+  }
 
   return (
-    <section className='mt-20 mb-8 text-center lg:text-left group'>
-      <div className='flex flex-wrap justify-center'>
-        <div className='w-full px-3 grow-0 shrink-0 basis-auto lg:w-10/12'>
-          <div className='grid items-center lg:grid-cols-2 gap-x-6'>
-            <div className='mb-10 lg:mb-0'>
-              <div className='text-2xl font-bold'>
-                This would be the newsletter section if I actually sent emails
-                <br />
-                <span className='text-cyan-100'>lol</span>
-              </div>
-            </div>
+    <section className='max-w-2xl mx-auto px-4 py-20'>
+      <div className='text-center mb-8'>
+        <div className='inline-flex items-center justify-center w-16 h-16 rounded-full bg-muted mb-6'>
+          <Mail className='w-8 h-8 text-foreground/70' />
+        </div>
+        <h1 className='text-3xl font-bold mb-3'>Stay in the loop</h1>
+        <p className='text-muted-foreground'>
+          Get notified when new mixes drop and other goosebumps updates.
+        </p>
+      </div>
 
-            <div className='mb-6 md:mb-0'>
-              <div className=''>
-                <form
-                  action='https://buttondown.email/api/emails/embed-subscribe/guidefari'
-                  method='post'
-                  target='popupwindow'
-                  className='flex-row md:flex'>
-                  <input
-                    type='email'
-                    name='email'
-                    id={emailId}
-                    className='block w-full px-4 py-2 m-0 mb-2 text-xl font-normal text-gray-700 transition ease-in-out border border-gray-300 border-solid rounded bg-cyan-100 form-control md:mb-0 md:mr-2 bg-clip-padding focus:text-gray-700 focus:bg-bg-cyan-300 focus:border-cyan-600 focus:outline-none'
-                    placeholder='Enter your email'
-                  />
-                  <button
-                    type='submit'
-                    className='inline-block py-3 text-sm font-medium leading-snug text-white uppercase transition duration-150 ease-in-out rounded shadow-md bg-cyan-600 px-7 hover:bg-cyan-700 hover:shadow-lg focus:bg-cyan-700 focus:shadow-lg focus:outline-none focus:ring-0 active:bg-cyan-800 active:shadow-lg'
-                    data-mdb-ripple='true'
-                    data-mdb-ripple-color='light'>
-                    Subscribe
-                  </button>
-                </form>
-              </div>
-            </div>
+      {isSuccess ? (
+        <div className='flex flex-col items-center gap-4 p-6 rounded-lg bg-muted/50'>
+          <CheckCircle className='w-12 h-12 text-green-500' />
+          <div className='text-center'>
+            <p className='font-medium text-lg'>
+              {data?.subscribed
+                ? "You're subscribed!"
+                : "You're already subscribed!"}
+            </p>
+            <p className='text-sm text-muted-foreground mt-1'>
+              {data?.subscribed
+                ? `We'll send updates to ${data.email}`
+                : `${data?.email} is already on the list.`}
+            </p>
           </div>
         </div>
-      </div>
+      ) : (
+        <form
+          onSubmit={handleSubmit}
+          className='flex flex-col sm:flex-row gap-3'>
+          <Input
+            type='email'
+            name='email'
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder='Enter your email'
+            required
+            disabled={isPending}
+            className='flex-1'
+          />
+          <Button type='submit' disabled={isPending || !email.trim()}>
+            {isPending ? (
+              <>
+                <Loader2 className='w-4 h-4 mr-2 animate-spin' />
+                Subscribing...
+              </>
+            ) : (
+              'Subscribe'
+            )}
+          </Button>
+        </form>
+      )}
+
+      {isError && (
+        <p className='text-sm text-destructive mt-3 text-center'>
+          {error?.message || 'Something went wrong. Please try again.'}
+        </p>
+      )}
     </section>
   )
 }
