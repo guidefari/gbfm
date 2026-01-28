@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { ShowCard } from '@/components/shows/ShowCard'
+import { ShowsSkeleton } from '@/components/shows/ShowsSkeleton'
 import { useAllShows } from '@/lib/http'
 import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'
 
@@ -21,18 +22,7 @@ function ShowsListPage() {
   } = useAllShows()
 
   if (isPending) {
-    return (
-      <div className='p-4'>
-        <div className='grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'>
-          {Array.from({ length: 12 }).map(() => (
-            <div key={crypto.randomUUID()} className='flex flex-col gap-2'>
-              <div className='w-full rounded-sm aspect-square bg-muted/50 animate-pulse' />
-              <div className='h-4 rounded bg-muted/50 animate-pulse' />
-            </div>
-          ))}
-        </div>
-      </div>
-    )
+    return <ShowsSkeleton />
   }
 
   if (error) {

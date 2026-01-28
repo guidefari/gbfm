@@ -1,11 +1,12 @@
 import type { SelectMdxCompiledAudio } from '@gbfm/vps/schemas'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Edit, Tag } from 'lucide-react'
+import { ArrowLeft, Edit, ListPlus, Tag } from 'lucide-react'
 import * as React from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { useToast } from '@/components/ui/use-toast'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
 import { useContentStore } from '@/store'
@@ -133,10 +134,11 @@ function MixPage() {
 
 function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
   const { user } = useAuthStore()
+  const { toast } = useToast()
   const navigate = useNavigate()
   const isAdmin = user?.role === 'admin'
   const { isPlaying, nowPlayingContext } = useAudioPlayerState()
-  const { loadTrack, togglePlayPause } = useAudioPlayerActions()
+  const { loadTrack, togglePlayPause, addToQueue } = useAudioPlayerActions()
 
   const isActive = nowPlayingContext?.title === mix.title
 
@@ -151,6 +153,15 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
         mix.id
       )
     }
+  }
+
+  const handleAddToQueue = () => {
+    addToQueue(mix)
+    toast({
+      title: 'Added to queue',
+      description: mix.title,
+      duration: 2000
+    })
   }
 
   const handleEdit = () => {
@@ -176,26 +187,36 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
             <img
               src={mix.thumbnailUrl || DEFAULT_IMAGE_URL}
               alt={mix.title}
-              className='w-full aspect-square object-cover border border-border rounded-sm shadow-lg transition-transform duration-300 group-hover:scale-[1.02]'
+              className='object-cover w-full border rounded-sm shadow-lg aspect-square border-border'
             />
           </div>
 
-          <Button
-            onClick={handlePlayClick}
-            size='lg'
-            className='w-full h-12 text-base font-bold tracking-widest uppercase transition-all rounded-none shadow-sm hover:shadow-md active:scale-95'>
-            {isActive && isPlaying ? (
-              <>
-                <GiPauseButton className='mr-2 text-xl' />
-                Pause Mix
-              </>
-            ) : (
-              <>
-                <GiPlayButton className='mr-2 text-xl' />
-                Play Mix
-              </>
-            )}
-          </Button>
+          <div className='flex gap-2'>
+            <Button
+              onClick={handlePlayClick}
+              size='lg'
+              className='flex-1 h-12 text-base font-bold tracking-widest uppercase transition-all rounded-none shadow-sm hover:shadow-md active:scale-95'>
+              {isActive && isPlaying ? (
+                <>
+                  <GiPauseButton className='mr-2 text-xl' />
+                  Pause
+                </>
+              ) : (
+                <>
+                  <GiPlayButton className='mr-2 text-xl' />
+                  Play
+                </>
+              )}
+            </Button>
+            <Button
+              onClick={handleAddToQueue}
+              variant='outline'
+              size='lg'
+              className='w-12 h-12 p-0 rounded-none shadow-sm hover:shadow-md active:scale-95'
+              title='Add to Queue'>
+              <ListPlus className='w-6 h-6' />
+            </Button>
+          </div>
 
           {mix.tags && mix.tags.length > 0 && (
             <div className='flex flex-wrap gap-2'>
@@ -216,9 +237,31 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
         <div className='flex-1 pt-2 space-y-6'>
           <div className='space-y-4'>
             <div className='flex items-start justify-between gap-4'>
-              <h1 className='text-4xl font-black leading-none tracking-tighter uppercase md:text-5xl'>
-                {mix.title}
-              </h1>
+              <div className='flex flex-col gap-2'>
+                <h1 className='text-4xl font-black leading-none tracking-tighter uppercase md:text-5xl'>
+                  {mix.title}
+                </h1>
+                {mix.creators && mix.creators.length > 0 && (
+                  <div className='flex flex-wrap gap-x-1.5 gap-y-1 text-xs font-bold uppercase tracking-widest text-muted-foreground/80'>
+                    <span className='opacity-50'>by</span>
+                    {mix.creators.map((creator, index) => (
+                      <React.Fragment key={creator.id}>
+                        <Link
+                          to='/profile/$username'
+                          params={{ username: creator.username || '' }}
+                          className='transition-colors hover:text-primary'>
+                          {creator.username ||
+                            creator.displayUsername ||
+                            creator.name}
+                        </Link>
+                        {index < (mix.creators?.length || 0) - 1 && (
+                          <span className='opacity-30'>&</span>
+                        )}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                )}
+              </div>
               {isAdmin && (
                 <Button
                   onClick={handleEdit}

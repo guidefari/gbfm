@@ -48,6 +48,8 @@ export type SelectMdxCompiledAudio = SelectAudio & {
   creators?: Array<{
     id: string
     name: string
+    username: string | null
+    displayUsername: string | null
   }>
 }
 
@@ -96,7 +98,15 @@ export const selectMdxCompiledAudioSchema = selectAudioSchema
         z
           .object({
             id: z.string().openapi({ description: 'Creator ID' }),
-            name: z.string().openapi({ description: 'Creator name' })
+            name: z.string().openapi({ description: 'Creator name' }),
+            username: z
+              .string()
+              .nullable()
+              .openapi({ description: 'Creator username' }),
+            displayUsername: z
+              .string()
+              .nullable()
+              .openapi({ description: 'Creator display username' })
           })
           .openapi('Creator')
       )

@@ -26,7 +26,12 @@ import { recordAudioCreate } from '@/lib/performance-monitoring'
 type AudioType = 'mix' | 'track' | 'misc' | 'radio_show'
 
 type AudioWithCreators = SelectAudio & {
-  creators: Array<{ id: string; name: string }>
+  creators: Array<{
+    id: string
+    name: string
+    username: string | null
+    displayUsername: string | null
+  }>
 }
 
 export interface AudioService {
@@ -130,7 +135,9 @@ const getByTypeEffect = (
                 .select({
                   audioId: audioCreators.audioId,
                   creatorId: usersTable.id,
-                  creatorName: usersTable.name
+                  creatorName: usersTable.name,
+                  creatorUsername: usersTable.username,
+                  creatorDisplayUsername: usersTable.displayUsername
                 })
                 .from(audioCreators)
                 .innerJoin(
@@ -149,16 +156,25 @@ const getByTypeEffect = (
 
     const creatorsByAudioId: Record<
       string,
-      Array<{ id: string; name: string }>
+      Array<{
+        id: string
+        name: string
+        username: string | null
+        displayUsername: string | null
+      }>
     > = {}
     for (const row of creatorsData) {
       const existing = creatorsByAudioId[row.audioId]
+      const creatorInfo = {
+        id: row.creatorId,
+        name: row.creatorName,
+        username: row.creatorUsername,
+        displayUsername: row.creatorDisplayUsername
+      }
       if (existing) {
-        existing.push({ id: row.creatorId, name: row.creatorName })
+        existing.push(creatorInfo)
       } else {
-        creatorsByAudioId[row.audioId] = [
-          { id: row.creatorId, name: row.creatorName }
-        ]
+        creatorsByAudioId[row.audioId] = [creatorInfo]
       }
     }
 
@@ -204,7 +220,9 @@ const getBySlugEffect = (type: AudioType, slug: string) =>
         db
           .select({
             id: usersTable.id,
-            name: usersTable.name
+            name: usersTable.name,
+            username: usersTable.username,
+            displayUsername: usersTable.displayUsername
           })
           .from(audioCreators)
           .innerJoin(usersTable, eq(audioCreators.creatorId, usersTable.id))
@@ -222,7 +240,9 @@ const getBySlugEffect = (type: AudioType, slug: string) =>
       compiledContent: '',
       creators: creators.map((creator) => ({
         id: creator.id,
-        name: creator.name
+        name: creator.name,
+        username: creator.username,
+        displayUsername: creator.displayUsername
       }))
     }
 
@@ -434,7 +454,9 @@ const updateEffect = (
         db
           .select({
             id: usersTable.id,
-            name: usersTable.name
+            name: usersTable.name,
+            username: usersTable.username,
+            displayUsername: usersTable.displayUsername
           })
           .from(audioCreators)
           .innerJoin(usersTable, eq(audioCreators.creatorId, usersTable.id))
@@ -452,7 +474,9 @@ const updateEffect = (
       compiledContent: '',
       creators: creators.map((creator) => ({
         id: creator.id,
-        name: creator.name
+        name: creator.name,
+        username: creator.username,
+        displayUsername: creator.displayUsername
       }))
     }
 

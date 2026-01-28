@@ -36,6 +36,11 @@ export const pagesAndPages: lol[] = [
     slug: '/mixes',
     icon: <PiVinylRecordLight className={iconSytles} />
   },
+  {
+    name: 'Radio Shows',
+    slug: '/shows',
+    icon: <PiVinylRecordLight className={iconSytles} />
+  },
   // {
   //   name: 'Words',
   //   slug: '/words',

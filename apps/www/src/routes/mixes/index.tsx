@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { Tag, X } from 'lucide-react'
+import { Radio, Tag, X } from 'lucide-react'
 import { useMemo } from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
 import { z } from 'zod'
@@ -88,19 +88,27 @@ function MixesListPage() {
   }
 
   return (
-    <div className='max-w-3xl mx-auto px-4 py-6'>
-      <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6'>
-        <h2 className='flex items-center gap-2 text-lg font-bold'>
-          <div className='w-2 h-2 rounded-sm bg-foreground/30' />
-          Mixes
-        </h2>
+    <div className='max-w-3xl mx-auto px-4 py-8'>
+      <div className='flex flex-row items-baseline justify-between gap-4 mb-8 border-b pb-4 border-border/40'>
+        <div className='flex items-baseline gap-6'>
+          <h1 className='text-2xl font-black tracking-tight'>Mixes</h1>
+          <Link
+            to='/shows'
+            className='flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors relative group'>
+            <Radio className='w-4 h-4' />
+            Radio Shows
+            <span className='absolute -bottom-[17px] left-0 right-0 h-0.5 bg-foreground scale-x-0 group-hover:scale-x-100 transition-transform origin-left' />
+          </Link>
+        </div>
         {allTags.length > 0 && (
           <Select value={tag || 'all'} onValueChange={handleTagChange}>
             <SelectTrigger
-              className='w-full sm:w-40 h-8 text-sm'
+              className='w-auto min-w-[120px] h-9 text-xs font-semibold uppercase tracking-wider bg-transparent border-none shadow-none hover:bg-muted/50 transition-colors px-3'
               data-testid='tag-filter-select'>
-              <Tag className='w-3 h-3 mr-2' />
-              <SelectValue placeholder='Filter by tag' />
+              <div className='flex items-center gap-2'>
+                <Tag className='w-3 h-3' />
+                <SelectValue placeholder='Filter' />
+              </div>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value='all' data-testid='tag-option-all'>
