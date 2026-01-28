@@ -17,10 +17,11 @@ import type {
 
 export const getAllShows: AppRouteHandler<GetAllShowsRoute> = async (c) => {
   const { limit, offset } = c.req.valid('query')
+  const isAdmin = c.get('user')?.role === 'admin'
 
   const program = Effect.gen(function* () {
     const showService = yield* ShowService
-    return yield* showService.getAll({ limit, offset })
+    return yield* showService.getAll({ limit, offset, includeDrafts: isAdmin })
   }).pipe(
     Effect.catchTag('DatabaseError', (e) =>
       Effect.succeed({

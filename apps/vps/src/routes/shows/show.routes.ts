@@ -14,7 +14,7 @@ import {
   createPaginatedResponseSchema,
   paginationQuerySchema
 } from '@/lib/pagination'
-import { betterAuthMiddleware } from '@/middlewares/better-auth.middleware'
+import { attachSessionContext, betterAuthMiddleware } from '@/middlewares/better-auth.middleware'
 
 const tags = ['Shows']
 
@@ -34,6 +34,7 @@ const showWithHostsSchema = selectShowSchema
 export const getAllShows = createRoute({
   path: '/',
   method: 'get',
+  middleware: [attachSessionContext],
   request: {
     query: paginationQuerySchema
   },

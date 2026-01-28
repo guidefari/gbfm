@@ -192,6 +192,12 @@ export const createShowSchema = insertShowSchema
 
 export const updateShowSchema = insertShowSchema
   .partial()
+  .extend({
+    hostIds: z
+      .array(z.string())
+      .optional()
+      .openapi({ description: 'IDs of show hosts' })
+  })
   .openapi('UpdateShowRequest')
 
 export const selectSubscriptionSchema = z

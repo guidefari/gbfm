@@ -17,6 +17,7 @@ import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RemindersRouteImport } from './routes/reminders'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ChangelogRouteImport } from './routes/changelog'
+import { Route as SlugRouteImport } from './routes/$slug'
 import { Route as TracksRouteRouteImport } from './routes/tracks/route'
 import { Route as MixesRouteRouteImport } from './routes/mixes/route'
 import { Route as LabelsRouteRouteImport } from './routes/labels/route'
@@ -84,6 +85,11 @@ const DashboardRoute = DashboardRouteImport.update({
 const ChangelogRoute = ChangelogRouteImport.update({
   id: '/changelog',
   path: '/changelog',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SlugRoute = SlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TracksRouteRoute = TracksRouteRouteImport.update({
@@ -187,6 +193,7 @@ export interface FileRoutesByFullPath {
   '/labels': typeof LabelsRouteRouteWithChildren
   '/mixes': typeof MixesRouteRouteWithChildren
   '/tracks': typeof TracksRouteRouteWithChildren
+  '/$slug': typeof SlugRoute
   '/changelog': typeof ChangelogRoute
   '/dashboard': typeof DashboardRoute
   '/reminders': typeof RemindersRoute
@@ -214,6 +221,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/$slug': typeof SlugRoute
   '/changelog': typeof ChangelogRoute
   '/dashboard': typeof DashboardRoute
   '/reminders': typeof RemindersRoute
@@ -245,6 +253,7 @@ export interface FileRoutesById {
   '/labels': typeof LabelsRouteRouteWithChildren
   '/mixes': typeof MixesRouteRouteWithChildren
   '/tracks': typeof TracksRouteRouteWithChildren
+  '/$slug': typeof SlugRoute
   '/changelog': typeof ChangelogRoute
   '/dashboard': typeof DashboardRoute
   '/reminders': typeof RemindersRoute
@@ -277,6 +286,7 @@ export interface FileRouteTypes {
     | '/labels'
     | '/mixes'
     | '/tracks'
+    | '/$slug'
     | '/changelog'
     | '/dashboard'
     | '/reminders'
@@ -304,6 +314,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/$slug'
     | '/changelog'
     | '/dashboard'
     | '/reminders'
@@ -334,6 +345,7 @@ export interface FileRouteTypes {
     | '/labels'
     | '/mixes'
     | '/tracks'
+    | '/$slug'
     | '/changelog'
     | '/dashboard'
     | '/reminders'
@@ -365,6 +377,7 @@ export interface RootRouteChildren {
   LabelsRouteRoute: typeof LabelsRouteRouteWithChildren
   MixesRouteRoute: typeof MixesRouteRouteWithChildren
   TracksRouteRoute: typeof TracksRouteRouteWithChildren
+  SlugRoute: typeof SlugRoute
   ChangelogRoute: typeof ChangelogRoute
   DashboardRoute: typeof DashboardRoute
   RemindersRoute: typeof RemindersRoute
@@ -448,6 +461,13 @@ declare module '@tanstack/react-router' {
       path: '/changelog'
       fullPath: '/changelog'
       preLoaderRoute: typeof ChangelogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$slug': {
+      id: '/$slug'
+      path: '/$slug'
+      fullPath: '/$slug'
+      preLoaderRoute: typeof SlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tracks': {
@@ -633,6 +653,7 @@ const rootRouteChildren: RootRouteChildren = {
   LabelsRouteRoute: LabelsRouteRouteWithChildren,
   MixesRouteRoute: MixesRouteRouteWithChildren,
   TracksRouteRoute: TracksRouteRouteWithChildren,
+  SlugRoute: SlugRoute,
   ChangelogRoute: ChangelogRoute,
   DashboardRoute: DashboardRoute,
   RemindersRoute: RemindersRoute,

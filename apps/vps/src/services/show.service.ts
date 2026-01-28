@@ -40,6 +40,7 @@ export interface ShowService {
   readonly getAll: (options: {
     limit: number
     offset: number
+    includeDrafts?: boolean
   }) => Effect.Effect<
     { data: ShowWithHosts[]; pagination: PaginationMetadata },
     DatabaseError
@@ -55,7 +56,7 @@ export interface ShowService {
     slug: string,
     userId: string,
     userRole: string,
-    data: Partial<InsertShow>
+    data: Partial<InsertShow> & { hostIds?: string[] }
   ) => Effect.Effect<
     SelectMdxCompiledShow,
     DatabaseError | NotFoundError | UnauthorizedError
@@ -100,11 +101,11 @@ export interface ShowService {
 
 export const ShowService = Context.GenericTag<ShowService>('ShowService')
 
-const getAllEffect = (options: { limit: number; offset: number }) =>
+const getAllEffect = (options: { limit: number; offset: number, includeDrafts?: boolean }) =>
   Effect.gen(function* () {
-    const { limit, offset } = options
+    const { limit, offset, includeDrafts } = options
 
-    const whereCondition = eq(showsTable.draft, false)
+    const whereCondition = includeDrafts ? undefined : eq(showsTable.draft, false)
 
     const countResult = yield* Effect.tryPromise({
       try: () =>
@@ -309,9 +310,11 @@ const updateEffect = (
   slug: string,
   userId: string,
   userRole: string,
-  data: Partial<InsertShow>
+  data: Partial<InsertShow> & { hostIds?: string[] }
 ) =>
   Effect.gen(function* () {
+    const { hostIds, ...updateData } = data
+
     const existingRecords = yield* Effect.tryPromise({
       try: () =>
         db.select().from(showsTable).where(eq(showsTable.slug, slug)).limit(1),
@@ -364,11 +367,35 @@ const updateEffect = (
 
     const updatedRecords = yield* Effect.tryPromise({
       try: () =>
-        db
-          .update(showsTable)
-          .set({ ...data, updatedAt: new Date() })
-          .where(eq(showsTable.id, existingShow.id))
-          .returning(),
+        db.transaction(async (tx) => {
+          const [updatedShow] = await tx
+            .update(showsTable)
+            .set({ ...updateData, updatedAt: new Date() })
+            .where(eq(showsTable.id, existingShow.id))
+            .returning()
+
+          if (!updatedShow) {
+            throw new Error('Failed to update show')
+          }
+
+          if (hostIds) {
+            // Delete existing hosts
+            await tx
+              .delete(showCreators)
+              .where(eq(showCreators.showId, updatedShow.id))
+
+            // Insert new hosts
+            if (hostIds.length > 0) {
+              await tx.insert(showCreators).values(
+                hostIds.map((creatorId) => ({
+                  showId: updatedShow.id,
+                  creatorId
+                }))
+              )
+            }
+          }
+          return [updatedShow]
+        }),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to update show: ${(error as Error).message}`,

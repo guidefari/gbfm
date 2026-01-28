@@ -11,6 +11,7 @@ import { LabelServiceLive } from '@/services/label.service'
 import { MusicReminderServiceLive } from '@/services/music-reminder.service'
 import { PostServiceLive } from '@/services/post.service'
 import { ProfileServiceLive } from '@/services/profile.service'
+import { ResolveServiceLive } from '@/services/resolve.service'
 import { PublicationServiceLive } from '@/services/publication.service'
 import { ReleaseServiceLive } from '@/services/release.service'
 import { S3ServiceLive } from '@/services/s3.service'
@@ -45,6 +46,7 @@ export const AppLayer = Layer.mergeAll(
   PostServiceLive,
   LabelServiceLive,
   ProfileServiceLive,
+  ResolveServiceLive,
   PublicationServiceLive,
   ReleaseServiceLive,
   S3ServiceLive,

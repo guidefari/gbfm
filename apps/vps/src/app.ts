@@ -8,6 +8,7 @@ import favorites from '@/routes/favorites/favorites.index'
 import musicReminders from '@/routes/music-reminders/music-reminders.index'
 import newsletter from '@/routes/newsletter/newsletter.index'
 import profile from '@/routes/profile/profile.index'
+import resolve from '@/routes/resolve/resolve.index'
 import publication from '@/routes/publication/publication.index'
 import rss from '@/routes/rss/rss.index'
 import share from '@/routes/share/share.index'
@@ -34,6 +35,7 @@ const setupRoutesEffect = Effect.gen(function* () {
   app.route('/auth', betterAuthRoutes)
   app.route('/favorites', favorites)
   app.route('/profile', profile)
+  app.route('/resolve', resolve)
   app.route('/user', user)
   app.route('/content', content)
   app.route('/email', email)

@@ -608,6 +608,47 @@ export type PublicProfile = {
   }
 }
 
+export type ResolvedProfile = {
+  type: 'profile'
+  data: PublicProfile
+}
+
+export type ResolvedShow = {
+  type: 'show'
+  data: {
+    id: string
+    title: string
+    slug: string
+    description: string | null
+    thumbnailUrl: string | null
+    compiledContent: string | null
+    hosts: Array<{ id: string; name: string }>
+  }
+}
+
+export type ResolveResult = ResolvedProfile | ResolvedShow
+
+export function useResolveSlug(slug: string) {
+  const { data, error, isPending } = useQuery<ResolveResult, Error>({
+    queryKey: ['resolve', slug],
+    queryFn: async () => {
+      const res = await fetch(`${VPS_BASE_URL}/resolve/${slug}`, {
+        credentials: 'include'
+      })
+      if (!res.ok) throw new Error('Not found')
+      return res.json()
+    },
+    enabled: Boolean(slug),
+    retry: false
+  })
+
+  return {
+    data,
+    error,
+    isPending
+  }
+}
+
 export function usePublicProfile(username: string) {
   const { data, error, isPending } = useQuery<PublicProfile, Error>({
     queryKey: ['profile', username],

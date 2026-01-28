@@ -210,6 +210,39 @@ export function generateStaticPageSEO(
   }
 }
 
+export type ResolvedShowData = {
+  id: string
+  title: string
+  slug: string
+  description: string | null
+  thumbnailUrl: string | null
+  compiledContent: string | null
+  hosts: Array<{ id: string; name: string }>
+}
+
+export function generateResolvedShowSEO(
+  show: ResolvedShowData,
+  slug: string
+): SEOHeadData {
+  const title = show.title || slug
+  const hostNames = show.hosts?.map((h) => h.name).join(', ')
+  const description =
+    show.description ||
+    (hostNames
+      ? `${title} hosted by ${hostNames} on goosebumps.fm`
+      : `Listen to ${title} on goosebumps.fm`)
+  const url = `${SITE_URL}/${slug}`
+  const image = show.thumbnailUrl || DEFAULT_OG_IMAGE
+
+  return {
+    title,
+    description,
+    url,
+    image,
+    type: 'website'
+  }
+}
+
 export function generateProfileSEO(
   profile: PublicProfile,
   username: string
@@ -222,7 +255,7 @@ export function generateProfileSEO(
     contentCount > 0
       ? `${displayName} has ${contentCount} ${contentCount === 1 ? 'contribution' : 'contributions'} on goosebumps.fm`
       : `${displayName}'s profile on goosebumps.fm`
-  const url = `${SITE_URL}/profile/${username}`
+  const url = `${SITE_URL}/${username}`
   const image = profile.image || DEFAULT_OG_IMAGE
 
   return {
