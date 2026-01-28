@@ -1,3 +1,14 @@
+# [2.9.0](https://github.com/guidefari/gbfm/compare/v2.8.0...v2.9.0) (2026-01-28)
+
+
+### Features
+
+* add user search functionality for admin and implement reserved slug generation and validation ([86676b4](https://github.com/guidefari/gbfm/commit/86676b47771061f716317010ea1d0050e861dff9))
+* Implement banner image support for shows and enhance host linking with user profiles. ([33edb38](https://github.com/guidefari/gbfm/commit/33edb38fe4b30f71d782a788faa881c5c80bf058))
+* Implement newsletter subscription functionality and add an admin tab for show management. ([834ed96](https://github.com/guidefari/gbfm/commit/834ed96bcded36426254cfc44bf87a8a03a76f43))
+* implement slug resolution to user profiles or shows and enhance authentication context attachment. ([196161f](https://github.com/guidefari/gbfm/commit/196161fc9f8995bb8e9ccca622f404923da7e83d))
+* Redesign show page to include a new banner, detailed header, and structured content sections. ([d13262d](https://github.com/guidefari/gbfm/commit/d13262dc0c9a600d0fc37f3d679466a5f15a5b53))
+
 # [2.8.0](https://github.com/guidefari/gbfm/compare/v2.7.3...v2.8.0) (2026-01-28)
 
 
