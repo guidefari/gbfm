@@ -89,7 +89,7 @@ function MixesListPage() {
 
   return (
     <div className='max-w-3xl mx-auto px-4 py-6'>
-      <div className='flex items-center justify-between gap-4 mb-4'>
+      <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6'>
         <h2 className='flex items-center gap-2 text-lg font-bold'>
           <div className='w-2 h-2 rounded-sm bg-foreground/30' />
           Mixes
@@ -97,7 +97,7 @@ function MixesListPage() {
         {allTags.length > 0 && (
           <Select value={tag || 'all'} onValueChange={handleTagChange}>
             <SelectTrigger
-              className='w-40 h-8 text-sm'
+              className='w-full sm:w-40 h-8 text-sm'
               data-testid='tag-filter-select'>
               <Tag className='w-3 h-3 mr-2' />
               <SelectValue placeholder='Filter by tag' />
@@ -156,11 +156,11 @@ function MixesListPage() {
                       mix.id
                     )
                   }>
-                  <img
-                    src={mix.thumbnailUrl || DEFAULT_IMAGE_URL}
-                    alt={mix.title}
-                    className='object-cover transition-transform duration-300 border rounded-sm w-14 h-14 border-border bg-background group-hover:scale-105'
-                  />
+                    <img
+                      src={mix.thumbnailUrl || DEFAULT_IMAGE_URL}
+                      alt={mix.title}
+                      className='object-cover transition-transform duration-300 border rounded-sm w-16 h-16 sm:w-20 sm:h-20 border-border bg-background group-hover:scale-105'
+                    />
                   <span
                     className={cn(
                       'absolute inset-0 flex items-center justify-center transition-all duration-300 rounded-sm bg-black/50',
@@ -177,12 +177,12 @@ function MixesListPage() {
                 </button>
                 <div className='flex-1 min-w-0'>
                   <div className='flex items-start justify-between gap-2'>
-                    <Link
-                      to='/mixes/$mixId'
-                      params={{ mixId: mix.slug }}
-                      className='flex-1 block font-bold leading-none truncate text-foreground hover:underline decoration-foreground/30 underline-offset-4'>
-                      {mix.title}
-                    </Link>
+                      <Link
+                        to='/mixes/$mixId'
+                        params={{ mixId: mix.slug }}
+                        className='flex-1 block font-bold leading-tight line-clamp-2 text-foreground hover:underline decoration-foreground/30 underline-offset-4'>
+                        {mix.title}
+                      </Link>
                     <MixMenu mix={mix} />
                   </div>
                   {mix.description && (
