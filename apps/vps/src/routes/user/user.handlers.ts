@@ -9,6 +9,7 @@ import type {
   GetEmailPreferencesRoute,
   GetProfileRoute,
   GetUserSubscriptionsRoute,
+  SearchUsersRoute,
   UpdateEmailPreferencesRoute,
   UpdateProfileRoute
 } from './user.routes'
@@ -212,4 +213,32 @@ export const getUserSubscriptions: AppRouteHandler<
   }
 
   return c.json(result, HttpStatusCodes.OK)
+}
+
+export const searchUsers: AppRouteHandler<SearchUsersRoute> = async (c) => {
+  const user = c.get('user')
+
+  if (!user) {
+    return c.json({ error: 'Unauthorized' }, HttpStatusCodes.UNAUTHORIZED)
+  }
+
+  const { q } = c.req.valid('query')
+
+  const program = Effect.gen(function* () {
+    const userService = yield* UserService
+    return yield* userService.searchUsers(q)
+  })
+
+  const result = await runApp(
+    program.pipe(Effect.withSpan('api.user.searchUsers'), Effect.either)
+  )
+
+  if (result._tag === 'Left') {
+    return c.json(
+      { error: 'Failed to search users' },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
+  }
+
+  return c.json(result.right, HttpStatusCodes.OK)
 }

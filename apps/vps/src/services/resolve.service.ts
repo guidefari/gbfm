@@ -6,6 +6,7 @@ import { user as userTable } from '@/db/auth.schema'
 import { showCreators, showsTable } from '@/db/show.schema'
 import { DatabaseError, NotFoundError } from '@/errors'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
+import { isReservedSlug } from '@/lib/reserved-slugs'
 
 type ProfileData = {
   id: string
@@ -55,6 +56,15 @@ export const ResolveService =
 
 const resolveEffect = (slug: string) =>
   Effect.gen(function* () {
+    // Check for reserved slugs first to avoid DB lookups
+    if (isReservedSlug(slug)) {
+      return yield* new NotFoundError({
+        message: 'Not found',
+        resource: 'slug',
+        id: slug
+      })
+    }
+
     const userRecords = yield* Effect.tryPromise({
       try: () =>
         db

@@ -1,5 +1,5 @@
 import { z } from '@hono/zod-openapi'
-import { type InferInsertModel, type InferSelectModel } from 'drizzle-orm'
+import type { InferInsertModel, InferSelectModel } from 'drizzle-orm'
 import { index, pgTable, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
 
 export const newsletterSubscribersTable = pgTable(

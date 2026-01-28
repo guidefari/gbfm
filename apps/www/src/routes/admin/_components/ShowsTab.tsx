@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/use-toast'
 import { fetcher, type PaginatedResponse, VPS_BASE_URL } from '@/lib/http'
+import { UserSearch } from './UserSearch'
 
 interface ShowItem {
   id: string
@@ -36,6 +37,11 @@ interface DeleteDialogState {
   title: string
 }
 
+interface SelectedHost {
+  id: string
+  name: string
+}
+
 interface ShowFormState {
   title: string
   slug: string
@@ -44,6 +50,7 @@ interface ShowFormState {
   thumbnailUrl: string
   draft: boolean
   tags: string
+  hosts: SelectedHost[]
 }
 
 const initialFormState: ShowFormState = {
@@ -53,7 +60,8 @@ const initialFormState: ShowFormState = {
   content: '',
   thumbnailUrl: '',
   draft: false,
-  tags: ''
+  tags: '',
+  hosts: []
 }
 
 export function ShowsTab() {
@@ -81,12 +89,17 @@ export function ShowsTab() {
       fetcher(`${VPS_BASE_URL}/shows`, {
         method: 'POST',
         body: JSON.stringify({
-          ...data,
+          title: data.title,
+          slug: data.slug,
+          description: data.description || undefined,
+          thumbnailUrl: data.thumbnailUrl || undefined,
+          draft: data.draft,
           tags: data.tags
             ? data.tags.split(',').map((t) => t.trim())
             : undefined,
-          // content is required
-          content: data.content || ''
+          content: data.content || '',
+          hostIds:
+            data.hosts.length > 0 ? data.hosts.map((h) => h.id) : undefined
         })
       }),
     onSuccess: () => {
@@ -109,10 +122,16 @@ export function ShowsTab() {
       fetcher(`${VPS_BASE_URL}/shows/${slug}`, {
         method: 'PATCH',
         body: JSON.stringify({
-          ...data,
+          title: data.title,
+          slug: data.slug,
+          description: data.description || undefined,
+          thumbnailUrl: data.thumbnailUrl || undefined,
+          draft: data.draft,
           tags: data.tags
             ? data.tags.split(',').map((t) => t.trim())
-            : undefined
+            : undefined,
+          content: data.content,
+          hostIds: data.hosts.map((h) => h.id)
         })
       }),
     onSuccess: () => {
@@ -157,7 +176,8 @@ export function ShowsTab() {
       content: show.content,
       thumbnailUrl: show.thumbnailUrl || '',
       draft: show.draft,
-      tags: show.tags ? show.tags.join(', ') : ''
+      tags: show.tags ? show.tags.join(', ') : '',
+      hosts: show.hosts || []
     })
     setEditDialog(true)
   }
@@ -333,6 +353,10 @@ export function ShowsTab() {
                 />
               </div>
             </div>
+            <UserSearch
+              selectedUsers={formData.hosts}
+              onSelectionChange={(hosts) => setFormData({ ...formData, hosts })}
+            />
             <div className='flex items-center space-x-2'>
               <input
                 type='checkbox'
@@ -442,6 +466,10 @@ export function ShowsTab() {
                 />
               </div>
             </div>
+            <UserSearch
+              selectedUsers={formData.hosts}
+              onSelectionChange={(hosts) => setFormData({ ...formData, hosts })}
+            />
             <div className='flex items-center space-x-2'>
               <input
                 type='checkbox'

@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Edit, Plus } from 'lucide-react'
-import { useState } from 'react'
+import { Check, Edit, Plus, X } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
@@ -66,10 +66,12 @@ export function UsersTab() {
   const [createUserDialog, setCreateUserDialog] = useState(false)
   const [newUser, setNewUser] = useState({
     name: '',
+    username: '',
     email: '',
     password: '',
     role: 'user' as UserRole
   })
+  const [debouncedUsername, setDebouncedUsername] = useState('')
   const [editUserDialog, setEditUserDialog] = useState(false)
   const [editUser, setEditUser] = useState<{
     id: string
@@ -80,6 +82,13 @@ export function UsersTab() {
     name: '',
     email: ''
   })
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedUsername(newUser.username)
+    }, 300)
+    return () => clearTimeout(timer)
+  }, [newUser.username])
 
   const { data, isPending } = useQuery({
     queryKey: ['admin', 'users', search],
@@ -94,13 +103,31 @@ export function UsersTab() {
     }
   })
 
+  const { data: usernameAvailability, isPending: checkingUsername } = useQuery({
+    queryKey: ['username', 'availability', debouncedUsername],
+    queryFn: async () => {
+      const result = await authClient.isUsernameAvailable({
+        username: debouncedUsername
+      })
+      return result.data
+    },
+    enabled: debouncedUsername.length >= 2
+  })
+
   const createUserMutation = useMutation({
     mutationFn: async () => {
+      const email =
+        newUser.email ||
+        `${newUser.username || crypto.randomUUID()}@placeholder.local`
+      const password = newUser.password || crypto.randomUUID()
+      const name = newUser.name || newUser.username || 'User'
+
       return authClient.admin.createUser({
-        email: newUser.email,
-        password: newUser.password,
-        name: newUser.name,
-        role: newUser.role
+        email,
+        password,
+        name,
+        role: newUser.role,
+        data: newUser.username ? { username: newUser.username } : undefined
       })
     },
     onSuccess: () => {
@@ -108,10 +135,12 @@ export function UsersTab() {
       setCreateUserDialog(false)
       setNewUser({
         name: '',
+        username: '',
         email: '',
         password: '',
         role: 'user'
       })
+      setDebouncedUsername('')
       toast({ title: 'User created successfully' })
     },
     onError: (err: Error) => {
@@ -255,15 +284,15 @@ export function UsersTab() {
           Loading users...
         </div>
       ) : (
-        <div className='overflow-x-auto rounded-sm border'>
+        <div className='overflow-x-auto border rounded-sm'>
           <table className='w-full text-sm'>
             <thead>
               <tr className='border-b bg-muted/50'>
-                <th className='px-4 py-3 text-left font-medium'>Name</th>
-                <th className='px-4 py-3 text-left font-medium'>Email</th>
-                <th className='px-4 py-3 text-left font-medium'>Role</th>
-                <th className='px-4 py-3 text-left font-medium'>Status</th>
-                <th className='px-4 py-3 text-left font-medium'>Actions</th>
+                <th className='px-4 py-3 font-medium text-left'>Name</th>
+                <th className='px-4 py-3 font-medium text-left'>Email</th>
+                <th className='px-4 py-3 font-medium text-left'>Role</th>
+                <th className='px-4 py-3 font-medium text-left'>Status</th>
+                <th className='px-4 py-3 font-medium text-left'>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -375,9 +404,9 @@ export function UsersTab() {
               Manually add a new user to the system.
             </DialogDescription>
           </DialogHeader>
-          <div className='space-y-4 py-4'>
+          <div className='py-4 space-y-4'>
             <div className='space-y-2'>
-              <Label htmlFor='name'>Name</Label>
+              <Label htmlFor='name'>Display Name</Label>
               <Input
                 id='name'
                 value={newUser.name}
@@ -386,6 +415,41 @@ export function UsersTab() {
                 }
                 placeholder='John Doe'
               />
+            </div>
+            <div className='space-y-2'>
+              <Label htmlFor='username'>Username (optional)</Label>
+              <div className='relative'>
+                <Input
+                  id='username'
+                  value={newUser.username}
+                  onChange={(e) =>
+                    setNewUser({
+                      ...newUser,
+                      username: e.target.value.toLowerCase().replace(/\s/g, '')
+                    })
+                  }
+                  placeholder='johndoe'
+                  className='pr-8'
+                />
+                {newUser.username.length >= 2 && (
+                  <div className='absolute -translate-y-1/2 right-2 top-1/2'>
+                    {checkingUsername ? (
+                      <div className='w-4 h-4 border-2 rounded-full animate-spin border-muted-foreground border-t-transparent' />
+                    ) : usernameAvailability?.available ? (
+                      <Check className='w-4 h-4 text-green-500' />
+                    ) : (
+                      <X className='w-4 h-4 text-destructive' />
+                    )}
+                  </div>
+                )}
+              </div>
+              {newUser.username.length >= 2 &&
+                !checkingUsername &&
+                !usernameAvailability?.available && (
+                  <p className='text-xs text-destructive'>
+                    Username is already taken
+                  </p>
+                )}
             </div>
             <div className='space-y-2'>
               <Label htmlFor='email'>Email</Label>
@@ -442,9 +506,9 @@ export function UsersTab() {
               onClick={() => createUserMutation.mutate()}
               disabled={
                 createUserMutation.isPending ||
-                !newUser.name ||
-                !newUser.email ||
-                !newUser.password
+                (!newUser.email && !newUser.username) ||
+                (newUser.username.length >= 2 &&
+                  !usernameAvailability?.available)
               }>
               {createUserMutation.isPending ? 'Creating...' : 'Create User'}
             </Button>
@@ -458,7 +522,7 @@ export function UsersTab() {
             <DialogTitle>Edit User</DialogTitle>
             <DialogDescription>Update user details.</DialogDescription>
           </DialogHeader>
-          <div className='space-y-4 py-4'>
+          <div className='py-4 space-y-4'>
             <div className='space-y-2'>
               <Label htmlFor='edit-name'>Name</Label>
               <Input

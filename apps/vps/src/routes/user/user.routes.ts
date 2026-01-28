@@ -210,8 +210,43 @@ export const getUserSubscriptions = createRoute({
   }
 })
 
+const searchUserResultSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  username: z.string().nullable(),
+  displayUsername: z.string().nullable(),
+  image: z.string().nullable()
+})
+
+export const searchUsers = createRoute({
+  path: '/search',
+  method: 'get',
+  middleware: [betterAuthMiddleware],
+  request: {
+    query: z.object({
+      q: z.string().min(1).openapi({ description: 'Search query' })
+    })
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.array(searchUserResultSchema),
+      'Users matching search query'
+    ),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
+      z.object({ error: z.string() }),
+      'Unauthorized'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to search users'
+    )
+  }
+})
+
 export type UpdateProfileRoute = typeof updateProfile
 export type GetProfileRoute = typeof getProfile
 export type GetEmailPreferencesRoute = typeof getEmailPreferences
 export type UpdateEmailPreferencesRoute = typeof updateEmailPreferences
 export type GetUserSubscriptionsRoute = typeof getUserSubscriptions
+export type SearchUsersRoute = typeof searchUsers

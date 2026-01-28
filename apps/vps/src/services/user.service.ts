@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { eq, ilike, or } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { user as userTable } from '@/db/auth.schema'
@@ -31,6 +31,17 @@ export interface UserService {
       updatedAt: Date
     },
     DatabaseError | NotFoundError
+  >
+
+  readonly searchUsers: (query: string) => Effect.Effect<
+    Array<{
+      id: string
+      name: string
+      username: string | null
+      displayUsername: string | null
+      image: string | null
+    }>,
+    DatabaseError
   >
 
   readonly updateUserProfile: (
@@ -140,6 +151,40 @@ const updateUserProfileEffect = (
     return user
   })
 
+const searchUsersEffect = (query: string) =>
+  Effect.gen(function* () {
+    const searchPattern = `%${query}%`
+
+    const users = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select({
+            id: userTable.id,
+            name: userTable.name,
+            username: userTable.username,
+            displayUsername: userTable.displayUsername,
+            image: userTable.image
+          })
+          .from(userTable)
+          .where(
+            or(
+              ilike(userTable.name, searchPattern),
+              ilike(userTable.username, searchPattern),
+              ilike(userTable.displayUsername, searchPattern)
+            )
+          )
+          .limit(10),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to search users: ${(error as Error).message}`,
+          operation: 'select',
+          table: 'user'
+        })
+    })
+
+    return users
+  })
+
 const getUserEmailPreferencesEffect = (userId: string) =>
   Effect.tryPromise({
     try: () => getOrCreateEmailPreferencesByUserId(userId),
@@ -182,6 +227,10 @@ export const UserServiceLive = Layer.succeed(UserService, {
   getUserById: (userId) =>
     getUserByIdEffect(userId).pipe(
       Effect.withSpan('user.getById', { attributes: { userId } })
+    ),
+  searchUsers: (query) =>
+    searchUsersEffect(query).pipe(
+      Effect.withSpan('user.searchUsers', { attributes: { query } })
     ),
   updateUserProfile: (userId, data) =>
     updateUserProfileEffect(userId, data).pipe(
