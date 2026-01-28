@@ -1,11 +1,15 @@
 import type { SelectMdxCompiledAudio } from '@gbfm/vps/schemas'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Edit } from 'lucide-react'
+import { ArrowLeft, Edit, Tag } from 'lucide-react'
 import * as React from 'react'
+import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
 import { MDXRendrr } from '@/components/MDXRendrr'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
 import { useContentStore } from '@/store'
+import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
 import { useAuthStore } from '@/store/auth'
 
 export const Route = createFileRoute('/mixes/$mixId')({
@@ -115,10 +119,10 @@ function MixPage() {
   if (!mix) return <div>No data</div>
 
   return (
-    <div className='max-w-3xl mx-auto px-4 py-6'>
+    <div className='max-w-3xl px-4 py-6 mx-auto'>
       <Link
         to='/mixes'
-        className='inline-flex items-center gap-1 mb-4 text-sm text-muted-foreground hover:text-foreground transition-colors'>
+        className='inline-flex items-center gap-1 mb-8 text-sm transition-colors text-muted-foreground hover:text-foreground'>
         <ArrowLeft className='w-4 h-4' />
         Mixes
       </Link>
@@ -131,6 +135,23 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
   const { user } = useAuthStore()
   const navigate = useNavigate()
   const isAdmin = user?.role === 'admin'
+  const { isPlaying, nowPlayingContext } = useAudioPlayerState()
+  const { loadTrack, togglePlayPause } = useAudioPlayerActions()
+
+  const isActive = nowPlayingContext?.title === mix.title
+
+  const handlePlayClick = () => {
+    if (isActive) {
+      togglePlayPause()
+    } else {
+      loadTrack(
+        mix.url,
+        mix.thumbnailUrl || DEFAULT_IMAGE_URL,
+        mix.title,
+        mix.id
+      )
+    }
+  }
 
   const handleEdit = () => {
     navigate({
@@ -147,37 +168,90 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
   }
 
   return (
-    <div className='space-y-4'>
-      <div className='flex items-start justify-between'>
-        <div className='flex-1'>
-          <h2 className='mb-2 text-2xl font-bold'>{mix.title}</h2>
-          {mix.description && (
-            <p className='text-sm text-muted-foreground'>{mix.description}</p>
-          )}
-          {mix.createdAt && (
-            <p className='mt-2 text-xs text-muted-foreground'>
-              {new Date(mix.createdAt).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
-            </p>
+    <div className='space-y-8'>
+      <div className='flex flex-col items-start gap-8 md:flex-row'>
+        {/* Left Column: Image and Play Button */}
+        <div className='flex-shrink-0 w-full space-y-4 md:w-64'>
+          <div className='relative group'>
+            <img
+              src={mix.thumbnailUrl || DEFAULT_IMAGE_URL}
+              alt={mix.title}
+              className='w-full aspect-square object-cover border border-border rounded-sm shadow-lg transition-transform duration-300 group-hover:scale-[1.02]'
+            />
+          </div>
+
+          <Button
+            onClick={handlePlayClick}
+            size='lg'
+            className='w-full h-12 text-base font-bold tracking-widest uppercase transition-all rounded-none shadow-sm hover:shadow-md active:scale-95'>
+            {isActive && isPlaying ? (
+              <>
+                <GiPauseButton className='mr-2 text-xl' />
+                Pause Mix
+              </>
+            ) : (
+              <>
+                <GiPlayButton className='mr-2 text-xl' />
+                Play Mix
+              </>
+            )}
+          </Button>
+
+          {mix.tags && mix.tags.length > 0 && (
+            <div className='flex flex-wrap gap-2'>
+              {mix.tags.map((tag) => (
+                <Badge
+                  key={tag}
+                  variant='secondary'
+                  className='text-[10px] uppercase tracking-widest px-2 py-1 rounded-none font-bold bg-muted/50 text-muted-foreground border-none'>
+                  <Tag className='w-3 h-3 mr-1 opacity-50' />
+                  {tag}
+                </Badge>
+              ))}
+            </div>
           )}
         </div>
-        {isAdmin && (
-          <Button
-            onClick={handleEdit}
-            variant='outline'
-            size='sm'
-            className='flex items-center gap-2'>
-            <Edit className='w-4 h-4' />
-            Edit Mix
-          </Button>
-        )}
+
+        {/* Right Column: Metadata */}
+        <div className='flex-1 pt-2 space-y-6'>
+          <div className='space-y-4'>
+            <div className='flex items-start justify-between gap-4'>
+              <h1 className='text-4xl font-black leading-none tracking-tighter uppercase md:text-5xl'>
+                {mix.title}
+              </h1>
+              {isAdmin && (
+                <Button
+                  onClick={handleEdit}
+                  variant='outline'
+                  size='sm'
+                  className='flex-shrink-0'>
+                  <Edit className='w-4 h-4 mr-2' />
+                  Edit
+                </Button>
+              )}
+            </div>
+            {mix.description && (
+              <p className='pl-4 text-xl italic font-medium leading-relaxed border-l-2 text-muted-foreground border-border/50'>
+                {mix.description}
+              </p>
+            )}
+            {mix.createdAt && (
+              <p className='font-mono text-sm text-muted-foreground/60'>
+                {new Date(mix.createdAt).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </p>
+            )}
+          </div>
+        </div>
       </div>
 
-      <div className='prose prose-sm dark:prose-invert max-w-none'>
-        <MDXRendrr mdxString={mix.compiledContent ?? mix.content} />
+      <div className='pt-8 border-t border-border/50'>
+        <div className='prose prose-base dark:prose-invert max-w-none prose-headings:uppercase prose-headings:font-black prose-headings:tracking-tighter prose-p:leading-relaxed prose-a:text-foreground prose-a:no-underline hover:prose-a:underline'>
+          <MDXRendrr mdxString={mix.compiledContent ?? mix.content} />
+        </div>
       </div>
     </div>
   )
