@@ -564,8 +564,8 @@ const getEpisodesEffect = (
     }
 
     const whereCondition = and(
-      eq(audioTable.showId, show.id),
-      eq(audioTable.type, 'radio_show')
+      eq(audioTable.showId, show.id)
+      // eq(audioTable.type, 'radio_show')
     )
 
     const countResult = yield* Effect.tryPromise({
