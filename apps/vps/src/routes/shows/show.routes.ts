@@ -14,7 +14,10 @@ import {
   createPaginatedResponseSchema,
   paginationQuerySchema
 } from '@/lib/pagination'
-import { attachSessionContext, betterAuthMiddleware } from '@/middlewares/better-auth.middleware'
+import {
+  attachSessionContext,
+  betterAuthMiddleware
+} from '@/middlewares/better-auth.middleware'
 
 const tags = ['Shows']
 

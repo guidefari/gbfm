@@ -101,11 +101,17 @@ export interface ShowService {
 
 export const ShowService = Context.GenericTag<ShowService>('ShowService')
 
-const getAllEffect = (options: { limit: number; offset: number, includeDrafts?: boolean }) =>
+const getAllEffect = (options: {
+  limit: number
+  offset: number
+  includeDrafts?: boolean
+}) =>
   Effect.gen(function* () {
     const { limit, offset, includeDrafts } = options
 
-    const whereCondition = includeDrafts ? undefined : eq(showsTable.draft, false)
+    const whereCondition = includeDrafts
+      ? undefined
+      : eq(showsTable.draft, false)
 
     const countResult = yield* Effect.tryPromise({
       try: () =>

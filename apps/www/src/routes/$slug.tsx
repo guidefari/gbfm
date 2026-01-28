@@ -4,11 +4,7 @@ import { ProfileContentGrid } from '@/components/profile/ProfileContentGrid'
 import { ProfileHeader } from '@/components/profile/ProfileHeader'
 import { EpisodeGrid } from '@/components/shows/EpisodeGrid'
 import { SubscribeButton } from '@/components/shows/SubscribeButton'
-import {
-  type ResolveResult,
-  useResolveSlug,
-  VPS_BASE_URL
-} from '@/lib/http'
+import { type ResolveResult, useResolveSlug, VPS_BASE_URL } from '@/lib/http'
 import {
   generateProfileSEO,
   generateResolvedShowSEO,
@@ -47,7 +43,10 @@ export const Route = createFileRoute('/$slug')({
       return { meta: generateSEOMeta(seoData) }
     }
 
-    const seoData = generateResolvedShowSEO(loaderData.resolved.data, params.slug)
+    const seoData = generateResolvedShowSEO(
+      loaderData.resolved.data,
+      params.slug
+    )
     return { meta: generateSEOMeta(seoData) }
   }
 })
@@ -79,9 +78,7 @@ function NotFound({ slug }: { slug: string }) {
 function ProfileView({
   profile
 }: {
-  profile: NonNullable<
-    Extract<ResolveResult, { type: 'profile' }>
-  >['data']
+  profile: NonNullable<Extract<ResolveResult, { type: 'profile' }>>['data']
 }) {
   return (
     <div className='mx-auto max-w-6xl px-4 py-6'>
