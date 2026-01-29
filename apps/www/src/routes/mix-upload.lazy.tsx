@@ -38,6 +38,7 @@ import { toast } from '@/components/ui/use-toast'
 import { authClient } from '@/lib/auth-client'
 import {
   fetcher,
+  useAllShows,
   useAudioBySlug,
   useAudioByType,
   VPS_BASE_URL
@@ -59,6 +60,8 @@ interface MixFormData {
   draft: boolean
   creatorId?: string
   url?: string
+  showId?: string
+  episodeNumber?: string
 }
 
 function MixUploadPage() {
@@ -70,10 +73,14 @@ function MixUploadPage() {
     content?: string
     thumbnailUrl?: string
     tags?: string[]
+    type?: string
   }
   const isEditMode = !!search.edit
+  const editType = (search.type as 'mix' | 'radio_show') || 'mix'
 
   const { data: allMixes } = useAudioByType('mix')
+  const { data: allShows } = useAllShows()
+
   const availableTags = useMemo(() => {
     const tagSet = new Set<string>()
     allMixes?.forEach((mix) => {
@@ -85,7 +92,7 @@ function MixUploadPage() {
   }, [allMixes])
 
   const { data: existingMix, isPending: mixLoading } = useAudioBySlug(
-    'mix',
+    editType,
     search.edit || ''
   )
 
@@ -99,7 +106,9 @@ function MixUploadPage() {
     tracklist: [],
     draft: true,
     creatorId: undefined,
-    url: undefined
+    url: undefined,
+    showId: undefined,
+    episodeNumber: undefined
   }))
   const [newTag, setNewTag] = useState('')
   const [uploadStep, setUploadStep] = useState<
@@ -144,7 +153,11 @@ function MixUploadPage() {
         thumbnailUrl: existingMix.thumbnailUrl || prev.thumbnailUrl,
         tags: existingMix.tags || prev.tags,
         creatorId: existingMix.creators?.[0]?.id || prev.creatorId,
-        url: existingMix.url || prev.url
+        url: existingMix.url || prev.url,
+        showId: existingMix.showId || prev.showId,
+        episodeNumber: existingMix.episodeNumber
+          ? String(existingMix.episodeNumber)
+          : prev.episodeNumber
       }))
       if (existingMix.thumbnailUrl) {
         setArtworkPreview(existingMix.thumbnailUrl)
@@ -157,14 +170,14 @@ function MixUploadPage() {
 
   const updateTagsMutation = useMutation({
     mutationFn: (tags: string[]) =>
-      fetcher(`${VPS_BASE_URL}/content/audio/mix/${search.edit}`, {
+      fetcher(`${VPS_BASE_URL}/content/audio/${editType}/${search.edit}`, {
         method: 'PATCH',
         body: JSON.stringify({ tags })
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['audio', 'mix'] })
+      queryClient.invalidateQueries({ queryKey: ['audio', editType] })
       queryClient.invalidateQueries({
-        queryKey: ['audio', 'mix', search.edit]
+        queryKey: ['audio', editType, search.edit]
       })
       toast({ title: 'Tags updated' })
     },
@@ -250,6 +263,9 @@ function MixUploadPage() {
               .join('\\n')}`
           : ''
 
+      const isShowEpisode = !!data.showId
+      const type = isShowEpisode ? 'radio_show' : 'mix'
+
       const audioData = {
         title: data.title,
         description: data.description,
@@ -257,15 +273,17 @@ function MixUploadPage() {
         content: data.content + tracklistMarkdown,
         thumbnailUrl: imageUrl,
         url: audioUrl,
-        type: 'mix',
+        type,
         tags: data.tags,
         creatorIds: [
           data.creatorId === 'current' ? user?.id : data.creatorId || user?.id
-        ].filter(Boolean)
+        ].filter(Boolean),
+        showId: data.showId,
+        episodeNumber: data.episodeNumber ? Number(data.episodeNumber) : null
       }
 
       const endpoint = isEditMode
-        ? `${VPS_BASE_URL}/content/audio/mix/${search.edit}`
+        ? `${VPS_BASE_URL}/content/audio/${editType}/${search.edit}`
         : `${VPS_BASE_URL}/content/audio`
 
       const method = isEditMode ? 'PATCH' : 'POST'
@@ -296,7 +314,9 @@ function MixUploadPage() {
             tracklist: [],
             draft: true,
             creatorId: undefined,
-            url: undefined
+            url: undefined,
+            showId: undefined,
+            episodeNumber: undefined
           })
           setAudioFile(null)
           setArtworkFile(null)
@@ -305,9 +325,17 @@ function MixUploadPage() {
         }
         setUploadStep('idle')
 
-        router.navigate({
-          to: isEditMode ? `/mixes/${search.edit}` : '/mixes'
-        })
+        const type = formData.showId ? 'radio_show' : 'mix'
+        if (type === 'radio_show') {
+          // Find the show slug if possible, or just go to shows
+          // For now, let's go to mix/show list or the specific item
+          // Since we don't have the show slug handy easily without looking it up from allShows
+          router.navigate({ to: '/shows' })
+        } else {
+          router.navigate({
+            to: isEditMode ? `/mixes/${search.edit}` : '/mixes'
+          })
+        }
       }, 2000)
     },
     onError: (error) => {
@@ -653,6 +681,49 @@ function MixUploadPage() {
                               ))}
                           </SelectContent>
                         </Select>
+                      </div>
+                    )}
+
+                    <div className='space-y-2'>
+                      <Label className='text-gb-pastel-green-1'>
+                        Radio Show (Optional)
+                      </Label>
+                      <Select
+                        value={formData.showId}
+                        onValueChange={(value) =>
+                          handleInputChange(
+                            'showId',
+                            value === 'none' ? '' : value
+                          )
+                        }>
+                        <SelectTrigger className='bg-gb-bg border-gb-pastel-green-2/30'>
+                          <SelectValue placeholder='Select show' />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value='none'>None</SelectItem>
+                          {allShows?.map((show) => (
+                            <SelectItem key={show.id} value={show.id}>
+                              {show.title}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {formData.showId && (
+                      <div className='space-y-2'>
+                        <Label className='text-gb-pastel-green-1'>
+                          Episode Number
+                        </Label>
+                        <Input
+                          type='number'
+                          value={formData.episodeNumber || ''}
+                          onChange={(e) =>
+                            handleInputChange('episodeNumber', e.target.value)
+                          }
+                          placeholder='e.g. 42'
+                          className='bg-gb-bg border-gb-pastel-green-2/30'
+                        />
                       </div>
                     )}
 

@@ -65,7 +65,10 @@ export async function fetcher<T>(input: RequestInfo, init: RequestInit = {}) {
   }
 }
 
-export function useAudioByType(type: 'mix' | 'track' | 'misc', tag?: string) {
+export function useAudioByType(
+  type: 'mix' | 'track' | 'misc' | 'radio_show',
+  tag?: string
+) {
   const {
     data,
     error,
@@ -99,7 +102,10 @@ export function useAudioByType(type: 'mix' | 'track' | 'misc', tag?: string) {
   }
 }
 
-export function useAudioBySlug(type: 'mix' | 'track' | 'misc', slug: string) {
+export function useAudioBySlug(
+  type: 'mix' | 'track' | 'misc' | 'radio_show',
+  slug: string
+) {
   const { data, error, isPending } = useQuery<SelectMdxCompiledAudio, Error>({
     queryKey: ['audio', type, slug],
     queryFn: async () =>
