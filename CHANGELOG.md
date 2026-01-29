@@ -1,3 +1,10 @@
+# [2.11.0](https://github.com/guidefari/gbfm/compare/v2.10.0...v2.11.0) (2026-01-29)
+
+
+### Features
+
+* mix upload ([db49d8f](https://github.com/guidefari/gbfm/commit/db49d8f12e130f7372de49386170f2048a23025f))
+
 # [2.10.0](https://github.com/guidefari/gbfm/compare/v2.9.0...v2.10.0) (2026-01-28)
 
 
