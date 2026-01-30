@@ -1,3 +1,13 @@
+# [2.12.0](https://github.com/guidefari/gbfm/compare/v2.11.0...v2.12.0) (2026-01-30)
+
+
+### Features
+
+* add `show` support to favourites ([a658638](https://github.com/guidefari/gbfm/commit/a6586386b75b6c9077fea6756c2bc5bb18aff310))
+* Implement a cron job to clean up expired QR PDF files from S3 using a new S3 object listing capability. ([4847842](https://github.com/guidefari/gbfm/commit/4847842bb4232cd234275af010ddff0212e0ebf3))
+* qr service ([75b6394](https://github.com/guidefari/gbfm/commit/75b639449011f3c876db05e2815d5f8420b7c5ab))
+* restrict QR download functionality to admin and creator roles. ([c84d587](https://github.com/guidefari/gbfm/commit/c84d587f8dcc428c5a0d3d8d1dbf82888c926071))
+
 # [2.11.0](https://github.com/guidefari/gbfm/compare/v2.10.0...v2.11.0) (2026-01-29)
 
 
