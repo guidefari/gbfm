@@ -18,12 +18,7 @@ import { user } from './auth.schema'
 import { showsTable } from './show.schema'
 import { defaultContentFields } from './util'
 
-export const audioTypeEnum = pgEnum('audio_type', [
-  'mix',
-  'track',
-  'misc',
-  'radio_show'
-])
+export const audioTypeEnum = pgEnum('audio_type', ['mix', 'track', 'misc'])
 
 export const audioTable = pgTable(
   'audio',
@@ -73,16 +68,16 @@ export const selectAudioSchema = z
       .nullable()
       .openapi({ description: 'Tags associated with the audio' }),
     type: z
-      .enum(['mix', 'track', 'misc', 'radio_show'])
+      .enum(['mix', 'track', 'misc'])
       .openapi({ description: 'Type of audio content' }),
     url: z.string().openapi({ description: 'Audio URL' }),
     showId: z.string().nullable().openapi({
-      description: 'ID of the associated show (for radio_show type)'
+      description: 'ID of the associated show (optional)'
     }),
     episodeNumber: z
       .number()
       .nullable()
-      .openapi({ description: 'Episode number (for radio_show type)' }),
+      .openapi({ description: 'Episode number (optional)' }),
     createdAt: z.date().openapi({ description: 'Creation timestamp' }),
     updatedAt: z.date().openapi({ description: 'Last update timestamp' })
   })
@@ -143,21 +138,21 @@ export const insertAudioSchema = z
       .optional()
       .openapi({ description: 'Tags for the audio' }),
     type: z
-      .enum(['mix', 'track', 'misc', 'radio_show'])
+      .enum(['mix', 'track', 'misc'])
       .openapi({ description: 'Type of audio content', example: 'mix' }),
     url: z.string().url().openapi({
       description: 'Audio URL',
       example: 'https://example.com/audio.mp3'
     }),
     showId: z.string().uuid().optional().openapi({
-      description: 'ID of the associated show (for radio_show type)'
+      description: 'ID of the associated show (optional)'
     }),
     episodeNumber: z
       .number()
       .int()
       .positive()
       .optional()
-      .openapi({ description: 'Episode number (for radio_show type)' })
+      .openapi({ description: 'Episode number (optional)' })
   })
   .openapi('InsertAudio')
 
