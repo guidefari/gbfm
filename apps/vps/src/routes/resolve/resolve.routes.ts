@@ -21,7 +21,7 @@ const resolveResponseSchema = z
               title: z.string(),
               slug: z.string(),
               thumbnailUrl: z.string().nullable(),
-              type: z.enum(['mix', 'track', 'misc', 'radio_show'])
+              type: z.enum(['mix', 'track', 'misc'])
             })
           ),
           shows: z.array(

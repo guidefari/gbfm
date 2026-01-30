@@ -476,8 +476,8 @@ const getBandcampMetadataWithSpan = (url: string) =>
     })
   )
 
-const enrichTrackFromUrlWithSpan = (url: string) =>
-  Effect.gen(function* () {
+const enrichTrackFromUrlWithSpan = Effect.fn('spotify.enrichTrackFromUrl')(
+  function* (url: string) {
     const platform = isSpotifyUrl(url)
       ? 'spotify'
       : isYouTubeUrl(url)
@@ -633,11 +633,8 @@ const enrichTrackFromUrlWithSpan = (url: string) =>
     }
 
     return result
-  }).pipe(
-    Effect.withSpan('spotify.enrichTrackFromUrl', {
-      attributes: { 'external.system': 'music-metadata' }
-    })
-  )
+  }
+)
 
 // Implementation - simple layer that provides access to the Effects
 export const SpotifyServiceLive = Layer.succeed(SpotifyService, {

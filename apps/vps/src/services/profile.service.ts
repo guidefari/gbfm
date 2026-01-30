@@ -18,7 +18,7 @@ export type PublicProfile = {
       title: string
       slug: string
       thumbnailUrl: string | null
-      type: 'mix' | 'track' | 'misc' | 'radio_show'
+      type: 'mix' | 'track' | 'misc'
     }>
     shows: Array<{
       id: string
