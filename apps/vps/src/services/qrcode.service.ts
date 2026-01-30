@@ -1,6 +1,6 @@
+import { Context, Effect, Layer } from 'effect'
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 import QRCode from 'qrcode'
-import { Context, Effect, Layer } from 'effect'
 import { DatabaseError } from '@/errors'
 import { config } from '@/services/config.service'
 import { S3Service } from '@/services/s3.service'
@@ -332,7 +332,7 @@ const generateFlyerPdf = (mix: MixData, qrDataUrl: string) =>
     })
   })
 
-const generateQROnlyPdf = (mix: MixData, qrDataUrl: string) =>
+const generateQROnlyPdf = (_mix: MixData, qrDataUrl: string) =>
   Effect.gen(function* () {
     const pdfDoc = yield* Effect.tryPromise({
       try: () => PDFDocument.create(),

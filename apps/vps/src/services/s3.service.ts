@@ -162,10 +162,13 @@ const listObjectsEffect = (prefix: string, bucketName: string) =>
         })
       )
       return (response.Contents ?? [])
-        .filter((obj) => obj.Key && obj.LastModified)
+        .filter(
+          (obj): obj is Required<Pick<typeof obj, 'Key' | 'LastModified'>> =>
+            Boolean(obj.Key && obj.LastModified)
+        )
         .map((obj) => ({
-          key: obj.Key!,
-          lastModified: obj.LastModified!
+          key: obj.Key,
+          lastModified: obj.LastModified
         }))
     },
     catch: (error) =>

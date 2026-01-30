@@ -8,9 +8,9 @@ import {
   type SelectAudio,
   type SelectMdxCompiledAudio
 } from '@/db/audio.schema'
-import { showsTable } from '@/db/show.schema'
 import { user as usersTable } from '@/db/auth.schema'
 import { timeQuery } from '@/db/query-timer'
+import { showsTable } from '@/db/show.schema'
 import {
   ConflictError,
   DatabaseError,
