@@ -145,6 +145,8 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
   const { toast } = useToast()
   const navigate = useNavigate()
   const isAdmin = user?.role === 'admin'
+  const isCreator = user?.role === 'creator'
+  const canDownloadQr = isAdmin || isCreator
   const { isPlaying, nowPlayingContext } = useAudioPlayerState()
   const { loadTrack, togglePlayPause, addToQueue } = useAudioPlayerActions()
 
@@ -296,30 +298,34 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
                 )}
               </div>
               <div className='flex flex-shrink-0 gap-2'>
-                <Button
-                  onClick={() => handleDownloadQR('flyer')}
-                  variant='outline'
-                  size='sm'
-                  disabled={isGeneratingPdf}
-                  title='Download Flyer PDF'>
-                  {isGeneratingPdf && qrTemplate === 'flyer' ? (
-                    <Loader2 className='w-4 h-4 animate-spin' />
-                  ) : (
-                    <Download className='w-4 h-4' />
-                  )}
-                </Button>
-                <Button
-                  onClick={() => handleDownloadQR('qr')}
-                  variant='outline'
-                  size='sm'
-                  disabled={isGeneratingPdf}
-                  title='Download QR Code PDF'>
-                  {isGeneratingPdf && qrTemplate === 'qr' ? (
-                    <Loader2 className='w-4 h-4 animate-spin' />
-                  ) : (
-                    <QrCode className='w-4 h-4' />
-                  )}
-                </Button>
+                {canDownloadQr && (
+                  <>
+                    <Button
+                      onClick={() => handleDownloadQR('flyer')}
+                      variant='outline'
+                      size='sm'
+                      disabled={isGeneratingPdf}
+                      title='Download Flyer PDF'>
+                      {isGeneratingPdf && qrTemplate === 'flyer' ? (
+                        <Loader2 className='w-4 h-4 animate-spin' />
+                      ) : (
+                        <Download className='w-4 h-4' />
+                      )}
+                    </Button>
+                    <Button
+                      onClick={() => handleDownloadQR('qr')}
+                      variant='outline'
+                      size='sm'
+                      disabled={isGeneratingPdf}
+                      title='Download QR Code PDF'>
+                      {isGeneratingPdf && qrTemplate === 'qr' ? (
+                        <Loader2 className='w-4 h-4 animate-spin' />
+                      ) : (
+                        <QrCode className='w-4 h-4' />
+                      )}
+                    </Button>
+                  </>
+                )}
                 {isAdmin && (
                   <Button onClick={handleEdit} variant='outline' size='sm'>
                     <Edit className='w-4 h-4 mr-2' />
