@@ -20,6 +20,7 @@ import user from '@/routes/user/user.index'
 // import { backfillDisplayUsername } from './data-migrations/backfill-display-username'
 import { db } from './db'
 import { runApp, runAppFork } from './runtime'
+import { cleanupExpiredQrPdfs } from './services/qr-cache-cleanup'
 import { processPendingReminders } from './services/reminder-processor'
 
 const healthCheckEffect = Effect.tryPromise({
@@ -62,16 +63,25 @@ const setupRoutesEffect = Effect.gen(function* () {
 })
 
 const cronJobEffect = processPendingReminders.pipe(
-  // Log success BEFORE potentially recovering from error
   Effect.tap(() => Effect.log('✅ Music reminder processing completed')),
-  // Catch and log any errors, continuing the loop
   Effect.catchAll((error) =>
     Effect.logError(
       `Cron job failed: ${error instanceof Error ? error.message : String(error)}`
     )
   ),
-  // Repeat every 30 seconds
   Effect.repeat(Schedule.spaced('30 seconds'))
+)
+
+const qrCacheCleanupEffect = cleanupExpiredQrPdfs.pipe(
+  Effect.tap(({ deleted }) =>
+    Effect.log(`✅ QR cache cleanup completed: ${deleted} files deleted`)
+  ),
+  Effect.catchAll((error) =>
+    Effect.logError(
+      `QR cache cleanup failed: ${error instanceof Error ? error.message : String(error)}`
+    )
+  ),
+  Effect.repeat(Schedule.spaced('1 minutes'))
 )
 
 const mainEffect = setupRoutesEffect
@@ -111,6 +121,7 @@ const initializeApp = async () => {
   // );
 
   runAppFork(cronJobEffect)
+  runAppFork(qrCacheCleanupEffect)
 
   return await runApp(
     mainEffect.pipe(

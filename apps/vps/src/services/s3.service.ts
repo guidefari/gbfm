@@ -1,6 +1,7 @@
 import {
   DeleteObjectCommand,
   HeadObjectCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client
 } from '@aws-sdk/client-s3'
@@ -25,6 +26,11 @@ export interface S3Service {
     key: string,
     bucketName: string
   ) => Effect.Effect<boolean, never>
+
+  readonly listObjects: (
+    prefix: string,
+    bucketName: string
+  ) => Effect.Effect<Array<{ key: string; lastModified: Date }>, S3Error>
 }
 
 // Service tag for dependency injection
@@ -145,9 +151,49 @@ const checkExistsEffect = (key: string, bucketName: string) =>
     })
   )
 
+const listObjectsEffect = (prefix: string, bucketName: string) =>
+  Effect.tryPromise({
+    try: async () => {
+      const s3 = new S3Client({})
+      const response = await s3.send(
+        new ListObjectsV2Command({
+          Bucket: bucketName,
+          Prefix: prefix
+        })
+      )
+      return (response.Contents ?? [])
+        .filter((obj) => obj.Key && obj.LastModified)
+        .map((obj) => ({
+          key: obj.Key!,
+          lastModified: obj.LastModified!
+        }))
+    },
+    catch: (error) =>
+      error instanceof Error
+        ? new S3Error({
+            message: `Failed to list objects from S3: ${error.message}`,
+            operation: 'list',
+            key: prefix
+          })
+        : new S3Error({
+            message: `Failed to list objects from S3: Unknown error: ${String(error)}`,
+            operation: 'list',
+            key: prefix
+          })
+  }).pipe(
+    Effect.withSpan('aws.s3.listObjectsV2', {
+      attributes: {
+        'aws.service': 's3',
+        's3.bucket': bucketName,
+        's3.prefix': prefix
+      }
+    })
+  )
+
 // Implementation - simple layer (effects are pure functions)
 export const S3ServiceLive = Layer.succeed(S3Service, {
   uploadFile: uploadFileEffect,
   deleteFile: deleteFileEffect,
-  checkExists: checkExistsEffect
+  checkExists: checkExistsEffect,
+  listObjects: listObjectsEffect
 })
