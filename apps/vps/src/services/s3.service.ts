@@ -1,5 +1,6 @@
 import {
   DeleteObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client
 } from '@aws-sdk/client-s3'
@@ -19,6 +20,11 @@ export interface S3Service {
     key: string,
     bucketName: string
   ) => Effect.Effect<void, S3Error>
+
+  readonly checkExists: (
+    key: string,
+    bucketName: string
+  ) => Effect.Effect<boolean, never>
 }
 
 // Service tag for dependency injection
@@ -115,8 +121,33 @@ const deleteFileEffect = (key: string, bucketName: string) =>
     })
   )
 
+const checkExistsEffect = (key: string, bucketName: string) =>
+  Effect.tryPromise({
+    try: async () => {
+      const s3 = new S3Client({})
+      await s3.send(
+        new HeadObjectCommand({
+          Bucket: bucketName,
+          Key: key
+        })
+      )
+      return true
+    },
+    catch: () => false
+  }).pipe(
+    Effect.orElseSucceed(() => false),
+    Effect.withSpan('aws.s3.headObject', {
+      attributes: {
+        'aws.service': 's3',
+        's3.bucket': bucketName,
+        's3.key_prefix': getKeyPrefix(key)
+      }
+    })
+  )
+
 // Implementation - simple layer (effects are pure functions)
 export const S3ServiceLive = Layer.succeed(S3Service, {
   uploadFile: uploadFileEffect,
-  deleteFile: deleteFileEffect
+  deleteFile: deleteFileEffect,
+  checkExists: checkExistsEffect
 })
