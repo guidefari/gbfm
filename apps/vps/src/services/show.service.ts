@@ -3,6 +3,7 @@ import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
 import { user as usersTable } from '@/db/auth.schema'
+import { favoritesTable } from '@/db/favorites.schema'
 import {
   type InsertShow,
   type SelectMdxCompiledShow,
@@ -563,10 +564,7 @@ const getEpisodesEffect = (
       })
     }
 
-    const whereCondition = and(
-      eq(audioTable.showId, show.id)
-      // eq(audioTable.type, 'radio_show')
-    )
+    const whereCondition = and(eq(audioTable.showId, show.id))
 
     const countResult = yield* Effect.tryPromise({
       try: () =>
@@ -644,6 +642,15 @@ const subscribeEffect = (userId: string, showId: string) =>
     }
 
     yield* recordShowSubscribe()
+
+    yield* Effect.tryPromise({
+      try: () =>
+        db
+          .insert(favoritesTable)
+          .values({ userId, showId })
+          .onConflictDoNothing(),
+      catch: () => Effect.void
+    }).pipe(Effect.catchAll(() => Effect.void))
 
     return subscription
   })

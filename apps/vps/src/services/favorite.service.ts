@@ -1,13 +1,36 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, isNotNull } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
 import { favoritesTable, type SelectFavorite } from '@/db/favorites.schema'
+import { showsTable } from '@/db/show.schema'
 import { ConflictError, DatabaseError, NotFoundError } from '@/errors'
 import {
   recordFavoriteAdd,
   recordFavoriteRemove
 } from '@/lib/performance-monitoring'
+
+type FavoriteWithContent = {
+  id: string
+  userId: string
+  audioId: string | null
+  showId: string | null
+  createdAt: Date
+  audio: {
+    id: string
+    title: string
+    slug: string
+    thumbnailUrl: string | null
+    type: 'mix' | 'track' | 'misc'
+    url: string
+  } | null
+  show: {
+    id: string
+    title: string
+    slug: string
+    thumbnailUrl: string | null
+  } | null
+}
 
 // Service interface
 export interface FavoriteService {
@@ -18,31 +41,26 @@ export interface FavoriteService {
     SelectFavorite,
     DatabaseError | NotFoundError | ConflictError
   >
+  readonly addShowFavorite: (
+    userId: string,
+    showId: string
+  ) => Effect.Effect<
+    SelectFavorite,
+    DatabaseError | NotFoundError | ConflictError
+  >
   readonly removeFavorite: (
     userId: string,
     audioId: string
+  ) => Effect.Effect<void, DatabaseError | NotFoundError>
+  readonly removeShowFavorite: (
+    userId: string,
+    showId: string
   ) => Effect.Effect<void, DatabaseError | NotFoundError>
   readonly getFavorites: (
     userId: string,
     limit?: number,
     offset?: number
-  ) => Effect.Effect<
-    {
-      id: string
-      userId: string
-      audioId: string
-      createdAt: Date
-      audio: {
-        id: string
-        title: string
-        slug: string
-        thumbnailUrl: string | null
-        type: 'mix' | 'track' | 'misc' | 'radio_show'
-        url: string
-      }
-    }[],
-    DatabaseError
-  >
+  ) => Effect.Effect<FavoriteWithContent[], DatabaseError>
 }
 
 // Service tag for dependency injection
@@ -217,18 +235,175 @@ const removeFavoriteEffect = (userId: string, audioId: string) =>
     })
   )
 
-const getFavoritesEffect = (userId: string, limit = 20, offset = 0) =>
+const addShowFavoriteEffect = (userId: string, showId: string) =>
+  Effect.withSpan('favorite.addShow', {
+    attributes: { userId, showId }
+  })(
+    Effect.gen(function* () {
+      const showRecords = yield* Effect.tryPromise({
+        try: () =>
+          db
+            .select()
+            .from(showsTable)
+            .where(eq(showsTable.id, showId))
+            .limit(1),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to check show existence: ${(error as Error).message}`,
+            operation: 'select',
+            table: 'shows'
+          })
+      })
+
+      if (showRecords.length === 0) {
+        return yield* new NotFoundError({
+          message: 'Show not found',
+          resource: 'show',
+          id: showId
+        })
+      }
+
+      const existingRecords = yield* Effect.tryPromise({
+        try: () =>
+          db
+            .select()
+            .from(favoritesTable)
+            .where(
+              and(
+                eq(favoritesTable.userId, userId),
+                eq(favoritesTable.showId, showId)
+              )
+            )
+            .limit(1),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to check existing favorite: ${(error as Error).message}`,
+            operation: 'select',
+            table: 'favorites'
+          })
+      })
+
+      if (existingRecords.length > 0) {
+        return yield* new ConflictError({
+          message: 'Already favorited',
+          resource: 'favorite',
+          id: `${userId}-${showId}`
+        })
+      }
+
+      const insertedRecords = yield* Effect.tryPromise({
+        try: () =>
+          db
+            .insert(favoritesTable)
+            .values({
+              userId,
+              showId
+            })
+            .returning(),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to add favorite: ${(error as Error).message}`,
+            operation: 'insert',
+            table: 'favorites'
+          })
+      })
+
+      const favorite = insertedRecords[0]
+      if (!favorite) {
+        return yield* new DatabaseError({
+          message: 'Failed to create favorite record',
+          operation: 'insert',
+          table: 'favorites'
+        })
+      }
+
+      yield* recordFavoriteAdd()
+      yield* Effect.logInfo('[Favorites] Show favorite added', {
+        favoriteId: favorite.id,
+        userId,
+        showId
+      })
+
+      return favorite
+    })
+  )
+
+const removeShowFavoriteEffect = (userId: string, showId: string) =>
+  Effect.withSpan('favorite.removeShow', {
+    attributes: { userId, showId }
+  })(
+    Effect.gen(function* () {
+      const existingRecords = yield* Effect.tryPromise({
+        try: () =>
+          db
+            .select()
+            .from(favoritesTable)
+            .where(
+              and(
+                eq(favoritesTable.userId, userId),
+                eq(favoritesTable.showId, showId)
+              )
+            )
+            .limit(1),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to check existing favorite: ${(error as Error).message}`,
+            operation: 'select',
+            table: 'favorites'
+          })
+      })
+
+      if (existingRecords.length === 0) {
+        return yield* new NotFoundError({
+          message: 'Favorite not found',
+          resource: 'favorite',
+          id: `${userId}-${showId}`
+        })
+      }
+
+      yield* Effect.tryPromise({
+        try: () =>
+          db
+            .delete(favoritesTable)
+            .where(
+              and(
+                eq(favoritesTable.userId, userId),
+                eq(favoritesTable.showId, showId)
+              )
+            ),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to remove favorite: ${(error as Error).message}`,
+            operation: 'delete',
+            table: 'favorites'
+          })
+      })
+
+      yield* recordFavoriteRemove()
+      yield* Effect.logInfo('[Favorites] Show favorite removed', {
+        userId,
+        showId
+      })
+    })
+  )
+
+const getFavoritesEffect = (
+  userId: string,
+  limit = 20,
+  offset = 0
+): Effect.Effect<FavoriteWithContent[], DatabaseError> =>
   Effect.withSpan('favorite.get', {
     attributes: { userId, limit, offset }
   })(
     Effect.gen(function* () {
-      const favorites = yield* Effect.tryPromise({
+      const audioFavorites = yield* Effect.tryPromise({
         try: () =>
           db
             .select({
               id: favoritesTable.id,
               userId: favoritesTable.userId,
               audioId: favoritesTable.audioId,
+              showId: favoritesTable.showId,
               createdAt: favoritesTable.createdAt,
               audio: {
                 id: audioTable.id,
@@ -241,32 +416,83 @@ const getFavoritesEffect = (userId: string, limit = 20, offset = 0) =>
             })
             .from(favoritesTable)
             .innerJoin(audioTable, eq(favoritesTable.audioId, audioTable.id))
-            .where(eq(favoritesTable.userId, userId))
+            .where(
+              and(
+                eq(favoritesTable.userId, userId),
+                isNotNull(favoritesTable.audioId)
+              )
+            )
             .orderBy(favoritesTable.createdAt)
             .limit(limit)
             .offset(offset),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to get favorites: ${(error as Error).message}`,
+            message: `Failed to get audio favorites: ${(error as Error).message}`,
             operation: 'select',
             table: 'favorites'
           })
       })
 
+      const showFavorites = yield* Effect.tryPromise({
+        try: () =>
+          db
+            .select({
+              id: favoritesTable.id,
+              userId: favoritesTable.userId,
+              audioId: favoritesTable.audioId,
+              showId: favoritesTable.showId,
+              createdAt: favoritesTable.createdAt,
+              show: {
+                id: showsTable.id,
+                title: showsTable.title,
+                slug: showsTable.slug,
+                thumbnailUrl: showsTable.thumbnailUrl
+              }
+            })
+            .from(favoritesTable)
+            .innerJoin(showsTable, eq(favoritesTable.showId, showsTable.id))
+            .where(
+              and(
+                eq(favoritesTable.userId, userId),
+                isNotNull(favoritesTable.showId)
+              )
+            )
+            .orderBy(favoritesTable.createdAt)
+            .limit(limit)
+            .offset(offset),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to get show favorites: ${(error as Error).message}`,
+            operation: 'select',
+            table: 'favorites'
+          })
+      })
+
+      const combined: FavoriteWithContent[] = [
+        ...audioFavorites.map((f) => ({ ...f, show: null })),
+        ...showFavorites.map((f) => ({ ...f, audio: null }))
+      ].sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      )
+
       yield* Effect.logInfo('[Favorites] Favorites retrieved', {
         userId,
-        count: favorites.length,
+        audioCount: audioFavorites.length,
+        showCount: showFavorites.length,
         limit,
         offset
       })
 
-      return favorites
+      return combined
     })
   )
 
 // Implementation - simple layer that provides access to the Effects
 export const FavoriteServiceLive = Layer.succeed(FavoriteService, {
   addFavorite: addFavoriteEffect,
+  addShowFavorite: addShowFavoriteEffect,
   removeFavorite: removeFavoriteEffect,
+  removeShowFavorite: removeShowFavoriteEffect,
   getFavorites: getFavoritesEffect
 })
