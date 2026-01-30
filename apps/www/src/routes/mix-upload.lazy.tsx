@@ -76,7 +76,7 @@ function MixUploadPage() {
     type?: string
   }
   const isEditMode = !!search.edit
-  const editType = (search.type as 'mix' | 'radio_show') || 'mix'
+  const editType = (search.type as 'mix') || 'mix'
 
   const { data: allMixes } = useAudioByType('mix')
   const { data: allShows } = useAllShows()
@@ -263,8 +263,7 @@ function MixUploadPage() {
               .join('\\n')}`
           : ''
 
-      const isShowEpisode = !!data.showId
-      const type = isShowEpisode ? 'radio_show' : 'mix'
+      const type = 'mix'
 
       const audioData = {
         title: data.title,
@@ -325,8 +324,8 @@ function MixUploadPage() {
         }
         setUploadStep('idle')
 
-        const type = formData.showId ? 'radio_show' : 'mix'
-        if (type === 'radio_show') {
+        const type = 'mix'
+        if (type === 'mix' && formData.showId) {
           // Find the show slug if possible, or just go to shows
           // For now, let's go to mix/show list or the specific item
           // Since we don't have the show slug handy easily without looking it up from allShows
