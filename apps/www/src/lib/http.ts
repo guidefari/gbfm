@@ -65,10 +65,7 @@ export async function fetcher<T>(input: RequestInfo, init: RequestInit = {}) {
   }
 }
 
-export function useAudioByType(
-  type: 'mix' | 'track' | 'misc' | 'radio_show',
-  tag?: string
-) {
+export function useAudioByType(type: 'mix' | 'track' | 'misc', tag?: string) {
   const {
     data,
     error,
@@ -102,10 +99,7 @@ export function useAudioByType(
   }
 }
 
-export function useAudioBySlug(
-  type: 'mix' | 'track' | 'misc' | 'radio_show',
-  slug: string
-) {
+export function useAudioBySlug(type: 'mix' | 'track' | 'misc', slug: string) {
   const { data, error, isPending } = useQuery<SelectMdxCompiledAudio, Error>({
     queryKey: ['audio', type, slug],
     queryFn: async () =>
@@ -603,7 +597,7 @@ export type PublicProfile = {
       title: string
       slug: string
       thumbnailUrl: string | null
-      type: 'mix' | 'track' | 'misc' | 'radio_show'
+      type: 'mix' | 'track' | 'misc'
     }>
     shows: Array<{
       id: string
@@ -696,5 +690,26 @@ export function useNewsletterSubscribe() {
           body: JSON.stringify({ email, source: 'subscribe_page' })
         }
       )
+  })
+}
+
+type QRPdfResponse = {
+  url: string
+  cached: boolean
+}
+
+export function useMixQRPdf(
+  slug: string,
+  template: 'flyer' | 'qr' = 'flyer',
+  enabled = false
+) {
+  return useQuery<QRPdfResponse>({
+    queryKey: ['mix-qr-pdf', slug, template],
+    queryFn: () =>
+      fetcher<QRPdfResponse>(
+        `${VPS_BASE_URL}/content/audio/mix/${slug}/qr-pdf?template=${template}`
+      ),
+    enabled,
+    staleTime: 1000 * 60 * 60 * 24
   })
 }

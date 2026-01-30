@@ -188,7 +188,7 @@ export const getAudioByType = createRoute({
   path: '/audio/{type}',
   method: 'get',
   request: {
-    params: z.object({ type: z.enum(['mix', 'track', 'misc', 'radio_show']) }),
+    params: z.object({ type: z.enum(['mix', 'track', 'misc']) }),
     query: paginationQuerySchema.extend({
       tag: z.string().optional()
     })
@@ -211,7 +211,7 @@ export const getAudioBySlug = createRoute({
   method: 'get',
   request: {
     params: z.object({
-      type: z.enum(['mix', 'track', 'misc', 'radio_show']),
+      type: z.enum(['mix', 'track', 'misc']),
       slug: z.string()
     })
   },
@@ -238,7 +238,7 @@ export const updateAudioBySlug = createRoute({
   middleware: [betterAuthMiddleware],
   request: {
     params: z.object({
-      type: z.enum(['mix', 'track', 'misc', 'radio_show']),
+      type: z.enum(['mix', 'track', 'misc']),
       slug: z.string()
     }),
     body: jsonContentRequired(
@@ -303,6 +303,40 @@ export const createAudio = createRoute({
   }
 })
 
+export const getMixQRPdf = createRoute({
+  path: '/audio/mix/{slug}/qr-pdf',
+  method: 'get',
+  request: {
+    params: z.object({
+      slug: z.string().openapi({ description: 'Mix slug' })
+    }),
+    query: z.object({
+      template: z
+        .enum(['flyer', 'qr'])
+        .default('flyer')
+        .openapi({ description: 'PDF template style' })
+    })
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.object({
+        url: z.string().openapi({ description: 'URL to the generated PDF' }),
+        cached: z.boolean().openapi({ description: 'Whether PDF was cached' })
+      }),
+      'QR PDF URL'
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      z.object({ error: z.string() }),
+      'Mix not found'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to generate QR PDF'
+    )
+  }
+})
+
 // Export types
 export type CreatePostRoute = typeof createPost
 export type GetPostsByTagRoute = typeof getPostsByTag
@@ -313,3 +347,4 @@ export type GetAudioByTypeRoute = typeof getAudioByType
 export type GetAudioBySlugRoute = typeof getAudioBySlug
 export type UpdateAudioBySlugRoute = typeof updateAudioBySlug
 export type CreateAudioRoute = typeof createAudio
+export type GetMixQRPdfRoute = typeof getMixQRPdf

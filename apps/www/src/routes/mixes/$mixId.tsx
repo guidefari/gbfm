@@ -1,6 +1,14 @@
 import type { SelectMdxCompiledAudio } from '@gbfm/vps/schemas'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { ArrowLeft, Edit, ListPlus, Tag } from 'lucide-react'
+import {
+  ArrowLeft,
+  Download,
+  Edit,
+  ListPlus,
+  Loader2,
+  QrCode,
+  Tag
+} from 'lucide-react'
 import * as React from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
 import { MDXRendrr } from '@/components/MDXRendrr'
@@ -8,7 +16,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/use-toast'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
-import { fetcher, VPS_BASE_URL } from '@/lib/http'
+import { fetcher, useMixQRPdf, VPS_BASE_URL } from '@/lib/http'
 import { useContentStore } from '@/store'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
 import { useAuthStore } from '@/store/auth'
@@ -178,6 +186,31 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
     })
   }
 
+  const [qrTemplate, setQrTemplate] = React.useState<'flyer' | 'qr' | null>(
+    null
+  )
+  const { data: qrPdf, isFetching: isGeneratingPdf } = useMixQRPdf(
+    mix.slug,
+    qrTemplate || 'flyer',
+    !!qrTemplate
+  )
+
+  React.useEffect(() => {
+    if (qrPdf?.url && qrTemplate) {
+      window.open(qrPdf.url, '_blank')
+      setQrTemplate(null)
+    }
+  }, [qrPdf, qrTemplate])
+
+  const handleDownloadQR = (template: 'flyer' | 'qr') => {
+    setQrTemplate(template)
+    toast({
+      title: 'Generating PDF...',
+      description: 'Your QR code PDF will download shortly',
+      duration: 3000
+    })
+  }
+
   return (
     <div className='space-y-8'>
       <div className='flex flex-col items-start gap-8 md:flex-row'>
@@ -262,16 +295,38 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
                   </div>
                 )}
               </div>
-              {isAdmin && (
+              <div className='flex flex-shrink-0 gap-2'>
                 <Button
-                  onClick={handleEdit}
+                  onClick={() => handleDownloadQR('flyer')}
                   variant='outline'
                   size='sm'
-                  className='flex-shrink-0'>
-                  <Edit className='w-4 h-4 mr-2' />
-                  Edit
+                  disabled={isGeneratingPdf}
+                  title='Download Flyer PDF'>
+                  {isGeneratingPdf && qrTemplate === 'flyer' ? (
+                    <Loader2 className='w-4 h-4 animate-spin' />
+                  ) : (
+                    <Download className='w-4 h-4' />
+                  )}
                 </Button>
-              )}
+                <Button
+                  onClick={() => handleDownloadQR('qr')}
+                  variant='outline'
+                  size='sm'
+                  disabled={isGeneratingPdf}
+                  title='Download QR Code PDF'>
+                  {isGeneratingPdf && qrTemplate === 'qr' ? (
+                    <Loader2 className='w-4 h-4 animate-spin' />
+                  ) : (
+                    <QrCode className='w-4 h-4' />
+                  )}
+                </Button>
+                {isAdmin && (
+                  <Button onClick={handleEdit} variant='outline' size='sm'>
+                    <Edit className='w-4 h-4 mr-2' />
+                    Edit
+                  </Button>
+                )}
+              </div>
             </div>
             {mix.description && (
               <p className='pl-4 text-xl italic font-medium leading-relaxed border-l-2 text-muted-foreground border-border/50'>

@@ -8,6 +8,7 @@ import {
   type SelectAudio,
   type SelectMdxCompiledAudio
 } from '@/db/audio.schema'
+import { showsTable } from '@/db/show.schema'
 import { user as usersTable } from '@/db/auth.schema'
 import { timeQuery } from '@/db/query-timer'
 import {
@@ -23,7 +24,7 @@ import {
 } from '@/lib/pagination'
 import { recordAudioCreate } from '@/lib/performance-monitoring'
 
-type AudioType = 'mix' | 'track' | 'misc' | 'radio_show'
+type AudioType = 'mix' | 'track' | 'misc'
 
 type AudioWithCreators = SelectAudio & {
   creators: Array<{
@@ -270,6 +271,30 @@ const getBySlugEffect = (type: AudioType, slug: string) =>
 
 const createEffect = (data: InsertAudio, creatorIds: string[]) =>
   Effect.gen(function* () {
+    let audioData = { ...data }
+
+    if (data.showId && !data.thumbnailUrl) {
+      const showId = data.showId
+      const showResult = yield* Effect.tryPromise({
+        try: () =>
+          db
+            .select({ thumbnailUrl: showsTable.thumbnailUrl })
+            .from(showsTable)
+            .where(eq(showsTable.id, showId))
+            .limit(1),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to fetch show: ${(error as Error).message}`,
+            operation: 'select',
+            table: 'shows'
+          })
+      })
+
+      if (showResult[0]?.thumbnailUrl) {
+        audioData = { ...audioData, thumbnailUrl: showResult[0].thumbnailUrl }
+      }
+    }
+
     const result = yield* Effect.tryPromise({
       try: () =>
         timeQuery(
@@ -277,7 +302,7 @@ const createEffect = (data: InsertAudio, creatorIds: string[]) =>
             db.transaction(async (tx) => {
               const [newAudio] = await tx
                 .insert(audioTable)
-                .values(data)
+                .values(audioData)
                 .returning()
 
               if (!newAudio) {

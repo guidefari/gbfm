@@ -10,6 +10,7 @@ import type { AppBindings, AppRouteHandler } from '@/lib/types'
 import { AppRuntime } from '@/runtime'
 import { AudioService } from '@/services/audio.service'
 import { PostService } from '@/services/post.service'
+import { QRCodeService } from '@/services/qrcode.service'
 
 import type {
   CreateAudioRoute,
@@ -17,6 +18,7 @@ import type {
   CreatePostRoute,
   GetAudioBySlugRoute,
   GetAudioByTypeRoute,
+  GetMixQRPdfRoute,
   GetPostsByTagRoute,
   ProcessMixUploadRoute,
   UpdateAudioBySlugRoute
@@ -612,4 +614,47 @@ function cleanup(files: ProcessedFiles): Effect.Effect<void> {
       fs.rmdir(path.dirname(files.audioPath))
     ).pipe(Effect.catchAll(() => Effect.void))
   })
+}
+
+export const getMixQRPdf: AppRouteHandler<GetMixQRPdfRoute> = async (c) => {
+  const { slug } = c.req.valid('param')
+  const { template } = c.req.valid('query')
+
+  const program = Effect.gen(function* () {
+    const audioService = yield* AudioService
+    const qrService = yield* QRCodeService
+
+    const mix = yield* audioService.getBySlug('mix', slug)
+
+    return yield* qrService.generateMixQRPdf(
+      {
+        slug: mix.slug,
+        title: mix.title,
+        thumbnailUrl: mix.thumbnailUrl,
+        creators: mix.creators
+      },
+      template
+    )
+  }).pipe(
+    Effect.catchTag('NotFoundError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: 404 as const
+      })
+    ),
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: 500 as const
+      })
+    )
+  )
+
+  const result = await AppRuntime.runPromise(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
+  }
+
+  return c.json(result, HttpStatusCodes.OK)
 }
