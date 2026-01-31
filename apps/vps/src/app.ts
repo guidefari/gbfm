@@ -9,9 +9,9 @@ import musicReminders from '@/routes/music-reminders/music-reminders.index'
 import newsletter from '@/routes/newsletter/newsletter.index'
 import profile from '@/routes/profile/profile.index'
 import publication from '@/routes/publication/publication.index'
+import { seoRouter, shareRouter } from '@/routes/redirect/redirect.index'
 import resolve from '@/routes/resolve/resolve.index'
 import rss from '@/routes/rss/rss.index'
-import share from '@/routes/share/share.index'
 import shows from '@/routes/shows/show.index'
 import spotify from '@/routes/spotify/spotify.index'
 import upload from '@/routes/upload/upload.index'
@@ -42,12 +42,13 @@ const setupRoutesEffect = Effect.gen(function* () {
   app.route('/email', email)
   app.route('/newsletter', newsletter)
   app.route('/publication', publication)
-  app.route('/share', share)
+  app.route('/s', shareRouter)
   app.route('/shows', shows)
   app.route('/spotify', spotify)
   app.route('/upload', upload)
   app.route('/music-reminders', musicReminders)
   app.route('', rss)
+  app.route('', seoRouter)
 
   app.get('/health', async (c) => {
     const result = await runApp(healthCheckEffect.pipe(Effect.either))
