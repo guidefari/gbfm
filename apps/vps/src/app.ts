@@ -20,6 +20,7 @@ import user from '@/routes/user/user.index'
 // import { backfillDisplayUsername } from './data-migrations/backfill-display-username'
 import { db } from './db'
 import { runApp, runAppFork } from './runtime'
+import { regenerateSitemap } from './routes/redirect/seo/sitemap'
 import { cleanupExpiredQrPdfs } from './services/qr-cache-cleanup'
 import { processPendingReminders } from './services/reminder-processor'
 
@@ -85,6 +86,15 @@ const qrCacheCleanupEffect = cleanupExpiredQrPdfs.pipe(
   Effect.repeat(Schedule.spaced('1 minutes'))
 )
 
+const sitemapRegenerationEffect = regenerateSitemap.pipe(
+  Effect.catchAll((error) =>
+    Effect.logError(
+      `Sitemap regeneration failed: ${error instanceof Error ? error.message : String(error)}`
+    )
+  ),
+  Effect.repeat(Schedule.spaced('1 hours'))
+)
+
 const mainEffect = setupRoutesEffect
 
 const setupGracefulShutdown = () => {
@@ -123,6 +133,7 @@ const initializeApp = async () => {
 
   runAppFork(cronJobEffect)
   runAppFork(qrCacheCleanupEffect)
+  runAppFork(sitemapRegenerationEffect)
 
   return await runApp(
     mainEffect.pipe(
