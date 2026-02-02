@@ -95,7 +95,9 @@ describe('sitemap.utils', () => {
       expect(xml).toContain(
         '<loc>https://goosebumps.fm/mixes/summer-vibes</loc>'
       )
-      expect(xml).toContain('<loc>https://goosebumps.fm/mixes/chill-beats</loc>')
+      expect(xml).toContain(
+        '<loc>https://goosebumps.fm/mixes/chill-beats</loc>'
+      )
     })
 
     test('includes shows', () => {

@@ -15,9 +15,7 @@ export const sitemapXml = async (c: Context) => {
   if (result._tag === 'Left') {
     Effect.logError('[Sitemap] Error getting sitemap', {
       error:
-        result.left instanceof Error
-          ? result.left.message
-          : String(result.left)
+        result.left instanceof Error ? result.left.message : String(result.left)
     }).pipe(Effect.runPromise)
 
     return c.text(EMPTY_SITEMAP, 500)

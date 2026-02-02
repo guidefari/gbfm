@@ -22,7 +22,9 @@ const fetchReleaseBySlug = (slug: string) =>
           releaseDate: releasesTable.releaseDate
         })
         .from(releasesTable)
-        .where(and(eq(releasesTable.slug, slug), eq(releasesTable.draft, false)))
+        .where(
+          and(eq(releasesTable.slug, slug), eq(releasesTable.draft, false))
+        )
         .limit(1),
     catch: (error) =>
       new DatabaseError({

@@ -104,8 +104,7 @@ export const shareTrack = async (c: Context) => {
     type: 'music.song',
     title: audio.title || slug,
     description:
-      audio.description ||
-      `Listen to ${audio.title || slug} on goosebumps.fm`,
+      audio.description || `Listen to ${audio.title || slug} on goosebumps.fm`,
     image: audio.thumbnailUrl,
     canonicalPath: `/tracks/${slug}`,
     audio: audio.url,

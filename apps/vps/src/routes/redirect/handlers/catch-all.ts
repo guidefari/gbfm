@@ -60,8 +60,7 @@ export const shareSlug = async (c: Context) => {
 
   if (resolved.type === 'profile') {
     const { data } = resolved
-    const displayName =
-      data.displayUsername || data.username || 'Unknown User'
+    const displayName = data.displayUsername || data.username || 'Unknown User'
 
     const html = buildOGHtml({
       type: 'profile',
@@ -83,8 +82,7 @@ export const shareSlug = async (c: Context) => {
       type: 'website',
       title: data.title || slug,
       description:
-        data.description ||
-        `Check out ${data.title || slug} on goosebumps.fm`,
+        data.description || `Check out ${data.title || slug} on goosebumps.fm`,
       image: data.bannerImageUrl || data.thumbnailUrl,
       canonicalPath: `/${data.slug}`,
       creators: data.hosts.map((h) => h.name),
