@@ -10,6 +10,7 @@ import {
 import { toast } from '@/components/ui/use-toast'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { useAddFavorite, useFavorites, useRemoveFavorite } from '@/lib/http'
+import { getShareUrl } from '@/lib/share'
 import { useAudioPlayerActions } from '@/store/audioPlayer'
 
 interface MixMenuProps {
@@ -25,7 +26,7 @@ export function MixMenu({ mix }: MixMenuProps) {
   const isFavorited = favorites.some((f) => f.audioId === mix.id)
 
   const handleShare = async () => {
-    const shareUrl = `https://vps.goosebumps.fm/share/mix/${mix.slug}`
+    const shareUrl = getShareUrl('mix', mix.slug)
 
     try {
       await navigator.clipboard.writeText(shareUrl)

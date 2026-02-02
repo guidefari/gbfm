@@ -12,6 +12,7 @@ import {
 import * as React from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
 import { MDXRendrr } from '@/components/MDXRendrr'
+import { ShareButton } from '@/components/ShareButton'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/use-toast'
@@ -160,7 +161,8 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
         mix.url,
         mix.thumbnailUrl || DEFAULT_IMAGE_URL,
         mix.title,
-        mix.id
+        mix.id,
+        mix.creators
       )
     }
   }
@@ -298,6 +300,7 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
                 )}
               </div>
               <div className='flex flex-shrink-0 gap-2'>
+                <ShareButton type='mix' slug={mix.slug} />
                 {canDownloadQr && (
                   <>
                     <Button

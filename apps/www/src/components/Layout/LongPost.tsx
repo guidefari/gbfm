@@ -1,4 +1,5 @@
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
+import { getShareUrl, type ShareContentType } from '@/lib/share'
 import { LilDate } from '../common/LilDate'
 import { MinimalCard } from '../common/MinimalCard'
 import { MDXRendrr } from '../MDXRendrr'
@@ -12,6 +13,7 @@ type Props = {
   youtubeId?: string
   mp3Url?: string
   slug?: string
+  shareType?: ShareContentType
 }
 
 export const LongPost = ({
@@ -22,11 +24,10 @@ export const LongPost = ({
   date,
   youtubeId,
   mp3Url,
-  slug
+  slug,
+  shareType = 'mix'
 }: Props) => {
-  const shareUrl = slug
-    ? `https://vps.goosebumps.fm/share/mix/${slug}`
-    : undefined
+  const shareUrl = slug ? getShareUrl(shareType, slug) : undefined
 
   return (
     <div className='relative grid grid-flow-row lg:grid-flow-col lg:grid-cols-[auto_1fr] lg:gap-5'>

@@ -1,4 +1,5 @@
 'use client'
+import { Link } from '@tanstack/react-router'
 import {
   List,
   Pause,
@@ -18,8 +19,38 @@ import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { useAddFavorite, useFavorites, useRemoveFavorite } from '@/lib/http'
 import { formatSeconds } from '@/lib/utils'
 import { attachVolumeScroll } from '@/lib/volumeScrollHandler'
-import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
+import {
+  type Creator,
+  useAudioPlayerActions,
+  useAudioPlayerState
+} from '@/store/audioPlayer'
 import { useAuthStore } from '@/store/auth'
+
+function CreatorLinks({ creators }: { creators?: Creator[] }) {
+  if (!creators || creators.length === 0) {
+    return <span>Mix</span>
+  }
+
+  return (
+    <>
+      {creators.map((creator, index) => (
+        <span key={creator.id}>
+          {creator.username ? (
+            <Link
+              to='/profile/$username'
+              params={{ username: creator.username }}
+              className='hover:underline'>
+              {creator.displayUsername}
+            </Link>
+          ) : (
+            <span>{creator.displayUsername}</span>
+          )}
+          {index < creators.length - 1 && ', '}
+        </span>
+      ))}
+    </>
+  )
+}
 
 interface BaseAudioPlayerProps {
   variant?: 'full' | 'compact'
@@ -161,7 +192,8 @@ export function BaseAudioPlayer({
     ? {
         title: nowPlayingContext.title,
         thumbnailUrl: thumbnailUrl,
-        artist: 'Mix' // Default since we don't have artist field
+        creators: nowPlayingContext.creators,
+        url: nowPlayingContext.url
       }
     : null
 
@@ -197,10 +229,16 @@ export function BaseAudioPlayer({
           />
           <div className='flex-1 min-w-0'>
             <h3 className='text-sm font-medium truncate'>
-              {currentTrack.title}
+              {currentTrack.url ? (
+                <Link to={currentTrack.url} className='hover:underline'>
+                  {currentTrack.title}
+                </Link>
+              ) : (
+                currentTrack.title
+              )}
             </h3>
             <p className='text-xs text-muted-foreground'>
-              {currentTrack.artist}
+              <CreatorLinks creators={currentTrack.creators} />
             </p>
           </div>
         </div>
@@ -281,10 +319,16 @@ export function BaseAudioPlayer({
             )}
             <div className='flex-1 min-w-0'>
               <h3 className='text-sm font-medium truncate'>
-                {currentTrack.title}
+                {currentTrack.url ? (
+                  <Link to={currentTrack.url} className='hover:underline'>
+                    {currentTrack.title}
+                  </Link>
+                ) : (
+                  currentTrack.title
+                )}
               </h3>
               <p className='px-0 text-xs truncate text-secondary-foreground'>
-                {currentTrack.artist}
+                <CreatorLinks creators={currentTrack.creators} />
               </p>
             </div>
             {showTrackActions && (
@@ -420,10 +464,16 @@ export function BaseAudioPlayer({
             )}
             <div className='flex-1 min-w-0'>
               <h3 className='text-sm font-medium truncate'>
-                {currentTrack.title}
+                {currentTrack.url ? (
+                  <Link to={currentTrack.url} className='hover:underline'>
+                    {currentTrack.title}
+                  </Link>
+                ) : (
+                  currentTrack.title
+                )}
               </h3>
               <p className='text-xs truncate text-secondary-foreground'>
-                {currentTrack.artist}
+                <CreatorLinks creators={currentTrack.creators} />
               </p>
             </div>
             {showQueue && (
