@@ -1,12 +1,15 @@
 import { and, eq } from 'drizzle-orm'
 import { Effect } from 'effect'
 import type { Context } from 'hono'
+import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import { db } from '@/db'
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { user as usersTable } from '@/db/auth.schema'
-import { DatabaseError } from '@/errors'
+import { DatabaseError, NotFoundError } from '@/errors'
 import { runApp } from '@/runtime'
 import { buildErrorHtml, buildOGHtml } from '../redirect.template'
+
+type HtmlResponse = { html: string; status: ContentfulStatusCode }
 
 const fetchTrackBySlug = (slug: string) =>
   Effect.tryPromise({
@@ -60,58 +63,64 @@ export const shareTrack = async (c: Context) => {
   const program = Effect.gen(function* () {
     const [audio] = yield* fetchTrackBySlug(slug)
     if (!audio) {
-      return { found: false } as const
+      return yield* new NotFoundError({
+        message: 'Track not found',
+        resource: 'track',
+        id: slug
+      })
     }
 
     const creators = yield* fetchCreators(audio.id)
-    return { found: true, audio, creators } as const
-  })
 
-  const result = await runApp(program.pipe(Effect.either))
-
-  if (result._tag === 'Left') {
-    Effect.logError('[Share] Error fetching track', {
-      slug,
-      error:
-        result.left instanceof Error ? result.left.message : String(result.left)
-    }).pipe(Effect.runPromise)
-
-    return c.html(
-      buildErrorHtml({
-        title: 'Error',
-        message: 'Something went wrong while loading this track.',
-        statusCode: 500
+    return {
+      html: buildOGHtml({
+        type: 'music.song',
+        title: audio.title || slug,
+        description:
+          audio.description ||
+          `Listen to ${audio.title || slug} on goosebumps.fm`,
+        image: audio.thumbnailUrl,
+        canonicalPath: `/tracks/${slug}`,
+        audio: audio.url,
+        creators: creators.map((c) => c.name),
+        imageAlt: `${audio.title || slug} cover art`
       }),
-      500
+      status: 200
+    } satisfies HtmlResponse
+  }).pipe(
+    Effect.catchTag('NotFoundError', () =>
+      Effect.succeed<HtmlResponse>({
+        html: buildErrorHtml({
+          title: 'Track not found',
+          message: "The track you're looking for doesn't exist.",
+          statusCode: 404
+        }),
+        status: 404
+      })
+    ),
+    Effect.catchTag('DatabaseError', (error) =>
+      Effect.gen(function* () {
+        yield* Effect.logError('[Share] Error fetching track', {
+          slug,
+          error: error.message
+        })
+        return {
+          html: buildErrorHtml({
+            title: 'Error',
+            message: 'Something went wrong while loading this track.',
+            statusCode: 500
+          }),
+          status: 500
+        } satisfies HtmlResponse
+      })
     )
+  )
+
+  const response = await runApp(program)
+
+  if (response.status === 200) {
+    c.header('Cache-Control', 'public, max-age=3600')
   }
 
-  const data = result.right
-  if (!data.found) {
-    return c.html(
-      buildErrorHtml({
-        title: 'Track not found',
-        message: "The track you're looking for doesn't exist.",
-        statusCode: 404
-      }),
-      404
-    )
-  }
-
-  const { audio, creators } = data
-
-  const html = buildOGHtml({
-    type: 'music.song',
-    title: audio.title || slug,
-    description:
-      audio.description || `Listen to ${audio.title || slug} on goosebumps.fm`,
-    image: audio.thumbnailUrl,
-    canonicalPath: `/tracks/${slug}`,
-    audio: audio.url,
-    creators: creators.map((c) => c.name),
-    imageAlt: `${audio.title || slug} cover art`
-  })
-
-  c.header('Cache-Control', 'public, max-age=3600')
-  return c.html(html)
+  return c.html(response.html, response.status)
 }

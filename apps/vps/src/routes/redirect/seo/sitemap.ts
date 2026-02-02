@@ -8,22 +8,28 @@ const EMPTY_SITEMAP =
   '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>'
 
 export const sitemapXml = async (c: Context) => {
-  const result = await runApp(getCachedSitemap.pipe(Effect.either))
+  const program = getCachedSitemap.pipe(
+    Effect.map((data) => ({ data, status: 200 as const })),
+    Effect.catchAll((error) =>
+      Effect.gen(function* () {
+        yield* Effect.logError('[Sitemap] Error getting sitemap', {
+          error: error instanceof Error ? error.message : String(error)
+        })
+        return { error: EMPTY_SITEMAP, status: 500 as const }
+      })
+    )
+  )
+
+  const result = await runApp(program)
 
   c.header('Content-Type', 'application/xml; charset=utf-8')
 
-  if (result._tag === 'Left') {
-    Effect.logError('[Sitemap] Error getting sitemap', {
-      error:
-        result.left instanceof Error ? result.left.message : String(result.left)
-    }).pipe(Effect.runPromise)
-
-    return c.text(EMPTY_SITEMAP, 500)
+  if ('error' in result) {
+    return c.text(result.error, result.status)
   }
 
-  const { xml, generatedAt } = result.right
+  const { xml, generatedAt } = result.data
 
-  // Cache for 1 hour, but allow stale content for 24 hours while revalidating
   c.header(
     'Cache-Control',
     'public, max-age=3600, stale-while-revalidate=86400'

@@ -52,13 +52,15 @@ const setupRoutesEffect = Effect.gen(function* () {
   app.route('', seoRouter)
 
   app.get('/health', async (c) => {
-    const result = await runApp(healthCheckEffect.pipe(Effect.either))
+    const program = healthCheckEffect.pipe(
+      Effect.map(() => ({ data: { dbConnected: true }, status: 200 as const })),
+      Effect.catchAll(() =>
+        Effect.succeed({ data: { dbConnected: false }, status: 500 as const })
+      )
+    )
 
-    if (result._tag === 'Left') {
-      return c.json({ dbConnected: false }, 500)
-    }
-
-    return c.json({ dbConnected: true })
+    const result = await runApp(program)
+    return c.json(result.data, result.status)
   })
 
   return app

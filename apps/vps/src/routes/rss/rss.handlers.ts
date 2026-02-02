@@ -27,17 +27,25 @@ const fetchMixesEffect = Effect.tryPromise({
 })
 
 export const getRSSFeed: AppRouteHandler<GetRSSFeedRoute> = async (c) => {
-  const result = await runApp(fetchMixesEffect.pipe(Effect.either))
+  const program = fetchMixesEffect.pipe(
+    Effect.map((mixes) => ({ data: mixes, status: 200 as const })),
+    Effect.catchTag('DatabaseError', (error) =>
+      Effect.gen(function* () {
+        yield* Effect.logError('[RSS] Error generating RSS feed', {
+          error: error.message
+        })
+        return { error: 'Internal Server Error', status: 500 as const }
+      })
+    )
+  )
 
-  if (result._tag === 'Left') {
-    Effect.logError('[RSS] Error generating RSS feed', {
-      error:
-        result.left instanceof Error ? result.left.message : String(result.left)
-    }).pipe(Effect.runPromise)
-    return c.text('Internal Server Error', 500)
+  const result = await runApp(program)
+
+  if ('error' in result) {
+    return c.text(result.error, result.status)
   }
 
-  const mixes = result.right
+  const mixes = result.data
   const sortedMixes = mixes.sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   )

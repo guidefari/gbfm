@@ -1,6 +1,5 @@
 import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
-import { S3Error } from '@/errors'
 import type { AppRouteHandler } from '@/lib/types'
 import { runApp } from '@/runtime'
 import { ConfigService } from '@/services/config.service'
@@ -71,30 +70,32 @@ export const uploadFile: AppRouteHandler<UploadFileRoute> = async (c) => {
     return { url: publicUrl, key }
   })
 
-  const result = await runApp(
-    program.pipe(
-      Effect.withSpan('api.upload.file', {
-        attributes: { fileType, fileName }
-      }),
-      Effect.either
+  const uploadProgram = program.pipe(
+    Effect.withSpan('api.upload.file', {
+      attributes: { fileType, fileName }
+    }),
+    Effect.map((data) => ({ data, status: HttpStatusCodes.OK }) as const),
+    Effect.catchTag('S3Error', (error) =>
+      Effect.gen(function* () {
+        yield* Effect.logError('[Upload] File upload error', {
+          fileName,
+          fileType,
+          fileSize: file.size,
+          error: error.message
+        })
+        return {
+          error: 'Failed to upload file',
+          status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+        } as const
+      })
     )
   )
 
-  if (result._tag === 'Left') {
-    const error = result.left
-    if (error instanceof S3Error) {
-      Effect.logError('[Upload] File upload error', {
-        fileName,
-        fileType,
-        fileSize: file.size,
-        error: error.message
-      }).pipe(Effect.runPromise)
-    }
-    return c.json(
-      { error: 'Failed to upload file' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
-    )
+  const result = await runApp(uploadProgram)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
 
-  return c.json(result.right, HttpStatusCodes.OK)
+  return c.json(result.data, result.status)
 }

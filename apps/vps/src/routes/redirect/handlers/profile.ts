@@ -1,11 +1,14 @@
 import { eq } from 'drizzle-orm'
 import { Effect } from 'effect'
 import type { Context } from 'hono'
+import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import { db } from '@/db'
 import { user as usersTable } from '@/db/auth.schema'
-import { DatabaseError } from '@/errors'
+import { DatabaseError, NotFoundError } from '@/errors'
 import { runApp } from '@/runtime'
 import { buildErrorHtml, buildOGHtml } from '../redirect.template'
+
+type HtmlResponse = { html: string; status: ContentfulStatusCode }
 
 const fetchUserByUsername = (username: string) =>
   Effect.tryPromise({
@@ -47,54 +50,60 @@ export const shareProfile = async (c: Context) => {
   const program = Effect.gen(function* () {
     const [user] = yield* fetchUserByUsername(username)
     if (!user || user.banned) {
-      return { found: false } as const
+      return yield* new NotFoundError({
+        message: 'Profile not found',
+        resource: 'profile',
+        id: username
+      })
     }
-    return { found: true, user } as const
-  })
 
-  const result = await runApp(program.pipe(Effect.either))
+    const displayName = user.displayUsername || user.username || user.name
 
-  if (result._tag === 'Left') {
-    Effect.logError('[Share] Error fetching profile', {
-      username,
-      error:
-        result.left instanceof Error ? result.left.message : String(result.left)
-    }).pipe(Effect.runPromise)
-
-    return c.html(
-      buildErrorHtml({
-        title: 'Error',
-        message: 'Something went wrong while loading this profile.',
-        statusCode: 500
+    return {
+      html: buildOGHtml({
+        type: 'profile',
+        title: displayName,
+        description: `Check out ${displayName}'s profile on goosebumps.fm`,
+        image: user.image,
+        canonicalPath: `/${user.username}`,
+        imageAlt: `${displayName}'s profile picture`
       }),
-      500
+      status: 200
+    } satisfies HtmlResponse
+  }).pipe(
+    Effect.catchTag('NotFoundError', () =>
+      Effect.succeed<HtmlResponse>({
+        html: buildErrorHtml({
+          title: 'Profile not found',
+          message: "The profile you're looking for doesn't exist.",
+          statusCode: 404
+        }),
+        status: 404
+      })
+    ),
+    Effect.catchTag('DatabaseError', (error) =>
+      Effect.gen(function* () {
+        yield* Effect.logError('[Share] Error fetching profile', {
+          username,
+          error: error.message
+        })
+        return {
+          html: buildErrorHtml({
+            title: 'Error',
+            message: 'Something went wrong while loading this profile.',
+            statusCode: 500
+          }),
+          status: 500
+        } satisfies HtmlResponse
+      })
     )
+  )
+
+  const response = await runApp(program)
+
+  if (response.status === 200) {
+    c.header('Cache-Control', 'public, max-age=3600')
   }
 
-  const data = result.right
-  if (!data.found) {
-    return c.html(
-      buildErrorHtml({
-        title: 'Profile not found',
-        message: "The profile you're looking for doesn't exist.",
-        statusCode: 404
-      }),
-      404
-    )
-  }
-
-  const { user } = data
-  const displayName = user.displayUsername || user.username || user.name
-
-  const html = buildOGHtml({
-    type: 'profile',
-    title: displayName,
-    description: `Check out ${displayName}'s profile on goosebumps.fm`,
-    image: user.image,
-    canonicalPath: `/${user.username}`,
-    imageAlt: `${displayName}'s profile picture`
-  })
-
-  c.header('Cache-Control', 'public, max-age=3600')
-  return c.html(html)
+  return c.html(response.html, response.status)
 }

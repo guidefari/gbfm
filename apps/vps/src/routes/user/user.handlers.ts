@@ -66,24 +66,30 @@ export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
   const program = Effect.gen(function* () {
     const userService = yield* UserService
     return yield* userService.updateUserProfile(user.id, updateData)
-  })
-
-  const result = await runApp(
-    program.pipe(Effect.withSpan('api.user.updateProfile'), Effect.either)
+  }).pipe(
+    Effect.withSpan('api.user.updateProfile'),
+    Effect.map((data) => ({ data, status: HttpStatusCodes.OK }) as const),
+    Effect.catchTag('NotFoundError', (error) =>
+      Effect.succeed({
+        error: error.message,
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', () =>
+      Effect.succeed({
+        error: 'Failed to update profile',
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    )
   )
 
-  if (result._tag === 'Left') {
-    const error = result.left
-    if (error._tag === 'NotFoundError') {
-      return c.json({ error: error.message }, HttpStatusCodes.NOT_FOUND)
-    }
-    return c.json(
-      { error: 'Failed to update profile' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
-    )
+  const result = await runApp(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
 
-  return c.json(result.right, HttpStatusCodes.OK)
+  return c.json(result.data, result.status)
 }
 
 export const getProfile: AppRouteHandler<GetProfileRoute> = async (c) => {
@@ -96,34 +102,43 @@ export const getProfile: AppRouteHandler<GetProfileRoute> = async (c) => {
   const program = Effect.gen(function* () {
     const userService = yield* UserService
     return yield* userService.getUserById(user.id)
-  })
-
-  const result = await runApp(
-    program.pipe(Effect.withSpan('api.user.getProfile'), Effect.either)
+  }).pipe(
+    Effect.withSpan('api.user.getProfile'),
+    Effect.map(
+      (data) =>
+        ({
+          data: {
+            ...data,
+            username: data.username,
+            avatarUrl: data.image,
+            image: data.image,
+            verified: data.emailVerified,
+            emailVerified: data.emailVerified
+          },
+          status: HttpStatusCodes.OK
+        }) as const
+    ),
+    Effect.catchTag('NotFoundError', (error) =>
+      Effect.succeed({
+        error: error.message,
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', () =>
+      Effect.succeed({
+        error: 'Failed to fetch profile',
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    )
   )
 
-  if (result._tag === 'Left') {
-    const error = result.left
-    if (error._tag === 'NotFoundError') {
-      return c.json({ error: error.message }, HttpStatusCodes.NOT_FOUND)
-    }
-    return c.json(
-      { error: 'Failed to fetch profile' },
-      HttpStatusCodes.NOT_FOUND
-    )
+  const result = await runApp(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
 
-  return c.json(
-    {
-      ...result.right,
-      username: result.right.username,
-      avatarUrl: result.right.image,
-      image: result.right.image,
-      verified: result.right.emailVerified,
-      emailVerified: result.right.emailVerified
-    },
-    HttpStatusCodes.OK
-  )
+  return c.json(result.data, result.status)
 }
 
 export const getEmailPreferences: AppRouteHandler<
@@ -138,20 +153,24 @@ export const getEmailPreferences: AppRouteHandler<
   const program = Effect.gen(function* () {
     const userService = yield* UserService
     return yield* userService.getUserEmailPreferences(user.id)
-  })
-
-  const result = await runApp(
-    program.pipe(Effect.withSpan('api.user.getEmailPreferences'), Effect.either)
+  }).pipe(
+    Effect.withSpan('api.user.getEmailPreferences'),
+    Effect.map((data) => ({ data, status: HttpStatusCodes.OK }) as const),
+    Effect.catchTag('DatabaseError', () =>
+      Effect.succeed({
+        error: 'Failed to fetch email preferences',
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    )
   )
 
-  if (result._tag === 'Left') {
-    return c.json(
-      { error: 'Failed to fetch email preferences' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
-    )
+  const result = await runApp(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
 
-  return c.json(result.right, HttpStatusCodes.OK)
+  return c.json(result.data, result.status)
 }
 
 export const updateEmailPreferences: AppRouteHandler<
@@ -168,23 +187,24 @@ export const updateEmailPreferences: AppRouteHandler<
   const program = Effect.gen(function* () {
     const userService = yield* UserService
     return yield* userService.updateUserEmailPreferences(user.id, updates)
-  })
-
-  const result = await runApp(
-    program.pipe(
-      Effect.withSpan('api.user.updateEmailPreferences'),
-      Effect.either
+  }).pipe(
+    Effect.withSpan('api.user.updateEmailPreferences'),
+    Effect.map((data) => ({ data, status: HttpStatusCodes.OK }) as const),
+    Effect.catchTag('DatabaseError', () =>
+      Effect.succeed({
+        error: 'Failed to update email preferences',
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
     )
   )
 
-  if (result._tag === 'Left') {
-    return c.json(
-      { error: 'Failed to update email preferences' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
-    )
+  const result = await runApp(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
 
-  return c.json(result.right, HttpStatusCodes.OK)
+  return c.json(result.data, result.status)
 }
 
 export const getUserSubscriptions: AppRouteHandler<
@@ -227,18 +247,22 @@ export const searchUsers: AppRouteHandler<SearchUsersRoute> = async (c) => {
   const program = Effect.gen(function* () {
     const userService = yield* UserService
     return yield* userService.searchUsers(q)
-  })
-
-  const result = await runApp(
-    program.pipe(Effect.withSpan('api.user.searchUsers'), Effect.either)
+  }).pipe(
+    Effect.withSpan('api.user.searchUsers'),
+    Effect.map((data) => ({ data, status: HttpStatusCodes.OK }) as const),
+    Effect.catchTag('DatabaseError', () =>
+      Effect.succeed({
+        error: 'Failed to search users',
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    )
   )
 
-  if (result._tag === 'Left') {
-    return c.json(
-      { error: 'Failed to search users' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
-    )
+  const result = await runApp(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
 
-  return c.json(result.right, HttpStatusCodes.OK)
+  return c.json(result.data, result.status)
 }

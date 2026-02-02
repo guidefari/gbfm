@@ -1,12 +1,15 @@
 import { and, eq } from 'drizzle-orm'
 import { Effect } from 'effect'
 import type { Context } from 'hono'
+import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import { db } from '@/db'
 import { labelsTable } from '@/db/label.schema'
 import { releasesTable } from '@/db/release.schema'
-import { DatabaseError } from '@/errors'
+import { DatabaseError, NotFoundError } from '@/errors'
 import { runApp } from '@/runtime'
 import { buildErrorHtml, buildOGHtml } from '../redirect.template'
+
+type HtmlResponse = { html: string; status: ContentfulStatusCode }
 
 const fetchReleaseBySlug = (slug: string) =>
   Effect.tryPromise({
@@ -70,58 +73,63 @@ export const shareRelease = async (c: Context) => {
   const program = Effect.gen(function* () {
     const [release] = yield* fetchReleaseBySlug(slug)
     if (!release) {
-      return { found: false } as const
+      return yield* new NotFoundError({
+        message: 'Release not found',
+        resource: 'release',
+        id: slug
+      })
     }
 
     const [label] = yield* fetchLabel(release.labelId)
-    return { found: true, release, label } as const
-  })
 
-  const result = await runApp(program.pipe(Effect.either))
-
-  if (result._tag === 'Left') {
-    Effect.logError('[Share] Error fetching release', {
-      slug,
-      error:
-        result.left instanceof Error ? result.left.message : String(result.left)
-    }).pipe(Effect.runPromise)
-
-    return c.html(
-      buildErrorHtml({
-        title: 'Error',
-        message: 'Something went wrong while loading this release.',
-        statusCode: 500
+    return {
+      html: buildOGHtml({
+        type: 'music.album',
+        title: release.title || slug,
+        description:
+          release.description ||
+          `Check out ${release.title || slug} on goosebumps.fm`,
+        image: release.thumbnailUrl,
+        canonicalPath: `/releases/${slug}`,
+        creators: label ? [label.title] : undefined,
+        imageAlt: `${release.title || slug} album art`
       }),
-      500
+      status: 200
+    } satisfies HtmlResponse
+  }).pipe(
+    Effect.catchTag('NotFoundError', () =>
+      Effect.succeed<HtmlResponse>({
+        html: buildErrorHtml({
+          title: 'Release not found',
+          message: "The release you're looking for doesn't exist.",
+          statusCode: 404
+        }),
+        status: 404
+      })
+    ),
+    Effect.catchTag('DatabaseError', (error) =>
+      Effect.gen(function* () {
+        yield* Effect.logError('[Share] Error fetching release', {
+          slug,
+          error: error.message
+        })
+        return {
+          html: buildErrorHtml({
+            title: 'Error',
+            message: 'Something went wrong while loading this release.',
+            statusCode: 500
+          }),
+          status: 500
+        } satisfies HtmlResponse
+      })
     )
+  )
+
+  const response = await runApp(program)
+
+  if (response.status === 200) {
+    c.header('Cache-Control', 'public, max-age=3600')
   }
 
-  const data = result.right
-  if (!data.found) {
-    return c.html(
-      buildErrorHtml({
-        title: 'Release not found',
-        message: "The release you're looking for doesn't exist.",
-        statusCode: 404
-      }),
-      404
-    )
-  }
-
-  const { release, label } = data
-
-  const html = buildOGHtml({
-    type: 'music.album',
-    title: release.title || slug,
-    description:
-      release.description ||
-      `Check out ${release.title || slug} on goosebumps.fm`,
-    image: release.thumbnailUrl,
-    canonicalPath: `/releases/${slug}`,
-    creators: label ? [label.title] : undefined,
-    imageAlt: `${release.title || slug} album art`
-  })
-
-  c.header('Cache-Control', 'public, max-age=3600')
-  return c.html(html)
+  return c.html(response.html, response.status)
 }
