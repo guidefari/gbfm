@@ -1,4 +1,4 @@
-import type { SelectAudio } from '@gbfm/vps/schemas'
+import type { SelectAudio, SelectMdxCompiledAudio } from '@gbfm/vps/schemas'
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 
@@ -18,9 +18,12 @@ const persistTimeToStorage = (time: number) => {
   }
 }
 
+export type Creator = NonNullable<SelectMdxCompiledAudio['creators']>[number]
+
 interface NowPlayingContext {
   url: string
   title: string
+  creators?: Creator[]
 }
 
 interface QueueItem {
@@ -30,6 +33,7 @@ interface QueueItem {
   url: string
   thumbnailUrl: string
   addedAt: number
+  creators?: Creator[]
 }
 
 interface AudioPlayerState {
@@ -83,17 +87,19 @@ interface AudioPlayerActions {
     src: string,
     thumbnailUrl: string,
     title: string,
-    trackId?: string
+    trackId?: string,
+    creators?: Creator[]
   ) => void
   preloadTrack: (
     src: string,
     thumbnailUrl: string,
     title: string,
-    trackId?: string
+    trackId?: string,
+    creators?: Creator[]
   ) => void
 
   // Queue management
-  addToQueue: (mix: SelectAudio) => void
+  addToQueue: (mix: SelectAudio | SelectMdxCompiledAudio) => void
   removeFromQueue: (itemId: string) => void
   clearQueue: () => void
   reorderQueue: (fromIndex: number, toIndex: number) => void
@@ -305,7 +311,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
           }
         },
 
-        loadTrack: (src, thumbnailUrl, title, trackId) => {
+        loadTrack: (src, thumbnailUrl, title, trackId, creators) => {
           const { audioRef, isPlaying, audioSrc, currentTime } = get()
           if (!audioRef) return
 
@@ -336,7 +342,10 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
               nowPlayingContext: {
                 title,
                 url:
-                  typeof window !== 'undefined' ? window.location.pathname : '/'
+                  typeof window !== 'undefined'
+                    ? window.location.pathname
+                    : '/',
+                creators
               },
               currentTrackId: trackId || null,
               currentTime: 0,
@@ -349,7 +358,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
           get().play(title)
         },
 
-        preloadTrack: (src, thumbnailUrl, title, trackId) => {
+        preloadTrack: (src, thumbnailUrl, title, trackId, creators) => {
           const { audioRef } = get()
           if (!audioRef || !src) return
 
@@ -361,7 +370,10 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
               nowPlayingContext: {
                 title,
                 url:
-                  typeof window !== 'undefined' ? window.location.pathname : '/'
+                  typeof window !== 'undefined'
+                    ? window.location.pathname
+                    : '/',
+                creators
               },
               currentTrackId: trackId || null,
               currentTime: 0,
@@ -455,7 +467,8 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
             title: mix.title,
             url: mix.url,
             thumbnailUrl: mix.thumbnailUrl || '',
-            addedAt: Date.now()
+            addedAt: Date.now(),
+            creators: 'creators' in mix ? mix.creators : undefined
           }
 
           set(
@@ -536,7 +549,8 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
             item.url,
             item.thumbnailUrl || '',
             item.title,
-            item.id
+            item.id,
+            item.creators
           )
         },
 

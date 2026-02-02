@@ -78,6 +78,8 @@ function ReleasePage() {
         content={data.compiledContent ?? data.content}
         thumbnailUrl={data.thumbnailUrl ?? ''}
         date={data.releaseDate ?? data.createdAt}
+        slug={slug}
+        shareType='release'
       />
     </div>
   )

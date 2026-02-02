@@ -3,6 +3,7 @@ import { Edit } from 'lucide-react'
 import * as React from 'react'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { ReleasesTable } from '@/components/ReleasesTable'
+import { ShareButton } from '@/components/ShareButton'
 import { Button } from '@/components/ui/button'
 import { useLabelBySlug, useReleasesByLabel } from '@/lib/http'
 import { generateLabelSEO, generateSEOMeta } from '@/lib/seo'
@@ -122,16 +123,19 @@ function LabelPage() {
             <div className='space-y-4'>
               <div className='flex items-start justify-between'>
                 <h1 className='text-2xl font-bold'>{data.title}</h1>
-                {isAdmin && (
-                  <Button
-                    onClick={handleEdit}
-                    variant='outline'
-                    size='sm'
-                    className='flex items-center gap-2'>
-                    <Edit className='w-4 h-4' />
-                    Edit Label
-                  </Button>
-                )}
+                <div className='flex gap-2'>
+                  <ShareButton type='label' slug={labelSlug} />
+                  {isAdmin && (
+                    <Button
+                      onClick={handleEdit}
+                      variant='outline'
+                      size='sm'
+                      className='flex items-center gap-2'>
+                      <Edit className='w-4 h-4' />
+                      Edit Label
+                    </Button>
+                  )}
+                </div>
               </div>
 
               {data.description && (

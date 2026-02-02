@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { MDXRendrr } from '@/components/MDXRendrr'
+import { ShareButton } from '@/components/ShareButton'
 import { EpisodeGrid } from '@/components/shows/EpisodeGrid'
 import { SubscribeButton } from '@/components/shows/SubscribeButton'
 import { useShowBySlug } from '@/lib/http'
@@ -101,7 +102,10 @@ function ShowPage() {
                 <p className='text-muted-foreground'>{data.description}</p>
               )}
 
-              <SubscribeButton showId={data.id} showTitle={data.title} />
+              <div className='flex gap-2'>
+                <SubscribeButton showId={data.id} showTitle={data.title} />
+                <ShareButton type='show' slug={showSlug} />
+              </div>
             </div>
           </div>
         </div>

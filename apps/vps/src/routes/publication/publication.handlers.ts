@@ -1,6 +1,5 @@
 import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
-import { ConflictError, NotFoundError } from '@/errors'
 import { createPaginationMetadata } from '@/lib/pagination'
 import type { AppRouteHandler } from '@/lib/types'
 import { runApp } from '@/runtime'
@@ -20,25 +19,32 @@ export const list: AppRouteHandler<ListRoute> = async (c) => {
   const program = Effect.gen(function* () {
     const service = yield* PublicationService
     return yield* service.getPublications(limit, offset)
-  })
-
-  const result = await runApp(program.pipe(Effect.either))
-
-  if (result._tag === 'Left') {
-    return c.json(
-      { error: 'Failed to fetch publications' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
+  }).pipe(
+    Effect.map(
+      ({ data, total }) =>
+        ({
+          data: {
+            data,
+            pagination: createPaginationMetadata(total, limit, offset)
+          },
+          status: HttpStatusCodes.OK
+        }) as const
+    ),
+    Effect.catchTag('DatabaseError', () =>
+      Effect.succeed({
+        error: 'Failed to fetch publications',
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
     )
+  )
+
+  const result = await runApp(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
 
-  const { data, total } = result.right
-  return c.json(
-    {
-      data,
-      pagination: createPaginationMetadata(total, limit, offset)
-    },
-    HttpStatusCodes.OK
-  )
+  return c.json(result.data, result.status)
 }
 
 export const getOne: AppRouteHandler<GetOneRoute> = async (c) => {
@@ -47,25 +53,29 @@ export const getOne: AppRouteHandler<GetOneRoute> = async (c) => {
   const program = Effect.gen(function* () {
     const service = yield* PublicationService
     return yield* service.getPublicationById(id)
-  })
-
-  const result = await runApp(program.pipe(Effect.either))
-
-  if (result._tag === 'Left') {
-    const error = result.left
-    if (error instanceof NotFoundError) {
-      return c.json(
-        { error: 'Publication not found' },
-        HttpStatusCodes.NOT_FOUND
-      )
-    }
-    return c.json(
-      { error: 'Failed to fetch publication' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
+  }).pipe(
+    Effect.map((data) => ({ data, status: HttpStatusCodes.OK }) as const),
+    Effect.catchTag('NotFoundError', () =>
+      Effect.succeed({
+        error: 'Publication not found',
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', () =>
+      Effect.succeed({
+        error: 'Failed to fetch publication',
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
     )
+  )
+
+  const result = await runApp(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
 
-  return c.json(result.right, HttpStatusCodes.OK)
+  return c.json(result.data, result.status)
 }
 
 export const create: AppRouteHandler<CreateRoute> = async (c) => {
@@ -74,25 +84,29 @@ export const create: AppRouteHandler<CreateRoute> = async (c) => {
   const program = Effect.gen(function* () {
     const service = yield* PublicationService
     return yield* service.createPublication(validated)
-  })
-
-  const result = await runApp(program.pipe(Effect.either))
-
-  if (result._tag === 'Left') {
-    const error = result.left
-    if (error instanceof ConflictError) {
-      return c.json(
-        { error: 'Publication with this slug already exists' },
-        HttpStatusCodes.CONFLICT
-      )
-    }
-    return c.json(
-      { error: 'Failed to create publication' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
+  }).pipe(
+    Effect.map((data) => ({ data, status: HttpStatusCodes.CREATED }) as const),
+    Effect.catchTag('ConflictError', () =>
+      Effect.succeed({
+        error: 'Publication with this slug already exists',
+        status: HttpStatusCodes.CONFLICT
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', () =>
+      Effect.succeed({
+        error: 'Failed to create publication',
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
     )
+  )
+
+  const result = await runApp(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
 
-  return c.json(result.right, HttpStatusCodes.CREATED)
+  return c.json(result.data, result.status)
 }
 
 export const patch: AppRouteHandler<PatchRoute> = async (c) => {
@@ -102,25 +116,29 @@ export const patch: AppRouteHandler<PatchRoute> = async (c) => {
   const program = Effect.gen(function* () {
     const service = yield* PublicationService
     return yield* service.updatePublication(id, validated)
-  })
-
-  const result = await runApp(program.pipe(Effect.either))
-
-  if (result._tag === 'Left') {
-    const error = result.left
-    if (error instanceof NotFoundError) {
-      return c.json(
-        { error: 'Publication not found' },
-        HttpStatusCodes.NOT_FOUND
-      )
-    }
-    return c.json(
-      { error: 'Failed to update publication' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
+  }).pipe(
+    Effect.map((data) => ({ data, status: HttpStatusCodes.OK }) as const),
+    Effect.catchTag('NotFoundError', () =>
+      Effect.succeed({
+        error: 'Publication not found',
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', () =>
+      Effect.succeed({
+        error: 'Failed to update publication',
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
     )
+  )
+
+  const result = await runApp(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
 
-  return c.json(result.right, HttpStatusCodes.OK)
+  return c.json(result.data, result.status)
 }
 
 export const remove: AppRouteHandler<RemoveRoute> = async (c) => {
@@ -129,23 +147,27 @@ export const remove: AppRouteHandler<RemoveRoute> = async (c) => {
   const program = Effect.gen(function* () {
     const service = yield* PublicationService
     return yield* service.deletePublication(id)
-  })
-
-  const result = await runApp(program.pipe(Effect.either))
-
-  if (result._tag === 'Left') {
-    const error = result.left
-    if (error instanceof NotFoundError) {
-      return c.json(
-        { error: 'Publication not found' },
-        HttpStatusCodes.NOT_FOUND
-      )
-    }
-    return c.json(
-      { error: 'Failed to delete publication' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
+  }).pipe(
+    Effect.map((data) => ({ data, status: HttpStatusCodes.OK }) as const),
+    Effect.catchTag('NotFoundError', () =>
+      Effect.succeed({
+        error: 'Publication not found',
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', () =>
+      Effect.succeed({
+        error: 'Failed to delete publication',
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
     )
+  )
+
+  const result = await runApp(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
 
-  return c.json(result.right, HttpStatusCodes.OK)
+  return c.json(result.data, result.status)
 }

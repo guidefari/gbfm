@@ -1,6 +1,5 @@
 import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
-import { DatabaseError, NotFoundError, UnauthorizedError } from '@/errors'
 import type { AppRouteHandler } from '@/lib/types'
 import { runApp } from '@/runtime'
 import { MusicReminderService } from '@/services/music-reminder.service'
@@ -35,7 +34,6 @@ export const createMusicReminder: AppRouteHandler<
     }
   })(
     Effect.gen(function* () {
-      // Add additional span annotations
       yield* Effect.annotateCurrentSpan('hasAlbumCover', !!albumCoverUrl)
       yield* Effect.annotateCurrentSpan('hasNotes', !!notes)
       const service = yield* MusicReminderService
@@ -49,38 +47,38 @@ export const createMusicReminder: AppRouteHandler<
         notes: notes || null
       })
     })
+  ).pipe(
+    Effect.map(
+      (newReminder) =>
+        ({
+          data: {
+            success: true,
+            reminder: {
+              ...newReminder,
+              reminderDate: newReminder.reminderDate.toISOString(),
+              createdAt: newReminder.createdAt.toISOString(),
+              updatedAt: newReminder.updatedAt.toISOString()
+            },
+            message: 'Music reminder created successfully'
+          },
+          status: HttpStatusCodes.CREATED
+        }) as const
+    ),
+    Effect.catchTag('DatabaseError', () =>
+      Effect.succeed({
+        error: 'Failed to create reminder',
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    )
   )
 
-  const result = await runApp(program.pipe(Effect.either))
+  const result = await runApp(program)
 
-  if (result._tag === 'Left') {
-    const error = result.left
-    if (error instanceof DatabaseError) {
-      return c.json(
-        { error: 'Failed to create reminder' },
-        HttpStatusCodes.INTERNAL_SERVER_ERROR
-      )
-    }
-    return c.json(
-      { error: 'An unexpected error occurred' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
-    )
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
 
-  const newReminder = result.right
-  return c.json(
-    {
-      success: true,
-      reminder: {
-        ...newReminder,
-        reminderDate: newReminder.reminderDate.toISOString(),
-        createdAt: newReminder.createdAt.toISOString(),
-        updatedAt: newReminder.updatedAt.toISOString()
-      },
-      message: 'Music reminder created successfully'
-    },
-    HttpStatusCodes.CREATED
-  )
+  return c.json(result.data, result.status)
 }
 
 export const getMusicReminders: AppRouteHandler<
@@ -91,33 +89,38 @@ export const getMusicReminders: AppRouteHandler<
   const program = Effect.gen(function* () {
     const service = yield* MusicReminderService
     return yield* service.getByUserId(user.id)
-  })
-
-  const result = await runApp(program.pipe(Effect.either))
-
-  if (result._tag === 'Left') {
-    return c.json(
-      { error: 'Failed to fetch reminders' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
+  }).pipe(
+    Effect.map((reminders) => {
+      const formattedReminders = reminders.map((reminder) => ({
+        ...reminder,
+        reminderDate: reminder.reminderDate.toISOString(),
+        createdAt: reminder.createdAt.toISOString(),
+        updatedAt: reminder.updatedAt.toISOString()
+      }))
+      return {
+        data: {
+          success: true,
+          reminders: formattedReminders,
+          total: reminders.length
+        },
+        status: HttpStatusCodes.OK
+      } as const
+    }),
+    Effect.catchTag('DatabaseError', () =>
+      Effect.succeed({
+        error: 'Failed to fetch reminders',
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
     )
+  )
+
+  const result = await runApp(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
 
-  const reminders = result.right
-  const formattedReminders = reminders.map((reminder) => ({
-    ...reminder,
-    reminderDate: reminder.reminderDate.toISOString(),
-    createdAt: reminder.createdAt.toISOString(),
-    updatedAt: reminder.updatedAt.toISOString()
-  }))
-
-  return c.json(
-    {
-      success: true,
-      reminders: formattedReminders,
-      total: reminders.length
-    },
-    HttpStatusCodes.OK
-  )
+  return c.json(result.data, result.status)
 }
 
 export const updateMusicReminder: AppRouteHandler<
@@ -139,41 +142,50 @@ export const updateMusicReminder: AppRouteHandler<
         : undefined,
       notes: updateData.notes
     })
-  })
-
-  const result = await runApp(program.pipe(Effect.either))
-
-  if (result._tag === 'Left') {
-    const error = result.left
-    if (error instanceof NotFoundError) {
-      return c.json(
-        { error: 'Music reminder not found' },
-        HttpStatusCodes.NOT_FOUND
-      )
-    }
-    if (error instanceof UnauthorizedError) {
-      return c.json({ error: 'Unauthorized' }, HttpStatusCodes.UNAUTHORIZED)
-    }
-    return c.json(
-      { error: 'Failed to update reminder' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
+  }).pipe(
+    Effect.map(
+      (updatedReminder) =>
+        ({
+          data: {
+            success: true,
+            reminder: {
+              ...updatedReminder,
+              reminderDate: updatedReminder.reminderDate.toISOString(),
+              createdAt: updatedReminder.createdAt.toISOString(),
+              updatedAt: updatedReminder.updatedAt.toISOString()
+            },
+            message: 'Music reminder updated successfully'
+          },
+          status: HttpStatusCodes.OK
+        }) as const
+    ),
+    Effect.catchTag('NotFoundError', () =>
+      Effect.succeed({
+        error: 'Music reminder not found',
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('UnauthorizedError', () =>
+      Effect.succeed({
+        error: 'Unauthorized',
+        status: HttpStatusCodes.UNAUTHORIZED
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', () =>
+      Effect.succeed({
+        error: 'Failed to update reminder',
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
     )
+  )
+
+  const result = await runApp(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
 
-  const updatedReminder = result.right
-  return c.json(
-    {
-      success: true,
-      reminder: {
-        ...updatedReminder,
-        reminderDate: updatedReminder.reminderDate.toISOString(),
-        createdAt: updatedReminder.createdAt.toISOString(),
-        updatedAt: updatedReminder.updatedAt.toISOString()
-      },
-      message: 'Music reminder updated successfully'
-    },
-    HttpStatusCodes.OK
-  )
+  return c.json(result.data, result.status)
 }
 
 export const deleteMusicReminder: AppRouteHandler<
@@ -185,32 +197,42 @@ export const deleteMusicReminder: AppRouteHandler<
   const program = Effect.gen(function* () {
     const service = yield* MusicReminderService
     return yield* service.delete(id, user.id)
-  })
-
-  const result = await runApp(program.pipe(Effect.either))
-
-  if (result._tag === 'Left') {
-    const error = result.left
-    if (error instanceof NotFoundError) {
-      return c.json(
-        { error: 'Music reminder not found' },
-        HttpStatusCodes.NOT_FOUND
-      )
-    }
-    if (error instanceof UnauthorizedError) {
-      return c.json({ error: 'Unauthorized' }, HttpStatusCodes.UNAUTHORIZED)
-    }
-    return c.json(
-      { error: 'Failed to delete reminder' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
+  }).pipe(
+    Effect.map(
+      () =>
+        ({
+          data: {
+            success: true,
+            message: 'Music reminder deleted successfully'
+          },
+          status: HttpStatusCodes.OK
+        }) as const
+    ),
+    Effect.catchTag('NotFoundError', () =>
+      Effect.succeed({
+        error: 'Music reminder not found',
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('UnauthorizedError', () =>
+      Effect.succeed({
+        error: 'Unauthorized',
+        status: HttpStatusCodes.UNAUTHORIZED
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', () =>
+      Effect.succeed({
+        error: 'Failed to delete reminder',
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
     )
+  )
+
+  const result = await runApp(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
 
-  return c.json(
-    {
-      success: true,
-      message: 'Music reminder deleted successfully'
-    },
-    HttpStatusCodes.OK
-  )
+  return c.json(result.data, result.status)
 }

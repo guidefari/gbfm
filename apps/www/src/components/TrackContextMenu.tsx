@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/context-menu'
 import { toast } from '@/components/ui/use-toast'
 import { useAddFavorite, useFavorites, useRemoveFavorite } from '@/lib/http'
+import { getShareUrl } from '@/lib/share'
 import { useAudioPlayerActions } from '@/store/audioPlayer'
 
 interface TrackContextMenuProps {
@@ -63,7 +64,10 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
   }
 
   const handleShare = async () => {
-    const shareUrl = `https://vps.goosebumps.fm/share/mix/${track.slug}`
+    const shareUrl = getShareUrl(
+      track.type === 'track' ? 'track' : 'mix',
+      track.slug
+    )
 
     try {
       await navigator.clipboard.writeText(shareUrl)

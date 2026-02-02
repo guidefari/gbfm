@@ -1,3 +1,4 @@
+import { ShareButton } from '@/components/ShareButton'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import type { PublicProfile } from '@/lib/http'
 
@@ -20,16 +21,25 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
           className='h-full w-full object-cover'
         />
       </div>
-      <div className='text-center sm:text-left'>
-        <h1 className='text-2xl font-bold text-foreground'>
-          {profile.displayUsername || profile.username}
-        </h1>
-        {profile.username && (
-          <p className='text-sm text-muted-foreground'>@{profile.username}</p>
-        )}
-        <p className='text-sm text-muted-foreground'>
-          Member since {memberSince}
-        </p>
+      <div className='flex-1 text-center sm:text-left'>
+        <div className='flex items-start justify-between'>
+          <div>
+            <h1 className='text-2xl font-bold text-foreground'>
+              {profile.displayUsername || profile.username}
+            </h1>
+            {profile.username && (
+              <p className='text-sm text-muted-foreground'>
+                @{profile.username}
+              </p>
+            )}
+            <p className='text-sm text-muted-foreground'>
+              Member since {memberSince}
+            </p>
+          </div>
+          {profile.username && (
+            <ShareButton type='profile' slug={profile.username} />
+          )}
+        </div>
       </div>
     </div>
   )

@@ -73,6 +73,8 @@ function TrackPage() {
       thumbnailUrl={data.thumbnailUrl ?? ''}
       date={data.createdAt}
       mp3Url={data.url}
+      slug={trackId}
+      shareType='track'
     />
   )
 }
