@@ -2,39 +2,31 @@
 
 import { useMutation } from '@tanstack/react-query'
 import { createLazyFileRoute, Link, useRouter } from '@tanstack/react-router'
-import {
-  ArrowRight,
-  CheckCircle,
-  Disc3,
-  ImageIcon,
-  List,
-  Loader2,
-  Music,
-  Save,
-  Sparkles,
-  Trash2,
-  Upload,
-  X
-} from 'lucide-react'
-import type React from 'react'
-import { useEffect, useId, useState } from 'react'
+import { CheckCircle, List, Loader2, Music, Save } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
+import { Card, CardContent } from '@/components/ui/card'
 import { toast } from '@/components/ui/use-toast'
-import { DEFAULT_IMAGE_URL } from '@/lib/constants'
+import {
+  AudioDetailsForm,
+  ArtworkUploader,
+  AudioUploader,
+  ContentTypeSelector,
+  getTypeLabel,
+  TagsInput,
+  UploadProgress,
+  type ContentType,
+  type UploadStep
+} from '@/components/upload'
+import { generateSlug, useFileUpload } from '@/hooks/useFileUpload'
 import { fetcher, useAudioBySlug, VPS_BASE_URL } from '@/lib/http'
 import { useAuthStore } from '@/store'
 
 export const Route = createLazyFileRoute('/upload')({
   component: UploadPage
 })
-
-type ContentType = 'mix' | 'track' | 'misc'
 
 interface AudioFormData {
   title: string
@@ -47,31 +39,45 @@ interface AudioFormData {
   draft: boolean
 }
 
-const CONTENT_TYPE_CONFIG = {
-  mix: {
-    icon: Disc3,
-    title: 'DJ Mix',
-    description: 'A continuous set blending multiple tracks together',
-    features: [
-      'Tracklist timestamps',
-      'Seamless transitions',
-      'Long-form content'
-    ],
-    color: 'gb-highlight'
-  },
-  track: {
-    icon: Music,
-    title: 'Track',
-    description: 'A single song or production',
-    features: ['Production credits', 'BPM & key info', 'Short-form content'],
-    color: 'gb-pastel-green-1'
-  },
-  misc: {
-    icon: Sparkles,
-    title: 'Other',
-    description: 'Podcasts, samples, sound design, etc.',
-    features: ['Flexible format', 'Any audio type', 'Custom metadata'],
-    color: 'gb-pastel-green-2'
+function getPlaceholderContent(type: string, title: string) {
+  switch (type) {
+    case 'mix':
+      return `# ${title || 'Your Mix Title'}
+
+## About This Mix
+Describe the vibe, inspiration, and journey of your mix...
+
+## Tracklist
+1. Artist - Track Name (00:00)
+2. Artist - Track Name (05:30)
+3. Artist - Track Name (10:15)
+
+## Mix Notes
+Add any technical details, equipment used, or special techniques...`
+    case 'track':
+      return `# ${title || 'Your Track Title'}
+
+## About This Track
+Tell the story behind your track, the inspiration, and creative process...
+
+## Production Notes
+- DAW:
+- Key:
+- BPM:
+- Genre:
+
+## Credits
+- Produced by:
+- Mixed by:
+- Mastered by:`
+    default:
+      return `# ${title || 'Your Audio Title'}
+
+## Description
+Tell us about this audio piece...
+
+## Details
+Add any relevant information, credits, or notes...`
   }
 }
 
@@ -101,27 +107,15 @@ function UploadPage() {
     tags: [],
     draft: true
   })
-  const [newTag, setNewTag] = useState('')
-  const [uploadStep, setUploadStep] = useState<
-    | 'idle'
-    | 'uploading-audio'
-    | 'uploading-image'
-    | 'creating-record'
-    | 'success'
-  >('idle')
-  const [audioFile, setAudioFile] = useState<File | null>(null)
-  const [artworkFile, setArtworkFile] = useState<File | null>(null)
-  const [audioPreview, setAudioPreview] = useState<string | null>(null)
-  const [artworkPreview, setArtworkPreview] = useState<string | null>(null)
+  const [uploadStep, setUploadStep] = useState<UploadStep>('idle')
+
+  const audioUpload = useFileUpload({
+    onTitleInfer: (title) => handleInputChange('title', title)
+  })
+  const artworkUpload = useFileUpload()
 
   const { user } = useAuthStore()
   const router = useRouter()
-
-  const audioUploadId = useId()
-  const titleId = useId()
-  const descriptionId = useId()
-  const slugId = useId()
-  const artworkUploadId = useId()
 
   useEffect(() => {
     if (isEditMode && editQuery.data && !editQuery.isPending) {
@@ -141,17 +135,8 @@ function UploadPage() {
     }
   }, [isEditMode, editQuery.data, editQuery.isPending])
 
-  const generateSlug = (title: string) => {
-    return title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '')
-  }
-
   const uploadMutation = useMutation({
-    mutationFn: async (
-      data: AudioFormData & { audioFile: File | null; artworkFile: File | null }
-    ) => {
+    mutationFn: async (data: AudioFormData & { isDraft: boolean }) => {
       if (!user) {
         toast({
           title: 'Please login/signup to upload content',
@@ -162,11 +147,10 @@ function UploadPage() {
 
       setUploadStep('uploading-audio')
 
-      const uploadFormData = new FormData()
-
       let audioUrl = ''
-      if (data.audioFile) {
-        uploadFormData.append('audioFile', data.audioFile)
+      if (audioUpload.file) {
+        const uploadFormData = new FormData()
+        uploadFormData.append('audioFile', audioUpload.file)
         uploadFormData.append('fileType', 'audio')
 
         const audioUploadResponse = await fetch(`${VPS_BASE_URL}/upload/file`, {
@@ -185,9 +169,9 @@ function UploadPage() {
       setUploadStep('uploading-image')
 
       let imageUrl = data.thumbnailUrl
-      if (data.artworkFile) {
+      if (artworkUpload.file) {
         const imageFormData = new FormData()
-        imageFormData.append('imageFile', data.artworkFile)
+        imageFormData.append('imageFile', artworkUpload.file)
         imageFormData.append('fileType', 'image')
 
         const imageUploadResponse = await fetch(`${VPS_BASE_URL}/upload/file`, {
@@ -247,10 +231,8 @@ function UploadPage() {
           tags: [],
           draft: true
         })
-        setAudioFile(null)
-        setArtworkFile(null)
-        setAudioPreview(null)
-        setArtworkPreview(null)
+        audioUpload.removeFile()
+        artworkUpload.removeFile()
         setUploadStep('idle')
         setSelectedType(null)
 
@@ -281,69 +263,12 @@ function UploadPage() {
     })
   }
 
-  const handleAudioFileChange = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setAudioFile(file)
-      const url = URL.createObjectURL(file)
-      setAudioPreview(url)
-
-      if (!formData.title) {
-        const fileName = file.name.replace(/\.[^/.]+$/, '')
-        const cleanTitle = fileName
-          .replace(/[-_]/g, ' ')
-          .replace(/\b\w/g, (l) => l.toUpperCase())
-        handleInputChange('title', cleanTitle)
-      }
-    }
-  }
-
-  const handleArtworkFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      setArtworkFile(file)
-      const url = URL.createObjectURL(file)
-      setArtworkPreview(url)
-    }
-  }
-
-  const removeAudioFile = () => {
-    setAudioFile(null)
-    if (audioPreview) {
-      URL.revokeObjectURL(audioPreview)
-      setAudioPreview(null)
-    }
-  }
-
-  const removeArtworkFile = () => {
-    setArtworkFile(null)
-    if (artworkPreview) {
-      URL.revokeObjectURL(artworkPreview)
-      setArtworkPreview(null)
-    }
-  }
-
-  const addTag = () => {
-    if (newTag.trim() && !formData.tags.includes(newTag.trim())) {
-      setFormData((prev) => ({
-        ...prev,
-        tags: [...prev.tags, newTag.trim()]
-      }))
-      setNewTag('')
-    }
-  }
-
-  const removeTag = (tagToRemove: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      tags: prev.tags.filter((tag) => tag !== tagToRemove)
-    }))
+  const handleAudioFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    audioUpload.handleFileChange(e, !formData.title)
   }
 
   const handleSubmit = async (isDraft: boolean) => {
-    if (!isEditMode && !audioFile) {
+    if (!isEditMode && !audioUpload.file) {
       toast({
         title: 'Audio file required',
         description: 'Please select an audio file to upload.',
@@ -352,8 +277,7 @@ function UploadPage() {
       return
     }
 
-    const submitData = { ...formData, draft: isDraft, audioFile, artworkFile }
-    uploadMutation.mutate(submitData)
+    uploadMutation.mutate({ ...formData, isDraft })
   }
 
   const handleSelectType = (type: ContentType) => {
@@ -361,142 +285,25 @@ function UploadPage() {
     setFormData((prev) => ({ ...prev, type }))
   }
 
-  const getUploadStepText = () => {
-    switch (uploadStep) {
-      case 'uploading-audio':
-        return 'Uploading audio file...'
-      case 'uploading-image':
-        return 'Uploading artwork...'
-      case 'creating-record':
-        return 'Creating audio record...'
-      case 'success':
-        return 'Upload completed successfully!'
-      default:
-        return 'Processing upload...'
-    }
+  const handleAddTag = (tag: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      tags: [...prev.tags, tag]
+    }))
+  }
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      tags: prev.tags.filter((tag) => tag !== tagToRemove)
+    }))
   }
 
   const isUploading = uploadStep !== 'idle' && uploadStep !== 'success'
-
-  const getTypeLabel = (type: string) => {
-    return CONTENT_TYPE_CONFIG[type as ContentType]?.title || type
-  }
-
-  const getPlaceholderContent = (type: string) => {
-    switch (type) {
-      case 'mix':
-        return `# ${formData.title || 'Your Mix Title'}
-
-## About This Mix
-Describe the vibe, inspiration, and journey of your mix...
-
-## Tracklist
-1. Artist - Track Name (00:00)
-2. Artist - Track Name (05:30)
-3. Artist - Track Name (10:15)
-
-## Mix Notes
-Add any technical details, equipment used, or special techniques...`
-      case 'track':
-        return `# ${formData.title || 'Your Track Title'}
-
-## About This Track
-Tell the story behind your track, the inspiration, and creative process...
-
-## Production Notes
-- DAW:
-- Key:
-- BPM:
-- Genre:
-
-## Credits
-- Produced by:
-- Mixed by:
-- Mastered by:`
-      default:
-        return `# ${formData.title || 'Your Audio Title'}
-
-## Description
-Tell us about this audio piece...
-
-## Details
-Add any relevant information, credits, or notes...`
-    }
-  }
+  const typeLabel = getTypeLabel(formData.type)
 
   if (!selectedType && !isEditMode) {
-    return (
-      <div className='px-4 py-8 mx-auto max-w-4xl sm:px-6 lg:px-8'>
-        <div className='mb-8 text-center'>
-          <h1 className='text-3xl font-bold text-gb-highlight'>Upload Audio</h1>
-          <p className='mt-2 text-gb-default-text'>
-            What type of content are you uploading?
-          </p>
-        </div>
-
-        <div className='grid gap-6 md:grid-cols-3'>
-          {(
-            Object.entries(CONTENT_TYPE_CONFIG) as [
-              ContentType,
-              typeof CONTENT_TYPE_CONFIG.mix
-            ][]
-          ).map(([type, config]) => {
-            const Icon = config.icon
-            return (
-              <button
-                key={type}
-                type='button'
-                onClick={() => handleSelectType(type)}
-                className='p-6 text-left transition-all border rounded-sm group bg-gb-darker-bg border-gb-pastel-green-2/20 hover:border-gb-highlight/50 hover:shadow-lg hover:-translate-y-1'>
-                <div
-                  className={`flex items-center justify-center w-12 h-12 mb-4 rounded-sm bg-${config.color}/20 group-hover:bg-${config.color}/30 transition-colors`}>
-                  <Icon className={`w-6 h-6 text-${config.color}`} />
-                </div>
-                <h3 className='mb-2 text-lg font-bold text-gb-pastel-green-1'>
-                  {config.title}
-                </h3>
-                <p className='mb-4 text-sm text-muted-foreground'>
-                  {config.description}
-                </p>
-                <ul className='space-y-1'>
-                  {config.features.map((feature) => (
-                    <li
-                      key={feature}
-                      className='flex items-center gap-2 text-xs text-gb-default-text'>
-                      <CheckCircle className='w-3 h-3 text-gb-pastel-green-2' />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-              </button>
-            )
-          })}
-        </div>
-
-        <div className='p-6 mt-8 border rounded-sm bg-gb-darker-bg border-gb-highlight/30'>
-          <div className='flex items-start gap-4'>
-            <div className='flex items-center justify-center flex-shrink-0 w-12 h-12 rounded-sm bg-gb-highlight/20'>
-              <List className='w-6 h-6 text-gb-highlight' />
-            </div>
-            <div className='flex-1'>
-              <h3 className='mb-1 text-lg font-bold text-gb-highlight'>
-                Uploading a DJ Mix?
-              </h3>
-              <p className='mb-3 text-sm text-gb-default-text'>
-                Use our dedicated mix uploader to automatically mark tracklist
-                timestamps as you play through your set.
-              </p>
-              <Link to='/mix-upload'>
-                <Button className='bg-gb-highlight hover:bg-gb-pastel-green-1 text-gb-darker-bg'>
-                  Go to Mix Uploader
-                  <ArrowRight className='w-4 h-4 ml-2' />
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
+    return <ContentTypeSelector onSelect={handleSelectType} />
   }
 
   return (
@@ -516,18 +323,16 @@ Add any relevant information, credits, or notes...`
               <Badge
                 variant='outline'
                 className='border-gb-pastel-green-2/50 text-gb-pastel-green-1'>
-                {getTypeLabel(formData.type)}
+                {typeLabel}
               </Badge>
             </div>
             <h1 className='text-3xl font-bold text-gb-highlight'>
-              {isEditMode
-                ? 'Edit Audio'
-                : `Upload ${getTypeLabel(formData.type)}`}
+              {isEditMode ? 'Edit Audio' : `Upload ${typeLabel}`}
             </h1>
             <p className='pl-0 mt-1 text-gb-default-text'>
               {isEditMode
                 ? 'Update your audio content'
-                : `Share your ${getTypeLabel(formData.type).toLowerCase()} with the world`}
+                : `Share your ${typeLabel.toLowerCase()} with the world`}
             </p>
           </div>
           <div className='flex items-center space-x-4'>
@@ -536,7 +341,7 @@ Add any relevant information, credits, or notes...`
               onClick={() => handleSubmit(true)}
               disabled={
                 isUploading ||
-                (!isEditMode && !audioFile) ||
+                (!isEditMode && !audioUpload.file) ||
                 uploadStep === 'success'
               }
               className='border-gb-pastel-green-2/30 text-gb-pastel-green-1 hover:bg-gb-pastel-green-2/20'>
@@ -560,11 +365,7 @@ Add any relevant information, credits, or notes...`
               ) : (
                 <Music className='w-4 h-4 mr-2' />
               )}
-              {uploadStep === 'success'
-                ? 'Published!'
-                : isUploading
-                  ? getUploadStepText()
-                  : 'Publish'}
+              {uploadStep === 'success' ? 'Published!' : 'Publish'}
             </Button>
           </div>
         </div>
@@ -594,302 +395,51 @@ Add any relevant information, credits, or notes...`
               <SimpleMarkdownEditor
                 value={formData.content}
                 onChange={(value) => handleInputChange('content', value)}
-                placeholder={getPlaceholderContent(formData.type)}
+                placeholder={getPlaceholderContent(
+                  formData.type,
+                  formData.title
+                )}
               />
             </CardContent>
           </Card>
         </div>
 
         <div className='space-y-6 lg:col-span-4'>
-          <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
-            <CardHeader>
-              <CardTitle className='flex items-center text-gb-pastel-green-1'>
-                <Music className='w-5 h-5 mr-2' />
-                Audio File
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!audioFile ? (
-                <div className='p-6 text-center transition-colors border-2 border-dashed rounded-sm border-gb-pastel-green-2/30 hover:border-gb-highlight/50'>
-                  <Music className='w-8 h-8 mx-auto mb-3 text-gb-pastel-green-2' />
-                  <p className='mb-3 text-sm text-gb-default-text'>
-                    Drag and drop your audio file here
-                  </p>
-                  <input
-                    type='file'
-                    accept='audio/*'
-                    onChange={handleAudioFileChange}
-                    className='hidden'
-                    id={audioUploadId}
-                  />
-                  <label htmlFor={audioUploadId}>
-                    <Button
-                      variant='outline'
-                      size='sm'
-                      className='bg-transparent cursor-pointer border-gb-pastel-green-2/30 text-gb-pastel-green-1 hover:bg-gb-pastel-green-2/20'
-                      asChild>
-                      <span>
-                        <Upload className='w-4 h-4 mr-2' />
-                        Choose File
-                      </span>
-                    </Button>
-                  </label>
-                  <p className='mt-2 text-xs text-gb-default-text/70'>
-                    MP3, WAV, FLAC, M4A (Max 500MB)
-                  </p>
-                </div>
-              ) : (
-                <div className='space-y-3'>
-                  <div className='flex items-center justify-between p-3 rounded-sm bg-gb-bg'>
-                    <div className='flex items-center min-w-0 space-x-3'>
-                      <Music className='flex-shrink-0 w-6 h-6 text-gb-highlight' />
-                      <div className='min-w-0'>
-                        <p className='font-medium leading-tight text-gb-pastel-green-1'>
-                          {audioFile.name}
-                        </p>
-                        <p className='text-xs text-gb-default-text'>
-                          {(audioFile.size / (1024 * 1024)).toFixed(2)} MB
-                        </p>
-                      </div>
-                    </div>
-                    <Button
-                      variant='ghost'
-                      size='sm'
-                      onClick={removeAudioFile}
-                      className='flex-shrink-0 text-red-400 hover:text-red-300'>
-                      <Trash2 className='w-4 h-4' />
-                    </Button>
-                  </div>
-                  {audioPreview && (
-                    /* biome-ignore lint/a11y/useMediaCaption: Audio preview for upload validation, captions not applicable */
-                    <audio controls className='w-full'>
-                      <source src={audioPreview} />
-                      Your browser does not support the audio element.
-                    </audio>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <AudioUploader
+            audioFile={audioUpload.file}
+            audioPreview={audioUpload.preview}
+            onFileChange={handleAudioFileChange}
+            onRemove={() => audioUpload.removeFile()}
+          />
 
-          <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
-            <CardHeader>
-              <CardTitle className='text-gb-pastel-green-1'>Details</CardTitle>
-            </CardHeader>
-            <CardContent className='space-y-4'>
-              <div className='space-y-2'>
-                <Label htmlFor={titleId} className='text-gb-pastel-green-1'>
-                  Title *
-                </Label>
-                <Input
-                  id={titleId}
-                  value={formData.title}
-                  onChange={(e) => handleInputChange('title', e.target.value)}
-                  placeholder='Enter audio title...'
-                  className='bg-gb-bg border-gb-pastel-green-2/30 text-gb-default-text focus:border-gb-highlight'
-                />
-              </div>
+          <AudioDetailsForm
+            title={formData.title}
+            description={formData.description}
+            slug={formData.slug}
+            contentTypeLabel={typeLabel}
+            onTitleChange={(value) => handleInputChange('title', value)}
+            onDescriptionChange={(value) =>
+              handleInputChange('description', value)
+            }
+            onSlugChange={(value) => handleInputChange('slug', value)}
+          />
 
-              <div className='space-y-2'>
-                <Label
-                  htmlFor={descriptionId}
-                  className='text-gb-pastel-green-1'>
-                  Description
-                </Label>
-                <Textarea
-                  id={descriptionId}
-                  value={formData.description}
-                  onChange={(e) =>
-                    handleInputChange('description', e.target.value)
-                  }
-                  placeholder={`Brief description of your ${getTypeLabel(formData.type).toLowerCase()}...`}
-                  className='bg-gb-bg border-gb-pastel-green-2/30 text-gb-default-text focus:border-gb-highlight'
-                />
-              </div>
+          <ArtworkUploader
+            artworkFile={artworkUpload.file}
+            artworkPreview={artworkUpload.preview}
+            onFileChange={(e) => artworkUpload.handleFileChange(e)}
+            onRemove={() => artworkUpload.removeFile()}
+          />
 
-              <div className='space-y-2'>
-                <Label htmlFor={slugId} className='text-gb-pastel-green-1'>
-                  URL Slug
-                </Label>
-                <Input
-                  id={slugId}
-                  value={formData.slug}
-                  onChange={(e) => handleInputChange('slug', e.target.value)}
-                  placeholder='url-friendly-slug (auto-generated if empty)'
-                  className='bg-gb-bg border-gb-pastel-green-2/30 text-gb-default-text focus:border-gb-highlight'
-                />
-                {formData.title && !formData.slug && (
-                  <p className='text-xs text-gb-default-text/70'>
-                    Will be auto-generated as: {generateSlug(formData.title)}
-                  </p>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
-            <CardHeader>
-              <CardTitle className='flex items-center text-gb-pastel-green-1'>
-                <ImageIcon className='w-5 h-5 mr-2' />
-                Artwork
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {!artworkFile && !artworkPreview ? (
-                <div className='p-4 text-center transition-colors border-2 border-dashed rounded-sm border-gb-pastel-green-2/30 hover:border-gb-highlight/50'>
-                  <ImageIcon className='w-6 h-6 mx-auto mb-2 text-gb-pastel-green-2' />
-                  <p className='mb-2 text-xs text-gb-default-text'>
-                    Upload cover artwork
-                  </p>
-                  <input
-                    type='file'
-                    accept='image/*'
-                    onChange={handleArtworkFileChange}
-                    className='hidden'
-                    id={artworkUploadId}
-                  />
-                  <label htmlFor={artworkUploadId}>
-                    <Button
-                      variant='outline'
-                      size='sm'
-                      className='bg-transparent cursor-pointer border-gb-pastel-green-2/30 text-gb-pastel-green-1 hover:bg-gb-pastel-green-2/20'
-                      asChild>
-                      <span>
-                        <Upload className='w-4 h-4 mr-2' />
-                        Choose Image
-                      </span>
-                    </Button>
-                  </label>
-                  <p className='mt-1 text-xs text-gb-default-text/70'>
-                    JPG, PNG, WebP (Max 10MB)
-                  </p>
-                </div>
-              ) : (
-                <div className='space-y-3'>
-                  <div className='relative overflow-hidden border rounded-sm aspect-square bg-gb-bg border-gb-pastel-green-2/20'>
-                    <img
-                      src={artworkPreview || DEFAULT_IMAGE_URL}
-                      alt='Artwork preview'
-                      className='object-cover w-full h-full'
-                    />
-                    <Button
-                      variant='ghost'
-                      size='sm'
-                      onClick={removeArtworkFile}
-                      className='absolute text-white top-2 right-2 bg-black/50 hover:bg-black/70'>
-                      <X className='w-4 h-4' />
-                    </Button>
-                  </div>
-                  {artworkFile && (
-                    <p className='text-xs text-center text-gb-default-text'>
-                      {artworkFile.name} (
-                      {(artworkFile.size / (1024 * 1024)).toFixed(2)} MB)
-                    </p>
-                  )}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
-            <CardHeader>
-              <CardTitle className='text-gb-pastel-green-1'>Tags</CardTitle>
-            </CardHeader>
-            <CardContent className='space-y-4'>
-              <div className='flex gap-2'>
-                <Input
-                  value={newTag}
-                  onChange={(e) => setNewTag(e.target.value)}
-                  placeholder='Add a tag...'
-                  className='bg-gb-bg border-gb-pastel-green-2/30 text-gb-default-text focus:border-gb-highlight'
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault()
-                      addTag()
-                    }
-                  }}
-                />
-                <Button
-                  onClick={addTag}
-                  variant='outline'
-                  className='bg-transparent border-gb-pastel-green-2/30 text-gb-pastel-green-1 hover:bg-gb-pastel-green-2/20'>
-                  Add
-                </Button>
-              </div>
-
-              <div className='flex flex-wrap gap-2'>
-                {formData.tags.map((tag) => (
-                  <Badge
-                    key={tag}
-                    variant='secondary'
-                    className='flex items-center gap-1 bg-gb-pastel-green-2/20 text-gb-pastel-green-1'>
-                    {tag}
-                    <X
-                      className='w-3 h-3 cursor-pointer hover:text-gb-highlight'
-                      onClick={() => removeTag(tag)}
-                    />
-                  </Badge>
-                ))}
-              </div>
-
-              {formData.tags.length === 0 && (
-                <p className='text-xs text-gb-default-text/70'>
-                  Add tags to help people discover your{' '}
-                  {getTypeLabel(formData.type).toLowerCase()}
-                </p>
-              )}
-            </CardContent>
-          </Card>
+          <TagsInput
+            tags={formData.tags}
+            onAddTag={handleAddTag}
+            onRemoveTag={handleRemoveTag}
+            contentTypeLabel={typeLabel.toLowerCase()}
+          />
 
           {(isUploading || uploadStep === 'success') && (
-            <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
-              <CardHeader>
-                <CardTitle
-                  className={`flex items-center ${uploadStep === 'success' ? 'text-green-400' : 'text-gb-pastel-green-1'}`}>
-                  {uploadStep === 'success' ? (
-                    <>
-                      <CheckCircle className='w-5 h-5 mr-2' />
-                      Upload Complete!
-                    </>
-                  ) : (
-                    <>
-                      <Loader2 className='w-5 h-5 mr-2 animate-spin' />
-                      {getUploadStepText()}
-                    </>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className='space-y-3'>
-                  <div className='w-full h-2 rounded-sm bg-gb-bg'>
-                    <div
-                      className={`h-2 rounded-sm transition-all duration-500 ${
-                        uploadStep === 'success'
-                          ? 'bg-green-400'
-                          : 'bg-gb-highlight animate-pulse'
-                      }`}
-                      style={{
-                        width:
-                          uploadStep === 'success'
-                            ? '100%'
-                            : uploadStep === 'creating-record'
-                              ? '80%'
-                              : uploadStep === 'uploading-image'
-                                ? '60%'
-                                : uploadStep === 'uploading-audio'
-                                  ? '30%'
-                                  : '10%'
-                      }}
-                    />
-                  </div>
-                  <p className='text-sm text-gb-default-text'>
-                    {uploadStep === 'success'
-                      ? `"${formData.title}" has been uploaded successfully! Redirecting...`
-                      : getUploadStepText()}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
+            <UploadProgress step={uploadStep} title={formData.title} />
           )}
         </div>
       </div>
