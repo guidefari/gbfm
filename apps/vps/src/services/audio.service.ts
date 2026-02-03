@@ -14,9 +14,11 @@ import { showsTable } from '@/db/show.schema'
 import {
   ConflictError,
   DatabaseError,
+  getErrorMessage,
   NotFoundError,
-  UnauthorizedError
+  type UnauthorizedError
 } from '@/errors'
+import { requireCreatorOrAdmin } from '@/lib/authorization'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
 import {
   createPaginationMetadata,
@@ -120,7 +122,7 @@ const getByTypeEffect = (
         ),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to fetch audio: ${(error as Error).message}`,
+          message: `Failed to fetch audio: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'audio'
         })
@@ -148,7 +150,7 @@ const getByTypeEffect = (
                 .where(inArray(audioCreators.audioId, audioIds)),
             catch: (error) =>
               new DatabaseError({
-                message: `Failed to fetch creators: ${(error as Error).message}`,
+                message: `Failed to fetch creators: ${getErrorMessage(error)}`,
                 operation: 'select',
                 table: 'audio_creators'
               })
@@ -201,7 +203,7 @@ const getBySlugEffect = (type: AudioType, slug: string) =>
           .limit(1),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to fetch audio: ${(error as Error).message}`,
+          message: `Failed to fetch audio: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'audio'
         })
@@ -230,7 +232,7 @@ const getBySlugEffect = (type: AudioType, slug: string) =>
           .where(eq(audioCreators.audioId, audio.id)),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to fetch creators: ${(error as Error).message}`,
+          message: `Failed to fetch creators: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'audio_creators'
         })
@@ -252,7 +254,7 @@ const getBySlugEffect = (type: AudioType, slug: string) =>
         try: () => compileMDX(audio.content),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to compile MDX: ${(error as Error).message}`,
+            message: `Failed to compile MDX: ${getErrorMessage(error)}`,
             operation: 'mdx_compile',
             table: 'audio'
           })
@@ -284,7 +286,7 @@ const createEffect = (data: InsertAudio, creatorIds: string[]) =>
             .limit(1),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to fetch show: ${(error as Error).message}`,
+            message: `Failed to fetch show: ${getErrorMessage(error)}`,
             operation: 'select',
             table: 'shows'
           })
@@ -321,7 +323,7 @@ const createEffect = (data: InsertAudio, creatorIds: string[]) =>
           'create-audio-transaction'
         ),
       catch: (error) => {
-        const errorMessage = (error as Error).message
+        const errorMessage = getErrorMessage(error)
         if (errorMessage.includes('unique constraint')) {
           return new ConflictError({
             message: 'Audio with this slug already exists',
@@ -376,7 +378,7 @@ const updateEffect = (
           .limit(1),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to check audio existence: ${(error as Error).message}`,
+          message: `Failed to check audio existence: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'audio'
         })
@@ -391,35 +393,7 @@ const updateEffect = (
       })
     }
 
-    const isAdmin = userRole === 'admin'
-    if (!isAdmin) {
-      const authorship = yield* Effect.tryPromise({
-        try: () =>
-          db
-            .select()
-            .from(audioCreators)
-            .where(
-              and(
-                eq(audioCreators.audioId, existingAudio.id),
-                eq(audioCreators.creatorId, userId)
-              )
-            )
-            .limit(1),
-        catch: (error) =>
-          new DatabaseError({
-            message: `Failed to check authorship: ${(error as Error).message}`,
-            operation: 'select',
-            table: 'audio_creators'
-          })
-      })
-
-      if (authorship.length === 0) {
-        return yield* new UnauthorizedError({
-          message: 'Forbidden, brethren.',
-          userId
-        })
-      }
-    }
+    yield* requireCreatorOrAdmin('audio', existingAudio.id, userId, userRole)
 
     const { creatorIds, ...updateData } = data
     let updatedAudio = existingAudio
@@ -434,7 +408,7 @@ const updateEffect = (
             .returning(),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to update audio: ${(error as Error).message}`,
+            message: `Failed to update audio: ${getErrorMessage(error)}`,
             operation: 'update',
             table: 'audio'
           })
@@ -467,7 +441,7 @@ const updateEffect = (
           }),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to update creators: ${(error as Error).message}`,
+            message: `Failed to update creators: ${getErrorMessage(error)}`,
             operation: 'transaction',
             table: 'audio_creators'
           })
@@ -488,7 +462,7 @@ const updateEffect = (
           .where(eq(audioCreators.audioId, updatedAudio.id)),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to fetch creators: ${(error as Error).message}`,
+          message: `Failed to fetch creators: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'audio_creators'
         })
@@ -510,7 +484,7 @@ const updateEffect = (
         try: () => compileMDX(updatedAudio.content),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to compile MDX: ${(error as Error).message}`,
+            message: `Failed to compile MDX: ${getErrorMessage(error)}`,
             operation: 'mdx_compile',
             table: 'audio'
           })

@@ -8,7 +8,12 @@ import {
   type SelectMdxCompiledRelease,
   type SelectRelease
 } from '@/db/release.schema'
-import { ConflictError, DatabaseError, NotFoundError } from '@/errors'
+import {
+  ConflictError,
+  DatabaseError,
+  getErrorMessage,
+  NotFoundError
+} from '@/errors'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
 import {
   createPaginationMetadata,
@@ -60,7 +65,7 @@ const getByLabelSlugEffect = (
           .limit(1),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to fetch label: ${(error as Error).message}`,
+          message: `Failed to fetch label: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'labels'
         })
@@ -82,7 +87,7 @@ const getByLabelSlugEffect = (
         db.select({ total: count() }).from(releasesTable).where(whereCondition),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to count releases: ${(error as Error).message}`,
+          message: `Failed to count releases: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'releases'
         })
@@ -101,7 +106,7 @@ const getByLabelSlugEffect = (
           .orderBy(desc(releasesTable.createdAt)),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to fetch releases: ${(error as Error).message}`,
+          message: `Failed to fetch releases: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'releases'
         })
@@ -124,7 +129,7 @@ const getBySlugEffect = (slug: string) =>
           .limit(1),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to fetch release: ${(error as Error).message}`,
+          message: `Failed to fetch release: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'releases'
         })
@@ -149,7 +154,7 @@ const getBySlugEffect = (slug: string) =>
         try: () => compileMDX(release.content),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to compile MDX: ${(error as Error).message}`,
+            message: `Failed to compile MDX: ${getErrorMessage(error)}`,
             operation: 'mdx_compile',
             table: 'releases'
           })
@@ -177,7 +182,7 @@ const createEffect = (data: InsertRelease & { releaseDate: Date }) =>
           .limit(1),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to fetch label: ${(error as Error).message}`,
+          message: `Failed to fetch label: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'labels'
         })
@@ -202,7 +207,7 @@ const createEffect = (data: InsertRelease & { releaseDate: Date }) =>
           })
           .returning(),
       catch: (error) => {
-        const errorMessage = (error as Error).message
+        const errorMessage = getErrorMessage(error)
         if (errorMessage.includes('unique constraint')) {
           return new ConflictError({
             message: 'Release with this slug already exists',
@@ -243,7 +248,7 @@ const updateEffect = (
           .limit(1),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to check release existence: ${(error as Error).message}`,
+          message: `Failed to check release existence: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'releases'
         })
@@ -271,7 +276,7 @@ const updateEffect = (
           .returning(),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to update release: ${(error as Error).message}`,
+          message: `Failed to update release: ${getErrorMessage(error)}`,
           operation: 'update',
           table: 'releases'
         })
@@ -296,7 +301,7 @@ const updateEffect = (
         try: () => compileMDX(updatedRelease.content),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to compile MDX: ${(error as Error).message}`,
+            message: `Failed to compile MDX: ${getErrorMessage(error)}`,
             operation: 'mdx_compile',
             table: 'releases'
           })
@@ -324,7 +329,7 @@ const deleteEffect = (slug: string) =>
           .limit(1),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to check release existence: ${(error as Error).message}`,
+          message: `Failed to check release existence: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'releases'
         })
@@ -346,7 +351,7 @@ const deleteEffect = (slug: string) =>
           .where(eq(releasesTable.id, existingRelease.id)),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to delete release: ${(error as Error).message}`,
+          message: `Failed to delete release: ${getErrorMessage(error)}`,
           operation: 'delete',
           table: 'releases'
         })

@@ -4,7 +4,7 @@ import { db } from '@/db'
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { user as userTable } from '@/db/auth.schema'
 import { showCreators, showsTable } from '@/db/show.schema'
-import { DatabaseError, NotFoundError } from '@/errors'
+import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
 
 export type PublicProfile = {
   id: string
@@ -56,7 +56,7 @@ const getPublicProfileEffect = (username: string) =>
           .limit(1),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to get user: ${(error as Error).message}`,
+          message: `Failed to get user: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'user'
         })
@@ -92,7 +92,7 @@ const getPublicProfileEffect = (username: string) =>
           .orderBy(audioTable.createdAt),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to get user mixes: ${(error as Error).message}`,
+          message: `Failed to get user mixes: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'audio'
         })
@@ -118,7 +118,7 @@ const getPublicProfileEffect = (username: string) =>
           .orderBy(showsTable.createdAt),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to get user shows: ${(error as Error).message}`,
+          message: `Failed to get user shows: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'shows'
         })

@@ -1,5 +1,29 @@
 import { Data } from 'effect'
 
+/**
+ * Extracts a human-readable message from any error type.
+ *
+ * @param error - The error to extract a message from
+ * @returns The error message string
+ *
+ * @example
+ * getErrorMessage(new Error('Something went wrong'))
+ * // => 'Something went wrong'
+ *
+ * @example
+ * getErrorMessage('Connection failed')
+ * // => 'Connection failed'
+ *
+ * @example
+ * getErrorMessage({ code: 500 })
+ * // => 'Unknown error'
+ */
+export function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message
+  if (typeof error === 'string') return error
+  return 'Unknown error'
+}
+
 export class EmailError extends Data.TaggedError('EmailError')<{
   readonly message: string
   readonly reminderId?: string

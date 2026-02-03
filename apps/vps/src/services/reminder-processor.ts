@@ -2,7 +2,7 @@ import { and, eq, lte, or } from 'drizzle-orm'
 import { Chunk, Effect, Schedule } from 'effect'
 import { db } from '@/db'
 import { musicReminder } from '@/db/music-reminder.schema'
-import { ReminderProcessingError } from '@/errors'
+import { getErrorMessage, ReminderProcessingError } from '@/errors'
 import { sendMusicReminderEmailEffect } from './email.service'
 
 // Process all pending music reminders
@@ -35,7 +35,7 @@ export const processPendingReminders = Effect.gen(function* () {
         .returning(),
     catch: (error) =>
       new ReminderProcessingError({
-        message: `Failed to claim pending reminders: ${(error as Error).message}`,
+        message: `Failed to claim pending reminders: ${getErrorMessage(error)}`,
         reminderId: 'batch',
         stage: 'query'
       })
@@ -88,7 +88,7 @@ const processSingleReminder = (reminder: typeof musicReminder.$inferSelect) =>
           .where(eq(musicReminder.id, reminder.id)),
       catch: (error) =>
         new ReminderProcessingError({
-          message: `Failed to update reminder status to sent: ${(error as Error).message}`,
+          message: `Failed to update reminder status to sent: ${getErrorMessage(error)}`,
           reminderId: reminder.id,
           stage: 'update'
         })
@@ -161,7 +161,7 @@ export const getReminderStats = Effect.gen(function* () {
         .from(musicReminder),
     catch: (error) =>
       new ReminderProcessingError({
-        message: `Failed to get reminder stats: ${(error as Error).message}`,
+        message: `Failed to get reminder stats: ${getErrorMessage(error)}`,
         reminderId: 'stats',
         stage: 'query'
       })

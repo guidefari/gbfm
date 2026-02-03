@@ -4,7 +4,7 @@ import { db } from '@/db'
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { user as userTable } from '@/db/auth.schema'
 import { showCreators, showsTable } from '@/db/show.schema'
-import { DatabaseError, NotFoundError } from '@/errors'
+import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
 import { isReservedSlug } from '@/lib/reserved-slugs'
 
@@ -84,7 +84,7 @@ const resolveEffect = (slug: string) =>
           .limit(1),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to lookup user: ${(error as Error).message}`,
+          message: `Failed to lookup user: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'user'
         })
@@ -113,7 +113,7 @@ const resolveEffect = (slug: string) =>
             .orderBy(audioTable.createdAt),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to get user mixes: ${(error as Error).message}`,
+            message: `Failed to get user mixes: ${getErrorMessage(error)}`,
             operation: 'select',
             table: 'audio'
           })
@@ -139,7 +139,7 @@ const resolveEffect = (slug: string) =>
             .orderBy(showsTable.createdAt),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to get user shows: ${(error as Error).message}`,
+            message: `Failed to get user shows: ${getErrorMessage(error)}`,
             operation: 'select',
             table: 'shows'
           })
@@ -170,7 +170,7 @@ const resolveEffect = (slug: string) =>
           .limit(1),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to lookup show: ${(error as Error).message}`,
+          message: `Failed to lookup show: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'shows'
         })
@@ -191,7 +191,7 @@ const resolveEffect = (slug: string) =>
             .where(eq(showCreators.showId, foundShow.id)),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to get show hosts: ${(error as Error).message}`,
+            message: `Failed to get show hosts: ${getErrorMessage(error)}`,
             operation: 'select',
             table: 'show_creators'
           })

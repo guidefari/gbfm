@@ -8,7 +8,7 @@ import {
   type SelectPost
 } from '@/db/post.schema'
 import { timeQuery } from '@/db/query-timer'
-import { ConflictError, DatabaseError } from '@/errors'
+import { ConflictError, DatabaseError, getErrorMessage } from '@/errors'
 import {
   createPaginationMetadata,
   type PaginationMetadata
@@ -50,7 +50,7 @@ const getByTagEffect = (
         ),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to count posts: ${(error as Error).message}`,
+          message: `Failed to count posts: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'posts'
         })
@@ -73,7 +73,7 @@ const getByTagEffect = (
         ),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to fetch posts: ${(error as Error).message}`,
+          message: `Failed to fetch posts: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'posts'
         })
@@ -118,7 +118,7 @@ const createEffect = (data: InsertPost, creatorIds: string[]) =>
           return newPost
         }),
       catch: (error) => {
-        const errorMessage = (error as Error).message
+        const errorMessage = getErrorMessage(error)
         if (errorMessage.includes('unique constraint')) {
           return new ConflictError({
             message: 'Post with this slug already exists',

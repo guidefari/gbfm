@@ -6,7 +6,12 @@ import {
   musicReminder,
   type NewMusicReminder
 } from '@/db/music-reminder.schema'
-import { DatabaseError, NotFoundError, UnauthorizedError } from '@/errors'
+import {
+  DatabaseError,
+  getErrorMessage,
+  NotFoundError,
+  UnauthorizedError
+} from '@/errors'
 
 export interface MusicReminderService {
   readonly create: (
@@ -46,7 +51,7 @@ const createEffect = (data: NewMusicReminder) =>
         try: () => db.insert(musicReminder).values(data).returning(),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to create music reminder: ${(error as Error).message}`,
+            message: `Failed to create music reminder: ${getErrorMessage(error)}`,
             operation: 'insert',
             table: 'music_reminder'
           })
@@ -84,7 +89,7 @@ const getByUserIdEffect = (userId: string) =>
           .orderBy(musicReminder.reminderDate),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to fetch music reminders: ${(error as Error).message}`,
+          message: `Failed to fetch music reminders: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'music_reminder'
         })
@@ -113,7 +118,7 @@ const updateEffect = (
           .limit(1),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to check reminder existence: ${(error as Error).message}`,
+          message: `Failed to check reminder existence: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'music_reminder'
         })
@@ -154,7 +159,7 @@ const updateEffect = (
           .returning(),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to update music reminder: ${(error as Error).message}`,
+          message: `Failed to update music reminder: ${getErrorMessage(error)}`,
           operation: 'update',
           table: 'music_reminder'
         })
@@ -190,7 +195,7 @@ const deleteEffect = (id: string, userId: string) =>
           .limit(1),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to check reminder existence: ${(error as Error).message}`,
+          message: `Failed to check reminder existence: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'music_reminder'
         })
@@ -216,7 +221,7 @@ const deleteEffect = (id: string, userId: string) =>
       try: () => db.delete(musicReminder).where(eq(musicReminder.id, id)),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to delete music reminder: ${(error as Error).message}`,
+          message: `Failed to delete music reminder: ${getErrorMessage(error)}`,
           operation: 'delete',
           table: 'music_reminder'
         })

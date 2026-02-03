@@ -12,9 +12,11 @@ import {
 import {
   ConflictError,
   DatabaseError,
+  getErrorMessage,
   NotFoundError,
-  UnauthorizedError
+  type UnauthorizedError
 } from '@/errors'
+import { requireCreator } from '@/lib/authorization'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
 import {
   createPaginationMetadata,
@@ -38,6 +40,7 @@ export interface LabelService {
   ) => Effect.Effect<SelectLabel, DatabaseError | ConflictError>
   readonly update: (
     slug: string,
+    userId: string,
     data: Partial<InsertLabel>
   ) => Effect.Effect<
     SelectMdxCompiledLabel,
@@ -59,7 +62,7 @@ const getAllEffect = (options: { limit: number; offset: number }) =>
         db.select({ total: count() }).from(labelsTable).where(whereCondition),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to count labels: ${(error as Error).message}`,
+          message: `Failed to count labels: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'labels'
         })
@@ -78,7 +81,7 @@ const getAllEffect = (options: { limit: number; offset: number }) =>
           .orderBy(desc(labelsTable.createdAt)),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to fetch labels: ${(error as Error).message}`,
+          message: `Failed to fetch labels: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'labels'
         })
@@ -102,7 +105,7 @@ const getBySlugEffect = (slug: string) =>
           .limit(1),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to fetch label: ${(error as Error).message}`,
+          message: `Failed to fetch label: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'labels'
         })
@@ -129,7 +132,7 @@ const getBySlugEffect = (slug: string) =>
           .where(eq(labelCreators.labelId, label.id)),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to fetch creators: ${(error as Error).message}`,
+          message: `Failed to fetch creators: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'label_creators'
         })
@@ -149,7 +152,7 @@ const getBySlugEffect = (slug: string) =>
         try: () => compileMDX(label.content),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to compile MDX: ${(error as Error).message}`,
+            message: `Failed to compile MDX: ${getErrorMessage(error)}`,
             operation: 'mdx_compile',
             table: 'labels'
           })
@@ -192,7 +195,7 @@ const createEffect = (data: InsertLabel, creatorIds: string[]) =>
           return newLabel
         }),
       catch: (error) => {
-        const errorMessage = (error as Error).message
+        const errorMessage = getErrorMessage(error)
         if (errorMessage.includes('unique constraint')) {
           return new ConflictError({
             message: 'Label with this slug already exists',
@@ -216,7 +219,11 @@ const createEffect = (data: InsertLabel, creatorIds: string[]) =>
     return result
   })
 
-const updateEffect = (slug: string, data: Partial<InsertLabel>) =>
+const updateEffect = (
+  slug: string,
+  userId: string,
+  data: Partial<InsertLabel>
+) =>
   Effect.gen(function* () {
     yield* Effect.annotateCurrentSpan('label.slug', slug)
     yield* Effect.annotateCurrentSpan(
@@ -232,7 +239,7 @@ const updateEffect = (slug: string, data: Partial<InsertLabel>) =>
           .limit(1),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to check label existence: ${(error as Error).message}`,
+          message: `Failed to check label existence: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'labels'
         })
@@ -247,26 +254,7 @@ const updateEffect = (slug: string, data: Partial<InsertLabel>) =>
       })
     }
 
-    const authorship = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select()
-          .from(labelCreators)
-          .where(eq(labelCreators.labelId, existingLabel.id))
-          .limit(1),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to check authorship: ${(error as Error).message}`,
-          operation: 'select',
-          table: 'label_creators'
-        })
-    })
-
-    if (authorship.length === 0) {
-      return yield* new UnauthorizedError({
-        message: 'Not authorized to edit this content'
-      })
-    }
+    yield* requireCreator('label', existingLabel.id, userId)
 
     const updatedRecords = yield* Effect.tryPromise({
       try: () =>
@@ -277,7 +265,7 @@ const updateEffect = (slug: string, data: Partial<InsertLabel>) =>
           .returning(),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to update label: ${(error as Error).message}`,
+          message: `Failed to update label: ${getErrorMessage(error)}`,
           operation: 'update',
           table: 'labels'
         })
@@ -304,7 +292,7 @@ const updateEffect = (slug: string, data: Partial<InsertLabel>) =>
           .where(eq(labelCreators.labelId, updatedLabel.id)),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to fetch creators: ${(error as Error).message}`,
+          message: `Failed to fetch creators: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'label_creators'
         })
@@ -324,7 +312,7 @@ const updateEffect = (slug: string, data: Partial<InsertLabel>) =>
         try: () => compileMDX(updatedLabel.content),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to compile MDX: ${(error as Error).message}`,
+            message: `Failed to compile MDX: ${getErrorMessage(error)}`,
             operation: 'mdx_compile',
             table: 'labels'
           })
@@ -351,8 +339,11 @@ const getBySlugWithSpan = (slug: string) =>
 const createWithSpan = (data: InsertLabel, creatorIds: string[]) =>
   createEffect(data, creatorIds).pipe(Effect.withSpan('label.create'))
 
-const updateWithSpan = (slug: string, data: Partial<InsertLabel>) =>
-  updateEffect(slug, data).pipe(Effect.withSpan('label.update'))
+const updateWithSpan = (
+  slug: string,
+  userId: string,
+  data: Partial<InsertLabel>
+) => updateEffect(slug, userId, data).pipe(Effect.withSpan('label.update'))
 
 export const LabelServiceLive = Layer.succeed(LabelService, {
   getAll: getAllWithSpan,

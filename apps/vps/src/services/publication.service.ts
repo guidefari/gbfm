@@ -8,7 +8,12 @@ import {
   publicationsTable,
   type SelectPublication
 } from '@/db/publication.schema'
-import { ConflictError, DatabaseError, NotFoundError } from '@/errors'
+import {
+  ConflictError,
+  DatabaseError,
+  getErrorMessage,
+  NotFoundError
+} from '@/errors'
 
 // Service interface
 export interface PublicationService {
@@ -90,7 +95,7 @@ const createPublicationEffect = (data: InsertPublication) =>
           .limit(1),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to check publication slug existence: ${(error as Error).message}`,
+          message: `Failed to check publication slug existence: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'publications'
         })
@@ -109,7 +114,7 @@ const createPublicationEffect = (data: InsertPublication) =>
       try: () => db.insert(publicationsTable).values(data).returning(),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to create publication: ${(error as Error).message}`,
+          message: `Failed to create publication: ${getErrorMessage(error)}`,
           operation: 'insert',
           table: 'publications'
         })
@@ -138,7 +143,7 @@ const getPublicationByIdEffect = (id: string) =>
           .limit(1),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to get publication by ID: ${(error as Error).message}`,
+          message: `Failed to get publication by ID: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'publications'
         })
@@ -167,7 +172,7 @@ const getPublicationBySlugEffect = (slug: string) =>
           .limit(1),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to get publication by slug: ${(error as Error).message}`,
+          message: `Failed to get publication by slug: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'publications'
         })
@@ -192,7 +197,7 @@ const getPublicationsEffect = (limit = 20, offset = 0) =>
       try: () => db.select({ total: count() }).from(publicationsTable),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to count publications: ${(error as Error).message}`,
+          message: `Failed to count publications: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'publications'
         })
@@ -211,7 +216,7 @@ const getPublicationsEffect = (limit = 20, offset = 0) =>
           .orderBy(publicationsTable.name),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to get publications: ${(error as Error).message}`,
+          message: `Failed to get publications: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'publications'
         })
@@ -238,7 +243,7 @@ const updatePublicationEffect = (
           .returning(),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to update publication: ${(error as Error).message}`,
+          message: `Failed to update publication: ${getErrorMessage(error)}`,
           operation: 'update',
           table: 'publications'
         })
@@ -270,7 +275,7 @@ const deletePublicationEffect = (id: string) =>
           .returning(),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to delete publication: ${(error as Error).message}`,
+          message: `Failed to delete publication: ${getErrorMessage(error)}`,
           operation: 'delete',
           table: 'publications'
         })
@@ -308,7 +313,7 @@ const addPublicationMemberEffect = (publicationId: string, userId: string) =>
           .limit(1),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to check publication member existence: ${(error as Error).message}`,
+          message: `Failed to check publication member existence: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'publication_members'
         })
@@ -331,7 +336,7 @@ const addPublicationMemberEffect = (publicationId: string, userId: string) =>
         }),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to add publication member: ${(error as Error).message}`,
+          message: `Failed to add publication member: ${getErrorMessage(error)}`,
           operation: 'insert',
           table: 'publication_members'
         })
@@ -355,7 +360,7 @@ const removePublicationMemberEffect = (publicationId: string, userId: string) =>
           .limit(1),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to check publication member existence: ${(error as Error).message}`,
+          message: `Failed to check publication member existence: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'publication_members'
         })
@@ -382,7 +387,7 @@ const removePublicationMemberEffect = (publicationId: string, userId: string) =>
           ),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to remove publication member: ${(error as Error).message}`,
+          message: `Failed to remove publication member: ${getErrorMessage(error)}`,
           operation: 'delete',
           table: 'publication_members'
         })
@@ -403,7 +408,7 @@ const getPublicationMembersEffect = (publicationId: string) =>
           .where(eq(publicationMembers.publicationId, publicationId)),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to get publication members: ${(error as Error).message}`,
+          message: `Failed to get publication members: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'publication_members'
         })
@@ -432,7 +437,7 @@ const addPublicationPostEffect = (publicationId: string, postId: string) =>
           .limit(1),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to check publication post existence: ${(error as Error).message}`,
+          message: `Failed to check publication post existence: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'publication_posts'
         })
@@ -455,7 +460,7 @@ const addPublicationPostEffect = (publicationId: string, postId: string) =>
         }),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to add publication post: ${(error as Error).message}`,
+          message: `Failed to add publication post: ${getErrorMessage(error)}`,
           operation: 'insert',
           table: 'publication_posts'
         })
@@ -479,7 +484,7 @@ const removePublicationPostEffect = (publicationId: string, postId: string) =>
           .limit(1),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to check publication post existence: ${(error as Error).message}`,
+          message: `Failed to check publication post existence: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'publication_posts'
         })
@@ -506,7 +511,7 @@ const removePublicationPostEffect = (publicationId: string, postId: string) =>
           ),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to remove publication post: ${(error as Error).message}`,
+          message: `Failed to remove publication post: ${getErrorMessage(error)}`,
           operation: 'delete',
           table: 'publication_posts'
         })

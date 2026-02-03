@@ -6,7 +6,7 @@ import type {
   InsertAuthorEmailPreferences,
   SelectAuthorEmailPreferences
 } from '@/db/email.schema'
-import { DatabaseError, NotFoundError } from '@/errors'
+import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
 import {
   getOrCreateEmailPreferencesByUserId,
   updateEmailPreferences as updateEmailPreferencesRepo
@@ -92,7 +92,7 @@ const getUserByIdEffect = (userId: string) =>
         db.select().from(userTable).where(eq(userTable.id, userId)).limit(1),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to get user: ${(error as Error).message}`,
+          message: `Failed to get user: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'user'
         })
@@ -133,7 +133,7 @@ const updateUserProfileEffect = (
           .returning(),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to update user profile: ${(error as Error).message}`,
+          message: `Failed to update user profile: ${getErrorMessage(error)}`,
           operation: 'update',
           table: 'user'
         })
@@ -176,7 +176,7 @@ const searchUsersEffect = (query: string) =>
           .limit(10),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to search users: ${(error as Error).message}`,
+          message: `Failed to search users: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'user'
         })
@@ -190,7 +190,7 @@ const getUserEmailPreferencesEffect = (userId: string) =>
     try: () => getOrCreateEmailPreferencesByUserId(userId),
     catch: (error) =>
       new DatabaseError({
-        message: `Failed to get user email preferences: ${(error as Error).message}`,
+        message: `Failed to get user email preferences: ${getErrorMessage(error)}`,
         operation: 'select',
         table: 'user_email_preferences'
       })
@@ -205,7 +205,7 @@ const updateUserEmailPreferencesEffect = (
       try: () => updateEmailPreferencesRepo(userId, preferences),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to update user email preferences: ${(error as Error).message}`,
+          message: `Failed to update user email preferences: ${getErrorMessage(error)}`,
           operation: 'update',
           table: 'user_email_preferences'
         })

@@ -1,6 +1,6 @@
 import { SpotifyApi as SpotifyApiClient } from '@spotify/web-api-ts-sdk'
 import { Context, Effect, Layer, Option } from 'effect'
-import { SpotifyError } from '@/errors'
+import { getErrorMessage, SpotifyError } from '@/errors'
 import { config } from '@/services/config.service'
 import type {
   Album,
@@ -219,7 +219,7 @@ const getBandcampMetadata = (url: string) =>
         }),
       catch: (error) =>
         new SpotifyError({
-          message: `Failed to fetch Bandcamp page: ${(error as Error).message}`,
+          message: `Failed to fetch Bandcamp page: ${getErrorMessage(error)}`,
           operation: 'getBandcampMetadata',
           statusCode: 500
         })
@@ -239,7 +239,7 @@ const getBandcampMetadata = (url: string) =>
       try: () => response.text(),
       catch: (error) =>
         new SpotifyError({
-          message: `Failed to read Bandcamp page content: ${(error as Error).message}`,
+          message: `Failed to read Bandcamp page content: ${getErrorMessage(error)}`,
           operation: 'getBandcampMetadata',
           statusCode: 500
         })
@@ -289,7 +289,7 @@ const getTrackEffect = (id: string) =>
       try: () => spotifyClient.tracks.get(sanitizedId),
       catch: (error) =>
         new SpotifyError({
-          message: `Failed to fetch track: ${(error as Error).message}`,
+          message: `Failed to fetch track: ${getErrorMessage(error)}`,
           operation: 'getTrack',
           statusCode: 500
         })
@@ -323,7 +323,7 @@ const getAlbumEffect = (id: string) =>
       try: () => spotifyClient.albums.get(sanitizedId),
       catch: (error) =>
         new SpotifyError({
-          message: `Failed to fetch album: ${(error as Error).message}`,
+          message: `Failed to fetch album: ${getErrorMessage(error)}`,
           operation: 'getAlbum',
           statusCode: 500
         })
@@ -362,7 +362,7 @@ const getPlaylistEffect = (id: string) =>
       try: () => spotifyClient.playlists.getPlaylist(sanitizedId),
       catch: (error) =>
         new SpotifyError({
-          message: `Failed to fetch playlist: ${(error as Error).message}`,
+          message: `Failed to fetch playlist: ${getErrorMessage(error)}`,
           operation: 'getPlaylist',
           statusCode: 500
         })
@@ -410,7 +410,7 @@ const searchAlbumsEffect = (query: string, limit = 10, offset = 0) =>
         ),
       catch: (error) =>
         new SpotifyError({
-          message: `Failed to search albums: ${(error as Error).message}`,
+          message: `Failed to search albums: ${getErrorMessage(error)}`,
           operation: 'searchAlbums',
           statusCode: 500
         })
@@ -521,7 +521,7 @@ const enrichTrackFromUrlWithSpan = Effect.fn('spotify.enrichTrackFromUrl')(
           try: () => spotifyClient.albums.get(id),
           catch: (error) =>
             new SpotifyError({
-              message: `Failed to fetch Spotify album: ${(error as Error).message}`,
+              message: `Failed to fetch Spotify album: ${getErrorMessage(error)}`,
               operation: 'enrichTrackFromUrl',
               statusCode: 500
             })
@@ -545,7 +545,7 @@ const enrichTrackFromUrlWithSpan = Effect.fn('spotify.enrichTrackFromUrl')(
           try: () => spotifyClient.tracks.get(id),
           catch: (error) =>
             new SpotifyError({
-              message: `Failed to fetch Spotify track: ${(error as Error).message}`,
+              message: `Failed to fetch Spotify track: ${getErrorMessage(error)}`,
               operation: 'enrichTrackFromUrl',
               statusCode: 500
             })

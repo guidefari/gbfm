@@ -1,7 +1,7 @@
 import { Context, Effect, Layer } from 'effect'
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 import QRCode from 'qrcode'
-import { DatabaseError } from '@/errors'
+import { DatabaseError, getErrorMessage } from '@/errors'
 import { config } from '@/services/config.service'
 import { S3Service } from '@/services/s3.service'
 
@@ -40,7 +40,7 @@ const generateQRDataUrl = (url: string) =>
       }),
     catch: (error) =>
       new DatabaseError({
-        message: `Failed to generate QR code: ${(error as Error).message}`,
+        message: `Failed to generate QR code: ${getErrorMessage(error)}`,
         operation: 'qr_generate',
         table: 'qrcode'
       })
@@ -55,7 +55,7 @@ const fetchImage = (url: string) =>
     },
     catch: (error) =>
       new DatabaseError({
-        message: `Failed to fetch image: ${(error as Error).message}`,
+        message: `Failed to fetch image: ${getErrorMessage(error)}`,
         operation: 'fetch',
         table: 'image'
       })
@@ -76,7 +76,7 @@ const generateFlyerPdf = (mix: MixData, qrDataUrl: string) =>
       try: () => PDFDocument.create(),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to create PDF: ${(error as Error).message}`,
+          message: `Failed to create PDF: ${getErrorMessage(error)}`,
           operation: 'create',
           table: 'pdf'
         })
@@ -89,7 +89,7 @@ const generateFlyerPdf = (mix: MixData, qrDataUrl: string) =>
       try: () => pdfDoc.embedFont(StandardFonts.HelveticaBold),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to embed font: ${(error as Error).message}`,
+          message: `Failed to embed font: ${getErrorMessage(error)}`,
           operation: 'font',
           table: 'pdf'
         })
@@ -99,7 +99,7 @@ const generateFlyerPdf = (mix: MixData, qrDataUrl: string) =>
       try: () => pdfDoc.embedFont(StandardFonts.Helvetica),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to embed font: ${(error as Error).message}`,
+          message: `Failed to embed font: ${getErrorMessage(error)}`,
           operation: 'font',
           table: 'pdf'
         })
@@ -109,7 +109,7 @@ const generateFlyerPdf = (mix: MixData, qrDataUrl: string) =>
       try: () => pdfDoc.embedFont(StandardFonts.Courier),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to embed font: ${(error as Error).message}`,
+          message: `Failed to embed font: ${getErrorMessage(error)}`,
           operation: 'font',
           table: 'pdf'
         })
@@ -256,7 +256,7 @@ const generateFlyerPdf = (mix: MixData, qrDataUrl: string) =>
       },
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to embed QR: ${(error as Error).message}`,
+          message: `Failed to embed QR: ${getErrorMessage(error)}`,
           operation: 'embed',
           table: 'pdf'
         })
@@ -325,7 +325,7 @@ const generateFlyerPdf = (mix: MixData, qrDataUrl: string) =>
       try: () => pdfDoc.save(),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to save PDF: ${(error as Error).message}`,
+          message: `Failed to save PDF: ${getErrorMessage(error)}`,
           operation: 'save',
           table: 'pdf'
         })
@@ -338,7 +338,7 @@ const generateQROnlyPdf = (_mix: MixData, qrDataUrl: string) =>
       try: () => PDFDocument.create(),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to create PDF: ${(error as Error).message}`,
+          message: `Failed to create PDF: ${getErrorMessage(error)}`,
           operation: 'create',
           table: 'pdf'
         })
@@ -351,7 +351,7 @@ const generateQROnlyPdf = (_mix: MixData, qrDataUrl: string) =>
       try: () => pdfDoc.embedFont(StandardFonts.HelveticaBold),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to embed font: ${(error as Error).message}`,
+          message: `Failed to embed font: ${getErrorMessage(error)}`,
           operation: 'font',
           table: 'pdf'
         })
@@ -361,7 +361,7 @@ const generateQROnlyPdf = (_mix: MixData, qrDataUrl: string) =>
       try: () => pdfDoc.embedFont(StandardFonts.Helvetica),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to embed font: ${(error as Error).message}`,
+          message: `Failed to embed font: ${getErrorMessage(error)}`,
           operation: 'font',
           table: 'pdf'
         })
@@ -435,7 +435,7 @@ const generateQROnlyPdf = (_mix: MixData, qrDataUrl: string) =>
       },
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to embed QR: ${(error as Error).message}`,
+          message: `Failed to embed QR: ${getErrorMessage(error)}`,
           operation: 'embed',
           table: 'pdf'
         })
@@ -500,7 +500,7 @@ const generateQROnlyPdf = (_mix: MixData, qrDataUrl: string) =>
       try: () => pdfDoc.save(),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to save PDF: ${(error as Error).message}`,
+          message: `Failed to save PDF: ${getErrorMessage(error)}`,
           operation: 'save',
           table: 'pdf'
         })

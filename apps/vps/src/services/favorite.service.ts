@@ -4,7 +4,12 @@ import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
 import { favoritesTable, type SelectFavorite } from '@/db/favorites.schema'
 import { showsTable } from '@/db/show.schema'
-import { ConflictError, DatabaseError, NotFoundError } from '@/errors'
+import {
+  ConflictError,
+  DatabaseError,
+  getErrorMessage,
+  NotFoundError
+} from '@/errors'
 import {
   recordFavoriteAdd,
   recordFavoriteRemove
@@ -83,7 +88,7 @@ const addFavoriteEffect = (userId: string, audioId: string) =>
             .limit(1),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to check audio existence: ${(error as Error).message}`,
+            message: `Failed to check audio existence: ${getErrorMessage(error)}`,
             operation: 'select',
             table: 'audio'
           })
@@ -112,7 +117,7 @@ const addFavoriteEffect = (userId: string, audioId: string) =>
             .limit(1),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to check existing favorite: ${(error as Error).message}`,
+            message: `Failed to check existing favorite: ${getErrorMessage(error)}`,
             operation: 'select',
             table: 'favorites'
           })
@@ -138,7 +143,7 @@ const addFavoriteEffect = (userId: string, audioId: string) =>
             .returning(),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to add favorite: ${(error as Error).message}`,
+            message: `Failed to add favorite: ${getErrorMessage(error)}`,
             operation: 'insert',
             table: 'favorites'
           })
@@ -193,7 +198,7 @@ const removeFavoriteEffect = (userId: string, audioId: string) =>
             .limit(1),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to check favorite existence: ${(error as Error).message}`,
+            message: `Failed to check favorite existence: ${getErrorMessage(error)}`,
             operation: 'select',
             table: 'favorites'
           })
@@ -220,7 +225,7 @@ const removeFavoriteEffect = (userId: string, audioId: string) =>
             ),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to remove favorite: ${(error as Error).message}`,
+            message: `Failed to remove favorite: ${getErrorMessage(error)}`,
             operation: 'delete',
             table: 'favorites'
           })
@@ -249,7 +254,7 @@ const addShowFavoriteEffect = (userId: string, showId: string) =>
             .limit(1),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to check show existence: ${(error as Error).message}`,
+            message: `Failed to check show existence: ${getErrorMessage(error)}`,
             operation: 'select',
             table: 'shows'
           })
@@ -277,7 +282,7 @@ const addShowFavoriteEffect = (userId: string, showId: string) =>
             .limit(1),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to check existing favorite: ${(error as Error).message}`,
+            message: `Failed to check existing favorite: ${getErrorMessage(error)}`,
             operation: 'select',
             table: 'favorites'
           })
@@ -302,7 +307,7 @@ const addShowFavoriteEffect = (userId: string, showId: string) =>
             .returning(),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to add favorite: ${(error as Error).message}`,
+            message: `Failed to add favorite: ${getErrorMessage(error)}`,
             operation: 'insert',
             table: 'favorites'
           })
@@ -347,7 +352,7 @@ const removeShowFavoriteEffect = (userId: string, showId: string) =>
             .limit(1),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to check existing favorite: ${(error as Error).message}`,
+            message: `Failed to check existing favorite: ${getErrorMessage(error)}`,
             operation: 'select',
             table: 'favorites'
           })
@@ -373,7 +378,7 @@ const removeShowFavoriteEffect = (userId: string, showId: string) =>
             ),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to remove favorite: ${(error as Error).message}`,
+            message: `Failed to remove favorite: ${getErrorMessage(error)}`,
             operation: 'delete',
             table: 'favorites'
           })
@@ -427,7 +432,7 @@ const getFavoritesEffect = (
             .offset(offset),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to get audio favorites: ${(error as Error).message}`,
+            message: `Failed to get audio favorites: ${getErrorMessage(error)}`,
             operation: 'select',
             table: 'favorites'
           })
@@ -462,7 +467,7 @@ const getFavoritesEffect = (
             .offset(offset),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to get show favorites: ${(error as Error).message}`,
+            message: `Failed to get show favorites: ${getErrorMessage(error)}`,
             operation: 'select',
             table: 'favorites'
           })

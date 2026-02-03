@@ -5,7 +5,7 @@ import { db } from '@/db'
 import { user } from '@/db/auth.schema'
 import { emailDeliveryLogsTable } from '@/db/email.schema'
 import type { MusicReminder } from '@/db/music-reminder.schema'
-import { DatabaseError, EmailError } from '@/errors'
+import { DatabaseError, EmailError, getErrorMessage } from '@/errors'
 import { recordEmailFail, recordEmailSend } from '@/lib/performance-monitoring'
 
 // Service interface
@@ -46,7 +46,7 @@ const sendReminderEmail = (reminder: MusicReminder) =>
           .limit(1),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to fetch user email: ${(error as Error).message}`,
+          message: `Failed to fetch user email: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'users'
         })
@@ -91,7 +91,7 @@ const sendReminderEmail = (reminder: MusicReminder) =>
           .returning({ id: emailDeliveryLogsTable.id }),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to create email log: ${(error as Error).message}`,
+          message: `Failed to create email log: ${getErrorMessage(error)}`,
           operation: 'insert',
           table: 'email_delivery_logs'
         })
@@ -129,7 +129,7 @@ const sendReminderEmail = (reminder: MusicReminder) =>
         }),
       catch: (error) =>
         new EmailError({
-          message: `Failed to send email: ${(error as Error).message}`,
+          message: `Failed to send email: ${getErrorMessage(error)}`,
           reminderId: reminder.id,
           emailAddress: userEmail
         })
@@ -147,7 +147,7 @@ const sendReminderEmail = (reminder: MusicReminder) =>
               .where(eq(emailDeliveryLogsTable.id, logEntry.id)),
           catch: (error) =>
             new DatabaseError({
-              message: `Failed to update email log: ${(error as Error).message}`,
+              message: `Failed to update email log: ${getErrorMessage(error)}`,
               operation: 'update',
               table: 'email_delivery_logs'
             })
