@@ -81,9 +81,10 @@ function ProfilePage() {
           </div>
         </div>
         <div>
-          {Array.from({ length: 4 }).map((_, _i) => (
+          {Array.from({ length: 4 }).map((_, i) => (
             <div
-              key={crypto.randomUUID()}
+              // biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton loader - items never reorder
+              key={i}
               className='aspect-square animate-pulse rounded-md bg-muted'
             />
           ))}

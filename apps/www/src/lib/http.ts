@@ -53,9 +53,13 @@ export async function fetcher<T>(input: RequestInfo, init: RequestInit = {}) {
     })
 
     if (res.status === 401) {
-      // const { clearAuth } = useAuthStore.getState()
-      // clearAuth()
       window.location.href = '/auth/sign-in'
+      throw new Error('Unauthorized')
+    }
+
+    if (!res.ok) {
+      const errorText = await res.text()
+      throw new Error(`HTTP ${res.status}: ${errorText || res.statusText}`)
     }
 
     return res.json() as Promise<T>

@@ -26,8 +26,11 @@ export function EpisodeGrid({ showSlug }: EpisodeGridProps) {
   if (isPending) {
     return (
       <div className='grid gap-2'>
-        {Array.from({ length: 5 }).map(() => (
-          <div key={crypto.randomUUID()} className='flex gap-3 items-start p-2'>
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div
+            // biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton loader - items never reorder
+            key={i}
+            className='flex gap-3 items-start p-2'>
             <div className='w-14 h-14 rounded-sm bg-muted/50 animate-pulse flex-shrink-0' />
             <div className='flex-1 space-y-2'>
               <div className='h-4 w-3/4 rounded bg-muted/50 animate-pulse' />

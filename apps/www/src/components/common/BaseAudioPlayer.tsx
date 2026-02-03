@@ -95,12 +95,6 @@ export function BaseAudioPlayer({
     ? favorites.some((f) => f.audioId === currentTrackId)
     : false
 
-  console.log('BaseAudioPlayer state', {
-    currentTrackId,
-    favorites: favorites.length,
-    isFavorited
-  })
-
   const {
     play,
     pause,

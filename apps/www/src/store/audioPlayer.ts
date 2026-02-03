@@ -1,6 +1,7 @@
 import type { SelectAudio, SelectMdxCompiledAudio } from '@gbfm/vps/schemas'
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
+import { toast } from '@/components/ui/use-toast'
 
 let lastPersistTime = 0
 const PERSIST_INTERVAL = 5000
@@ -316,7 +317,11 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
           if (!audioRef) return
 
           if (!src) {
-            alert("Yo, there's no preview audio for this one")
+            toast({
+              title: 'No preview available',
+              description: "There's no preview audio for this track",
+              variant: 'destructive'
+            })
             return
           }
 

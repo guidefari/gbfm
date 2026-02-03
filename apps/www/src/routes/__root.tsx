@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-router'
 import { Suspense } from 'react'
 import { CommandDialogDemo } from '@/components/cmd'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import AppShell from '@/components/Layout/AppShell'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { Toaster } from '@/components/ui/toaster'
@@ -45,17 +46,19 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
   component: () => (
     <>
       <HeadContent />
-      <ThemeProvider>
-        <QueryClientProvider client={queryClient}>
-          <AppShell showFooter={location.pathname !== '/'}>
-            {env.isDev && (
-              <FPSMeter className='fixed top-0 right-0 z-50' height={40} />
-            )}
-            <CommandDialogDemo />
-            <Outlet />
-          </AppShell>
-        </QueryClientProvider>
-      </ThemeProvider>
+      <ErrorBoundary>
+        <ThemeProvider>
+          <QueryClientProvider client={queryClient}>
+            <AppShell showFooter={location.pathname !== '/'}>
+              {env.isDev && (
+                <FPSMeter className='fixed top-0 right-0 z-50' height={40} />
+              )}
+              <CommandDialogDemo />
+              <Outlet />
+            </AppShell>
+          </QueryClientProvider>
+        </ThemeProvider>
+      </ErrorBoundary>
       <Toaster />
       <Suspense>{/* <TanStackRouterDevtools position="" /> */}</Suspense>
     </>
