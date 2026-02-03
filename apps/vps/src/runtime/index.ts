@@ -12,7 +12,10 @@ import type { QRCodeService } from '@/services/qrcode.service'
 import type { ReleaseService } from '@/services/release.service'
 import type { ResolveService } from '@/services/resolve.service'
 import type { S3Service } from '@/services/s3.service'
-import type { ShowService } from '@/services/show.service'
+import type {
+  ShowService,
+  ShowSubscriptionService
+} from '@/services/show.service'
 import type { SpotifyService } from '@/services/spotify.service'
 import type { UserService } from '@/services/user.service'
 import type { DatabaseService } from './services'
@@ -35,6 +38,7 @@ type AppServices =
   | ResolveService
   | S3Service
   | ShowService
+  | ShowSubscriptionService
   | UserService
 
 export const AppRuntime = ManagedRuntime.make(AppLayer)

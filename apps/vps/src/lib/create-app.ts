@@ -5,6 +5,7 @@ import { requestId } from 'hono/request-id'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { notFound, onError, serveEmojiFavicon } from 'stoker/middlewares'
 import { effectLogger } from '@/middlewares/effect-logger'
+import { standardRateLimiter } from '@/middlewares/rate-limiter'
 import { config } from '@/services/config.service'
 import type { AppBindings } from './types'
 
@@ -52,7 +53,11 @@ export const createAppEffect = Effect.sync(() => {
   const app = createRouter()
 
   app.use('*', cors(corsConfig))
-  app.use(requestId()).use(serveEmojiFavicon('🪿')).use(effectLogger())
+  app
+    .use(requestId())
+    .use(serveEmojiFavicon('🪿'))
+    .use(effectLogger())
+    .use(standardRateLimiter())
 
   app.notFound(notFound)
   app.onError(onError)
