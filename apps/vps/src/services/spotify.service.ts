@@ -1,7 +1,21 @@
 import { SpotifyApi as SpotifyApiClient } from '@spotify/web-api-ts-sdk'
-import { Context, Effect, Layer, Option } from 'effect'
+import { Context, Effect, Layer } from 'effect'
 import { getErrorMessage, SpotifyError } from '@/errors'
 import { config } from '@/services/config.service'
+import {
+  getBandcampMetadataWithSpan,
+  extractBandcampArtist,
+  calculateBandcampTotalDuration
+} from '@/services/bandcamp.service'
+import {
+  cleanId,
+  isSpotifyUrl,
+  isYouTubeUrl,
+  isAppleMusicUrl,
+  isBandcampUrl,
+  extractSpotifyId,
+  extractYouTubeId
+} from '@/services/url-utils'
 import type {
   Album,
   Playlist,
@@ -9,33 +23,18 @@ import type {
   Track
 } from '../routes/spotify/spotify.types'
 
-// Bandcamp metadata types
-interface BandcampAlbum {
-  '@type': 'MusicAlbum'
-  name: string
-  byArtist: { name: string } | { name: string }[]
-  image: string
-  datePublished: string
-  track?: {
-    itemListElement: Array<{
-      item: {
-        name: string
-        duration: string
-        '@id': string
-      }
-    }>
-  }
-  description?: string
-}
+export {
+  cleanId,
+  getIdFromSpotifyUrl,
+  isSpotifyUrl,
+  isYouTubeUrl,
+  isAppleMusicUrl,
+  isBandcampUrl,
+  extractSpotifyId,
+  extractYouTubeId,
+  extractBandcampId
+} from '@/services/url-utils'
 
-// Simple in-memory cache for Bandcamp data
-const bandcampCache = new Map<
-  string,
-  { data: BandcampAlbum; timestamp: number }
->()
-const CACHE_DURATION = 24 * 60 * 60 * 1000 // 24 hours
-
-// Service interface
 export interface SpotifyService {
   readonly getTrack: (id: string) => Effect.Effect<Track, SpotifyError>
   readonly getAlbum: (id: string) => Effect.Effect<Album, SpotifyError>
@@ -59,220 +58,14 @@ export interface SpotifyService {
   >
 }
 
-// Service tag for dependency injection
 export const SpotifyService =
   Context.GenericTag<SpotifyService>('SpotifyService')
 
-// Spotify client instance
 const spotifyClient = SpotifyApiClient.withClientCredentials(
   config.spotify.clientId,
   config.spotify.clientSecret
 )
 
-export const getIdFromSpotifyUrl = (url: string): string | null => {
-  const regex = /\/(\w+)\?/
-  const match = url.match(regex)
-  return match?.[1] || null
-}
-
-export const cleanId = (id: string): string | null => {
-  try {
-    const decodedUrl = decodeURIComponent(id)
-    new URL(decodedUrl)
-    return getIdFromSpotifyUrl(decodedUrl)
-  } catch (_error) {
-    return id
-  }
-}
-
-export const isSpotifyUrl = (url: string): boolean =>
-  url.includes('spotify.com') || url.includes('spotify.link')
-
-export const isYouTubeUrl = (url: string): boolean =>
-  url.includes('youtube.com') || url.includes('youtu.be')
-
-export const isAppleMusicUrl = (url: string): boolean =>
-  url.includes('music.apple.com')
-
-export const isBandcampUrl = (url: string): boolean =>
-  url.includes('bandcamp.com')
-
-export const extractSpotifyId = (url: string): string | null => {
-  const patterns = [
-    /spotify\.com\/track\/([a-zA-Z0-9]+)/,
-    /spotify\.com\/album\/([a-zA-Z0-9]+)/,
-    /spotify\.com\/playlist\/([a-zA-Z0-9]+)/,
-    /spotify\.link\/([a-zA-Z0-9]+)/
-  ]
-
-  for (const pattern of patterns) {
-    const match = url.match(pattern)
-    if (match?.[1]) {
-      return match[1]
-    }
-  }
-
-  return null
-}
-
-export const extractYouTubeId = (url: string): string | null => {
-  const patterns = [
-    /(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/,
-    /youtube\.com\/embed\/([a-zA-Z0-9_-]+)/
-  ]
-
-  for (const pattern of patterns) {
-    const match = url.match(pattern)
-    if (match?.[1]) {
-      return match[1]
-    }
-  }
-
-  return null
-}
-
-export const extractBandcampId = (url: string): string | null => {
-  const match =
-    url.match(/bandcamp\.com\/album\/([^/?]+)/) ||
-    url.match(/bandcamp\.com\/track\/([^/?]+)/)
-  return match?.[1] || null
-}
-
-// Fallback HTML parsing for Bandcamp pages
-const parseBandcampHtml = (html: string, _url: string) =>
-  Effect.gen(function* () {
-    const metadata: BandcampAlbum = {
-      '@type': 'MusicAlbum',
-      name: '',
-      byArtist: { name: '' },
-      image: '',
-      datePublished: new Date().toISOString()
-    }
-
-    // Extract title from #name-section h2.trackTitle
-    const titleMatch = html.match(
-      /<div[^>]*id="name-section"[^>]*>[\s\S]*?<h2[^>]*class="trackTitle"[^>]*>([^<]+)<\/h2>/
-    )
-    if (titleMatch?.[1]) {
-      metadata.name = titleMatch[1].trim()
-    } else {
-      return yield* new SpotifyError({
-        message: 'Could not extract title from Bandcamp page',
-        operation: 'parseBandcampHtml',
-        statusCode: 500
-      })
-    }
-
-    // Extract artist from #name-section h3 (text after "by ")
-    const artistMatch = html.match(
-      /<div[^>]*id="name-section"[^>]*>[\s\S]*?<h3[^>]*>([\s\S]*?)<\/h3>/
-    )
-    if (artistMatch?.[1]) {
-      const artistText = artistMatch[1].replace(/<[^>]+>/g, '').trim() // Remove HTML tags
-      const byMatch = artistText.match(/by\s+(.+)/i)
-      if (byMatch?.[1]) {
-        metadata.byArtist = { name: byMatch[1].trim() }
-      }
-    }
-
-    // Extract image from a.popupImage href
-    const imageMatch = html.match(
-      /<a[^>]*class="popupImage"[^>]*href="([^"]+)"/
-    )
-    if (imageMatch?.[1]) {
-      metadata.image = imageMatch[1]
-    }
-
-    // Extract release date if available (look for patterns like "released" or date formats)
-    const dateMatch = html.match(
-      /(?:released|release date)[^>]*(\d{1,2}\s+\w+\s+\d{4}|\w+\s+\d{1,2},?\s+\d{4}|\d{4}-\d{2}-\d{2})/i
-    )
-    if (dateMatch?.[1]) {
-      const parsedDate = new Date(dateMatch[1])
-      if (!Number.isNaN(parsedDate.getTime())) {
-        metadata.datePublished = parsedDate.toISOString()
-      }
-    }
-
-    return metadata
-  })
-
-// Bandcamp metadata extraction with caching
-const getBandcampMetadata = (url: string) =>
-  Effect.gen(function* () {
-    // Check cache first
-    const cacheKey = url
-    const cached = bandcampCache.get(cacheKey)
-    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      yield* Effect.annotateCurrentSpan('cache.hit', true)
-      return cached.data
-    }
-    yield* Effect.annotateCurrentSpan('cache.hit', false)
-
-    // Fetch the Bandcamp page
-    const response = yield* Effect.tryPromise({
-      try: () =>
-        fetch(url, {
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; MusicMetadataBot/1.0)'
-          }
-        }),
-      catch: (error) =>
-        new SpotifyError({
-          message: `Failed to fetch Bandcamp page: ${getErrorMessage(error)}`,
-          operation: 'getBandcampMetadata',
-          statusCode: 500
-        })
-    })
-
-    yield* Effect.annotateCurrentSpan('http.status_code', response.status)
-
-    if (!response.ok) {
-      return yield* new SpotifyError({
-        message: `Bandcamp page returned ${response.status}`,
-        operation: 'getBandcampMetadata',
-        statusCode: response.status
-      })
-    }
-
-    const html = yield* Effect.tryPromise({
-      try: () => response.text(),
-      catch: (error) =>
-        new SpotifyError({
-          message: `Failed to read Bandcamp page content: ${getErrorMessage(error)}`,
-          operation: 'getBandcampMetadata',
-          statusCode: 500
-        })
-    })
-
-    let metadata: BandcampAlbum | undefined
-
-    // Try JSON-LD structured data first
-    const jsonLdMatch = html.match(
-      /<script type="application\/ld\+json">([\s\S]*?)<\/script>/
-    )
-    if (jsonLdMatch?.[1]) {
-      const parseResult = Effect.sync(() => {
-        return JSON.parse(jsonLdMatch[1] || '')
-      }).pipe(Effect.option)
-      const parsed = yield* parseResult
-      if (Option.isSome(parsed)) {
-        metadata = parsed.value
-      }
-    }
-
-    // If JSON-LD failed or wasn't found, parse HTML directly
-    if (!metadata) {
-      metadata = yield* parseBandcampHtml(html, url)
-    }
-
-    // Cache the result
-    bandcampCache.set(cacheKey, { data: metadata, timestamp: Date.now() })
-
-    return metadata
-  })
-
-// Core service logic - pure Effects with no service dependencies
 const getTrackEffect = (id: string) =>
   Effect.gen(function* () {
     const sanitizedId = cleanId(id)
@@ -435,7 +228,6 @@ const searchAlbumsEffect = (query: string, limit = 10, offset = 0) =>
     return searchResponse
   })
 
-// Wrapped effects with spans
 const getTrackWithSpan = (id: string) =>
   getTrackEffect(id).pipe(
     Effect.withSpan('spotify.getTrack', {
@@ -466,13 +258,6 @@ const searchAlbumsWithSpan = (query: string, limit = 10, offset = 0) =>
         'spotify.offset': offset,
         'external.system': 'spotify'
       }
-    })
-  )
-
-const getBandcampMetadataWithSpan = (url: string) =>
-  getBandcampMetadata(url).pipe(
-    Effect.withSpan('bandcamp.getMetadata', {
-      attributes: { 'external.system': 'bandcamp' }
     })
   )
 
@@ -588,40 +373,14 @@ const enrichTrackFromUrlWithSpan = Effect.fn('spotify.enrichTrackFromUrl')(
     } else if (isBandcampUrl(url)) {
       const metadata = yield* getBandcampMetadataWithSpan(url)
 
-      const artist = Array.isArray(metadata.byArtist)
-        ? metadata.byArtist.map((a: { name: string }) => a.name).join(', ')
-        : metadata.byArtist.name
-
-      let totalDuration: number | undefined
-      if (metadata.track?.itemListElement) {
-        totalDuration = metadata.track.itemListElement.reduce(
-          (total: number, track: { item: { duration: string } }) => {
-            const duration = track.item.duration
-            if (duration) {
-              const match = duration.match(
-                /PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/
-              )
-              if (match) {
-                const hours = parseInt(match[1] || '0', 10)
-                const minutes = parseInt(match[2] || '0', 10)
-                const seconds = parseInt(match[3] || '0', 10)
-                return total + hours * 3600 + minutes * 60 + seconds
-              }
-            }
-            return total
-          },
-          0
-        )
-      }
-
       result = {
         title: metadata.name,
-        artist: artist,
+        artist: extractBandcampArtist(metadata),
         url: url,
         platform: 'bandcamp',
         thumbnailUrl: metadata.image,
         album: metadata.name,
-        duration: totalDuration
+        duration: calculateBandcampTotalDuration(metadata)
       }
     } else {
       result = {
@@ -636,7 +395,6 @@ const enrichTrackFromUrlWithSpan = Effect.fn('spotify.enrichTrackFromUrl')(
   }
 )
 
-// Implementation - simple layer that provides access to the Effects
 export const SpotifyServiceLive = Layer.succeed(SpotifyService, {
   getTrack: getTrackWithSpan,
   getAlbum: getAlbumWithSpan,
