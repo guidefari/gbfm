@@ -11,11 +11,10 @@ export const OtlpLive: Layer.Layer<never> = otlpBaseUrl
       baseUrl: otlpBaseUrl,
       resource: {
         serviceName: 'goosebumps-fm-api',
-        serviceNamespace: 'application',
         serviceVersion: process.env.npm_package_version || '1.0.0',
+        // serviceNamespace: 'application',
         attributes: {
-          'deployment.environment':
-            config.app.stage === 'prod' ? 'production' : 'development'
+          'deployment.environment': config.app.nodeEnv
         }
       },
       headers: otlpToken ? { Authorization: `Basic ${otlpToken}` } : {},
