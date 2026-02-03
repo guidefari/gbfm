@@ -108,10 +108,11 @@ export const updateLabelBySlug: AppRouteHandler<
 > = async (c) => {
   const { slug } = c.req.valid('param')
   const updateData = c.req.valid('json')
+  const user = c.get('user')
 
   const program = Effect.gen(function* () {
     const labelService = yield* LabelService
-    return yield* labelService.update(slug, updateData)
+    return yield* labelService.update(slug, user.id, updateData)
   }).pipe(
     Effect.catchTag('NotFoundError', (e) =>
       Effect.succeed({
