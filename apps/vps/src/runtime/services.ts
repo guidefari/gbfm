@@ -16,7 +16,10 @@ import { QRCodeServiceLive } from '@/services/qrcode.service'
 import { ReleaseServiceLive } from '@/services/release.service'
 import { ResolveServiceLive } from '@/services/resolve.service'
 import { S3ServiceLive } from '@/services/s3.service'
-import { ShowServiceLive } from '@/services/show.service'
+import {
+  ShowServiceLive,
+  ShowSubscriptionServiceLive
+} from '@/services/show.service'
 import { SpotifyServiceLive } from '@/services/spotify.service'
 import { UserServiceLive } from '@/services/user.service'
 
@@ -53,6 +56,7 @@ export const AppLayer = Layer.mergeAll(
   ReleaseServiceLive,
   S3ServiceLive,
   ShowServiceLive,
+  ShowSubscriptionServiceLive,
   UserServiceLive,
   DevToolsLive
 )

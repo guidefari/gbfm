@@ -2,7 +2,7 @@ import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import type { AppRouteHandler } from '@/lib/types'
 import { AppRuntime } from '@/runtime'
-import { ShowService } from '@/services/show.service'
+import { ShowService, ShowSubscriptionService } from '@/services/show.service'
 
 import type {
   CreateShowRoute,
@@ -236,8 +236,8 @@ export const subscribeToShow: AppRouteHandler<SubscribeToShowRoute> = async (
   const user = c.get('user')
 
   const program = Effect.gen(function* () {
-    const showService = yield* ShowService
-    return yield* showService.subscribe(user.id, showId)
+    const subscriptionService = yield* ShowSubscriptionService
+    return yield* subscriptionService.subscribe(user.id, showId)
   }).pipe(
     Effect.catchTag('ConflictError', (e) =>
       Effect.succeed({
@@ -270,8 +270,8 @@ export const unsubscribeFromShow: AppRouteHandler<
   const user = c.get('user')
 
   const program = Effect.gen(function* () {
-    const showService = yield* ShowService
-    return yield* showService.unsubscribe(user.id, showId)
+    const subscriptionService = yield* ShowSubscriptionService
+    return yield* subscriptionService.unsubscribe(user.id, showId)
   }).pipe(
     Effect.catchTag('NotFoundError', (e) =>
       Effect.succeed({

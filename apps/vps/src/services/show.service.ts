@@ -3,38 +3,34 @@ import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
 import { user as usersTable } from '@/db/auth.schema'
-import { favoritesTable } from '@/db/favorites.schema'
 import {
   type InsertShow,
   type SelectMdxCompiledShow,
   type SelectShow,
-  type SelectShowSubscription,
   showCreators,
-  showSubscriptionsTable,
   showsTable
 } from '@/db/show.schema'
 import {
   ConflictError,
   DatabaseError,
+  getErrorMessage,
   NotFoundError,
-  UnauthorizedError
+  type UnauthorizedError
 } from '@/errors'
+import { requireCreatorOrAdmin } from '@/lib/authorization'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
 import {
   createPaginationMetadata,
   type PaginationMetadata
 } from '@/lib/pagination'
-import {
-  recordShowSubscribe,
-  recordShowUnsubscribe
-} from '@/lib/performance-monitoring'
+
+export {
+  ShowSubscriptionService,
+  ShowSubscriptionServiceLive
+} from './show-subscription.service'
 
 type ShowWithHosts = SelectShow & {
   hosts: Array<{ id: string; name: string }>
-}
-
-type SubscriptionWithShow = SelectShowSubscription & {
-  show: SelectShow
 }
 
 export interface ShowService {
@@ -77,27 +73,6 @@ export interface ShowService {
     },
     DatabaseError | NotFoundError
   >
-  readonly subscribe: (
-    userId: string,
-    showId: string
-  ) => Effect.Effect<SelectShowSubscription, DatabaseError | ConflictError>
-  readonly unsubscribe: (
-    userId: string,
-    showId: string
-  ) => Effect.Effect<void, DatabaseError | NotFoundError>
-  readonly getUserSubscriptions: (
-    userId: string,
-    options: { limit: number; offset: number }
-  ) => Effect.Effect<
-    { data: SubscriptionWithShow[]; pagination: PaginationMetadata },
-    DatabaseError
-  >
-  readonly getSubscribers: (
-    showId: string
-  ) => Effect.Effect<
-    Array<{ userId: string; email: string; name: string }>,
-    DatabaseError
-  >
 }
 
 export const ShowService = Context.GenericTag<ShowService>('ShowService')
@@ -119,7 +94,7 @@ const getAllEffect = (options: {
         db.select({ total: count() }).from(showsTable).where(whereCondition),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to count shows: ${(error as Error).message}`,
+          message: `Failed to count shows: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'shows'
         })
@@ -138,7 +113,7 @@ const getAllEffect = (options: {
           .orderBy(desc(showsTable.createdAt)),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to fetch shows: ${(error as Error).message}`,
+          message: `Failed to fetch shows: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'shows'
         })
@@ -164,7 +139,7 @@ const getAllEffect = (options: {
                 .where(inArray(showCreators.showId, showIds)),
             catch: (error) =>
               new DatabaseError({
-                message: `Failed to fetch hosts: ${(error as Error).message}`,
+                message: `Failed to fetch hosts: ${getErrorMessage(error)}`,
                 operation: 'select',
                 table: 'show_creators'
               })
@@ -202,7 +177,7 @@ const getBySlugEffect = (slug: string) =>
         db.select().from(showsTable).where(eq(showsTable.slug, slug)).limit(1),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to fetch show: ${(error as Error).message}`,
+          message: `Failed to fetch show: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'shows'
         })
@@ -229,7 +204,7 @@ const getBySlugEffect = (slug: string) =>
           .where(eq(showCreators.showId, show.id)),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to fetch hosts: ${(error as Error).message}`,
+          message: `Failed to fetch hosts: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'show_creators'
         })
@@ -249,7 +224,7 @@ const getBySlugEffect = (slug: string) =>
         try: () => compileMDX(show.content),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to compile MDX: ${(error as Error).message}`,
+            message: `Failed to compile MDX: ${getErrorMessage(error)}`,
             operation: 'mdx_compile',
             table: 'shows'
           })
@@ -289,7 +264,7 @@ const createEffect = (data: InsertShow, hostIds: string[]) =>
           return newShow
         }),
       catch: (error) => {
-        const errorMessage = (error as Error).message
+        const errorMessage = getErrorMessage(error)
         if (errorMessage.includes('unique constraint')) {
           return new ConflictError({
             message: 'Show with this slug already exists',
@@ -327,7 +302,7 @@ const updateEffect = (
         db.select().from(showsTable).where(eq(showsTable.slug, slug)).limit(1),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to check show existence: ${(error as Error).message}`,
+          message: `Failed to check show existence: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'shows'
         })
@@ -342,35 +317,7 @@ const updateEffect = (
       })
     }
 
-    const isAdmin = userRole === 'admin'
-    if (!isAdmin) {
-      const authorship = yield* Effect.tryPromise({
-        try: () =>
-          db
-            .select()
-            .from(showCreators)
-            .where(
-              and(
-                eq(showCreators.showId, existingShow.id),
-                eq(showCreators.creatorId, userId)
-              )
-            )
-            .limit(1),
-        catch: (error) =>
-          new DatabaseError({
-            message: `Failed to check authorship: ${(error as Error).message}`,
-            operation: 'select',
-            table: 'show_creators'
-          })
-      })
-
-      if (authorship.length === 0) {
-        return yield* new UnauthorizedError({
-          message: 'Forbidden, brethren.',
-          userId
-        })
-      }
-    }
+    yield* requireCreatorOrAdmin('show', existingShow.id, userId, userRole)
 
     const updatedRecords = yield* Effect.tryPromise({
       try: () =>
@@ -386,12 +333,10 @@ const updateEffect = (
           }
 
           if (hostIds) {
-            // Delete existing hosts
             await tx
               .delete(showCreators)
               .where(eq(showCreators.showId, updatedShow.id))
 
-            // Insert new hosts
             if (hostIds.length > 0) {
               await tx.insert(showCreators).values(
                 hostIds.map((creatorId) => ({
@@ -405,7 +350,7 @@ const updateEffect = (
         }),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to update show: ${(error as Error).message}`,
+          message: `Failed to update show: ${getErrorMessage(error)}`,
           operation: 'update',
           table: 'shows'
         })
@@ -432,7 +377,7 @@ const updateEffect = (
           .where(eq(showCreators.showId, updatedShow.id)),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to fetch hosts: ${(error as Error).message}`,
+          message: `Failed to fetch hosts: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'show_creators'
         })
@@ -452,7 +397,7 @@ const updateEffect = (
         try: () => compileMDX(updatedShow.content),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to compile MDX: ${(error as Error).message}`,
+            message: `Failed to compile MDX: ${getErrorMessage(error)}`,
             operation: 'mdx_compile',
             table: 'shows'
           })
@@ -476,7 +421,7 @@ const deleteEffect = (slug: string, userId: string, userRole: string) =>
         db.select().from(showsTable).where(eq(showsTable.slug, slug)).limit(1),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to check show existence: ${(error as Error).message}`,
+          message: `Failed to check show existence: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'shows'
         })
@@ -491,42 +436,14 @@ const deleteEffect = (slug: string, userId: string, userRole: string) =>
       })
     }
 
-    const isAdmin = userRole === 'admin'
-    if (!isAdmin) {
-      const authorship = yield* Effect.tryPromise({
-        try: () =>
-          db
-            .select()
-            .from(showCreators)
-            .where(
-              and(
-                eq(showCreators.showId, existingShow.id),
-                eq(showCreators.creatorId, userId)
-              )
-            )
-            .limit(1),
-        catch: (error) =>
-          new DatabaseError({
-            message: `Failed to check authorship: ${(error as Error).message}`,
-            operation: 'select',
-            table: 'show_creators'
-          })
-      })
-
-      if (authorship.length === 0) {
-        return yield* new UnauthorizedError({
-          message: 'Forbidden, brethren.',
-          userId
-        })
-      }
-    }
+    yield* requireCreatorOrAdmin('show', existingShow.id, userId, userRole)
 
     yield* Effect.tryPromise({
       try: () =>
         db.delete(showsTable).where(eq(showsTable.id, existingShow.id)),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to delete show: ${(error as Error).message}`,
+          message: `Failed to delete show: ${getErrorMessage(error)}`,
           operation: 'delete',
           table: 'shows'
         })
@@ -549,7 +466,7 @@ const getEpisodesEffect = (
           .limit(1),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to fetch show: ${(error as Error).message}`,
+          message: `Failed to fetch show: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'shows'
         })
@@ -571,7 +488,7 @@ const getEpisodesEffect = (
         db.select({ total: count() }).from(audioTable).where(whereCondition),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to count episodes: ${(error as Error).message}`,
+          message: `Failed to count episodes: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'audio'
         })
@@ -590,7 +507,7 @@ const getEpisodesEffect = (
           .orderBy(desc(audioTable.episodeNumber)),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to fetch episodes: ${(error as Error).message}`,
+          message: `Failed to fetch episodes: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'audio'
         })
@@ -600,175 +517,6 @@ const getEpisodesEffect = (
       data: episodes,
       pagination: createPaginationMetadata(total, limit, offset)
     }
-  })
-
-const subscribeEffect = (userId: string, showId: string) =>
-  Effect.gen(function* () {
-    const result = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .insert(showSubscriptionsTable)
-          .values({ userId, showId })
-          .returning(),
-      catch: (error) => {
-        const errorMessage = (error as Error).message
-        if (errorMessage.includes('unique constraint')) {
-          return new ConflictError({
-            message: 'Already subscribed to this show',
-            resource: 'show_subscription'
-          })
-        }
-        if (errorMessage.includes('foreign key constraint')) {
-          return new ConflictError({
-            message: 'Show not found',
-            resource: 'show_subscription'
-          })
-        }
-        return new DatabaseError({
-          message: `Failed to subscribe: ${errorMessage}`,
-          operation: 'insert',
-          table: 'show_subscriptions'
-        })
-      }
-    })
-
-    const subscription = result[0]
-    if (!subscription) {
-      return yield* new DatabaseError({
-        message: 'Failed to create subscription',
-        operation: 'insert',
-        table: 'show_subscriptions'
-      })
-    }
-
-    yield* recordShowSubscribe()
-
-    yield* Effect.tryPromise({
-      try: () =>
-        db
-          .insert(favoritesTable)
-          .values({ userId, showId })
-          .onConflictDoNothing(),
-      catch: () => Effect.void
-    }).pipe(Effect.catchAll(() => Effect.void))
-
-    return subscription
-  })
-
-const unsubscribeEffect = (userId: string, showId: string) =>
-  Effect.gen(function* () {
-    const result = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .delete(showSubscriptionsTable)
-          .where(
-            and(
-              eq(showSubscriptionsTable.userId, userId),
-              eq(showSubscriptionsTable.showId, showId)
-            )
-          )
-          .returning(),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to unsubscribe: ${(error as Error).message}`,
-          operation: 'delete',
-          table: 'show_subscriptions'
-        })
-    })
-
-    if (result.length === 0) {
-      return yield* new NotFoundError({
-        message: 'Subscription not found',
-        resource: 'show_subscription'
-      })
-    }
-
-    yield* recordShowUnsubscribe()
-  })
-
-const getUserSubscriptionsEffect = (
-  userId: string,
-  options: { limit: number; offset: number }
-) =>
-  Effect.gen(function* () {
-    const { limit, offset } = options
-
-    const whereCondition = eq(showSubscriptionsTable.userId, userId)
-
-    const countResult = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select({ total: count() })
-          .from(showSubscriptionsTable)
-          .where(whereCondition),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to count subscriptions: ${(error as Error).message}`,
-          operation: 'select',
-          table: 'show_subscriptions'
-        })
-    })
-
-    const total = countResult[0]?.total ?? 0
-
-    const subscriptions = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select({
-            id: showSubscriptionsTable.id,
-            userId: showSubscriptionsTable.userId,
-            showId: showSubscriptionsTable.showId,
-            createdAt: showSubscriptionsTable.createdAt,
-            show: showsTable
-          })
-          .from(showSubscriptionsTable)
-          .innerJoin(
-            showsTable,
-            eq(showSubscriptionsTable.showId, showsTable.id)
-          )
-          .where(whereCondition)
-          .limit(limit)
-          .offset(offset)
-          .orderBy(desc(showSubscriptionsTable.createdAt)),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to fetch subscriptions: ${(error as Error).message}`,
-          operation: 'select',
-          table: 'show_subscriptions'
-        })
-    })
-
-    return {
-      data: subscriptions,
-      pagination: createPaginationMetadata(total, limit, offset)
-    }
-  })
-
-const getSubscribersEffect = (showId: string) =>
-  Effect.gen(function* () {
-    const subscribers = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select({
-            userId: usersTable.id,
-            email: usersTable.email,
-            name: usersTable.name
-          })
-          .from(showSubscriptionsTable)
-          .innerJoin(
-            usersTable,
-            eq(showSubscriptionsTable.userId, usersTable.id)
-          )
-          .where(eq(showSubscriptionsTable.showId, showId)),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to fetch subscribers: ${(error as Error).message}`,
-          operation: 'select',
-          table: 'show_subscriptions'
-        })
-    })
-
-    return subscribers
   })
 
 export const ShowServiceLive = Layer.succeed(ShowService, {
@@ -791,21 +539,5 @@ export const ShowServiceLive = Layer.succeed(ShowService, {
   getEpisodes: (showSlug, options) =>
     getEpisodesEffect(showSlug, options).pipe(
       Effect.withSpan('show.getEpisodes', { attributes: { showSlug } })
-    ),
-  subscribe: (userId, showId) =>
-    subscribeEffect(userId, showId).pipe(
-      Effect.withSpan('show.subscribe', { attributes: { showId } })
-    ),
-  unsubscribe: (userId, showId) =>
-    unsubscribeEffect(userId, showId).pipe(
-      Effect.withSpan('show.unsubscribe', { attributes: { showId } })
-    ),
-  getUserSubscriptions: (userId, options) =>
-    getUserSubscriptionsEffect(userId, options).pipe(
-      Effect.withSpan('show.getUserSubscriptions', { attributes: { userId } })
-    ),
-  getSubscribers: (showId) =>
-    getSubscribersEffect(showId).pipe(
-      Effect.withSpan('show.getSubscribers', { attributes: { showId } })
     )
 })

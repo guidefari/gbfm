@@ -2,7 +2,7 @@ import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import type { AppRouteHandler } from '@/lib/types'
 import { AppRuntime, runApp } from '@/runtime'
-import { ShowService } from '@/services/show.service'
+import { ShowSubscriptionService } from '@/services/show.service'
 import { UserService } from '@/services/user.service'
 
 import type {
@@ -214,8 +214,11 @@ export const getUserSubscriptions: AppRouteHandler<
   const user = c.get('user')
 
   const program = Effect.gen(function* () {
-    const showService = yield* ShowService
-    return yield* showService.getUserSubscriptions(user.id, { limit, offset })
+    const subscriptionService = yield* ShowSubscriptionService
+    return yield* subscriptionService.getUserSubscriptions(user.id, {
+      limit,
+      offset
+    })
   }).pipe(
     Effect.catchTag('DatabaseError', (e) =>
       Effect.succeed({
