@@ -81,7 +81,7 @@ separator();
 ### Available Functions
 
 | Function | Description |
-|----------|-------------|
+|----------|--------------|
 | `apiGet(endpoint)` | GET request, returns `ApiResponse` |
 | `apiPost(endpoint, data)` | POST request with JSON body |
 | `apiRequest(method, endpoint, options)` | Generic request |
