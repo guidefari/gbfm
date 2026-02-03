@@ -1,15 +1,15 @@
-export { AudioDetailsForm } from './AudioDetailsForm'
 export { ArtworkUploader } from './ArtworkUploader'
+export { AudioDetailsForm } from './AudioDetailsForm'
 export { AudioUploader } from './AudioUploader'
 export {
-  ContentTypeSelector,
   CONTENT_TYPE_CONFIG,
-  getTypeLabel,
-  type ContentType
+  type ContentType,
+  ContentTypeSelector,
+  getTypeLabel
 } from './ContentTypeSelector'
 export { TagsInput } from './TagsInput'
 export {
-  UploadProgress,
   getUploadStepText,
+  UploadProgress,
   type UploadStep
 } from './UploadProgress'

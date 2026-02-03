@@ -1,20 +1,20 @@
 import { SpotifyApi as SpotifyApiClient } from '@spotify/web-api-ts-sdk'
 import { Context, Effect, Layer } from 'effect'
 import { getErrorMessage, SpotifyError } from '@/errors'
+import {
+  calculateBandcampTotalDuration,
+  extractBandcampArtist,
+  getBandcampMetadataWithSpan
+} from '@/services/bandcamp.service'
 import { config } from '@/services/config.service'
 import {
-  getBandcampMetadataWithSpan,
-  extractBandcampArtist,
-  calculateBandcampTotalDuration
-} from '@/services/bandcamp.service'
-import {
   cleanId,
-  isSpotifyUrl,
-  isYouTubeUrl,
+  extractSpotifyId,
+  extractYouTubeId,
   isAppleMusicUrl,
   isBandcampUrl,
-  extractSpotifyId,
-  extractYouTubeId
+  isSpotifyUrl,
+  isYouTubeUrl
 } from '@/services/url-utils'
 import type {
   Album,
@@ -25,14 +25,14 @@ import type {
 
 export {
   cleanId,
-  getIdFromSpotifyUrl,
-  isSpotifyUrl,
-  isYouTubeUrl,
-  isAppleMusicUrl,
-  isBandcampUrl,
+  extractBandcampId,
   extractSpotifyId,
   extractYouTubeId,
-  extractBandcampId
+  getIdFromSpotifyUrl,
+  isAppleMusicUrl,
+  isBandcampUrl,
+  isSpotifyUrl,
+  isYouTubeUrl
 } from '@/services/url-utils'
 
 export interface SpotifyService {

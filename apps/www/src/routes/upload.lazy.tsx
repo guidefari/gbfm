@@ -10,14 +10,14 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { toast } from '@/components/ui/use-toast'
 import {
-  AudioDetailsForm,
   ArtworkUploader,
+  AudioDetailsForm,
   AudioUploader,
+  type ContentType,
   ContentTypeSelector,
   getTypeLabel,
   TagsInput,
   UploadProgress,
-  type ContentType,
   type UploadStep
 } from '@/components/upload'
 import { generateSlug, useFileUpload } from '@/hooks/useFileUpload'
