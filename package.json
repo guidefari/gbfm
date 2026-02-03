@@ -19,7 +19,8 @@
     "biome:ci": "biome ci",
     "precommit": "bun run format && bun run check && bun run typecheck",
     "ci": "bun run biome:ci && bun run typecheck && cd apps/www && bun run build",
-    "prepare": "effect-language-service patch && lefthook install"
+    "prepare": "effect-language-service patch",
+    "init:lefthook": "lefthook install"
   },
   "dependencies": {
     "@effect/cli": "0.73.0",
