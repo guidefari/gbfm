@@ -1,3 +1,15 @@
+# [2.13.0](https://github.com/guidefari/gbfm/compare/v2.12.0...v2.13.0) (2026-02-03)
+
+
+### Bug Fixes
+
+* **www:** address critical production issues ([00a9fda](https://github.com/guidefari/gbfm/commit/00a9fda00b73b354cc4330438b79c98e977e7565))
+
+
+### Features
+
+* **vps:** add rate limiting to public endpoints ([3b428f0](https://github.com/guidefari/gbfm/commit/3b428f0409d4233d379a52a685ba72470285d8b2))
+
 # [2.12.0](https://github.com/guidefari/gbfm/compare/v2.11.0...v2.12.0) (2026-01-30)
 
 
