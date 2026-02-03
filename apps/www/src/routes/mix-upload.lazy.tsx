@@ -2,39 +2,25 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createLazyFileRoute, useRouter } from '@tanstack/react-router'
-import {
-  FileText,
-  ImageIcon,
-  List,
-  Loader2,
-  Music,
-  Tag,
-  Trash2,
-  Upload,
-  X
-} from 'lucide-react'
-import { useEffect, useId, useMemo, useRef, useState } from 'react'
+import { FileText, List, Loader2, Music } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { AudioDropZone } from '@/components/mix-uploader/AudioDropZone'
+import { AudioFileCard } from '@/components/mix-uploader/AudioFileCard'
+import { MixDetailsForm } from '@/components/mix-uploader/MixDetailsForm'
 import {
   type TrackEntry,
   TracklistEditor
 } from '@/components/mix-uploader/tracklist-editor'
+import {
+  UploadProgress,
+  type UploadStep
+} from '@/components/mix-uploader/UploadProgress'
 import { UploadSummaryCard } from '@/components/mix-uploader/upload-summary-card'
 import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/use-toast'
+import { formatTime, generateSlug } from '@/hooks/useFileUpload'
 import { authClient } from '@/lib/auth-client'
 import {
   fetcher,
@@ -99,7 +85,7 @@ function MixUploadPage() {
   const [formData, setFormData] = useState<MixFormData>(() => ({
     title: search.title || '',
     description: search.description || '',
-    slug: search.edit || '', // Use the edit slug as the base slug
+    slug: search.edit || '',
     content: search.content || '',
     thumbnailUrl: search.thumbnailUrl || '',
     tags: search.tags || [],
@@ -111,13 +97,7 @@ function MixUploadPage() {
     episodeNumber: undefined
   }))
   const [newTag, setNewTag] = useState('')
-  const [uploadStep, setUploadStep] = useState<
-    | 'idle'
-    | 'uploading-audio'
-    | 'uploading-image'
-    | 'creating-record'
-    | 'success'
-  >('idle')
+  const [uploadStep, setUploadStep] = useState<UploadStep>('idle')
   const [audioFile, setAudioFile] = useState<File | null>(null)
   const [artworkFile, setArtworkFile] = useState<File | null>(null)
   const [audioPreview, setAudioPreview] = useState<string | null>(null)
@@ -132,11 +112,7 @@ function MixUploadPage() {
 
   const { data: usersData } = useQuery({
     queryKey: ['admin', 'users'],
-    queryFn: async () => {
-      return authClient.admin.listUsers({
-        query: { limit: 100 }
-      })
-    },
+    queryFn: async () => authClient.admin.listUsers({ query: { limit: 100 } }),
     enabled: isAdmin
   })
 
@@ -159,12 +135,8 @@ function MixUploadPage() {
           ? String(existingMix.episodeNumber)
           : prev.episodeNumber
       }))
-      if (existingMix.thumbnailUrl) {
-        setArtworkPreview(existingMix.thumbnailUrl)
-      }
-      if (existingMix.url) {
-        setAudioPreview(existingMix.url)
-      }
+      if (existingMix.thumbnailUrl) setArtworkPreview(existingMix.thumbnailUrl)
+      if (existingMix.url) setAudioPreview(existingMix.url)
     }
   }, [existingMix, isEditMode])
 
@@ -190,15 +162,6 @@ function MixUploadPage() {
     }
   })
 
-  const artworkUploadId = useId()
-
-  const generateSlug = (title: string) => {
-    return title
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '')
-  }
-
   const uploadMutation = useMutation({
     mutationFn: async (
       data: MixFormData & { audioFile: File | null; artworkFile: File | null }
@@ -213,10 +176,9 @@ function MixUploadPage() {
 
       setUploadStep('uploading-audio')
 
-      const uploadFormData = new FormData()
-
       let audioUrl = data.url || ''
       if (data.audioFile) {
+        const uploadFormData = new FormData()
         uploadFormData.append('audioFile', data.audioFile)
         uploadFormData.append('fileType', 'audio')
 
@@ -225,10 +187,7 @@ function MixUploadPage() {
           body: uploadFormData
         })
 
-        if (!audioUploadResponse.ok) {
-          throw new Error('Failed to upload audio file')
-        }
-
+        if (!audioUploadResponse.ok) throw new Error('Failed to upload audio')
         const audioResult = await audioUploadResponse.json()
         audioUrl = audioResult.url
       }
@@ -246,10 +205,7 @@ function MixUploadPage() {
           body: imageFormData
         })
 
-        if (!imageUploadResponse.ok) {
-          throw new Error('Failed to upload image file')
-        }
-
+        if (!imageUploadResponse.ok) throw new Error('Failed to upload image')
         const imageResult = await imageUploadResponse.json()
         imageUrl = imageResult.url
       }
@@ -258,12 +214,10 @@ function MixUploadPage() {
 
       const tracklistMarkdown =
         data.tracklist.length > 0
-          ? `\\n\\n## Tracklist\\n${data.tracklist
+          ? `\n\n## Tracklist\n${data.tracklist
               .map((t, i) => `${i + 1}. ${t.title} (${formatTime(t.time)})`)
-              .join('\\n')}`
+              .join('\n')}`
           : ''
-
-      const type = 'mix'
 
       const audioData = {
         title: data.title,
@@ -272,7 +226,7 @@ function MixUploadPage() {
         content: data.content + tracklistMarkdown,
         thumbnailUrl: imageUrl,
         url: audioUrl,
-        type,
+        type: 'mix',
         tags: data.tags,
         creatorIds: [
           data.creatorId === 'current' ? user?.id : data.creatorId || user?.id
@@ -285,10 +239,8 @@ function MixUploadPage() {
         ? `${VPS_BASE_URL}/content/audio/${editType}/${search.edit}`
         : `${VPS_BASE_URL}/content/audio`
 
-      const method = isEditMode ? 'PATCH' : 'POST'
-
       const result = await fetcher(endpoint, {
-        method,
+        method: isEditMode ? 'PATCH' : 'POST',
         body: JSON.stringify(audioData)
       })
 
@@ -298,37 +250,14 @@ function MixUploadPage() {
     onSuccess: () => {
       toast({
         title: isEditMode ? 'Update successful!' : 'Upload successful!',
-        description: `"${formData.title}" has been ${isEditMode ? 'updated' : 'uploaded'} successfully.`
+        description: `"${formData.title}" has been ${isEditMode ? 'updated' : 'uploaded'}.`
       })
 
       setTimeout(() => {
-        if (!isEditMode) {
-          setFormData({
-            title: '',
-            description: '',
-            slug: '',
-            content: '',
-            thumbnailUrl: '',
-            tags: [],
-            tracklist: [],
-            draft: true,
-            creatorId: undefined,
-            url: undefined,
-            showId: undefined,
-            episodeNumber: undefined
-          })
-          setAudioFile(null)
-          setArtworkFile(null)
-          setAudioPreview(null)
-          setArtworkPreview(null)
-        }
+        if (!isEditMode) resetForm()
         setUploadStep('idle')
 
-        const type = 'mix'
-        if (type === 'mix' && formData.showId) {
-          // Find the show slug if possible, or just go to shows
-          // For now, let's go to mix/show list or the specific item
-          // Since we don't have the show slug handy easily without looking it up from allShows
+        if (formData.showId) {
           router.navigate({ to: '/shows' })
         } else {
           router.navigate({
@@ -338,13 +267,10 @@ function MixUploadPage() {
       }, 2000)
     },
     onError: (error) => {
-      console.error('Upload failed:', error)
       toast({
         title: 'Upload failed',
         description:
-          error instanceof Error
-            ? error.message
-            : 'An unexpected error occurred.',
+          error instanceof Error ? error.message : 'An unexpected error.',
         variant: 'destructive'
       })
       setUploadStep('idle')
@@ -354,22 +280,16 @@ function MixUploadPage() {
   const handleInputChange = (field: keyof MixFormData, value: string) => {
     setFormData((prev) => {
       const updated = { ...prev, [field]: value }
-      if (field === 'title' && !prev.slug) {
-        updated.slug = generateSlug(value)
-      }
+      if (field === 'title' && !prev.slug) updated.slug = generateSlug(value)
       return updated
     })
   }
 
-  const handleAudioFileChange = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleAudioFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
       setAudioFile(file)
-      const url = URL.createObjectURL(file)
-      setAudioPreview(url)
-
+      setAudioPreview(URL.createObjectURL(file))
       if (!formData.title) {
         const fileName = file.name.replace(/\.[^/.]+$/, '')
         const cleanTitle = fileName
@@ -384,8 +304,7 @@ function MixUploadPage() {
     const file = e.target.files?.[0]
     if (file) {
       setArtworkFile(file)
-      const url = URL.createObjectURL(file)
-      setArtworkPreview(url)
+      setArtworkPreview(URL.createObjectURL(file))
     }
   }
 
@@ -417,20 +336,14 @@ function MixUploadPage() {
       const newTags = prev.tags.includes(tag)
         ? prev.tags.filter((t) => t !== tag)
         : [...prev.tags, tag]
-
-      if (isEditMode) {
-        updateTagsMutation.mutate(newTags)
-      }
-
+      if (isEditMode) updateTagsMutation.mutate(newTags)
       return { ...prev, tags: newTags }
     })
   }
 
   const addNewTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && newTag.trim()) {
-      if (!formData.tags.includes(newTag.trim())) {
-        toggleTag(newTag.trim())
-      }
+      if (!formData.tags.includes(newTag.trim())) toggleTag(newTag.trim())
       setNewTag('')
     }
   }
@@ -471,7 +384,7 @@ function MixUploadPage() {
     }
   }
 
-  const handleSubmit = async (isDraft: boolean) => {
+  const handleSubmit = (isDraft: boolean) => {
     if (!isEditMode && !audioFile) {
       toast({
         title: 'Audio file required',
@@ -480,17 +393,15 @@ function MixUploadPage() {
       })
       return
     }
-
-    const submitData = {
+    uploadMutation.mutate({
       ...formData,
       draft: isDraft,
-      audioFile: audioFile,
+      audioFile,
       artworkFile
-    }
-    uploadMutation.mutate(submitData)
+    })
   }
 
-  const handleDiscard = () => {
+  const resetForm = () => {
     setFormData({
       title: '',
       description: '',
@@ -501,7 +412,9 @@ function MixUploadPage() {
       tracklist: [],
       draft: true,
       creatorId: undefined,
-      url: undefined
+      url: undefined,
+      showId: undefined,
+      episodeNumber: undefined
     })
     setAudioFile(null)
     setArtworkFile(null)
@@ -536,52 +449,12 @@ function MixUploadPage() {
                 : 'Share your mix with tracklist timestamps for easy navigation.'}
             </p>
           </div>
-          {isUploading && (
-            <div className='w-full p-4 border rounded-sm md:w-64 bg-gb-darker-bg border-gb-pastel-green-2/20'>
-              <div className='flex justify-between mb-2 text-sm'>
-                <span className='font-medium text-gb-pastel-green-1'>
-                  Uploading Mix...
-                </span>
-                <Loader2 className='w-4 h-4 animate-spin text-gb-highlight' />
-              </div>
-              <div className='w-full h-2 rounded-sm bg-gb-bg'>
-                <div
-                  className='h-2 transition-all duration-300 rounded-sm bg-gb-highlight'
-                  style={{
-                    width:
-                      uploadStep === 'creating-record'
-                        ? '80%'
-                        : uploadStep === 'uploading-image'
-                          ? '60%'
-                          : uploadStep === 'uploading-audio'
-                            ? '30%'
-                            : '10%'
-                  }}
-                />
-              </div>
-            </div>
-          )}
+          {isUploading && <UploadProgress step={uploadStep} />}
         </div>
       </header>
 
       {!audioPreview && !isEditMode ? (
-        <div className='relative p-12 text-center transition-colors border-2 border-dashed cursor-pointer group rounded-sm bg-gb-darker-bg border-gb-pastel-green-2/30 hover:border-gb-highlight/50'>
-          <input
-            type='file'
-            accept='audio/*'
-            onChange={handleAudioFileChange}
-            className='absolute inset-0 opacity-0 cursor-pointer'
-          />
-          <div className='flex items-center justify-center w-16 h-16 mx-auto mb-4 transition-transform rounded-sm bg-gb-pastel-green-2/20 group-hover:scale-110'>
-            <Upload className='w-8 h-8 text-gb-highlight' />
-          </div>
-          <h2 className='mb-2 text-xl font-semibold text-gb-pastel-green-1'>
-            Select your mix file
-          </h2>
-          <p className='text-muted-foreground'>
-            MP3, WAV, or AIFF supported. Title will be inferred automatically.
-          </p>
-        </div>
+        <AudioDropZone onFileSelect={handleAudioFileChange} />
       ) : (
         <div className='grid grid-cols-1 gap-8 lg:grid-cols-12'>
           <div className='space-y-6 lg:col-span-7'>
@@ -606,227 +479,52 @@ function MixUploadPage() {
               </TabsList>
 
               <TabsContent value='details'>
-                <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
-                  <CardContent className='pt-6 space-y-6'>
-                    <div className='space-y-2'>
-                      <Label className='text-gb-pastel-green-1'>
-                        Mix Title
-                      </Label>
-                      <Input
-                        value={formData.title}
-                        onChange={(e) =>
-                          handleInputChange('title', e.target.value)
+                <MixDetailsForm
+                  title={formData.title}
+                  description={formData.description}
+                  slug={formData.slug}
+                  tags={formData.tags}
+                  creatorId={formData.creatorId}
+                  showId={formData.showId}
+                  episodeNumber={formData.episodeNumber}
+                  artworkPreview={artworkPreview}
+                  availableTags={availableTags}
+                  allShows={allShows}
+                  usersList={usersList.map((u) => ({
+                    id: u.id,
+                    name: u.name,
+                    displayUsername: (u as { displayUsername?: string })
+                      .displayUsername
+                  }))}
+                  currentUser={
+                    user
+                      ? {
+                          id: user.id,
+                          name: user.name,
+                          displayUsername: user.displayUsername
                         }
-                        placeholder='Summer Solstice Set 2024'
-                        className='bg-gb-bg border-gb-pastel-green-2/30'
-                      />
-                    </div>
-
-                    <div className='space-y-2'>
-                      <Label className='text-gb-pastel-green-1'>
-                        Short Description
-                      </Label>
-                      <Textarea
-                        value={formData.description}
-                        onChange={(e) =>
-                          handleInputChange('description', e.target.value)
-                        }
-                        placeholder='A deep dive into progressive sounds recorded live...'
-                        className='bg-gb-bg border-gb-pastel-green-2/30'
-                      />
-                    </div>
-
-                    <div className='space-y-2'>
-                      <Label className='text-gb-pastel-green-1'>URL Slug</Label>
-                      <Input
-                        value={formData.slug}
-                        onChange={(e) =>
-                          handleInputChange('slug', e.target.value)
-                        }
-                        placeholder='url-friendly-slug'
-                        className='bg-gb-bg border-gb-pastel-green-2/30'
-                      />
-                      {formData.title && !formData.slug && (
-                        <p className='text-xs text-muted-foreground'>
-                          Will be: {generateSlug(formData.title)}
-                        </p>
-                      )}
-                    </div>
-
-                    {isAdmin && (
-                      <div className='space-y-2'>
-                        <Label className='text-gb-pastel-green-1'>
-                          Creator
-                        </Label>
-                        <Select
-                          value={formData.creatorId}
-                          onValueChange={(value) =>
-                            handleInputChange('creatorId', value)
-                          }>
-                          <SelectTrigger className='bg-gb-bg border-gb-pastel-green-2/30'>
-                            <SelectValue placeholder='Select creator' />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={user?.id || 'current'}>
-                              {user?.displayUsername || user?.name} (Me)
-                            </SelectItem>
-                            {usersList
-                              .filter((u) => u.id !== user?.id)
-                              .map((u) => (
-                                <SelectItem key={u.id} value={u.id}>
-                                  {(u as { displayUsername?: string })
-                                    .displayUsername || u.name}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-
-                    <div className='space-y-2'>
-                      <Label className='text-gb-pastel-green-1'>
-                        Radio Show (Optional)
-                      </Label>
-                      <Select
-                        value={formData.showId}
-                        onValueChange={(value) =>
-                          handleInputChange(
-                            'showId',
-                            value === 'none' ? '' : value
-                          )
-                        }>
-                        <SelectTrigger className='bg-gb-bg border-gb-pastel-green-2/30'>
-                          <SelectValue placeholder='Select show' />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value='none'>None</SelectItem>
-                          {allShows?.map((show) => (
-                            <SelectItem key={show.id} value={show.id}>
-                              {show.title}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {formData.showId && (
-                      <div className='space-y-2'>
-                        <Label className='text-gb-pastel-green-1'>
-                          Episode Number
-                        </Label>
-                        <Input
-                          type='number'
-                          value={formData.episodeNumber || ''}
-                          onChange={(e) =>
-                            handleInputChange('episodeNumber', e.target.value)
-                          }
-                          placeholder='e.g. 42'
-                          className='bg-gb-bg border-gb-pastel-green-2/30'
-                        />
-                      </div>
-                    )}
-
-                    <div className='space-y-2'>
-                      <Label className='text-gb-pastel-green-1'>
-                        Genre Tags
-                        {updateTagsMutation.isPending && isEditMode && (
-                          <Loader2 className='inline w-3 h-3 ml-2 animate-spin' />
-                        )}
-                      </Label>
-                      <div className='flex flex-wrap gap-2 mb-4'>
-                        {availableTags.map((tag) => (
-                          <button
-                            key={tag}
-                            type='button'
-                            onClick={() => toggleTag(tag)}
-                            className={`px-3 py-1.5 rounded-sm text-xs font-medium border transition-all ${
-                              formData.tags.includes(tag)
-                                ? 'bg-gb-pastel-green-2 border-gb-pastel-green-2 text-gb-darker-bg'
-                                : 'bg-transparent border-gb-pastel-green-2/30 text-gb-default-text hover:border-gb-highlight/50'
-                            }`}>
-                            {tag}
-                          </button>
-                        ))}
-                      </div>
-                      <div className='relative'>
-                        <Tag className='absolute w-4 h-4 left-3 top-3.5 text-muted-foreground' />
-                        <Input
-                          value={newTag}
-                          onChange={(e) => setNewTag(e.target.value)}
-                          onKeyDown={addNewTag}
-                          placeholder='Add custom tag (Press Enter)'
-                          className='pl-10 bg-gb-bg border-gb-pastel-green-2/30'
-                        />
-                      </div>
-                      {formData.tags.length > 0 && (
-                        <div className='flex flex-wrap gap-2 mt-3'>
-                          {formData.tags
-                            .filter((tag) => !availableTags.includes(tag))
-                            .map((tag) => (
-                              <Badge
-                                key={tag}
-                                variant='secondary'
-                                className='flex items-center gap-1 bg-gb-pastel-green-2/20 text-gb-pastel-green-1'>
-                                {tag}
-                                <X
-                                  className='w-3 h-3 cursor-pointer hover:text-gb-highlight'
-                                  onClick={() => toggleTag(tag)}
-                                />
-                              </Badge>
-                            ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className='space-y-2'>
-                      <Label className='text-gb-pastel-green-1'>Artwork</Label>
-                      {!artworkFile && !artworkPreview ? (
-                        <div className='p-4 text-center transition-colors border-2 border-dashed rounded-sm border-gb-pastel-green-2/30 hover:border-gb-highlight/50'>
-                          <ImageIcon className='w-6 h-6 mx-auto mb-2 text-gb-pastel-green-2' />
-                          <p className='mb-2 text-xs text-muted-foreground'>
-                            Upload cover artwork
-                          </p>
-                          <input
-                            type='file'
-                            accept='image/*'
-                            onChange={handleArtworkFileChange}
-                            className='hidden'
-                            id={artworkUploadId}
-                          />
-                          <label htmlFor={artworkUploadId}>
-                            <Button
-                              variant='outline'
-                              size='sm'
-                              className='bg-transparent cursor-pointer border-gb-pastel-green-2/30 text-gb-pastel-green-1 hover:bg-gb-pastel-green-2/20'
-                              asChild>
-                              <span>
-                                <Upload className='w-4 h-4 mr-2' />
-                                Choose Image
-                              </span>
-                            </Button>
-                          </label>
-                        </div>
-                      ) : (
-                        <div className='space-y-3'>
-                          <div className='relative overflow-hidden border rounded-sm aspect-square bg-gb-bg border-gb-pastel-green-2/20 max-w-[200px]'>
-                            <img
-                              src={artworkPreview || ''}
-                              alt='Artwork preview'
-                              className='object-cover w-full h-full'
-                            />
-                            <Button
-                              variant='ghost'
-                              size='sm'
-                              onClick={removeArtworkFile}
-                              className='absolute text-white top-2 right-2 bg-black/50 hover:bg-black/70'>
-                              <X className='w-4 h-4' />
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                      : null
+                  }
+                  isAdmin={isAdmin}
+                  isEditMode={isEditMode}
+                  isUpdatingTags={updateTagsMutation.isPending}
+                  newTag={newTag}
+                  onTitleChange={(v) => handleInputChange('title', v)}
+                  onDescriptionChange={(v) =>
+                    handleInputChange('description', v)
+                  }
+                  onSlugChange={(v) => handleInputChange('slug', v)}
+                  onCreatorChange={(v) => handleInputChange('creatorId', v)}
+                  onShowChange={(v) => handleInputChange('showId', v)}
+                  onEpisodeNumberChange={(v) =>
+                    handleInputChange('episodeNumber', v)
+                  }
+                  onToggleTag={toggleTag}
+                  onNewTagChange={setNewTag}
+                  onAddNewTag={addNewTag}
+                  onArtworkChange={handleArtworkFileChange}
+                  onRemoveArtwork={removeArtworkFile}
+                />
               </TabsContent>
 
               <TabsContent value='tracklist'>
@@ -872,42 +570,12 @@ Add any technical details, equipment used, or special techniques...`}
               </TabsContent>
             </Tabs>
 
-            <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
-              <CardHeader>
-                <CardTitle className='flex items-center text-gb-pastel-green-1'>
-                  <Music className='w-5 h-5 mr-2' />
-                  Audio File
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className='flex items-center justify-between p-3 rounded-sm bg-gb-bg'>
-                  <div className='flex items-center min-w-0 space-x-3'>
-                    <Music className='flex-shrink-0 w-6 h-6 text-gb-highlight' />
-                    <div className='min-w-0'>
-                      <p className='font-medium leading-tight text-gb-pastel-green-1'>
-                        {audioFile?.name ||
-                          (formData.url
-                            ? formData.url.split('/').pop()
-                            : 'Unknown file')}
-                      </p>
-                      <p className='text-xs text-muted-foreground'>
-                        {audioFile
-                          ? (audioFile.size / (1024 * 1024)).toFixed(2)
-                          : '0'}{' '}
-                        MB
-                      </p>
-                    </div>
-                  </div>
-                  <Button
-                    variant='ghost'
-                    size='sm'
-                    onClick={removeAudioFile}
-                    className='flex-shrink-0 text-red-400 hover:text-red-300'>
-                    <Trash2 className='w-4 h-4' />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <AudioFileCard
+              fileName={audioFile?.name}
+              fileSize={audioFile?.size}
+              existingUrl={formData.url}
+              onRemove={removeAudioFile}
+            />
           </div>
 
           <div className='lg:col-span-5'>
@@ -920,7 +588,7 @@ Add any technical details, equipment used, or special techniques...`}
               onTimeUpdate={setCurrentTime}
               onPublish={() => handleSubmit(false)}
               onSaveDraft={() => handleSubmit(true)}
-              onDiscard={handleDiscard}
+              onDiscard={resetForm}
               isUploading={isUploading}
               uploadStep={uploadStep}
             />
@@ -929,10 +597,4 @@ Add any technical details, equipment used, or special techniques...`}
       )}
     </div>
   )
-}
-
-function formatTime(seconds: number): string {
-  const mins = Math.floor(seconds / 60)
-  const secs = Math.floor(seconds % 60)
-  return `${mins}:${secs.toString().padStart(2, '0')}`
 }
