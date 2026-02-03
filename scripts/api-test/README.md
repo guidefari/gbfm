@@ -1,14 +1,6 @@
 # API Test Scripts
 
-Bash scripts for testing GBFM API endpoints.
-
-## Setup
-
-Requires `jq` for JSON formatting:
-
-```bash
-brew install jq
-```
+TypeScript scripts for testing GBFM API endpoints, run with Bun.
 
 ## Configuration
 
@@ -20,60 +12,82 @@ export GBFM_API_URL="https://api.example.com"
 
 ## Scripts
 
-### health.sh
+### health.ts
 
 Check API health status.
 
 ```bash
-./scripts/api-test/health.sh
-./scripts/api-test/health.sh -v  # verbose
+bun run scripts/api-test/health.ts
+bun run scripts/api-test/health.ts -v  # verbose
 ```
 
-### redirect.sh
+### redirect.ts
 
 Test share/redirect endpoints (`/s/*`).
 
 ```bash
-./scripts/api-test/redirect.sh mix my-mix-slug
-./scripts/api-test/redirect.sh profile guidefari
-./scripts/api-test/redirect.sh show some-show
-./scripts/api-test/redirect.sh catch-all any-slug -v
+bun run scripts/api-test/redirect.ts mix my-mix-slug
+bun run scripts/api-test/redirect.ts profile guidefari
+bun run scripts/api-test/redirect.ts show some-show
+bun run scripts/api-test/redirect.ts catch-all any-slug -v
 ```
 
 Supported types: `mix`, `track`, `show`, `profile`, `release`, `label`, `catch-all`
 
-### resolve.sh
+### resolve.ts
 
 Test slug resolution endpoint (`/resolve/:slug`).
 
 ```bash
-./scripts/api-test/resolve.sh guidefari
-./scripts/api-test/resolve.sh some-slug -v
+bun run scripts/api-test/resolve.ts guidefari
+bun run scripts/api-test/resolve.ts some-slug -v
+```
+
+### sitemap.ts
+
+Test sitemap endpoint (`/sitemap.xml`).
+
+```bash
+bun run scripts/api-test/sitemap.ts
+bun run scripts/api-test/sitemap.ts -v
 ```
 
 ## Extending
 
-Add new scripts by sourcing the common library:
+Add new scripts by importing from the common library:
 
-```bash
-#!/bin/bash
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-source "$SCRIPT_DIR/lib/common.sh"
+```typescript
+import {
+  apiGet,
+  colors,
+  header,
+  parseArgs,
+  printResponse,
+  separator,
+  API_URL,
+} from "./lib/common";
 
-# Use api_get, api_post, print_response, etc.
-api_get "/your/endpoint"
-print_response
+const { verbose } = parseArgs(Bun.argv.slice(2));
+
+header(`My Endpoint: ${API_URL}/your/endpoint`);
+
+const response = await apiGet("/your/endpoint");
+
+printResponse(response, verbose);
+
+separator();
 ```
 
 ### Available Functions
 
 | Function | Description |
 |----------|-------------|
-| `api_get <endpoint>` | GET request, sets `API_STATUS`, `API_HEADERS`, `API_BODY` |
-| `api_post <endpoint> <json>` | POST request with JSON body |
-| `api_request <method> <endpoint>` | Generic request |
-| `print_response [verbose]` | Format and print the response |
-| `print_json <json>` | Pretty-print JSON with jq |
-| `header <title>` | Print section header |
-| `separator` | Print separator line |
-| `format_status <code>` | Color-coded status code |
+| `apiGet(endpoint)` | GET request, returns `ApiResponse` |
+| `apiPost(endpoint, data)` | POST request with JSON body |
+| `apiRequest(method, endpoint, options)` | Generic request |
+| `printResponse(response, verbose)` | Format and print the response |
+| `printJson(json, maxLines)` | Pretty-print JSON |
+| `header(title)` | Print section header |
+| `separator()` | Print separator line |
+| `formatStatus(code)` | Color-coded status code |
+| `parseArgs(args)` | Parse CLI arguments |
