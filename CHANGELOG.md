@@ -1,3 +1,10 @@
+## [2.13.3](https://github.com/guidefari/gbfm/compare/v2.13.2...v2.13.3) (2026-02-04)
+
+
+### Bug Fixes
+
+* clickable username on audio player ([e021dc5](https://github.com/guidefari/gbfm/commit/e021dc55dcab51620644fb958fa0e7d09da86ba3))
+
 ## [2.13.2](https://github.com/guidefari/gbfm/compare/v2.13.1...v2.13.2) (2026-02-04)
 
 
