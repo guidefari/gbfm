@@ -1,3 +1,10 @@
+# [2.14.0](https://github.com/guidefari/gbfm/compare/v2.13.3...v2.14.0) (2026-02-04)
+
+
+### Features
+
+* audio player and profile improvements ([e3c36dd](https://github.com/guidefari/gbfm/commit/e3c36ddb52cc895919e40b4b91405ed630546a96))
+
 ## [2.13.3](https://github.com/guidefari/gbfm/compare/v2.13.2...v2.13.3) (2026-02-04)
 
 
