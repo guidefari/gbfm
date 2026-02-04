@@ -22,7 +22,6 @@ export interface UserService {
       emailVerified: boolean
       image: string | null
       username: string | null
-      displayUsername: string | null
       role: string
       banned: boolean
       banReason: string | null
@@ -38,7 +37,6 @@ export interface UserService {
       id: string
       name: string
       username: string | null
-      displayUsername: string | null
       image: string | null
     }>,
     DatabaseError
@@ -47,7 +45,6 @@ export interface UserService {
   readonly updateUserProfile: (
     userId: string,
     data: {
-      displayUsername?: string
       email?: string
       image?: string
       username?: string
@@ -60,7 +57,6 @@ export interface UserService {
       emailVerified: boolean
       image: string | null
       username: string | null
-      displayUsername: string | null
       role: string
       banned: boolean
       banReason: string | null
@@ -113,7 +109,6 @@ const getUserByIdEffect = (userId: string) =>
 const updateUserProfileEffect = (
   userId: string,
   data: {
-    displayUsername?: string
     email?: string
     image?: string
     username?: string
@@ -162,15 +157,13 @@ const searchUsersEffect = (query: string) =>
             id: userTable.id,
             name: userTable.name,
             username: userTable.username,
-            displayUsername: userTable.displayUsername,
             image: userTable.image
           })
           .from(userTable)
           .where(
             or(
               ilike(userTable.name, searchPattern),
-              ilike(userTable.username, searchPattern),
-              ilike(userTable.displayUsername, searchPattern)
+              ilike(userTable.username, searchPattern)
             )
           )
           .limit(10),

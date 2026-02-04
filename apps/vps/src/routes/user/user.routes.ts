@@ -19,7 +19,6 @@ const selectUserSchema = z.object({
   emailVerified: z.boolean(),
   image: z.string().nullable(),
   username: z.string().nullable().optional(),
-  displayUsername: z.string().nullable().optional(),
   avatarUrl: z.string().nullable().optional(),
   verified: z.boolean().optional(),
   createdAt: z.date(),
@@ -27,7 +26,6 @@ const selectUserSchema = z.object({
 })
 
 const updateProfileSchema = z.object({
-  displayUsername: z.string().optional(),
   email: z.email().optional(),
   password: z.string().min(8).optional(),
   image: z.string().optional(),
@@ -62,7 +60,6 @@ export const updateProfile = createRoute({
         },
         'multipart/form-data': {
           schema: z.object({
-            displayUsername: z.string().optional(),
             email: z.email().optional(),
             password: z.string().min(8).optional(),
             username: z.string().optional(),
@@ -214,7 +211,6 @@ const searchUserResultSchema = z.object({
   id: z.string(),
   name: z.string(),
   username: z.string().nullable(),
-  displayUsername: z.string().nullable(),
   image: z.string().nullable()
 })
 

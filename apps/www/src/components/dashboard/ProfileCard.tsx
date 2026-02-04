@@ -30,13 +30,6 @@ export function ProfileCard({ user }: ProfileCardProps) {
 
   const fields = [
     {
-      name: 'displayUsername',
-      label: 'Display Name',
-      type: 'text',
-      placeholder: user?.displayUsername || 'Silly Goose',
-      value: user?.displayUsername || ''
-    },
-    {
       name: 'username',
       label: 'Username',
       type: 'text',

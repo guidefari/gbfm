@@ -492,16 +492,13 @@ function MixUploadPage() {
                   allShows={allShows}
                   usersList={usersList.map((u) => ({
                     id: u.id,
-                    name: u.name,
-                    displayUsername: (u as { displayUsername?: string })
-                      .displayUsername
+                    name: u.name
                   }))}
                   currentUser={
                     user
                       ? {
                           id: user.id,
-                          name: user.name,
-                          displayUsername: user.displayUsername
+                          name: user.name
                         }
                       : null
                   }

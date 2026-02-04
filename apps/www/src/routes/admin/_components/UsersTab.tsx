@@ -32,7 +32,6 @@ interface AdminUser {
   id: string
   name: string
   username?: string | null
-  displayUsername?: string | null
   email: string
   emailVerified?: boolean
   image?: string | null
@@ -83,7 +82,6 @@ export function UsersTab() {
     name: string
     email: string
     username: string
-    displayUsername: string
     image: string
     emailVerified: boolean
   }>({
@@ -91,7 +89,6 @@ export function UsersTab() {
     name: '',
     email: '',
     username: '',
-    displayUsername: '',
     image: '',
     emailVerified: false
   })
@@ -196,7 +193,6 @@ export function UsersTab() {
           name: editUser.name,
           email: editUser.email,
           username: editUser.username || undefined,
-          displayUsername: editUser.displayUsername || undefined,
           image: editUser.image || undefined,
           emailVerified: editUser.emailVerified
         }
@@ -338,9 +334,7 @@ export function UsersTab() {
             <tbody>
               {users.map((user) => (
                 <tr key={user.id} className='border-b hover:bg-muted/50'>
-                  <td className='px-4 py-3'>
-                    {user.displayUsername || user.name}
-                  </td>
+                  <td className='px-4 py-3'>{user.name}</td>
                   <td className='px-4 py-3 text-muted-foreground'>
                     {user.email}
                   </td>
@@ -370,10 +364,10 @@ export function UsersTab() {
                   </td>
                   <td className='px-4 py-3'>
                     <div className='flex items-center gap-2'>
-                      {user.displayUsername && (
+                      {user.username && (
                         <Button variant='outline' size='sm' asChild>
                           <a
-                            href={`/${user.displayUsername}`}
+                            href={`/${user.username}`}
                             target='_blank'
                             rel='noopener noreferrer'>
                             <ExternalLink className='w-4 h-4' />
@@ -390,7 +384,6 @@ export function UsersTab() {
                             name: user.name,
                             email: user.email,
                             username: user.username || '',
-                            displayUsername: user.displayUsername || '',
                             image: user.image || '',
                             emailVerified: user.emailVerified ?? false
                           })
@@ -416,7 +409,7 @@ export function UsersTab() {
                             setBanDialog({
                               open: true,
                               userId: user.id,
-                              userName: user.displayUsername || user.name
+                              userName: user.name
                             })
                           }>
                           Ban
@@ -429,7 +422,7 @@ export function UsersTab() {
                           setDeleteDialog({
                             open: true,
                             userId: user.id,
-                            userName: user.displayUsername || user.name
+                            userName: user.name
                           })
                         }>
                         Delete
@@ -631,20 +624,6 @@ export function UsersTab() {
                     Username is already taken
                   </p>
                 )}
-            </div>
-            <div className='space-y-2'>
-              <Label htmlFor='edit-display-username'>Display Username</Label>
-              <Input
-                id='edit-display-username'
-                value={editUser.displayUsername}
-                onChange={(e) =>
-                  setEditUser({ ...editUser, displayUsername: e.target.value })
-                }
-                placeholder='JohnDoe123'
-              />
-              <p className='text-xs text-muted-foreground'>
-                Case-preserved version shown in URLs and profiles
-              </p>
             </div>
             <div className='space-y-2'>
               <Label htmlFor='edit-email'>Email</Label>

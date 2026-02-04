@@ -18,7 +18,6 @@ const fetchUserByUsername = (username: string) =>
           id: usersTable.id,
           name: usersTable.name,
           username: usersTable.username,
-          displayUsername: usersTable.displayUsername,
           image: usersTable.image,
           banned: usersTable.banned
         })
@@ -57,7 +56,7 @@ export const shareProfile = async (c: Context) => {
       })
     }
 
-    const displayName = user.displayUsername || user.username || user.name
+    const displayName = user.name
 
     return {
       html: buildOGHtml({

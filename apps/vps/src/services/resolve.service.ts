@@ -10,7 +10,7 @@ import { isReservedSlug } from '@/lib/reserved-slugs'
 
 type ProfileData = {
   id: string
-  displayUsername: string | null
+  name: string
   username: string | null
   image: string | null
   createdAt: Date
@@ -73,7 +73,7 @@ const resolveEffect = (slug: string) =>
         db
           .select({
             id: userTable.id,
-            displayUsername: userTable.displayUsername,
+            name: userTable.name,
             username: userTable.username,
             image: userTable.image,
             createdAt: userTable.createdAt,
@@ -149,7 +149,7 @@ const resolveEffect = (slug: string) =>
         type: 'profile' as const,
         data: {
           id: foundUser.id,
-          displayUsername: foundUser.displayUsername,
+          name: foundUser.name,
           username: foundUser.username,
           image: foundUser.image,
           createdAt: foundUser.createdAt,
@@ -183,7 +183,7 @@ const resolveEffect = (slug: string) =>
           db
             .select({
               id: userTable.id,
-              name: userTable.displayUsername,
+              name: userTable.name,
               username: userTable.username
             })
             .from(showCreators)
@@ -199,7 +199,7 @@ const resolveEffect = (slug: string) =>
 
       const hosts = hostsRaw.map((h) => ({
         id: h.id,
-        name: h.name ?? 'Unknown',
+        name: h.name,
         username: h.username
       }))
 

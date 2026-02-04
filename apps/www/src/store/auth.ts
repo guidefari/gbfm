@@ -9,7 +9,6 @@ export interface User {
   emailVerified: boolean
   image?: string | null
   username?: string | null
-  displayUsername?: string | null
   createdAt: Date
   updatedAt: Date
   role?: string | null

@@ -5,8 +5,8 @@ interface WelcomeHeaderProps {
 }
 
 export function WelcomeHeader({ user }: WelcomeHeaderProps) {
-  const displayName = user.displayUsername || user.name
-  const firstName = displayName?.split(' ')[0] || 'there'
+  const displayName = user.name
+  const firstName = displayName.split(' ')[0] || 'there'
 
   return (
     <div className='flex items-center gap-6 py-4'>

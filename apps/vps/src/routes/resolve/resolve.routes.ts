@@ -10,7 +10,7 @@ const resolveResponseSchema = z
       type: z.literal('profile'),
       data: z.object({
         id: z.string(),
-        displayUsername: z.string().nullable(),
+        name: z.string(),
         username: z.string().nullable(),
         image: z.string().nullable(),
         createdAt: z.date(),

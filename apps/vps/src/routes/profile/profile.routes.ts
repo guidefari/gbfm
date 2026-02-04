@@ -7,10 +7,7 @@ const tags = ['Profile']
 const publicProfileResponseSchema = z
   .object({
     id: z.string().openapi({ description: 'User ID' }),
-    displayUsername: z
-      .string()
-      .nullable()
-      .openapi({ description: 'User display name' }),
+    name: z.string().openapi({ description: 'User display name' }),
     username: z.string().nullable().openapi({ description: 'Username' }),
     image: z.string().nullable().openapi({ description: 'User profile image' }),
     createdAt: z.date().openapi({ description: 'Account creation date' }),

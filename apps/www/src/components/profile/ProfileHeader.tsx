@@ -17,7 +17,7 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
       <div className='h-24 w-24 overflow-hidden rounded-full border border-border bg-muted'>
         <img
           src={profile.image || DEFAULT_IMAGE_URL}
-          alt={`${profile.displayUsername || profile.username || 'User'}'s avatar`}
+          alt={`${profile.name}'s avatar`}
           className='h-full w-full object-cover'
         />
       </div>
@@ -25,7 +25,7 @@ export function ProfileHeader({ profile }: ProfileHeaderProps) {
         <div className='flex items-start justify-between'>
           <div>
             <h1 className='text-2xl font-bold text-foreground'>
-              {profile.displayUsername || profile.username}
+              {profile.name}
             </h1>
             {profile.username && (
               <p className='text-sm text-muted-foreground'>

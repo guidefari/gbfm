@@ -8,7 +8,7 @@ import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
 
 export type PublicProfile = {
   id: string
-  displayUsername: string | null
+  name: string
   username: string | null
   image: string | null
   createdAt: Date
@@ -45,7 +45,7 @@ const getPublicProfileEffect = (username: string) =>
         db
           .select({
             id: userTable.id,
-            displayUsername: userTable.displayUsername,
+            name: userTable.name,
             username: userTable.username,
             image: userTable.image,
             createdAt: userTable.createdAt,
@@ -126,7 +126,7 @@ const getPublicProfileEffect = (username: string) =>
 
     return {
       id: foundUser.id,
-      displayUsername: foundUser.displayUsername,
+      name: foundUser.name,
       username: foundUser.username,
       image: foundUser.image,
       createdAt: foundUser.createdAt,

@@ -247,7 +247,7 @@ export function generateProfileSEO(
   profile: PublicProfile,
   username: string
 ): SEOHeadData {
-  const displayName = profile.displayUsername || username
+  const displayName = profile.name
   const contentCount =
     (profile.content?.mixes?.length ?? 0) +
     (profile.content?.shows?.length ?? 0)

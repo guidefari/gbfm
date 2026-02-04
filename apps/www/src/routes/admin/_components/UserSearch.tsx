@@ -10,7 +10,6 @@ interface UserSearchResult {
   id: string
   name: string
   username: string | null
-  displayUsername: string | null
   image: string | null
 }
 
@@ -45,10 +44,7 @@ export function UserSearch({
 
   const handleSelect = (user: UserSearchResult) => {
     if (!selectedUsers.some((u) => u.id === user.id)) {
-      onSelectionChange([
-        ...selectedUsers,
-        { id: user.id, name: user.displayUsername || user.name }
-      ])
+      onSelectionChange([...selectedUsers, { id: user.id, name: user.name }])
     }
     setSearchQuery('')
     setShowResults(false)
@@ -111,9 +107,7 @@ export function UserSearch({
                   type='button'
                   className='w-full px-3 py-2 text-left hover:bg-muted flex flex-col'
                   onClick={() => handleSelect(user)}>
-                  <span className='font-medium'>
-                    {user.displayUsername || user.name}
-                  </span>
+                  <span className='font-medium'>{user.name}</span>
                   {user.username && (
                     <span className='text-xs text-muted-foreground'>
                       @{user.username}

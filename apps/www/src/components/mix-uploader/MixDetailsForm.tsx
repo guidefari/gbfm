@@ -23,7 +23,6 @@ interface Show {
 interface User {
   id: string
   name: string
-  displayUsername?: string | null
 }
 
 interface MixDetailsFormProps {
@@ -134,13 +133,13 @@ export function MixDetailsForm({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value={currentUser?.id || 'current'}>
-                  {currentUser?.displayUsername || currentUser?.name} (Me)
+                  {currentUser?.name} (Me)
                 </SelectItem>
                 {usersList
                   .filter((u) => u.id !== currentUser?.id)
                   .map((u) => (
                     <SelectItem key={u.id} value={u.id}>
-                      {u.displayUsername || u.name}
+                      {u.name}
                     </SelectItem>
                   ))}
               </SelectContent>

@@ -107,7 +107,7 @@ export async function sendWelcomeEmail({
   await sendEmail({
     to,
     template: {
-      subject: `Welcome to goosebumps.fm, ${username}! 🎵`,
+      subject: `Welcome to goosebumps.fm, ${username}!`,
       component: React.createElement(WelcomeEmail, {
         username,
         ...(loginUrl && { loginUrl })

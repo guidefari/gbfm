@@ -287,9 +287,7 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
                           to='/profile/$username'
                           params={{ username: creator.username || '' }}
                           className='transition-colors hover:text-primary'>
-                          {creator.username ||
-                            creator.displayUsername ||
-                            creator.name}
+                          {creator.name}
                         </Link>
                         {index < (mix.creators?.length || 0) - 1 && (
                           <span className='opacity-30'>&</span>

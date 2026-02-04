@@ -11,7 +11,7 @@ interface MixData {
   slug: string
   title: string
   thumbnailUrl?: string | null
-  creators?: Array<{ name: string; displayUsername?: string | null }>
+  creators?: Array<{ name: string }>
 }
 
 export interface QRCodeService {
@@ -222,9 +222,7 @@ const generateFlyerPdf = (mix: MixData, qrDataUrl: string) =>
     })
 
     if (mix.creators && mix.creators.length > 0) {
-      const creatorNames = mix.creators
-        .map((c) => c.displayUsername || c.name)
-        .join(' & ')
+      const creatorNames = mix.creators.map((c) => c.name).join(' & ')
       page.drawText(`Curated by ${creatorNames}`, {
         x: 50,
         y: titleY - 25,

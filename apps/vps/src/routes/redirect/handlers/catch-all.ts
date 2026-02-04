@@ -13,7 +13,7 @@ const buildSuccessResponse = (
 ): HtmlResponse => {
   if (resolved.type === 'profile') {
     const { data } = resolved
-    const displayName = data.displayUsername || data.username || 'Unknown User'
+    const displayName = data.name
     return {
       html: buildOGHtml({
         type: 'profile',

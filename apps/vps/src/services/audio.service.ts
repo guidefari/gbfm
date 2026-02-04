@@ -33,7 +33,6 @@ type AudioWithCreators = SelectAudio & {
     id: string
     name: string
     username: string | null
-    displayUsername: string | null
   }>
 }
 
@@ -139,8 +138,7 @@ const getByTypeEffect = (
                   audioId: audioCreators.audioId,
                   creatorId: usersTable.id,
                   creatorName: usersTable.name,
-                  creatorUsername: usersTable.username,
-                  creatorDisplayUsername: usersTable.displayUsername
+                  creatorUsername: usersTable.username
                 })
                 .from(audioCreators)
                 .innerJoin(
@@ -163,7 +161,6 @@ const getByTypeEffect = (
         id: string
         name: string
         username: string | null
-        displayUsername: string | null
       }>
     > = {}
     for (const row of creatorsData) {
@@ -171,8 +168,7 @@ const getByTypeEffect = (
       const creatorInfo = {
         id: row.creatorId,
         name: row.creatorName,
-        username: row.creatorUsername,
-        displayUsername: row.creatorDisplayUsername
+        username: row.creatorUsername
       }
       if (existing) {
         existing.push(creatorInfo)
@@ -224,8 +220,7 @@ const getBySlugEffect = (type: AudioType, slug: string) =>
           .select({
             id: usersTable.id,
             name: usersTable.name,
-            username: usersTable.username,
-            displayUsername: usersTable.displayUsername
+            username: usersTable.username
           })
           .from(audioCreators)
           .innerJoin(usersTable, eq(audioCreators.creatorId, usersTable.id))
@@ -244,8 +239,7 @@ const getBySlugEffect = (type: AudioType, slug: string) =>
       creators: creators.map((creator) => ({
         id: creator.id,
         name: creator.name,
-        username: creator.username,
-        displayUsername: creator.displayUsername
+        username: creator.username
       }))
     }
 
@@ -454,8 +448,7 @@ const updateEffect = (
           .select({
             id: usersTable.id,
             name: usersTable.name,
-            username: usersTable.username,
-            displayUsername: usersTable.displayUsername
+            username: usersTable.username
           })
           .from(audioCreators)
           .innerJoin(usersTable, eq(audioCreators.creatorId, usersTable.id))
@@ -474,8 +467,7 @@ const updateEffect = (
       creators: creators.map((creator) => ({
         id: creator.id,
         name: creator.name,
-        username: creator.username,
-        displayUsername: creator.displayUsername
+        username: creator.username
       }))
     }
 

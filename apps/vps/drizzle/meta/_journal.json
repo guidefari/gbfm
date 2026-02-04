@@ -162,6 +162,13 @@
       "when": 1769719883822,
       "tag": "0025_needy_jigsaw",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1770237517921,
+      "tag": "0026_white_magik",
+      "breakpoints": true
     }
   ]
 }

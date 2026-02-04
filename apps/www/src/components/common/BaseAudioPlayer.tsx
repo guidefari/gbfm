@@ -40,10 +40,10 @@ function CreatorLinks({ creators }: { creators?: Creator[] }) {
               to='/profile/$username'
               params={{ username: creator.username }}
               className='hover:underline'>
-              {creator.displayUsername}
+              {creator.name}
             </Link>
           ) : (
-            <span>{creator.displayUsername}</span>
+            <span>{creator.name}</span>
           )}
           {index < creators.length - 1 && ', '}
         </span>
