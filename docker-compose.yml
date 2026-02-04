@@ -1,38 +1,14 @@
 services:
-  # app:
-  #   build:
-  #     context: .
-  #     target: dev
-  #     dockerfile: vps/Dockerfile
-  #   container_name: bun_app
-  #   ports:
-  #     - "3003:3003"
-  #   depends_on:
-  #     - postgres
-  #   volumes:
-  #     - ./vps:/app/vps
-  #     - ./core:/app/core
-  #     - ./backend:/app/backend
-  #     - ./web:/app/web
-  #   working_dir: /app/vps
-  #   command: bun --hot run src/api/index.ts
-  # networks:
-  #   - app-network
-
   postgres:
     image: postgres:17-alpine
     container_name: gbfm_pgdb
     restart: unless-stopped
     environment:
-      # POSTGRES_DB: ${DB_NAME:-postgres}
-      # POSTGRES_USER: ${DB_USER:-postgres}
-      # POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
       POSTGRES_INITDB_ARGS: "--auth-host=md5"
     volumes:
-      # - gbfm_pgdb:/var/lib/postgresql/data
       - ./config/postgresql.conf:/etc/postgresql/postgresql.conf
       - ./config/pg_hba.conf:/etc/postgresql/pg_hba.conf
       - ./backups:/backups
@@ -44,201 +20,28 @@ services:
       -c config_file=/etc/postgresql/postgresql.conf
       -c hba_file=/etc/postgresql/pg_hba.conf
     healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-postgres}",
-        ]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
       interval: 30s
       timeout: 10s
       retries: 5
     networks:
-      - postgres_network
+      - app_network
 
-  # Prometheus for metrics collection
-  prometheus:
-    image: prom/prometheus:latest
-    container_name: prometheus
+  # OpenTelemetry LGTM stack (Loki, Grafana, Tempo, Metrics)
+  # Grafana UI: http://localhost:3000
+  # OTLP gRPC: localhost:4317
+  # OTLP HTTP: localhost:4318
+  otel-lgtm:
+    image: grafana/otel-lgtm:latest
+    container_name: otel-lgtm
     restart: unless-stopped
     ports:
-      - "9090:9090"
-    volumes:
-      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
-    command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-      - "--storage.tsdb.path=/prometheus"
-      - "--web.console.libraries=/etc/prometheus/console_libraries"
-      - "--web.console.templates=/etc/prometheus/consoles"
-      - "--storage.tsdb.retention.time=90d"
-      - "--web.enable-lifecycle"
+      - "3000:3000"   # Grafana
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
     networks:
-      - postgres_network
-
-  # PostgreSQL Exporter for Prometheus
-  postgres_exporter:
-    image: prometheuscommunity/postgres-exporter:latest
-    container_name: postgres_exporter
-    restart: unless-stopped
-    environment:
-      DATA_SOURCE_NAME: "postgresql://${DB_USER:-appuser}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-myapp}?sslmode=disable"
-      PG_EXPORTER_EXTEND_QUERY_PATH: "/etc/postgres_exporter/queries.yaml"
-    volumes:
-      - ./config/postgres_exporter_queries.yaml:/etc/postgres_exporter/queries.yaml
-    ports:
-      - "9187:9187"
-    depends_on:
-      - postgres
-    networks:
-      - postgres_network
-
-  # Node Exporter for system metrics
-  node_exporter:
-    image: prom/node-exporter:latest
-    container_name: node_exporter
-    restart: unless-stopped
-    ports:
-      - "9100:9100"
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /:/rootfs:ro
-    command:
-      - "--path.procfs=/host/proc"
-      - "--path.rootfs=/rootfs"
-      - "--path.sysfs=/host/sys"
-      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
-    networks:
-      - postgres_network
-
-  # Grafana for visualization
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    restart: unless-stopped
-    ports:
-      - "3000:3000"
-    environment:
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin123}
-      GF_USERS_ALLOW_SIGN_UP: false
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./config/grafana/provisioning:/etc/grafana/provisioning
-      - ./config/grafana/dashboards:/var/lib/grafana/dashboards
-    networks:
-      - postgres_network
-
-  # Loki for log aggregation
-  loki:
-    image: grafana/loki:latest
-    container_name: loki
-    restart: unless-stopped
-    user: "0:0"
-    ports:
-      - "3100:3100"
-    volumes:
-      - ./config/loki-config.yml:/etc/loki/local-config.yaml
-      - loki_data:/loki
-    command: -config.file=/etc/loki/local-config.yaml
-    networks:
-      - postgres_network
-
-  # Promtail for log collection
-  promtail:
-    image: grafana/promtail:latest
-    container_name: promtail
-    restart: unless-stopped
-    volumes:
-      - ./config/promtail-config.yml:/etc/promtail/config.yml
-      - ./logs:/var/log/postgresql:ro
-      - /var/log:/var/log/host:ro
-    command: -config.file=/etc/promtail/config.yml
-    networks:
-      - postgres_network
-
-  # Tempo for distributed tracing
-  tempo:
-    image: grafana/tempo:latest
-    container_name: tempo
-    restart: unless-stopped
-    user: "0:0"
-    command: ["-config.file=/etc/tempo/tempo.yaml"]
-    volumes:
-      - ./config/tempo.yaml:/etc/tempo/tempo.yaml
-      - tempo_data:/tmp/tempo
-    ports:
-      - "3200:3200"
-      - "4317:4317"
-      - "4318:4318"
-    networks:
-      - postgres_network
-
-  # pgAdmin for database administration
-  # pgadmin:
-  #   image: dpage/pgadmin4:latest
-  #   container_name: pgadmin
-  #   restart: unless-stopped
-  #   environment:
-  #     PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@example.com}
-  #     PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
-  #     PGADMIN_CONFIG_SERVER_MODE: 'False'
-  #   volumes:
-  #     - pgadmin_data:/var/lib/pgadmin
-  #   ports:
-  #     - "8080:80"
-  #   depends_on:
-  #     - postgres
-  #   networks:
-  #     - postgres_network
-
-  # Backup service
-  postgres_backup:
-    image: postgres:17-alpine
-    container_name: postgres_backup
-    restart: "no"
-    environment:
-      PGPASSWORD: ${DB_PASSWORD}
-    volumes:
-      - ./backups:/backups
-      - ./scripts/backup.sh:/backup.sh
-    depends_on:
-      - postgres
-    networks:
-      - postgres_network
-    profiles:
-      - backup
-
-  # VPS Backup & Restore service (using Bun + PostgreSQL client tools)
-  # vps_backup:
-  #   build:
-  #     context: .
-  #     dockerfile: apps/vps/Dockerfile.backup
-  #   container_name: vps_backup
-  #   restart: "no"
-  #   environment:
-  #     LOCAL_DB_URL: postgres://${DB_USER:-appuser}:${DB_PASSWORD}@postgres:5432/${DB_NAME:-myapp}
-  #     SKIP_CONFIRM: ${SKIP_CONFIRM:-0}
-  #   volumes:
-  #     - ./apps/vps/backups:/app/backups
-  #     - ./apps/vps/scripts:/app/scripts
-  #   depends_on:
-  #     - postgres
-  #   networks:
-  #     - postgres_network
-  #   profiles:
-  #     - backup
-  # Usage:
-  # Backup: docker compose run --rm vps_backup bun run scripts/backup-db-local.ts
-  # Restore: docker compose run --rm vps_backup bun run scripts/restore-db.ts /app/backups/backup-2025-11-14.sql
+      - app_network
 
 networks:
-  postgres_network:
+  app_network:
     driver: bridge
-
-volumes:
-  # gbfm_pgdb:
-  prometheus_data:
-  grafana_data:
-  loki_data:
-  pgadmin_data:
-  tempo_data:

@@ -5,10 +5,6 @@
 
 declare module "sst" {
   export interface Resource {
-    "ACCESS_TOKEN_SECRET": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
     "BETTER_AUTH_SECRET": {
       "type": "sst.sst.Secret"
       "value": string
@@ -81,10 +77,6 @@ declare module "sst" {
       "value": string
     }
     "POSTHOG_KEY": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
-    "REFRESH_TOKEN_SECRET": {
       "type": "sst.sst.Secret"
       "value": string
     }

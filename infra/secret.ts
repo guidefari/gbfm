@@ -7,14 +7,14 @@ export const secret = {
     'SpotifyClientSecret',
     process.env.SPOTIFY_CLIENT_SECRET
   ),
-  AccessTokenSecret: new sst.Secret(
-    'ACCESS_TOKEN_SECRET',
-    process.env.ACCESS_TOKEN_SECRET
-  ),
-  RefreshTokenSecret: new sst.Secret(
-    'REFRESH_TOKEN_SECRET',
-    process.env.REFRESH_TOKEN_SECRET
-  ),
+  // AccessTokenSecret: new sst.Secret(
+  //   'ACCESS_TOKEN_SECRET',
+  //   process.env.ACCESS_TOKEN_SECRET
+  // ),
+  // RefreshTokenSecret: new sst.Secret(
+  //   'REFRESH_TOKEN_SECRET',
+  //   process.env.REFRESH_TOKEN_SECRET
+  // ),
   DatabaseHost: new sst.Secret('DatabaseHost', process.env.DB_HOST),
   DatabaseUser: new sst.Secret('DatabaseUser', process.env.DB_USER),
   DatabasePassword: new sst.Secret('DatabasePassword', process.env.DB_PASSWORD),

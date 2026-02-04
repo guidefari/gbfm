@@ -37,8 +37,7 @@ export const DatabaseServiceLive = Layer.succeed(DatabaseService, {
 const DevToolsLive: Layer.Layer<never> =
   process.env.NODE_ENV === 'production' ? Layer.empty : DevTools.layer()
 
-export const AppLayer = Layer.mergeAll(
-  OtlpLive,
+const ServicesLayer = Layer.mergeAll(
   ConfigServiceLive,
   DatabaseServiceLive,
   LoggerServiceLive,
@@ -60,3 +59,5 @@ export const AppLayer = Layer.mergeAll(
   UserServiceLive,
   DevToolsLive
 )
+
+export const AppLayer = ServicesLayer.pipe(Layer.provide(OtlpLive))

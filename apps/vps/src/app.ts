@@ -67,7 +67,6 @@ const setupRoutesEffect = Effect.gen(function* () {
 })
 
 const cronJobEffect = processPendingReminders.pipe(
-  Effect.tap(() => Effect.log('✅ Music reminder processing completed')),
   Effect.catchAll((error) =>
     Effect.logError(
       `Cron job failed: ${error instanceof Error ? error.message : String(error)}`
@@ -77,15 +76,12 @@ const cronJobEffect = processPendingReminders.pipe(
 )
 
 const qrCacheCleanupEffect = cleanupExpiredQrPdfs.pipe(
-  Effect.tap(({ deleted }) =>
-    Effect.log(`✅ QR cache cleanup completed: ${deleted} files deleted`)
-  ),
   Effect.catchAll((error) =>
     Effect.logError(
       `QR cache cleanup failed: ${error instanceof Error ? error.message : String(error)}`
     )
   ),
-  Effect.repeat(Schedule.spaced('1 minutes'))
+  Effect.repeat(Schedule.spaced('15 minutes'))
 )
 
 const sitemapRegenerationEffect = regenerateSitemap.pipe(
