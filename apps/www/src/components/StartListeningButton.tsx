@@ -43,7 +43,8 @@ export function StartListeningButton({
         actualMix.url,
         actualMix.thumbnailUrl || '',
         actualMix.title,
-        actualMix.id
+        actualMix.id,
+        actualMix.creators
       )
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to start playback')

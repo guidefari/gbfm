@@ -80,7 +80,8 @@ export function EpisodeGrid({ showSlug }: EpisodeGridProps) {
                     episode.url,
                     episode.thumbnailUrl || DEFAULT_IMAGE_URL,
                     episode.title,
-                    episode.id
+                    episode.id,
+                    episode.creators
                   )
                 }>
                 <img

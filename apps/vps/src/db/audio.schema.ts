@@ -35,16 +35,21 @@ export const audioTable = pgTable(
   ]
 )
 
-export type SelectAudio = InferSelectModel<typeof audioTable>
+type BaseSelectAudio = InferSelectModel<typeof audioTable>
 export type InsertAudio = InferInsertModel<typeof audioTable>
+
+export type Creator = {
+  id: string
+  name: string
+  username: string | null
+}
+
+export type SelectAudio = BaseSelectAudio & {
+  creators?: Creator[]
+}
 
 export type SelectMdxCompiledAudio = SelectAudio & {
   compiledContent: string
-  creators?: Array<{
-    id: string
-    name: string
-    username: string | null
-  }>
 }
 
 export const selectAudioSchema = z
@@ -78,7 +83,20 @@ export const selectAudioSchema = z
       .nullable()
       .openapi({ description: 'Episode number (optional)' }),
     createdAt: z.date().openapi({ description: 'Creation timestamp' }),
-    updatedAt: z.date().openapi({ description: 'Last update timestamp' })
+    updatedAt: z.date().openapi({ description: 'Last update timestamp' }),
+    creators: z
+      .array(
+        z.object({
+          id: z.string().openapi({ description: 'Creator ID' }),
+          name: z.string().openapi({ description: 'Creator name' }),
+          username: z
+            .string()
+            .nullable()
+            .openapi({ description: 'Creator username' })
+        })
+      )
+      .optional()
+      .openapi({ description: 'List of creators for this audio' })
   })
   .openapi('Audio')
 

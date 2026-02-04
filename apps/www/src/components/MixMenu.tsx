@@ -45,7 +45,13 @@ export function MixMenu({ mix }: MixMenuProps) {
   }
 
   const handlePlayNow = () => {
-    loadTrack(mix.url, mix.thumbnailUrl || DEFAULT_IMAGE_URL, mix.title, mix.id)
+    loadTrack(
+      mix.url,
+      mix.thumbnailUrl || DEFAULT_IMAGE_URL,
+      mix.title,
+      mix.id,
+      mix.creators
+    )
   }
 
   const handleAddToQueue = () => {

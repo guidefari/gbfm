@@ -36,7 +36,13 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
   }
 
   const handlePlayNow = () => {
-    loadTrack(track.url, track.thumbnailUrl || '', track.title, track.id)
+    loadTrack(
+      track.url,
+      track.thumbnailUrl || '',
+      track.title,
+      track.id,
+      track.creators
+    )
   }
 
   const handleToggleFavorite = async () => {

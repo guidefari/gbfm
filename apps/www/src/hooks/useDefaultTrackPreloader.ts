@@ -18,7 +18,8 @@ export function useDefaultTrackPreloader() {
       latestMix.url,
       latestMix.thumbnailUrl || DEFAULT_IMAGE_URL,
       latestMix.title,
-      latestMix.id
+      latestMix.id,
+      latestMix.creators
     )
   }, [isInitialized, audioSrc, mixes, preloadTrack])
 }

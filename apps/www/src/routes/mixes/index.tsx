@@ -164,7 +164,8 @@ function MixesListPage() {
                         mix.url,
                         mix.thumbnailUrl || DEFAULT_IMAGE_URL,
                         mix.title,
-                        mix.id
+                        mix.id,
+                        mix.creators
                       )
                     }>
                     <img

@@ -8,6 +8,12 @@ import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { useAudioPlayerActions } from '@/store/audioPlayer'
 
+interface Creator {
+  id: string
+  name: string
+  username: string | null
+}
+
 interface Track {
   queueId: string
   id: string
@@ -15,6 +21,7 @@ interface Track {
   url: string
   thumbnailUrl: string
   addedAt: number
+  creators?: Creator[]
 }
 
 interface SharedQueueItemProps {
@@ -120,7 +127,13 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
   }, [contextMenu.isOpen, closeContextMenu])
 
   const handlePlayNow = () => {
-    loadTrack(track.url, track.thumbnailUrl, track.title, track.id)
+    loadTrack(
+      track.url,
+      track.thumbnailUrl,
+      track.title,
+      track.id,
+      track.creators
+    )
     closeContextMenu()
   }
 
