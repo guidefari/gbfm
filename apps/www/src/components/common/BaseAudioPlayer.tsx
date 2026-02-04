@@ -187,7 +187,7 @@ export function BaseAudioPlayer({
         title: nowPlayingContext.title,
         thumbnailUrl: thumbnailUrl,
         creators: nowPlayingContext.creators,
-        url: nowPlayingContext.url
+        slug: nowPlayingContext.slug
       }
     : null
 
@@ -223,8 +223,11 @@ export function BaseAudioPlayer({
           />
           <div className='flex-1 min-w-0'>
             <h3 className='text-sm font-medium truncate'>
-              {currentTrack.url ? (
-                <Link to={currentTrack.url} className='hover:underline'>
+              {currentTrack.slug ? (
+                <Link
+                  to='/mixes/$mixId'
+                  params={{ mixId: currentTrack.slug }}
+                  className='hover:underline'>
                   {currentTrack.title}
                 </Link>
               ) : (
@@ -313,8 +316,11 @@ export function BaseAudioPlayer({
             )}
             <div className='flex-1 min-w-0'>
               <h3 className='text-sm font-medium truncate'>
-                {currentTrack.url ? (
-                  <Link to={currentTrack.url} className='hover:underline'>
+                {currentTrack.slug ? (
+                  <Link
+                    to='/mixes/$mixId'
+                    params={{ mixId: currentTrack.slug }}
+                    className='hover:underline'>
                     {currentTrack.title}
                   </Link>
                 ) : (
@@ -458,8 +464,11 @@ export function BaseAudioPlayer({
             )}
             <div className='flex-1 min-w-0'>
               <h3 className='text-sm font-medium truncate'>
-                {currentTrack.url ? (
-                  <Link to={currentTrack.url} className='hover:underline'>
+                {currentTrack.slug ? (
+                  <Link
+                    to='/mixes/$mixId'
+                    params={{ mixId: currentTrack.slug }}
+                    className='hover:underline'>
                     {currentTrack.title}
                   </Link>
                 ) : (

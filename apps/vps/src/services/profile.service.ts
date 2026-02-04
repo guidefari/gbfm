@@ -19,6 +19,7 @@ export type PublicProfile = {
       slug: string
       thumbnailUrl: string | null
       type: 'mix' | 'track' | 'misc'
+      showId: string | null
     }>
     shows: Array<{
       id: string
@@ -79,7 +80,8 @@ const getPublicProfileEffect = (username: string) =>
             title: audioTable.title,
             slug: audioTable.slug,
             thumbnailUrl: audioTable.thumbnailUrl,
-            type: audioTable.type
+            type: audioTable.type,
+            showId: audioTable.showId
           })
           .from(audioTable)
           .innerJoin(audioCreators, eq(audioTable.id, audioCreators.audioId))

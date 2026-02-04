@@ -41,7 +41,8 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
       track.thumbnailUrl || '',
       track.title,
       track.id,
-      track.creators
+      track.creators,
+      track.slug
     )
   }
 

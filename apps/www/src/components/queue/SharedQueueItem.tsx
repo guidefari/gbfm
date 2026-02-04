@@ -20,6 +20,7 @@ interface Track {
   title: string
   url: string
   thumbnailUrl: string
+  slug?: string
   addedAt: number
   creators?: Creator[]
 }
@@ -132,7 +133,8 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
       track.thumbnailUrl,
       track.title,
       track.id,
-      track.creators
+      track.creators,
+      track.slug
     )
     closeContextMenu()
   }

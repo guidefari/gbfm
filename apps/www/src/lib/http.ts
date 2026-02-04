@@ -602,6 +602,7 @@ export type PublicProfile = {
       slug: string
       thumbnailUrl: string | null
       type: 'mix' | 'track' | 'misc'
+      showId: string | null
     }>
     shows: Array<{
       id: string

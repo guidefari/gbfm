@@ -240,7 +240,8 @@ function TracksPage() {
                             item.thumbnailUrl || '',
                             item.title,
                             item.id,
-                            item.creators
+                            item.creators,
+                            item.slug
                           )
                         }>
                         <img
