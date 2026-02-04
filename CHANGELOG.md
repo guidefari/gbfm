@@ -1,3 +1,10 @@
+## [2.13.2](https://github.com/guidefari/gbfm/compare/v2.13.1...v2.13.2) (2026-02-04)
+
+
+### Bug Fixes
+
+* remove display_username ([7b9aa9b](https://github.com/guidefari/gbfm/commit/7b9aa9b3f9450b65abf24d62b5382eabaa483d04))
+
 ## [2.13.1](https://github.com/guidefari/gbfm/compare/v2.13.0...v2.13.1) (2026-02-03)
 
 
