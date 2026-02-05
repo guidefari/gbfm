@@ -1,8 +1,11 @@
 import { Link } from '@tanstack/react-router'
 import { Heart } from 'lucide-react'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
+import type { Favorite } from '@/lib/http'
 import { useFavorites } from '@/lib/http'
 import { PlayPauseButton } from '../PlayPauseButton'
+
+type AudioFavorite = Favorite & { audio: NonNullable<Favorite['audio']> }
 
 export function FavoritesSection() {
   const { data: favorites, isPending } = useFavorites()
@@ -19,7 +22,11 @@ export function FavoritesSection() {
     )
   }
 
-  if (favorites.length === 0) {
+  const audioFavorites = favorites.filter(
+    (f): f is AudioFavorite => f.audio !== null
+  )
+
+  if (audioFavorites.length === 0) {
     return null
   }
 
@@ -30,7 +37,7 @@ export function FavoritesSection() {
         Favorites
       </h3>
       <div className='space-y-4'>
-        {favorites.slice(0, 6).map((favorite) => (
+        {audioFavorites.slice(0, 6).map((favorite) => (
           <div
             key={favorite.id}
             className='flex items-center gap-4 p-2 rounded-none hover:bg-muted/50 transition-all duration-300 group border-b border-border/30 last:border-0 pb-4'>

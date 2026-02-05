@@ -1,0 +1,163 @@
+import { Heart, Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { AuthPromptDialog } from '@/components/AuthPromptDialog'
+import { Button } from '@/components/ui/button'
+import { toast } from '@/components/ui/use-toast'
+import {
+  useAddFavorite,
+  useAddShowFavorite,
+  useFavorites,
+  useRemoveFavorite,
+  useRemoveShowFavorite,
+  useSubscribeToShow,
+  useUnsubscribeFromShow,
+  useUserSubscriptions
+} from '@/lib/http'
+import { cn } from '@/lib/utils'
+import { useAuthStore } from '@/store/auth'
+
+interface FavoriteButtonProps {
+  contentType: 'mix' | 'show'
+  contentId: string
+  contentTitle: string
+  variant?: 'default' | 'outline' | 'ghost'
+  size?: 'default' | 'sm' | 'lg' | 'icon'
+  className?: string
+}
+
+export function FavoriteButton({
+  contentType,
+  contentId,
+  contentTitle,
+  variant = 'outline',
+  size = 'sm',
+  className
+}: FavoriteButtonProps) {
+  const { isAuthenticated } = useAuthStore()
+  const [showAuthDialog, setShowAuthDialog] = useState(false)
+
+  const { data: favorites } = useFavorites()
+  const { data: subscriptions } = useUserSubscriptions()
+  const { addFavorite, isPending: isAddingFavorite } = useAddFavorite()
+  const { removeFavorite, isPending: isRemovingFavorite } = useRemoveFavorite()
+  const { addShowFavorite, isPending: isAddingShowFavorite } =
+    useAddShowFavorite()
+  const { removeShowFavorite, isPending: isRemovingShowFavorite } =
+    useRemoveShowFavorite()
+  const { subscribe, isPending: isSubscribing } = useSubscribeToShow()
+  const { unsubscribe, isPending: isUnsubscribing } = useUnsubscribeFromShow()
+
+  const isFavorited =
+    contentType === 'mix'
+      ? favorites.some((f) => f.audioId === contentId)
+      : favorites.some((f) => f.showId === contentId)
+
+  const isSubscribed =
+    contentType === 'show' &&
+    subscriptions.some((sub) => sub.showId === contentId)
+
+  const isLoading =
+    isAddingFavorite ||
+    isRemovingFavorite ||
+    isAddingShowFavorite ||
+    isRemovingShowFavorite ||
+    isSubscribing ||
+    isUnsubscribing
+
+  const performFavoriteAction = async () => {
+    try {
+      if (contentType === 'mix') {
+        if (isFavorited) {
+          await removeFavorite({ audioId: contentId })
+          toast({
+            title: 'Removed from favorites',
+            description: `${contentTitle} removed from your favorites`
+          })
+        } else {
+          await addFavorite({ audioId: contentId })
+          toast({
+            title: 'Added to favorites',
+            description: `${contentTitle} added to your favorites`
+          })
+        }
+      } else {
+        if (isFavorited) {
+          await removeShowFavorite({ showId: contentId })
+          if (isSubscribed) {
+            await unsubscribe({ showId: contentId })
+          }
+          toast({
+            title: 'Removed from favorites',
+            description: `${contentTitle} removed from your favorites`
+          })
+        } else {
+          await addShowFavorite({ showId: contentId })
+          if (!isSubscribed) {
+            await subscribe({ showId: contentId })
+          }
+          toast({
+            title: 'Added to favorites',
+            description: `${contentTitle} added to your favorites. You'll be notified of new episodes.`
+          })
+        }
+      }
+    } catch (error) {
+      console.log('error:', error)
+      const message = error instanceof Error ? error.message.toLowerCase() : ''
+      if (message.includes('already favorited') || message.includes('409')) {
+        toast({
+          title: 'Already in favorites',
+          description: `${contentTitle} is already in your favorites`
+        })
+      } else {
+        toast({
+          title: 'Something went wrong',
+          description: 'Please try again',
+          variant: 'destructive'
+        })
+      }
+    }
+  }
+
+  const handleClick = async () => {
+    if (!isAuthenticated) {
+      setShowAuthDialog(true)
+      return
+    }
+
+    await performFavoriteAction()
+  }
+
+  const handleAuthSuccess = () => {
+    performFavoriteAction()
+  }
+
+  return (
+    <>
+      <Button
+        onClick={handleClick}
+        disabled={isLoading}
+        variant={variant}
+        size={size}
+        className={cn(className)}
+        title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}>
+        {isLoading ? (
+          <Loader2 className='w-4 h-4 animate-spin' />
+        ) : (
+          <Heart
+            className={cn(
+              'w-4 h-4',
+              isFavorited && 'fill-red-500 text-red-500'
+            )}
+          />
+        )}
+      </Button>
+      <AuthPromptDialog
+        open={showAuthDialog}
+        onOpenChange={setShowAuthDialog}
+        contentType={contentType}
+        onAuthSuccess={handleAuthSuccess}
+      />
+    </>
+  )
+}

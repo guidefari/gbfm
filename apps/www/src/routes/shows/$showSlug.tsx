@@ -1,9 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect } from 'react'
+import { FavoriteButton } from '@/components/FavoriteButton'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { ShareButton } from '@/components/ShareButton'
 import { EpisodeGrid } from '@/components/shows/EpisodeGrid'
-import { SubscribeButton } from '@/components/shows/SubscribeButton'
 import { useShowBySlug } from '@/lib/http'
 import { generateSEOMeta, generateShowSEO } from '@/lib/seo'
 import { useContentStore } from '@/store'
@@ -103,7 +103,11 @@ function ShowPage() {
               )}
 
               <div className='flex gap-2'>
-                <SubscribeButton showId={data.id} showTitle={data.title} />
+                <FavoriteButton
+                  contentType='show'
+                  contentId={data.id}
+                  contentTitle={data.title}
+                />
                 <ShareButton type='show' slug={showSlug} />
               </div>
             </div>

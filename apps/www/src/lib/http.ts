@@ -363,9 +363,10 @@ export type FavoriteAudio = {
 export type Favorite = {
   id: string
   userId: string
-  audioId: string
+  audioId: string | null
+  showId: string | null
   createdAt: string
-  audio: FavoriteAudio
+  audio: FavoriteAudio | null
 }
 
 export type FavoritesResponse = {
@@ -439,6 +440,51 @@ export function useRemoveFavorite() {
   }
 }
 
+export function useAddShowFavorite() {
+  const queryClient = useQueryClient()
+  const { mutateAsync: addShowFavorite, isPending } = useMutation<
+    { success: boolean; message: string },
+    Error,
+    { showId: string }
+  >({
+    mutationFn: async ({ showId }) =>
+      fetcher(`${VPS_BASE_URL}/favorites`, {
+        method: 'POST',
+        body: JSON.stringify({ showId })
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['favorites'] })
+    }
+  })
+
+  return {
+    addShowFavorite,
+    isPending
+  }
+}
+
+export function useRemoveShowFavorite() {
+  const queryClient = useQueryClient()
+  const { mutateAsync: removeShowFavorite, isPending } = useMutation<
+    { success: boolean; message: string },
+    Error,
+    { showId: string }
+  >({
+    mutationFn: async ({ showId }) =>
+      fetcher(`${VPS_BASE_URL}/favorites/show/${showId}`, {
+        method: 'DELETE'
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['favorites'] })
+    }
+  })
+
+  return {
+    removeShowFavorite,
+    isPending
+  }
+}
+
 export type ShowWithHosts = SelectShow & {
   hosts: Array<{ id: string; name: string }>
 }
@@ -479,6 +525,40 @@ export function useShowBySlug(slug: string) {
     queryKey: ['show', slug],
     queryFn: async () => fetcher(`${VPS_BASE_URL}/shows/${slug}`),
     enabled: Boolean(slug)
+  })
+
+  return {
+    data,
+    error,
+    isPending
+  }
+}
+
+export type ShowBasicInfo = {
+  id: string
+  title: string
+  slug: string
+  thumbnailUrl: string | null
+}
+
+export function useShowById(id: string | null | undefined) {
+  const { data, error, isPending } = useQuery<ShowBasicInfo, Error>({
+    queryKey: ['show-by-id', id],
+    queryFn: async () => {
+      const shows = await fetcher<PaginatedResponse<ShowWithHosts>>(
+        `${VPS_BASE_URL}/shows?limit=100`
+      )
+      const show = shows.data.find((s) => s.id === id)
+      if (!show) throw new Error('Show not found')
+      return {
+        id: show.id,
+        title: show.title,
+        slug: show.slug,
+        thumbnailUrl: show.thumbnailUrl
+      }
+    },
+    enabled: Boolean(id),
+    staleTime: 1000 * 60 * 5
   })
 
   return {

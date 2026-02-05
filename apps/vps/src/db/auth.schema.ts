@@ -26,6 +26,7 @@ export const user = pgTable('user', {
     .$onUpdate(() => /* @__PURE__ */ new Date())
     .notNull(),
   username: text('username').unique(),
+  displayUsername: text('display_username').unique(),
   role: text('role').default('user').notNull(),
   banned: boolean('banned').default(false).notNull(),
   banReason: text('ban_reason'),

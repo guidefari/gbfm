@@ -11,13 +11,14 @@ import {
 } from 'lucide-react'
 import * as React from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
+import { FavoriteButton } from '@/components/FavoriteButton'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { ShareButton } from '@/components/ShareButton'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/use-toast'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
-import { fetcher, useMixQRPdf, VPS_BASE_URL } from '@/lib/http'
+import { fetcher, useMixQRPdf, useShowById, VPS_BASE_URL } from '@/lib/http'
 import { useContentStore } from '@/store'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
 import { useAuthStore } from '@/store/auth'
@@ -150,6 +151,7 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
   const canDownloadQr = isAdmin || isCreator
   const { isPlaying, nowPlayingContext } = useAudioPlayerState()
   const { loadTrack, togglePlayPause, addToQueue } = useAudioPlayerActions()
+  const { data: show } = useShowById(mix.showId)
 
   const isActive = nowPlayingContext?.title === mix.title
 
@@ -297,9 +299,25 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
                     ))}
                   </div>
                 )}
+                {show && (
+                  <div className='flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-muted-foreground/80'>
+                    <span className='opacity-50'>from</span>
+                    <Link
+                      to='/shows/$showSlug'
+                      params={{ showSlug: show.slug }}
+                      className='transition-colors hover:text-primary'>
+                      {show.title}
+                    </Link>
+                  </div>
+                )}
               </div>
               <div className='flex flex-shrink-0 gap-2'>
                 <ShareButton type='mix' slug={mix.slug} />
+                <FavoriteButton
+                  contentType='mix'
+                  contentId={mix.id}
+                  contentTitle={mix.title}
+                />
                 {canDownloadQr && (
                   <>
                     <Button

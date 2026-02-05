@@ -117,7 +117,10 @@ export const auth = betterAuth({
   },
   plugins: [
     bearer(),
-    username(),
+    username({
+      displayUsernameNormalization: (displayUsername) =>
+        displayUsername.toLowerCase()
+    }),
     admin({
       ac,
       roles: {

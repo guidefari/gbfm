@@ -1,8 +1,8 @@
 import { Link } from '@tanstack/react-router'
 import { Music, Share2, User } from 'lucide-react'
+import { FavoriteButton } from '@/components/FavoriteButton'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { EpisodeGrid } from '@/components/shows/EpisodeGrid'
-import { SubscribeButton } from '@/components/shows/SubscribeButton'
 
 export type ShowLandingPageProps = {
   id: string
@@ -86,7 +86,12 @@ export function ShowLandingPage({ show }: { show: ShowLandingPageProps }) {
             </div>
 
             <div className='flex gap-3'>
-              <SubscribeButton showId={show.id} showTitle={show.title} />
+              <FavoriteButton
+                contentType='show'
+                contentId={show.id}
+                contentTitle={show.title}
+                size='lg'
+              />
               <button
                 type='button'
                 className='p-3 transition-colors border text-foreground border-border bg-muted/50 hover:bg-muted hover:text-highlight'>
