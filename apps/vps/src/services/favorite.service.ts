@@ -3,7 +3,7 @@ import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
 import { favoritesTable, type SelectFavorite } from '@/db/favorites.schema'
-import { showsTable } from '@/db/show.schema'
+import { showsTable, showSubscriptionsTable } from '@/db/show.schema'
 import {
   ConflictError,
   DatabaseError,
@@ -322,6 +322,44 @@ const addShowFavoriteEffect = (userId: string, showId: string) =>
         })
       }
 
+      // Auto-subscribe when favoriting a show
+      const existingSubscription = yield* Effect.tryPromise({
+        try: () =>
+          db
+            .select()
+            .from(showSubscriptionsTable)
+            .where(
+              and(
+                eq(showSubscriptionsTable.userId, userId),
+                eq(showSubscriptionsTable.showId, showId)
+              )
+            )
+            .limit(1),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to check subscription: ${getErrorMessage(error)}`,
+            operation: 'select',
+            table: 'show_subscriptions'
+          })
+      })
+
+      if (existingSubscription.length === 0) {
+        yield* Effect.tryPromise({
+          try: () =>
+            db.insert(showSubscriptionsTable).values({ userId, showId }),
+          catch: (error) =>
+            new DatabaseError({
+              message: `Failed to subscribe: ${getErrorMessage(error)}`,
+              operation: 'insert',
+              table: 'show_subscriptions'
+            })
+        })
+        yield* Effect.logInfo('[Favorites] Auto-subscribed to show', {
+          userId,
+          showId
+        })
+      }
+
       yield* recordFavoriteAdd()
       yield* Effect.logInfo('[Favorites] Show favorite added', {
         favoriteId: favorite.id,
@@ -382,6 +420,29 @@ const removeShowFavoriteEffect = (userId: string, showId: string) =>
             operation: 'delete',
             table: 'favorites'
           })
+      })
+
+      // Auto-unsubscribe when unfavoriting a show
+      yield* Effect.tryPromise({
+        try: () =>
+          db
+            .delete(showSubscriptionsTable)
+            .where(
+              and(
+                eq(showSubscriptionsTable.userId, userId),
+                eq(showSubscriptionsTable.showId, showId)
+              )
+            ),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to unsubscribe: ${getErrorMessage(error)}`,
+            operation: 'delete',
+            table: 'show_subscriptions'
+          })
+      })
+      yield* Effect.logInfo('[Favorites] Auto-unsubscribed from show', {
+        userId,
+        showId
       })
 
       yield* recordFavoriteRemove()

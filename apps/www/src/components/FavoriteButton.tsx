@@ -8,10 +8,7 @@ import {
   useAddShowFavorite,
   useFavorites,
   useRemoveFavorite,
-  useRemoveShowFavorite,
-  useSubscribeToShow,
-  useUnsubscribeFromShow,
-  useUserSubscriptions
+  useRemoveShowFavorite
 } from '@/lib/http'
 import { cn } from '@/lib/utils'
 import { useAuthStore } from '@/store/auth'
@@ -37,32 +34,23 @@ export function FavoriteButton({
   const [showAuthDialog, setShowAuthDialog] = useState(false)
 
   const { data: favorites } = useFavorites()
-  const { data: subscriptions } = useUserSubscriptions()
   const { addFavorite, isPending: isAddingFavorite } = useAddFavorite()
   const { removeFavorite, isPending: isRemovingFavorite } = useRemoveFavorite()
   const { addShowFavorite, isPending: isAddingShowFavorite } =
     useAddShowFavorite()
   const { removeShowFavorite, isPending: isRemovingShowFavorite } =
     useRemoveShowFavorite()
-  const { subscribe, isPending: isSubscribing } = useSubscribeToShow()
-  const { unsubscribe, isPending: isUnsubscribing } = useUnsubscribeFromShow()
 
   const isFavorited =
     contentType === 'mix'
       ? favorites.some((f) => f.audioId === contentId)
       : favorites.some((f) => f.showId === contentId)
 
-  const isSubscribed =
-    contentType === 'show' &&
-    subscriptions.some((sub) => sub.showId === contentId)
-
   const isLoading =
     isAddingFavorite ||
     isRemovingFavorite ||
     isAddingShowFavorite ||
-    isRemovingShowFavorite ||
-    isSubscribing ||
-    isUnsubscribing
+    isRemovingShowFavorite
 
   const performFavoriteAction = async () => {
     try {
@@ -83,18 +71,12 @@ export function FavoriteButton({
       } else {
         if (isFavorited) {
           await removeShowFavorite({ showId: contentId })
-          if (isSubscribed) {
-            await unsubscribe({ showId: contentId })
-          }
           toast({
             title: 'Removed from favorites',
             description: `${contentTitle} removed from your favorites`
           })
         } else {
           await addShowFavorite({ showId: contentId })
-          if (!isSubscribed) {
-            await subscribe({ showId: contentId })
-          }
           toast({
             title: 'Added to favorites',
             description: `${contentTitle} added to your favorites. You'll be notified of new episodes.`

@@ -117,6 +117,35 @@ export const getFavorites = createRoute({
   tags
 })
 
+export const removeShowFavorite = createRoute({
+  path: '/show/:showId',
+  method: 'delete',
+  middleware: [betterAuthMiddleware],
+  request: {
+    params: z.object({ showId: z.string().uuid() })
+  },
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      favoriteResponseSchema,
+      'Show favorite removed successfully'
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      favoriteResponseSchema,
+      'Favorite not found'
+    ),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
+      favoriteResponseSchema,
+      'Authentication required'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      favoriteResponseSchema,
+      'Internal server error'
+    )
+  },
+  tags
+})
+
 export type AddFavoriteRoute = typeof addFavorite
 export type RemoveFavoriteRoute = typeof removeFavorite
+export type RemoveShowFavoriteRoute = typeof removeShowFavorite
 export type GetFavoritesRoute = typeof getFavorites

@@ -7,7 +7,8 @@ import { FavoriteService } from '@/services/favorite.service'
 import type {
   AddFavoriteRoute,
   GetFavoritesRoute,
-  RemoveFavoriteRoute
+  RemoveFavoriteRoute,
+  RemoveShowFavoriteRoute
 } from './favorites.routes'
 
 export const addFavorite: AppRouteHandler<AddFavoriteRoute> = async (c) => {
@@ -83,6 +84,45 @@ export const removeFavorite: AppRouteHandler<RemoveFavoriteRoute> = async (
   const program = Effect.gen(function* () {
     const favoriteService = yield* FavoriteService
     yield* favoriteService.removeFavorite(user.id, audioId)
+    return { success: true, message: 'Removed from favorites' } as const
+  }).pipe(
+    Effect.catchTag('NotFoundError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    )
+  )
+
+  const result = await AppRuntime.runPromise(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
+  }
+
+  return c.json(result)
+}
+
+export const removeShowFavorite: AppRouteHandler<
+  RemoveShowFavoriteRoute
+> = async (c) => {
+  const user = c.get('user')
+  const { showId } = c.req.valid('param')
+
+  Effect.logInfo('[API] Remove show favorite requested', {
+    userId: user.id,
+    showId
+  }).pipe(Effect.runPromise)
+
+  const program = Effect.gen(function* () {
+    const favoriteService = yield* FavoriteService
+    yield* favoriteService.removeShowFavorite(user.id, showId)
     return { success: true, message: 'Removed from favorites' } as const
   }).pipe(
     Effect.catchTag('NotFoundError', (e) =>

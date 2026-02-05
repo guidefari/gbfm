@@ -4,6 +4,7 @@ import * as routes from './favorites.routes'
 
 const router = createRouter()
   .openapi(routes.addFavorite, handlers.addFavorite)
+  .openapi(routes.removeShowFavorite, handlers.removeShowFavorite)
   .openapi(routes.removeFavorite, handlers.removeFavorite)
   .openapi(routes.getFavorites, handlers.getFavorites)
 
