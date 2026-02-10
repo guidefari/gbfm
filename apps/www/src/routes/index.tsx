@@ -39,11 +39,11 @@ function Index() {
           )}>
           <StartListeningButton />
 
-          <hr className='border-t-2' />
+          <hr className='border-t-2 hidden lg:block' />
           <button
             type='button'
             onClick={openCmd}
-            className='flex items-center gap-2 transition-colors hover:text-highlight'>
+            className='items-center gap-2 transition-colors hover:text-highlight hidden lg:flex'>
             <kbd className='inline-flex h-5 bg-muted text-secondary-foreground items-center gap-1 border px-1.5 font-mono text-[10px] font-medium select-none'>
               <span className='text-xs'>
                 {typeof navigator !== 'undefined' &&

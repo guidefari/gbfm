@@ -8,7 +8,9 @@ import {
 import { Suspense } from 'react'
 import { CommandDialogDemo } from '@/components/cmd'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { PostEngagementSignUp } from '@/components/home/PostEngagementSignUp'
 import AppShell from '@/components/Layout/AppShell'
+import { WelcomeModal } from '@/components/onboarding/WelcomeModal'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { Toaster } from '@/components/ui/toaster'
 import { env } from '@/env'
@@ -54,6 +56,8 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
                 <FPSMeter className='fixed top-0 right-0 z-50' height={40} />
               )}
               <CommandDialogDemo />
+              <WelcomeModal />
+              <PostEngagementSignUp />
               <Outlet />
             </AppShell>
           </QueryClientProvider>
