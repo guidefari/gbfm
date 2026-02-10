@@ -20,6 +20,7 @@ import type {
   GetAudioByTypeRoute,
   GetMixQRPdfRoute,
   GetPostsByTagRoute,
+  GetPostsRoute,
   ProcessMixUploadRoute,
   UpdateAudioBySlugRoute
 } from './content.routes'
@@ -47,6 +48,30 @@ class FileSystemError extends Schema.TaggedError<FileSystemError>()(
     path: Schema.optional(Schema.String)
   }
 ) {}
+
+export const getPosts: AppRouteHandler<GetPostsRoute> = async (c) => {
+  const { limit, offset, type } = c.req.valid('query')
+
+  const program = Effect.gen(function* () {
+    const postService = yield* PostService
+    return yield* postService.getAll({ limit, offset, type })
+  }).pipe(
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    )
+  )
+
+  const result = await AppRuntime.runPromise(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
+  }
+
+  return c.json(result, HttpStatusCodes.OK)
+}
 
 export const createPost: AppRouteHandler<CreatePostRoute> = async (c) => {
   const { creatorIds, ...postData } = c.req.valid('json')

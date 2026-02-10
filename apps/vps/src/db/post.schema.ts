@@ -17,6 +17,8 @@ import { publicationsTable } from './publication.schema'
 import { defaultContentFields } from './util'
 
 export const postTypeEnum = pgEnum('post_type', ['post', 'micro'])
+// todo: derive this at some point bossman
+export type PostType = 'post' | 'micro'
 
 export const postsTable = pgTable(
   'posts',

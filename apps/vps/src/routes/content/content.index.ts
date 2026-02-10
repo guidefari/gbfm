@@ -8,6 +8,7 @@ import * as releaseHandlers from './release.handlers'
 import * as releaseRoutes from './release.routes'
 
 const router = createRouter()
+  .openapi(routes.getPosts, handlers.getPosts)
   .openapi(routes.createPost, handlers.createPost)
   .openapi(routes.getPostsByTag, handlers.getPostsByTag)
   .openapi(routes.getAudioByType, handlers.getAudioByType)

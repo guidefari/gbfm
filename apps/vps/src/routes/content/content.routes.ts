@@ -32,6 +32,30 @@ const tagParamsSchema = z
   .openapi('TagParams')
 
 // Routes
+export const getPosts = createRoute({
+  path: '/posts',
+  method: 'get',
+  request: {
+    query: paginationQuerySchema.extend({
+      type: z
+        .enum(['post', 'micro'])
+        .optional()
+        .openapi({ description: 'Filter by post type' })
+    })
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      createPaginatedResponseSchema(postResponseSchema),
+      'Paginated list of posts'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to fetch posts'
+    )
+  }
+})
+
 export const createPost = createRoute({
   path: '/post',
   method: 'post',
@@ -338,6 +362,7 @@ export const getMixQRPdf = createRoute({
 })
 
 // Export types
+export type GetPostsRoute = typeof getPosts
 export type CreatePostRoute = typeof createPost
 export type GetPostsByTagRoute = typeof getPostsByTag
 export type SeedMixesRoute = typeof seedMixes

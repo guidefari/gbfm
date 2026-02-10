@@ -1,8 +1,9 @@
-import { arrayContains, count, desc } from 'drizzle-orm'
+import { arrayContains, count, desc, eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import {
   type InsertPost,
+  type PostType,
   postCreators,
   postsTable,
   type SelectPost
@@ -15,6 +16,14 @@ import {
 } from '@/lib/pagination'
 
 export interface PostService {
+  readonly getAll: (options: {
+    limit: number
+    offset: number
+    type?: PostType
+  }) => Effect.Effect<
+    { data: SelectPost[]; pagination: PaginationMetadata },
+    DatabaseError
+  >
   readonly getByTag: (
     tag: string,
     options: { limit: number; offset: number }
@@ -29,6 +38,72 @@ export interface PostService {
 }
 
 export const PostService = Context.GenericTag<PostService>('PostService')
+
+const getAllEffect = (options: {
+  limit: number
+  offset: number
+  type?: PostType
+}) =>
+  Effect.gen(function* () {
+    const { limit, offset, type } = options
+    const whereCondition = type ? eq(postsTable.type, type) : undefined
+
+    const countResult = yield* Effect.tryPromise({
+      try: () =>
+        timeQuery(
+          () =>
+            db
+              .select({ total: count() })
+              .from(postsTable)
+              .where(whereCondition),
+          'get-posts-count'
+        ),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to count posts: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'posts'
+        })
+    })
+
+    const total = countResult[0]?.total ?? 0
+
+    const data = yield* Effect.tryPromise({
+      try: () =>
+        timeQuery(
+          () =>
+            db
+              .select()
+              .from(postsTable)
+              .limit(limit)
+              .offset(offset)
+              .where(whereCondition)
+              .orderBy(desc(postsTable.createdAt)),
+          'get-posts-data'
+        ),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch posts: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'posts'
+        })
+    })
+
+    yield* Effect.annotateCurrentSpan('resultCount', data.length)
+    yield* Effect.annotateCurrentSpan('totalCount', total)
+
+    yield* Effect.logInfo('[Content] Posts retrieved', {
+      count: data.length,
+      total,
+      limit,
+      offset
+    })
+
+    return {
+      data,
+      pagination: createPaginationMetadata(total, limit, offset)
+    }
+  })
 
 const getByTagEffect = (
   tag: string,
@@ -157,6 +232,7 @@ const createEffect = (data: InsertPost, creatorIds: string[]) =>
   })
 
 export const PostServiceLive = Layer.succeed(PostService, {
+  getAll: getAllEffect,
   getByTag: getByTagEffect,
   create: createEffect
 })
