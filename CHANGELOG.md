@@ -1,3 +1,12 @@
+# [2.15.0](https://github.com/guidefari/gbfm/compare/v2.14.0...v2.15.0) (2026-02-10)
+
+
+### Features
+
+* favourites and subscribing ([67dcde5](https://github.com/guidefari/gbfm/commit/67dcde5aa05cd7489bbc3ed09d1878d96ae2218e))
+* favourites/subscribe triggers modal sign up/login ([ff67687](https://github.com/guidefari/gbfm/commit/ff676870a80b980db57b89da6e499db7c8bae1c6))
+* onboarding improvements ([ef1de3f](https://github.com/guidefari/gbfm/commit/ef1de3fcc8d2ed17db9d725197160de83c809d05))
+
 # [2.14.0](https://github.com/guidefari/gbfm/compare/v2.13.3...v2.14.0) (2026-02-04)
 
 
