@@ -1,4 +1,5 @@
 import type { SelectMdxCompiledAudio } from '@gbfm/vps/schemas'
+import { useFeatureFlag } from '@gbfm/core/feature-flags'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import {
   ArrowLeft,
@@ -143,6 +144,7 @@ function MixPage() {
 }
 
 function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
+  const isQueueEnabled = useFeatureFlag('ui.queue')
   const { user } = useAuthStore()
   const { toast } = useToast()
   const navigate = useNavigate()
@@ -248,14 +250,16 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
                 </>
               )}
             </Button>
-            <Button
-              onClick={handleAddToQueue}
-              variant='outline'
-              size='lg'
-              className='w-12 h-12 p-0 rounded-none shadow-sm hover:shadow-md active:scale-95'
-              title='Add to Queue'>
-              <ListPlus className='w-6 h-6' />
-            </Button>
+            {isQueueEnabled && (
+              <Button
+                onClick={handleAddToQueue}
+                variant='outline'
+                size='lg'
+                className='w-12 h-12 p-0 rounded-none shadow-sm hover:shadow-md active:scale-95'
+                title='Add to Queue'>
+                <ListPlus className='w-6 h-6' />
+              </Button>
+            )}
           </div>
 
           {mix.tags && mix.tags.length > 0 && (

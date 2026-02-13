@@ -1,4 +1,5 @@
 import { AnimatePresence } from 'motion/react'
+import { useFeatureFlag } from '@gbfm/core/feature-flags'
 import type React from 'react'
 import AudioPlayer from '@/components/AudioPlayer'
 import FullscreenAudioPlayer from '@/components/FullscreenAudioPlayer'
@@ -19,6 +20,7 @@ type Props = {
 
 export default function AppShell({ children }: Props) {
   useAudioPlayerInitializer()
+  const isQueueEnabled = useFeatureFlag('ui.queue')
 
   const { audioSrc, isFullscreenVisible } = useAudioPlayerState()
   const { preferredPlayerType, showCompactPlayer } = useUIStore()
@@ -49,7 +51,7 @@ export default function AppShell({ children }: Props) {
           </div>
         )}
 
-        <QueueColumn />
+        {isQueueEnabled && <QueueColumn />}
 
         <FullscreenAudioPlayer />
       </div>

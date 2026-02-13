@@ -1,5 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { useFeatureFlag } from '@gbfm/core/feature-flags'
 import { Heart, MoreHorizontal, Play, Plus, Share2, X } from 'lucide-react'
 import type React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -53,6 +54,8 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
   fontSize = 'base',
   disableInternalDrag = false
 }) => {
+  const isShareEnabled = useFeatureFlag('ui.share')
+  const isQueueEnabled = useFeatureFlag('ui.queue')
   const { playFromQueue, removeFromQueue, addToQueue, loadTrack } =
     useAudioPlayerActions()
 
@@ -344,13 +347,15 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
             Play now
           </button>
 
-          <button
-            type='button'
-            onClick={handleAddToQueue}
-            className='flex items-center w-full gap-2 px-3 py-2 text-sm text-left transition-colors text-foreground hover:bg-muted'>
-            <Plus className='w-4 h-4' />
-            Add to queue
-          </button>
+          {isQueueEnabled && (
+            <button
+              type='button'
+              onClick={handleAddToQueue}
+              className='flex items-center w-full gap-2 px-3 py-2 text-sm text-left transition-colors text-foreground hover:bg-muted'>
+              <Plus className='w-4 h-4' />
+              Add to queue
+            </button>
+          )}
 
           <hr className='my-1 border-border' />
 
@@ -362,13 +367,15 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
             Add to favorites
           </button>
 
-          <button
-            type='button'
-            onClick={handleShare}
-            className='flex items-center w-full gap-2 px-3 py-2 text-sm text-left transition-colors text-foreground hover:bg-muted'>
-            <Share2 className='w-4 h-4' />
-            Share
-          </button>
+          {isShareEnabled && (
+            <button
+              type='button'
+              onClick={handleShare}
+              className='flex items-center w-full gap-2 px-3 py-2 text-sm text-left transition-colors text-foreground hover:bg-muted'>
+              <Share2 className='w-4 h-4' />
+              Share
+            </button>
+          )}
         </div>
       )}
     </>

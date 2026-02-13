@@ -49,6 +49,7 @@ export const createCommandData = (
   isOnMixesPage: boolean,
   canEdit: boolean,
   isAdmin: boolean,
+  isQueueEnabled: boolean,
   currentArchetype?: string,
   currentId?: string,
   audioSrc?: string | null,
@@ -287,13 +288,17 @@ export const createCommandData = (
           onSelect: actions.volumeDown,
           shortcut: '⌥↓'
         },
-        {
-          id: 'toggle-queue',
-          label: `${isQueueVisible ? 'Hide' : 'Show'} Queue`,
-          icon: List,
-          onSelect: actions.toggleQueue,
-          shortcut: 'Q'
-        },
+        ...(isQueueEnabled
+          ? [
+              {
+                id: 'toggle-queue',
+                label: `${isQueueVisible ? 'Hide' : 'Show'} Queue`,
+                icon: List,
+                onSelect: actions.toggleQueue,
+                shortcut: 'Q'
+              }
+            ]
+          : []),
         {
           id: 'toggle-fullscreen',
           label: `${isFullscreenVisible ? 'Exit' : 'Enter'} Fullscreen`,

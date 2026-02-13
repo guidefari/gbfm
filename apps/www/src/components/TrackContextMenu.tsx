@@ -1,4 +1,5 @@
 import type { SelectAudio } from '@gbfm/vps/schemas'
+import { useFeatureFlag } from '@gbfm/core/feature-flags'
 import { Heart, HeartOff, Play, Plus, Share2 } from 'lucide-react'
 import type React from 'react'
 import {
@@ -24,6 +25,8 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
   children,
   className = ''
 }) => {
+  const isShareEnabled = useFeatureFlag('ui.share')
+  const isQueueEnabled = useFeatureFlag('ui.queue')
   const { addToQueue, loadTrack } = useAudioPlayerActions()
   const { data: favorites } = useFavorites()
   const { addFavorite } = useAddFavorite()
@@ -101,10 +104,12 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
           Play now
         </ContextMenuItem>
 
-        <ContextMenuItem onClick={handleAddToQueue}>
-          <Plus className='w-4 h-4' />
-          Add to queue
-        </ContextMenuItem>
+        {isQueueEnabled && (
+          <ContextMenuItem onClick={handleAddToQueue}>
+            <Plus className='w-4 h-4' />
+            Add to queue
+          </ContextMenuItem>
+        )}
 
         <ContextMenuSeparator />
 
@@ -122,10 +127,12 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
           )}
         </ContextMenuItem>
 
-        <ContextMenuItem onClick={handleShare}>
-          <Share2 className='w-4 h-4' />
-          Share
-        </ContextMenuItem>
+        {isShareEnabled && (
+          <ContextMenuItem onClick={handleShare}>
+            <Share2 className='w-4 h-4' />
+            Share
+          </ContextMenuItem>
+        )}
       </ContextMenuContent>
     </ContextMenu>
   )

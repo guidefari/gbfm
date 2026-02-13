@@ -1,4 +1,5 @@
 import type { SelectAudio } from '@gbfm/vps/schemas'
+import { useFeatureFlag } from '@gbfm/core/feature-flags'
 import { Heart, HeartOff, MoreVertical, Play, Plus, Share2 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -18,6 +19,8 @@ interface MixMenuProps {
 }
 
 export function MixMenu({ mix }: MixMenuProps) {
+  const isShareEnabled = useFeatureFlag('ui.share')
+  const isQueueEnabled = useFeatureFlag('ui.queue')
   const { addToQueue, loadTrack } = useAudioPlayerActions()
   const { data: favorites } = useFavorites()
   const { addFavorite } = useAddFavorite()
@@ -100,10 +103,12 @@ export function MixMenu({ mix }: MixMenuProps) {
           Play now
         </DropdownMenuItem>
 
-        <DropdownMenuItem onClick={handleAddToQueue}>
-          <Plus className='w-4 h-4' />
-          Add to queue
-        </DropdownMenuItem>
+        {isQueueEnabled && (
+          <DropdownMenuItem onClick={handleAddToQueue}>
+            <Plus className='w-4 h-4' />
+            Add to queue
+          </DropdownMenuItem>
+        )}
 
         <DropdownMenuSeparator />
 
@@ -121,10 +126,12 @@ export function MixMenu({ mix }: MixMenuProps) {
           )}
         </DropdownMenuItem>
 
-        <DropdownMenuItem onClick={handleShare}>
-          <Share2 className='w-4 h-4' />
-          Share
-        </DropdownMenuItem>
+        {isShareEnabled && (
+          <DropdownMenuItem onClick={handleShare}>
+            <Share2 className='w-4 h-4' />
+            Share
+          </DropdownMenuItem>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   )

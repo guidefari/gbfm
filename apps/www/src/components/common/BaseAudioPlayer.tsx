@@ -1,5 +1,6 @@
 'use client'
 import { Link } from '@tanstack/react-router'
+import { useFeatureFlag } from '@gbfm/core/feature-flags'
 import {
   List,
   Pause,
@@ -71,6 +72,9 @@ export function BaseAudioPlayer({
   className = '',
   onFullscreenToggle
 }: BaseAudioPlayerProps) {
+  const isQueueEnabled = useFeatureFlag('ui.queue')
+  const shouldShowQueue = showQueue && isQueueEnabled
+
   const {
     audioSrc,
     isPlaying,
@@ -430,7 +434,7 @@ export function BaseAudioPlayer({
               </div>
             )}
 
-            {showQueue && (
+            {shouldShowQueue && (
               <Button
                 variant='ghost'
                 size='icon'
@@ -479,7 +483,7 @@ export function BaseAudioPlayer({
                 <CreatorLinks creators={currentTrack.creators} />
               </p>
             </div>
-            {showQueue && (
+            {shouldShowQueue && (
               <Button
                 variant='ghost'
                 size='icon'

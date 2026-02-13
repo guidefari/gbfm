@@ -1,4 +1,5 @@
 import { Share2 } from 'lucide-react'
+import { useFeatureFlag } from '@gbfm/core/feature-flags'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/use-toast'
 import { getShareUrl, type ShareContentType } from '@/lib/share'
@@ -18,6 +19,10 @@ export function ShareButton({
   size = 'sm',
   className
 }: ShareButtonProps) {
+  const isShareEnabled = useFeatureFlag('ui.share')
+
+  if (!isShareEnabled) return null
+
   const handleShare = async () => {
     const shareUrl = getShareUrl(type, slug)
 

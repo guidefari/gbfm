@@ -1,5 +1,6 @@
 'use client'
 import { Link } from '@tanstack/react-router'
+import { useFeatureFlag } from '@gbfm/core/feature-flags'
 import {
   ChevronDown,
   List,
@@ -58,6 +59,7 @@ function CreatorLinks({ creators, onClick }: Props) {
 }
 
 const FullscreenAudioPlayer = () => {
+  const isQueueEnabled = useFeatureFlag('ui.queue')
   const {
     audioSrc,
     isPlaying,
@@ -169,19 +171,21 @@ const FullscreenAudioPlayer = () => {
                       className='text-muted-foreground hover:text-foreground hover:bg-muted'>
                       <Star className='w-5 h-5' />
                     </Button>
-                    <Button
-                      variant='ghost'
-                      size='icon'
-                      onClick={toggleQueue}
-                      className={`text-muted-foreground hover:text-foreground hover:bg-muted ${queue.length > 0 ? 'relative' : ''}`}
-                      title='Toggle Queue'>
-                      <List className='w-5 h-5' />
-                      {queue.length > 0 && (
-                        <span className='absolute flex items-center justify-center w-4 h-4 text-xs rounded-sm -top-1 -right-1 bg-primary text-primary-foreground'>
-                          {queue.length}
-                        </span>
-                      )}
-                    </Button>
+                    {isQueueEnabled && (
+                      <Button
+                        variant='ghost'
+                        size='icon'
+                        onClick={toggleQueue}
+                        className={`text-muted-foreground hover:text-foreground hover:bg-muted ${queue.length > 0 ? 'relative' : ''}`}
+                        title='Toggle Queue'>
+                        <List className='w-5 h-5' />
+                        {queue.length > 0 && (
+                          <span className='absolute flex items-center justify-center w-4 h-4 text-xs rounded-sm -top-1 -right-1 bg-primary text-primary-foreground'>
+                            {queue.length}
+                          </span>
+                        )}
+                      </Button>
+                    )}
                   </div>
                 </div>
                 <CreatorLinks

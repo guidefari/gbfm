@@ -1,5 +1,6 @@
 'use client'
 
+import { useFeatureFlag } from '@gbfm/core/feature-flags'
 import { useRouterState } from '@tanstack/react-router'
 import * as React from 'react'
 import { CommandDialog, CommandInput } from '@/components/ui/command'
@@ -26,6 +27,7 @@ export function CommandDialogDemo() {
   const { Cmd, openCmd, closeCmd, toggleCmd } = useUIStore()
   const { user, isAuthenticated } = useAuthStore()
   const { audioSrc } = useAudioPlayerState()
+  const isQueueEnabled = useFeatureFlag('ui.queue')
   const isAdmin = user?.role === 'admin'
 
   const navigationActions = useNavigationActions(closeCmd)
@@ -67,6 +69,7 @@ export function CommandDialogDemo() {
         isOnMixesPage,
         canEdit,
         isAdmin,
+        isQueueEnabled,
         currentArchetype,
         currentId,
         audioSrc,
@@ -85,6 +88,7 @@ export function CommandDialogDemo() {
       isOnMixesPage,
       canEdit,
       isAdmin,
+      isQueueEnabled,
       currentArchetype,
       currentId,
       audioSrc,

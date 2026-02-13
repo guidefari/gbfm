@@ -4,14 +4,20 @@
   "type": "module",
   "exports": {
     "./utils": "./src/utils/index.ts",
-    "./api": "./src/api/index.ts"
+    "./api": "./src/api/index.ts",
+    "./feature-flags": "./src/feature-flags/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@types/react": "^19.1.10",
     "@types/bun": "^1.2.23",
+    "react": "19.2.0",
     "typescript": "^5.9.3"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
   },
   "dependencies": {}
 }

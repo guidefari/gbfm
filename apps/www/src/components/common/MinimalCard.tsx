@@ -1,4 +1,5 @@
 import { Share } from 'lucide-react'
+import { useFeatureFlag } from '@gbfm/core/feature-flags'
 import type React from 'react'
 import { MdOutlineDownloading } from 'react-icons/md'
 import { toast } from '@/components/ui/use-toast'
@@ -42,6 +43,8 @@ export const MinimalCard: React.FC<Props> = ({
   hideTitle,
   shareUrl
 }) => {
+  const isShareEnabled = useFeatureFlag('ui.share')
+
   const constructUrl = () => {
     if (!previewUrl) return
     const safeTitle = encodeURIComponent(title)
@@ -131,7 +134,7 @@ export const MinimalCard: React.FC<Props> = ({
                 <MdOutlineDownloading className='py-0.5 default-icon' />
               </a>
             )}
-            {shareUrl && (
+            {isShareEnabled && shareUrl && (
               <button
                 type='button'
                 title='Share'

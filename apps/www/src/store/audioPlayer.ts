@@ -1,4 +1,5 @@
 import type { SelectAudio, SelectMdxCompiledAudio } from '@gbfm/vps/schemas'
+import { isFeatureEnabled } from '@gbfm/core/feature-flags'
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 import { toast } from '@/components/ui/use-toast'
@@ -456,6 +457,8 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
 
         // Queue management actions
         addToQueue: (mix) => {
+          if (!isFeatureEnabled('ui.queue')) return
+
           const queueItem: QueueItem = {
             queueId: `queue-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
             id: mix.id,
@@ -575,6 +578,8 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
         },
 
         toggleQueue: () => {
+          if (!isFeatureEnabled('ui.queue')) return
+
           set(
             (state) => ({ isQueueVisible: !state.isQueueVisible }),
             false,
