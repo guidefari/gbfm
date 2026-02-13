@@ -77,7 +77,7 @@ function ShowPage() {
   const hostNames = data.hosts?.map((h) => h.name).join(', ')
 
   return (
-    <div className='max-w-7xl px-4 py-6 mx-auto'>
+    <div className='max-w-7xl px-4 py-6 mx-auto overflow-hidden'>
       <div className='grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,2.5fr)]'>
         <div className='lg:col-span-1'>
           <div className='sticky top-6'>
@@ -92,8 +92,8 @@ function ShowPage() {
               />
             </div>
 
-            <div className='space-y-3'>
-              <h1 className='text-2xl font-bold'>{data.title}</h1>
+            <div className='space-y-3 min-w-0'>
+              <h1 className='text-2xl font-bold break-words'>{data.title}</h1>
 
               {hostNames && (
                 <p className='text-sm text-muted-foreground'>
@@ -121,7 +121,7 @@ function ShowPage() {
           </div>
         </div>
 
-        <div className='lg:col-span-1'>
+        <div className='lg:col-span-1 min-w-0'>
           <EpisodeGrid showSlug={showSlug} />
         </div>
       </div>
@@ -142,7 +142,7 @@ function ShowDescription({
 
   return (
     <div>
-      <div className='text-sm text-muted-foreground line-clamp-4 prose prose-sm prose-neutral dark:prose-invert max-w-none [&_p]:text-muted-foreground [&_p]:text-sm [&_p]:m-0'>
+      <div className='text-sm text-muted-foreground line-clamp-4 prose prose-sm prose-neutral dark:prose-invert max-w-none break-words overflow-hidden [&_p]:text-muted-foreground [&_p]:text-sm [&_p]:m-0'>
         {compiledContent ? (
           <MDXRendrr mdxString={compiledContent} />
         ) : (

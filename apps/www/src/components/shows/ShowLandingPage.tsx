@@ -22,7 +22,7 @@ export function ShowLandingPage({ show }: { show: ShowLandingPageProps }) {
   const logoUrl = show.thumbnailUrl || '/fav.png'
 
   return (
-    <div className='min-h-screen bg-background text-foreground selection:bg-highlight/30'>
+    <div className='min-h-screen bg-background text-foreground selection:bg-highlight/30 overflow-x-hidden'>
       <div className='relative h-[40vh] md:h-[50vh] overflow-hidden'>
         <img
           src={bannerUrl}
@@ -102,8 +102,8 @@ export function ShowLandingPage({ show }: { show: ShowLandingPageProps }) {
         </div>
       </div>
 
-      <main className='grid max-w-6xl grid-cols-1 gap-16 px-6 py-12 mx-auto md:px-12 lg:grid-cols-3'>
-        <div className='space-y-12 lg:col-span-2'>
+      <main className='grid max-w-6xl grid-cols-1 gap-16 px-4 py-12 mx-auto md:px-12 lg:grid-cols-3 overflow-hidden'>
+        <div className='space-y-12 lg:col-span-2 min-w-0'>
           <section>
             <div className='flex items-center justify-between pb-4 mb-8 border-b border-border'>
               <h2 className='flex items-center gap-3 text-2xl font-semibold text-gb-pastel-green-2'>
