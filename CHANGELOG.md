@@ -1,3 +1,15 @@
+# [2.18.0](https://github.com/guidefari/gbfm/compare/v2.17.0...v2.18.0) (2026-02-13)
+
+
+### Bug Fixes
+
+* marquee ([14769c5](https://github.com/guidefari/gbfm/commit/14769c5573be064a9c7db27d3a060e5b79162819))
+
+
+### Features
+
+* audio player improvements ([b98c9c7](https://github.com/guidefari/gbfm/commit/b98c9c71934c48373cfb04fe392bf06a09887e71))
+
 # [2.17.0](https://github.com/guidefari/gbfm/compare/v2.16.0...v2.17.0) (2026-02-13)
 
 
