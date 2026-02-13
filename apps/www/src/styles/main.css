@@ -383,6 +383,12 @@
     animation: title-marquee-slow 18s linear infinite;
   }
 
+  @media (min-width: 640px) {
+    .title-marquee--mobile-only {
+      animation: none;
+    }
+  }
+
   @keyframes title-marquee-slow {
     0%,
     22% {

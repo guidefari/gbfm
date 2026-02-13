@@ -58,14 +58,16 @@ export const QueueColumn = () => {
 
   return (
     <Sheet open={isQueueVisible} onOpenChange={toggleQueue}>
-      <SheetContent side='right' className='w-80'>
+      <SheetContent
+        side='right'
+        className='w-full sm:w-80 flex flex-col overflow-hidden'>
         <SheetHeader>
           <SheetTitle>Queue</SheetTitle>
         </SheetHeader>
 
-        <ScrollArea className='flex-1 px-4'>
+        <ScrollArea className='flex-1 px-2'>
           {nowPlayingContext.title !== 'Nothing playing, yet' && (
-            <div className='p-4 mb-4 border-b rounded-sm border-border bg-muted/20'>
+            <div className='p-3 mb-4 border-b border-border'>
               <h3 className='mb-2 text-xs font-medium text-muted-foreground'>
                 Now Playing
               </h3>
@@ -75,20 +77,16 @@ export const QueueColumn = () => {
                   alt={nowPlayingContext.title}
                   className='flex-shrink-0 object-cover w-12 h-12 rounded'
                 />
-                <div className='flex-1'>
-                  <h4 className='text-sm font-medium truncate'>
-                    {nowPlayingContext.title}
-                  </h4>
-                </div>
+                <h4 className='flex-1 min-w-0 text-sm font-medium truncate'>
+                  {nowPlayingContext.title}
+                </h4>
               </div>
             </div>
           )}
 
           {queue.length === 0 ? (
             <div className='flex flex-col items-center justify-center p-8 text-center'>
-              <div className='flex items-center justify-center w-16 h-16 mb-4 rounded-sm bg-muted'>
-                <Play className='w-8 h-8 text-muted-foreground' />
-              </div>
+              <Play className='w-8 h-8 mb-4 text-muted-foreground' />
               <h3 className='mb-2 font-medium'>Your queue is empty</h3>
               <p className='text-sm text-muted-foreground'>
                 Add some tracks to get started
