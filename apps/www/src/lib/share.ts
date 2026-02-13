@@ -7,6 +7,7 @@ export type ShareContentType =
   | 'profile'
   | 'release'
   | 'label'
+  | 'post'
 
 /**
  * Generates a share URL for the redirect service.

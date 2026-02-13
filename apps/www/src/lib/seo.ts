@@ -1,6 +1,7 @@
 import type {
   SelectMdxCompiledAudio,
   SelectMdxCompiledLabel,
+  SelectMdxCompiledPost,
   SelectMdxCompiledRelease,
   SelectMdxCompiledShow
 } from '@gbfm/vps/schemas'
@@ -133,6 +134,42 @@ export function generateTrackSEO(
     image,
     type: 'music.song',
     audioUrl: track.url || undefined
+  }
+}
+
+export function generatePostSEO(
+  post: SelectMdxCompiledPost,
+  slug: string
+): SEOHeadData {
+  const title = post.title || slug
+  const description = post.description || `Read ${title} on goosebumps.fm`
+  const url = `${SITE_URL}/dispatch/${slug}`
+  const image = post.thumbnailUrl || DEFAULT_OG_IMAGE
+
+  return {
+    title,
+    description,
+    url,
+    image,
+    type: 'article'
+  }
+}
+
+export function generateMicroPostSEO(
+  post: SelectMdxCompiledPost,
+  slug: string
+): SEOHeadData {
+  const title = post.title || slug
+  const description = post.description || `Read ${title} on goosebumps.fm`
+  const url = `${SITE_URL}/pings/${slug}`
+  const image = post.thumbnailUrl || DEFAULT_OG_IMAGE
+
+  return {
+    title,
+    description,
+    url,
+    image,
+    type: 'article'
   }
 }
 
@@ -297,5 +334,15 @@ export const STATIC_PAGE_SEO = {
     'Dashboard',
     'Your personal dashboard on goosebumps.fm. Access your favorites, recent plays, and reminders.',
     '/dashboard'
+  ),
+  dispatch: generateStaticPageSEO(
+    'Dispatch',
+    'Long-form posts, essays, and deep dives on goosebumps.fm.',
+    '/dispatch'
+  ),
+  pings: generateStaticPageSEO(
+    'Pings',
+    'Short thoughts, updates, and micro posts on goosebumps.fm.',
+    '/pings'
   )
 } as const

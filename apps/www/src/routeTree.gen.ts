@@ -19,20 +19,26 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ChangelogRouteImport } from './routes/changelog'
 import { Route as SlugRouteImport } from './routes/$slug'
 import { Route as TracksRouteRouteImport } from './routes/tracks/route'
+import { Route as PingsRouteRouteImport } from './routes/pings/route'
 import { Route as MixesRouteRouteImport } from './routes/mixes/route'
 import { Route as LabelsRouteRouteImport } from './routes/labels/route'
+import { Route as DispatchRouteRouteImport } from './routes/dispatch/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TracksIndexRouteImport } from './routes/tracks/index'
 import { Route as ShowsIndexRouteImport } from './routes/shows/index'
+import { Route as PingsIndexRouteImport } from './routes/pings/index'
 import { Route as MixesIndexRouteImport } from './routes/mixes/index'
 import { Route as LabelsIndexRouteImport } from './routes/labels/index'
+import { Route as DispatchIndexRouteImport } from './routes/dispatch/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as TracksTrackIdRouteImport } from './routes/tracks/$trackId'
 import { Route as ShowsShowSlugRouteImport } from './routes/shows/$showSlug'
 import { Route as ReleasesSlugRouteImport } from './routes/releases/$slug'
 import { Route as ProfileUsernameRouteImport } from './routes/profile/$username'
+import { Route as PingsSlugRouteImport } from './routes/pings/$slug'
 import { Route as MixesMixIdRouteImport } from './routes/mixes/$mixId'
 import { Route as LabelsLabelSlugRouteImport } from './routes/labels/$labelSlug'
+import { Route as DispatchSlugRouteImport } from './routes/dispatch/$slug'
 import { Route as AuthSignUpRouteImport } from './routes/auth/sign-up'
 import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
 import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
@@ -97,6 +103,11 @@ const TracksRouteRoute = TracksRouteRouteImport.update({
   path: '/tracks',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PingsRouteRoute = PingsRouteRouteImport.update({
+  id: '/pings',
+  path: '/pings',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MixesRouteRoute = MixesRouteRouteImport.update({
   id: '/mixes',
   path: '/mixes',
@@ -105,6 +116,11 @@ const MixesRouteRoute = MixesRouteRouteImport.update({
 const LabelsRouteRoute = LabelsRouteRouteImport.update({
   id: '/labels',
   path: '/labels',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DispatchRouteRoute = DispatchRouteRouteImport.update({
+  id: '/dispatch',
+  path: '/dispatch',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -122,6 +138,11 @@ const ShowsIndexRoute = ShowsIndexRouteImport.update({
   path: '/shows/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PingsIndexRoute = PingsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => PingsRouteRoute,
+} as any)
 const MixesIndexRoute = MixesIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -131,6 +152,11 @@ const LabelsIndexRoute = LabelsIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => LabelsRouteRoute,
+} as any)
+const DispatchIndexRoute = DispatchIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DispatchRouteRoute,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/admin/',
@@ -157,6 +183,11 @@ const ProfileUsernameRoute = ProfileUsernameRouteImport.update({
   path: '/profile/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PingsSlugRoute = PingsSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => PingsRouteRoute,
+} as any)
 const MixesMixIdRoute = MixesMixIdRouteImport.update({
   id: '/$mixId',
   path: '/$mixId',
@@ -166,6 +197,11 @@ const LabelsLabelSlugRoute = LabelsLabelSlugRouteImport.update({
   id: '/$labelSlug',
   path: '/$labelSlug',
   getParentRoute: () => LabelsRouteRoute,
+} as any)
+const DispatchSlugRoute = DispatchSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => DispatchRouteRoute,
 } as any)
 const AuthSignUpRoute = AuthSignUpRouteImport.update({
   id: '/auth/sign-up',
@@ -190,8 +226,10 @@ const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dispatch': typeof DispatchRouteRouteWithChildren
   '/labels': typeof LabelsRouteRouteWithChildren
   '/mixes': typeof MixesRouteRouteWithChildren
+  '/pings': typeof PingsRouteRouteWithChildren
   '/tracks': typeof TracksRouteRouteWithChildren
   '/$slug': typeof SlugRoute
   '/changelog': typeof ChangelogRoute
@@ -207,15 +245,19 @@ export interface FileRoutesByFullPath {
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
+  '/dispatch/$slug': typeof DispatchSlugRoute
   '/labels/$labelSlug': typeof LabelsLabelSlugRoute
   '/mixes/$mixId': typeof MixesMixIdRoute
+  '/pings/$slug': typeof PingsSlugRoute
   '/profile/$username': typeof ProfileUsernameRoute
   '/releases/$slug': typeof ReleasesSlugRoute
   '/shows/$showSlug': typeof ShowsShowSlugRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/dispatch/': typeof DispatchIndexRoute
   '/labels/': typeof LabelsIndexRoute
   '/mixes/': typeof MixesIndexRoute
+  '/pings/': typeof PingsIndexRoute
   '/shows/': typeof ShowsIndexRoute
   '/tracks/': typeof TracksIndexRoute
 }
@@ -235,23 +277,29 @@ export interface FileRoutesByTo {
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
+  '/dispatch/$slug': typeof DispatchSlugRoute
   '/labels/$labelSlug': typeof LabelsLabelSlugRoute
   '/mixes/$mixId': typeof MixesMixIdRoute
+  '/pings/$slug': typeof PingsSlugRoute
   '/profile/$username': typeof ProfileUsernameRoute
   '/releases/$slug': typeof ReleasesSlugRoute
   '/shows/$showSlug': typeof ShowsShowSlugRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
   '/admin': typeof AdminIndexRoute
+  '/dispatch': typeof DispatchIndexRoute
   '/labels': typeof LabelsIndexRoute
   '/mixes': typeof MixesIndexRoute
+  '/pings': typeof PingsIndexRoute
   '/shows': typeof ShowsIndexRoute
   '/tracks': typeof TracksIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dispatch': typeof DispatchRouteRouteWithChildren
   '/labels': typeof LabelsRouteRouteWithChildren
   '/mixes': typeof MixesRouteRouteWithChildren
+  '/pings': typeof PingsRouteRouteWithChildren
   '/tracks': typeof TracksRouteRouteWithChildren
   '/$slug': typeof SlugRoute
   '/changelog': typeof ChangelogRoute
@@ -267,15 +315,19 @@ export interface FileRoutesById {
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
+  '/dispatch/$slug': typeof DispatchSlugRoute
   '/labels/$labelSlug': typeof LabelsLabelSlugRoute
   '/mixes/$mixId': typeof MixesMixIdRoute
+  '/pings/$slug': typeof PingsSlugRoute
   '/profile/$username': typeof ProfileUsernameRoute
   '/releases/$slug': typeof ReleasesSlugRoute
   '/shows/$showSlug': typeof ShowsShowSlugRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/dispatch/': typeof DispatchIndexRoute
   '/labels/': typeof LabelsIndexRoute
   '/mixes/': typeof MixesIndexRoute
+  '/pings/': typeof PingsIndexRoute
   '/shows/': typeof ShowsIndexRoute
   '/tracks/': typeof TracksIndexRoute
 }
@@ -283,8 +335,10 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/dispatch'
     | '/labels'
     | '/mixes'
+    | '/pings'
     | '/tracks'
     | '/$slug'
     | '/changelog'
@@ -300,15 +354,19 @@ export interface FileRouteTypes {
     | '/auth/reset-password'
     | '/auth/sign-in'
     | '/auth/sign-up'
+    | '/dispatch/$slug'
     | '/labels/$labelSlug'
     | '/mixes/$mixId'
+    | '/pings/$slug'
     | '/profile/$username'
     | '/releases/$slug'
     | '/shows/$showSlug'
     | '/tracks/$trackId'
     | '/admin/'
+    | '/dispatch/'
     | '/labels/'
     | '/mixes/'
+    | '/pings/'
     | '/shows/'
     | '/tracks/'
   fileRoutesByTo: FileRoutesByTo
@@ -328,22 +386,28 @@ export interface FileRouteTypes {
     | '/auth/reset-password'
     | '/auth/sign-in'
     | '/auth/sign-up'
+    | '/dispatch/$slug'
     | '/labels/$labelSlug'
     | '/mixes/$mixId'
+    | '/pings/$slug'
     | '/profile/$username'
     | '/releases/$slug'
     | '/shows/$showSlug'
     | '/tracks/$trackId'
     | '/admin'
+    | '/dispatch'
     | '/labels'
     | '/mixes'
+    | '/pings'
     | '/shows'
     | '/tracks'
   id:
     | '__root__'
     | '/'
+    | '/dispatch'
     | '/labels'
     | '/mixes'
+    | '/pings'
     | '/tracks'
     | '/$slug'
     | '/changelog'
@@ -359,23 +423,29 @@ export interface FileRouteTypes {
     | '/auth/reset-password'
     | '/auth/sign-in'
     | '/auth/sign-up'
+    | '/dispatch/$slug'
     | '/labels/$labelSlug'
     | '/mixes/$mixId'
+    | '/pings/$slug'
     | '/profile/$username'
     | '/releases/$slug'
     | '/shows/$showSlug'
     | '/tracks/$trackId'
     | '/admin/'
+    | '/dispatch/'
     | '/labels/'
     | '/mixes/'
+    | '/pings/'
     | '/shows/'
     | '/tracks/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DispatchRouteRoute: typeof DispatchRouteRouteWithChildren
   LabelsRouteRoute: typeof LabelsRouteRouteWithChildren
   MixesRouteRoute: typeof MixesRouteRouteWithChildren
+  PingsRouteRoute: typeof PingsRouteRouteWithChildren
   TracksRouteRoute: typeof TracksRouteRouteWithChildren
   SlugRoute: typeof SlugRoute
   ChangelogRoute: typeof ChangelogRoute
@@ -477,6 +547,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TracksRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pings': {
+      id: '/pings'
+      path: '/pings'
+      fullPath: '/pings'
+      preLoaderRoute: typeof PingsRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mixes': {
       id: '/mixes'
       path: '/mixes'
@@ -489,6 +566,13 @@ declare module '@tanstack/react-router' {
       path: '/labels'
       fullPath: '/labels'
       preLoaderRoute: typeof LabelsRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dispatch': {
+      id: '/dispatch'
+      path: '/dispatch'
+      fullPath: '/dispatch'
+      preLoaderRoute: typeof DispatchRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -512,6 +596,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ShowsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pings/': {
+      id: '/pings/'
+      path: '/'
+      fullPath: '/pings/'
+      preLoaderRoute: typeof PingsIndexRouteImport
+      parentRoute: typeof PingsRouteRoute
+    }
     '/mixes/': {
       id: '/mixes/'
       path: '/'
@@ -525,6 +616,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/labels/'
       preLoaderRoute: typeof LabelsIndexRouteImport
       parentRoute: typeof LabelsRouteRoute
+    }
+    '/dispatch/': {
+      id: '/dispatch/'
+      path: '/'
+      fullPath: '/dispatch/'
+      preLoaderRoute: typeof DispatchIndexRouteImport
+      parentRoute: typeof DispatchRouteRoute
     }
     '/admin/': {
       id: '/admin/'
@@ -561,6 +659,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/pings/$slug': {
+      id: '/pings/$slug'
+      path: '/$slug'
+      fullPath: '/pings/$slug'
+      preLoaderRoute: typeof PingsSlugRouteImport
+      parentRoute: typeof PingsRouteRoute
+    }
     '/mixes/$mixId': {
       id: '/mixes/$mixId'
       path: '/$mixId'
@@ -574,6 +679,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/labels/$labelSlug'
       preLoaderRoute: typeof LabelsLabelSlugRouteImport
       parentRoute: typeof LabelsRouteRoute
+    }
+    '/dispatch/$slug': {
+      id: '/dispatch/$slug'
+      path: '/$slug'
+      fullPath: '/dispatch/$slug'
+      preLoaderRoute: typeof DispatchSlugRouteImport
+      parentRoute: typeof DispatchRouteRoute
     }
     '/auth/sign-up': {
       id: '/auth/sign-up'
@@ -606,6 +718,20 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface DispatchRouteRouteChildren {
+  DispatchSlugRoute: typeof DispatchSlugRoute
+  DispatchIndexRoute: typeof DispatchIndexRoute
+}
+
+const DispatchRouteRouteChildren: DispatchRouteRouteChildren = {
+  DispatchSlugRoute: DispatchSlugRoute,
+  DispatchIndexRoute: DispatchIndexRoute,
+}
+
+const DispatchRouteRouteWithChildren = DispatchRouteRoute._addFileChildren(
+  DispatchRouteRouteChildren,
+)
+
 interface LabelsRouteRouteChildren {
   LabelsLabelSlugRoute: typeof LabelsLabelSlugRoute
   LabelsIndexRoute: typeof LabelsIndexRoute
@@ -634,6 +760,20 @@ const MixesRouteRouteWithChildren = MixesRouteRoute._addFileChildren(
   MixesRouteRouteChildren,
 )
 
+interface PingsRouteRouteChildren {
+  PingsSlugRoute: typeof PingsSlugRoute
+  PingsIndexRoute: typeof PingsIndexRoute
+}
+
+const PingsRouteRouteChildren: PingsRouteRouteChildren = {
+  PingsSlugRoute: PingsSlugRoute,
+  PingsIndexRoute: PingsIndexRoute,
+}
+
+const PingsRouteRouteWithChildren = PingsRouteRoute._addFileChildren(
+  PingsRouteRouteChildren,
+)
+
 interface TracksRouteRouteChildren {
   TracksTrackIdRoute: typeof TracksTrackIdRoute
   TracksIndexRoute: typeof TracksIndexRoute
@@ -650,8 +790,10 @@ const TracksRouteRouteWithChildren = TracksRouteRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DispatchRouteRoute: DispatchRouteRouteWithChildren,
   LabelsRouteRoute: LabelsRouteRouteWithChildren,
   MixesRouteRoute: MixesRouteRouteWithChildren,
+  PingsRouteRoute: PingsRouteRouteWithChildren,
   TracksRouteRoute: TracksRouteRouteWithChildren,
   SlugRoute: SlugRoute,
   ChangelogRoute: ChangelogRoute,

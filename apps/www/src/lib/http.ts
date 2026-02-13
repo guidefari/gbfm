@@ -3,8 +3,10 @@ import type {
   SelectLabel,
   SelectMdxCompiledAudio,
   SelectMdxCompiledLabel,
+  SelectMdxCompiledPost,
   SelectMdxCompiledRelease,
   SelectMdxCompiledShow,
+  SelectPost,
   SelectRelease,
   SelectShow,
   SelectShowSubscription
@@ -109,6 +111,54 @@ export function useAudioBySlug(type: 'mix' | 'track' | 'misc', slug: string) {
     queryFn: async () =>
       fetcher(`${VPS_BASE_URL}/content/audio/${type}/${slug}`),
     enabled: Boolean(slug) // Only run query if slug is provided
+  })
+
+  return {
+    data,
+    error,
+    isPending
+  }
+}
+
+export function usePosts(type?: 'post' | 'micro', limit = 20) {
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isPending
+  } = useInfiniteQuery<PaginatedResponse<SelectMdxCompiledPost>, Error>({
+    queryKey: ['posts', type, limit].filter(Boolean),
+    queryFn: async ({ pageParam = 0 }) => {
+      const url = new URL(`${VPS_BASE_URL}/content/posts`)
+      url.searchParams.set('limit', String(limit))
+      url.searchParams.set('offset', String(pageParam))
+      if (type) url.searchParams.set('type', type)
+      return fetcher<PaginatedResponse<SelectMdxCompiledPost>>(url.toString())
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.hasMore
+        ? lastPage.pagination.offset + lastPage.pagination.limit
+        : undefined
+  })
+
+  return {
+    data: data?.pages.flatMap((page) => page.data) ?? [],
+    error,
+    isPending,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
+  }
+}
+
+export function usePostBySlug(slug: string) {
+  const { data, error, isPending } = useQuery<SelectMdxCompiledPost, Error>({
+    queryKey: ['post', slug],
+    queryFn: async () => fetcher(`${VPS_BASE_URL}/content/posts/${slug}`),
+    enabled: Boolean(slug)
   })
 
   return {

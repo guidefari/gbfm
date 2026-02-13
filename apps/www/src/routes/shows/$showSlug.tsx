@@ -4,6 +4,7 @@ import { FavoriteButton } from '@/components/FavoriteButton'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { ShareButton } from '@/components/ShareButton'
 import { EpisodeGrid } from '@/components/shows/EpisodeGrid'
+import { ReadMoreModal } from '@/components/shows/ReadMoreModal'
 import { useShowBySlug } from '@/lib/http'
 import { generateSEOMeta, generateShowSEO } from '@/lib/seo'
 import { useContentStore } from '@/store'
@@ -76,11 +77,11 @@ function ShowPage() {
   const hostNames = data.hosts?.map((h) => h.name).join(', ')
 
   return (
-    <div className='max-w-6xl px-4 py-6 mx-auto'>
-      <div className='grid grid-cols-1 gap-8 lg:grid-cols-3'>
+    <div className='max-w-7xl px-4 py-6 mx-auto'>
+      <div className='grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,2.5fr)]'>
         <div className='lg:col-span-1'>
           <div className='sticky top-6'>
-            <div className='mb-6'>
+            <div className='mb-4'>
               <img
                 className='w-full rounded-sm'
                 src={data.thumbnailUrl || '/fav.png'}
@@ -91,15 +92,21 @@ function ShowPage() {
               />
             </div>
 
-            <div className='space-y-4'>
+            <div className='space-y-3'>
               <h1 className='text-2xl font-bold'>{data.title}</h1>
 
               {hostNames && (
-                <p className='text-muted-foreground'>Hosted by {hostNames}</p>
+                <p className='text-sm text-muted-foreground'>
+                  Hosted by {hostNames}
+                </p>
               )}
 
-              {data.description && (
-                <p className='text-muted-foreground'>{data.description}</p>
+              {(data.description || data.compiledContent) && (
+                <ShowDescription
+                  title={data.title}
+                  description={data.description || ''}
+                  compiledContent={data.compiledContent}
+                />
               )}
 
               <div className='flex gap-2'>
@@ -114,16 +121,49 @@ function ShowPage() {
           </div>
         </div>
 
-        <div className='space-y-8 lg:col-span-2'>
-          {data.compiledContent && (
-            <div className='prose prose-neutral dark:prose-invert max-w-none'>
-              <MDXRendrr mdxString={data.compiledContent} />
-            </div>
-          )}
-
+        <div className='lg:col-span-1'>
           <EpisodeGrid showSlug={showSlug} />
         </div>
       </div>
+    </div>
+  )
+}
+
+function ShowDescription({
+  title,
+  description,
+  compiledContent
+}: {
+  title: string
+  description: string
+  compiledContent?: string
+}) {
+  const hasExpandableContent = description.length > 120 || compiledContent
+
+  return (
+    <div>
+      <div className='text-sm text-muted-foreground line-clamp-4 prose prose-sm prose-neutral dark:prose-invert max-w-none [&_p]:text-muted-foreground [&_p]:text-sm [&_p]:m-0'>
+        {compiledContent ? (
+          <MDXRendrr mdxString={compiledContent} />
+        ) : (
+          <p>{description}</p>
+        )}
+      </div>
+      {hasExpandableContent && (
+        <ReadMoreModal
+          title={title}
+          trigger={
+            <span className='text-sm font-semibold hover:underline underline-offset-4 cursor-pointer'>
+              read more
+            </span>
+          }>
+          {compiledContent ? (
+            <MDXRendrr mdxString={compiledContent} />
+          ) : (
+            <p>{description}</p>
+          )}
+        </ReadMoreModal>
+      )}
     </div>
   )
 }
