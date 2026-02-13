@@ -1,3 +1,17 @@
+# [2.17.0](https://github.com/guidefari/gbfm/compare/v2.16.0...v2.17.0) (2026-02-13)
+
+
+### Bug Fixes
+
+* build ([ba2757a](https://github.com/guidefari/gbfm/commit/ba2757ab31c46269dfb0d41b1f3e612ebcaebfab))
+
+
+### Features
+
+* **vps:** add post by slug endpoint with MDX compilation ([38c8d56](https://github.com/guidefari/gbfm/commit/38c8d56a47c7db725397850fb8a95644c35dc908))
+* **vps:** add post share/redirect handler ([0e4750b](https://github.com/guidefari/gbfm/commit/0e4750b7af88e63db10e8913fda992ed5aaace32))
+* **www:** add dispatch and pings post routes with show page improvements ([46b1e55](https://github.com/guidefari/gbfm/commit/46b1e55336df6616f402ef6f5bcab8ac9db8e312))
+
 # [2.16.0](https://github.com/guidefari/gbfm/compare/v2.15.0...v2.16.0) (2026-02-10)
 
 
