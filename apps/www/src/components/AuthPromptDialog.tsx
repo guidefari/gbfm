@@ -12,22 +12,12 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { signIn, signUp } from '@/lib/auth-client'
 import { useAuthStore } from '@/store/auth'
-
-interface AuthPromptDialogProps {
-  open: boolean
-  onOpenChange: (open: boolean) => void
-  contentType: 'mix' | 'show'
-  onAuthSuccess: () => void
-}
+import { useAuthPromptStore } from '@/store/authPrompt'
 
 type AuthMode = 'choice' | 'sign-in' | 'sign-up'
 
-export function AuthPromptDialog({
-  open,
-  onOpenChange,
-  contentType,
-  onAuthSuccess
-}: AuthPromptDialogProps) {
+export function AuthPromptDialog() {
+  const { isOpen, contentType, onAuthSuccess, close } = useAuthPromptStore()
   const [mode, setMode] = useState<AuthMode>('choice')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -37,8 +27,13 @@ export function AuthPromptDialog({
     if (!isOpen) {
       setMode('choice')
       setError('')
+      close()
     }
-    onOpenChange(isOpen)
+  }
+
+  const handleAuthSuccess = () => {
+    handleClose(false)
+    onAuthSuccess?.()
   }
 
   const handleSignIn = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -58,8 +53,7 @@ export function AuthPromptDialog({
 
       if (result.data) {
         setUser(result.data.user)
-        handleClose(false)
-        onAuthSuccess()
+        handleAuthSuccess()
       } else if (result.error) {
         setError(result.error.message || 'Failed to sign in')
       }
@@ -91,8 +85,7 @@ export function AuthPromptDialog({
 
       if (result.data) {
         setUser(result.data.user)
-        handleClose(false)
-        onAuthSuccess()
+        handleAuthSuccess()
       } else if (result.error) {
         setError(result.error.message || 'Failed to sign up')
       }
@@ -104,7 +97,7 @@ export function AuthPromptDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
+    <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className='sm:max-w-md'>
         <DialogHeader>
           <div className='flex items-center justify-center w-12 h-12 mx-auto mb-2 rounded-full bg-primary/10'>

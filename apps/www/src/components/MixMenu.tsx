@@ -1,5 +1,5 @@
-import type { SelectAudio } from '@gbfm/vps/schemas'
 import { useFeatureFlag } from '@gbfm/core/feature-flags'
+import type { SelectAudio } from '@gbfm/vps/schemas'
 import { Heart, HeartOff, MoreVertical, Play, Plus, Share2 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { toast } from '@/components/ui/use-toast'
+import { useAuthGuard } from '@/hooks/useAuthGuard'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { useAddFavorite, useFavorites, useRemoveFavorite } from '@/lib/http'
 import { getShareUrl } from '@/lib/share'
@@ -22,6 +23,7 @@ export function MixMenu({ mix }: MixMenuProps) {
   const isShareEnabled = useFeatureFlag('ui.share')
   const isQueueEnabled = useFeatureFlag('ui.queue')
   const { addToQueue, loadTrack } = useAudioPlayerActions()
+  const { requireAuth } = useAuthGuard('mix')
   const { data: favorites } = useFavorites()
   const { addFavorite } = useAddFavorite()
   const { removeFavorite } = useRemoveFavorite()
@@ -62,7 +64,7 @@ export function MixMenu({ mix }: MixMenuProps) {
     addToQueue(mix)
   }
 
-  const handleToggleFavorite = async () => {
+  const performFavoriteAction = async () => {
     try {
       if (isFavorited) {
         await removeFavorite({ audioId: mix.id })
@@ -84,6 +86,10 @@ export function MixMenu({ mix }: MixMenuProps) {
         variant: 'destructive'
       })
     }
+  }
+
+  const handleToggleFavorite = () => {
+    requireAuth(() => performFavoriteAction())
   }
 
   return (

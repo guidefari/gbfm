@@ -1,8 +1,7 @@
 import { Heart, Loader2 } from 'lucide-react'
-import { useState } from 'react'
-import { AuthPromptDialog } from '@/components/AuthPromptDialog'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/use-toast'
+import { useAuthGuard } from '@/hooks/useAuthGuard'
 import {
   useAddFavorite,
   useAddShowFavorite,
@@ -11,7 +10,6 @@ import {
   useRemoveShowFavorite
 } from '@/lib/http'
 import { cn } from '@/lib/utils'
-import { useAuthStore } from '@/store/auth'
 
 interface FavoriteButtonProps {
   contentType: 'mix' | 'show'
@@ -30,8 +28,7 @@ export function FavoriteButton({
   size = 'sm',
   className
 }: FavoriteButtonProps) {
-  const { isAuthenticated } = useAuthStore()
-  const [showAuthDialog, setShowAuthDialog] = useState(false)
+  const { requireAuth } = useAuthGuard(contentType)
 
   const { data: favorites } = useFavorites()
   const { addFavorite, isPending: isAddingFavorite } = useAddFavorite()
@@ -101,45 +98,25 @@ export function FavoriteButton({
     }
   }
 
-  const handleClick = async () => {
-    if (!isAuthenticated) {
-      setShowAuthDialog(true)
-      return
-    }
-
-    await performFavoriteAction()
-  }
-
-  const handleAuthSuccess = () => {
-    performFavoriteAction()
+  const handleClick = () => {
+    requireAuth(() => performFavoriteAction())
   }
 
   return (
-    <>
-      <Button
-        onClick={handleClick}
-        disabled={isLoading}
-        variant={variant}
-        size={size}
-        className={cn(className)}
-        title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}>
-        {isLoading ? (
-          <Loader2 className='w-4 h-4 animate-spin' />
-        ) : (
-          <Heart
-            className={cn(
-              'w-4 h-4',
-              isFavorited && 'fill-red-500 text-red-500'
-            )}
-          />
-        )}
-      </Button>
-      <AuthPromptDialog
-        open={showAuthDialog}
-        onOpenChange={setShowAuthDialog}
-        contentType={contentType}
-        onAuthSuccess={handleAuthSuccess}
-      />
-    </>
+    <Button
+      onClick={handleClick}
+      disabled={isLoading}
+      variant={variant}
+      size={size}
+      className={cn(className)}
+      title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}>
+      {isLoading ? (
+        <Loader2 className='w-4 h-4 animate-spin' />
+      ) : (
+        <Heart
+          className={cn('w-4 h-4', isFavorited && 'fill-red-500 text-red-500')}
+        />
+      )}
+    </Button>
   )
 }

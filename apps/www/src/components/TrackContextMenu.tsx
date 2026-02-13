@@ -1,5 +1,5 @@
-import type { SelectAudio } from '@gbfm/vps/schemas'
 import { useFeatureFlag } from '@gbfm/core/feature-flags'
+import type { SelectAudio } from '@gbfm/vps/schemas'
 import { Heart, HeartOff, Play, Plus, Share2 } from 'lucide-react'
 import type React from 'react'
 import {
@@ -10,6 +10,7 @@ import {
   ContextMenuTrigger
 } from '@/components/ui/context-menu'
 import { toast } from '@/components/ui/use-toast'
+import { useAuthGuard } from '@/hooks/useAuthGuard'
 import { useAddFavorite, useFavorites, useRemoveFavorite } from '@/lib/http'
 import { getShareUrl } from '@/lib/share'
 import { useAudioPlayerActions } from '@/store/audioPlayer'
@@ -28,6 +29,7 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
   const isShareEnabled = useFeatureFlag('ui.share')
   const isQueueEnabled = useFeatureFlag('ui.queue')
   const { addToQueue, loadTrack } = useAudioPlayerActions()
+  const { requireAuth } = useAuthGuard('mix')
   const { data: favorites } = useFavorites()
   const { addFavorite } = useAddFavorite()
   const { removeFavorite } = useRemoveFavorite()
@@ -49,7 +51,7 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
     )
   }
 
-  const handleToggleFavorite = async () => {
+  const performFavoriteAction = async () => {
     try {
       if (isFavorited) {
         await removeFavorite({ audioId: track.id })
@@ -71,6 +73,10 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
         variant: 'destructive'
       })
     }
+  }
+
+  const handleToggleFavorite = () => {
+    requireAuth(() => performFavoriteAction())
   }
 
   const handleShare = async () => {

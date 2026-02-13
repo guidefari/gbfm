@@ -6,9 +6,9 @@ import {
   Outlet
 } from '@tanstack/react-router'
 import { Suspense } from 'react'
+import { AuthPromptDialog } from '@/components/AuthPromptDialog'
 import { CommandDialogDemo } from '@/components/cmd'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
-import { PostEngagementSignUp } from '@/components/home/PostEngagementSignUp'
 import AppShell from '@/components/Layout/AppShell'
 import { WelcomeModal } from '@/components/onboarding/WelcomeModal'
 import { ThemeProvider } from '@/components/ThemeProvider'
@@ -57,7 +57,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
               )}
               <CommandDialogDemo />
               <WelcomeModal />
-              <PostEngagementSignUp />
+              <AuthPromptDialog />
               <Outlet />
             </AppShell>
           </QueryClientProvider>
