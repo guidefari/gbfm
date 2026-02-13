@@ -1,3 +1,18 @@
+# [2.19.0](https://github.com/guidefari/gbfm/compare/v2.18.0...v2.19.0) (2026-02-13)
+
+
+### Bug Fixes
+
+* run precommit ([48cd614](https://github.com/guidefari/gbfm/commit/48cd614ff493778051d47a4bc2f5ec0d065f3cbe))
+* **www:** extract MixListItem component and fix mobile overflow ([227e3f4](https://github.com/guidefari/gbfm/commit/227e3f479f5dc3dacffd0ef12021b2960692bc6d))
+
+
+### Features
+
+* analytics wrapper ([0fe55b8](https://github.com/guidefari/gbfm/commit/0fe55b88ed36ca49dd89402d28fe7ae949c622d7))
+* local feature flag ([8b91a16](https://github.com/guidefari/gbfm/commit/8b91a16973921f3bf7574136c5bd38c33e2d33c8))
+* **www:** use effect (👀) ([fdef587](https://github.com/guidefari/gbfm/commit/fdef58783bc8e02777a3795a8807326132c001c4))
+
 # [2.18.0](https://github.com/guidefari/gbfm/compare/v2.17.0...v2.18.0) (2026-02-13)
 
 
