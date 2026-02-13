@@ -1,6 +1,5 @@
 'use client'
 import { CheckIcon } from '@radix-ui/react-icons'
-// import * as Sentry from "@sentry/nextjs";
 import { useState } from 'react'
 import { FaSquareRss } from 'react-icons/fa6'
 import {
@@ -27,7 +26,6 @@ export const RSS = () => {
       navigator.clipboard.writeText(RSSurl)
       toggleIsCopiedForThreeSeconds()
     } catch (error) {
-      // Sentry.captureException(error);
       console.error('Failed to copy to clipboard', error)
     }
   }

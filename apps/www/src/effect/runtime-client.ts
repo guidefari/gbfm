@@ -1,9 +1,9 @@
 import { Layer, ManagedRuntime } from 'effect'
-import { env } from '@/env'
 import {
   makePostHogAnalyticsLayer,
   NoopAnalyticsLayer
 } from '@/effect/services/analytics'
+import { env } from '@/env'
 
 const analyticsLayer =
   env.posthogKey && env.posthogHost

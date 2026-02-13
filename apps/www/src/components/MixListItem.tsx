@@ -1,6 +1,6 @@
+import type { SelectAudio } from '@gbfm/vps/schemas'
 import { Link } from '@tanstack/react-router'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
-import type { SelectAudio } from '@gbfm/vps/schemas'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'

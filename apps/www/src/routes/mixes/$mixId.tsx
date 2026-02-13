@@ -12,18 +12,18 @@ import {
   Share2,
   Tag
 } from 'lucide-react'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
 import * as React from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
 import { FavoriteButton } from '@/components/FavoriteButton'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 import { useToast } from '@/components/ui/use-toast'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { fetcher, useMixQRPdf, useShowById, VPS_BASE_URL } from '@/lib/http'
