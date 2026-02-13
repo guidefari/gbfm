@@ -327,6 +327,16 @@
     }
   }
 
+  @keyframes title-marquee {
+    0% {
+      transform: translateX(0);
+    }
+
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
   /* for markdown editor seen in previous codebase */
   /* .overrides {
         --font-body: 'JetBrainsMono', monospace !important;
@@ -362,6 +372,33 @@
 
   .bg-gb-pastel-green-2 {
     background-color: var(--pastel-green-2);
+  }
+
+  .title-marquee {
+    animation: title-marquee 12s linear infinite;
+    will-change: transform;
+  }
+
+  .title-marquee--slow {
+    animation: title-marquee-slow 18s linear infinite;
+  }
+
+  @keyframes title-marquee-slow {
+    0%,
+    22% {
+      transform: translateX(0);
+    }
+
+    78%,
+    100% {
+      transform: translateX(-50%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .title-marquee {
+      animation: none;
+    }
   }
 
   .text-gb-highlight {

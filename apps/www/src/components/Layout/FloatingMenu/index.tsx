@@ -1,11 +1,11 @@
 import { Link } from '@tanstack/react-router'
 import {
-  Building2,
   Disc3,
   Home,
   LogIn,
   Menu,
   Moon,
+  Radio,
   Sun,
   User,
   X
@@ -32,7 +32,7 @@ type FloatingMenuProps = {
 export function FloatingMenu({ className }: FloatingMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const { resolvedTheme, setTheme } = useTheme()
-  const { audioSrc } = useAudioPlayerState()
+  const { audioSrc, isFullscreenVisible } = useAudioPlayerState()
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
   const hasActiveAudio = Boolean(audioSrc)
@@ -79,9 +79,9 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
       action: closeMenu
     },
     {
-      id: 'labels',
-      icon: <Building2 className='w-6 h-6' />,
-      label: 'Labels',
+      id: 'shows',
+      icon: <Radio className='w-6 h-6' />,
+      label: 'Shows',
       action: closeMenu
     },
     isAuthenticated
@@ -119,8 +119,8 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
         return '/'
       case 'mixes':
         return '/mixes'
-      case 'labels':
-        return '/labels'
+      case 'shows':
+        return '/shows'
       case 'profile':
         return '/settings/profile'
       case 'login':
@@ -222,25 +222,27 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
         )}
       </AnimatePresence>
 
-      <motion.button
-        onClick={toggleMenu}
-        className={cn(
-          'relative z-50 flex items-center justify-center rounded-sm shadow-lg',
-          'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
-          'active:scale-95 transition-transform',
-          isOpen
-            ? 'bg-destructive text-destructive-foreground'
-            : 'bg-primary text-primary-foreground'
-        )}
-        style={{ width: 56, height: 56 }}
-        aria-expanded={isOpen}
-        aria-label={isOpen ? 'Close menu' : 'Open menu'}>
-        <motion.div
-          animate={{ rotate: isOpen ? 135 : 0 }}
-          transition={{ duration: 0.2 }}>
-          {isOpen ? <X className='w-6 h-6' /> : <Menu className='w-6 h-6' />}
-        </motion.div>
-      </motion.button>
+      {!isFullscreenVisible && (
+        <motion.button
+          onClick={toggleMenu}
+          className={cn(
+            'relative z-50 flex items-center justify-center rounded-sm shadow-lg',
+            'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+            'active:scale-95 transition-transform',
+            isOpen
+              ? 'bg-destructive text-destructive-foreground'
+              : 'bg-primary text-primary-foreground'
+          )}
+          style={{ width: 56, height: 56 }}
+          aria-expanded={isOpen}
+          aria-label={isOpen ? 'Close menu' : 'Open menu'}>
+          <motion.div
+            animate={{ rotate: isOpen ? 135 : 0 }}
+            transition={{ duration: 0.2 }}>
+            {isOpen ? <X className='w-6 h-6' /> : <Menu className='w-6 h-6' />}
+          </motion.div>
+        </motion.button>
+      )}
     </div>
   )
 }

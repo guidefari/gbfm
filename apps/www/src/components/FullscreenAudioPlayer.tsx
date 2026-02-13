@@ -1,8 +1,8 @@
 'use client'
+import { Link } from '@tanstack/react-router'
 import {
   ChevronDown,
   List,
-  MoreHorizontal,
   Pause,
   Play,
   SkipBack,
@@ -17,7 +17,43 @@ import { Button } from '@/components/ui/button'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { formatSeconds } from '@/lib/utils'
 import { attachVolumeScroll } from '@/lib/volumeScrollHandler'
-import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
+import {
+  type Creator,
+  useAudioPlayerActions,
+  useAudioPlayerState
+} from '@/store/audioPlayer'
+
+type Props = {
+  creators: Creator[]
+  onClick?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void
+}
+
+function CreatorLinks({ creators, onClick }: Props) {
+  if (!creators || creators.length === 0) {
+    return <span>Unknown creator</span>
+  }
+
+  return (
+    <>
+      {creators.map((creator, index) => (
+        <span key={creator.id}>
+          {creator.username ? (
+            <Link
+              to='/profile/$username'
+              params={{ username: creator.username }}
+              className='hover:text-foreground hover:underline'
+              onClick={onClick}>
+              {creator.name}
+            </Link>
+          ) : (
+            <span>{creator.name}</span>
+          )}
+          {index < creators.length - 1 && ', '}
+        </span>
+      ))}
+    </>
+  )
+}
 
 const FullscreenAudioPlayer = () => {
   const {
@@ -82,7 +118,7 @@ const FullscreenAudioPlayer = () => {
     ? {
         title: nowPlayingContext.title,
         thumbnailUrl: thumbnailUrl,
-        artist: 'Mix' // Default since we don't have artist field
+        creators: nowPlayingContext.creators
       }
     : null
 
@@ -90,11 +126,10 @@ const FullscreenAudioPlayer = () => {
 
   return (
     <div
-      className={`fixed inset-0 z-50 bg-gradient-to-br from-background via-card to-secondary text-foreground transition-transform duration-500 ease-out flex flex-col ${
+      className={`fixed inset-0 z-50 bg-background text-foreground transition-transform duration-500 ease-out flex flex-col ${
         isFullscreenVisible ? 'translate-y-0' : 'translate-y-full'
       }`}>
-      {/* Header */}
-      <div className='flex items-center justify-between flex-shrink-0 p-6'>
+      <div className='flex items-center justify-between flex-shrink-0 px-4 py-3 sm:p-6'>
         <Button
           variant='ghost'
           size='sm'
@@ -102,35 +137,30 @@ const FullscreenAudioPlayer = () => {
           className='text-muted-foreground hover:text-foreground hover:bg-muted'>
           <ChevronDown className='w-6 h-6' />
         </Button>
-        <Button
-          variant='ghost'
-          size='sm'
-          className='text-muted-foreground hover:text-foreground hover:bg-muted'>
-          <MoreHorizontal className='w-6 h-6' />
-        </Button>
       </div>
 
-      <div className='flex items-center justify-center flex-1 min-h-0 px-8 pb-8'>
-        {/* Left Panel - Now Playing */}
-        <div className='flex flex-col max-w-2xl'>
-          {/* Album Artwork */}
-          <div className='relative mb-8'>
-            <div className='w-full max-w-md mx-auto overflow-hidden shadow-2xl bg-gradient-to-br rounded-sm aspect-square from-primary/20 to-accent'>
-              <img
-                src={currentTrack.thumbnailUrl || DEFAULT_IMAGE_URL}
-                alt={currentTrack.title}
-                className='object-cover w-full h-full'
-              />
-            </div>
+      <div className='flex flex-col items-center flex-1 min-h-0 px-4 pb-6 overflow-hidden sm:justify-center sm:px-8 sm:pb-8'>
+        <div className='flex flex-col w-full max-w-2xl min-h-0 flex-1'>
+          <div className='flex items-center justify-center mb-4 sm:mb-8 flex-1 min-h-0'>
+            <img
+              src={currentTrack.thumbnailUrl || DEFAULT_IMAGE_URL}
+              alt={currentTrack.title}
+              className='max-w-full max-h-full object-contain rounded-sm shadow-2xl'
+            />
           </div>
 
-          {/* Track Info */}
-          <div className='mb-8'>
+          <div className='mb-4 sm:mb-8 flex-shrink-0'>
             <div className='flex items-center justify-between mb-2'>
-              <h1 className='pr-4 text-2xl font-semibold leading-tight'>
-                {currentTrack.title}
-              </h1>
-              <div className='flex items-center flex-shrink-0 gap-2'>
+              <div className='relative flex-1 min-w-0 pr-4 overflow-hidden'>
+                <div className='title-marquee title-marquee--slow flex min-w-max text-xl sm:text-2xl font-semibold leading-tight text-foreground'>
+                  <span className='shrink-0 pr-12'>{currentTrack.title}</span>
+                  <span aria-hidden='true' className='shrink-0 pr-12'>
+                    {currentTrack.title}
+                  </span>
+                </div>
+                <h1 className='sr-only'>{currentTrack.title}</h1>
+              </div>
+              <div className='flex items-center flex-shrink-0 gap-1 sm:gap-2'>
                 <Button
                   variant='ghost'
                   size='icon'
@@ -150,21 +180,17 @@ const FullscreenAudioPlayer = () => {
                     </span>
                   )}
                 </Button>
-                <Button
-                  variant='ghost'
-                  size='icon'
-                  className='text-muted-foreground hover:text-foreground hover:bg-muted'>
-                  <MoreHorizontal className='w-5 h-5' />
-                </Button>
               </div>
             </div>
-            <p className='text-lg text-muted-foreground'>
-              {currentTrack.artist}
-            </p>
+            {currentTrack?.creators && (
+              <CreatorLinks
+                creators={currentTrack.creators}
+                onClick={toggleFullscreen}
+              />
+            )}
           </div>
 
-          {/* Progress Bar */}
-          <div className='mb-8'>
+          <div className='mb-4 sm:mb-8 flex-shrink-0'>
             <input
               type='range'
               value={progress}
@@ -179,8 +205,7 @@ const FullscreenAudioPlayer = () => {
             </div>
           </div>
 
-          {/* Controls */}
-          <div className='flex items-center justify-center gap-6 mb-8'>
+          <div className='flex items-center justify-center gap-6 mb-4 sm:mb-8 flex-shrink-0'>
             <Button
               variant='ghost'
               size='icon'
@@ -210,8 +235,7 @@ const FullscreenAudioPlayer = () => {
             </Button>
           </div>
 
-          {/* Volume Control */}
-          <div className='flex items-center gap-4'>
+          <div className='hidden sm:flex items-center gap-4'>
             <Button
               ref={volumeButtonRef}
               variant='ghost'
