@@ -19,6 +19,7 @@ import type {
   GetAudioBySlugRoute,
   GetAudioByTypeRoute,
   GetMixQRPdfRoute,
+  GetPostBySlugRoute,
   GetPostsByTagRoute,
   GetPostsRoute,
   ProcessMixUploadRoute,
@@ -56,6 +57,36 @@ export const getPosts: AppRouteHandler<GetPostsRoute> = async (c) => {
     const postService = yield* PostService
     return yield* postService.getAll({ limit, offset, type })
   }).pipe(
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    )
+  )
+
+  const result = await AppRuntime.runPromise(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
+  }
+
+  return c.json(result, HttpStatusCodes.OK)
+}
+
+export const getPostBySlug: AppRouteHandler<GetPostBySlugRoute> = async (c) => {
+  const { slug } = c.req.valid('param')
+
+  const program = Effect.gen(function* () {
+    const postService = yield* PostService
+    return yield* postService.getBySlug(slug)
+  }).pipe(
+    Effect.catchTag('NotFoundError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
     Effect.catchTag('DatabaseError', (e) =>
       Effect.succeed({
         error: e.message,

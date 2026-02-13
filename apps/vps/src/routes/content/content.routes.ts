@@ -8,7 +8,11 @@ import {
   selectMdxCompiledAudioSchema,
   updateAudioSchema
 } from '@/db/audio.schema'
-import { createPostSchema, selectPostSchema } from '@/db/post.schema'
+import {
+  createPostSchema,
+  selectMdxCompiledPostSchema,
+  selectPostSchema
+} from '@/db/post.schema'
 import {
   createPaginatedResponseSchema,
   paginationQuerySchema
@@ -46,12 +50,37 @@ export const getPosts = createRoute({
   tags,
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
-      createPaginatedResponseSchema(postResponseSchema),
+      createPaginatedResponseSchema(selectMdxCompiledPostSchema),
       'Paginated list of posts'
     ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to fetch posts'
+    )
+  }
+})
+
+export const getPostBySlug = createRoute({
+  path: '/posts/{slug}',
+  method: 'get',
+  request: {
+    params: z.object({
+      slug: z.string().openapi({ description: 'Post slug' })
+    })
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      selectMdxCompiledPostSchema,
+      'Single post'
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      z.object({ error: z.string() }),
+      'Post not found'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to fetch post'
     )
   }
 })
@@ -363,6 +392,7 @@ export const getMixQRPdf = createRoute({
 
 // Export types
 export type GetPostsRoute = typeof getPosts
+export type GetPostBySlugRoute = typeof getPostBySlug
 export type CreatePostRoute = typeof createPost
 export type GetPostsByTagRoute = typeof getPostsByTag
 export type SeedMixesRoute = typeof seedMixes

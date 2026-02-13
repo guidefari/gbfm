@@ -1,15 +1,23 @@
 import { arrayContains, count, desc, eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
+import { user as usersTable } from '@/db/auth.schema'
 import {
   type InsertPost,
   type PostType,
   postCreators,
   postsTable,
+  type SelectMdxCompiledPost,
   type SelectPost
 } from '@/db/post.schema'
 import { timeQuery } from '@/db/query-timer'
-import { ConflictError, DatabaseError, getErrorMessage } from '@/errors'
+import {
+  ConflictError,
+  DatabaseError,
+  getErrorMessage,
+  NotFoundError
+} from '@/errors'
+import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
 import {
   createPaginationMetadata,
   type PaginationMetadata
@@ -21,9 +29,12 @@ export interface PostService {
     offset: number
     type?: PostType
   }) => Effect.Effect<
-    { data: SelectPost[]; pagination: PaginationMetadata },
+    { data: SelectMdxCompiledPost[]; pagination: PaginationMetadata },
     DatabaseError
   >
+  readonly getBySlug: (
+    slug: string
+  ) => Effect.Effect<SelectMdxCompiledPost, DatabaseError | NotFoundError>
   readonly getByTag: (
     tag: string,
     options: { limit: number; offset: number }
@@ -99,8 +110,27 @@ const getAllEffect = (options: {
       offset
     })
 
-    return {
+    const compiledData: SelectMdxCompiledPost[] = yield* Effect.forEach(
       data,
+      (post) =>
+        Effect.gen(function* () {
+          let compiledContent = ''
+          if (post.content) {
+            const mdxResult = yield* Effect.tryPromise({
+              try: () => compileMDX(post.content),
+              catch: () => ({ error: 'compile failed' })
+            })
+            if (isMDXCompilationResult(mdxResult)) {
+              compiledContent = mdxResult.compiled
+            }
+          }
+          return { ...post, compiledContent }
+        }),
+      { concurrency: 5 }
+    )
+
+    return {
+      data: compiledData,
       pagination: createPaginationMetadata(total, limit, offset)
     }
   })
@@ -172,6 +202,84 @@ const getByTagEffect = (
     }
   })
 
+const getBySlugEffect = (slug: string) =>
+  Effect.gen(function* () {
+    const postRecords = yield* Effect.tryPromise({
+      try: () =>
+        db.select().from(postsTable).where(eq(postsTable.slug, slug)).limit(1),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch post: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'posts'
+        })
+    })
+
+    const post = postRecords[0]
+    if (!post) {
+      return yield* new NotFoundError({
+        message: 'Post not found',
+        resource: 'post',
+        id: slug
+      })
+    }
+
+    const creators = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select({
+            id: usersTable.id,
+            name: usersTable.name
+          })
+          .from(postCreators)
+          .innerJoin(usersTable, eq(postCreators.creatorId, usersTable.id))
+          .where(eq(postCreators.postId, post.id)),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch creators: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'post_creators'
+        })
+    })
+
+    let processedPost: SelectMdxCompiledPost = {
+      ...post,
+      compiledContent: '',
+      creators: creators.map((creator) => ({
+        id: creator.id,
+        name: creator.name
+      }))
+    }
+
+    if (post.content) {
+      const mdxResult = yield* Effect.tryPromise({
+        try: () => compileMDX(post.content),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to compile MDX: ${getErrorMessage(error)}`,
+            operation: 'mdx_compile',
+            table: 'posts'
+          })
+      })
+
+      if (isMDXCompilationResult(mdxResult)) {
+        processedPost = {
+          ...processedPost,
+          compiledContent: mdxResult.compiled
+        }
+      }
+    }
+
+    yield* Effect.annotateCurrentSpan('slug', slug)
+
+    yield* Effect.logInfo('[Content] Post retrieved by slug', {
+      slug,
+      postId: post.id
+    })
+
+    return processedPost
+  }).pipe(Effect.withSpan('post.getBySlug'))
+
 const createEffect = (data: InsertPost, creatorIds: string[]) =>
   Effect.gen(function* () {
     const result = yield* Effect.tryPromise({
@@ -233,6 +341,7 @@ const createEffect = (data: InsertPost, creatorIds: string[]) =>
 
 export const PostServiceLive = Layer.succeed(PostService, {
   getAll: getAllEffect,
+  getBySlug: getBySlugEffect,
   getByTag: getByTagEffect,
   create: createEffect
 })
