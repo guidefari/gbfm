@@ -13,6 +13,7 @@ import {
   Pause,
   Play,
   Radio,
+  Rocket,
   RotateCcw,
   Settings,
   Shield,
@@ -43,6 +44,7 @@ export const createCommandData = (
     resetUIState: () => void
     resetAudioPlayer: () => void
     resetAll: () => void
+    runEffectExample: () => void
   },
   _closeCmd: () => void,
   isAuthenticated: boolean,
@@ -418,6 +420,12 @@ export const createCommandData = (
       type: 'section',
       requiresAuth: false,
       items: [
+        {
+          id: 'effect-example',
+          label: 'Effect Example Button',
+          icon: Rocket,
+          onSelect: devActions.runEffectExample
+        },
         {
           id: 'reset-ui',
           label: 'Reset UI State',
