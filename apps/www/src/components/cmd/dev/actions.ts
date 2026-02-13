@@ -1,7 +1,7 @@
 import { Effect } from 'effect'
 import * as React from 'react'
-import { RuntimeClient } from '@/effect/runtime-client'
-import { track } from '@/effect/services/analytics'
+import { RuntimeClient } from '@/runtime'
+import { track } from '@/services/analytics'
 import { useUIStore } from '@/store/ui'
 
 export const useDevActions = (closeCmd: () => void) => {
