@@ -6,7 +6,6 @@ import type {
   SelectMdxCompiledPost,
   SelectMdxCompiledRelease,
   SelectMdxCompiledShow,
-  SelectPost,
   SelectRelease,
   SelectShow,
   SelectShowSubscription

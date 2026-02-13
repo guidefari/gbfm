@@ -60,6 +60,7 @@ function PingsListPage() {
       <div className='max-w-2xl mx-auto px-4 py-8'>
         <div className='animate-pulse space-y-6'>
           {Array.from({ length: 3 }).map((_, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: static array.
             <div key={i} className='space-y-2 pb-6 border-b border-border/20'>
               <div className='h-4 w-24 bg-muted/50 rounded' />
               <div className='h-3 w-full bg-muted/50 rounded' />

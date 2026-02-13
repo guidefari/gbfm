@@ -118,7 +118,12 @@ const getAllEffect = (options: {
           if (post.content) {
             const mdxResult = yield* Effect.tryPromise({
               try: () => compileMDX(post.content),
-              catch: () => ({ error: 'compile failed' })
+              catch: (error) =>
+                new DatabaseError({
+                  message: `Failed to compile MDX: ${getErrorMessage(error)}`,
+                  operation: 'mdx_compile',
+                  table: 'posts'
+                })
             })
             if (isMDXCompilationResult(mdxResult)) {
               compiledContent = mdxResult.compiled
@@ -202,83 +207,82 @@ const getByTagEffect = (
     }
   })
 
-const getBySlugEffect = (slug: string) =>
-  Effect.gen(function* () {
-    const postRecords = yield* Effect.tryPromise({
-      try: () =>
-        db.select().from(postsTable).where(eq(postsTable.slug, slug)).limit(1),
+const getBySlugEffect = Effect.fn('post.getBySlug')(function* (slug: string) {
+  const postRecords = yield* Effect.tryPromise({
+    try: () =>
+      db.select().from(postsTable).where(eq(postsTable.slug, slug)).limit(1),
+    catch: (error) =>
+      new DatabaseError({
+        message: `Failed to fetch post: ${getErrorMessage(error)}`,
+        operation: 'select',
+        table: 'posts'
+      })
+  })
+
+  const post = postRecords[0]
+  if (!post) {
+    return yield* new NotFoundError({
+      message: 'Post not found',
+      resource: 'post',
+      id: slug
+    })
+  }
+
+  const creators = yield* Effect.tryPromise({
+    try: () =>
+      db
+        .select({
+          id: usersTable.id,
+          name: usersTable.name
+        })
+        .from(postCreators)
+        .innerJoin(usersTable, eq(postCreators.creatorId, usersTable.id))
+        .where(eq(postCreators.postId, post.id)),
+    catch: (error) =>
+      new DatabaseError({
+        message: `Failed to fetch creators: ${getErrorMessage(error)}`,
+        operation: 'select',
+        table: 'post_creators'
+      })
+  })
+
+  let processedPost: SelectMdxCompiledPost = {
+    ...post,
+    compiledContent: '',
+    creators: creators.map((creator) => ({
+      id: creator.id,
+      name: creator.name
+    }))
+  }
+
+  if (post.content) {
+    const mdxResult = yield* Effect.tryPromise({
+      try: () => compileMDX(post.content),
       catch: (error) =>
         new DatabaseError({
-          message: `Failed to fetch post: ${getErrorMessage(error)}`,
-          operation: 'select',
+          message: `Failed to compile MDX: ${getErrorMessage(error)}`,
+          operation: 'mdx_compile',
           table: 'posts'
         })
     })
 
-    const post = postRecords[0]
-    if (!post) {
-      return yield* new NotFoundError({
-        message: 'Post not found',
-        resource: 'post',
-        id: slug
-      })
-    }
-
-    const creators = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select({
-            id: usersTable.id,
-            name: usersTable.name
-          })
-          .from(postCreators)
-          .innerJoin(usersTable, eq(postCreators.creatorId, usersTable.id))
-          .where(eq(postCreators.postId, post.id)),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to fetch creators: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'post_creators'
-        })
-    })
-
-    let processedPost: SelectMdxCompiledPost = {
-      ...post,
-      compiledContent: '',
-      creators: creators.map((creator) => ({
-        id: creator.id,
-        name: creator.name
-      }))
-    }
-
-    if (post.content) {
-      const mdxResult = yield* Effect.tryPromise({
-        try: () => compileMDX(post.content),
-        catch: (error) =>
-          new DatabaseError({
-            message: `Failed to compile MDX: ${getErrorMessage(error)}`,
-            operation: 'mdx_compile',
-            table: 'posts'
-          })
-      })
-
-      if (isMDXCompilationResult(mdxResult)) {
-        processedPost = {
-          ...processedPost,
-          compiledContent: mdxResult.compiled
-        }
+    if (isMDXCompilationResult(mdxResult)) {
+      processedPost = {
+        ...processedPost,
+        compiledContent: mdxResult.compiled
       }
     }
+  }
 
-    yield* Effect.annotateCurrentSpan('slug', slug)
+  yield* Effect.annotateCurrentSpan('slug', slug)
 
-    yield* Effect.logInfo('[Content] Post retrieved by slug', {
-      slug,
-      postId: post.id
-    })
+  yield* Effect.logInfo('[Content] Post retrieved by slug', {
+    slug,
+    postId: post.id
+  })
 
-    return processedPost
-  }).pipe(Effect.withSpan('post.getBySlug'))
+  return processedPost
+})
 
 const createEffect = (data: InsertPost, creatorIds: string[]) =>
   Effect.gen(function* () {

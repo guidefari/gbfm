@@ -1,6 +1,8 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ProfileContentGrid } from '@/components/profile/ProfileContentGrid'
-import { ProfileHeader } from '@/components/profile/ProfileHeader'
+import {
+  PublicProfilePage,
+  PublicProfilePageSkeleton
+} from '@/components/profile/PublicProfilePage'
 import { ShowLandingPage } from '@/components/shows/ShowLandingPage'
 import { type ResolveResult, useResolveSlug, VPS_BASE_URL } from '@/lib/http'
 import {
@@ -73,35 +75,6 @@ function NotFound({ slug }: { slug: string }) {
   )
 }
 
-function ProfileView({
-  profile
-}: {
-  profile: NonNullable<Extract<ResolveResult, { type: 'profile' }>>['data']
-}) {
-  return (
-    <div className='max-w-6xl px-4 py-6 mx-auto'>
-      <ProfileHeader profile={profile} />
-      <div className='mt-8'>
-        <ProfileContentGrid content={profile.content} />
-      </div>
-    </div>
-  )
-}
-
-function LoadingSkeleton() {
-  return (
-    <div className='max-w-6xl px-4 py-6 mx-auto'>
-      <div className='flex flex-col items-center gap-4 sm:flex-row sm:items-start'>
-        <div className='w-24 h-24 rounded-full animate-pulse bg-muted' />
-        <div className='space-y-2'>
-          <div className='w-32 h-6 rounded animate-pulse bg-muted' />
-          <div className='w-24 h-4 rounded animate-pulse bg-muted' />
-        </div>
-      </div>
-    </div>
-  )
-}
-
 function SlugPage() {
   const { slug } = Route.useParams()
   const { resolved: loaderResolved } = Route.useLoaderData()
@@ -110,7 +83,7 @@ function SlugPage() {
   const resolved = data ?? loaderResolved
 
   if (isPending && !resolved) {
-    return <LoadingSkeleton />
+    return <PublicProfilePageSkeleton />
   }
 
   if (!resolved || error) {
@@ -118,7 +91,7 @@ function SlugPage() {
   }
 
   if (resolved.type === 'profile') {
-    return <ProfileView profile={resolved.data} />
+    return <PublicProfilePage profile={resolved.data} />
   }
 
   return <ShowLandingPage show={resolved.data} />

@@ -60,6 +60,7 @@ function DispatchListPage() {
       <div className='max-w-3xl mx-auto px-4 py-8'>
         <div className='animate-pulse space-y-4'>
           {Array.from({ length: 5 }).map((_, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: static array.
             <div key={i} className='h-24 bg-muted/50 rounded-sm' />
           ))}
         </div>
