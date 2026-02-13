@@ -8,7 +8,7 @@ import {
   Play,
   SkipBack,
   SkipForward,
-  Star,
+  Heart,
   Volume2,
   VolumeX
 } from 'lucide-react'
@@ -169,7 +169,7 @@ const FullscreenAudioPlayer = () => {
                       variant='ghost'
                       size='icon'
                       className='text-muted-foreground hover:text-foreground hover:bg-muted'>
-                      <Star className='w-5 h-5' />
+                      <Heart className='w-5 h-5' />
                     </Button>
                     {isQueueEnabled && (
                       <Button

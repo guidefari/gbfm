@@ -1,5 +1,5 @@
-import type { SelectMdxCompiledAudio } from '@gbfm/vps/schemas'
 import { useFeatureFlag } from '@gbfm/core/feature-flags'
+import type { SelectMdxCompiledAudio } from '@gbfm/vps/schemas'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import {
   ArrowLeft,
@@ -7,19 +7,27 @@ import {
   Edit,
   ListPlus,
   Loader2,
+  MoreHorizontal,
   QrCode,
+  Share2,
   Tag
 } from 'lucide-react'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 import * as React from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
 import { FavoriteButton } from '@/components/FavoriteButton'
 import { MDXRendrr } from '@/components/MDXRendrr'
-import { ShareButton } from '@/components/ShareButton'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { useToast } from '@/components/ui/use-toast'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { fetcher, useMixQRPdf, useShowById, VPS_BASE_URL } from '@/lib/http'
+import { getShareUrl } from '@/lib/share'
 import { useContentStore } from '@/store'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
 import { useAuthStore } from '@/store/auth'
@@ -143,8 +151,69 @@ function MixPage() {
   )
 }
 
+type MixAction =
+  | { key: string; label: string; icon: React.ReactNode; onClick: () => void }
+  | { key: string; component: React.ReactNode }
+
+const MAX_INLINE_ACTIONS = 1
+
+function MixActionBar({ actions }: { actions: MixAction[] }) {
+  const inlineActions = actions.slice(0, MAX_INLINE_ACTIONS)
+  const overflowActions = actions.slice(MAX_INLINE_ACTIONS)
+  const hasOverflow = overflowActions.length > 0
+
+  return (
+    <div className='flex items-center gap-2'>
+      {inlineActions.map((action) =>
+        'component' in action ? (
+          <React.Fragment key={action.key}>{action.component}</React.Fragment>
+        ) : (
+          <Button
+            key={action.key}
+            onClick={action.onClick}
+            variant='outline'
+            size='lg'
+            className='w-12 h-12 p-0 rounded-none shadow-sm hover:shadow-md active:scale-95'
+            title={action.label}>
+            {action.icon}
+          </Button>
+        )
+      )}
+
+      {hasOverflow && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant='outline'
+              size='lg'
+              className='w-12 h-12 p-0 rounded-none shadow-sm hover:shadow-md active:scale-95'
+              title='More actions'>
+              <MoreHorizontal className='w-5 h-5' />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align='end'>
+            {overflowActions.map((action) =>
+              'component' in action ? (
+                <React.Fragment key={action.key}>
+                  {action.component}
+                </React.Fragment>
+              ) : (
+                <DropdownMenuItem key={action.key} onClick={action.onClick}>
+                  {action.icon}
+                  <span>{action.label}</span>
+                </DropdownMenuItem>
+              )
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+    </div>
+  )
+}
+
 function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
   const isQueueEnabled = useFeatureFlag('ui.queue')
+  const isShareEnabled = useFeatureFlag('ui.share')
   const { user } = useAuthStore()
   const { toast } = useToast()
   const navigate = useNavigate()
@@ -179,6 +248,23 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
       description: mix.title,
       duration: 2000
     })
+  }
+
+  const handleShare = async () => {
+    const shareUrl = getShareUrl('mix', mix.slug)
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      toast({
+        title: 'Link copied!',
+        description: 'Share URL copied to clipboard'
+      })
+    } catch {
+      toast({
+        title: 'Failed to copy',
+        description: 'Could not copy link to clipboard',
+        variant: 'destructive'
+      })
+    }
   }
 
   const handleEdit = () => {
@@ -220,6 +306,78 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
     })
   }
 
+  const actions: MixAction[] = [
+    {
+      key: 'favorite',
+      component: (
+        <FavoriteButton
+          contentType='mix'
+          contentId={mix.id}
+          contentTitle={mix.title}
+          variant='outline'
+          size='lg'
+          className='w-12 h-12 p-0 rounded-none shadow-sm hover:shadow-md active:scale-95'
+        />
+      )
+    },
+    ...(isQueueEnabled
+      ? [
+          {
+            key: 'queue',
+            label: 'Add to queue',
+            icon: <ListPlus className='w-5 h-5' />,
+            onClick: handleAddToQueue
+          }
+        ]
+      : []),
+    ...(isShareEnabled
+      ? [
+          {
+            key: 'share',
+            label: 'Share',
+            icon: <Share2 className='w-4 h-4' />,
+            onClick: handleShare
+          }
+        ]
+      : []),
+    ...(canDownloadQr
+      ? [
+          {
+            key: 'qr-flyer',
+            label: 'Download flyer',
+            icon:
+              isGeneratingPdf && qrTemplate === 'flyer' ? (
+                <Loader2 className='w-4 h-4 animate-spin' />
+              ) : (
+                <Download className='w-4 h-4' />
+              ),
+            onClick: () => handleDownloadQR('flyer')
+          },
+          {
+            key: 'qr-code',
+            label: 'Download QR',
+            icon:
+              isGeneratingPdf && qrTemplate === 'qr' ? (
+                <Loader2 className='w-4 h-4 animate-spin' />
+              ) : (
+                <QrCode className='w-4 h-4' />
+              ),
+            onClick: () => handleDownloadQR('qr')
+          }
+        ]
+      : []),
+    ...(isAdmin
+      ? [
+          {
+            key: 'edit',
+            label: 'Edit',
+            icon: <Edit className='w-4 h-4' />,
+            onClick: handleEdit
+          }
+        ]
+      : [])
+  ]
+
   return (
     <div className='space-y-8'>
       <div className='flex flex-col items-start gap-8 md:flex-row'>
@@ -250,16 +408,7 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
                 </>
               )}
             </Button>
-            {isQueueEnabled && (
-              <Button
-                onClick={handleAddToQueue}
-                variant='outline'
-                size='lg'
-                className='w-12 h-12 p-0 rounded-none shadow-sm hover:shadow-md active:scale-95'
-                title='Add to Queue'>
-                <ListPlus className='w-6 h-6' />
-              </Button>
-            )}
+            <MixActionBar actions={actions} />
           </div>
 
           {mix.tags && mix.tags.length > 0 && (
@@ -280,83 +429,39 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
         {/* Right Column: Metadata */}
         <div className='flex-1 pt-2 space-y-6'>
           <div className='space-y-4'>
-            <div className='flex items-start justify-between gap-4'>
-              <div className='flex flex-col gap-2'>
-                <h1 className='text-4xl font-black leading-none tracking-tighter uppercase md:text-5xl'>
-                  {mix.title}
-                </h1>
-                {mix.creators && mix.creators.length > 0 && (
-                  <div className='flex flex-wrap gap-x-1.5 gap-y-1 text-xs font-bold uppercase tracking-widest text-muted-foreground/80'>
-                    <span className='opacity-50'>by</span>
-                    {mix.creators.map((creator, index) => (
-                      <React.Fragment key={creator.id}>
-                        <Link
-                          to='/profile/$username'
-                          params={{ username: creator.username || '' }}
-                          className='transition-colors hover:text-primary'>
-                          {creator.name}
-                        </Link>
-                        {index < (mix.creators?.length || 0) - 1 && (
-                          <span className='opacity-30'>&</span>
-                        )}
-                      </React.Fragment>
-                    ))}
-                  </div>
-                )}
-                {show && (
-                  <div className='flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-muted-foreground/80'>
-                    <span className='opacity-50'>from</span>
-                    <Link
-                      to='/shows/$showSlug'
-                      params={{ showSlug: show.slug }}
-                      className='transition-colors hover:text-primary'>
-                      {show.title}
-                    </Link>
-                  </div>
-                )}
-              </div>
-              <div className='flex flex-shrink-0 gap-2'>
-                <ShareButton type='mix' slug={mix.slug} />
-                <FavoriteButton
-                  contentType='mix'
-                  contentId={mix.id}
-                  contentTitle={mix.title}
-                />
-                {canDownloadQr && (
-                  <>
-                    <Button
-                      onClick={() => handleDownloadQR('flyer')}
-                      variant='outline'
-                      size='sm'
-                      disabled={isGeneratingPdf}
-                      title='Download Flyer PDF'>
-                      {isGeneratingPdf && qrTemplate === 'flyer' ? (
-                        <Loader2 className='w-4 h-4 animate-spin' />
-                      ) : (
-                        <Download className='w-4 h-4' />
+            <div className='flex flex-col gap-2'>
+              <h1 className='text-4xl font-black leading-none tracking-tighter uppercase md:text-5xl'>
+                {mix.title}
+              </h1>
+              {mix.creators && mix.creators.length > 0 && (
+                <div className='flex flex-wrap gap-x-1.5 gap-y-1 text-xs font-bold uppercase tracking-widest text-muted-foreground/80'>
+                  <span className='opacity-50'>by</span>
+                  {mix.creators.map((creator, index) => (
+                    <React.Fragment key={creator.id}>
+                      <Link
+                        to='/profile/$username'
+                        params={{ username: creator.username || '' }}
+                        className='transition-colors hover:text-primary'>
+                        {creator.name}
+                      </Link>
+                      {index < (mix.creators?.length || 0) - 1 && (
+                        <span className='opacity-30'>&</span>
                       )}
-                    </Button>
-                    <Button
-                      onClick={() => handleDownloadQR('qr')}
-                      variant='outline'
-                      size='sm'
-                      disabled={isGeneratingPdf}
-                      title='Download QR Code PDF'>
-                      {isGeneratingPdf && qrTemplate === 'qr' ? (
-                        <Loader2 className='w-4 h-4 animate-spin' />
-                      ) : (
-                        <QrCode className='w-4 h-4' />
-                      )}
-                    </Button>
-                  </>
-                )}
-                {isAdmin && (
-                  <Button onClick={handleEdit} variant='outline' size='sm'>
-                    <Edit className='w-4 h-4 mr-2' />
-                    Edit
-                  </Button>
-                )}
-              </div>
+                    </React.Fragment>
+                  ))}
+                </div>
+              )}
+              {show && (
+                <div className='flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-muted-foreground/80'>
+                  <span className='opacity-50'>from</span>
+                  <Link
+                    to='/shows/$showSlug'
+                    params={{ showSlug: show.slug }}
+                    className='transition-colors hover:text-primary'>
+                    {show.title}
+                  </Link>
+                </div>
+              )}
             </div>
             {mix.description && (
               <p className='pl-4 text-xl italic font-medium leading-relaxed border-l-2 text-muted-foreground border-border/50'>
