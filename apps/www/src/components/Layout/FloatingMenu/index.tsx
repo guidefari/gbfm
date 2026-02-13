@@ -139,14 +139,21 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className='fixed inset-0 z-40 flex flex-col justify-end bg-background/95 backdrop-blur-md'>
+            className='fixed inset-0 z-40 flex flex-col justify-end'>
+            <button
+              type='button'
+              className='absolute inset-0 bg-background/95 backdrop-blur-md'
+              onClick={closeMenu}
+              aria-label='Close menu'
+              tabIndex={-1}
+            />
             {hasActiveAudio && (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
                 transition={{ duration: 0.2 }}
-                className='px-4 mb-6'>
+                className='relative px-4 mb-6'>
                 <NowPlayingMini onClose={closeMenu} />
               </motion.div>
             )}
@@ -156,7 +163,7 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 30 }}
               transition={{ duration: 0.2 }}
-              className='grid grid-cols-4 gap-3 px-4 mb-4'>
+              className='relative grid grid-cols-4 gap-3 px-4 mb-4'>
               {navItems.map((item) => {
                 const route = getItemRoute(item.id)
                 const content = (
@@ -200,7 +207,7 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 20 }}
               transition={{ duration: 0.2 }}
-              className='flex items-center justify-between gap-3 px-4 pb-4'>
+              className='relative flex items-center justify-between gap-3 px-4 pb-4'>
               <div className='flex items-center gap-3'>
                 {quickActions.map((action) => (
                   <button

@@ -1,5 +1,19 @@
 import { Layer, ManagedRuntime } from 'effect'
+import { env } from '@/env'
+import {
+  makePostHogAnalyticsLayer,
+  NoopAnalyticsLayer
+} from '@/effect/services/analytics'
 
-const MainLayer = Layer.empty
+const analyticsLayer =
+  env.posthogKey && env.posthogHost
+    ? makePostHogAnalyticsLayer({
+        apiKey: env.posthogKey,
+        apiHost: env.posthogHost,
+        debug: env.isDev
+      })
+    : NoopAnalyticsLayer
+
+const MainLayer = Layer.mergeAll(analyticsLayer)
 
 export const RuntimeClient = ManagedRuntime.make(MainLayer)

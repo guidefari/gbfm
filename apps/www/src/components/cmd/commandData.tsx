@@ -44,7 +44,7 @@ export const createCommandData = (
     resetUIState: () => void
     resetAudioPlayer: () => void
     resetAll: () => void
-    runEffectExample: () => void
+    runAnalyticsExample: () => void
   },
   _closeCmd: () => void,
   isAuthenticated: boolean,
@@ -421,10 +421,10 @@ export const createCommandData = (
       requiresAuth: false,
       items: [
         {
-          id: 'effect-example',
-          label: 'Effect Example Button',
+          id: 'analytics-example',
+          label: 'Analytics Example Button',
           icon: Rocket,
-          onSelect: devActions.runEffectExample
+          onSelect: devActions.runAnalyticsExample
         },
         {
           id: 'reset-ui',

@@ -1,6 +1,7 @@
 import { Effect } from 'effect'
 import * as React from 'react'
 import { RuntimeClient } from '@/effect/runtime-client'
+import { track } from '@/effect/services/analytics'
 import { useUIStore } from '@/store/ui'
 
 export const useDevActions = (closeCmd: () => void) => {
@@ -37,10 +38,22 @@ export const useDevActions = (closeCmd: () => void) => {
     })
   }, [closeCmd])
 
+  const runAnalyticsExample = React.useCallback(() => {
+    const program = track('cmd.dev.analytics-example', {
+      source: 'command-palette'
+    }).pipe(Effect.as('Tracked analytics event'))
+
+    void RuntimeClient.runPromise(program).then((message) => {
+      window.alert(message)
+      closeCmd()
+    })
+  }, [closeCmd])
+
   return {
     resetUIState,
     resetAudioPlayer,
     resetAll,
-    runEffectExample
+    runEffectExample,
+    runAnalyticsExample
   }
 }

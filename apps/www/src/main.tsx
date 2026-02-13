@@ -2,12 +2,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createRouter, RouterProvider } from '@tanstack/react-router'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
+import { RuntimeClient } from '@/effect/runtime-client'
+import { page } from '@/effect/services/analytics'
 import { MAIN_SCROLL_CONTAINER_ID } from './lib/constants'
 import { routeTree } from './routeTree.gen'
 import './styles/main.css'
-import { PostHogProvider } from 'posthog-js/react'
 import { ThemeProvider } from './components/ThemeProvider'
-import { env } from './env'
 import { useAuthSync } from './hooks/useAuthSync'
 import { useAuthStore } from './store/auth'
 
@@ -44,6 +44,14 @@ function App() {
   const auth = useAuthStore()
   useAuthSync()
 
+  React.useEffect(() => {
+    void RuntimeClient.runPromise(
+      page('app-loaded', {
+        pathname: window.location.pathname
+      })
+    )
+  }, [])
+
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme='dark' storageKey='vite-ui-theme'>
@@ -60,16 +68,7 @@ if (container) {
 
   root.render(
     <React.StrictMode>
-      <PostHogProvider
-        apiKey={import.meta.env.VITE_PUBLIC_POSTHOG_KEY}
-        options={{
-          api_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST,
-          defaults: '2025-05-24',
-          capture_exceptions: true, // This enables capturing exceptions using Error Tracking, set to false if you don't want this
-          debug: env.isDev
-        }}>
-        <App />
-      </PostHogProvider>
+      <App />
     </React.StrictMode>
   )
 } else {
