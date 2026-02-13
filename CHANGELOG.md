@@ -1,3 +1,10 @@
+# [2.16.0](https://github.com/guidefari/gbfm/compare/v2.15.0...v2.16.0) (2026-02-10)
+
+
+### Features
+
+* posts endpoint ([2b22631](https://github.com/guidefari/gbfm/commit/2b226317a1415f1911ed8dec66405d72cdeca7df))
+
 # [2.15.0](https://github.com/guidefari/gbfm/compare/v2.14.0...v2.15.0) (2026-02-10)
 
 
