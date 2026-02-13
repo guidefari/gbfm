@@ -14,6 +14,7 @@ import {
 import { AnimatePresence, motion } from 'motion/react'
 import type React from 'react'
 import { useEffect, useRef } from 'react'
+import { OverflowTitle } from '@/components/player/OverflowTitle'
 import { Button } from '@/components/ui/button'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { formatSeconds } from '@/lib/utils'
@@ -25,7 +26,7 @@ import {
 } from '@/store/audioPlayer'
 
 type Props = {
-  creators: Creator[]
+  creators?: Creator[]
   onClick?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void
 }
 
@@ -156,19 +157,11 @@ const FullscreenAudioPlayer = () => {
 
               <div className='mb-4 sm:mb-8 flex-shrink-0'>
                 <div className='flex items-center justify-between mb-2'>
-                  <div className='relative flex-1 min-w-0 pr-4 overflow-hidden'>
-                    <div className='title-marquee title-marquee--slow title-marquee--mobile-only flex min-w-max text-xl sm:text-2xl font-semibold leading-tight text-foreground'>
-                      <span className='shrink-0 pr-12'>
-                        {currentTrack.title}
-                      </span>
-                      <span
-                        aria-hidden='true'
-                        className='shrink-0 pr-12 sm:hidden'>
-                        {currentTrack.title}
-                      </span>
-                    </div>
-                    <h1 className='sr-only'>{currentTrack.title}</h1>
-                  </div>
+                  <OverflowTitle
+                    text={currentTrack.title}
+                    className='flex-1 min-w-0 pr-4'
+                    textClassName='text-xl sm:text-2xl font-semibold leading-tight text-foreground'
+                  />
                   <div className='flex items-center flex-shrink-0 gap-1 sm:gap-2'>
                     <Button
                       variant='ghost'
@@ -191,12 +184,10 @@ const FullscreenAudioPlayer = () => {
                     </Button>
                   </div>
                 </div>
-                {currentTrack?.creators && (
-                  <CreatorLinks
-                    creators={currentTrack.creators}
-                    onClick={toggleFullscreen}
-                  />
-                )}
+                <CreatorLinks
+                  creators={currentTrack.creators}
+                  onClick={toggleFullscreen}
+                />
               </div>
 
               <div className='mb-4 sm:mb-8 flex-shrink-0'>

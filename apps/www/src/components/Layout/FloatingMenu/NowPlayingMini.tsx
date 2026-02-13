@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { Pause, Play, SkipBack, SkipForward } from 'lucide-react'
+import { OverflowTitle } from '@/components/player/OverflowTitle'
 import { cn } from '@/lib/utils'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
 
@@ -50,14 +51,10 @@ export function NowPlayingMini({ onClose }: NowPlayingMiniProps) {
             type='button'
             onClick={handleOpenFullscreen}
             className='block w-full text-left focus:outline-none'>
-            <div className='relative overflow-hidden'>
-              <div className='title-marquee title-marquee--slow flex min-w-max text-sm font-semibold text-foreground'>
-                <span className='shrink-0 pr-10'>{title}</span>
-                <span aria-hidden='true' className='shrink-0 pr-10'>
-                  {title}
-                </span>
-              </div>
-            </div>
+            <OverflowTitle
+              text={title}
+              textClassName='text-sm font-semibold text-foreground'
+            />
             <div className='mt-0.5 truncate text-xs text-muted-foreground'>
               {creators.length > 0 ? (
                 creators.map((creator, index) => (

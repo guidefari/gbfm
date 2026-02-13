@@ -327,16 +327,6 @@
     }
   }
 
-  @keyframes title-marquee {
-    0% {
-      transform: translateX(0);
-    }
-
-    100% {
-      transform: translateX(-50%);
-    }
-  }
-
   /* for markdown editor seen in previous codebase */
   /* .overrides {
         --font-body: 'JetBrainsMono', monospace !important;
@@ -374,35 +364,26 @@
     background-color: var(--pastel-green-2);
   }
 
-  .title-marquee {
-    animation: title-marquee 12s linear infinite;
+  .overflow-title-marquee {
+    animation: overflow-title-marquee var(--overflow-duration, 12s) linear
+      infinite;
     will-change: transform;
   }
 
-  .title-marquee--slow {
-    animation: title-marquee-slow 18s linear infinite;
-  }
-
-  @media (min-width: 640px) {
-    .title-marquee--mobile-only {
-      animation: none;
-    }
-  }
-
-  @keyframes title-marquee-slow {
+  @keyframes overflow-title-marquee {
     0%,
-    22% {
+    20% {
       transform: translateX(0);
     }
 
-    78%,
+    80%,
     100% {
-      transform: translateX(-50%);
+      transform: translateX(calc(-1 * var(--overflow-distance, 0px)));
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .title-marquee {
+    .overflow-title-marquee {
       animation: none;
     }
   }
