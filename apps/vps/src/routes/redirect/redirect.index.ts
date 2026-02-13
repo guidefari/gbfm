@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { shareSlug } from './handlers/catch-all'
 import { shareLabel } from './handlers/label'
 import { shareMix } from './handlers/mix'
+import { sharePost } from './handlers/post'
 import { shareProfile } from './handlers/profile'
 import { shareRelease } from './handlers/release'
 import { shareShow } from './handlers/show'
@@ -19,6 +20,9 @@ shareRouter.get('/show/:slug', shareShow)
 shareRouter.get('/profile/:username', shareProfile)
 shareRouter.get('/release/:slug', shareRelease)
 shareRouter.get('/label/:slug', shareLabel)
+shareRouter.get('/post/:slug', sharePost)
+shareRouter.get('/dispatch/:slug', sharePost)
+shareRouter.get('/ping/:slug', sharePost)
 
 // Catch-all route for profiles and shows (resolves slug)
 shareRouter.get('/:slug', shareSlug)
