@@ -11,7 +11,8 @@ import {
 import {
   createPostSchema,
   selectMdxCompiledPostSchema,
-  selectPostSchema
+  selectPostSchema,
+  updatePostSchema
 } from '@/db/post.schema'
 import {
   createPaginatedResponseSchema,
@@ -113,6 +114,50 @@ export const createPost = createRoute({
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
       createErrorSchema(createPostSchema),
       'Validation error'
+    )
+  }
+})
+
+export const updatePostBySlug = createRoute({
+  path: '/posts/{slug}',
+  method: 'patch',
+  middleware: [betterAuthMiddleware],
+  request: {
+    params: z.object({
+      slug: z.string().openapi({ description: 'Post slug' })
+    }),
+    body: jsonContentRequired(
+      updatePostSchema.extend({
+        creatorIds: z
+          .array(z.string())
+          .min(1)
+          .optional()
+          .openapi({ description: 'IDs of post creators' })
+      }),
+      'The post data to update'
+    )
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      selectMdxCompiledPostSchema,
+      'Updated post'
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      z.object({ error: z.string() }),
+      'Post not found'
+    ),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
+      z.object({ error: z.string() }),
+      'Not authorized to edit this content'
+    ),
+    [HttpStatusCodes.FORBIDDEN]: jsonContent(
+      z.object({ error: z.string() }),
+      'Forbidden.'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to update post'
     )
   }
 })
@@ -394,6 +439,7 @@ export const getMixQRPdf = createRoute({
 export type GetPostsRoute = typeof getPosts
 export type GetPostBySlugRoute = typeof getPostBySlug
 export type CreatePostRoute = typeof createPost
+export type UpdatePostBySlugRoute = typeof updatePostBySlug
 export type GetPostsByTagRoute = typeof getPostsByTag
 export type SeedMixesRoute = typeof seedMixes
 export type CreateMixRoute = typeof createMix

@@ -54,6 +54,16 @@ interface PublicationItem {
   createdAt: string
 }
 
+interface PostItem {
+  id: string
+  title: string
+  slug: string
+  type: 'post' | 'micro' | null
+  createdAt: string
+  tags?: string[] | null
+  creators?: Array<{ id: string; name: string }>
+}
+
 interface DeleteDialogState {
   open: boolean
   type: 'mix' | 'label' | 'publication'
@@ -104,6 +114,20 @@ export function ContentTab() {
     queryFn: () =>
       fetcher<PaginatedResponse<PublicationItem>>(
         `${VPS_BASE_URL}/publication?limit=50&offset=0`
+      )
+  })
+  const { data: dispatchData, isPending: dispatchPending } = useQuery({
+    queryKey: ['admin', 'posts', 'post'],
+    queryFn: () =>
+      fetcher<PaginatedResponse<PostItem>>(
+        `${VPS_BASE_URL}/content/posts?type=post&limit=50&offset=0`
+      )
+  })
+  const { data: pingsData, isPending: pingsPending } = useQuery({
+    queryKey: ['admin', 'posts', 'micro'],
+    queryFn: () =>
+      fetcher<PaginatedResponse<PostItem>>(
+        `${VPS_BASE_URL}/content/posts?type=micro&limit=50&offset=0`
       )
   })
 
@@ -194,6 +218,8 @@ export function ContentTab() {
   const mixes = mixesData?.data ?? []
   const labels = labelsData?.data ?? []
   const publications = publicationsData?.data ?? []
+  const dispatchPosts = dispatchData?.data ?? []
+  const pingPosts = pingsData?.data ?? []
 
   const allExistingTags = useMemo(() => {
     const tagSet = new Set<string>()
@@ -226,6 +252,10 @@ export function ContentTab() {
       <Tabs defaultValue='mixes'>
         <TabsList>
           <TabsTrigger value='mixes'>Mixes ({mixes.length})</TabsTrigger>
+          <TabsTrigger value='dispatch'>
+            Dispatch ({dispatchPosts.length})
+          </TabsTrigger>
+          <TabsTrigger value='pings'>Pings ({pingPosts.length})</TabsTrigger>
           <TabsTrigger value='labels'>Labels ({labels.length})</TabsTrigger>
           <TabsTrigger value='publications'>
             Publications ({publications.length})
@@ -293,6 +323,150 @@ export function ContentTab() {
                         colSpan={6}
                         className='px-4 py-8 text-center text-muted-foreground'>
                         No mixes found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value='dispatch' className='mt-4'>
+          {dispatchPending ? (
+            <div className='py-8 text-center text-muted-foreground'>
+              Loading dispatch posts...
+            </div>
+          ) : (
+            <div className='overflow-x-auto rounded-sm border'>
+              <table className='w-full text-sm'>
+                <thead>
+                  <tr className='border-b bg-muted/50'>
+                    <th className='px-4 py-3 text-left font-medium'>Title</th>
+                    <th className='px-4 py-3 text-left font-medium'>Slug</th>
+                    <th className='px-4 py-3 text-left font-medium'>Tags</th>
+                    <th className='px-4 py-3 text-left font-medium'>
+                      Created By
+                    </th>
+                    <th className='px-4 py-3 text-left font-medium'>Created</th>
+                    <th className='px-4 py-3 text-left font-medium'>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dispatchPosts.map((post) => (
+                    <tr key={post.id} className='border-b hover:bg-muted/50'>
+                      <td className='px-4 py-3'>{post.title}</td>
+                      <td className='px-4 py-3 text-muted-foreground'>
+                        {post.slug}
+                      </td>
+                      <td className='px-4 py-3 text-muted-foreground'>
+                        {post.tags?.join(', ') || '—'}
+                      </td>
+                      <td className='px-4 py-3 text-muted-foreground'>
+                        {post.creators?.map((c) => c.name).join(', ') || '—'}
+                      </td>
+                      <td className='px-4 py-3 text-muted-foreground'>
+                        {new Date(post.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className='px-4 py-3'>
+                        <div className='flex gap-2'>
+                          <Button variant='outline' size='sm' asChild>
+                            <Link
+                              to='/dispatch/$slug'
+                              params={{ slug: post.slug }}>
+                              View
+                            </Link>
+                          </Button>
+                          <Button
+                            variant='outline'
+                            size='sm'
+                            onClick={() => {
+                              window.location.href = `/post-upload?edit=${encodeURIComponent(post.slug)}&type=post`
+                            }}>
+                            Edit
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {dispatchPosts.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className='px-4 py-8 text-center text-muted-foreground'>
+                        No dispatch posts found
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value='pings' className='mt-4'>
+          {pingsPending ? (
+            <div className='py-8 text-center text-muted-foreground'>
+              Loading ping posts...
+            </div>
+          ) : (
+            <div className='overflow-x-auto rounded-sm border'>
+              <table className='w-full text-sm'>
+                <thead>
+                  <tr className='border-b bg-muted/50'>
+                    <th className='px-4 py-3 text-left font-medium'>Title</th>
+                    <th className='px-4 py-3 text-left font-medium'>Slug</th>
+                    <th className='px-4 py-3 text-left font-medium'>Tags</th>
+                    <th className='px-4 py-3 text-left font-medium'>
+                      Created By
+                    </th>
+                    <th className='px-4 py-3 text-left font-medium'>Created</th>
+                    <th className='px-4 py-3 text-left font-medium'>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {pingPosts.map((post) => (
+                    <tr key={post.id} className='border-b hover:bg-muted/50'>
+                      <td className='px-4 py-3'>{post.title}</td>
+                      <td className='px-4 py-3 text-muted-foreground'>
+                        {post.slug}
+                      </td>
+                      <td className='px-4 py-3 text-muted-foreground'>
+                        {post.tags?.join(', ') || '—'}
+                      </td>
+                      <td className='px-4 py-3 text-muted-foreground'>
+                        {post.creators?.map((c) => c.name).join(', ') || '—'}
+                      </td>
+                      <td className='px-4 py-3 text-muted-foreground'>
+                        {new Date(post.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className='px-4 py-3'>
+                        <div className='flex gap-2'>
+                          <Button variant='outline' size='sm' asChild>
+                            <Link
+                              to='/pings/$slug'
+                              params={{ slug: post.slug }}>
+                              View
+                            </Link>
+                          </Button>
+                          <Button
+                            variant='outline'
+                            size='sm'
+                            onClick={() => {
+                              window.location.href = `/post-upload?edit=${encodeURIComponent(post.slug)}&type=micro`
+                            }}>
+                            Edit
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {pingPosts.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className='px-4 py-8 text-center text-muted-foreground'>
+                        No ping posts found
                       </td>
                     </tr>
                   )}

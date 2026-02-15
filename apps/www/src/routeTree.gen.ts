@@ -45,6 +45,7 @@ import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-passw
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
 
 const UploadLazyRouteImport = createFileRoute('/upload')()
+const PostUploadLazyRouteImport = createFileRoute('/post-upload')()
 const MixUploadLazyRouteImport = createFileRoute('/mix-upload')()
 const LabelUploadLazyRouteImport = createFileRoute('/label-upload')()
 
@@ -53,6 +54,11 @@ const UploadLazyRoute = UploadLazyRouteImport.update({
   path: '/upload',
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() => import('./routes/upload.lazy').then((d) => d.Route))
+const PostUploadLazyRoute = PostUploadLazyRouteImport.update({
+  id: '/post-upload',
+  path: '/post-upload',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() => import('./routes/post-upload.lazy').then((d) => d.Route))
 const MixUploadLazyRoute = MixUploadLazyRouteImport.update({
   id: '/mix-upload',
   path: '/mix-upload',
@@ -240,6 +246,7 @@ export interface FileRoutesByFullPath {
   '/upload-old': typeof UploadOldRoute
   '/label-upload': typeof LabelUploadLazyRoute
   '/mix-upload': typeof MixUploadLazyRoute
+  '/post-upload': typeof PostUploadLazyRoute
   '/upload': typeof UploadLazyRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
@@ -272,6 +279,7 @@ export interface FileRoutesByTo {
   '/upload-old': typeof UploadOldRoute
   '/label-upload': typeof LabelUploadLazyRoute
   '/mix-upload': typeof MixUploadLazyRoute
+  '/post-upload': typeof PostUploadLazyRoute
   '/upload': typeof UploadLazyRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
@@ -310,6 +318,7 @@ export interface FileRoutesById {
   '/upload-old': typeof UploadOldRoute
   '/label-upload': typeof LabelUploadLazyRoute
   '/mix-upload': typeof MixUploadLazyRoute
+  '/post-upload': typeof PostUploadLazyRoute
   '/upload': typeof UploadLazyRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
@@ -349,6 +358,7 @@ export interface FileRouteTypes {
     | '/upload-old'
     | '/label-upload'
     | '/mix-upload'
+    | '/post-upload'
     | '/upload'
     | '/auth/forgot-password'
     | '/auth/reset-password'
@@ -381,6 +391,7 @@ export interface FileRouteTypes {
     | '/upload-old'
     | '/label-upload'
     | '/mix-upload'
+    | '/post-upload'
     | '/upload'
     | '/auth/forgot-password'
     | '/auth/reset-password'
@@ -418,6 +429,7 @@ export interface FileRouteTypes {
     | '/upload-old'
     | '/label-upload'
     | '/mix-upload'
+    | '/post-upload'
     | '/upload'
     | '/auth/forgot-password'
     | '/auth/reset-password'
@@ -456,6 +468,7 @@ export interface RootRouteChildren {
   UploadOldRoute: typeof UploadOldRoute
   LabelUploadLazyRoute: typeof LabelUploadLazyRoute
   MixUploadLazyRoute: typeof MixUploadLazyRoute
+  PostUploadLazyRoute: typeof PostUploadLazyRoute
   UploadLazyRoute: typeof UploadLazyRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute
@@ -475,6 +488,13 @@ declare module '@tanstack/react-router' {
       path: '/upload'
       fullPath: '/upload'
       preLoaderRoute: typeof UploadLazyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/post-upload': {
+      id: '/post-upload'
+      path: '/post-upload'
+      fullPath: '/post-upload'
+      preLoaderRoute: typeof PostUploadLazyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mix-upload': {
@@ -804,6 +824,7 @@ const rootRouteChildren: RootRouteChildren = {
   UploadOldRoute: UploadOldRoute,
   LabelUploadLazyRoute: LabelUploadLazyRoute,
   MixUploadLazyRoute: MixUploadLazyRoute,
+  PostUploadLazyRoute: PostUploadLazyRoute,
   UploadLazyRoute: UploadLazyRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthResetPasswordRoute: AuthResetPasswordRoute,

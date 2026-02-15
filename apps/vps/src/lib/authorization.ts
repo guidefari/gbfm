@@ -3,10 +3,11 @@ import { Effect } from 'effect'
 import { db } from '@/db'
 import { audioCreators } from '@/db/audio.schema'
 import { labelCreators } from '@/db/label.schema'
+import { postCreators } from '@/db/post.schema'
 import { showCreators } from '@/db/show.schema'
 import { DatabaseError, getErrorMessage, UnauthorizedError } from '@/errors'
 
-type CreatorTableType = 'show' | 'audio' | 'label'
+type CreatorTableType = 'show' | 'audio' | 'label' | 'post'
 
 export function checkCreatorAuthorship(
   tableType: CreatorTableType,
@@ -19,21 +20,27 @@ export function checkCreatorAuthorship(
         ? showCreators
         : tableType === 'audio'
           ? audioCreators
-          : labelCreators
+          : tableType === 'label'
+            ? labelCreators
+            : postCreators
 
     const idColumn =
       tableType === 'show'
         ? showCreators.showId
         : tableType === 'audio'
           ? audioCreators.audioId
-          : labelCreators.labelId
+          : tableType === 'label'
+            ? labelCreators.labelId
+            : postCreators.postId
 
     const creatorColumn =
       tableType === 'show'
         ? showCreators.creatorId
         : tableType === 'audio'
           ? audioCreators.creatorId
-          : labelCreators.creatorId
+          : tableType === 'label'
+            ? labelCreators.creatorId
+            : postCreators.creatorId
 
     const authorship = yield* Effect.tryPromise({
       try: () =>

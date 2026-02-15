@@ -23,7 +23,8 @@ import type {
   GetPostsByTagRoute,
   GetPostsRoute,
   ProcessMixUploadRoute,
-  UpdateAudioBySlugRoute
+  UpdateAudioBySlugRoute,
+  UpdatePostBySlugRoute
 } from './content.routes'
 
 // Error types for upload processing
@@ -138,6 +139,48 @@ export const createPost: AppRouteHandler<CreatePostRoute> = async (c) => {
   }
 
   return c.json(result, HttpStatusCodes.CREATED)
+}
+
+export const updatePostBySlug: AppRouteHandler<UpdatePostBySlugRoute> = async (
+  c
+) => {
+  const { slug } = c.req.valid('param')
+  const updateData = c.req.valid('json')
+  const user = c.get('user')
+
+  const program = Effect.gen(function* () {
+    const postService = yield* PostService
+    return yield* postService.update(slug, user.id, user.role || 'user', {
+      ...updateData
+    })
+  }).pipe(
+    Effect.catchTag('NotFoundError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('UnauthorizedError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.FORBIDDEN
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    )
+  )
+
+  const result = await AppRuntime.runPromise(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
+  }
+
+  return c.json(result, HttpStatusCodes.OK)
 }
 
 export const getPostsByTag: AppRouteHandler<GetPostsByTagRoute> = async (c) => {
