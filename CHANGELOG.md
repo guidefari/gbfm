@@ -1,3 +1,10 @@
+## [2.21.1](https://github.com/guidefari/gbfm/compare/v2.21.0...v2.21.1) (2026-02-16)
+
+
+### Bug Fixes
+
+* **www:** sync resolve with profile ([f84477b](https://github.com/guidefari/gbfm/commit/f84477bb7e44409a0bc887f13c053cc1b879e6f4))
+
 # [2.21.0](https://github.com/guidefari/gbfm/compare/v2.20.0...v2.21.0) (2026-02-16)
 
 
