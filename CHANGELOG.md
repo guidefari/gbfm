@@ -1,3 +1,12 @@
+# [2.21.0](https://github.com/guidefari/gbfm/compare/v2.20.0...v2.21.0) (2026-02-16)
+
+
+### Features
+
+* clickable link to post author ([dfa680c](https://github.com/guidefari/gbfm/commit/dfa680cabec45140d89b78ebd12596bad1e49ee0))
+* restyle mix list item ([9b96ef1](https://github.com/guidefari/gbfm/commit/9b96ef1dc0d3c9f9f742bf86062daff900807ad0))
+* **www:** styling (dispatch and profile) ([88e4b12](https://github.com/guidefari/gbfm/commit/88e4b1225102f9dcd69ab41f7094fc34fd36f258))
+
 # [2.20.0](https://github.com/guidefari/gbfm/compare/v2.19.0...v2.20.0) (2026-02-15)
 
 
