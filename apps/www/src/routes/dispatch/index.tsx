@@ -2,6 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { Tag, X } from 'lucide-react'
 import { useMemo } from 'react'
 import { z } from 'zod'
+import { DispatchListItem } from '@/components/DispatchListItem'
 import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -11,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
-import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { usePosts } from '@/lib/http'
 import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'
 
@@ -114,41 +114,9 @@ function DispatchListPage() {
           </Badge>
         </div>
       )}
-      <div className='grid gap-2'>
+      <div className='grid gap-3'>
         {filteredData?.map((post) => (
-          <article
-            key={post.id}
-            className='flex gap-3 items-start p-2 transition-all duration-300 cursor-pointer hover:bg-muted/50 rounded-sm group'>
-            {post.thumbnailUrl && (
-              <img
-                src={post.thumbnailUrl || DEFAULT_IMAGE_URL}
-                alt={post.title}
-                className='object-cover transition-transform duration-300 border rounded-sm w-16 h-16 sm:w-20 sm:h-20 border-border bg-background group-hover:scale-105 flex-shrink-0'
-              />
-            )}
-            <div className='flex-1 min-w-0'>
-              <Link
-                to='/dispatch/$slug'
-                params={{ slug: post.slug }}
-                className='block font-bold leading-tight line-clamp-2 text-foreground hover:underline decoration-foreground/30 underline-offset-4'>
-                {post.title}
-              </Link>
-              {post.description && (
-                <div className='mt-1 text-sm leading-relaxed text-foreground/60 line-clamp-2'>
-                  {post.description}
-                </div>
-              )}
-              {post.createdAt && (
-                <div className='mt-1 font-mono text-xs text-muted-foreground/60'>
-                  {new Date(post.createdAt).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric'
-                  })}
-                </div>
-              )}
-            </div>
-          </article>
+          <DispatchListItem key={post.id} post={post} />
         ))}
 
         <LoadMoreTrigger

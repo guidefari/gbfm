@@ -1,6 +1,7 @@
 import { Link } from '@tanstack/react-router'
-import { ChevronDown } from 'lucide-react'
-import { useState } from 'react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import HorizontalScrollCards from '@/components/common/HorizontalScrollCards'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import type { PublicProfile } from '@/lib/http'
 
@@ -9,97 +10,18 @@ interface ProfileContentGridProps {
 }
 
 type Mix = PublicProfile['content']['mixes'][number]
-type Show = PublicProfile['content']['shows'][number]
+// type Show = PublicProfile['content']['shows'][number]
+type Dispatch = PublicProfile['content']['dispatches'][number]
+type Ping = PublicProfile['content']['pings'][number]
 
-function MixCard({ mix }: { mix: Mix }) {
-  return (
-    <Link
-      to='/mixes/$mixId'
-      params={{ mixId: mix.slug }}
-      className='flex items-center gap-3 p-2 -mx-2 transition-colors rounded-md cursor-pointer group hover:bg-muted/50'>
-      <div className='flex-shrink-0 w-12 h-12 overflow-hidden border rounded-sm border-border bg-background'>
-        <img
-          src={mix.thumbnailUrl || DEFAULT_IMAGE_URL}
-          alt={mix.title}
-          className='object-cover w-full h-full'
-        />
-      </div>
-      <span className='text-sm font-medium transition-colors text-foreground group-hover:text-highlight line-clamp-2'>
-        {mix.title}
-      </span>
-    </Link>
-  )
-}
-
-function ShowCard({
-  show,
-  mixes,
-  defaultExpanded
-}: {
-  show: Show
-  mixes: Mix[]
-  defaultExpanded: boolean
-}) {
-  const [isExpanded, setIsExpanded] = useState(defaultExpanded)
-  const hasMixes = mixes.length > 0
-
-  return (
-    <div className='overflow-hidden border rounded-lg border-border bg-card'>
-      <button
-        type='button'
-        className={`flex items-center gap-4 p-4 w-full text-left ${hasMixes ? 'cursor-pointer hover:bg-muted/30' : ''} transition-colors`}
-        onClick={() => hasMixes && setIsExpanded(!isExpanded)}>
-        <Link
-          to='/shows/$showSlug'
-          params={{ showSlug: show.slug }}
-          onClick={(e) => e.stopPropagation()}
-          className='flex-shrink-0 w-16 h-16 overflow-hidden border rounded-sm border-border bg-background hover:opacity-80 transition-opacity'>
-          <img
-            src={show.thumbnailUrl || DEFAULT_IMAGE_URL}
-            alt={show.title}
-            className='object-cover w-full h-full'
-          />
-        </Link>
-        <div className='flex-1 min-w-0'>
-          <Link
-            to='/shows/$showSlug'
-            params={{ showSlug: show.slug }}
-            onClick={(e) => e.stopPropagation()}
-            className='text-base font-semibold transition-colors text-foreground hover:text-highlight line-clamp-1'>
-            {show.title}
-          </Link>
-          {hasMixes && (
-            <p className='text-sm text-muted-foreground'>
-              {mixes.length} {mixes.length === 1 ? 'episode' : 'episodes'}
-            </p>
-          )}
-        </div>
-        {hasMixes && (
-          <ChevronDown
-            className={`w-5 h-5 text-muted-foreground transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-          />
-        )}
-      </button>
-
-      {hasMixes && isExpanded && (
-        <div className='px-4 pb-4 space-y-1 border-t border-border'>
-          <div className='pt-3'>
-            {mixes.map((mix) => (
-              <MixCard key={mix.id} mix={mix} />
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
+const CARD_CLASS = 'w-36 flex-shrink-0'
 
 function StandaloneMixCard({ mix }: { mix: Mix }) {
   return (
     <Link
       to='/mixes/$mixId'
       params={{ mixId: mix.slug }}
-      className='flex flex-col gap-2 transition-transform cursor-pointer group hover:scale-105'>
+      className={`${CARD_CLASS} flex flex-col gap-2 group`}>
       <div className='w-full overflow-hidden border rounded-sm shadow-sm aspect-square border-border bg-background'>
         <img
           src={mix.thumbnailUrl || DEFAULT_IMAGE_URL}
@@ -114,31 +36,134 @@ function StandaloneMixCard({ mix }: { mix: Mix }) {
   )
 }
 
+function ProfileDispatchCard({ dispatch }: { dispatch: Dispatch }) {
+  return (
+    <Link
+      to='/dispatch/$slug'
+      params={{ slug: dispatch.slug }}
+      className={`${CARD_CLASS} flex flex-col gap-2 group`}>
+      {dispatch.thumbnailUrl && (
+        <div className='w-full overflow-hidden border rounded-sm shadow-sm aspect-video border-border bg-background'>
+          <img
+            src={dispatch.thumbnailUrl}
+            alt={dispatch.title}
+            className='object-cover w-full h-full transition-opacity group-hover:opacity-80'
+          />
+        </div>
+      )}
+      <h3 className='text-sm font-semibold leading-tight transition-colors text-foreground group-hover:text-highlight line-clamp-2'>
+        {dispatch.title}
+      </h3>
+    </Link>
+  )
+}
+
+function ProfilePingCard({ ping }: { ping: Ping }) {
+  const date = new Date(ping.createdAt).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  })
+
+  return (
+    <Link
+      to='/pings/$slug'
+      params={{ slug: ping.slug }}
+      className={`${CARD_CLASS} flex flex-col gap-1 p-3 transition-colors border rounded-lg group border-border bg-card hover:bg-muted/50`}>
+      <h3 className='text-sm font-semibold leading-tight transition-colors text-foreground group-hover:text-highlight line-clamp-2'>
+        {ping.title}
+      </h3>
+      <p className='text-xs text-muted-foreground'>{date}</p>
+    </Link>
+  )
+}
+
+function ContentSection({
+  title,
+  children
+}: {
+  title: string
+  children: React.ReactNode
+}) {
+  const scrollRef = useRef<HTMLDivElement>(null)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
+
+  const updateScrollState = useCallback(() => {
+    const el = scrollRef.current?.querySelector(
+      '[data-radix-scroll-area-viewport]'
+    )
+    if (!el) return
+    setCanScrollLeft(el.scrollLeft > 0)
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1)
+  }, [])
+
+  useEffect(() => {
+    const el = scrollRef.current?.querySelector(
+      '[data-radix-scroll-area-viewport]'
+    )
+    if (!el) return
+    updateScrollState()
+    el.addEventListener('scroll', updateScrollState)
+    const observer = new ResizeObserver(updateScrollState)
+    observer.observe(el)
+    return () => {
+      el.removeEventListener('scroll', updateScrollState)
+      observer.disconnect()
+    }
+  }, [updateScrollState])
+
+  const scroll = (direction: 'left' | 'right') => {
+    const el = scrollRef.current?.querySelector(
+      '[data-radix-scroll-area-viewport]'
+    )
+    if (!el) return
+    const amount = el.clientWidth * 0.75
+    el.scrollBy({
+      left: direction === 'left' ? -amount : amount,
+      behavior: 'smooth'
+    })
+  }
+
+  return (
+    <section>
+      <div className='flex items-center justify-between mb-3'>
+        <h2 className='text-lg font-semibold text-foreground'>{title}</h2>
+        <div className='flex gap-1'>
+          <button
+            type='button'
+            onClick={() => scroll('left')}
+            disabled={!canScrollLeft}
+            className='p-1 transition-colors rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 disabled:opacity-0'>
+            <ChevronLeft className='w-5 h-5' />
+          </button>
+          <button
+            type='button'
+            onClick={() => scroll('right')}
+            disabled={!canScrollRight}
+            className='p-1 transition-colors rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 disabled:opacity-0'>
+            <ChevronRight className='w-5 h-5' />
+          </button>
+        </div>
+      </div>
+      <div ref={scrollRef}>
+        <HorizontalScrollCards>{children}</HorizontalScrollCards>
+      </div>
+    </section>
+  )
+}
+
 export function ProfileContentGrid({ content }: ProfileContentGridProps) {
   const mixes = content?.mixes ?? []
   const shows = content?.shows ?? []
-
-  const showsById = new Map(shows.map((show) => [show.id, show]))
-  const mixesByShowId = new Map<string, Mix[]>()
-  const standaloneMixes: Mix[] = []
-
-  for (const mix of mixes) {
-    if (mix.showId && showsById.has(mix.showId)) {
-      const existing = mixesByShowId.get(mix.showId) || []
-      existing.push(mix)
-      mixesByShowId.set(mix.showId, existing)
-    } else {
-      standaloneMixes.push(mix)
-    }
-  }
-
-  const showsWithMixes = shows.filter((show) => mixesByShowId.has(show.id))
-  const showsWithoutMixes = shows.filter((show) => !mixesByShowId.has(show.id))
+  const dispatches = content?.dispatches ?? []
+  const pings = content?.pings ?? []
 
   const hasContent =
-    showsWithMixes.length > 0 ||
-    showsWithoutMixes.length > 0 ||
-    standaloneMixes.length > 0
+    shows.length > 0 ||
+    mixes.length > 0 ||
+    dispatches.length > 0 ||
+    pings.length > 0
 
   if (!hasContent) {
     return (
@@ -149,43 +174,37 @@ export function ProfileContentGrid({ content }: ProfileContentGridProps) {
   }
 
   return (
-    <div className='space-y-6'>
-      {showsWithMixes.length > 0 && (
-        <section className='space-y-3'>
-          {showsWithMixes.map((show) => (
-            <ShowCard
-              key={show.id}
-              show={show}
-              mixes={mixesByShowId.get(show.id) || []}
-              defaultExpanded={showsWithMixes.length === 1}
-            />
+    <div className='space-y-8'>
+      {/* {shows.length > 0 && (
+        <ContentSection title='Shows'>
+          {shows.map((show) => (
+            <ProfileShowCard key={show.id} show={show} />
           ))}
-        </section>
+        </ContentSection>
+      )} */}
+
+      {mixes.length > 0 && (
+        <ContentSection title='Mixes'>
+          {mixes.map((mix) => (
+            <StandaloneMixCard key={mix.id} mix={mix} />
+          ))}
+        </ContentSection>
       )}
 
-      {showsWithoutMixes.length > 0 && (
-        <section className='space-y-3'>
-          <h2 className='text-lg font-semibold text-foreground'>Shows</h2>
-          {showsWithoutMixes.map((show) => (
-            <ShowCard
-              key={show.id}
-              show={show}
-              mixes={[]}
-              defaultExpanded={false}
-            />
+      {dispatches.length > 0 && (
+        <ContentSection title='Dispatches'>
+          {dispatches.map((dispatch) => (
+            <ProfileDispatchCard key={dispatch.id} dispatch={dispatch} />
           ))}
-        </section>
+        </ContentSection>
       )}
 
-      {standaloneMixes.length > 0 && (
-        <section>
-          <h2 className='mb-4 text-lg font-semibold text-foreground'>Mixes</h2>
-          <div className='grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5'>
-            {standaloneMixes.map((mix) => (
-              <StandaloneMixCard key={mix.id} mix={mix} />
-            ))}
-          </div>
-        </section>
+      {pings.length > 0 && (
+        <ContentSection title='Pings'>
+          {pings.map((ping) => (
+            <ProfilePingCard key={ping.id} ping={ping} />
+          ))}
+        </ContentSection>
       )}
     </div>
   )

@@ -739,6 +739,20 @@ export type PublicProfile = {
       slug: string
       thumbnailUrl: string | null
     }>
+    dispatches: Array<{
+      id: string
+      title: string
+      slug: string
+      thumbnailUrl: string | null
+      description: string | null
+      createdAt: string
+    }>
+    pings: Array<{
+      id: string
+      title: string
+      slug: string
+      createdAt: string
+    }>
   }
 }
 

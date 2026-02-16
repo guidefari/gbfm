@@ -176,25 +176,7 @@ const getAllEffect = (options: {
 
     const compiledData: SelectMdxCompiledPost[] = yield* Effect.forEach(
       data,
-      (post) =>
-        Effect.gen(function* () {
-          let compiledContent = ''
-          if (post.content) {
-            const mdxResult = yield* Effect.tryPromise({
-              try: () => compileMDX(post.content),
-              catch: (error) =>
-                new DatabaseError({
-                  message: `Failed to compile MDX: ${getErrorMessage(error)}`,
-                  operation: 'mdx_compile',
-                  table: 'posts'
-                })
-            })
-            if (isMDXCompilationResult(mdxResult)) {
-              compiledContent = mdxResult.compiled
-            }
-          }
-          return { ...post, compiledContent }
-        }),
+      (post) => buildPostWithCreators(post),
       { concurrency: 5 }
     )
 
