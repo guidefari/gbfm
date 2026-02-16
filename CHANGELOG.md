@@ -1,3 +1,10 @@
+# [2.20.0](https://github.com/guidefari/gbfm/compare/v2.19.0...v2.20.0) (2026-02-15)
+
+
+### Features
+
+* create/update post ([84cc06e](https://github.com/guidefari/gbfm/commit/84cc06e6d0b9086cdf50415eca774689c48383aa))
+
 # [2.19.0](https://github.com/guidefari/gbfm/compare/v2.18.0...v2.19.0) (2026-02-13)
 
 
