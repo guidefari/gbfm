@@ -137,7 +137,7 @@ function MixesListPage() {
           </Badge>
         </div>
       )}
-      <div className='grid gap-2'>
+      <div className='grid gap-3'>
         {isPending && tag ? (
           <MixesListSkeleton />
         ) : (

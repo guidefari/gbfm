@@ -13,6 +13,7 @@ import { useAuthGuard } from '@/hooks/useAuthGuard'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { useAddFavorite, useFavorites, useRemoveFavorite } from '@/lib/http'
 import { getShareUrl } from '@/lib/share'
+import { cn } from '@/lib/utils'
 import { useAudioPlayerActions } from '@/store/audioPlayer'
 
 interface MixMenuProps {
@@ -98,12 +99,14 @@ export function MixMenu({ mix }: MixMenuProps) {
         <button
           type='button'
           onClick={(e) => e.stopPropagation()}
-          className='flex-shrink-0 p-1 transition-colors rounded hover:bg-muted focus:outline-none focus:ring-2 focus:ring-highlight'
+          className={cn(
+            'flex-shrink-0 p-1 transition-colors rounded-none hover:bg-muted focus:outline-none focus:ring-2 focus:ring-highlight'
+          )}
           aria-label='More actions'>
-          <MoreVertical className='w-4 h-4 text-foreground/60 hover:text-foreground' />
+          <MoreVertical className='w-5 h-5 text-foreground/60 hover:text-foreground' />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align='start'>
+      <DropdownMenuContent align='end'>
         <DropdownMenuItem onClick={handlePlayNow}>
           <Play className='w-4 h-4' />
           Play now
