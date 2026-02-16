@@ -1,7 +1,7 @@
 import { Link } from '@tanstack/react-router'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
 import HorizontalScrollCards from '@/components/common/HorizontalScrollCards'
+import { useHorizontalScroll } from '@/hooks/useHorizontalScroll'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import type { PublicProfile } from '@/lib/http'
 
@@ -85,45 +85,8 @@ function ContentSection({
   title: string
   children: React.ReactNode
 }) {
-  const scrollRef = useRef<HTMLDivElement>(null)
-  const [canScrollLeft, setCanScrollLeft] = useState(false)
-  const [canScrollRight, setCanScrollRight] = useState(false)
-
-  const updateScrollState = useCallback(() => {
-    const el = scrollRef.current?.querySelector(
-      '[data-radix-scroll-area-viewport]'
-    )
-    if (!el) return
-    setCanScrollLeft(el.scrollLeft > 0)
-    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 1)
-  }, [])
-
-  useEffect(() => {
-    const el = scrollRef.current?.querySelector(
-      '[data-radix-scroll-area-viewport]'
-    )
-    if (!el) return
-    updateScrollState()
-    el.addEventListener('scroll', updateScrollState)
-    const observer = new ResizeObserver(updateScrollState)
-    observer.observe(el)
-    return () => {
-      el.removeEventListener('scroll', updateScrollState)
-      observer.disconnect()
-    }
-  }, [updateScrollState])
-
-  const scroll = (direction: 'left' | 'right') => {
-    const el = scrollRef.current?.querySelector(
-      '[data-radix-scroll-area-viewport]'
-    )
-    if (!el) return
-    const amount = el.clientWidth * 0.75
-    el.scrollBy({
-      left: direction === 'left' ? -amount : amount,
-      behavior: 'smooth'
-    })
-  }
+  const { containerRef, canScrollLeft, canScrollRight, scroll } =
+    useHorizontalScroll()
 
   return (
     <section>
@@ -146,7 +109,7 @@ function ContentSection({
           </button>
         </div>
       </div>
-      <div ref={scrollRef}>
+      <div ref={containerRef}>
         <HorizontalScrollCards>{children}</HorizontalScrollCards>
       </div>
     </section>
