@@ -83,7 +83,16 @@ function PostDetails({
                     <span className='opacity-50'>by</span>
                     {post.creators.map((creator, index) => (
                       <React.Fragment key={creator.id}>
-                        <span>{creator.name}</span>
+                        {creator.username ? (
+                          <Link
+                            to='/profile/$username'
+                            params={{ username: creator.username }}
+                            className='underline-offset-4 hover:underline text-foreground/90 hover:text-foreground'>
+                            {creator.name}
+                          </Link>
+                        ) : (
+                          <span>{creator.name}</span>
+                        )}
                         {index < (post.creators?.length || 0) - 1 && (
                           <span className='opacity-30'>&</span>
                         )}

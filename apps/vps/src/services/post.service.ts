@@ -68,7 +68,8 @@ const buildPostWithCreators = (post: SelectPost) =>
         db
           .select({
             id: usersTable.id,
-            name: usersTable.name
+            name: usersTable.name,
+            username: usersTable.username
           })
           .from(postCreators)
           .innerJoin(usersTable, eq(postCreators.creatorId, usersTable.id))
@@ -86,7 +87,8 @@ const buildPostWithCreators = (post: SelectPost) =>
       compiledContent: '',
       creators: creators.map((creator) => ({
         id: creator.id,
-        name: creator.name
+        name: creator.name,
+        username: creator.username
       }))
     }
 

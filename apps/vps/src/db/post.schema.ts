@@ -40,6 +40,7 @@ export type SelectMdxCompiledPost = SelectPost & {
   creators?: Array<{
     id: string
     name: string
+    username: string | null
   }>
   publication?: {
     id: string
@@ -90,7 +91,11 @@ export const selectMdxCompiledPostSchema = selectPostSchema
         z
           .object({
             id: z.string().openapi({ description: 'Creator ID' }),
-            name: z.string().openapi({ description: 'Creator name' })
+            name: z.string().openapi({ description: 'Creator name' }),
+            username: z
+              .string()
+              .nullable()
+              .openapi({ description: 'Creator username' })
           })
           .openapi('Creator')
       )
