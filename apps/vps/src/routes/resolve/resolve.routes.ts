@@ -31,6 +31,24 @@ const resolveResponseSchema = z
               slug: z.string(),
               thumbnailUrl: z.string().nullable()
             })
+          ),
+          dispatches: z.array(
+            z.object({
+              id: z.string(),
+              title: z.string(),
+              slug: z.string(),
+              thumbnailUrl: z.string().nullable(),
+              description: z.string().nullable(),
+              createdAt: z.date()
+            })
+          ),
+          pings: z.array(
+            z.object({
+              id: z.string(),
+              title: z.string(),
+              slug: z.string(),
+              createdAt: z.date()
+            })
           )
         })
       })

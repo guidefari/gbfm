@@ -3,6 +3,7 @@ import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { user as userTable } from '@/db/auth.schema'
+import { postCreators, postsTable } from '@/db/post.schema'
 import { showCreators, showsTable } from '@/db/show.schema'
 import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
@@ -27,6 +28,20 @@ type ProfileData = {
       title: string
       slug: string
       thumbnailUrl: string | null
+    }>
+    dispatches: Array<{
+      id: string
+      title: string
+      slug: string
+      thumbnailUrl: string | null
+      description: string | null
+      createdAt: Date
+    }>
+    pings: Array<{
+      id: string
+      title: string
+      slug: string
+      createdAt: Date
     }>
   }
 }
@@ -145,6 +160,43 @@ const resolveEffect = (slug: string) =>
           })
       })
 
+      const userPosts = yield* Effect.tryPromise({
+        try: () =>
+          db
+            .select({
+              id: postsTable.id,
+              title: postsTable.title,
+              slug: postsTable.slug,
+              thumbnailUrl: postsTable.thumbnailUrl,
+              description: postsTable.description,
+              type: postsTable.type,
+              createdAt: postsTable.createdAt
+            })
+            .from(postsTable)
+            .innerJoin(postCreators, eq(postsTable.id, postCreators.postId))
+            .where(
+              and(
+                eq(postCreators.creatorId, foundUser.id),
+                eq(postsTable.draft, false)
+              )
+            )
+            .orderBy(postsTable.createdAt),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to get user posts: ${getErrorMessage(error)}`,
+            operation: 'select',
+            table: 'posts'
+          })
+      })
+
+      const dispatches = userPosts
+        .filter((p) => p.type === 'post')
+        .map(({ type, ...rest }) => rest)
+
+      const pings = userPosts
+        .filter((p) => p.type === 'micro')
+        .map(({ type, thumbnailUrl, description, ...rest }) => rest)
+
       return {
         type: 'profile' as const,
         data: {
@@ -155,7 +207,9 @@ const resolveEffect = (slug: string) =>
           createdAt: foundUser.createdAt,
           content: {
             mixes: userMixes,
-            shows: userShows
+            shows: userShows,
+            dispatches,
+            pings
           }
         }
       }
