@@ -1,3 +1,10 @@
+## [2.22.1](https://github.com/guidefari/gbfm/compare/v2.22.0...v2.22.1) (2026-02-17)
+
+
+### Bug Fixes
+
+* **db:** allow user deletion by updating user FKs to cascade/set null ([af442c7](https://github.com/guidefari/gbfm/commit/af442c7b2e81436fc0b8ff461ce02929ad2e86a0))
+
 # [2.22.0](https://github.com/guidefari/gbfm/compare/v2.21.1...v2.22.0) (2026-02-17)
 
 
