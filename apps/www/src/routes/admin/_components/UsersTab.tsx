@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, Edit, ExternalLink, Plus, X } from 'lucide-react'
+import { Check, Edit, ExternalLink, Mail, Plus, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/select'
 import { toast } from '@/components/ui/use-toast'
 import { authClient } from '@/lib/auth-client'
+import { VPS_BASE_URL, fetcher } from '@/lib/http'
 import { ImageUploadField } from './ImageUploadField'
 
 const ROLES = ['admin', 'editor', 'creator', 'user'] as const
@@ -147,6 +148,27 @@ export function UsersTab() {
         debouncedEditUsername !== originalUsername
     })
 
+  const sendInviteMutation = useMutation({
+    mutationFn: async (userId: string) =>
+      fetcher<{ success: boolean; emailId: string }>(
+        `${VPS_BASE_URL}/invite/send`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ userId })
+        }
+      ),
+    onSuccess: () => {
+      toast({ title: 'Invite email sent' })
+    },
+    onError: (err: Error) => {
+      toast({
+        title: 'Failed to send invite',
+        description: err.message,
+        variant: 'destructive'
+      })
+    }
+  })
+
   const createUserMutation = useMutation({
     mutationFn: async () => {
       const email =
@@ -163,7 +185,7 @@ export function UsersTab() {
         data: newUser.username ? { username: newUser.username } : undefined
       })
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
       setCreateUserDialog(false)
       setNewUser({
@@ -175,6 +197,11 @@ export function UsersTab() {
       })
       setDebouncedUsername('')
       toast({ title: 'User created successfully' })
+
+      const createdUserId = result?.data?.user?.id
+      if (createdUserId && newUser.email) {
+        sendInviteMutation.mutate(createdUserId)
+      }
     },
     onError: (err: Error) => {
       toast({
@@ -375,6 +402,15 @@ export function UsersTab() {
                           </a>
                         </Button>
                       )}
+                      <Button
+                        variant='outline'
+                        size='sm'
+                        onClick={() => sendInviteMutation.mutate(user.id)}
+                        disabled={sendInviteMutation.isPending}
+                        title='Send invite email'>
+                        <Mail className='w-4 h-4' />
+                        <span className='sr-only'>Send Invite</span>
+                      </Button>
                       <Button
                         variant='outline'
                         size='sm'

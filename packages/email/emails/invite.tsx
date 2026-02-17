@@ -13,48 +13,49 @@ import {
 import type * as React from 'react'
 import { emailTheme } from './theme'
 
-interface PasswordResetEmailProps {
-  resetUrl: string
+interface InviteEmailProps {
+  name: string
+  inviteUrl: string
+  role?: string
   expiresIn?: string
 }
 
-export const PasswordResetEmail: React.FC<
-  Readonly<PasswordResetEmailProps>
-> = ({ resetUrl, expiresIn = '1 hour' }) => {
+export const InviteEmail: React.FC<Readonly<InviteEmailProps>> = ({
+  name,
+  inviteUrl,
+  role = 'user',
+  expiresIn = '7 days'
+}) => {
   return (
     <Html>
       <Head />
-      <Preview>Reset your goosebumps.fm password</Preview>
+      <Preview>You've been invited to goosebumps.fm</Preview>
       <Body style={main}>
         <Container style={container}>
           <Section style={header}>
             <Heading style={h1}>goosebumps.fm</Heading>
-            <Text style={subtitle}>Password Reset</Text>
+            <Text style={subtitle}>You're invited</Text>
           </Section>
 
           <Section style={content}>
-            <Heading style={h2}>Reset Your Password</Heading>
+            <Heading style={h2}>Welcome, {name}!</Heading>
             <Text style={text}>
-              We received a request to reset your password for your
-              goosebumps.fm account.
+              You've been invited to join goosebumps.fm as a{' '}
+              <strong>{role}</strong>.
             </Text>
 
             <Text style={text}>
-              Click the button below to create a new password:
+              Click the button below to set your password and access your
+              account:
             </Text>
 
-            <Button style={button} href={resetUrl}>
-              Reset Password
+            <Button style={button} href={inviteUrl}>
+              Set Your Password
             </Button>
 
             <Text style={text}>
-              This link will expire in {expiresIn}. If you didn't request this
-              password reset, you can safely ignore this email.
-            </Text>
-
-            <Text style={text}>
-              For security reasons, this link can only be used once. If you need
-              to reset your password again, please request a new reset link.
+              This invite link will expire in {expiresIn}. If you didn't expect
+              this invitation, you can safely ignore this email.
             </Text>
           </Section>
 
@@ -64,8 +65,8 @@ export const PasswordResetEmail: React.FC<
               this URL into your browser:
             </Text>
             <Text style={urlText}>
-              <Link href={resetUrl} style={link}>
-                {resetUrl}
+              <Link href={inviteUrl} style={link}>
+                {inviteUrl}
               </Link>
             </Text>
             <Text style={footerText}>
@@ -177,4 +178,4 @@ const link = {
   textDecoration: 'underline'
 }
 
-export default PasswordResetEmail
+export default InviteEmail

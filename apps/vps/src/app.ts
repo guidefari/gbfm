@@ -4,6 +4,7 @@ import configureOpenAPI from '@/lib/configure-open-api'
 import { createAppEffect } from '@/lib/create-app'
 import content from '@/routes/content/content.index'
 import email from '@/routes/email/email.index'
+import invite from '@/routes/invite/invite.index'
 import favorites from '@/routes/favorites/favorites.index'
 import musicReminders from '@/routes/music-reminders/music-reminders.index'
 import newsletter from '@/routes/newsletter/newsletter.index'
@@ -34,6 +35,7 @@ const setupRoutesEffect = Effect.gen(function* () {
 
   app.route('/auth', betterAuthRoutes)
   app.route('/favorites', favorites)
+  app.route('/invite', invite)
   app.route('/profile', profile)
   app.route('/resolve', resolve)
   app.route('/user', user)

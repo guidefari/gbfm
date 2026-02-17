@@ -212,6 +212,35 @@ export async function sendMusicReminderEmail({
   })
 }
 
+export async function sendInviteEmail({
+  to,
+  name,
+  inviteUrl,
+  role = 'user',
+  expiresIn = '7 days'
+}: {
+  to: string
+  name: string
+  inviteUrl: string
+  role?: string
+  expiresIn?: string
+}): Promise<void> {
+  const { InviteEmail } = await import('../emails/invite')
+
+  await sendEmail({
+    to,
+    template: {
+      subject: "You've been invited to goosebumps.fm",
+      component: React.createElement(InviteEmail, {
+        name,
+        inviteUrl,
+        role,
+        expiresIn
+      })
+    }
+  })
+}
+
 export async function sendBackupNotificationEmail({
   to,
   status,

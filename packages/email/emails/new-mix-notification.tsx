@@ -11,6 +11,7 @@ import {
   Text
 } from '@react-email/components'
 import type * as React from 'react'
+import { emailTheme } from './theme'
 
 interface NewMixNotificationProps {
   username: string
@@ -110,13 +111,12 @@ export const NewMixNotification: React.FC<
 
 // Styles
 const main = {
-  backgroundColor: '#0a0a0a',
-  fontFamily:
-    '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif'
+  backgroundColor: emailTheme.colors.mono.page,
+  fontFamily: emailTheme.typography.sansAlt
 }
 
 const container = {
-  backgroundColor: '#0a0a0a',
+  backgroundColor: emailTheme.colors.mono.page,
   margin: '0 auto',
   padding: '0',
   maxWidth: '600px'
@@ -125,14 +125,14 @@ const container = {
 const header = {
   padding: '40px 20px 30px',
   textAlign: 'center' as const,
-  borderBottom: '1px solid #1a1a1a'
+  borderBottom: `1px solid ${emailTheme.colors.mono.border}`
 }
 
 const logoText = {
   fontSize: '20px',
   fontWeight: '700',
   letterSpacing: '4px',
-  color: '#ffffff',
+  color: emailTheme.colors.mono.white,
   margin: '0 0 4px',
   textTransform: 'uppercase' as const
 }
@@ -140,7 +140,7 @@ const logoText = {
 const tagline = {
   fontSize: '11px',
   letterSpacing: '2px',
-  color: '#666666',
+  color: emailTheme.colors.mono.textMuted,
   margin: '0',
   textTransform: 'uppercase' as const
 }
@@ -153,7 +153,7 @@ const hero = {
 const newMixLabel = {
   fontSize: '11px',
   letterSpacing: '3px',
-  color: '#999999',
+  color: emailTheme.colors.mono.textSecondary,
   margin: '0 0 20px',
   textTransform: 'uppercase' as const
 }
@@ -165,7 +165,7 @@ const content = {
 
 const greeting = {
   fontSize: '16px',
-  color: '#ffffff',
+  color: emailTheme.colors.mono.white,
   margin: '0 0 16px',
   fontWeight: '500'
 }
@@ -173,19 +173,19 @@ const greeting = {
 const bodyText = {
   fontSize: '16px',
   lineHeight: '24px',
-  color: '#999999',
+  color: emailTheme.colors.mono.textSecondary,
   margin: '0 0 32px'
 }
 
 const ctaButton = {
-  backgroundColor: '#ffffff',
-  color: '#000000',
+  backgroundColor: emailTheme.colors.mono.white,
+  color: emailTheme.colors.mono.black,
   fontSize: '14px',
   fontWeight: '600',
   letterSpacing: '1px',
   textTransform: 'uppercase' as const,
   padding: '14px 40px',
-  borderRadius: '30px',
+  borderRadius: emailTheme.radius.pill,
   textDecoration: 'none',
   display: 'inline-block',
   margin: '0 0 24px'
@@ -193,12 +193,12 @@ const ctaButton = {
 
 const dateInfo = {
   fontSize: '13px',
-  color: '#666666',
+  color: emailTheme.colors.mono.textMuted,
   margin: '0'
 }
 
 const mixTitleStyles = {
-  color: '#9bfd9e',
+  color: emailTheme.colors.mono.textPrimary,
   fontSize: '28px',
   fontWeight: 'bold',
   margin: '24px 0 8px',
@@ -206,7 +206,7 @@ const mixTitleStyles = {
 }
 
 const artistText = {
-  color: '#b6fadf',
+  color: emailTheme.colors.mono.textTertiary,
   fontSize: '18px',
   margin: '0 0 8px',
   textAlign: 'center' as const

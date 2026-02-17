@@ -10,6 +10,7 @@ import {
   Section,
   Text
 } from '@react-email/components'
+import { emailTheme } from './theme'
 
 interface WelcomeEmailProps {
   username: string
@@ -76,13 +77,12 @@ export function WelcomeEmail({
 }
 
 const main = {
-  backgroundColor: '#111827',
-  fontFamily:
-    "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif"
+  backgroundColor: emailTheme.colors.brand.page,
+  fontFamily: emailTheme.typography.sans
 }
 
 const container = {
-  backgroundColor: '#1a5368',
+  backgroundColor: emailTheme.colors.brand.container,
   margin: '0 auto',
   padding: '20px 0 48px',
   marginBottom: '64px'
@@ -91,12 +91,12 @@ const container = {
 const header = {
   textAlign: 'center' as const,
   padding: '48px 0',
-  backgroundColor: '#4e8c71',
-  color: '#ffffff'
+  backgroundColor: emailTheme.colors.brand.header,
+  color: emailTheme.colors.brand.white
 }
 
 const h1 = {
-  color: '#9bfd9e',
+  color: emailTheme.colors.brand.textPrimary,
   fontSize: '32px',
   fontWeight: 'bold',
   margin: '0 0 8px',
@@ -104,7 +104,7 @@ const h1 = {
 }
 
 const subtitle = {
-  color: '#84c9dd',
+  color: emailTheme.colors.brand.textSecondary,
   fontSize: '16px',
   margin: '0',
   textAlign: 'center' as const
@@ -115,23 +115,23 @@ const content = {
 }
 
 const h2 = {
-  color: '#9bfd9e',
+  color: emailTheme.colors.brand.textPrimary,
   fontSize: '24px',
   fontWeight: 'bold',
   margin: '0 0 16px'
 }
 
 const text = {
-  color: '#84c9dd',
+  color: emailTheme.colors.brand.textSecondary,
   fontSize: '16px',
   lineHeight: '24px',
   margin: '0 0 16px'
 }
 
 const button = {
-  backgroundColor: '#9bfd9e',
-  borderRadius: '6px',
-  color: '#111827',
+  backgroundColor: emailTheme.colors.brand.textPrimary,
+  borderRadius: emailTheme.radius.md,
+  color: emailTheme.colors.brand.textInverse,
   fontSize: '16px',
   fontWeight: 'bold',
   textDecoration: 'none',
@@ -143,20 +143,20 @@ const button = {
 }
 
 const footer = {
-  borderTop: '1px solid #4e8c71',
+  borderTop: `1px solid ${emailTheme.colors.brand.header}`,
   padding: '32px 24px',
   textAlign: 'center' as const
 }
 
 const footerText = {
-  color: '#84c9dd',
+  color: emailTheme.colors.brand.textSecondary,
   fontSize: '14px',
   lineHeight: '20px',
   margin: '0 0 8px'
 }
 
 const link = {
-  color: '#9bfd9e',
+  color: emailTheme.colors.brand.textPrimary,
   textDecoration: 'underline'
 }
 
