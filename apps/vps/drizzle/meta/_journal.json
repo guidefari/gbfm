@@ -176,6 +176,13 @@
       "when": 1770327910683,
       "tag": "0027_illegal_mojo",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1771352455467,
+      "tag": "0028_quick_wolfsbane",
+      "breakpoints": true
     }
   ]
 }

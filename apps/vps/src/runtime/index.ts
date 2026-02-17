@@ -7,7 +7,6 @@ import type { LabelService } from '@/services/label.service'
 import type { MusicReminderService } from '@/services/music-reminder.service'
 import type { PostService } from '@/services/post.service'
 import type { ProfileService } from '@/services/profile.service'
-import type { PublicationService } from '@/services/publication.service'
 import type { QRCodeService } from '@/services/qrcode.service'
 import type { ReleaseService } from '@/services/release.service'
 import type { ResolveService } from '@/services/resolve.service'
@@ -32,7 +31,6 @@ type AppServices =
   | PostService
   | LabelService
   | ProfileService
-  | PublicationService
   | QRCodeService
   | ReleaseService
   | ResolveService

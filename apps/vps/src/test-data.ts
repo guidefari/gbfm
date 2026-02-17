@@ -1,7 +1,6 @@
 import type { z } from 'zod'
 import type { insertUserSchema } from './db/auth.schema'
 import type { createPostSchema } from './db/post.schema'
-import type { selectPublicationSchema } from './db/publication.schema'
 
 export const users: Array<z.infer<typeof insertUserSchema>> = [
   {
@@ -24,8 +23,7 @@ export const posts: Array<z.infer<typeof createPostSchema>> = [
     creatorIds: ['1', '2'],
     draft: false,
     tags: ['dnb', 'techno', 'house'],
-    type: 'post',
-    publicationId: '1'
+    type: 'post'
   },
   {
     title: 'Micro 1',
@@ -36,8 +34,7 @@ export const posts: Array<z.infer<typeof createPostSchema>> = [
     creatorIds: ['1'],
     draft: false,
     tags: ['dnb', 'techno', 'house'],
-    type: 'micro',
-    publicationId: '1'
+    type: 'micro'
   },
   {
     title: 'Label 1',
@@ -48,16 +45,6 @@ export const posts: Array<z.infer<typeof createPostSchema>> = [
     creatorIds: ['1'],
     draft: false,
     tags: ['dnb', 'techno', 'house'],
-    type: 'post',
-    publicationId: '1'
-  }
-]
-
-export const publications: Array<z.infer<typeof selectPublicationSchema>> = [
-  {
-    id: '1',
-    name: 'Publication 1',
-    description: 'Description 1',
-    slug: 'publication-1'
+    type: 'post'
   }
 ]

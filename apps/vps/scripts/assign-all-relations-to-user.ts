@@ -4,10 +4,6 @@ import { audioCreators, audioTable } from '../src/db/audio.schema'
 import { user } from '../src/db/auth.schema'
 import { labelCreators, labelsTable } from '../src/db/label.schema'
 import { postCreators, postsTable } from '../src/db/post.schema'
-import {
-  publicationMembers,
-  publicationsTable
-} from '../src/db/publication.schema'
 
 async function assignAllRelationsToUser() {
   const targetEmail = 'guidefari@icloud.com'
@@ -136,47 +132,6 @@ async function assignAllRelationsToUser() {
     console.log(`  ✅ Reassigned ${wrongLabelCreators.length} label_creators to target user`)
     totalUpdated += wrongLabelCreators.length
   }
-
-
-  const publications = await db
-    .select({ id: publicationsTable.id })
-    .from(publicationsTable)
-  const existingPubMembers = await db
-    .select({ publicationId: publicationMembers.publicationId })
-    .from(publicationMembers)
-  const pubIdsWithMembers = new Set(existingPubMembers.map((r) => r.publicationId))
-  const pubsWithoutMembers = publications.filter(
-    (p) => !pubIdsWithMembers.has(p.id)
-  )
-
-  console.log(`\nPublications: ${publications.length} total, ${pubsWithoutMembers.length} without members`)
-  if (pubsWithoutMembers.length > 0) {
-    await db.insert(publicationMembers).values(
-      pubsWithoutMembers.map((p) => ({
-        publicationId: p.id,
-        userId: targetUser.id
-      }))
-    )
-    console.log(`  ✅ Created ${pubsWithoutMembers.length} publication_members entries`)
-    totalCreated += pubsWithoutMembers.length
-  }
-
-  const wrongPubMembers = await db
-    .select()
-    .from(publicationMembers)
-    .where(notInArray(publicationMembers.userId, [targetUser.id]))
-  if (wrongPubMembers.length > 0) {
-    await db.delete(publicationMembers).where(notInArray(publicationMembers.userId, [targetUser.id]))
-    await db.insert(publicationMembers).values(
-      wrongPubMembers.map((r) => ({
-        publicationId: r.publicationId,
-        userId: targetUser.id
-      }))
-    ).onConflictDoNothing()
-    console.log(`  ✅ Reassigned ${wrongPubMembers.length} publication_members to target user`)
-    totalUpdated += wrongPubMembers.length
-  }
-
   console.log(`\n✅ Migration complete!`)
   console.log(`   Created: ${totalCreated} new creator/member entries`)
   console.log(`   Updated: ${totalUpdated} existing entries`)

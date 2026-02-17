@@ -8,7 +8,6 @@ import favorites from '@/routes/favorites/favorites.index'
 import musicReminders from '@/routes/music-reminders/music-reminders.index'
 import newsletter from '@/routes/newsletter/newsletter.index'
 import profile from '@/routes/profile/profile.index'
-import publication from '@/routes/publication/publication.index'
 import { seoRouter, shareRouter } from '@/routes/redirect/redirect.index'
 import resolve from '@/routes/resolve/resolve.index'
 import rss from '@/routes/rss/rss.index'
@@ -41,7 +40,6 @@ const setupRoutesEffect = Effect.gen(function* () {
   app.route('/content', content)
   app.route('/email', email)
   app.route('/newsletter', newsletter)
-  app.route('/publication', publication)
   app.route('/s', shareRouter)
   app.route('/shows', shows)
   app.route('/spotify', spotify)

@@ -20,7 +20,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/use-toast'
 import { TagsInput } from '@/components/upload'
-import { fetcher, type PaginatedResponse, VPS_BASE_URL } from '@/lib/http'
+import { fetcher, VPS_BASE_URL } from '@/lib/http'
 import { useAuthStore } from '@/store'
 import { UserSearch } from './admin/_components/UserSearch'
 
@@ -40,13 +40,7 @@ interface PostItem {
   tags: string[] | null
   draft: boolean
   type: PostType | null
-  publicationId: string | null
   creators?: Array<{ id: string; name: string }>
-}
-
-interface PublicationItem {
-  id: string
-  title: string
 }
 
 interface PostFormData {
@@ -58,7 +52,6 @@ interface PostFormData {
   tags: string[]
   draft: boolean
   type: PostType
-  publicationId: string
 }
 
 function PostUploadPage() {
@@ -79,8 +72,7 @@ function PostUploadPage() {
     thumbnailUrl: '',
     tags: [],
     draft: false,
-    type: search.type ?? 'post',
-    publicationId: ''
+    type: search.type ?? 'post'
   })
   const [artworkFile, setArtworkFile] = useState<File | null>(null)
   const [artworkPreview, setArtworkPreview] = useState<string | null>(null)
@@ -98,14 +90,6 @@ function PostUploadPage() {
     enabled: isEditMode && Boolean(search.edit)
   })
 
-  const { data: publicationsData } = useQuery({
-    queryKey: ['publications', 'all'],
-    queryFn: () =>
-      fetcher<PaginatedResponse<PublicationItem>>(
-        `${VPS_BASE_URL}/publication?limit=50&offset=0`
-      )
-  })
-
   useEffect(() => {
     if (!existingPost) return
     setFormData({
@@ -116,8 +100,7 @@ function PostUploadPage() {
       thumbnailUrl: existingPost.thumbnailUrl || '',
       tags: existingPost.tags || [],
       draft: existingPost.draft ?? false,
-      type: existingPost.type || search.type || 'post',
-      publicationId: existingPost.publicationId || ''
+      type: existingPost.type || search.type || 'post'
     })
     setSelectedCreators(existingPost.creators || [])
   }, [existingPost, search.type])
@@ -177,7 +160,6 @@ function PostUploadPage() {
         tags: data.tags,
         draft: data.draft,
         type: data.type,
-        publicationId: data.publicationId || null,
         creatorIds:
           selectedCreators.length > 0
             ? selectedCreators.map((creator) => creator.id)
@@ -266,8 +248,7 @@ function PostUploadPage() {
         thumbnailUrl: existingPost.thumbnailUrl || '',
         tags: existingPost.tags || [],
         draft: existingPost.draft ?? false,
-        type: existingPost.type || 'post',
-        publicationId: existingPost.publicationId || ''
+        type: existingPost.type || 'post'
       })
       return
     }
@@ -280,8 +261,7 @@ function PostUploadPage() {
       thumbnailUrl: '',
       tags: [],
       draft: false,
-      type: search.type || 'post',
-      publicationId: ''
+      type: search.type || 'post'
     })
     removeArtworkFile()
   }
@@ -388,29 +368,6 @@ function PostUploadPage() {
                     <SelectContent>
                       <SelectItem value='post'>Dispatch</SelectItem>
                       <SelectItem value='micro'>Ping</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className='space-y-2'>
-                  <Label className='text-gb-pastel-green-1'>Publication</Label>
-                  <Select
-                    value={formData.publicationId || '__none__'}
-                    onValueChange={(value) =>
-                      handleInputChange(
-                        'publicationId',
-                        value === '__none__' ? '' : value
-                      )
-                    }>
-                    <SelectTrigger>
-                      <SelectValue placeholder='None' />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value='__none__'>None</SelectItem>
-                      {(publicationsData?.data || []).map((publication) => (
-                        <SelectItem key={publication.id} value={publication.id}>
-                          {publication.title}
-                        </SelectItem>
-                      ))}
                     </SelectContent>
                   </Select>
                 </div>

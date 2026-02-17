@@ -109,14 +109,6 @@ export class PostServiceError extends Data.TaggedError('PostServiceError')<{
   readonly postId?: string
 }> {}
 
-export class PublicationServiceError extends Data.TaggedError(
-  'PublicationServiceError'
-)<{
-  readonly message: string
-  readonly operation: string
-  readonly publicationId?: string
-}> {}
-
 export class ReleaseServiceError extends Data.TaggedError(
   'ReleaseServiceError'
 )<{

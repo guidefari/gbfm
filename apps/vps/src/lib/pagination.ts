@@ -42,7 +42,7 @@ export const paginationMetadataSchema = z
  * @returns Zod schema for paginated response
  *
  * @example
- * const publicationListSchema = createPaginatedResponseSchema(publicationSchema)
+ * const postListSchema = createPaginatedResponseSchema(postSchema)
  */
 export function createPaginatedResponseSchema<T extends z.ZodType>(
   dataSchema: T

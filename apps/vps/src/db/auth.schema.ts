@@ -11,7 +11,6 @@ import {
   userEmailPreferencesTable
 } from './email.schema'
 import { postCreators } from './post.schema'
-import { publicationMembers } from './publication.schema'
 import { showCreators, showSubscriptionsTable } from './show.schema'
 
 export const user = pgTable('user', {
@@ -100,7 +99,6 @@ export const userRelations = relations(user, ({ many, one }) => ({
   audioCreators: many(audioCreators),
   emailDeliveryLogs: many(emailDeliveryLogsTable),
   userEmailPreferences: one(userEmailPreferencesTable),
-  publicationMembers: many(publicationMembers),
   showCreators: many(showCreators),
   showSubscriptions: many(showSubscriptionsTable)
 }))

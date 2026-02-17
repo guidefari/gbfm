@@ -13,7 +13,6 @@ import {
   uuid
 } from 'drizzle-orm/pg-core'
 import { user } from './auth.schema'
-import { publicationsTable } from './publication.schema'
 import { defaultContentFields } from './util'
 
 export const postTypeEnum = pgEnum('post_type', ['post', 'micro'])
@@ -24,10 +23,7 @@ export const postsTable = pgTable(
   'posts',
   {
     ...defaultContentFields,
-    type: postTypeEnum(),
-    publicationId: uuid().references(() => publicationsTable.id, {
-      onDelete: 'set null'
-    })
+    type: postTypeEnum()
   },
   (table) => [index('posts_slug_idx').on(table.slug)]
 )
@@ -42,11 +38,6 @@ export type SelectMdxCompiledPost = SelectPost & {
     name: string
     username: string | null
   }>
-  publication?: {
-    id: string
-    name: string
-    slug: string
-  }
 }
 
 export const selectPostSchema = z
@@ -72,10 +63,6 @@ export const selectPostSchema = z
       .enum(['post', 'micro'])
       .nullable()
       .openapi({ description: 'Type of the post' }),
-    publicationId: z
-      .string()
-      .nullable()
-      .openapi({ description: 'ID of the publication this post belongs to' }),
     createdAt: z.date().openapi({ description: 'Creation timestamp' }),
     updatedAt: z.date().openapi({ description: 'Last update timestamp' })
   })
@@ -100,15 +87,7 @@ export const selectMdxCompiledPostSchema = selectPostSchema
           .openapi('Creator')
       )
       .optional()
-      .openapi({ description: 'List of creators for this post' }),
-    publication: z
-      .object({
-        id: z.string().openapi({ description: 'Publication ID' }),
-        name: z.string().openapi({ description: 'Publication name' }),
-        slug: z.string().openapi({ description: 'Publication slug' })
-      })
-      .optional()
-      .openapi({ description: 'Publication information' })
+      .openapi({ description: 'List of creators for this post' })
   })
   .openapi('CompiledPost')
 
@@ -143,13 +122,7 @@ export const insertPostSchema = z
       .enum(['post', 'micro'])
       .nullable()
       .optional()
-      .openapi({ description: 'Type of the post' }),
-    publicationId: z
-      .string()
-      .uuid()
-      .nullable()
-      .optional()
-      .openapi({ description: 'Publication ID' })
+      .openapi({ description: 'Type of the post' })
   })
   .openapi('InsertPost')
 
@@ -180,12 +153,8 @@ export const postCreators = pgTable(
   (t) => [primaryKey({ columns: [t.postId, t.creatorId] })]
 )
 
-export const postsRelations = relations(postsTable, ({ many, one }) => ({
-  postCreators: many(postCreators),
-  publication: one(publicationsTable, {
-    fields: [postsTable.publicationId],
-    references: [publicationsTable.id]
-  })
+export const postsRelations = relations(postsTable, ({ many }) => ({
+  postCreators: many(postCreators)
 }))
 
 export const postCreatorsRelations = relations(postCreators, ({ one }) => ({
