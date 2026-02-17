@@ -2,7 +2,6 @@ import {
   Body,
   Button,
   Container,
-  Head,
   Heading,
   Html,
   Img,
@@ -12,6 +11,7 @@ import {
   Text
 } from '@react-email/components'
 import type * as React from 'react'
+import { EmailHead } from './email-head'
 import { emailTheme } from './theme'
 
 interface MusicReminderEmailProps {
@@ -41,9 +41,9 @@ export const MusicReminderEmail: React.FC<
 }) => {
   return (
     <Html>
-      <Head />
+      <EmailHead />
       <Preview>
-        Time to listen: {musicTitle} by {artistName} 🎵
+        Time to listen: {musicTitle} by {artistName}
       </Preview>
       <Body style={main}>
         <Container style={container}>

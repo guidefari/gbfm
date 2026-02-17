@@ -2,7 +2,6 @@ import {
   Body,
   Button,
   Container,
-  Head,
   Heading,
   Html,
   Link,
@@ -10,6 +9,7 @@ import {
   Section,
   Text
 } from '@react-email/components'
+import { EmailHead } from './email-head'
 import { emailTheme } from './theme'
 
 interface WelcomeEmailProps {
@@ -23,8 +23,8 @@ export function WelcomeEmail({
 }: WelcomeEmailProps) {
   return (
     <Html>
-      <Head />
-      <Preview>Welcome to goosebumps.fm, {username}! 🎵</Preview>
+      <EmailHead />
+      <Preview>Welcome to goosebumps.fm, {username}!</Preview>
       <Body style={main}>
         <Container style={container}>
           <Section style={header}>
@@ -33,7 +33,7 @@ export function WelcomeEmail({
           </Section>
 
           <Section style={content}>
-            <Heading style={h2}>Welcome, {username}! 🎉</Heading>
+            <Heading style={h2}>Welcome, {username}!</Heading>
             <Text style={text}>
               Thank you for joining the goosebumps.fm community! We're excited
               to have you on board and can't wait to see what you'll create.

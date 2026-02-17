@@ -18,6 +18,12 @@ import { config } from '@/services/config.service'
 
 import type { SendInviteRoute } from './invite.routes'
 
+function generateToken(length: number): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  const bytes = crypto.getRandomValues(new Uint8Array(length))
+  return Array.from(bytes, (b) => chars[b % chars.length]).join('')
+}
+
 export const sendInviteHandler: AppRouteHandler<SendInviteRoute> = async (
   c
 ) => {
@@ -39,13 +45,13 @@ export const sendInviteHandler: AppRouteHandler<SendInviteRoute> = async (
     return c.json({ error: 'User not found' }, HttpStatusCodes.NOT_FOUND)
   }
 
-  const token = crypto.randomUUID()
+  const token = generateToken(24)
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
 
   await db.insert(verification).values({
     id: crypto.randomUUID(),
-    identifier: targetUser.email,
-    value: token,
+    identifier: `reset-password:${token}`,
+    value: targetUser.id,
     expiresAt
   })
 

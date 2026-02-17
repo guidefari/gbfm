@@ -2,7 +2,6 @@ import {
   Body,
   Button,
   Container,
-  Head,
   Heading,
   Html,
   Link,
@@ -11,6 +10,7 @@ import {
   Text
 } from '@react-email/components'
 import type * as React from 'react'
+import { EmailHead } from './email-head'
 import { emailTheme } from './theme'
 
 interface InviteEmailProps {
@@ -28,7 +28,7 @@ export const InviteEmail: React.FC<Readonly<InviteEmailProps>> = ({
 }) => {
   return (
     <Html>
-      <Head />
+      <EmailHead />
       <Preview>You've been invited to goosebumps.fm</Preview>
       <Body style={main}>
         <Container style={container}>

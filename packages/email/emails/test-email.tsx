@@ -2,7 +2,6 @@ import {
   Body,
   Button,
   Container,
-  Head,
   Heading,
   Html,
   Link,
@@ -10,6 +9,7 @@ import {
   Section,
   Text
 } from '@react-email/components'
+import { EmailHead } from './email-head'
 import { emailTheme } from './theme'
 
 interface TestEmailProps {
@@ -23,17 +23,17 @@ export function TestEmail({
 }: TestEmailProps) {
   return (
     <Html>
-      <Head />
+      <EmailHead />
       <Preview>Test Email - {name}</Preview>
       <Body style={main}>
         <Container style={container}>
           <Section style={header}>
-            <Heading style={h1}>🧪 Test Email</Heading>
+            <Heading style={h1}>Test Email</Heading>
             <Text style={subtitle}>Development & Testing</Text>
           </Section>
 
           <Section style={content}>
-            <Heading style={h2}>Hello, {name}! 👋</Heading>
+            <Heading style={h2}>Hello, {name}!</Heading>
             <Text style={text}>{message}</Text>
 
             <Text style={text}>

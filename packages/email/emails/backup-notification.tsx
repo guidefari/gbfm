@@ -2,7 +2,6 @@ import {
   Body,
   Button,
   Container,
-  Head,
   Heading,
   Html,
   Link,
@@ -10,6 +9,7 @@ import {
   Section,
   Text
 } from '@react-email/components'
+import { EmailHead } from './email-head'
 import { emailTheme } from './theme'
 
 interface BackupNotificationProps {
@@ -39,29 +39,25 @@ export function BackupNotification({
 }: BackupNotificationProps) {
   const subject =
     status === 'success'
-      ? `✅ Database Backup Successful - ${stage.toUpperCase()}`
-      : `❌ Database Backup Failed - ${stage.toUpperCase()}`
+      ? `Database Backup Successful - ${stage.toUpperCase()}`
+      : `Database Backup Failed - ${stage.toUpperCase()}`
 
   return (
     <Html>
-      <Head />
+      <EmailHead />
       <Preview>{subject}</Preview>
       <Body style={main}>
         <Container style={getContainerStyle(status)}>
           <Section style={getHeaderStyle(status)}>
             <Heading style={h1}>
-              {status === 'success'
-                ? '✅ Backup Successful'
-                : '❌ Backup Failed'}
+              {status === 'success' ? 'Backup Successful' : 'Backup Failed'}
             </Heading>
             <Text style={subtitle}>Database Backup Task</Text>
           </Section>
 
           <Section style={content}>
             <Heading style={h2}>
-              {status === 'success'
-                ? 'Great news! 🎉'
-                : 'Something went wrong! ⚠️'}
+              {status === 'success' ? 'Great news!' : 'Something went wrong!'}
             </Heading>
 
             <Text style={text}>

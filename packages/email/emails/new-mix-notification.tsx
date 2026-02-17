@@ -2,7 +2,6 @@ import {
   Body,
   Button,
   Container,
-  Head,
   Heading,
   Html,
   // Img,
@@ -11,6 +10,7 @@ import {
   Text
 } from '@react-email/components'
 import type * as React from 'react'
+import { EmailHead } from './email-head'
 import { emailTheme } from './theme'
 
 interface NewMixNotificationProps {
@@ -37,9 +37,9 @@ export const NewMixNotification: React.FC<
 }) => {
   return (
     <Html>
-      <Head />
+      <EmailHead />
       <Preview>
-        New mix alert: {mixTitle} by {artistName} 🎧
+        New mix alert: {mixTitle} by {artistName}
       </Preview>
       <Body style={main}>
         <Container style={container}>

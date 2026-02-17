@@ -2,7 +2,6 @@ import {
   Body,
   Button,
   Container,
-  Head,
   Heading,
   Html,
   Link,
@@ -11,6 +10,7 @@ import {
   Text
 } from '@react-email/components'
 import type * as React from 'react'
+import { EmailHead } from './email-head'
 import { emailTheme } from './theme'
 
 interface PasswordResetEmailProps {
@@ -23,7 +23,7 @@ export const PasswordResetEmail: React.FC<
 > = ({ resetUrl, expiresIn = '1 hour' }) => {
   return (
     <Html>
-      <Head />
+      <EmailHead />
       <Preview>Reset your goosebumps.fm password</Preview>
       <Body style={main}>
         <Container style={container}>
