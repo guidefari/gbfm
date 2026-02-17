@@ -1,9 +1,9 @@
 export { BackupNotification } from '../emails/backup-notification'
-export { emailTheme } from '../emails/theme'
 export { InviteEmail } from '../emails/invite'
 export { NewMixNotification } from '../emails/new-mix-notification'
 export { PasswordResetEmail } from '../emails/password-reset'
 export { TestEmail } from '../emails/test-email'
+export { emailTheme } from '../emails/theme'
 export { WelcomeEmail } from '../emails/welcome'
 export {
   type EmailTemplate,
