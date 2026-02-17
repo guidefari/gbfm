@@ -1,3 +1,10 @@
+# [2.22.0](https://github.com/guidefari/gbfm/compare/v2.21.1...v2.22.0) (2026-02-17)
+
+
+### Features
+
+* remove publications ([a95683e](https://github.com/guidefari/gbfm/commit/a95683e9e95780157d455c7bd37981170f463be6))
+
 ## [2.21.1](https://github.com/guidefari/gbfm/compare/v2.21.0...v2.21.1) (2026-02-16)
 
 
