@@ -169,7 +169,7 @@ export const labelCreators = pgTable(
       .references(() => labelsTable.id),
     creatorId: text()
       .notNull()
-      .references(() => user.id)
+      .references(() => user.id, { onDelete: 'cascade' })
   },
   (t) => [primaryKey({ columns: [t.labelId, t.creatorId] })]
 )

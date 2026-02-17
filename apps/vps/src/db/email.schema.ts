@@ -42,7 +42,7 @@ export const emailDeliveryLogsTable = pgTable(
   'email_delivery_logs',
   {
     id: uuid().primaryKey().defaultRandom(),
-    userId: text().references(() => user.id), // null for non-user emails
+    userId: text().references(() => user.id, { onDelete: 'set null' }), // null for non-user emails
     recipientEmail: varchar({ length: 255 }).notNull(),
     recipientName: varchar({ length: 255 }),
     emailType: varchar({ length: 50 }).notNull(),
@@ -73,7 +73,7 @@ export const userEmailPreferencesTable = pgTable('user_email_preferences', {
   userId: text()
     .notNull()
     .unique()
-    .references(() => user.id),
+    .references(() => user.id, { onDelete: 'cascade' }),
   // Notification preferences
   mixReleaseEnabled: boolean().notNull().default(true),
   promotionalEnabled: boolean().notNull().default(true),

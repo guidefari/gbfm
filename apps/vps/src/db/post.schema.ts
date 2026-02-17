@@ -148,7 +148,7 @@ export const postCreators = pgTable(
       .references(() => postsTable.id),
     creatorId: text()
       .notNull()
-      .references(() => user.id)
+      .references(() => user.id, { onDelete: 'cascade' })
   },
   (t) => [primaryKey({ columns: [t.postId, t.creatorId] })]
 )
