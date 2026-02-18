@@ -23,7 +23,7 @@ import {
 } from '@/components/ui/select'
 import { toast } from '@/components/ui/use-toast'
 import { authClient } from '@/lib/auth-client'
-import { VPS_BASE_URL, fetcher } from '@/lib/http'
+import { fetcher, VPS_BASE_URL } from '@/lib/http'
 import { ImageUploadField } from './ImageUploadField'
 
 const ROLES = ['admin', 'editor', 'creator', 'user'] as const
