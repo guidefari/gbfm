@@ -1,3 +1,10 @@
+## [2.24.1](https://github.com/guidefari/gbfm/compare/v2.24.0...v2.24.1) (2026-02-20)
+
+
+### Bug Fixes
+
+* **ci:** format ([0686c45](https://github.com/guidefari/gbfm/commit/0686c457b941750e063ba78a648de6be7e1ceffc))
+
 # [2.24.0](https://github.com/guidefari/gbfm/compare/v2.23.0...v2.24.0) (2026-02-20)
 
 
