@@ -1,50 +1,15 @@
 import { and, eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
-import { audioCreators, audioTable } from '@/db/audio.schema'
-import { user as userTable } from '@/db/auth.schema'
-import { postCreators, postsTable } from '@/db/post.schema'
 import { showCreators, showsTable } from '@/db/show.schema'
+import { user as userTable } from '@/db/auth.schema'
 import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
 import { isReservedSlug } from '@/lib/reserved-slugs'
-
-type ProfileData = {
-  id: string
-  name: string
-  username: string | null
-  image: string | null
-  createdAt: Date
-  content: {
-    mixes: Array<{
-      id: string
-      title: string
-      slug: string
-      thumbnailUrl: string | null
-      type: 'mix' | 'track' | 'misc'
-    }>
-    shows: Array<{
-      id: string
-      title: string
-      slug: string
-      thumbnailUrl: string | null
-    }>
-    dispatches: Array<{
-      id: string
-      title: string
-      slug: string
-      thumbnailUrl: string | null
-      description: string | null
-      createdAt: Date
-    }>
-    pings: Array<{
-      id: string
-      title: string
-      slug: string
-      createdAt: Date
-    }>
-  }
-}
+import {
+  type PublicProfile,
+  getPublicProfileEffect
+} from '@/services/profile.service'
 
 type ShowData = {
   id: string
@@ -60,7 +25,7 @@ type ShowData = {
 }
 
 export type ResolveResult =
-  | { type: 'profile'; data: ProfileData }
+  | { type: 'profile'; data: PublicProfile }
   | { type: 'show'; data: ShowData }
 
 export interface ResolveService {
@@ -74,7 +39,6 @@ export const ResolveService =
 
 const resolveEffect = (slug: string) =>
   Effect.gen(function* () {
-    // Check for reserved slugs first to avoid DB lookups
     if (isReservedSlug(slug)) {
       return yield* new NotFoundError({
         message: 'Not found',
@@ -88,11 +52,8 @@ const resolveEffect = (slug: string) =>
         db
           .select({
             id: userTable.id,
-            name: userTable.name,
-            username: userTable.username,
-            image: userTable.image,
-            createdAt: userTable.createdAt,
-            banned: userTable.banned
+            banned: userTable.banned,
+            username: userTable.username
           })
           .from(userTable)
           .where(eq(userTable.username, slug))
@@ -107,112 +68,8 @@ const resolveEffect = (slug: string) =>
 
     const foundUser = userRecords[0]
     if (foundUser && !foundUser.banned) {
-      const userMixes = yield* Effect.tryPromise({
-        try: () =>
-          db
-            .select({
-              id: audioTable.id,
-              title: audioTable.title,
-              slug: audioTable.slug,
-              thumbnailUrl: audioTable.thumbnailUrl,
-              type: audioTable.type
-            })
-            .from(audioTable)
-            .innerJoin(audioCreators, eq(audioTable.id, audioCreators.audioId))
-            .where(
-              and(
-                eq(audioCreators.creatorId, foundUser.id),
-                eq(audioTable.draft, false)
-              )
-            )
-            .orderBy(audioTable.createdAt),
-        catch: (error) =>
-          new DatabaseError({
-            message: `Failed to get user mixes: ${getErrorMessage(error)}`,
-            operation: 'select',
-            table: 'audio'
-          })
-      })
-
-      const userShows = yield* Effect.tryPromise({
-        try: () =>
-          db
-            .select({
-              id: showsTable.id,
-              title: showsTable.title,
-              slug: showsTable.slug,
-              thumbnailUrl: showsTable.thumbnailUrl
-            })
-            .from(showsTable)
-            .innerJoin(showCreators, eq(showsTable.id, showCreators.showId))
-            .where(
-              and(
-                eq(showCreators.creatorId, foundUser.id),
-                eq(showsTable.draft, false)
-              )
-            )
-            .orderBy(showsTable.createdAt),
-        catch: (error) =>
-          new DatabaseError({
-            message: `Failed to get user shows: ${getErrorMessage(error)}`,
-            operation: 'select',
-            table: 'shows'
-          })
-      })
-
-      const userPosts = yield* Effect.tryPromise({
-        try: () =>
-          db
-            .select({
-              id: postsTable.id,
-              title: postsTable.title,
-              slug: postsTable.slug,
-              thumbnailUrl: postsTable.thumbnailUrl,
-              description: postsTable.description,
-              type: postsTable.type,
-              createdAt: postsTable.createdAt
-            })
-            .from(postsTable)
-            .innerJoin(postCreators, eq(postsTable.id, postCreators.postId))
-            .where(
-              and(
-                eq(postCreators.creatorId, foundUser.id),
-                eq(postsTable.draft, false)
-              )
-            )
-            .orderBy(postsTable.createdAt),
-        catch: (error) =>
-          new DatabaseError({
-            message: `Failed to get user posts: ${getErrorMessage(error)}`,
-            operation: 'select',
-            table: 'posts'
-          })
-      })
-
-      const dispatches = userPosts
-        .filter((p) => p.type === 'post')
-        .map(({ type, ...rest }) => rest)
-
-      const pings = userPosts
-        .filter((p) => p.type === 'micro')
-        .map(({ type, thumbnailUrl, description, ...rest }) => rest)
-
-      return {
-        type: 'profile' as const,
-        data: {
-          id: foundUser.id,
-          name: foundUser.name,
-          username: foundUser.username,
-          image: foundUser.image,
-          createdAt: foundUser.createdAt,
-          content: {
-            mixes: userMixes,
-            shows: userShows,
-            dispatches,
-            pings
-          }
-        }
-      }
+      const profile = yield* getPublicProfileEffect(slug)
+      return { type: 'profile' as const, data: profile }
     }
 
     const showRecords = yield* Effect.tryPromise({

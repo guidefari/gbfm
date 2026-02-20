@@ -64,7 +64,7 @@ export interface ProfileService {
 export const ProfileService =
   Context.GenericTag<ProfileService>('ProfileService')
 
-const getPublicProfileEffect = (username: string) =>
+export const getPublicProfileEffect = (username: string) =>
   Effect.gen(function* () {
     const userRecords = yield* Effect.tryPromise({
       try: () =>
