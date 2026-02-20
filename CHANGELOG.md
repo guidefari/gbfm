@@ -1,3 +1,10 @@
+## [2.24.2](https://github.com/guidefari/gbfm/compare/v2.24.1...v2.24.2) (2026-02-20)
+
+
+### Bug Fixes
+
+* social icons ([3a98313](https://github.com/guidefari/gbfm/commit/3a98313e73c9c58b9317020ce80317a67345ba33))
+
 ## [2.24.1](https://github.com/guidefari/gbfm/compare/v2.24.0...v2.24.1) (2026-02-20)
 
 
