@@ -1,14 +1,14 @@
 import { and, eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
-import { showCreators, showsTable } from '@/db/show.schema'
 import { user as userTable } from '@/db/auth.schema'
+import { showCreators, showsTable } from '@/db/show.schema'
 import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
 import { isReservedSlug } from '@/lib/reserved-slugs'
 import {
-  type PublicProfile,
-  getPublicProfileEffect
+  getPublicProfileEffect,
+  type PublicProfile
 } from '@/services/profile.service'
 
 type ShowData = {
