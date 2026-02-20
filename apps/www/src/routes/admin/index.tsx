@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuthStore } from '@/store/auth'
 import { ContentTab } from './_components/ContentTab'
+import { EmailLogsTab } from './_components/EmailLogsTab'
 import { SessionsTab } from './_components/SessionsTab'
 import { ShowsTab } from './_components/ShowsTab'
 import { UsersTab } from './_components/UsersTab'
@@ -48,6 +49,7 @@ function AdminDashboard() {
               <TabsTrigger value='content'>Content</TabsTrigger>
               <TabsTrigger value='shows'>Shows</TabsTrigger>
               <TabsTrigger value='sessions'>Sessions</TabsTrigger>
+              <TabsTrigger value='email-logs'>Email Logs</TabsTrigger>
             </TabsList>
 
             <TabsContent value='users'>
@@ -64,6 +66,10 @@ function AdminDashboard() {
 
             <TabsContent value='sessions'>
               <SessionsTab />
+            </TabsContent>
+
+            <TabsContent value='email-logs'>
+              <EmailLogsTab />
             </TabsContent>
           </Tabs>
         </CardContent>

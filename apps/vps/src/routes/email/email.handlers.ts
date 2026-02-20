@@ -7,17 +7,69 @@ import { audioTable } from '@/db/audio.schema'
 import { user as usersTable } from '@/db/auth.schema'
 import {
   EMAIL_DELIVERY_STATUSES,
-  EMAIL_NOTIFICATION_TYPES
+  EMAIL_NOTIFICATION_TYPES,
+  type SelectEmailDeliveryLog,
+  selectEmailDeliveryLogSchema
 } from '@/db/email.schema'
 import type { AppRouteHandler } from '@/lib/types'
 import {
   createEmailDeliveryLog,
+  getAdminEmailLogs,
   markEmailDeliveryLogAsFailed,
   markEmailDeliveryLogAsSent
 } from '@/repositories/email-delivery-log.repository'
 import { canReceiveEmail } from '@/repositories/email-preferences.repository'
 
-import type { SendMixNotificationRoute } from './email.routes'
+import type {
+  GetEmailLogsRoute,
+  SendMixNotificationRoute
+} from './email.routes'
+
+const EMAIL_TYPE_NORMALIZATION_MAP: Record<string, string> = {
+  TRANSACTIONAL: EMAIL_NOTIFICATION_TYPES.TRANSACTIONAL,
+  MIX_RELEASE: EMAIL_NOTIFICATION_TYPES.MIX_RELEASE,
+  MIXRELEASE: EMAIL_NOTIFICATION_TYPES.MIX_RELEASE,
+  MIX_NOTIFICATION: EMAIL_NOTIFICATION_TYPES.MIX_RELEASE,
+  MUSIC_REMINDER: EMAIL_NOTIFICATION_TYPES.MIX_RELEASE,
+  PROMOTIONAL: EMAIL_NOTIFICATION_TYPES.PROMOTIONAL,
+  SYSTEM: EMAIL_NOTIFICATION_TYPES.SYSTEM
+}
+
+const EMAIL_STATUS_NORMALIZATION_MAP: Record<string, string> = {
+  PENDING: EMAIL_DELIVERY_STATUSES.PENDING,
+  SENT: EMAIL_DELIVERY_STATUSES.SENT,
+  DELIVERED: EMAIL_DELIVERY_STATUSES.DELIVERED,
+  BOUNCED: EMAIL_DELIVERY_STATUSES.BOUNCED,
+  COMPLAINED: EMAIL_DELIVERY_STATUSES.COMPLAINED,
+  FAILED: EMAIL_DELIVERY_STATUSES.FAILED,
+  SUCCESS: EMAIL_DELIVERY_STATUSES.SENT,
+  FAILURE: EMAIL_DELIVERY_STATUSES.FAILED
+}
+
+function normalizeLogToken(value: string | null | undefined) {
+  return (value ?? '')
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+}
+
+function normalizeEmailLogRecord(
+  log: SelectEmailDeliveryLog
+): SelectEmailDeliveryLog {
+  const normalizedTypeToken = normalizeLogToken(log.emailType)
+  const normalizedStatusToken = normalizeLogToken(log.status)
+
+  return {
+    ...log,
+    emailType:
+      EMAIL_TYPE_NORMALIZATION_MAP[normalizedTypeToken] ??
+      EMAIL_NOTIFICATION_TYPES.SYSTEM,
+    status:
+      EMAIL_STATUS_NORMALIZATION_MAP[normalizedStatusToken] ??
+      EMAIL_DELIVERY_STATUSES.FAILED
+  }
+}
 
 export const sendMixNotification: AppRouteHandler<
   SendMixNotificationRoute
@@ -188,6 +240,24 @@ export const sendMixNotification: AppRouteHandler<
     console.error('Failed to send mix notification emails:', error)
     return c.json(
       { error: 'Failed to send emails' },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
+  }
+}
+
+export const getEmailLogs: AppRouteHandler<GetEmailLogsRoute> = async (c) => {
+  const query = c.req.valid('query')
+
+  try {
+    const result = await getAdminEmailLogs(query)
+    const data = result.data.map((log) =>
+      selectEmailDeliveryLogSchema.parse(normalizeEmailLogRecord(log))
+    )
+    return c.json({ data, pagination: result.pagination }, HttpStatusCodes.OK)
+  } catch (error) {
+    console.error('Failed to fetch email logs:', error)
+    return c.json(
+      { error: 'Failed to fetch email logs' },
       HttpStatusCodes.INTERNAL_SERVER_ERROR
     )
   }

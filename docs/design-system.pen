@@ -822,23 +822,23 @@
           "padding": 32,
           "children": [
             {
-              "type": "ellipse",
-              "id": "ce4DI",
+              "type": "frame",
+              "id": "zPisf",
               "name": "Avatar",
               "metadata": {
                 "type": "unsplash",
-                "username": "sezha72",
-                "link": "https://unsplash.com/@sezha72",
-                "author": "semen zhuravlev"
+                "username": "simonreza_",
+                "link": "https://unsplash.com/@simonreza_",
+                "author": "Simon Reza"
               },
+              "width": 96,
+              "height": 96,
               "fill": {
                 "type": "image",
                 "enabled": true,
-                "url": "https://images.unsplash.com/photo-1640202584480-4046a81d9da0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1ODk0Nzl8&ixlib=rb-4.1.0&q=80&w=1080",
+                "url": "https://images.unsplash.com/photo-1655923102863-c0b6cccc56f0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMxMzF8&ixlib=rb-4.1.0&q=80&w=1080",
                 "mode": "fill"
-              },
-              "width": 96,
-              "height": 96
+              }
             },
             {
               "type": "frame",
@@ -854,7 +854,7 @@
                   "name": "DisplayName",
                   "fill": "#9bfd9e",
                   "content": "Guide Fari",
-                  "fontFamily": "Space Grotesk",
+                  "fontFamily": "JetBrains Mono",
                   "fontSize": 24,
                   "fontWeight": "bold"
                 },
@@ -864,7 +864,7 @@
                   "name": "Username",
                   "fill": "#7ec8da",
                   "content": "@guidefari",
-                  "fontFamily": "Inter",
+                  "fontFamily": "JetBrains Mono",
                   "fontSize": 14,
                   "fontWeight": "normal"
                 },
@@ -874,7 +874,7 @@
                   "name": "MemberSince",
                   "fill": "#7ec8da",
                   "content": "Member since December 2025",
-                  "fontFamily": "Inter",
+                  "fontFamily": "JetBrains Mono",
                   "fontSize": 12,
                   "fontWeight": "normal"
                 }
@@ -914,65 +914,16 @@
           "padding": 24,
           "children": [
             {
-              "type": "frame",
-              "id": "iZf9b",
+              "id": "4TNNP",
+              "type": "ref",
+              "ref": "c633A",
               "name": "MixesHeader",
               "width": "fill_container",
-              "gap": 8,
-              "children": [
-                {
-                  "type": "text",
-                  "id": "6Zun5",
-                  "name": "MixesTitle",
-                  "fill": "#9bfd9e",
-                  "content": "Mixes",
-                  "fontFamily": "Space Grotesk",
-                  "fontSize": 18,
-                  "fontWeight": "bold"
-                },
-                {
-                  "type": "frame",
-                  "id": "BilvQ",
-                  "name": "PrevBtn",
-                  "width": 32,
-                  "height": 32,
-                  "fill": "hsl(215, 27.9%, 16.9%)",
-                  "cornerRadius": 4,
-                  "padding": 6,
-                  "children": [
-                    {
-                      "type": "icon_font",
-                      "id": "Nm6rZ",
-                      "name": "mixesPrevIcon",
-                      "width": 0,
-                      "height": 0,
-                      "iconFontFamily": "Material Symbols Rounded",
-                      "fill": "hsl(194, 52%, 67%)"
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "dmAOx",
-                  "name": "NextBtn",
-                  "width": 32,
-                  "height": 32,
-                  "fill": "hsl(215, 27.9%, 16.9%)",
-                  "cornerRadius": 4,
-                  "padding": 6,
-                  "children": [
-                    {
-                      "type": "icon_font",
-                      "id": "91Py9",
-                      "name": "mixesNextIcon",
-                      "width": 0,
-                      "height": 0,
-                      "iconFontFamily": "Material Symbols Rounded",
-                      "fill": "hsl(194, 52%, 67%)"
-                    }
-                  ]
+              "descendants": {
+                "4vyJY": {
+                  "content": "Mixes"
                 }
-              ]
+              }
             },
             {
               "type": "frame",
@@ -982,168 +933,80 @@
               "gap": 16,
               "children": [
                 {
-                  "type": "frame",
-                  "id": "JvAc1",
-                  "name": "MixCard1",
-                  "width": 144,
-                  "fill": "#153d4f",
-                  "layout": "vertical",
-                  "gap": 8,
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "5FWPQ",
-                      "name": "MixImg1",
-                      "metadata": {
-                        "type": "unsplash",
-                        "username": "jz2360",
-                        "link": "https://unsplash.com/@jz2360",
-                        "author": "Jaydee Zhang"
-                      },
-                      "width": 144,
-                      "height": 144,
+                  "id": "WeBhQ",
+                  "type": "ref",
+                  "ref": "cePOo",
+                  "name": "mc1",
+                  "descendants": {
+                    "IkTW8": {
                       "fill": {
                         "type": "image",
                         "enabled": true,
-                        "url": "https://images.unsplash.com/photo-1578066472314-bbd466999d98?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTA1MDh8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "url": "https://images.unsplash.com/photo-1682587007957-da4e7d116ffb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMxNTR8&ixlib=rb-4.1.0&q=80&w=1080",
                         "mode": "fill"
-                      },
-                      "cornerRadius": 4
+                      }
                     },
-                    {
-                      "type": "text",
-                      "id": "4TlTM",
-                      "name": "mix1title",
-                      "fill": "#7ec8da",
-                      "content": "gb#21",
-                      "fontFamily": "Inter",
-                      "fontSize": 13,
-                      "fontWeight": "normal"
+                    "5ynTi": {
+                      "content": "gb#21"
                     }
-                  ]
+                  }
                 },
                 {
-                  "type": "frame",
-                  "id": "GvjNJ",
-                  "name": "MixCard2",
-                  "width": 144,
-                  "fill": "#153d4f",
-                  "layout": "vertical",
-                  "gap": 8,
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "l1yI6",
-                      "name": "MixImg2",
-                      "metadata": {
-                        "type": "unsplash",
-                        "username": "tami171091",
-                        "link": "https://unsplash.com/@tami171091",
-                        "author": "Tahamie Farooqui"
-                      },
-                      "width": 144,
-                      "height": 144,
+                  "id": "KLp5E",
+                  "type": "ref",
+                  "ref": "cePOo",
+                  "name": "mc2",
+                  "descendants": {
+                    "IkTW8": {
                       "fill": {
                         "type": "image",
                         "enabled": true,
-                        "url": "https://images.unsplash.com/photo-1762539720707-f472fd57d3f2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTA1MDl8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "url": "https://images.unsplash.com/photo-1765120550506-b09ff099bbc6?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMxNjN8&ixlib=rb-4.1.0&q=80&w=1080",
                         "mode": "fill"
-                      },
-                      "cornerRadius": 4
+                      }
                     },
-                    {
-                      "type": "text",
-                      "id": "fKJFR",
-                      "name": "mix2title",
-                      "fill": "#7ec8da",
-                      "content": "gb#33 - Ambient",
-                      "fontFamily": "Inter",
-                      "fontSize": 13,
-                      "fontWeight": "normal"
+                    "5ynTi": {
+                      "content": "gb#33 - Ambient"
                     }
-                  ]
+                  }
                 },
                 {
-                  "type": "frame",
-                  "id": "GrlSe",
-                  "name": "MixCard3",
-                  "width": 144,
-                  "fill": "#153d4f",
-                  "layout": "vertical",
-                  "gap": 8,
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "XCddN",
-                      "name": "MixImg3",
-                      "metadata": {
-                        "type": "unsplash",
-                        "username": "abstralofficial",
-                        "link": "https://unsplash.com/@abstralofficial",
-                        "author": "Abstral Official"
-                      },
-                      "width": 144,
-                      "height": 144,
+                  "id": "GjR8z",
+                  "type": "ref",
+                  "ref": "cePOo",
+                  "name": "mc3",
+                  "descendants": {
+                    "IkTW8": {
                       "fill": {
                         "type": "image",
                         "enabled": true,
-                        "url": "https://images.unsplash.com/photo-1648090328990-773c71909629?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTA1MDl8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "url": "https://images.unsplash.com/photo-1760534745629-cdc84407498f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMxNjV8&ixlib=rb-4.1.0&q=80&w=1080",
                         "mode": "fill"
-                      },
-                      "cornerRadius": 4
+                      }
                     },
-                    {
-                      "type": "text",
-                      "id": "H6aUe",
-                      "name": "mix3title",
-                      "fill": "#7ec8da",
-                      "content": "gb#41 - House in the CBD",
-                      "fontFamily": "Inter",
-                      "fontSize": 13,
-                      "fontWeight": "normal"
+                    "5ynTi": {
+                      "content": "gb#41 - House in the CBD"
                     }
-                  ]
+                  }
                 },
                 {
-                  "type": "frame",
-                  "id": "hAL7U",
-                  "name": "MixCard4",
-                  "width": 144,
-                  "fill": "#153d4f",
-                  "layout": "vertical",
-                  "gap": 8,
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "g61nz",
-                      "name": "MixImg4",
-                      "metadata": {
-                        "type": "unsplash",
-                        "username": "cmrcn_",
-                        "link": "https://unsplash.com/@cmrcn_",
-                        "author": "Cemrecan Yurtman"
-                      },
-                      "width": 144,
-                      "height": 144,
+                  "id": "K49r8",
+                  "type": "ref",
+                  "ref": "cePOo",
+                  "name": "mc4",
+                  "descendants": {
+                    "IkTW8": {
                       "fill": {
                         "type": "image",
                         "enabled": true,
-                        "url": "https://images.unsplash.com/photo-1758587421135-f5152430a97a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTA1MTB8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "url": "https://images.unsplash.com/photo-1722098220722-edb9985cf7b2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMxNjZ8&ixlib=rb-4.1.0&q=80&w=1080",
                         "mode": "fill"
-                      },
-                      "cornerRadius": 4
+                      }
                     },
-                    {
-                      "type": "text",
-                      "id": "IiP4V",
-                      "name": "mix4title",
-                      "fill": "#7ec8da",
-                      "content": "gb#42",
-                      "fontFamily": "Inter",
-                      "fontSize": 13,
-                      "fontWeight": "normal"
+                    "5ynTi": {
+                      "content": "gb#42"
                     }
-                  ]
+                  }
                 }
               ]
             }
@@ -1160,65 +1023,16 @@
           "padding": 24,
           "children": [
             {
-              "type": "frame",
-              "id": "Q4pro",
+              "id": "1bPTQ",
+              "type": "ref",
+              "ref": "c633A",
               "name": "DispatchesHeader",
               "width": "fill_container",
-              "gap": 8,
-              "children": [
-                {
-                  "type": "text",
-                  "id": "Pzwg1",
-                  "name": "DispatchesTitle",
-                  "fill": "#9bfd9e",
-                  "content": "Dispatches",
-                  "fontFamily": "Space Grotesk",
-                  "fontSize": 18,
-                  "fontWeight": "bold"
-                },
-                {
-                  "type": "frame",
-                  "id": "6DI9v",
-                  "name": "DispPrevBtn",
-                  "width": 32,
-                  "height": 32,
-                  "fill": "hsl(215, 27.9%, 16.9%)",
-                  "cornerRadius": 4,
-                  "padding": 6,
-                  "children": [
-                    {
-                      "type": "icon_font",
-                      "id": "tb12T",
-                      "name": "dispPrevIcon",
-                      "width": 0,
-                      "height": 0,
-                      "iconFontFamily": "Material Symbols Rounded",
-                      "fill": "hsl(194, 52%, 67%)"
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "c2Fyo",
-                  "name": "DispNextBtn",
-                  "width": 32,
-                  "height": 32,
-                  "fill": "hsl(215, 27.9%, 16.9%)",
-                  "cornerRadius": 4,
-                  "padding": 6,
-                  "children": [
-                    {
-                      "type": "icon_font",
-                      "id": "uRCuK",
-                      "name": "dispNextIcon",
-                      "width": 0,
-                      "height": 0,
-                      "iconFontFamily": "Material Symbols Rounded",
-                      "fill": "hsl(194, 52%, 67%)"
-                    }
-                  ]
+              "descendants": {
+                "4vyJY": {
+                  "content": "Dispatches"
                 }
-              ]
+              }
             },
             {
               "type": "frame",
@@ -1228,86 +1042,42 @@
               "gap": 16,
               "children": [
                 {
-                  "type": "frame",
-                  "id": "pXx6q",
-                  "name": "DispCard1",
-                  "width": 200,
-                  "fill": "#153d4f",
-                  "layout": "vertical",
-                  "gap": 8,
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "g3bsA",
-                      "name": "DispImg1",
-                      "metadata": {
-                        "type": "unsplash",
-                        "username": "anniespratt",
-                        "link": "https://unsplash.com/@anniespratt",
-                        "author": "Annie Spratt"
-                      },
-                      "width": 200,
-                      "height": 112,
+                  "id": "D0knt",
+                  "type": "ref",
+                  "ref": "OZxtD",
+                  "name": "dc1",
+                  "descendants": {
+                    "vG3A4": {
                       "fill": {
                         "type": "image",
                         "enabled": true,
-                        "url": "https://images.unsplash.com/photo-1643393770792-56ba9b929636?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTA1MTF8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "url": "https://images.unsplash.com/photo-1518516278006-4aca92806257?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMxNzR8&ixlib=rb-4.1.0&q=80&w=1080",
                         "mode": "fill"
-                      },
-                      "cornerRadius": 4
+                      }
                     },
-                    {
-                      "type": "text",
-                      "id": "jhg3F",
-                      "name": "disp1title",
-                      "fill": "#7ec8da",
-                      "content": "Datasette",
-                      "fontFamily": "Inter",
-                      "fontSize": 13,
-                      "fontWeight": "normal"
+                    "Rxd2U": {
+                      "content": "Datasette"
                     }
-                  ]
+                  }
                 },
                 {
-                  "type": "frame",
-                  "id": "wyBo8",
-                  "name": "DispCard2",
-                  "width": 200,
-                  "fill": "#153d4f",
-                  "layout": "vertical",
-                  "gap": 8,
-                  "children": [
-                    {
-                      "type": "frame",
-                      "id": "TjE8h",
-                      "name": "DispImg2",
-                      "metadata": {
-                        "type": "unsplash",
-                        "username": "lucasdalamartaphoto",
-                        "link": "https://unsplash.com/@lucasdalamartaphoto",
-                        "author": "Lucas Dalamarta"
-                      },
-                      "width": 200,
-                      "height": 112,
+                  "id": "5YL2M",
+                  "type": "ref",
+                  "ref": "OZxtD",
+                  "name": "dc2",
+                  "descendants": {
+                    "vG3A4": {
                       "fill": {
                         "type": "image",
                         "enabled": true,
-                        "url": "https://images.unsplash.com/photo-1761521299886-2ad43906b40a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTA1MTJ8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "url": "https://images.unsplash.com/photo-1596477602103-a64a83304ecf?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMxNzV8&ixlib=rb-4.1.0&q=80&w=1080",
                         "mode": "fill"
-                      },
-                      "cornerRadius": 4
+                      }
                     },
-                    {
-                      "type": "text",
-                      "id": "snPYB",
-                      "name": "disp2title",
-                      "fill": "#7ec8da",
-                      "content": "Weekly Dispatch #2",
-                      "fontFamily": "Inter",
-                      "fontSize": 13,
-                      "fontWeight": "normal"
+                    "Rxd2U": {
+                      "content": "Weekly Dispatch #2"
                     }
-                  ]
+                  }
                 }
               ]
             }
@@ -1324,65 +1094,16 @@
           "padding": 24,
           "children": [
             {
-              "type": "frame",
-              "id": "0rExj",
+              "id": "8j21j",
+              "type": "ref",
+              "ref": "c633A",
               "name": "PingsHeader",
               "width": "fill_container",
-              "gap": 8,
-              "children": [
-                {
-                  "type": "text",
-                  "id": "vSUYj",
-                  "name": "PingsTitle",
-                  "fill": "#9bfd9e",
-                  "content": "Pings",
-                  "fontFamily": "Space Grotesk",
-                  "fontSize": 18,
-                  "fontWeight": "bold"
-                },
-                {
-                  "type": "frame",
-                  "id": "0VMVU",
-                  "name": "PingsPrevBtn",
-                  "width": 32,
-                  "height": 32,
-                  "fill": "hsl(215, 27.9%, 16.9%)",
-                  "cornerRadius": 4,
-                  "padding": 6,
-                  "children": [
-                    {
-                      "type": "icon_font",
-                      "id": "vA9cW",
-                      "name": "pingsPrevIcon",
-                      "width": 0,
-                      "height": 0,
-                      "iconFontFamily": "Material Symbols Rounded",
-                      "fill": "hsl(194, 52%, 67%)"
-                    }
-                  ]
-                },
-                {
-                  "type": "frame",
-                  "id": "HcmHc",
-                  "name": "PingsNextBtn",
-                  "width": 32,
-                  "height": 32,
-                  "fill": "hsl(215, 27.9%, 16.9%)",
-                  "cornerRadius": 4,
-                  "padding": 6,
-                  "children": [
-                    {
-                      "type": "icon_font",
-                      "id": "l8Ycp",
-                      "name": "pingsNextIcon",
-                      "width": 0,
-                      "height": 0,
-                      "iconFontFamily": "Material Symbols Rounded",
-                      "fill": "hsl(194, 52%, 67%)"
-                    }
-                  ]
+              "descendants": {
+                "4vyJY": {
+                  "content": "Pings"
                 }
-              ]
+              }
             },
             {
               "type": "frame",
@@ -1392,80 +1113,32 @@
               "gap": 16,
               "children": [
                 {
-                  "type": "frame",
-                  "id": "SfYrG",
-                  "name": "PingCard1",
-                  "width": 220,
-                  "fill": "#0d1c2e",
-                  "cornerRadius": 4,
-                  "stroke": {
-                    "align": "inside",
-                    "thickness": 1,
-                    "fill": "#2a3f52"
-                  },
-                  "layout": "vertical",
-                  "gap": 8,
-                  "padding": 16,
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "982v4",
-                      "name": "ping1title",
-                      "fill": "#9bfd9e",
-                      "content": "Guide Fari",
-                      "fontFamily": "Space Grotesk",
-                      "fontSize": 14,
-                      "fontWeight": "bold"
+                  "id": "0qbcz",
+                  "type": "ref",
+                  "ref": "8SOsk",
+                  "name": "pc1",
+                  "descendants": {
+                    "vnXsV": {
+                      "content": "Guide Fari"
                     },
-                    {
-                      "type": "text",
-                      "id": "SpRmO",
-                      "name": "ping1date",
-                      "fill": "#7ec8da",
-                      "content": "Nov 09, 2021",
-                      "fontFamily": "Inter",
-                      "fontSize": 12,
-                      "fontWeight": "normal"
+                    "iQJYe": {
+                      "content": "Nov 09, 2021"
                     }
-                  ]
+                  }
                 },
                 {
-                  "type": "frame",
-                  "id": "GUEcP",
-                  "name": "PingCard2",
-                  "width": 220,
-                  "fill": "#0d1c2e",
-                  "cornerRadius": 4,
-                  "stroke": {
-                    "align": "inside",
-                    "thickness": 1,
-                    "fill": "#2a3f52"
-                  },
-                  "layout": "vertical",
-                  "gap": 8,
-                  "padding": 16,
-                  "children": [
-                    {
-                      "type": "text",
-                      "id": "Opjz1",
-                      "name": "ping2title",
-                      "fill": "#9bfd9e",
-                      "content": "goosebumps.fm",
-                      "fontFamily": "Space Grotesk",
-                      "fontSize": 14,
-                      "fontWeight": "bold"
+                  "id": "00uoc",
+                  "type": "ref",
+                  "ref": "8SOsk",
+                  "name": "pc2",
+                  "descendants": {
+                    "vnXsV": {
+                      "content": "goosebumps.fm"
                     },
-                    {
-                      "type": "text",
-                      "id": "wkdtB",
-                      "name": "ping2date",
-                      "fill": "#7ec8da",
-                      "content": "Dec 01, 2025",
-                      "fontFamily": "Inter",
-                      "fontSize": 12,
-                      "fontWeight": "normal"
+                    "iQJYe": {
+                      "content": "Dec 01, 2025"
                     }
-                  ]
+                  }
                 }
               ]
             }
@@ -1491,7 +1164,7 @@
           "name": "varATitle",
           "fill": "#9bfd9e",
           "content": "Variation A — Icon Row",
-          "fontFamily": "Space Grotesk",
+          "fontFamily": "JetBrains Mono",
           "fontSize": 14,
           "fontWeight": "bold"
         },
@@ -1662,7 +1335,7 @@
           "name": "varBTitle",
           "fill": "#9bfd9e",
           "content": "Variation B — Pill Badges",
-          "fontFamily": "Space Grotesk",
+          "fontFamily": "JetBrains Mono",
           "fontSize": 14,
           "fontWeight": "bold"
         },
@@ -1704,7 +1377,7 @@
                   "name": "p1t",
                   "fill": "#7ec8da",
                   "content": "Bandcamp",
-                  "fontFamily": "Inter",
+                  "fontFamily": "JetBrains Mono",
                   "fontSize": 13,
                   "fontWeight": "500"
                 }
@@ -1741,7 +1414,7 @@
                   "name": "p2t",
                   "fill": "#7ec8da",
                   "content": "Substack",
-                  "fontFamily": "Inter",
+                  "fontFamily": "JetBrains Mono",
                   "fontSize": 13,
                   "fontWeight": "500"
                 }
@@ -1778,7 +1451,7 @@
                   "name": "p3t",
                   "fill": "#7ec8da",
                   "content": "SoundCloud",
-                  "fontFamily": "Inter",
+                  "fontFamily": "JetBrains Mono",
                   "fontSize": 13,
                   "fontWeight": "500"
                 }
@@ -1824,7 +1497,7 @@
                   "name": "p4t",
                   "fill": "#7ec8da",
                   "content": "Instagram",
-                  "fontFamily": "Inter",
+                  "fontFamily": "JetBrains Mono",
                   "fontSize": 13,
                   "fontWeight": "500"
                 }
@@ -1861,7 +1534,7 @@
                   "name": "p5t",
                   "fill": "#7ec8da",
                   "content": "Twitter",
-                  "fontFamily": "Inter",
+                  "fontFamily": "JetBrains Mono",
                   "fontSize": 13,
                   "fontWeight": "500"
                 }
@@ -1898,7 +1571,7 @@
                   "name": "p6t",
                   "fill": "#7ec8da",
                   "content": "TikTok",
-                  "fontFamily": "Inter",
+                  "fontFamily": "JetBrains Mono",
                   "fontSize": 13,
                   "fontWeight": "500"
                 }
@@ -1926,7 +1599,7 @@
           "name": "varCTitle",
           "fill": "#9bfd9e",
           "content": "Variation C — Vertical List",
-          "fontFamily": "Space Grotesk",
+          "fontFamily": "JetBrains Mono",
           "fontSize": 14,
           "fontWeight": "bold"
         },
@@ -1975,7 +1648,7 @@
                   "name": "r1t",
                   "fill": "#7ec8da",
                   "content": "Bandcamp",
-                  "fontFamily": "Inter",
+                  "fontFamily": "JetBrains Mono",
                   "fontSize": 14,
                   "fontWeight": "normal"
                 },
@@ -2026,7 +1699,7 @@
                   "name": "r2t",
                   "fill": "#7ec8da",
                   "content": "Substack",
-                  "fontFamily": "Inter",
+                  "fontFamily": "JetBrains Mono",
                   "fontSize": 14,
                   "fontWeight": "normal"
                 },
@@ -2077,7 +1750,7 @@
                   "name": "r3t",
                   "fill": "#7ec8da",
                   "content": "SoundCloud",
-                  "fontFamily": "Inter",
+                  "fontFamily": "JetBrains Mono",
                   "fontSize": 14,
                   "fontWeight": "normal"
                 },
@@ -2128,7 +1801,7 @@
                   "name": "r4t",
                   "fill": "#7ec8da",
                   "content": "Instagram",
-                  "fontFamily": "Inter",
+                  "fontFamily": "JetBrains Mono",
                   "fontSize": 14,
                   "fontWeight": "normal"
                 },
@@ -2179,7 +1852,7 @@
                   "name": "r5t",
                   "fill": "#7ec8da",
                   "content": "Twitter",
-                  "fontFamily": "Inter",
+                  "fontFamily": "JetBrains Mono",
                   "fontSize": 14,
                   "fontWeight": "normal"
                 },
@@ -2223,7 +1896,7 @@
                   "name": "r6t",
                   "fill": "#7ec8da",
                   "content": "TikTok",
-                  "fontFamily": "Inter",
+                  "fontFamily": "JetBrains Mono",
                   "fontSize": 14,
                   "fontWeight": "normal"
                 },
@@ -2236,6 +1909,4226 @@
                   "iconFontName": "arrow_outward",
                   "iconFontFamily": "Material Symbols Rounded",
                   "fill": "#4e8c71"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "jbQZh",
+      "x": 0,
+      "y": 1400,
+      "name": "Profile A — Icon Row",
+      "width": 1024,
+      "fill": "#153d4f",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "3pXMd",
+          "name": "ProfileHeader",
+          "width": "fill_container",
+          "fill": "#153d4f",
+          "gap": 16,
+          "padding": 32,
+          "children": [
+            {
+              "type": "frame",
+              "id": "c7OTE",
+              "name": "Avatar",
+              "metadata": {
+                "type": "unsplash",
+                "username": "adriaan92",
+                "link": "https://unsplash.com/@adriaan92",
+                "author": "Adriaan Terblanche"
+              },
+              "width": 96,
+              "height": 96,
+              "fill": {
+                "type": "image",
+                "enabled": true,
+                "url": "https://images.unsplash.com/photo-1614660594021-4f743f134fa1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMxMzF8&ixlib=rb-4.1.0&q=80&w=1080",
+                "mode": "fill"
+              }
+            },
+            {
+              "type": "frame",
+              "id": "6ZKAk",
+              "name": "HeaderInfo",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 4,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "GaEh3",
+                  "name": "DisplayName",
+                  "fill": "#9bfd9e",
+                  "content": "Guide Fari",
+                  "fontFamily": "JetBrains Mono",
+                  "fontSize": 24,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "kMGCR",
+                  "name": "Username",
+                  "fill": "#7ec8da",
+                  "content": "@guidefari",
+                  "fontFamily": "JetBrains Mono",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "uXJaL",
+                  "name": "MemberSince",
+                  "fill": "#7ec8da",
+                  "content": "Member since December 2025",
+                  "fontFamily": "JetBrains Mono",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "WUgvU",
+                  "name": "Bio",
+                  "opacity": 0.8,
+                  "fill": "#7ec8da",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "DJ, producer and curator from Johannesburg. Deep house, ambient, and electronic music.",
+                  "lineHeight": 1.4,
+                  "fontFamily": "JetBrains Mono",
+                  "fontSize": 13,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "frame",
+                  "id": "wZ8JB",
+                  "name": "SocialIcons",
+                  "width": "fill_container",
+                  "gap": 10,
+                  "padding": [
+                    8,
+                    0,
+                    0,
+                    0
+                  ],
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "9Bo0j",
+                      "name": "s1",
+                      "width": 36,
+                      "height": 36,
+                      "fill": "#0d1c2e",
+                      "cornerRadius": 18,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "ljMX0",
+                          "name": "s1i",
+                          "width": 18,
+                          "height": 18,
+                          "iconFontName": "album",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "#7ec8da"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "5yAQN",
+                      "name": "s2",
+                      "width": 36,
+                      "height": 36,
+                      "fill": "#0d1c2e",
+                      "cornerRadius": 18,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "nwhTR",
+                          "name": "s2i",
+                          "width": 18,
+                          "height": 18,
+                          "iconFontName": "newspaper",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "#7ec8da"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "EH69B",
+                      "name": "s3",
+                      "width": 36,
+                      "height": 36,
+                      "fill": "#0d1c2e",
+                      "cornerRadius": 18,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "AYKtk",
+                          "name": "s3i",
+                          "width": 18,
+                          "height": 18,
+                          "iconFontName": "cloud",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "#7ec8da"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "2AOH7",
+                      "name": "s4",
+                      "width": 36,
+                      "height": 36,
+                      "fill": "#0d1c2e",
+                      "cornerRadius": 18,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "N4FPp",
+                          "name": "s4i",
+                          "width": 18,
+                          "height": 18,
+                          "iconFontName": "photo_camera",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "#7ec8da"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "C3IBJ",
+                      "name": "s5",
+                      "width": 36,
+                      "height": 36,
+                      "fill": "#0d1c2e",
+                      "cornerRadius": 18,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "hgXde",
+                          "name": "s5i",
+                          "width": 18,
+                          "height": 18,
+                          "iconFontName": "twitter",
+                          "iconFontFamily": "lucide",
+                          "fill": "#7ec8da"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "H7ZdA",
+                      "name": "s6",
+                      "width": 36,
+                      "height": 36,
+                      "fill": "#0d1c2e",
+                      "cornerRadius": 18,
+                      "justifyContent": "center",
+                      "alignItems": "center",
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "bfy9m",
+                          "name": "s6i",
+                          "width": 18,
+                          "height": 18,
+                          "iconFontName": "music_note",
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "#7ec8da"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "6e4jm",
+              "name": "ShareButton",
+              "width": 36,
+              "height": 36,
+              "fill": "hsl(215, 27.9%, 16.9%)",
+              "cornerRadius": 4,
+              "padding": 8,
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "WEghh",
+                  "name": "ShareIcon",
+                  "width": 0,
+                  "height": 0,
+                  "iconFontFamily": "Material Symbols Rounded",
+                  "fill": "hsl(194, 52%, 67%)"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "Svnym",
+          "name": "MixesSection",
+          "width": "fill_container",
+          "fill": "#153d4f",
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 24,
+          "children": [
+            {
+              "id": "bRWQO",
+              "type": "ref",
+              "ref": "c633A",
+              "name": "MixesHeader",
+              "width": "fill_container",
+              "descendants": {
+                "4vyJY": {
+                  "content": "Mixes"
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "8ywtp",
+              "name": "MixesRow",
+              "width": "fill_container",
+              "gap": 16,
+              "children": [
+                {
+                  "id": "bIZLe",
+                  "type": "ref",
+                  "ref": "cePOo",
+                  "name": "mc1",
+                  "descendants": {
+                    "IkTW8": {
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "https://images.unsplash.com/photo-1645523906562-004730f38652?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMxOTB8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "mode": "fill"
+                      }
+                    },
+                    "5ynTi": {
+                      "content": "gb#21"
+                    }
+                  }
+                },
+                {
+                  "id": "HzR7w",
+                  "type": "ref",
+                  "ref": "cePOo",
+                  "name": "mc2",
+                  "descendants": {
+                    "IkTW8": {
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "https://images.unsplash.com/photo-1760907216741-dd33c336c42e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMxOTF8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "mode": "fill"
+                      }
+                    },
+                    "5ynTi": {
+                      "content": "gb#33 - Ambient"
+                    }
+                  }
+                },
+                {
+                  "id": "8naQB",
+                  "type": "ref",
+                  "ref": "cePOo",
+                  "name": "mc3",
+                  "descendants": {
+                    "IkTW8": {
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "https://images.unsplash.com/photo-1611706830355-761c514e66bc?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyMDB8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "mode": "fill"
+                      }
+                    },
+                    "5ynTi": {
+                      "content": "gb#41 - House in the CBD"
+                    }
+                  }
+                },
+                {
+                  "id": "N6KX8",
+                  "type": "ref",
+                  "ref": "cePOo",
+                  "name": "mc4",
+                  "descendants": {
+                    "IkTW8": {
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "https://images.unsplash.com/photo-1694098255907-a9e4a6ce96e2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyMDF8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "mode": "fill"
+                      }
+                    },
+                    "5ynTi": {
+                      "content": "gb#42"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "KUY20",
+          "name": "DispatchesSection",
+          "width": "fill_container",
+          "fill": "#153d4f",
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 24,
+          "children": [
+            {
+              "id": "t4yhj",
+              "type": "ref",
+              "ref": "c633A",
+              "name": "DispatchesHeader",
+              "width": "fill_container",
+              "descendants": {
+                "4vyJY": {
+                  "content": "Dispatches"
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "ivCQM",
+              "name": "DispatchesRow",
+              "width": "fill_container",
+              "gap": 16,
+              "children": [
+                {
+                  "id": "pRc1Q",
+                  "type": "ref",
+                  "ref": "OZxtD",
+                  "name": "dc1",
+                  "descendants": {
+                    "vG3A4": {
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "https://images.unsplash.com/photo-1686061594183-8c864f508b00?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyMDJ8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "mode": "fill"
+                      }
+                    },
+                    "Rxd2U": {
+                      "content": "Datasette"
+                    }
+                  }
+                },
+                {
+                  "id": "CpKQp",
+                  "type": "ref",
+                  "ref": "OZxtD",
+                  "name": "dc2",
+                  "descendants": {
+                    "vG3A4": {
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "https://images.unsplash.com/photo-1554322883-8a633a425300?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyMDN8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "mode": "fill"
+                      }
+                    },
+                    "Rxd2U": {
+                      "content": "Weekly Dispatch #2"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "H0zpK",
+          "name": "PingsSection",
+          "width": "fill_container",
+          "fill": "#153d4f",
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 24,
+          "children": [
+            {
+              "id": "XxSG0",
+              "type": "ref",
+              "ref": "c633A",
+              "name": "PingsHeader",
+              "width": "fill_container",
+              "descendants": {
+                "4vyJY": {
+                  "content": "Pings"
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "b6TrB",
+              "name": "PingsRow",
+              "width": "fill_container",
+              "gap": 16,
+              "children": [
+                {
+                  "id": "coEzN",
+                  "type": "ref",
+                  "ref": "8SOsk",
+                  "name": "pc1",
+                  "descendants": {
+                    "vnXsV": {
+                      "content": "Guide Fari"
+                    },
+                    "iQJYe": {
+                      "content": "Nov 09, 2021"
+                    }
+                  }
+                },
+                {
+                  "id": "S7UM4",
+                  "type": "ref",
+                  "ref": "8SOsk",
+                  "name": "pc2",
+                  "descendants": {
+                    "vnXsV": {
+                      "content": "goosebumps.fm"
+                    },
+                    "iQJYe": {
+                      "content": "Dec 01, 2025"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "lSCiB",
+      "x": 1100,
+      "y": 1400,
+      "name": "Profile B — Pill Badges",
+      "width": 1024,
+      "fill": "#153d4f",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "4e4AI",
+          "name": "ProfileHeader",
+          "width": "fill_container",
+          "fill": "#153d4f",
+          "gap": 16,
+          "padding": 32,
+          "children": [
+            {
+              "type": "frame",
+              "id": "DZm0o",
+              "name": "Avatar",
+              "metadata": {
+                "type": "unsplash",
+                "username": "vrundanabira",
+                "link": "https://unsplash.com/@vrundanabira",
+                "author": "Vrunda Nabira"
+              },
+              "width": 96,
+              "height": 96,
+              "fill": {
+                "type": "image",
+                "enabled": true,
+                "url": "https://images.unsplash.com/photo-1663576139900-74a388628f78?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMxMzJ8&ixlib=rb-4.1.0&q=80&w=1080",
+                "mode": "fill"
+              }
+            },
+            {
+              "type": "frame",
+              "id": "40xDG",
+              "name": "HeaderInfo",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 4,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "1HpV1",
+                  "name": "DisplayName",
+                  "fill": "#9bfd9e",
+                  "content": "Guide Fari",
+                  "fontFamily": "JetBrains Mono",
+                  "fontSize": 24,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "cCybG",
+                  "name": "Username",
+                  "fill": "#7ec8da",
+                  "content": "@guidefari",
+                  "fontFamily": "JetBrains Mono",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "nlgoW",
+                  "name": "MemberSince",
+                  "fill": "#7ec8da",
+                  "content": "Member since December 2025",
+                  "fontFamily": "JetBrains Mono",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "vgx66",
+              "name": "ShareButton",
+              "width": 36,
+              "height": 36,
+              "fill": "hsl(215, 27.9%, 16.9%)",
+              "cornerRadius": 4,
+              "padding": 8,
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "MCEOM",
+                  "name": "ShareIcon",
+                  "width": 0,
+                  "height": 0,
+                  "iconFontFamily": "Material Symbols Rounded",
+                  "fill": "hsl(194, 52%, 67%)"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "ZSNyV",
+          "name": "SocialLinks Section",
+          "width": "fill_container",
+          "fill": "#153d4f",
+          "layout": "vertical",
+          "gap": 12,
+          "padding": 24,
+          "children": [
+            {
+              "type": "text",
+              "id": "QeA0K",
+              "name": "pillTitle",
+              "fill": "#9bfd9e",
+              "content": "About",
+              "fontFamily": "JetBrains Mono",
+              "fontSize": 18,
+              "fontWeight": "bold"
+            },
+            {
+              "type": "text",
+              "id": "bs22h",
+              "name": "Bio",
+              "fill": "#7ec8da",
+              "textGrowth": "fixed-width",
+              "width": "fill_container",
+              "content": "DJ, producer and curator from Johannesburg. Exploring deep house, ambient, and electronic music. Writing about music, tech, and creative tools.",
+              "lineHeight": 1.5,
+              "fontFamily": "JetBrains Mono",
+              "fontSize": 14,
+              "fontWeight": "normal"
+            },
+            {
+              "type": "frame",
+              "id": "1NHq7",
+              "name": "PillRow1",
+              "width": "fill_container",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "0LjdX",
+                  "name": "b1",
+                  "fill": "#0d1c2e",
+                  "cornerRadius": 20,
+                  "gap": 8,
+                  "padding": [
+                    6,
+                    14,
+                    6,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "vjoaE",
+                      "name": "b1i",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "album",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "#ff6b4a"
+                    },
+                    {
+                      "type": "text",
+                      "id": "ikbn2",
+                      "name": "b1t",
+                      "fill": "#7ec8da",
+                      "content": "Bandcamp",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "kuMlC",
+                  "name": "b2",
+                  "fill": "#0d1c2e",
+                  "cornerRadius": 20,
+                  "gap": 8,
+                  "padding": [
+                    6,
+                    14,
+                    6,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "r1x55",
+                      "name": "b2i",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "newspaper",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "#ff6719"
+                    },
+                    {
+                      "type": "text",
+                      "id": "IDuzW",
+                      "name": "b2t",
+                      "fill": "#7ec8da",
+                      "content": "Substack",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "l7viw",
+                  "name": "b3",
+                  "fill": "#0d1c2e",
+                  "cornerRadius": 20,
+                  "gap": 8,
+                  "padding": [
+                    6,
+                    14,
+                    6,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "mtlAm",
+                      "name": "b3i",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "cloud",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "#ff5500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "eI8tn",
+                      "name": "b3t",
+                      "fill": "#7ec8da",
+                      "content": "SoundCloud",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "DLKIu",
+              "name": "PillRow2",
+              "width": "fill_container",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "cgUal",
+                  "name": "b4",
+                  "fill": "#0d1c2e",
+                  "cornerRadius": 20,
+                  "gap": 8,
+                  "padding": [
+                    6,
+                    14,
+                    6,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "U8hyA",
+                      "name": "b4i",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "photo_camera",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "#e1306c"
+                    },
+                    {
+                      "type": "text",
+                      "id": "xBwVX",
+                      "name": "b4t",
+                      "fill": "#7ec8da",
+                      "content": "Instagram",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "i6Y47",
+                  "name": "b5",
+                  "fill": "#0d1c2e",
+                  "cornerRadius": 20,
+                  "gap": 8,
+                  "padding": [
+                    6,
+                    14,
+                    6,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "yXCQm",
+                      "name": "b5i",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "twitter",
+                      "iconFontFamily": "lucide",
+                      "fill": "#1da1f2"
+                    },
+                    {
+                      "type": "text",
+                      "id": "HZoIS",
+                      "name": "b5t",
+                      "fill": "#7ec8da",
+                      "content": "Twitter",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "5lZcM",
+                  "name": "b6",
+                  "fill": "#0d1c2e",
+                  "cornerRadius": 20,
+                  "gap": 8,
+                  "padding": [
+                    6,
+                    14,
+                    6,
+                    10
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "B0PsE",
+                      "name": "b6i",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "music_note",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "#ee1d52"
+                    },
+                    {
+                      "type": "text",
+                      "id": "3JmRw",
+                      "name": "b6t",
+                      "fill": "#7ec8da",
+                      "content": "TikTok",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 13,
+                      "fontWeight": "500"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "kH7Po",
+          "name": "MixesSection",
+          "width": "fill_container",
+          "fill": "#153d4f",
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 24,
+          "children": [
+            {
+              "id": "QtBtm",
+              "type": "ref",
+              "ref": "c633A",
+              "name": "MixesHeader",
+              "width": "fill_container",
+              "descendants": {
+                "4vyJY": {
+                  "content": "Mixes"
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "AAE0U",
+              "name": "MixesRow",
+              "width": "fill_container",
+              "gap": 16,
+              "children": [
+                {
+                  "id": "OaaMC",
+                  "type": "ref",
+                  "ref": "cePOo",
+                  "name": "mc1",
+                  "descendants": {
+                    "IkTW8": {
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "https://images.unsplash.com/photo-1594328082882-d1eb3f14a450?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyMTd8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "mode": "fill"
+                      }
+                    },
+                    "5ynTi": {
+                      "content": "gb#21"
+                    }
+                  }
+                },
+                {
+                  "id": "3ogLZ",
+                  "type": "ref",
+                  "ref": "cePOo",
+                  "name": "mc2",
+                  "descendants": {
+                    "IkTW8": {
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "https://images.unsplash.com/photo-1592581696332-debdf95cd713?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyMTl8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "mode": "fill"
+                      }
+                    },
+                    "5ynTi": {
+                      "content": "gb#33 - Ambient"
+                    }
+                  }
+                },
+                {
+                  "id": "CIpLL",
+                  "type": "ref",
+                  "ref": "cePOo",
+                  "name": "mc3",
+                  "descendants": {
+                    "IkTW8": {
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "https://images.unsplash.com/photo-1767658574210-661054981453?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyMjN8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "mode": "fill"
+                      }
+                    },
+                    "5ynTi": {
+                      "content": "gb#41 - House in the CBD"
+                    }
+                  }
+                },
+                {
+                  "id": "DxNm2",
+                  "type": "ref",
+                  "ref": "cePOo",
+                  "name": "mc4",
+                  "descendants": {
+                    "IkTW8": {
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "https://images.unsplash.com/photo-1709314189694-c709d3e3ac7f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyMjR8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "mode": "fill"
+                      }
+                    },
+                    "5ynTi": {
+                      "content": "gb#42"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "chyLS",
+          "name": "DispatchesSection",
+          "width": "fill_container",
+          "fill": "#153d4f",
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 24,
+          "children": [
+            {
+              "id": "GXQFd",
+              "type": "ref",
+              "ref": "c633A",
+              "name": "DispatchesHeader",
+              "width": "fill_container",
+              "descendants": {
+                "4vyJY": {
+                  "content": "Dispatches"
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "w2uIT",
+              "name": "DispatchesRow",
+              "width": "fill_container",
+              "gap": 16,
+              "children": [
+                {
+                  "id": "zi96b",
+                  "type": "ref",
+                  "ref": "OZxtD",
+                  "name": "dc1",
+                  "descendants": {
+                    "vG3A4": {
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "https://images.unsplash.com/photo-1752079830410-da4c0d752a0b?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyMjZ8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "mode": "fill"
+                      }
+                    },
+                    "Rxd2U": {
+                      "content": "Datasette"
+                    }
+                  }
+                },
+                {
+                  "id": "Wy9VO",
+                  "type": "ref",
+                  "ref": "OZxtD",
+                  "name": "dc2",
+                  "descendants": {
+                    "vG3A4": {
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "https://images.unsplash.com/photo-1760258915512-e26e8a25c71a?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyMjZ8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "mode": "fill"
+                      }
+                    },
+                    "Rxd2U": {
+                      "content": "Weekly Dispatch #2"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "prukm",
+          "name": "PingsSection",
+          "width": "fill_container",
+          "fill": "#153d4f",
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 24,
+          "children": [
+            {
+              "id": "ju2UT",
+              "type": "ref",
+              "ref": "c633A",
+              "name": "PingsHeader",
+              "width": "fill_container",
+              "descendants": {
+                "4vyJY": {
+                  "content": "Pings"
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "5n6my",
+              "name": "PingsRow",
+              "width": "fill_container",
+              "gap": 16,
+              "children": [
+                {
+                  "id": "dtMnO",
+                  "type": "ref",
+                  "ref": "8SOsk",
+                  "name": "pc1",
+                  "descendants": {
+                    "vnXsV": {
+                      "content": "Guide Fari"
+                    },
+                    "iQJYe": {
+                      "content": "Nov 09, 2021"
+                    }
+                  }
+                },
+                {
+                  "id": "mm0vQ",
+                  "type": "ref",
+                  "ref": "8SOsk",
+                  "name": "pc2",
+                  "descendants": {
+                    "vnXsV": {
+                      "content": "goosebumps.fm"
+                    },
+                    "iQJYe": {
+                      "content": "Dec 01, 2025"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "f0WJV",
+      "x": 2200,
+      "y": 1400,
+      "name": "Profile C — Vertical List",
+      "width": 1024,
+      "fill": "#153d4f",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "ovKhL",
+          "name": "ProfileHeader",
+          "width": "fill_container",
+          "fill": "#153d4f",
+          "gap": 16,
+          "padding": 32,
+          "children": [
+            {
+              "type": "frame",
+              "id": "dFaSV",
+              "name": "Avatar",
+              "metadata": {
+                "type": "unsplash",
+                "username": "filipp_roman_photography",
+                "link": "https://unsplash.com/@filipp_roman_photography",
+                "author": "Filipp Romanovski"
+              },
+              "width": 96,
+              "height": 96,
+              "fill": {
+                "type": "image",
+                "enabled": true,
+                "url": "https://images.unsplash.com/photo-1629058161906-e6b253fa2ad0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMxMzJ8&ixlib=rb-4.1.0&q=80&w=1080",
+                "mode": "fill"
+              }
+            },
+            {
+              "type": "frame",
+              "id": "ZE2u0",
+              "name": "HeaderInfo",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 4,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "B5zQ6",
+                  "name": "DisplayName",
+                  "fill": "#9bfd9e",
+                  "content": "Guide Fari",
+                  "fontFamily": "JetBrains Mono",
+                  "fontSize": 24,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "bJnhW",
+                  "name": "Username",
+                  "fill": "#7ec8da",
+                  "content": "@guidefari",
+                  "fontFamily": "JetBrains Mono",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                },
+                {
+                  "type": "text",
+                  "id": "qWHIr",
+                  "name": "MemberSince",
+                  "fill": "#7ec8da",
+                  "content": "Member since December 2025",
+                  "fontFamily": "JetBrains Mono",
+                  "fontSize": 12,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "H3fWW",
+              "name": "ShareButton",
+              "width": 36,
+              "height": 36,
+              "fill": "hsl(215, 27.9%, 16.9%)",
+              "cornerRadius": 4,
+              "padding": 8,
+              "children": [
+                {
+                  "type": "icon_font",
+                  "id": "ADXwx",
+                  "name": "ShareIcon",
+                  "width": 0,
+                  "height": 0,
+                  "iconFontFamily": "Material Symbols Rounded",
+                  "fill": "hsl(194, 52%, 67%)"
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "SrhG0",
+          "name": "Bio + Links",
+          "width": "fill_container",
+          "fill": "#153d4f",
+          "gap": 24,
+          "padding": 24,
+          "children": [
+            {
+              "type": "frame",
+              "id": "FtTw2",
+              "name": "BioColumn",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 12,
+              "children": [
+                {
+                  "type": "text",
+                  "id": "1Vcwl",
+                  "name": "bioLabel",
+                  "fill": "#9bfd9e",
+                  "content": "About",
+                  "fontFamily": "JetBrains Mono",
+                  "fontSize": 16,
+                  "fontWeight": "bold"
+                },
+                {
+                  "type": "text",
+                  "id": "cY41f",
+                  "name": "bioText",
+                  "fill": "#7ec8da",
+                  "textGrowth": "fixed-width",
+                  "width": "fill_container",
+                  "content": "DJ, producer and curator. Exploring the intersection of deep house, ambient, and electronic music from Johannesburg. Writing about music, tech, and creative tools.",
+                  "lineHeight": 1.5,
+                  "fontFamily": "JetBrains Mono",
+                  "fontSize": 14,
+                  "fontWeight": "normal"
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "e0cDO",
+              "name": "LinksColumn",
+              "clip": true,
+              "width": 220,
+              "fill": "#0d1c2e",
+              "cornerRadius": 8,
+              "layout": "vertical",
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "BstVH",
+                  "name": "r1",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#2a3f52"
+                  },
+                  "gap": 10,
+                  "padding": [
+                    8,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "cMfhk",
+                      "name": "r1i",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "album",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "#ff6b4a"
+                    },
+                    {
+                      "type": "text",
+                      "id": "qMvOE",
+                      "name": "r1t",
+                      "fill": "#7ec8da",
+                      "content": "Bandcamp",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "cGJMS",
+                      "name": "r1a",
+                      "width": 12,
+                      "height": 12,
+                      "iconFontName": "arrow_outward",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "#4e8c71"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "8FxpV",
+                  "name": "r2",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#2a3f52"
+                  },
+                  "gap": 10,
+                  "padding": [
+                    8,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "zcKP4",
+                      "name": "r2i",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "newspaper",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "#ff6719"
+                    },
+                    {
+                      "type": "text",
+                      "id": "Aqdhr",
+                      "name": "r2t",
+                      "fill": "#7ec8da",
+                      "content": "Substack",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "zBsjf",
+                      "name": "r2a",
+                      "width": 12,
+                      "height": 12,
+                      "iconFontName": "arrow_outward",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "#4e8c71"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "kUmu9",
+                  "name": "r3",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#2a3f52"
+                  },
+                  "gap": 10,
+                  "padding": [
+                    8,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "o62hK",
+                      "name": "r3i",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "cloud",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "#ff5500"
+                    },
+                    {
+                      "type": "text",
+                      "id": "94HJj",
+                      "name": "r3t",
+                      "fill": "#7ec8da",
+                      "content": "SoundCloud",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "zOY9W",
+                      "name": "r3a",
+                      "width": 12,
+                      "height": 12,
+                      "iconFontName": "arrow_outward",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "#4e8c71"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Y47fF",
+                  "name": "r4",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#2a3f52"
+                  },
+                  "gap": 10,
+                  "padding": [
+                    8,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "mxIBh",
+                      "name": "r4i",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "photo_camera",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "#e1306c"
+                    },
+                    {
+                      "type": "text",
+                      "id": "x6D22",
+                      "name": "r4t",
+                      "fill": "#7ec8da",
+                      "content": "Instagram",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "eBuKE",
+                      "name": "r4a",
+                      "width": 12,
+                      "height": 12,
+                      "iconFontName": "arrow_outward",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "#4e8c71"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "xRtb4",
+                  "name": "r5",
+                  "width": "fill_container",
+                  "stroke": {
+                    "align": "inside",
+                    "thickness": {
+                      "bottom": 1
+                    },
+                    "fill": "#2a3f52"
+                  },
+                  "gap": 10,
+                  "padding": [
+                    8,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "ZXJhn",
+                      "name": "r5i",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "twitter",
+                      "iconFontFamily": "lucide",
+                      "fill": "#1da1f2"
+                    },
+                    {
+                      "type": "text",
+                      "id": "KuZue",
+                      "name": "r5t",
+                      "fill": "#7ec8da",
+                      "content": "Twitter",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "TRRPP",
+                      "name": "r5a",
+                      "width": 12,
+                      "height": 12,
+                      "iconFontName": "arrow_outward",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "#4e8c71"
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "JBiuN",
+                  "name": "r6",
+                  "width": "fill_container",
+                  "gap": 10,
+                  "padding": [
+                    8,
+                    12
+                  ],
+                  "alignItems": "center",
+                  "children": [
+                    {
+                      "type": "icon_font",
+                      "id": "RsqqQ",
+                      "name": "r6i",
+                      "width": 16,
+                      "height": 16,
+                      "iconFontName": "music_note",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "#ee1d52"
+                    },
+                    {
+                      "type": "text",
+                      "id": "ieMlv",
+                      "name": "r6t",
+                      "fill": "#7ec8da",
+                      "content": "TikTok",
+                      "fontFamily": "JetBrains Mono",
+                      "fontSize": 13,
+                      "fontWeight": "normal"
+                    },
+                    {
+                      "type": "icon_font",
+                      "id": "erdJ9",
+                      "name": "r6a",
+                      "width": 12,
+                      "height": 12,
+                      "iconFontName": "arrow_outward",
+                      "iconFontFamily": "Material Symbols Rounded",
+                      "fill": "#4e8c71"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "pARl3",
+          "name": "MixesSection",
+          "width": "fill_container",
+          "fill": "#153d4f",
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 24,
+          "children": [
+            {
+              "id": "g7QCx",
+              "type": "ref",
+              "ref": "c633A",
+              "name": "MixesHeader",
+              "width": "fill_container",
+              "descendants": {
+                "4vyJY": {
+                  "content": "Mixes"
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "OZdyU",
+              "name": "MixesRow",
+              "width": "fill_container",
+              "gap": 16,
+              "children": [
+                {
+                  "id": "4Wrgq",
+                  "type": "ref",
+                  "ref": "cePOo",
+                  "name": "mc1",
+                  "descendants": {
+                    "IkTW8": {
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "https://images.unsplash.com/photo-1761005654347-f5907893edb7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyNDF8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "mode": "fill"
+                      }
+                    },
+                    "5ynTi": {
+                      "content": "gb#21"
+                    }
+                  }
+                },
+                {
+                  "id": "qnKLk",
+                  "type": "ref",
+                  "ref": "cePOo",
+                  "name": "mc2",
+                  "descendants": {
+                    "IkTW8": {
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "https://images.unsplash.com/photo-1760441282745-8d38e6a024f1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyNDF8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "mode": "fill"
+                      }
+                    },
+                    "5ynTi": {
+                      "content": "gb#33 - Ambient"
+                    }
+                  }
+                },
+                {
+                  "id": "VE2Vs",
+                  "type": "ref",
+                  "ref": "cePOo",
+                  "name": "mc3",
+                  "descendants": {
+                    "IkTW8": {
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "https://images.unsplash.com/photo-1762900076151-265900a47a8e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyNDZ8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "mode": "fill"
+                      }
+                    },
+                    "5ynTi": {
+                      "content": "gb#41 - House in the CBD"
+                    }
+                  }
+                },
+                {
+                  "id": "1DDnu",
+                  "type": "ref",
+                  "ref": "cePOo",
+                  "name": "mc4",
+                  "descendants": {
+                    "IkTW8": {
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "https://images.unsplash.com/photo-1628388564562-cf8ec9621505?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyNDh8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "mode": "fill"
+                      }
+                    },
+                    "5ynTi": {
+                      "content": "gb#42"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "WijiM",
+          "name": "DispatchesSection",
+          "width": "fill_container",
+          "fill": "#153d4f",
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 24,
+          "children": [
+            {
+              "id": "SnqaD",
+              "type": "ref",
+              "ref": "c633A",
+              "name": "DispatchesHeader",
+              "width": "fill_container",
+              "descendants": {
+                "4vyJY": {
+                  "content": "Dispatches"
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "CqHIX",
+              "name": "DispatchesRow",
+              "width": "fill_container",
+              "gap": 16,
+              "children": [
+                {
+                  "id": "fArvH",
+                  "type": "ref",
+                  "ref": "OZxtD",
+                  "name": "dc1",
+                  "descendants": {
+                    "vG3A4": {
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "https://images.unsplash.com/photo-1763568258143-904ea924ac53?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyNDl8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "mode": "fill"
+                      }
+                    },
+                    "Rxd2U": {
+                      "content": "Datasette"
+                    }
+                  }
+                },
+                {
+                  "id": "lRFTp",
+                  "type": "ref",
+                  "ref": "OZxtD",
+                  "name": "dc2",
+                  "descendants": {
+                    "vG3A4": {
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "https://images.unsplash.com/photo-1759984782555-dd51d7eca012?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyNTB8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "mode": "fill"
+                      }
+                    },
+                    "Rxd2U": {
+                      "content": "Weekly Dispatch #2"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "8C5sN",
+          "name": "PingsSection",
+          "width": "fill_container",
+          "fill": "#153d4f",
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 24,
+          "children": [
+            {
+              "id": "eBWRZ",
+              "type": "ref",
+              "ref": "c633A",
+              "name": "PingsHeader",
+              "width": "fill_container",
+              "descendants": {
+                "4vyJY": {
+                  "content": "Pings"
+                }
+              }
+            },
+            {
+              "type": "frame",
+              "id": "0IV1S",
+              "name": "PingsRow",
+              "width": "fill_container",
+              "gap": 16,
+              "children": [
+                {
+                  "id": "IIB62",
+                  "type": "ref",
+                  "ref": "8SOsk",
+                  "name": "pc1",
+                  "descendants": {
+                    "vnXsV": {
+                      "content": "Guide Fari"
+                    },
+                    "iQJYe": {
+                      "content": "Nov 09, 2021"
+                    }
+                  }
+                },
+                {
+                  "id": "pkcnC",
+                  "type": "ref",
+                  "ref": "8SOsk",
+                  "name": "pc2",
+                  "descendants": {
+                    "vnXsV": {
+                      "content": "goosebumps.fm"
+                    },
+                    "iQJYe": {
+                      "content": "Dec 01, 2025"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "cePOo",
+      "x": 0,
+      "y": 2565,
+      "name": "Component/MixCard",
+      "reusable": true,
+      "width": 144,
+      "layout": "vertical",
+      "gap": 8,
+      "children": [
+        {
+          "type": "frame",
+          "id": "IkTW8",
+          "name": "MixImg",
+          "width": 144,
+          "height": 144,
+          "fill": "#153d4f",
+          "cornerRadius": 4
+        },
+        {
+          "type": "text",
+          "id": "5ynTi",
+          "name": "MixTitle",
+          "fill": "#7ec8da",
+          "content": "Mix Title",
+          "fontFamily": "JetBrains Mono",
+          "fontSize": 13,
+          "fontWeight": "normal"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "OZxtD",
+      "x": 200,
+      "y": 2565,
+      "name": "Component/DispatchCard",
+      "reusable": true,
+      "width": 200,
+      "layout": "vertical",
+      "gap": 8,
+      "children": [
+        {
+          "type": "frame",
+          "id": "vG3A4",
+          "name": "DispImg",
+          "width": 200,
+          "height": 112,
+          "fill": "#153d4f",
+          "cornerRadius": 4
+        },
+        {
+          "type": "text",
+          "id": "Rxd2U",
+          "name": "DispTitle",
+          "fill": "#7ec8da",
+          "content": "Dispatch Title",
+          "fontFamily": "JetBrains Mono",
+          "fontSize": 13,
+          "fontWeight": "normal"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "8SOsk",
+      "x": 450,
+      "y": 2565,
+      "name": "Component/PingCard",
+      "reusable": true,
+      "width": 220,
+      "fill": "#0d1c2e",
+      "cornerRadius": 4,
+      "stroke": {
+        "align": "inside",
+        "thickness": 1,
+        "fill": "#2a3f52"
+      },
+      "layout": "vertical",
+      "gap": 8,
+      "padding": 16,
+      "children": [
+        {
+          "type": "text",
+          "id": "vnXsV",
+          "name": "PingTitle",
+          "fill": "#9bfd9e",
+          "content": "Ping Title",
+          "fontFamily": "JetBrains Mono",
+          "fontSize": 14,
+          "fontWeight": "bold"
+        },
+        {
+          "type": "text",
+          "id": "iQJYe",
+          "name": "PingDate",
+          "fill": "#7ec8da",
+          "content": "Jan 01, 2025",
+          "fontFamily": "JetBrains Mono",
+          "fontSize": 12,
+          "fontWeight": "normal"
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "c633A",
+      "x": 0,
+      "y": 2750,
+      "name": "Component/SectionHeader",
+      "reusable": true,
+      "width": "fill_container(400)",
+      "gap": 8,
+      "alignItems": "center",
+      "children": [
+        {
+          "type": "text",
+          "id": "4vyJY",
+          "name": "SectionTitle",
+          "fill": "#9bfd9e",
+          "textGrowth": "fixed-width",
+          "width": "fill_container",
+          "content": "Section",
+          "fontFamily": "JetBrains Mono",
+          "fontSize": 18,
+          "fontWeight": "bold"
+        },
+        {
+          "type": "frame",
+          "id": "pimUy",
+          "name": "PrevBtn",
+          "width": 32,
+          "height": 32,
+          "fill": "hsl(215, 27.9%, 16.9%)",
+          "cornerRadius": 4,
+          "padding": 6,
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon_font",
+              "id": "y8rtR",
+              "name": "PrevIcon",
+              "width": 20,
+              "height": 20,
+              "iconFontName": "chevron_left",
+              "iconFontFamily": "Material Symbols Rounded",
+              "fill": "hsl(194, 52%, 67%)"
+            }
+          ]
+        },
+        {
+          "type": "frame",
+          "id": "6GtGm",
+          "name": "NextBtn",
+          "width": 32,
+          "height": 32,
+          "fill": "hsl(215, 27.9%, 16.9%)",
+          "cornerRadius": 4,
+          "padding": 6,
+          "justifyContent": "center",
+          "alignItems": "center",
+          "children": [
+            {
+              "type": "icon_font",
+              "id": "WYF6s",
+              "name": "NextIcon",
+              "width": 20,
+              "height": 20,
+              "iconFontName": "chevron_right",
+              "iconFontFamily": "Material Symbols Rounded",
+              "fill": "hsl(194, 52%, 67%)"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "Y4HY7",
+      "x": 3344,
+      "y": 0,
+      "name": "Profile D — Split Columns",
+      "width": 1280,
+      "height": 1200,
+      "fill": "#153d4f",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "xNOZQ",
+          "name": "MainSplit",
+          "width": "fill_container",
+          "gap": 24,
+          "padding": 24,
+          "children": [
+            {
+              "type": "frame",
+              "id": "q5xz7",
+              "name": "UserColumn",
+              "width": 320,
+              "layout": "vertical",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "XHyoQ",
+                  "name": "header",
+                  "width": "fill_container",
+                  "fill": "#153d4f",
+                  "gap": 16,
+                  "padding": 32,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "NTgAE",
+                      "name": "Avatar",
+                      "metadata": {
+                        "type": "unsplash",
+                        "username": "filipp_roman_photography",
+                        "link": "https://unsplash.com/@filipp_roman_photography",
+                        "author": "Filipp Romanovski"
+                      },
+                      "width": 96,
+                      "height": 96,
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "https://images.unsplash.com/photo-1629058161906-e6b253fa2ad0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMxMzJ8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "mode": "fill"
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "VeElp",
+                      "name": "HeaderInfo",
+                      "width": 147,
+                      "layout": "vertical",
+                      "gap": 4,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "zKZ8o",
+                          "name": "DisplayName",
+                          "fill": "#9bfd9e",
+                          "content": "Guide Fari",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 24,
+                          "fontWeight": "bold"
+                        },
+                        {
+                          "type": "text",
+                          "id": "Ku5Od",
+                          "name": "Username",
+                          "fill": "#7ec8da",
+                          "content": "@guidefari",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "5RZLu",
+                          "name": "MemberSince",
+                          "fill": "#7ec8da",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Member since December 2025",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "2wmh9",
+                      "name": "ShareButton",
+                      "width": 36,
+                      "height": 36,
+                      "fill": "hsl(215, 27.9%, 16.9%)",
+                      "cornerRadius": 4,
+                      "padding": 8,
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "NMKRH",
+                          "name": "ShareIcon",
+                          "width": 0,
+                          "height": 0,
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "hsl(194, 52%, 67%)"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "mnGgX",
+                  "name": "bioLinks",
+                  "width": "fill_container",
+                  "fill": "#153d4f",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "yhakl",
+                      "name": "BioColumn",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "cTqfG",
+                          "name": "bioLabel",
+                          "fill": "#9bfd9e",
+                          "content": "About",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 16,
+                          "fontWeight": "bold"
+                        },
+                        {
+                          "type": "text",
+                          "id": "KpebR",
+                          "name": "bioText",
+                          "fill": "#7ec8da",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "DJ, producer and curator. Exploring the intersection of deep house, ambient, and electronic music from Johannesburg. Writing about music, tech, and creative tools.",
+                          "lineHeight": 1.5,
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "bHkyw",
+                      "name": "LinksColumn",
+                      "clip": true,
+                      "width": "fill_container",
+                      "fill": "#0d1c2e",
+                      "cornerRadius": 8,
+                      "layout": "vertical",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "Dt5Bp",
+                          "name": "r1",
+                          "width": "fill_container",
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": {
+                              "bottom": 1
+                            },
+                            "fill": "#2a3f52"
+                          },
+                          "gap": 10,
+                          "padding": [
+                            8,
+                            12
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "doluQ",
+                              "name": "r1i",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "album",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#ff6b4a"
+                            },
+                            {
+                              "type": "text",
+                              "id": "AMi6a",
+                              "name": "r1t",
+                              "fill": "#7ec8da",
+                              "content": "Bandcamp",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "SvIB4",
+                              "name": "r1a",
+                              "width": 12,
+                              "height": 12,
+                              "iconFontName": "arrow_outward",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#4e8c71"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "C6Xsp",
+                          "name": "r2",
+                          "width": "fill_container",
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": {
+                              "bottom": 1
+                            },
+                            "fill": "#2a3f52"
+                          },
+                          "gap": 10,
+                          "padding": [
+                            8,
+                            12
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "FWy0v",
+                              "name": "r2i",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "newspaper",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#ff6719"
+                            },
+                            {
+                              "type": "text",
+                              "id": "Zhccw",
+                              "name": "r2t",
+                              "fill": "#7ec8da",
+                              "content": "Substack",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "ZuFfn",
+                              "name": "r2a",
+                              "width": 12,
+                              "height": 12,
+                              "iconFontName": "arrow_outward",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#4e8c71"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "szzXN",
+                          "name": "r3",
+                          "width": "fill_container",
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": {
+                              "bottom": 1
+                            },
+                            "fill": "#2a3f52"
+                          },
+                          "gap": 10,
+                          "padding": [
+                            8,
+                            12
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "3dJGQ",
+                              "name": "r3i",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "cloud",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#ff5500"
+                            },
+                            {
+                              "type": "text",
+                              "id": "YArYN",
+                              "name": "r3t",
+                              "fill": "#7ec8da",
+                              "content": "SoundCloud",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "85oWK",
+                              "name": "r3a",
+                              "width": 12,
+                              "height": 12,
+                              "iconFontName": "arrow_outward",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#4e8c71"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "nogoZ",
+                          "name": "r4",
+                          "width": "fill_container",
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": {
+                              "bottom": 1
+                            },
+                            "fill": "#2a3f52"
+                          },
+                          "gap": 10,
+                          "padding": [
+                            8,
+                            12
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "1GPWb",
+                              "name": "r4i",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "photo_camera",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#e1306c"
+                            },
+                            {
+                              "type": "text",
+                              "id": "fgKyB",
+                              "name": "r4t",
+                              "fill": "#7ec8da",
+                              "content": "Instagram",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "Bsx82",
+                              "name": "r4a",
+                              "width": 12,
+                              "height": 12,
+                              "iconFontName": "arrow_outward",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#4e8c71"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "72S2l",
+                          "name": "r5",
+                          "width": "fill_container",
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": {
+                              "bottom": 1
+                            },
+                            "fill": "#2a3f52"
+                          },
+                          "gap": 10,
+                          "padding": [
+                            8,
+                            12
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "J77IR",
+                              "name": "r5i",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "twitter",
+                              "iconFontFamily": "lucide",
+                              "fill": "#1da1f2"
+                            },
+                            {
+                              "type": "text",
+                              "id": "TMhDg",
+                              "name": "r5t",
+                              "fill": "#7ec8da",
+                              "content": "Twitter",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "4seQA",
+                              "name": "r5a",
+                              "width": 12,
+                              "height": 12,
+                              "iconFontName": "arrow_outward",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#4e8c71"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "umqUV",
+                          "name": "r6",
+                          "width": "fill_container",
+                          "gap": 10,
+                          "padding": [
+                            8,
+                            12
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "Q6RLz",
+                              "name": "r6i",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "music_note",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#ee1d52"
+                            },
+                            {
+                              "type": "text",
+                              "id": "lbI9D",
+                              "name": "r6t",
+                              "fill": "#7ec8da",
+                              "content": "TikTok",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "Y8f5R",
+                              "name": "r6a",
+                              "width": 12,
+                              "height": 12,
+                              "iconFontName": "arrow_outward",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#4e8c71"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "Vn4rh",
+              "name": "ContentColumn",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "xTogH",
+                  "name": "mixes",
+                  "width": "fill_container",
+                  "fill": "#153d4f",
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "id": "6kDQA",
+                      "type": "ref",
+                      "ref": "c633A",
+                      "name": "MixesHeader",
+                      "width": "fill_container",
+                      "descendants": {
+                        "4vyJY": {
+                          "content": "Mixes"
+                        }
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "5b5Tp",
+                      "name": "MixesRow",
+                      "width": "fill_container",
+                      "gap": 16,
+                      "children": [
+                        {
+                          "id": "IdMS4",
+                          "type": "ref",
+                          "ref": "cePOo",
+                          "name": "mc1",
+                          "descendants": {
+                            "IkTW8": {
+                              "fill": {
+                                "type": "image",
+                                "enabled": true,
+                                "url": "https://images.unsplash.com/photo-1761005654347-f5907893edb7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyNDF8&ixlib=rb-4.1.0&q=80&w=1080",
+                                "mode": "fill"
+                              }
+                            },
+                            "5ynTi": {
+                              "content": "gb#21"
+                            }
+                          }
+                        },
+                        {
+                          "id": "4K4Rd",
+                          "type": "ref",
+                          "ref": "cePOo",
+                          "name": "mc2",
+                          "descendants": {
+                            "IkTW8": {
+                              "fill": {
+                                "type": "image",
+                                "enabled": true,
+                                "url": "https://images.unsplash.com/photo-1760441282745-8d38e6a024f1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyNDF8&ixlib=rb-4.1.0&q=80&w=1080",
+                                "mode": "fill"
+                              }
+                            },
+                            "5ynTi": {
+                              "content": "gb#33 - Ambient"
+                            }
+                          }
+                        },
+                        {
+                          "id": "AuqPx",
+                          "type": "ref",
+                          "ref": "cePOo",
+                          "name": "mc3",
+                          "descendants": {
+                            "IkTW8": {
+                              "fill": {
+                                "type": "image",
+                                "enabled": true,
+                                "url": "https://images.unsplash.com/photo-1762900076151-265900a47a8e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyNDZ8&ixlib=rb-4.1.0&q=80&w=1080",
+                                "mode": "fill"
+                              }
+                            },
+                            "5ynTi": {
+                              "content": "gb#41 - House in the CBD"
+                            }
+                          }
+                        },
+                        {
+                          "id": "rPV76",
+                          "type": "ref",
+                          "ref": "cePOo",
+                          "name": "mc4",
+                          "descendants": {
+                            "IkTW8": {
+                              "fill": {
+                                "type": "image",
+                                "enabled": true,
+                                "url": "https://images.unsplash.com/photo-1628388564562-cf8ec9621505?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyNDh8&ixlib=rb-4.1.0&q=80&w=1080",
+                                "mode": "fill"
+                              }
+                            },
+                            "5ynTi": {
+                              "content": "gb#42"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "MFOft",
+                  "name": "dispatches",
+                  "width": "fill_container",
+                  "fill": "#153d4f",
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "id": "goGXD",
+                      "type": "ref",
+                      "ref": "c633A",
+                      "name": "DispatchesHeader",
+                      "width": "fill_container",
+                      "descendants": {
+                        "4vyJY": {
+                          "content": "Dispatches"
+                        }
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "gcdHP",
+                      "name": "DispatchesRow",
+                      "width": "fill_container",
+                      "gap": 16,
+                      "children": [
+                        {
+                          "id": "2qs3j",
+                          "type": "ref",
+                          "ref": "OZxtD",
+                          "name": "dc1",
+                          "descendants": {
+                            "vG3A4": {
+                              "fill": {
+                                "type": "image",
+                                "enabled": true,
+                                "url": "https://images.unsplash.com/photo-1763568258143-904ea924ac53?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyNDl8&ixlib=rb-4.1.0&q=80&w=1080",
+                                "mode": "fill"
+                              }
+                            },
+                            "Rxd2U": {
+                              "content": "Datasette"
+                            }
+                          }
+                        },
+                        {
+                          "id": "yJRqb",
+                          "type": "ref",
+                          "ref": "OZxtD",
+                          "name": "dc2",
+                          "descendants": {
+                            "vG3A4": {
+                              "fill": {
+                                "type": "image",
+                                "enabled": true,
+                                "url": "https://images.unsplash.com/photo-1759984782555-dd51d7eca012?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyNTB8&ixlib=rb-4.1.0&q=80&w=1080",
+                                "mode": "fill"
+                              }
+                            },
+                            "Rxd2U": {
+                              "content": "Weekly Dispatch #2"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "5ftZW",
+                  "name": "pings",
+                  "width": "fill_container",
+                  "fill": "#153d4f",
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "id": "zKgVe",
+                      "type": "ref",
+                      "ref": "c633A",
+                      "name": "PingsHeader",
+                      "width": "fill_container",
+                      "descendants": {
+                        "4vyJY": {
+                          "content": "Pings"
+                        }
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "FCiOV",
+                      "name": "PingsRow",
+                      "width": "fill_container",
+                      "gap": 16,
+                      "children": [
+                        {
+                          "id": "1zvhj",
+                          "type": "ref",
+                          "ref": "8SOsk",
+                          "name": "pc1",
+                          "descendants": {
+                            "vnXsV": {
+                              "content": "Guide Fari"
+                            },
+                            "iQJYe": {
+                              "content": "Nov 09, 2021"
+                            }
+                          }
+                        },
+                        {
+                          "id": "AoiRs",
+                          "type": "ref",
+                          "ref": "8SOsk",
+                          "name": "pc2",
+                          "descendants": {
+                            "vnXsV": {
+                              "content": "goosebumps.fm"
+                            },
+                            "iQJYe": {
+                              "content": "Dec 01, 2025"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "Kua6p",
+      "x": 4744,
+      "y": 0,
+      "name": "Profile D — iPad",
+      "width": 1024,
+      "height": 1366,
+      "fill": "#153d4f",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "9vSFK",
+          "name": "MainSplit",
+          "width": "fill_container",
+          "gap": 20,
+          "padding": 20,
+          "children": [
+            {
+              "type": "frame",
+              "id": "NiR1G",
+              "name": "UserColumn",
+              "width": 256,
+              "layout": "vertical",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "vnDtO",
+                  "name": "header",
+                  "width": "fill_container",
+                  "fill": "#153d4f",
+                  "gap": 16,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "e1wxy",
+                      "name": "Avatar",
+                      "metadata": {
+                        "type": "unsplash",
+                        "username": "filipp_roman_photography",
+                        "link": "https://unsplash.com/@filipp_roman_photography",
+                        "author": "Filipp Romanovski"
+                      },
+                      "width": 96,
+                      "height": 96,
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "https://images.unsplash.com/photo-1629058161906-e6b253fa2ad0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMxMzJ8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "mode": "fill"
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "GTCFg",
+                      "name": "HeaderInfo",
+                      "width": 141,
+                      "layout": "vertical",
+                      "gap": 4,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "ChfLP",
+                          "name": "DisplayName",
+                          "fill": "#9bfd9e",
+                          "content": "Guide Fari",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 24,
+                          "fontWeight": "bold"
+                        },
+                        {
+                          "type": "text",
+                          "id": "0bO89",
+                          "name": "Username",
+                          "fill": "#7ec8da",
+                          "content": "@guidefari",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "3HsSH",
+                          "name": "MemberSince",
+                          "fill": "#7ec8da",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "Member since December 2025",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "FEmfA",
+                      "name": "ShareButton",
+                      "width": 36,
+                      "height": 36,
+                      "fill": "hsl(215, 27.9%, 16.9%)",
+                      "cornerRadius": 4,
+                      "padding": 8,
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "hdQIj",
+                          "name": "ShareIcon",
+                          "width": 0,
+                          "height": 0,
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "hsl(194, 52%, 67%)"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "RDoLf",
+                  "name": "bioLinks",
+                  "width": "fill_container",
+                  "fill": "#153d4f",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": 20,
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "cPtnX",
+                      "name": "BioColumn",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "C2iUg",
+                          "name": "bioLabel",
+                          "fill": "#9bfd9e",
+                          "content": "About",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 16,
+                          "fontWeight": "bold"
+                        },
+                        {
+                          "type": "text",
+                          "id": "0Dv5b",
+                          "name": "bioText",
+                          "fill": "#7ec8da",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "DJ, producer and curator. Exploring the intersection of deep house, ambient, and electronic music from Johannesburg. Writing about music, tech, and creative tools.",
+                          "lineHeight": 1.5,
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "JoQKM",
+                      "name": "LinksColumn",
+                      "clip": true,
+                      "width": "fill_container",
+                      "fill": "#0d1c2e",
+                      "cornerRadius": 8,
+                      "layout": "vertical",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "EAjlH",
+                          "name": "r1",
+                          "width": "fill_container",
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": {
+                              "bottom": 1
+                            },
+                            "fill": "#2a3f52"
+                          },
+                          "gap": 10,
+                          "padding": [
+                            8,
+                            12
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "kDIcz",
+                              "name": "r1i",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "album",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#ff6b4a"
+                            },
+                            {
+                              "type": "text",
+                              "id": "DWMhV",
+                              "name": "r1t",
+                              "fill": "#7ec8da",
+                              "content": "Bandcamp",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "V4dJu",
+                              "name": "r1a",
+                              "width": 12,
+                              "height": 12,
+                              "iconFontName": "arrow_outward",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#4e8c71"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "2kPS1",
+                          "name": "r2",
+                          "width": "fill_container",
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": {
+                              "bottom": 1
+                            },
+                            "fill": "#2a3f52"
+                          },
+                          "gap": 10,
+                          "padding": [
+                            8,
+                            12
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "tNrZy",
+                              "name": "r2i",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "newspaper",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#ff6719"
+                            },
+                            {
+                              "type": "text",
+                              "id": "WtvXQ",
+                              "name": "r2t",
+                              "fill": "#7ec8da",
+                              "content": "Substack",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "pbvlO",
+                              "name": "r2a",
+                              "width": 12,
+                              "height": 12,
+                              "iconFontName": "arrow_outward",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#4e8c71"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "Tm8Am",
+                          "name": "r3",
+                          "width": "fill_container",
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": {
+                              "bottom": 1
+                            },
+                            "fill": "#2a3f52"
+                          },
+                          "gap": 10,
+                          "padding": [
+                            8,
+                            12
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "muV3z",
+                              "name": "r3i",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "cloud",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#ff5500"
+                            },
+                            {
+                              "type": "text",
+                              "id": "Hmg4r",
+                              "name": "r3t",
+                              "fill": "#7ec8da",
+                              "content": "SoundCloud",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "qUmXD",
+                              "name": "r3a",
+                              "width": 12,
+                              "height": 12,
+                              "iconFontName": "arrow_outward",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#4e8c71"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "jnJxg",
+                          "name": "r4",
+                          "width": "fill_container",
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": {
+                              "bottom": 1
+                            },
+                            "fill": "#2a3f52"
+                          },
+                          "gap": 10,
+                          "padding": [
+                            8,
+                            12
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "7cdh1",
+                              "name": "r4i",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "photo_camera",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#e1306c"
+                            },
+                            {
+                              "type": "text",
+                              "id": "KJXz6",
+                              "name": "r4t",
+                              "fill": "#7ec8da",
+                              "content": "Instagram",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "9jF3A",
+                              "name": "r4a",
+                              "width": 12,
+                              "height": 12,
+                              "iconFontName": "arrow_outward",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#4e8c71"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "KlI6z",
+                          "name": "r5",
+                          "width": "fill_container",
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": {
+                              "bottom": 1
+                            },
+                            "fill": "#2a3f52"
+                          },
+                          "gap": 10,
+                          "padding": [
+                            8,
+                            12
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "mDWO8",
+                              "name": "r5i",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "twitter",
+                              "iconFontFamily": "lucide",
+                              "fill": "#1da1f2"
+                            },
+                            {
+                              "type": "text",
+                              "id": "LQFKh",
+                              "name": "r5t",
+                              "fill": "#7ec8da",
+                              "content": "Twitter",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "kwSl7",
+                              "name": "r5a",
+                              "width": 12,
+                              "height": 12,
+                              "iconFontName": "arrow_outward",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#4e8c71"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "gREuC",
+                          "name": "r6",
+                          "width": "fill_container",
+                          "gap": 10,
+                          "padding": [
+                            8,
+                            12
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "LOVgt",
+                              "name": "r6i",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "music_note",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#ee1d52"
+                            },
+                            {
+                              "type": "text",
+                              "id": "5xWCj",
+                              "name": "r6t",
+                              "fill": "#7ec8da",
+                              "content": "TikTok",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "GeWJr",
+                              "name": "r6a",
+                              "width": 12,
+                              "height": 12,
+                              "iconFontName": "arrow_outward",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#4e8c71"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "hni7g",
+              "name": "ContentColumn",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "5d57p",
+                  "name": "mixes",
+                  "width": "fill_container",
+                  "fill": "#153d4f",
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "id": "XjkWU",
+                      "type": "ref",
+                      "ref": "c633A",
+                      "name": "MixesHeader",
+                      "width": "fill_container",
+                      "descendants": {
+                        "4vyJY": {
+                          "content": "Mixes"
+                        }
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "6n9PJ",
+                      "name": "MixesRow",
+                      "width": "fill_container",
+                      "gap": 16,
+                      "children": [
+                        {
+                          "id": "GPZZ7",
+                          "type": "ref",
+                          "ref": "cePOo",
+                          "name": "mc1",
+                          "descendants": {
+                            "IkTW8": {
+                              "fill": {
+                                "type": "image",
+                                "enabled": true,
+                                "url": "https://images.unsplash.com/photo-1761005654347-f5907893edb7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyNDF8&ixlib=rb-4.1.0&q=80&w=1080",
+                                "mode": "fill"
+                              }
+                            },
+                            "5ynTi": {
+                              "content": "gb#21"
+                            }
+                          }
+                        },
+                        {
+                          "id": "bnii8",
+                          "type": "ref",
+                          "ref": "cePOo",
+                          "name": "mc2",
+                          "descendants": {
+                            "IkTW8": {
+                              "fill": {
+                                "type": "image",
+                                "enabled": true,
+                                "url": "https://images.unsplash.com/photo-1760441282745-8d38e6a024f1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyNDF8&ixlib=rb-4.1.0&q=80&w=1080",
+                                "mode": "fill"
+                              }
+                            },
+                            "5ynTi": {
+                              "content": "gb#33 - Ambient"
+                            }
+                          }
+                        },
+                        {
+                          "id": "X50Xu",
+                          "type": "ref",
+                          "ref": "cePOo",
+                          "name": "mc3",
+                          "descendants": {
+                            "IkTW8": {
+                              "fill": {
+                                "type": "image",
+                                "enabled": true,
+                                "url": "https://images.unsplash.com/photo-1762900076151-265900a47a8e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyNDZ8&ixlib=rb-4.1.0&q=80&w=1080",
+                                "mode": "fill"
+                              }
+                            },
+                            "5ynTi": {
+                              "content": "gb#41 - House in the CBD"
+                            }
+                          }
+                        },
+                        {
+                          "id": "L7fT8",
+                          "type": "ref",
+                          "ref": "cePOo",
+                          "name": "mc4",
+                          "descendants": {
+                            "IkTW8": {
+                              "fill": {
+                                "type": "image",
+                                "enabled": true,
+                                "url": "https://images.unsplash.com/photo-1628388564562-cf8ec9621505?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyNDh8&ixlib=rb-4.1.0&q=80&w=1080",
+                                "mode": "fill"
+                              }
+                            },
+                            "5ynTi": {
+                              "content": "gb#42"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "gIgUK",
+                  "name": "dispatches",
+                  "width": "fill_container",
+                  "fill": "#153d4f",
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "id": "SEMnm",
+                      "type": "ref",
+                      "ref": "c633A",
+                      "name": "DispatchesHeader",
+                      "width": "fill_container",
+                      "descendants": {
+                        "4vyJY": {
+                          "content": "Dispatches"
+                        }
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "JWvx9",
+                      "name": "DispatchesRow",
+                      "width": "fill_container",
+                      "gap": 16,
+                      "children": [
+                        {
+                          "id": "FexD0",
+                          "type": "ref",
+                          "ref": "OZxtD",
+                          "name": "dc1",
+                          "descendants": {
+                            "vG3A4": {
+                              "fill": {
+                                "type": "image",
+                                "enabled": true,
+                                "url": "https://images.unsplash.com/photo-1763568258143-904ea924ac53?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyNDl8&ixlib=rb-4.1.0&q=80&w=1080",
+                                "mode": "fill"
+                              }
+                            },
+                            "Rxd2U": {
+                              "content": "Datasette"
+                            }
+                          }
+                        },
+                        {
+                          "id": "ww0GV",
+                          "type": "ref",
+                          "ref": "OZxtD",
+                          "name": "dc2",
+                          "descendants": {
+                            "vG3A4": {
+                              "fill": {
+                                "type": "image",
+                                "enabled": true,
+                                "url": "https://images.unsplash.com/photo-1759984782555-dd51d7eca012?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyNTB8&ixlib=rb-4.1.0&q=80&w=1080",
+                                "mode": "fill"
+                              }
+                            },
+                            "Rxd2U": {
+                              "content": "Weekly Dispatch #2"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "tapCK",
+                  "name": "pings",
+                  "width": "fill_container",
+                  "fill": "#153d4f",
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 24,
+                  "children": [
+                    {
+                      "id": "FtrkD",
+                      "type": "ref",
+                      "ref": "c633A",
+                      "name": "PingsHeader",
+                      "width": "fill_container",
+                      "descendants": {
+                        "4vyJY": {
+                          "content": "Pings"
+                        }
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "EDCMb",
+                      "name": "PingsRow",
+                      "width": "fill_container",
+                      "gap": 16,
+                      "children": [
+                        {
+                          "id": "hqhbO",
+                          "type": "ref",
+                          "ref": "8SOsk",
+                          "name": "pc1",
+                          "descendants": {
+                            "vnXsV": {
+                              "content": "Guide Fari"
+                            },
+                            "iQJYe": {
+                              "content": "Nov 09, 2021"
+                            }
+                          }
+                        },
+                        {
+                          "id": "HYf6K",
+                          "type": "ref",
+                          "ref": "8SOsk",
+                          "name": "pc2",
+                          "descendants": {
+                            "vnXsV": {
+                              "content": "goosebumps.fm"
+                            },
+                            "iQJYe": {
+                              "content": "Dec 01, 2025"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "frame",
+      "id": "y6ZZQ",
+      "x": 5890,
+      "y": 0,
+      "name": "Profile D — Mobile",
+      "width": 390,
+      "fill": "#153d4f",
+      "layout": "vertical",
+      "children": [
+        {
+          "type": "frame",
+          "id": "Cjkak",
+          "name": "MainSplit",
+          "width": "fill_container",
+          "layout": "vertical",
+          "gap": 16,
+          "padding": 16,
+          "children": [
+            {
+              "type": "frame",
+              "id": "F80Hn",
+              "name": "UserColumn",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 8,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "ZMvSi",
+                  "name": "header",
+                  "width": "fill_container",
+                  "fill": "#153d4f",
+                  "layout": "vertical",
+                  "gap": 8,
+                  "padding": [
+                    16,
+                    16,
+                    8,
+                    16
+                  ],
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "bZCWk",
+                      "name": "Avatar",
+                      "metadata": {
+                        "type": "unsplash",
+                        "username": "filipp_roman_photography",
+                        "link": "https://unsplash.com/@filipp_roman_photography",
+                        "author": "Filipp Romanovski"
+                      },
+                      "width": 96,
+                      "height": 96,
+                      "fill": {
+                        "type": "image",
+                        "enabled": true,
+                        "url": "https://images.unsplash.com/photo-1629058161906-e6b253fa2ad0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMxMzJ8&ixlib=rb-4.1.0&q=80&w=1080",
+                        "mode": "fill"
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "bVboF",
+                      "name": "HeaderInfo",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 4,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "u4x6l",
+                          "name": "DisplayName",
+                          "fill": "#9bfd9e",
+                          "content": "Guide Fari",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 24,
+                          "fontWeight": "bold"
+                        },
+                        {
+                          "type": "text",
+                          "id": "QN8pO",
+                          "name": "Username",
+                          "fill": "#7ec8da",
+                          "content": "@guidefari",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        },
+                        {
+                          "type": "text",
+                          "id": "kes2F",
+                          "name": "MemberSince",
+                          "fill": "#7ec8da",
+                          "content": "Member since December 2025",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 12,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "EVEG3",
+                      "name": "ShareButton",
+                      "width": 36,
+                      "height": 36,
+                      "fill": "hsl(215, 27.9%, 16.9%)",
+                      "cornerRadius": 4,
+                      "padding": 8,
+                      "children": [
+                        {
+                          "type": "icon_font",
+                          "id": "5qwZ1",
+                          "name": "ShareIcon",
+                          "width": 0,
+                          "height": 0,
+                          "iconFontFamily": "Material Symbols Rounded",
+                          "fill": "hsl(194, 52%, 67%)"
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "an4xE",
+                  "name": "bioLinks",
+                  "width": "fill_container",
+                  "fill": "#153d4f",
+                  "layout": "vertical",
+                  "gap": 12,
+                  "padding": [
+                    8,
+                    16,
+                    16,
+                    16
+                  ],
+                  "children": [
+                    {
+                      "type": "frame",
+                      "id": "918mc",
+                      "name": "BioColumn",
+                      "width": "fill_container",
+                      "layout": "vertical",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "type": "text",
+                          "id": "Moih2",
+                          "name": "bioLabel",
+                          "fill": "#9bfd9e",
+                          "content": "About",
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 16,
+                          "fontWeight": "bold"
+                        },
+                        {
+                          "type": "text",
+                          "id": "6Cve4",
+                          "name": "bioText",
+                          "fill": "#7ec8da",
+                          "textGrowth": "fixed-width",
+                          "width": "fill_container",
+                          "content": "DJ, producer and curator. Exploring the intersection of deep house, ambient, and electronic music from Johannesburg. Writing about music, tech, and creative tools.",
+                          "lineHeight": 1.5,
+                          "fontFamily": "JetBrains Mono",
+                          "fontSize": 14,
+                          "fontWeight": "normal"
+                        }
+                      ]
+                    },
+                    {
+                      "type": "frame",
+                      "id": "MCjWY",
+                      "name": "LinksColumn",
+                      "clip": true,
+                      "width": "fill_container",
+                      "fill": "#0d1c2e",
+                      "cornerRadius": 8,
+                      "layout": "vertical",
+                      "children": [
+                        {
+                          "type": "frame",
+                          "id": "HX8I8",
+                          "name": "r1",
+                          "width": "fill_container",
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": {
+                              "bottom": 1
+                            },
+                            "fill": "#2a3f52"
+                          },
+                          "gap": 10,
+                          "padding": [
+                            8,
+                            12
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "fmEU5",
+                              "name": "r1i",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "album",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#ff6b4a"
+                            },
+                            {
+                              "type": "text",
+                              "id": "taPjc",
+                              "name": "r1t",
+                              "fill": "#7ec8da",
+                              "content": "Bandcamp",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "g5lXb",
+                              "name": "r1a",
+                              "width": 12,
+                              "height": 12,
+                              "iconFontName": "arrow_outward",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#4e8c71"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "y4LxS",
+                          "name": "r2",
+                          "width": "fill_container",
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": {
+                              "bottom": 1
+                            },
+                            "fill": "#2a3f52"
+                          },
+                          "gap": 10,
+                          "padding": [
+                            8,
+                            12
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "x2J3Z",
+                              "name": "r2i",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "newspaper",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#ff6719"
+                            },
+                            {
+                              "type": "text",
+                              "id": "z0EGn",
+                              "name": "r2t",
+                              "fill": "#7ec8da",
+                              "content": "Substack",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "dutiz",
+                              "name": "r2a",
+                              "width": 12,
+                              "height": 12,
+                              "iconFontName": "arrow_outward",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#4e8c71"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "zhcWf",
+                          "name": "r3",
+                          "width": "fill_container",
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": {
+                              "bottom": 1
+                            },
+                            "fill": "#2a3f52"
+                          },
+                          "gap": 10,
+                          "padding": [
+                            8,
+                            12
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "HrzR8",
+                              "name": "r3i",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "cloud",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#ff5500"
+                            },
+                            {
+                              "type": "text",
+                              "id": "cVdKg",
+                              "name": "r3t",
+                              "fill": "#7ec8da",
+                              "content": "SoundCloud",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "SGJ25",
+                              "name": "r3a",
+                              "width": 12,
+                              "height": 12,
+                              "iconFontName": "arrow_outward",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#4e8c71"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "jB93S",
+                          "name": "r4",
+                          "width": "fill_container",
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": {
+                              "bottom": 1
+                            },
+                            "fill": "#2a3f52"
+                          },
+                          "gap": 10,
+                          "padding": [
+                            8,
+                            12
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "uzf1x",
+                              "name": "r4i",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "photo_camera",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#e1306c"
+                            },
+                            {
+                              "type": "text",
+                              "id": "UX7Wl",
+                              "name": "r4t",
+                              "fill": "#7ec8da",
+                              "content": "Instagram",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "9Mux7",
+                              "name": "r4a",
+                              "width": 12,
+                              "height": 12,
+                              "iconFontName": "arrow_outward",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#4e8c71"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "fy9bI",
+                          "name": "r5",
+                          "width": "fill_container",
+                          "stroke": {
+                            "align": "inside",
+                            "thickness": {
+                              "bottom": 1
+                            },
+                            "fill": "#2a3f52"
+                          },
+                          "gap": 10,
+                          "padding": [
+                            8,
+                            12
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "cAkdZ",
+                              "name": "r5i",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "twitter",
+                              "iconFontFamily": "lucide",
+                              "fill": "#1da1f2"
+                            },
+                            {
+                              "type": "text",
+                              "id": "Ryxmh",
+                              "name": "r5t",
+                              "fill": "#7ec8da",
+                              "content": "Twitter",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "QCm6q",
+                              "name": "r5a",
+                              "width": 12,
+                              "height": 12,
+                              "iconFontName": "arrow_outward",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#4e8c71"
+                            }
+                          ]
+                        },
+                        {
+                          "type": "frame",
+                          "id": "WGXVv",
+                          "name": "r6",
+                          "width": "fill_container",
+                          "gap": 10,
+                          "padding": [
+                            8,
+                            12
+                          ],
+                          "alignItems": "center",
+                          "children": [
+                            {
+                              "type": "icon_font",
+                              "id": "GgXVu",
+                              "name": "r6i",
+                              "width": 16,
+                              "height": 16,
+                              "iconFontName": "music_note",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#ee1d52"
+                            },
+                            {
+                              "type": "text",
+                              "id": "5NAUM",
+                              "name": "r6t",
+                              "fill": "#7ec8da",
+                              "content": "TikTok",
+                              "fontFamily": "JetBrains Mono",
+                              "fontSize": 13,
+                              "fontWeight": "normal"
+                            },
+                            {
+                              "type": "icon_font",
+                              "id": "ALhWe",
+                              "name": "r6a",
+                              "width": 12,
+                              "height": 12,
+                              "iconFontName": "arrow_outward",
+                              "iconFontFamily": "Material Symbols Rounded",
+                              "fill": "#4e8c71"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "frame",
+              "id": "brhvc",
+              "name": "ContentColumn",
+              "width": "fill_container",
+              "layout": "vertical",
+              "gap": 16,
+              "children": [
+                {
+                  "type": "frame",
+                  "id": "YJ20r",
+                  "name": "mixes",
+                  "width": "fill_container",
+                  "fill": "#153d4f",
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 16,
+                  "children": [
+                    {
+                      "id": "a6w6Q",
+                      "type": "ref",
+                      "ref": "c633A",
+                      "name": "MixesHeader",
+                      "width": "fill_container",
+                      "descendants": {
+                        "4vyJY": {
+                          "content": "Mixes"
+                        }
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "NrUrl",
+                      "name": "MixesRow",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "id": "CnK1W",
+                          "type": "ref",
+                          "ref": "cePOo",
+                          "name": "mc1",
+                          "width": "fit_content",
+                          "descendants": {
+                            "IkTW8": {
+                              "fill": {
+                                "type": "image",
+                                "enabled": true,
+                                "url": "https://images.unsplash.com/photo-1761005654347-f5907893edb7?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyNDF8&ixlib=rb-4.1.0&q=80&w=1080",
+                                "mode": "fill"
+                              }
+                            },
+                            "5ynTi": {
+                              "content": "gb#21"
+                            }
+                          }
+                        },
+                        {
+                          "id": "zpnfm",
+                          "type": "ref",
+                          "ref": "cePOo",
+                          "name": "mc2",
+                          "width": "fit_content",
+                          "descendants": {
+                            "IkTW8": {
+                              "fill": {
+                                "type": "image",
+                                "enabled": true,
+                                "url": "https://images.unsplash.com/photo-1760441282745-8d38e6a024f1?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyNDF8&ixlib=rb-4.1.0&q=80&w=1080",
+                                "mode": "fill"
+                              }
+                            },
+                            "5ynTi": {
+                              "content": "gb#33 - Ambient"
+                            }
+                          }
+                        },
+                        {
+                          "id": "cUeWC",
+                          "type": "ref",
+                          "ref": "cePOo",
+                          "name": "mc3",
+                          "width": "fit_content",
+                          "descendants": {
+                            "IkTW8": {
+                              "fill": {
+                                "type": "image",
+                                "enabled": true,
+                                "url": "https://images.unsplash.com/photo-1762900076151-265900a47a8e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyNDZ8&ixlib=rb-4.1.0&q=80&w=1080",
+                                "mode": "fill"
+                              }
+                            },
+                            "5ynTi": {
+                              "content": "gb#41 - House in the CBD"
+                            }
+                          }
+                        },
+                        {
+                          "id": "bxsRN",
+                          "type": "ref",
+                          "ref": "cePOo",
+                          "name": "mc4",
+                          "width": "fit_content",
+                          "descendants": {
+                            "IkTW8": {
+                              "fill": {
+                                "type": "image",
+                                "enabled": true,
+                                "url": "https://images.unsplash.com/photo-1628388564562-cf8ec9621505?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyNDh8&ixlib=rb-4.1.0&q=80&w=1080",
+                                "mode": "fill"
+                              }
+                            },
+                            "5ynTi": {
+                              "content": "gb#42"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "Wcurk",
+                  "name": "dispatches",
+                  "width": "fill_container",
+                  "fill": "#153d4f",
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 16,
+                  "children": [
+                    {
+                      "id": "8Tlcj",
+                      "type": "ref",
+                      "ref": "c633A",
+                      "name": "DispatchesHeader",
+                      "width": "fill_container",
+                      "descendants": {
+                        "4vyJY": {
+                          "content": "Dispatches"
+                        }
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "Hu7Uk",
+                      "name": "DispatchesRow",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "id": "qzvtV",
+                          "type": "ref",
+                          "ref": "OZxtD",
+                          "name": "dc1",
+                          "width": "fit_content",
+                          "descendants": {
+                            "vG3A4": {
+                              "fill": {
+                                "type": "image",
+                                "enabled": true,
+                                "url": "https://images.unsplash.com/photo-1763568258143-904ea924ac53?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyNDl8&ixlib=rb-4.1.0&q=80&w=1080",
+                                "mode": "fill"
+                              }
+                            },
+                            "Rxd2U": {
+                              "content": "Datasette"
+                            }
+                          }
+                        },
+                        {
+                          "id": "Es5mO",
+                          "type": "ref",
+                          "ref": "OZxtD",
+                          "name": "dc2",
+                          "width": "fit_content",
+                          "descendants": {
+                            "vG3A4": {
+                              "fill": {
+                                "type": "image",
+                                "enabled": true,
+                                "url": "https://images.unsplash.com/photo-1759984782555-dd51d7eca012?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w4NDM0ODN8MHwxfHJhbmRvbXx8fHx8fHx8fDE3NzE1OTMyNTB8&ixlib=rb-4.1.0&q=80&w=1080",
+                                "mode": "fill"
+                              }
+                            },
+                            "Rxd2U": {
+                              "content": "Weekly Dispatch #2"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "type": "frame",
+                  "id": "lSgCy",
+                  "name": "pings",
+                  "width": "fill_container",
+                  "fill": "#153d4f",
+                  "layout": "vertical",
+                  "gap": 16,
+                  "padding": 16,
+                  "children": [
+                    {
+                      "id": "OrINB",
+                      "type": "ref",
+                      "ref": "c633A",
+                      "name": "PingsHeader",
+                      "width": "fill_container",
+                      "descendants": {
+                        "4vyJY": {
+                          "content": "Pings"
+                        }
+                      }
+                    },
+                    {
+                      "type": "frame",
+                      "id": "zbfcQ",
+                      "name": "PingsRow",
+                      "gap": 12,
+                      "children": [
+                        {
+                          "id": "o2xJc",
+                          "type": "ref",
+                          "ref": "8SOsk",
+                          "name": "pc1",
+                          "width": "fit_content",
+                          "descendants": {
+                            "vnXsV": {
+                              "content": "Guide Fari"
+                            },
+                            "iQJYe": {
+                              "content": "Nov 09, 2021"
+                            }
+                          }
+                        },
+                        {
+                          "id": "gCCib",
+                          "type": "ref",
+                          "ref": "8SOsk",
+                          "name": "pc2",
+                          "width": "fit_content",
+                          "descendants": {
+                            "vnXsV": {
+                              "content": "goosebumps.fm"
+                            },
+                            "iQJYe": {
+                              "content": "Dec 01, 2025"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  ]
                 }
               ]
             }

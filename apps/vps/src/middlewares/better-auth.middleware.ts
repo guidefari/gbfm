@@ -1,5 +1,6 @@
 import { Effect } from 'effect'
 import type { Context, Next } from 'hono'
+import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { auth } from '@/lib/auth'
 import type { AppBindings } from '@/lib/types'
 
@@ -57,6 +58,30 @@ export const attachSessionContext = async (
       path: c.req.path,
       method: c.req.method
     }).pipe(Effect.runPromise)
+  }
+
+  await next()
+}
+
+export const requireAdminMiddleware = async (
+  c: Context<AppBindings>,
+  next: Next
+) => {
+  const authResult = await betterAuthMiddleware(c, async () => {})
+  if (authResult) {
+    return authResult
+  }
+
+  const user = c.get('user')
+  if (user.role !== 'admin') {
+    Effect.logWarning('[Auth] Forbidden access attempt', {
+      userId: user.id,
+      role: user.role,
+      path: c.req.path,
+      method: c.req.method
+    }).pipe(Effect.runPromise)
+
+    return c.json({ error: 'Forbidden' }, HttpStatusCodes.FORBIDDEN)
   }
 
   await next()

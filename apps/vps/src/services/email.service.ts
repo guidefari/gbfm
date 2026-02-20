@@ -3,7 +3,11 @@ import { eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { user } from '@/db/auth.schema'
-import { emailDeliveryLogsTable } from '@/db/email.schema'
+import {
+  EMAIL_DELIVERY_STATUSES,
+  EMAIL_NOTIFICATION_TYPES,
+  emailDeliveryLogsTable
+} from '@/db/email.schema'
 import type { MusicReminder } from '@/db/music-reminder.schema'
 import { DatabaseError, EmailError, getErrorMessage } from '@/errors'
 import { recordEmailFail, recordEmailSend } from '@/lib/performance-monitoring'
@@ -78,10 +82,10 @@ const sendReminderEmail = (reminder: MusicReminder) =>
           .values({
             userId: reminder.userId,
             recipientEmail: userEmail,
-            emailType: 'music_reminder',
+            emailType: EMAIL_NOTIFICATION_TYPES.MIX_RELEASE,
             templateName: 'music-reminder',
             subject: `🎵 Time to listen: ${reminder.musicTitle} by ${reminder.artistName}`,
-            status: 'pending',
+            status: EMAIL_DELIVERY_STATUSES.PENDING,
             metadata: {
               reminderId: reminder.id,
               musicTitle: reminder.musicTitle,
@@ -141,7 +145,7 @@ const sendReminderEmail = (reminder: MusicReminder) =>
             db
               .update(emailDeliveryLogsTable)
               .set({
-                status: 'sent',
+                status: EMAIL_DELIVERY_STATUSES.SENT,
                 sentAt: new Date()
               })
               .where(eq(emailDeliveryLogsTable.id, logEntry.id)),
@@ -171,7 +175,7 @@ const sendReminderEmail = (reminder: MusicReminder) =>
             db
               .update(emailDeliveryLogsTable)
               .set({
-                status: 'failed',
+                status: EMAIL_DELIVERY_STATUSES.FAILED,
                 errorMessage
               })
               .where(eq(emailDeliveryLogsTable.id, logEntry.id)),

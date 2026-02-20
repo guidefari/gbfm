@@ -309,6 +309,76 @@ export function useUpdateEmailPreferences() {
   }
 }
 
+export type EmailLogStatus =
+  | 'PENDING'
+  | 'SENT'
+  | 'DELIVERED'
+  | 'BOUNCED'
+  | 'COMPLAINED'
+  | 'FAILED'
+
+export type AdminEmailLog = {
+  id: string
+  userId: string | null
+  recipientEmail: string
+  recipientName: string | null
+  emailType: string
+  templateName: string
+  subject: string
+  status: EmailLogStatus
+  sesMessageId: string | null
+  metadata: Record<string, unknown> | null
+  errorMessage: string | null
+  sentAt: string | Date | null
+  deliveredAt: string | Date | null
+  bouncedAt: string | Date | null
+  complainedAt: string | Date | null
+  createdAt: string | Date
+  updatedAt: string | Date
+}
+
+export type AdminEmailLogsFilters = {
+  limit?: number
+  offset?: number
+  status?: EmailLogStatus
+  recipientEmail?: string
+  dateFrom?: string
+  dateTo?: string
+}
+
+export function useAdminEmailLogs({
+  limit = 20,
+  offset = 0,
+  status,
+  recipientEmail,
+  dateFrom,
+  dateTo
+}: AdminEmailLogsFilters) {
+  return useQuery<PaginatedResponse<AdminEmailLog>, Error>({
+    queryKey: [
+      'admin',
+      'email-logs',
+      limit,
+      offset,
+      status,
+      recipientEmail,
+      dateFrom,
+      dateTo
+    ],
+    queryFn: async () => {
+      const url = new URL(`${VPS_BASE_URL}/email/logs`)
+      url.searchParams.set('limit', String(limit))
+      url.searchParams.set('offset', String(offset))
+      if (status) url.searchParams.set('status', status)
+      if (recipientEmail) url.searchParams.set('recipientEmail', recipientEmail)
+      if (dateFrom) url.searchParams.set('dateFrom', dateFrom)
+      if (dateTo) url.searchParams.set('dateTo', dateTo)
+
+      return fetcher<PaginatedResponse<AdminEmailLog>>(url.toString())
+    }
+  })
+}
+
 export function useAllLabels() {
   const {
     data,
