@@ -197,6 +197,13 @@
       "when": 1771360457643,
       "tag": "0030_optimal_maginty",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1771621009842,
+      "tag": "0031_salty_toad",
+      "breakpoints": true
     }
   ]
 }

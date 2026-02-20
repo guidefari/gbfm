@@ -1,8 +1,12 @@
-import { and, eq } from 'drizzle-orm'
+import { and, asc, eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { audioCreators, audioTable } from '@/db/audio.schema'
-import { user as userTable } from '@/db/auth.schema'
+import {
+  type SocialLinkPlatform,
+  userSocialLinks,
+  user as userTable
+} from '@/db/auth.schema'
 import { postCreators, postsTable } from '@/db/post.schema'
 import { showCreators, showsTable } from '@/db/show.schema'
 import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
@@ -12,6 +16,12 @@ export type PublicProfile = {
   name: string
   username: string | null
   image: string | null
+  bio: string | null
+  socialLinks: Array<{
+    platform: SocialLinkPlatform
+    url: string
+    position: number
+  }>
   createdAt: Date
   content: {
     mixes: Array<{
@@ -64,6 +74,7 @@ const getPublicProfileEffect = (username: string) =>
             name: userTable.name,
             username: userTable.username,
             image: userTable.image,
+            bio: userTable.bio,
             createdAt: userTable.createdAt,
             banned: userTable.banned
           })
@@ -86,6 +97,25 @@ const getPublicProfileEffect = (username: string) =>
         id: username
       })
     }
+
+    const socialLinks = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select({
+            platform: userSocialLinks.platform,
+            url: userSocialLinks.url,
+            position: userSocialLinks.position
+          })
+          .from(userSocialLinks)
+          .where(eq(userSocialLinks.userId, foundUser.id))
+          .orderBy(asc(userSocialLinks.position)),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to get user social links: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'user_social_links'
+        })
+    })
 
     const userMixes = yield* Effect.tryPromise({
       try: () =>
@@ -183,6 +213,13 @@ const getPublicProfileEffect = (username: string) =>
       name: foundUser.name,
       username: foundUser.username,
       image: foundUser.image,
+      bio: foundUser.bio,
+      socialLinks: socialLinks.map((link) => ({
+        platform:
+          link.platform as PublicProfile['socialLinks'][number]['platform'],
+        url: link.url,
+        position: link.position
+      })),
       createdAt: foundUser.createdAt,
       content: {
         mixes: userMixes,

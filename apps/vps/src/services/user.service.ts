@@ -1,7 +1,11 @@
-import { eq, ilike, or } from 'drizzle-orm'
+import { asc, eq, ilike, or } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
-import { user as userTable } from '@/db/auth.schema'
+import {
+  type SocialLinkPlatform,
+  userSocialLinks,
+  user as userTable
+} from '@/db/auth.schema'
 import type {
   InsertAuthorEmailPreferences,
   SelectAuthorEmailPreferences
@@ -22,6 +26,7 @@ export interface UserService {
       emailVerified: boolean
       image: string | null
       username: string | null
+      bio: string | null
       role: string
       banned: boolean
       banReason: string | null
@@ -48,6 +53,7 @@ export interface UserService {
       email?: string
       image?: string
       username?: string
+      bio?: string
     }
   ) => Effect.Effect<
     {
@@ -57,6 +63,7 @@ export interface UserService {
       emailVerified: boolean
       image: string | null
       username: string | null
+      bio: string | null
       role: string
       banned: boolean
       banReason: string | null
@@ -64,6 +71,31 @@ export interface UserService {
       createdAt: Date
       updatedAt: Date
     },
+    DatabaseError | NotFoundError
+  >
+
+  readonly getUserSocialLinks: (userId: string) => Effect.Effect<
+    Array<{
+      platform: SocialLinkPlatform
+      url: string
+      position: number
+    }>,
+    DatabaseError | NotFoundError
+  >
+
+  readonly replaceUserSocialLinks: (
+    userId: string,
+    links: Array<{
+      platform: SocialLinkPlatform
+      url: string
+      position: number
+    }>
+  ) => Effect.Effect<
+    Array<{
+      platform: SocialLinkPlatform
+      url: string
+      position: number
+    }>,
     DatabaseError | NotFoundError
   >
 
@@ -112,6 +144,7 @@ const updateUserProfileEffect = (
     email?: string
     image?: string
     username?: string
+    bio?: string
   }
 ) =>
   Effect.gen(function* () {
@@ -189,6 +222,90 @@ const getUserEmailPreferencesEffect = (userId: string) =>
       })
   })
 
+const getUserSocialLinksEffect = (userId: string) =>
+  Effect.gen(function* () {
+    yield* getUserByIdEffect(userId)
+
+    const links = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select({
+            platform: userSocialLinks.platform,
+            url: userSocialLinks.url,
+            position: userSocialLinks.position
+          })
+          .from(userSocialLinks)
+          .where(eq(userSocialLinks.userId, userId))
+          .orderBy(asc(userSocialLinks.position)),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to get user social links: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'user_social_links'
+        })
+    })
+
+    return links.map((link) => ({
+      platform: link.platform as SocialLinkPlatform,
+      url: link.url,
+      position: link.position
+    }))
+  })
+
+const replaceUserSocialLinksEffect = (
+  userId: string,
+  links: Array<{
+    platform: SocialLinkPlatform
+    url: string
+    position: number
+  }>
+) =>
+  Effect.gen(function* () {
+    yield* getUserByIdEffect(userId)
+
+    const updatedLinks = yield* Effect.tryPromise({
+      try: () =>
+        db.transaction(async (tx) => {
+          await tx
+            .delete(userSocialLinks)
+            .where(eq(userSocialLinks.userId, userId))
+
+          if (links.length > 0) {
+            await tx.insert(userSocialLinks).values(
+              links.map((link) => ({
+                userId,
+                platform: link.platform,
+                url: link.url,
+                position: link.position
+              }))
+            )
+          }
+
+          return tx
+            .select({
+              platform: userSocialLinks.platform,
+              url: userSocialLinks.url,
+              position: userSocialLinks.position
+            })
+            .from(userSocialLinks)
+            .where(eq(userSocialLinks.userId, userId))
+            .orderBy(asc(userSocialLinks.position))
+        }),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to replace user social links: ${getErrorMessage(error)}`,
+          operation: 'update',
+          table: 'user_social_links'
+        })
+    })
+
+    return updatedLinks.map((link) => ({
+      platform: link.platform as SocialLinkPlatform,
+      url: link.url,
+      position: link.position
+    }))
+  })
+
 const updateUserEmailPreferencesEffect = (
   userId: string,
   preferences: Partial<InsertAuthorEmailPreferences>
@@ -228,6 +345,14 @@ export const UserServiceLive = Layer.succeed(UserService, {
   updateUserProfile: (userId, data) =>
     updateUserProfileEffect(userId, data).pipe(
       Effect.withSpan('user.updateProfile', { attributes: { userId } })
+    ),
+  getUserSocialLinks: (userId) =>
+    getUserSocialLinksEffect(userId).pipe(
+      Effect.withSpan('user.getSocialLinks', { attributes: { userId } })
+    ),
+  replaceUserSocialLinks: (userId, links) =>
+    replaceUserSocialLinksEffect(userId, links).pipe(
+      Effect.withSpan('user.replaceSocialLinks', { attributes: { userId } })
     ),
   getUserEmailPreferences: (userId) =>
     getUserEmailPreferencesEffect(userId).pipe(

@@ -26,6 +26,20 @@ import type {
 
 export const VPS_BASE_URL = import.meta.env.VITE_VPS_BASE_URL
 
+export type SocialLinkPlatform =
+  | 'bandcamp'
+  | 'substack'
+  | 'soundcloud'
+  | 'instagram'
+  | 'twitter'
+  | 'tiktok'
+
+export type SocialLink = {
+  platform: SocialLinkPlatform
+  url: string
+  position: number
+}
+
 // Pagination types
 export type PaginationMetadata = {
   total: number
@@ -263,6 +277,68 @@ export function useUpdateProfile() {
     updateProfile,
     isPending
   }
+}
+
+export function useAdminUserSocialLinks(userId: string) {
+  return useQuery<SocialLink[], Error>({
+    queryKey: ['admin', 'user-social-links', userId],
+    queryFn: () =>
+      fetcher<SocialLink[]>(
+        `${VPS_BASE_URL}/user/admin/${userId}/social-links`
+      ),
+    enabled: Boolean(userId)
+  })
+}
+
+export function useReplaceAdminUserSocialLinks() {
+  const queryClient = useQueryClient()
+  return useMutation<
+    SocialLink[],
+    Error,
+    { userId: string; links: SocialLink[] }
+  >({
+    mutationFn: ({ userId, links }) =>
+      fetcher<SocialLink[]>(
+        `${VPS_BASE_URL}/user/admin/${userId}/social-links`,
+        {
+          method: 'PUT',
+          body: JSON.stringify(links)
+        }
+      ),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ['admin', 'user-social-links', variables.userId]
+      })
+    }
+  })
+}
+
+export function useUpdateAdminUserBio() {
+  return useMutation<
+    { bio: string | null },
+    Error,
+    { userId: string; bio: string }
+  >({
+    mutationFn: ({ userId, bio }) =>
+      fetcher<{ bio: string | null }>(
+        `${VPS_BASE_URL}/user/admin/${userId}/bio`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ bio })
+        }
+      )
+  })
+}
+
+export function useAdminUserBio(userId: string) {
+  return useQuery<{ bio: string | null }, Error>({
+    queryKey: ['admin', 'user-bio', userId],
+    queryFn: () =>
+      fetcher<{ bio: string | null }>(
+        `${VPS_BASE_URL}/user/admin/${userId}/bio`
+      ),
+    enabled: Boolean(userId)
+  })
 }
 
 export type EmailPreferences = {
@@ -793,6 +869,8 @@ export type PublicProfile = {
   name: string
   username: string | null
   image: string | null
+  bio: string | null
+  socialLinks: SocialLink[]
   createdAt: string
   content: {
     mixes: Array<{

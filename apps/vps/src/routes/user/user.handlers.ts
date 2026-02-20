@@ -6,10 +6,16 @@ import { ShowSubscriptionService } from '@/services/show.service'
 import { UserService } from '@/services/user.service'
 
 import type {
+  GetAdminUserBioRoute,
+  GetAdminUserSocialLinksRoute,
   GetEmailPreferencesRoute,
   GetProfileRoute,
+  GetSocialLinksRoute,
   GetUserSubscriptionsRoute,
+  ReplaceAdminUserSocialLinksRoute,
+  ReplaceSocialLinksRoute,
   SearchUsersRoute,
+  UpdateAdminUserBioRoute,
   UpdateEmailPreferencesRoute,
   UpdateProfileRoute
 } from './user.routes'
@@ -26,6 +32,7 @@ export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
     email?: string
     image?: string
     username?: string
+    bio?: string
   }> = {}
   let avatarFile: File | null = null
   const contentType = c.req.header('content-type') || ''
@@ -42,7 +49,7 @@ export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
       ) {
         avatarFile = value as File
       } else if (typeof value === 'string' && key !== 'avatar') {
-        if (key === 'email' || key === 'username') {
+        if (key === 'email' || key === 'username' || key === 'bio') {
           updateData[key] = value
         }
       }
@@ -51,6 +58,7 @@ export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
     const body = c.req.valid('json')
     if (body.email) updateData.email = body.email
     if (body.username) updateData.username = body.username
+    if (body.bio !== undefined) updateData.bio = body.bio
   }
 
   if (avatarFile) {
@@ -95,19 +103,24 @@ export const getProfile: AppRouteHandler<GetProfileRoute> = async (c) => {
 
   const program = Effect.gen(function* () {
     const userService = yield* UserService
-    return yield* userService.getUserById(user.id)
+    const [profile, socialLinks] = yield* Effect.all([
+      userService.getUserById(user.id),
+      userService.getUserSocialLinks(user.id)
+    ])
+    return { profile, socialLinks }
   }).pipe(
     Effect.withSpan('api.user.getProfile'),
     Effect.map(
       (data) =>
         ({
           data: {
-            ...data,
-            username: data.username,
-            avatarUrl: data.image,
-            image: data.image,
-            verified: data.emailVerified,
-            emailVerified: data.emailVerified
+            ...data.profile,
+            username: data.profile.username,
+            avatarUrl: data.profile.image,
+            image: data.profile.image,
+            verified: data.profile.emailVerified,
+            emailVerified: data.profile.emailVerified,
+            socialLinks: data.socialLinks
           },
           status: HttpStatusCodes.OK
         }) as const
@@ -122,6 +135,266 @@ export const getProfile: AppRouteHandler<GetProfileRoute> = async (c) => {
       Effect.succeed({
         error: 'Failed to fetch profile',
         status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    )
+  )
+
+  const result = await runApp(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
+  }
+
+  return c.json(result.data, result.status)
+}
+
+export const getSocialLinks: AppRouteHandler<GetSocialLinksRoute> = async (
+  c
+) => {
+  const user = c.get('user')
+
+  if (!user) {
+    return c.json({ error: 'Unauthorized' }, HttpStatusCodes.UNAUTHORIZED)
+  }
+
+  const program = Effect.gen(function* () {
+    const userService = yield* UserService
+    return yield* userService.getUserSocialLinks(user.id)
+  }).pipe(
+    Effect.withSpan('api.user.getSocialLinks'),
+    Effect.map((data) => ({ data, status: HttpStatusCodes.OK }) as const),
+    Effect.catchTag('NotFoundError', (error) =>
+      Effect.succeed({
+        error: error.message,
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', () =>
+      Effect.succeed({
+        error: 'Failed to fetch social links',
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    )
+  )
+
+  const result = await runApp(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
+  }
+
+  return c.json(result.data, result.status)
+}
+
+export const replaceSocialLinks: AppRouteHandler<
+  ReplaceSocialLinksRoute
+> = async (c) => {
+  const user = c.get('user')
+
+  if (!user) {
+    return c.json({ error: 'Unauthorized' }, HttpStatusCodes.UNAUTHORIZED)
+  }
+
+  const links = c.req.valid('json')
+
+  const program = Effect.gen(function* () {
+    const userService = yield* UserService
+    return yield* userService.replaceUserSocialLinks(user.id, links)
+  }).pipe(
+    Effect.withSpan('api.user.replaceSocialLinks'),
+    Effect.map((data) => ({ data, status: HttpStatusCodes.OK }) as const),
+    Effect.catchTag('NotFoundError', (error) =>
+      Effect.succeed({
+        error: error.message,
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', () =>
+      Effect.succeed({
+        error: 'Failed to replace social links',
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    )
+  )
+
+  const result = await runApp(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
+  }
+
+  return c.json(result.data, result.status)
+}
+
+export const getAdminUserSocialLinks: AppRouteHandler<
+  GetAdminUserSocialLinksRoute
+> = async (c) => {
+  const user = c.get('user')
+
+  if (!user) {
+    return c.json({ error: 'Unauthorized' }, HttpStatusCodes.UNAUTHORIZED)
+  }
+
+  if (user.role !== 'admin') {
+    return c.json({ error: 'Admin access required' }, HttpStatusCodes.FORBIDDEN)
+  }
+
+  const { userId } = c.req.valid('param')
+
+  const program = Effect.gen(function* () {
+    const userService = yield* UserService
+    return yield* userService.getUserSocialLinks(userId)
+  }).pipe(
+    Effect.withSpan('api.user.getAdminUserSocialLinks'),
+    Effect.map((data) => ({ data, status: HttpStatusCodes.OK }) as const),
+    Effect.catchTag('NotFoundError', (error) =>
+      Effect.succeed({
+        error: error.message,
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', () =>
+      Effect.succeed({
+        error: 'Failed to fetch admin social links',
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    )
+  )
+
+  const result = await runApp(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
+  }
+
+  return c.json(result.data, result.status)
+}
+
+export const replaceAdminUserSocialLinks: AppRouteHandler<
+  ReplaceAdminUserSocialLinksRoute
+> = async (c) => {
+  const user = c.get('user')
+
+  if (!user) {
+    return c.json({ error: 'Unauthorized' }, HttpStatusCodes.UNAUTHORIZED)
+  }
+
+  if (user.role !== 'admin') {
+    return c.json({ error: 'Admin access required' }, HttpStatusCodes.FORBIDDEN)
+  }
+
+  const { userId } = c.req.valid('param')
+  const links = c.req.valid('json')
+
+  const program = Effect.gen(function* () {
+    const userService = yield* UserService
+    return yield* userService.replaceUserSocialLinks(userId, links)
+  }).pipe(
+    Effect.withSpan('api.user.replaceAdminUserSocialLinks'),
+    Effect.map((data) => ({ data, status: HttpStatusCodes.OK }) as const),
+    Effect.catchTag('NotFoundError', (error) =>
+      Effect.succeed({
+        error: error.message,
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', () =>
+      Effect.succeed({
+        error: 'Failed to replace admin social links',
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    )
+  )
+
+  const result = await runApp(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
+  }
+
+  return c.json(result.data, result.status)
+}
+
+export const updateAdminUserBio: AppRouteHandler<
+  UpdateAdminUserBioRoute
+> = async (c) => {
+  const user = c.get('user')
+
+  if (!user) {
+    return c.json({ error: 'Unauthorized' }, HttpStatusCodes.UNAUTHORIZED)
+  }
+
+  if (user.role !== 'admin') {
+    return c.json({ error: 'Admin access required' }, HttpStatusCodes.FORBIDDEN)
+  }
+
+  const { userId } = c.req.valid('param')
+  const { bio } = c.req.valid('json')
+
+  const program = Effect.gen(function* () {
+    const userService = yield* UserService
+    const updated = yield* userService.updateUserProfile(userId, {
+      bio: bio ?? undefined
+    })
+    return { bio: updated.bio }
+  }).pipe(
+    Effect.withSpan('api.user.updateAdminUserBio'),
+    Effect.map((data) => ({ data, status: HttpStatusCodes.OK }) as const),
+    Effect.catchTag('NotFoundError', (error) =>
+      Effect.succeed({
+        error: error.message,
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', () =>
+      Effect.succeed({
+        error: 'Failed to update admin user bio',
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    )
+  )
+
+  const result = await runApp(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
+  }
+
+  return c.json(result.data, result.status)
+}
+
+export const getAdminUserBio: AppRouteHandler<GetAdminUserBioRoute> = async (
+  c
+) => {
+  const user = c.get('user')
+
+  if (!user) {
+    return c.json({ error: 'Unauthorized' }, HttpStatusCodes.UNAUTHORIZED)
+  }
+
+  if (user.role !== 'admin') {
+    return c.json({ error: 'Admin access required' }, HttpStatusCodes.FORBIDDEN)
+  }
+
+  const { userId } = c.req.valid('param')
+
+  const program = Effect.gen(function* () {
+    const userService = yield* UserService
+    const targetUser = yield* userService.getUserById(userId)
+    return { bio: targetUser.bio }
+  }).pipe(
+    Effect.withSpan('api.user.getAdminUserBio'),
+    Effect.map((data) => ({ data, status: HttpStatusCodes.OK }) as const),
+    Effect.catchTag('NotFoundError', (error) =>
+      Effect.succeed({
+        error: error.message,
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', () =>
+      Effect.succeed({
+        error: 'Failed to fetch admin user bio',
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
       } as const)
     )
   )

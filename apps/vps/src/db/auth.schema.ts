@@ -4,7 +4,16 @@ import {
   type InferSelectModel,
   relations
 } from 'drizzle-orm'
-import { boolean, index, pgTable, text, timestamp } from 'drizzle-orm/pg-core'
+import {
+  boolean,
+  index,
+  integer,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid
+} from 'drizzle-orm/pg-core'
 import { audioCreators } from './audio.schema'
 import {
   emailDeliveryLogsTable,
@@ -19,6 +28,7 @@ export const user = pgTable('user', {
   email: text('email').notNull().unique(),
   emailVerified: boolean('email_verified').default(false).notNull(),
   image: text('image'),
+  bio: text('bio'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at')
     .defaultNow()
@@ -31,6 +41,60 @@ export const user = pgTable('user', {
   banReason: text('ban_reason'),
   banExpires: timestamp('ban_expires')
 })
+
+export const SOCIAL_LINK_PLATFORMS = [
+  'bandcamp',
+  'substack',
+  'soundcloud',
+  'instagram',
+  'twitter',
+  'tiktok'
+] as const
+
+export type SocialLinkPlatform = (typeof SOCIAL_LINK_PLATFORMS)[number]
+
+export const socialLinkPlatformSchema = z.enum(SOCIAL_LINK_PLATFORMS)
+
+export const userSocialLinkSchema = z.object({
+  platform: socialLinkPlatformSchema.openapi({
+    description: 'Social link platform'
+  }),
+  url: z.string().url().openapi({ description: 'Social link URL' }),
+  position: z
+    .number()
+    .int()
+    .nonnegative()
+    .openapi({ description: 'Order position for this social link' })
+})
+
+export type UserSocialLink = z.infer<typeof userSocialLinkSchema>
+
+export const userSocialLinksSchema = z.array(userSocialLinkSchema)
+
+export const userSocialLinks = pgTable(
+  'user_social_links',
+  {
+    id: uuid('id').defaultRandom().primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' }),
+    platform: text('platform').notNull(),
+    url: text('url').notNull(),
+    position: integer('position').notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at')
+      .defaultNow()
+      .$onUpdate(() => /* @__PURE__ */ new Date())
+      .notNull()
+  },
+  (table) => [
+    index('user_social_links_user_id_idx').on(table.userId),
+    uniqueIndex('user_social_links_user_position_uq').on(
+      table.userId,
+      table.position
+    )
+  ]
+)
 
 export const session = pgTable(
   'session',
@@ -95,6 +159,7 @@ export const verification = pgTable(
 export const userRelations = relations(user, ({ many, one }) => ({
   sessions: many(session),
   accounts: many(account),
+  socialLinks: many(userSocialLinks),
   postCreators: many(postCreators),
   audioCreators: many(audioCreators),
   emailDeliveryLogs: many(emailDeliveryLogsTable),
@@ -119,6 +184,7 @@ export const selectUserSchema = z
       .boolean()
       .openapi({ description: 'Whether the email is verified' }),
     image: z.string().nullable().openapi({ description: 'Profile image URL' }),
+    bio: z.string().nullable().openapi({ description: 'User biography' }),
     createdAt: z.date().openapi({ description: 'Account creation timestamp' }),
     updatedAt: z
       .date()
@@ -151,12 +217,27 @@ export const insertUserSchema = z
       example: 'john@example.com'
     }),
     image: z.string().optional().openapi({ description: 'Profile image URL' }),
+    bio: z
+      .string()
+      .max(500)
+      .optional()
+      .openapi({ description: 'User biography' }),
     role: z
       .string()
       .optional()
       .openapi({ description: 'User role', default: 'user' })
   })
   .openapi('InsertUser')
+
+export const userSocialLinksRelations = relations(
+  userSocialLinks,
+  ({ one }) => ({
+    user: one(user, {
+      fields: [userSocialLinks.userId],
+      references: [user.id]
+    })
+  })
+)
 
 export const sessionRelations = relations(session, ({ one }) => ({
   user: one(user, {

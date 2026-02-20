@@ -1,6 +1,7 @@
 import { createRoute, z } from '@hono/zod-openapi'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { jsonContent } from 'stoker/openapi/helpers'
+import { userSocialLinkSchema } from '@/db/auth.schema'
 
 const tags = ['Profile']
 
@@ -10,6 +11,10 @@ const publicProfileResponseSchema = z
     name: z.string().openapi({ description: 'User display name' }),
     username: z.string().nullable().openapi({ description: 'Username' }),
     image: z.string().nullable().openapi({ description: 'User profile image' }),
+    bio: z.string().nullable().openapi({ description: 'User biography' }),
+    socialLinks: z
+      .array(userSocialLinkSchema)
+      .openapi({ description: 'Ordered social links' }),
     createdAt: z.date().openapi({ description: 'Account creation date' }),
     content: z.object({
       mixes: z.array(

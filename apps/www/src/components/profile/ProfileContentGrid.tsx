@@ -10,7 +10,6 @@ interface ProfileContentGridProps {
 }
 
 type Mix = PublicProfile['content']['mixes'][number]
-// type Show = PublicProfile['content']['shows'][number]
 type Dispatch = PublicProfile['content']['dispatches'][number]
 type Ping = PublicProfile['content']['pings'][number]
 
@@ -21,15 +20,15 @@ function StandaloneMixCard({ mix }: { mix: Mix }) {
     <Link
       to='/mixes/$mixId'
       params={{ mixId: mix.slug }}
-      className={`${CARD_CLASS} flex flex-col gap-2 group`}>
-      <div className='w-full overflow-hidden border rounded-sm shadow-sm aspect-square border-border bg-background'>
+      className={`${CARD_CLASS} group flex flex-col gap-2`}>
+      <div className='aspect-square w-full overflow-hidden rounded-sm border border-border bg-background'>
         <img
           src={mix.thumbnailUrl || DEFAULT_IMAGE_URL}
           alt={mix.title}
-          className='object-cover w-full h-full transition-opacity group-hover:opacity-80'
+          className='h-full w-full object-cover transition-opacity group-hover:opacity-80'
         />
       </div>
-      <h3 className='text-sm font-semibold leading-tight transition-colors text-foreground group-hover:text-highlight line-clamp-2'>
+      <h3 className='line-clamp-2 font-mono text-sm font-medium leading-tight text-foreground transition-colors group-hover:text-highlight'>
         {mix.title}
       </h3>
     </Link>
@@ -41,17 +40,17 @@ function ProfileDispatchCard({ dispatch }: { dispatch: Dispatch }) {
     <Link
       to='/dispatch/$slug'
       params={{ slug: dispatch.slug }}
-      className={`${CARD_CLASS} flex flex-col gap-2 group`}>
+      className={`${CARD_CLASS} group flex flex-col gap-2`}>
       {dispatch.thumbnailUrl && (
-        <div className='w-full overflow-hidden border rounded-sm shadow-sm aspect-video border-border bg-background'>
+        <div className='aspect-video w-full overflow-hidden rounded-sm border border-border bg-background'>
           <img
             src={dispatch.thumbnailUrl}
             alt={dispatch.title}
-            className='object-cover w-full h-full transition-opacity group-hover:opacity-80'
+            className='h-full w-full object-cover transition-opacity group-hover:opacity-80'
           />
         </div>
       )}
-      <h3 className='text-sm font-semibold leading-tight transition-colors text-foreground group-hover:text-highlight line-clamp-2'>
+      <h3 className='line-clamp-2 font-mono text-sm font-medium leading-tight text-foreground transition-colors group-hover:text-highlight'>
         {dispatch.title}
       </h3>
     </Link>
@@ -69,12 +68,48 @@ function ProfilePingCard({ ping }: { ping: Ping }) {
     <Link
       to='/pings/$slug'
       params={{ slug: ping.slug }}
-      className={`${CARD_CLASS} flex flex-col gap-1 p-3 transition-colors border rounded-lg group border-border bg-card hover:bg-muted/50`}>
-      <h3 className='text-sm font-semibold leading-tight transition-colors text-foreground group-hover:text-highlight line-clamp-2'>
+      className={`${CARD_CLASS} group flex flex-col gap-1 rounded-sm border border-border bg-card p-3 transition-colors hover:bg-muted/50`}>
+      <h3 className='line-clamp-2 font-mono text-sm font-semibold leading-tight text-foreground transition-colors group-hover:text-highlight'>
         {ping.title}
       </h3>
-      <p className='text-xs text-muted-foreground'>{date}</p>
+      <p className='font-mono text-xs text-muted-foreground'>{date}</p>
     </Link>
+  )
+}
+
+function SectionHeader({
+  title,
+  canScrollLeft,
+  canScrollRight,
+  onPrev,
+  onNext
+}: {
+  title: string
+  canScrollLeft: boolean
+  canScrollRight: boolean
+  onPrev: () => void
+  onNext: () => void
+}) {
+  return (
+    <div className='mb-3 flex items-center gap-2'>
+      <h2 className='flex-1 font-mono text-lg font-bold text-highlight'>
+        {title}
+      </h2>
+      <button
+        type='button'
+        onClick={onPrev}
+        disabled={!canScrollLeft}
+        className='flex h-8 w-8 items-center justify-center rounded bg-card text-foreground transition-colors hover:text-highlight disabled:opacity-0'>
+        <ChevronLeft className='h-5 w-5' />
+      </button>
+      <button
+        type='button'
+        onClick={onNext}
+        disabled={!canScrollRight}
+        className='flex h-8 w-8 items-center justify-center rounded bg-card text-foreground transition-colors hover:text-highlight disabled:opacity-0'>
+        <ChevronRight className='h-5 w-5' />
+      </button>
+    </div>
   )
 }
 
@@ -89,26 +124,14 @@ function ContentSection({
     useHorizontalScroll()
 
   return (
-    <section>
-      <div className='flex items-center justify-between mb-3'>
-        <h2 className='text-lg font-semibold text-foreground'>{title}</h2>
-        <div className='flex gap-1'>
-          <button
-            type='button'
-            onClick={() => scroll('left')}
-            disabled={!canScrollLeft}
-            className='p-1 transition-colors rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 disabled:opacity-0'>
-            <ChevronLeft className='w-5 h-5' />
-          </button>
-          <button
-            type='button'
-            onClick={() => scroll('right')}
-            disabled={!canScrollRight}
-            className='p-1 transition-colors rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/50 disabled:opacity-0'>
-            <ChevronRight className='w-5 h-5' />
-          </button>
-        </div>
-      </div>
+    <section className='py-4'>
+      <SectionHeader
+        title={title}
+        canScrollLeft={canScrollLeft}
+        canScrollRight={canScrollRight}
+        onPrev={() => scroll('left')}
+        onNext={() => scroll('right')}
+      />
       <div ref={containerRef}>
         <HorizontalScrollCards>{children}</HorizontalScrollCards>
       </div>
@@ -118,34 +141,22 @@ function ContentSection({
 
 export function ProfileContentGrid({ content }: ProfileContentGridProps) {
   const mixes = content?.mixes ?? []
-  const shows = content?.shows ?? []
   const dispatches = content?.dispatches ?? []
   const pings = content?.pings ?? []
 
   const hasContent =
-    shows.length > 0 ||
-    mixes.length > 0 ||
-    dispatches.length > 0 ||
-    pings.length > 0
+    mixes.length > 0 || dispatches.length > 0 || pings.length > 0
 
   if (!hasContent) {
     return (
-      <div className='py-8 text-center text-muted-foreground'>
+      <div className='px-4 py-8 font-mono text-sm text-muted-foreground lg:px-0'>
         No public content yet
       </div>
     )
   }
 
   return (
-    <div className='space-y-8'>
-      {/* {shows.length > 0 && (
-        <ContentSection title='Shows'>
-          {shows.map((show) => (
-            <ProfileShowCard key={show.id} show={show} />
-          ))}
-        </ContentSection>
-      )} */}
-
+    <div className='flex flex-col divide-y divide-border/50'>
       {mixes.length > 0 && (
         <ContentSection title='Mixes'>
           {mixes.map((mix) => (

@@ -1,5 +1,30 @@
+import {
+  closestCenter,
+  DndContext,
+  type DragEndEvent,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, Edit, ExternalLink, Mail, Plus, X } from 'lucide-react'
+import {
+  Check,
+  Edit,
+  ExternalLink,
+  GripVertical,
+  Mail,
+  Plus,
+  X
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -21,9 +46,19 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/use-toast'
 import { authClient } from '@/lib/auth-client'
-import { fetcher, VPS_BASE_URL } from '@/lib/http'
+import {
+  fetcher,
+  type SocialLink,
+  type SocialLinkPlatform,
+  useAdminUserBio,
+  useAdminUserSocialLinks,
+  useReplaceAdminUserSocialLinks,
+  VPS_BASE_URL
+} from '@/lib/http'
 import { ImageUploadField } from './ImageUploadField'
 
 const ROLES = ['admin', 'editor', 'creator', 'user'] as const
@@ -54,6 +89,87 @@ interface DeleteDialogState {
   userName: string
 }
 
+const SOCIAL_LINK_PLATFORM_OPTIONS: SocialLinkPlatform[] = [
+  'bandcamp',
+  'substack',
+  'soundcloud',
+  'instagram',
+  'twitter',
+  'tiktok'
+]
+
+const SOCIAL_LINK_PLATFORM_LABELS: Record<SocialLinkPlatform, string> = {
+  bandcamp: 'Bandcamp',
+  substack: 'Substack',
+  soundcloud: 'SoundCloud',
+  instagram: 'IG',
+  twitter: 'Twitter',
+  tiktok: 'TikTok'
+}
+
+function SortableSocialLinkRow({
+  link,
+  onChange,
+  onRemove
+}: {
+  link: SocialLink
+  onChange: (next: SocialLink) => void
+  onRemove: () => void
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({
+      id: `${link.platform}-${link.position}-${link.url}`
+    })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className='grid grid-cols-[auto_180px_1fr_auto] items-start gap-2 rounded-sm border p-3'>
+      <button
+        type='button'
+        className='mt-2 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing'
+        aria-label='Reorder social link'
+        {...attributes}
+        {...listeners}>
+        <GripVertical className='h-4 w-4' />
+      </button>
+
+      <Select
+        value={link.platform}
+        onValueChange={(value: SocialLinkPlatform) =>
+          onChange({ ...link, platform: value })
+        }>
+        <SelectTrigger>
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {SOCIAL_LINK_PLATFORM_OPTIONS.map((platform) => (
+            <SelectItem key={platform} value={platform}>
+              {SOCIAL_LINK_PLATFORM_LABELS[platform]}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Input
+        value={link.url}
+        onChange={(e) => onChange({ ...link, url: e.target.value })}
+        placeholder='https://...'
+      />
+
+      <Button type='button' variant='ghost' size='sm' onClick={onRemove}>
+        <X className='h-4 w-4' />
+      </Button>
+    </div>
+  )
+}
+
 export function UsersTab() {
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
@@ -78,12 +194,16 @@ export function UsersTab() {
   })
   const [debouncedUsername, setDebouncedUsername] = useState('')
   const [editUserDialog, setEditUserDialog] = useState(false)
+  const [editDialogTab, setEditDialogTab] = useState<
+    'details' | 'social-links'
+  >('details')
   const [editUser, setEditUser] = useState<{
     id: string
     name: string
     email: string
     username: string
     image: string
+    bio: string
     emailVerified: boolean
   }>({
     id: '',
@@ -91,10 +211,18 @@ export function UsersTab() {
     email: '',
     username: '',
     image: '',
+    bio: '',
     emailVerified: false
   })
+  const [socialLinksDraft, setSocialLinksDraft] = useState<
+    Array<SocialLink & { tempId: string }>
+  >([])
   const [debouncedEditUsername, setDebouncedEditUsername] = useState('')
   const [originalUsername, setOriginalUsername] = useState('')
+
+  const socialLinksQuery = useAdminUserSocialLinks(editUser.id)
+  const bioQuery = useAdminUserBio(editUser.id)
+  const replaceAdminUserSocialLinksMutation = useReplaceAdminUserSocialLinks()
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -109,6 +237,34 @@ export function UsersTab() {
     }, 300)
     return () => clearTimeout(timer)
   }, [editUser.username])
+
+  useEffect(() => {
+    if (!editUserDialog) return
+    const bio = bioQuery.data?.bio
+    if (bio !== undefined) {
+      setEditUser((prev) => ({ ...prev, bio: bio ?? '' }))
+    }
+  }, [editUserDialog, bioQuery.data?.bio])
+
+  useEffect(() => {
+    if (!editUserDialog || !socialLinksQuery.data) return
+    setSocialLinksDraft(
+      socialLinksQuery.data
+        .slice()
+        .sort((a, b) => a.position - b.position)
+        .map((link, index) => ({
+          ...link,
+          tempId: `${link.platform}-${index}-${crypto.randomUUID()}`
+        }))
+    )
+  }, [editUserDialog, socialLinksQuery.data])
+
+  const socialLinkSensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates
+    })
+  )
 
   const { data, isPending } = useQuery({
     queryKey: ['admin', 'users', search],
@@ -214,7 +370,7 @@ export function UsersTab() {
 
   const updateUserMutation = useMutation({
     mutationFn: async () => {
-      return authClient.admin.updateUser({
+      await authClient.admin.updateUser({
         userId: editUser.id,
         data: {
           name: editUser.name,
@@ -224,9 +380,20 @@ export function UsersTab() {
           emailVerified: editUser.emailVerified
         }
       })
+
+      return fetcher<{ bio: string | null }>(
+        `${VPS_BASE_URL}/user/admin/${editUser.id}/bio`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({ bio: editUser.bio })
+        }
+      )
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
+      queryClient.invalidateQueries({
+        queryKey: ['admin', 'user-bio', editUser.id]
+      })
       setEditUserDialog(false)
       toast({ title: 'User updated successfully' })
     },
@@ -325,6 +492,68 @@ export function UsersTab() {
     }
   })
 
+  const handleSocialLinkDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    setSocialLinksDraft((prev) => {
+      const oldIndex = prev.findIndex((item) => item.tempId === active.id)
+      const newIndex = prev.findIndex((item) => item.tempId === over.id)
+      if (oldIndex < 0 || newIndex < 0) return prev
+
+      return arrayMove(prev, oldIndex, newIndex).map((item, index) => ({
+        ...item,
+        position: index
+      }))
+    })
+  }
+
+  const handleAddSocialLink = () => {
+    setSocialLinksDraft((prev) => [
+      ...prev,
+      {
+        tempId: crypto.randomUUID(),
+        platform: 'bandcamp',
+        url: '',
+        position: prev.length
+      }
+    ])
+  }
+
+  const handleSaveSocialLinks = () => {
+    if (!editUser.id) return
+
+    const cleaned = socialLinksDraft
+      .map(({ tempId, ...rest }) => rest)
+      .filter((link) => link.url.trim().length > 0)
+      .map((link, index) => ({ ...link, position: index }))
+
+    replaceAdminUserSocialLinksMutation.mutate(
+      {
+        userId: editUser.id,
+        links: cleaned
+      },
+      {
+        onSuccess: (links) => {
+          setSocialLinksDraft(
+            links.map((link, index) => ({
+              ...link,
+              tempId: `${link.platform}-${index}-${crypto.randomUUID()}`
+            }))
+          )
+          toast({ title: 'Social links updated successfully' })
+        },
+        onError: (err) => {
+          toast({
+            title: 'Failed to update social links',
+            description: err.message,
+            variant: 'destructive'
+          })
+        }
+      }
+    )
+  }
+
   const users = (data?.data?.users ?? []) as AdminUser[]
 
   return (
@@ -421,9 +650,12 @@ export function UsersTab() {
                             email: user.email,
                             username: user.username || '',
                             image: user.image || '',
+                            bio: '',
                             emailVerified: user.emailVerified ?? false
                           })
                           setOriginalUsername(user.username || '')
+                          setEditDialogTab('details')
+                          setSocialLinksDraft([])
                           setEditUserDialog(true)
                         }}>
                         <Edit className='w-4 h-4' />
@@ -607,104 +839,218 @@ export function UsersTab() {
             <DialogTitle>Edit User</DialogTitle>
             <DialogDescription>Update user details.</DialogDescription>
           </DialogHeader>
-          <div className='py-4 space-y-4'>
-            <ImageUploadField
-              label='Profile Image'
-              value={editUser.image}
-              onChange={(url) => setEditUser({ ...editUser, image: url })}
-            />
-            <div className='space-y-2'>
-              <Label htmlFor='edit-name'>Name</Label>
-              <Input
-                id='edit-name'
-                value={editUser.name}
-                onChange={(e) =>
-                  setEditUser({ ...editUser, name: e.target.value })
-                }
-                placeholder='John Doe'
+          <Tabs
+            value={editDialogTab}
+            onValueChange={(value) =>
+              setEditDialogTab(value as 'details' | 'social-links')
+            }
+            className='py-4 space-y-4'>
+            <TabsList>
+              <TabsTrigger value='details'>Details</TabsTrigger>
+              <TabsTrigger value='social-links'>Social Links</TabsTrigger>
+            </TabsList>
+
+            <TabsContent value='details' className='space-y-4'>
+              <ImageUploadField
+                label='Profile Image'
+                value={editUser.image}
+                onChange={(url) => setEditUser({ ...editUser, image: url })}
               />
-            </div>
-            <div className='space-y-2'>
-              <Label htmlFor='edit-username'>Username</Label>
-              <div className='relative'>
+              <div className='space-y-2'>
+                <Label htmlFor='edit-name'>Name</Label>
                 <Input
-                  id='edit-username'
-                  value={editUser.username}
+                  id='edit-name'
+                  value={editUser.name}
+                  onChange={(e) =>
+                    setEditUser({ ...editUser, name: e.target.value })
+                  }
+                  placeholder='John Doe'
+                />
+              </div>
+              <div className='space-y-2'>
+                <Label htmlFor='edit-username'>Username</Label>
+                <div className='relative'>
+                  <Input
+                    id='edit-username'
+                    value={editUser.username}
+                    onChange={(e) =>
+                      setEditUser({
+                        ...editUser,
+                        username: e.target.value
+                          .toLowerCase()
+                          .replace(/\s/g, '')
+                      })
+                    }
+                    placeholder='johndoe'
+                    className='pr-8'
+                  />
+                  {editUser.username.length >= 2 &&
+                    editUser.username !== originalUsername && (
+                      <div className='absolute -translate-y-1/2 right-2 top-1/2'>
+                        {checkingEditUsername ? (
+                          <div className='w-4 h-4 border-2 rounded-full animate-spin border-muted-foreground border-t-transparent' />
+                        ) : editUsernameAvailability?.available ? (
+                          <Check className='w-4 h-4 text-green-500' />
+                        ) : (
+                          <X className='w-4 h-4 text-destructive' />
+                        )}
+                      </div>
+                    )}
+                </div>
+                {editUser.username.length >= 2 &&
+                  editUser.username !== originalUsername &&
+                  !checkingEditUsername &&
+                  !editUsernameAvailability?.available && (
+                    <p className='text-xs text-destructive'>
+                      Username is already taken
+                    </p>
+                  )}
+              </div>
+              <div className='space-y-2'>
+                <Label htmlFor='edit-email'>Email</Label>
+                <Input
+                  id='edit-email'
+                  type='email'
+                  value={editUser.email}
+                  onChange={(e) =>
+                    setEditUser({ ...editUser, email: e.target.value })
+                  }
+                  placeholder='john@example.com'
+                />
+              </div>
+              <div className='space-y-2'>
+                <Label htmlFor='edit-bio'>Bio</Label>
+                <Textarea
+                  id='edit-bio'
+                  value={editUser.bio}
                   onChange={(e) =>
                     setEditUser({
                       ...editUser,
-                      username: e.target.value.toLowerCase().replace(/\s/g, '')
+                      bio: e.target.value.slice(0, 500)
                     })
                   }
-                  placeholder='johndoe'
-                  className='pr-8'
+                  placeholder='Write a short bio...'
+                  className='min-h-[110px]'
                 />
-                {editUser.username.length >= 2 &&
-                  editUser.username !== originalUsername && (
-                    <div className='absolute -translate-y-1/2 right-2 top-1/2'>
-                      {checkingEditUsername ? (
-                        <div className='w-4 h-4 border-2 rounded-full animate-spin border-muted-foreground border-t-transparent' />
-                      ) : editUsernameAvailability?.available ? (
-                        <Check className='w-4 h-4 text-green-500' />
-                      ) : (
-                        <X className='w-4 h-4 text-destructive' />
-                      )}
-                    </div>
-                  )}
+                <p className='text-xs text-muted-foreground'>
+                  {editUser.bio.length}/500
+                </p>
               </div>
-              {editUser.username.length >= 2 &&
-                editUser.username !== originalUsername &&
-                !checkingEditUsername &&
-                !editUsernameAvailability?.available && (
-                  <p className='text-xs text-destructive'>
-                    Username is already taken
+              <div className='flex items-center space-x-2'>
+                <Checkbox
+                  id='edit-email-verified'
+                  checked={editUser.emailVerified}
+                  onCheckedChange={(checked) =>
+                    setEditUser({
+                      ...editUser,
+                      emailVerified: checked === true
+                    })
+                  }
+                />
+                <Label htmlFor='edit-email-verified' className='cursor-pointer'>
+                  Email Verified
+                </Label>
+              </div>
+            </TabsContent>
+
+            <TabsContent value='social-links' className='space-y-3'>
+              <div className='flex items-center justify-between'>
+                <div>
+                  <h4 className='text-sm font-medium'>Social Links</h4>
+                  <p className='text-xs text-muted-foreground'>
+                    Drag to reorder. Empty URLs are ignored on save.
                   </p>
-                )}
-            </div>
-            <div className='space-y-2'>
-              <Label htmlFor='edit-email'>Email</Label>
-              <Input
-                id='edit-email'
-                type='email'
-                value={editUser.email}
-                onChange={(e) =>
-                  setEditUser({ ...editUser, email: e.target.value })
-                }
-                placeholder='john@example.com'
-              />
-            </div>
-            <div className='flex items-center space-x-2'>
-              <Checkbox
-                id='edit-email-verified'
-                checked={editUser.emailVerified}
-                onCheckedChange={(checked) =>
-                  setEditUser({ ...editUser, emailVerified: checked === true })
-                }
-              />
-              <Label htmlFor='edit-email-verified' className='cursor-pointer'>
-                Email Verified
-              </Label>
-            </div>
-          </div>
+                </div>
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  onClick={handleAddSocialLink}>
+                  <Plus className='mr-2 h-4 w-4' />
+                  Add Link
+                </Button>
+              </div>
+
+              {socialLinksQuery.isPending ? (
+                <p className='text-sm text-muted-foreground'>
+                  Loading social links...
+                </p>
+              ) : socialLinksDraft.length === 0 ? (
+                <div className='rounded-sm border border-dashed p-4 text-sm text-muted-foreground'>
+                  No social links yet.
+                </div>
+              ) : (
+                <DndContext
+                  sensors={socialLinkSensors}
+                  collisionDetection={closestCenter}
+                  onDragEnd={handleSocialLinkDragEnd}>
+                  <SortableContext
+                    items={socialLinksDraft.map((item) => item.tempId)}
+                    strategy={verticalListSortingStrategy}>
+                    <div className='space-y-2'>
+                      {socialLinksDraft.map((link) => (
+                        <SortableSocialLinkRow
+                          key={link.tempId}
+                          link={link}
+                          onChange={(next) =>
+                            setSocialLinksDraft((prev) =>
+                              prev.map((item) =>
+                                item.tempId === link.tempId
+                                  ? { ...next, tempId: link.tempId }
+                                  : item
+                              )
+                            )
+                          }
+                          onRemove={() =>
+                            setSocialLinksDraft((prev) =>
+                              prev
+                                .filter((item) => item.tempId !== link.tempId)
+                                .map((item, index) => ({
+                                  ...item,
+                                  position: index
+                                }))
+                            )
+                          }
+                        />
+                      ))}
+                    </div>
+                  </SortableContext>
+                </DndContext>
+              )}
+            </TabsContent>
+          </Tabs>
           <DialogFooter>
             <Button
               variant='outline'
               onClick={() => setEditUserDialog(false)}
-              disabled={updateUserMutation.isPending}>
-              Cancel
-            </Button>
-            <Button
-              onClick={() => updateUserMutation.mutate()}
               disabled={
                 updateUserMutation.isPending ||
-                !editUser.name ||
-                !editUser.email ||
-                (editUser.username.length >= 2 &&
-                  editUser.username !== originalUsername &&
-                  !editUsernameAvailability?.available)
+                replaceAdminUserSocialLinksMutation.isPending
               }>
-              {updateUserMutation.isPending ? 'Saving...' : 'Save Changes'}
+              Cancel
             </Button>
+            {editDialogTab === 'details' ? (
+              <Button
+                onClick={() => updateUserMutation.mutate()}
+                disabled={
+                  updateUserMutation.isPending ||
+                  !editUser.name ||
+                  !editUser.email ||
+                  (editUser.username.length >= 2 &&
+                    editUser.username !== originalUsername &&
+                    !editUsernameAvailability?.available)
+                }>
+                {updateUserMutation.isPending ? 'Saving...' : 'Save Changes'}
+              </Button>
+            ) : (
+              <Button
+                onClick={handleSaveSocialLinks}
+                disabled={replaceAdminUserSocialLinksMutation.isPending}>
+                {replaceAdminUserSocialLinksMutation.isPending
+                  ? 'Saving...'
+                  : 'Save Social Links'}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
