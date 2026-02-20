@@ -1,3 +1,13 @@
+# [2.24.0](https://github.com/guidefari/gbfm/compare/v2.23.0...v2.24.0) (2026-02-20)
+
+
+### Features
+
+* **design:** init design system ([6ccf038](https://github.com/guidefari/gbfm/commit/6ccf03828cbff262bf5124df4f3cc0206bbb4025))
+* **design:** profile page ([1e2f19a](https://github.com/guidefari/gbfm/commit/1e2f19ae5195aa2247829e0252ea32edeb651d4b))
+* email logs tab for admin ([3672388](https://github.com/guidefari/gbfm/commit/367238832e34987107d6357b5d9b0154c4bc8bfb))
+* **www:** social links on profile ([43b2049](https://github.com/guidefari/gbfm/commit/43b20494c20be32ba6de88f63e4f575790b009b0))
+
 # [2.23.0](https://github.com/guidefari/gbfm/compare/v2.22.1...v2.23.0) (2026-02-18)
 
 
