@@ -1,3 +1,16 @@
+# [2.23.0](https://github.com/guidefari/gbfm/compare/v2.22.1...v2.23.0) (2026-02-18)
+
+
+### Bug Fixes
+
+* emails ([dc77703](https://github.com/guidefari/gbfm/commit/dc777032c382e5a72e5a8d0bf282269083da5c60))
+* sort imports to pass Biome CI checks ([#79](https://github.com/guidefari/gbfm/issues/79)) ([42555d2](https://github.com/guidefari/gbfm/commit/42555d2d5478c227404e93d06e1f5155364cb1c7))
+
+
+### Features
+
+* invite user flow ([6d24f3d](https://github.com/guidefari/gbfm/commit/6d24f3d71be00b27b438d7c03eb9c909c624370b))
+
 ## [2.22.1](https://github.com/guidefari/gbfm/compare/v2.22.0...v2.22.1) (2026-02-17)
 
 
