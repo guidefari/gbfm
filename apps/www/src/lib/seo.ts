@@ -143,7 +143,7 @@ export function generatePostSEO(
 ): SEOHeadData {
   const title = post.title || slug
   const description = post.description || `Read ${title} on goosebumps.fm`
-  const url = `${SITE_URL}/dispatch/${slug}`
+  const url = `${SITE_URL}/editorial/${slug}`
   const image = post.thumbnailUrl || DEFAULT_OG_IMAGE
 
   return {
@@ -161,7 +161,7 @@ export function generateMicroPostSEO(
 ): SEOHeadData {
   const title = post.title || slug
   const description = post.description || `Read ${title} on goosebumps.fm`
-  const url = `${SITE_URL}/pings/${slug}`
+  const url = `${SITE_URL}/tweet/${slug}`
   const image = post.thumbnailUrl || DEFAULT_OG_IMAGE
 
   return {
@@ -335,14 +335,14 @@ export const STATIC_PAGE_SEO = {
     'Your personal dashboard on goosebumps.fm. Access your favorites, recent plays, and reminders.',
     '/dashboard'
   ),
-  dispatch: generateStaticPageSEO(
-    'Dispatch',
+  editorial: generateStaticPageSEO(
+    'Editorial',
     'Long-form posts, essays, and deep dives on goosebumps.fm.',
-    '/dispatch'
+    '/editorial'
   ),
-  pings: generateStaticPageSEO(
-    'Pings',
+  tweet: generateStaticPageSEO(
+    'Tweet',
     'Short thoughts, updates, and micro posts on goosebumps.fm.',
-    '/pings'
+    '/tweet'
   )
 } as const

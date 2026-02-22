@@ -9,8 +9,8 @@ import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
 import { generatePostSEO, generateSEOMeta } from '@/lib/seo'
 
-export const Route = createFileRoute('/dispatch/$slug')({
-  component: DispatchPostPage,
+export const Route = createFileRoute('/editorial/$slug')({
+  component: EditorialPostPage,
   loader: async ({ params }) => {
     const post = await fetcher<SelectMdxCompiledPost>(
       `${VPS_BASE_URL}/content/posts/${params.slug}`
@@ -32,7 +32,7 @@ export const Route = createFileRoute('/dispatch/$slug')({
   }
 })
 
-function DispatchPostPage() {
+function EditorialPostPage() {
   const { slug } = Route.useParams()
   const { post } = Route.useLoaderData()
 
@@ -41,10 +41,10 @@ function DispatchPostPage() {
   return (
     <div className='max-w-3xl px-4 py-6 mx-auto'>
       <Link
-        to='/dispatch'
+        to='/editorial'
         className='inline-flex items-center gap-1 mb-8 text-sm transition-colors text-muted-foreground hover:text-foreground'>
         <ArrowLeft className='w-4 h-4' />
-        Dispatch
+        Editorial
       </Link>
       <PostDetails post={post} slug={slug} />
     </div>

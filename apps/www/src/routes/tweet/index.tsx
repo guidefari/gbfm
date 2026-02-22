@@ -19,15 +19,15 @@ const searchSchema = z.object({
   tag: z.string().optional()
 })
 
-export const Route = createFileRoute('/pings/')({
-  component: PingsListPage,
+export const Route = createFileRoute('/tweet/')({
+  component: TweetListPage,
   validateSearch: searchSchema,
   head: () => ({
-    meta: generateSEOMeta(STATIC_PAGE_SEO.pings)
+    meta: generateSEOMeta(STATIC_PAGE_SEO.tweet)
   })
 })
 
-function PingsListPage() {
+function TweetListPage() {
   const { tag } = Route.useSearch()
   const navigate = Route.useNavigate()
   const { data, isPending, fetchNextPage, hasNextPage, isFetchingNextPage } =
@@ -76,11 +76,11 @@ function PingsListPage() {
     <div className='max-w-2xl mx-auto px-4 py-8'>
       <div className='flex flex-row items-baseline justify-between gap-4 mb-8 border-b pb-4 border-border/40'>
         <div className='flex items-baseline gap-6'>
-          <h1 className='text-2xl font-black tracking-tight'>Pings</h1>
+          <h1 className='text-2xl font-black tracking-tight'>Tweet</h1>
           <Link
-            to='/dispatch'
+            to='/editorial'
             className='flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors relative group'>
-            Dispatch
+            Editorial
             <span className='absolute -bottom-[17px] left-0 right-0 h-0.5 bg-foreground scale-x-0 group-hover:scale-x-100 transition-transform origin-left' />
           </Link>
         </div>
@@ -122,7 +122,7 @@ function PingsListPage() {
         {filteredData?.map((post) => (
           <Link
             key={post.id}
-            to='/pings/$slug'
+            to='/tweet/$slug'
             params={{ slug: post.slug }}
             className='block px-1 py-5 border-b border-border/30 transition-colors hover:bg-muted/30 cursor-pointer group'>
             <div className='flex items-center gap-2 mb-2'>

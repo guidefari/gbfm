@@ -90,14 +90,14 @@ export function ContentTab() {
       )
   })
 
-  const { data: dispatchData, isPending: dispatchPending } = useQuery({
+  const { data: editorialData, isPending: editorialPending } = useQuery({
     queryKey: ['admin', 'posts', 'post'],
     queryFn: () =>
       fetcher<PaginatedResponse<PostItem>>(
         `${VPS_BASE_URL}/content/posts?type=post&limit=50&offset=0`
       )
   })
-  const { data: pingsData, isPending: pingsPending } = useQuery({
+  const { data: tweetData, isPending: tweetPending } = useQuery({
     queryKey: ['admin', 'posts', 'micro'],
     queryFn: () =>
       fetcher<PaginatedResponse<PostItem>>(
@@ -168,8 +168,8 @@ export function ContentTab() {
 
   const mixes = mixesData?.data ?? []
   const labels = labelsData?.data ?? []
-  const dispatchPosts = dispatchData?.data ?? []
-  const pingPosts = pingsData?.data ?? []
+  const editorialPosts = editorialData?.data ?? []
+  const tweetPosts = tweetData?.data ?? []
 
   const allExistingTags = useMemo(() => {
     const tagSet = new Set<string>()
@@ -202,10 +202,10 @@ export function ContentTab() {
       <Tabs defaultValue='mixes'>
         <TabsList>
           <TabsTrigger value='mixes'>Mixes ({mixes.length})</TabsTrigger>
-          <TabsTrigger value='dispatch'>
-            Dispatch ({dispatchPosts.length})
+          <TabsTrigger value='editorial'>
+            Editorial ({editorialPosts.length})
           </TabsTrigger>
-          <TabsTrigger value='pings'>Pings ({pingPosts.length})</TabsTrigger>
+          <TabsTrigger value='tweet'>Tweet ({tweetPosts.length})</TabsTrigger>
           <TabsTrigger value='labels'>Labels ({labels.length})</TabsTrigger>
         </TabsList>
 
@@ -279,10 +279,10 @@ export function ContentTab() {
           )}
         </TabsContent>
 
-        <TabsContent value='dispatch' className='mt-4'>
-          {dispatchPending ? (
+        <TabsContent value='editorial' className='mt-4'>
+          {editorialPending ? (
             <div className='py-8 text-center text-muted-foreground'>
-              Loading dispatch posts...
+              Loading editorial posts...
             </div>
           ) : (
             <div className='overflow-x-auto rounded-sm border'>
@@ -300,7 +300,7 @@ export function ContentTab() {
                   </tr>
                 </thead>
                 <tbody>
-                  {dispatchPosts.map((post) => (
+                  {editorialPosts.map((post) => (
                     <tr key={post.id} className='border-b hover:bg-muted/50'>
                       <td className='px-4 py-3'>{post.title}</td>
                       <td className='px-4 py-3 text-muted-foreground'>
@@ -319,7 +319,7 @@ export function ContentTab() {
                         <div className='flex gap-2'>
                           <Button variant='outline' size='sm' asChild>
                             <Link
-                              to='/dispatch/$slug'
+                              to='/editorial/$slug'
                               params={{ slug: post.slug }}>
                               View
                             </Link>
@@ -336,12 +336,12 @@ export function ContentTab() {
                       </td>
                     </tr>
                   ))}
-                  {dispatchPosts.length === 0 && (
+                  {editorialPosts.length === 0 && (
                     <tr>
                       <td
                         colSpan={6}
                         className='px-4 py-8 text-center text-muted-foreground'>
-                        No dispatch posts found
+                        No editorial posts found
                       </td>
                     </tr>
                   )}
@@ -351,10 +351,10 @@ export function ContentTab() {
           )}
         </TabsContent>
 
-        <TabsContent value='pings' className='mt-4'>
-          {pingsPending ? (
+        <TabsContent value='tweet' className='mt-4'>
+          {tweetPending ? (
             <div className='py-8 text-center text-muted-foreground'>
-              Loading ping posts...
+              Loading tweet posts...
             </div>
           ) : (
             <div className='overflow-x-auto rounded-sm border'>
@@ -372,7 +372,7 @@ export function ContentTab() {
                   </tr>
                 </thead>
                 <tbody>
-                  {pingPosts.map((post) => (
+                  {tweetPosts.map((post) => (
                     <tr key={post.id} className='border-b hover:bg-muted/50'>
                       <td className='px-4 py-3'>{post.title}</td>
                       <td className='px-4 py-3 text-muted-foreground'>
@@ -391,7 +391,7 @@ export function ContentTab() {
                         <div className='flex gap-2'>
                           <Button variant='outline' size='sm' asChild>
                             <Link
-                              to='/pings/$slug'
+                              to='/tweet/$slug'
                               params={{ slug: post.slug }}>
                               View
                             </Link>
@@ -408,12 +408,12 @@ export function ContentTab() {
                       </td>
                     </tr>
                   ))}
-                  {pingPosts.length === 0 && (
+                  {tweetPosts.length === 0 && (
                     <tr>
                       <td
                         colSpan={6}
                         className='px-4 py-8 text-center text-muted-foreground'>
-                        No ping posts found
+                        No tweet posts found
                       </td>
                     </tr>
                   )}
