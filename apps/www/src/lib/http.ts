@@ -887,7 +887,7 @@ export type PublicProfile = {
       slug: string
       thumbnailUrl: string | null
     }>
-    dispatches: Array<{
+    editorials: Array<{
       id: string
       title: string
       slug: string
@@ -895,7 +895,7 @@ export type PublicProfile = {
       description: string | null
       createdAt: string
     }>
-    pings: Array<{
+    tweets: Array<{
       id: string
       title: string
       slug: string

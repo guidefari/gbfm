@@ -38,7 +38,7 @@ export type PublicProfile = {
       slug: string
       thumbnailUrl: string | null
     }>
-    dispatches: Array<{
+    editorials: Array<{
       id: string
       title: string
       slug: string
@@ -46,7 +46,7 @@ export type PublicProfile = {
       description: string | null
       createdAt: Date
     }>
-    pings: Array<{
+    tweets: Array<{
       id: string
       title: string
       slug: string
@@ -200,11 +200,11 @@ export const getPublicProfileEffect = (username: string) =>
         })
     })
 
-    const dispatches = userPosts
+    const editorials = userPosts
       .filter((p) => p.type === 'post')
       .map(({ type, ...rest }) => rest)
 
-    const pings = userPosts
+    const tweets = userPosts
       .filter((p) => p.type === 'micro')
       .map(({ type, thumbnailUrl, description, ...rest }) => rest)
 
@@ -224,8 +224,8 @@ export const getPublicProfileEffect = (username: string) =>
       content: {
         mixes: userMixes,
         shows: userShows,
-        dispatches,
-        pings
+        editorials,
+        tweets
       }
     }
   })

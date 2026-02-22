@@ -10,8 +10,8 @@ interface ProfileContentGridProps {
 }
 
 type Mix = PublicProfile['content']['mixes'][number]
-type Editorial = PublicProfile['content']['dispatches'][number]
-type Tweet = PublicProfile['content']['pings'][number]
+type Editorial = PublicProfile['content']['editorials'][number]
+type Tweet = PublicProfile['content']['tweets'][number]
 
 const CARD_CLASS = 'w-36 flex-shrink-0'
 
@@ -141,8 +141,8 @@ function ContentSection({
 
 export function ProfileContentGrid({ content }: ProfileContentGridProps) {
   const mixes = content?.mixes ?? []
-  const editorials = content?.dispatches ?? []
-  const tweets = content?.pings ?? []
+  const editorials = content?.editorials ?? []
+  const tweets = content?.tweets ?? []
 
   const hasContent =
     mixes.length > 0 || editorials.length > 0 || tweets.length > 0

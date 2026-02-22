@@ -32,7 +32,7 @@ const resolveResponseSchema = z
               thumbnailUrl: z.string().nullable()
             })
           ),
-          dispatches: z.array(
+          editorials: z.array(
             z.object({
               id: z.string(),
               title: z.string(),
@@ -42,7 +42,7 @@ const resolveResponseSchema = z
               createdAt: z.date()
             })
           ),
-          pings: z.array(
+          tweets: z.array(
             z.object({
               id: z.string(),
               title: z.string(),
