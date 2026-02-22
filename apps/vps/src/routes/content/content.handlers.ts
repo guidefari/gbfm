@@ -25,6 +25,7 @@ import type {
   GetPostsRoute,
   ProcessMixUploadRoute,
   SubmitMixProcessingRoute,
+  TrackAudioPlayRoute,
   UpdateAudioBySlugRoute,
   UpdatePostBySlugRoute
 } from './content.routes'
@@ -809,6 +810,38 @@ export const getMixJobStatus: AppRouteHandler<GetMixJobStatusRoute> = async (
 
   if (!result) {
     return c.json({ error: 'Job not found' }, HttpStatusCodes.NOT_FOUND)
+  }
+
+  return c.json(result, HttpStatusCodes.OK)
+}
+
+export const trackAudioPlay: AppRouteHandler<TrackAudioPlayRoute> = async (
+  c
+) => {
+  const { id } = c.req.valid('param')
+
+  const program = Effect.gen(function* () {
+    const audioService = yield* AudioService
+    return yield* audioService.trackPlay(id)
+  }).pipe(
+    Effect.catchTag('NotFoundError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    )
+  )
+
+  const result = await AppRuntime.runPromise(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
   }
 
   return c.json(result, HttpStatusCodes.OK)
