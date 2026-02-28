@@ -1,4 +1,4 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import type { SitemapData } from './sitemap.utils'
 import {
   buildSitemapIndexXml,
@@ -148,30 +148,41 @@ describe('sitemap.utils', () => {
     })
 
     test('snapshot: full sitemap structure', () => {
-      // Use fixed dates for snapshot stability
-      const fixedData: SitemapData = {
-        mixes: [{ slug: 'test-mix', updatedAt: new Date('2024-01-15') }],
-        shows: [{ slug: 'test-show', updatedAt: new Date('2024-01-10') }],
-        releases: [{ slug: 'test-release', updatedAt: new Date('2024-01-05') }],
-        labels: [{ slug: 'test-label', updatedAt: new Date('2024-01-01') }],
-        profiles: [{ username: 'testuser', updatedAt: new Date('2024-01-20') }]
+      vi.useFakeTimers()
+      vi.setSystemTime(new Date('2026-02-01T00:00:00Z'))
+
+      try {
+        // Use fixed dates for snapshot stability
+        const fixedData: SitemapData = {
+          mixes: [{ slug: 'test-mix', updatedAt: new Date('2024-01-15') }],
+          shows: [{ slug: 'test-show', updatedAt: new Date('2024-01-10') }],
+          releases: [
+            { slug: 'test-release', updatedAt: new Date('2024-01-05') }
+          ],
+          labels: [{ slug: 'test-label', updatedAt: new Date('2024-01-01') }],
+          profiles: [
+            { username: 'testuser', updatedAt: new Date('2024-01-20') }
+          ]
+        }
+
+        const xml = buildSitemapXml(fixedData, 'https://goosebumps.fm')
+
+        // Remove dynamic "now" date entries for snapshot stability
+        // by extracting just the structure without the homepage/listing pages dates
+        const contentUrls = xml
+          .split('\n')
+          .filter(
+            (line) =>
+              line.includes('/test-') ||
+              line.includes('/testuser') ||
+              line.includes('<loc>') === false
+          )
+          .join('\n')
+
+        expect(contentUrls).toMatchSnapshot()
+      } finally {
+        vi.useRealTimers()
       }
-
-      const xml = buildSitemapXml(fixedData, 'https://goosebumps.fm')
-
-      // Remove dynamic "now" date entries for snapshot stability
-      // by extracting just the structure without the homepage/listing pages dates
-      const contentUrls = xml
-        .split('\n')
-        .filter(
-          (line) =>
-            line.includes('/test-') ||
-            line.includes('/testuser') ||
-            line.includes('<loc>') === false
-        )
-        .join('\n')
-
-      expect(contentUrls).toMatchSnapshot()
     })
   })
 

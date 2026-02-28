@@ -5,12 +5,12 @@ describe('feature flags', () => {
   test('returns all flags with default values', () => {
     expect(getFeatureFlags()).toEqual({
       'ui.share': true,
-      'ui.queue': true
+      'ui.queue': false
     })
   })
 
   test('resolves share and queue flags', () => {
     expect(isFeatureEnabled('ui.share')).toBe(true)
-    expect(isFeatureEnabled('ui.queue')).toBe(true)
+    expect(isFeatureEnabled('ui.queue')).toBe(false)
   })
 })

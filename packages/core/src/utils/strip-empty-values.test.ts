@@ -2,14 +2,14 @@ import { describe, expect, test } from 'vitest'
 import { stripEmptyValues } from './strip-empty-values'
 
 describe('stripEmptyValues', () => {
-  test('removes empty strings', () => {
+  test('removes empty strings', async () => {
     const input = {
       name: 'John',
       email: '',
       age: 25
     }
 
-    const result = stripEmptyValues(input)
+    const result = await stripEmptyValues(input)
 
     expect(result).toEqual({
       name: 'John',
@@ -17,14 +17,14 @@ describe('stripEmptyValues', () => {
     })
   })
 
-  test('removes strings with only whitespace', () => {
+  test('removes strings with only whitespace', async () => {
     const input = {
       name: 'John',
       bio: '   ',
       location: 'NYC'
     }
 
-    const result = stripEmptyValues(input)
+    const result = await stripEmptyValues(input)
 
     expect(result).toEqual({
       name: 'John',
@@ -32,14 +32,14 @@ describe('stripEmptyValues', () => {
     })
   })
 
-  test('removes null values', () => {
+  test('removes null values', async () => {
     const input = {
       name: 'John',
       email: null,
       age: 25
     }
 
-    const result = stripEmptyValues(input)
+    const result = await stripEmptyValues(input)
 
     expect(result).toEqual({
       name: 'John',
@@ -47,14 +47,14 @@ describe('stripEmptyValues', () => {
     })
   })
 
-  test('removes empty arrays', () => {
+  test('removes empty arrays', async () => {
     const input = {
       name: 'John',
       tags: [],
       age: 25
     }
 
-    const result = stripEmptyValues(input)
+    const result = await stripEmptyValues(input)
 
     expect(result).toEqual({
       name: 'John',
@@ -62,14 +62,14 @@ describe('stripEmptyValues', () => {
     })
   })
 
-  test('keeps arrays with non-empty values', () => {
+  test('keeps arrays with non-empty values', async () => {
     const input = {
       name: 'John',
       tags: ['developer', 'typescript'],
       age: 25
     }
 
-    const result = stripEmptyValues(input)
+    const result = await stripEmptyValues(input)
 
     expect(result).toEqual({
       name: 'John',
@@ -78,14 +78,14 @@ describe('stripEmptyValues', () => {
     })
   })
 
-  test('filters empty strings from arrays', () => {
+  test('filters empty strings from arrays', async () => {
     const input = {
       name: 'John',
       tags: ['developer', '', 'typescript', '   '],
       age: 25
     }
 
-    const result = stripEmptyValues(input)
+    const result = await stripEmptyValues(input)
 
     expect(result).toEqual({
       name: 'John',
@@ -94,14 +94,14 @@ describe('stripEmptyValues', () => {
     })
   })
 
-  test('removes array that becomes empty after filtering', () => {
+  test('removes array that becomes empty after filtering', async () => {
     const input = {
       name: 'John',
       tags: ['', '   ', null],
       age: 25
     }
 
-    const result = stripEmptyValues(input)
+    const result = await stripEmptyValues(input)
 
     expect(result).toEqual({
       name: 'John',
@@ -109,14 +109,14 @@ describe('stripEmptyValues', () => {
     })
   })
 
-  test('keeps boolean false values', () => {
+  test('keeps boolean false values', async () => {
     const input = {
       name: 'John',
       active: false,
       verified: true
     }
 
-    const result = stripEmptyValues(input)
+    const result = await stripEmptyValues(input)
 
     expect(result).toEqual({
       name: 'John',
@@ -125,14 +125,14 @@ describe('stripEmptyValues', () => {
     })
   })
 
-  test('keeps number zero', () => {
+  test('keeps number zero', async () => {
     const input = {
       name: 'John',
       score: 0,
       age: 25
     }
 
-    const result = stripEmptyValues(input)
+    const result = await stripEmptyValues(input)
 
     expect(result).toEqual({
       name: 'John',
@@ -141,7 +141,7 @@ describe('stripEmptyValues', () => {
     })
   })
 
-  test('handles complex label object with multiple empty types', () => {
+  test('handles complex label object with multiple empty types', async () => {
     const input = {
       title: 'Test Label',
       description: '',
@@ -153,7 +153,7 @@ describe('stripEmptyValues', () => {
       draft: false
     }
 
-    const result = stripEmptyValues(input)
+    const result = await stripEmptyValues(input)
 
     expect(result).toEqual({
       title: 'Test Label',
@@ -163,7 +163,7 @@ describe('stripEmptyValues', () => {
     })
   })
 
-  test('returns empty object when all values are empty', () => {
+  test('returns empty object when all values are empty', async () => {
     const input = {
       name: '',
       email: '   ',
@@ -171,15 +171,15 @@ describe('stripEmptyValues', () => {
       bio: null
     }
 
-    const result = stripEmptyValues(input)
+    const result = await stripEmptyValues(input)
 
     expect(result).toEqual({})
   })
 
-  test('handles empty object input', () => {
+  test('handles empty object input', async () => {
     const input = {}
 
-    const result = stripEmptyValues(input)
+    const result = await stripEmptyValues(input)
 
     expect(result).toEqual({})
   })
