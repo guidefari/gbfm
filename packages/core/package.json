@@ -5,19 +5,25 @@
   "exports": {
     "./utils": "./src/utils/index.ts",
     "./api": "./src/api/index.ts",
-    "./feature-flags": "./src/feature-flags/index.ts"
+    "./feature-flags": "./src/feature-flags/index.ts",
+    "./mix-processing": "./src/mix-processing/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "@types/react": "^19.1.10",
     "@types/bun": "^1.2.23",
     "react": "19.2.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "4.0.18"
   },
   "peerDependencies": {
     "react": "^19.0.0"
   },
-  "dependencies": {}
+  "dependencies": {
+    "effect": "3.19.15"
+  }
 }

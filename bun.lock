@@ -88,6 +88,7 @@
         "@effect/opentelemetry": "^0.60.0",
         "@effect/platform": "0.94.1",
         "@effect/platform-bun": "0.87.0",
+        "@gbfm/core": "workspace:*",
         "@gbfm/email": "workspace:*",
         "@hono/zod-openapi": "1.2.0",
         "@hono/zod-validator": "0.7.6",
@@ -200,6 +201,9 @@
     "packages/core": {
       "name": "@gbfm/core",
       "version": "0.0.1",
+      "dependencies": {
+        "effect": "3.19.15",
+      },
       "devDependencies": {
         "@types/bun": "^1.2.23",
         "@types/react": "^19.1.10",
