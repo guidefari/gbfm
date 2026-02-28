@@ -14,6 +14,7 @@ import resolve from '@/routes/resolve/resolve.index'
 import rss from '@/routes/rss/rss.index'
 import shows from '@/routes/shows/show.index'
 import spotify from '@/routes/spotify/spotify.index'
+import fileManager from '@/routes/file-manager/file-manager.index'
 import upload from '@/routes/upload/upload.index'
 import betterAuthRoutes from '@/routes/user/better-auth.routes'
 import user from '@/routes/user/user.index'
@@ -45,6 +46,7 @@ const setupRoutesEffect = Effect.gen(function* () {
   app.route('/s', shareRouter)
   app.route('/shows', shows)
   app.route('/spotify', spotify)
+  app.route('/file-manager', fileManager)
   app.route('/upload', upload)
   app.route('/music-reminders', musicReminders)
   app.route('', rss)

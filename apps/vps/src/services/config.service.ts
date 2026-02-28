@@ -102,7 +102,8 @@ const ConfigSchema = Schema.Struct({
   }),
   buckets: Schema.Struct({
     userContent: Schema.String,
-    databaseBackups: Schema.String
+    databaseBackups: Schema.String,
+    mixes: Schema.String
   }),
   tasks: Schema.Struct({
     databaseBackup: Schema.optional(Schema.String)
@@ -186,6 +187,9 @@ export function createConfig(): ConfigService {
   const databaseBackupsBucketName =
     process.env.DATABASE_BACKUPS_BUCKET_NAME ||
     getResourceValue('DatabaseBackups.name', 'database-backups-dev')
+  const mixesBucketName =
+    process.env.MIXES_BUCKET_NAME ||
+    getResourceValue('Mixes.name', 'mixes-dev')
 
   // Tasks
   const databaseBackupTask =
@@ -230,7 +234,8 @@ export function createConfig(): ConfigService {
     },
     buckets: {
       userContent: userContentBucketName,
-      databaseBackups: databaseBackupsBucketName
+      databaseBackups: databaseBackupsBucketName,
+      mixes: mixesBucketName
     },
     tasks: {
       databaseBackup: databaseBackupTask
