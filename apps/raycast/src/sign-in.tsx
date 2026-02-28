@@ -60,7 +60,8 @@ export default function SignIn() {
       const response = await fetch(`${values.baseUrl}/auth/sign-in/email`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          Origin: values.baseUrl
         },
         body: JSON.stringify({
           email: values.email,
@@ -73,14 +74,21 @@ export default function SignIn() {
         throw new Error(error.error || 'Sign in failed')
       }
 
+      // Better Auth bearer plugin returns the token in the set-auth-token header
+      const bearerToken = response.headers.get('set-auth-token')
       const data = (await response.json()) as {
         user: { name: string; email: string }
-        token: string
+        session: { token: string }
+      }
+
+      const accessToken = bearerToken || data.session?.token
+      if (!accessToken) {
+        throw new Error('No access token received from server')
       }
 
       const result = {
-        accessToken: data.token,
-        refreshToken: data.token,
+        accessToken,
+        refreshToken: accessToken,
         user: {
           name: data.user.name,
           email: data.user.email

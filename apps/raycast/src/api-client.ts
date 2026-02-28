@@ -32,66 +32,52 @@ const getConfiguration = async (): Promise<ApiConfiguration> => {
 
 const refreshAccessToken = async (
   baseUrl: string,
-  refreshToken: string
+  currentToken: string
 ): Promise<string> => {
   Runtime.runSync(Runtime.defaultRuntime)(
-    Effect.logInfo('Attempting to refresh access token')
+    Effect.logInfo('Attempting to refresh session via get-session')
   )
 
-  const response = await fetch(`${baseUrl}/auth/refresh-session`, {
-    method: 'POST',
+  // Better Auth doesn't have a separate refresh endpoint.
+  // Call get-session with the bearer token to validate/extend the session.
+  const response = await fetch(`${baseUrl}/auth/get-session`, {
+    method: 'GET',
     headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ refreshToken })
+      Authorization: `Bearer ${currentToken}`,
+      Origin: baseUrl
+    }
   })
 
   if (!response.ok) {
     Runtime.runSync(Runtime.defaultRuntime)(
-      Effect.logError('Token refresh failed', {
+      Effect.logError('Session refresh failed', {
         status: response.status,
         statusText: response.statusText
       })
     )
 
-    if (response.status === 401 || response.status === 403) {
-      throw new AuthenticationError(
-        'Refresh token expired or invalid',
-        response.status
-      )
-    }
-
-    throw new ServerError('Token refresh failed', response.status)
-  }
-
-  const data = (await response.json()) as {
-    token?: string
-    session?: { token: string }
-  }
-  const accessToken = data.token || data.session?.token
-
-  if (!accessToken) {
-    throw new ServerError(
-      'No access token in refresh response',
+    throw new AuthenticationError(
+      'Session expired. Please sign in again.',
       response.status
     )
   }
 
-  const result = {
-    accessToken
+  // Check if Better Auth returned a new bearer token in the header
+  const newToken = response.headers.get('set-auth-token')
+  const accessToken = newToken || currentToken
+
+  if (newToken) {
+    await LocalStorage.setItem('gbfm-access-token', accessToken)
+    Runtime.runSync(Runtime.defaultRuntime)(
+      Effect.logInfo('Session refreshed with new token')
+    )
+  } else {
+    Runtime.runSync(Runtime.defaultRuntime)(
+      Effect.logInfo('Session still valid, keeping current token')
+    )
   }
 
-  Runtime.runSync(Runtime.defaultRuntime)(
-    Effect.logInfo('Access token refreshed successfully')
-  )
-
-  await LocalStorage.setItem('gbfm-access-token', result.accessToken)
-
-  Runtime.runSync(Runtime.defaultRuntime)(
-    Effect.logDebug('New access token stored successfully')
-  )
-
-  return result.accessToken
+  return accessToken
 }
 
 const makeRequest = async (

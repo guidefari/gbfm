@@ -57,6 +57,12 @@
       "mode": "view"
     },
     {
+      "name": "process-mix",
+      "title": "Process Mix",
+      "description": "Upload and process a mix with FFmpeg (audio/video)",
+      "mode": "view"
+    },
+    {
       "name": "sign-in",
       "title": "Sign In",
       "description": "Sign in to get access token",
