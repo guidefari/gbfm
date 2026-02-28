@@ -4,11 +4,11 @@ import os from 'node:os'
 import path from 'node:path'
 import { Effect, Schema } from 'effect'
 import ffmpeg from 'ffmpeg-static'
-import type { Context } from 'hono'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import type { AppBindings, AppRouteHandler } from '@/lib/types'
 import { AppRuntime } from '@/runtime'
 import { AudioService } from '@/services/audio.service'
+import { MixProcessingService } from '@/services/mix-processing.service'
 import { PostService } from '@/services/post.service'
 import { QRCodeService } from '@/services/qrcode.service'
 
@@ -18,11 +18,13 @@ import type {
   CreatePostRoute,
   GetAudioBySlugRoute,
   GetAudioByTypeRoute,
+  GetMixJobStatusRoute,
   GetMixQRPdfRoute,
   GetPostBySlugRoute,
   GetPostsByTagRoute,
   GetPostsRoute,
   ProcessMixUploadRoute,
+  SubmitMixProcessingRoute,
   UpdateAudioBySlugRoute,
   UpdatePostBySlugRoute
 } from './content.routes'
@@ -402,23 +404,17 @@ interface ProcessedFiles {
   imagePath: string
   outputPath: string
   description: string
+  outputFormat: string
+  title: string
   artist?: string
   album?: string
 }
 
 // Private helper, not exported
 function processUploadHelper(
-  c: Context<AppBindings>
+  formData: FormData
 ): Effect.Effect<ProcessedFiles, ValidationError | FileSystemError> {
   return Effect.gen(function* () {
-    const formData = yield* Effect.tryPromise({
-      try: () => c.req.formData(),
-      catch: (error) =>
-        FileSystemError.make({
-          message: `Failed to parse form data: ${error instanceof Error ? error.message : 'Unknown error'}`
-        })
-    })
-
     const tmpDir = yield* Effect.tryPromise({
       try: () => fs.mkdtemp(path.join(os.tmpdir(), 'mix-')),
       catch: (error) =>
@@ -429,8 +425,9 @@ function processUploadHelper(
 
     const audioFile = formData.get('audioFile') as File
     const imageFile = formData.get('coverImage') as File
-    const outputFormat = formData.get('outputFormat') as string
+    const outputFormat = (formData.get('outputFormat') as string) || 'mp4'
     const description = formData.get('description') as string
+    const title = formData.get('title') as string
     const artist = formData.get('artist') as string
     const album = formData.get('album') as string
 
@@ -478,7 +475,16 @@ function processUploadHelper(
         })
     })
 
-    return { audioPath, imagePath, outputPath, description, artist, album }
+    return {
+      audioPath,
+      imagePath,
+      outputPath,
+      description,
+      outputFormat,
+      title,
+      artist,
+      album
+    }
   })
 }
 
@@ -492,18 +498,11 @@ export const processUpload: AppRouteHandler<ProcessMixUploadRoute> = async (
     email: user.email
   }).pipe(Effect.runPromise)
 
-  const program = Effect.gen(function* () {
-    const formData = yield* Effect.tryPromise({
-      try: () => c.req.formData(),
-      catch: (error) =>
-        FileSystemError.make({
-          message: `Failed to parse form data: ${error instanceof Error ? error.message : 'Unknown error'}`
-        })
-    })
+  const formData = await c.req.formData()
 
-    const files = yield* processUploadHelper(c)
-    const outputFormat = (formData.get('outputFormat') as string) || 'mp4'
-    const title = formData.get('title') as string
+  const program = Effect.gen(function* () {
+    const files = yield* processUploadHelper(formData)
+    const { outputFormat, title } = files
 
     const safeTitle = title.replace(/[^a-z0-9]/gi, '_').toLowerCase()
 
@@ -713,6 +712,106 @@ function cleanup(files: ProcessedFiles): Effect.Effect<void> {
       fs.rmdir(path.dirname(files.audioPath))
     ).pipe(Effect.catchAll(() => Effect.void))
   })
+}
+
+export const submitMixProcessing: AppRouteHandler<
+  SubmitMixProcessingRoute
+> = async (c) => {
+  const user = c.get('user')
+  const formData = await c.req.formData()
+
+  const program = Effect.gen(function* () {
+    const audioFile = formData.get('audioFile') as File
+    const imageFile = formData.get('coverImage') as File
+    const outputFormat = (formData.get('outputFormat') as string) || 'mp4'
+    const title = formData.get('title') as string
+    const description = formData.get('description') as string
+    const artist = formData.get('artist') as string
+    const album = formData.get('album') as string
+
+    if (!audioFile || !imageFile) {
+      return yield* ValidationError.make({
+        message: 'Missing required files: audioFile and coverImage are required'
+      })
+    }
+
+    const audioBuffer = yield* Effect.tryPromise({
+      try: () => audioFile.arrayBuffer().then((ab) => Buffer.from(ab)),
+      catch: (error) =>
+        FileSystemError.make({
+          message: `Failed to read audio file: ${error instanceof Error ? error.message : 'Unknown error'}`
+        })
+    })
+
+    const imageBuffer = yield* Effect.tryPromise({
+      try: () => imageFile.arrayBuffer().then((ab) => Buffer.from(ab)),
+      catch: (error) =>
+        FileSystemError.make({
+          message: `Failed to read image file: ${error instanceof Error ? error.message : 'Unknown error'}`
+        })
+    })
+
+    const jobId = crypto.randomUUID()
+    const mixProcessing = yield* MixProcessingService
+
+    yield* mixProcessing.submitJob(jobId, {
+      audioBuffer,
+      imageBuffer,
+      outputFormat: outputFormat as 'mp3' | 'mp4',
+      title,
+      description,
+      artist,
+      album
+    })
+
+    yield* Effect.logInfo('[Content] Mix processing job submitted', {
+      jobId,
+      userId: user.id,
+      title
+    })
+
+    return { jobId, status: 'Queued' as const }
+  }).pipe(
+    Effect.catchTag('ValidationError', (error) =>
+      Effect.succeed({
+        error: error.message,
+        status: HttpStatusCodes.BAD_REQUEST
+      } as const)
+    ),
+    Effect.catchTag('FileSystemError', (error) =>
+      Effect.succeed({
+        error: error.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    )
+  )
+
+  const result = await AppRuntime.runPromise(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
+  }
+
+  return c.json(result, HttpStatusCodes.ACCEPTED)
+}
+
+export const getMixJobStatus: AppRouteHandler<GetMixJobStatusRoute> = async (
+  c
+) => {
+  const { jobId } = c.req.valid('param')
+
+  const program = Effect.gen(function* () {
+    const mixProcessing = yield* MixProcessingService
+    return yield* mixProcessing.getJobStatus(jobId)
+  })
+
+  const result = await AppRuntime.runPromise(program)
+
+  if (!result) {
+    return c.json({ error: 'Job not found' }, HttpStatusCodes.NOT_FOUND)
+  }
+
+  return c.json(result, HttpStatusCodes.OK)
 }
 
 export const getMixQRPdf: AppRouteHandler<GetMixQRPdfRoute> = async (c) => {

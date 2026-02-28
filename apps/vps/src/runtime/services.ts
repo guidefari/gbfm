@@ -20,6 +20,7 @@ import {
   ShowSubscriptionServiceLive
 } from '@/services/show.service'
 import { SpotifyServiceLive } from '@/services/spotify.service'
+import { MixProcessingServiceLayer } from '@/services/mix-processing.service'
 import { UserServiceLive } from '@/services/user.service'
 
 export interface DatabaseService {
@@ -36,7 +37,7 @@ export const DatabaseServiceLive = Layer.succeed(DatabaseService, {
 const DevToolsLive: Layer.Layer<never> =
   process.env.NODE_ENV === 'production' ? Layer.empty : DevTools.layer()
 
-const ServicesLayer = Layer.mergeAll(
+const BaseServicesLayer = Layer.mergeAll(
   ConfigServiceLive,
   DatabaseServiceLive,
   LoggerServiceLive,
@@ -56,6 +57,12 @@ const ServicesLayer = Layer.mergeAll(
   ShowSubscriptionServiceLive,
   UserServiceLive,
   DevToolsLive
+)
+
+// MixProcessingServiceLayer depends on S3Service from BaseServicesLayer
+const ServicesLayer = Layer.merge(
+  BaseServicesLayer,
+  MixProcessingServiceLayer.pipe(Layer.provide(BaseServicesLayer))
 )
 
 export const AppLayer = ServicesLayer.pipe(Layer.provide(OtlpLive))

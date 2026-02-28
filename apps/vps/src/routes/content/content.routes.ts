@@ -435,6 +435,82 @@ export const getMixQRPdf = createRoute({
   }
 })
 
+export const submitMixProcessing = createRoute({
+  path: '/mixes/process/async',
+  method: 'post',
+  middleware: [betterAuthMiddleware],
+  request: {
+    body: {
+      content: {
+        'multipart/form-data': {
+          schema: z.object({
+            title: z.string(),
+            artist: z.string().optional(),
+            album: z.string().optional(),
+            description: z.string(),
+            outputFormat: z.enum(['mp3', 'mp4']),
+            audioFile: z.any(),
+            coverImage: z.any()
+          })
+        }
+      }
+    }
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.ACCEPTED]: jsonContent(
+      z.object({
+        jobId: z.string(),
+        status: z.literal('Queued')
+      }),
+      'Processing job submitted'
+    ),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
+      z.object({ error: z.string() }),
+      'Validation error'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to submit processing job'
+    )
+  }
+})
+
+export const getMixJobStatus = createRoute({
+  path: '/mixes/jobs/{jobId}',
+  method: 'get',
+  middleware: [betterAuthMiddleware],
+  request: {
+    params: z.object({
+      jobId: z.string().openapi({ description: 'Processing job ID' })
+    })
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.object({
+        id: z.string(),
+        status: z.discriminatedUnion('_tag', [
+          z.object({ _tag: z.literal('Queued') }),
+          z.object({ _tag: z.literal('Processing') }),
+          z.object({
+            _tag: z.literal('Completed'),
+            outputUrl: z.string()
+          }),
+          z.object({ _tag: z.literal('Failed'), error: z.string() })
+        ]),
+        createdAt: z.number(),
+        updatedAt: z.number()
+      }),
+      'Job status'
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      z.object({ error: z.string() }),
+      'Job not found'
+    )
+  }
+})
+
 // Export types
 export type GetPostsRoute = typeof getPosts
 export type GetPostBySlugRoute = typeof getPostBySlug
@@ -449,3 +525,5 @@ export type GetAudioBySlugRoute = typeof getAudioBySlug
 export type UpdateAudioBySlugRoute = typeof updateAudioBySlug
 export type CreateAudioRoute = typeof createAudio
 export type GetMixQRPdfRoute = typeof getMixQRPdf
+export type SubmitMixProcessingRoute = typeof submitMixProcessing
+export type GetMixJobStatusRoute = typeof getMixJobStatus

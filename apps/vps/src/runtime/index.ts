@@ -16,6 +16,7 @@ import type {
   ShowSubscriptionService
 } from '@/services/show.service'
 import type { SpotifyService } from '@/services/spotify.service'
+import type { MixProcessingService } from '@/services/mix-processing.service'
 import type { UserService } from '@/services/user.service'
 import type { DatabaseService } from './services'
 import { AppLayer } from './services'
@@ -37,6 +38,7 @@ type AppServices =
   | S3Service
   | ShowService
   | ShowSubscriptionService
+  | MixProcessingService
   | UserService
 
 export const AppRuntime = ManagedRuntime.make(AppLayer)
