@@ -1,21 +1,24 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  ArrowRight,
-  Copy,
-  Loader2,
-  RefreshCw,
-  ServerCrash
-} from 'lucide-react'
+import { ArrowLeftRight, ArrowRight, Copy, Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
 import { toast } from '@/components/ui/use-toast'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
 
 const STORAGE_KEY_BUCKET_A = 'filemanager:bucketA'
 const STORAGE_KEY_BUCKET_B = 'filemanager:bucketB'
+const STORAGE_KEY_RECENT_BUCKETS = 'filemanager:recentBuckets'
+const CUSTOM_BUCKET_VALUE = '__custom__'
 
 interface S3Object {
   key: string
@@ -29,6 +32,7 @@ interface BucketConfig {
     userContent: string
     mixes: string
   }
+  availableBuckets: string[]
 }
 
 function formatBytes(bytes: number) {
@@ -39,99 +43,12 @@ function formatBytes(bytes: number) {
   return `${parseFloat((bytes / k ** i).toFixed(1))} ${sizes[i]}`
 }
 
-function BucketPanel({
-  label,
-  bucketName,
-  onBucketNameChange,
-  knownBuckets
-}: {
-  label: string
-  bucketName: string
-  onBucketNameChange: (v: string) => void
-  knownBuckets: BucketConfig['buckets'] | undefined
-}) {
-  const { data, isPending, error, refetch } = useQuery<{ objects: S3Object[] }>(
-    {
-      queryKey: ['file-manager', 'list', bucketName],
-      queryFn: () =>
-        fetcher<{ objects: S3Object[] }>(
-          `${VPS_BASE_URL}/file-manager/list?bucketName=${encodeURIComponent(bucketName)}`
-        ),
-      enabled: Boolean(bucketName),
-      staleTime: 30_000
-    }
-  )
-
-  return (
-    <div className='flex-1 min-w-0 space-y-3'>
-      <div className='flex items-center justify-between gap-2'>
-        <h3 className='text-sm font-semibold'>{label}</h3>
-        <Button
-          variant='ghost'
-          size='icon'
-          className='h-7 w-7'
-          onClick={() => refetch()}
-          disabled={isPending || !bucketName}>
-          <RefreshCw className={`h-3.5 w-3.5 ${isPending ? 'animate-spin' : ''}`} />
-        </Button>
-      </div>
-
-      <div className='space-y-1.5'>
-        <Label className='text-xs text-muted-foreground'>Bucket name</Label>
-        <Input
-          value={bucketName}
-          onChange={(e) => onBucketNameChange(e.target.value)}
-          placeholder='e.g. my-app-dev-mixes-abc123'
-          className='h-8 text-xs font-mono'
-        />
-        {knownBuckets && (
-          <div className='flex flex-wrap gap-1.5 pt-0.5'>
-            <span className='text-xs text-muted-foreground'>Known:</span>
-            {Object.entries(knownBuckets).map(([name, bucket]) => (
-              <button
-                key={name}
-                type='button'
-                onClick={() => onBucketNameChange(bucket)}
-                className='text-xs text-primary underline-offset-2 hover:underline truncate max-w-[180px]'>
-                {name}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className='rounded-sm border min-h-[200px] overflow-x-auto'>
-        {!bucketName ? (
-          <div className='flex items-center justify-center h-40 text-sm text-muted-foreground'>
-            Enter a bucket name above
-          </div>
-        ) : isPending ? (
-          <div className='flex items-center justify-center h-40 gap-2 text-sm text-muted-foreground'>
-            <Loader2 className='h-4 w-4 animate-spin' />
-            Loading objects...
-          </div>
-        ) : error ? (
-          <div className='flex items-center justify-center h-40 gap-2 text-sm text-destructive'>
-            <ServerCrash className='h-4 w-4' />
-            Failed to load — check bucket name &amp; permissions
-          </div>
-        ) : (
-          <div className='text-xs text-muted-foreground px-3 pt-2 pb-1'>
-            {data?.objects.length ?? 0} objects
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
 export function FilesTab() {
   const queryClient = useQueryClient()
 
   const { data: configData } = useQuery<BucketConfig>({
     queryKey: ['file-manager', 'config'],
-    queryFn: () =>
-      fetcher<BucketConfig>(`${VPS_BASE_URL}/file-manager/config`),
+    queryFn: () => fetcher<BucketConfig>(`${VPS_BASE_URL}/file-manager/config`),
     staleTime: Infinity
   })
 
@@ -141,30 +58,78 @@ export function FilesTab() {
   const [bucketB, setBucketB] = useState(
     () => localStorage.getItem(STORAGE_KEY_BUCKET_B) ?? ''
   )
-  const [activeBucket, setActiveBucket] = useState<'mixes' | 'userContent'>(
-    'mixes'
-  )
-
-  // Pre-fill bucket A from config on first load
-  useEffect(() => {
-    if (configData && !bucketA) {
-      const name = configData.buckets[activeBucket]
-      if (name) {
-        setBucketA(name)
-        localStorage.setItem(STORAGE_KEY_BUCKET_A, name)
-      }
+  const [isCustomBucketA, setIsCustomBucketA] = useState(false)
+  const [isCustomBucketB, setIsCustomBucketB] = useState(false)
+  const [recentBuckets, setRecentBuckets] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_RECENT_BUCKETS)
+      if (!raw) return []
+      const parsed = JSON.parse(raw)
+      if (!Array.isArray(parsed)) return []
+      return parsed.filter(
+        (value): value is string => typeof value === 'string'
+      )
+    } catch {
+      return []
     }
-  }, [configData, activeBucket, bucketA])
+  })
+
+  const rememberBucket = (bucketName: string) => {
+    if (!bucketName.trim()) return
+    setRecentBuckets((prev) => {
+      const next = [
+        bucketName,
+        ...prev.filter((item) => item !== bucketName)
+      ].slice(0, 8)
+      localStorage.setItem(STORAGE_KEY_RECENT_BUCKETS, JSON.stringify(next))
+      return next
+    })
+  }
 
   const persistBucketA = (v: string) => {
     setBucketA(v)
     localStorage.setItem(STORAGE_KEY_BUCKET_A, v)
+    rememberBucket(v)
   }
 
   const persistBucketB = (v: string) => {
     setBucketB(v)
     localStorage.setItem(STORAGE_KEY_BUCKET_B, v)
+    rememberBucket(v)
   }
+
+  // Default to known stage buckets, so most users never need manual entry.
+  useEffect(() => {
+    if (!configData) return
+
+    if (!bucketA) {
+      persistBucketA(configData.buckets.mixes)
+    }
+
+    if (!bucketB) {
+      persistBucketB(configData.buckets.userContent)
+    }
+  }, [bucketA, bucketB, configData])
+
+  // Keep custom-mode toggles in sync with persisted values.
+  useEffect(() => {
+    if (!configData) return
+
+    const knownBucketValues = new Set([
+      ...Object.values(configData.buckets),
+      ...configData.availableBuckets
+    ])
+    setIsCustomBucketA((prev) =>
+      prev
+        ? !knownBucketValues.has(bucketA)
+        : Boolean(bucketA) && !knownBucketValues.has(bucketA)
+    )
+    setIsCustomBucketB((prev) =>
+      prev
+        ? !knownBucketValues.has(bucketB)
+        : Boolean(bucketB) && !knownBucketValues.has(bucketB)
+    )
+  }, [bucketA, bucketB, configData])
 
   const { data: listA } = useQuery<{ objects: S3Object[] }>({
     queryKey: ['file-manager', 'list', bucketA],
@@ -228,6 +193,33 @@ export function FilesTab() {
     return 'b-only'
   }
 
+  const stageBuckets = configData
+    ? Object.entries(configData.buckets).filter(
+        ([, bucket], index, arr) =>
+          arr.findIndex(([, value]) => value === bucket) === index
+      )
+    : []
+  const stageBucketValues = new Set(stageBuckets.map(([, bucket]) => bucket))
+  const availableBuckets = configData
+    ? Array.from(new Set(configData.availableBuckets)).filter(Boolean)
+    : []
+  const discoveredBuckets = availableBuckets.filter(
+    (bucket) => !stageBucketValues.has(bucket)
+  )
+  const selectableCustomBuckets = recentBuckets.filter(
+    (bucket) =>
+      !stageBucketValues.has(bucket) && !availableBuckets.includes(bucket)
+  )
+  const selectValueA = isCustomBucketA
+    ? CUSTOM_BUCKET_VALUE
+    : bucketA || undefined
+  const selectValueB = isCustomBucketB
+    ? CUSTOM_BUCKET_VALUE
+    : bucketB || undefined
+  const isSameBucketSelected = Boolean(
+    bucketA && bucketB && bucketA === bucketB
+  )
+
   return (
     <div className='space-y-6'>
       {configData && (
@@ -236,62 +228,146 @@ export function FilesTab() {
         </div>
       )}
 
-      {/* Bucket type selector */}
-      <div className='flex gap-2'>
-        <span className='text-sm text-muted-foreground self-center mr-1'>
-          Quick-fill:
-        </span>
-        {(['mixes', 'userContent'] as const).map((key) => (
-          <Button
-            key={key}
-            variant={activeBucket === key ? 'default' : 'outline'}
-            size='sm'
-            onClick={() => {
-              setActiveBucket(key)
-              if (configData) {
-                persistBucketA(configData.buckets[key])
-              }
-            }}>
-            {key === 'mixes' ? 'Mixes' : 'User Content'}
-          </Button>
-        ))}
+      <div className='flex items-center justify-between gap-2'>
+        <p className='text-xs text-muted-foreground'>
+          Pick from known buckets first. Use custom mode only for external or
+          one-off buckets.
+        </p>
+        <Button
+          type='button'
+          variant='outline'
+          size='sm'
+          className='h-8'
+          disabled={!bucketA || !bucketB}
+          onClick={() => {
+            const nextA = bucketB
+            const nextB = bucketA
+            const nextCustomA = isCustomBucketB
+            const nextCustomB = isCustomBucketA
+            persistBucketA(nextA)
+            persistBucketB(nextB)
+            setIsCustomBucketA(nextCustomA)
+            setIsCustomBucketB(nextCustomB)
+          }}>
+          <ArrowLeftRight className='h-3.5 w-3.5 mr-1.5' />
+          Swap A/B
+        </Button>
       </div>
 
-      {/* Bucket name inputs */}
       <div className='grid grid-cols-2 gap-4'>
         <div className='space-y-1.5'>
           <Label className='text-xs text-muted-foreground'>Bucket A</Label>
-          <Input
-            value={bucketA}
-            onChange={(e) => persistBucketA(e.target.value)}
-            placeholder='Bucket A name'
-            className='h-8 text-xs font-mono'
-          />
-          {configData && (
-            <div className='flex flex-wrap gap-1.5'>
-              {Object.entries(configData.buckets).map(([name, bucket]) => (
-                <button
-                  key={name}
-                  type='button'
-                  onClick={() => persistBucketA(bucket)}
-                  className='text-xs text-primary underline-offset-2 hover:underline'>
-                  {name}
-                </button>
+          <Select
+            value={selectValueA}
+            onValueChange={(value) => {
+              if (value === CUSTOM_BUCKET_VALUE) {
+                setIsCustomBucketA(true)
+                persistBucketA('')
+                return
+              }
+              setIsCustomBucketA(false)
+              persistBucketA(value)
+            }}>
+            <SelectTrigger className='h-8 text-xs'>
+              <SelectValue placeholder='Select source bucket' />
+            </SelectTrigger>
+            <SelectContent>
+              {stageBuckets.map(([name, bucket]) => (
+                <SelectItem key={name} value={bucket} className='text-xs'>
+                  {name} · {bucket}
+                </SelectItem>
               ))}
-            </div>
+              {selectableCustomBuckets.map((bucket) => (
+                <SelectItem
+                  key={`saved-a-${bucket}`}
+                  value={bucket}
+                  className='text-xs font-mono'>
+                  saved · {bucket}
+                </SelectItem>
+              ))}
+              {discoveredBuckets.map((bucket) => (
+                <SelectItem
+                  key={`available-a-${bucket}`}
+                  value={bucket}
+                  className='text-xs font-mono'>
+                  available · {bucket}
+                </SelectItem>
+              ))}
+              <SelectItem value={CUSTOM_BUCKET_VALUE} className='text-xs'>
+                Custom bucket name...
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          {isCustomBucketA && (
+            <Input
+              value={bucketA}
+              onChange={(e) => persistBucketA(e.target.value)}
+              placeholder='Paste bucket A name'
+              className='h-8 text-xs font-mono'
+            />
           )}
         </div>
 
         <div className='space-y-1.5'>
           <Label className='text-xs text-muted-foreground'>Bucket B</Label>
-          <Input
-            value={bucketB}
-            onChange={(e) => persistBucketB(e.target.value)}
-            placeholder='Other bucket name (e.g. prod bucket)'
-            className='h-8 text-xs font-mono'
-          />
+          <Select
+            value={selectValueB}
+            onValueChange={(value) => {
+              if (value === CUSTOM_BUCKET_VALUE) {
+                setIsCustomBucketB(true)
+                persistBucketB('')
+                return
+              }
+              setIsCustomBucketB(false)
+              persistBucketB(value)
+            }}>
+            <SelectTrigger className='h-8 text-xs'>
+              <SelectValue placeholder='Select destination bucket' />
+            </SelectTrigger>
+            <SelectContent>
+              {stageBuckets.map(([name, bucket]) => (
+                <SelectItem key={name} value={bucket} className='text-xs'>
+                  {name} · {bucket}
+                </SelectItem>
+              ))}
+              {selectableCustomBuckets.map((bucket) => (
+                <SelectItem
+                  key={`saved-b-${bucket}`}
+                  value={bucket}
+                  className='text-xs font-mono'>
+                  saved · {bucket}
+                </SelectItem>
+              ))}
+              {discoveredBuckets.map((bucket) => (
+                <SelectItem
+                  key={`available-b-${bucket}`}
+                  value={bucket}
+                  className='text-xs font-mono'>
+                  available · {bucket}
+                </SelectItem>
+              ))}
+              <SelectItem value={CUSTOM_BUCKET_VALUE} className='text-xs'>
+                Custom bucket name...
+              </SelectItem>
+            </SelectContent>
+          </Select>
+          {isCustomBucketB && (
+            <Input
+              value={bucketB}
+              onChange={(e) => persistBucketB(e.target.value)}
+              placeholder='Paste bucket B name'
+              className='h-8 text-xs font-mono'
+            />
+          )}
         </div>
       </div>
+
+      {isSameBucketSelected && (
+        <div className='rounded-sm border border-yellow-300 bg-yellow-50 px-3 py-2 text-xs text-yellow-900 dark:border-yellow-900/50 dark:bg-yellow-950/30 dark:text-yellow-300'>
+          Bucket A and Bucket B are the same. Choose two different buckets to
+          compare or copy files.
+        </div>
+      )}
 
       {/* Diff table */}
       {allKeys.length > 0 && (
@@ -312,8 +388,7 @@ export function FilesTab() {
                 const objB = listB?.objects.find((o) => o.key === key)
                 const size = objA?.size ?? objB?.size ?? 0
                 const isCopying =
-                  copyMutation.isPending &&
-                  copyMutation.variables?.key === key
+                  copyMutation.isPending && copyMutation.variables?.key === key
 
                 return (
                   <tr key={key} className='border-b hover:bg-muted/50'>
@@ -350,7 +425,7 @@ export function FilesTab() {
                           <Button
                             variant='outline'
                             size='sm'
-                            disabled={isCopying}
+                            disabled={isCopying || isSameBucketSelected}
                             onClick={() =>
                               copyMutation.mutate({
                                 key,
@@ -372,7 +447,7 @@ export function FilesTab() {
                           <Button
                             variant='outline'
                             size='sm'
-                            disabled={isCopying}
+                            disabled={isCopying || isSameBucketSelected}
                             onClick={() =>
                               copyMutation.mutate({
                                 key,
@@ -395,7 +470,9 @@ export function FilesTab() {
                             <Button
                               variant='ghost'
                               size='sm'
-                              disabled={isCopying || !bucketB}
+                              disabled={
+                                isCopying || !bucketB || isSameBucketSelected
+                              }
                               title='Re-copy A → B'
                               onClick={() =>
                                 copyMutation.mutate({
@@ -410,7 +487,9 @@ export function FilesTab() {
                             <Button
                               variant='ghost'
                               size='sm'
-                              disabled={isCopying || !bucketA}
+                              disabled={
+                                isCopying || !bucketA || isSameBucketSelected
+                              }
                               title='Re-copy B → A'
                               onClick={() =>
                                 copyMutation.mutate({

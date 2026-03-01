@@ -2,6 +2,7 @@ import {
   CopyObjectCommand,
   DeleteObjectCommand,
   HeadObjectCommand,
+  ListBucketsCommand,
   ListObjectsV2Command,
   PutObjectCommand,
   S3Client
@@ -31,13 +32,18 @@ export interface S3Service {
   readonly listObjects: (
     prefix: string,
     bucketName: string
-  ) => Effect.Effect<Array<{ key: string; lastModified: Date; size: number }>, S3Error>
+  ) => Effect.Effect<
+    Array<{ key: string; lastModified: Date; size: number }>,
+    S3Error
+  >
 
   readonly copyFile: (
     key: string,
     sourceBucket: string,
     destinationBucket: string
   ) => Effect.Effect<void, S3Error>
+
+  readonly listBuckets: () => Effect.Effect<string[], S3Error>
 }
 
 // Service tag for dependency injection
@@ -162,7 +168,11 @@ const listObjectsEffect = (prefix: string, bucketName: string) =>
   Effect.tryPromise({
     try: async () => {
       const s3 = new S3Client({})
-      const allObjects: Array<{ key: string; lastModified: Date; size: number }> = []
+      const allObjects: Array<{
+        key: string
+        lastModified: Date
+        size: number
+      }> = []
       let continuationToken: string | undefined
 
       do {
@@ -174,13 +184,10 @@ const listObjectsEffect = (prefix: string, bucketName: string) =>
           })
         )
         const page = (response.Contents ?? [])
-          .filter(
-            (obj): obj is Required<Pick<typeof obj, 'Key' | 'LastModified'>> =>
-              Boolean(obj.Key && obj.LastModified)
-          )
+          .filter((obj) => Boolean(obj.Key && obj.LastModified))
           .map((obj) => ({
-            key: obj.Key,
-            lastModified: obj.LastModified,
+            key: obj.Key as string,
+            lastModified: obj.LastModified as Date,
             size: obj.Size ?? 0
           }))
         allObjects.push(...page)
@@ -252,11 +259,41 @@ const copyFileEffect = (
     })
   )
 
+const listBucketsEffect = () =>
+  Effect.tryPromise({
+    try: async () => {
+      const s3 = new S3Client({})
+      const response = await s3.send(new ListBucketsCommand({}))
+      return (response.Buckets ?? [])
+        .map((bucket) => bucket.Name)
+        .filter((name): name is string => Boolean(name))
+    },
+    catch: (error) =>
+      error instanceof Error
+        ? new S3Error({
+            message: `Failed to list buckets from S3: ${error.message}`,
+            operation: 'list',
+            key: 'buckets'
+          })
+        : new S3Error({
+            message: `Failed to list buckets from S3: Unknown error: ${String(error)}`,
+            operation: 'list',
+            key: 'buckets'
+          })
+  }).pipe(
+    Effect.withSpan('aws.s3.listBuckets', {
+      attributes: {
+        'aws.service': 's3'
+      }
+    })
+  )
+
 // Implementation - simple layer (effects are pure functions)
 export const S3ServiceLive = Layer.succeed(S3Service, {
   uploadFile: uploadFileEffect,
   deleteFile: deleteFileEffect,
   checkExists: checkExistsEffect,
   listObjects: listObjectsEffect,
-  copyFile: copyFileEffect
+  copyFile: copyFileEffect,
+  listBuckets: listBucketsEffect
 })

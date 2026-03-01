@@ -14,12 +14,41 @@ import type {
 export const getConfig: AppRouteHandler<GetConfigRoute> = async (c) => {
   const program = Effect.gen(function* () {
     const config = yield* ConfigService
+    const s3Service = yield* S3Service
+    const configuredBuckets = [config.buckets.userContent, config.buckets.mixes]
+    const additionalBuckets = (process.env.FILE_MANAGER_BUCKETS ?? '')
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean)
+
+    const discoveredBuckets = yield* s3Service.listBuckets().pipe(
+      Effect.catchTag('S3Error', (error) =>
+        Effect.gen(function* () {
+          yield* Effect.logWarning('[FileManager] Failed to list buckets', {
+            error: error.message
+          })
+          return []
+        })
+      )
+    )
+
+    const availableBuckets = Array.from(
+      new Set(
+        [
+          ...configuredBuckets,
+          ...additionalBuckets,
+          ...discoveredBuckets
+        ].filter(Boolean)
+      )
+    ).sort((a, b) => a.localeCompare(b))
+
     return {
       stage: config.app.stage,
       buckets: {
         userContent: config.buckets.userContent,
         mixes: config.buckets.mixes
-      }
+      },
+      availableBuckets
     }
   })
 

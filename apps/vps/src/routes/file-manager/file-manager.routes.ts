@@ -23,9 +23,10 @@ export const getConfig = createRoute({
         buckets: z.object({
           userContent: z.string(),
           mixes: z.string()
-        })
+        }),
+        availableBuckets: z.array(z.string())
       }),
-      'Current stage and known bucket names'
+      'Current stage buckets and all discoverable buckets'
     )
   }
 })
