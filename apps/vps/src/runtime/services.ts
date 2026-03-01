@@ -8,6 +8,7 @@ import { ConfigServiceLive } from '@/services/config.service'
 import { EmailServiceLive } from '@/services/email.service'
 import { FavoriteServiceLive } from '@/services/favorite.service'
 import { LabelServiceLive } from '@/services/label.service'
+import { MixProcessingServiceLayer } from '@/services/mix-processing.service'
 import { MusicReminderServiceLive } from '@/services/music-reminder.service'
 import { PostServiceLive } from '@/services/post.service'
 import { ProfileServiceLive } from '@/services/profile.service'
@@ -20,7 +21,6 @@ import {
   ShowSubscriptionServiceLive
 } from '@/services/show.service'
 import { SpotifyServiceLive } from '@/services/spotify.service'
-import { MixProcessingServiceLayer } from '@/services/mix-processing.service'
 import { UserServiceLive } from '@/services/user.service'
 
 export interface DatabaseService {

@@ -5,6 +5,7 @@ import { createAppEffect } from '@/lib/create-app'
 import content from '@/routes/content/content.index'
 import email from '@/routes/email/email.index'
 import favorites from '@/routes/favorites/favorites.index'
+import fileManager from '@/routes/file-manager/file-manager.index'
 import invite from '@/routes/invite/invite.index'
 import musicReminders from '@/routes/music-reminders/music-reminders.index'
 import newsletter from '@/routes/newsletter/newsletter.index'
@@ -45,6 +46,7 @@ const setupRoutesEffect = Effect.gen(function* () {
   app.route('/s', shareRouter)
   app.route('/shows', shows)
   app.route('/spotify', spotify)
+  app.route('/file-manager', fileManager)
   app.route('/upload', upload)
   app.route('/music-reminders', musicReminders)
   app.route('', rss)

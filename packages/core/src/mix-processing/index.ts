@@ -1,20 +1,20 @@
-export type {
-  MixProcessingInput,
-  ProcessedFiles,
-  JobStatus,
-  JobInfo
-} from './types'
-export {
-  MixValidationError,
-  MixProcessingError,
-  MixFileSystemError
-} from './errors'
 export { MixProcessingConfig } from './config'
 export {
-  formatTracklist,
-  writeFilesToDisk,
-  createAudioOrVideo,
-  cleanup,
-  processMix
-} from './processing'
+  MixFileSystemError,
+  MixProcessingError,
+  MixValidationError
+} from './errors'
 export { MixJobQueue, makeInMemoryJobQueue } from './job-queue'
+export {
+  cleanup,
+  createAudioOrVideo,
+  formatTracklist,
+  processMix,
+  writeFilesToDisk
+} from './processing'
+export type {
+  JobInfo,
+  JobStatus,
+  MixProcessingInput,
+  ProcessedFiles
+} from './types'

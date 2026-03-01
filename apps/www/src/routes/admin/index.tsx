@@ -4,6 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useAuthStore } from '@/store/auth'
 import { ContentTab } from './_components/ContentTab'
 import { EmailLogsTab } from './_components/EmailLogsTab'
+import { FilesTab } from './_components/FilesTab'
 import { SessionsTab } from './_components/SessionsTab'
 import { ShowsTab } from './_components/ShowsTab'
 import { UsersTab } from './_components/UsersTab'
@@ -50,6 +51,7 @@ function AdminDashboard() {
               <TabsTrigger value='shows'>Shows</TabsTrigger>
               <TabsTrigger value='sessions'>Sessions</TabsTrigger>
               <TabsTrigger value='email-logs'>Email Logs</TabsTrigger>
+              <TabsTrigger value='files'>Files</TabsTrigger>
             </TabsList>
 
             <TabsContent value='users'>
@@ -70,6 +72,10 @@ function AdminDashboard() {
 
             <TabsContent value='email-logs'>
               <EmailLogsTab />
+            </TabsContent>
+
+            <TabsContent value='files'>
+              <FilesTab />
             </TabsContent>
           </Tabs>
         </CardContent>
