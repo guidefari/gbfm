@@ -1,3 +1,12 @@
+# [2.25.0](https://github.com/guidefari/gbfm/compare/v2.24.2...v2.25.0) (2026-03-01)
+
+
+### Features
+
+* **core:** add mix processing module with Effect-based job queue ([7958b38](https://github.com/guidefari/gbfm/commit/7958b38cd23414be587ff712bf0dc72e3dd1c654))
+* **raycast:** add process-mix command with async job polling ([f07aaf4](https://github.com/guidefari/gbfm/commit/f07aaf4e5b1c2118a6e9de50b026502b12678c49))
+* **vps:** add async mix processing endpoints with job status tracking ([4cc4b4f](https://github.com/guidefari/gbfm/commit/4cc4b4f50ac5ebd0fa2a5a6e0c9b0811b09fd5de))
+
 ## [2.24.2](https://github.com/guidefari/gbfm/compare/v2.24.1...v2.24.2) (2026-02-20)
 
 
