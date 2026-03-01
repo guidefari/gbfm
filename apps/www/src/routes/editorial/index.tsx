@@ -2,7 +2,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { Tag, X } from 'lucide-react'
 import { useMemo } from 'react'
 import { z } from 'zod'
-import { DispatchListItem } from '@/components/DispatchListItem'
+import { EditorialListItem } from '@/components/EditorialListItem'
 import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -19,15 +19,15 @@ const searchSchema = z.object({
   tag: z.string().optional()
 })
 
-export const Route = createFileRoute('/dispatch/')({
-  component: DispatchListPage,
+export const Route = createFileRoute('/editorial/')({
+  component: EditorialListPage,
   validateSearch: searchSchema,
   head: () => ({
-    meta: generateSEOMeta(STATIC_PAGE_SEO.dispatch)
+    meta: generateSEOMeta(STATIC_PAGE_SEO.editorial)
   })
 })
 
-function DispatchListPage() {
+function EditorialListPage() {
   const { tag } = Route.useSearch()
   const navigate = Route.useNavigate()
   const { data, isPending, fetchNextPage, hasNextPage, isFetchingNextPage } =
@@ -72,11 +72,11 @@ function DispatchListPage() {
     <div className='max-w-3xl mx-auto px-4 py-8'>
       <div className='flex flex-row items-baseline justify-between gap-4 mb-8 border-b pb-4 border-border/40'>
         <div className='flex items-baseline gap-6'>
-          <h1 className='text-2xl font-black tracking-tight'>Dispatch</h1>
+          <h1 className='text-2xl font-black tracking-tight'>Editorial</h1>
           <Link
-            to='/pings'
+            to='/tweet'
             className='flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors relative group'>
-            Pings
+            Tweet
             <span className='absolute -bottom-[17px] left-0 right-0 h-0.5 bg-foreground scale-x-0 group-hover:scale-x-100 transition-transform origin-left' />
           </Link>
         </div>
@@ -116,7 +116,7 @@ function DispatchListPage() {
       )}
       <div className='grid gap-3'>
         {filteredData?.map((post) => (
-          <DispatchListItem key={post.id} post={post} />
+          <EditorialListItem key={post.id} post={post} />
         ))}
 
         <LoadMoreTrigger

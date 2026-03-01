@@ -8,8 +8,8 @@ import { Badge } from '@/components/ui/badge'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
 import { generateMicroPostSEO, generateSEOMeta } from '@/lib/seo'
 
-export const Route = createFileRoute('/pings/$slug')({
-  component: PingPostPage,
+export const Route = createFileRoute('/tweet/$slug')({
+  component: TweetPostPage,
   loader: async ({ params }) => {
     const post = await fetcher<SelectMdxCompiledPost>(
       `${VPS_BASE_URL}/content/posts/${params.slug}`
@@ -20,7 +20,7 @@ export const Route = createFileRoute('/pings/$slug')({
     if (!loaderData?.post) {
       return {
         meta: [
-          { title: 'Ping | goosebumps.fm' },
+          { title: 'Tweet | goosebumps.fm' },
           { name: 'description', content: 'Short updates on goosebumps.fm' }
         ]
       }
@@ -31,7 +31,7 @@ export const Route = createFileRoute('/pings/$slug')({
   }
 })
 
-function PingPostPage() {
+function TweetPostPage() {
   const { slug } = Route.useParams()
   const { post } = Route.useLoaderData()
 
@@ -40,10 +40,10 @@ function PingPostPage() {
   return (
     <div className='max-w-2xl px-4 py-6 mx-auto'>
       <Link
-        to='/pings'
+        to='/tweet'
         className='inline-flex items-center gap-1 mb-8 text-sm transition-colors text-muted-foreground hover:text-foreground'>
         <ArrowLeft className='w-4 h-4' />
-        Pings
+        Tweet
       </Link>
       <article className='space-y-6'>
         <div className='space-y-3'>

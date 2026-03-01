@@ -69,7 +69,7 @@ export const sharePost = async (c: Context) => {
     const creators = yield* fetchCreators(post.id)
 
     const canonicalPath =
-      post.type === 'micro' ? `/pings/${slug}` : `/dispatch/${slug}`
+      post.type === 'micro' ? `/tweet/${slug}` : `/editorial/${slug}`
 
     return {
       html: buildOGHtml({

@@ -10,8 +10,8 @@ interface ProfileContentGridProps {
 }
 
 type Mix = PublicProfile['content']['mixes'][number]
-type Dispatch = PublicProfile['content']['dispatches'][number]
-type Ping = PublicProfile['content']['pings'][number]
+type Editorial = PublicProfile['content']['editorials'][number]
+type Tweet = PublicProfile['content']['tweets'][number]
 
 const CARD_CLASS = 'w-36 flex-shrink-0'
 
@@ -35,30 +35,30 @@ function StandaloneMixCard({ mix }: { mix: Mix }) {
   )
 }
 
-function ProfileDispatchCard({ dispatch }: { dispatch: Dispatch }) {
+function ProfileEditorialCard({ editorial }: { editorial: Editorial }) {
   return (
     <Link
-      to='/dispatch/$slug'
-      params={{ slug: dispatch.slug }}
+      to='/editorial/$slug'
+      params={{ slug: editorial.slug }}
       className={`${CARD_CLASS} group flex flex-col gap-2`}>
-      {dispatch.thumbnailUrl && (
+      {editorial.thumbnailUrl && (
         <div className='aspect-video w-full overflow-hidden rounded-sm border border-border bg-background'>
           <img
-            src={dispatch.thumbnailUrl}
-            alt={dispatch.title}
+            src={editorial.thumbnailUrl}
+            alt={editorial.title}
             className='h-full w-full object-cover transition-opacity group-hover:opacity-80'
           />
         </div>
       )}
       <h3 className='line-clamp-2 font-mono text-sm font-medium leading-tight text-foreground transition-colors group-hover:text-highlight'>
-        {dispatch.title}
+        {editorial.title}
       </h3>
     </Link>
   )
 }
 
-function ProfilePingCard({ ping }: { ping: Ping }) {
-  const date = new Date(ping.createdAt).toLocaleDateString('en-US', {
+function ProfileTweetCard({ tweet }: { tweet: Tweet }) {
+  const date = new Date(tweet.createdAt).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
     year: 'numeric'
@@ -66,11 +66,11 @@ function ProfilePingCard({ ping }: { ping: Ping }) {
 
   return (
     <Link
-      to='/pings/$slug'
-      params={{ slug: ping.slug }}
+      to='/tweet/$slug'
+      params={{ slug: tweet.slug }}
       className={`${CARD_CLASS} group flex flex-col gap-1 rounded-sm border border-border bg-card p-3 transition-colors hover:bg-muted/50`}>
       <h3 className='line-clamp-2 font-mono text-sm font-semibold leading-tight text-foreground transition-colors group-hover:text-highlight'>
-        {ping.title}
+        {tweet.title}
       </h3>
       <p className='font-mono text-xs text-muted-foreground'>{date}</p>
     </Link>
@@ -141,11 +141,11 @@ function ContentSection({
 
 export function ProfileContentGrid({ content }: ProfileContentGridProps) {
   const mixes = content?.mixes ?? []
-  const dispatches = content?.dispatches ?? []
-  const pings = content?.pings ?? []
+  const editorials = content?.editorials ?? []
+  const tweets = content?.tweets ?? []
 
   const hasContent =
-    mixes.length > 0 || dispatches.length > 0 || pings.length > 0
+    mixes.length > 0 || editorials.length > 0 || tweets.length > 0
 
   if (!hasContent) {
     return (
@@ -165,18 +165,18 @@ export function ProfileContentGrid({ content }: ProfileContentGridProps) {
         </ContentSection>
       )}
 
-      {dispatches.length > 0 && (
-        <ContentSection title='Dispatches'>
-          {dispatches.map((dispatch) => (
-            <ProfileDispatchCard key={dispatch.id} dispatch={dispatch} />
+      {editorials.length > 0 && (
+        <ContentSection title='Editorial'>
+          {editorials.map((editorial) => (
+            <ProfileEditorialCard key={editorial.id} editorial={editorial} />
           ))}
         </ContentSection>
       )}
 
-      {pings.length > 0 && (
-        <ContentSection title='Pings'>
-          {pings.map((ping) => (
-            <ProfilePingCard key={ping.id} ping={ping} />
+      {tweets.length > 0 && (
+        <ContentSection title='Tweet'>
+          {tweets.map((tweet) => (
+            <ProfileTweetCard key={tweet.id} tweet={tweet} />
           ))}
         </ContentSection>
       )}

@@ -5,11 +5,11 @@ import { CalendarDays, Sparkles } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 
-interface DispatchListItemProps {
+interface EditorialListItemProps {
   post: SelectMdxCompiledPost
 }
 
-export function DispatchListItem({ post }: DispatchListItemProps) {
+export function EditorialListItem({ post }: EditorialListItemProps) {
   const recencyLabel = getMixRecencyLabel(post.createdAt)
   const hasCreators = Boolean(post.creators && post.creators.length > 0)
 
@@ -38,7 +38,7 @@ export function DispatchListItem({ post }: DispatchListItemProps) {
 
       <div className='flex-1 min-w-0 pr-20 sm:pr-24'>
         <Link
-          to='/dispatch/$slug'
+          to='/editorial/$slug'
           params={{ slug: post.slug }}
           className='block text-base sm:text-lg font-extrabold leading-tight line-clamp-2 text-foreground hover:underline decoration-foreground/30 underline-offset-4'>
           {post.title}

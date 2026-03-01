@@ -111,7 +111,7 @@ function PostUploadPage() {
   }, [isEditMode, user])
 
   const heading = useMemo(
-    () => (formData.type === 'micro' ? 'Ping' : 'Dispatch'),
+    () => (formData.type === 'micro' ? 'Tweet' : 'Editorial'),
     [formData.type]
   )
 
@@ -187,8 +187,8 @@ function PostUploadPage() {
       const savedType = savedPost.type || formData.type
       const targetPath =
         savedType === 'micro'
-          ? `/pings/${savedPost.slug}`
-          : `/dispatch/${savedPost.slug}`
+          ? `/tweet/${savedPost.slug}`
+          : `/editorial/${savedPost.slug}`
 
       setTimeout(() => {
         router.navigate({ to: targetPath })
@@ -284,9 +284,9 @@ function PostUploadPage() {
               {isEditMode ? `Edit ${heading}` : `Create ${heading}`}
             </h1>
             <p className='mt-1 text-gb-default-text'>
-              {heading === 'Ping'
+              {heading === 'Tweet'
                 ? 'Write and publish short-form micro posts.'
-                : 'Write and publish long-form dispatch posts.'}
+                : 'Write and publish long-form editorial posts.'}
             </p>
           </div>
           <div className='flex gap-3'>
@@ -366,8 +366,8 @@ function PostUploadPage() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value='post'>Dispatch</SelectItem>
-                      <SelectItem value='micro'>Ping</SelectItem>
+                      <SelectItem value='post'>Editorial</SelectItem>
+                      <SelectItem value='micro'>Tweet</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
