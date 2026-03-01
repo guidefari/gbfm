@@ -188,8 +188,7 @@ export function createConfig(): ConfigService {
     process.env.DATABASE_BACKUPS_BUCKET_NAME ||
     getResourceValue('DatabaseBackups.name', 'database-backups-dev')
   const mixesBucketName =
-    process.env.MIXES_BUCKET_NAME ||
-    getResourceValue('Mixes.name', 'mixes-dev')
+    process.env.MIXES_BUCKET_NAME || getResourceValue('Mixes.name', 'mixes-dev')
 
   // Tasks
   const databaseBackupTask =

@@ -3,12 +3,12 @@ import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
 import { Effect } from 'effect'
+import { MixProcessingConfig } from './config'
 import {
   MixFileSystemError,
   MixProcessingError,
   MixValidationError
 } from './errors'
-import { MixProcessingConfig } from './config'
 import type { MixProcessingInput, ProcessedFiles } from './types'
 
 export function formatTracklist(tracklist: string): string {

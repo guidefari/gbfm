@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeftRight, ArrowRight, Copy, Loader2 } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -74,7 +74,7 @@ export function FilesTab() {
     }
   })
 
-  const rememberBucket = (bucketName: string) => {
+  const rememberBucket = useCallback((bucketName: string) => {
     if (!bucketName.trim()) return
     setRecentBuckets((prev) => {
       const next = [
@@ -84,19 +84,25 @@ export function FilesTab() {
       localStorage.setItem(STORAGE_KEY_RECENT_BUCKETS, JSON.stringify(next))
       return next
     })
-  }
+  }, [])
 
-  const persistBucketA = (v: string) => {
-    setBucketA(v)
-    localStorage.setItem(STORAGE_KEY_BUCKET_A, v)
-    rememberBucket(v)
-  }
+  const persistBucketA = useCallback(
+    (v: string) => {
+      setBucketA(v)
+      localStorage.setItem(STORAGE_KEY_BUCKET_A, v)
+      rememberBucket(v)
+    },
+    [rememberBucket]
+  )
 
-  const persistBucketB = (v: string) => {
-    setBucketB(v)
-    localStorage.setItem(STORAGE_KEY_BUCKET_B, v)
-    rememberBucket(v)
-  }
+  const persistBucketB = useCallback(
+    (v: string) => {
+      setBucketB(v)
+      localStorage.setItem(STORAGE_KEY_BUCKET_B, v)
+      rememberBucket(v)
+    },
+    [rememberBucket]
+  )
 
   // Default to known stage buckets, so most users never need manual entry.
   useEffect(() => {
@@ -109,7 +115,7 @@ export function FilesTab() {
     if (!bucketB) {
       persistBucketB(configData.buckets.userContent)
     }
-  }, [bucketA, bucketB, configData])
+  }, [bucketA, bucketB, configData, persistBucketA, persistBucketB])
 
   // Keep custom-mode toggles in sync with persisted values.
   useEffect(() => {
