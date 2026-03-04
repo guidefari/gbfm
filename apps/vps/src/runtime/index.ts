@@ -5,6 +5,8 @@ import type { EmailService } from '@/services/email.service'
 import type { FavoriteService } from '@/services/favorite.service'
 import type { LabelService } from '@/services/label.service'
 import type { MixProcessingService } from '@/services/mix-processing.service'
+import type { MusicEntityService } from '@/services/music-entity.service'
+import type { MusicLinkScraperService } from '@/services/music-link-scraper.service'
 import type { MusicReminderService } from '@/services/music-reminder.service'
 import type { PostService } from '@/services/post.service'
 import type { ProfileService } from '@/services/profile.service'
@@ -30,6 +32,8 @@ type AppServices =
   | SpotifyService
   | MusicReminderService
   | ReminderSignalService
+  | MusicLinkScraperService
+  | MusicEntityService
   | AudioService
   | PostService
   | LabelService

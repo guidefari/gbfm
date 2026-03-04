@@ -9,6 +9,8 @@ import { EmailServiceLive } from '@/services/email.service'
 import { FavoriteServiceLive } from '@/services/favorite.service'
 import { LabelServiceLive } from '@/services/label.service'
 import { MixProcessingServiceLayer } from '@/services/mix-processing.service'
+import { MusicEntityServiceLive } from '@/services/music-entity.service'
+import { MusicLinkScraperServiceLive } from '@/services/music-link-scraper.service'
 import { MusicReminderServiceLive } from '@/services/music-reminder.service'
 import { PostServiceLive } from '@/services/post.service'
 import { ProfileServiceLive } from '@/services/profile.service'
@@ -47,6 +49,7 @@ const BaseServicesLayer = Layer.mergeAll(
   SpotifyServiceLive,
   MusicReminderServiceLive,
   ReminderSignalServiceLive,
+  MusicLinkScraperServiceLive,
   AudioServiceLive,
   PostServiceLive,
   LabelServiceLive,
@@ -60,12 +63,11 @@ const BaseServicesLayer = Layer.mergeAll(
   DevToolsLive
 )
 
-// These layers depend on S3Service from BaseServicesLayer
-const DependentServicesLayer = Layer.mergeAll(
-  QRCodeServiceLive,
-  MixProcessingServiceLayer
-).pipe(Layer.provide(BaseServicesLayer))
-
-const ServicesLayer = Layer.merge(BaseServicesLayer, DependentServicesLayer)
+const ServicesLayer = Layer.mergeAll(
+  BaseServicesLayer,
+  QRCodeServiceLive.pipe(Layer.provide(BaseServicesLayer)),
+  MixProcessingServiceLayer.pipe(Layer.provide(BaseServicesLayer)),
+  MusicEntityServiceLive.pipe(Layer.provide(BaseServicesLayer))
+)
 
 export const AppLayer = ServicesLayer.pipe(Layer.provide(OtlpLive))
