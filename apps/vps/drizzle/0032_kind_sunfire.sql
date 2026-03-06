@@ -1,0 +1,1 @@
+ALTER TABLE "audio" ADD COLUMN "playCount" integer DEFAULT 0 NOT NULL;

@@ -1,4 +1,4 @@
-import { and, arrayContains, count, desc, eq, inArray } from 'drizzle-orm'
+import { and, arrayContains, count, desc, eq, inArray, sql } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import {
@@ -62,6 +62,10 @@ export interface AudioService {
     SelectMdxCompiledAudio,
     DatabaseError | NotFoundError | UnauthorizedError
   >
+  readonly trackPlay: (
+    id: string,
+    clientIp?: string
+  ) => Effect.Effect<{ playCount: number }, DatabaseError | NotFoundError>
 }
 
 export const AudioService = Context.GenericTag<AudioService>('AudioService')
@@ -493,6 +497,66 @@ const updateEffect = (
     return baseProcessedAudio
   })
 
+const PLAY_DEDUP_WINDOW_MS = 5 * 60 * 1000 // 5 minutes
+const playDedupMap = new Map<string, number>()
+
+const trackPlayEffect = (id: string, clientIp?: string) =>
+  Effect.gen(function* () {
+    const records = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select({ id: audioTable.id, playCount: audioTable.playCount })
+          .from(audioTable)
+          .where(eq(audioTable.id, id))
+          .limit(1),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch audio: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'audio'
+        })
+    })
+
+    const audio = records[0]
+    if (!audio) {
+      return yield* new NotFoundError({
+        message: 'Audio not found',
+        resource: 'audio',
+        id
+      })
+    }
+
+    if (clientIp) {
+      const now = Date.now()
+      for (const [key, expiresAt] of playDedupMap) {
+        if (now >= expiresAt) playDedupMap.delete(key)
+      }
+
+      const dedupKey = `${clientIp}:${id}`
+      if (playDedupMap.has(dedupKey)) {
+        return { playCount: audio.playCount }
+      }
+      playDedupMap.set(dedupKey, now + PLAY_DEDUP_WINDOW_MS)
+    }
+
+    const updated = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .update(audioTable)
+          .set({ playCount: sql`${audioTable.playCount} + 1` })
+          .where(eq(audioTable.id, audio.id))
+          .returning({ playCount: audioTable.playCount }),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to increment play count: ${getErrorMessage(error)}`,
+          operation: 'update',
+          table: 'audio'
+        })
+    })
+
+    return { playCount: updated[0]?.playCount ?? 0 }
+  })
+
 export const AudioServiceLive = Layer.succeed(AudioService, {
   getByType: (type, options) =>
     getByTypeEffect(type, options).pipe(
@@ -507,5 +571,9 @@ export const AudioServiceLive = Layer.succeed(AudioService, {
   update: (type, slug, userId, userRole, data) =>
     updateEffect(type, slug, userId, userRole, data).pipe(
       Effect.withSpan('audio.update', { attributes: { type, slug } })
+    ),
+  trackPlay: (id, clientIp) =>
+    trackPlayEffect(id, clientIp).pipe(
+      Effect.withSpan('audio.trackPlay', { attributes: { id } })
     )
 })

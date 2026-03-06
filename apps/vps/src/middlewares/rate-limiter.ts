@@ -116,3 +116,9 @@ export const relaxedRateLimiter = () =>
     windowMs: 60 * 1000,
     maxRequests: 120
   })
+
+export const playTrackRateLimiter = () =>
+  rateLimiter({
+    windowMs: 60 * 1000,
+    maxRequests: 5
+  })

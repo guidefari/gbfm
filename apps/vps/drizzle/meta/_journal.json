@@ -204,6 +204,13 @@
       "when": 1771621009842,
       "tag": "0031_salty_toad",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1772838756438,
+      "tag": "0032_kind_sunfire",
+      "breakpoints": true
     }
   ]
 }

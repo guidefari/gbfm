@@ -5,6 +5,7 @@ import AudioPlayer from '@/components/AudioPlayer'
 import FullscreenAudioPlayer from '@/components/FullscreenAudioPlayer'
 import { QueueColumn } from '@/components/queue/QueueColumn'
 import { useAudioPlayerInitializer } from '@/hooks/useAudioPlayer'
+import { useMixPlayTracking } from '@/hooks/useMixPlayTracking'
 import { MAIN_SCROLL_CONTAINER_ID } from '@/lib/constants'
 import { useUIStore } from '@/store'
 import { useAudioPlayerState } from '@/store/audioPlayer'
@@ -20,6 +21,7 @@ type Props = {
 
 export default function AppShell({ children }: Props) {
   useAudioPlayerInitializer()
+  useMixPlayTracking()
   const isQueueEnabled = useFeatureFlag('ui.queue')
 
   const { audioSrc, isFullscreenVisible } = useAudioPlayerState()

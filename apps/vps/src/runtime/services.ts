@@ -50,7 +50,6 @@ const BaseServicesLayer = Layer.mergeAll(
   LabelServiceLive,
   ProfileServiceLive,
   ResolveServiceLive,
-  QRCodeServiceLive,
   ReleaseServiceLive,
   S3ServiceLive,
   ShowServiceLive,
@@ -59,10 +58,12 @@ const BaseServicesLayer = Layer.mergeAll(
   DevToolsLive
 )
 
-// MixProcessingServiceLayer depends on S3Service from BaseServicesLayer
-const ServicesLayer = Layer.merge(
-  BaseServicesLayer,
-  MixProcessingServiceLayer.pipe(Layer.provide(BaseServicesLayer))
-)
+// These layers depend on S3Service from BaseServicesLayer
+const DependentServicesLayer = Layer.mergeAll(
+  QRCodeServiceLive,
+  MixProcessingServiceLayer
+).pipe(Layer.provide(BaseServicesLayer))
+
+const ServicesLayer = Layer.merge(BaseServicesLayer, DependentServicesLayer)
 
 export const AppLayer = ServicesLayer.pipe(Layer.provide(OtlpLive))

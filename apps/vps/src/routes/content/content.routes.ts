@@ -19,6 +19,7 @@ import {
   paginationQuerySchema
 } from '@/lib/pagination'
 import { betterAuthMiddleware } from '@/middlewares/better-auth.middleware'
+import { playTrackRateLimiter } from '@/middlewares/rate-limiter'
 
 const tags = ['Content']
 
@@ -401,6 +402,37 @@ export const createAudio = createRoute({
   }
 })
 
+export const trackAudioPlay = createRoute({
+  path: '/audio/:id/play',
+  method: 'post',
+  middleware: [playTrackRateLimiter()],
+  request: {
+    params: z.object({
+      id: z.string().uuid().openapi({ description: 'Audio ID' })
+    })
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.object({
+        playCount: z
+          .number()
+          .int()
+          .openapi({ description: 'Updated play count' })
+      }),
+      'Play tracked successfully'
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      z.object({ error: z.string() }),
+      'Audio not found'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to track play'
+    )
+  }
+})
+
 export const getMixQRPdf = createRoute({
   path: '/audio/mix/{slug}/qr-pdf',
   method: 'get',
@@ -527,3 +559,4 @@ export type CreateAudioRoute = typeof createAudio
 export type GetMixQRPdfRoute = typeof getMixQRPdf
 export type SubmitMixProcessingRoute = typeof submitMixProcessing
 export type GetMixJobStatusRoute = typeof getMixJobStatus
+export type TrackAudioPlayRoute = typeof trackAudioPlay

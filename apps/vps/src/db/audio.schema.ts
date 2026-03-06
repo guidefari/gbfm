@@ -27,7 +27,8 @@ export const audioTable = pgTable(
     type: audioTypeEnum().notNull(),
     url: varchar({ length: 255 }).notNull(),
     showId: uuid().references(() => showsTable.id, { onDelete: 'set null' }),
-    episodeNumber: integer()
+    episodeNumber: integer(),
+    playCount: integer().notNull().default(0)
   },
   (table) => [
     index('audio_slug_idx').on(table.slug),
@@ -84,6 +85,10 @@ export const selectAudioSchema = z
       .openapi({ description: 'Episode number (optional)' }),
     createdAt: z.date().openapi({ description: 'Creation timestamp' }),
     updatedAt: z.date().openapi({ description: 'Last update timestamp' }),
+    playCount: z
+      .number()
+      .int()
+      .openapi({ description: 'Number of times this audio has been played' }),
     creators: z
       .array(
         z.object({
