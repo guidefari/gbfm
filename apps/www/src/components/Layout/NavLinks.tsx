@@ -1,6 +1,12 @@
 import { Disc3, Home, Mail, Radio, Rss, Settings, Tag } from 'lucide-react'
 import { TfiYoutube } from 'react-icons/tfi'
 import { RSS } from '@/components/RSS'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@/components/ui/tooltip'
 
 type BaseLink = {
   name: string
@@ -51,9 +57,21 @@ export const pagesAndPages: lol[] = [
     icon: <TfiYoutube className={iconSytles} />,
     name: 'Mixes via Youtube',
     CustomComponent: (
-      <a href='https://youtube.com/@goosebumpsfm' className='text-inherit'>
-        <TfiYoutube className={iconSytles} />
-      </a>
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <a
+              href='https://youtube.com/@goosebumpsfm'
+              target='_blank'
+              rel='noreferrer'
+              className='flex items-center justify-center transition-colors rounded-sm h-9 w-9 text-gb-bg hover:text-white md:h-8 md:w-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
+              <TfiYoutube className={iconSytles} />
+              <span className='sr-only'>Mixes via Youtube</span>
+            </a>
+          </TooltipTrigger>
+          <TooltipContent side='right'>Mixes via Youtube</TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     )
   },
   {

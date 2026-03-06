@@ -41,7 +41,8 @@ export default function AppShell({ children }: Props) {
       <div className='relative flex flex-col h-screen overflow-hidden'>
         <main
           id={MAIN_SCROLL_CONTAINER_ID}
-          className='flex-1 overflow-y-auto bg-background pb-28 sm:pb-32'>
+          tabIndex={-1}
+          className='flex-1 overflow-y-auto bg-background pb-28 sm:pb-32 focus:outline-none'>
           {children}
         </main>
 

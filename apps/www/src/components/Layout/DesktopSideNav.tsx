@@ -6,6 +6,7 @@ import {
   TooltipProvider,
   TooltipTrigger
 } from '@/components/ui/tooltip'
+import { MAIN_SCROLL_CONTAINER_ID } from '@/lib/constants'
 import { useUIStore } from '@/store'
 import { useAuthStore } from '@/store/auth'
 import { pagesAndPages } from './NavLinks'
@@ -28,6 +29,11 @@ export const DesktopSideNav = () => {
 
   return (
     <aside className='sticky top-0 z-30 flex flex-col h-screen border-r w-14 border-border bg-background'>
+      <a
+        href={`#${MAIN_SCROLL_CONTAINER_ID}`}
+        className='absolute top-2 left-2 z-50 px-3 py-2 text-xs font-medium bg-background text-foreground border border-border rounded-sm opacity-0 pointer-events-none focus:opacity-100 focus:pointer-events-auto transition-opacity duration-150'>
+        Skip to main content
+      </a>
       <nav className='flex flex-col items-center gap-4 px-2 sm:py-5'>
         {filteredPages.map((page) => {
           if (page.CustomComponent) {
@@ -39,7 +45,7 @@ export const DesktopSideNav = () => {
                 <TooltipTrigger asChild>
                   <Link
                     to={page.slug}
-                    className='flex items-center justify-center transition-colors rounded-sm h-9 w-9 text-gb-bg hover:text-white md:h-8 md:w-8'>
+                    className='flex items-center justify-center transition-colors rounded-sm h-9 w-9 text-gb-bg hover:text-white md:h-8 md:w-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
                     {page.icon}
                     <span className='sr-only'>{page.name}</span>
                   </Link>
@@ -58,7 +64,7 @@ export const DesktopSideNav = () => {
                 <button
                   type='button'
                   onClick={toggleCompactPlayer}
-                  className={`flex items-center justify-center transition-all rounded-sm h-9 w-9 md:h-8 md:w-8 ${
+                  className={`flex items-center justify-center transition-all rounded-sm h-9 w-9 md:h-8 md:w-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                     isPlayerVisible
                       ? 'bg-white text-gb-bg shadow-sm'
                       : 'text-gb-bg hover:text-white hover:bg-muted'

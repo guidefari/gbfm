@@ -33,17 +33,17 @@ export const RSS = () => {
   return (
     <TooltipProvider>
       <Tooltip>
-        <TooltipTrigger>
-          <div className='flex justify-center items-center w-5 h-5'>
+        <TooltipTrigger asChild>
+          <button
+            type='button'
+            onClick={handleCopyToClipboard}
+            className='flex items-center justify-center transition-colors rounded-sm h-9 w-9 text-gb-bg hover:text-white md:h-8 md:w-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0'>
             {isCopied ? (
-              <CheckIcon className='w-full h-full text-orange-300 cursor-pointer' />
+              <CheckIcon className='w-5 h-5' />
             ) : (
-              <FaSquareRss
-                onClick={handleCopyToClipboard}
-                className='text-orange-300 cursor-pointer'
-              />
+              <FaSquareRss className='w-5 h-5' />
             )}
-          </div>
+          </button>
         </TooltipTrigger>
         <TooltipContent side='right'>
           {isCopied
