@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { Check, Plus, X } from 'lucide-react'
+import { ArrowUpDown, Check, Plus, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -68,6 +68,9 @@ interface EditDialogState {
 
 export function ContentTab() {
   const queryClient = useQueryClient()
+  const [mixPlaySortOrder, setMixPlaySortOrder] = useState<'asc' | 'desc'>(
+    'desc'
+  )
   const [editDialog, setEditDialog] = useState<EditDialogState>({
     open: false,
     mix: null,
@@ -172,6 +175,14 @@ export function ContentTab() {
   const editorialPosts = editorialData?.data ?? []
   const tweetPosts = tweetData?.data ?? []
 
+  const sortedMixes = useMemo(() => {
+    return [...mixes].sort((left, right) =>
+      mixPlaySortOrder === 'asc'
+        ? left.playCount - right.playCount
+        : right.playCount - left.playCount
+    )
+  }, [mixPlaySortOrder, mixes])
+
   const allExistingTags = useMemo(() => {
     const tagSet = new Set<string>()
     mixes.forEach((mix) => {
@@ -223,7 +234,20 @@ export function ContentTab() {
                     <th className='px-4 py-3 text-left font-medium'>Title</th>
                     <th className='px-4 py-3 text-left font-medium'>Slug</th>
                     <th className='px-4 py-3 text-left font-medium'>Tags</th>
-                    <th className='px-4 py-3 text-left font-medium'>Plays</th>
+                    <th className='px-4 py-3 text-left font-medium'>
+                      <Button
+                        variant='ghost'
+                        size='sm'
+                        className='-ml-3 h-auto px-3 py-0 font-medium'
+                        onClick={() =>
+                          setMixPlaySortOrder((current) =>
+                            current === 'desc' ? 'asc' : 'desc'
+                          )
+                        }>
+                        Plays {mixPlaySortOrder === 'desc' ? '↓' : '↑'}
+                        <ArrowUpDown className='ml-2 h-3.5 w-3.5' />
+                      </Button>
+                    </th>
                     <th className='px-4 py-3 text-left font-medium'>
                       Created By
                     </th>
@@ -232,7 +256,7 @@ export function ContentTab() {
                   </tr>
                 </thead>
                 <tbody>
-                  {mixes.map((mix) => (
+                  {sortedMixes.map((mix) => (
                     <tr key={mix.id} className='border-b hover:bg-muted/50'>
                       <td className='px-4 py-3'>{mix.title}</td>
                       <td className='px-4 py-3 text-muted-foreground'>
@@ -269,7 +293,7 @@ export function ContentTab() {
                       </td>
                     </tr>
                   ))}
-                  {mixes.length === 0 && (
+                  {sortedMixes.length === 0 && (
                     <tr>
                       <td
                         colSpan={7}
