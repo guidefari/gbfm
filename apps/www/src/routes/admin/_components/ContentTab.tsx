@@ -31,6 +31,7 @@ interface AudioItem {
   slug: string
   type: string
   createdAt: string
+  playCount: number
   tags?: string[] | null
   creators?: Array<{ id: string; name: string }>
 }
@@ -222,6 +223,7 @@ export function ContentTab() {
                     <th className='px-4 py-3 text-left font-medium'>Title</th>
                     <th className='px-4 py-3 text-left font-medium'>Slug</th>
                     <th className='px-4 py-3 text-left font-medium'>Tags</th>
+                    <th className='px-4 py-3 text-left font-medium'>Plays</th>
                     <th className='px-4 py-3 text-left font-medium'>
                       Created By
                     </th>
@@ -238,6 +240,9 @@ export function ContentTab() {
                       </td>
                       <td className='px-4 py-3 text-muted-foreground'>
                         {mix.tags?.join(', ') || '—'}
+                      </td>
+                      <td className='px-4 py-3 text-muted-foreground'>
+                        {mix.playCount.toLocaleString()}
                       </td>
                       <td className='px-4 py-3 text-muted-foreground'>
                         {mix.creators?.map((c) => c.name).join(', ') || '—'}
@@ -267,7 +272,7 @@ export function ContentTab() {
                   {mixes.length === 0 && (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={7}
                         className='px-4 py-8 text-center text-muted-foreground'>
                         No mixes found
                       </td>
