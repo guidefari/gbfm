@@ -500,13 +500,6 @@ const updateEffect = (
 const PLAY_DEDUP_WINDOW_MS = 5 * 60 * 1000 // 5 minutes
 const playDedupMap = new Map<string, number>()
 
-setInterval(() => {
-  const now = Date.now()
-  for (const [key, expiresAt] of playDedupMap) {
-    if (now >= expiresAt) playDedupMap.delete(key)
-  }
-}, 60 * 1000)
-
 const trackPlayEffect = (id: string, clientIp?: string) =>
   Effect.gen(function* () {
     const records = yield* Effect.tryPromise({
@@ -534,11 +527,16 @@ const trackPlayEffect = (id: string, clientIp?: string) =>
     }
 
     if (clientIp) {
+      const now = Date.now()
+      for (const [key, expiresAt] of playDedupMap) {
+        if (now >= expiresAt) playDedupMap.delete(key)
+      }
+
       const dedupKey = `${clientIp}:${id}`
       if (playDedupMap.has(dedupKey)) {
         return { playCount: audio.playCount }
       }
-      playDedupMap.set(dedupKey, Date.now() + PLAY_DEDUP_WINDOW_MS)
+      playDedupMap.set(dedupKey, now + PLAY_DEDUP_WINDOW_MS)
     }
 
     const updated = yield* Effect.tryPromise({
