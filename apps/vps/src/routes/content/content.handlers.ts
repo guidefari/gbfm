@@ -819,10 +819,14 @@ export const trackAudioPlay: AppRouteHandler<TrackAudioPlayRoute> = async (
   c
 ) => {
   const { id } = c.req.valid('param')
+  const clientIp =
+    c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ||
+    c.req.header('x-real-ip') ||
+    'unknown'
 
   const program = Effect.gen(function* () {
     const audioService = yield* AudioService
-    return yield* audioService.trackPlay(id)
+    return yield* audioService.trackPlay(id, clientIp)
   }).pipe(
     Effect.catchTag('NotFoundError', (e) =>
       Effect.succeed({

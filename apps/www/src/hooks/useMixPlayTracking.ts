@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
+import { VPS_BASE_URL } from '@/lib/http'
 import { RuntimeClient } from '@/runtime'
 import { track } from '@/services/analytics'
-import { VPS_BASE_URL } from '@/lib/http'
 import { useAudioPlayerStore } from '@/store/audioPlayer'
 
 /**

@@ -19,6 +19,7 @@ import {
   paginationQuerySchema
 } from '@/lib/pagination'
 import { betterAuthMiddleware } from '@/middlewares/better-auth.middleware'
+import { playTrackRateLimiter } from '@/middlewares/rate-limiter'
 
 const tags = ['Content']
 
@@ -404,6 +405,7 @@ export const createAudio = createRoute({
 export const trackAudioPlay = createRoute({
   path: '/audio/:id/play',
   method: 'post',
+  middleware: [playTrackRateLimiter()],
   request: {
     params: z.object({
       id: z.string().uuid().openapi({ description: 'Audio ID' })
@@ -413,7 +415,10 @@ export const trackAudioPlay = createRoute({
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
       z.object({
-        playCount: z.number().int().openapi({ description: 'Updated play count' })
+        playCount: z
+          .number()
+          .int()
+          .openapi({ description: 'Updated play count' })
       }),
       'Play tracked successfully'
     ),

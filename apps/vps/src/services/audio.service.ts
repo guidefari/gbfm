@@ -63,7 +63,8 @@ export interface AudioService {
     DatabaseError | NotFoundError | UnauthorizedError
   >
   readonly trackPlay: (
-    id: string
+    id: string,
+    clientIp?: string
   ) => Effect.Effect<{ playCount: number }, DatabaseError | NotFoundError>
 }
 
@@ -496,12 +497,22 @@ const updateEffect = (
     return baseProcessedAudio
   })
 
-const trackPlayEffect = (id: string) =>
+const PLAY_DEDUP_WINDOW_MS = 5 * 60 * 1000 // 5 minutes
+const playDedupMap = new Map<string, number>()
+
+setInterval(() => {
+  const now = Date.now()
+  for (const [key, expiresAt] of playDedupMap) {
+    if (now >= expiresAt) playDedupMap.delete(key)
+  }
+}, 60 * 1000)
+
+const trackPlayEffect = (id: string, clientIp?: string) =>
   Effect.gen(function* () {
     const records = yield* Effect.tryPromise({
       try: () =>
         db
-          .select({ id: audioTable.id })
+          .select({ id: audioTable.id, playCount: audioTable.playCount })
           .from(audioTable)
           .where(eq(audioTable.id, id))
           .limit(1),
@@ -520,6 +531,14 @@ const trackPlayEffect = (id: string) =>
         resource: 'audio',
         id
       })
+    }
+
+    if (clientIp) {
+      const dedupKey = `${clientIp}:${id}`
+      if (playDedupMap.has(dedupKey)) {
+        return { playCount: audio.playCount }
+      }
+      playDedupMap.set(dedupKey, Date.now() + PLAY_DEDUP_WINDOW_MS)
     }
 
     const updated = yield* Effect.tryPromise({
@@ -555,8 +574,8 @@ export const AudioServiceLive = Layer.succeed(AudioService, {
     updateEffect(type, slug, userId, userRole, data).pipe(
       Effect.withSpan('audio.update', { attributes: { type, slug } })
     ),
-  trackPlay: (id) =>
-    trackPlayEffect(id).pipe(
+  trackPlay: (id, clientIp) =>
+    trackPlayEffect(id, clientIp).pipe(
       Effect.withSpan('audio.trackPlay', { attributes: { id } })
     )
 })
