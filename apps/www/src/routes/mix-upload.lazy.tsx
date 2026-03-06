@@ -5,9 +5,9 @@ import { createLazyFileRoute, useRouter } from '@tanstack/react-router'
 import { FileText, List, Loader2, Music } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AudioDropZone } from '@/components/mix-uploader/AudioDropZone'
-import { S3AudioFilePicker } from '@/components/mix-uploader/S3AudioFilePicker'
 import { AudioFileCard } from '@/components/mix-uploader/AudioFileCard'
 import { MixDetailsForm } from '@/components/mix-uploader/MixDetailsForm'
+import { S3AudioFilePicker } from '@/components/mix-uploader/S3AudioFilePicker'
 import {
   type TrackEntry,
   TracklistEditor
@@ -406,7 +406,8 @@ function MixUploadPage() {
     if (!isEditMode && !audioFile && !formData.url) {
       toast({
         title: 'Audio file required',
-        description: 'Please select an audio file to upload or pick one from S3.',
+        description:
+          'Please select an audio file to upload or pick one from S3.',
         variant: 'destructive'
       })
       return

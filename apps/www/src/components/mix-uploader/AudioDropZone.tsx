@@ -6,7 +6,10 @@ interface AudioDropZoneProps {
   onPickFromS3?: () => void
 }
 
-export function AudioDropZone({ onFileSelect, onPickFromS3 }: AudioDropZoneProps) {
+export function AudioDropZone({
+  onFileSelect,
+  onPickFromS3
+}: AudioDropZoneProps) {
   return (
     <div className='space-y-3'>
       <div className='relative p-12 text-center transition-colors border-2 border-dashed cursor-pointer group rounded-sm bg-gb-darker-bg border-gb-pastel-green-2/30 hover:border-gb-highlight/50'>
