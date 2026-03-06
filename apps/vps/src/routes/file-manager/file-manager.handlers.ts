@@ -44,6 +44,7 @@ export const getConfig: AppRouteHandler<GetConfigRoute> = async (c) => {
 
     return {
       stage: config.app.stage,
+      routerUrl: config.urls.router,
       buckets: {
         userContent: config.buckets.userContent,
         mixes: config.buckets.mixes
