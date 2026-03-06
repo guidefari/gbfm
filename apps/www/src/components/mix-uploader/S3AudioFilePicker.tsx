@@ -146,14 +146,14 @@ export function S3AudioFilePicker({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='max-w-2xl bg-gb-darker-bg border-gb-pastel-green-2/20'>
+      <DialogContent className='max-w-2xl bg-gb-darker-bg border-gb-pastel-green-2/20 overflow-hidden'>
         <DialogHeader>
           <DialogTitle className='text-gb-pastel-green-1'>
             Pick audio file from S3
           </DialogTitle>
         </DialogHeader>
 
-        <div className='space-y-4'>
+        <div className='space-y-4 min-w-0 w-full'>
           <div className='flex items-center gap-2'>
             <Select
               value={effectiveBucket}
@@ -181,7 +181,7 @@ export function S3AudioFilePicker({
             </Button>
           </div>
 
-          <div className='rounded-sm border border-gb-pastel-green-2/20 overflow-hidden'>
+          <div className='rounded-sm border border-gb-pastel-green-2/20 overflow-hidden w-full max-w-full'>
             {isListLoading ? (
               <div className='flex items-center justify-center py-12'>
                 <Loader2 className='h-6 w-6 animate-spin text-gb-highlight' />
@@ -193,7 +193,7 @@ export function S3AudioFilePicker({
                   : 'Select a bucket to browse files'}
               </div>
             ) : (
-              <div className='max-h-80 overflow-y-auto'>
+              <div className='max-h-80 overflow-y-auto overflow-x-hidden'>
                 {audioFiles.map((obj) => {
                   const isSelected = selectedKey === obj.key
                   return (
@@ -201,30 +201,25 @@ export function S3AudioFilePicker({
                       key={obj.key}
                       type='button'
                       onClick={() => setSelectedKey(obj.key)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gb-pastel-green-2/10 transition-colors border-b border-gb-pastel-green-2/10 last:border-b-0 ${
+                      className={`w-full flex items-center gap-3 pl-4 pr-3 py-2.5 text-left hover:bg-gb-pastel-green-2/10 transition-colors border-b border-gb-pastel-green-2/10 last:border-b-0 ${
                         isSelected ? 'bg-gb-pastel-green-2/15' : ''
                       }`}>
                       <div
-                        className={`flex-shrink-0 w-8 h-8 rounded-sm flex items-center justify-center ${
+                        className={`flex-none w-7 h-7 rounded-sm flex items-center justify-center ${
                           isSelected
                             ? 'bg-gb-highlight text-gb-darker-bg'
                             : 'bg-gb-pastel-green-2/20 text-gb-highlight'
                         }`}>
                         {isSelected ? (
-                          <Check className='h-4 w-4' />
+                          <Check className='h-3.5 w-3.5' />
                         ) : (
-                          <Music className='h-4 w-4' />
+                          <Music className='h-3.5 w-3.5' />
                         )}
                       </div>
-                      <div className='flex-1 min-w-0'>
-                        <p className='text-sm font-mono text-gb-default-text truncate'>
-                          {obj.key.split('/').pop() ?? obj.key}
-                        </p>
-                        <p className='text-xs text-muted-foreground truncate'>
-                          {obj.key}
-                        </p>
-                      </div>
-                      <span className='flex-shrink-0 text-xs text-muted-foreground'>
+                      <p className='flex-1 min-w-0 text-sm font-mono text-gb-default-text truncate'>
+                        {obj.key.split('/').pop() ?? obj.key}
+                      </p>
+                      <span className='flex-none text-xs tabular-nums text-muted-foreground ml-3'>
                         {formatBytes(obj.size)}
                       </span>
                     </button>
