@@ -5,7 +5,6 @@ import {
   entityTypeEnum,
   insertMusicAlbumSchema,
   insertMusicArtistSchema,
-  insertMusicEntityLinkSchema,
   insertMusicPlaylistSchema,
   insertMusicTrackSchema,
   linkStatusEnum,
@@ -83,7 +82,10 @@ export const updateArtist = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(selectMusicArtistSchema, 'Updated artist'),
+    [HttpStatusCodes.OK]: jsonContent(
+      selectMusicArtistSchema,
+      'Updated artist'
+    ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(errorSchema, 'Not found'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       errorSchema,
@@ -449,17 +451,29 @@ export const scrapeEntityLinks = createRoute({
     params: entityParams,
     body: jsonContentRequired(
       z.object({
-        seedUrl: z
+        url: z
           .string()
           .url()
+          .optional()
           .openapi({
             description:
-              'Any streaming URL for this entity (Spotify, Bandcamp, etc.). ' +
-              'Odesli will expand it to all known platform links.',
+              'Any streaming URL (Spotify, Bandcamp, YouTube, etc.). ' +
+              'Odesli expands it to 15+ platform links.',
             example: 'https://open.spotify.com/album/5J3O2A5oPaWDxePgJdSgNJ'
-          })
+          }),
+        artistName: z.string().optional(),
+        albumTitle: z.string().optional(),
+        trackTitle: z.string().optional(),
+        mbid: z
+          .string()
+          .optional()
+          .openapi({ description: 'MusicBrainz ID for direct lookup' }),
+        isrc: z
+          .string()
+          .optional()
+          .openapi({ description: 'International Standard Recording Code' })
       }),
-      'Seed URL for scraping'
+      'Scrape input — provide at least one field'
     )
   },
   tags,
@@ -469,7 +483,7 @@ export const scrapeEntityLinks = createRoute({
         scraped: z.number().openapi({ description: 'Number of links found' }),
         links: z.array(selectMusicEntityLinkSchema)
       }),
-      'Scrape results — links are stored with status pending_review'
+      'Scrape results — links stored with status pending_review'
     ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       errorSchema,
@@ -496,6 +510,87 @@ export const listPendingLinks = createRoute({
     [HttpStatusCodes.OK]: jsonContent(
       z.array(selectMusicEntityLinkSchema),
       'Pending links awaiting review'
+    )
+  }
+})
+
+// ---------------------------------------------------------------------------
+// Artist ↔ album / track junction endpoints
+// ---------------------------------------------------------------------------
+
+const albumArtistParams = z.object({
+  albumId: z.string().uuid(),
+  artistId: z.string().uuid()
+})
+
+const trackArtistParams = z.object({
+  trackId: z.string().uuid(),
+  artistId: z.string().uuid()
+})
+
+const artistJunctionBody = z.object({
+  role: z.string().optional().openapi({ example: 'featured' }),
+  displayOrder: z.number().int().optional()
+})
+
+export const addArtistToAlbum = createRoute({
+  path: '/albums/:albumId/artists/:artistId',
+  method: 'put',
+  request: {
+    params: albumArtistParams,
+    body: jsonContentRequired(artistJunctionBody, 'Artist role on this album')
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.NO_CONTENT]: { description: 'Artist added/updated' },
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      errorSchema,
+      'Server error'
+    )
+  }
+})
+
+export const removeArtistFromAlbum = createRoute({
+  path: '/albums/:albumId/artists/:artistId',
+  method: 'delete',
+  request: { params: albumArtistParams },
+  tags,
+  responses: {
+    [HttpStatusCodes.NO_CONTENT]: { description: 'Artist removed' },
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      errorSchema,
+      'Server error'
+    )
+  }
+})
+
+export const addArtistToTrack = createRoute({
+  path: '/tracks/:trackId/artists/:artistId',
+  method: 'put',
+  request: {
+    params: trackArtistParams,
+    body: jsonContentRequired(artistJunctionBody, 'Artist role on this track')
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.NO_CONTENT]: { description: 'Artist added/updated' },
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      errorSchema,
+      'Server error'
+    )
+  }
+})
+
+export const removeArtistFromTrack = createRoute({
+  path: '/tracks/:trackId/artists/:artistId',
+  method: 'delete',
+  request: { params: trackArtistParams },
+  tags,
+  responses: {
+    [HttpStatusCodes.NO_CONTENT]: { description: 'Artist removed' },
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      errorSchema,
+      'Server error'
     )
   }
 })
@@ -534,3 +629,8 @@ export type UpdateEntityLinkStatusRoute = typeof updateEntityLinkStatus
 export type DeleteEntityLinkRoute = typeof deleteEntityLink
 export type ScrapeEntityLinksRoute = typeof scrapeEntityLinks
 export type ListPendingLinksRoute = typeof listPendingLinks
+
+export type AddArtistToAlbumRoute = typeof addArtistToAlbum
+export type RemoveArtistFromAlbumRoute = typeof removeArtistFromAlbum
+export type AddArtistToTrackRoute = typeof addArtistToTrack
+export type RemoveArtistFromTrackRoute = typeof removeArtistFromTrack

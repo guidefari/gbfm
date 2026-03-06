@@ -2,18 +2,15 @@ import { and, desc, eq, sql } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import {
-  type InsertMusicAlbum,
-  type InsertMusicArtist,
   type InsertMusicEntityLink,
-  type InsertMusicPlaylist,
-  type InsertMusicTrack,
-  LINK_STATUSES,
   type LinkStatus,
   type MusicEntityType,
+  musicAlbumArtistsTable,
   musicAlbumsTable,
   musicArtistsTable,
   musicEntityLinksTable,
   musicPlaylistsTable,
+  musicTrackArtistsTable,
   musicTracksTable,
   type SelectMusicAlbum,
   type SelectMusicArtist,
@@ -25,8 +22,54 @@ import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
 import {
   type MusicLinkScraperService,
   MusicLinkScraperService as MusicLinkScraperServiceTag,
-  type ScrapedLink
+  type MusicScrapeInput
 } from './music-link-scraper.service'
+
+// ---------------------------------------------------------------------------
+// Input types (Drizzle insert types minus fields we handle separately)
+// ---------------------------------------------------------------------------
+
+export interface CreateArtistInput {
+  name: string
+  bio?: string | null
+  imageUrl?: string | null
+  genres?: string[] | null
+  slug: string
+  publishedAt?: Date | null
+}
+
+export interface CreateAlbumInput {
+  title: string
+  artistNames?: string[] | null
+  /** Junction-table artist links — inserted separately after the album row */
+  artistIds?: string[]
+  releaseDate?: Date | null
+  coverImageUrl?: string | null
+  genres?: string[] | null
+  albumType?: string | null
+  slug: string
+  publishedAt?: Date | null
+}
+
+export interface CreateTrackInput {
+  title: string
+  artistNames?: string[] | null
+  /** Junction-table artist links — inserted separately after the track row */
+  artistIds?: string[]
+  albumId?: string | null
+  trackNumber?: number | null
+  slug: string
+  publishedAt?: Date | null
+}
+
+export interface CreatePlaylistInput {
+  title: string
+  description?: string | null
+  coverImageUrl?: string | null
+  curatorId?: string | null
+  slug: string
+  publishedAt?: Date | null
+}
 
 // ---------------------------------------------------------------------------
 // Service interface
@@ -35,7 +78,7 @@ import {
 export interface MusicEntityService {
   // Artists
   readonly createArtist: (
-    data: InsertMusicArtist
+    data: CreateArtistInput
   ) => Effect.Effect<SelectMusicArtist, DatabaseError>
   readonly getArtists: () => Effect.Effect<SelectMusicArtist[], DatabaseError>
   readonly getArtistById: (
@@ -43,7 +86,7 @@ export interface MusicEntityService {
   ) => Effect.Effect<SelectMusicArtist, DatabaseError | NotFoundError>
   readonly updateArtist: (
     id: string,
-    data: Partial<InsertMusicArtist>
+    data: Partial<CreateArtistInput>
   ) => Effect.Effect<SelectMusicArtist, DatabaseError | NotFoundError>
   readonly deleteArtist: (
     id: string
@@ -51,7 +94,7 @@ export interface MusicEntityService {
 
   // Albums
   readonly createAlbum: (
-    data: InsertMusicAlbum
+    data: CreateAlbumInput
   ) => Effect.Effect<SelectMusicAlbum, DatabaseError>
   readonly getAlbums: () => Effect.Effect<SelectMusicAlbum[], DatabaseError>
   readonly getAlbumById: (
@@ -59,7 +102,7 @@ export interface MusicEntityService {
   ) => Effect.Effect<SelectMusicAlbum, DatabaseError | NotFoundError>
   readonly updateAlbum: (
     id: string,
-    data: Partial<InsertMusicAlbum>
+    data: Partial<CreateAlbumInput>
   ) => Effect.Effect<SelectMusicAlbum, DatabaseError | NotFoundError>
   readonly deleteAlbum: (
     id: string
@@ -67,7 +110,7 @@ export interface MusicEntityService {
 
   // Tracks
   readonly createTrack: (
-    data: InsertMusicTrack
+    data: CreateTrackInput
   ) => Effect.Effect<SelectMusicTrack, DatabaseError>
   readonly getTracks: () => Effect.Effect<SelectMusicTrack[], DatabaseError>
   readonly getTrackById: (
@@ -75,7 +118,7 @@ export interface MusicEntityService {
   ) => Effect.Effect<SelectMusicTrack, DatabaseError | NotFoundError>
   readonly updateTrack: (
     id: string,
-    data: Partial<InsertMusicTrack>
+    data: Partial<CreateTrackInput>
   ) => Effect.Effect<SelectMusicTrack, DatabaseError | NotFoundError>
   readonly deleteTrack: (
     id: string
@@ -83,19 +126,42 @@ export interface MusicEntityService {
 
   // Playlists
   readonly createPlaylist: (
-    data: InsertMusicPlaylist
+    data: CreatePlaylistInput
   ) => Effect.Effect<SelectMusicPlaylist, DatabaseError>
-  readonly getPlaylists: () => Effect.Effect<SelectMusicPlaylist[], DatabaseError>
+  readonly getPlaylists: () => Effect.Effect<
+    SelectMusicPlaylist[],
+    DatabaseError
+  >
   readonly getPlaylistById: (
     id: string
   ) => Effect.Effect<SelectMusicPlaylist, DatabaseError | NotFoundError>
   readonly updatePlaylist: (
     id: string,
-    data: Partial<InsertMusicPlaylist>
+    data: Partial<CreatePlaylistInput>
   ) => Effect.Effect<SelectMusicPlaylist, DatabaseError | NotFoundError>
   readonly deletePlaylist: (
     id: string
   ) => Effect.Effect<void, DatabaseError | NotFoundError>
+
+  // Artist-entity junctions
+  readonly addArtistToAlbum: (
+    albumId: string,
+    artistId: string,
+    opts?: { role?: string; displayOrder?: number }
+  ) => Effect.Effect<void, DatabaseError>
+  readonly removeArtistFromAlbum: (
+    albumId: string,
+    artistId: string
+  ) => Effect.Effect<void, DatabaseError>
+  readonly addArtistToTrack: (
+    trackId: string,
+    artistId: string,
+    opts?: { role?: string; displayOrder?: number }
+  ) => Effect.Effect<void, DatabaseError>
+  readonly removeArtistFromTrack: (
+    trackId: string,
+    artistId: string
+  ) => Effect.Effect<void, DatabaseError>
 
   // Links
   readonly getLinksForEntity: (
@@ -124,7 +190,7 @@ export interface MusicEntityService {
   readonly scrapeLinksForEntity: (
     entityType: MusicEntityType,
     entityId: string,
-    seedUrl: string
+    input: MusicScrapeInput
   ) => Effect.Effect<SelectMusicEntityLink[], DatabaseError>
 }
 
@@ -159,7 +225,7 @@ function requireInserted<T>(
   if (!row) {
     return Effect.fail(
       new DatabaseError({
-        message: `Insert returned no rows`,
+        message: 'Insert returned no rows',
         operation: 'insert',
         table
       })
@@ -168,15 +234,41 @@ function requireInserted<T>(
   return Effect.succeed(row)
 }
 
+/** Insert junction rows (artist → album or artist → track). Ignores conflicts. */
+function insertArtistLinks(
+  table: typeof musicAlbumArtistsTable | typeof musicTrackArtistsTable,
+  entityKey: 'albumId' | 'trackId',
+  entityId: string,
+  artistIds: string[]
+): Effect.Effect<void, DatabaseError> {
+  if (artistIds.length === 0) return Effect.succeed(undefined)
+  const rows = artistIds.map((artistId, i) => ({
+    [entityKey]: entityId,
+    artistId,
+    displayOrder: i
+  }))
+  return Effect.tryPromise({
+    try: () =>
+      (db.insert(table) as ReturnType<typeof db.insert>)
+        .values(rows)
+        .onConflictDoNothing(),
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to link artists: ${getErrorMessage(e)}`,
+        operation: 'insert',
+        table: table._.name
+      })
+  }).pipe(Effect.asVoid)
+}
+
 // ---------------------------------------------------------------------------
 // Artist effects
 // ---------------------------------------------------------------------------
 
-const createArtistEffect = (data: InsertMusicArtist) =>
+const createArtistEffect = (data: CreateArtistInput) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
-      try: () =>
-        db.insert(musicArtistsTable).values(data).returning(),
+      try: () => db.insert(musicArtistsTable).values(data).returning(),
       catch: (e) =>
         new DatabaseError({
           message: `Failed to create artist: ${getErrorMessage(e)}`,
@@ -221,7 +313,7 @@ const getArtistByIdEffect = (id: string) =>
     return yield* requireOne(rows, 'MusicArtist', id)
   }).pipe(Effect.withSpan('musicEntity.getArtistById', { attributes: { id } }))
 
-const updateArtistEffect = (id: string, data: Partial<InsertMusicArtist>) =>
+const updateArtistEffect = (id: string, data: Partial<CreateArtistInput>) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
       try: () =>
@@ -262,10 +354,11 @@ const deleteArtistEffect = (id: string) =>
 // Album effects
 // ---------------------------------------------------------------------------
 
-const createAlbumEffect = (data: InsertMusicAlbum) =>
+const createAlbumEffect = (data: CreateAlbumInput) =>
   Effect.gen(function* () {
+    const { artistIds, ...albumData } = data
     const rows = yield* Effect.tryPromise({
-      try: () => db.insert(musicAlbumsTable).values(data).returning(),
+      try: () => db.insert(musicAlbumsTable).values(albumData).returning(),
       catch: (e) =>
         new DatabaseError({
           message: `Failed to create album: ${getErrorMessage(e)}`,
@@ -273,7 +366,18 @@ const createAlbumEffect = (data: InsertMusicAlbum) =>
           table: 'music_albums'
         })
     })
-    return yield* requireInserted(rows, 'music_albums')
+    const album = yield* requireInserted(rows, 'music_albums')
+
+    if (artistIds?.length) {
+      yield* insertArtistLinks(
+        musicAlbumArtistsTable,
+        'albumId',
+        album.id,
+        artistIds
+      )
+    }
+
+    return album
   }).pipe(Effect.withSpan('musicEntity.createAlbum'))
 
 const getAlbumsEffect = () =>
@@ -310,13 +414,14 @@ const getAlbumByIdEffect = (id: string) =>
     return yield* requireOne(rows, 'MusicAlbum', id)
   }).pipe(Effect.withSpan('musicEntity.getAlbumById', { attributes: { id } }))
 
-const updateAlbumEffect = (id: string, data: Partial<InsertMusicAlbum>) =>
+const updateAlbumEffect = (id: string, data: Partial<CreateAlbumInput>) =>
   Effect.gen(function* () {
+    const { artistIds, ...albumData } = data
     const rows = yield* Effect.tryPromise({
       try: () =>
         db
           .update(musicAlbumsTable)
-          .set({ ...data, updatedAt: new Date() })
+          .set({ ...albumData, updatedAt: new Date() })
           .where(eq(musicAlbumsTable.id, id))
           .returning(),
       catch: (e) =>
@@ -326,7 +431,13 @@ const updateAlbumEffect = (id: string, data: Partial<InsertMusicAlbum>) =>
           table: 'music_albums'
         })
     })
-    return yield* requireOne(rows, 'MusicAlbum', id)
+    const album = yield* requireOne(rows, 'MusicAlbum', id)
+
+    if (artistIds?.length) {
+      yield* insertArtistLinks(musicAlbumArtistsTable, 'albumId', id, artistIds)
+    }
+
+    return album
   }).pipe(Effect.withSpan('musicEntity.updateAlbum', { attributes: { id } }))
 
 const deleteAlbumEffect = (id: string) =>
@@ -351,10 +462,11 @@ const deleteAlbumEffect = (id: string) =>
 // Track effects
 // ---------------------------------------------------------------------------
 
-const createTrackEffect = (data: InsertMusicTrack) =>
+const createTrackEffect = (data: CreateTrackInput) =>
   Effect.gen(function* () {
+    const { artistIds, ...trackData } = data
     const rows = yield* Effect.tryPromise({
-      try: () => db.insert(musicTracksTable).values(data).returning(),
+      try: () => db.insert(musicTracksTable).values(trackData).returning(),
       catch: (e) =>
         new DatabaseError({
           message: `Failed to create track: ${getErrorMessage(e)}`,
@@ -362,7 +474,18 @@ const createTrackEffect = (data: InsertMusicTrack) =>
           table: 'music_tracks'
         })
     })
-    return yield* requireInserted(rows, 'music_tracks')
+    const track = yield* requireInserted(rows, 'music_tracks')
+
+    if (artistIds?.length) {
+      yield* insertArtistLinks(
+        musicTrackArtistsTable,
+        'trackId',
+        track.id,
+        artistIds
+      )
+    }
+
+    return track
   }).pipe(Effect.withSpan('musicEntity.createTrack'))
 
 const getTracksEffect = () =>
@@ -399,13 +522,14 @@ const getTrackByIdEffect = (id: string) =>
     return yield* requireOne(rows, 'MusicTrack', id)
   }).pipe(Effect.withSpan('musicEntity.getTrackById', { attributes: { id } }))
 
-const updateTrackEffect = (id: string, data: Partial<InsertMusicTrack>) =>
+const updateTrackEffect = (id: string, data: Partial<CreateTrackInput>) =>
   Effect.gen(function* () {
+    const { artistIds, ...trackData } = data
     const rows = yield* Effect.tryPromise({
       try: () =>
         db
           .update(musicTracksTable)
-          .set({ ...data, updatedAt: new Date() })
+          .set({ ...trackData, updatedAt: new Date() })
           .where(eq(musicTracksTable.id, id))
           .returning(),
       catch: (e) =>
@@ -415,7 +539,13 @@ const updateTrackEffect = (id: string, data: Partial<InsertMusicTrack>) =>
           table: 'music_tracks'
         })
     })
-    return yield* requireOne(rows, 'MusicTrack', id)
+    const track = yield* requireOne(rows, 'MusicTrack', id)
+
+    if (artistIds?.length) {
+      yield* insertArtistLinks(musicTrackArtistsTable, 'trackId', id, artistIds)
+    }
+
+    return track
   }).pipe(Effect.withSpan('musicEntity.updateTrack', { attributes: { id } }))
 
 const deleteTrackEffect = (id: string) =>
@@ -440,7 +570,7 @@ const deleteTrackEffect = (id: string) =>
 // Playlist effects
 // ---------------------------------------------------------------------------
 
-const createPlaylistEffect = (data: InsertMusicPlaylist) =>
+const createPlaylistEffect = (data: CreatePlaylistInput) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
       try: () => db.insert(musicPlaylistsTable).values(data).returning(),
@@ -490,7 +620,7 @@ const getPlaylistByIdEffect = (id: string) =>
     Effect.withSpan('musicEntity.getPlaylistById', { attributes: { id } })
   )
 
-const updatePlaylistEffect = (id: string, data: Partial<InsertMusicPlaylist>) =>
+const updatePlaylistEffect = (id: string, data: Partial<CreatePlaylistInput>) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
       try: () =>
@@ -507,9 +637,7 @@ const updatePlaylistEffect = (id: string, data: Partial<InsertMusicPlaylist>) =>
         })
     })
     return yield* requireOne(rows, 'MusicPlaylist', id)
-  }).pipe(
-    Effect.withSpan('musicEntity.updatePlaylist', { attributes: { id } })
-  )
+  }).pipe(Effect.withSpan('musicEntity.updatePlaylist', { attributes: { id } }))
 
 const deletePlaylistEffect = (id: string) =>
   Effect.gen(function* () {
@@ -527,8 +655,128 @@ const deletePlaylistEffect = (id: string) =>
         })
     })
     yield* requireOne(rows, 'MusicPlaylist', id)
+  }).pipe(Effect.withSpan('musicEntity.deletePlaylist', { attributes: { id } }))
+
+// ---------------------------------------------------------------------------
+// Junction table effects
+// ---------------------------------------------------------------------------
+
+const addArtistToAlbumEffect = (
+  albumId: string,
+  artistId: string,
+  opts?: { role?: string; displayOrder?: number }
+) =>
+  Effect.tryPromise({
+    try: () =>
+      db
+        .insert(musicAlbumArtistsTable)
+        .values({
+          albumId,
+          artistId,
+          role: opts?.role,
+          displayOrder: opts?.displayOrder ?? 0
+        })
+        .onConflictDoUpdate({
+          target: [
+            musicAlbumArtistsTable.albumId,
+            musicAlbumArtistsTable.artistId
+          ],
+          set: { role: opts?.role, displayOrder: opts?.displayOrder ?? 0 }
+        }),
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to add artist to album: ${getErrorMessage(e)}`,
+        operation: 'insert',
+        table: 'music_album_artists'
+      })
   }).pipe(
-    Effect.withSpan('musicEntity.deletePlaylist', { attributes: { id } })
+    Effect.asVoid,
+    Effect.withSpan('musicEntity.addArtistToAlbum', {
+      attributes: { albumId, artistId }
+    })
+  )
+
+const removeArtistFromAlbumEffect = (albumId: string, artistId: string) =>
+  Effect.tryPromise({
+    try: () =>
+      db
+        .delete(musicAlbumArtistsTable)
+        .where(
+          and(
+            eq(musicAlbumArtistsTable.albumId, albumId),
+            eq(musicAlbumArtistsTable.artistId, artistId)
+          )
+        ),
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to remove artist from album: ${getErrorMessage(e)}`,
+        operation: 'delete',
+        table: 'music_album_artists'
+      })
+  }).pipe(
+    Effect.asVoid,
+    Effect.withSpan('musicEntity.removeArtistFromAlbum', {
+      attributes: { albumId, artistId }
+    })
+  )
+
+const addArtistToTrackEffect = (
+  trackId: string,
+  artistId: string,
+  opts?: { role?: string; displayOrder?: number }
+) =>
+  Effect.tryPromise({
+    try: () =>
+      db
+        .insert(musicTrackArtistsTable)
+        .values({
+          trackId,
+          artistId,
+          role: opts?.role,
+          displayOrder: opts?.displayOrder ?? 0
+        })
+        .onConflictDoUpdate({
+          target: [
+            musicTrackArtistsTable.trackId,
+            musicTrackArtistsTable.artistId
+          ],
+          set: { role: opts?.role, displayOrder: opts?.displayOrder ?? 0 }
+        }),
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to add artist to track: ${getErrorMessage(e)}`,
+        operation: 'insert',
+        table: 'music_track_artists'
+      })
+  }).pipe(
+    Effect.asVoid,
+    Effect.withSpan('musicEntity.addArtistToTrack', {
+      attributes: { trackId, artistId }
+    })
+  )
+
+const removeArtistFromTrackEffect = (trackId: string, artistId: string) =>
+  Effect.tryPromise({
+    try: () =>
+      db
+        .delete(musicTrackArtistsTable)
+        .where(
+          and(
+            eq(musicTrackArtistsTable.trackId, trackId),
+            eq(musicTrackArtistsTable.artistId, artistId)
+          )
+        ),
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to remove artist from track: ${getErrorMessage(e)}`,
+        operation: 'delete',
+        table: 'music_track_artists'
+      })
+  }).pipe(
+    Effect.asVoid,
+    Effect.withSpan('musicEntity.removeArtistFromTrack', {
+      attributes: { trackId, artistId }
+    })
   )
 
 // ---------------------------------------------------------------------------
@@ -570,7 +818,6 @@ const getLinksForEntityEffect = (
 const addLinkEffect = (data: InsertMusicEntityLink) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
-      // ON CONFLICT: update URL + metadata if the same platform link is re-added
       try: () =>
         db
           .insert(musicEntityLinksTable)
@@ -655,9 +902,7 @@ const deleteLinkEffect = (linkId: string) =>
         })
     })
     yield* requireOne(rows, 'MusicEntityLink', linkId)
-  }).pipe(
-    Effect.withSpan('musicEntity.deleteLink', { attributes: { linkId } })
-  )
+  }).pipe(Effect.withSpan('musicEntity.deleteLink', { attributes: { linkId } }))
 
 const getPendingLinksEffect = (opts?: { limit?: number; offset?: number }) =>
   Effect.tryPromise({
@@ -678,21 +923,14 @@ const getPendingLinksEffect = (opts?: { limit?: number; offset?: number }) =>
   }).pipe(Effect.withSpan('musicEntity.getPendingLinks'))
 
 // ---------------------------------------------------------------------------
-// Scraping effect — calls scraper service then bulk-inserts results
+// Scraping — runs providers, bulk-inserts all resulting links
 // ---------------------------------------------------------------------------
 
 const scrapeLinksEffect =
   (scraper: MusicLinkScraperService) =>
-  (entityType: MusicEntityType, entityId: string, seedUrl: string) =>
+  (entityType: MusicEntityType, entityId: string, input: MusicScrapeInput) =>
     Effect.gen(function* () {
-      const result = yield* Effect.catchAll(
-        scraper.scrapeFromUrl(seedUrl),
-        (err) =>
-          Effect.zipRight(
-            Effect.logWarning(`Scrape failed for ${seedUrl}: ${err.message}`),
-            Effect.succeed({ links: [] as ScrapedLink[], entityMeta: undefined })
-          )
-      )
+      const result = yield* scraper.scrape(input)
 
       if (result.links.length === 0) {
         return [] as SelectMusicEntityLink[]
@@ -728,7 +966,7 @@ const scrapeLinksEffect =
       return inserted
     }).pipe(
       Effect.withSpan('musicEntity.scrapeLinks', {
-        attributes: { entityType, entityId, seedUrl }
+        attributes: { entityType, entityId }
       })
     )
 
@@ -765,6 +1003,11 @@ export const MusicEntityServiceLive = Layer.effect(
       getPlaylistById: getPlaylistByIdEffect,
       updatePlaylist: updatePlaylistEffect,
       deletePlaylist: deletePlaylistEffect,
+
+      addArtistToAlbum: addArtistToAlbumEffect,
+      removeArtistFromAlbum: removeArtistFromAlbumEffect,
+      addArtistToTrack: addArtistToTrackEffect,
+      removeArtistFromTrack: removeArtistFromTrackEffect,
 
       getLinksForEntity: getLinksForEntityEffect,
       addLink: addLinkEffect,

@@ -4,6 +4,8 @@ import type { AppRouteHandler } from '@/lib/types'
 import { AppRuntime } from '@/runtime'
 import { MusicEntityService } from '@/services/music-entity.service'
 import type {
+  AddArtistToAlbumRoute,
+  AddArtistToTrackRoute,
   AddEntityLinkRoute,
   CreateAlbumRoute,
   CreateArtistRoute,
@@ -24,6 +26,8 @@ import type {
   ListPendingLinksRoute,
   ListPlaylistsRoute,
   ListTracksRoute,
+  RemoveArtistFromAlbumRoute,
+  RemoveArtistFromTrackRoute,
   ScrapeEntityLinksRoute,
   UpdateAlbumRoute,
   UpdateArtistRoute,
@@ -59,7 +63,10 @@ export const createArtist: AppRouteHandler<CreateArtistRoute> = async (c) => {
   )
   const result = await AppRuntime.runPromise(program)
   if ('error' in result) {
-    return c.json({ error: result.error }, HttpStatusCodes.INTERNAL_SERVER_ERROR)
+    return c.json(
+      { error: result.error },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
   }
   return c.json(result, HttpStatusCodes.CREATED)
 }
@@ -102,7 +109,10 @@ export const updateArtist: AppRouteHandler<UpdateArtistRoute> = async (c) => {
     return c.json({ error: result.error }, HttpStatusCodes.NOT_FOUND)
   }
   if ('error' in result) {
-    return c.json({ error: result.error }, HttpStatusCodes.INTERNAL_SERVER_ERROR)
+    return c.json(
+      { error: result.error },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
   }
   return c.json(result, HttpStatusCodes.OK)
 }
@@ -153,7 +163,10 @@ export const createAlbum: AppRouteHandler<CreateAlbumRoute> = async (c) => {
   )
   const result = await AppRuntime.runPromise(program)
   if ('error' in result) {
-    return c.json({ error: result.error }, HttpStatusCodes.INTERNAL_SERVER_ERROR)
+    return c.json(
+      { error: result.error },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
   }
   return c.json(result, HttpStatusCodes.CREATED)
 }
@@ -196,7 +209,10 @@ export const updateAlbum: AppRouteHandler<UpdateAlbumRoute> = async (c) => {
     return c.json({ error: result.error }, HttpStatusCodes.NOT_FOUND)
   }
   if ('error' in result) {
-    return c.json({ error: result.error }, HttpStatusCodes.INTERNAL_SERVER_ERROR)
+    return c.json(
+      { error: result.error },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
   }
   return c.json(result, HttpStatusCodes.OK)
 }
@@ -247,7 +263,10 @@ export const createTrack: AppRouteHandler<CreateTrackRoute> = async (c) => {
   )
   const result = await AppRuntime.runPromise(program)
   if ('error' in result) {
-    return c.json({ error: result.error }, HttpStatusCodes.INTERNAL_SERVER_ERROR)
+    return c.json(
+      { error: result.error },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
   }
   return c.json(result, HttpStatusCodes.CREATED)
 }
@@ -290,7 +309,10 @@ export const updateTrack: AppRouteHandler<UpdateTrackRoute> = async (c) => {
     return c.json({ error: result.error }, HttpStatusCodes.NOT_FOUND)
   }
   if ('error' in result) {
-    return c.json({ error: result.error }, HttpStatusCodes.INTERNAL_SERVER_ERROR)
+    return c.json(
+      { error: result.error },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
   }
   return c.json(result, HttpStatusCodes.OK)
 }
@@ -343,7 +365,10 @@ export const createPlaylist: AppRouteHandler<CreatePlaylistRoute> = async (
   )
   const result = await AppRuntime.runPromise(program)
   if ('error' in result) {
-    return c.json({ error: result.error }, HttpStatusCodes.INTERNAL_SERVER_ERROR)
+    return c.json(
+      { error: result.error },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
   }
   return c.json(result, HttpStatusCodes.CREATED)
 }
@@ -388,7 +413,10 @@ export const updatePlaylist: AppRouteHandler<UpdatePlaylistRoute> = async (
     return c.json({ error: result.error }, HttpStatusCodes.NOT_FOUND)
   }
   if ('error' in result) {
-    return c.json({ error: result.error }, HttpStatusCodes.INTERNAL_SERVER_ERROR)
+    return c.json(
+      { error: result.error },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
   }
   return c.json(result, HttpStatusCodes.OK)
 }
@@ -452,7 +480,10 @@ export const addEntityLink: AppRouteHandler<AddEntityLinkRoute> = async (c) => {
   )
   const result = await AppRuntime.runPromise(program)
   if ('error' in result) {
-    return c.json({ error: result.error }, HttpStatusCodes.INTERNAL_SERVER_ERROR)
+    return c.json(
+      { error: result.error },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
   }
   return c.json(result, HttpStatusCodes.CREATED)
 }
@@ -485,7 +516,10 @@ export const updateEntityLinkStatus: AppRouteHandler<
     return c.json({ error: result.error }, HttpStatusCodes.NOT_FOUND)
   }
   if ('error' in result) {
-    return c.json({ error: result.error }, HttpStatusCodes.INTERNAL_SERVER_ERROR)
+    return c.json(
+      { error: result.error },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
   }
   return c.json(result, HttpStatusCodes.OK)
 }
@@ -515,30 +549,141 @@ export const deleteEntityLink: AppRouteHandler<DeleteEntityLinkRoute> = async (
 // Scrape
 // ---------------------------------------------------------------------------
 
-export const scrapeEntityLinks: AppRouteHandler<ScrapeEntityLinksRoute> =
-  async (c) => {
-    const { entityType, entityId } = c.req.valid('param')
-    const { seedUrl } = c.req.valid('json')
-    const program = Effect.gen(function* () {
-      const svc = yield* MusicEntityService
-      return yield* svc.scrapeLinksForEntity(entityType, entityId, seedUrl)
-    }).pipe(
-      Effect.catchTag('DatabaseError', (e) =>
-        Effect.succeed({ error: e.message } as const)
-      ),
-      Effect.withSpan('api.music.scrapeEntityLinks', {
-        attributes: { entityType, entityId, seedUrl }
-      })
+export const scrapeEntityLinks: AppRouteHandler<
+  ScrapeEntityLinksRoute
+> = async (c) => {
+  const { entityType, entityId } = c.req.valid('param')
+  const input = c.req.valid('json')
+  const program = Effect.gen(function* () {
+    const svc = yield* MusicEntityService
+    return yield* svc.scrapeLinksForEntity(entityType, entityId, input)
+  }).pipe(
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({ error: e.message } as const)
+    ),
+    Effect.withSpan('api.music.scrapeEntityLinks', {
+      attributes: { entityType, entityId }
+    })
+  )
+  const result = await AppRuntime.runPromise(program)
+  if ('error' in result) {
+    return c.json(
+      { error: result.error },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
     )
-    const result = await AppRuntime.runPromise(program)
-    if ('error' in result) {
-      return c.json(
-        { error: result.error },
-        HttpStatusCodes.INTERNAL_SERVER_ERROR
-      )
-    }
-    return c.json({ scraped: result.length, links: result }, HttpStatusCodes.OK)
   }
+  return c.json({ scraped: result.length, links: result }, HttpStatusCodes.OK)
+}
+
+// ---------------------------------------------------------------------------
+// Artist ↔ album / track junctions
+// ---------------------------------------------------------------------------
+
+export const addArtistToAlbum: AppRouteHandler<AddArtistToAlbumRoute> = async (
+  c
+) => {
+  const { albumId, artistId } = c.req.valid('param')
+  const body = c.req.valid('json')
+  const program = Effect.gen(function* () {
+    const svc = yield* MusicEntityService
+    yield* svc.addArtistToAlbum(albumId, artistId, body)
+    return { ok: true } as const
+  }).pipe(
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({ error: e.message } as const)
+    ),
+    Effect.withSpan('api.music.addArtistToAlbum', {
+      attributes: { albumId, artistId }
+    })
+  )
+  const result = await AppRuntime.runPromise(program)
+  if ('error' in result) {
+    return c.json(
+      { error: result.error },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
+  }
+  return c.body(null, HttpStatusCodes.NO_CONTENT)
+}
+
+export const removeArtistFromAlbum: AppRouteHandler<
+  RemoveArtistFromAlbumRoute
+> = async (c) => {
+  const { albumId, artistId } = c.req.valid('param')
+  const program = Effect.gen(function* () {
+    const svc = yield* MusicEntityService
+    yield* svc.removeArtistFromAlbum(albumId, artistId)
+    return { ok: true } as const
+  }).pipe(
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({ error: e.message } as const)
+    ),
+    Effect.withSpan('api.music.removeArtistFromAlbum', {
+      attributes: { albumId, artistId }
+    })
+  )
+  const result = await AppRuntime.runPromise(program)
+  if ('error' in result) {
+    return c.json(
+      { error: result.error },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
+  }
+  return c.body(null, HttpStatusCodes.NO_CONTENT)
+}
+
+export const addArtistToTrack: AppRouteHandler<AddArtistToTrackRoute> = async (
+  c
+) => {
+  const { trackId, artistId } = c.req.valid('param')
+  const body = c.req.valid('json')
+  const program = Effect.gen(function* () {
+    const svc = yield* MusicEntityService
+    yield* svc.addArtistToTrack(trackId, artistId, body)
+    return { ok: true } as const
+  }).pipe(
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({ error: e.message } as const)
+    ),
+    Effect.withSpan('api.music.addArtistToTrack', {
+      attributes: { trackId, artistId }
+    })
+  )
+  const result = await AppRuntime.runPromise(program)
+  if ('error' in result) {
+    return c.json(
+      { error: result.error },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
+  }
+  return c.body(null, HttpStatusCodes.NO_CONTENT)
+}
+
+export const removeArtistFromTrack: AppRouteHandler<
+  RemoveArtistFromTrackRoute
+> = async (c) => {
+  const { trackId, artistId } = c.req.valid('param')
+  const program = Effect.gen(function* () {
+    const svc = yield* MusicEntityService
+    yield* svc.removeArtistFromTrack(trackId, artistId)
+    return { ok: true } as const
+  }).pipe(
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({ error: e.message } as const)
+    ),
+    Effect.withSpan('api.music.removeArtistFromTrack', {
+      attributes: { trackId, artistId }
+    })
+  )
+  const result = await AppRuntime.runPromise(program)
+  if ('error' in result) {
+    return c.json(
+      { error: result.error },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
+  }
+  return c.body(null, HttpStatusCodes.NO_CONTENT)
+}
 
 // ---------------------------------------------------------------------------
 // Review queue
