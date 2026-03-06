@@ -1,3 +1,11 @@
+# [2.26.0](https://github.com/guidefari/gbfm/compare/v2.25.0...v2.26.0) (2026-03-06)
+
+
+### Features
+
+* consolidate shows page ([022042e](https://github.com/guidefari/gbfm/commit/022042eae1d67101cd2b2100df859dac97a03ff9))
+* desktop sidenav enhancements ([e7c21bf](https://github.com/guidefari/gbfm/commit/e7c21bf4517e84179353fda38ab7123e6e5446e7))
+
 # [2.25.0](https://github.com/guidefari/gbfm/compare/v2.24.2...v2.25.0) (2026-03-01)
 
 
