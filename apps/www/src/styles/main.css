@@ -141,7 +141,7 @@
   }
 
   p {
-    @apply p-2 w-fit;
+    @apply p-0 m-0;
   }
 
   h1,

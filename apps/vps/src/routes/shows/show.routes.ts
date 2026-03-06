@@ -256,6 +256,41 @@ export const unsubscribeFromShow = createRoute({
   }
 })
 
+export const getShowQRPdf = createRoute({
+  path: '/{slug}/qr-pdf',
+  method: 'get',
+  request: {
+    params: z.object({
+      slug: z.string().openapi({ description: 'Show slug' })
+    }),
+    query: z.object({
+      template: z
+        .enum(['flyer', 'qr'])
+        .default('flyer')
+        .openapi({ description: 'PDF template style' })
+    })
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.object({
+        url: z.string().openapi({ description: 'URL to the generated PDF' }),
+        cached: z.boolean().openapi({ description: 'Whether PDF was cached' })
+      }),
+      'QR PDF URL'
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      z.object({ error: z.string() }),
+      'Show not found'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to generate QR PDF'
+    )
+  }
+})
+
+export type GetShowQRPdfRoute = typeof getShowQRPdf
 export type GetAllShowsRoute = typeof getAllShows
 export type GetShowBySlugRoute = typeof getShowBySlug
 export type CreateShowRoute = typeof createShow

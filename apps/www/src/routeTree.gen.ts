@@ -18,24 +18,24 @@ import { Route as RemindersRouteImport } from './routes/reminders'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ChangelogRouteImport } from './routes/changelog'
 import { Route as SlugRouteImport } from './routes/$slug'
-import { Route as TracksRouteRouteImport } from './routes/tracks/route'
 import { Route as TweetRouteRouteImport } from './routes/tweet/route'
+import { Route as TracksRouteRouteImport } from './routes/tracks/route'
 import { Route as MixesRouteRouteImport } from './routes/mixes/route'
 import { Route as LabelsRouteRouteImport } from './routes/labels/route'
 import { Route as EditorialRouteRouteImport } from './routes/editorial/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TweetIndexRouteImport } from './routes/tweet/index'
 import { Route as TracksIndexRouteImport } from './routes/tracks/index'
 import { Route as ShowsIndexRouteImport } from './routes/shows/index'
-import { Route as TweetIndexRouteImport } from './routes/tweet/index'
 import { Route as MixesIndexRouteImport } from './routes/mixes/index'
 import { Route as LabelsIndexRouteImport } from './routes/labels/index'
 import { Route as EditorialIndexRouteImport } from './routes/editorial/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as TweetSlugRouteImport } from './routes/tweet/$slug'
 import { Route as TracksTrackIdRouteImport } from './routes/tracks/$trackId'
 import { Route as ShowsShowSlugRouteImport } from './routes/shows/$showSlug'
 import { Route as ReleasesSlugRouteImport } from './routes/releases/$slug'
 import { Route as ProfileUsernameRouteImport } from './routes/profile/$username'
-import { Route as TweetSlugRouteImport } from './routes/tweet/$slug'
 import { Route as MixesMixIdRouteImport } from './routes/mixes/$mixId'
 import { Route as LabelsLabelSlugRouteImport } from './routes/labels/$labelSlug'
 import { Route as EditorialSlugRouteImport } from './routes/editorial/$slug'
@@ -104,14 +104,14 @@ const SlugRoute = SlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
-const TracksRouteRoute = TracksRouteRouteImport.update({
-  id: '/tracks',
-  path: '/tracks',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const TweetRouteRoute = TweetRouteRouteImport.update({
   id: '/tweet',
   path: '/tweet',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TracksRouteRoute = TracksRouteRouteImport.update({
+  id: '/tracks',
+  path: '/tracks',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MixesRouteRoute = MixesRouteRouteImport.update({
@@ -134,6 +134,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TweetIndexRoute = TweetIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => TweetRouteRoute,
+} as any)
 const TracksIndexRoute = TracksIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -141,13 +146,8 @@ const TracksIndexRoute = TracksIndexRouteImport.update({
 } as any)
 const ShowsIndexRoute = ShowsIndexRouteImport.update({
   id: '/shows/',
-  path: '/shows',
+  path: '/shows/',
   getParentRoute: () => rootRouteImport,
-} as any)
-const TweetIndexRoute = TweetIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => TweetRouteRoute,
 } as any)
 const MixesIndexRoute = MixesIndexRouteImport.update({
   id: '/',
@@ -166,8 +166,13 @@ const EditorialIndexRoute = EditorialIndexRouteImport.update({
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/admin/',
-  path: '/admin',
+  path: '/admin/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const TweetSlugRoute = TweetSlugRouteImport.update({
+  id: '/$slug',
+  path: '/$slug',
+  getParentRoute: () => TweetRouteRoute,
 } as any)
 const TracksTrackIdRoute = TracksTrackIdRouteImport.update({
   id: '/$trackId',
@@ -188,11 +193,6 @@ const ProfileUsernameRoute = ProfileUsernameRouteImport.update({
   id: '/profile/$username',
   path: '/profile/$username',
   getParentRoute: () => rootRouteImport,
-} as any)
-const TweetSlugRoute = TweetSlugRouteImport.update({
-  id: '/$slug',
-  path: '/$slug',
-  getParentRoute: () => TweetRouteRoute,
 } as any)
 const MixesMixIdRoute = MixesMixIdRouteImport.update({
   id: '/$mixId',
@@ -235,8 +235,8 @@ export interface FileRoutesByFullPath {
   '/editorial': typeof EditorialRouteRouteWithChildren
   '/labels': typeof LabelsRouteRouteWithChildren
   '/mixes': typeof MixesRouteRouteWithChildren
-  '/tweet': typeof TweetRouteRouteWithChildren
   '/tracks': typeof TracksRouteRouteWithChildren
+  '/tweet': typeof TweetRouteRouteWithChildren
   '/$slug': typeof SlugRoute
   '/changelog': typeof ChangelogRoute
   '/dashboard': typeof DashboardRoute
@@ -255,18 +255,18 @@ export interface FileRoutesByFullPath {
   '/editorial/$slug': typeof EditorialSlugRoute
   '/labels/$labelSlug': typeof LabelsLabelSlugRoute
   '/mixes/$mixId': typeof MixesMixIdRoute
-  '/tweet/$slug': typeof TweetSlugRoute
   '/profile/$username': typeof ProfileUsernameRoute
   '/releases/$slug': typeof ReleasesSlugRoute
   '/shows/$showSlug': typeof ShowsShowSlugRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
+  '/tweet/$slug': typeof TweetSlugRoute
   '/admin/': typeof AdminIndexRoute
   '/editorial/': typeof EditorialIndexRoute
   '/labels/': typeof LabelsIndexRoute
   '/mixes/': typeof MixesIndexRoute
-  '/tweet/': typeof TweetIndexRoute
   '/shows/': typeof ShowsIndexRoute
   '/tracks/': typeof TracksIndexRoute
+  '/tweet/': typeof TweetIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -288,18 +288,18 @@ export interface FileRoutesByTo {
   '/editorial/$slug': typeof EditorialSlugRoute
   '/labels/$labelSlug': typeof LabelsLabelSlugRoute
   '/mixes/$mixId': typeof MixesMixIdRoute
-  '/tweet/$slug': typeof TweetSlugRoute
   '/profile/$username': typeof ProfileUsernameRoute
   '/releases/$slug': typeof ReleasesSlugRoute
   '/shows/$showSlug': typeof ShowsShowSlugRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
+  '/tweet/$slug': typeof TweetSlugRoute
   '/admin': typeof AdminIndexRoute
   '/editorial': typeof EditorialIndexRoute
   '/labels': typeof LabelsIndexRoute
   '/mixes': typeof MixesIndexRoute
-  '/tweet': typeof TweetIndexRoute
   '/shows': typeof ShowsIndexRoute
   '/tracks': typeof TracksIndexRoute
+  '/tweet': typeof TweetIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -307,8 +307,8 @@ export interface FileRoutesById {
   '/editorial': typeof EditorialRouteRouteWithChildren
   '/labels': typeof LabelsRouteRouteWithChildren
   '/mixes': typeof MixesRouteRouteWithChildren
-  '/tweet': typeof TweetRouteRouteWithChildren
   '/tracks': typeof TracksRouteRouteWithChildren
+  '/tweet': typeof TweetRouteRouteWithChildren
   '/$slug': typeof SlugRoute
   '/changelog': typeof ChangelogRoute
   '/dashboard': typeof DashboardRoute
@@ -327,18 +327,18 @@ export interface FileRoutesById {
   '/editorial/$slug': typeof EditorialSlugRoute
   '/labels/$labelSlug': typeof LabelsLabelSlugRoute
   '/mixes/$mixId': typeof MixesMixIdRoute
-  '/tweet/$slug': typeof TweetSlugRoute
   '/profile/$username': typeof ProfileUsernameRoute
   '/releases/$slug': typeof ReleasesSlugRoute
   '/shows/$showSlug': typeof ShowsShowSlugRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
+  '/tweet/$slug': typeof TweetSlugRoute
   '/admin/': typeof AdminIndexRoute
   '/editorial/': typeof EditorialIndexRoute
   '/labels/': typeof LabelsIndexRoute
   '/mixes/': typeof MixesIndexRoute
-  '/tweet/': typeof TweetIndexRoute
   '/shows/': typeof ShowsIndexRoute
   '/tracks/': typeof TracksIndexRoute
+  '/tweet/': typeof TweetIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -347,8 +347,8 @@ export interface FileRouteTypes {
     | '/editorial'
     | '/labels'
     | '/mixes'
-    | '/tweet'
     | '/tracks'
+    | '/tweet'
     | '/$slug'
     | '/changelog'
     | '/dashboard'
@@ -367,18 +367,18 @@ export interface FileRouteTypes {
     | '/editorial/$slug'
     | '/labels/$labelSlug'
     | '/mixes/$mixId'
-    | '/tweet/$slug'
     | '/profile/$username'
     | '/releases/$slug'
     | '/shows/$showSlug'
     | '/tracks/$trackId'
+    | '/tweet/$slug'
     | '/admin/'
     | '/editorial/'
     | '/labels/'
     | '/mixes/'
-    | '/tweet/'
     | '/shows/'
     | '/tracks/'
+    | '/tweet/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -400,26 +400,26 @@ export interface FileRouteTypes {
     | '/editorial/$slug'
     | '/labels/$labelSlug'
     | '/mixes/$mixId'
-    | '/tweet/$slug'
     | '/profile/$username'
     | '/releases/$slug'
     | '/shows/$showSlug'
     | '/tracks/$trackId'
+    | '/tweet/$slug'
     | '/admin'
     | '/editorial'
     | '/labels'
     | '/mixes'
-    | '/tweet'
     | '/shows'
     | '/tracks'
+    | '/tweet'
   id:
     | '__root__'
     | '/'
     | '/editorial'
     | '/labels'
     | '/mixes'
-    | '/tweet'
     | '/tracks'
+    | '/tweet'
     | '/$slug'
     | '/changelog'
     | '/dashboard'
@@ -438,18 +438,18 @@ export interface FileRouteTypes {
     | '/editorial/$slug'
     | '/labels/$labelSlug'
     | '/mixes/$mixId'
-    | '/tweet/$slug'
     | '/profile/$username'
     | '/releases/$slug'
     | '/shows/$showSlug'
     | '/tracks/$trackId'
+    | '/tweet/$slug'
     | '/admin/'
     | '/editorial/'
     | '/labels/'
     | '/mixes/'
-    | '/tweet/'
     | '/shows/'
     | '/tracks/'
+    | '/tweet/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -457,8 +457,8 @@ export interface RootRouteChildren {
   EditorialRouteRoute: typeof EditorialRouteRouteWithChildren
   LabelsRouteRoute: typeof LabelsRouteRouteWithChildren
   MixesRouteRoute: typeof MixesRouteRouteWithChildren
-  TweetRouteRoute: typeof TweetRouteRouteWithChildren
   TracksRouteRoute: typeof TracksRouteRouteWithChildren
+  TweetRouteRoute: typeof TweetRouteRouteWithChildren
   SlugRoute: typeof SlugRoute
   ChangelogRoute: typeof ChangelogRoute
   DashboardRoute: typeof DashboardRoute
@@ -560,18 +560,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/tracks': {
-      id: '/tracks'
-      path: '/tracks'
-      fullPath: '/tracks'
-      preLoaderRoute: typeof TracksRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/tweet': {
       id: '/tweet'
       path: '/tweet'
       fullPath: '/tweet'
       preLoaderRoute: typeof TweetRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tracks': {
+      id: '/tracks'
+      path: '/tracks'
+      fullPath: '/tracks'
+      preLoaderRoute: typeof TracksRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mixes': {
@@ -602,6 +602,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tweet/': {
+      id: '/tweet/'
+      path: '/'
+      fullPath: '/tweet/'
+      preLoaderRoute: typeof TweetIndexRouteImport
+      parentRoute: typeof TweetRouteRoute
+    }
     '/tracks/': {
       id: '/tracks/'
       path: '/'
@@ -615,13 +622,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/shows/'
       preLoaderRoute: typeof ShowsIndexRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/tweet/': {
-      id: '/tweet/'
-      path: '/'
-      fullPath: '/tweet/'
-      preLoaderRoute: typeof TweetIndexRouteImport
-      parentRoute: typeof TweetRouteRoute
     }
     '/mixes/': {
       id: '/mixes/'
@@ -651,6 +651,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tweet/$slug': {
+      id: '/tweet/$slug'
+      path: '/$slug'
+      fullPath: '/tweet/$slug'
+      preLoaderRoute: typeof TweetSlugRouteImport
+      parentRoute: typeof TweetRouteRoute
+    }
     '/tracks/$trackId': {
       id: '/tracks/$trackId'
       path: '/$trackId'
@@ -678,13 +685,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/profile/$username'
       preLoaderRoute: typeof ProfileUsernameRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/tweet/$slug': {
-      id: '/tweet/$slug'
-      path: '/$slug'
-      fullPath: '/tweet/$slug'
-      preLoaderRoute: typeof TweetSlugRouteImport
-      parentRoute: typeof TweetRouteRoute
     }
     '/mixes/$mixId': {
       id: '/mixes/$mixId'
@@ -780,20 +780,6 @@ const MixesRouteRouteWithChildren = MixesRouteRoute._addFileChildren(
   MixesRouteRouteChildren,
 )
 
-interface TweetRouteRouteChildren {
-  TweetSlugRoute: typeof TweetSlugRoute
-  TweetIndexRoute: typeof TweetIndexRoute
-}
-
-const TweetRouteRouteChildren: TweetRouteRouteChildren = {
-  TweetSlugRoute: TweetSlugRoute,
-  TweetIndexRoute: TweetIndexRoute,
-}
-
-const TweetRouteRouteWithChildren = TweetRouteRoute._addFileChildren(
-  TweetRouteRouteChildren,
-)
-
 interface TracksRouteRouteChildren {
   TracksTrackIdRoute: typeof TracksTrackIdRoute
   TracksIndexRoute: typeof TracksIndexRoute
@@ -808,13 +794,27 @@ const TracksRouteRouteWithChildren = TracksRouteRoute._addFileChildren(
   TracksRouteRouteChildren,
 )
 
+interface TweetRouteRouteChildren {
+  TweetSlugRoute: typeof TweetSlugRoute
+  TweetIndexRoute: typeof TweetIndexRoute
+}
+
+const TweetRouteRouteChildren: TweetRouteRouteChildren = {
+  TweetSlugRoute: TweetSlugRoute,
+  TweetIndexRoute: TweetIndexRoute,
+}
+
+const TweetRouteRouteWithChildren = TweetRouteRoute._addFileChildren(
+  TweetRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   EditorialRouteRoute: EditorialRouteRouteWithChildren,
   LabelsRouteRoute: LabelsRouteRouteWithChildren,
   MixesRouteRoute: MixesRouteRouteWithChildren,
-  TweetRouteRoute: TweetRouteRouteWithChildren,
   TracksRouteRoute: TracksRouteRouteWithChildren,
+  TweetRouteRoute: TweetRouteRouteWithChildren,
   SlugRoute: SlugRoute,
   ChangelogRoute: ChangelogRoute,
   DashboardRoute: DashboardRoute,

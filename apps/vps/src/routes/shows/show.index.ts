@@ -10,6 +10,7 @@ const router = createRouter()
   .openapi(routes.updateShowBySlug, handlers.updateShowBySlug)
   .openapi(routes.deleteShowBySlug, handlers.deleteShowBySlug)
   .openapi(routes.getShowEpisodes, handlers.getShowEpisodes)
+  .openapi(routes.getShowQRPdf, handlers.getShowQRPdf)
   .openapi(routes.subscribeToShow, handlers.subscribeToShow)
   .openapi(routes.unsubscribeFromShow, handlers.unsubscribeFromShow)
 

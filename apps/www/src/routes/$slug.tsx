@@ -1,9 +1,8 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, Navigate } from '@tanstack/react-router'
 import {
   PublicProfilePage,
   PublicProfilePageSkeleton
 } from '@/components/profile/PublicProfilePage'
-import { ShowLandingPage } from '@/components/shows/ShowLandingPage'
 import { type ResolveResult, useResolveSlug, VPS_BASE_URL } from '@/lib/http'
 import {
   generateProfileSEO,
@@ -94,5 +93,7 @@ function SlugPage() {
     return <PublicProfilePage profile={resolved.data} />
   }
 
-  return <ShowLandingPage show={resolved.data} />
+  return (
+    <Navigate to='/shows/$showSlug' params={{ showSlug: resolved.data.slug }} />
+  )
 }

@@ -5,6 +5,7 @@ import { MDXRendrr } from '@/components/MDXRendrr'
 import { ShareButton } from '@/components/ShareButton'
 import { EpisodeGrid } from '@/components/shows/EpisodeGrid'
 import { ReadMoreModal } from '@/components/shows/ReadMoreModal'
+import { ShowQRButton } from '@/components/shows/ShowQRButton'
 import { useShowBySlug } from '@/lib/http'
 import { generateSEOMeta, generateShowSEO } from '@/lib/seo'
 import { useContentStore } from '@/store'
@@ -116,6 +117,7 @@ function ShowPage() {
                   contentTitle={data.title}
                 />
                 <ShareButton type='show' slug={showSlug} />
+                <ShowQRButton slug={showSlug} />
               </div>
             </div>
           </div>
@@ -142,7 +144,7 @@ function ShowDescription({
 
   return (
     <div>
-      <div className='text-sm text-muted-foreground line-clamp-4 prose prose-sm prose-neutral dark:prose-invert max-w-none break-words overflow-hidden [&_p]:text-muted-foreground [&_p]:text-sm [&_p]:m-0'>
+      <div className='text-sm text-muted-foreground line-clamp-4 prose prose-sm prose-neutral dark:prose-invert max-w-none break-words overflow-hidden [&_p]:text-muted-foreground [&_p]:text-sm'>
         {compiledContent ? (
           <MDXRendrr mdxString={compiledContent} />
         ) : (
@@ -153,7 +155,7 @@ function ShowDescription({
         <ReadMoreModal
           title={title}
           trigger={
-            <span className='text-sm font-semibold hover:underline underline-offset-4 cursor-pointer'>
+            <span className='text-sm font-medium text-primary underline underline-offset-4 cursor-pointer hover:opacity-80'>
               read more
             </span>
           }>

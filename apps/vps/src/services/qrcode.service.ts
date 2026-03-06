@@ -14,9 +14,20 @@ interface MixData {
   creators?: Array<{ name: string }>
 }
 
+interface ShowData {
+  slug: string
+  title: string
+  thumbnailUrl?: string | null
+  hosts?: Array<{ name: string }>
+}
+
 export interface QRCodeService {
   readonly generateMixQRPdf: (
     mix: MixData,
+    template: QRTemplate
+  ) => Effect.Effect<{ url: string; cached: boolean }, DatabaseError, S3Service>
+  readonly generateShowQRPdf: (
+    show: ShowData,
     template: QRTemplate
   ) => Effect.Effect<{ url: string; cached: boolean }, DatabaseError, S3Service>
 }
@@ -549,11 +560,69 @@ const generateMixQRPdfEffect = (mix: MixData, template: QRTemplate) =>
     return { url, cached: false }
   })
 
+const generateShowQRPdfEffect = (show: ShowData, template: QRTemplate) =>
+  Effect.gen(function* () {
+    const s3Service = yield* S3Service
+    const bucketName = config.buckets.userContent
+    const routerUrl = config.urls.router
+
+    const cacheKey = getCacheKey(`show-${show.slug}`, template)
+    const isCached = yield* s3Service.checkExists(cacheKey, bucketName)
+
+    if (isCached) {
+      const url = `${routerUrl}/user-content/${cacheKey}`
+      return { url, cached: true }
+    }
+
+    const showUrl = `https://goosebumps.fm/shows/${show.slug}`
+    const qrDataUrl = yield* generateQRDataUrl(showUrl)
+
+    // Adapt show data to MixData shape for reusing PDF templates
+    const mixLikeData: MixData = {
+      slug: show.slug,
+      title: show.title,
+      thumbnailUrl: show.thumbnailUrl,
+      creators: show.hosts
+    }
+
+    const pdfBytes =
+      template === 'flyer'
+        ? yield* generateFlyerPdf(mixLikeData, qrDataUrl)
+        : yield* generateQROnlyPdf(mixLikeData, qrDataUrl)
+
+    yield* s3Service
+      .uploadFile(
+        cacheKey,
+        Buffer.from(pdfBytes),
+        'application/pdf',
+        bucketName
+      )
+      .pipe(
+        Effect.mapError(
+          (e) =>
+            new DatabaseError({
+              message: `Failed to cache PDF: ${e.message}`,
+              operation: 'put',
+              table: 's3'
+            })
+        )
+      )
+
+    const url = `${routerUrl}/user-content/${cacheKey}`
+    return { url, cached: false }
+  })
+
 export const QRCodeServiceLive = Layer.succeed(QRCodeService, {
   generateMixQRPdf: (mix, template) =>
     generateMixQRPdfEffect(mix, template).pipe(
       Effect.withSpan('qrcode.generateMixQRPdf', {
         attributes: { slug: mix.slug, template }
+      })
+    ),
+  generateShowQRPdf: (show, template) =>
+    generateShowQRPdfEffect(show, template).pipe(
+      Effect.withSpan('qrcode.generateShowQRPdf', {
+        attributes: { slug: show.slug, template }
       })
     )
 })

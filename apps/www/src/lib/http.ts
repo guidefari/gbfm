@@ -1009,3 +1009,19 @@ export function useMixQRPdf(
     staleTime: 1000 * 60 * 60 * 24
   })
 }
+
+export function useShowQRPdf(
+  slug: string,
+  template: 'flyer' | 'qr' = 'flyer',
+  enabled = false
+) {
+  return useQuery<QRPdfResponse>({
+    queryKey: ['show-qr-pdf', slug, template],
+    queryFn: () =>
+      fetcher<QRPdfResponse>(
+        `${VPS_BASE_URL}/shows/${slug}/qr-pdf?template=${template}`
+      ),
+    enabled,
+    staleTime: 1000 * 60 * 60 * 24
+  })
+}

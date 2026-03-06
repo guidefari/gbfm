@@ -2,6 +2,7 @@ import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import type { AppRouteHandler } from '@/lib/types'
 import { AppRuntime } from '@/runtime'
+import { QRCodeService } from '@/services/qrcode.service'
 import { ShowService, ShowSubscriptionService } from '@/services/show.service'
 
 import type {
@@ -10,6 +11,7 @@ import type {
   GetAllShowsRoute,
   GetShowBySlugRoute,
   GetShowEpisodesRoute,
+  GetShowQRPdfRoute,
   SubscribeToShowRoute,
   UnsubscribeFromShowRoute,
   UpdateShowBySlugRoute
@@ -295,4 +297,48 @@ export const unsubscribeFromShow: AppRouteHandler<
   }
 
   return c.body(null, HttpStatusCodes.NO_CONTENT)
+}
+
+export const getShowQRPdf: AppRouteHandler<GetShowQRPdfRoute> = async (c) => {
+  const { slug } = c.req.valid('param')
+  const { template } = c.req.valid('query')
+
+  const program = Effect.gen(function* () {
+    const showService = yield* ShowService
+    const qrService = yield* QRCodeService
+
+    const show = yield* showService.getBySlug(slug)
+
+    return yield* qrService.generateShowQRPdf(
+      {
+        slug: show.slug,
+        title: show.title,
+        thumbnailUrl: show.thumbnailUrl,
+        hosts: show.hosts
+      },
+      template
+    )
+  }).pipe(
+    Effect.catchTag('NotFoundError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    ),
+    Effect.withSpan('api.show.getQRPdf', { attributes: { slug, template } })
+  )
+
+  const result = await AppRuntime.runPromise(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
+  }
+
+  return c.json(result, HttpStatusCodes.OK)
 }
