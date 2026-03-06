@@ -25,11 +25,11 @@ export interface QRCodeService {
   readonly generateMixQRPdf: (
     mix: MixData,
     template: QRTemplate
-  ) => Effect.Effect<{ url: string; cached: boolean }, DatabaseError, S3Service>
+  ) => Effect.Effect<{ url: string; cached: boolean }, DatabaseError>
   readonly generateShowQRPdf: (
     show: ShowData,
     template: QRTemplate
-  ) => Effect.Effect<{ url: string; cached: boolean }, DatabaseError, S3Service>
+  ) => Effect.Effect<{ url: string; cached: boolean }, DatabaseError>
 }
 
 export const QRCodeService = Context.GenericTag<QRCodeService>('QRCodeService')
@@ -516,9 +516,12 @@ const generateQROnlyPdf = (_mix: MixData, qrDataUrl: string) =>
     })
   })
 
-const generateMixQRPdfEffect = (mix: MixData, template: QRTemplate) =>
+const generateMixQRPdfEffect = (
+  mix: MixData,
+  template: QRTemplate,
+  s3Service: S3Service
+) =>
   Effect.gen(function* () {
-    const s3Service = yield* S3Service
     const bucketName = config.buckets.userContent
     const routerUrl = config.urls.router
 
@@ -560,9 +563,12 @@ const generateMixQRPdfEffect = (mix: MixData, template: QRTemplate) =>
     return { url, cached: false }
   })
 
-const generateShowQRPdfEffect = (show: ShowData, template: QRTemplate) =>
+const generateShowQRPdfEffect = (
+  show: ShowData,
+  template: QRTemplate,
+  s3Service: S3Service
+) =>
   Effect.gen(function* () {
-    const s3Service = yield* S3Service
     const bucketName = config.buckets.userContent
     const routerUrl = config.urls.router
 
@@ -612,17 +618,23 @@ const generateShowQRPdfEffect = (show: ShowData, template: QRTemplate) =>
     return { url, cached: false }
   })
 
-export const QRCodeServiceLive = Layer.succeed(QRCodeService, {
-  generateMixQRPdf: (mix, template) =>
-    generateMixQRPdfEffect(mix, template).pipe(
-      Effect.withSpan('qrcode.generateMixQRPdf', {
-        attributes: { slug: mix.slug, template }
-      })
-    ),
-  generateShowQRPdf: (show, template) =>
-    generateShowQRPdfEffect(show, template).pipe(
-      Effect.withSpan('qrcode.generateShowQRPdf', {
-        attributes: { slug: show.slug, template }
-      })
-    )
-})
+export const QRCodeServiceLive = Layer.effect(
+  QRCodeService,
+  Effect.gen(function* () {
+    const s3Service = yield* S3Service
+    return {
+      generateMixQRPdf: (mix: MixData, template: QRTemplate) =>
+        generateMixQRPdfEffect(mix, template, s3Service).pipe(
+          Effect.withSpan('qrcode.generateMixQRPdf', {
+            attributes: { slug: mix.slug, template }
+          })
+        ),
+      generateShowQRPdf: (show: ShowData, template: QRTemplate) =>
+        generateShowQRPdfEffect(show, template, s3Service).pipe(
+          Effect.withSpan('qrcode.generateShowQRPdf', {
+            attributes: { slug: show.slug, template }
+          })
+        )
+    }
+  })
+)
