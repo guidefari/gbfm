@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { AudioDropZone } from '@/components/mix-uploader/AudioDropZone'
 import { AudioFileCard } from '@/components/mix-uploader/AudioFileCard'
 import { MixDetailsForm } from '@/components/mix-uploader/MixDetailsForm'
+import { S3AudioFilePicker } from '@/components/mix-uploader/S3AudioFilePicker'
 import {
   type TrackEntry,
   TracklistEditor
@@ -103,6 +104,7 @@ function MixUploadPage() {
   const [audioPreview, setAudioPreview] = useState<string | null>(null)
   const [artworkPreview, setArtworkPreview] = useState<string | null>(null)
   const [currentTime, setCurrentTime] = useState(0)
+  const [s3PickerOpen, setS3PickerOpen] = useState(false)
 
   const audioRef = useRef<HTMLAudioElement>(null)
   const router = useRouter()
@@ -300,6 +302,22 @@ function MixUploadPage() {
     }
   }
 
+  const handleS3FileSelect = (url: string, filename: string) => {
+    setAudioPreview(url)
+    setFormData((prev) => {
+      const updated = { ...prev, url }
+      if (!prev.title) {
+        const cleanTitle = filename
+          .replace(/\.[^/.]+$/, '')
+          .replace(/[-_]/g, ' ')
+          .replace(/\b\w/g, (l) => l.toUpperCase())
+        updated.title = cleanTitle
+        if (!prev.slug) updated.slug = generateSlug(cleanTitle)
+      }
+      return updated
+    })
+  }
+
   const handleArtworkFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
@@ -385,10 +403,11 @@ function MixUploadPage() {
   }
 
   const handleSubmit = (isDraft: boolean) => {
-    if (!isEditMode && !audioFile) {
+    if (!isEditMode && !audioFile && !formData.url) {
       toast({
         title: 'Audio file required',
-        description: 'Please select an audio file to upload.',
+        description:
+          'Please select an audio file to upload or pick one from S3.',
         variant: 'destructive'
       })
       return
@@ -453,8 +472,17 @@ function MixUploadPage() {
         </div>
       </header>
 
+      <S3AudioFilePicker
+        open={s3PickerOpen}
+        onOpenChange={setS3PickerOpen}
+        onSelect={handleS3FileSelect}
+      />
+
       {!audioPreview && !isEditMode ? (
-        <AudioDropZone onFileSelect={handleAudioFileChange} />
+        <AudioDropZone
+          onFileSelect={handleAudioFileChange}
+          onPickFromS3={() => setS3PickerOpen(true)}
+        />
       ) : (
         <div className='grid grid-cols-1 gap-8 lg:grid-cols-12'>
           <div className='space-y-6 lg:col-span-7'>

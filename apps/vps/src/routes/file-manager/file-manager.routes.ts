@@ -20,6 +20,7 @@ export const getConfig = createRoute({
     [HttpStatusCodes.OK]: jsonContent(
       z.object({
         stage: z.string(),
+        routerUrl: z.string(),
         buckets: z.object({
           userContent: z.string(),
           mixes: z.string()
