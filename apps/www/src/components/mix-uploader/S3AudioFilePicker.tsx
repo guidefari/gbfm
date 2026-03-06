@@ -229,6 +229,21 @@ export function S3AudioFilePicker({
             )}
           </div>
 
+          {selectedKey && configData && (
+            <div className='rounded-sm border border-gb-pastel-green-2/20 p-3'>
+              {/* biome-ignore lint/a11y/useMediaCaption: internal preview player, no captions needed */}
+              <audio
+                key={selectedKey}
+                controls
+                className='w-full h-8'
+                src={
+                  getPublicUrl(configData, effectiveBucket, selectedKey) ??
+                  undefined
+                }
+              />
+            </div>
+          )}
+
           <div className='flex justify-end gap-2'>
             <Button
               variant='outline'
