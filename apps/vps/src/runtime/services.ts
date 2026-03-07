@@ -14,6 +14,7 @@ import { PostServiceLive } from '@/services/post.service'
 import { ProfileServiceLive } from '@/services/profile.service'
 import { QRCodeServiceLive } from '@/services/qrcode.service'
 import { ReleaseServiceLive } from '@/services/release.service'
+import { ReminderSignalServiceLive } from '@/services/reminder-signal.service'
 import { ResolveServiceLive } from '@/services/resolve.service'
 import { S3ServiceLive } from '@/services/s3.service'
 import {
@@ -45,6 +46,7 @@ const BaseServicesLayer = Layer.mergeAll(
   FavoriteServiceLive,
   SpotifyServiceLive,
   MusicReminderServiceLive,
+  ReminderSignalServiceLive,
   AudioServiceLive,
   PostServiceLive,
   LabelServiceLive,

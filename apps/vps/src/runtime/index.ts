@@ -10,6 +10,7 @@ import type { PostService } from '@/services/post.service'
 import type { ProfileService } from '@/services/profile.service'
 import type { QRCodeService } from '@/services/qrcode.service'
 import type { ReleaseService } from '@/services/release.service'
+import type { ReminderSignalService } from '@/services/reminder-signal.service'
 import type { ResolveService } from '@/services/resolve.service'
 import type { S3Service } from '@/services/s3.service'
 import type {
@@ -28,6 +29,7 @@ type AppServices =
   | FavoriteService
   | SpotifyService
   | MusicReminderService
+  | ReminderSignalService
   | AudioService
   | PostService
   | LabelService

@@ -853,7 +853,7 @@ export const trackAudioPlay: AppRouteHandler<TrackAudioPlayRoute> = async (
 
 export const getMixQRPdf: AppRouteHandler<GetMixQRPdfRoute> = async (c) => {
   const { slug } = c.req.valid('param')
-  const { template } = c.req.valid('query')
+  const { force } = c.req.valid('query')
 
   const program = Effect.gen(function* () {
     const audioService = yield* AudioService
@@ -868,7 +868,7 @@ export const getMixQRPdf: AppRouteHandler<GetMixQRPdfRoute> = async (c) => {
         thumbnailUrl: mix.thumbnailUrl,
         creators: mix.creators
       },
-      template
+      force
     )
   }).pipe(
     Effect.catchTag('NotFoundError', (e) =>

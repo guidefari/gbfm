@@ -264,10 +264,11 @@ export const getShowQRPdf = createRoute({
       slug: z.string().openapi({ description: 'Show slug' })
     }),
     query: z.object({
-      template: z
-        .enum(['flyer', 'qr'])
-        .default('flyer')
-        .openapi({ description: 'PDF template style' })
+      force: z
+        .string()
+        .optional()
+        .transform((v) => v === 'true')
+        .openapi({ description: 'Skip cache and regenerate' })
     })
   },
   tags,

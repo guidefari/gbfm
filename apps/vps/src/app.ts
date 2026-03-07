@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { Effect, Schedule } from 'effect'
+import { Duration, Effect, Schedule } from 'effect'
 import configureOpenAPI from '@/lib/configure-open-api'
 import { createAppEffect } from '@/lib/create-app'
 import content from '@/routes/content/content.index'
@@ -21,8 +21,11 @@ import user from '@/routes/user/user.index'
 import { db } from './db'
 import { regenerateSitemap } from './routes/redirect/seo/sitemap'
 import { runApp, runAppFork } from './runtime'
-import { cleanupExpiredQrPdfs } from './services/qr-cache-cleanup'
-import { processPendingReminders } from './services/reminder-processor'
+import {
+  processPendingReminders,
+  queryNextDueReminder
+} from './services/reminder-processor'
+import { ReminderSignalService } from './services/reminder-signal.service'
 
 const healthCheckEffect = Effect.tryPromise({
   try: () => db.execute(sql.raw('SELECT 1')),
@@ -67,22 +70,32 @@ const setupRoutesEffect = Effect.gen(function* () {
   return app
 })
 
-const cronJobEffect = processPendingReminders.pipe(
-  Effect.catchAll((error) =>
-    Effect.logError(
-      `Cron job failed: ${error instanceof Error ? error.message : String(error)}`
-    )
-  ),
-  Effect.repeat(Schedule.spaced('30 seconds'))
-)
+// Recovery interval caps the sleep so stalled/failed reminders are always retried
+const RECOVERY_INTERVAL_MS = 5 * 60 * 1000
 
-const qrCacheCleanupEffect = cleanupExpiredQrPdfs.pipe(
+const reminderLoopEffect = Effect.gen(function* () {
+  const { await: awaitSignal } = yield* ReminderSignalService
+
+  const nextDate = yield* queryNextDueReminder.pipe(
+    Effect.catchAll(() => Effect.succeed(null))
+  )
+
+  const msUntilNext = nextDate
+    ? Math.max(0, nextDate.getTime() - Date.now())
+    : RECOVERY_INTERVAL_MS
+  const sleepMs = Math.min(msUntilNext, RECOVERY_INTERVAL_MS)
+
+  // Wake up when the next reminder is due OR when a new one is signalled
+  yield* Effect.race(Effect.sleep(Duration.millis(sleepMs)), awaitSignal)
+
+  yield* processPendingReminders
+}).pipe(
   Effect.catchAll((error) =>
     Effect.logError(
-      `QR cache cleanup failed: ${error instanceof Error ? error.message : String(error)}`
+      `Reminder loop failed: ${error instanceof Error ? error.message : String(error)}`
     )
   ),
-  Effect.repeat(Schedule.spaced('15 minutes'))
+  Effect.repeat(Schedule.forever)
 )
 
 const sitemapRegenerationEffect = regenerateSitemap.pipe(
@@ -122,8 +135,7 @@ const setupGracefulShutdown = () => {
 const initializeApp = async () => {
   setupGracefulShutdown()
 
-  runAppFork(cronJobEffect)
-  runAppFork(qrCacheCleanupEffect)
+  runAppFork(reminderLoopEffect)
   runAppFork(sitemapRegenerationEffect)
 
   return await runApp(
