@@ -39,59 +39,107 @@ export const useKeyboardShortcuts = ({
   })
 
   // 0 — navigate to mixes
-  useHotkey('0', () => {
-    routeToMixes()
-  }, { enabled: !isCmdOpen })
+  useHotkey(
+    '0',
+    () => {
+      routeToMixes()
+    },
+    { enabled: !isCmdOpen }
+  )
 
   // Alt+S — toggle sort order (mixes page only)
-  useHotkey('Alt+S', () => {
-    toggleSortOrder()
-  }, { enabled: !isCmdOpen && isOnMixesPage })
+  useHotkey(
+    'Alt+S',
+    () => {
+      toggleSortOrder()
+    },
+    { enabled: !isCmdOpen && isOnMixesPage }
+  )
 
   // Space — play/pause
-  useHotkey('Space', () => {
-    audioPlayerActions.actions.togglePlayPause()
-  }, { enabled: hasAudio && !isCmdOpen })
+  useHotkey(
+    'Space',
+    () => {
+      audioPlayerActions.actions.togglePlayPause()
+    },
+    { enabled: hasAudio && !isCmdOpen }
+  )
 
   // ← / → — previous / next track
-  useHotkey('ArrowLeft', () => {
-    audioPlayerActions.actions.playPrevious()
-  }, { enabled: hasAudio && !isCmdOpen && audioPlayerActions.canPlayPrevious })
+  useHotkey(
+    'ArrowLeft',
+    () => {
+      audioPlayerActions.actions.playPrevious()
+    },
+    { enabled: hasAudio && !isCmdOpen && audioPlayerActions.canPlayPrevious }
+  )
 
-  useHotkey('ArrowRight', () => {
-    audioPlayerActions.actions.playNext()
-  }, { enabled: hasAudio && !isCmdOpen && audioPlayerActions.canPlayNext })
+  useHotkey(
+    'ArrowRight',
+    () => {
+      audioPlayerActions.actions.playNext()
+    },
+    { enabled: hasAudio && !isCmdOpen && audioPlayerActions.canPlayNext }
+  )
 
   // Alt+← / Alt+→ — seek backward / forward
-  useHotkey('Alt+ArrowLeft', () => {
-    audioPlayerActions.actions.jumpBackward()
-  }, { enabled: hasAudio && !isCmdOpen })
+  useHotkey(
+    'Alt+ArrowLeft',
+    () => {
+      audioPlayerActions.actions.jumpBackward()
+    },
+    { enabled: hasAudio && !isCmdOpen }
+  )
 
-  useHotkey('Alt+ArrowRight', () => {
-    audioPlayerActions.actions.jumpForward()
-  }, { enabled: hasAudio && !isCmdOpen })
+  useHotkey(
+    'Alt+ArrowRight',
+    () => {
+      audioPlayerActions.actions.jumpForward()
+    },
+    { enabled: hasAudio && !isCmdOpen }
+  )
 
   // M — mute/unmute
-  useHotkey('M', () => {
-    audioPlayerActions.actions.toggleMute()
-  }, { enabled: hasAudio && !isCmdOpen })
+  useHotkey(
+    'M',
+    () => {
+      audioPlayerActions.actions.toggleMute()
+    },
+    { enabled: hasAudio && !isCmdOpen }
+  )
 
   // Alt+↑ / Alt+↓ — volume up/down
-  useHotkey('Alt+ArrowUp', () => {
-    audioPlayerActions.actions.volumeUp()
-  }, { enabled: hasAudio && !isCmdOpen })
+  useHotkey(
+    'Alt+ArrowUp',
+    () => {
+      audioPlayerActions.actions.volumeUp()
+    },
+    { enabled: hasAudio && !isCmdOpen }
+  )
 
-  useHotkey('Alt+ArrowDown', () => {
-    audioPlayerActions.actions.volumeDown()
-  }, { enabled: hasAudio && !isCmdOpen })
+  useHotkey(
+    'Alt+ArrowDown',
+    () => {
+      audioPlayerActions.actions.volumeDown()
+    },
+    { enabled: hasAudio && !isCmdOpen }
+  )
 
   // Q — toggle queue
-  useHotkey('Q', () => {
-    audioPlayerActions.actions.toggleQueue()
-  }, { enabled: hasAudio && !isCmdOpen })
+  useHotkey(
+    'Q',
+    () => {
+      audioPlayerActions.actions.toggleQueue()
+    },
+    { enabled: hasAudio && !isCmdOpen }
+  )
 
   // F — toggle fullscreen
-  useHotkey('F', () => {
-    audioPlayerActions.actions.toggleFullscreen()
-  }, { enabled: hasAudio && !isCmdOpen })
+  useHotkey(
+    'F',
+    () => {
+      audioPlayerActions.actions.toggleFullscreen()
+    },
+    { enabled: hasAudio && !isCmdOpen }
+  )
 }

@@ -272,7 +272,9 @@ export function HierarchicalCommand({
           return (
             <UICommandItem
               key={item.id}
-              ref={(el) => { itemRefs.current[index] = el }}
+              ref={(el) => {
+                itemRefs.current[index] = el
+              }}
               onSelect={() => handleItemSelect(item)}
               onMouseEnter={() => setSelectedIndex(index)}
               className={isSelected ? 'bg-accent text-accent-foreground' : ''}>
