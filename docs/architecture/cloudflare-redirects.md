@@ -34,3 +34,28 @@ See `apps/vps/src/routes/redirect/redirect.template.ts` for the HTML template an
 ## Phase
 
 All rules run in `http_request_dynamic_redirect` phase, which fires before Cloudflare serves cached assets — ensuring crawlers and users always hit the VPS for these paths rather than the SPA's static files.
+
+## Troubleshooting: deployment error 20217
+
+**Symptom**: Deployment fails with:
+```
+'zone' is not a valid value for kind because exceeded maximum number of zone rulesets
+for phase http_request_dynamic_redirect (code 20217)
+```
+
+**Cause**: Cloudflare only allows one zone-level ruleset per phase. If SST/Pulumi state gets out of sync with Cloudflare (e.g. after a partial deployment failure or a state reset), the next deploy tries to `POST` (create) a new ruleset even though one already exists in Cloudflare.
+
+**Fix**:
+
+1. Delete the orphaned Cloudflare ruleset using the helper script:
+   ```bash
+   CLOUDFLARE_API_TOKEN=<token> ./scripts/fix-cf-redirect-ruleset.sh
+   ```
+   The API token needs **Zone > Rulesets > Edit** permission. The zone ID is hardcoded in the script (`75566badee03001f5a62414d8c32901d`).
+
+2. Redeploy:
+   ```bash
+   bun deploy:prod
+   ```
+
+SST will recreate the ruleset and properly track it in its Pulumi state going forward.

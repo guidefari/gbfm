@@ -16,6 +16,12 @@ export const urls = new sst.Linkable('Urls', {
 
 // Cloudflare redirect rules — see docs/architecture/cloudflare-redirects.md
 // RSS redirect rule for production
+//
+// NOTE: Cloudflare only allows one zone-level ruleset per phase.
+// If deployment fails with error 20217 ("exceeded maximum number of zone rulesets"),
+// the ruleset exists in Cloudflare but is not tracked in SST/Pulumi state (state drift).
+// Fix: run scripts/fix-cf-redirect-ruleset.sh to delete the orphaned ruleset,
+// then redeploy. See docs/architecture/cloudflare-redirects.md for details.
 if ($app.stage === 'prod') {
   const zone = cloudflare.getZoneOutput({
     filter: {
