@@ -170,9 +170,7 @@ describe('sitemap.utils', () => {
     test('includes micro posts at /tweet/:slug', () => {
       const xml = buildSitemapXml(mockData, 'https://goosebumps.fm')
 
-      expect(xml).toContain(
-        '<loc>https://goosebumps.fm/tweet/my-tweet</loc>'
-      )
+      expect(xml).toContain('<loc>https://goosebumps.fm/tweet/my-tweet</loc>')
     })
 
     test('null-type posts default to /editorial/:slug', () => {

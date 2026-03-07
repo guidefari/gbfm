@@ -137,15 +137,14 @@ const fetchPosts = () =>
 
 // Effect to fetch all sitemap data
 export const fetchSitemapData = Effect.gen(function* () {
-  const [mixes, shows, releases, labels, profiles, posts] =
-    yield* Effect.all([
-      fetchMixes(),
-      fetchShows(),
-      fetchReleases(),
-      fetchLabels(),
-      fetchProfiles(),
-      fetchPosts()
-    ])
+  const [mixes, shows, releases, labels, profiles, posts] = yield* Effect.all([
+    fetchMixes(),
+    fetchShows(),
+    fetchReleases(),
+    fetchLabels(),
+    fetchProfiles(),
+    fetchPosts()
+  ])
   return { mixes, shows, releases, labels, profiles, posts } as SitemapData
 })
 
