@@ -16,7 +16,7 @@ export const www = new sst.aws.StaticSite('gbfm-www', {
   },
   domain: {
     name: `www.${domain}`,
-    dns: sst.cloudflare.dns(),
+    dns: sst.cloudflare.dns({ proxy: true }),
     ...($app.stage === 'prod' ? { aliases: [domain] } : {})
   }
 })

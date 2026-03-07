@@ -40,7 +40,7 @@ if ($app.stage === 'prod') {
             }
           }
         },
-        expression: `(http.request.uri.path eq "/rss.xml") or (http.request.uri.path eq "/rss")`,
+        expression: `((http.request.uri.path eq "/rss.xml") or (http.request.uri.path eq "/rss")) and (http.host eq "${domain}")`,
         description: 'Redirect RSS feeds to VPS',
         enabled: true
       },
@@ -54,7 +54,7 @@ if ($app.stage === 'prod') {
             }
           }
         },
-        expression: `http.request.uri.path eq "/sitemap.xml"`,
+        expression: `(http.request.uri.path eq "/sitemap.xml") and (http.host eq "${domain}")`,
         description: 'Redirect sitemap to VPS dynamic sitemap',
         enabled: true
       },
@@ -69,7 +69,7 @@ if ($app.stage === 'prod') {
             preserveQueryString: true
           }
         },
-        expression: `starts_with(http.request.uri.path, "/s/")`,
+        expression: `starts_with(http.request.uri.path, "/s/") and (http.host eq "${domain}")`,
         description: 'Redirect share routes to VPS OG handlers',
         enabled: true
       }
