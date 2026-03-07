@@ -1,3 +1,10 @@
+## [2.26.1](https://github.com/guidefari/gbfm/compare/v2.26.0...v2.26.1) (2026-03-07)
+
+
+### Bug Fixes
+
+* play tracking ([5729456](https://github.com/guidefari/gbfm/commit/57294565ff8ba0d06d3630375de995804b8c9d86))
+
 # [2.26.0](https://github.com/guidefari/gbfm/compare/v2.25.0...v2.26.0) (2026-03-06)
 
 
