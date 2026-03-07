@@ -14,6 +14,7 @@ export const urls = new sst.Linkable('Urls', {
   }
 })
 
+// Cloudflare redirect rules — see docs/architecture/cloudflare-redirects.md
 // RSS redirect rule for production
 if ($app.stage === 'prod') {
   const zone = cloudflare.getZoneOutput({
