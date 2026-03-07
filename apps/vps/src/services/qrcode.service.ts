@@ -1,9 +1,19 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+import fontkit from '@pdf-lib/fontkit'
 import { Context, Effect, Layer } from 'effect'
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
+import { PDFDocument, rgb } from 'pdf-lib'
 import QRCode from 'qrcode'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { config } from '@/services/config.service'
 import { S3Service } from '@/services/s3.service'
+
+const jbMonoBold = readFileSync(
+  join(import.meta.dir, '../assets/fonts/JetBrainsMono-Bold.ttf')
+)
+const jbMonoExtraBold = readFileSync(
+  join(import.meta.dir, '../assets/fonts/JetBrainsMono-ExtraBold.ttf')
+)
 
 interface MixData {
   slug: string
@@ -73,11 +83,13 @@ const generateQROnlyPdf = (mix: MixData, qrDataUrl: string) =>
         })
     })
 
+    pdfDoc.registerFontkit(fontkit)
+
     const page = pdfDoc.addPage([612, 792])
     const { width, height } = page.getSize()
 
-    const helveticaBold = yield* Effect.tryPromise({
-      try: () => pdfDoc.embedFont(StandardFonts.HelveticaBold),
+    const fontBold = yield* Effect.tryPromise({
+      try: () => pdfDoc.embedFont(jbMonoBold),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to embed font: ${getErrorMessage(error)}`,
@@ -86,8 +98,8 @@ const generateQROnlyPdf = (mix: MixData, qrDataUrl: string) =>
         })
     })
 
-    const helvetica = yield* Effect.tryPromise({
-      try: () => pdfDoc.embedFont(StandardFonts.Helvetica),
+    const fontExtraBold = yield* Effect.tryPromise({
+      try: () => pdfDoc.embedFont(jbMonoExtraBold),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to embed font: ${getErrorMessage(error)}`,
@@ -108,7 +120,7 @@ const generateQROnlyPdf = (mix: MixData, qrDataUrl: string) =>
       x: 80,
       y: height - 120,
       size: 48,
-      font: helveticaBold,
+      font: fontExtraBold,
       color: colors.pastelGreen1
     })
 
@@ -116,7 +128,7 @@ const generateQROnlyPdf = (mix: MixData, qrDataUrl: string) =>
       x: 80,
       y: height - 175,
       size: 48,
-      font: helveticaBold,
+      font: fontExtraBold,
       color: colors.highlight
     })
 
@@ -172,7 +184,7 @@ const generateQROnlyPdf = (mix: MixData, qrDataUrl: string) =>
       x: 80,
       y: labelY,
       size: 12,
-      font: helvetica,
+      font: fontBold,
       color: colors.pastelGreen2
     })
 
@@ -182,7 +194,7 @@ const generateQROnlyPdf = (mix: MixData, qrDataUrl: string) =>
       x: 80,
       y: labelY - 45,
       size: 32,
-      font: helveticaBold,
+      font: fontExtraBold,
       color: colors.pastelGreen1
     })
 
@@ -192,7 +204,7 @@ const generateQROnlyPdf = (mix: MixData, qrDataUrl: string) =>
         x: 80,
         y: labelY - 80,
         size: 18,
-        font: helveticaBold,
+        font: fontExtraBold,
         color: colors.highlight
       })
     }
@@ -208,16 +220,16 @@ const generateQROnlyPdf = (mix: MixData, qrDataUrl: string) =>
       x: 80,
       y: 55,
       size: 10,
-      font: helveticaBold,
+      font: fontExtraBold,
       color: colors.pastelGreen2
     })
 
     const shortUrl = `goosebumps.fm/${mix.slug}`
     page.drawText(shortUrl, {
-      x: width - 80 - helvetica.widthOfTextAtSize(shortUrl, 10),
+      x: width - 80 - fontBold.widthOfTextAtSize(shortUrl, 10),
       y: 55,
       size: 10,
-      font: helvetica,
+      font: fontBold,
       color: colors.pastelGreen2
     })
 
