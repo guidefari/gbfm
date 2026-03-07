@@ -1,12 +1,6 @@
-import { Download, Loader2, QrCode } from 'lucide-react'
+import { Loader2, QrCode } from 'lucide-react'
 import * as React from 'react'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
 import { useToast } from '@/components/ui/use-toast'
 import { useShowQRPdf } from '@/lib/http'
 import { useAuthStore } from '@/store/auth'
@@ -28,24 +22,21 @@ export function ShowQRButton({
   const isAdmin = user?.role === 'admin'
   const { toast } = useToast()
 
-  const [qrTemplate, setQrTemplate] = React.useState<'flyer' | 'qr' | null>(
-    null
-  )
+  const [enabled, setEnabled] = React.useState(false)
   const { data: qrPdf, isFetching: isGeneratingPdf } = useShowQRPdf(
     slug,
-    qrTemplate || 'flyer',
-    !!qrTemplate
+    enabled
   )
 
   React.useEffect(() => {
-    if (qrPdf?.url && qrTemplate) {
+    if (qrPdf?.url && enabled) {
       window.open(qrPdf.url, '_blank')
-      setQrTemplate(null)
+      setEnabled(false)
     }
-  }, [qrPdf, qrTemplate])
+  }, [qrPdf, enabled])
 
-  const handleDownloadQR = (template: 'flyer' | 'qr') => {
-    setQrTemplate(template)
+  const handleDownloadQR = () => {
+    setEnabled(true)
     toast({
       title: 'Generating PDF...',
       description: 'Your QR code PDF will download shortly',
@@ -56,30 +47,16 @@ export function ShowQRButton({
   if (!isAdmin) return null
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant={variant} size={size} className={className}>
-          <QrCode className='w-4 h-4' />
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent>
-        <DropdownMenuItem onClick={() => handleDownloadQR('flyer')}>
-          {isGeneratingPdf && qrTemplate === 'flyer' ? (
-            <Loader2 className='w-4 h-4 animate-spin' />
-          ) : (
-            <Download className='w-4 h-4' />
-          )}
-          <span>Download flyer</span>
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => handleDownloadQR('qr')}>
-          {isGeneratingPdf && qrTemplate === 'qr' ? (
-            <Loader2 className='w-4 h-4 animate-spin' />
-          ) : (
-            <QrCode className='w-4 h-4' />
-          )}
-          <span>Download QR</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Button
+      variant={variant}
+      size={size}
+      className={className}
+      onClick={handleDownloadQR}>
+      {isGeneratingPdf ? (
+        <Loader2 className='w-4 h-4 animate-spin' />
+      ) : (
+        <QrCode className='w-4 h-4' />
+      )}
+    </Button>
   )
 }

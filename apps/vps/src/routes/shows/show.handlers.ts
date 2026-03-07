@@ -301,7 +301,7 @@ export const unsubscribeFromShow: AppRouteHandler<
 
 export const getShowQRPdf: AppRouteHandler<GetShowQRPdfRoute> = async (c) => {
   const { slug } = c.req.valid('param')
-  const { template } = c.req.valid('query')
+  const { force } = c.req.valid('query')
 
   const program = Effect.gen(function* () {
     const showService = yield* ShowService
@@ -316,7 +316,7 @@ export const getShowQRPdf: AppRouteHandler<GetShowQRPdfRoute> = async (c) => {
         thumbnailUrl: show.thumbnailUrl,
         hosts: show.hosts
       },
-      template
+      force
     )
   }).pipe(
     Effect.catchTag('NotFoundError', (e) =>
@@ -331,7 +331,7 @@ export const getShowQRPdf: AppRouteHandler<GetShowQRPdfRoute> = async (c) => {
         status: HttpStatusCodes.INTERNAL_SERVER_ERROR
       } as const)
     ),
-    Effect.withSpan('api.show.getQRPdf', { attributes: { slug, template } })
+    Effect.withSpan('api.show.getQRPdf', { attributes: { slug } })
   )
 
   const result = await AppRuntime.runPromise(program)

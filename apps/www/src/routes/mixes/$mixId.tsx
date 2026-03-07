@@ -3,7 +3,6 @@ import type { SelectMdxCompiledAudio } from '@gbfm/vps/schemas'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import {
   ArrowLeft,
-  Download,
   Edit,
   ListPlus,
   Loader2,
@@ -281,24 +280,21 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
     })
   }
 
-  const [qrTemplate, setQrTemplate] = React.useState<'flyer' | 'qr' | null>(
-    null
-  )
+  const [qrEnabled, setQrEnabled] = React.useState(false)
   const { data: qrPdf, isFetching: isGeneratingPdf } = useMixQRPdf(
     mix.slug,
-    qrTemplate || 'flyer',
-    !!qrTemplate
+    qrEnabled
   )
 
   React.useEffect(() => {
-    if (qrPdf?.url && qrTemplate) {
+    if (qrPdf?.url && qrEnabled) {
       window.open(qrPdf.url, '_blank')
-      setQrTemplate(null)
+      setQrEnabled(false)
     }
-  }, [qrPdf, qrTemplate])
+  }, [qrPdf, qrEnabled])
 
-  const handleDownloadQR = (template: 'flyer' | 'qr') => {
-    setQrTemplate(template)
+  const handleDownloadQR = () => {
+    setQrEnabled(true)
     toast({
       title: 'Generating PDF...',
       description: 'Your QR code PDF will download shortly',
@@ -343,26 +339,14 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
     ...(canDownloadQr
       ? [
           {
-            key: 'qr-flyer',
-            label: 'Download flyer',
-            icon:
-              isGeneratingPdf && qrTemplate === 'flyer' ? (
-                <Loader2 className='w-4 h-4 animate-spin' />
-              ) : (
-                <Download className='w-4 h-4' />
-              ),
-            onClick: () => handleDownloadQR('flyer')
-          },
-          {
             key: 'qr-code',
             label: 'Download QR',
-            icon:
-              isGeneratingPdf && qrTemplate === 'qr' ? (
-                <Loader2 className='w-4 h-4 animate-spin' />
-              ) : (
-                <QrCode className='w-4 h-4' />
-              ),
-            onClick: () => handleDownloadQR('qr')
+            icon: isGeneratingPdf ? (
+              <Loader2 className='w-4 h-4 animate-spin' />
+            ) : (
+              <QrCode className='w-4 h-4' />
+            ),
+            onClick: handleDownloadQR
           }
         ]
       : []),

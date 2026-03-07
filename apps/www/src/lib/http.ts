@@ -994,33 +994,23 @@ type QRPdfResponse = {
   cached: boolean
 }
 
-export function useMixQRPdf(
-  slug: string,
-  template: 'flyer' | 'qr' = 'flyer',
-  enabled = false
-) {
+export function useMixQRPdf(slug: string, enabled = false) {
   return useQuery<QRPdfResponse>({
-    queryKey: ['mix-qr-pdf', slug, template],
+    queryKey: ['mix-qr-pdf', slug],
     queryFn: () =>
       fetcher<QRPdfResponse>(
-        `${VPS_BASE_URL}/content/audio/mix/${slug}/qr-pdf?template=${template}`
+        `${VPS_BASE_URL}/content/audio/mix/${slug}/qr-pdf`
       ),
     enabled,
     staleTime: 1000 * 60 * 60 * 24
   })
 }
 
-export function useShowQRPdf(
-  slug: string,
-  template: 'flyer' | 'qr' = 'flyer',
-  enabled = false
-) {
+export function useShowQRPdf(slug: string, enabled = false) {
   return useQuery<QRPdfResponse>({
-    queryKey: ['show-qr-pdf', slug, template],
+    queryKey: ['show-qr-pdf', slug],
     queryFn: () =>
-      fetcher<QRPdfResponse>(
-        `${VPS_BASE_URL}/shows/${slug}/qr-pdf?template=${template}`
-      ),
+      fetcher<QRPdfResponse>(`${VPS_BASE_URL}/shows/${slug}/qr-pdf`),
     enabled,
     staleTime: 1000 * 60 * 60 * 24
   })
