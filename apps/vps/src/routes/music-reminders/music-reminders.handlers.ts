@@ -3,6 +3,7 @@ import * as HttpStatusCodes from 'stoker/http-status-codes'
 import type { AppRouteHandler } from '@/lib/types'
 import { runApp } from '@/runtime'
 import { MusicReminderService } from '@/services/music-reminder.service'
+import { ReminderSignalService } from '@/services/reminder-signal.service'
 
 import type {
   CreateMusicReminderRoute,
@@ -37,7 +38,7 @@ export const createMusicReminder: AppRouteHandler<
       yield* Effect.annotateCurrentSpan('hasAlbumCover', !!albumCoverUrl)
       yield* Effect.annotateCurrentSpan('hasNotes', !!notes)
       const service = yield* MusicReminderService
-      return yield* service.create({
+      const result = yield* service.create({
         userId: user.id,
         musicTitle,
         artistName,
@@ -46,6 +47,9 @@ export const createMusicReminder: AppRouteHandler<
         reminderDate: new Date(reminderDate),
         notes: notes || null
       })
+      const signal = yield* ReminderSignalService
+      yield* signal.signal
+      return result
     })
   ).pipe(
     Effect.map(
@@ -132,7 +136,7 @@ export const updateMusicReminder: AppRouteHandler<
 
   const program = Effect.gen(function* () {
     const service = yield* MusicReminderService
-    return yield* service.update(id, user.id, {
+    const result = yield* service.update(id, user.id, {
       musicTitle: updateData.musicTitle,
       artistName: updateData.artistName,
       musicUrl: updateData.musicUrl,
@@ -142,6 +146,9 @@ export const updateMusicReminder: AppRouteHandler<
         : undefined,
       notes: updateData.notes
     })
+    const signal = yield* ReminderSignalService
+    yield* signal.signal
+    return result
   }).pipe(
     Effect.map(
       (updatedReminder) =>

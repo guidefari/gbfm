@@ -6,6 +6,7 @@ import type { FavoriteService } from '@/services/favorite.service'
 import type { LabelService } from '@/services/label.service'
 import type { MixProcessingService } from '@/services/mix-processing.service'
 import type { MusicReminderService } from '@/services/music-reminder.service'
+import type { ReminderSignalService } from '@/services/reminder-signal.service'
 import type { PostService } from '@/services/post.service'
 import type { ProfileService } from '@/services/profile.service'
 import type { QRCodeService } from '@/services/qrcode.service'
@@ -28,6 +29,7 @@ type AppServices =
   | FavoriteService
   | SpotifyService
   | MusicReminderService
+  | ReminderSignalService
   | AudioService
   | PostService
   | LabelService

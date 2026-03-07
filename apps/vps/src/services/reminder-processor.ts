@@ -1,4 +1,4 @@
-import { and, eq, lte, or } from 'drizzle-orm'
+import { and, asc, eq, lte, or } from 'drizzle-orm'
 import { Chunk, Effect, Schedule } from 'effect'
 import { db } from '@/db'
 import { musicReminder } from '@/db/music-reminder.schema'
@@ -126,6 +126,32 @@ const processSingleReminder = (reminder: typeof musicReminder.$inferSelect) =>
       })
     )
   )
+
+// Returns the soonest reminderDate among pending/failed reminders (past or future)
+export const queryNextDueReminder = Effect.gen(function* () {
+  const results = yield* Effect.tryPromise({
+    try: () =>
+      db
+        .select({ reminderDate: musicReminder.reminderDate })
+        .from(musicReminder)
+        .where(
+          or(
+            eq(musicReminder.status, 'pending'),
+            eq(musicReminder.status, 'failed')
+          )
+        )
+        .orderBy(asc(musicReminder.reminderDate))
+        .limit(1),
+    catch: (error) =>
+      new ReminderProcessingError({
+        message: `Failed to query next due reminder: ${getErrorMessage(error)}`,
+        reminderId: 'next-query',
+        stage: 'query'
+      })
+  })
+
+  return results[0]?.reminderDate ?? null
+})
 
 // Get statistics about pending reminders (for monitoring)
 // not using this anywhere yet👀
