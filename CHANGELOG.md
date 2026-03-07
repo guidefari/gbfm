@@ -1,3 +1,11 @@
+# [2.27.0](https://github.com/guidefari/gbfm/compare/v2.26.1...v2.27.0) (2026-03-07)
+
+
+### Features
+
+* **seo:** fix sitemap routing, add posts, and add JSON-LD structured data ([2e68fb0](https://github.com/guidefari/gbfm/commit/2e68fb09bfd130ceaecd5b3c45e3e83041aba485))
+* **seo:** route sitemap dynamic entries through VPS /s/ pre-render routes ([5410220](https://github.com/guidefari/gbfm/commit/5410220edee8956d1eff0c6932b4afea9fb43999))
+
 ## [2.26.1](https://github.com/guidefari/gbfm/compare/v2.26.0...v2.26.1) (2026-03-07)
 
 
