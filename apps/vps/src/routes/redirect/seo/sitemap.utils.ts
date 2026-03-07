@@ -10,12 +10,19 @@ export interface ProfileEntry {
   updatedAt: Date
 }
 
+export interface PostEntry {
+  slug: string
+  updatedAt: Date
+  type: 'post' | 'micro' | null
+}
+
 export interface SitemapData {
   mixes: SitemapEntry[]
   shows: SitemapEntry[]
   releases: SitemapEntry[]
   labels: SitemapEntry[]
   profiles: ProfileEntry[]
+  posts: PostEntry[]
 }
 
 export const formatDate = (date: Date): string => {
@@ -48,6 +55,8 @@ export const buildSitemapXml = (data: SitemapData, siteUrl: string): string => {
   urls.push(buildUrlEntry(`${siteUrl}/shows`, now, 'daily', '0.9'))
   urls.push(buildUrlEntry(`${siteUrl}/releases`, now, 'weekly', '0.7'))
   urls.push(buildUrlEntry(`${siteUrl}/labels`, now, 'weekly', '0.7'))
+  urls.push(buildUrlEntry(`${siteUrl}/editorial`, now, 'daily', '0.8'))
+  urls.push(buildUrlEntry(`${siteUrl}/tweet`, now, 'daily', '0.8'))
 
   // Mixes
   for (const mix of data.mixes) {
@@ -99,6 +108,15 @@ export const buildSitemapXml = (data: SitemapData, siteUrl: string): string => {
         )
       )
     }
+  }
+
+  // Posts: 'post' type -> /editorial/:slug, 'micro' type -> /tweet/:slug
+  for (const post of data.posts) {
+    const path =
+      post.type === 'micro'
+        ? `${siteUrl}/tweet/${post.slug}`
+        : `${siteUrl}/editorial/${post.slug}`
+    urls.push(buildUrlEntry(path, post.updatedAt, 'weekly', '0.7'))
   }
 
   return `<?xml version="1.0" encoding="UTF-8"?>

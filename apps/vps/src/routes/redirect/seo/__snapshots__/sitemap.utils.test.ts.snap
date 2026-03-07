@@ -29,6 +29,16 @@ exports[`sitemap.utils > buildSitemapXml > snapshot: full sitemap structure 1`] 
     <priority>0.7</priority>
   </url>
   <url>
+    <lastmod>2026-02-01</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <lastmod>2026-02-01</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://goosebumps.fm/mixes/test-mix</loc>
     <lastmod>2024-01-15</lastmod>
     <changefreq>weekly</changefreq>
@@ -57,6 +67,18 @@ exports[`sitemap.utils > buildSitemapXml > snapshot: full sitemap structure 1`] 
     <lastmod>2024-01-20</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.5</priority>
+  </url>
+  <url>
+    <loc>https://goosebumps.fm/editorial/test-post</loc>
+    <lastmod>2024-01-25</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://goosebumps.fm/tweet/test-tweet</loc>
+    <lastmod>2024-01-26</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
   </url>
 </urlset>"
 `;
