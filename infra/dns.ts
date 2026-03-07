@@ -22,11 +22,11 @@ if ($app.stage === 'prod') {
     }
   })
 
-  new cloudflare.Ruleset('rss-redirect', {
+  new cloudflare.Ruleset('vps-redirects', {
     kind: 'zone',
     zoneId: zone.zoneId,
-    name: 'RSS Feed Redirects',
-    description: 'Redirect RSS requests to VPS',
+    name: 'VPS Route Redirects',
+    description: 'Redirect requests to VPS for dynamic content',
     phase: 'http_request_dynamic_redirect',
     rules: [
       {
@@ -41,6 +41,35 @@ if ($app.stage === 'prod') {
         },
         expression: `(http.request.uri.path eq "/rss.xml") or (http.request.uri.path eq "/rss")`,
         description: 'Redirect RSS feeds to VPS',
+        enabled: true
+      },
+      {
+        action: 'redirect',
+        actionParameters: {
+          fromValue: {
+            statusCode: 301,
+            targetUrl: {
+              value: `https://vps.${domain}/sitemap.xml`
+            }
+          }
+        },
+        expression: `http.request.uri.path eq "/sitemap.xml"`,
+        description: 'Redirect sitemap to VPS dynamic sitemap',
+        enabled: true
+      },
+      {
+        action: 'redirect',
+        actionParameters: {
+          fromValue: {
+            statusCode: 301,
+            targetUrl: {
+              expression: `concat("https://vps.${domain}", http.request.uri.path)`
+            },
+            preserveQueryString: true
+          }
+        },
+        expression: `starts_with(http.request.uri.path, "/s/")`,
+        description: 'Redirect share routes to VPS OG handlers',
         enabled: true
       }
     ]

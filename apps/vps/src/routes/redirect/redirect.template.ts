@@ -33,6 +33,8 @@ export interface OGData {
   creators?: string[]
   /** Optional alt text for the image */
   imageAlt?: string
+  /** Optional published/updated date for articles */
+  updatedAt?: Date | null
 }
 
 export interface ErrorPageData {
@@ -62,6 +64,9 @@ export const buildOGHtml = (data: OGData): string => {
   // Type-specific OG tags
   const typeSpecificTags = buildTypeSpecificTags(data, creatorNames)
 
+  // JSON-LD structured data
+  const jsonLd = buildJsonLd(data, canonicalUrl, image, siteUrl)
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -88,11 +93,15 @@ ${typeSpecificTags}
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:site" content="@goosebumpsfm">
   <meta name="twitter:url" content="${canonicalUrl}">
   <meta name="twitter:title" content="${title} | goosebumps.fm">
   <meta name="twitter:description" content="${description}">
   <meta name="twitter:image" content="${image}">
   <meta name="twitter:image:alt" content="${escapeHtml(imageAlt)}">
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">${jsonLd}</script>
 
   <!-- Redirect to the actual page -->
   <meta http-equiv="refresh" content="0;url=${canonicalUrl}">
@@ -161,6 +170,73 @@ ${typeSpecificTags}
   </script>
 </body>
 </html>`
+}
+
+const buildJsonLd = (
+  data: OGData,
+  canonicalUrl: string,
+  image: string,
+  siteUrl: string
+): string => {
+  const base = {
+    '@context': 'https://schema.org',
+    name: data.title,
+    description: data.description,
+    image,
+    url: canonicalUrl
+  }
+
+  if (data.type === 'music.song' || data.type === 'music.album') {
+    const schema: Record<string, unknown> = {
+      ...base,
+      '@type': data.type === 'music.album' ? 'MusicAlbum' : 'MusicRecording'
+    }
+    if (data.creators?.length) {
+      schema.byArtist = data.creators.map((name) => ({
+        '@type': 'MusicGroup',
+        name
+      }))
+    }
+    if (data.audio) {
+      schema.audio = { '@type': 'AudioObject', contentUrl: data.audio }
+    }
+    return JSON.stringify(schema)
+  }
+
+  if (data.type === 'article') {
+    const schema: Record<string, unknown> = {
+      ...base,
+      '@type': 'Article',
+      publisher: {
+        '@type': 'Organization',
+        name: 'goosebumps.fm',
+        url: siteUrl
+      }
+    }
+    if (data.creators?.length) {
+      schema.author = data.creators.map((name) => ({
+        '@type': 'Person',
+        name
+      }))
+    }
+    if (data.updatedAt) {
+      schema.dateModified = data.updatedAt.toISOString()
+    }
+    return JSON.stringify(schema)
+  }
+
+  if (data.type === 'profile') {
+    return JSON.stringify({
+      ...base,
+      '@type': 'Person'
+    })
+  }
+
+  return JSON.stringify({
+    ...base,
+    '@type': 'WebPage',
+    isPartOf: { '@type': 'WebSite', name: 'goosebumps.fm', url: siteUrl }
+  })
 }
 
 const buildTypeSpecificTags = (

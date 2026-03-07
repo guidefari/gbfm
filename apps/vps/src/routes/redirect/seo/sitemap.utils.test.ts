@@ -58,6 +58,14 @@ describe('sitemap.utils', () => {
       profiles: [
         { username: 'dj-cool', updatedAt: new Date('2024-06-12') },
         { username: null, updatedAt: new Date('2024-06-12') } // Should be filtered out
+      ],
+      posts: [
+        {
+          slug: 'my-editorial',
+          updatedAt: new Date('2024-06-05'),
+          type: 'post'
+        },
+        { slug: 'my-tweet', updatedAt: new Date('2024-06-08'), type: 'micro' }
       ]
     }
 
@@ -87,6 +95,8 @@ describe('sitemap.utils', () => {
       expect(xml).toContain('<loc>https://goosebumps.fm/shows</loc>')
       expect(xml).toContain('<loc>https://goosebumps.fm/releases</loc>')
       expect(xml).toContain('<loc>https://goosebumps.fm/labels</loc>')
+      expect(xml).toContain('<loc>https://goosebumps.fm/editorial</loc>')
+      expect(xml).toContain('<loc>https://goosebumps.fm/tweet</loc>')
     })
 
     test('includes all mixes', () => {
@@ -142,9 +152,37 @@ describe('sitemap.utils', () => {
           !m.includes('/mixes') &&
           !m.includes('/shows') &&
           !m.includes('/releases') &&
-          !m.includes('/labels')
+          !m.includes('/labels') &&
+          !m.includes('/editorial') &&
+          !m.includes('/tweet')
       )
       expect(nonStaticProfiles).toHaveLength(1)
+    })
+
+    test('includes editorial posts at /editorial/:slug', () => {
+      const xml = buildSitemapXml(mockData, 'https://goosebumps.fm')
+
+      expect(xml).toContain(
+        '<loc>https://goosebumps.fm/editorial/my-editorial</loc>'
+      )
+    })
+
+    test('includes micro posts at /tweet/:slug', () => {
+      const xml = buildSitemapXml(mockData, 'https://goosebumps.fm')
+
+      expect(xml).toContain('<loc>https://goosebumps.fm/tweet/my-tweet</loc>')
+    })
+
+    test('null-type posts default to /editorial/:slug', () => {
+      const data: SitemapData = {
+        ...mockData,
+        posts: [{ slug: 'unknown-type', updatedAt: new Date(), type: null }]
+      }
+      const xml = buildSitemapXml(data, 'https://goosebumps.fm')
+
+      expect(xml).toContain(
+        '<loc>https://goosebumps.fm/editorial/unknown-type</loc>'
+      )
     })
 
     test('snapshot: full sitemap structure', () => {
@@ -162,6 +200,18 @@ describe('sitemap.utils', () => {
           labels: [{ slug: 'test-label', updatedAt: new Date('2024-01-01') }],
           profiles: [
             { username: 'testuser', updatedAt: new Date('2024-01-20') }
+          ],
+          posts: [
+            {
+              slug: 'test-post',
+              updatedAt: new Date('2024-01-25'),
+              type: 'post'
+            },
+            {
+              slug: 'test-tweet',
+              updatedAt: new Date('2024-01-26'),
+              type: 'micro'
+            }
           ]
         }
 
@@ -202,7 +252,7 @@ describe('sitemap.utils', () => {
       // This will have a dynamic date, so we just check structure
       const xml = buildSitemapIndexXml('https://goosebumps.fm')
 
-      // Replace date with placeholder for snapshot
+      // Replace date with placeholder for snapshot stability
       const normalized = xml.replace(
         /<lastmod>\d{4}-\d{2}-\d{2}<\/lastmod>/,
         '<lastmod>YYYY-MM-DD</lastmod>'
@@ -227,7 +277,8 @@ describe('sitemap.utils', () => {
         shows: [],
         releases: [],
         labels: [],
-        profiles: []
+        profiles: [],
+        posts: []
       }
 
       const xml = buildSitemapXml(emptyData, 'https://goosebumps.fm')
