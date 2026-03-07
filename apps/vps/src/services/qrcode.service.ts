@@ -42,12 +42,12 @@ const generateQRDataUrl = (url: string) =>
     try: () =>
       QRCode.toDataURL(url, {
         width: 400,
-        margin: 0,
+        margin: 1,
         color: {
-          dark: '#000000',
-          light: '#ffffff'
+          dark: '#9bfd9e',
+          light: '#111827'
         },
-        errorCorrectionLevel: 'M'
+        errorCorrectionLevel: 'H'
       }),
     catch: (error) =>
       new DatabaseError({
@@ -135,28 +135,39 @@ const generateFlyerPdf = (mix: MixData, qrDataUrl: string) =>
       color: colors.bg
     })
 
-    // Logo text
-    page.drawText('goosebumps.', {
-      x: 50,
-      y: height - 70,
-      size: 32,
+    const logoText = 'goosebumps.'
+    const logoSize = 32
+    const logoX = 50
+    const logoY = height - 70
+    page.drawText(logoText, {
+      x: logoX,
+      y: logoY,
+      size: logoSize,
       font: helveticaBold,
       color: colors.pastelGreen1
     })
 
-    // fm highlight box
+    const fmText = 'fm'
+    const fmSize = 18
+    const fmPadX = 6
+    const fmPadY = 4
+    const fmTextWidth = helveticaBold.widthOfTextAtSize(fmText, fmSize)
+    const fmBoxX =
+      logoX + helveticaBold.widthOfTextAtSize(logoText, logoSize) + 8
+    const fmBoxY = logoY - 2
+    const fmBoxW = fmTextWidth + fmPadX * 2
+    const fmBoxH = fmSize + fmPadY * 2
     page.drawRectangle({
-      x: 290,
-      y: height - 85,
-      width: 35,
-      height: 25,
+      x: fmBoxX,
+      y: fmBoxY,
+      width: fmBoxW,
+      height: fmBoxH,
       color: colors.highlight
     })
-
-    page.drawText('fm', {
-      x: 293,
-      y: height - 80,
-      size: 20,
+    page.drawText(fmText, {
+      x: fmBoxX + fmPadX,
+      y: fmBoxY + fmPadY + 1,
+      size: fmSize,
       font: helveticaBold,
       color: colors.darkerBg
     })
@@ -202,7 +213,7 @@ const generateFlyerPdf = (mix: MixData, qrDataUrl: string) =>
 
         if (image) {
           const imgDims = image.scale(1)
-          const scale = Math.min(
+          const scale = Math.max(
             imageBoxWidth / imgDims.width,
             imageBoxHeight / imgDims.height
           )
@@ -217,6 +228,49 @@ const generateFlyerPdf = (mix: MixData, qrDataUrl: string) =>
             width: scaledWidth,
             height: scaledHeight
           })
+
+          // Mask overflow: cover left/right and top/bottom bleed with bg color
+          const boxLeft = 50
+          const boxRight = 50 + imageBoxWidth
+          const boxBottom = imageBoxY
+          const boxTop = imageBoxY + imageBoxHeight
+
+          if (imgX < boxLeft) {
+            page.drawRectangle({
+              x: 0,
+              y: boxBottom,
+              width: boxLeft,
+              height: imageBoxHeight,
+              color: colors.bg
+            })
+          }
+          if (imgX + scaledWidth > boxRight) {
+            page.drawRectangle({
+              x: boxRight,
+              y: boxBottom,
+              width: width - boxRight,
+              height: imageBoxHeight,
+              color: colors.bg
+            })
+          }
+          if (imgY < boxBottom) {
+            page.drawRectangle({
+              x: boxLeft,
+              y: 0,
+              width: imageBoxWidth,
+              height: boxBottom,
+              color: colors.bg
+            })
+          }
+          if (imgY + scaledHeight > boxTop) {
+            page.drawRectangle({
+              x: boxLeft,
+              y: boxTop,
+              width: imageBoxWidth,
+              height: height - boxTop,
+              color: colors.bg
+            })
+          }
         }
       }
     }
@@ -271,13 +325,14 @@ const generateFlyerPdf = (mix: MixData, qrDataUrl: string) =>
         })
     })
 
-    // QR code with highlight border
     page.drawRectangle({
-      x: 47,
-      y: qrY - 3,
-      width: qrSize + 6,
-      height: qrSize + 6,
-      color: colors.highlight
+      x: 44,
+      y: qrY - 6,
+      width: qrSize + 12,
+      height: qrSize + 12,
+      color: colors.darkerBg,
+      borderColor: colors.highlight,
+      borderWidth: 2
     })
 
     page.drawImage(qrImage, {
@@ -322,8 +377,9 @@ const generateFlyerPdf = (mix: MixData, qrDataUrl: string) =>
       dashArray: [4, 2]
     })
 
-    page.drawText('PAGE 01', {
-      x: width - 80,
+    const footerUrl = `goosebumps.fm/${mix.slug}`
+    page.drawText(footerUrl, {
+      x: width - 50 - helvetica.widthOfTextAtSize(footerUrl, 9),
       y: 30,
       size: 9,
       font: helvetica,
@@ -341,7 +397,7 @@ const generateFlyerPdf = (mix: MixData, qrDataUrl: string) =>
     })
   })
 
-const generateQROnlyPdf = (_mix: MixData, qrDataUrl: string) =>
+const generateQROnlyPdf = (mix: MixData, qrDataUrl: string) =>
   Effect.gen(function* () {
     const pdfDoc = yield* Effect.tryPromise({
       try: () => PDFDocument.create(),
@@ -412,23 +468,14 @@ const generateQROnlyPdf = (_mix: MixData, qrDataUrl: string) =>
     const qrX = (width - qrSize) / 2
     const qrY = height - 530
 
-    // White QR background
     page.drawRectangle({
       x: qrX - 15,
       y: qrY - 15,
       width: qrSize + 30,
       height: qrSize + 30,
-      color: rgb(1, 1, 1)
-    })
-
-    // Highlight border
-    page.drawRectangle({
-      x: qrX - 15,
-      y: qrY - 15,
-      width: qrSize + 30,
-      height: qrSize + 30,
+      color: colors.darkerBg,
       borderColor: colors.highlight,
-      borderWidth: 4
+      borderWidth: 3
     })
 
     const qrImage = yield* Effect.tryPromise({
@@ -458,7 +505,7 @@ const generateQROnlyPdf = (_mix: MixData, qrDataUrl: string) =>
     })
 
     const labelY = qrY - 50
-    page.drawText('IMMEDIATE ACCESS', {
+    page.drawText('SCAN TO LISTEN', {
       x: 80,
       y: labelY,
       size: 12,
@@ -466,21 +513,26 @@ const generateQROnlyPdf = (_mix: MixData, qrDataUrl: string) =>
       color: colors.pastelGreen2
     })
 
-    page.drawText('SCAN TO', {
+    const truncatedTitle =
+      mix.title.length > 28 ? `${mix.title.substring(0, 25)}...` : mix.title
+    page.drawText(truncatedTitle.toUpperCase(), {
       x: 80,
-      y: labelY - 40,
-      size: 36,
+      y: labelY - 45,
+      size: 32,
       font: helveticaBold,
       color: colors.pastelGreen1
     })
 
-    page.drawText('PLAY MIX', {
-      x: 80,
-      y: labelY - 80,
-      size: 36,
-      font: helveticaBold,
-      color: colors.highlight
-    })
+    if (mix.creators && mix.creators.length > 0) {
+      const creatorNames = mix.creators.map((c) => c.name).join(' & ')
+      page.drawText(`by ${creatorNames}`.toUpperCase(), {
+        x: 80,
+        y: labelY - 80,
+        size: 18,
+        font: helveticaBold,
+        color: colors.highlight
+      })
+    }
 
     page.drawLine({
       start: { x: 80, y: 80 },
@@ -489,7 +541,7 @@ const generateQROnlyPdf = (_mix: MixData, qrDataUrl: string) =>
       color: colors.pastelGreen2
     })
 
-    page.drawText('CONNECT', {
+    page.drawText('goosebumps.fm', {
       x: 80,
       y: 55,
       size: 10,
@@ -497,8 +549,9 @@ const generateQROnlyPdf = (_mix: MixData, qrDataUrl: string) =>
       color: colors.pastelGreen2
     })
 
-    page.drawText('PAGE 02 / IMPACT', {
-      x: width - 150,
+    const shortUrl = `goosebumps.fm/${mix.slug}`
+    page.drawText(shortUrl, {
+      x: width - 80 - helvetica.widthOfTextAtSize(shortUrl, 10),
       y: 55,
       size: 10,
       font: helvetica,
