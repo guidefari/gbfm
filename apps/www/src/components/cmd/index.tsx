@@ -96,20 +96,15 @@ export function CommandDialogDemo() {
     ]
   )
 
-  const { setupKeyboardShortcuts } = useKeyboardShortcuts({
+  useKeyboardShortcuts({
     isOnMixesPage,
     toggleSortOrder: sortingActions.toggleSort,
     routeToMixes: navigationActions.routeToMixes,
     toggleCmd,
     closeCmd,
     audioSrc,
-    isCmdOpen: Cmd.isOpen,
-    whitelistedShortcuts: ['cmd+k']
+    isCmdOpen: Cmd.isOpen
   })
-
-  React.useEffect(() => {
-    return setupKeyboardShortcuts()
-  }, [setupKeyboardShortcuts])
 
   const handleItemSelect = (item: CommandItem | CommandAction) => {
     if ('onSelect' in item) {

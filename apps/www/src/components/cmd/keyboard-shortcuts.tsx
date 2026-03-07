@@ -1,3 +1,4 @@
+import { useHotkey } from '@tanstack/react-hotkeys'
 import { useAudioPlayerCmdActions } from './audio/actions'
 
 interface KeyboardShortcutsProps {
@@ -8,81 +9,6 @@ interface KeyboardShortcutsProps {
   closeCmd: () => void
   audioSrc: string | null
   isCmdOpen: boolean
-  whitelistedShortcuts?: string[]
-}
-
-// Elements that should be ignored for keyboard shortcuts when focused
-const TYPING_ELEMENTS = [
-  'INPUT',
-  'TEXTAREA',
-  'SELECT',
-  'DETAILS',
-  'IFRAME' // For rich text editors and embedded content
-]
-
-// Roles that indicate typing elements
-const TYPING_ROLES = [
-  'textbox',
-  'combobox',
-  'searchbox',
-  'search',
-  'listbox',
-  'menuitem',
-  'option'
-]
-
-// Check if the current focused element is a typing element
-const isTypingElement = (element: Element | null): boolean => {
-  if (!element) return false
-
-  // Check if element is a typing element by tag name
-  if (TYPING_ELEMENTS.includes(element.tagName)) {
-    return true
-  }
-
-  // Check if element has contenteditable attribute
-  if (element.getAttribute('contenteditable') === 'true') {
-    return true
-  }
-
-  // Check if element has specific roles
-  const role = element.getAttribute('role')
-  if (role && TYPING_ROLES.includes(role)) {
-    return true
-  }
-
-  // Check if element is inside a typing element (using closest for more reliable checking)
-  const selector = [
-    ...TYPING_ELEMENTS.map((tag) => tag.toLowerCase()),
-    '[contenteditable="true"]',
-    '[contenteditable]',
-    ...TYPING_ROLES.map((role) => `[role="${role}"]`)
-  ].join(',')
-
-  const parentTypingElement = element.closest(selector)
-  if (parentTypingElement) {
-    return true
-  }
-
-  // Additional checks for common rich text editor classes and IDs
-  const isInRichTextEditor = element.closest(
-    [
-      '.ProseMirror',
-      '.ql-editor',
-      '.toastui-editor-contents',
-      '.wysiwyg-editor',
-      '.rich-text-editor',
-      '[data-gramm_editor]',
-      '[class*="editor"]',
-      '[class*="rich-text"]'
-    ].join(',')
-  )
-
-  if (isInRichTextEditor) {
-    return true
-  }
-
-  return false
 }
 
 export const useKeyboardShortcuts = ({
@@ -92,156 +18,128 @@ export const useKeyboardShortcuts = ({
   toggleCmd,
   closeCmd,
   audioSrc,
-  isCmdOpen,
-  whitelistedShortcuts = ['cmd+k']
+  isCmdOpen
 }: KeyboardShortcutsProps) => {
   const audioPlayerActions = useAudioPlayerCmdActions(closeCmd)
 
-  const setupKeyboardShortcuts = () => {
-    const down = (e: KeyboardEvent) => {
-      // Handle Escape key specially - always close command dialog if open, regardless of focus
-      if (e.key === 'Escape') {
-        e.preventDefault()
-        if (isCmdOpen) {
-          closeCmd()
-          return
-        }
-        if (audioSrc && audioPlayerActions.isFullscreenVisible) {
-          audioPlayerActions.actions.closeFullscreen()
-          return
-        }
-        return
-      }
+  const hasAudio = Boolean(audioSrc)
 
-      // Check if user is focused on a typing element
-      const activeElement = document.activeElement
-      if (isTypingElement(activeElement)) {
-        return
-      }
+  // Cmd/Ctrl+K — toggle command dialog (ignoreInputs: false by default for Mod combos)
+  useHotkey('Mod+K', () => {
+    toggleCmd()
+  })
 
-      // Allow browser navigation shortcuts to pass through (only cmd/ctrl + key combinations)
-      const isBrowserNavigation =
-        (e.metaKey || e.ctrlKey) &&
-        [
-          'ArrowLeft', // cmd+left = back
-          'ArrowRight', // cmd+right = forward
-          'r', // cmd+r = reload
-          't', // cmd+t = new tab
-          'w', // cmd+w = close tab
-          'l', // cmd+l = focus address bar
-          'a', // cmd+a = select all
-          'c', // cmd+c = copy
-          'v', // cmd+v = paste
-          'z', // cmd+z = undo
-          'f', // cmd+f = find (conflicts with our fullscreen shortcut, but browser takes precedence)
-          'n', // cmd+n = new window
-          ',', // cmd+, = preferences
-          '1',
-          '2',
-          '3',
-          '4',
-          '5',
-          '6',
-          '7',
-          '8',
-          '9' // cmd+1-9 = switch tabs
-        ].includes(e.key)
-
-      if (isBrowserNavigation) {
-        return // Allow browser shortcuts to work normally
-      }
-
-      // Always allow cmd+k to toggle command dialog
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault()
-        toggleCmd()
-        return
-      }
-
-      // If command dialog is open, only allow whitelisted shortcuts
-      if (isCmdOpen && !whitelistedShortcuts.includes(e.key)) {
-        return
-      }
-
-      // Only process other shortcuts when command dialog is closed
-      if (e.key === '0') {
-        e.preventDefault()
-        routeToMixes()
-      }
-
-      if (e.key === 's' && e.altKey && isOnMixesPage) {
-        e.preventDefault()
-        toggleSortOrder()
-      }
-
-      // Audio player shortcuts
-      if (audioSrc) {
-        if (e.key === ' ') {
-          e.preventDefault()
-          audioPlayerActions.actions.togglePlayPause()
-        }
-
-        if (e.key === 'ArrowLeft' && e.altKey) {
-          e.preventDefault()
-          audioPlayerActions.actions.jumpBackward()
-        }
-
-        if (e.key === 'ArrowRight' && e.altKey) {
-          e.preventDefault()
-          audioPlayerActions.actions.jumpForward()
-        }
-
-        if (
-          e.key === 'ArrowLeft' &&
-          !e.altKey &&
-          audioPlayerActions.canPlayPrevious
-        ) {
-          e.preventDefault()
-          audioPlayerActions.actions.playPrevious()
-        }
-
-        if (
-          e.key === 'ArrowRight' &&
-          !e.altKey &&
-          audioPlayerActions.canPlayNext
-        ) {
-          e.preventDefault()
-          audioPlayerActions.actions.playNext()
-        }
-
-        if (e.key === 'm' || e.key === 'M') {
-          e.preventDefault()
-          audioPlayerActions.actions.toggleMute()
-        }
-
-        if (e.key === 'ArrowUp' && e.altKey) {
-          e.preventDefault()
-          audioPlayerActions.actions.volumeUp()
-        }
-
-        if (e.key === 'ArrowDown' && e.altKey) {
-          e.preventDefault()
-          audioPlayerActions.actions.volumeDown()
-        }
-
-        if (e.key === 'q' || e.key === 'Q') {
-          e.preventDefault()
-          audioPlayerActions.actions.toggleQueue()
-        }
-
-        if (e.key === 'f' || e.key === 'F') {
-          e.preventDefault()
-          audioPlayerActions.actions.toggleFullscreen()
-        }
-      }
+  // Escape — close command dialog or fullscreen player
+  useHotkey('Escape', () => {
+    if (isCmdOpen) {
+      closeCmd()
+    } else if (hasAudio && audioPlayerActions.isFullscreenVisible) {
+      audioPlayerActions.actions.closeFullscreen()
     }
+  })
 
-    document.addEventListener('keydown', down)
-    return () => document.removeEventListener('keydown', down)
-  }
+  // 0 — navigate to mixes
+  useHotkey(
+    '0',
+    () => {
+      routeToMixes()
+    },
+    { enabled: !isCmdOpen }
+  )
 
-  return {
-    setupKeyboardShortcuts,
-    audioPlayerActions
-  }
+  // Alt+S — toggle sort order (mixes page only)
+  useHotkey(
+    'Alt+S',
+    () => {
+      toggleSortOrder()
+    },
+    { enabled: !isCmdOpen && isOnMixesPage }
+  )
+
+  // Space — play/pause
+  useHotkey(
+    'Space',
+    () => {
+      audioPlayerActions.actions.togglePlayPause()
+    },
+    { enabled: hasAudio && !isCmdOpen }
+  )
+
+  // ← / → — previous / next track
+  useHotkey(
+    'ArrowLeft',
+    () => {
+      audioPlayerActions.actions.playPrevious()
+    },
+    { enabled: hasAudio && !isCmdOpen && audioPlayerActions.canPlayPrevious }
+  )
+
+  useHotkey(
+    'ArrowRight',
+    () => {
+      audioPlayerActions.actions.playNext()
+    },
+    { enabled: hasAudio && !isCmdOpen && audioPlayerActions.canPlayNext }
+  )
+
+  // Alt+← / Alt+→ — seek backward / forward
+  useHotkey(
+    'Alt+ArrowLeft',
+    () => {
+      audioPlayerActions.actions.jumpBackward()
+    },
+    { enabled: hasAudio && !isCmdOpen }
+  )
+
+  useHotkey(
+    'Alt+ArrowRight',
+    () => {
+      audioPlayerActions.actions.jumpForward()
+    },
+    { enabled: hasAudio && !isCmdOpen }
+  )
+
+  // M — mute/unmute
+  useHotkey(
+    'M',
+    () => {
+      audioPlayerActions.actions.toggleMute()
+    },
+    { enabled: hasAudio && !isCmdOpen }
+  )
+
+  // Alt+↑ / Alt+↓ — volume up/down
+  useHotkey(
+    'Alt+ArrowUp',
+    () => {
+      audioPlayerActions.actions.volumeUp()
+    },
+    { enabled: hasAudio && !isCmdOpen }
+  )
+
+  useHotkey(
+    'Alt+ArrowDown',
+    () => {
+      audioPlayerActions.actions.volumeDown()
+    },
+    { enabled: hasAudio && !isCmdOpen }
+  )
+
+  // Q — toggle queue
+  useHotkey(
+    'Q',
+    () => {
+      audioPlayerActions.actions.toggleQueue()
+    },
+    { enabled: hasAudio && !isCmdOpen }
+  )
+
+  // F — toggle fullscreen
+  useHotkey(
+    'F',
+    () => {
+      audioPlayerActions.actions.toggleFullscreen()
+    },
+    { enabled: hasAudio && !isCmdOpen }
+  )
 }

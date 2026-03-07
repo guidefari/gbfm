@@ -33,6 +33,7 @@ export function HierarchicalCommand({
   )
   const [selectedIndex, setSelectedIndex] = useState(0)
   const containerRef = useRef<HTMLDivElement>(null)
+  const itemRefs = useRef<Array<HTMLElement | null>>([])
 
   // Filter items based on authentication and search
   const filteredItems = items
@@ -175,6 +176,13 @@ export function HierarchicalCommand({
     }
   }, [searchValue, isInSection])
 
+  // Scroll selected item into view when navigating with keyboard in list view
+  useEffect(() => {
+    if (isInSection) {
+      itemRefs.current[selectedIndex]?.scrollIntoView({ block: 'nearest' })
+    }
+  }, [selectedIndex, isInSection])
+
   // Render as grid when showing main tiles (both filtered and unfiltered)
   if (!isInSection) {
     return (
@@ -259,12 +267,17 @@ export function HierarchicalCommand({
         }>
         {currentItems.map((item, index) => {
           const Icon = 'icon' in item ? item.icon : undefined
+          const isSelected = index === selectedIndex
 
           return (
             <UICommandItem
               key={item.id}
+              ref={(el) => {
+                itemRefs.current[index] = el
+              }}
               onSelect={() => handleItemSelect(item)}
-              onMouseEnter={() => setSelectedIndex(index)}>
+              onMouseEnter={() => setSelectedIndex(index)}
+              className={isSelected ? 'bg-accent text-accent-foreground' : ''}>
               {Icon && <Icon className='w-4 h-4' />}
               <span>{item.label}</span>
               {'shortcut' in item && item.shortcut && (
