@@ -86,6 +86,7 @@ const ConfigSchema = Schema.Struct({
   }),
   urls: Schema.Struct({
     frontend: Schema.String,
+    vps: Schema.String,
     router: Schema.String,
     bucketRouter: Schema.String
   }),
@@ -152,6 +153,9 @@ export function createConfig(): ConfigService {
   const frontendUrl = isProd
     ? getResourceValue('Urls.site', 'http://localhost:5173')
     : process.env.FRONTEND_URL || 'http://localhost:5173'
+  const vpsUrl = isProd
+    ? getResourceValue('Urls.vps', 'http://localhost:3003')
+    : process.env.VPS_URL || 'http://localhost:3003'
   const routerUrl =
     process.env.ROUTER_URL ||
     getResourceValue('Router.url', 'http://localhost:3000')
@@ -217,6 +221,7 @@ export function createConfig(): ConfigService {
     },
     urls: {
       frontend: frontendUrl,
+      vps: vpsUrl,
       router: routerUrl,
       bucketRouter: bucketRouterUrl
     },

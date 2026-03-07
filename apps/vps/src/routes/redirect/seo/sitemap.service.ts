@@ -152,7 +152,8 @@ export const fetchSitemapData = Effect.gen(function* () {
 export const regenerateSitemap = Effect.gen(function* () {
   const data = yield* fetchSitemapData
   const siteUrl = config.urls.frontend.replace(/\/$/, '')
-  const xml = buildSitemapXml(data, siteUrl)
+  const vpsUrl = config.urls.vps.replace(/\/$/, '')
+  const xml = buildSitemapXml(data, siteUrl, vpsUrl)
 
   sitemapCache = {
     xml,

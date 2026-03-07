@@ -43,9 +43,14 @@ export const buildUrlEntry = (
   </url>`
 }
 
-export const buildSitemapXml = (data: SitemapData, siteUrl: string): string => {
+export const buildSitemapXml = (
+  data: SitemapData,
+  siteUrl: string,
+  vpsUrl?: string
+): string => {
   const now = new Date()
   const urls: string[] = []
+  const dynamicBase = vpsUrl ? `${vpsUrl}/s` : null
 
   // Homepage
   urls.push(buildUrlEntry(siteUrl, now, 'daily', '1.0'))
@@ -60,63 +65,61 @@ export const buildSitemapXml = (data: SitemapData, siteUrl: string): string => {
 
   // Mixes
   for (const mix of data.mixes) {
-    urls.push(
-      buildUrlEntry(`${siteUrl}/mixes/${mix.slug}`, mix.updatedAt, 'weekly')
-    )
+    const loc = dynamicBase
+      ? `${dynamicBase}/mix/${mix.slug}`
+      : `${siteUrl}/mixes/${mix.slug}`
+    urls.push(buildUrlEntry(loc, mix.updatedAt, 'weekly'))
   }
 
   // Shows
   for (const show of data.shows) {
-    urls.push(
-      buildUrlEntry(`${siteUrl}/shows/${show.slug}`, show.updatedAt, 'weekly')
-    )
+    const loc = dynamicBase
+      ? `${dynamicBase}/show/${show.slug}`
+      : `${siteUrl}/shows/${show.slug}`
+    urls.push(buildUrlEntry(loc, show.updatedAt, 'weekly'))
   }
 
   // Releases
   for (const release of data.releases) {
-    urls.push(
-      buildUrlEntry(
-        `${siteUrl}/releases/${release.slug}`,
-        release.updatedAt,
-        'monthly',
-        '0.6'
-      )
-    )
+    const loc = dynamicBase
+      ? `${dynamicBase}/release/${release.slug}`
+      : `${siteUrl}/releases/${release.slug}`
+    urls.push(buildUrlEntry(loc, release.updatedAt, 'monthly', '0.6'))
   }
 
   // Labels
   for (const label of data.labels) {
-    urls.push(
-      buildUrlEntry(
-        `${siteUrl}/labels/${label.slug}`,
-        label.updatedAt,
-        'monthly',
-        '0.6'
-      )
-    )
+    const loc = dynamicBase
+      ? `${dynamicBase}/label/${label.slug}`
+      : `${siteUrl}/labels/${label.slug}`
+    urls.push(buildUrlEntry(loc, label.updatedAt, 'monthly', '0.6'))
   }
 
   // Profiles (only those with usernames)
   for (const profile of data.profiles) {
     if (profile.username) {
-      urls.push(
-        buildUrlEntry(
-          `${siteUrl}/${profile.username}`,
-          profile.updatedAt,
-          'weekly',
-          '0.5'
-        )
-      )
+      const loc = dynamicBase
+        ? `${dynamicBase}/profile/${profile.username}`
+        : `${siteUrl}/${profile.username}`
+      urls.push(buildUrlEntry(loc, profile.updatedAt, 'weekly', '0.5'))
     }
   }
 
   // Posts: 'post' type -> /editorial/:slug, 'micro' type -> /tweet/:slug
   for (const post of data.posts) {
-    const path =
-      post.type === 'micro'
-        ? `${siteUrl}/tweet/${post.slug}`
-        : `${siteUrl}/editorial/${post.slug}`
-    urls.push(buildUrlEntry(path, post.updatedAt, 'weekly', '0.7'))
+    let loc: string
+    if (dynamicBase) {
+      loc =
+        post.type === 'micro'
+          ? `${dynamicBase}/tweet/${post.slug}`
+          : `${dynamicBase}/editorial/${post.slug}`
+    } else {
+      loc =
+        post.type === 'micro'
+          ? `${siteUrl}/tweet/${post.slug}`
+          : `${siteUrl}/editorial/${post.slug}`
+    }
+    urls.push(buildUrlEntry(loc, post.updatedAt, 'weekly', '0.7'))
   }
 
   return `<?xml version="1.0" encoding="UTF-8"?>
