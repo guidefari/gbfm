@@ -3,6 +3,8 @@ import type { SelectAudio, SelectMdxCompiledAudio } from '@gbfm/vps/schemas'
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 import { toast } from '@/components/ui/use-toast'
+import { RuntimeClient } from '@/runtime'
+import { track } from '@/services/analytics'
 
 let lastPersistTime = 0
 const PERSIST_INTERVAL = 5000
@@ -364,6 +366,16 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
             },
             false,
             'audioPlayer/loadTrack'
+          )
+
+          void RuntimeClient.runPromise(
+            track('audio_played', {
+              trackId: trackId ?? null,
+              title,
+              slug: slug ?? null,
+              pageUrl:
+                typeof window !== 'undefined' ? window.location.pathname : null
+            })
           )
 
           get().play(title)
