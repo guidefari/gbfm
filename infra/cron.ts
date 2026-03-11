@@ -9,7 +9,7 @@ import { dbBackupTask } from './vps'
  * Uses a Task with a Docker container that has PostgreSQL client tools and Bun installed.
  */
 
-export const dbBackupCron = new sst.aws.Cron('DatabaseBackupCron', {
+export const dbBackupCron = new sst.aws.CronV2('DatabaseBackupCron', {
   task: dbBackupTask,
   schedule: 'cron(0 2 * * ? *)'
 })

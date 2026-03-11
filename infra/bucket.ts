@@ -9,7 +9,7 @@ export const contentBucket = new sst.aws.Bucket('User_Content', {
 })
 
 // QR PDFs are temporary — expire them via S3 lifecycle instead of a polling cron job
-new aws.s3.BucketLifecycleConfigurationV2('QrPdfLifecycle', {
+new aws.s3.BucketLifecycleConfiguration('QrPdfLifecycle', {
   bucket: contentBucket.name,
   rules: [
     {
