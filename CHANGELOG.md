@@ -1,3 +1,11 @@
+## [2.27.1](https://github.com/guidefari/gbfm/compare/v2.27.0...v2.27.1) (2026-03-11)
+
+
+### Bug Fixes
+
+* biome errors ([903dbfe](https://github.com/guidefari/gbfm/commit/903dbfe62ba7fe1b9c9fd9261b97ce4dbee8d438))
+* vps Dockerfile ([d2e6d29](https://github.com/guidefari/gbfm/commit/d2e6d29459a2ad960d5dd1f9b7772fba8841d0c0))
+
 # [2.27.0](https://github.com/guidefari/gbfm/compare/v2.26.1...v2.27.0) (2026-03-07)
 
 
