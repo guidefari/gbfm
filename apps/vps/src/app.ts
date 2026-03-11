@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { Duration, Effect, Schedule } from 'effect'
+import { Data, Duration, Effect, Schedule } from 'effect'
 import configureOpenAPI from '@/lib/configure-open-api'
 import { createAppEffect } from '@/lib/create-app'
 import content from '@/routes/content/content.index'
@@ -27,9 +27,13 @@ import {
 } from './services/reminder-processor'
 import { ReminderSignalService } from './services/reminder-signal.service'
 
+class HealthCheckError extends Data.TaggedError('HealthCheckError')<{
+  cause?: unknown
+}> {}
+
 const healthCheckEffect = Effect.tryPromise({
   try: () => db.execute(sql.raw('SELECT 1')),
-  catch: () => Effect.die('Database connection failed')
+  catch: (cause) => new HealthCheckError({ cause })
 })
 
 const setupRoutesEffect = Effect.gen(function* () {

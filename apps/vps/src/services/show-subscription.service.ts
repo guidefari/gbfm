@@ -96,14 +96,9 @@ const subscribeEffect = (userId: string, showId: string) =>
 
     yield* recordShowSubscribe()
 
-    yield* Effect.tryPromise({
-      try: () =>
-        db
-          .insert(favoritesTable)
-          .values({ userId, showId })
-          .onConflictDoNothing(),
-      catch: () => Effect.void
-    }).pipe(Effect.catchAll(() => Effect.void))
+    yield* Effect.tryPromise(() =>
+      db.insert(favoritesTable).values({ userId, showId }).onConflictDoNothing()
+    ).pipe(Effect.catchAll(() => Effect.void))
 
     return subscription
   })
