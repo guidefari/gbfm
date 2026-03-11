@@ -1,3 +1,10 @@
+## [2.27.2](https://github.com/guidefari/gbfm/compare/v2.27.1...v2.27.2) (2026-03-11)
+
+
+### Bug Fixes
+
+* backup task dockerfile ([f35f6ba](https://github.com/guidefari/gbfm/commit/f35f6ba08d3823fa487b94db792db1172f42cafe))
+
 ## [2.27.1](https://github.com/guidefari/gbfm/compare/v2.27.0...v2.27.1) (2026-03-11)
 
 
