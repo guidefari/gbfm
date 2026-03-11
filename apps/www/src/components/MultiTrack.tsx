@@ -83,8 +83,8 @@ export function MultiTrack({
           <ScrollArea.Root className='w-full h-auto shadow-sm ScrollAreaRoot'>
             <ScrollArea.Viewport className='max-h-60 bg-gb-bg'>
               <ul className='p-0'>
-                {tracks.map((track, index) => (
-                  <li className='' key={`${track.trackUrl} - ${index}`}>
+                {tracks.map((track) => (
+                  <li className='' key={track.trackUrl}>
                     <div
                       className={clsx(
                         'flex items-center  mb-2 space-x-1 text-white group Tag'

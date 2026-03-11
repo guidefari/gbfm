@@ -124,8 +124,8 @@ const ConfigSchema = Schema.Struct({
   })
 })
 
-export interface ConfigService
-  extends Schema.Schema.Type<typeof ConfigSchema> {}
+type ConfigSchemaType = typeof ConfigSchema.Type
+export interface ConfigService extends ConfigSchemaType {}
 
 export const ConfigService = Context.GenericTag<ConfigService>('ConfigService')
 

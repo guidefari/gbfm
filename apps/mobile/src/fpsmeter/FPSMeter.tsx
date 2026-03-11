@@ -188,6 +188,7 @@ export const FPSMeter: React.FC<FPSMeterProps> = ({
 
           return (
             <Rect
+              // biome-ignore lint/suspicious/noArrayIndexKey: frames are positional
               key={`frame-${currentFrameNumber - frames.length + i}`}
               x={x}
               y={0}
