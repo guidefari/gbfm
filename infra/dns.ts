@@ -23,68 +23,62 @@ if ($app.stage === 'prod') {
     }
   })
 
-  new cloudflare.Ruleset('vps-redirects', {
-    kind: 'zone',
-    zoneId: zone.zoneId,
-    name: 'VPS Route Redirects',
-    description: 'Redirect requests to VPS for dynamic content',
-    phase: 'http_request_dynamic_redirect',
-    rules: [
-      {
-        action: 'redirect',
-        actionParameters: {
-          fromValue: {
-            statusCode: 301,
-            targetUrl: {
-              value: `https://vps.${domain}/rss.xml`
+  const importId = process.env.CF_RULESET_IMPORT || undefined
+
+  new cloudflare.Ruleset(
+    'vps-redirects',
+    {
+      kind: 'zone',
+      zoneId: zone.zoneId,
+      name: 'VPS Route Redirects',
+      description: 'Redirect requests to VPS for dynamic content',
+      phase: 'http_request_dynamic_redirect',
+      rules: [
+        {
+          action: 'redirect',
+          actionParameters: {
+            fromValue: {
+              statusCode: 301,
+              targetUrl: {
+                value: `https://vps.${domain}/rss.xml`
+              }
             }
-          }
+          },
+          expression: `((http.request.uri.path eq "/rss.xml") or (http.request.uri.path eq "/rss")) and (http.host eq "${domain}")`,
+          description: 'Redirect RSS feeds to VPS',
+          enabled: true
         },
-        expression: `((http.request.uri.path eq "/rss.xml") or (http.request.uri.path eq "/rss")) and (http.host eq "${domain}")`,
-        description: 'Redirect RSS feeds to VPS',
-        enabled: true
-      },
-      {
-        action: 'redirect',
-        actionParameters: {
-          fromValue: {
-            statusCode: 301,
-            targetUrl: {
-              value: `https://vps.${domain}/sitemap.xml`
+        {
+          action: 'redirect',
+          actionParameters: {
+            fromValue: {
+              statusCode: 301,
+              targetUrl: {
+                value: `https://vps.${domain}/sitemap.xml`
+              }
             }
-          }
+          },
+          expression: `(http.request.uri.path eq "/sitemap.xml") and (http.host eq "${domain}")`,
+          description: 'Redirect sitemap to VPS dynamic sitemap',
+          enabled: true
         },
-        expression: `(http.request.uri.path eq "/sitemap.xml") and (http.host eq "${domain}")`,
-        description: 'Redirect sitemap to VPS dynamic sitemap',
-        enabled: true
-      },
-      {
-        action: 'redirect',
-        actionParameters: {
-          fromValue: {
-            statusCode: 301,
-            targetUrl: {
-              expression: `concat("https://vps.${domain}", http.request.uri.path)`
-            },
-            preserveQueryString: true
-          }
-        },
-        expression: `starts_with(http.request.uri.path, "/s/") and (http.host eq "${domain}")`,
-        description: 'Redirect share routes to VPS OG handlers',
-        enabled: true
-      }
-    ]
-  })
+        {
+          action: 'redirect',
+          actionParameters: {
+            fromValue: {
+              statusCode: 301,
+              targetUrl: {
+                expression: `concat("https://vps.${domain}", http.request.uri.path)`
+              },
+              preserveQueryString: true
+            }
+          },
+          expression: `starts_with(http.request.uri.path, "/s/") and (http.host eq "${domain}")`,
+          description: 'Redirect share routes to VPS OG handlers',
+          enabled: true
+        }
+      ]
+    },
+    importId ? { import: importId } : undefined
+  )
 }
-
-// export const shortDomain = domain.replace(/goosebumps\.fm$/, "gbfm.dev");
-
-// export const zone = cloudflare.getZoneOutput({
-// 	filter: {
-// 		name: domain,
-// 	},
-// });
-
-// export const shortZone = cloudflare.getZoneOutput({
-//   name: "gbfm.dev",
-// });

@@ -17,6 +17,11 @@ on:
         required: false
         default: false
         type: boolean
+      cf_ruleset_import:
+        description: "Cloudflare ruleset import ID, e.g. zones/{zone_id}/{ruleset_id}"
+        required: false
+        default: ""
+        type: string
 
 concurrency:
   group: ${{ github.ref }}
@@ -105,6 +110,7 @@ jobs:
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
           OTEL_EXPORTER_OTLP_ENDPOINT: ${{ secrets.OTEL_EXPORTER_OTLP_ENDPOINT }}
           GRAFANA_OTLP_TOKEN: ${{ secrets.GRAFANA_OTLP_TOKEN }}
+          CF_RULESET_IMPORT: ${{ inputs.cf_ruleset_import }}
 
         run: |
           if [ "${{ inputs.refresh }}" = "true" ]; then
