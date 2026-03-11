@@ -12,6 +12,11 @@ on:
         required: false
         default: ""
         type: string
+      refresh:
+        description: "Run sst refresh before deploying (fixes state drift, e.g. Cloudflare ruleset error 20217)"
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: ${{ github.ref }}
@@ -102,5 +107,7 @@ jobs:
           GRAFANA_OTLP_TOKEN: ${{ secrets.GRAFANA_OTLP_TOKEN }}
 
         run: |
-          # bun run sst refresh --stage=prod
+          if [ "${{ inputs.refresh }}" = "true" ]; then
+            bun run sst refresh --stage=prod
+          fi
           bun run sst deploy --stage=prod
