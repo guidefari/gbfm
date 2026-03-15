@@ -560,17 +560,17 @@ export const deleteEntityLink: AppRouteHandler<DeleteEntityLinkRoute> = async (
 export const scrapeEntityLinks: AppRouteHandler<
   ScrapeEntityLinksRoute
 > = async (c) => {
-  const { entityType, entityId } = c.req.valid('param')
+  const { entityType } = c.req.valid('param')
   const input = c.req.valid('json')
   const program = Effect.gen(function* () {
     const svc = yield* MusicEntityService
-    return yield* svc.scrapeLinksForEntity(entityType, entityId, input)
+    return yield* svc.scrapeAndCreateEntity(entityType, input)
   }).pipe(
     Effect.catchTag('DatabaseError', (e) =>
       Effect.succeed({ error: e.message } as const)
     ),
     Effect.withSpan('api.music.scrapeEntityLinks', {
-      attributes: { entityType, entityId }
+      attributes: { entityType }
     })
   )
   const result = await AppRuntime.runPromise(program)
@@ -580,7 +580,7 @@ export const scrapeEntityLinks: AppRouteHandler<
       HttpStatusCodes.INTERNAL_SERVER_ERROR
     )
   }
-  return c.json({ scraped: result.length, links: result }, HttpStatusCodes.OK)
+  return c.json(result, HttpStatusCodes.OK)
 }
 
 // ---------------------------------------------------------------------------

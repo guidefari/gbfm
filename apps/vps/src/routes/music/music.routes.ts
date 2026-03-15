@@ -461,11 +461,11 @@ export const deleteEntityLink = createRoute({
 // ---------------------------------------------------------------------------
 
 export const scrapeEntityLinks = createRoute({
-  path: '/:entityType/:entityId/scrape',
+  path: '/:entityType/scrape',
   method: 'post',
   middleware: [requireAdminMiddleware],
   request: {
-    params: entityParams,
+    params: z.object({ entityType: entityTypeEnum }),
     body: jsonContentRequired(
       z.object({
         url: z
@@ -497,10 +497,13 @@ export const scrapeEntityLinks = createRoute({
   responses: {
     [HttpStatusCodes.OK]: jsonContent(
       z.object({
-        scraped: z.number().openapi({ description: 'Number of links found' }),
+        entity: z.record(z.string(), z.unknown()).openapi({
+          description:
+            'The auto-created entity (artist, album, track, or playlist)'
+        }),
         links: z.array(selectMusicEntityLinkSchema)
       }),
-      'Scrape results — links stored with status pending_review'
+      'Entity created and links scraped'
     ),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       errorSchema,

@@ -191,11 +191,20 @@ export interface MusicEntityService {
   }) => Effect.Effect<SelectMusicEntityLink[], DatabaseError>
 
   // Scraping
-  readonly scrapeLinksForEntity: (
+  readonly scrapeAndCreateEntity: (
     entityType: MusicEntityType,
-    entityId: string,
     input: MusicScrapeInput
-  ) => Effect.Effect<SelectMusicEntityLink[], DatabaseError>
+  ) => Effect.Effect<
+    {
+      entity:
+        | SelectMusicArtist
+        | SelectMusicAlbum
+        | SelectMusicTrack
+        | SelectMusicPlaylist
+      links: SelectMusicEntityLink[]
+    },
+    DatabaseError
+  >
 }
 
 export const MusicEntityService =
@@ -957,16 +966,61 @@ const getPendingLinksEffect = (opts?: { limit?: number; offset?: number }) =>
 // Scraping — runs providers, bulk-inserts all resulting links
 // ---------------------------------------------------------------------------
 
-const scrapeLinksEffect =
+const toSlug = (text: string) =>
+  `${text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')}-${crypto.randomUUID().slice(0, 8)}`
+
+const scrapeAndCreateEntityEffect =
   (scraper: MusicLinkScraperService) =>
-  (entityType: MusicEntityType, entityId: string, input: MusicScrapeInput) =>
+  (entityType: MusicEntityType, input: MusicScrapeInput) =>
     Effect.gen(function* () {
       const result = yield* scraper.scrape(input)
+      const meta = result.entityMeta
 
-      if (result.links.length === 0) {
-        return [] as SelectMusicEntityLink[]
-      }
+      const entity = yield* (() => {
+        switch (entityType) {
+          case 'artist': {
+            const name =
+              meta?.artistName ?? input.artistName ?? 'Unknown Artist'
+            return createArtistEffect({
+              name,
+              slug: toSlug(name),
+              imageUrl: meta?.thumbnailUrl
+            })
+          }
+          case 'album': {
+            const title = meta?.title ?? input.albumTitle ?? 'Untitled Album'
+            const artistName = meta?.artistName ?? input.artistName
+            return createAlbumEffect({
+              title,
+              slug: toSlug(title),
+              artistNames: artistName ? [artistName] : undefined,
+              coverImageUrl: meta?.thumbnailUrl
+            })
+          }
+          case 'track': {
+            const title = meta?.title ?? input.trackTitle ?? 'Untitled Track'
+            const artistName = meta?.artistName ?? input.artistName
+            return createTrackEffect({
+              title,
+              slug: toSlug(title),
+              artistNames: artistName ? [artistName] : undefined
+            })
+          }
+          case 'playlist': {
+            const title = meta?.title ?? 'Untitled Playlist'
+            return createPlaylistEffect({
+              title,
+              slug: toSlug(title),
+              coverImageUrl: meta?.thumbnailUrl
+            })
+          }
+        }
+      })()
 
+      const entityId = entity.id
       const inserted: SelectMusicEntityLink[] = []
       for (const link of result.links) {
         const row = yield* Effect.catchAll(
@@ -994,10 +1048,10 @@ const scrapeLinksEffect =
         `[MusicEntity] Scraped ${inserted.length} links for ${entityType}:${entityId}`
       )
 
-      return inserted
+      return { entity, links: inserted }
     }).pipe(
-      Effect.withSpan('musicEntity.scrapeLinks', {
-        attributes: { entityType, entityId }
+      Effect.withSpan('musicEntity.scrapeAndCreateEntity', {
+        attributes: { entityType }
       })
     )
 
@@ -1045,7 +1099,7 @@ export const MusicEntityServiceLive = Layer.effect(
       updateLinkStatus: updateLinkStatusEffect,
       deleteLink: deleteLinkEffect,
       getPendingLinks: getPendingLinksEffect,
-      scrapeLinksForEntity: scrapeLinksEffect(scraper)
+      scrapeAndCreateEntity: scrapeAndCreateEntityEffect(scraper)
     } satisfies MusicEntityService
   })
 )
