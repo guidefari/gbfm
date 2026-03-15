@@ -130,7 +130,8 @@ export const dbBackupTask = new sst.aws.Task('DatabaseBackupTask', {
   cluster,
   image: {
     context: './',
-    dockerfile: 'apps/vps/Dockerfile.backup-task'
+    target: 'backup-task',
+    dockerfile: 'apps/vps/Dockerfile'
   },
   environment: {
     DATABASE_BACKUP_BUCKET: dbBackupBucket.name,

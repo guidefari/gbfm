@@ -4,7 +4,6 @@ WORKDIR /usr/src/app
 # --- Install dependencies (cached layer) ---
 FROM base AS deps
 
-# Copy lockfile and package.json files first for better caching
 COPY bun.lock ./
 COPY package.json ./
 COPY apps/vps/package.json ./apps/vps/
@@ -17,30 +16,44 @@ COPY packages/email/src ./packages/email/src
 COPY packages/email/emails ./packages/email/emails
 COPY packages/core/src ./packages/core/src
 COPY apps/vps/src ./apps/vps/src
+COPY apps/vps/scripts ./apps/vps/scripts
 COPY apps/vps/package.json apps/vps/tsconfig.json ./apps/vps/
 COPY packages/email/package.json packages/email/tsconfig.json ./packages/email/
 COPY packages/core/package.json packages/core/tsconfig.json ./packages/core/
 COPY tsconfig.json ./
 
-# --- Production stage ---
-FROM base AS release
+# --- Shared production base ---
+FROM base AS prod-base
 WORKDIR /usr/src/app
 
-# Copy the installed dependencies
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=deps /usr/src/app/package.json ./package.json
-
-# Copy source code
 COPY --from=deps /usr/src/app/packages/email ./packages/email
 COPY --from=deps /usr/src/app/packages/core ./packages/core
 COPY --from=deps /usr/src/app/apps/vps ./apps/vps
 COPY --from=deps /usr/src/app/tsconfig.json ./tsconfig.json
 
+# --- API server ---
+FROM prod-base AS release
+
 EXPOSE 3003
 WORKDIR /usr/src/app/apps/vps
 
-# Health check to monitor application status
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
   CMD curl -f http://localhost:3003/health || exit 1
 
 CMD ["bun", "run", "src/index.ts"]
+
+# --- Database backup task ---
+FROM oven/bun:latest-alpine AS backup-task
+RUN apk add --no-cache postgresql17-client
+WORKDIR /usr/src/app
+
+COPY --from=deps /usr/src/app/node_modules ./node_modules
+COPY --from=deps /usr/src/app/package.json ./package.json
+COPY --from=deps /usr/src/app/packages/email ./packages/email
+COPY --from=deps /usr/src/app/packages/core ./packages/core
+COPY --from=deps /usr/src/app/apps/vps ./apps/vps
+COPY --from=deps /usr/src/app/tsconfig.json ./tsconfig.json
+
+CMD ["bun", "run", "apps/vps/scripts/run-backup-task.ts"]
