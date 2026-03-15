@@ -1,3 +1,10 @@
+# [2.28.0](https://github.com/guidefari/gbfm/compare/v2.27.3...v2.28.0) (2026-03-15)
+
+
+### Features
+
+* update MixListItem ([d17d4c5](https://github.com/guidefari/gbfm/commit/d17d4c5ba05018765c3af172a7334f509cf2a69c))
+
 ## [2.27.3](https://github.com/guidefari/gbfm/compare/v2.27.2...v2.27.3) (2026-03-11)
 
 
