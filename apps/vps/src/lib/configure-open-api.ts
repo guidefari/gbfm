@@ -15,8 +15,16 @@ type AuthEndpoint = {
   }
 }
 
-const toOpenApiPath = (path: string) =>
-  `/auth${path.replaceAll(/:([^/]+)/g, '{$1}')}`
+/**
+ * Converts Hono-style path params (`:id`) to OpenAPI-style (`{id}`).
+ * `@hono/zod-openapi` emits colon-prefixed params in the generated doc,
+ * but Scalar (and other OpenAPI clients) expect braces to interpolate
+ * path variables into the actual request URL.
+ */
+const colonToOpenApiBraces = (path: string) =>
+  path.replaceAll(/:([^/]+)/g, '{$1}')
+
+const toOpenApiPath = (path: string) => `/auth${colonToOpenApiBraces(path)}`
 
 const toOpenApiMethod = (method: string) => method.toLowerCase()
 
@@ -76,8 +84,15 @@ export default function configureOpenAPI(app: AppOpenAPI) {
       }
     })
 
+    // Rewrite all generated paths from `:param` → `{param}` so Scalar
+    // correctly substitutes path variables in its request client.
+    const convertedPaths: typeof document.paths = {}
+    for (const [path, value] of Object.entries(document.paths ?? {})) {
+      convertedPaths[colonToOpenApiBraces(path)] = value
+    }
+
     document.paths = {
-      ...document.paths,
+      ...convertedPaths,
       ...buildAuthPaths()
     }
 
