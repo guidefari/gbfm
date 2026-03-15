@@ -247,7 +247,6 @@ function requireInserted<T>(
   return Effect.succeed(row)
 }
 
-
 // ---------------------------------------------------------------------------
 // Artist effects
 // ---------------------------------------------------------------------------
@@ -346,31 +345,39 @@ const createAlbumEffect = Effect.fn('musicEntity.createAlbum')(function* (
   data: CreateAlbumInput
 ) {
   const { artistIds, ...albumData } = data
-  
+
   return yield* Effect.tryPromise({
-    try: () => db.transaction(async (tx) => {
-      const rows = await tx.insert(musicAlbumsTable).values(albumData).returning()
-      const album = rows[0]
-      if (!album) {
-        throw new Error('Insert returned no rows')
-      }
+    try: () =>
+      db.transaction(async (tx) => {
+        const rows = await tx
+          .insert(musicAlbumsTable)
+          .values(albumData)
+          .returning()
+        const album = rows[0]
+        if (!album) {
+          throw new Error('Insert returned no rows')
+        }
 
-      if (artistIds?.length) {
-        const linkRows = artistIds.map((artistId, i) => ({
-          albumId: album.id,
-          artistId,
-          displayOrder: i
-        }))
-        await tx.insert(musicAlbumArtistsTable)
-          .values(linkRows)
-          .onConflictDoUpdate({
-            target: [musicAlbumArtistsTable.albumId, musicAlbumArtistsTable.artistId],
-            set: { displayOrder: sql`excluded.display_order` }
-          })
-      }
+        if (artistIds?.length) {
+          const linkRows = artistIds.map((artistId, i) => ({
+            albumId: album.id,
+            artistId,
+            displayOrder: i
+          }))
+          await tx
+            .insert(musicAlbumArtistsTable)
+            .values(linkRows)
+            .onConflictDoUpdate({
+              target: [
+                musicAlbumArtistsTable.albumId,
+                musicAlbumArtistsTable.artistId
+              ],
+              set: { displayOrder: sql`excluded.display_order` }
+            })
+        }
 
-      return album
-    }),
+        return album
+      }),
     catch: (e) =>
       new DatabaseError({
         message: `Failed to create album: ${getErrorMessage(e)}`,
@@ -417,36 +424,41 @@ const getAlbumByIdEffect = (id: string) =>
 const updateAlbumEffect = (id: string, data: Partial<CreateAlbumInput>) =>
   Effect.gen(function* () {
     const { artistIds, ...albumData } = data
-    
+
     return yield* Effect.tryPromise({
-      try: () => db.transaction(async (tx) => {
-        const rows = await tx
-          .update(musicAlbumsTable)
-          .set({ ...albumData, updatedAt: new Date() })
-          .where(eq(musicAlbumsTable.id, id))
-          .returning()
-        
-        const album = rows[0]
-        if (!album) {
-          throw new Error('Album not found')
-        }
+      try: () =>
+        db.transaction(async (tx) => {
+          const rows = await tx
+            .update(musicAlbumsTable)
+            .set({ ...albumData, updatedAt: new Date() })
+            .where(eq(musicAlbumsTable.id, id))
+            .returning()
 
-        if (artistIds?.length) {
-          const linkRows = artistIds.map((artistId, i) => ({
-            albumId: id,
-            artistId,
-            displayOrder: i
-          }))
-          await tx.insert(musicAlbumArtistsTable)
-            .values(linkRows)
-            .onConflictDoUpdate({
-              target: [musicAlbumArtistsTable.albumId, musicAlbumArtistsTable.artistId],
-              set: { displayOrder: sql`excluded.display_order` }
-            })
-        }
+          const album = rows[0]
+          if (!album) {
+            throw new Error('Album not found')
+          }
 
-        return album
-      }),
+          if (artistIds?.length) {
+            const linkRows = artistIds.map((artistId, i) => ({
+              albumId: id,
+              artistId,
+              displayOrder: i
+            }))
+            await tx
+              .insert(musicAlbumArtistsTable)
+              .values(linkRows)
+              .onConflictDoUpdate({
+                target: [
+                  musicAlbumArtistsTable.albumId,
+                  musicAlbumArtistsTable.artistId
+                ],
+                set: { displayOrder: sql`excluded.display_order` }
+              })
+          }
+
+          return album
+        }),
       catch: (e) =>
         new DatabaseError({
           message: `Failed to update album: ${getErrorMessage(e)}`,
@@ -482,31 +494,39 @@ const createTrackEffect = Effect.fn('musicEntity.createTrack')(function* (
   data: CreateTrackInput
 ) {
   const { artistIds, ...trackData } = data
-  
+
   return yield* Effect.tryPromise({
-    try: () => db.transaction(async (tx) => {
-      const rows = await tx.insert(musicTracksTable).values(trackData).returning()
-      const track = rows[0]
-      if (!track) {
-        throw new Error('Insert returned no rows')
-      }
+    try: () =>
+      db.transaction(async (tx) => {
+        const rows = await tx
+          .insert(musicTracksTable)
+          .values(trackData)
+          .returning()
+        const track = rows[0]
+        if (!track) {
+          throw new Error('Insert returned no rows')
+        }
 
-      if (artistIds?.length) {
-        const linkRows = artistIds.map((artistId, i) => ({
-          trackId: track.id,
-          artistId,
-          displayOrder: i
-        }))
-        await tx.insert(musicTrackArtistsTable)
-          .values(linkRows)
-          .onConflictDoUpdate({
-            target: [musicTrackArtistsTable.trackId, musicTrackArtistsTable.artistId],
-            set: { displayOrder: sql`excluded.display_order` }
-          })
-      }
+        if (artistIds?.length) {
+          const linkRows = artistIds.map((artistId, i) => ({
+            trackId: track.id,
+            artistId,
+            displayOrder: i
+          }))
+          await tx
+            .insert(musicTrackArtistsTable)
+            .values(linkRows)
+            .onConflictDoUpdate({
+              target: [
+                musicTrackArtistsTable.trackId,
+                musicTrackArtistsTable.artistId
+              ],
+              set: { displayOrder: sql`excluded.display_order` }
+            })
+        }
 
-      return track
-    }),
+        return track
+      }),
     catch: (e) =>
       new DatabaseError({
         message: `Failed to create track: ${getErrorMessage(e)}`,
@@ -553,36 +573,41 @@ const getTrackByIdEffect = (id: string) =>
 const updateTrackEffect = (id: string, data: Partial<CreateTrackInput>) =>
   Effect.gen(function* () {
     const { artistIds, ...trackData } = data
-    
+
     return yield* Effect.tryPromise({
-      try: () => db.transaction(async (tx) => {
-        const rows = await tx
-          .update(musicTracksTable)
-          .set({ ...trackData, updatedAt: new Date() })
-          .where(eq(musicTracksTable.id, id))
-          .returning()
-        
-        const track = rows[0]
-        if (!track) {
-          throw new Error('Track not found')
-        }
+      try: () =>
+        db.transaction(async (tx) => {
+          const rows = await tx
+            .update(musicTracksTable)
+            .set({ ...trackData, updatedAt: new Date() })
+            .where(eq(musicTracksTable.id, id))
+            .returning()
 
-        if (artistIds?.length) {
-          const linkRows = artistIds.map((artistId, i) => ({
-            trackId: id,
-            artistId,
-            displayOrder: i
-          }))
-          await tx.insert(musicTrackArtistsTable)
-            .values(linkRows)
-            .onConflictDoUpdate({
-              target: [musicTrackArtistsTable.trackId, musicTrackArtistsTable.artistId],
-              set: { displayOrder: sql`excluded.display_order` }
-            })
-        }
+          const track = rows[0]
+          if (!track) {
+            throw new Error('Track not found')
+          }
 
-        return track
-      }),
+          if (artistIds?.length) {
+            const linkRows = artistIds.map((artistId, i) => ({
+              trackId: id,
+              artistId,
+              displayOrder: i
+            }))
+            await tx
+              .insert(musicTrackArtistsTable)
+              .values(linkRows)
+              .onConflictDoUpdate({
+                target: [
+                  musicTrackArtistsTable.trackId,
+                  musicTrackArtistsTable.artistId
+                ],
+                set: { displayOrder: sql`excluded.display_order` }
+              })
+          }
+
+          return track
+        }),
       catch: (e) =>
         new DatabaseError({
           message: `Failed to update track: ${getErrorMessage(e)}`,
