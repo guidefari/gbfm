@@ -1,5 +1,6 @@
 import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
 import { MixListItem } from '@/components/MixListItem'
+import { MixTimeline, MixTimelineItem } from '@/components/MixTimeline'
 import { useShowEpisodes } from '@/lib/http'
 
 interface EpisodeGridProps {
@@ -54,17 +55,18 @@ export function EpisodeGrid({ showSlug }: EpisodeGridProps) {
   return (
     <div className='space-y-4'>
       <h2 className='text-xl font-bold'>Episodes</h2>
-      <div className='grid gap-2'>
+      <MixTimeline>
         {episodes.map((episode) => (
-          <MixListItem key={episode.id} mix={episode} />
+          <MixTimelineItem key={episode.id} mix={episode}>
+            <MixListItem mix={episode} />
+          </MixTimelineItem>
         ))}
-
         <LoadMoreTrigger
           onLoadMore={fetchNextPage}
           hasNextPage={hasNextPage}
           isFetchingNextPage={isFetchingNextPage}
         />
-      </div>
+      </MixTimeline>
     </div>
   )
 }

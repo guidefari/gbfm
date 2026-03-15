@@ -3,9 +3,10 @@ import { Radio, Tag, X } from 'lucide-react'
 import { useMemo } from 'react'
 import { z } from 'zod'
 import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
-import { MixesListSkeleton, MixesSkeleton } from '@/components/MixesSkeleton'
+import { MixesListSkeleton } from '@/components/MixesSkeleton'
 import { MixListItem } from '@/components/MixListItem'
 import { MixMenu } from '@/components/MixMenu'
+import { MixTimeline, MixTimelineItem } from '@/components/MixTimeline'
 import { TrackContextMenu } from '@/components/TrackContextMenu'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -78,10 +79,6 @@ function MixesListPage() {
     return sorted
   }, [data, mixesSorting.sortBy, mixesSorting.sortOrder])
 
-  if (isPending && !tag) {
-    return <MixesSkeleton />
-  }
-
   return (
     <div className='max-w-3xl mx-auto px-4 py-8'>
       <div className='flex flex-row items-baseline justify-between gap-4 mb-8 border-b pb-4 border-border/40'>
@@ -95,7 +92,7 @@ function MixesListPage() {
             <span className='absolute -bottom-[17px] left-0 right-0 h-0.5 bg-foreground scale-x-0 group-hover:scale-x-100 transition-transform origin-left' />
           </Link>
         </div>
-        {allTags.length > 0 && (
+        {allTags.length > 0 ? (
           <Select value={tag || 'all'} onValueChange={handleTagChange}>
             <SelectTrigger
               className='w-auto min-w-[120px] h-9 text-xs font-semibold uppercase tracking-wider bg-transparent border-none shadow-none hover:bg-muted/50 transition-colors px-3'
@@ -116,6 +113,8 @@ function MixesListPage() {
               ))}
             </SelectContent>
           </Select>
+        ) : (
+          <div className='h-9 min-w-[120px] px-3' aria-hidden='true' />
         )}
       </div>
       {tag && (
@@ -137,23 +136,24 @@ function MixesListPage() {
           </Badge>
         </div>
       )}
-      <div className='grid gap-3'>
-        {isPending && tag ? (
-          <MixesListSkeleton />
-        ) : (
-          sortedData?.map((mix) => (
-            <TrackContextMenu key={mix.id} track={mix}>
-              <MixListItem mix={mix} actions={<MixMenu mix={mix} />} />
-            </TrackContextMenu>
-          ))
-        )}
-
-        <LoadMoreTrigger
-          onLoadMore={fetchNextPage}
-          hasNextPage={hasNextPage}
-          isFetchingNextPage={isFetchingNextPage}
-        />
-      </div>
+      {isPending && !data?.length ? (
+        <MixesListSkeleton />
+      ) : (
+        <MixTimeline>
+          {sortedData?.map((mix) => (
+            <MixTimelineItem key={mix.id} mix={mix}>
+              <TrackContextMenu track={mix}>
+                <MixListItem mix={mix} actions={<MixMenu mix={mix} />} />
+              </TrackContextMenu>
+            </MixTimelineItem>
+          ))}
+          <LoadMoreTrigger
+            onLoadMore={fetchNextPage}
+            hasNextPage={hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+          />
+        </MixTimeline>
+      )}
     </div>
   )
 }

@@ -1,7 +1,7 @@
 import { getMixRecencyLabel } from '@gbfm/core/utils'
 import type { SelectAudio } from '@gbfm/vps/schemas'
 import { Link } from '@tanstack/react-router'
-import { CalendarDays, Pause, Play } from 'lucide-react'
+import { Pause, Play } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { cn } from '@/lib/utils'
@@ -34,104 +34,96 @@ export function MixListItem({ mix, actions }: MixListItemProps) {
     <article
       data-testid='mix-item'
       className={cn(
-        'group relative border border-border bg-card p-4 sm:p-5 transition-all duration-200 hover:border-foreground/50 hover:shadow-sm',
+        'group relative border border-border bg-card p-5 sm:p-6 transition-all duration-200 hover:border-foreground/50',
         isActive && 'ring-1 ring-highlight bg-secondary'
       )}>
-      <div className='flex flex-col sm:flex-row gap-4 sm:gap-5'>
-        <div className='relative flex-shrink-0'>
-          <img
-            src={mix.thumbnailUrl || DEFAULT_IMAGE_URL}
-            alt={mix.title}
-            className='object-cover border w-full sm:w-32 h-32 border-border bg-background'
-          />
-          {recencyLabel && (
-            <span
-              className={cn(
-                'absolute -top-2 -right-2 text-[10px] font-bold px-2 py-0.5',
-                recencyLabel === 'new'
-                  ? 'bg-highlight text-background'
-                  : 'bg-foreground/20 text-foreground/70'
-              )}>
-              {recencyLabel.toUpperCase()}
-            </span>
-          )}
-        </div>
-
-        <div className='flex-1 min-w-0 flex flex-col justify-between'>
-          <div>
-            <div className='flex justify-between items-start'>
-              <div className='space-y-1'>
-                <Link
-                  to='/mixes/$mixId'
-                  params={{ mixId: mix.slug }}
-                  className='block text-lg sm:text-xl font-bold leading-tight line-clamp-2 text-foreground group-hover:text-highlight transition-colors'>
-                  {mix.title}
-                </Link>
-                {hasCreators && (
-                  <p className='text-xs uppercase tracking-widest text-highlight/80'>
-                    <span className='opacity-60'>By </span>
-                    {mix.creators?.map((creator, index) => (
-                      <span key={creator.id}>
-                        {creator.username ? (
-                          <Link
-                            to='/profile/$username'
-                            params={{ username: creator.username }}
-                            className='hover:underline decoration-highlight/50 underline-offset-4'>
-                            {creator.name}
-                          </Link>
-                        ) : (
-                          <span>{creator.name}</span>
-                        )}
-                        {index < (mix.creators?.length || 0) - 1 && (
-                          <span className='mx-1 opacity-50'>&</span>
-                        )}
-                      </span>
-                    ))}
-                  </p>
-                )}
-              </div>
-              <div className='flex-shrink-0 ml-2'>{actions}</div>
-            </div>
-
-            {mix.tags && mix.tags.length > 0 && (
-              <div className='flex flex-wrap items-center gap-1.5 mt-3'>
-                {mix.tags.map((tag) => (
-                  <Link key={tag} to='/mixes' search={{ tag }}>
-                    <Badge
-                      variant='secondary'
-                      className='rounded-none border border-border bg-muted/50 text-foreground/70 text-[10px] uppercase tracking-widest px-2 py-0.5 hover:border-highlight hover:text-highlight transition-colors cursor-pointer'>
-                      {tag}
-                    </Badge>
-                  </Link>
-                ))}
-              </div>
-            )}
-
-            {mix.description && (
-              <p className='mt-3 text-sm leading-relaxed text-foreground/60 line-clamp-2'>
-                {mix.description}
-              </p>
-            )}
+      <div className='flex flex-col lg:flex-row gap-6'>
+        <div className='flex-1 min-w-0'>
+          <div className='flex justify-between items-start'>
+            <Link
+              to='/mixes/$mixId'
+              params={{ mixId: mix.slug }}
+              className='block text-2xl font-black leading-tight line-clamp-2 text-foreground uppercase tracking-tight transition-colors'>
+              {mix.title}
+            </Link>
+            <div className='flex-shrink-0 ml-2'>{actions}</div>
           </div>
 
-          <div className='mt-4 pt-3 border-t border-border/50 flex items-center justify-between'>
+          {hasCreators && (
+            <p className='mt-1 text-xs uppercase tracking-widest text-highlight/80'>
+              <span className='opacity-60'>By </span>
+              {mix.creators?.map((creator, index) => (
+                <span key={creator.id}>
+                  {creator.username ? (
+                    <Link
+                      to='/profile/$username'
+                      params={{ username: creator.username }}
+                      className='hover:underline decoration-highlight/50 underline-offset-4'>
+                      {creator.name}
+                    </Link>
+                  ) : (
+                    <span>{creator.name}</span>
+                  )}
+                  {index < (mix.creators?.length || 0) - 1 && (
+                    <span className='mx-1 opacity-50'>&</span>
+                  )}
+                </span>
+              ))}
+            </p>
+          )}
+
+          {mix.description && (
+            <p className='mt-4 text-sm leading-relaxed text-foreground/50 border-l-2 border-highlight/20 pl-4 py-1 italic line-clamp-2'>
+              {mix.description}
+            </p>
+          )}
+
+          {mix.tags && mix.tags.length > 0 && (
+            <div className='flex flex-wrap items-center gap-1.5 mt-4'>
+              {mix.tags.map((tag) => (
+                <Link key={tag} to='/mixes' search={{ tag }}>
+                  <Badge
+                    variant='secondary'
+                    className='rounded-none border border-border bg-muted/50 text-foreground/70 text-[10px] uppercase tracking-widest px-2 py-0.5 hover:border-highlight hover:text-highlight transition-colors cursor-pointer'>
+                    {tag}
+                  </Badge>
+                </Link>
+              ))}
+            </div>
+          )}
+
+          <div className='mt-5 pt-4 border-t border-border/50 flex items-center gap-5'>
             <PlayButton
               isActive={isActive}
               isPlaying={isPlaying}
               title={mix.title}
               onClick={handlePlay}
             />
-            <span className='flex items-center gap-1.5 text-[11px] font-mono text-muted-foreground'>
-              <CalendarDays className='w-3.5 h-3.5 opacity-50' />
-              {new Date(mix.createdAt)
-                .toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric'
-                })
-                .toUpperCase()}
-            </span>
+            {hasCreators && (
+              <span className='text-xs text-muted-foreground uppercase font-bold tracking-widest'>
+                By {mix.creators?.map((c) => c.name).join(' & ')}
+              </span>
+            )}
           </div>
+        </div>
+
+        <div className='relative flex-shrink-0 order-first lg:order-last'>
+          <img
+            src={mix.thumbnailUrl || DEFAULT_IMAGE_URL}
+            alt={mix.title}
+            className='object-cover border w-full lg:w-48 h-48 border-border bg-background'
+          />
+          {recencyLabel && (
+            <span
+              className={cn(
+                'absolute right-2 top-2 border px-2 py-1 text-[10px] font-bold uppercase tracking-widest leading-none',
+                recencyLabel === 'new'
+                  ? 'border-highlight bg-highlight text-background'
+                  : 'border-border bg-background/90 text-foreground/75 backdrop-blur-sm'
+              )}>
+              {recencyLabel.toUpperCase()}
+            </span>
+          )}
         </div>
       </div>
     </article>
