@@ -245,7 +245,7 @@ function insertArtistLinks(
   entityId: string,
   artistIds: string[]
 ): Effect.Effect<void, DatabaseError> {
-  if (artistIds.length === 0) return Effect.succeed(undefined)
+  if (artistIds.length === 0) return Effect.void
   const rows = artistIds.map((artistId, i) => ({
     [entityKey]: entityId,
     artistId,
@@ -269,19 +269,20 @@ function insertArtistLinks(
 // Artist effects
 // ---------------------------------------------------------------------------
 
-const createArtistEffect = (data: CreateArtistInput) =>
-  Effect.gen(function* () {
-    const rows = yield* Effect.tryPromise({
-      try: () => db.insert(musicArtistsTable).values(data).returning(),
-      catch: (e) =>
-        new DatabaseError({
-          message: `Failed to create artist: ${getErrorMessage(e)}`,
-          operation: 'insert',
-          table: 'music_artists'
-        })
-    })
-    return yield* requireInserted(rows, 'music_artists')
-  }).pipe(Effect.withSpan('musicEntity.createArtist'))
+const createArtistEffect = Effect.fn('musicEntity.createArtist')(function* (
+  data: CreateArtistInput
+) {
+  const rows = yield* Effect.tryPromise({
+    try: () => db.insert(musicArtistsTable).values(data).returning(),
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to create artist: ${getErrorMessage(e)}`,
+        operation: 'insert',
+        table: 'music_artists'
+      })
+  })
+  return yield* requireInserted(rows, 'music_artists')
+})
 
 const getArtistsEffect = () =>
   Effect.tryPromise({
@@ -358,31 +359,32 @@ const deleteArtistEffect = (id: string) =>
 // Album effects
 // ---------------------------------------------------------------------------
 
-const createAlbumEffect = (data: CreateAlbumInput) =>
-  Effect.gen(function* () {
-    const { artistIds, ...albumData } = data
-    const rows = yield* Effect.tryPromise({
-      try: () => db.insert(musicAlbumsTable).values(albumData).returning(),
-      catch: (e) =>
-        new DatabaseError({
-          message: `Failed to create album: ${getErrorMessage(e)}`,
-          operation: 'insert',
-          table: 'music_albums'
-        })
-    })
-    const album = yield* requireInserted(rows, 'music_albums')
+const createAlbumEffect = Effect.fn('musicEntity.createAlbum')(function* (
+  data: CreateAlbumInput
+) {
+  const { artistIds, ...albumData } = data
+  const rows = yield* Effect.tryPromise({
+    try: () => db.insert(musicAlbumsTable).values(albumData).returning(),
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to create album: ${getErrorMessage(e)}`,
+        operation: 'insert',
+        table: 'music_albums'
+      })
+  })
+  const album = yield* requireInserted(rows, 'music_albums')
 
-    if (artistIds?.length) {
-      yield* insertArtistLinks(
-        musicAlbumArtistsTable,
-        'albumId',
-        album.id,
-        artistIds
-      )
-    }
+  if (artistIds?.length) {
+    yield* insertArtistLinks(
+      musicAlbumArtistsTable,
+      'albumId',
+      album.id,
+      artistIds
+    )
+  }
 
-    return album
-  }).pipe(Effect.withSpan('musicEntity.createAlbum'))
+  return album
+})
 
 const getAlbumsEffect = () =>
   Effect.tryPromise({
@@ -466,31 +468,32 @@ const deleteAlbumEffect = (id: string) =>
 // Track effects
 // ---------------------------------------------------------------------------
 
-const createTrackEffect = (data: CreateTrackInput) =>
-  Effect.gen(function* () {
-    const { artistIds, ...trackData } = data
-    const rows = yield* Effect.tryPromise({
-      try: () => db.insert(musicTracksTable).values(trackData).returning(),
-      catch: (e) =>
-        new DatabaseError({
-          message: `Failed to create track: ${getErrorMessage(e)}`,
-          operation: 'insert',
-          table: 'music_tracks'
-        })
-    })
-    const track = yield* requireInserted(rows, 'music_tracks')
+const createTrackEffect = Effect.fn('musicEntity.createTrack')(function* (
+  data: CreateTrackInput
+) {
+  const { artistIds, ...trackData } = data
+  const rows = yield* Effect.tryPromise({
+    try: () => db.insert(musicTracksTable).values(trackData).returning(),
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to create track: ${getErrorMessage(e)}`,
+        operation: 'insert',
+        table: 'music_tracks'
+      })
+  })
+  const track = yield* requireInserted(rows, 'music_tracks')
 
-    if (artistIds?.length) {
-      yield* insertArtistLinks(
-        musicTrackArtistsTable,
-        'trackId',
-        track.id,
-        artistIds
-      )
-    }
+  if (artistIds?.length) {
+    yield* insertArtistLinks(
+      musicTrackArtistsTable,
+      'trackId',
+      track.id,
+      artistIds
+    )
+  }
 
-    return track
-  }).pipe(Effect.withSpan('musicEntity.createTrack'))
+  return track
+})
 
 const getTracksEffect = () =>
   Effect.tryPromise({
@@ -574,19 +577,20 @@ const deleteTrackEffect = (id: string) =>
 // Playlist effects
 // ---------------------------------------------------------------------------
 
-const createPlaylistEffect = (data: CreatePlaylistInput) =>
-  Effect.gen(function* () {
-    const rows = yield* Effect.tryPromise({
-      try: () => db.insert(musicPlaylistsTable).values(data).returning(),
-      catch: (e) =>
-        new DatabaseError({
-          message: `Failed to create playlist: ${getErrorMessage(e)}`,
-          operation: 'insert',
-          table: 'music_playlists'
-        })
-    })
-    return yield* requireInserted(rows, 'music_playlists')
-  }).pipe(Effect.withSpan('musicEntity.createPlaylist'))
+const createPlaylistEffect = Effect.fn('musicEntity.createPlaylist')(function* (
+  data: CreatePlaylistInput
+) {
+  const rows = yield* Effect.tryPromise({
+    try: () => db.insert(musicPlaylistsTable).values(data).returning(),
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to create playlist: ${getErrorMessage(e)}`,
+        operation: 'insert',
+        table: 'music_playlists'
+      })
+  })
+  return yield* requireInserted(rows, 'music_playlists')
+})
 
 const getPlaylistsEffect = () =>
   Effect.tryPromise({
@@ -819,36 +823,37 @@ const getLinksForEntityEffect = (
     })
   )
 
-const addLinkEffect = (data: InsertMusicEntityLink) =>
-  Effect.gen(function* () {
-    const rows = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .insert(musicEntityLinksTable)
-          .values(data)
-          .onConflictDoUpdate({
-            target: [
-              musicEntityLinksTable.entityType,
-              musicEntityLinksTable.entityId,
-              musicEntityLinksTable.platform
-            ],
-            set: {
-              url: data.url,
-              status: data.status ?? 'pending_review',
-              metadata: data.metadata,
-              updatedAt: sql`now()`
-            }
-          })
-          .returning(),
-      catch: (e) =>
-        new DatabaseError({
-          message: `Failed to add link: ${getErrorMessage(e)}`,
-          operation: 'insert',
-          table: 'music_entity_links'
+const addLinkEffect = Effect.fn('musicEntity.addLink')(function* (
+  data: InsertMusicEntityLink
+) {
+  const rows = yield* Effect.tryPromise({
+    try: () =>
+      db
+        .insert(musicEntityLinksTable)
+        .values(data)
+        .onConflictDoUpdate({
+          target: [
+            musicEntityLinksTable.entityType,
+            musicEntityLinksTable.entityId,
+            musicEntityLinksTable.platform
+          ],
+          set: {
+            url: data.url,
+            status: data.status ?? 'pending_review',
+            metadata: data.metadata,
+            updatedAt: sql`now()`
+          }
         })
-    })
-    return yield* requireInserted(rows, 'music_entity_links')
-  }).pipe(Effect.withSpan('musicEntity.addLink'))
+        .returning(),
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to add link: ${getErrorMessage(e)}`,
+        operation: 'insert',
+        table: 'music_entity_links'
+      })
+  })
+  return yield* requireInserted(rows, 'music_entity_links')
+})
 
 const updateLinkStatusEffect = (
   entityType: MusicEntityType,

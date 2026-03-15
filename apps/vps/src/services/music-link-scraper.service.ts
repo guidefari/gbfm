@@ -459,42 +459,43 @@ function makeScraperWithProviders(
   providers: MusicDataProvider[]
 ): MusicLinkScraperService {
   return {
-    scrape: (input: MusicScrapeInput) =>
-      Effect.gen(function* () {
-        const platformMap = new Map<string, ScrapedLink>()
-        let entityMeta: EntityMeta | undefined
+    scrape: Effect.fn('musicScraper.scrape')(function* (
+      input: MusicScrapeInput
+    ) {
+      const platformMap = new Map<string, ScrapedLink>()
+      let entityMeta: EntityMeta | undefined
 
-        for (const provider of providers) {
-          const result = yield* Effect.catchAll(
-            provider.fetchLinks(input),
-            (err) =>
-              Effect.zipRight(
-                Effect.logWarning(
-                  `[${provider.name}] scrape failed: ${err.message}`
-                ),
-                Effect.succeed({
-                  links: [],
-                  entityMeta: undefined
-                } satisfies ProviderResult)
-              )
-          )
+      for (const provider of providers) {
+        const result = yield* Effect.catchAll(
+          provider.fetchLinks(input),
+          (err) =>
+            Effect.zipRight(
+              Effect.logWarning(
+                `[${provider.name}] scrape failed: ${err.message}`
+              ),
+              Effect.succeed({
+                links: [],
+                entityMeta: undefined
+              } satisfies ProviderResult)
+            )
+        )
 
-          // Later providers override earlier ones for the same platform
-          for (const link of result.links) {
-            platformMap.set(link.platform, link)
-          }
-
-          // Use the first successful entityMeta we get
-          if (!entityMeta && result.entityMeta) {
-            entityMeta = result.entityMeta
-          }
+        // Later providers override earlier ones for the same platform
+        for (const link of result.links) {
+          platformMap.set(link.platform, link)
         }
 
-        return {
-          links: [...platformMap.values()],
-          entityMeta
-        } satisfies ScrapeResult
-      }).pipe(Effect.withSpan('musicScraper.scrape'))
+        // Use the first successful entityMeta we get
+        if (!entityMeta && result.entityMeta) {
+          entityMeta = result.entityMeta
+        }
+      }
+
+      return {
+        links: [...platformMap.values()],
+        entityMeta
+      } satisfies ScrapeResult
+    })
   }
 }
 
