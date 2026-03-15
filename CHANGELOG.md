@@ -1,3 +1,10 @@
+## [2.27.3](https://github.com/guidefari/gbfm/compare/v2.27.2...v2.27.3) (2026-03-11)
+
+
+### Bug Fixes
+
+* **force trigger ci👀:** document ssl redirect loop ([e06f186](https://github.com/guidefari/gbfm/commit/e06f18686eb196f4df421fa4780b334a5d912a44))
+
 ## [2.27.2](https://github.com/guidefari/gbfm/compare/v2.27.1...v2.27.2) (2026-03-11)
 
 
