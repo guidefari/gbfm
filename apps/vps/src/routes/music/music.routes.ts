@@ -21,6 +21,7 @@ import {
   updateMusicTrackSchema
 } from '@/db/music-entity.schema'
 import { requireAdminMiddleware } from '@/middlewares/better-auth.middleware'
+import { strictRateLimiter } from '@/middlewares/rate-limiter'
 
 const tags = ['Music']
 const errorSchema = z.object({ error: z.string() })
@@ -463,7 +464,7 @@ export const deleteEntityLink = createRoute({
 export const scrapeEntityLinks = createRoute({
   path: '/:entityType/scrape',
   method: 'post',
-  middleware: [requireAdminMiddleware],
+  middleware: [requireAdminMiddleware, strictRateLimiter()],
   request: {
     params: z.object({ entityType: entityTypeEnum }),
     body: jsonContentRequired(
