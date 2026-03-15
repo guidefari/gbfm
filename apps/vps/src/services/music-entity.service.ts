@@ -173,12 +173,16 @@ export interface MusicEntityService {
     data: InsertMusicEntityLink
   ) => Effect.Effect<SelectMusicEntityLink, DatabaseError>
   readonly updateLinkStatus: (
+    entityType: MusicEntityType,
+    entityId: string,
     linkId: string,
     status: LinkStatus,
     verifiedBy?: string,
     metadata?: Record<string, unknown>
   ) => Effect.Effect<SelectMusicEntityLink, DatabaseError | NotFoundError>
   readonly deleteLink: (
+    entityType: MusicEntityType,
+    entityId: string,
     linkId: string
   ) => Effect.Effect<void, DatabaseError | NotFoundError>
   readonly getPendingLinks: (opts?: {
@@ -847,6 +851,8 @@ const addLinkEffect = (data: InsertMusicEntityLink) =>
   }).pipe(Effect.withSpan('musicEntity.addLink'))
 
 const updateLinkStatusEffect = (
+  entityType: MusicEntityType,
+  entityId: string,
   linkId: string,
   status: LinkStatus,
   verifiedBy?: string,
@@ -870,7 +876,13 @@ const updateLinkStatusEffect = (
         db
           .update(musicEntityLinksTable)
           .set(updateData)
-          .where(eq(musicEntityLinksTable.id, linkId))
+          .where(
+            and(
+              eq(musicEntityLinksTable.entityType, entityType),
+              eq(musicEntityLinksTable.entityId, entityId),
+              eq(musicEntityLinksTable.id, linkId)
+            )
+          )
           .returning(),
       catch: (e) =>
         new DatabaseError({
@@ -882,17 +894,27 @@ const updateLinkStatusEffect = (
     return yield* requireOne(rows, 'MusicEntityLink', linkId)
   }).pipe(
     Effect.withSpan('musicEntity.updateLinkStatus', {
-      attributes: { linkId, status }
+      attributes: { entityType, entityId, linkId, status, verifiedBy }
     })
   )
 
-const deleteLinkEffect = (linkId: string) =>
+const deleteLinkEffect = (
+  entityType: MusicEntityType,
+  entityId: string,
+  linkId: string
+) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
       try: () =>
         db
           .delete(musicEntityLinksTable)
-          .where(eq(musicEntityLinksTable.id, linkId))
+          .where(
+            and(
+              eq(musicEntityLinksTable.entityType, entityType),
+              eq(musicEntityLinksTable.entityId, entityId),
+              eq(musicEntityLinksTable.id, linkId)
+            )
+          )
           .returning({ id: musicEntityLinksTable.id }),
       catch: (e) =>
         new DatabaseError({
@@ -902,7 +924,11 @@ const deleteLinkEffect = (linkId: string) =>
         })
     })
     yield* requireOne(rows, 'MusicEntityLink', linkId)
-  }).pipe(Effect.withSpan('musicEntity.deleteLink', { attributes: { linkId } }))
+  }).pipe(
+    Effect.withSpan('musicEntity.deleteLink', {
+      attributes: { entityType, entityId, linkId }
+    })
+  )
 
 const getPendingLinksEffect = (opts?: { limit?: number; offset?: number }) =>
   Effect.tryPromise({

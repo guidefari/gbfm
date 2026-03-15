@@ -20,6 +20,7 @@ import {
   updateMusicPlaylistSchema,
   updateMusicTrackSchema
 } from '@/db/music-entity.schema'
+import { requireAdminMiddleware } from '@/middlewares/better-auth.middleware'
 
 const tags = ['Music']
 const errorSchema = z.object({ error: z.string() })
@@ -43,6 +44,7 @@ export const listArtists = createRoute({
 export const createArtist = createRoute({
   path: '/artists',
   method: 'post',
+  middleware: [requireAdminMiddleware],
   request: {
     body: jsonContentRequired(insertMusicArtistSchema, 'Artist data')
   },
@@ -76,6 +78,7 @@ export const getArtist = createRoute({
 export const updateArtist = createRoute({
   path: '/artists/:id',
   method: 'patch',
+  middleware: [requireAdminMiddleware],
   request: {
     params: z.object({ id: z.string().uuid() }),
     body: jsonContentRequired(updateMusicArtistSchema, 'Fields to update')
@@ -97,6 +100,7 @@ export const updateArtist = createRoute({
 export const deleteArtist = createRoute({
   path: '/artists/:id',
   method: 'delete',
+  middleware: [requireAdminMiddleware],
   request: {
     params: z.object({ id: z.string().uuid() })
   },
@@ -126,6 +130,7 @@ export const listAlbums = createRoute({
 export const createAlbum = createRoute({
   path: '/albums',
   method: 'post',
+  middleware: [requireAdminMiddleware],
   request: {
     body: jsonContentRequired(insertMusicAlbumSchema, 'Album data')
   },
@@ -159,6 +164,7 @@ export const getAlbum = createRoute({
 export const updateAlbum = createRoute({
   path: '/albums/:id',
   method: 'patch',
+  middleware: [requireAdminMiddleware],
   request: {
     params: z.object({ id: z.string().uuid() }),
     body: jsonContentRequired(updateMusicAlbumSchema, 'Fields to update')
@@ -177,6 +183,7 @@ export const updateAlbum = createRoute({
 export const deleteAlbum = createRoute({
   path: '/albums/:id',
   method: 'delete',
+  middleware: [requireAdminMiddleware],
   request: {
     params: z.object({ id: z.string().uuid() })
   },
@@ -206,6 +213,7 @@ export const listTracks = createRoute({
 export const createTrack = createRoute({
   path: '/tracks',
   method: 'post',
+  middleware: [requireAdminMiddleware],
   request: {
     body: jsonContentRequired(insertMusicTrackSchema, 'Track data')
   },
@@ -239,6 +247,7 @@ export const getTrack = createRoute({
 export const updateTrack = createRoute({
   path: '/tracks/:id',
   method: 'patch',
+  middleware: [requireAdminMiddleware],
   request: {
     params: z.object({ id: z.string().uuid() }),
     body: jsonContentRequired(updateMusicTrackSchema, 'Fields to update')
@@ -257,6 +266,7 @@ export const updateTrack = createRoute({
 export const deleteTrack = createRoute({
   path: '/tracks/:id',
   method: 'delete',
+  middleware: [requireAdminMiddleware],
   request: {
     params: z.object({ id: z.string().uuid() })
   },
@@ -286,6 +296,7 @@ export const listPlaylists = createRoute({
 export const createPlaylist = createRoute({
   path: '/playlists',
   method: 'post',
+  middleware: [requireAdminMiddleware],
   request: {
     body: jsonContentRequired(insertMusicPlaylistSchema, 'Playlist data')
   },
@@ -319,6 +330,7 @@ export const getPlaylist = createRoute({
 export const updatePlaylist = createRoute({
   path: '/playlists/:id',
   method: 'patch',
+  middleware: [requireAdminMiddleware],
   request: {
     params: z.object({ id: z.string().uuid() }),
     body: jsonContentRequired(updateMusicPlaylistSchema, 'Fields to update')
@@ -340,6 +352,7 @@ export const updatePlaylist = createRoute({
 export const deletePlaylist = createRoute({
   path: '/playlists/:id',
   method: 'delete',
+  middleware: [requireAdminMiddleware],
   request: {
     params: z.object({ id: z.string().uuid() })
   },
@@ -380,6 +393,7 @@ export const listEntityLinks = createRoute({
 export const addEntityLink = createRoute({
   path: '/:entityType/:entityId/links',
   method: 'post',
+  middleware: [requireAdminMiddleware],
   request: {
     params: entityParams,
     body: jsonContentRequired(
@@ -406,6 +420,7 @@ export const addEntityLink = createRoute({
 export const updateEntityLinkStatus = createRoute({
   path: '/:entityType/:entityId/links/:linkId',
   method: 'patch',
+  middleware: [requireAdminMiddleware],
   request: {
     params: entityParams.extend({ linkId: z.string().uuid() }),
     body: jsonContentRequired(
@@ -430,6 +445,7 @@ export const updateEntityLinkStatus = createRoute({
 export const deleteEntityLink = createRoute({
   path: '/:entityType/:entityId/links/:linkId',
   method: 'delete',
+  middleware: [requireAdminMiddleware],
   request: {
     params: entityParams.extend({ linkId: z.string().uuid() })
   },
@@ -447,6 +463,7 @@ export const deleteEntityLink = createRoute({
 export const scrapeEntityLinks = createRoute({
   path: '/:entityType/:entityId/scrape',
   method: 'post',
+  middleware: [requireAdminMiddleware],
   request: {
     params: entityParams,
     body: jsonContentRequired(
@@ -499,6 +516,7 @@ export const scrapeEntityLinks = createRoute({
 export const listPendingLinks = createRoute({
   path: '/links/pending',
   method: 'get',
+  middleware: [requireAdminMiddleware],
   request: {
     query: z.object({
       limit: z.coerce.number().min(1).max(100).optional().default(50),
@@ -536,6 +554,7 @@ const artistJunctionBody = z.object({
 export const addArtistToAlbum = createRoute({
   path: '/albums/:albumId/artists/:artistId',
   method: 'put',
+  middleware: [requireAdminMiddleware],
   request: {
     params: albumArtistParams,
     body: jsonContentRequired(artistJunctionBody, 'Artist role on this album')
@@ -553,6 +572,7 @@ export const addArtistToAlbum = createRoute({
 export const removeArtistFromAlbum = createRoute({
   path: '/albums/:albumId/artists/:artistId',
   method: 'delete',
+  middleware: [requireAdminMiddleware],
   request: { params: albumArtistParams },
   tags,
   responses: {
@@ -567,6 +587,7 @@ export const removeArtistFromAlbum = createRoute({
 export const addArtistToTrack = createRoute({
   path: '/tracks/:trackId/artists/:artistId',
   method: 'put',
+  middleware: [requireAdminMiddleware],
   request: {
     params: trackArtistParams,
     body: jsonContentRequired(artistJunctionBody, 'Artist role on this track')
@@ -584,6 +605,7 @@ export const addArtistToTrack = createRoute({
 export const removeArtistFromTrack = createRoute({
   path: '/tracks/:trackId/artists/:artistId',
   method: 'delete',
+  middleware: [requireAdminMiddleware],
   request: { params: trackArtistParams },
   tags,
   responses: {

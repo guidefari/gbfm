@@ -491,15 +491,21 @@ export const addEntityLink: AppRouteHandler<AddEntityLinkRoute> = async (c) => {
 export const updateEntityLinkStatus: AppRouteHandler<
   UpdateEntityLinkStatusRoute
 > = async (c) => {
-  const { linkId } = c.req.valid('param')
+  const { entityType, entityId, linkId } = c.req.valid('param')
   const { status, metadata } = c.req.valid('json')
-
-  // In a real app you'd get the userId from the auth session
-  const userId = c.get('user' as never) as string | undefined
+  const user = c.get('user')
+  const userId = status === 'verified' ? user.id : undefined
 
   const program = Effect.gen(function* () {
     const svc = yield* MusicEntityService
-    return yield* svc.updateLinkStatus(linkId, status, userId, metadata)
+    return yield* svc.updateLinkStatus(
+      entityType,
+      entityId,
+      linkId,
+      status,
+      userId,
+      metadata
+    )
   }).pipe(
     Effect.catchTag('NotFoundError', (e) =>
       Effect.succeed({ error: e.message, notFound: true } as const)
@@ -508,7 +514,7 @@ export const updateEntityLinkStatus: AppRouteHandler<
       Effect.succeed({ error: e.message } as const)
     ),
     Effect.withSpan('api.music.updateEntityLinkStatus', {
-      attributes: { linkId, status }
+      attributes: { entityType, entityId, linkId, status, userId }
     })
   )
   const result = await AppRuntime.runPromise(program)
@@ -527,16 +533,18 @@ export const updateEntityLinkStatus: AppRouteHandler<
 export const deleteEntityLink: AppRouteHandler<DeleteEntityLinkRoute> = async (
   c
 ) => {
-  const { linkId } = c.req.valid('param')
+  const { entityType, entityId, linkId } = c.req.valid('param')
   const program = Effect.gen(function* () {
     const svc = yield* MusicEntityService
-    yield* svc.deleteLink(linkId)
+    yield* svc.deleteLink(entityType, entityId, linkId)
     return { ok: true } as const
   }).pipe(
     Effect.catchTag('NotFoundError', (e) =>
       Effect.succeed({ error: e.message, notFound: true } as const)
     ),
-    Effect.withSpan('api.music.deleteEntityLink', { attributes: { linkId } })
+    Effect.withSpan('api.music.deleteEntityLink', {
+      attributes: { entityType, entityId, linkId }
+    })
   )
   const result = await AppRuntime.runPromise(program)
   if ('notFound' in result) {

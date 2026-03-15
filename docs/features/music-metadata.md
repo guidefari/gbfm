@@ -290,7 +290,7 @@ Or by text identifiers (no streaming URL needed):
 ```json
 {
   "artistName": "Burial",
-  "albumTitle": "Untrue"
+  "trackTitle": "Archangel"
 }
 ```
 
@@ -324,6 +324,7 @@ Response `200`:
 ```http
 PATCH /music/album/b2c3d4e5-…/links/c3d4e5f6-…
 Content-Type: application/json
+Cookie: <admin session>
 
 {
   "status": "verified"
@@ -353,7 +354,7 @@ The `MusicLinkScraperService` uses a provider-first architecture. Providers are 
 | Provider | Auth | Use Case |
 |---|---|---|
 | **Odesli** | None (rate-limited) | Convert one streaming URL to 15+ platform links |
-| **MusicBrainz** | None (1 req/sec) | Canonical metadata, MBIDs, text-based search |
+| **MusicBrainz** | None (1 req/sec) | MusicBrainz links, MBIDs, recording-oriented text search |
 | **Firecrawl** | `FIRECRAWL_API_KEY` env var | AI-powered scrape of artist pages for social/Discord links |
 
 ### Adding a new provider
@@ -378,13 +379,15 @@ cd apps/vps
 bun db:migrate
 ```
 
-### 2. Seed lookup tables
+This migrates and seeds the lookup tables automatically.
+
+### 2. Re-seed lookup tables manually if needed
 
 ```bash
-bun scripts/seed-music-lookups.ts
+bun run db:seed:music-lookups
 ```
 
-This must be run before any `music_entity_links` rows can be inserted, as `entityType` and `platform` FK-reference these tables.
+This is safe to rerun if platform or entity type definitions change.
 
 ### 3. Optional: enable Firecrawl
 
