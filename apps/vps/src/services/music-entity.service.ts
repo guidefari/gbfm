@@ -19,13 +19,13 @@ import {
   type SelectMusicTrack
 } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
-import { parseArtistNames } from './parse-artist-names'
-import { toSlug } from './to-slug'
 import {
   type MusicLinkScraperService,
   MusicLinkScraperService as MusicLinkScraperServiceTag,
   type MusicScrapeInput
 } from './music-link-scraper.service'
+import { parseArtistNames } from './parse-artist-names'
+import { toSlug } from './to-slug'
 
 // ---------------------------------------------------------------------------
 // Input types (Drizzle insert types minus fields we handle separately)
