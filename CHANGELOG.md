@@ -1,3 +1,14 @@
+# [2.29.0](https://github.com/guidefari/gbfm/compare/v2.28.0...v2.29.0) (2026-03-18)
+
+
+### Features
+
+* add auth docs to scalar ([e2fa6ea](https://github.com/guidefari/gbfm/commit/e2fa6ea2350a148e2a59c98aee771b428978025f))
+* auto-create and link artists during scrape with idempotency ([24206ad](https://github.com/guidefari/gbfm/commit/24206ad44c2d071781d491b39637a45a952aa704))
+* **music:** complete platform-agnostic music metadata system ([cb6bc79](https://github.com/guidefari/gbfm/commit/cb6bc791128100da75169ba64e56d980bb14e981))
+* platform-agnostic music metadata system ([8f11e70](https://github.com/guidefari/gbfm/commit/8f11e703a69e4e57309468c66cf22dcc7cf5c500))
+* remove entityId from scrape endpoint ([cf1b58e](https://github.com/guidefari/gbfm/commit/cf1b58e99871301cbb51392dfb34f2b6b3b71fb7))
+
 # [2.28.0](https://github.com/guidefari/gbfm/compare/v2.27.3...v2.28.0) (2026-03-15)
 
 
