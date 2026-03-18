@@ -110,8 +110,6 @@ const ODESLI_PLATFORM_MAP: Record<string, MusicPlatform> = {
   tidal: 'tidal',
   deezer: 'deezer',
   amazonMusic: 'amazon_music',
-  napster: 'other',
-  pandora: 'other',
   soundcloud: 'soundcloud',
   bandcamp: 'bandcamp'
 }

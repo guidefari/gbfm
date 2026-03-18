@@ -19,6 +19,7 @@ import {
   type SelectMusicTrack
 } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
+import { parseArtistNames } from './parse-artist-names'
 import {
   type MusicLinkScraperService,
   MusicLinkScraperService as MusicLinkScraperServiceTag,
@@ -372,7 +373,7 @@ const createAlbumEffect = Effect.fn('musicEntity.createAlbum')(function* (
                 musicAlbumArtistsTable.albumId,
                 musicAlbumArtistsTable.artistId
               ],
-              set: { displayOrder: sql`excluded.display_order` }
+              set: { displayOrder: sql`excluded."displayOrder"` }
             })
         }
 
@@ -453,7 +454,7 @@ const updateAlbumEffect = (id: string, data: Partial<CreateAlbumInput>) =>
                   musicAlbumArtistsTable.albumId,
                   musicAlbumArtistsTable.artistId
                 ],
-                set: { displayOrder: sql`excluded.display_order` }
+                set: { displayOrder: sql`excluded."displayOrder"` }
               })
           }
 
@@ -521,7 +522,7 @@ const createTrackEffect = Effect.fn('musicEntity.createTrack')(function* (
                 musicTrackArtistsTable.trackId,
                 musicTrackArtistsTable.artistId
               ],
-              set: { displayOrder: sql`excluded.display_order` }
+              set: { displayOrder: sql`excluded."displayOrder"` }
             })
         }
 
@@ -602,7 +603,7 @@ const updateTrackEffect = (id: string, data: Partial<CreateTrackInput>) =>
                   musicTrackArtistsTable.trackId,
                   musicTrackArtistsTable.artistId
                 ],
-                set: { displayOrder: sql`excluded.display_order` }
+                set: { displayOrder: sql`excluded."displayOrder"` }
               })
           }
 
@@ -1025,41 +1026,160 @@ const toSlug = (text: string) =>
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')}-${crypto.randomUUID().slice(0, 8)}`
 
+const findOrCreateArtistsByName = Effect.fn(
+  'musicEntity.findOrCreateArtistsByName'
+)(function* (names: string[]) {
+  const artistIds: string[] = []
+  for (const name of names) {
+    const existing = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select()
+          .from(musicArtistsTable)
+          .where(sql`lower(${musicArtistsTable.name}) = lower(${name})`)
+          .limit(1),
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to find artist: ${getErrorMessage(e)}`,
+          operation: 'select',
+          table: 'music_artists'
+        })
+    })
+    if (existing[0]) {
+      artistIds.push(existing[0].id)
+    } else {
+      const created = yield* createArtistEffect({
+        name,
+        slug: toSlug(name)
+      })
+      artistIds.push(created.id)
+    }
+  }
+  return artistIds
+})
+
+const findExistingEntityByUrl = (url: string) =>
+  Effect.tryPromise({
+    try: () =>
+      db
+        .select()
+        .from(musicEntityLinksTable)
+        .where(eq(musicEntityLinksTable.url, url))
+        .limit(1),
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to check existing link: ${getErrorMessage(e)}`,
+        operation: 'select',
+        table: 'music_entity_links'
+      })
+  }).pipe(Effect.withSpan('musicEntity.findExistingEntityByUrl'))
+
+const getEntityById = (
+  entityType: MusicEntityType,
+  entityId: string
+): Effect.Effect<
+  SelectMusicArtist | SelectMusicAlbum | SelectMusicTrack | SelectMusicPlaylist,
+  DatabaseError | NotFoundError
+> => {
+  switch (entityType) {
+    case 'artist':
+      return getArtistByIdEffect(entityId)
+    case 'album':
+      return getAlbumByIdEffect(entityId)
+    case 'track':
+      return getTrackByIdEffect(entityId)
+    case 'playlist':
+      return getPlaylistByIdEffect(entityId)
+  }
+}
+
+const findOrCreateArtistEntity = Effect.fn(
+  'musicEntity.findOrCreateArtistEntity'
+)(function* (name: string, imageUrl?: string | null) {
+  const existing = yield* Effect.tryPromise({
+    try: () =>
+      db
+        .select()
+        .from(musicArtistsTable)
+        .where(sql`lower(${musicArtistsTable.name}) = lower(${name})`)
+        .limit(1),
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to find artist: ${getErrorMessage(e)}`,
+        operation: 'select',
+        table: 'music_artists'
+      })
+  })
+  if (existing[0]) return existing[0]
+  return yield* createArtistEffect({
+    name,
+    slug: toSlug(name),
+    imageUrl
+  })
+})
+
 const scrapeAndCreateEntityEffect =
   (scraper: MusicLinkScraperService) =>
   (entityType: MusicEntityType, input: MusicScrapeInput) =>
     Effect.gen(function* () {
+      if (input.url) {
+        const existingLinks = yield* findExistingEntityByUrl(input.url)
+        const match = existingLinks[0]
+        if (match) {
+          const entity = yield* Effect.catchTag(
+            getEntityById(match.entityType as MusicEntityType, match.entityId),
+            'NotFoundError',
+            () => Effect.succeed(null)
+          )
+          if (entity) {
+            const links = yield* getLinksForEntityEffect(
+              match.entityType as MusicEntityType,
+              match.entityId
+            )
+            yield* Effect.logInfo(
+              `[MusicEntity] URL already scraped, returning existing ${match.entityType}:${match.entityId}`
+            )
+            return { entity, links }
+          }
+        }
+      }
+
       const result = yield* scraper.scrape(input)
       const meta = result.entityMeta
+
+      const rawArtistName = meta?.artistName ?? input.artistName
+      const artistNames = rawArtistName
+        ? parseArtistNames(rawArtistName)
+        : undefined
+      const artistIds =
+        artistNames && (entityType === 'album' || entityType === 'track')
+          ? yield* findOrCreateArtistsByName(artistNames)
+          : undefined
 
       const entity = yield* (() => {
         switch (entityType) {
           case 'artist': {
             const name =
               meta?.artistName ?? input.artistName ?? 'Unknown Artist'
-            return createArtistEffect({
-              name,
-              slug: toSlug(name),
-              imageUrl: meta?.thumbnailUrl
-            })
+            return findOrCreateArtistEntity(name, meta?.thumbnailUrl)
           }
           case 'album': {
             const title = meta?.title ?? input.albumTitle ?? 'Untitled Album'
-            const artistName = meta?.artistName ?? input.artistName
             return createAlbumEffect({
               title,
               slug: toSlug(title),
-              artistNames: artistName ? [artistName] : undefined,
+              artistNames,
+              artistIds,
               coverImageUrl: meta?.thumbnailUrl
             })
           }
           case 'track': {
             const title = meta?.title ?? input.trackTitle ?? 'Untitled Track'
-            const artistName = meta?.artistName ?? input.artistName
             return createTrackEffect({
               title,
               slug: toSlug(title),
-              artistNames: artistName ? [artistName] : undefined
+              artistNames,
+              artistIds
             })
           }
           case 'playlist': {
