@@ -1063,34 +1063,47 @@ const getPendingLinksEffect = (opts?: { limit?: number; offset?: number }) =>
 // Scraping — runs providers, bulk-inserts all resulting links
 // ---------------------------------------------------------------------------
 
+const findArtistByNameCI = (name: string) =>
+  Effect.tryPromise({
+    try: () =>
+      db
+        .select()
+        .from(musicArtistsTable)
+        .where(sql`lower(${musicArtistsTable.name}) = lower(${name})`)
+        .limit(1),
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to find artist: ${getErrorMessage(e)}`,
+        operation: 'select',
+        table: 'music_artists'
+      })
+  }).pipe(Effect.withSpan('musicEntity.findArtistByNameCI'))
+
+const findOrCreateArtist = Effect.fn('musicEntity.findOrCreateArtist')(
+  function* (name: string, opts?: { imageUrl?: string | null }) {
+    const rows = yield* findArtistByNameCI(name)
+    if (rows[0]) {
+      if (opts?.imageUrl && rows[0].imageUrl !== opts.imageUrl) {
+        yield* Effect.logInfo(
+          `[MusicEntity] Artist "${rows[0].name}" exists with different imageUrl (existing: ${rows[0].imageUrl}, scraped: ${opts.imageUrl}) — skipping update`
+        )
+      }
+      return rows[0]
+    }
+    return yield* createArtistEffect({
+      name,
+      slug: toSlug(name),
+      imageUrl: opts?.imageUrl
+    })
+  }
+)
+
 const findOrCreateArtistsByName = Effect.fn(
   'musicEntity.findOrCreateArtistsByName'
 )(function* (names: string[]) {
   const artists: SelectMusicArtist[] = []
   for (const name of names) {
-    const existing = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select()
-          .from(musicArtistsTable)
-          .where(sql`lower(${musicArtistsTable.name}) = lower(${name})`)
-          .limit(1),
-      catch: (e) =>
-        new DatabaseError({
-          message: `Failed to find artist: ${getErrorMessage(e)}`,
-          operation: 'select',
-          table: 'music_artists'
-        })
-    })
-    if (existing[0]) {
-      artists.push(existing[0])
-    } else {
-      const created = yield* createArtistEffect({
-        name,
-        slug: toSlug(name)
-      })
-      artists.push(created)
-    }
+    artists.push(yield* findOrCreateArtist(name))
   }
   return artists
 })
@@ -1134,38 +1147,6 @@ const getEntityById = (
       return getPlaylistByIdEffect(entityId)
   }
 }
-
-const findOrCreateArtistEntity = Effect.fn(
-  'musicEntity.findOrCreateArtistEntity'
-)(function* (name: string, imageUrl?: string | null) {
-  const existing = yield* Effect.tryPromise({
-    try: () =>
-      db
-        .select()
-        .from(musicArtistsTable)
-        .where(sql`lower(${musicArtistsTable.name}) = lower(${name})`)
-        .limit(1),
-    catch: (e) =>
-      new DatabaseError({
-        message: `Failed to find artist: ${getErrorMessage(e)}`,
-        operation: 'select',
-        table: 'music_artists'
-      })
-  })
-  if (existing[0]) {
-    if (imageUrl && existing[0].imageUrl !== imageUrl) {
-      yield* Effect.logInfo(
-        `[MusicEntity] Artist "${existing[0].name}" exists with different imageUrl (existing: ${existing[0].imageUrl}, scraped: ${imageUrl}) — skipping update`
-      )
-    }
-    return existing[0]
-  }
-  return yield* createArtistEffect({
-    name,
-    slug: toSlug(name),
-    imageUrl
-  })
-})
 
 const scrapeAndCreateEntityEffect =
   (scraper: MusicLinkScraperService) =>
@@ -1212,7 +1193,9 @@ const scrapeAndCreateEntityEffect =
           case 'artist': {
             const name =
               meta?.artistName ?? input.artistName ?? 'Unknown Artist'
-            return findOrCreateArtistEntity(name, meta?.thumbnailUrl)
+            return findOrCreateArtist(name, {
+              imageUrl: meta?.thumbnailUrl
+            })
           }
           case 'album': {
             const title = meta?.title ?? input.albumTitle ?? 'Untitled Album'
