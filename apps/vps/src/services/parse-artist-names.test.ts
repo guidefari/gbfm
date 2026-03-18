@@ -14,16 +14,15 @@ describe('parseArtistNames', () => {
     ])
   })
 
-  test('splits on ampersand', () => {
-    expect(parseArtistNames('Fischer & Chloe')).toEqual(['Fischer', 'Chloe'])
-  })
-
-  test('splits on "and"', () => {
-    expect(parseArtistNames('Fischer and Chloe')).toEqual(['Fischer', 'Chloe'])
-  })
-
   test('splits on feat.', () => {
     expect(parseArtistNames('Burial feat. Four Tet')).toEqual([
+      'Burial',
+      'Four Tet'
+    ])
+  })
+
+  test('splits on feat without dot', () => {
+    expect(parseArtistNames('Burial feat Four Tet')).toEqual([
       'Burial',
       'Four Tet'
     ])
@@ -43,31 +42,32 @@ describe('parseArtistNames', () => {
     ])
   })
 
-  test('splits on ×', () => {
-    expect(parseArtistNames('Burial × Four Tet')).toEqual([
-      'Burial',
-      'Four Tet'
+  test('does not split on ampersand', () => {
+    expect(parseArtistNames('Simon & Garfunkel')).toEqual(['Simon & Garfunkel'])
+  })
+
+  test('does not split on "and"', () => {
+    expect(parseArtistNames('Florence and the Machine')).toEqual([
+      'Florence and the Machine'
     ])
   })
 
-  test('splits on x', () => {
-    expect(parseArtistNames('Burial x Four Tet')).toEqual([
-      'Burial',
-      'Four Tet'
+  test('does not split on x', () => {
+    expect(parseArtistNames('TNGHT x Hudson Mohawke')).toEqual([
+      'TNGHT x Hudson Mohawke'
     ])
   })
 
-  test('splits on vs', () => {
+  test('does not split on vs', () => {
     expect(parseArtistNames('Burial vs Four Tet')).toEqual([
-      'Burial',
-      'Four Tet'
+      'Burial vs Four Tet'
     ])
   })
 
   test('handles mixed separators', () => {
     expect(
       parseArtistNames('Hurricane Dan, Fischer & Chloe feat. Burial')
-    ).toEqual(['Hurricane Dan', 'Fischer', 'Chloe', 'Burial'])
+    ).toEqual(['Hurricane Dan', 'Fischer & Chloe', 'Burial'])
   })
 
   test('trims whitespace', () => {

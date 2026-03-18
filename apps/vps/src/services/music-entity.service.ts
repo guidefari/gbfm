@@ -20,6 +20,7 @@ import {
 } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
 import { parseArtistNames } from './parse-artist-names'
+import { toSlug } from './to-slug'
 import {
   type MusicLinkScraperService,
   MusicLinkScraperService as MusicLinkScraperServiceTag,
@@ -248,6 +249,22 @@ function requireInserted<T>(
   return Effect.succeed(row)
 }
 
+type DrizzleTransaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+const deleteLinksForEntityTx = (
+  tx: DrizzleTransaction,
+  entityType: MusicEntityType,
+  entityId: string
+) =>
+  tx
+    .delete(musicEntityLinksTable)
+    .where(
+      and(
+        eq(musicEntityLinksTable.entityType, entityType),
+        eq(musicEntityLinksTable.entityId, entityId)
+      )
+    )
+
 // ---------------------------------------------------------------------------
 // Artist effects
 // ---------------------------------------------------------------------------
@@ -303,11 +320,15 @@ const getArtistByIdEffect = (id: string) =>
 
 const updateArtistEffect = (id: string, data: Partial<CreateArtistInput>) =>
   Effect.gen(function* () {
+    const updateData = { ...data }
+    if (updateData.name && !updateData.slug) {
+      updateData.slug = toSlug(updateData.name)
+    }
     const rows = yield* Effect.tryPromise({
       try: () =>
         db
           .update(musicArtistsTable)
-          .set({ ...data, updatedAt: new Date() })
+          .set({ ...updateData, updatedAt: new Date() })
           .where(eq(musicArtistsTable.id, id))
           .returning(),
       catch: (e) =>
@@ -324,10 +345,13 @@ const deleteArtistEffect = (id: string) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
       try: () =>
-        db
-          .delete(musicArtistsTable)
-          .where(eq(musicArtistsTable.id, id))
-          .returning({ id: musicArtistsTable.id }),
+        db.transaction(async (tx) => {
+          await deleteLinksForEntityTx(tx, 'artist', id)
+          return tx
+            .delete(musicArtistsTable)
+            .where(eq(musicArtistsTable.id, id))
+            .returning({ id: musicArtistsTable.id })
+        }),
       catch: (e) =>
         new DatabaseError({
           message: `Failed to delete artist: ${getErrorMessage(e)}`,
@@ -425,6 +449,9 @@ const getAlbumByIdEffect = (id: string) =>
 const updateAlbumEffect = (id: string, data: Partial<CreateAlbumInput>) =>
   Effect.gen(function* () {
     const { artistIds, ...albumData } = data
+    if (albumData.title && !albumData.slug) {
+      albumData.slug = toSlug(albumData.title)
+    }
 
     return yield* Effect.tryPromise({
       try: () =>
@@ -473,10 +500,13 @@ const deleteAlbumEffect = (id: string) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
       try: () =>
-        db
-          .delete(musicAlbumsTable)
-          .where(eq(musicAlbumsTable.id, id))
-          .returning({ id: musicAlbumsTable.id }),
+        db.transaction(async (tx) => {
+          await deleteLinksForEntityTx(tx, 'album', id)
+          return tx
+            .delete(musicAlbumsTable)
+            .where(eq(musicAlbumsTable.id, id))
+            .returning({ id: musicAlbumsTable.id })
+        }),
       catch: (e) =>
         new DatabaseError({
           message: `Failed to delete album: ${getErrorMessage(e)}`,
@@ -574,6 +604,9 @@ const getTrackByIdEffect = (id: string) =>
 const updateTrackEffect = (id: string, data: Partial<CreateTrackInput>) =>
   Effect.gen(function* () {
     const { artistIds, ...trackData } = data
+    if (trackData.title && !trackData.slug) {
+      trackData.slug = toSlug(trackData.title)
+    }
 
     return yield* Effect.tryPromise({
       try: () =>
@@ -622,10 +655,13 @@ const deleteTrackEffect = (id: string) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
       try: () =>
-        db
-          .delete(musicTracksTable)
-          .where(eq(musicTracksTable.id, id))
-          .returning({ id: musicTracksTable.id }),
+        db.transaction(async (tx) => {
+          await deleteLinksForEntityTx(tx, 'track', id)
+          return tx
+            .delete(musicTracksTable)
+            .where(eq(musicTracksTable.id, id))
+            .returning({ id: musicTracksTable.id })
+        }),
       catch: (e) =>
         new DatabaseError({
           message: `Failed to delete track: ${getErrorMessage(e)}`,
@@ -693,11 +729,15 @@ const getPlaylistByIdEffect = (id: string) =>
 
 const updatePlaylistEffect = (id: string, data: Partial<CreatePlaylistInput>) =>
   Effect.gen(function* () {
+    const updateData = { ...data }
+    if (updateData.title && !updateData.slug) {
+      updateData.slug = toSlug(updateData.title)
+    }
     const rows = yield* Effect.tryPromise({
       try: () =>
         db
           .update(musicPlaylistsTable)
-          .set({ ...data, updatedAt: new Date() })
+          .set({ ...updateData, updatedAt: new Date() })
           .where(eq(musicPlaylistsTable.id, id))
           .returning(),
       catch: (e) =>
@@ -714,10 +754,13 @@ const deletePlaylistEffect = (id: string) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
       try: () =>
-        db
-          .delete(musicPlaylistsTable)
-          .where(eq(musicPlaylistsTable.id, id))
-          .returning({ id: musicPlaylistsTable.id }),
+        db.transaction(async (tx) => {
+          await deleteLinksForEntityTx(tx, 'playlist', id)
+          return tx
+            .delete(musicPlaylistsTable)
+            .where(eq(musicPlaylistsTable.id, id))
+            .returning({ id: musicPlaylistsTable.id })
+        }),
       catch: (e) =>
         new DatabaseError({
           message: `Failed to delete playlist: ${getErrorMessage(e)}`,
@@ -1020,16 +1063,10 @@ const getPendingLinksEffect = (opts?: { limit?: number; offset?: number }) =>
 // Scraping — runs providers, bulk-inserts all resulting links
 // ---------------------------------------------------------------------------
 
-const toSlug = (text: string) =>
-  `${text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')}-${crypto.randomUUID().slice(0, 8)}`
-
 const findOrCreateArtistsByName = Effect.fn(
   'musicEntity.findOrCreateArtistsByName'
 )(function* (names: string[]) {
-  const artistIds: string[] = []
+  const artists: SelectMusicArtist[] = []
   for (const name of names) {
     const existing = yield* Effect.tryPromise({
       try: () =>
@@ -1046,25 +1083,30 @@ const findOrCreateArtistsByName = Effect.fn(
         })
     })
     if (existing[0]) {
-      artistIds.push(existing[0].id)
+      artists.push(existing[0])
     } else {
       const created = yield* createArtistEffect({
         name,
         slug: toSlug(name)
       })
-      artistIds.push(created.id)
+      artists.push(created)
     }
   }
-  return artistIds
+  return artists
 })
 
-const findExistingEntityByUrl = (url: string) =>
+const findExistingEntityByUrl = (url: string, entityType: MusicEntityType) =>
   Effect.tryPromise({
     try: () =>
       db
         .select()
         .from(musicEntityLinksTable)
-        .where(eq(musicEntityLinksTable.url, url))
+        .where(
+          and(
+            eq(musicEntityLinksTable.url, url),
+            eq(musicEntityLinksTable.entityType, entityType)
+          )
+        )
         .limit(1),
     catch: (e) =>
       new DatabaseError({
@@ -1110,7 +1152,14 @@ const findOrCreateArtistEntity = Effect.fn(
         table: 'music_artists'
       })
   })
-  if (existing[0]) return existing[0]
+  if (existing[0]) {
+    if (imageUrl && existing[0].imageUrl !== imageUrl) {
+      yield* Effect.logInfo(
+        `[MusicEntity] Artist "${existing[0].name}" exists with different imageUrl (existing: ${existing[0].imageUrl}, scraped: ${imageUrl}) — skipping update`
+      )
+    }
+    return existing[0]
+  }
   return yield* createArtistEffect({
     name,
     slug: toSlug(name),
@@ -1123,7 +1172,10 @@ const scrapeAndCreateEntityEffect =
   (entityType: MusicEntityType, input: MusicScrapeInput) =>
     Effect.gen(function* () {
       if (input.url) {
-        const existingLinks = yield* findExistingEntityByUrl(input.url)
+        const existingLinks = yield* findExistingEntityByUrl(
+          input.url,
+          entityType
+        )
         const match = existingLinks[0]
         if (match) {
           const entity = yield* Effect.catchTag(
@@ -1148,13 +1200,12 @@ const scrapeAndCreateEntityEffect =
       const meta = result.entityMeta
 
       const rawArtistName = meta?.artistName ?? input.artistName
-      const artistNames = rawArtistName
-        ? parseArtistNames(rawArtistName)
-        : undefined
-      const artistIds =
-        artistNames && (entityType === 'album' || entityType === 'track')
-          ? yield* findOrCreateArtistsByName(artistNames)
+      const foundArtists =
+        rawArtistName && (entityType === 'album' || entityType === 'track')
+          ? yield* findOrCreateArtistsByName(parseArtistNames(rawArtistName))
           : undefined
+      const artistNames = foundArtists?.map((a) => a.name)
+      const artistIds = foundArtists?.map((a) => a.id)
 
       const entity = yield* (() => {
         switch (entityType) {
