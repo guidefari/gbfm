@@ -5,25 +5,25 @@
     "": {
       "name": "gbfm",
       "dependencies": {
-        "@effect/cli": "latest",
-        "@effect/platform": "latest",
-        "effect": "latest",
-        "gray-matter": "latest",
-        "sst": "latest",
-        "vitest": "latest",
-        "zod": "latest",
+        "@effect/cli": "0.73.2",
+        "@effect/platform": "0.94.5",
+        "effect": "3.19.15",
+        "gray-matter": "4.0.3",
+        "sst": "4.2.7",
+        "vitest": "4.0.18",
+        "zod": "4.3.6",
       },
       "devDependencies": {
-        "@biomejs/biome": "latest",
-        "@effect/language-service": "latest",
-        "@semantic-release/changelog": "latest",
-        "@semantic-release/git": "latest",
-        "@semantic-release/github": "latest",
-        "@tsconfig/bun": "latest",
-        "lefthook": "latest",
-        "madge": "latest",
-        "semantic-release": "latest",
-        "typescript": "latest",
+        "@biomejs/biome": "2.4.6",
+        "@effect/language-service": "^0.79.0",
+        "@semantic-release/changelog": "^6.0.3",
+        "@semantic-release/git": "^10.0.1",
+        "@semantic-release/github": "^12.0.6",
+        "@tsconfig/bun": "1.0.10",
+        "lefthook": "^2.1.3",
+        "madge": "^8.0.0",
+        "semantic-release": "^25.0.3",
+        "typescript": "5.9.3",
       },
     },
     "apps/mobile": {
@@ -99,7 +99,7 @@
         "@opentelemetry/sdk-trace-node": "^2.5.0",
         "@opentelemetry/sdk-trace-web": "^2.5.0",
         "@pdf-lib/fontkit": "^1.1.1",
-        "@scalar/hono-api-reference": "0.9.34",
+        "@scalar/hono-api-reference": "0.10.3",
         "@spotify/web-api-ts-sdk": "1.2.0",
         "@types/qrcode": "^1.5.6",
         "better-auth": "^1.4.15",
@@ -1296,13 +1296,13 @@
 
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.56.0", "", { "os": "win32", "cpu": "x64" }, "sha512-H8AE9Ur/t0+1VXujj90w0HrSOuv0Nq9r1vSZF2t5km20NTfosQsGGUXDaKdQZzwuLts7IyL1fYT4hM95TI9c4g=="],
 
-    "@scalar/core": ["@scalar/core@0.3.32", "", { "dependencies": { "@scalar/types": "0.5.8" } }, "sha512-5qUC2l1fhLyKw1iKAbuQCWb2TNZ4Y52MDc7MA7RA7QLdJ0QPBzk2UAJ0ZuYY2dIhZ3qTcpuqtF4EXEllXHoNOA=="],
+    "@scalar/core": ["@scalar/core@0.4.3", "", { "dependencies": { "@scalar/types": "0.7.3" } }, "sha512-Fp/J5RyajknwZrDG5/nsJRxL07cS2gJ9wvnvIWcFgsR8HWy/7qMQ+PtpYhdBmMYiBAql1JJobKTu/7ZWqnHaFA=="],
 
-    "@scalar/helpers": ["@scalar/helpers@0.2.8", "", {}, "sha512-aXXRF4sCaiGZIRpZ1MUcnl8y0Q9pPG1VXqQMWacVWDh6zQN9cuayTC/TbODzWeldp50sgJ1E8MpHvpeV7CEF9g=="],
+    "@scalar/helpers": ["@scalar/helpers@0.4.1", "", {}, "sha512-XfyYqSUA597wfzS8lmMY1xvYv4si2WytuoBWj7JDpx3E/lVq7YEsticXF/Q30ttFVRBfgQErg8MQI6b6IkZr2Q=="],
 
-    "@scalar/hono-api-reference": ["@scalar/hono-api-reference@0.9.34", "", { "dependencies": { "@scalar/core": "0.3.32" }, "peerDependencies": { "hono": "^4.10.3" } }, "sha512-UNvyIlESDBws9ofAfO2R5v6qX4vp5rks1dY3n1SoOgxmDj4O+0k/oO7c6vFDyaDBjXokBMbW1V13mNYdkIaINQ=="],
+    "@scalar/hono-api-reference": ["@scalar/hono-api-reference@0.10.3", "", { "dependencies": { "@scalar/core": "0.4.3" }, "peerDependencies": { "hono": "^4.12.5" } }, "sha512-bdueh25lDTx8US5qJux4L3LlkXwqe64kUnPEGqFmjAYfNfDJI3KknCgq43P9aikO07wnqpPNRYGj8sxOEubidw=="],
 
-    "@scalar/types": ["@scalar/types@0.5.8", "", { "dependencies": { "@scalar/helpers": "0.2.8", "nanoid": "^5.1.6", "type-fest": "^5.3.1", "zod": "^4.3.5" } }, "sha512-eL8zojDI9QB+kNRkuM80auTKHnzNrlOLC8ZLUJVnY0Jj5ZtoInKMDGodgQXK1wOSDTcfVfgLALOY1zb6cFFlCg=="],
+    "@scalar/types": ["@scalar/types@0.7.3", "", { "dependencies": { "@scalar/helpers": "0.4.1", "nanoid": "^5.1.6", "type-fest": "^5.3.1", "zod": "^4.3.5" } }, "sha512-9ThydMH28aA5DMm8Q/nTKXKnAKejG7Awlj7IC99oXkq5aOJ60Sn0kS1RWaqQosaWI3ezyPJ7/sUglssAEMA6EA=="],
 
     "@sec-ant/readable-stream": ["@sec-ant/readable-stream@0.4.1", "", {}, "sha512-831qok9r2t8AlxLko40y2ebgSDhenenCatLVeW/uBtnHPyhHOvG0C7TvfgecV+wHzIm5KUICgzmVpWS+IMEAeg=="],
 
@@ -3881,8 +3881,6 @@
     "@rollup/pluginutils/estree-walker": ["estree-walker@2.0.2", "", {}, "sha512-Rfkk/Mp/DL7JVje3u18FxFujQlTNR2q6QfMSMB7AvCBx91NGj/ba3kCfza0f6dVDbw7YlRf/nDrn7pQrCCyQ/w=="],
 
     "@scalar/types/nanoid": ["nanoid@5.1.6", "", { "bin": { "nanoid": "bin/nanoid.js" } }, "sha512-c7+7RQ+dMB5dPwwCp4ee1/iV/q2P6aK1mTZcfr1BTuVlyW9hJYiMPybJCcnBlQtuSmTIWNeazm/zqNoZSSElBg=="],
-
-    "@scalar/types/zod": ["zod@4.3.5", "", {}, "sha512-k7Nwx6vuWx1IJ9Bjuf4Zt1PEllcwe7cls3VNzm4CQ1/hgtFUK2bRNG3rvnpPUhFjmqJKAKtjV576KnUkHocg/g=="],
 
     "@semantic-release/github/@semantic-release/error": ["@semantic-release/error@4.0.0", "", {}, "sha512-mgdxrHTLOjOddRVYIYDo0fR3/v61GNN1YGkfbrjuIKg/uMgCd+Qzo3UAXJ+woLQQpos4pl5Esuw5A7AoNlzjUQ=="],
 
