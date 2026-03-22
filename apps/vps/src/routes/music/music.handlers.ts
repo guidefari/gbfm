@@ -461,7 +461,9 @@ export const listPlaylistTracks: AppRouteHandler<
     Effect.gen(function* () {
       const svc = yield* MusicEntityService
       return yield* svc.getPlaylistTracks(id)
-    }).pipe(Effect.withSpan('api.music.listPlaylistTracks', { attributes: { id } }))
+    }).pipe(
+      Effect.withSpan('api.music.listPlaylistTracks', { attributes: { id } })
+    )
   )
   return c.json(result, HttpStatusCodes.OK)
 }
@@ -513,7 +515,9 @@ export const updatePlaylistTrack: AppRouteHandler<
     Effect.catchTag('DatabaseError', (e) =>
       Effect.succeed({ error: e.message } as const)
     ),
-    Effect.withSpan('api.music.updatePlaylistTrack', { attributes: { trackId } })
+    Effect.withSpan('api.music.updatePlaylistTrack', {
+      attributes: { trackId }
+    })
   )
   const result = await AppRuntime.runPromise(program)
   if ('notFound' in result) {

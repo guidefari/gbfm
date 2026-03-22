@@ -1171,13 +1171,10 @@ export function useReorderPlaylistTracks(playlistId: string) {
   const queryClient = useQueryClient()
   return useMutation<void, Error, string[]>({
     mutationFn: (orderedIds) =>
-      fetcher(
-        `${VPS_BASE_URL}/music/playlists/${playlistId}/tracks/reorder`,
-        {
-          method: 'PUT',
-          body: JSON.stringify({ orderedIds })
-        }
-      ),
+      fetcher(`${VPS_BASE_URL}/music/playlists/${playlistId}/tracks/reorder`, {
+        method: 'PUT',
+        body: JSON.stringify({ orderedIds })
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['playlists', playlistId] })
     }

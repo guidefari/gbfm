@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Plus, Globe, Lock, Trash2 } from 'lucide-react'
+import { Globe, Lock, Plus, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -13,11 +13,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { toast } from '@/components/ui/use-toast'
-import {
-  useCreatePlaylist,
-  useDeletePlaylist,
-  usePlaylists
-} from '@/lib/http'
+import { useCreatePlaylist, useDeletePlaylist, usePlaylists } from '@/lib/http'
 
 function toSlug(title: string) {
   return title

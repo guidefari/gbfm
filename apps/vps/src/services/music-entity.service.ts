@@ -850,7 +850,7 @@ const addPlaylistTrackEffect = Effect.fn('musicEntity.addPlaylistTrack')(
           table: 'playlist_tracks'
         })
     })
-    const position = (countRows[0]?.cnt ?? 0)
+    const position = countRows[0]?.cnt ?? 0
     const rows = yield* Effect.tryPromise({
       try: () =>
         db
@@ -923,13 +923,13 @@ const reorderPlaylistTracksEffect = (
   Effect.tryPromise({
     try: () =>
       db.transaction(async (tx) => {
-        for (let i = 0; i < orderedIds.length; i++) {
+        for (const [i, trackId] of orderedIds.entries()) {
           await tx
             .update(playlistTracksTable)
             .set({ position: i, updatedAt: new Date() })
             .where(
               and(
-                eq(playlistTracksTable.id, orderedIds[i]),
+                eq(playlistTracksTable.id, trackId),
                 eq(playlistTracksTable.playlistId, playlistId)
               )
             )

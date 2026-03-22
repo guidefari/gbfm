@@ -1,9 +1,9 @@
 import {
+  closestCenter,
   DndContext,
   type DragEndEvent,
   KeyboardSensor,
   PointerSensor,
-  closestCenter,
   useSensor,
   useSensors
 } from '@dnd-kit/core'
@@ -15,6 +15,7 @@ import {
   verticalListSortingStrategy
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import type { SelectPlaylistTrack } from '@gbfm/vps/schemas'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import {
   ArrowLeft,
@@ -47,10 +48,8 @@ import {
   useRemovePlaylistTrack,
   useReorderPlaylistTracks,
   useUpdatePlaylist,
-  useUpdatePlaylistTrack,
-  type PlaylistWithTracks
+  useUpdatePlaylistTrack
 } from '@/lib/http'
-import type { SelectPlaylistTrack } from '@gbfm/vps/schemas'
 
 export const Route = createFileRoute('/admin/playlists/$id')({
   component: PlaylistDetailPage
@@ -67,8 +66,14 @@ interface TrackRowProps {
 }
 
 function TrackRow({ track, onEdit, onRemove }: TrackRowProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useSortable({ id: track.id })
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: track.id })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -216,9 +221,7 @@ function AddTrackForm({ playlistId, onSuccess }: AddTrackFormProps) {
             ? [enriched.artist]
             : [],
         thumbnailUrl: enriched?.thumbnailUrl,
-        durationMs: enriched?.duration
-          ? enriched.duration * 1000
-          : undefined,
+        durationMs: enriched?.duration ? enriched.duration * 1000 : undefined,
         bpm: bpm.trim() || undefined,
         musicalKey: musicalKey.trim() || undefined,
         notes: notes.trim() || undefined
@@ -314,7 +317,7 @@ function AddTrackForm({ playlistId, onSuccess }: AddTrackFormProps) {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder='Start at 1:30, mix out at 4:00…'
-              rows={2}
+              className='min-h-[64px]'
             />
           </div>
         </div>
@@ -457,7 +460,7 @@ function EditTrackDialog({ track, playlistId, onClose }: EditTrackDialogProps) {
               onChange={(e) =>
                 setForm((p) => ({ ...p, notes: e.target.value }))
               }
-              rows={3}
+              className='min-h-[80px]'
             />
           </div>
         </div>
@@ -496,7 +499,9 @@ function PlaylistDetailPage() {
   // Keep local tracks in sync with server data
   useEffect(() => {
     if (playlist?.tracks) {
-      setLocalTracks([...playlist.tracks].sort((a, b) => a.position - b.position))
+      setLocalTracks(
+        [...playlist.tracks].sort((a, b) => a.position - b.position)
+      )
     }
   }, [playlist?.tracks])
 
@@ -570,7 +575,10 @@ function PlaylistDetailPage() {
     return (
       <div className='container mx-auto max-w-3xl py-8 px-4'>
         <p className='text-muted-foreground'>Playlist not found.</p>
-        <Link to='/admin' search={{ tab: 'playlists' }} className='mt-4 inline-flex text-sm underline'>
+        <Link
+          to='/admin'
+          search={{ tab: 'playlists' }}
+          className='mt-4 inline-flex text-sm underline'>
           Back to admin
         </Link>
       </div>
