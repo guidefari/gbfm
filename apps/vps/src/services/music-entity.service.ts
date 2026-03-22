@@ -12,11 +12,13 @@ import {
   musicPlaylistsTable,
   musicTrackArtistsTable,
   musicTracksTable,
+  playlistTracksTable,
   type SelectMusicAlbum,
   type SelectMusicArtist,
   type SelectMusicEntityLink,
   type SelectMusicPlaylist,
-  type SelectMusicTrack
+  type SelectMusicTrack,
+  type SelectPlaylistTrack
 } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
 import {
@@ -70,8 +72,26 @@ export interface CreatePlaylistInput {
   coverImageUrl?: string | null
   curatorId?: string | null
   slug: string
+  isPublic?: boolean
   publishedAt?: Date | null
 }
+
+export interface CreatePlaylistTrackInput {
+  playlistId: string
+  url: string
+  platform: string
+  title: string
+  artistNames?: string[] | null
+  thumbnailUrl?: string | null
+  durationMs?: number | null
+  bpm?: string | null
+  musicalKey?: string | null
+  notes?: string | null
+}
+
+export type UpdatePlaylistTrackInput = Partial<
+  Omit<CreatePlaylistTrackInput, 'playlistId'>
+> & { position?: number }
 
 // ---------------------------------------------------------------------------
 // Service interface
@@ -144,6 +164,25 @@ export interface MusicEntityService {
   readonly deletePlaylist: (
     id: string
   ) => Effect.Effect<void, DatabaseError | NotFoundError>
+
+  // Playlist tracks
+  readonly getPlaylistTracks: (
+    playlistId: string
+  ) => Effect.Effect<SelectPlaylistTrack[], DatabaseError>
+  readonly addPlaylistTrack: (
+    data: CreatePlaylistTrackInput
+  ) => Effect.Effect<SelectPlaylistTrack, DatabaseError>
+  readonly updatePlaylistTrack: (
+    trackId: string,
+    data: UpdatePlaylistTrackInput
+  ) => Effect.Effect<SelectPlaylistTrack, DatabaseError | NotFoundError>
+  readonly removePlaylistTrack: (
+    trackId: string
+  ) => Effect.Effect<void, DatabaseError | NotFoundError>
+  readonly reorderPlaylistTracks: (
+    playlistId: string,
+    orderedIds: string[]
+  ) => Effect.Effect<void, DatabaseError>
 
   // Artist-entity junctions
   readonly addArtistToAlbum: (
@@ -772,6 +811,144 @@ const deletePlaylistEffect = (id: string) =>
   }).pipe(Effect.withSpan('musicEntity.deletePlaylist', { attributes: { id } }))
 
 // ---------------------------------------------------------------------------
+// Playlist track effects
+// ---------------------------------------------------------------------------
+
+const getPlaylistTracksEffect = (playlistId: string) =>
+  Effect.tryPromise({
+    try: () =>
+      db
+        .select()
+        .from(playlistTracksTable)
+        .where(eq(playlistTracksTable.playlistId, playlistId))
+        .orderBy(playlistTracksTable.position),
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to list playlist tracks: ${getErrorMessage(e)}`,
+        operation: 'select',
+        table: 'playlist_tracks'
+      })
+  }).pipe(
+    Effect.withSpan('musicEntity.getPlaylistTracks', {
+      attributes: { playlistId }
+    })
+  )
+
+const addPlaylistTrackEffect = Effect.fn('musicEntity.addPlaylistTrack')(
+  function* (data: CreatePlaylistTrackInput) {
+    // Append at the end: position = current max + 1
+    const countRows = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select({ cnt: sql<number>`count(*)::int` })
+          .from(playlistTracksTable)
+          .where(eq(playlistTracksTable.playlistId, data.playlistId)),
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to count playlist tracks: ${getErrorMessage(e)}`,
+          operation: 'select',
+          table: 'playlist_tracks'
+        })
+    })
+    const position = (countRows[0]?.cnt ?? 0)
+    const rows = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .insert(playlistTracksTable)
+          .values({ ...data, position })
+          .returning(),
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to add playlist track: ${getErrorMessage(e)}`,
+          operation: 'insert',
+          table: 'playlist_tracks'
+        })
+    })
+    return yield* requireInserted(rows, 'playlist_tracks')
+  }
+)
+
+const updatePlaylistTrackEffect = (
+  trackId: string,
+  data: UpdatePlaylistTrackInput
+) =>
+  Effect.gen(function* () {
+    const rows = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .update(playlistTracksTable)
+          .set({ ...data, updatedAt: new Date() })
+          .where(eq(playlistTracksTable.id, trackId))
+          .returning(),
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to update playlist track: ${getErrorMessage(e)}`,
+          operation: 'update',
+          table: 'playlist_tracks'
+        })
+    })
+    return yield* requireOne(rows, 'PlaylistTrack', trackId)
+  }).pipe(
+    Effect.withSpan('musicEntity.updatePlaylistTrack', {
+      attributes: { trackId }
+    })
+  )
+
+const removePlaylistTrackEffect = (trackId: string) =>
+  Effect.gen(function* () {
+    const rows = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .delete(playlistTracksTable)
+          .where(eq(playlistTracksTable.id, trackId))
+          .returning({ id: playlistTracksTable.id }),
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to remove playlist track: ${getErrorMessage(e)}`,
+          operation: 'delete',
+          table: 'playlist_tracks'
+        })
+    })
+    yield* requireOne(rows, 'PlaylistTrack', trackId)
+  }).pipe(
+    Effect.withSpan('musicEntity.removePlaylistTrack', {
+      attributes: { trackId }
+    })
+  )
+
+const reorderPlaylistTracksEffect = (
+  playlistId: string,
+  orderedIds: string[]
+) =>
+  Effect.tryPromise({
+    try: () =>
+      db.transaction(async (tx) => {
+        for (let i = 0; i < orderedIds.length; i++) {
+          await tx
+            .update(playlistTracksTable)
+            .set({ position: i, updatedAt: new Date() })
+            .where(
+              and(
+                eq(playlistTracksTable.id, orderedIds[i]),
+                eq(playlistTracksTable.playlistId, playlistId)
+              )
+            )
+        }
+      }),
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to reorder playlist tracks: ${getErrorMessage(e)}`,
+        operation: 'update',
+        table: 'playlist_tracks'
+      })
+  }).pipe(
+    Effect.asVoid,
+    Effect.withSpan('musicEntity.reorderPlaylistTracks', {
+      attributes: { playlistId }
+    })
+  )
+
+// ---------------------------------------------------------------------------
 // Junction table effects
 // ---------------------------------------------------------------------------
 
@@ -1295,6 +1472,12 @@ export const MusicEntityServiceLive = Layer.effect(
       getPlaylistById: getPlaylistByIdEffect,
       updatePlaylist: updatePlaylistEffect,
       deletePlaylist: deletePlaylistEffect,
+
+      getPlaylistTracks: getPlaylistTracksEffect,
+      addPlaylistTrack: addPlaylistTrackEffect,
+      updatePlaylistTrack: updatePlaylistTrackEffect,
+      removePlaylistTrack: removePlaylistTrackEffect,
+      reorderPlaylistTracks: reorderPlaylistTracksEffect,
 
       addArtistToAlbum: addArtistToAlbumEffect,
       removeArtistFromAlbum: removeArtistFromAlbumEffect,

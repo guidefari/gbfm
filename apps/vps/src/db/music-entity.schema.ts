@@ -5,9 +5,11 @@ import {
   relations
 } from 'drizzle-orm'
 import {
+  boolean,
   index,
   integer,
   jsonb,
+  numeric,
   pgTable,
   primaryKey,
   text,
@@ -153,11 +155,41 @@ export const musicPlaylistsTable = pgTable(
     coverImageUrl: varchar({ length: 512 }),
     curatorId: text().references(() => user.id, { onDelete: 'set null' }),
     slug: varchar({ length: 255 }).notNull().unique(),
+    isPublic: boolean().notNull().default(false),
     publishedAt: timestamp({ withTimezone: true }),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
   },
   (table) => [index('music_playlists_slug_idx').on(table.slug)]
+)
+
+/** Each track within a curator playlist — denormalized for fast display */
+export const playlistTracksTable = pgTable(
+  'playlist_tracks',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    playlistId: uuid()
+      .notNull()
+      .references(() => musicPlaylistsTable.id, { onDelete: 'cascade' }),
+    position: integer().notNull().default(0),
+    url: varchar({ length: 2048 }).notNull(),
+    platform: varchar({ length: 50 })
+      .notNull()
+      .references(() => musicPlatformsTable.id),
+    title: varchar({ length: 255 }).notNull(),
+    artistNames: varchar({ length: 255 }).array(),
+    thumbnailUrl: varchar({ length: 512 }),
+    durationMs: integer(),
+    bpm: numeric({ precision: 5, scale: 1 }),
+    musicalKey: varchar({ length: 10 }),
+    notes: text(),
+    createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => [
+    index('playlist_tracks_playlist_idx').on(table.playlistId),
+    index('playlist_tracks_position_idx').on(table.playlistId, table.position)
+  ]
 )
 
 // ---------------------------------------------------------------------------
@@ -260,6 +292,9 @@ export type InsertMusicTrack = InferInsertModel<typeof musicTracksTable>
 export type SelectMusicPlaylist = InferSelectModel<typeof musicPlaylistsTable>
 export type InsertMusicPlaylist = InferInsertModel<typeof musicPlaylistsTable>
 
+export type SelectPlaylistTrack = InferSelectModel<typeof playlistTracksTable>
+export type InsertPlaylistTrack = InferInsertModel<typeof playlistTracksTable>
+
 export type SelectMusicEntityLink = InferSelectModel<
   typeof musicEntityLinksTable
 >
@@ -325,10 +360,21 @@ export const musicTrackArtistsRelations = relations(
 
 export const musicPlaylistsRelations = relations(
   musicPlaylistsTable,
-  ({ one }) => ({
+  ({ one, many }) => ({
     curator: one(user, {
       fields: [musicPlaylistsTable.curatorId],
       references: [user.id]
+    }),
+    tracks: many(playlistTracksTable)
+  })
+)
+
+export const playlistTracksRelations = relations(
+  playlistTracksTable,
+  ({ one }) => ({
+    playlist: one(musicPlaylistsTable, {
+      fields: [playlistTracksTable.playlistId],
+      references: [musicPlaylistsTable.id]
     })
   })
 )
@@ -478,9 +524,29 @@ export const insertMusicPlaylistSchema = z
     coverImageUrl: z.string().url().optional(),
     curatorId: z.string().optional(),
     slug: z.string().min(1).openapi({ example: 'late-night-selections' }),
+    isPublic: z.boolean().optional().default(false),
     publishedAt: z.coerce.date().optional()
   })
   .openapi('InsertMusicPlaylist')
+
+export const selectPlaylistTrackSchema = z
+  .object({
+    id: z.string().uuid(),
+    playlistId: z.string().uuid(),
+    position: z.number().int(),
+    url: z.string(),
+    platform: z.string(),
+    title: z.string(),
+    artistNames: z.array(z.string()).nullable(),
+    thumbnailUrl: z.string().nullable(),
+    durationMs: z.number().nullable(),
+    bpm: z.string().nullable(),
+    musicalKey: z.string().nullable(),
+    notes: z.string().nullable(),
+    createdAt: z.date(),
+    updatedAt: z.date()
+  })
+  .openapi('PlaylistTrack')
 
 export const selectMusicPlaylistSchema = z
   .object({
@@ -490,15 +556,53 @@ export const selectMusicPlaylistSchema = z
     coverImageUrl: z.string().nullable(),
     curatorId: z.string().nullable(),
     slug: z.string(),
+    isPublic: z.boolean(),
     publishedAt: z.date().nullable(),
     createdAt: z.date(),
     updatedAt: z.date()
   })
   .openapi('MusicPlaylist')
 
+export const selectMusicPlaylistWithTracksSchema = selectMusicPlaylistSchema
+  .extend({
+    tracks: z.array(selectPlaylistTrackSchema)
+  })
+  .openapi('MusicPlaylistWithTracks')
+
 export const updateMusicPlaylistSchema = insertMusicPlaylistSchema
   .partial()
   .openapi('UpdateMusicPlaylist')
+
+// --- Playlist Tracks ---
+
+export const insertPlaylistTrackSchema = z
+  .object({
+    url: z.string().url(),
+    platform: musicPlatformEnum,
+    title: z.string().min(1),
+    artistNames: z.array(z.string()).optional(),
+    thumbnailUrl: z.string().url().optional(),
+    durationMs: z.number().int().positive().optional(),
+    bpm: z.string().optional().openapi({ example: '128.0' }),
+    musicalKey: z.string().optional().openapi({ example: '4A' }),
+    notes: z.string().optional()
+  })
+  .openapi('InsertPlaylistTrack')
+
+export const updatePlaylistTrackSchema = insertPlaylistTrackSchema
+  .partial()
+  .extend({
+    position: z.number().int().min(0).optional()
+  })
+  .openapi('UpdatePlaylistTrack')
+
+export const reorderPlaylistTracksSchema = z
+  .object({
+    orderedIds: z.array(z.string().uuid()).min(1).openapi({
+      description: 'Track IDs in the desired display order'
+    })
+  })
+  .openapi('ReorderPlaylistTracks')
 
 // --- Entity Link ---
 // entityType/platform use z.string() in the select schema because

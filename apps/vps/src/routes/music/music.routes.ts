@@ -7,18 +7,23 @@ import {
   insertMusicArtistSchema,
   insertMusicPlaylistSchema,
   insertMusicTrackSchema,
+  insertPlaylistTrackSchema,
   linkStatusEnum,
   musicPlatformEnum,
+  reorderPlaylistTracksSchema,
   selectMusicAlbumSchema,
   selectMusicArtistSchema,
   selectMusicEntityLinkSchema,
+  selectMusicPlaylistWithTracksSchema,
   selectMusicPlaylistSchema,
   selectMusicTrackSchema,
+  selectPlaylistTrackSchema,
   updateMusicAlbumSchema,
   updateMusicArtistSchema,
   updateMusicEntityLinkStatusSchema,
   updateMusicPlaylistSchema,
-  updateMusicTrackSchema
+  updateMusicTrackSchema,
+  updatePlaylistTrackSchema
 } from '@/db/music-entity.schema'
 import { requireAdminMiddleware } from '@/middlewares/better-auth.middleware'
 import { strictRateLimiter } from '@/middlewares/rate-limiter'
@@ -323,7 +328,10 @@ export const getPlaylist = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(selectMusicPlaylistSchema, 'Playlist'),
+    [HttpStatusCodes.OK]: jsonContent(
+      selectMusicPlaylistWithTracksSchema,
+      'Playlist with tracks'
+    ),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(errorSchema, 'Not found')
   }
 })
@@ -361,6 +369,101 @@ export const deletePlaylist = createRoute({
   responses: {
     [HttpStatusCodes.NO_CONTENT]: { description: 'Deleted' },
     [HttpStatusCodes.NOT_FOUND]: jsonContent(errorSchema, 'Not found')
+  }
+})
+
+// ---------------------------------------------------------------------------
+// Playlist tracks
+// ---------------------------------------------------------------------------
+
+export const listPlaylistTracks = createRoute({
+  path: '/playlists/:id/tracks',
+  method: 'get',
+  request: {
+    params: z.object({ id: z.string().uuid() })
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.array(selectPlaylistTrackSchema),
+      'Ordered track list'
+    )
+  }
+})
+
+export const addPlaylistTrack = createRoute({
+  path: '/playlists/:id/tracks',
+  method: 'post',
+  middleware: [requireAdminMiddleware],
+  request: {
+    params: z.object({ id: z.string().uuid() }),
+    body: jsonContentRequired(insertPlaylistTrackSchema, 'Track to add')
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.CREATED]: jsonContent(
+      selectPlaylistTrackSchema,
+      'Added track'
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(errorSchema, 'Playlist not found'),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      errorSchema,
+      'Server error'
+    )
+  }
+})
+
+export const updatePlaylistTrack = createRoute({
+  path: '/playlists/:id/tracks/:trackId',
+  method: 'patch',
+  middleware: [requireAdminMiddleware],
+  request: {
+    params: z.object({ id: z.string().uuid(), trackId: z.string().uuid() }),
+    body: jsonContentRequired(updatePlaylistTrackSchema, 'Fields to update')
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      selectPlaylistTrackSchema,
+      'Updated track'
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(errorSchema, 'Not found'),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      errorSchema,
+      'Server error'
+    )
+  }
+})
+
+export const removePlaylistTrack = createRoute({
+  path: '/playlists/:id/tracks/:trackId',
+  method: 'delete',
+  middleware: [requireAdminMiddleware],
+  request: {
+    params: z.object({ id: z.string().uuid(), trackId: z.string().uuid() })
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.NO_CONTENT]: { description: 'Removed' },
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(errorSchema, 'Not found')
+  }
+})
+
+export const reorderPlaylistTracks = createRoute({
+  path: '/playlists/:id/tracks/reorder',
+  method: 'put',
+  middleware: [requireAdminMiddleware],
+  request: {
+    params: z.object({ id: z.string().uuid() }),
+    body: jsonContentRequired(reorderPlaylistTracksSchema, 'New order')
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.NO_CONTENT]: { description: 'Reordered' },
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      errorSchema,
+      'Server error'
+    )
   }
 })
 
@@ -648,6 +751,12 @@ export type CreatePlaylistRoute = typeof createPlaylist
 export type GetPlaylistRoute = typeof getPlaylist
 export type UpdatePlaylistRoute = typeof updatePlaylist
 export type DeletePlaylistRoute = typeof deletePlaylist
+
+export type ListPlaylistTracksRoute = typeof listPlaylistTracks
+export type AddPlaylistTrackRoute = typeof addPlaylistTrack
+export type UpdatePlaylistTrackRoute = typeof updatePlaylistTrack
+export type RemovePlaylistTrackRoute = typeof removePlaylistTrack
+export type ReorderPlaylistTracksRoute = typeof reorderPlaylistTracks
 
 export type ListEntityLinksRoute = typeof listEntityLinks
 export type AddEntityLinkRoute = typeof addEntityLink

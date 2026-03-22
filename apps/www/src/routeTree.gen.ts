@@ -31,6 +31,7 @@ import { Route as MixesIndexRouteImport } from './routes/mixes/index'
 import { Route as LabelsIndexRouteImport } from './routes/labels/index'
 import { Route as EditorialIndexRouteImport } from './routes/editorial/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminPlaylistsIdRouteImport } from './routes/admin/playlists.$id'
 import { Route as TweetSlugRouteImport } from './routes/tweet/$slug'
 import { Route as TracksTrackIdRouteImport } from './routes/tracks/$trackId'
 import { Route as ShowsShowSlugRouteImport } from './routes/shows/$showSlug'
@@ -169,6 +170,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminPlaylistsIdRoute = AdminPlaylistsIdRouteImport.update({
+  id: '/admin/playlists/$id',
+  path: '/admin/playlists/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TweetSlugRoute = TweetSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
@@ -231,6 +237,7 @@ const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
 } as any)
 
 export interface FileRoutesByFullPath {
+  '/admin/playlists/$id': typeof AdminPlaylistsIdRoute
   '/': typeof IndexRoute
   '/editorial': typeof EditorialRouteRouteWithChildren
   '/labels': typeof LabelsRouteRouteWithChildren
@@ -269,6 +276,7 @@ export interface FileRoutesByFullPath {
   '/tweet/': typeof TweetIndexRoute
 }
 export interface FileRoutesByTo {
+  '/admin/playlists/$id': typeof AdminPlaylistsIdRoute
   '/': typeof IndexRoute
   '/$slug': typeof SlugRoute
   '/changelog': typeof ChangelogRoute
@@ -302,6 +310,7 @@ export interface FileRoutesByTo {
   '/tweet': typeof TweetIndexRoute
 }
 export interface FileRoutesById {
+  '/admin/playlists/$id': typeof AdminPlaylistsIdRoute
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/editorial': typeof EditorialRouteRouteWithChildren
@@ -372,6 +381,7 @@ export interface FileRouteTypes {
     | '/shows/$showSlug'
     | '/tracks/$trackId'
     | '/tweet/$slug'
+    | '/admin/playlists/$id'
     | '/admin/'
     | '/editorial/'
     | '/labels/'
@@ -381,6 +391,7 @@ export interface FileRouteTypes {
     | '/tweet/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/admin/playlists/$id'
     | '/'
     | '/$slug'
     | '/changelog'
@@ -413,6 +424,7 @@ export interface FileRouteTypes {
     | '/tracks'
     | '/tweet'
   id:
+    | '/admin/playlists/$id'
     | '__root__'
     | '/'
     | '/editorial'
@@ -453,6 +465,7 @@ export interface FileRouteTypes {
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
+  AdminPlaylistsIdRoute: typeof AdminPlaylistsIdRoute
   IndexRoute: typeof IndexRoute
   EditorialRouteRoute: typeof EditorialRouteRouteWithChildren
   LabelsRouteRoute: typeof LabelsRouteRouteWithChildren
@@ -644,6 +657,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EditorialIndexRouteImport
       parentRoute: typeof EditorialRouteRoute
     }
+    '/admin/playlists/$id': {
+      id: '/admin/playlists/$id'
+      path: '/admin/playlists/$id'
+      fullPath: '/admin/playlists/$id'
+      preLoaderRoute: typeof AdminPlaylistsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/': {
       id: '/admin/'
       path: '/admin'
@@ -809,6 +829,7 @@ const TweetRouteRouteWithChildren = TweetRouteRoute._addFileChildren(
 )
 
 const rootRouteChildren: RootRouteChildren = {
+  AdminPlaylistsIdRoute: AdminPlaylistsIdRoute,
   IndexRoute: IndexRoute,
   EditorialRouteRoute: EditorialRouteRouteWithChildren,
   LabelsRouteRoute: LabelsRouteRouteWithChildren,

@@ -5,6 +5,7 @@ import { useAuthStore } from '@/store/auth'
 import { ContentTab } from './_components/ContentTab'
 import { EmailLogsTab } from './_components/EmailLogsTab'
 import { FilesTab } from './_components/FilesTab'
+import { PlaylistsTab } from './_components/PlaylistsTab'
 import { SessionsTab } from './_components/SessionsTab'
 import { ShowsTab } from './_components/ShowsTab'
 import { UsersTab } from './_components/UsersTab'
@@ -49,6 +50,7 @@ function AdminDashboard() {
               <TabsTrigger value='users'>Users</TabsTrigger>
               <TabsTrigger value='content'>Content</TabsTrigger>
               <TabsTrigger value='shows'>Shows</TabsTrigger>
+              <TabsTrigger value='playlists'>Playlists</TabsTrigger>
               <TabsTrigger value='sessions'>Sessions</TabsTrigger>
               <TabsTrigger value='email-logs'>Email Logs</TabsTrigger>
               <TabsTrigger value='files'>Files</TabsTrigger>
@@ -64,6 +66,10 @@ function AdminDashboard() {
 
             <TabsContent value='shows'>
               <ShowsTab />
+            </TabsContent>
+
+            <TabsContent value='playlists'>
+              <PlaylistsTab />
             </TabsContent>
 
             <TabsContent value='sessions'>

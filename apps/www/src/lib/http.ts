@@ -6,6 +6,8 @@ import type {
   SelectMdxCompiledPost,
   SelectMdxCompiledRelease,
   SelectMdxCompiledShow,
+  SelectMusicPlaylist,
+  SelectPlaylistTrack,
   SelectRelease,
   SelectShow,
   SelectShowSubscription
@@ -1013,5 +1015,171 @@ export function useShowQRPdf(slug: string, enabled = false) {
       fetcher<QRPdfResponse>(`${VPS_BASE_URL}/shows/${slug}/qr-pdf`),
     enabled,
     staleTime: 1000 * 60 * 60 * 24
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Playlists (curator mix-prep primitive)
+// ---------------------------------------------------------------------------
+
+export type PlaylistWithTracks = SelectMusicPlaylist & {
+  tracks: SelectPlaylistTrack[]
+}
+
+export function usePlaylists() {
+  return useQuery<SelectMusicPlaylist[]>({
+    queryKey: ['playlists'],
+    queryFn: () =>
+      fetcher<SelectMusicPlaylist[]>(`${VPS_BASE_URL}/music/playlists`)
+  })
+}
+
+export function usePlaylist(id: string) {
+  return useQuery<PlaylistWithTracks>({
+    queryKey: ['playlists', id],
+    queryFn: () =>
+      fetcher<PlaylistWithTracks>(`${VPS_BASE_URL}/music/playlists/${id}`),
+    enabled: Boolean(id)
+  })
+}
+
+export function useCreatePlaylist() {
+  const queryClient = useQueryClient()
+  return useMutation<
+    SelectMusicPlaylist,
+    Error,
+    {
+      title: string
+      description?: string
+      slug: string
+      isPublic?: boolean
+    }
+  >({
+    mutationFn: (data) =>
+      fetcher(`${VPS_BASE_URL}/music/playlists`, {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['playlists'] })
+    }
+  })
+}
+
+export function useUpdatePlaylist(id: string) {
+  const queryClient = useQueryClient()
+  return useMutation<
+    SelectMusicPlaylist,
+    Error,
+    Partial<{
+      title: string
+      description: string
+      slug: string
+      isPublic: boolean
+    }>
+  >({
+    mutationFn: (data) =>
+      fetcher(`${VPS_BASE_URL}/music/playlists/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data)
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['playlists', id] })
+      queryClient.invalidateQueries({ queryKey: ['playlists'] })
+    }
+  })
+}
+
+export function useDeletePlaylist() {
+  const queryClient = useQueryClient()
+  return useMutation<void, Error, string>({
+    mutationFn: (id) =>
+      fetcher(`${VPS_BASE_URL}/music/playlists/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['playlists'] })
+    }
+  })
+}
+
+export function useAddPlaylistTrack(playlistId: string) {
+  const queryClient = useQueryClient()
+  return useMutation<
+    SelectPlaylistTrack,
+    Error,
+    {
+      url: string
+      platform: string
+      title: string
+      artistNames?: string[]
+      thumbnailUrl?: string
+      durationMs?: number
+      bpm?: string
+      musicalKey?: string
+      notes?: string
+    }
+  >({
+    mutationFn: (data) =>
+      fetcher(`${VPS_BASE_URL}/music/playlists/${playlistId}/tracks`, {
+        method: 'POST',
+        body: JSON.stringify(data)
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['playlists', playlistId] })
+    }
+  })
+}
+
+export function useUpdatePlaylistTrack(playlistId: string, trackId: string) {
+  const queryClient = useQueryClient()
+  return useMutation<
+    SelectPlaylistTrack,
+    Error,
+    Partial<{
+      title: string
+      artistNames: string[]
+      bpm: string
+      musicalKey: string
+      notes: string
+    }>
+  >({
+    mutationFn: (data) =>
+      fetcher(
+        `${VPS_BASE_URL}/music/playlists/${playlistId}/tracks/${trackId}`,
+        { method: 'PATCH', body: JSON.stringify(data) }
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['playlists', playlistId] })
+    }
+  })
+}
+
+export function useRemovePlaylistTrack(playlistId: string) {
+  const queryClient = useQueryClient()
+  return useMutation<void, Error, string>({
+    mutationFn: (trackId) =>
+      fetcher(
+        `${VPS_BASE_URL}/music/playlists/${playlistId}/tracks/${trackId}`,
+        { method: 'DELETE' }
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['playlists', playlistId] })
+    }
+  })
+}
+
+export function useReorderPlaylistTracks(playlistId: string) {
+  const queryClient = useQueryClient()
+  return useMutation<void, Error, string[]>({
+    mutationFn: (orderedIds) =>
+      fetcher(
+        `${VPS_BASE_URL}/music/playlists/${playlistId}/tracks/reorder`,
+        {
+          method: 'PUT',
+          body: JSON.stringify({ orderedIds })
+        }
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['playlists', playlistId] })
+    }
   })
 }
