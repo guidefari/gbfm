@@ -9,6 +9,45 @@ import { track } from '@/services/analytics'
 let lastPersistTime = 0
 const PERSIST_INTERVAL = 5000
 
+const hasMediaSession = () =>
+  typeof navigator !== 'undefined' && 'mediaSession' in navigator
+
+const setMediaSessionMetadata = (
+  title: string,
+  creators: Creator[] | undefined,
+  thumbnailUrl: string
+) => {
+  if (!hasMediaSession()) return
+
+  const artist = creators?.map((c) => c.name).join(', ') ?? ''
+  const artwork = thumbnailUrl
+    ? [{ src: thumbnailUrl, sizes: '512x512', type: 'image/jpeg' }]
+    : []
+
+  navigator.mediaSession.metadata = new MediaMetadata({ title, artist, artwork })
+}
+
+const setMediaSessionPlaybackState = (playing: boolean) => {
+  if (!hasMediaSession()) return
+  navigator.mediaSession.playbackState = playing ? 'playing' : 'paused'
+}
+
+const setMediaSessionPositionState = (
+  duration: number,
+  currentTime: number
+) => {
+  if (!hasMediaSession() || !duration || !isFinite(duration)) return
+  try {
+    navigator.mediaSession.setPositionState({
+      duration,
+      playbackRate: 1,
+      position: Math.min(currentTime, duration)
+    })
+  } catch {
+    // Ignore errors from invalid state
+  }
+}
+
 const persistTimeToStorage = (time: number) => {
   try {
     const stored = localStorage.getItem('audio-player-store')
@@ -184,6 +223,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
                 false,
                 'audioPlayer/updateDuration'
               )
+              setMediaSessionPositionState(ref.duration || 0, ref.currentTime)
             }
 
             const handleVisibilityChange = () => {
@@ -201,6 +241,29 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
               handleVisibilityChange
             )
 
+            if (hasMediaSession()) {
+              navigator.mediaSession.setActionHandler('play', () => get().play())
+              navigator.mediaSession.setActionHandler('pause', () => get().pause())
+              navigator.mediaSession.setActionHandler('seekbackward', (details) =>
+                get().jumpBackward(details.seekOffset ?? 15)
+              )
+              navigator.mediaSession.setActionHandler('seekforward', (details) =>
+                get().jumpForward(details.seekOffset ?? 30)
+              )
+              navigator.mediaSession.setActionHandler('previoustrack', () =>
+                get().playPrevious()
+              )
+              navigator.mediaSession.setActionHandler('nexttrack', () =>
+                get().playNext()
+              )
+              navigator.mediaSession.setActionHandler('seekto', (details) => {
+                const { audioRef: ar } = get()
+                if (ar && details.seekTime != null) {
+                  ar.currentTime = details.seekTime
+                }
+              })
+            }
+
             if (!get().isInitialized) {
               get().initialize()
             }
@@ -213,6 +276,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
 
           audioRef.play()
           set({ isPlaying: true }, false, 'audioPlayer/play')
+          setMediaSessionPlaybackState(true)
 
           if (title) {
             set(
@@ -238,6 +302,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
 
           audioRef.pause()
           set({ isPlaying: false }, false, 'audioPlayer/pause')
+          setMediaSessionPlaybackState(false)
           if (currentTime > 0) {
             persistTimeToStorage(currentTime)
             lastPersistTime = Date.now()
@@ -368,6 +433,8 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
             'audioPlayer/loadTrack'
           )
 
+          setMediaSessionMetadata(title, creators, thumbnailUrl)
+
           void RuntimeClient.runPromise(
             track('audio_played', {
               trackId: trackId ?? null,
@@ -428,6 +495,10 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
           if (now - lastPersistTime >= PERSIST_INTERVAL) {
             lastPersistTime = now
             persistTimeToStorage(audioRef.currentTime)
+            setMediaSessionPositionState(
+              audioRef.duration || 0,
+              audioRef.currentTime
+            )
           }
         },
 
