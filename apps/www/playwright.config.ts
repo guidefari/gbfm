@@ -15,7 +15,13 @@ export default defineConfig({
   projects: [
     {
       name: 'Mobile Chrome',
-      use: { ...devices['Pixel 5'], colorScheme: 'dark' }
+      use: {
+        ...devices['Pixel 5'],
+        colorScheme: 'dark',
+        launchOptions: {
+          executablePath: process.env.CHROMIUM_PATH || undefined
+        }
+      }
     }
   ],
   webServer: {
