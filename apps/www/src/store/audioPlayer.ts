@@ -20,9 +20,7 @@ const setMediaSessionMetadata = (
   if (!hasMediaSession()) return
 
   const artist = creators?.map((c) => c.name).join(', ') ?? ''
-  const artwork = thumbnailUrl
-    ? [{ src: thumbnailUrl, sizes: '512x512', type: 'image/jpeg' }]
-    : []
+  const artwork = thumbnailUrl ? [{ src: thumbnailUrl }] : []
 
   navigator.mediaSession.metadata = new MediaMetadata({
     title,
