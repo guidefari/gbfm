@@ -24,7 +24,11 @@ const setMediaSessionMetadata = (
     ? [{ src: thumbnailUrl, sizes: '512x512', type: 'image/jpeg' }]
     : []
 
-  navigator.mediaSession.metadata = new MediaMetadata({ title, artist, artwork })
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title,
+    artist,
+    artwork
+  })
 }
 
 const setMediaSessionPlaybackState = (playing: boolean) => {
@@ -36,7 +40,7 @@ const setMediaSessionPositionState = (
   duration: number,
   currentTime: number
 ) => {
-  if (!hasMediaSession() || !duration || !isFinite(duration)) return
+  if (!hasMediaSession() || !duration || !Number.isFinite(duration)) return
   try {
     navigator.mediaSession.setPositionState({
       duration,
@@ -242,13 +246,19 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
             )
 
             if (hasMediaSession()) {
-              navigator.mediaSession.setActionHandler('play', () => get().play())
-              navigator.mediaSession.setActionHandler('pause', () => get().pause())
-              navigator.mediaSession.setActionHandler('seekbackward', (details) =>
-                get().jumpBackward(details.seekOffset ?? 15)
+              navigator.mediaSession.setActionHandler('play', () =>
+                get().play()
               )
-              navigator.mediaSession.setActionHandler('seekforward', (details) =>
-                get().jumpForward(details.seekOffset ?? 30)
+              navigator.mediaSession.setActionHandler('pause', () =>
+                get().pause()
+              )
+              navigator.mediaSession.setActionHandler(
+                'seekbackward',
+                (details) => get().jumpBackward(details.seekOffset ?? 15)
+              )
+              navigator.mediaSession.setActionHandler(
+                'seekforward',
+                (details) => get().jumpForward(details.seekOffset ?? 30)
               )
               navigator.mediaSession.setActionHandler('previoustrack', () =>
                 get().playPrevious()
