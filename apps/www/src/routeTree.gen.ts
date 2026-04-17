@@ -30,6 +30,7 @@ import { Route as ShowsIndexRouteImport } from './routes/shows/index'
 import { Route as MixesIndexRouteImport } from './routes/mixes/index'
 import { Route as LabelsIndexRouteImport } from './routes/labels/index'
 import { Route as EditorialIndexRouteImport } from './routes/editorial/index'
+import { Route as DjsIndexRouteImport } from './routes/djs/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as TweetSlugRouteImport } from './routes/tweet/$slug'
 import { Route as TracksTrackIdRouteImport } from './routes/tracks/$trackId'
@@ -38,11 +39,13 @@ import { Route as ReleasesSlugRouteImport } from './routes/releases/$slug'
 import { Route as ProfileUsernameRouteImport } from './routes/profile/$username'
 import { Route as MixesMixIdRouteImport } from './routes/mixes/$mixId'
 import { Route as LabelsLabelSlugRouteImport } from './routes/labels/$labelSlug'
+import { Route as InviteCharlie3000RouteImport } from './routes/invite/charlie3000'
 import { Route as EditorialSlugRouteImport } from './routes/editorial/$slug'
 import { Route as AuthSignUpRouteImport } from './routes/auth/sign-up'
 import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
 import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
+import { Route as AdminOverviewRouteImport } from './routes/admin/overview'
 
 const UploadLazyRouteImport = createFileRoute('/upload')()
 const PostUploadLazyRouteImport = createFileRoute('/post-upload')()
@@ -164,6 +167,11 @@ const EditorialIndexRoute = EditorialIndexRouteImport.update({
   path: '/',
   getParentRoute: () => EditorialRouteRoute,
 } as any)
+const DjsIndexRoute = DjsIndexRouteImport.update({
+  id: '/djs/',
+  path: '/djs/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
@@ -204,6 +212,11 @@ const LabelsLabelSlugRoute = LabelsLabelSlugRouteImport.update({
   path: '/$labelSlug',
   getParentRoute: () => LabelsRouteRoute,
 } as any)
+const InviteCharlie3000Route = InviteCharlie3000RouteImport.update({
+  id: '/invite/charlie3000',
+  path: '/invite/charlie3000',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const EditorialSlugRoute = EditorialSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
@@ -229,6 +242,11 @@ const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
   path: '/auth/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminOverviewRoute = AdminOverviewRouteImport.update({
+  id: '/admin/overview',
+  path: '/admin/overview',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -248,11 +266,13 @@ export interface FileRoutesByFullPath {
   '/mix-upload': typeof MixUploadLazyRoute
   '/post-upload': typeof PostUploadLazyRoute
   '/upload': typeof UploadLazyRoute
+  '/admin/overview': typeof AdminOverviewRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
   '/editorial/$slug': typeof EditorialSlugRoute
+  '/invite/charlie3000': typeof InviteCharlie3000Route
   '/labels/$labelSlug': typeof LabelsLabelSlugRoute
   '/mixes/$mixId': typeof MixesMixIdRoute
   '/profile/$username': typeof ProfileUsernameRoute
@@ -261,6 +281,7 @@ export interface FileRoutesByFullPath {
   '/tracks/$trackId': typeof TracksTrackIdRoute
   '/tweet/$slug': typeof TweetSlugRoute
   '/admin/': typeof AdminIndexRoute
+  '/djs/': typeof DjsIndexRoute
   '/editorial/': typeof EditorialIndexRoute
   '/labels/': typeof LabelsIndexRoute
   '/mixes/': typeof MixesIndexRoute
@@ -281,11 +302,13 @@ export interface FileRoutesByTo {
   '/mix-upload': typeof MixUploadLazyRoute
   '/post-upload': typeof PostUploadLazyRoute
   '/upload': typeof UploadLazyRoute
+  '/admin/overview': typeof AdminOverviewRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
   '/editorial/$slug': typeof EditorialSlugRoute
+  '/invite/charlie3000': typeof InviteCharlie3000Route
   '/labels/$labelSlug': typeof LabelsLabelSlugRoute
   '/mixes/$mixId': typeof MixesMixIdRoute
   '/profile/$username': typeof ProfileUsernameRoute
@@ -294,6 +317,7 @@ export interface FileRoutesByTo {
   '/tracks/$trackId': typeof TracksTrackIdRoute
   '/tweet/$slug': typeof TweetSlugRoute
   '/admin': typeof AdminIndexRoute
+  '/djs': typeof DjsIndexRoute
   '/editorial': typeof EditorialIndexRoute
   '/labels': typeof LabelsIndexRoute
   '/mixes': typeof MixesIndexRoute
@@ -320,11 +344,13 @@ export interface FileRoutesById {
   '/mix-upload': typeof MixUploadLazyRoute
   '/post-upload': typeof PostUploadLazyRoute
   '/upload': typeof UploadLazyRoute
+  '/admin/overview': typeof AdminOverviewRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
   '/editorial/$slug': typeof EditorialSlugRoute
+  '/invite/charlie3000': typeof InviteCharlie3000Route
   '/labels/$labelSlug': typeof LabelsLabelSlugRoute
   '/mixes/$mixId': typeof MixesMixIdRoute
   '/profile/$username': typeof ProfileUsernameRoute
@@ -333,6 +359,7 @@ export interface FileRoutesById {
   '/tracks/$trackId': typeof TracksTrackIdRoute
   '/tweet/$slug': typeof TweetSlugRoute
   '/admin/': typeof AdminIndexRoute
+  '/djs/': typeof DjsIndexRoute
   '/editorial/': typeof EditorialIndexRoute
   '/labels/': typeof LabelsIndexRoute
   '/mixes/': typeof MixesIndexRoute
@@ -360,11 +387,13 @@ export interface FileRouteTypes {
     | '/mix-upload'
     | '/post-upload'
     | '/upload'
+    | '/admin/overview'
     | '/auth/forgot-password'
     | '/auth/reset-password'
     | '/auth/sign-in'
     | '/auth/sign-up'
     | '/editorial/$slug'
+    | '/invite/charlie3000'
     | '/labels/$labelSlug'
     | '/mixes/$mixId'
     | '/profile/$username'
@@ -373,6 +402,7 @@ export interface FileRouteTypes {
     | '/tracks/$trackId'
     | '/tweet/$slug'
     | '/admin/'
+    | '/djs/'
     | '/editorial/'
     | '/labels/'
     | '/mixes/'
@@ -393,11 +423,13 @@ export interface FileRouteTypes {
     | '/mix-upload'
     | '/post-upload'
     | '/upload'
+    | '/admin/overview'
     | '/auth/forgot-password'
     | '/auth/reset-password'
     | '/auth/sign-in'
     | '/auth/sign-up'
     | '/editorial/$slug'
+    | '/invite/charlie3000'
     | '/labels/$labelSlug'
     | '/mixes/$mixId'
     | '/profile/$username'
@@ -406,6 +438,7 @@ export interface FileRouteTypes {
     | '/tracks/$trackId'
     | '/tweet/$slug'
     | '/admin'
+    | '/djs'
     | '/editorial'
     | '/labels'
     | '/mixes'
@@ -431,11 +464,13 @@ export interface FileRouteTypes {
     | '/mix-upload'
     | '/post-upload'
     | '/upload'
+    | '/admin/overview'
     | '/auth/forgot-password'
     | '/auth/reset-password'
     | '/auth/sign-in'
     | '/auth/sign-up'
     | '/editorial/$slug'
+    | '/invite/charlie3000'
     | '/labels/$labelSlug'
     | '/mixes/$mixId'
     | '/profile/$username'
@@ -444,6 +479,7 @@ export interface FileRouteTypes {
     | '/tracks/$trackId'
     | '/tweet/$slug'
     | '/admin/'
+    | '/djs/'
     | '/editorial/'
     | '/labels/'
     | '/mixes/'
@@ -470,14 +506,17 @@ export interface RootRouteChildren {
   MixUploadLazyRoute: typeof MixUploadLazyRoute
   PostUploadLazyRoute: typeof PostUploadLazyRoute
   UploadLazyRoute: typeof UploadLazyRoute
+  AdminOverviewRoute: typeof AdminOverviewRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute
   AuthSignInRoute: typeof AuthSignInRoute
   AuthSignUpRoute: typeof AuthSignUpRoute
+  InviteCharlie3000Route: typeof InviteCharlie3000Route
   ProfileUsernameRoute: typeof ProfileUsernameRoute
   ReleasesSlugRoute: typeof ReleasesSlugRoute
   ShowsShowSlugRoute: typeof ShowsShowSlugRoute
   AdminIndexRoute: typeof AdminIndexRoute
+  DjsIndexRoute: typeof DjsIndexRoute
   ShowsIndexRoute: typeof ShowsIndexRoute
 }
 
@@ -644,6 +683,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EditorialIndexRouteImport
       parentRoute: typeof EditorialRouteRoute
     }
+    '/djs/': {
+      id: '/djs/'
+      path: '/djs'
+      fullPath: '/djs/'
+      preLoaderRoute: typeof DjsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/': {
       id: '/admin/'
       path: '/admin'
@@ -700,6 +746,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LabelsLabelSlugRouteImport
       parentRoute: typeof LabelsRouteRoute
     }
+    '/invite/charlie3000': {
+      id: '/invite/charlie3000'
+      path: '/invite/charlie3000'
+      fullPath: '/invite/charlie3000'
+      preLoaderRoute: typeof InviteCharlie3000RouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/editorial/$slug': {
       id: '/editorial/$slug'
       path: '/$slug'
@@ -733,6 +786,13 @@ declare module '@tanstack/react-router' {
       path: '/auth/forgot-password'
       fullPath: '/auth/forgot-password'
       preLoaderRoute: typeof AuthForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/overview': {
+      id: '/admin/overview'
+      path: '/admin/overview'
+      fullPath: '/admin/overview'
+      preLoaderRoute: typeof AdminOverviewRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -826,14 +886,17 @@ const rootRouteChildren: RootRouteChildren = {
   MixUploadLazyRoute: MixUploadLazyRoute,
   PostUploadLazyRoute: PostUploadLazyRoute,
   UploadLazyRoute: UploadLazyRoute,
+  AdminOverviewRoute: AdminOverviewRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthResetPasswordRoute: AuthResetPasswordRoute,
   AuthSignInRoute: AuthSignInRoute,
   AuthSignUpRoute: AuthSignUpRoute,
+  InviteCharlie3000Route: InviteCharlie3000Route,
   ProfileUsernameRoute: ProfileUsernameRoute,
   ReleasesSlugRoute: ReleasesSlugRoute,
   ShowsShowSlugRoute: ShowsShowSlugRoute,
   AdminIndexRoute: AdminIndexRoute,
+  DjsIndexRoute: DjsIndexRoute,
   ShowsIndexRoute: ShowsIndexRoute,
 }
 export const routeTree = rootRouteImport
