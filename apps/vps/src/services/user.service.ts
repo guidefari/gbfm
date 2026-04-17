@@ -1,6 +1,7 @@
-import { asc, eq, ilike, or } from 'drizzle-orm'
+import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
+import { audioCreators, audioTable } from '@/db/audio.schema'
 import {
   type SocialLinkPlatform,
   userSocialLinks,
@@ -97,6 +98,18 @@ export interface UserService {
       position: number
     }>,
     DatabaseError | NotFoundError
+  >
+
+  readonly listDjs: () => Effect.Effect<
+    Array<{
+      id: string
+      name: string
+      username: string | null
+      image: string | null
+      bio: string | null
+      mixCount: number
+    }>,
+    DatabaseError
   >
 
   readonly getUserEmailPreferences: (
@@ -306,6 +319,44 @@ const replaceUserSocialLinksEffect = (
     }))
   })
 
+const listDjsEffect = () =>
+  Effect.gen(function* () {
+    const mixCountExpr = sql<number>`count(${audioTable.id})::int`
+
+    const rows = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select({
+            id: userTable.id,
+            name: userTable.name,
+            username: userTable.username,
+            image: userTable.image,
+            bio: userTable.bio,
+            mixCount: mixCountExpr
+          })
+          .from(userTable)
+          .innerJoin(audioCreators, eq(audioCreators.creatorId, userTable.id))
+          .innerJoin(audioTable, eq(audioTable.id, audioCreators.audioId))
+          .where(and(eq(userTable.banned, false), eq(audioTable.draft, false)))
+          .groupBy(
+            userTable.id,
+            userTable.name,
+            userTable.username,
+            userTable.image,
+            userTable.bio
+          )
+          .orderBy(desc(mixCountExpr), asc(userTable.name)),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to list djs: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'user'
+        })
+    })
+
+    return rows
+  })
+
 const updateUserEmailPreferencesEffect = (
   userId: string,
   preferences: Partial<InsertAuthorEmailPreferences>
@@ -354,6 +405,7 @@ export const UserServiceLive = Layer.succeed(UserService, {
     replaceUserSocialLinksEffect(userId, links).pipe(
       Effect.withSpan('user.replaceSocialLinks', { attributes: { userId } })
     ),
+  listDjs: () => listDjsEffect().pipe(Effect.withSpan('user.listDjs')),
   getUserEmailPreferences: (userId) =>
     getUserEmailPreferencesEffect(userId).pipe(
       Effect.withSpan('user.getEmailPreferences', { attributes: { userId } })

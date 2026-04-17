@@ -12,6 +12,7 @@ import type {
   GetProfileRoute,
   GetSocialLinksRoute,
   GetUserSubscriptionsRoute,
+  ListDjsRoute,
   ReplaceAdminUserSocialLinksRoute,
   ReplaceSocialLinksRoute,
   SearchUsersRoute,
@@ -503,6 +504,30 @@ export const getUserSubscriptions: AppRouteHandler<
   }
 
   return c.json(result, HttpStatusCodes.OK)
+}
+
+export const listDjs: AppRouteHandler<ListDjsRoute> = async (c) => {
+  const program = Effect.gen(function* () {
+    const userService = yield* UserService
+    return yield* userService.listDjs()
+  }).pipe(
+    Effect.withSpan('api.user.listDjs'),
+    Effect.map((data) => ({ data, status: HttpStatusCodes.OK }) as const),
+    Effect.catchTag('DatabaseError', () =>
+      Effect.succeed({
+        error: 'Failed to list DJs',
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    )
+  )
+
+  const result = await runApp(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
+  }
+
+  return c.json(result.data, result.status)
 }
 
 export const searchUsers: AppRouteHandler<SearchUsersRoute> = async (c) => {

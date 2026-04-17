@@ -948,6 +948,23 @@ export function useResolveSlug(slug: string) {
   }
 }
 
+export type DjListItem = {
+  id: string
+  name: string
+  username: string | null
+  image: string | null
+  bio: string | null
+  mixCount: number
+}
+
+export function useDjs() {
+  return useQuery<DjListItem[], Error>({
+    queryKey: ['djs'],
+    queryFn: () => fetcher<DjListItem[]>(`${VPS_BASE_URL}/user/djs`),
+    staleTime: 1000 * 60 * 5
+  })
+}
+
 export function usePublicProfile(username: string) {
   const { data, error, isPending } = useQuery<PublicProfile, Error>({
     queryKey: ['profile', username],

@@ -438,6 +438,31 @@ const searchUserResultSchema = z.object({
   image: z.string().nullable()
 })
 
+const djListItemSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  username: z.string().nullable(),
+  image: z.string().nullable(),
+  bio: z.string().nullable(),
+  mixCount: z.number().int().nonnegative()
+})
+
+export const listDjs = createRoute({
+  path: '/djs',
+  method: 'get',
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.array(djListItemSchema),
+      'List of DJs (users who have published mixes)'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to list DJs'
+    )
+  }
+})
+
 export const searchUsers = createRoute({
   path: '/search',
   method: 'get',
@@ -476,4 +501,5 @@ export type GetAdminUserBioRoute = typeof getAdminUserBio
 export type GetEmailPreferencesRoute = typeof getEmailPreferences
 export type UpdateEmailPreferencesRoute = typeof updateEmailPreferences
 export type GetUserSubscriptionsRoute = typeof getUserSubscriptions
+export type ListDjsRoute = typeof listDjs
 export type SearchUsersRoute = typeof searchUsers

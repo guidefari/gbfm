@@ -5,7 +5,7 @@ import { generateSEOMeta, generateStaticPageSEO } from '@/lib/seo'
 
 const pageSEO = generateStaticPageSEO(
   'An invite for Charlie3000',
-  'A personal invitation to Charlie3000 to record a guest mix for goosebumps.fm, with a R3000 stipend and a home for the archive.',
+  'A personal invitation to Charlie3000 to record a guest mix for goosebumps.fm',
   '/invite/charlie3000'
 )
 
@@ -31,7 +31,7 @@ type Fact = {
 }
 
 const facts: Fact[] = [
-  { label: 'Stipend', value: '€150 per mix' },
+  { label: 'Stipend', value: '€100 per mix' },
   { label: 'Format', value: 'Guest mix on the main show', to: '/shows/gbfm' },
   { label: 'Cadence', value: 'Start with one, open to more' }
 ]
@@ -54,7 +54,7 @@ function InviteCharliePage() {
           <section className='space-y-10'>
             <div className='space-y-5'>
               <h1 className='text-4xl mt-0 font-black tracking-tighter sm:text-5xl lg:text-6xl xl:text-7xl'>
-                Charlie3000,{' '}
+                hi Charlie!{' '}
                 <span className='relative inline-block'>
                   <span className='relative z-10'>I'd love</span>
                   <span className='absolute inset-x-0 bottom-1 h-3 bg-gb-highlight/40 -z-0' />
@@ -124,11 +124,11 @@ function InviteCharliePage() {
                     className='underline underline-offset-4 text-gb-pastel-green-1 hover:text-gb-highlight'>
                     kimetsu.
                   </Link>{' '}
-                  as a resident — his profile is the shape of thing I'd want to
+                  as a resident, his profile is the shape of thing I'd want to
                   build around your mixes too.
                 </p>
                 <p>
-                  So far, I've been able to budget €150 per mix. The request is
+                  So far, I've been able to budget €100 per mix. The request is
                   one mix to start, and if we both enjoy it, I'd love to make
                   this an ongoing thing.
                 </p>
