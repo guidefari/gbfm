@@ -10,13 +10,13 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          'bg-gb-pastel-green-2 text-gb-darker-bg shadow-lg hover:shadow-xl hover:bg-gb-highlight hover:-translate-y-0.5 active:translate-y-0 active:shadow-md',
+          'bg-gb-pastel-green-2 text-gb-darker-bg shadow-lg hover:shadow-xl hover:bg-gb-highlight hover:-translate-y-0.5 active:translate-y-0 active:shadow-md hover:text-gb-darker-bg',
         destructive:
           'bg-red-600 text-white shadow-lg hover:shadow-xl hover:bg-red-700 hover:-translate-y-0.5 active:translate-y-0 active:shadow-md',
         outline:
           'border-2 border-gb-pastel-green-2/30 bg-transparent text-gb-pastel-green-1 shadow-sm hover:bg-gb-pastel-green-2/20 hover:border-gb-highlight/50 hover:text-gb-highlight hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0',
         secondary:
-          'bg-gb-bg text-gb-default-text shadow-md hover:shadow-lg hover:bg-gb-darker-bg hover:text-gb-pastel-green-1 hover:-translate-y-0.5 active:translate-y-0',
+          'bg-gb-darker-bg text-gb-pastel-green-1 border border-gb-pastel-green-2/40 shadow-md hover:shadow-lg hover:bg-gb-bg hover:border-gb-highlight/60 hover:text-gb-highlight hover:-translate-y-0.5 active:translate-y-0',
         ghost:
           'hover:bg-gb-pastel-green-2/20 hover:text-gb-highlight hover:shadow-md transition-all duration-150',
         link: 'text-gb-pastel-green-1 underline-offset-4 hover:underline hover:text-gb-highlight transition-colors duration-150'
