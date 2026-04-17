@@ -22,7 +22,7 @@ import { toast } from '@/components/ui/use-toast'
 import { TagsInput } from '@/components/upload'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
 import { useAuthStore } from '@/store'
-import { UserSearch } from './admin/_components/UserSearch'
+import { UserSearch } from './admin/_components/-UserSearch'
 
 export const Route = createLazyFileRoute('/post-upload')({
   component: PostUploadPage

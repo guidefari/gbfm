@@ -16,8 +16,8 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { toast } from '@/components/ui/use-toast'
 import { fetcher, type PaginatedResponse, VPS_BASE_URL } from '@/lib/http'
-import { ImageUploadField } from './ImageUploadField'
-import { UserSearch } from './UserSearch'
+import { ImageUploadField } from './-ImageUploadField'
+import { UserSearch } from './-UserSearch'
 
 interface ShowItem {
   id: string

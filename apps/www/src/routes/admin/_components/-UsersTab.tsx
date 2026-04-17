@@ -59,7 +59,7 @@ import {
   useReplaceAdminUserSocialLinks,
   VPS_BASE_URL
 } from '@/lib/http'
-import { ImageUploadField } from './ImageUploadField'
+import { ImageUploadField } from './-ImageUploadField'
 
 const ROLES = ['admin', 'editor', 'creator', 'user'] as const
 type UserRole = (typeof ROLES)[number]

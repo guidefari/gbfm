@@ -344,5 +344,10 @@ export const STATIC_PAGE_SEO = {
     'Tweet',
     'Short thoughts, updates, and micro posts on goosebumps.fm.',
     '/tweet'
+  ),
+  djs: generateStaticPageSEO(
+    'DJs & Residents',
+    'Browse the DJs and residents who have published mixes on goosebumps.fm.',
+    '/djs'
   )
 } as const
