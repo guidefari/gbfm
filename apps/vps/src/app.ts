@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm'
 import { Data, Duration, Effect, Schedule } from 'effect'
 import configureOpenAPI from '@/lib/configure-open-api'
 import { createAppEffect } from '@/lib/create-app'
+import admin from '@/routes/admin/admin.index'
 import content from '@/routes/content/content.index'
 import email from '@/routes/email/email.index'
 import favorites from '@/routes/favorites/favorites.index'
@@ -42,6 +43,7 @@ const setupRoutesEffect = Effect.gen(function* () {
 
   configureOpenAPI(app)
 
+  app.route('/admin', admin)
   app.route('/auth', betterAuthRoutes)
   app.route('/favorites', favorites)
   app.route('/invite', invite)

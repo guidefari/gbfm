@@ -1,3 +1,4 @@
+export * from './admin-overview.schema.ts'
 export * from './audio.schema.ts'
 export * from './auth.schema.ts'
 export * from './email.schema.ts'

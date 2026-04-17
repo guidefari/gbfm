@@ -9,11 +9,11 @@ import {
   Users
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { AdminAccessGuard } from './_components/-AdminAccessGuard'
 import {
   type AdminOverviewContentBreakdown,
   useAdminOverview
-} from '@/lib/http'
-import { AdminAccessGuard } from './_components/-AdminAccessGuard'
+} from './overview.data'
 
 export const Route = createFileRoute('/admin/overview')({
   component: AdminOverviewPage
