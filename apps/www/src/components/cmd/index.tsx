@@ -23,6 +23,7 @@ import type { CommandAction, CommandItem } from './types'
 export function CommandDialogDemo() {
   const [searchValue, setSearchValue] = React.useState('')
   const [isInSection, setIsInSection] = React.useState(false)
+  const scrollContainerRef = React.useRef<HTMLDivElement>(null)
   const routerState = useRouterState()
   const { Cmd, openCmd, closeCmd, toggleCmd } = useUIStore()
   const { user, isAuthenticated } = useAuthStore()
@@ -150,7 +151,7 @@ export function CommandDialogDemo() {
         onKeyDown={handleInputKeyDown}
       />
 
-      <div className='overflow-auto max-h-96'>
+      <div ref={scrollContainerRef} className='overflow-auto max-h-96'>
         <HierarchicalCommand
           items={commandItems}
           onItemSelect={handleItemSelect}
@@ -158,6 +159,7 @@ export function CommandDialogDemo() {
           searchValue={searchValue}
           onSearchChange={setSearchValue}
           onSectionChange={setIsInSection}
+          scrollContainerRef={scrollContainerRef}
         />
 
         <div className='flex items-center justify-center p-2 border-t'>

@@ -1,4 +1,5 @@
 import { Search } from 'lucide-react'
+import type { RefObject } from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   CommandEmpty,
@@ -16,6 +17,7 @@ interface HierarchicalCommandProps {
   searchValue: string
   onSearchChange: (value: string) => void
   onSectionChange?: (isInSection: boolean) => void
+  scrollContainerRef?: RefObject<HTMLDivElement | null>
   className?: string
 }
 
@@ -26,13 +28,13 @@ export function HierarchicalCommand({
   searchValue,
   onSearchChange,
   onSectionChange,
+  scrollContainerRef,
   className
 }: HierarchicalCommandProps) {
   const [activeSection, setActiveSection] = useState<CommandSection | null>(
     null
   )
   const [selectedIndex, setSelectedIndex] = useState(0)
-  const containerRef = useRef<HTMLDivElement>(null)
   const itemRefs = useRef<Array<HTMLElement | null>>([])
 
   // Filter items based on authentication and search
@@ -176,18 +178,40 @@ export function HierarchicalCommand({
     }
   }, [searchValue, isInSection])
 
-  // Scroll selected item into view when navigating with keyboard in list view
   useEffect(() => {
-    if (isInSection) {
-      itemRefs.current[selectedIndex]?.scrollIntoView({ block: 'nearest' })
+    const selectedItem = itemRefs.current[selectedIndex]
+
+    if (!selectedItem) {
+      return
     }
-  }, [selectedIndex, isInSection])
+
+    const scrollContainer = scrollContainerRef?.current
+
+    if (!scrollContainer || isInSection) {
+      selectedItem.scrollIntoView({
+        block: 'nearest',
+        inline: 'nearest'
+      })
+      return
+    }
+
+    const padding = 16
+    const containerRect = scrollContainer.getBoundingClientRect()
+    const itemRect = selectedItem.getBoundingClientRect()
+    const topOverflow = itemRect.top - containerRect.top - padding
+    const bottomOverflow = itemRect.bottom - containerRect.bottom + padding
+
+    if (topOverflow < 0) {
+      scrollContainer.scrollBy({ top: topOverflow })
+    } else if (bottomOverflow > 0) {
+      scrollContainer.scrollBy({ top: bottomOverflow })
+    }
+  }, [isInSection, scrollContainerRef, selectedIndex])
 
   // Render as grid when showing main tiles (both filtered and unfiltered)
   if (!isInSection) {
     return (
       <div
-        ref={containerRef}
         className={cn('min-h-[320px] p-4', className)} // Fixed minimum height
       >
         <div className='grid grid-cols-4 gap-4'>
@@ -199,7 +223,11 @@ export function HierarchicalCommand({
               <button
                 type='button'
                 key={item.id}
+                ref={(el) => {
+                  itemRefs.current[index] = el
+                }}
                 className={cn(
+                  'scroll-m-4',
                   'flex flex-col items-center justify-center p-6 rounded-sm border-2 transition-all duration-200',
                   'hover:bg-accent hover:border-accent-foreground/20 focus:outline-none',
                   isSelected
@@ -277,7 +305,10 @@ export function HierarchicalCommand({
               }}
               onSelect={() => handleItemSelect(item)}
               onMouseEnter={() => setSelectedIndex(index)}
-              className={isSelected ? 'bg-accent text-accent-foreground' : ''}>
+              className={cn(
+                'scroll-m-4',
+                isSelected ? 'bg-accent text-accent-foreground' : ''
+              )}>
               {Icon && <Icon className='w-4 h-4' />}
               <span>{item.label}</span>
               {'shortcut' in item && item.shortcut && (
