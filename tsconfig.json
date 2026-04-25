@@ -7,7 +7,6 @@
     "moduleDetection": "force",
     "isolatedModules": true,
     "skipLibCheck": true,
-    "downlevelIteration": true,
     "verbatimModuleSyntax": true,
     "rewriteRelativeImportExtensions": true,
     "strict": true,

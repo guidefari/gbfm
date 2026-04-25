@@ -337,7 +337,7 @@ export function UsersTab() {
         email,
         password,
         name,
-        role: newUser.role,
+        role: newUser.role as 'admin' | 'user',
         data: newUser.username ? { username: newUser.username } : undefined
       })
     },

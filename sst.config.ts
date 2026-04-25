@@ -7,7 +7,7 @@ export default $config({
       removal: input?.stage === 'prod' ? 'retain' : 'remove',
       home: 'aws',
       providers: {
-        cloudflare: true,
+        cloudflare: '6.13.0',
         aws: {
           region: 'us-east-1'
         }

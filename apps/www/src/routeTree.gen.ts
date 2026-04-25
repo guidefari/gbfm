@@ -280,12 +280,12 @@ export interface FileRoutesByFullPath {
   '/shows/$showSlug': typeof ShowsShowSlugRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
   '/tweet/$slug': typeof TweetSlugRoute
-  '/admin/': typeof AdminIndexRoute
-  '/djs/': typeof DjsIndexRoute
+  '/admin': typeof AdminIndexRoute
+  '/djs': typeof DjsIndexRoute
   '/editorial/': typeof EditorialIndexRoute
   '/labels/': typeof LabelsIndexRoute
   '/mixes/': typeof MixesIndexRoute
-  '/shows/': typeof ShowsIndexRoute
+  '/shows': typeof ShowsIndexRoute
   '/tracks/': typeof TracksIndexRoute
   '/tweet/': typeof TweetIndexRoute
 }
@@ -401,12 +401,12 @@ export interface FileRouteTypes {
     | '/shows/$showSlug'
     | '/tracks/$trackId'
     | '/tweet/$slug'
-    | '/admin/'
-    | '/djs/'
+    | '/admin'
+    | '/djs'
     | '/editorial/'
     | '/labels/'
     | '/mixes/'
-    | '/shows/'
+    | '/shows'
     | '/tracks/'
     | '/tweet/'
   fileRoutesByTo: FileRoutesByTo
@@ -658,7 +658,7 @@ declare module '@tanstack/react-router' {
     '/shows/': {
       id: '/shows/'
       path: '/shows'
-      fullPath: '/shows/'
+      fullPath: '/shows'
       preLoaderRoute: typeof ShowsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
@@ -686,14 +686,14 @@ declare module '@tanstack/react-router' {
     '/djs/': {
       id: '/djs/'
       path: '/djs'
-      fullPath: '/djs/'
+      fullPath: '/djs'
       preLoaderRoute: typeof DjsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
       id: '/admin/'
       path: '/admin'
-      fullPath: '/admin/'
+      fullPath: '/admin'
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }

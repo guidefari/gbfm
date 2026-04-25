@@ -328,14 +328,14 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
 
         jumpForward: (seconds = 30) => {
           const { audioRef } = get()
-          if (!audioRef || !audioRef.src) return
+          if (!audioRef?.src) return
 
           audioRef.currentTime += seconds
         },
 
         jumpBackward: (seconds = 15) => {
           const { audioRef } = get()
-          if (!audioRef || !audioRef.src) return
+          if (!audioRef?.src) return
 
           audioRef.currentTime -= seconds
         },

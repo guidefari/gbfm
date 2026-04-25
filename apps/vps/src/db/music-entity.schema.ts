@@ -565,4 +565,4 @@ export const musicTrackArtistSchema = z
   .openapi('MusicTrackArtist')
 
 // Re-export enums for use in routes
-export { musicPlatformEnum, linkStatusEnum, entityTypeEnum }
+export { entityTypeEnum, linkStatusEnum, musicPlatformEnum }
