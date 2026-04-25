@@ -125,8 +125,14 @@ export function CommandDialogDemo() {
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       e.preventDefault()
     }
+  }
+
+  const handleDialogKeyDownCapture = (
+    e: React.KeyboardEvent<HTMLDivElement>
+  ) => {
     if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
       e.preventDefault()
+      e.stopPropagation()
       closeCmd()
     }
   }
@@ -151,7 +157,10 @@ export function CommandDialogDemo() {
         onKeyDown={handleInputKeyDown}
       />
 
-      <div ref={scrollContainerRef} className='overflow-auto max-h-96'>
+      <div
+        ref={scrollContainerRef}
+        className='overflow-auto max-h-96 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden'
+        onKeyDownCapture={handleDialogKeyDownCapture}>
         <HierarchicalCommand
           items={commandItems}
           onItemSelect={handleItemSelect}
@@ -161,16 +170,28 @@ export function CommandDialogDemo() {
           onSectionChange={setIsInSection}
           scrollContainerRef={scrollContainerRef}
         />
+      </div>
 
-        <div className='flex items-center justify-center p-2 border-t'>
+      <div className='flex items-center justify-between gap-3 p-3 border-t'>
+        <div className='flex items-center gap-2 text-xs text-muted-foreground'>
+          <span className='font-medium tracking-wide text-foreground'>
+            GBFM
+          </span>
           <a
             href={`https://github.com/guidefari/gbfm/releases/tag/v${version}`}
             target='_blank'
             rel='noopener noreferrer'
-            className='text-xs transition-colors text-muted-foreground hover:text-foreground'>
+            className='inline-flex items-center rounded-full border px-2 py-1 font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground'>
             v{version}
           </a>
         </div>
+        <a
+          href={`https://github.com/guidefari/gbfm/releases/tag/v${version}`}
+          target='_blank'
+          rel='noopener noreferrer'
+          className='text-xs transition-colors text-muted-foreground hover:text-foreground'>
+          Release notes
+        </a>
       </div>
     </CommandDialog>
   )

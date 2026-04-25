@@ -1,6 +1,12 @@
 import { Search } from 'lucide-react'
 import type { RefObject } from 'react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState
+} from 'react'
 import {
   CommandEmpty,
   CommandGroup,
@@ -178,7 +184,7 @@ export function HierarchicalCommand({
     }
   }, [searchValue, isInSection])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const selectedItem = itemRefs.current[selectedIndex]
 
     if (!selectedItem) {
@@ -228,7 +234,7 @@ export function HierarchicalCommand({
                 }}
                 className={cn(
                   'scroll-m-4',
-                  'flex flex-col items-center justify-center p-6 rounded-sm border-2 transition-all duration-200',
+                  'flex flex-col items-center justify-center p-6 rounded-sm border-2',
                   'hover:bg-accent hover:border-accent-foreground/20 focus:outline-none',
                   isSelected
                     ? 'border-background bg-accent shadow-lg'
@@ -238,7 +244,7 @@ export function HierarchicalCommand({
                 onMouseEnter={() => setSelectedIndex(index)}>
                 <Icon
                   className={cn(
-                    'w-8 h-8 mb-2 transition-colors',
+                    'w-8 h-8 mb-2',
                     isSelected
                       ? 'text-accent-foreground'
                       : 'text-muted-foreground'
@@ -246,7 +252,7 @@ export function HierarchicalCommand({
                 />
                 <span
                   className={cn(
-                    'text-sm font-medium transition-colors text-center',
+                    'text-sm font-medium text-center',
                     isSelected
                       ? 'text-accent-foreground'
                       : 'text-muted-foreground'
@@ -256,7 +262,7 @@ export function HierarchicalCommand({
                 {item.shortcut && (
                   <span
                     className={cn(
-                      'text-xs mt-1 px-2 py-1 rounded bg-muted transition-colors',
+                      'text-xs mt-1 px-2 py-1 rounded bg-muted',
                       isSelected
                         ? 'text-accent-foreground/80'
                         : 'text-muted-foreground/60'
