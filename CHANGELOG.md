@@ -1,3 +1,18 @@
+# [2.30.0](https://github.com/guidefari/gbfm/compare/v2.29.0...v2.30.0) (2026-04-17)
+
+
+### Bug Fixes
+
+* button styles ([3f35ed6](https://github.com/guidefari/gbfm/commit/3f35ed66eb16040346fa66557f39ed8fed1018b4))
+
+
+### Features
+
+* **admin:** add overview dashboard ([f127625](https://github.com/guidefari/gbfm/commit/f1276251453b0ba1fe5b70ef6ed5489feee1d6c9))
+* invite charlie ([7c3d166](https://github.com/guidefari/gbfm/commit/7c3d1669f8e8a1a14879ad387b68bdfbb717363b))
+* list djs ([db2adbb](https://github.com/guidefari/gbfm/commit/db2adbbcc6727ec611b10b8dcfddc544853d56b3))
+* ui ([e62a5f8](https://github.com/guidefari/gbfm/commit/e62a5f8fd0c26c99ffc6bec46dfc3fe8aa2c9b63))
+
 # [2.29.0](https://github.com/guidefari/gbfm/compare/v2.28.0...v2.29.0) (2026-03-18)
 
 
