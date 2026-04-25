@@ -174,24 +174,14 @@ export function CommandDialogDemo() {
 
       <div className='flex items-center justify-between gap-3 p-3 border-t'>
         <div className='flex items-center gap-2 text-xs text-muted-foreground'>
-          <span className='font-medium tracking-wide text-foreground'>
-            GBFM
-          </span>
           <a
             href={`https://github.com/guidefari/gbfm/releases/tag/v${version}`}
             target='_blank'
             rel='noopener noreferrer'
-            className='inline-flex items-center rounded-full border px-2 py-1 font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground'>
+            className='inline-flex items-center border px-2 py-1 font-medium text-foreground transition-colors hover:bg-accent hover:text-accent-foreground'>
             v{version}
           </a>
         </div>
-        <a
-          href={`https://github.com/guidefari/gbfm/releases/tag/v${version}`}
-          target='_blank'
-          rel='noopener noreferrer'
-          className='text-xs transition-colors text-muted-foreground hover:text-foreground'>
-          Release notes
-        </a>
       </div>
     </CommandDialog>
   )
