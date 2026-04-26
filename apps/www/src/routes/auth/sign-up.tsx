@@ -10,6 +10,10 @@ import {
   PasswordChecklist
 } from '@/components/Auth/PasswordChecklist'
 import { ProfilePreviewCard } from '@/components/Auth/ProfilePreviewCard'
+import {
+  UsernameAvailability,
+  useUsernameAvailability
+} from '@/components/Auth/UsernameAvailability'
 import { signUp } from '@/lib/auth-client'
 import { useAuthStore } from '@/store/auth'
 
@@ -31,6 +35,7 @@ function SignUpPage() {
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [username, setUsername] = useState('')
+  const usernameStatus = useUsernameAvailability(username)
   const navigate = Route.useNavigate()
   const { setUser } = useAuthStore()
 
@@ -133,7 +138,8 @@ function SignUpPage() {
             placeholder: 'yourname',
             required: true,
             autoComplete: 'username',
-            onChange: setUsername
+            onChange: setUsername,
+            rightSlot: <UsernameAvailability username={username} />
           },
           {
             name: 'password',
@@ -149,7 +155,9 @@ function SignUpPage() {
         onSubmit={onSubmit}
         submitButtonText='Sign Up'
         isSubmitting={isSubmitting}
-        submitDisabled={!isPasswordValid(password)}
+        submitDisabled={
+          !isPasswordValid(password) || usernameStatus.state === 'taken'
+        }
       />
     </AuthPageLayout>
   )
