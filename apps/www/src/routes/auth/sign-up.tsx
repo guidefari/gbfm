@@ -1,5 +1,9 @@
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
+import {
+  AuthPageLayout,
+  AuthStatusNotice
+} from '@/components/Auth/AuthPageLayout'
 import { GenericAuthForm } from '@/components/Auth/GenericForm'
 import { signUp } from '@/lib/auth-client'
 import { useAuthStore } from '@/store/auth'
@@ -18,11 +22,13 @@ export const Route = createFileRoute('/auth/sign-up')({
 function SignUpPage() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const navigate = Route.useNavigate()
   const { setUser } = useAuthStore()
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    setIsSubmitting(true)
     const formData = new FormData(event.currentTarget)
     const email = formData.get('email') as string
     const password = formData.get('password') as string
@@ -51,67 +57,87 @@ function SignUpPage() {
     } catch (_err) {
       setError('Failed to sign up')
       setMessage('')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   return (
-    <div className=''>
-      <div className='mx-auto space-y-8 w-full max-w-md'>
-        {message && (
-          <div className='p-4 text-sm text-green-700 bg-green-100 rounded-md'>
-            {message}
-          </div>
-        )}
-        {error && (
-          <div className='p-4 text-sm text-red-700 bg-red-100 rounded-md'>
-            {error}
-          </div>
-        )}
-        <GenericAuthForm
-          formTitle='Sign Up'
-          fields={[
-            {
-              name: 'email',
-              label: 'Email',
-              type: 'email',
-              placeholder: 'name@example.com',
-              required: true
-            },
-            {
-              name: 'name',
-              label: 'Name',
-              type: 'text',
-              placeholder: 'Enter your name',
-              required: true
-            },
-            {
-              name: 'username',
-              label: 'Username',
-              type: 'text',
-              placeholder: 'Choose a username',
-              required: true
-            },
-            {
-              name: 'password',
-              label: 'Password',
-              type: 'password',
-              placeholder: 'Enter your password',
-              required: true
-            }
-          ]}
-          onSubmit={onSubmit}
-          submitButtonText='Sign Up'
-        />
-        <div className='text-center'>
-          <p className='text-sm text-gray-500'>
-            Already have an account? <Link to='/auth/sign-in'>Sign in</Link>
+    <AuthPageLayout
+      badge='Create Account'
+      title='Create your listener account'
+      description='Save favorites, follow the people you love, and keep your place in the archive.'
+      status={
+        message ? (
+          <AuthStatusNotice variant='success'>{message}</AuthStatusNotice>
+        ) : error ? (
+          <AuthStatusNotice variant='error'>{error}</AuthStatusNotice>
+        ) : null
+      }
+      footer={
+        <div className='space-y-3 border-t border-gb-pastel-green-2/20 pt-4 text-sm text-muted-foreground'>
+          <p>
+            Already have an account?{' '}
+            <Link
+              to='/auth/sign-in'
+              className='font-medium text-gb-pastel-green-1 underline-offset-4 hover:text-gb-highlight'>
+              Sign in
+            </Link>
           </p>
-          <p className='text-sm text-gray-500'>
-            Forgot password? <Link to='/auth/forgot-password'>Reset here</Link>
+          <p>
+            Forgot password?{' '}
+            <Link
+              to='/auth/forgot-password'
+              className='font-medium text-gb-pastel-green-1 underline-offset-4 hover:text-gb-highlight'>
+              Reset it here
+            </Link>
           </p>
         </div>
-      </div>
-    </div>
+      }>
+      <GenericAuthForm
+        formTitle='Sign Up'
+        fields={[
+          {
+            name: 'email',
+            label: 'Email',
+            type: 'email',
+            placeholder: 'name@example.com',
+            required: true,
+            autoComplete: 'email',
+            autoFocus: true
+          },
+          {
+            name: 'name',
+            label: 'Name',
+            type: 'text',
+            placeholder: 'Enter your name',
+            required: true,
+            autoComplete: 'name'
+          },
+          {
+            name: 'username',
+            label: 'Username',
+            type: 'text',
+            placeholder: 'Choose a username',
+            required: true,
+            autoComplete: 'username',
+            helperText:
+              'Keep it short and recognizable. This becomes part of your public profile.'
+          },
+          {
+            name: 'password',
+            label: 'Password',
+            type: 'password',
+            placeholder: 'Enter your password',
+            required: true,
+            autoComplete: 'new-password'
+          }
+        ]}
+        onSubmit={onSubmit}
+        submitButtonText='Sign Up'
+        isSubmitting={isSubmitting}
+      />
+    </AuthPageLayout>
   )
 }
 

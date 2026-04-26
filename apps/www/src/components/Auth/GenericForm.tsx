@@ -1,11 +1,10 @@
+import { Loader2 } from 'lucide-react'
 import type React from 'react'
 import type {
   HTMLInputAutoCompleteAttribute,
   HTMLInputTypeAttribute
 } from 'react'
-import { LockIcon } from '@/components/common/icons'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 
@@ -14,6 +13,7 @@ type Props = {
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>
   formTitle: string
   submitButtonText?: string
+  isSubmitting?: boolean
 }
 
 export type FormField = {
@@ -22,9 +22,12 @@ export type FormField = {
   type: HTMLInputTypeAttribute
   placeholder: string
   required?: boolean
+  autoComplete?: HTMLInputAutoCompleteAttribute
+  autoFocus?: boolean
+  helperText?: string
 }
 
-const AutoCompleteMatcher = (
+const autoCompleteMatcher = (
   type: HTMLInputTypeAttribute
 ): HTMLInputAutoCompleteAttribute => {
   switch (type) {
@@ -41,44 +44,47 @@ export const GenericAuthForm = ({
   fields,
   onSubmit,
   formTitle,
-  submitButtonText
+  submitButtonText,
+  isSubmitting = false
 }: Props) => {
   return (
-    <div className='flex-col justify-center items-center sm:px-6 lg:px-8'>
-      <div className='mx-auto space-y-8 w-full max-w-md'>
-        <div className='flex flex-col justify-center items-center space-y-2'>
-          <div className='inline-flex items-center px-3 py-1 text-sm font-medium rounded-sm bg-primary text-primary-foreground'>
-            <LockIcon className='mr-2 w-4 h-4' />
-            {formTitle}
+    <form onSubmit={onSubmit} aria-label={formTitle}>
+      <div className='grid gap-4'>
+        {fields.map((field) => (
+          <div className='grid gap-1.5' key={field.name}>
+            <Label htmlFor={field.name} className='text-gb-pastel-green-1'>
+              {field.label}
+            </Label>
+            <Input
+              id={field.name}
+              type={field.type}
+              placeholder={field.placeholder}
+              required={field.required || false}
+              name={field.name}
+              autoComplete={
+                field.autoComplete || autoCompleteMatcher(field.type)
+              }
+              autoFocus={field.autoFocus}
+              className='h-11 border-gb-pastel-green-2/30 bg-gb-darker-bg/60 text-foreground placeholder:text-muted-foreground/80 focus-visible:ring-gb-highlight'
+            />
+            {field.helperText ? (
+              <p className='text-xs leading-5 text-muted-foreground'>
+                {field.helperText}
+              </p>
+            ) : null}
           </div>
-        </div>
-        <Card>
-          <CardContent className='space-y-4'>
-            <form onSubmit={onSubmit}>
-              <div className='grid gap-3'>
-                {fields.map((field) => (
-                  <div className='grid gap-1' key={field.name}>
-                    <div className='flex justify-between items-center'>
-                      <Label htmlFor={field.name}>{field.label}</Label>
-                    </div>
-                    <Input
-                      id={field.name}
-                      type={field.type}
-                      placeholder={field.placeholder}
-                      required={field.required || false}
-                      name={field.name}
-                      autoComplete={AutoCompleteMatcher(field.type)}
-                    />
-                  </div>
-                ))}
-                <Button type='submit' className='w-full'>
-                  {submitButtonText || formTitle}
-                </Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
+        ))}
+        <Button
+          type='submit'
+          className='mt-2 w-full'
+          size='lg'
+          disabled={isSubmitting}>
+          {isSubmitting ? (
+            <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+          ) : null}
+          {submitButtonText || formTitle}
+        </Button>
       </div>
-    </div>
+    </form>
   )
 }

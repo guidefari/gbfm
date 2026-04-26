@@ -1,5 +1,9 @@
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
+import {
+  AuthPageLayout,
+  AuthStatusNotice
+} from '@/components/Auth/AuthPageLayout'
 import { GenericAuthForm } from '@/components/Auth/GenericForm'
 import { toast } from '@/components/ui/use-toast'
 import { signIn } from '@/lib/auth-client'
@@ -18,11 +22,13 @@ export const Route = createFileRoute('/auth/sign-in')({
 
 function SignInPage() {
   const [error, setError] = useState<string>('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const navigate = Route.useNavigate()
   const { setUser } = useAuthStore()
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
+    setIsSubmitting(true)
     const formData = new FormData(event.currentTarget)
     const identifier = formData.get('identifier') as string
     const password = formData.get('password') as string
@@ -47,49 +53,66 @@ function SignInPage() {
       }
     } catch (_err) {
       setError('Failed to sign in')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   return (
-    <div className=''>
-      <div className='mx-auto space-y-8 w-full max-w-md'>
-        {error && (
-          <div className='p-4 text-sm text-red-700 bg-red-100 rounded-md'>
-            {error}
-          </div>
-        )}
-
-        <GenericAuthForm
-          formTitle='Sign In'
-          fields={[
-            {
-              name: 'identifier',
-              label: 'Email or Username',
-              type: 'text',
-              placeholder: 'name@example.com or username',
-              required: true
-            },
-            {
-              name: 'password',
-              label: 'Password',
-              type: 'password',
-              placeholder: 'Enter your password',
-              required: true
-            }
-          ]}
-          onSubmit={onSubmit}
-          submitButtonText='Sign In'
-        />
-
-        <div className='text-center'>
-          <p className='text-sm text-gray-500'>
-            Don't have an account? <Link to='/auth/sign-up'>Sign up</Link>
+    <AuthPageLayout
+      badge='Sign In'
+      title='Welcome back'
+      description='Pick up where your listening left off and keep your saved favorites close.'
+      status={
+        error ? (
+          <AuthStatusNotice variant='error'>{error}</AuthStatusNotice>
+        ) : null
+      }
+      footer={
+        <div className='space-y-3 border-t border-gb-pastel-green-2/20 pt-4 text-sm text-muted-foreground'>
+          <p>
+            Don&apos;t have an account?{' '}
+            <Link
+              to='/auth/sign-up'
+              className='font-medium text-gb-pastel-green-1 underline-offset-4 hover:text-gb-highlight'>
+              Sign up
+            </Link>
           </p>
-          <p className='text-sm text-gray-500'>
-            Forgot password? <Link to='/auth/forgot-password'>Reset here</Link>
+          <p>
+            Forgot password?{' '}
+            <Link
+              to='/auth/forgot-password'
+              className='font-medium text-gb-pastel-green-1 underline-offset-4 hover:text-gb-highlight'>
+              Reset it here
+            </Link>
           </p>
         </div>
-      </div>
-    </div>
+      }>
+      <GenericAuthForm
+        formTitle='Sign In'
+        fields={[
+          {
+            name: 'identifier',
+            label: 'Email or Username',
+            type: 'text',
+            placeholder: 'name@example.com or username',
+            required: true,
+            autoComplete: 'username',
+            autoFocus: true
+          },
+          {
+            name: 'password',
+            label: 'Password',
+            type: 'password',
+            placeholder: 'Enter your password',
+            required: true,
+            autoComplete: 'current-password'
+          }
+        ]}
+        onSubmit={onSubmit}
+        submitButtonText='Sign In'
+        isSubmitting={isSubmitting}
+      />
+    </AuthPageLayout>
   )
 }
