@@ -233,7 +233,7 @@ new sst.x.DevCommand('Restore_Planetscale_Database', {
 
 new sst.x.DevCommand('Otel_Stack', {
   dev: {
-    command: 'docker compose up tempo grafana prometheus loki promtail -d',
+    command: 'docker compose up jaeger -d',
     directory: './',
     autostart: false
   }
