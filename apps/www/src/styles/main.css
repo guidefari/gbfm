@@ -336,6 +336,16 @@
 
 @layer utilities {
   /* Custom color utilities for your design system */
+  .bg-vinyl-rings {
+    background-image: repeating-radial-gradient(
+      circle,
+      transparent 0,
+      transparent 5.4%,
+      color-mix(in srgb, var(--pastel-green-1) 50%, transparent) 5.45%,
+      transparent 5.5%
+    );
+  }
+
   .ring-gb-highlight {
     --tw-ring-color: var(--highlight);
   }

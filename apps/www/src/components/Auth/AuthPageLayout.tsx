@@ -25,25 +25,24 @@ export function AuthPageLayout({
   children
 }: AuthPageLayoutProps) {
   return (
-    <div className='relative overflow-hidden px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10'>
-      <div className='pointer-events-none absolute -top-24 left-[8%] h-64 w-64 rounded-full bg-gb-pastel-green-2/12 blur-3xl' />
-      <div className='pointer-events-none absolute right-[10%] top-[18%] h-72 w-72 rounded-full bg-gb-highlight/10 blur-3xl' />
-      <div className='pointer-events-none absolute inset-0 bg-[linear-gradient(to_right,rgba(182,250,223,0.04)_1px,transparent_1px),linear-gradient(to_bottom,rgba(182,250,223,0.04)_1px,transparent_1px)] bg-[size:36px_36px] opacity-25' />
+    <div className='relative px-4 py-6 sm:px-6 sm:py-8 lg:px-8 lg:py-10'>
+      <div className='pointer-events-none fixed inset-0 overflow-hidden'>
+        <div className='bg-vinyl-rings absolute left-1/2 top-1/2 aspect-square w-[160vmax] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-[0.07]' />
+        <div className='absolute -top-24 left-[8%] h-64 w-64 rounded-full bg-gb-pastel-green-2/12 blur-3xl' />
+        <div className='absolute right-[10%] top-[18%] h-72 w-72 rounded-full bg-gb-highlight/10 blur-3xl' />
+      </div>
 
       <div className='relative mx-auto flex w-full max-w-6xl items-start justify-center lg:pt-6'>
         <div className='grid w-full items-start gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(360px,440px)] lg:gap-12'>
           <section className='hidden space-y-6 lg:block'>
             <div className='max-w-xl space-y-4'>
-              <h1 className='mt-0 text-4xl font-black tracking-tight text-foreground sm:text-5xl xl:text-6xl'>
-                A calmer way back into your listening world.
+              <h1 className='mt-0 text-5xl font-black tracking-tight text-foreground sm:text-6xl xl:text-7xl'>
+                {title}
               </h1>
               <p className='max-w-lg text-base leading-7 text-muted-foreground sm:text-lg'>
-                Save favorites, stay notified about new additions to the
-                archive.
+                {description}
               </p>
             </div>
-
-            <div className='grid max-w-xl gap-4 sm:grid-cols-2'></div>
           </section>
 
           <section className='w-full lg:self-start'>
@@ -56,7 +55,7 @@ export function AuthPageLayout({
                       {badge}
                     </div>
 
-                    <div className='space-y-2'>
+                    <div className='space-y-2 lg:hidden'>
                       <h2 className='mt-0 text-3xl font-black tracking-tight text-foreground'>
                         {title}
                       </h2>

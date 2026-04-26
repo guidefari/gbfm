@@ -61,8 +61,8 @@ function SignInPage() {
   return (
     <AuthPageLayout
       badge='Sign In'
-      title='Welcome back'
-      description='Pick up where your listening left off and keep your saved favorites close.'
+      title='Welcome back.'
+      description='Sign in to pick up where you left off.'
       status={
         error ? (
           <AuthStatusNotice variant='error'>{error}</AuthStatusNotice>
