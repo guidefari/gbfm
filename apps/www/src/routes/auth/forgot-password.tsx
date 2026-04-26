@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { useState } from 'react'
+import { MailCheck } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import {
   AuthPageLayout,
   AuthStatusNotice
@@ -11,17 +12,22 @@ export const Route = createFileRoute('/auth/forgot-password')({
   component: ForgotPasswordPage
 })
 
+const RESEND_COOLDOWN_SECONDS = 30
+
 function ForgotPasswordPage() {
-  const [message, setMessage] = useState<string>('')
   const [error, setError] = useState<string>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [sentEmail, setSentEmail] = useState<string>('')
+  const [cooldown, setCooldown] = useState(0)
 
-  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault()
+  useEffect(() => {
+    if (cooldown <= 0) return
+    const id = setTimeout(() => setCooldown((s) => s - 1), 1000)
+    return () => clearTimeout(id)
+  }, [cooldown])
+
+  const sendReset = async (email: string) => {
     setIsSubmitting(true)
-    const formData = new FormData(event.currentTarget)
-    const email = formData.get('email') as string
-
     try {
       const result = await authClient.requestPasswordReset({
         email,
@@ -30,28 +36,49 @@ function ForgotPasswordPage() {
 
       if (result.error) {
         setError(result.error.message || 'Failed to send reset email')
-        setMessage('')
       } else {
-        setMessage('Password reset email sent! Check your inbox.')
         setError('')
+        setSentEmail(email)
+        setCooldown(RESEND_COOLDOWN_SECONDS)
       }
     } catch (_err) {
       setError('Failed to send reset email')
-      setMessage('')
     } finally {
       setIsSubmitting(false)
     }
   }
 
+  const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const formData = new FormData(event.currentTarget)
+    const email = formData.get('email') as string
+    await sendReset(email)
+  }
+
+  const onResend = () => {
+    if (cooldown > 0 || !sentEmail) return
+    sendReset(sentEmail)
+  }
+
+  const useDifferentEmail = () => {
+    setSentEmail('')
+    setError('')
+    setCooldown(0)
+  }
+
+  const isSent = Boolean(sentEmail)
+
   return (
     <AuthPageLayout
-      badge='Password Help'
-      title='Reset your password'
-      description='Enter the email tied to your account and we will send you a reset link.'
+      badge={isSent ? 'Email Sent' : 'Password Help'}
+      title={isSent ? 'Check your inbox.' : 'Reset your password.'}
+      description={
+        isSent
+          ? "We sent a reset link. It should arrive in a minute. If you don't see it, check spam."
+          : 'Enter the email tied to your account and we will send you a reset link.'
+      }
       status={
-        message ? (
-          <AuthStatusNotice variant='success'>{message}</AuthStatusNotice>
-        ) : error ? (
+        !isSent && error ? (
           <AuthStatusNotice variant='error'>{error}</AuthStatusNotice>
         ) : null
       }
@@ -75,23 +102,62 @@ function ForgotPasswordPage() {
           </p>
         </div>
       }>
-      <GenericAuthForm
-        formTitle='Forgot Password'
-        fields={[
-          {
-            name: 'email',
-            label: 'Email',
-            type: 'email',
-            placeholder: 'name@example.com',
-            required: true,
-            autoComplete: 'email',
-            autoFocus: true
-          }
-        ]}
-        onSubmit={onSubmit}
-        submitButtonText='Send Reset Email'
-        isSubmitting={isSubmitting}
-      />
+      {isSent ? (
+        <div className='space-y-5'>
+          <div className='flex flex-col items-center gap-3 border border-gb-pastel-green-2/30 bg-gb-pastel-green-2/10 px-6 py-8 text-center'>
+            <MailCheck className='h-10 w-10 text-gb-pastel-green-1' />
+            <p className='text-sm text-muted-foreground'>Reset link sent to</p>
+            <p className='text-base font-semibold break-all text-foreground'>
+              {sentEmail}
+            </p>
+          </div>
+
+          {error ? (
+            <AuthStatusNotice variant='error'>{error}</AuthStatusNotice>
+          ) : null}
+
+          <div className='space-y-2 text-sm'>
+            <p className='text-muted-foreground'>Didn&apos;t get the email?</p>
+            <div className='flex flex-wrap gap-x-4 gap-y-2'>
+              <button
+                type='button'
+                onClick={onResend}
+                disabled={cooldown > 0 || isSubmitting}
+                className='font-medium text-gb-pastel-green-1 underline-offset-4 hover:text-gb-highlight disabled:cursor-not-allowed disabled:text-muted-foreground disabled:hover:text-muted-foreground'>
+                {isSubmitting
+                  ? 'Resending...'
+                  : cooldown > 0
+                    ? `Resend in ${cooldown}s`
+                    : 'Resend email'}
+              </button>
+              <button
+                type='button'
+                onClick={useDifferentEmail}
+                className='font-medium text-gb-pastel-green-1 underline-offset-4 hover:text-gb-highlight'>
+                Use a different email
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <GenericAuthForm
+          formTitle='Forgot Password'
+          fields={[
+            {
+              name: 'email',
+              label: 'Email',
+              type: 'email',
+              placeholder: 'name@example.com',
+              required: true,
+              autoComplete: 'email',
+              autoFocus: true
+            }
+          ]}
+          onSubmit={onSubmit}
+          submitButtonText='Send Reset Email'
+          isSubmitting={isSubmitting}
+        />
+      )}
     </AuthPageLayout>
   )
 }
