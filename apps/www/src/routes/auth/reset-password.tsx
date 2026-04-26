@@ -6,6 +6,10 @@ import {
   AuthStatusNotice
 } from '@/components/Auth/AuthPageLayout'
 import { GenericAuthForm } from '@/components/Auth/GenericForm'
+import {
+  isPasswordValid,
+  PasswordChecklist
+} from '@/components/Auth/PasswordChecklist'
 import { authClient } from '@/lib/auth-client'
 
 export const searchSchema = z.object({
@@ -25,6 +29,7 @@ function ResetPasswordPage() {
   const [error, setError] = useState<string>('')
   const [isValidToken, setIsValidToken] = useState<boolean>(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [password, setPassword] = useState('')
 
   useEffect(() => {
     if (search.error) {
@@ -46,6 +51,12 @@ function ResetPasswordPage() {
     const formData = new FormData(event.currentTarget)
     const password = formData.get('password') as string
     const confirmPassword = formData.get('confirmPassword') as string
+
+    if (!isPasswordValid(password)) {
+      setError('Password does not meet requirements')
+      setIsSubmitting(false)
+      return
+    }
 
     if (password !== confirmPassword) {
       setError('Passwords do not match')
@@ -150,7 +161,9 @@ function ResetPasswordPage() {
             placeholder: 'Enter new password',
             required: true,
             autoComplete: 'new-password',
-            autoFocus: true
+            autoFocus: true,
+            onChange: setPassword,
+            belowField: <PasswordChecklist password={password} />
           },
           {
             name: 'confirmPassword',
@@ -164,6 +177,7 @@ function ResetPasswordPage() {
         onSubmit={onSubmit}
         submitButtonText='Reset Password'
         isSubmitting={isSubmitting}
+        submitDisabled={!isPasswordValid(password)}
       />
     </AuthPageLayout>
   )

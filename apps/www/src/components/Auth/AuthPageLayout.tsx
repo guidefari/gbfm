@@ -8,6 +8,7 @@ type AuthPageLayoutProps = {
   badge?: string
   status?: ReactNode
   footer?: ReactNode
+  aside?: ReactNode
   children: ReactNode
 }
 
@@ -22,6 +23,7 @@ export function AuthPageLayout({
   badge = 'Listener Access',
   status,
   footer,
+  aside,
   children
 }: AuthPageLayoutProps) {
   return (
@@ -43,6 +45,7 @@ export function AuthPageLayout({
                 {description}
               </p>
             </div>
+            {aside ? <div className='max-w-md pt-2'>{aside}</div> : null}
           </section>
 
           <section className='w-full lg:self-start'>

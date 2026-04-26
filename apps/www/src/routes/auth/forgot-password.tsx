@@ -1,12 +1,13 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { MailCheck } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   AuthPageLayout,
   AuthStatusNotice
 } from '@/components/Auth/AuthPageLayout'
 import { GenericAuthForm } from '@/components/Auth/GenericForm'
 import { authClient } from '@/lib/auth-client'
+import { useCooldown } from '@/lib/useCooldown'
 
 export const Route = createFileRoute('/auth/forgot-password')({
   component: ForgotPasswordPage
@@ -18,13 +19,7 @@ function ForgotPasswordPage() {
   const [error, setError] = useState<string>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [sentEmail, setSentEmail] = useState<string>('')
-  const [cooldown, setCooldown] = useState(0)
-
-  useEffect(() => {
-    if (cooldown <= 0) return
-    const id = setTimeout(() => setCooldown((s) => s - 1), 1000)
-    return () => clearTimeout(id)
-  }, [cooldown])
+  const cooldown = useCooldown(RESEND_COOLDOWN_SECONDS)
 
   const sendReset = async (email: string) => {
     setIsSubmitting(true)
@@ -39,7 +34,7 @@ function ForgotPasswordPage() {
       } else {
         setError('')
         setSentEmail(email)
-        setCooldown(RESEND_COOLDOWN_SECONDS)
+        cooldown.start()
       }
     } catch (_err) {
       setError('Failed to send reset email')
@@ -56,14 +51,14 @@ function ForgotPasswordPage() {
   }
 
   const onResend = () => {
-    if (cooldown > 0 || !sentEmail) return
+    if (cooldown.isActive || !sentEmail) return
     sendReset(sentEmail)
   }
 
   const useDifferentEmail = () => {
     setSentEmail('')
     setError('')
-    setCooldown(0)
+    cooldown.reset()
   }
 
   const isSent = Boolean(sentEmail)
@@ -122,12 +117,12 @@ function ForgotPasswordPage() {
               <button
                 type='button'
                 onClick={onResend}
-                disabled={cooldown > 0 || isSubmitting}
+                disabled={cooldown.isActive || isSubmitting}
                 className='font-medium text-gb-pastel-green-1 underline-offset-4 hover:text-gb-highlight disabled:cursor-not-allowed disabled:text-muted-foreground disabled:hover:text-muted-foreground'>
                 {isSubmitting
                   ? 'Resending...'
-                  : cooldown > 0
-                    ? `Resend in ${cooldown}s`
+                  : cooldown.isActive
+                    ? `Resend in ${cooldown.remaining}s`
                     : 'Resend email'}
               </button>
               <button

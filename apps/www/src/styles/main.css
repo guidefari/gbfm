@@ -336,6 +336,14 @@
 
 @layer utilities {
   /* Custom color utilities for your design system */
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
   .bg-vinyl-rings {
     background-image: repeating-radial-gradient(
       circle,

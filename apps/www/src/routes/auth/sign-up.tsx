@@ -5,6 +5,11 @@ import {
   AuthStatusNotice
 } from '@/components/Auth/AuthPageLayout'
 import { GenericAuthForm } from '@/components/Auth/GenericForm'
+import {
+  isPasswordValid,
+  PasswordChecklist
+} from '@/components/Auth/PasswordChecklist'
+import { ProfilePreviewCard } from '@/components/Auth/ProfilePreviewCard'
 import { signUp } from '@/lib/auth-client'
 import { useAuthStore } from '@/store/auth'
 
@@ -23,6 +28,9 @@ function SignUpPage() {
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [password, setPassword] = useState('')
+  const [displayName, setDisplayName] = useState('')
+  const [username, setUsername] = useState('')
   const navigate = Route.useNavigate()
   const { setUser } = useAuthStore()
 
@@ -67,6 +75,9 @@ function SignUpPage() {
       badge='Create Account'
       title='Create your listener account'
       description='Save favorites, follow the people you love, and keep your place in the archive.'
+      aside={
+        <ProfilePreviewCard displayName={displayName} username={username} />
+      }
       status={
         message ? (
           <AuthStatusNotice variant='success'>{message}</AuthStatusNotice>
@@ -108,21 +119,21 @@ function SignUpPage() {
           },
           {
             name: 'name',
-            label: 'Name',
+            label: 'Display Name',
             type: 'text',
-            placeholder: 'Enter your name',
+            placeholder: 'How you want to be known',
             required: true,
-            autoComplete: 'name'
+            autoComplete: 'name',
+            onChange: setDisplayName
           },
           {
             name: 'username',
             label: 'Username',
             type: 'text',
-            placeholder: 'Choose a username',
+            placeholder: 'yourname',
             required: true,
             autoComplete: 'username',
-            helperText:
-              'Keep it short and recognizable. This becomes part of your public profile.'
+            onChange: setUsername
           },
           {
             name: 'password',
@@ -130,12 +141,15 @@ function SignUpPage() {
             type: 'password',
             placeholder: 'Enter your password',
             required: true,
-            autoComplete: 'new-password'
+            autoComplete: 'new-password',
+            onChange: setPassword,
+            belowField: <PasswordChecklist password={password} />
           }
         ]}
         onSubmit={onSubmit}
         submitButtonText='Sign Up'
         isSubmitting={isSubmitting}
+        submitDisabled={!isPasswordValid(password)}
       />
     </AuthPageLayout>
   )
