@@ -1,18 +1,7 @@
 import { Link } from '@tanstack/react-router'
-import {
-  Disc3,
-  Home,
-  LogIn,
-  Menu,
-  Moon,
-  Radio,
-  Sun,
-  User,
-  X
-} from 'lucide-react'
+import { Disc3, Home, LogIn, Menu, Radio, User, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useState } from 'react'
-import { useTheme } from '@/components/ThemeProvider'
 import { cn } from '@/lib/utils'
 import { useAudioPlayerState } from '@/store/audioPlayer'
 import { useAuthStore } from '@/store/auth'
@@ -31,7 +20,6 @@ type FloatingMenuProps = {
 
 export function FloatingMenu({ className }: FloatingMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const { resolvedTheme, setTheme } = useTheme()
   const { audioSrc, isFullscreenVisible } = useAudioPlayerState()
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
 
@@ -60,10 +48,6 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
       document.body.style.overflow = ''
     }
   }, [isOpen])
-
-  const handleThemeToggle = useCallback(() => {
-    setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')
-  }, [resolvedTheme, setTheme])
 
   const navItems: MenuItemConfig[] = [
     {
@@ -99,20 +83,6 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
         }
   ].filter(Boolean)
 
-  const quickActions: MenuItemConfig[] = [
-    {
-      id: 'theme',
-      icon:
-        resolvedTheme === 'dark' ? (
-          <Sun className='w-5 h-5' />
-        ) : (
-          <Moon className='w-5 h-5' />
-        ),
-      label: resolvedTheme === 'dark' ? 'Light' : 'Dark',
-      action: handleThemeToggle
-    }
-  ]
-
   const getItemRoute = (id: string): string | null => {
     switch (id) {
       case 'home':
@@ -122,7 +92,7 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
       case 'shows':
         return '/shows'
       case 'profile':
-        return '/settings/profile'
+        return '/settings'
       case 'login':
         return '/auth/sign-in'
       default:
@@ -201,30 +171,7 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
                 )
               })}
             </motion.nav>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 20 }}
-              transition={{ duration: 0.2 }}
-              className='relative flex items-center justify-between gap-3 px-4 pb-4'>
-              <div className='flex items-center gap-3'>
-                {quickActions.map((action) => (
-                  <button
-                    type='button'
-                    key={action.id}
-                    onClick={action.action}
-                    className={cn(
-                      'flex items-center gap-2 px-4 py-3 rounded-sm',
-                      'bg-card border border-border',
-                      'active:scale-95 active:bg-accent transition-transform'
-                    )}>
-                    {action.icon}
-                    <span className='text-sm font-medium'>{action.label}</span>
-                  </button>
-                ))}
-              </div>
-            </motion.div>
+            <div className='relative h-4' />
           </motion.div>
         )}
       </AnimatePresence>
@@ -236,17 +183,15 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
             'relative z-50 flex items-center justify-center rounded-sm shadow-lg',
             'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
             'active:scale-95 transition-transform',
-            isOpen
-              ? 'bg-destructive text-destructive-foreground'
-              : 'bg-primary text-primary-foreground'
+            'bg-primary text-primary-foreground'
           )}
           style={{ width: 56, height: 56 }}
           aria-expanded={isOpen}
           aria-label={isOpen ? 'Close menu' : 'Open menu'}>
           <motion.div
-            animate={{ rotate: isOpen ? 135 : 0 }}
+            animate={{ scale: isOpen ? 1.05 : 1 }}
             transition={{ duration: 0.2 }}>
-            {isOpen ? <X className='w-6 h-6' /> : <Menu className='w-6 h-6' />}
+            {isOpen ? <X className='h-6 w-6' /> : <Menu className='h-6 w-6' />}
           </motion.div>
         </motion.button>
       )}
