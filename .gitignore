@@ -15,3 +15,4 @@ apps/www/test-results/
 apps/www/playwright-report
 **/*tsconfig.tsbuildinfo
 docs/refactor.md
+session.md

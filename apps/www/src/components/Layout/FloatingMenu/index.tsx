@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Disc3, Home, LogIn, Menu, Radio, User, X } from 'lucide-react'
+import { Bell, Disc3, Home, LogIn, Menu, Radio, User, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -68,6 +68,12 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
       label: 'Shows',
       action: closeMenu
     },
+    {
+      id: 'reminders',
+      icon: <Bell className='w-6 h-6' />,
+      label: 'Reminder',
+      action: closeMenu
+    },
     isAuthenticated
       ? {
           id: 'profile',
@@ -91,8 +97,10 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
         return '/mixes'
       case 'shows':
         return '/shows'
+      case 'reminders':
+        return '/reminders'
       case 'profile':
-        return '/settings'
+        return '/dashboard'
       case 'login':
         return '/auth/sign-in'
       default:
@@ -133,7 +141,7 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 30 }}
               transition={{ duration: 0.2 }}
-              className='relative grid grid-cols-4 gap-3 px-4 mb-24'>
+              className='relative grid grid-cols-3 gap-3 px-4 mb-24'>
               {navItems.map((item) => {
                 const route = getItemRoute(item.id)
                 const content = (

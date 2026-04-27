@@ -31,7 +31,7 @@ export function FavoritesSection() {
   }
 
   return (
-    <div className='flex flex-col h-full bg-card/15 rounded-sm overflow-hidden p-5 sm:p-6'>
+    <div className='flex flex-col h-full rounded-sm overflow-hidden'>
       <h3 className='flex items-center gap-2 text-xs font-bold text-foreground uppercase tracking-widest mb-6'>
         <Heart className='w-3.5 h-3.5 text-red-500' />
         Favorites

@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { Bell, History, type LucideIcon } from 'lucide-react'
+import { Bell, History, type LucideIcon, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
 
@@ -58,11 +58,20 @@ export function RemindersCard() {
             <Bell className='w-3.5 h-3.5 text-primary' />
             Reminders
           </h3>
-          <Link
-            to='/reminders'
-            className='text-[10px] font-bold uppercase tracking-widest text-muted-foreground no-underline hover:text-primary transition-colors'>
-            Manage
-          </Link>
+          <div className='flex items-center gap-3'>
+            <Link
+              to='/reminders'
+              className='flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-primary no-underline hover:text-primary/80 transition-colors'>
+              <Plus className='w-3 h-3' />
+              New
+            </Link>
+            <div className='w-px h-3 bg-border/50' />
+            <Link
+              to='/reminders'
+              className='text-[10px] font-bold uppercase tracking-widest text-muted-foreground no-underline hover:text-primary transition-colors'>
+              Manage
+            </Link>
+          </div>
         </div>
 
         <div className='flex gap-0 border border-border/50 rounded-sm overflow-hidden'>
