@@ -4,7 +4,8 @@
       "@/*": [
         "./src/*"
       ]
-    }
+    },
+    "types": ["node", "nativewind/types"]
   },
   "extends": "expo/tsconfig.base",
   "include": [
