@@ -56,6 +56,7 @@ function FieldInput({ field }: { field: FormField }) {
   const isPassword = field.type === 'password'
   const effectiveType = isPassword && show ? 'text' : field.type
   const autoComplete = field.autoComplete || autoCompleteMatcher(field.type)
+  const disableAutoCap = !isPassword
 
   const input = (
     <Input
@@ -65,6 +66,9 @@ function FieldInput({ field }: { field: FormField }) {
       required={field.required || false}
       name={field.name}
       autoComplete={autoComplete}
+      autoCapitalize={disableAutoCap ? 'none' : undefined}
+      autoCorrect={disableAutoCap ? 'off' : undefined}
+      spellCheck={disableAutoCap ? false : undefined}
       autoFocus={field.autoFocus}
       onChange={
         field.onChange ? (e) => field.onChange?.(e.target.value) : undefined

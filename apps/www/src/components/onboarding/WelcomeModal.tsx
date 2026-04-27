@@ -39,18 +39,17 @@ export function WelcomeModal() {
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && handleClose()}>
-      <DialogContent className='max-w-md'>
-        <DialogHeader>
-          <DialogTitle className='text-xl'>
-            Welcome to goosebumps.fm
-            {user?.name && `, ${user.name.split(' ')[0]}`}
+      <DialogContent className='max-w-md p-5 sm:p-6'>
+        <DialogHeader className='space-y-1 text-left'>
+          <DialogTitle className='text-lg sm:text-xl'>
+            Welcome{user?.name && `, ${user.name.split(' ')[0]}`}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className='text-sm'>
             You're now part of the archive. Here's what you can do:
           </DialogDescription>
         </DialogHeader>
 
-        <div className='space-y-4 py-4'>
+        <div className='space-y-3 py-2'>
           <div className='flex items-start gap-3'>
             <div className='p-2 bg-highlight/10 rounded-sm'>
               <Heart className='w-4 h-4 text-highlight' />
