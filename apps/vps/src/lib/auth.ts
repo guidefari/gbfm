@@ -45,11 +45,9 @@ export const auth = betterAuth({
   emailVerification: {
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
-    sendVerificationEmail: async ({ user, url }) => {
-      const callbackURL = `${config.urls.frontend}/auth/verify-email`
-      const verificationUrl = url.includes('callbackURL=')
-        ? url
-        : `${url}${url.includes('?') ? '&' : '?'}callbackURL=${encodeURIComponent(callbackURL)}`
+    sendVerificationEmail: async ({ user, token }) => {
+      const callbackURL = `${config.urls.frontend}/`
+      const verificationUrl = `${config.urls.frontend}/auth/verify-email?token=${encodeURIComponent(token)}&callbackURL=${encodeURIComponent(callbackURL)}`
 
       const baseLogFields = {
         userId: user.id,

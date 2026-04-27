@@ -1,13 +1,17 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { MailCheck } from 'lucide-react'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { Loader2, MailCheck } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { z } from 'zod'
 import {
   AuthPageLayout,
   AuthStatusNotice
 } from '@/components/Auth/AuthPageLayout'
+import { authClient } from '@/lib/auth-client'
 
 const searchSchema = z.object({
-  error: z.string().optional()
+  token: z.string().optional(),
+  error: z.string().optional(),
+  callbackURL: z.string().optional()
 })
 
 export const Route = createFileRoute('/auth/verify-email')({
@@ -15,23 +19,74 @@ export const Route = createFileRoute('/auth/verify-email')({
   validateSearch: searchSchema
 })
 
+type Status = 'verifying' | 'success' | 'error'
+
 function VerifyEmailPage() {
-  const { error } = Route.useSearch()
-  const isError = Boolean(error)
+  const { token, error: searchError, callbackURL } = Route.useSearch()
+  const navigate = useNavigate()
+  const [status, setStatus] = useState<Status>(
+    searchError ? 'error' : token ? 'verifying' : 'error'
+  )
+  const [errorMessage, setErrorMessage] = useState<string>(
+    searchError || (!token ? 'Missing verification token.' : '')
+  )
+
+  useEffect(() => {
+    if (!token || searchError) return
+    let cancelled = false
+    ;(async () => {
+      const { error } = await authClient.verifyEmail({ query: { token } })
+      if (cancelled) return
+      if (error) {
+        setStatus('error')
+        setErrorMessage(error.message || 'Verification failed.')
+        return
+      }
+      setStatus('success')
+      const redirectTo = callbackURL || '/'
+      setTimeout(() => {
+        if (redirectTo.startsWith('/')) {
+          navigate({ to: redirectTo })
+        } else {
+          window.location.href = redirectTo
+        }
+      }, 1200)
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [token, searchError, callbackURL, navigate])
+
+  const isError = status === 'error'
+  const isVerifying = status === 'verifying'
 
   return (
     <AuthPageLayout
-      badge={isError ? 'Verification Failed' : 'Email Verified'}
-      title={isError ? "That didn't work." : "You're all set."}
+      badge={
+        isVerifying
+          ? 'Verifying'
+          : isError
+            ? 'Verification Failed'
+            : 'Email Verified'
+      }
+      title={
+        isVerifying
+          ? 'Hang tight.'
+          : isError
+            ? "That didn't work."
+            : "You're all set."
+      }
       description={
-        isError
-          ? 'The verification link is invalid or expired. Request a new one from your account.'
-          : 'Your email is verified. Welcome to goosebumps.fm.'
+        isVerifying
+          ? 'Confirming your email now.'
+          : isError
+            ? 'The verification link is invalid or expired. Request a new one from your account.'
+            : 'Your email is verified. Signing you in.'
       }
       status={
         isError ? (
           <AuthStatusNotice variant='error'>
-            {error || 'Verification failed.'}
+            {errorMessage || 'Verification failed.'}
           </AuthStatusNotice>
         ) : null
       }
@@ -46,14 +101,21 @@ function VerifyEmailPage() {
           </p>
         </div>
       }>
-      {!isError ? (
+      {isVerifying ? (
+        <div className='flex flex-col items-center gap-3 border border-gb-pastel-green-2/30 bg-gb-pastel-green-2/10 px-6 py-8 text-center'>
+          <Loader2 className='h-10 w-10 animate-spin text-gb-pastel-green-1' />
+          <p className='text-base font-semibold text-foreground'>
+            Verifying your email
+          </p>
+        </div>
+      ) : !isError ? (
         <div className='flex flex-col items-center gap-3 border border-gb-pastel-green-2/30 bg-gb-pastel-green-2/10 px-6 py-8 text-center'>
           <MailCheck className='h-10 w-10 text-gb-pastel-green-1' />
           <p className='text-base font-semibold text-foreground'>
             Email verified
           </p>
           <p className='text-sm text-muted-foreground'>
-            Thanks for confirming. Your account is fully active.
+            Thanks for confirming. Redirecting you now.
           </p>
         </div>
       ) : null}
