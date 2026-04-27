@@ -6,6 +6,7 @@ import {
   Outlet
 } from '@tanstack/react-router'
 import { Suspense } from 'react'
+import { VerifyEmailBanner } from '@/components/Auth/VerifyEmailBanner'
 import { AuthPromptDialog } from '@/components/AuthPromptDialog'
 import { CommandDialogDemo } from '@/components/cmd'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -55,6 +56,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
               {env.isDev && (
                 <FPSMeter className='fixed top-0 right-0 z-50' height={40} />
               )}
+              <VerifyEmailBanner />
               <CommandDialogDemo />
               <WelcomeModal />
               <AuthPromptDialog />
