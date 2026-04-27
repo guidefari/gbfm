@@ -14,7 +14,7 @@ export function WelcomeHeader({ user }: WelcomeHeaderProps) {
         <img
           src={user.image}
           alt={displayName || 'User avatar'}
-          className='w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0 rounded-none object-cover border-2 border-border'
+          className='w-12 h-12 sm:w-16 sm:h-16 flex-shrink-0 rounded-sm object-cover border border-border/60'
         />
       )}
       <div className='min-w-0 flex-1'>

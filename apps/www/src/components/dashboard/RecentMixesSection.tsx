@@ -30,7 +30,7 @@ export function RecentMixesSection() {
         </h3>
         <Link
           to='/mixes'
-          className='text-xs text-muted-foreground hover:text-foreground'>
+          className='text-xs text-muted-foreground no-underline hover:text-foreground'>
           View all
         </Link>
       </div>
@@ -38,8 +38,8 @@ export function RecentMixesSection() {
         {recentMixes.map((mix) => (
           <div
             key={mix.id}
-            className='flex flex-col gap-4 p-4 rounded-none border border-border bg-card/30 hover:bg-accent transition-all duration-300 group'>
-            <div className='relative aspect-square w-full overflow-hidden rounded-none border border-border'>
+            className='flex flex-col gap-4 p-4 rounded-sm bg-card/20 hover:bg-accent/50 transition-all duration-300 group'>
+            <div className='relative aspect-square w-full overflow-hidden rounded-sm border border-border/50'>
               <img
                 src={mix.thumbnailUrl || DEFAULT_IMAGE_URL}
                 alt={mix.title}
@@ -58,7 +58,7 @@ export function RecentMixesSection() {
               <Link
                 to='/mixes/$mixId'
                 params={{ mixId: mix.slug }}
-                className='text-sm font-bold uppercase tracking-widest truncate block hover:text-primary transition-colors'>
+                className='text-sm font-bold uppercase tracking-widest truncate block no-underline hover:text-primary transition-colors'>
                 {mix.title}
               </Link>
               {mix.description && (

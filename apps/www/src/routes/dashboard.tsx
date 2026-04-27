@@ -82,7 +82,7 @@ function Dashboard() {
         </div>
         <Link
           to='/settings'
-          className='flex items-center gap-2 px-6 py-3 text-xs font-bold tracking-widest uppercase transition-all border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground'>
+          className='flex items-center gap-2 px-6 py-3 text-xs font-bold tracking-widest uppercase no-underline transition-all border border-primary/60 rounded-sm text-primary hover:bg-primary hover:text-primary-foreground'>
           Manage Settings
           <ChevronRight className='w-4 h-4' />
         </Link>
