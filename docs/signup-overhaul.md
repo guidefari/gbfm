@@ -77,12 +77,12 @@ Current `/auth/sign-up` works but misses several industry standards: no password
 4. ✅ Extend GenericForm with `belowField`, `rightSlot`, `onChange`. Add password show/hide. _Show/hide auto-applied to `type='password'` fields (no separate `PasswordInput` wrapper needed). Also added `submitDisabled` and `beforeSubmit` props._
 5. ✅ Build `UsernameAvailability` component, wire into sign-up. _No backend work needed: better-auth's `username` plugin already exposes `authClient.isUsernameAvailable`. Skipped custom `checkUsername` endpoint and rate-limit plan._
 6. ✅ Combined welcome+verify email template, swap send path, flip backend flags. _`welcome.tsx` now requires `verificationUrl` (no opt-in / no fallback shape). `sendOnSignUp: true`, `autoSignInAfterVerification: true`, `requireEmailVerification` kept `false` (auto-signin + nag-banner pattern, not block-until-verified). Standalone welcome email removed from `databaseHooks.user.create.after`. `sendVerificationEmail` appends `callbackURL=<frontend>/auth/verify-email` to the better-auth url so the redirect lands on the frontend, not the VPS root._
-7. Frontend: signup success state ("check your inbox"), `useCooldown`-backed resend.
-8. ⚠️ Partial: `/auth/verify-email` route landed early (needed for step 6 callback to work). `VerifyEmailBanner` still TODO.
-9. Inline "Sign in instead" on existing-email error.
-10. Terms/privacy stub routes + consent line on signup.
+7. ✅ Frontend: signup success state ("check your inbox"), `useCooldown`-backed resend via `authClient.sendVerificationEmail`.
+8. ✅ `/auth/verify-email` route now token-aware (calls `authClient.verifyEmail` on mount, redirects to `callbackURL` after success). `VerifyEmailBanner` mounted in `__root.tsx` — sticky bar, dismiss-for-session via `sessionStorage`, resend button on shared 30s cooldown.
+9. ✅ Inline "Sign in instead" link rendered inside `AuthStatusNotice` when error message looks like an existing-email collision (heuristic on common substrings).
+10. ✅ `/terms` and `/privacy` stub routes (single placeholder paragraph each). New `TermsConsent` component rendered above the signup submit via `GenericAuthForm.beforeSubmit`.
 
-- ALSO NEED TO LOOK INTO Verification. that's not working at the moment, redirect takes us to the backend file.
+- ✅ Verification redirect fixed: backend now builds the email link as `${frontend}/auth/verify-email?token=...&callbackURL=...` directly (was using better-auth's API-rooted url). Frontend route extracts the token, calls `authClient.verifyEmail`, and the existing `autoSignInAfterVerification: true` setting signs the user in.
 
 ## Profile preview card (added during step 4)
 
