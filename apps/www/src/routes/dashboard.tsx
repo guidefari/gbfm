@@ -46,34 +46,31 @@ function Dashboard() {
   }
 
   return (
-    <div className='px-6 py-12 mx-auto space-y-20 max-w-7xl font-jetbrains'>
-      <div className='space-y-12'>
+    <div className='px-4 py-6 sm:px-6 sm:py-12 mx-auto space-y-10 sm:space-y-16 max-w-7xl font-jetbrains'>
+      <div className='space-y-6 sm:space-y-12'>
         <WelcomeHeader user={session.user} />
-        <div className='pt-8 border-t border-border'>
+        <div>
           <QuickActions />
         </div>
       </div>
 
-      <div className='grid grid-cols-1 gap-16 pt-16 border-t lg:grid-cols-12 border-border'>
-        {/* Main Column */}
-        <div className='space-y-16 lg:col-span-8'>
-          <div className='pt-16 border-t border-border'>
+      <div className='grid grid-cols-1 gap-8 sm:gap-12 lg:grid-cols-12'>
+        <div className='space-y-8 sm:space-y-16 lg:col-span-8'>
+          <div>
             <FavoritesSection />
           </div>
           <RecentMixesSection />
         </div>
 
-        {/* Sidebar */}
-        <div className='hidden pl-12 space-y-12 border-l lg:col-span-4 border-border lg:block'>
+        <div className='hidden space-y-12 lg:col-span-4 lg:block'>
           <RemindersCard />
         </div>
-        {/* Mobile Sidebar */}
-        <div className='block pt-12 space-y-12 border-t lg:hidden border-border'>
+        <div className='block space-y-12 lg:hidden'>
           <RemindersCard />
         </div>
       </div>
 
-      <div className='flex items-center justify-between pt-16 border-t border-border'>
+      <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pt-8 sm:pt-12 border-t border-border/30'>
         <div className='space-y-1'>
           <h3 className='flex items-center gap-2 text-sm font-bold tracking-widest uppercase text-muted-foreground'>
             <Settings className='w-4 h-4' />
