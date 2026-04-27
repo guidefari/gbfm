@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "skills": {
+    "agent-device": {
+      "source": "callstackincubator/agent-device",
+      "sourceType": "github",
+      "computedHash": "ecf834a2074c1f48e3d26a150338c46e5cb3cc5502b1b9c89a85131336efc0eb"
+    },
+    "dogfood": {
+      "source": "callstackincubator/agent-device",
+      "sourceType": "github",
+      "computedHash": "38114e3270f12c0fcc2334cc54155f0b3717904928d32a8005ec4ff095b99e20"
+    }
+  }
+}
