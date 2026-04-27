@@ -133,7 +133,7 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 30 }}
               transition={{ duration: 0.2 }}
-              className='relative grid grid-cols-4 gap-3 px-4 mb-4'>
+              className='relative grid grid-cols-4 gap-3 px-4 mb-24'>
               {navItems.map((item) => {
                 const route = getItemRoute(item.id)
                 const content = (
@@ -171,7 +171,6 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
                 )
               })}
             </motion.nav>
-            <div className='relative h-4' />
           </motion.div>
         )}
       </AnimatePresence>
