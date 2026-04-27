@@ -71,16 +71,30 @@ Current `/auth/sign-up` works but misses several industry standards: no password
 
 ## Build order (small, verifiable steps)
 
-1. Extract `useCooldown` hook from forgot-password, refactor that file to use it.
-2. Add `.no-scrollbar` utility + apply to AuthPageLayout card.
-3. Build `PasswordChecklist`. Wire into sign-up + reset-password.
-4. Extend GenericForm with `belowField`, `rightSlot`, `onChange`. Add `PasswordInput` w/ show/hide.
-5. Backend: add `checkUsername` endpoint via better-auth plugin. Build `UsernameAvailability` component, wire into sign-up.
-6. Backend: combined welcome+verify email template, swap send path, flip `requireEmailVerification` + `sendOnSignUp`.
+1. ✅ Extract `useCooldown` hook from forgot-password, refactor that file to use it. _Landed at `src/lib/useCooldown.ts` (flat, matching project convention)._
+2. ✅ Add `.no-scrollbar` utility + apply to AuthPageLayout card. _Utility added; card-internal scroll attempt reverted because it fought the AppShell chrome and made the whole page scrollable. Page scrolls naturally for now; utility kept for future use._
+3. ✅ Build `PasswordChecklist`. Wire into sign-up + reset-password. _Exports `isPasswordValid` for submit-gate reuse._
+4. ✅ Extend GenericForm with `belowField`, `rightSlot`, `onChange`. Add password show/hide. _Show/hide auto-applied to `type='password'` fields (no separate `PasswordInput` wrapper needed). Also added `submitDisabled` and `beforeSubmit` props._
+5. ✅ Build `UsernameAvailability` component, wire into sign-up. _No backend work needed: better-auth's `username` plugin already exposes `authClient.isUsernameAvailable`. Skipped custom `checkUsername` endpoint and rate-limit plan._
+6. ✅ Combined welcome+verify email template, swap send path, flip backend flags. _`welcome.tsx` now requires `verificationUrl` (no opt-in / no fallback shape). `sendOnSignUp: true`, `autoSignInAfterVerification: true`, `requireEmailVerification` kept `false` (auto-signin + nag-banner pattern, not block-until-verified). Standalone welcome email removed from `databaseHooks.user.create.after`. `sendVerificationEmail` appends `callbackURL=<frontend>/auth/verify-email` to the better-auth url so the redirect lands on the frontend, not the VPS root._
 7. Frontend: signup success state ("check your inbox"), `useCooldown`-backed resend.
-8. `verify-email.tsx` route + `VerifyEmailBanner` mounted in root.
+8. ⚠️ Partial: `/auth/verify-email` route landed early (needed for step 6 callback to work). `VerifyEmailBanner` still TODO.
 9. Inline "Sign in instead" on existing-email error.
 10. Terms/privacy stub routes + consent line on signup.
+
+- ALSO NEED TO LOOK INTO Verification. that's not working at the moment, redirect takes us to the backend file.
+
+## Profile preview card (added during step 4)
+
+`ProfilePreviewCard` shown on sign-up desktop aside (`AuthPageLayout` got an `aside?: ReactNode` prop). Avatar from initials, live-updates display name + `@username` as user types. Replaced inline helper text on Display Name / Username fields per user feedback (card explains the concepts, inline hints were redundant).
+
+## Profile field rename (added during step 4)
+
+`name` field relabelled to "Display Name" in sign-up. Username field placeholder simplified.
+
+## Style notes
+
+- No em dashes in user-facing copy (saved as memory feedback).
 
 ## Verification
 

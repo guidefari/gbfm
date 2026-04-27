@@ -8,10 +8,29 @@ import {
 import type { Layer } from 'effect'
 import { config } from '@/services/config.service'
 
-// OTLP HTTP endpoint (otel-lgtm container)
-const OTLP_ENDPOINT = 'http://localhost:4318/v1/traces'
+const DEFAULT_OTLP_ENDPOINT = 'http://localhost:4318'
 
-console.log('[OTEL] Exporting traces to:', OTLP_ENDPOINT)
+const otlpEndpoint = (config.otel.endpoint || DEFAULT_OTLP_ENDPOINT).replace(
+  /\/$/,
+  ''
+)
+
+const traceExporterUrl = otlpEndpoint.endsWith('/v1/traces')
+  ? otlpEndpoint
+  : `${otlpEndpoint}/v1/traces`
+
+console.log('[OTEL] Exporting traces to:', traceExporterUrl)
+
+const spanProcessor = [
+  ...(config.app.nodeEnv === 'production'
+    ? []
+    : [new SimpleSpanProcessor(new ConsoleSpanExporter())]),
+  new BatchSpanProcessor(
+    new OTLPTraceExporter({
+      url: traceExporterUrl
+    })
+  )
+]
 
 export const OtlpLive: Layer.Layer<never> = NodeSdk.layer(() => ({
   resource: {
@@ -22,12 +41,5 @@ export const OtlpLive: Layer.Layer<never> = NodeSdk.layer(() => ({
       'deployment.environment': config.app.nodeEnv
     }
   },
-  spanProcessor: [
-    new SimpleSpanProcessor(new ConsoleSpanExporter()),
-    new BatchSpanProcessor(
-      new OTLPTraceExporter({
-        url: OTLP_ENDPOINT
-      })
-    )
-  ]
+  spanProcessor
 }))

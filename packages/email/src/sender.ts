@@ -96,21 +96,21 @@ export async function sendTestEmail({
 export async function sendWelcomeEmail({
   to,
   username,
-  loginUrl
+  verificationUrl
 }: {
   to: string
   username: string
-  loginUrl?: string
+  verificationUrl: string
 }): Promise<void> {
   const { WelcomeEmail } = await import('../emails/welcome')
 
   await sendEmail({
     to,
     template: {
-      subject: `Welcome to goosebumps.fm, ${username}!`,
+      subject: `Welcome to goosebumps.fm, ${username}, verify your email`,
       component: React.createElement(WelcomeEmail, {
         username,
-        ...(loginUrl && { loginUrl })
+        verificationUrl
       })
     }
   })

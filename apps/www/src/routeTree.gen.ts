@@ -41,6 +41,7 @@ import { Route as MixesMixIdRouteImport } from './routes/mixes/$mixId'
 import { Route as LabelsLabelSlugRouteImport } from './routes/labels/$labelSlug'
 import { Route as InviteCharlie3000RouteImport } from './routes/invite/charlie3000'
 import { Route as EditorialSlugRouteImport } from './routes/editorial/$slug'
+import { Route as AuthVerifyEmailRouteImport } from './routes/auth/verify-email'
 import { Route as AuthSignUpRouteImport } from './routes/auth/sign-up'
 import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
 import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
@@ -222,6 +223,11 @@ const EditorialSlugRoute = EditorialSlugRouteImport.update({
   path: '/$slug',
   getParentRoute: () => EditorialRouteRoute,
 } as any)
+const AuthVerifyEmailRoute = AuthVerifyEmailRouteImport.update({
+  id: '/auth/verify-email',
+  path: '/auth/verify-email',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthSignUpRoute = AuthSignUpRouteImport.update({
   id: '/auth/sign-up',
   path: '/auth/sign-up',
@@ -271,6 +277,7 @@ export interface FileRoutesByFullPath {
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
+  '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/editorial/$slug': typeof EditorialSlugRoute
   '/invite/charlie3000': typeof InviteCharlie3000Route
   '/labels/$labelSlug': typeof LabelsLabelSlugRoute
@@ -307,6 +314,7 @@ export interface FileRoutesByTo {
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
+  '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/editorial/$slug': typeof EditorialSlugRoute
   '/invite/charlie3000': typeof InviteCharlie3000Route
   '/labels/$labelSlug': typeof LabelsLabelSlugRoute
@@ -349,6 +357,7 @@ export interface FileRoutesById {
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
+  '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/editorial/$slug': typeof EditorialSlugRoute
   '/invite/charlie3000': typeof InviteCharlie3000Route
   '/labels/$labelSlug': typeof LabelsLabelSlugRoute
@@ -392,6 +401,7 @@ export interface FileRouteTypes {
     | '/auth/reset-password'
     | '/auth/sign-in'
     | '/auth/sign-up'
+    | '/auth/verify-email'
     | '/editorial/$slug'
     | '/invite/charlie3000'
     | '/labels/$labelSlug'
@@ -428,6 +438,7 @@ export interface FileRouteTypes {
     | '/auth/reset-password'
     | '/auth/sign-in'
     | '/auth/sign-up'
+    | '/auth/verify-email'
     | '/editorial/$slug'
     | '/invite/charlie3000'
     | '/labels/$labelSlug'
@@ -469,6 +480,7 @@ export interface FileRouteTypes {
     | '/auth/reset-password'
     | '/auth/sign-in'
     | '/auth/sign-up'
+    | '/auth/verify-email'
     | '/editorial/$slug'
     | '/invite/charlie3000'
     | '/labels/$labelSlug'
@@ -511,6 +523,7 @@ export interface RootRouteChildren {
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute
   AuthSignInRoute: typeof AuthSignInRoute
   AuthSignUpRoute: typeof AuthSignUpRoute
+  AuthVerifyEmailRoute: typeof AuthVerifyEmailRoute
   InviteCharlie3000Route: typeof InviteCharlie3000Route
   ProfileUsernameRoute: typeof ProfileUsernameRoute
   ReleasesSlugRoute: typeof ReleasesSlugRoute
@@ -760,6 +773,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EditorialSlugRouteImport
       parentRoute: typeof EditorialRouteRoute
     }
+    '/auth/verify-email': {
+      id: '/auth/verify-email'
+      path: '/auth/verify-email'
+      fullPath: '/auth/verify-email'
+      preLoaderRoute: typeof AuthVerifyEmailRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth/sign-up': {
       id: '/auth/sign-up'
       path: '/auth/sign-up'
@@ -891,6 +911,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthResetPasswordRoute: AuthResetPasswordRoute,
   AuthSignInRoute: AuthSignInRoute,
   AuthSignUpRoute: AuthSignUpRoute,
+  AuthVerifyEmailRoute: AuthVerifyEmailRoute,
   InviteCharlie3000Route: InviteCharlie3000Route,
   ProfileUsernameRoute: ProfileUsernameRoute,
   ReleasesSlugRoute: ReleasesSlugRoute,

@@ -75,6 +75,16 @@ new sst.x.DevCommand('db_pushProd', {
   }
 })
 
+new sst.x.DevCommand('Explain_Auth_User_Query', {
+  link: [...allSecrets, email],
+  dev: {
+    command:
+      'bun scripts/explain-auth-user-query.ts --field=username --value=guidefari',
+    directory: './apps/vps',
+    autostart: false
+  }
+})
+
 // new sst.x.DevCommand('Drizzle_Check_Prod', {
 //   link: [...allSecrets, email],
 //   dev: {

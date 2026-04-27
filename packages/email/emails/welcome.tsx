@@ -14,17 +14,19 @@ import { emailTheme } from './theme'
 
 interface WelcomeEmailProps {
   username: string
-  loginUrl?: string
+  verificationUrl: string
 }
 
 export function WelcomeEmail({
   username = 'John Doe',
-  loginUrl = 'https://goosebumps.fm/auth/signin'
+  verificationUrl = 'https://goosebumps.fm/auth/verify-email'
 }: WelcomeEmailProps) {
   return (
     <Html>
       <EmailHead />
-      <Preview>Welcome to goosebumps.fm, {username}!</Preview>
+      <Preview>
+        Welcome to goosebumps.fm, {username}. Verify your email to get started.
+      </Preview>
       <Body style={main}>
         <Container style={container}>
           <Section style={header}>
@@ -35,35 +37,34 @@ export function WelcomeEmail({
           <Section style={content}>
             <Heading style={h2}>Welcome, {username}!</Heading>
             <Text style={text}>
-              Thank you for joining the goosebumps.fm community! We're excited
-              to have you on board and can't wait to see what you'll create.
+              Thanks for joining the goosebumps.fm community. We're glad you're
+              here.
+            </Text>
+            <Text style={text}>
+              One quick step: confirm your email address so you can save
+              favorites, follow people, and pick up where you left off.
             </Text>
 
-            <Text style={text}>With your new account, you can:</Text>
-
-            {/* <ul style={featureList}>
-							<li style={featureItem}>Share your music and mixes</li>
-							<li style={featureItem}>Connect with other artists</li>
-							<li style={featureItem}>Discover new sounds</li>
-							<li style={featureItem}>Build your music profile</li>
-						</ul> */}
-
-            <Button style={button} href={loginUrl}>
-              Get Started
+            <Button style={button} href={verificationUrl}>
+              Verify your email
             </Button>
 
+            <Text style={mutedText}>
+              If the button doesn't work, copy this link into your browser:
+              <br />
+              <Link href={verificationUrl} style={link}>
+                {verificationUrl}
+              </Link>
+            </Text>
+
             <Text style={text}>
-              If you have any questions or need help getting started, feel free
-              to reach out to our support team.
+              If you have any questions or need help getting started, reach out
+              to our support team.
             </Text>
           </Section>
 
           <Section style={footer}>
-            <Text style={footerText}>
-              Best regards,
-              {/* <br /> */}
-              The goosebumps.fm Team
-            </Text>
+            <Text style={footerText}>Best regards, The goosebumps.fm Team</Text>
             <Text style={footerText}>
               <Link href='https://goosebumps.fm' style={link}>
                 goosebumps.fm
@@ -126,6 +127,14 @@ const text = {
   fontSize: '16px',
   lineHeight: '24px',
   margin: '0 0 16px'
+}
+
+const mutedText = {
+  color: emailTheme.colors.brand.textSecondary,
+  fontSize: '13px',
+  lineHeight: '20px',
+  margin: '0 0 16px',
+  wordBreak: 'break-all' as const
 }
 
 const button = {
