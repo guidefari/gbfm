@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { CalendarClock } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { useToast } from '@/components/ui/use-toast'
 import { fetcher, useEnrichTrackFromUrl, VPS_BASE_URL } from '@/lib/http'
 import { useAuthStore } from '@/store'
@@ -29,6 +30,19 @@ export const Route = createFileRoute('/reminders')({
   component: MusicReminders
 })
 
+const formatReminderDateValue = (value: string) => {
+  if (!value) return ''
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  })
+}
+
 function MusicReminders() {
   const { isAuthenticated } = useAuthStore()
   console.log('isAuthenticated:', isAuthenticated)
@@ -40,6 +54,17 @@ function MusicReminders() {
   const [notes, setNotes] = useState('')
   const [reminderDate, setReminderDate] = useState('')
   const { toast } = useToast()
+  const dateInputRef = useRef<HTMLInputElement>(null)
+
+  const handleDateContainerClick = () => {
+    if (dateInputRef.current) {
+      if (dateInputRef.current.showPicker) {
+        dateInputRef.current.showPicker()
+      } else {
+        dateInputRef.current.focus()
+      }
+    }
+  }
 
   // Enrich track details when URL changes
   const { data: enrichedTrack, isLoading: isEnriching } =
@@ -135,12 +160,12 @@ function MusicReminders() {
     return (
       <div className='flex items-center justify-center min-h-screen p-4'>
         <div className='text-center'>
-          <p className='text-lg text-muted-foreground mb-4'>
+          <p className='mb-4 text-lg text-muted-foreground'>
             Please sign in to access music reminders
           </p>
           <a
             href='/auth/sign-in'
-            className='inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90'>
+            className='inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90'>
             Sign In
           </a>
         </div>
@@ -149,7 +174,7 @@ function MusicReminders() {
   }
 
   return (
-    <div className='p-4 mx-auto max-w-4xl'>
+    <div className='max-w-4xl p-4 mx-auto'>
       <h1 className='mb-6 text-3xl font-bold'>Music Reminders</h1>
       <p className='mb-8 text-muted-foreground'>
         Add links to music you want to be reminded to listen to later. We'll
@@ -158,13 +183,13 @@ function MusicReminders() {
 
       <div className='space-y-6'>
         {/* Add Reminder Form */}
-        <div className='rounded-lg border bg-card p-6'>
+        <div className='p-6 border rounded-lg bg-card'>
           <h2 className='mb-4 text-xl font-semibold'>Add New Reminder</h2>
           <form className='space-y-4' onSubmit={handleSubmit}>
             <div>
               <label
                 htmlFor='musicUrl'
-                className='block text-sm font-medium mb-1'>
+                className='block mb-1 text-sm font-medium'>
                 Music URL (Spotify, YouTube, etc.)
               </label>
               <input
@@ -174,23 +199,23 @@ function MusicReminders() {
                 required
                 value={musicUrl}
                 onChange={(e) => setMusicUrl(e.target.value)}
-                className='w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
+                className='w-full px-3 py-2 text-sm border rounded-md border-input bg-background'
                 placeholder='https://...'
               />
               <input type='hidden' name='albumCoverUrl' value={albumCoverUrl} />
               {isEnriching && (
-                <p className='text-sm text-muted-foreground mt-1'>
+                <p className='mt-1 text-sm text-muted-foreground'>
                   Loading track details...
                 </p>
               )}
               {enrichedTrack && (
-                <div className='mt-2 p-3 bg-muted rounded-md'>
+                <div className='p-3 mt-2 rounded-md bg-muted'>
                   <div className='flex items-start gap-3'>
                     {enrichedTrack.thumbnailUrl && (
                       <img
                         src={enrichedTrack.thumbnailUrl}
                         alt={`${enrichedTrack.title} cover`}
-                        className='w-12 h-12 rounded-md object-cover flex-shrink-0'
+                        className='flex-shrink-0 object-cover w-12 h-12 rounded-md'
                       />
                     )}
                     <div className='flex-1 min-w-0'>
@@ -198,7 +223,7 @@ function MusicReminders() {
                         Found: {enrichedTrack.title} by {enrichedTrack.artist}
                       </p>
                       {enrichedTrack.album && (
-                        <p className='text-xs text-muted-foreground truncate'>
+                        <p className='text-xs truncate text-muted-foreground'>
                           Album: {enrichedTrack.album}
                         </p>
                       )}
@@ -214,7 +239,7 @@ function MusicReminders() {
               <div>
                 <label
                   htmlFor='musicTitle'
-                  className='block text-sm font-medium mb-1'>
+                  className='block mb-1 text-sm font-medium'>
                   Music Title
                 </label>
                 <input
@@ -224,14 +249,14 @@ function MusicReminders() {
                   required
                   value={musicTitle}
                   onChange={(e) => setMusicTitle(e.target.value)}
-                  className='w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
+                  className='w-full px-3 py-2 text-sm border rounded-md border-input bg-background'
                   placeholder='Enter song or album title'
                 />
               </div>
               <div>
                 <label
                   htmlFor='artistName'
-                  className='block text-sm font-medium mb-1'>
+                  className='block mb-1 text-sm font-medium'>
                   Artist Name
                 </label>
                 <input
@@ -241,7 +266,7 @@ function MusicReminders() {
                   required
                   value={artistName}
                   onChange={(e) => setArtistName(e.target.value)}
-                  className='w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
+                  className='w-full px-3 py-2 text-sm border rounded-md border-input bg-background'
                   placeholder='Enter artist name'
                 />
               </div>
@@ -250,23 +275,41 @@ function MusicReminders() {
               <div>
                 <label
                   htmlFor='reminderDate'
-                  className='block text-sm font-medium mb-1'>
+                  className='block mb-1 text-sm font-medium'>
                   Reminder Date
                 </label>
-                <input
-                  type='datetime-local'
-                  id='reminderDate'
-                  name='reminderDate'
-                  required
-                  value={reminderDate}
-                  onChange={(e) => setReminderDate(e.target.value)}
-                  className='w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
-                />
+                <div
+                  className='relative w-full h-10 overflow-hidden border rounded-md cursor-pointer border-input bg-background'
+                  onClick={handleDateContainerClick}>
+                  <div className='flex items-center h-full min-w-0 gap-2 px-3 text-sm pointer-events-none'>
+                    <CalendarClock className='flex-shrink-0 w-4 h-4 text-muted-foreground' />
+                    <span
+                      className={
+                        reminderDate
+                          ? 'truncate text-foreground'
+                          : 'truncate text-muted-foreground'
+                      }>
+                      {reminderDate
+                        ? formatReminderDateValue(reminderDate)
+                        : 'Pick date and time'}
+                    </span>
+                  </div>
+                  <input
+                    type='datetime-local'
+                    id='reminderDate'
+                    name='reminderDate'
+                    required
+                    ref={dateInputRef}
+                    value={reminderDate}
+                    onChange={(e) => setReminderDate(e.target.value)}
+                    className='absolute inset-0 w-full h-full opacity-0 cursor-pointer'
+                  />
+                </div>
               </div>
               <div>
                 <label
                   htmlFor='notes'
-                  className='block text-sm font-medium mb-1'>
+                  className='block mb-1 text-sm font-medium'>
                   Notes (Optional)
                 </label>
                 <input
@@ -275,7 +318,7 @@ function MusicReminders() {
                   name='notes'
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className='w-full rounded-md border border-input bg-background px-3 py-2 text-sm'
+                  className='w-full px-3 py-2 text-sm border rounded-md border-input bg-background'
                   placeholder='Why do you want to listen to this?'
                 />
               </div>
@@ -283,7 +326,7 @@ function MusicReminders() {
             <button
               type='submit'
               disabled={createReminderMutation.isPending}
-              className='inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50'>
+              className='inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50'>
               {createReminderMutation.isPending
                 ? 'Creating...'
                 : 'Add Reminder'}
@@ -292,10 +335,10 @@ function MusicReminders() {
         </div>
 
         {/* Existing Reminders */}
-        <div className='rounded-lg border bg-card p-6'>
+        <div className='p-6 border rounded-lg bg-card'>
           <h2 className='mb-4 text-xl font-semibold'>Your Reminders</h2>
           {isLoadingReminders ? (
-            <div className='text-center text-muted-foreground py-8'>
+            <div className='py-8 text-center text-muted-foreground'>
               <p>Loading your reminders...</p>
             </div>
           ) : reminders?.reminders && reminders?.reminders?.length > 0 ? (
@@ -315,7 +358,7 @@ function MusicReminders() {
                         <img
                           src={reminder.albumCoverUrl}
                           alt={`${reminder.musicTitle} cover`}
-                          className='w-10 h-10 rounded object-cover'
+                          className='object-cover w-10 h-10 rounded'
                         />
                       )}
                       <div>
@@ -342,9 +385,9 @@ function MusicReminders() {
                 ))}
             </div>
           ) : (
-            <div className='text-center text-muted-foreground py-8'>
+            <div className='py-8 text-center text-muted-foreground'>
               <p>No music reminders yet.</p>
-              <p className='text-sm mt-2'>Add your first reminder above!</p>
+              <p className='mt-2 text-sm'>Add your first reminder above!</p>
             </div>
           )}
         </div>
