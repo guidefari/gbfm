@@ -36,15 +36,15 @@ export default function AppShell({ children }: Props) {
     showCompactPlayer
 
   return (
-    <div className='grid sm:grid-cols-[auto_1fr] h-screen w-full bg-background'>
+    <div className='grid h-screen w-full bg-background sm:grid-cols-[auto_1fr]'>
       <div className='hidden sm:block'>
         <DesktopSideNav />
       </div>
-      <div className='relative flex flex-col h-screen overflow-hidden'>
+      <div className='relative flex h-screen min-w-0 flex-col overflow-hidden'>
         <main
           id={MAIN_SCROLL_CONTAINER_ID}
           tabIndex={-1}
-          className='flex-1 overflow-y-auto bg-background pb-28 sm:pb-32 focus:outline-none'>
+          className='min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-background pb-28 focus:outline-none sm:pb-32'>
           {children}
         </main>
 

@@ -54,7 +54,10 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
           <QueryClientProvider client={queryClient}>
             <AppShell showFooter={location.pathname !== '/'}>
               {env.isDev && (
-                <FPSMeter className='fixed top-0 right-0 z-50' height={40} />
+                <FPSMeter
+                  className='fixed top-0 right-0 z-50 hidden sm:block'
+                  height={40}
+                />
               )}
               <VerifyEmailBanner />
               <CommandDialogDemo />
