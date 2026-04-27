@@ -1,3 +1,21 @@
+# [2.31.0](https://github.com/guidefari/gbfm/compare/v2.30.0...v2.31.0) (2026-04-27)
+
+
+### Bug Fixes
+
+* **cmd:** keep keyboard-selected items in view ([d12293a](https://github.com/guidefari/gbfm/commit/d12293ab6282682a7196824081f66221046ee35a))
+* **cmd:** polish keyboard handling and footer ([421b54b](https://github.com/guidefari/gbfm/commit/421b54b1654dbecfb74c9073bd73845666232e11))
+* tsconfig ([a4c83d3](https://github.com/guidefari/gbfm/commit/a4c83d39ea4a8b52275e41b2eb584cbe0eadaf69))
+* verification email ([aea5dd0](https://github.com/guidefari/gbfm/commit/aea5dd032a2f0cb4aa06f9c55a99facc57d2d4de))
+
+
+### Features
+
+* **auth:** live username availability check on sign-up ([9ade9d2](https://github.com/guidefari/gbfm/commit/9ade9d2fea2007f51ec720a233f8043da956aa2e))
+* **auth:** signup ux groundwork ([fec619f](https://github.com/guidefari/gbfm/commit/fec619f1bdd096abb55c2272ef70764f0d2d5e0d))
+* **auth:** verify-email banner, signup success state, terms/privacy ([957910e](https://github.com/guidefari/gbfm/commit/957910ea00129a1faf65454364afbbd1757abfb9))
+* forgot password ux ([446fc59](https://github.com/guidefari/gbfm/commit/446fc59f70552238ec8c5589b4d668545eff5709))
+
 # [2.30.0](https://github.com/guidefari/gbfm/compare/v2.29.0...v2.30.0) (2026-04-17)
 
 
