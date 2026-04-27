@@ -4,6 +4,7 @@ import {
   type LucideIcon,
   Mail,
   Music,
+  Palette,
   Settings,
   User as UserIcon
 } from 'lucide-react'
@@ -11,7 +12,8 @@ import { useState } from 'react'
 import {
   EmailPreferencesCard,
   PlayerPreferencesCard,
-  ProfileCard
+  ProfileCard,
+  ThemePreferencesCard
 } from '@/components/dashboard'
 import { useSession } from '@/lib/auth-client'
 
@@ -22,7 +24,7 @@ export const Route = createFileRoute('/settings')({
 function SettingsPage() {
   const { data: session, isPending } = useSession()
   const [activeSettingTab, setActiveSettingTab] = useState<
-    'profile' | 'player' | 'email'
+    'profile' | 'appearance' | 'player' | 'email'
   >('profile')
 
   if (isPending) {
@@ -82,6 +84,12 @@ function SettingsPage() {
                 label='Account Profile'
               />
               <SettingNavButton
+                active={activeSettingTab === 'appearance'}
+                onClick={() => setActiveSettingTab('appearance')}
+                icon={Palette}
+                label='Appearance'
+              />
+              <SettingNavButton
                 active={activeSettingTab === 'player'}
                 onClick={() => setActiveSettingTab('player')}
                 icon={Music}
@@ -101,6 +109,11 @@ function SettingsPage() {
             {activeSettingTab === 'profile' && (
               <div className='animate-in fade-in slide-in-from-left-2 duration-300'>
                 <ProfileCard user={session.user} />
+              </div>
+            )}
+            {activeSettingTab === 'appearance' && (
+              <div className='animate-in fade-in slide-in-from-left-2 duration-300'>
+                <ThemePreferencesCard />
               </div>
             )}
             {activeSettingTab === 'player' && (
