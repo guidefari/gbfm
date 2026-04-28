@@ -1,10 +1,98 @@
 @import url(fonts.css);
 @import url(scrollbar.css);
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@plugin "@tailwindcss/typography";
+@plugin "tailwindcss-animate";
+
+@theme {
+  --breakpoint-2xl: 1400px;
+  --color-highlight: var(--highlight);
+  --color-gb-highlight: var(--highlight);
+  --color-gb-bg: var(--bg);
+  --color-gb-darker-bg: var(--darker-bg);
+  --color-gb-pastel-green-1: var(--pastel-green-1);
+  --color-gb-pastel-green-2: var(--pastel-green-2);
+  --color-gb-default-text: var(--default-text);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --font-jetbrains:
+    JetBrainsMono, ui-monospace, monospace, SFMono-Regular, Menlo, Monaco,
+    Consolas, Liberation Mono, Courier New;
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --scale-101: 1.01;
+  --scale-102: 1.02;
+  --scale-103: 1.03;
+  --scale-104: 1.04;
+  --default-ring-width: 3px;
+  --animate-spin-slow: spin 3s linear infinite;
+  --animate-accordion-down: accordion-down 0.2s ease-out;
+  --animate-accordion-up: accordion-up 0.2s ease-out;
+}
+
+@utility container {
+  margin-inline: auto;
+  padding-inline: 2rem;
+}
+
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+
+  to {
+    height: 0;
+  }
+}
 
 @layer base {
+  *,
+  ::before,
+  ::after,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-gray-400);
+  }
+
   :root {
     --scale-ratio: 1.333;
     --font-size-1: clamp(0.875rem, 1rem, 1rem);
@@ -194,7 +282,7 @@
   }
 
   blockquote code {
-    @apply text-background !important;
+    @apply !text-background;
   }
 
   blockquote:before {
@@ -354,34 +442,6 @@
     );
   }
 
-  .ring-gb-highlight {
-    --tw-ring-color: var(--highlight);
-  }
-
-  .ring-offset-gb-bg {
-    --tw-ring-offset-color: var(--bg);
-  }
-
-  .bg-gb-highlight {
-    background-color: var(--highlight);
-  }
-
-  .bg-gb-bg {
-    background-color: var(--bg);
-  }
-
-  .bg-gb-darker-bg {
-    background-color: var(--darker-bg);
-  }
-
-  .bg-gb-pastel-green-1 {
-    background-color: var(--pastel-green-1);
-  }
-
-  .bg-gb-pastel-green-2 {
-    background-color: var(--pastel-green-2);
-  }
-
   .overflow-title-marquee {
     animation: overflow-title-marquee var(--overflow-duration, 12s) linear
       infinite;
@@ -404,33 +464,5 @@
     .overflow-title-marquee {
       animation: none;
     }
-  }
-
-  .text-gb-highlight {
-    color: var(--highlight);
-  }
-
-  .text-gb-default-text {
-    color: var(--default-text);
-  }
-
-  .text-gb-pastel-green-1 {
-    color: var(--pastel-green-1);
-  }
-
-  .text-gb-pastel-green-2 {
-    color: var(--pastel-green-2);
-  }
-
-  .text-gb-darker-bg {
-    color: var(--darker-bg);
-  }
-
-  .border-gb-highlight {
-    border-color: var(--highlight);
-  }
-
-  .border-gb-pastel-green-2 {
-    border-color: var(--pastel-green-2);
   }
 }

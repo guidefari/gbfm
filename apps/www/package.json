@@ -66,16 +66,15 @@
     "@overengineering/fps-meter": "0.2.3",
     "@playwright/test": "1.57.0",
     "@tailwindcss/typography": "0.5.19",
+    "@tailwindcss/vite": "4.2.4",
     "@tanstack/router-devtools": "1.133.28",
     "@tanstack/router-plugin": "1.133.28",
     "@types/node": "22.18.8",
     "@types/react": "19.1.8",
     "@types/react-dom": "19.1.6",
     "@vitejs/plugin-react": "4.3.1",
-    "autoprefixer": "10.4.20",
     "globals": "15.9.0",
-    "postcss": "8.4.41",
-    "tailwindcss": "3.4.18",
+    "tailwindcss": "4.2.4",
     "vite": "5.4.10"
   }
 }

@@ -64,7 +64,7 @@ export const pagesAndPages: lol[] = [
               href='https://youtube.com/@goosebumpsfm'
               target='_blank'
               rel='noreferrer'
-              className='flex items-center justify-center transition-colors rounded-sm h-9 w-9 text-gb-bg hover:text-white md:h-8 md:w-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
+              className='flex items-center justify-center transition-colors rounded-sm h-9 w-9 text-foreground hover:text-highlight md:h-8 md:w-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
               <TfiYoutube className={iconSytles} />
               <span className='sr-only'>Mixes via Youtube</span>
             </a>

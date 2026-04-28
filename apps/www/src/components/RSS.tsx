@@ -37,7 +37,7 @@ export const RSS = () => {
           <button
             type='button'
             onClick={handleCopyToClipboard}
-            className='flex items-center justify-center transition-colors rounded-sm h-9 w-9 text-gb-bg hover:text-white md:h-8 md:w-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0'>
+            className='flex items-center justify-center transition-colors rounded-sm h-9 w-9 text-foreground hover:text-highlight md:h-8 md:w-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-0'>
             {isCopied ? (
               <CheckIcon className='w-5 h-5' />
             ) : (

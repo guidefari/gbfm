@@ -45,7 +45,7 @@ export const DesktopSideNav = () => {
                 <TooltipTrigger asChild>
                   <Link
                     to={page.slug}
-                    className='flex items-center justify-center transition-colors rounded-sm h-9 w-9 text-gb-bg hover:text-white md:h-8 md:w-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
+                    className='flex items-center justify-center transition-colors rounded-sm h-9 w-9 text-foreground hover:text-highlight md:h-8 md:w-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
                     {page.icon}
                     <span className='sr-only'>{page.name}</span>
                   </Link>
@@ -67,7 +67,7 @@ export const DesktopSideNav = () => {
                   className={`flex items-center justify-center transition-all rounded-sm h-9 w-9 md:h-8 md:w-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                     isPlayerVisible
                       ? 'bg-white text-gb-bg shadow-sm'
-                      : 'text-gb-bg hover:text-white hover:bg-muted'
+                      : 'text-foreground hover:text-highlight hover:bg-muted'
                   }`}
                   aria-label='Toggle player'>
                   <Music className='w-4 h-4' />
