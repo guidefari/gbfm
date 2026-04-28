@@ -1,3 +1,10 @@
+## [2.34.2](https://github.com/guidefari/gbfm/compare/v2.34.1...v2.34.2) (2026-04-28)
+
+
+### Bug Fixes
+
+* tracklist item highlight ([6c3900b](https://github.com/guidefari/gbfm/commit/6c3900b52bb5645a8e2fecfd65614a5b87caf83c))
+
 ## [2.34.1](https://github.com/guidefari/gbfm/compare/v2.34.0...v2.34.1) (2026-04-28)
 
 
