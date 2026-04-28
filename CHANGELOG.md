@@ -1,3 +1,10 @@
+## [2.34.1](https://github.com/guidefari/gbfm/compare/v2.34.0...v2.34.1) (2026-04-28)
+
+
+### Bug Fixes
+
+* **e2e:** theme-toggle session ([44415ff](https://github.com/guidefari/gbfm/commit/44415ff90fc05bc31c9a26be686a4d481a5cfc4a))
+
 # [2.34.0](https://github.com/guidefari/gbfm/compare/v2.33.0...v2.34.0) (2026-04-28)
 
 
