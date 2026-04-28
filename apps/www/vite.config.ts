@@ -1,6 +1,7 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import mdx from "@mdx-js/rollup";
 import tailwindcss from "@tailwindcss/vite";
@@ -20,7 +21,7 @@ export default defineConfig({
 	],
 	resolve: {
 		alias: {
-			"@": resolve(__dirname, "./src"),
+			"@": resolve(fileURLToPath(new URL(".", import.meta.url)), "src"),
 		},
 	},
 	server: {

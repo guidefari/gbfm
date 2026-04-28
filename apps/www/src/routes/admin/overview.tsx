@@ -13,7 +13,7 @@ import { AdminAccessGuard } from './_components/-AdminAccessGuard'
 import {
   type AdminOverviewContentBreakdown,
   useAdminOverview
-} from './overview.data'
+} from './-overview.data'
 
 export const Route = createFileRoute('/admin/overview')({
   component: AdminOverviewPage

@@ -227,7 +227,7 @@ const FullscreenAudioPlayer = () => {
                   {isPlaying ? (
                     <Pause className='w-8 h-8' />
                   ) : (
-                    <Play className='w-8 h-8 ml-1' />
+                    <Play className='w-8 h-8' />
                   )}
                 </Button>
                 <Button

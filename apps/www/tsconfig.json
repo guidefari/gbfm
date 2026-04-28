@@ -14,6 +14,7 @@
 		"isolatedModules": true,
 		"moduleDetection": "force",
 		"jsx": "react-jsx",
+		"incremental": true,
 
 		/* Linting */
 		"strict": true,

@@ -274,7 +274,7 @@ export function BaseAudioPlayer({
             {isPlaying ? (
               <Pause className='w-4 h-4' />
             ) : (
-              <Play className='ml-0.5 w-4 h-4' />
+              <Play className='w-4 h-4' />
             )}
           </Button>
           <Button
@@ -365,7 +365,7 @@ export function BaseAudioPlayer({
                 {isPlaying ? (
                   <Pause className='w-4 h-4' />
                 ) : (
-                  <Play className='ml-0.5 w-4 h-4' />
+                  <Play className='w-4 h-4' />
                 )}
               </Button>
               <Button
@@ -530,7 +530,7 @@ export function BaseAudioPlayer({
                 {isPlaying ? (
                   <Pause className='w-5 h-5' />
                 ) : (
-                  <Play className='w-5 h-5 ml-0.5' />
+                  <Play className='w-5 h-5' />
                 )}
               </Button>
               <Button
