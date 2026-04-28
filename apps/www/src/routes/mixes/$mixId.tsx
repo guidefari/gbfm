@@ -466,7 +466,7 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
       </div>
 
       <div className='pt-8 border-t border-border/50'>
-        <div className='prose prose-base dark:prose-invert max-w-none prose-headings:uppercase prose-headings:font-black prose-headings:tracking-tighter prose-p:leading-relaxed prose-a:text-foreground prose-a:no-underline hover:prose-a:underline'>
+        <div className='prose prose-base dark:prose-invert max-w-none prose-headings:uppercase prose-headings:font-black prose-headings:tracking-tighter prose-p:leading-relaxed prose-a:text-foreground prose-a:underline'>
           <MDXRendrr mdxString={mix.compiledContent ?? mix.content} />
         </div>
       </div>

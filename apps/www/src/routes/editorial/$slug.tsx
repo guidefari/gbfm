@@ -136,7 +136,7 @@ function PostDetails({
       )}
 
       <div className='pt-8 border-t border-border/50'>
-        <div className='prose prose-base dark:prose-invert max-w-none prose-headings:font-black prose-headings:tracking-tighter prose-p:leading-relaxed prose-a:text-foreground prose-a:no-underline hover:prose-a:underline'>
+        <div className='prose prose-base dark:prose-invert max-w-none prose-headings:font-black prose-headings:tracking-tighter prose-p:leading-relaxed prose-a:text-foreground prose-a:underline'>
           <MDXRendrr mdxString={post.compiledContent ?? post.content} />
         </div>
       </div>
