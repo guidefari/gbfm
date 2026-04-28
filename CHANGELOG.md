@@ -1,3 +1,11 @@
+# [2.34.0](https://github.com/guidefari/gbfm/compare/v2.33.0...v2.34.0) (2026-04-28)
+
+
+### Features
+
+* deps ([9d5ef4f](https://github.com/guidefari/gbfm/commit/9d5ef4fecbd13112d2e6472232512815e75652f6))
+* tsgo brrrr🚀 ([ada8353](https://github.com/guidefari/gbfm/commit/ada835339f6df3082b6638043439873976fd2e43))
+
 # [2.33.0](https://github.com/guidefari/gbfm/compare/v2.32.0...v2.33.0) (2026-04-28)
 
 
