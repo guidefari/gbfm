@@ -8,7 +8,7 @@
     "build": "vite build",
     "bio": "biome lint ./src --write && biome format --write ./src",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsgo --noEmit",
     "test": "playwright test",
     "test:ui": "playwright test --ui"
   },

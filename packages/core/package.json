@@ -9,7 +9,7 @@
     "./mix-processing": "./src/mix-processing/index.ts"
   },
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsgo --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },

@@ -41,6 +41,7 @@
     "lefthook": "2.1.6",
     "madge": "8.0.0",
     "semantic-release": "25.0.3",
+    "@typescript/native-preview": "7.0.0-dev.20260428.1",
     "typescript": "6.0.3"
   },
   "overrides": {

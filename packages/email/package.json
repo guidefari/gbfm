@@ -9,7 +9,7 @@
   "sideEffects": false,
   "scripts": {
     "dev": "npx react-email dev --dir emails",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsgo --noEmit",
     "test:send": "bun src/test-send.ts"
   },
   "devDependencies": {

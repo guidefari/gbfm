@@ -253,11 +253,6 @@ export class FirecrawlProvider implements MusicDataProvider {
     const apiKey = this.apiKey
 
     return Effect.gen(function* () {
-      const body =
-        '{"urls":["' +
-        pageUrl +
-        '"],"prompt":"Extract all music streaming and social media links from this page. Look for: Spotify, Apple Music, YouTube, Bandcamp, SoundCloud, Tidal, Deezer, Amazon Music, Discord server links, Instagram, Twitter/X.","schema":{"type":"object","properties":{"socialLinks":{"type":"object","description":"Streaming and social links keyed by platform name","additionalProperties":{"type":"string"}}}}}'
-
       const response = yield* Effect.tryPromise({
         try: () =>
           fetch('https://api.firecrawl.dev/v1/extract', {
@@ -266,7 +261,24 @@ export class FirecrawlProvider implements MusicDataProvider {
               Authorization: `Bearer ${apiKey}`,
               'Content-Type': 'application/json'
             },
-            body
+            body: JSON.stringify({
+              urls: [pageUrl],
+              prompt:
+                'Extract all music streaming and social media links from this page. ' +
+                'Look for: Spotify, Apple Music, YouTube, Bandcamp, SoundCloud, Tidal, ' +
+                'Deezer, Amazon Music, Discord server links, Instagram, Twitter/X.',
+              schema: {
+                type: 'object',
+                properties: {
+                  socialLinks: {
+                    type: 'object',
+                    description:
+                      'Streaming and social links keyed by platform name',
+                    additionalProperties: { type: 'string' }
+                  }
+                }
+              }
+            })
           }),
         catch: (err) =>
           new MusicScraperError({
