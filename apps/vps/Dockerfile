@@ -45,7 +45,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 CMD ["bun", "run", "src/index.ts"]
 
 # --- Database backup task ---
-FROM oven/bun:latest-alpine AS backup-task
+FROM oven/bun:alpine AS backup-task
 RUN apk add --no-cache postgresql17-client
 WORKDIR /usr/src/app
 
