@@ -141,8 +141,12 @@ export default function ProcessMix() {
       formData.append('description', values.description || '')
       formData.append('outputFormat', values.outputFormat || 'mp3')
 
-      const audioBlob = new Blob([audioBuffer], { type: 'audio/mpeg' })
-      const imageBlob = new Blob([imageBuffer], { type: 'image/jpeg' })
+      const audioBlob = new Blob([new Uint8Array(audioBuffer)], {
+        type: 'audio/mpeg'
+      })
+      const imageBlob = new Blob([new Uint8Array(imageBuffer)], {
+        type: 'image/jpeg'
+      })
       formData.append(
         'audioFile',
         audioBlob,

@@ -1,4 +1,4 @@
-import { Effect, Option } from 'effect'
+import { Effect } from 'effect'
 import { getErrorMessage, SpotifyError } from '@/errors'
 
 export interface BandcampAlbum {
@@ -24,6 +24,14 @@ const bandcampCache = new Map<
   { data: BandcampAlbum; timestamp: number }
 >()
 const CACHE_DURATION = 24 * 60 * 60 * 1000 // 24 hours
+
+const parseBandcampJsonLd = (json: string): BandcampAlbum | undefined => {
+  try {
+    return JSON.parse(json)
+  } catch {
+    return undefined
+  }
+}
 
 const parseBandcampHtml = (html: string) =>
   Effect.gen(function* () {
@@ -130,13 +138,7 @@ export const getBandcampMetadata = (url: string) =>
       /<script type="application\/ld\+json">([\s\S]*?)<\/script>/
     )
     if (jsonLdMatch?.[1]) {
-      const parseResult = Effect.sync(() => {
-        return JSON.parse(jsonLdMatch[1] || '')
-      }).pipe(Effect.option)
-      const parsed = yield* parseResult
-      if (Option.isSome(parsed)) {
-        metadata = parsed.value
-      }
+      metadata = parseBandcampJsonLd(jsonLdMatch[1] || '') || metadata
     }
 
     if (!metadata) {

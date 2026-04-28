@@ -22,8 +22,8 @@
     "noPropertyAccessFromIndexSignature": false,
     "plugins": [{ "name": "@effect/language-service" }],
     "types": ["@types/bun"],
-    "baseUrl": ".",
     "paths": {
+      "*": ["./*"],
       "@/*": ["./src/*"]
     }
   },

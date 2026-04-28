@@ -81,7 +81,7 @@
     "@types/react": "19.1.10",
     "eslint": "9.37.0",
     "prettier": "3.5.3",
-    "typescript": "5.9.3"
+    "typescript": "6.0.3"
   },
   "scripts": {
     "build": "ray build",

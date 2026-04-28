@@ -6,7 +6,9 @@
   ],
   "compilerOptions": {
     "lib": [
-      "ES2023"
+      "ES2023",
+      "DOM",
+      "DOM.Iterable"
     ],
     "module": "esnext",
     "target": "ES2023",
@@ -18,6 +20,6 @@
     "jsx": "react-jsx",
     "resolveJsonModule": true,
     "moduleResolution": "bundler",
-    // "types": ["@types/bun"]
+    "types": ["@types/bun"]
   }
 }
