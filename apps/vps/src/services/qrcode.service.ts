@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import fontkit from '@pdf-lib/fontkit'
 import { Context, Effect, Layer } from 'effect'
 import { PDFDocument, rgb } from 'pdf-lib'
@@ -8,11 +9,13 @@ import { DatabaseError, getErrorMessage } from '@/errors'
 import { config } from '@/services/config.service'
 import { S3Service } from '@/services/s3.service'
 
+const currentDir = dirname(fileURLToPath(import.meta.url))
+
 const jbMonoBold = readFileSync(
-  join(import.meta.dir, '../assets/fonts/JetBrainsMono-Bold.ttf')
+  join(currentDir, '../assets/fonts/JetBrainsMono-Bold.ttf')
 )
 const jbMonoExtraBold = readFileSync(
-  join(import.meta.dir, '../assets/fonts/JetBrainsMono-ExtraBold.ttf')
+  join(currentDir, '../assets/fonts/JetBrainsMono-ExtraBold.ttf')
 )
 
 interface MixData {
