@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Check, Loader2, Music, RefreshCw } from 'lucide-react'
+import { Check, ImageIcon, Loader2, Music, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
@@ -39,6 +39,10 @@ interface S3AudioFilePickerProps {
   onSelect: (url: string, filename: string) => void
 }
 
+interface S3MediaFilePickerProps extends S3AudioFilePickerProps {
+  mediaType: 'audio' | 'image'
+}
+
 const AUDIO_EXTENSIONS = new Set([
   'mp3',
   'wav',
@@ -51,9 +55,16 @@ const AUDIO_EXTENSIONS = new Set([
   'wma'
 ])
 
+const IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif'])
+
 function isAudioFile(key: string) {
   const ext = key.split('.').pop()?.toLowerCase()
   return ext ? AUDIO_EXTENSIONS.has(ext) : false
+}
+
+function isImageFile(key: string) {
+  const ext = key.split('.').pop()?.toLowerCase()
+  return ext ? IMAGE_EXTENSIONS.has(ext) : false
 }
 
 function formatBytes(bytes: number) {
@@ -78,11 +89,12 @@ function getPublicUrl(
   return null
 }
 
-export function S3AudioFilePicker({
+export function S3MediaFilePicker({
   open,
   onOpenChange,
-  onSelect
-}: S3AudioFilePickerProps) {
+  onSelect,
+  mediaType
+}: S3MediaFilePickerProps) {
   const [selectedBucket, setSelectedBucket] = useState<string>('')
   const [selectedKey, setSelectedKey] = useState<string | null>(null)
 
@@ -114,8 +126,16 @@ export function S3AudioFilePicker({
     staleTime: 30_000
   })
 
-  const audioFiles =
-    listData?.objects.filter((obj) => isAudioFile(obj.key)) ?? []
+  const mediaFiles =
+    listData?.objects.filter((obj) =>
+      mediaType === 'audio' ? isAudioFile(obj.key) : isImageFile(obj.key)
+    ) ?? []
+
+  const title =
+    mediaType === 'audio' ? 'Pick audio file from S3' : 'Pick image from S3'
+  const emptyMessage = effectiveBucket
+    ? `No ${mediaType} files found in this bucket`
+    : 'Select a bucket to browse files'
 
   const handleConfirm = () => {
     if (!selectedKey || !configData) return
@@ -148,9 +168,7 @@ export function S3AudioFilePicker({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='max-w-2xl bg-gb-darker-bg border-gb-pastel-green-2/20 overflow-hidden'>
         <DialogHeader>
-          <DialogTitle className='text-gb-pastel-green-1'>
-            Pick audio file from S3
-          </DialogTitle>
+          <DialogTitle className='text-gb-pastel-green-1'>{title}</DialogTitle>
         </DialogHeader>
 
         <div className='space-y-4 min-w-0 w-full'>
@@ -186,36 +204,56 @@ export function S3AudioFilePicker({
               <div className='flex items-center justify-center py-12'>
                 <Loader2 className='h-6 w-6 animate-spin text-gb-highlight' />
               </div>
-            ) : audioFiles.length === 0 ? (
+            ) : mediaFiles.length === 0 ? (
               <div className='py-12 text-center text-sm text-muted-foreground'>
-                {effectiveBucket
-                  ? 'No audio files found in this bucket'
-                  : 'Select a bucket to browse files'}
+                {emptyMessage}
               </div>
             ) : (
               <div className='max-h-80 overflow-y-auto overflow-x-hidden'>
-                {audioFiles.map((obj) => {
+                {mediaFiles.map((obj) => {
                   const isSelected = selectedKey === obj.key
+                  const publicUrl = configData
+                    ? getPublicUrl(configData, effectiveBucket, obj.key)
+                    : null
                   return (
                     <button
                       key={obj.key}
                       type='button'
                       onClick={() => setSelectedKey(obj.key)}
+                      disabled={!publicUrl}
                       className={`w-full flex items-center gap-3 pl-4 pr-3 py-2.5 text-left hover:bg-gb-pastel-green-2/10 transition-colors border-b border-gb-pastel-green-2/10 last:border-b-0 ${
                         isSelected ? 'bg-gb-pastel-green-2/15' : ''
-                      }`}>
-                      <div
-                        className={`flex-none w-7 h-7 rounded-sm flex items-center justify-center ${
-                          isSelected
-                            ? 'bg-gb-highlight text-gb-darker-bg'
-                            : 'bg-gb-pastel-green-2/20 text-gb-highlight'
-                        }`}>
-                        {isSelected ? (
-                          <Check className='h-3.5 w-3.5' />
-                        ) : (
-                          <Music className='h-3.5 w-3.5' />
-                        )}
-                      </div>
+                      } ${publicUrl ? '' : 'cursor-not-allowed opacity-50'}`}>
+                      {mediaType === 'image' && publicUrl ? (
+                        <div className='relative flex-none h-12 w-12 overflow-hidden rounded-sm border border-gb-pastel-green-2/20 bg-gb-pastel-green-2/10'>
+                          <img
+                            src={publicUrl}
+                            alt={obj.key.split('/').pop() ?? obj.key}
+                            loading='lazy'
+                            className='h-full w-full object-cover'
+                          />
+                          {isSelected && (
+                            <div className='absolute inset-0 flex items-center justify-center bg-gb-highlight/80 text-gb-darker-bg'>
+                              <Check className='h-4 w-4' />
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <div
+                          className={`flex-none w-7 h-7 rounded-sm flex items-center justify-center ${
+                            isSelected
+                              ? 'bg-gb-highlight text-gb-darker-bg'
+                              : 'bg-gb-pastel-green-2/20 text-gb-highlight'
+                          }`}>
+                          {isSelected ? (
+                            <Check className='h-3.5 w-3.5' />
+                          ) : mediaType === 'image' ? (
+                            <ImageIcon className='h-3.5 w-3.5' />
+                          ) : (
+                            <Music className='h-3.5 w-3.5' />
+                          )}
+                        </div>
+                      )}
                       <p className='flex-1 min-w-0 text-sm font-mono text-gb-default-text truncate'>
                         {obj.key.split('/').pop() ?? obj.key}
                       </p>
@@ -229,7 +267,7 @@ export function S3AudioFilePicker({
             )}
           </div>
 
-          {selectedKey && configData && (
+          {selectedKey && configData && mediaType === 'audio' && (
             <div className='rounded-sm border border-gb-pastel-green-2/20 p-3'>
               {/* biome-ignore lint/a11y/useMediaCaption: internal preview player, no captions needed */}
               <audio
@@ -240,6 +278,19 @@ export function S3AudioFilePicker({
                   getPublicUrl(configData, effectiveBucket, selectedKey) ??
                   undefined
                 }
+              />
+            </div>
+          )}
+
+          {selectedKey && configData && mediaType === 'image' && (
+            <div className='rounded-sm border border-gb-pastel-green-2/20 p-3'>
+              <img
+                src={
+                  getPublicUrl(configData, effectiveBucket, selectedKey) ??
+                  undefined
+                }
+                alt={selectedKey.split('/').pop() ?? selectedKey}
+                className='h-40 w-full rounded-sm object-cover'
               />
             </div>
           )}
@@ -267,4 +318,8 @@ export function S3AudioFilePicker({
       </DialogContent>
     </Dialog>
   )
+}
+
+export function S3AudioFilePicker(props: S3AudioFilePickerProps) {
+  return <S3MediaFilePicker {...props} mediaType='audio' />
 }

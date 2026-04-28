@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useToast } from '@/components/ui/use-toast'
 import { fetcher, useEnrichTrackFromUrl, VPS_BASE_URL } from '@/lib/http'
 import { useAuthStore } from '@/store'
+import { Textarea } from '@/components/ui/textarea'
 
 interface MusicReminder {
   id: string
@@ -56,16 +57,16 @@ function MusicReminders() {
   const { toast } = useToast()
   const dateInputRef = useRef<HTMLInputElement>(null)
 
-  const handleDateContainerClick = () => {
-    if (dateInputRef.current) {
-      if (dateInputRef.current.showPicker) {
-        dateInputRef.current.showPicker()
-      } else {
-        dateInputRef.current.focus()
-      }
+  const handleDateInputPointerDown = () => {
+    const input = dateInputRef.current
+    if (
+      input &&
+      'showPicker' in input &&
+      typeof input.showPicker === 'function'
+    ) {
+      input.showPicker()
     }
   }
-
   // Enrich track details when URL changes
   const { data: enrichedTrack, isLoading: isEnriching } =
     useEnrichTrackFromUrl(musicUrl)
@@ -199,12 +200,12 @@ function MusicReminders() {
                 required
                 value={musicUrl}
                 onChange={(e) => setMusicUrl(e.target.value)}
-                className='w-full px-3 py-2 text-sm border rounded-md border-input bg-background'
+                className='w-full px-3 py-2 border rounded-md border-input bg-background'
                 placeholder='https://...'
               />
               <input type='hidden' name='albumCoverUrl' value={albumCoverUrl} />
               {isEnriching && (
-                <p className='mt-1 text-sm text-muted-foreground'>
+                <p className='mt-1 text-muted-foreground'>
                   Loading track details...
                 </p>
               )}
@@ -219,7 +220,7 @@ function MusicReminders() {
                       />
                     )}
                     <div className='flex-1 min-w-0'>
-                      <p className='text-sm font-medium truncate'>
+                      <p className=' font-medium truncate'>
                         Found: {enrichedTrack.title} by {enrichedTrack.artist}
                       </p>
                       {enrichedTrack.album && (
@@ -249,7 +250,7 @@ function MusicReminders() {
                   required
                   value={musicTitle}
                   onChange={(e) => setMusicTitle(e.target.value)}
-                  className='w-full px-3 py-2 text-sm border rounded-md border-input bg-background'
+                  className='w-full px-3 py-2  border rounded-md border-input bg-background'
                   placeholder='Enter song or album title'
                 />
               </div>
@@ -266,7 +267,7 @@ function MusicReminders() {
                   required
                   value={artistName}
                   onChange={(e) => setArtistName(e.target.value)}
-                  className='w-full px-3 py-2 text-sm border rounded-md border-input bg-background'
+                  className='w-full px-3 py-2  border rounded-md border-input bg-background'
                   placeholder='Enter artist name'
                 />
               </div>
@@ -279,10 +280,7 @@ function MusicReminders() {
                   Reminder Date
                 </label>
                 <div className='relative w-full h-10 overflow-hidden border rounded-md border-input bg-background'>
-                  <button
-                    type='button'
-                    className='absolute inset-0 z-10 flex items-center w-full h-full min-w-0 gap-2 px-3 text-sm text-left cursor-pointer'
-                    onClick={handleDateContainerClick}>
+                  <div className='flex items-center h-full min-w-0 gap-2 px-3  pointer-events-none'>
                     <CalendarClock className='flex-shrink-0 w-4 h-4 text-muted-foreground' />
                     <span
                       className={
@@ -294,7 +292,7 @@ function MusicReminders() {
                         ? formatReminderDateValue(reminderDate)
                         : 'Pick date and time'}
                     </span>
-                  </button>
+                  </div>
                   <input
                     type='datetime-local'
                     id='reminderDate'
@@ -303,7 +301,8 @@ function MusicReminders() {
                     ref={dateInputRef}
                     value={reminderDate}
                     onChange={(e) => setReminderDate(e.target.value)}
-                    className='absolute inset-0 w-full h-full opacity-0 pointer-events-none'
+                    onPointerDown={handleDateInputPointerDown}
+                    className='absolute inset-0 w-full h-full opacity-0 cursor-pointer'
                   />
                 </div>
               </div>
@@ -313,13 +312,12 @@ function MusicReminders() {
                   className='block mb-1 text-sm font-medium'>
                   Notes (Optional)
                 </label>
-                <input
-                  type='text'
+                <Textarea
                   id='notes'
                   name='notes'
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className='w-full px-3 py-2 text-sm border rounded-md border-input bg-background'
+                  className='w-full px-3 py-2 border bg-background'
                   placeholder='Why do you want to listen to this?'
                 />
               </div>

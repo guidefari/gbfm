@@ -1,5 +1,6 @@
-import { ImageIcon, Loader2, Trash2 } from 'lucide-react'
+import { FolderOpen, ImageIcon, Loader2, Trash2 } from 'lucide-react'
 import { useId, useState } from 'react'
+import { S3MediaFilePicker } from '@/components/mix-uploader/S3AudioFilePicker'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { toast } from '@/components/ui/use-toast'
@@ -19,6 +20,7 @@ export function ImageUploadField({
   const inputId = useId()
   const [isUploading, setIsUploading] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false)
 
   const displayUrl = previewUrl || value
 
@@ -67,6 +69,15 @@ export function ImageUploadField({
     onChange('')
   }
 
+  const handleSelectExistingImage = (url: string) => {
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl)
+      setPreviewUrl(null)
+    }
+    onChange(url)
+    toast({ title: 'Image selected' })
+  }
+
   return (
     <div className='space-y-2'>
       <Label>{label}</Label>
@@ -95,31 +106,49 @@ export function ImageUploadField({
           </Button>
         </div>
       ) : (
-        <div className='relative flex h-24 items-center justify-center rounded-sm border-2 border-dashed bg-muted/50 transition-colors hover:border-primary/50'>
-          <input
-            type='file'
-            accept='image/*'
-            onChange={handleFileChange}
-            className='hidden'
-            id={inputId}
-            disabled={isUploading}
-          />
-          <label
-            htmlFor={inputId}
-            className='flex cursor-pointer flex-col items-center gap-1'>
-            {isUploading ? (
-              <Loader2 className='h-5 w-5 animate-spin text-muted-foreground' />
-            ) : (
-              <>
-                <ImageIcon className='h-5 w-5 text-muted-foreground' />
-                <span className='text-xs text-muted-foreground'>
-                  Click to upload
-                </span>
-              </>
-            )}
-          </label>
+        <div className='space-y-2'>
+          <div className='relative flex h-24 items-center justify-center rounded-sm border-2 border-dashed bg-muted/50 transition-colors hover:border-primary/50'>
+            <input
+              type='file'
+              accept='image/*'
+              onChange={handleFileChange}
+              className='hidden'
+              id={inputId}
+              disabled={isUploading}
+            />
+            <label
+              htmlFor={inputId}
+              className='flex cursor-pointer flex-col items-center gap-1'>
+              {isUploading ? (
+                <Loader2 className='h-5 w-5 animate-spin text-muted-foreground' />
+              ) : (
+                <>
+                  <ImageIcon className='h-5 w-5 text-muted-foreground' />
+                  <span className='text-xs text-muted-foreground'>
+                    Click to upload
+                  </span>
+                </>
+              )}
+            </label>
+          </div>
         </div>
       )}
+      <Button
+        type='button'
+        variant='outline'
+        size='sm'
+        className='w-full'
+        onClick={() => setMediaPickerOpen(true)}
+        disabled={isUploading}>
+        <FolderOpen className='mr-2 h-3.5 w-3.5' />
+        Choose from bucket
+      </Button>
+      <S3MediaFilePicker
+        open={mediaPickerOpen}
+        onOpenChange={setMediaPickerOpen}
+        mediaType='image'
+        onSelect={handleSelectExistingImage}
+      />
     </div>
   )
 }
