@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { CalendarClock } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/use-toast'
 import { fetcher, useEnrichTrackFromUrl, VPS_BASE_URL } from '@/lib/http'
@@ -166,7 +167,7 @@ function MusicReminders() {
           </p>
           <a
             href='/auth/sign-in'
-            className='inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90'>
+            className='inline-flex items-center justify-center px-4 py-2 text-sm font-medium  bg-primary text-primary-foreground hover:bg-primary/90'>
             Sign In
           </a>
         </div>
@@ -193,14 +194,14 @@ function MusicReminders() {
                 className='block mb-1 text-sm font-medium'>
                 Music URL (Spotify, YouTube, etc.)
               </label>
-              <input
+              <Input
                 type='url'
                 id='musicUrl'
                 name='musicUrl'
                 required
                 value={musicUrl}
                 onChange={(e) => setMusicUrl(e.target.value)}
-                className='w-full px-3 py-2 border rounded-md border-input bg-background'
+                className='w-full px-3 py-2 border  border-input bg-background'
                 placeholder='https://...'
               />
               <input type='hidden' name='albumCoverUrl' value={albumCoverUrl} />
@@ -210,13 +211,13 @@ function MusicReminders() {
                 </p>
               )}
               {enrichedTrack && (
-                <div className='p-3 mt-2 rounded-md bg-muted'>
+                <div className='p-3 mt-2  bg-muted'>
                   <div className='flex items-start gap-3'>
                     {enrichedTrack.thumbnailUrl && (
                       <img
                         src={enrichedTrack.thumbnailUrl}
                         alt={`${enrichedTrack.title} cover`}
-                        className='flex-shrink-0 object-cover w-12 h-12 rounded-md'
+                        className='flex-shrink-0 object-cover w-12 h-12 '
                       />
                     )}
                     <div className='flex-1 min-w-0'>
@@ -243,14 +244,14 @@ function MusicReminders() {
                   className='block mb-1 text-sm font-medium'>
                   Music Title
                 </label>
-                <input
+                <Input
                   type='text'
                   id='musicTitle'
                   name='musicTitle'
                   required
                   value={musicTitle}
                   onChange={(e) => setMusicTitle(e.target.value)}
-                  className='w-full px-3 py-2  border rounded-md border-input bg-background'
+                  className='w-full px-3 py-2  border  border-input bg-background'
                   placeholder='Enter song or album title'
                 />
               </div>
@@ -260,14 +261,14 @@ function MusicReminders() {
                   className='block mb-1 text-sm font-medium'>
                   Artist Name
                 </label>
-                <input
+                <Input
                   type='text'
                   id='artistName'
                   name='artistName'
                   required
                   value={artistName}
                   onChange={(e) => setArtistName(e.target.value)}
-                  className='w-full px-3 py-2  border rounded-md border-input bg-background'
+                  className='w-full px-3 py-2  border  border-input bg-background'
                   placeholder='Enter artist name'
                 />
               </div>
@@ -279,13 +280,13 @@ function MusicReminders() {
                   className='block mb-1 text-sm font-medium'>
                   Reminder Date
                 </label>
-                <div className='relative w-full h-10 overflow-hidden border rounded-md border-input bg-background'>
+                <div className='relative w-full h-10 overflow-hidden border  border-input bg-background'>
                   <div className='flex items-center h-full min-w-0 gap-2 px-3  pointer-events-none'>
                     <CalendarClock className='flex-shrink-0 w-4 h-4 text-muted-foreground' />
                     <span
                       className={
                         reminderDate
-                          ? 'truncate text-foreground'
+                          ? 'truncate text-base'
                           : 'truncate text-muted-foreground'
                       }>
                       {reminderDate
@@ -293,7 +294,7 @@ function MusicReminders() {
                         : 'Pick date and time'}
                     </span>
                   </div>
-                  <input
+                  <Input
                     type='datetime-local'
                     id='reminderDate'
                     name='reminderDate'
@@ -309,7 +310,7 @@ function MusicReminders() {
               <div>
                 <label
                   htmlFor='notes'
-                  className='block mb-1 text-sm font-medium'>
+                  className='block mb-2 text-sm font-medium'>
                   Notes (Optional)
                 </label>
                 <Textarea
@@ -317,15 +318,15 @@ function MusicReminders() {
                   name='notes'
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className='w-full px-3 py-2 border bg-background'
-                  placeholder='Why do you want to listen to this?'
+                  className='min-h-32 w-full resize-y border-border/70 bg-background px-3 py-2 leading-relaxed shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+                  placeholder='Add a memory, reason, or note for future you...'
                 />
               </div>
             </div>
             <button
               type='submit'
               disabled={createReminderMutation.isPending}
-              className='inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50'>
+              className='inline-flex items-center justify-center px-4 py-2 text-sm font-medium  bg-primary text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50'>
               {createReminderMutation.isPending
                 ? 'Creating...'
                 : 'Add Reminder'}
