@@ -24,6 +24,6 @@
     "react": "^19.0.0"
   },
   "dependencies": {
-    "effect": "3.19.15"
+    "effect": "3.20.0"
   }
 }
