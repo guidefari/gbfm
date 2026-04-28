@@ -1,3 +1,10 @@
+# [2.33.0](https://github.com/guidefari/gbfm/compare/v2.32.0...v2.33.0) (2026-04-28)
+
+
+### Features
+
+* tailwind upgrade ([f008e8b](https://github.com/guidefari/gbfm/commit/f008e8b0d0b140a789cab40da0aea7d42ae29d17))
+
 # [2.32.0](https://github.com/guidefari/gbfm/compare/v2.31.0...v2.32.0) (2026-04-28)
 
 
