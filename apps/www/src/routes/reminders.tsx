@@ -217,7 +217,7 @@ function MusicReminders() {
                       <img
                         src={enrichedTrack.thumbnailUrl}
                         alt={`${enrichedTrack.title} cover`}
-                        className='flex-shrink-0 object-cover w-12 h-12 '
+                        className='shrink-0 object-cover w-12 h-12 '
                       />
                     )}
                     <div className='flex-1 min-w-0'>
@@ -282,7 +282,7 @@ function MusicReminders() {
                 </label>
                 <div className='relative w-full h-10 overflow-hidden border  border-input bg-background'>
                   <div className='flex items-center h-full min-w-0 gap-2 px-3  pointer-events-none'>
-                    <CalendarClock className='flex-shrink-0 w-4 h-4 text-muted-foreground' />
+                    <CalendarClock className='shrink-0 w-4 h-4 text-muted-foreground' />
                     <span
                       className={
                         reminderDate

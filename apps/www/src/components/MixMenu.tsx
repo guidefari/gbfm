@@ -100,7 +100,7 @@ export function MixMenu({ mix }: MixMenuProps) {
           type='button'
           onClick={(e) => e.stopPropagation()}
           className={cn(
-            'flex-shrink-0 p-1 transition-colors rounded-none hover:bg-muted focus:outline-none focus:ring-2 focus:ring-highlight'
+            'shrink-0 p-1 transition-colors rounded-none hover:bg-muted focus:outline-none focus:ring-2 focus:ring-highlight'
           )}
           aria-label='More actions'>
           <MoreVertical className='w-5 h-5 text-foreground/60 hover:text-foreground' />

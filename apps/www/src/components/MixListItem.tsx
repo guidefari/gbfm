@@ -46,7 +46,7 @@ export function MixListItem({ mix, actions }: MixListItemProps) {
               className='block text-2xl font-black leading-tight line-clamp-2 text-foreground uppercase tracking-tight transition-colors'>
               {mix.title}
             </Link>
-            <div className='flex-shrink-0 ml-2'>{actions}</div>
+            <div className='shrink-0 ml-2'>{actions}</div>
           </div>
 
           {hasCreators && (
@@ -107,7 +107,7 @@ export function MixListItem({ mix, actions }: MixListItemProps) {
           </div>
         </div>
 
-        <div className='relative flex-shrink-0 order-first lg:order-last'>
+        <div className='relative shrink-0 order-first lg:order-last'>
           <img
             src={mix.thumbnailUrl || DEFAULT_IMAGE_URL}
             alt={mix.title}

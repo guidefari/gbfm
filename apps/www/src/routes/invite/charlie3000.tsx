@@ -46,8 +46,8 @@ export const Route = createFileRoute('/invite/charlie3000')({
 function InviteCharliePage() {
   return (
     <div className='relative overflow-hidden'>
-      <div className='pointer-events-none absolute -top-20 -left-24 w-[22rem] h-[22rem] rounded-full bg-gb-pastel-green-2/10 blur-3xl' />
-      <div className='pointer-events-none absolute top-[40%] -right-32 w-[26rem] h-[26rem] rounded-full bg-gb-highlight/10 blur-3xl' />
+      <div className='pointer-events-none absolute -top-20 -left-24 w-88 h-88 rounded-full bg-gb-pastel-green-2/10 blur-3xl' />
+      <div className='pointer-events-none absolute top-[40%] -right-32 w-104 h-104 rounded-full bg-gb-highlight/10 blur-3xl' />
 
       <div className='relative px-4 py-10 mx-auto max-w-6xl sm:px-6 lg:px-8 lg:py-16'>
         <div className='grid gap-10 lg:gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(320px,0.9fr)] lg:items-start'>
@@ -57,7 +57,7 @@ function InviteCharliePage() {
                 hi Charlie!{' '}
                 <span className='relative inline-block'>
                   <span className='relative z-10'>I'd love</span>
-                  <span className='absolute inset-x-0 bottom-1 h-3 bg-gb-highlight/40 -z-0' />
+                  <span className='absolute inset-x-0 bottom-1 h-3 bg-gb-highlight/40 z-0' />
                 </span>{' '}
                 to host a guest mix from you
               </h1>

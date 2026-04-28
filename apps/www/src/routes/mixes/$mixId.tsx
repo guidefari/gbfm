@@ -366,7 +366,7 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
     <div className='space-y-8'>
       <div className='flex flex-col items-start gap-8 md:flex-row'>
         {/* Left Column: Image and Play Button */}
-        <div className='flex-shrink-0 w-full space-y-4 md:w-64'>
+        <div className='shrink-0 w-full space-y-4 md:w-64'>
           <div className='relative group'>
             <img
               src={mix.thumbnailUrl || DEFAULT_IMAGE_URL}

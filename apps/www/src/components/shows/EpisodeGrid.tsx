@@ -25,7 +25,7 @@ export function EpisodeGrid({ showSlug }: EpisodeGridProps) {
             // biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton loader - items never reorder
             key={i}
             className='flex gap-3 items-start p-2'>
-            <div className='w-14 h-14 rounded-sm bg-muted/50 animate-pulse flex-shrink-0' />
+            <div className='w-14 h-14 rounded-sm bg-muted/50 animate-pulse shrink-0' />
             <div className='flex-1 space-y-2'>
               <div className='h-4 w-3/4 rounded bg-muted/50 animate-pulse' />
               <div className='h-3 w-1/2 rounded bg-muted/50 animate-pulse' />

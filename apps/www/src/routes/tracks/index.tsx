@@ -230,7 +230,7 @@ function TracksPage() {
               <Card className='transition-colors cursor-pointer bg-gb-darker-bg border-gb-pastel-green-2/20 hover:border-gb-highlight/50'>
                 <CardContent className='p-4'>
                   <div className='flex gap-3'>
-                    <div className='relative flex-shrink-0'>
+                    <div className='relative shrink-0'>
                       <button
                         type='button'
                         className='relative group focus:outline-none'

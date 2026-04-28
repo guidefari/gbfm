@@ -31,7 +31,7 @@ export const LongPost = ({
 
   return (
     <div className='relative grid grid-flow-row lg:grid-flow-col lg:grid-cols-[auto_1fr] lg:gap-5'>
-      <div className='px-2 mt-6 break-words rounded-md w-fit lg:mx-auto lg:sticky lg:top-6 lg:self-start lg:col-span-1'>
+      <div className='px-2 mt-6 wrap-break-word rounded-md w-fit lg:mx-auto lg:sticky lg:top-6 lg:self-start lg:col-span-1'>
         {mp3Url ? (
           <MinimalCard
             title={title}
@@ -64,7 +64,7 @@ export const LongPost = ({
           />
         )}
       </div>
-      <article className='min-h-screen px-2 mt-6 break-words lg:w-auto lg:px-0 lg:col-span-2'>
+      <article className='min-h-screen px-2 mt-6 wrap-break-word lg:w-auto lg:px-0 lg:col-span-2'>
         {description && <p className='text-left'>{description}</p>}
         <MDXRendrr mdxString={content} />
       </article>

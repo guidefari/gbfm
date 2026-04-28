@@ -175,7 +175,7 @@ function TabButton({
 function ReminderItem({ reminder }: { reminder: MusicReminder }) {
   return (
     <div className='flex items-center gap-4 p-2 rounded-sm hover:bg-muted/40 transition-colors group'>
-      <div className='relative flex-shrink-0'>
+      <div className='relative shrink-0'>
         {reminder.albumCoverUrl ? (
           <img
             src={reminder.albumCoverUrl}

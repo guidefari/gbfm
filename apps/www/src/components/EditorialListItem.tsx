@@ -33,7 +33,7 @@ export function EditorialListItem({ post }: EditorialListItemProps) {
       <img
         src={post.thumbnailUrl || DEFAULT_IMAGE_URL}
         alt={post.title}
-        className='object-cover transition-transform duration-300 border w-20 h-20 border-border bg-background group-hover:scale-101 flex-shrink-0'
+        className='object-cover transition-transform duration-300 border w-20 h-20 border-border bg-background group-hover:scale-101 shrink-0'
       />
 
       <div className='flex-1 min-w-0 pr-20 sm:pr-24'>

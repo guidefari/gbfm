@@ -75,8 +75,8 @@ export const MinimalCard: React.FC<Props> = ({
 
   return (
     <div
-      className={`not-prose relative z-10 min-w-64 flex-shrink-0 overflow-hidden max-w-md my-8 border-2 border-t-0 border-l-0 rounded-md md:max-w-xs border-gb-tomato ${className}`}>
-      <div className='relative flex-shrink-0 mb-4 sm:mb-0 sm:mr-4 group'>
+      className={`not-prose relative z-10 min-w-64 shrink-0 overflow-hidden max-w-md my-8 border-2 border-t-0 border-l-0 rounded-md md:max-w-xs border-gb-tomato ${className}`}>
+      <div className='relative shrink-0 mb-4 sm:mb-0 sm:mr-4 group'>
         {trackUrl ? (
           <a
             href={trackUrl}
@@ -139,7 +139,7 @@ export const MinimalCard: React.FC<Props> = ({
                 type='button'
                 title='Share'
                 onClick={handleShare}
-                className='flex-shrink-0 p-1 transition-colors rounded hover:bg-muted focus:outline-none focus:ring-2 focus:ring-highlight'>
+                className='shrink-0 p-1 transition-colors rounded hover:bg-muted focus:outline-none focus:ring-2 focus:ring-highlight'>
                 <Share className='w-5 h-5 text-foreground/60 hover:text-foreground' />
               </button>
             )}

@@ -75,7 +75,7 @@ function SettingsPage() {
       <div className='pt-12 border-t border-border'>
         <div className='flex flex-col lg:flex-row gap-12'>
           {/* Settings Nav */}
-          <div className='lg:w-64 flex-shrink-0'>
+          <div className='lg:w-64 shrink-0'>
             <nav className='flex flex-col gap-1'>
               <SettingNavButton
                 active={activeSettingTab === 'profile'}

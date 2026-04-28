@@ -33,7 +33,7 @@ export function AudioFileCard({
       <CardContent>
         <div className='flex items-center justify-between p-3 rounded-sm bg-gb-bg'>
           <div className='flex items-center min-w-0 space-x-3'>
-            <Music className='flex-shrink-0 w-6 h-6 text-gb-highlight' />
+            <Music className='shrink-0 w-6 h-6 text-gb-highlight' />
             <div className='min-w-0'>
               <p className='font-medium leading-tight text-gb-pastel-green-1'>
                 {displayName}
@@ -45,7 +45,7 @@ export function AudioFileCard({
             variant='ghost'
             size='sm'
             onClick={onRemove}
-            className='flex-shrink-0 text-red-400 hover:text-red-300'>
+            className='shrink-0 text-red-400 hover:text-red-300'>
             <Trash2 className='w-4 h-4' />
           </Button>
         </div>

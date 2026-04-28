@@ -13,7 +13,7 @@ type Mix = PublicProfile['content']['mixes'][number]
 type Editorial = PublicProfile['content']['editorials'][number]
 type Tweet = PublicProfile['content']['tweets'][number]
 
-const CARD_CLASS = 'w-36 flex-shrink-0'
+const CARD_CLASS = 'w-36 shrink-0'
 
 function StandaloneMixCard({ mix }: { mix: Mix }) {
   return (

@@ -94,7 +94,9 @@ function ShowPage() {
             </div>
 
             <div className='space-y-3 min-w-0'>
-              <h1 className='text-2xl font-bold break-words'>{data.title}</h1>
+              <h1 className='text-2xl font-bold wrap-break-word'>
+                {data.title}
+              </h1>
 
               {hostNames && (
                 <p className='text-sm text-muted-foreground'>
@@ -144,7 +146,7 @@ function ShowDescription({
 
   return (
     <div>
-      <div className='text-sm text-muted-foreground line-clamp-4 prose prose-sm prose-neutral dark:prose-invert max-w-none break-words overflow-hidden [&_p]:text-muted-foreground [&_p]:text-sm'>
+      <div className='text-sm text-muted-foreground line-clamp-4 prose prose-sm prose-neutral dark:prose-invert max-w-none wrap-break-word overflow-hidden [&_p]:text-muted-foreground [&_p]:text-sm'>
         {compiledContent ? (
           <MDXRendrr mdxString={compiledContent} />
         ) : (

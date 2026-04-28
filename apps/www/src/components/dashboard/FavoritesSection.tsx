@@ -41,7 +41,7 @@ export function FavoritesSection() {
           <div
             key={favorite.id}
             className='flex items-center gap-4 p-2 rounded-sm hover:bg-muted/40 transition-all duration-300 group'>
-            <div className='relative flex-shrink-0'>
+            <div className='relative shrink-0'>
               <img
                 src={favorite.audio.thumbnailUrl || DEFAULT_IMAGE_URL}
                 alt={favorite.audio.title}

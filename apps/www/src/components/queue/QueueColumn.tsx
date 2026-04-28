@@ -75,7 +75,7 @@ export const QueueColumn = () => {
                 <img
                   src={thumbnailUrl || DEFAULT_IMAGE_URL}
                   alt={nowPlayingContext.title}
-                  className='flex-shrink-0 object-cover w-12 h-12 rounded'
+                  className='shrink-0 object-cover w-12 h-12 rounded'
                 />
                 <h4 className='flex-1 min-w-0 text-sm font-medium truncate'>
                   {nowPlayingContext.title}

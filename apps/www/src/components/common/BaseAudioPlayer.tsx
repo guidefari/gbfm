@@ -203,7 +203,7 @@ export function BaseAudioPlayer({
     }
     return (
       <div
-        className={`flex-shrink-0 border-t border-transparent min-h-[104px] ${className}`}
+        className={`shrink-0 border-t border-transparent min-h-[104px] ${className}`}
       />
     )
   }
@@ -295,8 +295,8 @@ export function BaseAudioPlayer({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3, ease: 'easeOut' }}
-      className={`flex-shrink-0 border-t backdrop-blur-md bg-background/95 border-border min-h-[104px] ${className}`}>
-      <div className='px-4 py-3 mx-auto max-w-screen-2xl'>
+      className={`shrink-0 border-t backdrop-blur-md bg-background/95 border-border min-h-[104px] ${className}`}>
+      <div className='px-4 py-3 mx-auto max-w-(--breakpoint-2xl)'>
         {/* Desktop Layout */}
         <div className='hidden md:grid md:grid-cols-3 md:items-center md:gap-4'>
           {/* Left: Track Info */}
@@ -305,7 +305,7 @@ export function BaseAudioPlayer({
               <button
                 type='button'
                 onClick={onFullscreenToggle}
-                className='flex-shrink-0 p-0 bg-transparent border-0'>
+                className='shrink-0 p-0 bg-transparent border-0'>
                 <img
                   src={currentTrack.thumbnailUrl || DEFAULT_IMAGE_URL}
                   alt={currentTrack.title}
@@ -331,7 +331,7 @@ export function BaseAudioPlayer({
               </p>
             </div>
             {showTrackActions && (
-              <div className='flex items-center flex-shrink-0 gap-2'>
+              <div className='flex items-center shrink-0 gap-2'>
                 <Button
                   variant='ghost'
                   size='icon'
@@ -378,7 +378,7 @@ export function BaseAudioPlayer({
             </div>
 
             <div className='flex items-center w-full max-w-md gap-2'>
-              <span className='text-xs text-secondary-foreground min-w-[2.5rem] text-right'>
+              <span className='text-xs text-secondary-foreground min-w-10 text-right'>
                 {formatSeconds(currentTime)}
               </span>
               <input
@@ -389,7 +389,7 @@ export function BaseAudioPlayer({
                 step={0.1}
                 className='flex-1 h-2 bg-muted rounded-sm appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-lg'
               />
-              <span className='text-xs text-secondary-foreground min-w-[2.5rem]'>
+              <span className='text-xs text-secondary-foreground min-w-10'>
                 {formatSeconds(duration)}
               </span>
             </div>
@@ -453,7 +453,7 @@ export function BaseAudioPlayer({
               <button
                 type='button'
                 onClick={onFullscreenToggle}
-                className='flex-shrink-0 p-0 bg-transparent border-0'>
+                className='shrink-0 p-0 bg-transparent border-0'>
                 <img
                   src={currentTrack.thumbnailUrl || DEFAULT_IMAGE_URL}
                   alt={currentTrack.title}
@@ -495,7 +495,7 @@ export function BaseAudioPlayer({
           </div>
 
           <div className='flex items-center gap-2 mb-2'>
-            <span className='text-xs text-secondary-foreground min-w-[2.5rem] text-right'>
+            <span className='text-xs text-secondary-foreground min-w-10 text-right'>
               {formatSeconds(currentTime)}
             </span>
             <input
@@ -506,7 +506,7 @@ export function BaseAudioPlayer({
               step={0.1}
               className='flex-1 h-2 bg-muted rounded-sm appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-lg'
             />
-            <span className='text-xs text-secondary-foreground min-w-[2.5rem]'>
+            <span className='text-xs text-secondary-foreground min-w-10'>
               {formatSeconds(duration)}
             </span>
           </div>

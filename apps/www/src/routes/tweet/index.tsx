@@ -81,7 +81,7 @@ function TweetListPage() {
             to='/editorial'
             className='flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors relative group'>
             Editorial
-            <span className='absolute -bottom-[17px] left-0 right-0 h-0.5 bg-foreground scale-x-0 group-hover:scale-x-100 transition-transform origin-left' />
+            <span className='absolute bottom-[-17px] left-0 right-0 h-0.5 bg-foreground scale-x-0 group-hover:scale-x-100 transition-transform origin-left' />
           </Link>
         </div>
         {allTags.length > 0 && (

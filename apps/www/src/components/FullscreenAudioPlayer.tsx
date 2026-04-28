@@ -137,7 +137,7 @@ const FullscreenAudioPlayer = () => {
           exit={{ y: '100%', opacity: 0 }}
           transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
           className='fixed inset-0 z-50 flex flex-col bg-background text-foreground'>
-          <div className='flex items-center justify-between flex-shrink-0 px-4 py-3 sm:p-6'>
+          <div className='flex items-center justify-between shrink-0 px-4 py-3 sm:p-6'>
             <Button
               variant='ghost'
               size='sm'
@@ -157,14 +157,14 @@ const FullscreenAudioPlayer = () => {
                 />
               </div>
 
-              <div className='mb-4 sm:mb-8 flex-shrink-0'>
+              <div className='mb-4 sm:mb-8 shrink-0'>
                 <div className='flex items-center justify-between mb-2'>
                   <OverflowTitle
                     text={currentTrack.title}
                     className='flex-1 min-w-0 pr-4'
                     textClassName='text-xl sm:text-2xl font-semibold leading-tight text-foreground'
                   />
-                  <div className='flex items-center flex-shrink-0 gap-1 sm:gap-2'>
+                  <div className='flex items-center shrink-0 gap-1 sm:gap-2'>
                     <Button
                       variant='ghost'
                       size='icon'
@@ -194,7 +194,7 @@ const FullscreenAudioPlayer = () => {
                 />
               </div>
 
-              <div className='mb-4 sm:mb-8 flex-shrink-0'>
+              <div className='mb-4 sm:mb-8 shrink-0'>
                 <input
                   type='range'
                   value={progress}
@@ -209,7 +209,7 @@ const FullscreenAudioPlayer = () => {
                 </div>
               </div>
 
-              <div className='flex items-center justify-center gap-6 mb-4 sm:mb-8 flex-shrink-0'>
+              <div className='flex items-center justify-center gap-6 mb-4 sm:mb-8 shrink-0'>
                 <Button
                   variant='ghost'
                   size='icon'

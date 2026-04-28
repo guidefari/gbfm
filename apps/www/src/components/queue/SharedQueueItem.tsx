@@ -245,7 +245,7 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
         {/* Album Art */}
         <div
           className={cn(
-            'overflow-hidden relative flex-shrink-0 rounded',
+            'overflow-hidden relative shrink-0 rounded',
             isCompact && 'w-10 h-10',
             isFullscreen && 'w-12 h-12 rounded-sm'
           )}>
@@ -302,7 +302,7 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
         {/* Actions */}
         <div
           className={cn(
-            'flex flex-shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100',
+            'flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100',
             isCompact && 'gap-1',
             isFullscreen && 'gap-2'
           )}>

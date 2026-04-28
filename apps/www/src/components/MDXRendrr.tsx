@@ -41,7 +41,7 @@ export function MDXRendrr({ mdxString }: { mdxString: string }) {
           <summary className='text-red-300 text-xs cursor-pointer'>
             Show raw content
           </summary>
-          <pre className='mt-2 p-2 bg-red-900/10 rounded text-xs text-red-200 whitespace-pre-wrap break-words'>
+          <pre className='mt-2 p-2 bg-red-900/10 rounded text-xs text-red-200 whitespace-pre-wrap wrap-break-word'>
             {mdxString}
           </pre>
         </details>

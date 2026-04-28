@@ -62,7 +62,7 @@ function PostDetails({
     <div className='space-y-8'>
       <div className='flex flex-col items-start gap-8 md:flex-row'>
         {post.thumbnailUrl && (
-          <div className='flex-shrink-0 w-full md:w-64'>
+          <div className='shrink-0 w-full md:w-64'>
             <img
               src={post.thumbnailUrl || DEFAULT_IMAGE_URL}
               alt={post.title}

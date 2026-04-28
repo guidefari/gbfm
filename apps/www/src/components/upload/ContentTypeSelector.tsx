@@ -94,7 +94,7 @@ export function ContentTypeSelector({ onSelect }: ContentTypeSelectorProps) {
 
       <div className='p-6 mt-8 border rounded-sm bg-gb-darker-bg border-gb-highlight/30'>
         <div className='flex items-start gap-4'>
-          <div className='flex items-center justify-center flex-shrink-0 w-12 h-12 rounded-sm bg-gb-highlight/20'>
+          <div className='flex items-center justify-center shrink-0 w-12 h-12 rounded-sm bg-gb-highlight/20'>
             <List className='w-6 h-6 text-gb-highlight' />
           </div>
           <div className='flex-1'>
