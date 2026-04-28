@@ -47,7 +47,7 @@
     "clsx": "2.1.1",
     "cmdk": "1.1.1",
     "date-fns": "4.1.0",
-    "effect": "3.19.15",
+    "effect": "3.20.0",
     "input-otp": "1.2.4",
     "jwt-decode": "4.0.0",
     "lucide-react": "1.12.0",
