@@ -278,10 +278,11 @@ function MusicReminders() {
                   className='block mb-1 text-sm font-medium'>
                   Reminder Date
                 </label>
-                <div
-                  className='relative w-full h-10 overflow-hidden border rounded-md cursor-pointer border-input bg-background'
-                  onClick={handleDateContainerClick}>
-                  <div className='flex items-center h-full min-w-0 gap-2 px-3 text-sm pointer-events-none'>
+                <div className='relative w-full h-10 overflow-hidden border rounded-md border-input bg-background'>
+                  <button
+                    type='button'
+                    className='absolute inset-0 z-10 flex items-center w-full h-full min-w-0 gap-2 px-3 text-sm text-left cursor-pointer'
+                    onClick={handleDateContainerClick}>
                     <CalendarClock className='flex-shrink-0 w-4 h-4 text-muted-foreground' />
                     <span
                       className={
@@ -293,7 +294,7 @@ function MusicReminders() {
                         ? formatReminderDateValue(reminderDate)
                         : 'Pick date and time'}
                     </span>
-                  </div>
+                  </button>
                   <input
                     type='datetime-local'
                     id='reminderDate'
@@ -302,7 +303,7 @@ function MusicReminders() {
                     ref={dateInputRef}
                     value={reminderDate}
                     onChange={(e) => setReminderDate(e.target.value)}
-                    className='absolute inset-0 w-full h-full opacity-0 cursor-pointer'
+                    className='absolute inset-0 w-full h-full opacity-0 pointer-events-none'
                   />
                 </div>
               </div>
