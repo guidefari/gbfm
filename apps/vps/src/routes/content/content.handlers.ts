@@ -1,4 +1,3 @@
-import { spawn } from 'node:child_process'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
@@ -657,28 +656,27 @@ function createAudioOrVideo(
           ]
 
     yield* Effect.tryPromise({
-      try: () =>
-        new Promise<void>((resolve, reject) => {
-          const ffmpegProcess = spawn(ffmpeg as string, ffmpegArgs)
+      try: async () => {
+        const ffmpegProcess = Bun.spawn([ffmpeg as string, ...ffmpegArgs], {
+          stdout: 'pipe',
+          stderr: 'pipe'
+        })
 
-          ffmpegProcess.on('close', (code) => {
-            if (code === 0) {
-              resolve()
-            } else {
-              reject(new Error(`FFmpeg process exited with code ${code}`))
-            }
-          })
+        const [stderr, exitCode] = await Promise.all([
+          new Response(ffmpegProcess.stderr).text(),
+          ffmpegProcess.exited
+        ])
 
-          ffmpegProcess.on('error', (error) => {
-            reject(error)
-          })
+        if (stderr.trim()) {
+          Effect.logInfo('[Content] FFmpeg processing', {
+            output: stderr.trim()
+          }).pipe(Effect.runPromise)
+        }
 
-          ffmpegProcess.stderr.on('data', (data) => {
-            Effect.logInfo('[Content] FFmpeg processing', {
-              output: data.toString().trim()
-            }).pipe(Effect.runPromise)
-          })
-        }),
+        if (exitCode !== 0) {
+          throw new Error(`FFmpeg process exited with code ${exitCode}`)
+        }
+      },
       catch: (error) =>
         ProcessingError.make({
           message: `FFmpeg processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
