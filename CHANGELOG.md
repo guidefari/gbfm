@@ -1,3 +1,23 @@
+# [2.32.0](https://github.com/guidefari/gbfm/compare/v2.31.0...v2.32.0) (2026-04-28)
+
+
+### Bug Fixes
+
+* dockerfile ([f92358e](https://github.com/guidefari/gbfm/commit/f92358e023576120e43983d51a4529fd331d7222))
+* **www:** disable autocap on auth inputs, polish welcome modal mobile ([5d19903](https://github.com/guidefari/gbfm/commit/5d19903042ae71b13d84961a904a212895ec4f3d))
+* **www:** make reminder date picker accessible ([d1e06e0](https://github.com/guidefari/gbfm/commit/d1e06e034140e4ed73561c1ca3c30ba7a61d7504))
+* **www:** prevent mobile auth horizontal scroll ([91cdf3f](https://github.com/guidefari/gbfm/commit/91cdf3ff47299d29d1d5eabf2d51bca33e6a01c6))
+* **www:** reminders datetime picker not opening on desktop ([c6e975d](https://github.com/guidefari/gbfm/commit/c6e975d9f5e81efeb77ff8cd657215d34cab2afd))
+* **www:** responsive dashboard layout on mobile ([9ecb59a](https://github.com/guidefari/gbfm/commit/9ecb59aaa4ca3498b8a78b1e4bac5ecac1aaf81c))
+
+
+### Features
+
+* reminder form improvements ([dc361f0](https://github.com/guidefari/gbfm/commit/dc361f03580e881d2a193c37c05753f09de1d6a3))
+* ui ([bb1342c](https://github.com/guidefari/gbfm/commit/bb1342c30b1accb412557a471b96dbf1acb6c3b5))
+* **www:** add appearance settings ([4c24b34](https://github.com/guidefari/gbfm/commit/4c24b340040bd8ebe94c71f6e0b92124368b67c8))
+* **www:** add reminders to floating nav, restructure dashboard entry points ([4b8f083](https://github.com/guidefari/gbfm/commit/4b8f083426878c3075c6c78573d6139baf8ddea6))
+
 # [2.31.0](https://github.com/guidefari/gbfm/compare/v2.30.0...v2.31.0) (2026-04-27)
 
 
