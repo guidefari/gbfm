@@ -10,7 +10,7 @@ export type AnalyticsProperties = Record<string, unknown>
  * Effect service contract for analytics/event tracking.
  *
  * This interface is intentionally provider-agnostic so implementations can be
- * swapped (PostHog, Sentry, Segment, etc.) without changing call sites.
+ * swapped without changing call sites.
  */
 export class Analytics extends Context.Tag('@gbfm/www/Analytics')<
   Analytics,

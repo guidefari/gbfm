@@ -1,8 +1,8 @@
 export { NoopAnalyticsLayer } from './noop'
 export {
-  makePostHogAnalyticsLayer,
-  type PostHogAnalyticsOptions
-} from './posthog'
+  makeSentryAnalyticsLayer,
+  type SentryAnalyticsOptions
+} from './sentry'
 export {
   Analytics,
   type AnalyticsProperties,

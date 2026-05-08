@@ -7,21 +7,12 @@ export const secret = {
     'SpotifyClientSecret',
     process.env.SPOTIFY_CLIENT_SECRET
   ),
-  // AccessTokenSecret: new sst.Secret(
-  //   'ACCESS_TOKEN_SECRET',
-  //   process.env.ACCESS_TOKEN_SECRET
-  // ),
-  // RefreshTokenSecret: new sst.Secret(
-  //   'REFRESH_TOKEN_SECRET',
-  //   process.env.REFRESH_TOKEN_SECRET
-  // ),
   DatabaseHost: new sst.Secret('DatabaseHost', process.env.DB_HOST),
   DatabaseUser: new sst.Secret('DatabaseUser', process.env.DB_USER),
   DatabasePassword: new sst.Secret('DatabasePassword', process.env.DB_PASSWORD),
   DatabasePort: new sst.Secret('DatabasePort', process.env.DB_PORT),
   DatabaseName: new sst.Secret('DatabaseName', process.env.DB_NAME),
-  POSTHOG_KEY: new sst.Secret('POSTHOG_KEY', process.env.POSTHOG_KEY),
-  POSTHOG_HOST: new sst.Secret('POSTHOG_HOST', process.env.POSTHOG_HOST),
+  SENTRY_DSN: new sst.Secret('SENTRY_DSN', process.env.SENTRY_DSN),
   BETTER_AUTH_SECRET: new sst.Secret(
     'BETTER_AUTH_SECRET',
     process.env.BETTER_AUTH_SECRET
@@ -29,14 +20,6 @@ export const secret = {
   BETTER_AUTH_URL: new sst.Secret(
     'BETTER_AUTH_URL',
     process.env.BETTER_AUTH_URL
-  ),
-  OTEL_EXPORTER_OTLP_ENDPOINT: new sst.Secret(
-    'OTEL_EXPORTER_OTLP_ENDPOINT',
-    process.env.OTEL_EXPORTER_OTLP_ENDPOINT
-  ),
-  GRAFANA_OTLP_TOKEN: new sst.Secret(
-    'GRAFANA_OTLP_TOKEN',
-    process.env.GRAFANA_OTLP_TOKEN
   )
 }
 

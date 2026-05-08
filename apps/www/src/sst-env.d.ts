@@ -6,8 +6,8 @@
 /// <reference types="vite/client" />
 interface ImportMetaEnv {
   readonly VITE_VPS_BASE_URL: string
-  readonly VITE_PUBLIC_POSTHOG_KEY: string
-  readonly VITE_PUBLIC_POSTHOG_HOST: string
+  readonly VITE_PUBLIC_SENTRY_DSN: string
+  readonly VITE_PUBLIC_SENTRY_ENVIRONMENT: string
 }
 interface ImportMeta {
   readonly env: ImportMetaEnv
