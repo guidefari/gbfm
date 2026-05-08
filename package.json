@@ -4,7 +4,7 @@
   "sideEffects": false,
   "private": true,
   "scripts": {
-    "dev": "sst dev --stage=dev",
+    "dev": "sst dev --stage=dev --verbose",
     "refresh": "sst refresh --stage=dev",
     "sso": "aws sso login --sso-session=terminal --no-browser",
     "deploy": "sst deploy --stage=dev",
@@ -34,7 +34,6 @@
   "devDependencies": {
     "@biomejs/biome": "2.4.13",
     "@effect/language-service": "0.85.1",
-    "@effect/tsgo": "0.5.2",
     "@pulumi/hcloud": "^1.34.0",
     "@semantic-release/changelog": "6.0.3",
     "@semantic-release/git": "10.0.1",

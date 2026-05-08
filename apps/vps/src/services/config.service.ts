@@ -75,6 +75,24 @@ function getResourceValue<T extends string | number>(
   }
 }
 
+function parseSentryDsn(dsn: string): {
+  otelEndpoint: string
+  otelToken: string
+} {
+  if (!dsn) return { otelEndpoint: '', otelToken: '' }
+
+  try {
+    const url = new URL(dsn)
+    const projectId = url.pathname.replace(/^\//, '')
+    return {
+      otelEndpoint: `${url.protocol}//${url.host}/api/${projectId}/otlp`,
+      otelToken: url.username
+    }
+  } catch {
+    return { otelEndpoint: '', otelToken: '' }
+  }
+}
+
 // Config schema using Effect Schema
 const ConfigSchema = Schema.Struct({
   database: Schema.Struct({
@@ -120,7 +138,8 @@ const ConfigSchema = Schema.Struct({
   }),
   otel: Schema.Struct({
     endpoint: Schema.optional(Schema.String),
-    token: Schema.optional(Schema.String)
+    token: Schema.optional(Schema.String),
+    headers: Schema.optional(Schema.String)
   })
 })
 
@@ -204,12 +223,11 @@ export function createConfig(): ConfigService {
   const dbStage = process.env.DB_STAGE
   const logLevel = process.env.LOG_LEVEL
 
-  // OpenTelemetry
-  const otelEndpoint =
-    process.env.OTEL_EXPORTER_OTLP_ENDPOINT ||
-    getResourceValue('OTEL_EXPORTER_OTLP_ENDPOINT', '')
-  const otelToken =
-    process.env.GRAFANA_OTLP_TOKEN || getResourceValue('GRAFANA_OTLP_TOKEN', '')
+  const sentryDsn = process.env.SENTRY_DSN || getResourceValue('SENTRY_DSN', '')
+  const { otelEndpoint, otelToken } = parseSentryDsn(sentryDsn)
+  const otelHeaders = otelToken
+    ? `x-sentry-auth=sentry_version=7, sentry_key=${otelToken}`
+    : ''
 
   return {
     database: {
@@ -252,7 +270,8 @@ export function createConfig(): ConfigService {
     },
     otel: {
       endpoint: otelEndpoint,
-      token: otelToken
+      token: otelToken,
+      headers: otelHeaders
     },
     resources: {
       available: Resource !== null

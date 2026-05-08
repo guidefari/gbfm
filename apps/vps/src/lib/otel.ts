@@ -21,13 +21,39 @@ const traceExporterUrl = otlpEndpoint.endsWith('/v1/traces')
 
 console.log('[OTEL] Exporting traces to:', traceExporterUrl)
 
+function parseOtelHeaders(headers: string | undefined) {
+  if (!headers) return undefined
+
+  return headers
+    .split(',')
+    .map((header) => header.trim())
+    .filter(Boolean)
+    .reduce<Record<string, string>>((acc, header) => {
+      const separatorIndex = header.indexOf('=')
+
+      if (separatorIndex === -1) return acc
+
+      const key = header.slice(0, separatorIndex).trim()
+      const value = header.slice(separatorIndex + 1).trim()
+
+      if (key && value) {
+        acc[key] = value
+      }
+
+      return acc
+    }, {})
+}
+
+const otelHeaders = parseOtelHeaders(config.otel.headers)
+
 const spanProcessor = [
   ...(config.app.nodeEnv === 'production'
     ? []
     : [new SimpleSpanProcessor(new ConsoleSpanExporter())]),
   new BatchSpanProcessor(
     new OTLPTraceExporter({
-      url: traceExporterUrl
+      url: traceExporterUrl,
+      ...(otelHeaders ? { headers: otelHeaders } : {})
     })
   )
 ]

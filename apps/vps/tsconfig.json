@@ -20,12 +20,7 @@
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
-    "plugins": [
-      {
-        "name": "@effect/language-service",
-        "namespaceImportPackages": ["effect", "@effect/*"]
-      }
-    ],
+    "plugins": [{ "name": "@effect/language-service" }],
     "types": ["@types/bun"],
     "paths": {
       "*": ["./*"],

@@ -17,13 +17,7 @@
     "sourceMap": true,
     "incremental": true,
     "composite": true,
-    "plugins": [
-      {
-        "name": "@effect/language-service",
-        "namespaceImportPackages": ["effect", "@effect/*"]
-      }
-    ]
+    "plugins": [{ "name": "@effect/language-service" }]
   },
-  "files": ["infra/otel.ts"],
   "exclude": [".sst"]
 }

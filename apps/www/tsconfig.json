@@ -21,12 +21,7 @@
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
 		"noFallthroughCasesInSwitch": true,
-		"plugins": [
-			{
-				"name": "@effect/language-service",
-				"namespaceImportPackages": ["effect", "@effect/*"]
-			}
-		],
+		"plugins": [{ "name": "@effect/language-service" }],
 
 		"paths": {
 			"@/*": ["./src/*"]

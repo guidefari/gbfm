@@ -13,12 +13,7 @@
     "declaration": true,
     "declarationMap": true,
     "types": ["@types/bun"],
-    "plugins": [
-      {
-        "name": "@effect/language-service",
-        "namespaceImportPackages": ["effect", "@effect/*"]
-      }
-    ]
+    "plugins": [{ "name": "@effect/language-service" }]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
