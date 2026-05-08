@@ -1,3 +1,15 @@
+# [2.35.0](https://github.com/guidefari/gbfm/compare/v2.34.2...v2.35.0) (2026-05-08)
+
+
+### Bug Fixes
+
+* biome schema ([2971027](https://github.com/guidefari/gbfm/commit/2971027508525b22d4ad422afc268306ac077a46))
+
+
+### Features
+
+* otel cont ([9583761](https://github.com/guidefari/gbfm/commit/9583761463353896025d29d74afabcba15773c7e))
+
 ## [2.34.2](https://github.com/guidefari/gbfm/compare/v2.34.1...v2.34.2) (2026-04-28)
 
 
