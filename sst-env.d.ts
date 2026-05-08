@@ -57,10 +57,6 @@ declare module "sst" {
       "sender": string
       "type": "sst.aws.Email"
     }
-    "GRAFANA_OTLP_TOKEN": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
     "MDX_Bucket": {
       "name": string
       "type": "sst.aws.Bucket"
@@ -69,21 +65,13 @@ declare module "sst" {
       "name": string
       "type": "sst.aws.Bucket"
     }
-    "OTEL_EXPORTER_OTLP_ENDPOINT": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
-    "POSTHOG_HOST": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
-    "POSTHOG_KEY": {
-      "type": "sst.sst.Secret"
-      "value": string
-    }
     "Router": {
       "type": "sst.aws.Router"
       "url": string
+    }
+    "SENTRY_DSN": {
+      "type": "sst.sst.Secret"
+      "value": string
     }
     "SpotifyClientId": {
       "type": "sst.sst.Secret"
