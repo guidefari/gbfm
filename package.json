@@ -11,7 +11,7 @@
     "deploy:prod": "sst deploy --stage=prod",
     "gen": "cd vps && sst shell drizzle-kit generate",
     "release": "semantic-release",
-    "typecheck": "bun --filter='*' typecheck",
+    "typecheck": "tsgo --noEmit && bun --filter='*' typecheck",
     "lint": "biome lint .",
     "lint:fix": "biome lint --write .",
     "format": "biome format --write .",
@@ -34,14 +34,16 @@
   "devDependencies": {
     "@biomejs/biome": "2.4.13",
     "@effect/language-service": "0.85.1",
+    "@effect/tsgo": "0.5.2",
+    "@pulumi/hcloud": "^1.34.0",
     "@semantic-release/changelog": "6.0.3",
     "@semantic-release/git": "10.0.1",
     "@semantic-release/github": "12.0.6",
     "@tsconfig/bun": "1.0.10",
+    "@typescript/native-preview": "7.0.0-dev.20260428.1",
     "lefthook": "2.1.6",
     "madge": "8.0.0",
     "semantic-release": "25.0.3",
-    "@typescript/native-preview": "7.0.0-dev.20260428.1",
     "typescript": "6.0.3"
   },
   "overrides": {

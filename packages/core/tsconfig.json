@@ -12,7 +12,13 @@
     "noEmit": true,
     "declaration": true,
     "declarationMap": true,
-    "types": ["@types/bun"]
+    "types": ["@types/bun"],
+    "plugins": [
+      {
+        "name": "@effect/language-service",
+        "namespaceImportPackages": ["effect", "@effect/*"]
+      }
+    ]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]

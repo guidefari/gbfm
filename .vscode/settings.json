@@ -11,7 +11,8 @@
     "titleBar.inactiveBackground": "#7abcd780"
   },
   "typescript.tsdk": "./node_modules/typescript/lib",
-  "typescript.enablePromptUseWorkspaceTsdk": true
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.native-preview.tsdk": "/Users/guidefari/source/oss/gbfm/node_modules/@typescript/native-preview"
 }
 
 
