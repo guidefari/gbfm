@@ -48,6 +48,7 @@ import { Route as AuthSignUpRouteImport } from './routes/auth/sign-up'
 import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
 import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
+import { Route as AdminPlaylistsRouteImport } from './routes/admin/playlists'
 import { Route as AdminOverviewRouteImport } from './routes/admin/overview'
 import { Route as AdminCaptureRouteImport } from './routes/admin/capture'
 
@@ -261,6 +262,11 @@ const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
   path: '/auth/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminPlaylistsRoute = AdminPlaylistsRouteImport.update({
+  id: '/admin/playlists',
+  path: '/admin/playlists',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminOverviewRoute = AdminOverviewRouteImport.update({
   id: '/admin/overview',
   path: '/admin/overview',
@@ -294,6 +300,7 @@ export interface FileRoutesByFullPath {
   '/upload': typeof UploadLazyRoute
   '/admin/capture': typeof AdminCaptureRoute
   '/admin/overview': typeof AdminOverviewRoute
+  '/admin/playlists': typeof AdminPlaylistsRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/sign-in': typeof AuthSignInRoute
@@ -334,6 +341,7 @@ export interface FileRoutesByTo {
   '/upload': typeof UploadLazyRoute
   '/admin/capture': typeof AdminCaptureRoute
   '/admin/overview': typeof AdminOverviewRoute
+  '/admin/playlists': typeof AdminPlaylistsRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/sign-in': typeof AuthSignInRoute
@@ -380,6 +388,7 @@ export interface FileRoutesById {
   '/upload': typeof UploadLazyRoute
   '/admin/capture': typeof AdminCaptureRoute
   '/admin/overview': typeof AdminOverviewRoute
+  '/admin/playlists': typeof AdminPlaylistsRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/sign-in': typeof AuthSignInRoute
@@ -427,6 +436,7 @@ export interface FileRouteTypes {
     | '/upload'
     | '/admin/capture'
     | '/admin/overview'
+    | '/admin/playlists'
     | '/auth/forgot-password'
     | '/auth/reset-password'
     | '/auth/sign-in'
@@ -467,6 +477,7 @@ export interface FileRouteTypes {
     | '/upload'
     | '/admin/capture'
     | '/admin/overview'
+    | '/admin/playlists'
     | '/auth/forgot-password'
     | '/auth/reset-password'
     | '/auth/sign-in'
@@ -512,6 +523,7 @@ export interface FileRouteTypes {
     | '/upload'
     | '/admin/capture'
     | '/admin/overview'
+    | '/admin/playlists'
     | '/auth/forgot-password'
     | '/auth/reset-password'
     | '/auth/sign-in'
@@ -558,6 +570,7 @@ export interface RootRouteChildren {
   UploadLazyRoute: typeof UploadLazyRoute
   AdminCaptureRoute: typeof AdminCaptureRoute
   AdminOverviewRoute: typeof AdminOverviewRoute
+  AdminPlaylistsRoute: typeof AdminPlaylistsRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute
   AuthSignInRoute: typeof AuthSignInRoute
@@ -861,6 +874,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/playlists': {
+      id: '/admin/playlists'
+      path: '/admin/playlists'
+      fullPath: '/admin/playlists'
+      preLoaderRoute: typeof AdminPlaylistsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/overview': {
       id: '/admin/overview'
       path: '/admin/overview'
@@ -970,6 +990,7 @@ const rootRouteChildren: RootRouteChildren = {
   UploadLazyRoute: UploadLazyRoute,
   AdminCaptureRoute: AdminCaptureRoute,
   AdminOverviewRoute: AdminOverviewRoute,
+  AdminPlaylistsRoute: AdminPlaylistsRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthResetPasswordRoute: AuthResetPasswordRoute,
   AuthSignInRoute: AuthSignInRoute,
