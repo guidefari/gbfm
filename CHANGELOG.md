@@ -1,3 +1,13 @@
+# [2.37.0](https://github.com/guidefari/gbfm/compare/v2.36.0...v2.37.0) (2026-05-09)
+
+
+### Features
+
+* **db:** extend posts with music entity linking ([95e1ff8](https://github.com/guidefari/gbfm/commit/95e1ff8a504ea54b73fb2554d6cdcd98733f099b))
+* **music:** add entity resolver endpoint ([1194f1c](https://github.com/guidefari/gbfm/commit/1194f1c09ae09b41b46bb53363d7b41a8472295a))
+* sentry BE ([fed2902](https://github.com/guidefari/gbfm/commit/fed2902738d9efc0e40e2caf4bbd5631ae88a2be))
+* **www:** add music capture UI for creating posts from URLs ([0f9d13d](https://github.com/guidefari/gbfm/commit/0f9d13dd6ad1594261f4869f29b3adc2fc0e6a45))
+
 # [2.36.0](https://github.com/guidefari/gbfm/compare/v2.35.0...v2.36.0) (2026-05-09)
 
 
