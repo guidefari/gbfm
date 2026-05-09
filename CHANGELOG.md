@@ -1,3 +1,16 @@
+# [2.39.0](https://github.com/guidefari/gbfm/compare/v2.38.1...v2.39.0) (2026-05-09)
+
+
+### Bug Fixes
+
+* **www:** place biome suppression on key prop line ([0943e97](https://github.com/guidefari/gbfm/commit/0943e9794eabe5fc92bf0097a6457af0cffd6459))
+
+
+### Features
+
+* **www:** add tweets and editorial to nav and command palette ([f56f102](https://github.com/guidefari/gbfm/commit/f56f10223abf928ba48c215cabd6ada738437098))
+* **www:** refresh tweet post page ([52dcc2a](https://github.com/guidefari/gbfm/commit/52dcc2abe26fa1fa457d4580e5bdc7682502d5bd))
+
 ## [2.38.1](https://github.com/guidefari/gbfm/compare/v2.38.0...v2.38.1) (2026-05-09)
 
 
