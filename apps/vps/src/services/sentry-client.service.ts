@@ -1,5 +1,7 @@
 import * as Sentry from '@sentry/bun'
-import type { Client } from '@sentry/core'
+
+type Client = NonNullable<ReturnType<typeof Sentry.getClient>>
+
 import { Context, Effect, Layer } from 'effect'
 import { ConfigService } from './config.service'
 
