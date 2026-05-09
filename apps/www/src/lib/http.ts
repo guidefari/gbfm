@@ -247,6 +247,42 @@ export function useEnrichTrackFromUrl(url: string) {
   }
 }
 
+export type ResolvedMusicEntity = {
+  entityType: 'album' | 'track' | 'playlist'
+  entity: {
+    id: string
+    title: string
+    slug: string
+    coverImageUrl: string | null
+    artistNames?: string[] | null
+    description?: string | null
+  }
+  links: Array<{
+    platform: string
+    url: string
+  }>
+  coverImageUrl: string | null
+}
+
+export function useResolveMusicEntity(url: string) {
+  const { data, error, isLoading } = useQuery<ResolvedMusicEntity>({
+    queryKey: ['music/resolve', url],
+    queryFn: async () =>
+      fetcher(`${VPS_BASE_URL}/music/resolve`, {
+        method: 'POST',
+        body: JSON.stringify({ url })
+      }),
+    enabled: !!url && url.length > 10,
+    staleTime: 15 * 60 * 1000
+  })
+
+  return {
+    data,
+    error,
+    isLoading
+  }
+}
+
 export function useUserLOL() {
   const { data, error, isPending } = useQuery<User, Error>({
     queryKey: ['user'],

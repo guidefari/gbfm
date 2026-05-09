@@ -211,6 +211,20 @@ export function ContentTab() {
 
   return (
     <div className='space-y-4'>
+      <div className='flex flex-wrap gap-2'>
+        <Button asChild size='sm'>
+          <Link to='/post-upload' search={{ type: 'post' }}>
+            <Plus className='w-4 h-4 mr-2' />
+            New editorial
+          </Link>
+        </Button>
+        <Button asChild size='sm' variant='outline'>
+          <Link to='/post-upload' search={{ type: 'micro' }}>
+            <Plus className='w-4 h-4 mr-2' />
+            New tweet
+          </Link>
+        </Button>
+      </div>
       <Tabs defaultValue='mixes'>
         <TabsList>
           <TabsTrigger value='mixes'>Mixes ({mixes.length})</TabsTrigger>
