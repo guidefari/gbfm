@@ -20,6 +20,7 @@ import { ReminderSignalServiceLive } from '@/services/reminder-signal.service'
 import { ResolveServiceLive } from '@/services/resolve.service'
 import { S3ServiceLive } from '@/services/s3.service'
 import { SentryServiceLive } from '@/services/sentry.service'
+import { SentryClientServiceLive } from '@/services/sentry-client.service'
 import {
   ShowServiceLive,
   ShowSubscriptionServiceLive
@@ -41,6 +42,10 @@ export const DatabaseServiceLive = Layer.succeed(DatabaseService, {
 const DevToolsLive: Layer.Layer<never> =
   process.env.NODE_ENV === 'production' ? Layer.empty : DevTools.layer()
 
+const SentryClientLive = SentryClientServiceLive.pipe(
+  Layer.provide(ConfigServiceLive)
+)
+
 const BaseServicesLayer = Layer.mergeAll(
   ConfigServiceLive,
   DatabaseServiceLive,
@@ -57,7 +62,7 @@ const BaseServicesLayer = Layer.mergeAll(
   ResolveServiceLive,
   ReleaseServiceLive,
   S3ServiceLive,
-  SentryServiceLive.pipe(Layer.provide(ConfigServiceLive)),
+  SentryServiceLive.pipe(Layer.provide(SentryClientLive)),
   ShowServiceLive,
   ShowSubscriptionServiceLive,
   UserServiceLive,
@@ -72,6 +77,11 @@ const ServicesLayer = Layer.mergeAll(
 )
 
 export const AppLayer = ServicesLayer.pipe(
-  Layer.provide(OtlpLive.pipe(Layer.provide(ConfigServiceLive))),
+  Layer.provide(
+    OtlpLive.pipe(
+      Layer.provide(ConfigServiceLive),
+      Layer.provide(SentryClientLive)
+    )
+  ),
   Layer.provide(AppLoggerLive)
 )

@@ -54,9 +54,6 @@ const pinoInstance = pino(
   config.app.nodeEnv === 'production' ? undefined : pretty()
 )
 
-const sentryEnabled =
-  config.sentry.dsn.length > 0 || process.env.SENTRY_ENABLED === 'true'
-
 function pinoLevel(level: LogLevel.LogLevel): pino.Level {
   switch (level._tag) {
     case 'Trace':
@@ -101,7 +98,7 @@ export const AppLogger = Logger.make(
 
     pinoInstance[pinoLevel(logLevel)](payload, msg)
 
-    if (!sentryEnabled) return
+    if (!Sentry.getClient()) return
 
     const sentryLogger = Sentry.logger
     switch (logLevel._tag) {

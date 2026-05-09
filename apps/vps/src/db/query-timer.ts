@@ -1,65 +1,67 @@
-import { Effect } from 'effect'
+import { Cause, Data, Effect, Exit } from 'effect'
 
-const SLOW_QUERY_THRESHOLD = 100 // ms
-const VERY_SLOW_QUERY_THRESHOLD = 500 // ms
+const SLOW_QUERY_THRESHOLD = 100
+const VERY_SLOW_QUERY_THRESHOLD = 500
 
-async function runWithAppRuntime(effect: Effect.Effect<void>): Promise<void> {
-  const { AppRuntime } = await import('@/runtime')
-  await AppRuntime.runPromise(effect)
+class QueryFailure extends Data.TaggedError('QueryFailure')<{
+  readonly cause: unknown
+}> {}
+
+let runtimePromise: Promise<typeof import('@/runtime').AppRuntime> | undefined
+const getRuntime = () => {
+  runtimePromise ??= import('@/runtime').then((m) => m.AppRuntime)
+  return runtimePromise
 }
 
 export async function timeQuery<T>(
   queryFn: () => Promise<T>,
   context: string
 ): Promise<T> {
-  const startTime = performance.now()
+  const AppRuntime = await getRuntime()
 
-  try {
-    const result = await queryFn()
-    const duration = performance.now() - startTime
-    const roundedDuration = Math.round(duration * 100) / 100
+  const program = Effect.gen(function* () {
+    const start = performance.now()
+    const result = yield* Effect.tryPromise({
+      try: () => queryFn(),
+      catch: (cause) => new QueryFailure({ cause })
+    })
+    const duration = Math.round((performance.now() - start) * 100) / 100
 
     if (duration > VERY_SLOW_QUERY_THRESHOLD) {
-      await runWithAppRuntime(
-        Effect.logError('[Performance] Very slow database query detected', {
-          context,
-          duration: roundedDuration,
-          threshold: VERY_SLOW_QUERY_THRESHOLD,
-          severity: 'critical'
-        })
-      )
+      yield* Effect.logError('[DB] Very slow query', {
+        context,
+        duration,
+        threshold: VERY_SLOW_QUERY_THRESHOLD
+      })
     } else if (duration > SLOW_QUERY_THRESHOLD) {
-      await runWithAppRuntime(
-        Effect.logWarning('[Performance] Slow database query detected', {
-          context,
-          duration: roundedDuration,
-          threshold: SLOW_QUERY_THRESHOLD,
-          severity: 'warning'
-        })
-      )
-    } else {
-      await runWithAppRuntime(
-        Effect.logDebug('[Performance] Database query', {
-          context,
-          duration: roundedDuration,
-          status: 'success'
-        })
-      )
+      yield* Effect.logWarning('[DB] Slow query', {
+        context,
+        duration,
+        threshold: SLOW_QUERY_THRESHOLD
+      })
     }
 
     return result
-  } catch (error) {
-    const duration = performance.now() - startTime
-
-    await runWithAppRuntime(
-      Effect.logError('[Performance] Database query failed', {
+  }).pipe(
+    Effect.tapError((failure) =>
+      Effect.logError('[DB] Query failed', {
         context,
-        duration: Math.round(duration * 100) / 100,
-        error: error instanceof Error ? error.message : String(error),
-        severity: 'error'
+        error:
+          failure.cause instanceof Error
+            ? failure.cause.message
+            : String(failure.cause)
       })
-    )
+    ),
+    Effect.withSpan('db.query', { attributes: { 'db.context': context } })
+  )
 
-    throw error
+  const exit = await AppRuntime.runPromiseExit(program)
+  if (Exit.isSuccess(exit)) return exit.value
+
+  const failure = Cause.failureOption(exit.cause)
+  if (failure._tag === 'Some') {
+    const cause = failure.value.cause
+    throw cause instanceof Error ? cause : new Error(String(cause))
   }
+  throw new Error(Cause.pretty(exit.cause))
 }

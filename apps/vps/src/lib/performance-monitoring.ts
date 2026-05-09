@@ -1,81 +1,88 @@
+import * as Sentry from '@sentry/bun'
 import { Effect, Metric } from 'effect'
 import { pool } from '@/db'
+
+const SLOW_REQUEST_THRESHOLD = 500
 
 const requestCount = Metric.counter('request_count', {
   description: 'Total number of requests'
 })
-
 const errorCount = Metric.counter('error_count', {
   description: 'Total number of errors'
 })
-
 const slowRequestCount = Metric.counter('slow_request_count', {
   description: 'Total number of slow requests (>500ms)'
 })
-
 const responseTime = Metric.gauge('response_time_ms', {
   description: 'Most recent response time in milliseconds'
 })
-
 const heapUsed = Metric.gauge('heap_used_mb', {
   description: 'Current heap memory usage in MB'
 })
-
 const uptime = Metric.gauge('uptime_seconds', {
   description: 'Process uptime in seconds'
 })
-
-// Business metrics
 const favoriteAddCount = Metric.counter('favorite_add_count', {
   description: 'Total favorites added'
 })
-
 const favoriteRemoveCount = Metric.counter('favorite_remove_count', {
   description: 'Total favorites removed'
 })
-
 const showSubscribeCount = Metric.counter('show_subscribe_count', {
   description: 'Total show subscriptions'
 })
-
 const showUnsubscribeCount = Metric.counter('show_unsubscribe_count', {
   description: 'Total show unsubscriptions'
 })
-
 const audioCreateCount = Metric.counter('audio_create_count', {
   description: 'Total audio content created'
 })
-
 const emailSendCount = Metric.counter('email_send_count', {
   description: 'Total emails sent'
 })
-
 const emailFailCount = Metric.counter('email_fail_count', {
   description: 'Total email send failures'
 })
-
-// Database operation gauges
 const dbQueryDuration = Metric.gauge('db_query_duration_ms', {
   description: 'Most recent database query duration in milliseconds'
 })
-
 const activeConnections = Metric.gauge('active_db_connections', {
   description: 'Current number of active database connections'
 })
 
-const SLOW_REQUEST_THRESHOLD = 500
+const mirrorCount = (name: string, value = 1) =>
+  Effect.sync(() => {
+    if (!Sentry.getClient()) return
+    Sentry.metrics.count(name, value)
+  })
+
+const mirrorGauge = (name: string, value: number, unit?: string) =>
+  Effect.sync(() => {
+    if (!Sentry.getClient()) return
+    Sentry.metrics.gauge(name, value, unit ? { unit } : undefined)
+  })
+
+const mirrorDistribution = (name: string, value: number, unit?: string) =>
+  Effect.sync(() => {
+    if (!Sentry.getClient()) return
+    Sentry.metrics.distribution(name, value, unit ? { unit } : undefined)
+  })
 
 export const recordRequest = (duration: number, isError = false) =>
   Effect.gen(function* () {
     yield* requestCount(Effect.succeed(1))
     yield* responseTime(Effect.succeed(duration))
+    yield* mirrorCount('request_count')
+    yield* mirrorDistribution('response_time_ms', duration, 'millisecond')
 
     if (isError) {
       yield* errorCount(Effect.succeed(1))
+      yield* mirrorCount('error_count')
     }
 
     if (duration > SLOW_REQUEST_THRESHOLD) {
       yield* slowRequestCount(Effect.succeed(1))
+      yield* mirrorCount('slow_request_count')
     }
   })
 
@@ -84,6 +91,9 @@ export const checkPerformanceHealth = Effect.gen(function* () {
   yield* heapUsed(Effect.succeed(heapUsedMB))
   yield* uptime(Effect.succeed(process.uptime()))
   yield* activeConnections(Effect.succeed(pool.totalCount))
+  yield* mirrorGauge('heap_used_mb', heapUsedMB, 'megabyte')
+  yield* mirrorGauge('uptime_seconds', process.uptime(), 'second')
+  yield* mirrorGauge('active_db_connections', pool.totalCount)
 
   if (heapUsedMB > 500) {
     yield* Effect.logWarning('[Performance] High memory usage detected', {
@@ -93,15 +103,48 @@ export const checkPerformanceHealth = Effect.gen(function* () {
   }
 })
 
-export const recordFavoriteAdd = () => favoriteAddCount(Effect.succeed(1))
-export const recordFavoriteRemove = () => favoriteRemoveCount(Effect.succeed(1))
-export const recordShowSubscribe = () => showSubscribeCount(Effect.succeed(1))
+export const recordFavoriteAdd = () =>
+  Effect.zipRight(
+    favoriteAddCount(Effect.succeed(1)),
+    mirrorCount('favorite_add_count')
+  )
+export const recordFavoriteRemove = () =>
+  Effect.zipRight(
+    favoriteRemoveCount(Effect.succeed(1)),
+    mirrorCount('favorite_remove_count')
+  )
+export const recordShowSubscribe = () =>
+  Effect.zipRight(
+    showSubscribeCount(Effect.succeed(1)),
+    mirrorCount('show_subscribe_count')
+  )
 export const recordShowUnsubscribe = () =>
-  showUnsubscribeCount(Effect.succeed(1))
-export const recordAudioCreate = () => audioCreateCount(Effect.succeed(1))
-export const recordEmailSend = () => emailSendCount(Effect.succeed(1))
-export const recordEmailFail = () => emailFailCount(Effect.succeed(1))
+  Effect.zipRight(
+    showUnsubscribeCount(Effect.succeed(1)),
+    mirrorCount('show_unsubscribe_count')
+  )
+export const recordAudioCreate = () =>
+  Effect.zipRight(
+    audioCreateCount(Effect.succeed(1)),
+    mirrorCount('audio_create_count')
+  )
+export const recordEmailSend = () =>
+  Effect.zipRight(
+    emailSendCount(Effect.succeed(1)),
+    mirrorCount('email_send_count')
+  )
+export const recordEmailFail = () =>
+  Effect.zipRight(
+    emailFailCount(Effect.succeed(1)),
+    mirrorCount('email_fail_count')
+  )
 export const recordDbQueryDuration = (duration: number) =>
-  dbQueryDuration(Effect.succeed(duration))
+  Effect.zipRight(
+    dbQueryDuration(Effect.succeed(duration)),
+    mirrorDistribution('db_query_duration_ms', duration, 'millisecond')
+  )
 export const recordActiveConnections = () =>
-  activeConnections(Effect.succeed(pool.totalCount))
+  Effect.zipRight(
+    activeConnections(Effect.succeed(pool.totalCount)),
+    mirrorGauge('active_db_connections', pool.totalCount)
+  )
