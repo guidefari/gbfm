@@ -8,8 +8,10 @@ import {
 const analyticsLayer = env.sentryDsn
   ? makeSentryAnalyticsLayer({
       dsn: env.sentryDsn,
-      environment: env.sentryEnvironment,
-      debug: env.isDev
+      environment:
+        env.sentryEnvironment ?? (env.isDev ? 'development' : 'production'),
+      debug: env.isDev,
+      tracesSampleRate: env.isDev ? 1.0 : 0.1
     })
   : NoopAnalyticsLayer
 

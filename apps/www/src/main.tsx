@@ -1,9 +1,13 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createRouter, RouterProvider } from '@tanstack/react-router'
+import { Effect } from 'effect'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { RuntimeClient } from '@/runtime'
-import { page } from '@/services/analytics'
+import { Analytics, page } from '@/services/analytics'
+
+void RuntimeClient.runPromise(Effect.asVoid(Analytics))
+
 import { MAIN_SCROLL_CONTAINER_ID } from './lib/constants'
 import { routeTree } from './routeTree.gen'
 import './styles/main.css'
