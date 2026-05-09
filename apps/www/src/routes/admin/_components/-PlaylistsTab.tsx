@@ -1,10 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ChevronDown, ChevronRight, Loader2, Plus } from 'lucide-react'
+import {
+  ArrowLeft,
+  ChevronDown,
+  ChevronRight,
+  Loader2,
+  Plus
+} from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { toast } from '@/components/ui/use-toast'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
 import { PlaylistEditor, type PlaylistSummary } from './-PlaylistEditor'
@@ -73,9 +78,15 @@ export function PlaylistsTab() {
   const playlists = playlistsQuery.data ?? []
   const selected = playlists.find((p) => p.id === selectedId) ?? null
 
+  const showSidebar = !selected
+  const showEditor = !!selected
+
   return (
     <div className='flex h-full'>
-      <aside className='flex flex-col w-80 border-r shrink-0'>
+      <aside
+        className={`flex-col w-full md:w-80 border-r shrink-0 md:flex ${
+          showSidebar ? 'flex' : 'hidden'
+        }`}>
         <div className='border-b'>
           <button
             type='button'
@@ -132,7 +143,7 @@ export function PlaylistsTab() {
           Playlists {playlists.length > 0 && `(${playlists.length})`}
         </div>
 
-        <ScrollArea className='flex-1'>
+        <div className='flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none]'>
           {playlistsQuery.isLoading && (
             <div className='px-4 py-2 text-sm text-muted-foreground'>
               Loading…
@@ -156,10 +167,10 @@ export function PlaylistsTab() {
                   <button
                     type='button'
                     onClick={() => setSelectedId(p.id)}
-                    className={`flex items-center w-full gap-3 px-4 py-2 text-left transition-colors ${
+                    className={`flex items-center w-full gap-3 px-4 py-2 text-left border-l-2 transition-colors ${
                       active
-                        ? 'bg-muted text-foreground'
-                        : 'hover:bg-muted/50 text-muted-foreground hover:text-foreground'
+                        ? 'bg-muted text-foreground border-primary'
+                        : 'border-transparent hover:bg-muted/50 text-muted-foreground hover:text-foreground'
                     }`}>
                     {p.coverImageUrl ? (
                       <img
@@ -183,18 +194,34 @@ export function PlaylistsTab() {
               )
             })}
           </ul>
-        </ScrollArea>
+        </div>
       </aside>
 
-      <main className='flex-1 min-w-0'>
+      <main
+        className={`flex-1 min-w-0 ${showEditor ? 'flex' : 'hidden md:flex'} flex-col`}>
         {selected ? (
-          <ScrollArea className='h-full'>
-            <div className='p-6'>
-              <PlaylistEditor key={selected.id} playlist={selected} />
+          <>
+            <div className='flex items-center gap-2 px-4 py-2 border-b md:hidden shrink-0'>
+              <Button
+                type='button'
+                variant='ghost'
+                size='sm'
+                onClick={() => setSelectedId(null)}>
+                <ArrowLeft className='w-4 h-4 mr-2' />
+                Playlists
+              </Button>
+              <span className='text-sm font-medium truncate'>
+                {selected.title}
+              </span>
             </div>
-          </ScrollArea>
+            <div className='flex-1 min-h-0 overflow-y-auto lg:overflow-hidden [&::-webkit-scrollbar]:hidden [scrollbar-width:none]'>
+              <div className='p-4 md:p-6 lg:h-full'>
+                <PlaylistEditor key={selected.id} playlist={selected} />
+              </div>
+            </div>
+          </>
         ) : (
-          <div className='flex items-center justify-center h-full text-sm text-muted-foreground'>
+          <div className='items-center justify-center hidden h-full text-sm md:flex text-muted-foreground'>
             Select a playlist to edit.
           </div>
         )}

@@ -106,10 +106,10 @@ export function SortableTrackRow({ track, onRemove, removeDisabled }: Props) {
     <div
       ref={setNodeRef}
       style={style}
-      className='flex items-center gap-3 p-2 border rounded bg-background'>
+      className='group flex items-center gap-3 px-2 py-1.5 border border-transparent rounded hover:bg-muted/40 hover:border-border'>
       <button
         type='button'
-        className='cursor-grab active:cursor-grabbing touch-none text-muted-foreground hover:text-foreground'
+        className='opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing touch-none text-muted-foreground hover:text-foreground'
         {...attributes}
         {...listeners}
         aria-label='Drag handle'>
@@ -148,7 +148,7 @@ export function SortableTrackRow({ track, onRemove, removeDisabled }: Props) {
         <div className='text-xs text-muted-foreground truncate'>
           {track.artistNames?.join(', ') ?? ''}
         </div>
-        {track.links && track.links.length > 0 && (
+        {track.links && track.links.length > 1 && (
           <div className='mt-1 flex flex-wrap gap-1.5'>
             {track.links.map((link) => {
               const entry = PLATFORM_ICONS[link.platform]
@@ -189,7 +189,8 @@ export function SortableTrackRow({ track, onRemove, removeDisabled }: Props) {
         size='sm'
         onClick={() => onRemove(track.trackId)}
         disabled={removeDisabled}
-        aria-label='Remove track'>
+        aria-label='Remove track'
+        className='opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive'>
         <Trash2 className='w-4 h-4' />
       </Button>
     </div>

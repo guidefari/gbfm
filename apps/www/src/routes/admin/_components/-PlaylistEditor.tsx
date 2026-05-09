@@ -15,7 +15,7 @@ import {
   verticalListSortingStrategy
 } from '@dnd-kit/sortable'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Loader2 } from 'lucide-react'
+import { ExternalLink, Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -32,6 +32,7 @@ export interface PlaylistSummary {
   description: string | null
   coverImageUrl: string | null
   slug: string
+  spotifyUrl?: string | null
 }
 
 interface PlaylistTracksApiRow {
@@ -162,8 +163,8 @@ export function PlaylistEditor({ playlist }: Props) {
   const metadataMutation = useMutation({
     mutationFn: async (data: {
       title: string
-      description: string | null
-      coverImageUrl: string | null
+      description?: string
+      coverImageUrl?: string
     }) =>
       fetcher(`${VPS_BASE_URL}/music/playlists/${playlist.id}`, {
         method: 'PATCH',
@@ -199,8 +200,8 @@ export function PlaylistEditor({ playlist }: Props) {
     e.preventDefault()
     metadataMutation.mutate({
       title: title.trim(),
-      description: description.trim() || null,
-      coverImageUrl: coverImageUrl.trim() || null
+      description: description.trim() || undefined,
+      coverImageUrl: coverImageUrl.trim() || undefined
     })
   }
 
@@ -217,53 +218,101 @@ export function PlaylistEditor({ playlist }: Props) {
     coverImageUrl !== (playlist.coverImageUrl ?? '')
 
   return (
-    <div className='grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]'>
-      <section className='space-y-4'>
-        <h2 className='text-lg font-semibold'>Metadata</h2>
-        <form onSubmit={handleSaveMetadata} className='space-y-3'>
-          <div className='space-y-1'>
-            <Label htmlFor={`title-${playlist.id}`}>Title</Label>
-            <Input
-              id={`title-${playlist.id}`}
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              required
+    <div className='grid gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:h-full lg:min-h-0'>
+      <section className='flex flex-col lg:min-h-0 lg:overflow-hidden'>
+        <form
+          onSubmit={handleSaveMetadata}
+          className='flex flex-col gap-4 lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:pr-2 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]'>
+          <div className='flex items-start gap-4'>
+            <ImageUploadField
+              label='Cover image'
+              value={coverImageUrl}
+              onChange={setCoverImageUrl}
+              variant='compact'
+              size={144}
+              hideLabel
             />
+            <div className='flex flex-col flex-1 min-w-0 gap-2'>
+              <Label
+                htmlFor={`title-${playlist.id}`}
+                className='text-xs uppercase tracking-wide text-muted-foreground'>
+                Title
+              </Label>
+              <Input
+                id={`title-${playlist.id}`}
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                required
+                className='text-lg font-semibold h-auto py-2'
+              />
+              <div className='flex items-center gap-3 text-xs text-muted-foreground'>
+                <span className='truncate'>{playlist.slug}</span>
+                {playlist.spotifyUrl && (
+                  <a
+                    href={playlist.spotifyUrl}
+                    target='_blank'
+                    rel='noopener noreferrer'
+                    className='inline-flex items-center gap-1 underline hover:text-foreground'
+                    title={playlist.spotifyUrl}>
+                    Source
+                    <ExternalLink className='w-3 h-3' />
+                  </a>
+                )}
+              </div>
+            </div>
           </div>
           <div className='space-y-1'>
-            <Label htmlFor={`desc-${playlist.id}`}>Description</Label>
+            <Label
+              htmlFor={`desc-${playlist.id}`}
+              className='text-xs uppercase tracking-wide text-muted-foreground'>
+              Description
+            </Label>
             <Textarea
               id={`desc-${playlist.id}`}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className='min-h-24'
+              className='min-h-32'
             />
           </div>
-          <ImageUploadField
-            label='Cover image'
-            value={coverImageUrl}
-            onChange={setCoverImageUrl}
-          />
-          <Button
-            type='submit'
-            size='sm'
-            disabled={!metadataDirty || metadataMutation.isPending}>
-            {metadataMutation.isPending ? (
-              <>
-                <Loader2 className='w-3 h-3 mr-2 animate-spin' />
-                Saving
-              </>
-            ) : (
-              'Save metadata'
-            )}
-          </Button>
+          {metadataDirty && (
+            <div className='sticky bottom-0 flex items-center justify-end gap-2 py-2 bg-background/90 backdrop-blur'>
+              <Button
+                type='button'
+                variant='ghost'
+                size='sm'
+                onClick={() => {
+                  setTitle(playlist.title)
+                  setDescription(playlist.description ?? '')
+                  setCoverImageUrl(playlist.coverImageUrl ?? '')
+                }}
+                disabled={metadataMutation.isPending}>
+                Discard
+              </Button>
+              <Button
+                type='submit'
+                size='sm'
+                disabled={metadataMutation.isPending}>
+                {metadataMutation.isPending ? (
+                  <>
+                    <Loader2 className='w-3 h-3 mr-2 animate-spin' />
+                    Saving
+                  </>
+                ) : (
+                  'Save changes'
+                )}
+              </Button>
+            </div>
+          )}
         </form>
       </section>
 
-      <section className='space-y-4'>
-        <div className='flex items-center justify-between'>
+      <section className='flex flex-col gap-3 lg:min-h-0 lg:overflow-hidden'>
+        <div className='flex items-center justify-between gap-2 shrink-0'>
           <h2 className='text-lg font-semibold'>
-            Tracks ({orderedIds.length})
+            Tracks{' '}
+            <span className='text-sm font-normal text-muted-foreground'>
+              ({orderedIds.length})
+            </span>
           </h2>
           {reorderMutation.isPending && (
             <span className='text-xs text-muted-foreground'>
@@ -273,31 +322,26 @@ export function PlaylistEditor({ playlist }: Props) {
           )}
         </div>
 
-        <form onSubmit={handleAddSpotify} className='space-y-1'>
-          <Label htmlFor={`add-spotify-${playlist.id}`} className='text-xs'>
-            Add track by Spotify URL
-          </Label>
-          <div className='flex gap-2'>
-            <Input
-              id={`add-spotify-${playlist.id}`}
-              type='url'
-              placeholder='https://open.spotify.com/track/...'
-              value={spotifyTrackUrl}
-              onChange={(e) => setSpotifyTrackUrl(e.target.value)}
-              disabled={addSpotifyMutation.isPending}
-            />
-            <Button
-              type='submit'
-              disabled={
-                addSpotifyMutation.isPending || !spotifyTrackUrl.trim()
-              }>
-              {addSpotifyMutation.isPending ? (
-                <Loader2 className='w-4 h-4 animate-spin' />
-              ) : (
-                'Add'
-              )}
-            </Button>
-          </div>
+        <form onSubmit={handleAddSpotify} className='flex gap-2 shrink-0'>
+          <Input
+            id={`add-spotify-${playlist.id}`}
+            type='url'
+            placeholder='Paste Spotify track URL to add'
+            value={spotifyTrackUrl}
+            onChange={(e) => setSpotifyTrackUrl(e.target.value)}
+            disabled={addSpotifyMutation.isPending}
+            className='h-9'
+          />
+          <Button
+            type='submit'
+            size='sm'
+            disabled={addSpotifyMutation.isPending || !spotifyTrackUrl.trim()}>
+            {addSpotifyMutation.isPending ? (
+              <Loader2 className='w-4 h-4 animate-spin' />
+            ) : (
+              'Add'
+            )}
+          </Button>
         </form>
 
         {tracksQuery.isLoading && (
@@ -308,30 +352,32 @@ export function PlaylistEditor({ playlist }: Props) {
           <div className='text-sm text-muted-foreground'>No tracks yet.</div>
         )}
 
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-          modifiers={[restrictToVerticalAxis]}>
-          <SortableContext
-            items={orderedIds}
-            strategy={verticalListSortingStrategy}>
-            <div className='space-y-1'>
-              {orderedIds.map((id) => {
-                const row = trackMap.get(id)
-                if (!row) return null
-                return (
-                  <SortableTrackRow
-                    key={id}
-                    track={row}
-                    onRemove={(trackId) => removeMutation.mutate(trackId)}
-                    removeDisabled={removeMutation.isPending}
-                  />
-                )
-              })}
-            </div>
-          </SortableContext>
-        </DndContext>
+        <div className='lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:pr-2 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]'>
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+            modifiers={[restrictToVerticalAxis]}>
+            <SortableContext
+              items={orderedIds}
+              strategy={verticalListSortingStrategy}>
+              <div className='space-y-1'>
+                {orderedIds.map((id) => {
+                  const row = trackMap.get(id)
+                  if (!row) return null
+                  return (
+                    <SortableTrackRow
+                      key={id}
+                      track={row}
+                      onRemove={(trackId) => removeMutation.mutate(trackId)}
+                      removeDisabled={removeMutation.isPending}
+                    />
+                  )
+                })}
+              </div>
+            </SortableContext>
+          </DndContext>
+        </div>
       </section>
     </div>
   )

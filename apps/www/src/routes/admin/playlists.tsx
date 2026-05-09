@@ -11,7 +11,7 @@ export const Route = createFileRoute('/admin/playlists')({
 function AdminPlaylistsPage() {
   return (
     <AdminAccessGuard>
-      <div className='flex flex-col h-screen'>
+      <div className='flex flex-col h-[calc(100vh-8rem)]'>
         <header className='flex items-center justify-between gap-4 px-6 py-4 border-b shrink-0'>
           <div>
             <h1 className='text-xl font-bold'>Playlist management</h1>
