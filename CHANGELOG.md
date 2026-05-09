@@ -1,3 +1,10 @@
+## [2.38.1](https://github.com/guidefari/gbfm/compare/v2.38.0...v2.38.1) (2026-05-09)
+
+
+### Bug Fixes
+
+* ts ([67e73a7](https://github.com/guidefari/gbfm/commit/67e73a7fe28b9dd9a8dbf486c3920af3e24d6b38))
+
 # [2.38.0](https://github.com/guidefari/gbfm/compare/v2.37.0...v2.38.0) (2026-05-09)
 
 
