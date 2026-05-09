@@ -1,20 +1,12 @@
 import { Effect } from 'effect'
-import pino from 'pino'
-import pretty from 'pino-pretty'
 
-import { config } from '@/services/config.service'
-
-const logger = pino(
-  {
-    level: config.app.logLevel || 'info',
-    name: 'db-query'
-  },
-  config.app.nodeEnv === 'production' ? undefined : pretty()
-)
-
-// Performance thresholds
 const SLOW_QUERY_THRESHOLD = 100 // ms
 const VERY_SLOW_QUERY_THRESHOLD = 500 // ms
+
+async function runWithAppRuntime(effect: Effect.Effect<void>): Promise<void> {
+  const { AppRuntime } = await import('@/runtime')
+  await AppRuntime.runPromise(effect)
+}
 
 export async function timeQuery<T>(
   queryFn: () => Promise<T>,
@@ -27,40 +19,46 @@ export async function timeQuery<T>(
     const duration = performance.now() - startTime
     const roundedDuration = Math.round(duration * 100) / 100
 
-    // Log slow queries at appropriate levels
     if (duration > VERY_SLOW_QUERY_THRESHOLD) {
-      Effect.logError('[Performance] Very slow database query detected', {
-        context,
-        duration: roundedDuration,
-        threshold: VERY_SLOW_QUERY_THRESHOLD,
-        severity: 'critical'
-      }).pipe(Effect.runPromise)
+      await runWithAppRuntime(
+        Effect.logError('[Performance] Very slow database query detected', {
+          context,
+          duration: roundedDuration,
+          threshold: VERY_SLOW_QUERY_THRESHOLD,
+          severity: 'critical'
+        })
+      )
     } else if (duration > SLOW_QUERY_THRESHOLD) {
-      Effect.logWarning('[Performance] Slow database query detected', {
-        context,
-        duration: roundedDuration,
-        threshold: SLOW_QUERY_THRESHOLD,
-        severity: 'warning'
-      }).pipe(Effect.runPromise)
+      await runWithAppRuntime(
+        Effect.logWarning('[Performance] Slow database query detected', {
+          context,
+          duration: roundedDuration,
+          threshold: SLOW_QUERY_THRESHOLD,
+          severity: 'warning'
+        })
+      )
     } else {
-      // Normal queries still logged at debug level
-      logger.debug({
-        context,
-        duration: roundedDuration,
-        status: 'success'
-      })
+      await runWithAppRuntime(
+        Effect.logDebug('[Performance] Database query', {
+          context,
+          duration: roundedDuration,
+          status: 'success'
+        })
+      )
     }
 
     return result
   } catch (error) {
     const duration = performance.now() - startTime
 
-    Effect.logError('[Performance] Database query failed', {
-      context,
-      duration: Math.round(duration * 100) / 100,
-      error: error instanceof Error ? error.message : String(error),
-      severity: 'error'
-    }).pipe(Effect.runPromise)
+    await runWithAppRuntime(
+      Effect.logError('[Performance] Database query failed', {
+        context,
+        duration: Math.round(duration * 100) / 100,
+        error: error instanceof Error ? error.message : String(error),
+        severity: 'error'
+      })
+    )
 
     throw error
   }

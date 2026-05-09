@@ -19,7 +19,8 @@ export const SentryServiceLive = Layer.scoped(
   SentryService,
   Effect.gen(function* () {
     const { sentry } = yield* ConfigService
-    const enabled = sentry.dsn.length > 0
+    const enabled =
+      sentry.dsn.length > 0 || process.env.SENTRY_ENABLED === 'true'
 
     if (enabled) {
       yield* Effect.acquireRelease(
@@ -28,7 +29,8 @@ export const SentryServiceLive = Layer.scoped(
             dsn: sentry.dsn,
             environment: sentry.environment,
             tracesSampleRate: sentry.environment === 'production' ? 0.1 : 1.0,
-            sendDefaultPii: false
+            sendDefaultPii: false,
+            enableLogs: true
           })
         }),
         () =>

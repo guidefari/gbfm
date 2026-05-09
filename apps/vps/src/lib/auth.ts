@@ -33,12 +33,15 @@ export const auth = betterAuth({
         to: user.email,
         resetUrl: url,
         expiresIn: '1 hour'
-      }).catch((err: Error) => {
-        Effect.logError('[Auth] Failed to send password reset email', {
-          userId: user.id,
-          email: user.email,
-          error: err.message
-        }).pipe(Effect.runPromise)
+      }).catch(async (err: Error) => {
+        const { runAppFork } = await import('@/runtime')
+        runAppFork(
+          Effect.logError('[Auth] Failed to send password reset email', {
+            userId: user.id,
+            email: user.email,
+            error: err.message
+          })
+        )
       })
     }
   },

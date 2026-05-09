@@ -8,6 +8,7 @@ import { ConfigServiceLive } from '@/services/config.service'
 import { EmailServiceLive } from '@/services/email.service'
 import { FavoriteServiceLive } from '@/services/favorite.service'
 import { LabelServiceLive } from '@/services/label.service'
+import { AppLoggerLive } from '@/services/logger.service'
 import { MixProcessingServiceLayer } from '@/services/mix-processing.service'
 import { MusicEntityServiceLive } from '@/services/music-entity.service'
 import { MusicLinkScraperServiceLive } from '@/services/music-link-scraper.service'
@@ -73,5 +74,6 @@ const ServicesLayer = Layer.mergeAll(
 )
 
 export const AppLayer = ServicesLayer.pipe(
-  Layer.provide(OtlpLive.pipe(Layer.provide(ConfigServiceLive)))
+  Layer.provide(OtlpLive.pipe(Layer.provide(ConfigServiceLive))),
+  Layer.provide(AppLoggerLive)
 )

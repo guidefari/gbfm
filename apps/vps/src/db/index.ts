@@ -1,4 +1,3 @@
-import { Effect } from 'effect'
 import { config } from '@/services/config.service'
 import 'dotenv/config'
 import { drizzle } from 'drizzle-orm/node-postgres'
@@ -14,11 +13,10 @@ const dbConfig = {
   database: config.database.name,
   ssl: isProd ? true : { rejectUnauthorized: false }
 }
-Effect.logInfo('[DB] Connecting to database', {
-  stage: config.app.dbStage || 'prod',
-  host: dbConfig.host,
-  database: dbConfig.database
-}).pipe(Effect.runPromise)
+
+console.log(
+  `[DB] Connecting stage=${config.app.dbStage || 'prod'} host=${dbConfig.host} db=${dbConfig.database}`
+)
 
 const pool = new Pool(dbConfig)
 

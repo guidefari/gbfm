@@ -19,6 +19,7 @@ import {
   markEmailDeliveryLogAsSent
 } from '@/repositories/email-delivery-log.repository'
 import { canReceiveEmail } from '@/repositories/email-preferences.repository'
+import { runAppFork } from '@/runtime'
 
 import type {
   GetEmailLogsRoute,
@@ -135,19 +136,19 @@ export const sendMixNotification: AppRouteHandler<
 
         if (!canReceive) {
           Effect.annotateCurrentSpan('totalRecipients', recipients.length).pipe(
-            Effect.runPromise
+            runAppFork
           )
-          Effect.annotateCurrentSpan('mixSlug', mixSlug).pipe(Effect.runPromise)
+          Effect.annotateCurrentSpan('mixSlug', mixSlug).pipe(runAppFork)
           Effect.annotateCurrentSpan(
             'mixTitle',
             metadata?.mixTitle || mix.title
-          ).pipe(Effect.runPromise)
+          ).pipe(runAppFork)
 
           Effect.logInfo('[Email] Sending mix notification emails', {
             totalRecipients: recipients.length,
             mixSlug,
             mixTitle: metadata?.mixTitle || mix.title
-          }).pipe(Effect.runPromise)
+          }).pipe(runAppFork)
           skipped.push(recipient)
           continue
         }
@@ -202,7 +203,7 @@ export const sendMixNotification: AppRouteHandler<
             emailError instanceof Error
               ? emailError.message
               : String(emailError)
-        }).pipe(Effect.runPromise)
+        }).pipe(runAppFork)
 
         // Mark as failed in the log
         await markEmailDeliveryLogAsFailed(

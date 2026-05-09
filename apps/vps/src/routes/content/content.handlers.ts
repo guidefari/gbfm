@@ -5,7 +5,7 @@ import { Effect, Schema } from 'effect'
 import ffmpeg from 'ffmpeg-static'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import type { AppRouteHandler } from '@/lib/types'
-import { AppRuntime } from '@/runtime'
+import { AppRuntime, runAppFork } from '@/runtime'
 import { AudioService } from '@/services/audio.service'
 import { MixProcessingService } from '@/services/mix-processing.service'
 import { PostService } from '@/services/post.service'
@@ -496,7 +496,7 @@ export const processUpload: AppRouteHandler<ProcessMixUploadRoute> = async (
   Effect.logInfo('[Content] File processing started', {
     userId: user.id,
     email: user.email
-  }).pipe(Effect.runPromise)
+  }).pipe(runAppFork)
 
   const formData = await c.req.formData()
 
@@ -552,7 +552,7 @@ export const processUpload: AppRouteHandler<ProcessMixUploadRoute> = async (
     title: result.safeTitle,
     outputFormat: result.outputFormat,
     outputSize: result.outputBuffer.length
-  }).pipe(Effect.runPromise)
+  }).pipe(runAppFork)
 
   return new Response(result.outputBuffer, {
     headers: {
@@ -670,7 +670,7 @@ function createAudioOrVideo(
         if (stderr.trim()) {
           Effect.logInfo('[Content] FFmpeg processing', {
             output: stderr.trim()
-          }).pipe(Effect.runPromise)
+          }).pipe(runAppFork)
         }
 
         if (exitCode !== 0) {

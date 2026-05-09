@@ -14,6 +14,7 @@ import {
   markEmailDeliveryLogAsFailed,
   markEmailDeliveryLogAsSent
 } from '@/repositories/email-delivery-log.repository'
+import { runAppFork } from '@/runtime'
 import { config } from '@/services/config.service'
 
 import type { SendInviteRoute } from './invite.routes'
@@ -88,7 +89,7 @@ export const sendInviteHandler: AppRouteHandler<SendInviteRoute> = async (
       email: targetUser.email,
       emailLogId: deliveryLog.id,
       error: error instanceof Error ? error.message : String(error)
-    }).pipe(Effect.runPromise)
+    }).pipe(runAppFork)
 
     await markEmailDeliveryLogAsFailed(
       deliveryLog.id,

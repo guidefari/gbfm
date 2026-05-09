@@ -27,9 +27,12 @@ export async function compileMDX(
       compiled: compiled.toString()
     }
   } catch (error) {
-    Effect.logError('[MDX] Error compiling MDX content', {
-      error: error instanceof Error ? error.message : String(error)
-    }).pipe(Effect.runPromise)
+    const { runAppFork } = await import('@/runtime')
+    runAppFork(
+      Effect.logError('[MDX] Error compiling MDX content', {
+        error: error instanceof Error ? error.message : String(error)
+      })
+    )
 
     return {
       error: 'Failed to compile MDX content',
@@ -59,9 +62,12 @@ export async function compileMDXToString(content: string): Promise<string> {
     })
     return compiled.toString()
   } catch (error) {
-    Effect.logError('[MDX] Error compiling MDX content', {
-      error: error instanceof Error ? error.message : String(error)
-    }).pipe(Effect.runPromise)
+    const { runAppFork } = await import('@/runtime')
+    runAppFork(
+      Effect.logError('[MDX] Error compiling MDX content', {
+        error: error instanceof Error ? error.message : String(error)
+      })
+    )
 
     throw new Error(
       `Failed to compile MDX: ${error instanceof Error ? error.message : String(error)}`

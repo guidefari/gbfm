@@ -5,7 +5,6 @@ import {
   checkPerformanceHealth,
   recordRequest
 } from '@/lib/performance-monitoring'
-import { config } from '@/services/config.service'
 
 // Performance thresholds for request monitoring
 const SLOW_REQUEST_THRESHOLD = 500 // ms - warning
@@ -97,53 +96,33 @@ export function effectLogger(): MiddlewareHandler {
         )
       ]
 
-      // Run all logging effects in parallel
       yield* Effect.all(performanceEffects, { concurrency: 'unbounded' })
-
-      // Handle different logging environments
-      if (config.app.nodeEnv === 'production') {
-        // Effects already logged above
-        return
-      } else {
-        console.log(
-          `[HTTP] ${c.req.method} ${c.req.path} ${c.res.status} - ${duration}ms`
-        )
-        return
-      }
     })
 
     // Run the entire logging effect
     const { AppRuntime } = await import('@/runtime')
     await AppRuntime.runPromise(
       loggingEffect.pipe(
-        Effect.catchAll((error) => {
-          const duration = Date.now() - start
-
-          // Fallback logging if Effect logging fails
-          if (config.app.nodeEnv === 'production') {
-            console.error(
-              `[ERROR] ${c.req.method} ${c.req.path} failed - ${duration}ms - ${error._tag}: ${error.message}`
+        Effect.catchAll((error) =>
+          Effect.logError('Request failed', {
+            method: c.req.method,
+            path: c.req.path,
+            duration: Date.now() - start,
+            error: error._tag,
+            message: error.message
+          }).pipe(
+            Effect.zipRight(
+              Effect.fail(
+                error instanceof LoggerError
+                  ? error
+                  : new LoggerError({
+                      message: `Logging failed: ${String(error)}`,
+                      operation: 'middleware-logging'
+                    })
+              )
             )
-          } else {
-            console.error(
-              `[HTTP] ${c.req.method} ${c.req.path} failed - ${duration}ms`,
-              {
-                error: error._tag,
-                message: error.message
-              }
-            )
-          }
-
-          // Re-throw the original error if it was a LoggerError, otherwise throw the logging error
-          return Effect.fail(
-            error instanceof LoggerError
-              ? error
-              : new LoggerError({
-                  message: `Logging failed: ${String(error)}`,
-                  operation: 'middleware-logging'
-                })
           )
-        })
+        )
       )
     )
   }

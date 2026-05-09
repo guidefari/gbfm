@@ -1,7 +1,7 @@
 import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import type { AppRouteHandler } from '@/lib/types'
-import { AppRuntime } from '@/runtime'
+import { AppRuntime, runAppFork } from '@/runtime'
 import { FavoriteService } from '@/services/favorite.service'
 
 import type {
@@ -15,16 +15,14 @@ export const addFavorite: AppRouteHandler<AddFavoriteRoute> = async (c) => {
   const user = c.get('user')
   const { audioId, showId } = c.req.valid('json')
 
-  Effect.annotateCurrentSpan('userId', user.id).pipe(Effect.runPromise)
-  Effect.annotateCurrentSpan('operation', 'add-favorite').pipe(
-    Effect.runPromise
-  )
+  Effect.annotateCurrentSpan('userId', user.id).pipe(runAppFork)
+  Effect.annotateCurrentSpan('operation', 'add-favorite').pipe(runAppFork)
 
   Effect.logInfo('[API] Add favorite requested', {
     userId: user.id,
     audioId,
     showId
-  }).pipe(Effect.runPromise)
+  }).pipe(runAppFork)
 
   const program = Effect.gen(function* () {
     const favoriteService = yield* FavoriteService
@@ -63,7 +61,7 @@ export const addFavorite: AppRouteHandler<AddFavoriteRoute> = async (c) => {
       audioId,
       error: result.error,
       statusCode: result.status
-    }).pipe(Effect.runPromise)
+    }).pipe(runAppFork)
     return c.json({ error: result.error }, result.status)
   }
 
@@ -79,7 +77,7 @@ export const removeFavorite: AppRouteHandler<RemoveFavoriteRoute> = async (
   Effect.logInfo('[API] Remove favorite requested', {
     userId: user.id,
     audioId
-  }).pipe(Effect.runPromise)
+  }).pipe(runAppFork)
 
   const program = Effect.gen(function* () {
     const favoriteService = yield* FavoriteService
@@ -118,7 +116,7 @@ export const removeShowFavorite: AppRouteHandler<
   Effect.logInfo('[API] Remove show favorite requested', {
     userId: user.id,
     showId
-  }).pipe(Effect.runPromise)
+  }).pipe(runAppFork)
 
   const program = Effect.gen(function* () {
     const favoriteService = yield* FavoriteService

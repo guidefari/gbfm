@@ -3,6 +3,7 @@ import type { Context, Next } from 'hono'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { auth } from '@/lib/auth'
 import type { AppBindings } from '@/lib/types'
+import { runAppFork } from '@/runtime'
 
 export const betterAuthMiddleware = async (
   c: Context<AppBindings>,
@@ -20,7 +21,7 @@ export const betterAuthMiddleware = async (
         c.req.header('x-forwarded-for') ||
         c.req.header('x-real-ip') ||
         'unknown'
-    }).pipe(Effect.runPromise)
+    }).pipe(runAppFork)
 
     return c.json({ error: 'Unauthorized' }, 401)
   }
@@ -34,7 +35,7 @@ export const betterAuthMiddleware = async (
     email: session.user.email,
     path: c.req.path,
     method: c.req.method
-  }).pipe(Effect.runPromise)
+  }).pipe(runAppFork)
 
   await next()
 }
@@ -57,7 +58,7 @@ export const attachSessionContext = async (
       email: session.user.email,
       path: c.req.path,
       method: c.req.method
-    }).pipe(Effect.runPromise)
+    }).pipe(runAppFork)
   }
 
   await next()
@@ -79,7 +80,7 @@ export const requireAdminMiddleware = async (
       role: user.role,
       path: c.req.path,
       method: c.req.method
-    }).pipe(Effect.runPromise)
+    }).pipe(runAppFork)
 
     return c.json({ error: 'Forbidden' }, HttpStatusCodes.FORBIDDEN)
   }
