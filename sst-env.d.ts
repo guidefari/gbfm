@@ -65,11 +65,19 @@ declare module "sst" {
       "name": string
       "type": "sst.aws.Bucket"
     }
+    "OTEL_EXPORTER_OTLP_ENDPOINT": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
+    "OTEL_EXPORTER_OTLP_HEADERS": {
+      "type": "sst.sst.Secret"
+      "value": string
+    }
     "Router": {
       "type": "sst.aws.Router"
       "url": string
     }
-    "SENTRY_DSN": {
+    "SENTRY_BACKEND_DSN": {
       "type": "sst.sst.Secret"
       "value": string
     }
@@ -89,6 +97,10 @@ declare module "sst" {
     "User_Content": {
       "name": string
       "type": "sst.aws.Bucket"
+    }
+    "VITE_PUBLIC_SENTRY_DSN": {
+      "type": "sst.sst.Secret"
+      "value": string
     }
     "gbfm-www": {
       "type": "sst.aws.StaticSite"

@@ -208,10 +208,15 @@ export function createConfig(): ConfigService {
   const dbStage = process.env.DB_STAGE
   const logLevel = process.env.LOG_LEVEL
 
-  const otelEndpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT || ''
-  const otelHeaders = process.env.OTEL_EXPORTER_OTLP_HEADERS || ''
+  const otelEndpoint =
+    process.env.OTEL_EXPORTER_OTLP_ENDPOINT ||
+    getResourceValue('OTEL_EXPORTER_OTLP_ENDPOINT', '')
+  const otelHeaders =
+    process.env.OTEL_EXPORTER_OTLP_HEADERS ||
+    getResourceValue('OTEL_EXPORTER_OTLP_HEADERS', '')
 
-  const sentryDsn = process.env.SENTRY_DSN || getResourceValue('SENTRY_DSN', '')
+  const sentryDsn =
+    process.env.SENTRY_BACKEND_DSN || getResourceValue('SENTRY_BACKEND_DSN', '')
   const sentryEnvironment =
     process.env.SENTRY_ENVIRONMENT || (isProd ? 'production' : 'development')
 

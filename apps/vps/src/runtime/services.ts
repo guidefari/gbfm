@@ -72,4 +72,6 @@ const ServicesLayer = Layer.mergeAll(
   MusicEntityServiceLive.pipe(Layer.provide(BaseServicesLayer))
 )
 
-export const AppLayer = ServicesLayer.pipe(Layer.provide(OtlpLive))
+export const AppLayer = ServicesLayer.pipe(
+  Layer.provide(OtlpLive.pipe(Layer.provide(ConfigServiceLive)))
+)

@@ -65,19 +65,6 @@ const setupRoutesEffect = Effect.gen(function* () {
   app.route('', rss)
   app.route('', seoRouter)
 
-  app.get('/sentry-test', async (c) => {
-    await runApp(
-      Effect.flatMap(SentryService, (sentry) =>
-        sentry.captureMessage('sentry-test ping', 'info')
-      )
-    )
-    return c.json({ ok: true, sent: 'message' })
-  })
-
-  app.get('/sentry-throw', () => {
-    throw new Error('sentry-throw: deliberate test error')
-  })
-
   app.get('/health', async (c) => {
     const program = healthCheckEffect.pipe(
       Effect.map(() => ({ data: { dbConnected: true }, status: 200 as const })),

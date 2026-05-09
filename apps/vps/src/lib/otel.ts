@@ -1,10 +1,6 @@
 import { NodeSdk } from '@effect/opentelemetry'
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
-import {
-  BatchSpanProcessor,
-  ConsoleSpanExporter,
-  SimpleSpanProcessor
-} from '@opentelemetry/sdk-trace-base'
+import { SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
 import { Effect, Layer } from 'effect'
 import { ConfigService } from '@/services/config.service'
 
@@ -31,42 +27,34 @@ function parseOtelHeaders(headers: string | undefined) {
     }, {})
 }
 
-export const OtlpLive: Layer.Layer<never> = Layer.flatMap(
-  ConfigService,
-  (config) =>
-    Effect.sync(() => {
-      const otlpEndpoint = (config.otel.endpoint || '').replace(/\/$/, '')
+export const OtlpLive = Effect.gen(function* () {
+  const config = yield* ConfigService
+  const otlpEndpoint = (config.otel.endpoint || '').replace(/\/$/, '')
 
-      const traceExporterUrl = otlpEndpoint.endsWith('/v1/traces')
-        ? otlpEndpoint
-        : `${otlpEndpoint}/v1/traces`
+  const otelHeaders = parseOtelHeaders(config.otel.headers)
 
-      console.log('[OTEL] Exporting traces to:', traceExporterUrl)
-
-      const otelHeaders = parseOtelHeaders(config.otel.headers)
-
-      const spanProcessor = [
-        ...(config.app.nodeEnv === 'production'
-          ? []
-          : [new SimpleSpanProcessor(new ConsoleSpanExporter())]),
-        new BatchSpanProcessor(
+  const spanProcessor = otlpEndpoint
+    ? [
+        new SimpleSpanProcessor(
           new OTLPTraceExporter({
-            url: traceExporterUrl,
+            url: otlpEndpoint.endsWith('/v1/traces')
+              ? otlpEndpoint
+              : `${otlpEndpoint}/v1/traces`,
             ...(otelHeaders ? { headers: otelHeaders } : {})
           })
         )
       ]
+    : []
 
-      return NodeSdk.layer(() => ({
-        resource: {
-          serviceName: 'goosebumps-fm-api',
-          serviceVersion: process.env.npm_package_version || '1.0.0',
-          serviceNamespace: 'application',
-          attributes: {
-            'deployment.environment': config.app.nodeEnv
-          }
-        },
-        spanProcessor
-      }))
-    }).pipe(Layer.unwrap)
-)
+  return NodeSdk.layer(() => ({
+    resource: {
+      serviceName: 'goosebumps-fm-api',
+      serviceVersion: process.env.npm_package_version || '1.0.0',
+      serviceNamespace: 'application',
+      attributes: {
+        'deployment.environment': config.app.nodeEnv
+      }
+    },
+    spanProcessor
+  }))
+}).pipe(Layer.unwrapEffect)

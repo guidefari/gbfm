@@ -27,15 +27,8 @@ export const SentryServiceLive = Layer.scoped(
           Sentry.init({
             dsn: sentry.dsn,
             environment: sentry.environment,
-            debug: sentry.environment !== 'production',
             tracesSampleRate: sentry.environment === 'production' ? 0.1 : 1.0,
-            sendDefaultPii: false,
-            beforeSend(event) {
-              console.log(
-                `[sentry] beforeSend event_id=${event.event_id} level=${event.level}`
-              )
-              return event
-            }
+            sendDefaultPii: false
           })
         }),
         () =>
@@ -48,24 +41,23 @@ export const SentryServiceLive = Layer.scoped(
         `[sentry] connected env=${sentry.environment} traces=${sentry.environment === 'production' ? 0.1 : 1.0}`
       )
     } else {
-      yield* Effect.logWarning('[sentry] disabled (no SENTRY_DSN)')
+      yield* Effect.logWarning('[sentry] disabled (no SENTRY_BACKEND_DSN)')
     }
 
-    const captureException = (
-      error: unknown,
-      context?: Record<string, unknown>
-    ) =>
-      Effect.sync(() => {
-        if (!enabled) return
-        Sentry.captureException(error, context ? { extra: context } : undefined)
-      })
-
-    const captureMessage = (message: string, level?: Sentry.SeverityLevel) =>
-      Effect.sync(() => {
-        if (!enabled) return
-        Sentry.captureMessage(message, level)
-      })
-
-    return SentryService.of({ captureException, captureMessage })
+    return SentryService.of({
+      captureException: (error, context) =>
+        Effect.sync(() => {
+          if (!enabled) return
+          Sentry.captureException(
+            error,
+            context ? { extra: context } : undefined
+          )
+        }),
+      captureMessage: (message, level) =>
+        Effect.sync(() => {
+          if (!enabled) return
+          Sentry.captureMessage(message, level)
+        })
+    })
   })
 )
