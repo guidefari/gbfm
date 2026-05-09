@@ -217,50 +217,54 @@ export function PlaylistEditor({ playlist }: Props) {
     coverImageUrl !== (playlist.coverImageUrl ?? '')
 
   return (
-    <div className='space-y-6 pt-2'>
-      <form onSubmit={handleSaveMetadata} className='space-y-3'>
-        <div className='space-y-1'>
-          <Label htmlFor={`title-${playlist.id}`}>Title</Label>
-          <Input
-            id={`title-${playlist.id}`}
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
+    <div className='grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]'>
+      <section className='space-y-4'>
+        <h2 className='text-lg font-semibold'>Metadata</h2>
+        <form onSubmit={handleSaveMetadata} className='space-y-3'>
+          <div className='space-y-1'>
+            <Label htmlFor={`title-${playlist.id}`}>Title</Label>
+            <Input
+              id={`title-${playlist.id}`}
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              required
+            />
+          </div>
+          <div className='space-y-1'>
+            <Label htmlFor={`desc-${playlist.id}`}>Description</Label>
+            <Textarea
+              id={`desc-${playlist.id}`}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className='min-h-24'
+            />
+          </div>
+          <ImageUploadField
+            label='Cover image'
+            value={coverImageUrl}
+            onChange={setCoverImageUrl}
           />
-        </div>
-        <div className='space-y-1'>
-          <Label htmlFor={`desc-${playlist.id}`}>Description</Label>
-          <Textarea
-            id={`desc-${playlist.id}`}
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </div>
-        <ImageUploadField
-          label='Cover image'
-          value={coverImageUrl}
-          onChange={setCoverImageUrl}
-        />
-        <Button
-          type='submit'
-          size='sm'
-          disabled={!metadataDirty || metadataMutation.isPending}>
-          {metadataMutation.isPending ? (
-            <>
-              <Loader2 className='w-3 h-3 mr-2 animate-spin' />
-              Saving
-            </>
-          ) : (
-            'Save metadata'
-          )}
-        </Button>
-      </form>
+          <Button
+            type='submit'
+            size='sm'
+            disabled={!metadataDirty || metadataMutation.isPending}>
+            {metadataMutation.isPending ? (
+              <>
+                <Loader2 className='w-3 h-3 mr-2 animate-spin' />
+                Saving
+              </>
+            ) : (
+              'Save metadata'
+            )}
+          </Button>
+        </form>
+      </section>
 
-      <div className='space-y-2'>
+      <section className='space-y-4'>
         <div className='flex items-center justify-between'>
-          <h4 className='text-sm font-semibold'>
+          <h2 className='text-lg font-semibold'>
             Tracks ({orderedIds.length})
-          </h4>
+          </h2>
           {reorderMutation.isPending && (
             <span className='text-xs text-muted-foreground'>
               <Loader2 className='inline w-3 h-3 mr-1 animate-spin' />
@@ -268,6 +272,33 @@ export function PlaylistEditor({ playlist }: Props) {
             </span>
           )}
         </div>
+
+        <form onSubmit={handleAddSpotify} className='space-y-1'>
+          <Label htmlFor={`add-spotify-${playlist.id}`} className='text-xs'>
+            Add track by Spotify URL
+          </Label>
+          <div className='flex gap-2'>
+            <Input
+              id={`add-spotify-${playlist.id}`}
+              type='url'
+              placeholder='https://open.spotify.com/track/...'
+              value={spotifyTrackUrl}
+              onChange={(e) => setSpotifyTrackUrl(e.target.value)}
+              disabled={addSpotifyMutation.isPending}
+            />
+            <Button
+              type='submit'
+              disabled={
+                addSpotifyMutation.isPending || !spotifyTrackUrl.trim()
+              }>
+              {addSpotifyMutation.isPending ? (
+                <Loader2 className='w-4 h-4 animate-spin' />
+              ) : (
+                'Add'
+              )}
+            </Button>
+          </div>
+        </form>
 
         {tracksQuery.isLoading && (
           <div className='text-sm text-muted-foreground'>Loading tracks…</div>
@@ -301,32 +332,7 @@ export function PlaylistEditor({ playlist }: Props) {
             </div>
           </SortableContext>
         </DndContext>
-      </div>
-
-      <form onSubmit={handleAddSpotify} className='space-y-2'>
-        <Label htmlFor={`add-spotify-${playlist.id}`}>
-          Add track by Spotify URL
-        </Label>
-        <div className='flex gap-2'>
-          <Input
-            id={`add-spotify-${playlist.id}`}
-            type='url'
-            placeholder='https://open.spotify.com/track/...'
-            value={spotifyTrackUrl}
-            onChange={(e) => setSpotifyTrackUrl(e.target.value)}
-            disabled={addSpotifyMutation.isPending}
-          />
-          <Button
-            type='submit'
-            disabled={addSpotifyMutation.isPending || !spotifyTrackUrl.trim()}>
-            {addSpotifyMutation.isPending ? (
-              <Loader2 className='w-4 h-4 animate-spin' />
-            ) : (
-              'Add'
-            )}
-          </Button>
-        </div>
-      </form>
+      </section>
     </div>
   )
 }

@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { AdminAccessGuard } from './_components/-AdminAccessGuard'
 import { PlaylistsTab } from './_components/-PlaylistsTab'
 
@@ -12,30 +11,24 @@ export const Route = createFileRoute('/admin/playlists')({
 function AdminPlaylistsPage() {
   return (
     <AdminAccessGuard>
-      <div className='container max-w-6xl py-8 mx-auto'>
-        <div className='flex flex-col gap-4 mb-6 sm:flex-row sm:items-start sm:justify-between'>
+      <div className='flex flex-col h-screen'>
+        <header className='flex items-center justify-between gap-4 px-6 py-4 border-b shrink-0'>
           <div>
-            <h1 className='text-2xl font-bold'>Playlist management</h1>
-            <p className='mt-1 text-sm text-muted-foreground'>
+            <h1 className='text-xl font-bold'>Playlist management</h1>
+            <p className='text-xs text-muted-foreground'>
               Import Spotify playlists, edit metadata, and reorder tracks.
             </p>
           </div>
-          <Button asChild variant='outline'>
+          <Button asChild variant='outline' size='sm'>
             <Link to='/admin'>
               <ArrowLeft className='w-4 h-4 mr-2' />
               Back to admin
             </Link>
           </Button>
+        </header>
+        <div className='flex-1 min-h-0'>
+          <PlaylistsTab />
         </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Playlists</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <PlaylistsTab />
-          </CardContent>
-        </Card>
       </div>
     </AdminAccessGuard>
   )
