@@ -145,12 +145,15 @@ export interface MusicEntityService {
     data: CreatePlaylistInput
   ) => Effect.Effect<SelectMusicPlaylist, DatabaseError>
   readonly getPlaylists: () => Effect.Effect<
-    SelectMusicPlaylist[],
+    (SelectMusicPlaylist & { spotifyUrl: string | null })[],
     DatabaseError
   >
   readonly getPlaylistById: (
     id: string
-  ) => Effect.Effect<SelectMusicPlaylist, DatabaseError | NotFoundError>
+  ) => Effect.Effect<
+    SelectMusicPlaylist & { spotifyUrl: string | null },
+    DatabaseError | NotFoundError
+  >
   readonly updatePlaylist: (
     id: string,
     data: Partial<CreatePlaylistInput>
@@ -747,11 +750,24 @@ const createPlaylistEffect = Effect.fn('musicEntity.createPlaylist')(function* (
 
 const getPlaylistsEffect = () =>
   Effect.tryPromise({
-    try: () =>
-      db
-        .select()
+    try: async () => {
+      const rows = await db
+        .select({
+          playlist: musicPlaylistsTable,
+          spotifyUrl: musicEntityLinksTable.url
+        })
         .from(musicPlaylistsTable)
-        .orderBy(desc(musicPlaylistsTable.createdAt)),
+        .leftJoin(
+          musicEntityLinksTable,
+          and(
+            eq(musicEntityLinksTable.entityType, 'playlist'),
+            eq(musicEntityLinksTable.entityId, musicPlaylistsTable.id),
+            eq(musicEntityLinksTable.platform, 'spotify')
+          )
+        )
+        .orderBy(desc(musicPlaylistsTable.createdAt))
+      return rows.map((r) => ({ ...r.playlist, spotifyUrl: r.spotifyUrl }))
+    },
     catch: (e) =>
       new DatabaseError({
         message: `Failed to list playlists: ${getErrorMessage(e)}`,
@@ -763,12 +779,25 @@ const getPlaylistsEffect = () =>
 const getPlaylistByIdEffect = (id: string) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select()
+      try: async () => {
+        const result = await db
+          .select({
+            playlist: musicPlaylistsTable,
+            spotifyUrl: musicEntityLinksTable.url
+          })
           .from(musicPlaylistsTable)
+          .leftJoin(
+            musicEntityLinksTable,
+            and(
+              eq(musicEntityLinksTable.entityType, 'playlist'),
+              eq(musicEntityLinksTable.entityId, musicPlaylistsTable.id),
+              eq(musicEntityLinksTable.platform, 'spotify')
+            )
+          )
           .where(eq(musicPlaylistsTable.id, id))
-          .limit(1),
+          .limit(1)
+        return result.map((r) => ({ ...r.playlist, spotifyUrl: r.spotifyUrl }))
+      },
       catch: (e) =>
         new DatabaseError({
           message: `Failed to get playlist: ${getErrorMessage(e)}`,

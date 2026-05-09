@@ -543,7 +543,8 @@ export const selectMusicPlaylistSchema = z
     slug: z.string(),
     publishedAt: z.date().nullable(),
     createdAt: z.date(),
-    updatedAt: z.date()
+    updatedAt: z.date(),
+    spotifyUrl: z.string().nullable().optional()
   })
   .openapi('MusicPlaylist')
 
