@@ -8,8 +8,10 @@ import {
   LockKeyhole,
   LogOut,
   Maximize2,
+  MessageSquare,
   Monitor,
   Moon,
+  Newspaper,
   Pause,
   Play,
   Radio,
@@ -155,6 +157,22 @@ export const createCommandData = (
     //     // }
     //   ]
     // }
+    {
+      id: 'tweets',
+      label: 'Tweets',
+      icon: MessageSquare,
+      type: 'action',
+      onSelect: navigationActions.routeToTweets,
+      requiresAuth: false
+    },
+    {
+      id: 'editorial',
+      label: 'Editorial',
+      icon: Newspaper,
+      type: 'action',
+      onSelect: navigationActions.routeToEditorial,
+      requiresAuth: false
+    },
     {
       id: 'mixes',
       label: 'Mixes',

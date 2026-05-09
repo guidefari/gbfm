@@ -64,6 +64,16 @@ export const useNavigationActions = (closeCmd: () => void) => {
     closeCmd()
   }, [router, closeCmd])
 
+  const routeToTweets = React.useCallback(() => {
+    router({ to: '/tweet' })
+    closeCmd()
+  }, [router, closeCmd])
+
+  const routeToEditorial = React.useCallback(() => {
+    router({ to: '/editorial' })
+    closeCmd()
+  }, [router, closeCmd])
+
   return {
     routeToMixes,
     routeToShows,
@@ -76,6 +86,8 @@ export const useNavigationActions = (closeCmd: () => void) => {
     routeToUpload,
     routeToAdmin,
     routeToLabelUpload,
-    routeToReminders
+    routeToReminders,
+    routeToTweets,
+    routeToEditorial
   }
 }

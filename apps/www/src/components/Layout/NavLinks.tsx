@@ -1,4 +1,14 @@
-import { Disc3, Home, Mail, Radio, Rss, Settings, Tag } from 'lucide-react'
+import {
+  Disc3,
+  Home,
+  Mail,
+  MessageSquare,
+  Newspaper,
+  Radio,
+  Rss,
+  Settings,
+  Tag
+} from 'lucide-react'
 import { TfiYoutube } from 'react-icons/tfi'
 import { RSS } from '@/components/RSS'
 import {
@@ -28,6 +38,16 @@ export const pagesAndPages: lol[] = [
     name: 'Home',
     slug: '/',
     icon: <Home className={iconSytles} />
+  },
+  {
+    name: 'Tweets',
+    slug: '/tweet',
+    icon: <MessageSquare className={iconSytles} />
+  },
+  {
+    name: 'Editorial',
+    slug: '/editorial',
+    icon: <Newspaper className={iconSytles} />
   },
   {
     name: 'Mixes',
