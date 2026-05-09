@@ -2,7 +2,6 @@ import { DevTools } from '@effect/experimental'
 import { Context, Layer } from 'effect'
 import { db } from '@/db'
 import { OtlpLive } from '@/lib/otel'
-import { LoggerServiceLive } from '@/middlewares/effect-logger'
 import { AudioServiceLive } from '@/services/audio.service'
 import { ConfigServiceLive } from '@/services/config.service'
 import { EmailServiceLive } from '@/services/email.service'
@@ -45,7 +44,6 @@ const DevToolsLive: Layer.Layer<never> =
 const BaseServicesLayer = Layer.mergeAll(
   ConfigServiceLive,
   DatabaseServiceLive,
-  LoggerServiceLive,
   EmailServiceLive,
   FavoriteServiceLive,
   SpotifyServiceLive,

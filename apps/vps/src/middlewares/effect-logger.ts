@@ -1,4 +1,4 @@
-import { Context, Effect, Layer } from 'effect'
+import { Effect } from 'effect'
 import type { MiddlewareHandler } from 'hono'
 import { LoggerError } from '@/errors'
 import {
@@ -6,41 +6,8 @@ import {
   recordRequest
 } from '@/lib/performance-monitoring'
 
-// Performance thresholds for request monitoring
-const SLOW_REQUEST_THRESHOLD = 500 // ms - warning
-const VERY_SLOW_REQUEST_THRESHOLD = 2000 // ms - error
-
-export interface LoggerService {
-  readonly log: (
-    message: string,
-    level?: 'trace' | 'debug' | 'info' | 'warn' | 'error'
-  ) => Effect.Effect<void>
-  readonly logRequest: (
-    method: string,
-    path: string,
-    statusCode: number,
-    duration: number
-  ) => Effect.Effect<void>
-}
-
-export const LoggerService = Context.GenericTag<LoggerService>('LoggerService')
-
-export const LoggerServiceLive = Layer.effect(
-  LoggerService,
-  Effect.gen(function* () {
-    return {
-      log: (message: string, level = 'info') =>
-        Effect.log(`[${level.toUpperCase()}] ${message}`),
-
-      logRequest: (
-        method: string,
-        path: string,
-        statusCode: number,
-        duration: number
-      ) => Effect.log(`[INFO] ${method} ${path} ${statusCode} - ${duration}ms`)
-    }
-  })
-)
+const SLOW_REQUEST_THRESHOLD = 500
+const VERY_SLOW_REQUEST_THRESHOLD = 2000
 
 export function effectLogger(): MiddlewareHandler {
   return async (c, next) => {
