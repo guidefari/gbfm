@@ -75,24 +75,6 @@ function getResourceValue<T extends string | number>(
   }
 }
 
-function parseSentryDsn(dsn: string): {
-  otelEndpoint: string
-  otelToken: string
-} {
-  if (!dsn) return { otelEndpoint: '', otelToken: '' }
-
-  try {
-    const url = new URL(dsn)
-    const projectId = url.pathname.replace(/^\//, '')
-    return {
-      otelEndpoint: `${url.protocol}//${url.host}/api/${projectId}/otlp`,
-      otelToken: url.username
-    }
-  } catch {
-    return { otelEndpoint: '', otelToken: '' }
-  }
-}
-
 // Config schema using Effect Schema
 const ConfigSchema = Schema.Struct({
   database: Schema.Struct({
@@ -138,8 +120,11 @@ const ConfigSchema = Schema.Struct({
   }),
   otel: Schema.Struct({
     endpoint: Schema.optional(Schema.String),
-    token: Schema.optional(Schema.String),
     headers: Schema.optional(Schema.String)
+  }),
+  sentry: Schema.Struct({
+    dsn: Schema.String,
+    environment: Schema.String
   })
 })
 
@@ -223,11 +208,12 @@ export function createConfig(): ConfigService {
   const dbStage = process.env.DB_STAGE
   const logLevel = process.env.LOG_LEVEL
 
+  const otelEndpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT || ''
+  const otelHeaders = process.env.OTEL_EXPORTER_OTLP_HEADERS || ''
+
   const sentryDsn = process.env.SENTRY_DSN || getResourceValue('SENTRY_DSN', '')
-  const { otelEndpoint, otelToken } = parseSentryDsn(sentryDsn)
-  const otelHeaders = otelToken
-    ? `x-sentry-auth=sentry_version=7, sentry_key=${otelToken}`
-    : ''
+  const sentryEnvironment =
+    process.env.SENTRY_ENVIRONMENT || (isProd ? 'production' : 'development')
 
   return {
     database: {
@@ -270,8 +256,11 @@ export function createConfig(): ConfigService {
     },
     otel: {
       endpoint: otelEndpoint,
-      token: otelToken,
       headers: otelHeaders
+    },
+    sentry: {
+      dsn: sentryDsn,
+      environment: sentryEnvironment
     },
     resources: {
       available: Resource !== null

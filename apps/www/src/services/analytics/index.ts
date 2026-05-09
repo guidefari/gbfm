@@ -1,5 +1,6 @@
 export { NoopAnalyticsLayer } from './noop'
 export {
+  captureException,
   makeSentryAnalyticsLayer,
   type SentryAnalyticsOptions
 } from './sentry'
