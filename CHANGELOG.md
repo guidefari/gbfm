@@ -1,3 +1,10 @@
+# [2.36.0](https://github.com/guidefari/gbfm/compare/v2.35.0...v2.36.0) (2026-05-09)
+
+
+### Features
+
+* **QoL:** port check before running server ([2b99d94](https://github.com/guidefari/gbfm/commit/2b99d941a491a2f7e41ea22a6d35161a9951133b))
+
 # [2.35.0](https://github.com/guidefari/gbfm/compare/v2.34.2...v2.35.0) (2026-05-08)
 
 
