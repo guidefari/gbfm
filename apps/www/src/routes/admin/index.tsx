@@ -27,12 +27,17 @@ function AdminDashboard() {
               email, and files.
             </p>
           </div>
-          <Button asChild variant='outline'>
-            <Link to='/admin/overview'>
-              View overview
-              <ArrowRight className='w-4 h-4 ml-2' />
-            </Link>
-          </Button>
+          <div className='flex gap-2'>
+            <Button asChild variant='outline'>
+              <Link to='/admin/capture'>Capture tweet</Link>
+            </Button>
+            <Button asChild variant='outline'>
+              <Link to='/admin/overview'>
+                View overview
+                <ArrowRight className='w-4 h-4 ml-2' />
+              </Link>
+            </Button>
+          </div>
         </div>
 
         <Card>

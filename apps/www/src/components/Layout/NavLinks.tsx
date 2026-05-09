@@ -13,6 +13,7 @@ type BaseLink = {
   external?: { link: string }
   icon: React.ReactNode
   adminOnly?: boolean
+  hideInSideNav?: boolean
 }
 
 type lol =
@@ -41,7 +42,8 @@ export const pagesAndPages: lol[] = [
   {
     name: 'Record Labels',
     slug: '/labels',
-    icon: <Tag className={iconSytles} />
+    icon: <Tag className={iconSytles} />,
+    hideInSideNav: true
   },
   {
     name: 'Subscribe',

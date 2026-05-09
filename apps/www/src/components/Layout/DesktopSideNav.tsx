@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Music } from 'lucide-react'
+import { FilePenLine, Music } from 'lucide-react'
 import {
   Tooltip,
   TooltipContent,
@@ -18,6 +18,7 @@ export const DesktopSideNav = () => {
 
   const filteredPages = pagesAndPages.filter((page) => {
     if (page.adminOnly && !isAdmin) return false
+    if (page.hideInSideNav) return false
     return true
   })
 
@@ -55,6 +56,22 @@ export const DesktopSideNav = () => {
             </TooltipProvider>
           )
         })}
+        {isAdmin && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link
+                  to='/post-upload'
+                  search={{ type: 'post' }}
+                  className='flex items-center justify-center transition-colors rounded-sm h-9 w-9 text-foreground hover:text-highlight md:h-8 md:w-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
+                  <FilePenLine className='w-5 h-5 transition-all group-hover:scale-110' />
+                  <span className='sr-only'>Post Upload</span>
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent side='right'>Post Upload</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
       </nav>
       <nav className='flex flex-col items-center gap-4 px-2 mt-auto sm:py-5'>
         {isCompactMode && (

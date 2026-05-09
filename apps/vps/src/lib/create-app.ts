@@ -6,7 +6,9 @@ import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { notFound, onError, serveEmojiFavicon } from 'stoker/middlewares'
 import { effectLogger } from '@/middlewares/effect-logger'
 import { standardRateLimiter } from '@/middlewares/rate-limiter'
+import { runAppFork } from '@/runtime'
 import { config } from '@/services/config.service'
+import { SentryService } from '@/services/sentry.service'
 import type { AppBindings } from './types'
 
 export const corsConfig = {
@@ -60,7 +62,18 @@ export const createAppEffect = Effect.sync(() => {
     .use(standardRateLimiter())
 
   app.notFound(notFound)
-  app.onError(onError)
+  app.onError((err, c) => {
+    runAppFork(
+      Effect.flatMap(SentryService, (sentry) =>
+        sentry.captureException(err, {
+          path: c.req.path,
+          method: c.req.method,
+          requestId: c.get('requestId')
+        })
+      )
+    )
+    return onError(err, c)
+  })
 
   return app
 })

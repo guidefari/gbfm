@@ -15,6 +15,9 @@ import {
 import { user } from './auth.schema'
 import { defaultContentFields } from './util'
 
+export const POST_MUSIC_ENTITY_TYPES = ['album', 'track', 'playlist'] as const
+export type PostMusicEntityType = (typeof POST_MUSIC_ENTITY_TYPES)[number]
+
 export const postTypeEnum = pgEnum('post_type', ['post', 'micro'])
 // todo: derive this at some point bossman
 export type PostType = 'post' | 'micro'
@@ -23,9 +26,17 @@ export const postsTable = pgTable(
   'posts',
   {
     ...defaultContentFields,
-    type: postTypeEnum()
+    type: postTypeEnum(),
+    musicEntityType: text('music_entity_type'),
+    musicEntityId: uuid('music_entity_id')
   },
-  (table) => [index('posts_slug_idx').on(table.slug)]
+  (table) => [
+    index('posts_slug_idx').on(table.slug),
+    index('posts_music_entity_idx').on(
+      table.musicEntityType,
+      table.musicEntityId
+    )
+  ]
 )
 
 export type SelectPost = InferSelectModel<typeof postsTable>
@@ -63,6 +74,15 @@ export const selectPostSchema = z
       .enum(['post', 'micro'])
       .nullable()
       .openapi({ description: 'Type of the post' }),
+    musicEntityType: z
+      .string()
+      .nullable()
+      .openapi({ description: 'Attached music entity type' }),
+    musicEntityId: z
+      .string()
+      .uuid()
+      .nullable()
+      .openapi({ description: 'Attached music entity ID' }),
     createdAt: z.date().openapi({ description: 'Creation timestamp' }),
     updatedAt: z.date().openapi({ description: 'Last update timestamp' })
   })
@@ -122,7 +142,21 @@ export const insertPostSchema = z
       .enum(['post', 'micro'])
       .nullable()
       .optional()
-      .openapi({ description: 'Type of the post' })
+      .openapi({ description: 'Type of the post' }),
+    musicEntityType: z
+      .enum([...POST_MUSIC_ENTITY_TYPES] as [
+        PostMusicEntityType,
+        ...PostMusicEntityType[]
+      ])
+      .nullable()
+      .optional()
+      .openapi({ description: 'Attached music entity type' }),
+    musicEntityId: z
+      .string()
+      .uuid()
+      .nullable()
+      .optional()
+      .openapi({ description: 'Attached music entity ID' })
   })
   .openapi('InsertPost')
 
