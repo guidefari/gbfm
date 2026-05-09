@@ -35,10 +35,40 @@ export {
   isYouTubeUrl
 } from '@/services/url-utils'
 
+export interface SpotifyImportTrack {
+  spotifyTrackId: string
+  title: string
+  artistNames: string[]
+  artistSpotifyIds: string[]
+  albumName: string | null
+  albumSpotifyId: string | null
+  albumImageUrl: string | null
+  trackUrl: string
+  previewUrl: string | null
+  durationMs: number | null
+  trackNumber: number | null
+}
+
+export interface SpotifyImportPlaylist {
+  spotifyPlaylistId: string
+  title: string
+  description: string | null
+  coverImageUrl: string | null
+  ownerName: string | null
+  playlistUrl: string
+  tracks: SpotifyImportTrack[]
+}
+
 export interface SpotifyService {
   readonly getTrack: (id: string) => Effect.Effect<Track, SpotifyError>
   readonly getAlbum: (id: string) => Effect.Effect<Album, SpotifyError>
   readonly getPlaylist: (id: string) => Effect.Effect<Playlist, SpotifyError>
+  readonly getPlaylistForImport: (
+    id: string
+  ) => Effect.Effect<SpotifyImportPlaylist, SpotifyError>
+  readonly getTrackForImport: (
+    id: string
+  ) => Effect.Effect<SpotifyImportTrack, SpotifyError>
   readonly searchAlbums: (
     query: string,
     limit?: number,
@@ -178,6 +208,74 @@ const getPlaylistEffect = (id: string) =>
     return playlist
   })
 
+const PLAYLIST_IMPORT_CACHE_TTL_MS = 60 * 60 * 1000
+const playlistImportCache = new Map<
+  string,
+  { value: SpotifyImportPlaylist; expiresAt: number }
+>()
+
+const getPlaylistForImportEffect = (id: string) =>
+  Effect.gen(function* () {
+    const sanitizedId = cleanId(id)
+
+    if (!id || !sanitizedId) {
+      return yield* new SpotifyError({
+        message: 'Invalid playlist ID provided',
+        operation: 'getPlaylistForImport',
+        statusCode: 400
+      })
+    }
+
+    const now = Date.now()
+    const cached = playlistImportCache.get(sanitizedId)
+    if (cached && cached.expiresAt > now) {
+      return cached.value
+    }
+
+    const data = yield* Effect.tryPromise({
+      try: () => spotifyClient.playlists.getPlaylist(sanitizedId),
+      catch: (error) =>
+        new SpotifyError({
+          message: `Failed to fetch playlist: ${getErrorMessage(error)}`,
+          operation: 'getPlaylistForImport',
+          statusCode: 500
+        })
+    })
+
+    const tracks: SpotifyImportTrack[] = data.tracks.items
+      .filter((item) => item.track?.id)
+      .map(({ track }) => ({
+        spotifyTrackId: track.id,
+        title: track.name,
+        artistNames: track.artists.map((a) => a.name),
+        artistSpotifyIds: track.artists.map((a) => a.id).filter(Boolean),
+        albumName: track.album?.name ?? null,
+        albumSpotifyId: track.album?.id ?? null,
+        albumImageUrl: track.album?.images?.[0]?.url ?? null,
+        trackUrl: track.external_urls.spotify,
+        previewUrl: track.preview_url ?? null,
+        durationMs: track.duration_ms ?? null,
+        trackNumber: track.track_number ?? null
+      }))
+
+    const result: SpotifyImportPlaylist = {
+      spotifyPlaylistId: data.id,
+      title: data.name,
+      description: data.description ?? null,
+      coverImageUrl: data.images?.[0]?.url ?? null,
+      ownerName: data.owner.display_name ?? null,
+      playlistUrl: data.external_urls.spotify,
+      tracks
+    }
+
+    playlistImportCache.set(sanitizedId, {
+      value: result,
+      expiresAt: now + PLAYLIST_IMPORT_CACHE_TTL_MS
+    })
+
+    return result
+  })
+
 const searchAlbumsEffect = (query: string, limit = 10, offset = 0) =>
   Effect.gen(function* () {
     if (!query || query.trim() === '') {
@@ -245,6 +343,58 @@ const getAlbumWithSpan = (id: string) =>
 const getPlaylistWithSpan = (id: string) =>
   getPlaylistEffect(id).pipe(
     Effect.withSpan('spotify.getPlaylist', {
+      attributes: { 'spotify.id': id, 'external.system': 'spotify' }
+    })
+  )
+
+const getTrackForImportEffect = (id: string) =>
+  Effect.gen(function* () {
+    const sanitizedId = cleanId(id)
+    if (!id || !sanitizedId) {
+      return yield* new SpotifyError({
+        message: 'Invalid track ID provided',
+        operation: 'getTrackForImport',
+        statusCode: 400
+      })
+    }
+
+    const data = yield* Effect.tryPromise({
+      try: () => spotifyClient.tracks.get(sanitizedId),
+      catch: (error) =>
+        new SpotifyError({
+          message: `Failed to fetch track: ${getErrorMessage(error)}`,
+          operation: 'getTrackForImport',
+          statusCode: 500
+        })
+    })
+
+    const result: SpotifyImportTrack = {
+      spotifyTrackId: data.id,
+      title: data.name,
+      artistNames: data.artists.map((a) => a.name),
+      artistSpotifyIds: data.artists.map((a) => a.id).filter(Boolean),
+      albumName: data.album?.name ?? null,
+      albumSpotifyId: data.album?.id ?? null,
+      albumImageUrl: data.album?.images?.[0]?.url ?? null,
+      trackUrl: data.external_urls.spotify,
+      previewUrl: data.preview_url ?? null,
+      durationMs: data.duration_ms ?? null,
+      trackNumber: data.track_number ?? null
+    }
+
+    return result
+  })
+
+const getTrackForImportWithSpan = (id: string) =>
+  getTrackForImportEffect(id).pipe(
+    Effect.withSpan('spotify.getTrackForImport', {
+      attributes: { 'spotify.id': id, 'external.system': 'spotify' }
+    })
+  )
+
+const getPlaylistForImportWithSpan = (id: string) =>
+  getPlaylistForImportEffect(id).pipe(
+    Effect.withSpan('spotify.getPlaylistForImport', {
       attributes: { 'spotify.id': id, 'external.system': 'spotify' }
     })
   )
@@ -399,6 +549,8 @@ export const SpotifyServiceLive = Layer.succeed(SpotifyService, {
   getTrack: getTrackWithSpan,
   getAlbum: getAlbumWithSpan,
   getPlaylist: getPlaylistWithSpan,
+  getPlaylistForImport: getPlaylistForImportWithSpan,
+  getTrackForImport: getTrackForImportWithSpan,
   searchAlbums: searchAlbumsWithSpan,
   enrichTrackFromUrl: enrichTrackFromUrlWithSpan
 })

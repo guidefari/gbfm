@@ -15,6 +15,8 @@ import type {
   AddArtistToAlbumRoute,
   AddArtistToTrackRoute,
   AddEntityLinkRoute,
+  AddSpotifyTrackToPlaylistRoute,
+  AddTrackToPlaylistRoute,
   CreateAlbumRoute,
   CreateArtistRoute,
   CreatePlaylistRoute,
@@ -27,7 +29,9 @@ import type {
   GetAlbumRoute,
   GetArtistRoute,
   GetPlaylistRoute,
+  GetPlaylistTracksRoute,
   GetTrackRoute,
+  ImportSpotifyPlaylistRoute,
   ListAlbumsRoute,
   ListArtistsRoute,
   ListEntityLinksRoute,
@@ -36,6 +40,8 @@ import type {
   ListTracksRoute,
   RemoveArtistFromAlbumRoute,
   RemoveArtistFromTrackRoute,
+  RemoveTrackFromPlaylistRoute,
+  ReorderPlaylistTracksRoute,
   ResolveMusicEntityRoute,
   ScrapeEntityLinksRoute,
   UpdateAlbumRoute,
@@ -449,6 +455,152 @@ export const deletePlaylist: AppRouteHandler<DeletePlaylistRoute> = async (
     return c.json({ error: result.error }, HttpStatusCodes.NOT_FOUND)
   }
   return c.body(null, HttpStatusCodes.NO_CONTENT)
+}
+
+// ---------------------------------------------------------------------------
+// Playlist track handlers
+// ---------------------------------------------------------------------------
+
+export const getPlaylistTracks: AppRouteHandler<
+  GetPlaylistTracksRoute
+> = async (c) => {
+  const { id } = c.req.valid('param')
+  const result = await AppRuntime.runPromise(
+    Effect.gen(function* () {
+      const svc = yield* MusicEntityService
+      return yield* svc.getPlaylistTracks(id)
+    }).pipe(
+      Effect.withSpan('api.music.getPlaylistTracks', { attributes: { id } })
+    )
+  )
+  return c.json(result, HttpStatusCodes.OK)
+}
+
+export const addTrackToPlaylist: AppRouteHandler<
+  AddTrackToPlaylistRoute
+> = async (c) => {
+  const { id } = c.req.valid('param')
+  const body = c.req.valid('json')
+  const result = await AppRuntime.runPromise(
+    Effect.gen(function* () {
+      const svc = yield* MusicEntityService
+      return yield* svc.addTrackToPlaylist(id, body.trackId, body.position)
+    }).pipe(Effect.withSpan('api.music.addTrackToPlaylist'))
+  )
+  return c.json(result, HttpStatusCodes.CREATED)
+}
+
+export const removeTrackFromPlaylist: AppRouteHandler<
+  RemoveTrackFromPlaylistRoute
+> = async (c) => {
+  const { id, trackId } = c.req.valid('param')
+  await AppRuntime.runPromise(
+    Effect.gen(function* () {
+      const svc = yield* MusicEntityService
+      yield* svc.removeTrackFromPlaylist(id, trackId)
+    }).pipe(Effect.withSpan('api.music.removeTrackFromPlaylist'))
+  )
+  return c.body(null, HttpStatusCodes.NO_CONTENT)
+}
+
+export const reorderPlaylistTracks: AppRouteHandler<
+  ReorderPlaylistTracksRoute
+> = async (c) => {
+  const { id } = c.req.valid('param')
+  const { trackIds } = c.req.valid('json')
+
+  const program = Effect.gen(function* () {
+    const svc = yield* MusicEntityService
+    yield* svc.reorderPlaylistTracks(id, trackIds)
+    return { ok: true } as const
+  }).pipe(
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: e.message.includes('match current playlist tracks')
+          ? HttpStatusCodes.BAD_REQUEST
+          : HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    ),
+    Effect.withSpan('api.music.reorderPlaylistTracks', { attributes: { id } })
+  )
+
+  const result = await AppRuntime.runPromise(program)
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
+  }
+  return c.body(null, HttpStatusCodes.NO_CONTENT)
+}
+
+export const addSpotifyTrackToPlaylist: AppRouteHandler<
+  AddSpotifyTrackToPlaylistRoute
+> = async (c) => {
+  const { id } = c.req.valid('param')
+  const { url } = c.req.valid('json')
+
+  const program = Effect.gen(function* () {
+    const svc = yield* MusicEntityService
+    return yield* svc.addSpotifyTrackToPlaylist(id, url)
+  }).pipe(
+    Effect.catchTag('SpotifyError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status:
+          e.statusCode === 400
+            ? HttpStatusCodes.BAD_REQUEST
+            : HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    ),
+    Effect.withSpan('api.music.addSpotifyTrackToPlaylist', {
+      attributes: { id }
+    })
+  )
+
+  const result = await AppRuntime.runPromise(program)
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
+  }
+  return c.json(result, HttpStatusCodes.CREATED)
+}
+
+export const importSpotifyPlaylist: AppRouteHandler<
+  ImportSpotifyPlaylistRoute
+> = async (c) => {
+  const { url } = c.req.valid('json')
+
+  const program = Effect.gen(function* () {
+    const svc = yield* MusicEntityService
+    return yield* svc.importSpotifyPlaylist(url)
+  }).pipe(
+    Effect.catchTag('SpotifyError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status:
+          e.statusCode === 400
+            ? HttpStatusCodes.BAD_REQUEST
+            : HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    ),
+    Effect.withSpan('api.music.importSpotifyPlaylist')
+  )
+
+  const result = await AppRuntime.runPromise(program)
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
+  }
+  return c.json(result, HttpStatusCodes.OK)
 }
 
 // ---------------------------------------------------------------------------

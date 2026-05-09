@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, sql } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import {
@@ -10,21 +10,34 @@ import {
   musicArtistsTable,
   musicEntityLinksTable,
   musicPlaylistsTable,
+  musicPlaylistTracksTable,
   musicTrackArtistsTable,
   musicTracksTable,
   type SelectMusicAlbum,
   type SelectMusicArtist,
   type SelectMusicEntityLink,
   type SelectMusicPlaylist,
+  type SelectMusicPlaylistTrack,
   type SelectMusicTrack
 } from '@/db/music-entity.schema'
-import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
+import {
+  DatabaseError,
+  getErrorMessage,
+  NotFoundError,
+  SpotifyError
+} from '@/errors'
 import {
   type MusicLinkScraperService,
   MusicLinkScraperService as MusicLinkScraperServiceTag,
   type MusicScrapeInput
 } from './music-link-scraper.service'
 import { parseArtistNames } from './parse-artist-names'
+import {
+  getIdFromSpotifyUrl,
+  type SpotifyImportPlaylist,
+  type SpotifyService,
+  SpotifyService as SpotifyServiceTag
+} from './spotify.service'
 import { toSlug } from './to-slug'
 
 // ---------------------------------------------------------------------------
@@ -145,6 +158,46 @@ export interface MusicEntityService {
   readonly deletePlaylist: (
     id: string
   ) => Effect.Effect<void, DatabaseError | NotFoundError>
+
+  // Playlist tracks
+  readonly getPlaylistTracks: (playlistId: string) => Effect.Effect<
+    Array<{
+      track: SelectMusicTrack
+      position: number
+      addedAt: Date
+      links: SelectMusicEntityLink[]
+    }>,
+    DatabaseError
+  >
+  readonly addTrackToPlaylist: (
+    playlistId: string,
+    trackId: string,
+    position: number
+  ) => Effect.Effect<SelectMusicPlaylistTrack, DatabaseError>
+  readonly removeTrackFromPlaylist: (
+    playlistId: string,
+    trackId: string
+  ) => Effect.Effect<void, DatabaseError>
+  readonly reorderPlaylistTracks: (
+    playlistId: string,
+    trackIds: string[]
+  ) => Effect.Effect<void, DatabaseError>
+  readonly addSpotifyTrackToPlaylist: (
+    playlistId: string,
+    spotifyUrl: string
+  ) => Effect.Effect<
+    { trackId: string; position: number; created: boolean },
+    DatabaseError | SpotifyError
+  >
+  readonly importSpotifyPlaylist: (url: string) => Effect.Effect<
+    {
+      playlist: SelectMusicPlaylist
+      trackCount: number
+      createdTrackCount: number
+      reusedTrackCount: number
+    },
+    DatabaseError | SpotifyError
+  >
 
   // Artist-entity junctions
   readonly addArtistToAlbum: (
@@ -773,6 +826,469 @@ const deletePlaylistEffect = (id: string) =>
   }).pipe(Effect.withSpan('musicEntity.deletePlaylist', { attributes: { id } }))
 
 // ---------------------------------------------------------------------------
+// Playlist track effects
+// ---------------------------------------------------------------------------
+
+const getPlaylistTracksEffect = (playlistId: string) =>
+  Effect.tryPromise({
+    try: async () => {
+      const rows = await db
+        .select({
+          track: musicTracksTable,
+          position: musicPlaylistTracksTable.position,
+          addedAt: musicPlaylistTracksTable.addedAt
+        })
+        .from(musicPlaylistTracksTable)
+        .innerJoin(
+          musicTracksTable,
+          eq(musicPlaylistTracksTable.trackId, musicTracksTable.id)
+        )
+        .where(eq(musicPlaylistTracksTable.playlistId, playlistId))
+        .orderBy(musicPlaylistTracksTable.position)
+
+      const trackIds = rows.map((r) => r.track.id)
+      const linkRows =
+        trackIds.length === 0
+          ? []
+          : await db
+              .select()
+              .from(musicEntityLinksTable)
+              .where(
+                and(
+                  eq(musicEntityLinksTable.entityType, 'track'),
+                  inArray(musicEntityLinksTable.entityId, trackIds)
+                )
+              )
+
+      const linksByTrackId = new Map<string, SelectMusicEntityLink[]>()
+      for (const link of linkRows) {
+        const list = linksByTrackId.get(link.entityId) ?? []
+        list.push(link)
+        linksByTrackId.set(link.entityId, list)
+      }
+
+      return rows.map((r) => ({
+        ...r,
+        links: linksByTrackId.get(r.track.id) ?? []
+      }))
+    },
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to get playlist tracks: ${getErrorMessage(e)}`,
+        operation: 'select',
+        table: 'music_playlist_tracks'
+      })
+  }).pipe(
+    Effect.withSpan('musicEntity.getPlaylistTracks', {
+      attributes: { playlistId }
+    })
+  )
+
+const addTrackToPlaylistEffect = Effect.fn('musicEntity.addTrackToPlaylist')(
+  function* (playlistId: string, trackId: string, position: number) {
+    const rows = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .insert(musicPlaylistTracksTable)
+          .values({ playlistId, trackId, position })
+          .onConflictDoUpdate({
+            target: [
+              musicPlaylistTracksTable.playlistId,
+              musicPlaylistTracksTable.trackId
+            ],
+            set: { position }
+          })
+          .returning(),
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to add track to playlist: ${getErrorMessage(e)}`,
+          operation: 'insert',
+          table: 'music_playlist_tracks'
+        })
+    })
+    return yield* requireInserted(rows, 'music_playlist_tracks')
+  }
+)
+
+const removeTrackFromPlaylistEffect = (playlistId: string, trackId: string) =>
+  Effect.tryPromise({
+    try: () =>
+      db
+        .delete(musicPlaylistTracksTable)
+        .where(
+          and(
+            eq(musicPlaylistTracksTable.playlistId, playlistId),
+            eq(musicPlaylistTracksTable.trackId, trackId)
+          )
+        ),
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to remove track from playlist: ${getErrorMessage(e)}`,
+        operation: 'delete',
+        table: 'music_playlist_tracks'
+      })
+  }).pipe(
+    Effect.asVoid,
+    Effect.withSpan('musicEntity.removeTrackFromPlaylist', {
+      attributes: { playlistId, trackId }
+    })
+  )
+
+const reorderPlaylistTracksEffect = (playlistId: string, trackIds: string[]) =>
+  Effect.tryPromise({
+    try: () =>
+      db.transaction(async (tx) => {
+        const existing = await tx
+          .select({ trackId: musicPlaylistTracksTable.trackId })
+          .from(musicPlaylistTracksTable)
+          .where(eq(musicPlaylistTracksTable.playlistId, playlistId))
+
+        const existingSet = new Set(existing.map((r) => r.trackId))
+        const incomingSet = new Set(trackIds)
+
+        if (
+          existingSet.size !== incomingSet.size ||
+          [...existingSet].some((id) => !incomingSet.has(id))
+        ) {
+          throw new Error(
+            'Reorder track set must match current playlist tracks exactly'
+          )
+        }
+
+        for (let i = 0; i < trackIds.length; i += 1) {
+          await tx
+            .update(musicPlaylistTracksTable)
+            .set({ position: i })
+            .where(
+              and(
+                eq(musicPlaylistTracksTable.playlistId, playlistId),
+                eq(musicPlaylistTracksTable.trackId, trackIds[i] as string)
+              )
+            )
+        }
+      }),
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to reorder tracks: ${getErrorMessage(e)}`,
+        operation: 'update',
+        table: 'music_playlist_tracks'
+      })
+  }).pipe(
+    Effect.asVoid,
+    Effect.withSpan('musicEntity.reorderPlaylistTracks', {
+      attributes: { playlistId }
+    })
+  )
+
+// ---------------------------------------------------------------------------
+// Spotify playlist import
+// ---------------------------------------------------------------------------
+
+const findEntityIdBySpotifyUrlTx = async (
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  entityType: MusicEntityType,
+  url: string
+) => {
+  const rows = await tx
+    .select({ entityId: musicEntityLinksTable.entityId })
+    .from(musicEntityLinksTable)
+    .where(
+      and(
+        eq(musicEntityLinksTable.entityType, entityType),
+        eq(musicEntityLinksTable.platform, 'spotify'),
+        eq(musicEntityLinksTable.url, url)
+      )
+    )
+    .limit(1)
+  return rows[0]?.entityId ?? null
+}
+
+const uniqueSlug = async (
+  tx: Parameters<Parameters<typeof db.transaction>[0]>[0],
+  table:
+    | typeof musicPlaylistsTable
+    | typeof musicTracksTable
+    | typeof musicArtistsTable
+    | typeof musicAlbumsTable,
+  base: string
+): Promise<string> => {
+  let candidate = base
+  let n = 1
+  while (true) {
+    const existing = await tx
+      .select({ id: table.id })
+      .from(table)
+      .where(eq(table.slug, candidate))
+      .limit(1)
+    if (existing.length === 0) return candidate
+    n += 1
+    candidate = `${base}-${n}`
+  }
+}
+
+const importSpotifyPlaylistEffect = (spotify: SpotifyService) =>
+  Effect.fn('musicEntity.importSpotifyPlaylist')(function* (url: string) {
+    const id = getIdFromSpotifyUrl(url)
+    if (!id) {
+      return yield* new SpotifyError({
+        message: 'Could not extract Spotify playlist ID from URL',
+        operation: 'importSpotifyPlaylist',
+        statusCode: 400
+      })
+    }
+
+    const data: SpotifyImportPlaylist = yield* spotify.getPlaylistForImport(id)
+
+    return yield* Effect.tryPromise({
+      try: () =>
+        db.transaction(async (tx) => {
+          let createdTrackCount = 0
+          let reusedTrackCount = 0
+
+          const existingPlaylistId = await findEntityIdBySpotifyUrlTx(
+            tx,
+            'playlist',
+            data.playlistUrl
+          )
+
+          let playlist: SelectMusicPlaylist
+          if (existingPlaylistId) {
+            const updated = await tx
+              .update(musicPlaylistsTable)
+              .set({
+                title: data.title,
+                description: data.description,
+                coverImageUrl: data.coverImageUrl,
+                updatedAt: new Date()
+              })
+              .where(eq(musicPlaylistsTable.id, existingPlaylistId))
+              .returning()
+            const row = updated[0]
+            if (!row) throw new Error('Failed to update existing playlist')
+            playlist = row
+          } else {
+            const slug = await uniqueSlug(
+              tx,
+              musicPlaylistsTable,
+              toSlug(data.title)
+            )
+            const inserted = await tx
+              .insert(musicPlaylistsTable)
+              .values({
+                title: data.title,
+                description: data.description,
+                coverImageUrl: data.coverImageUrl,
+                slug
+              })
+              .returning()
+            const row = inserted[0]
+            if (!row) throw new Error('Failed to insert playlist')
+            playlist = row
+
+            await tx.insert(musicEntityLinksTable).values({
+              entityType: 'playlist',
+              entityId: playlist.id,
+              platform: 'spotify',
+              url: data.playlistUrl,
+              status: 'verified',
+              metadata: { spotifyPlaylistId: data.spotifyPlaylistId }
+            })
+          }
+
+          await tx
+            .delete(musicPlaylistTracksTable)
+            .where(eq(musicPlaylistTracksTable.playlistId, playlist.id))
+
+          for (let i = 0; i < data.tracks.length; i += 1) {
+            const t = data.tracks[i]
+            if (!t) continue
+
+            const existingTrackId = await findEntityIdBySpotifyUrlTx(
+              tx,
+              'track',
+              t.trackUrl
+            )
+
+            let trackId: string
+            if (existingTrackId) {
+              trackId = existingTrackId
+              reusedTrackCount += 1
+            } else {
+              const slug = await uniqueSlug(
+                tx,
+                musicTracksTable,
+                toSlug(`${t.artistNames.join(' ')} ${t.title}`)
+              )
+              const inserted = await tx
+                .insert(musicTracksTable)
+                .values({
+                  title: t.title,
+                  artistNames: t.artistNames,
+                  coverImageUrl: t.albumImageUrl,
+                  trackNumber: t.trackNumber,
+                  slug
+                })
+                .returning()
+              const row = inserted[0]
+              if (!row) throw new Error('Failed to insert track')
+              trackId = row.id
+              createdTrackCount += 1
+
+              await tx.insert(musicEntityLinksTable).values({
+                entityType: 'track',
+                entityId: trackId,
+                platform: 'spotify',
+                url: t.trackUrl,
+                status: 'verified',
+                metadata: {
+                  spotifyTrackId: t.spotifyTrackId,
+                  durationMs: t.durationMs,
+                  previewUrl: t.previewUrl,
+                  albumName: t.albumName,
+                  albumSpotifyId: t.albumSpotifyId
+                }
+              })
+            }
+
+            await tx
+              .insert(musicPlaylistTracksTable)
+              .values({ playlistId: playlist.id, trackId, position: i })
+              .onConflictDoUpdate({
+                target: [
+                  musicPlaylistTracksTable.playlistId,
+                  musicPlaylistTracksTable.trackId
+                ],
+                set: { position: i }
+              })
+          }
+
+          return {
+            playlist,
+            trackCount: data.tracks.length,
+            createdTrackCount,
+            reusedTrackCount
+          }
+        }),
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to import Spotify playlist: ${getErrorMessage(e)}`,
+          operation: 'insert',
+          table: 'music_playlists'
+        })
+    })
+  })
+
+const addSpotifyTrackToPlaylistEffect = (spotify: SpotifyService) =>
+  Effect.fn('musicEntity.addSpotifyTrackToPlaylist')(function* (
+    playlistId: string,
+    spotifyUrl: string
+  ) {
+    const id = getIdFromSpotifyUrl(spotifyUrl)
+    if (!id) {
+      return yield* new SpotifyError({
+        message: 'Could not extract Spotify track ID from URL',
+        operation: 'addSpotifyTrackToPlaylist',
+        statusCode: 400
+      })
+    }
+
+    const t = yield* spotify.getTrackForImport(id)
+
+    return yield* Effect.tryPromise({
+      try: () =>
+        db.transaction(async (tx) => {
+          const existingTrackId = await findEntityIdBySpotifyUrlTx(
+            tx,
+            'track',
+            t.trackUrl
+          )
+
+          let trackId: string
+          let created = false
+          if (existingTrackId) {
+            trackId = existingTrackId
+          } else {
+            const slug = await uniqueSlug(
+              tx,
+              musicTracksTable,
+              toSlug(`${t.artistNames.join(' ')} ${t.title}`)
+            )
+            const inserted = await tx
+              .insert(musicTracksTable)
+              .values({
+                title: t.title,
+                artistNames: t.artistNames,
+                coverImageUrl: t.albumImageUrl,
+                trackNumber: t.trackNumber,
+                slug
+              })
+              .returning()
+            const row = inserted[0]
+            if (!row) throw new Error('Failed to insert track')
+            trackId = row.id
+            created = true
+
+            await tx.insert(musicEntityLinksTable).values({
+              entityType: 'track',
+              entityId: trackId,
+              platform: 'spotify',
+              url: t.trackUrl,
+              status: 'verified',
+              metadata: {
+                spotifyTrackId: t.spotifyTrackId,
+                durationMs: t.durationMs,
+                previewUrl: t.previewUrl,
+                albumName: t.albumName,
+                albumSpotifyId: t.albumSpotifyId
+              }
+            })
+          }
+
+          const maxRow = await tx
+            .select({
+              max: sql<number | null>`max(${musicPlaylistTracksTable.position})`
+            })
+            .from(musicPlaylistTracksTable)
+            .where(eq(musicPlaylistTracksTable.playlistId, playlistId))
+          const nextPosition = (maxRow[0]?.max ?? -1) + 1
+
+          await tx
+            .insert(musicPlaylistTracksTable)
+            .values({ playlistId, trackId, position: nextPosition })
+            .onConflictDoNothing({
+              target: [
+                musicPlaylistTracksTable.playlistId,
+                musicPlaylistTracksTable.trackId
+              ]
+            })
+
+          const finalRow = await tx
+            .select({ position: musicPlaylistTracksTable.position })
+            .from(musicPlaylistTracksTable)
+            .where(
+              and(
+                eq(musicPlaylistTracksTable.playlistId, playlistId),
+                eq(musicPlaylistTracksTable.trackId, trackId)
+              )
+            )
+            .limit(1)
+
+          return {
+            trackId,
+            position: finalRow[0]?.position ?? nextPosition,
+            created
+          }
+        }),
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to add Spotify track: ${getErrorMessage(e)}`,
+          operation: 'insert',
+          table: 'music_playlist_tracks'
+        })
+    })
+  })
+
+// ---------------------------------------------------------------------------
 // Junction table effects
 // ---------------------------------------------------------------------------
 
@@ -1272,6 +1788,7 @@ export const MusicEntityServiceLive = Layer.effect(
   MusicEntityService,
   Effect.gen(function* () {
     const scraper = yield* MusicLinkScraperServiceTag
+    const spotify = yield* SpotifyServiceTag
 
     return {
       createArtist: createArtistEffect,
@@ -1297,6 +1814,13 @@ export const MusicEntityServiceLive = Layer.effect(
       getPlaylistById: getPlaylistByIdEffect,
       updatePlaylist: updatePlaylistEffect,
       deletePlaylist: deletePlaylistEffect,
+
+      getPlaylistTracks: getPlaylistTracksEffect,
+      addTrackToPlaylist: addTrackToPlaylistEffect,
+      removeTrackFromPlaylist: removeTrackFromPlaylistEffect,
+      reorderPlaylistTracks: reorderPlaylistTracksEffect,
+      addSpotifyTrackToPlaylist: addSpotifyTrackToPlaylistEffect(spotify),
+      importSpotifyPlaylist: importSpotifyPlaylistEffect(spotify),
 
       addArtistToAlbum: addArtistToAlbumEffect,
       removeArtistFromAlbum: removeArtistFromAlbumEffect,

@@ -2,13 +2,19 @@ import { createRoute, z } from '@hono/zod-openapi'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { jsonContent, jsonContentRequired } from 'stoker/openapi/helpers'
 import {
+  addSpotifyTrackResultSchema,
+  addSpotifyTrackToPlaylistSchema,
   entityTypeEnum,
+  importSpotifyPlaylistResultSchema,
+  importSpotifyPlaylistSchema,
   insertMusicAlbumSchema,
   insertMusicArtistSchema,
   insertMusicPlaylistSchema,
+  insertMusicPlaylistTrackSchema,
   insertMusicTrackSchema,
   linkStatusEnum,
   musicPlatformEnum,
+  reorderPlaylistTracksSchema,
   selectMusicAlbumSchema,
   selectMusicArtistSchema,
   selectMusicEntityLinkSchema,
@@ -365,6 +371,150 @@ export const deletePlaylist = createRoute({
 })
 
 // ---------------------------------------------------------------------------
+// Playlist tracks
+// ---------------------------------------------------------------------------
+
+const playlistTrackResponseSchema = z
+  .object({
+    track: selectMusicTrackSchema,
+    position: z.number().int(),
+    addedAt: z.date(),
+    links: z.array(selectMusicEntityLinkSchema)
+  })
+  .openapi('PlaylistTrackEntry')
+
+export const getPlaylistTracks = createRoute({
+  path: '/playlists/:id/tracks',
+  method: 'get',
+  request: {
+    params: z.object({ id: z.string().uuid() })
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.array(playlistTrackResponseSchema),
+      'Tracks in playlist (ordered)'
+    )
+  }
+})
+
+export const addTrackToPlaylist = createRoute({
+  path: '/playlists/:id/tracks',
+  method: 'post',
+  middleware: [requireAdminMiddleware],
+  request: {
+    params: z.object({ id: z.string().uuid() }),
+    body: jsonContentRequired(insertMusicPlaylistTrackSchema, 'Track to add')
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.CREATED]: jsonContent(
+      z.object({
+        playlistId: z.string().uuid(),
+        trackId: z.string().uuid(),
+        position: z.number().int(),
+        addedAt: z.date()
+      }),
+      'Added'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      errorSchema,
+      'Server error'
+    )
+  }
+})
+
+export const removeTrackFromPlaylist = createRoute({
+  path: '/playlists/:id/tracks/:trackId',
+  method: 'delete',
+  middleware: [requireAdminMiddleware],
+  request: {
+    params: z.object({
+      id: z.string().uuid(),
+      trackId: z.string().uuid()
+    })
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.NO_CONTENT]: { description: 'Removed' }
+  }
+})
+
+export const reorderPlaylistTracks = createRoute({
+  path: '/playlists/:id/tracks/order',
+  method: 'put',
+  middleware: [requireAdminMiddleware],
+  request: {
+    params: z.object({ id: z.string().uuid() }),
+    body: jsonContentRequired(
+      reorderPlaylistTracksSchema,
+      'New ordering of trackIds'
+    )
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.NO_CONTENT]: { description: 'Reordered' },
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
+      errorSchema,
+      'Mismatched track set'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      errorSchema,
+      'Server error'
+    )
+  }
+})
+
+export const addSpotifyTrackToPlaylist = createRoute({
+  path: '/playlists/:id/tracks/spotify',
+  method: 'post',
+  middleware: [requireAdminMiddleware, strictRateLimiter()],
+  request: {
+    params: z.object({ id: z.string().uuid() }),
+    body: jsonContentRequired(
+      addSpotifyTrackToPlaylistSchema,
+      'Spotify track URL'
+    )
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.CREATED]: jsonContent(
+      addSpotifyTrackResultSchema,
+      'Added'
+    ),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(errorSchema, 'Invalid URL'),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      errorSchema,
+      'Server error'
+    )
+  }
+})
+
+export const importSpotifyPlaylist = createRoute({
+  path: '/playlists/import/spotify',
+  method: 'post',
+  middleware: [requireAdminMiddleware, strictRateLimiter()],
+  request: {
+    body: jsonContentRequired(
+      importSpotifyPlaylistSchema,
+      'Spotify playlist URL'
+    )
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      importSpotifyPlaylistResultSchema,
+      'Imported playlist'
+    ),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(errorSchema, 'Invalid URL'),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      errorSchema,
+      'Import failed'
+    )
+  }
+})
+
+// ---------------------------------------------------------------------------
 // Resolve a pasted URL into a music entity
 // ---------------------------------------------------------------------------
 
@@ -685,6 +835,12 @@ export type CreatePlaylistRoute = typeof createPlaylist
 export type GetPlaylistRoute = typeof getPlaylist
 export type UpdatePlaylistRoute = typeof updatePlaylist
 export type DeletePlaylistRoute = typeof deletePlaylist
+export type GetPlaylistTracksRoute = typeof getPlaylistTracks
+export type AddTrackToPlaylistRoute = typeof addTrackToPlaylist
+export type RemoveTrackFromPlaylistRoute = typeof removeTrackFromPlaylist
+export type ImportSpotifyPlaylistRoute = typeof importSpotifyPlaylist
+export type ReorderPlaylistTracksRoute = typeof reorderPlaylistTracks
+export type AddSpotifyTrackToPlaylistRoute = typeof addSpotifyTrackToPlaylist
 
 export type ResolveMusicEntityRoute = typeof resolveMusicEntity
 

@@ -196,6 +196,31 @@ export const musicTrackArtistsTable = pgTable(
 )
 
 // ---------------------------------------------------------------------------
+// Many-to-many: playlists ↔ tracks
+// ---------------------------------------------------------------------------
+
+export const musicPlaylistTracksTable = pgTable(
+  'music_playlist_tracks',
+  {
+    playlistId: uuid()
+      .notNull()
+      .references(() => musicPlaylistsTable.id, { onDelete: 'cascade' }),
+    trackId: uuid()
+      .notNull()
+      .references(() => musicTracksTable.id, { onDelete: 'cascade' }),
+    position: integer().notNull(),
+    addedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => [
+    primaryKey({ columns: [table.playlistId, table.trackId] }),
+    index('music_playlist_tracks_position_idx').on(
+      table.playlistId,
+      table.position
+    )
+  ]
+)
+
+// ---------------------------------------------------------------------------
 // Platform links — the core of the agnostic storage
 // ---------------------------------------------------------------------------
 
@@ -261,6 +286,13 @@ export type InsertMusicTrack = InferInsertModel<typeof musicTracksTable>
 export type SelectMusicPlaylist = InferSelectModel<typeof musicPlaylistsTable>
 export type InsertMusicPlaylist = InferInsertModel<typeof musicPlaylistsTable>
 
+export type SelectMusicPlaylistTrack = InferSelectModel<
+  typeof musicPlaylistTracksTable
+>
+export type InsertMusicPlaylistTrack = InferInsertModel<
+  typeof musicPlaylistTracksTable
+>
+
 export type SelectMusicEntityLink = InferSelectModel<
   typeof musicEntityLinksTable
 >
@@ -292,7 +324,8 @@ export const musicTracksRelations = relations(
       fields: [musicTracksTable.albumId],
       references: [musicAlbumsTable.id]
     }),
-    trackArtists: many(musicTrackArtistsTable)
+    trackArtists: many(musicTrackArtistsTable),
+    playlistTracks: many(musicPlaylistTracksTable)
   })
 )
 
@@ -326,10 +359,25 @@ export const musicTrackArtistsRelations = relations(
 
 export const musicPlaylistsRelations = relations(
   musicPlaylistsTable,
-  ({ one }) => ({
+  ({ one, many }) => ({
     curator: one(user, {
       fields: [musicPlaylistsTable.curatorId],
       references: [user.id]
+    }),
+    playlistTracks: many(musicPlaylistTracksTable)
+  })
+)
+
+export const musicPlaylistTracksRelations = relations(
+  musicPlaylistTracksTable,
+  ({ one }) => ({
+    playlist: one(musicPlaylistsTable, {
+      fields: [musicPlaylistTracksTable.playlistId],
+      references: [musicPlaylistsTable.id]
+    }),
+    track: one(musicTracksTable, {
+      fields: [musicPlaylistTracksTable.trackId],
+      references: [musicTracksTable.id]
     })
   })
 )
@@ -566,6 +614,63 @@ export const musicTrackArtistSchema = z
     role: z.string().optional()
   })
   .openapi('MusicTrackArtist')
+
+// --- Playlist track junction schemas ---
+
+export const musicPlaylistTrackSchema = z
+  .object({
+    playlistId: z.string().uuid(),
+    trackId: z.string().uuid(),
+    position: z.number().int().nonnegative(),
+    addedAt: z.date()
+  })
+  .openapi('MusicPlaylistTrack')
+
+export const insertMusicPlaylistTrackSchema = z
+  .object({
+    trackId: z.string().uuid(),
+    position: z.number().int().nonnegative()
+  })
+  .openapi('InsertMusicPlaylistTrack')
+
+export const reorderPlaylistTracksSchema = z
+  .object({
+    trackIds: z.array(z.string().uuid()).min(1)
+  })
+  .openapi('ReorderPlaylistTracks')
+
+export const addSpotifyTrackToPlaylistSchema = z
+  .object({
+    url: z.string().url().openapi({
+      example: 'https://open.spotify.com/track/...'
+    })
+  })
+  .openapi('AddSpotifyTrackToPlaylist')
+
+export const addSpotifyTrackResultSchema = z
+  .object({
+    trackId: z.string().uuid(),
+    position: z.number().int(),
+    created: z.boolean()
+  })
+  .openapi('AddSpotifyTrackResult')
+
+export const importSpotifyPlaylistSchema = z
+  .object({
+    url: z.string().url().openapi({
+      example: 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M'
+    })
+  })
+  .openapi('ImportSpotifyPlaylist')
+
+export const importSpotifyPlaylistResultSchema = z
+  .object({
+    playlist: selectMusicPlaylistSchema,
+    trackCount: z.number().int(),
+    createdTrackCount: z.number().int(),
+    reusedTrackCount: z.number().int()
+  })
+  .openapi('ImportSpotifyPlaylistResult')
 
 // Re-export enums for use in routes
 export { entityTypeEnum, linkStatusEnum, musicPlatformEnum }
