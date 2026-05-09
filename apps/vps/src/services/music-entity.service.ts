@@ -58,6 +58,7 @@ export interface CreateTrackInput {
   artistNames?: string[] | null
   /** Junction-table artist links — inserted separately after the track row */
   artistIds?: string[]
+  coverImageUrl?: string | null
   albumId?: string | null
   trackNumber?: number | null
   slug: string
@@ -1213,7 +1214,8 @@ const scrapeAndCreateEntityEffect =
               title,
               slug: toSlug(title),
               artistNames,
-              artistIds
+              artistIds,
+              coverImageUrl: meta?.thumbnailUrl
             })
           }
           case 'playlist': {

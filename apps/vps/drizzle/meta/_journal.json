@@ -218,6 +218,13 @@
       "when": 1772804277667,
       "tag": "0033_lucky_mastermind",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1778335064510,
+      "tag": "0034_smooth_molly_hayes",
+      "breakpoints": true
     }
   ]
 }

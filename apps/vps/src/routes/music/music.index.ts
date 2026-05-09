@@ -28,6 +28,7 @@ const router = createRouter()
   .openapi(routes.getPlaylist, handlers.getPlaylist)
   .openapi(routes.updatePlaylist, handlers.updatePlaylist)
   .openapi(routes.deletePlaylist, handlers.deletePlaylist)
+  .openapi(routes.resolveMusicEntity, handlers.resolveMusicEntity)
   // Review queue (before polymorphic /:entityType routes to avoid conflict)
   .openapi(routes.listPendingLinks, handlers.listPendingLinks)
   // Links per entity

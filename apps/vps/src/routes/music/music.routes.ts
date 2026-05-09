@@ -365,6 +365,43 @@ export const deletePlaylist = createRoute({
 })
 
 // ---------------------------------------------------------------------------
+// Resolve a pasted URL into a music entity
+// ---------------------------------------------------------------------------
+
+export const resolveMusicEntity = createRoute({
+  path: '/resolve',
+  method: 'post',
+  middleware: [requireAdminMiddleware, strictRateLimiter()],
+  request: {
+    body: jsonContentRequired(
+      z.object({
+        url: z.string().url().openapi({
+          description:
+            'Any supported music URL (Spotify, Apple Music, Bandcamp, YouTube)'
+        })
+      }),
+      'URL to resolve'
+    )
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.object({
+        entityType: entityTypeEnum,
+        entity: z.record(z.string(), z.unknown()),
+        links: z.array(selectMusicEntityLinkSchema),
+        coverImageUrl: z.string().nullable()
+      }),
+      'Resolved music entity'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      errorSchema,
+      'Server error'
+    )
+  }
+})
+
+// ---------------------------------------------------------------------------
 // Links — per entity
 // ---------------------------------------------------------------------------
 
@@ -648,6 +685,8 @@ export type CreatePlaylistRoute = typeof createPlaylist
 export type GetPlaylistRoute = typeof getPlaylist
 export type UpdatePlaylistRoute = typeof updatePlaylist
 export type DeletePlaylistRoute = typeof deletePlaylist
+
+export type ResolveMusicEntityRoute = typeof resolveMusicEntity
 
 export type ListEntityLinksRoute = typeof listEntityLinks
 export type AddEntityLinkRoute = typeof addEntityLink

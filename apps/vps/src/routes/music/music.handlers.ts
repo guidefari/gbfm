@@ -2,7 +2,15 @@ import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import type { AppRouteHandler } from '@/lib/types'
 import { AppRuntime } from '@/runtime'
+import { ConfigService } from '@/services/config.service'
 import { MusicEntityService } from '@/services/music-entity.service'
+import { S3Service } from '@/services/s3.service'
+import {
+  isAppleMusicUrl,
+  isBandcampUrl,
+  isSpotifyUrl,
+  isYouTubeUrl
+} from '@/services/spotify.service'
 import type {
   AddArtistToAlbumRoute,
   AddArtistToTrackRoute,
@@ -28,6 +36,7 @@ import type {
   ListTracksRoute,
   RemoveArtistFromAlbumRoute,
   RemoveArtistFromTrackRoute,
+  ResolveMusicEntityRoute,
   ScrapeEntityLinksRoute,
   UpdateAlbumRoute,
   UpdateArtistRoute,
@@ -440,6 +449,132 @@ export const deletePlaylist: AppRouteHandler<DeletePlaylistRoute> = async (
     return c.json({ error: result.error }, HttpStatusCodes.NOT_FOUND)
   }
   return c.body(null, HttpStatusCodes.NO_CONTENT)
+}
+
+// ---------------------------------------------------------------------------
+// Resolve pasted URL into a music entity
+// ---------------------------------------------------------------------------
+
+const inferEntityTypeFromUrl = (url: string) => {
+  if (isSpotifyUrl(url)) {
+    if (url.includes('/album/')) return 'album' as const
+    if (url.includes('/playlist/')) return 'playlist' as const
+    return 'track' as const
+  }
+
+  if (isBandcampUrl(url)) return 'album' as const
+  if (isAppleMusicUrl(url)) return 'track' as const
+  if (isYouTubeUrl(url)) return 'track' as const
+
+  return 'track' as const
+}
+
+const copyCoverImageEffect = (
+  entityType: 'album' | 'track' | 'playlist',
+  entityId: string,
+  coverImageUrl: string
+) =>
+  Effect.gen(function* () {
+    const config = yield* ConfigService
+    const s3 = yield* S3Service
+
+    const response = yield* Effect.tryPromise({
+      try: () => fetch(coverImageUrl),
+      catch: () => new Error(`Failed to fetch ${coverImageUrl}`)
+    })
+
+    if (!response.ok) {
+      return null
+    }
+
+    const contentType = response.headers.get('content-type') || 'image/jpeg'
+    const arrayBuffer = yield* Effect.tryPromise({
+      try: () => response.arrayBuffer(),
+      catch: () => new Error(`Failed to read ${coverImageUrl}`)
+    })
+    const buffer = Buffer.from(arrayBuffer)
+    const key = `music/${entityType}/${entityId}/cover`
+    const uploadedKey = yield* s3.uploadFile(
+      key,
+      buffer,
+      contentType,
+      config.buckets.userContent
+    )
+
+    return `${config.urls.router}/user-content/${uploadedKey}`
+  }).pipe(Effect.catchAll(() => Effect.succeed(null)))
+
+export const resolveMusicEntity: AppRouteHandler<
+  ResolveMusicEntityRoute
+> = async (c) => {
+  const { url } = c.req.valid('json')
+  const entityType = inferEntityTypeFromUrl(url)
+
+  const program = Effect.gen(function* () {
+    const svc = yield* MusicEntityService
+    const result = yield* svc.scrapeAndCreateEntity(entityType, { url })
+
+    const entity = result.entity
+    const coverImageUrl =
+      'coverImageUrl' in entity ? entity.coverImageUrl : null
+
+    if (coverImageUrl) {
+      const publicCoverImageUrl = yield* copyCoverImageEffect(
+        entityType,
+        entity.id,
+        coverImageUrl
+      )
+
+      if (publicCoverImageUrl && publicCoverImageUrl !== coverImageUrl) {
+        switch (entityType) {
+          case 'album':
+            yield* svc.updateAlbum(entity.id, {
+              coverImageUrl: publicCoverImageUrl
+            })
+            break
+          case 'track':
+            yield* svc.updateTrack(entity.id, {
+              coverImageUrl: publicCoverImageUrl
+            })
+            break
+          case 'playlist':
+            yield* svc.updatePlaylist(entity.id, {
+              coverImageUrl: publicCoverImageUrl
+            })
+            break
+        }
+
+        return {
+          entity: { ...entity, coverImageUrl: publicCoverImageUrl },
+          entityType,
+          links: result.links,
+          coverImageUrl: publicCoverImageUrl
+        } as const
+      }
+    }
+
+    return {
+      entity,
+      entityType,
+      links: result.links,
+      coverImageUrl
+    } as const
+  }).pipe(
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({ error: e.message } as const)
+    ),
+    Effect.withSpan('api.music.resolveMusicEntity', { attributes: { url } })
+  )
+
+  const result = await AppRuntime.runPromise(program)
+  if ('error' in result) {
+    return c.json(
+      { error: result.error },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
+  }
+
+  return c.json(result, HttpStatusCodes.OK)
 }
 
 // ---------------------------------------------------------------------------

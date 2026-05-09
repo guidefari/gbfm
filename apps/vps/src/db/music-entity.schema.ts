@@ -132,6 +132,7 @@ export const musicTracksTable = pgTable(
     title: varchar({ length: 255 }).notNull(),
     // Denormalized artist names for fast display without joins
     artistNames: varchar({ length: 255 }).array(),
+    coverImageUrl: varchar({ length: 512 }),
     albumId: uuid().references(() => musicAlbumsTable.id, {
       onDelete: 'set null'
     }),
@@ -444,6 +445,7 @@ export const insertMusicTrackSchema = z
       description:
         'UUIDs of existing music_artists rows to link via junction table'
     }),
+    coverImageUrl: z.string().url().optional(),
     albumId: z.string().uuid().optional(),
     trackNumber: z.number().int().positive().optional(),
     slug: z.string().min(1).openapi({ example: 'archangel' }),
@@ -456,6 +458,7 @@ export const selectMusicTrackSchema = z
     id: z.string().uuid(),
     title: z.string(),
     artistNames: z.array(z.string()).nullable(),
+    coverImageUrl: z.string().nullable(),
     albumId: z.string().nullable(),
     trackNumber: z.number().nullable(),
     slug: z.string(),
