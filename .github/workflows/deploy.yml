@@ -111,7 +111,10 @@ jobs:
           POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
           BETTER_AUTH_URL: ${{ secrets.BETTER_AUTH_URL }}
           BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
-          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          SENTRY_BACKEND_DSN: ${{ secrets.SENTRY_BACKEND_DSN }}
+          VITE_PUBLIC_SENTRY_DSN: ${{ secrets.VITE_PUBLIC_SENTRY_DSN }}
+          OTEL_EXPORTER_OTLP_ENDPOINT: ${{ secrets.OTEL_EXPORTER_OTLP_ENDPOINT }}
+          OTEL_EXPORTER_OTLP_HEADERS: ${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
           CF_RULESET_IMPORT: ${{ inputs.cf_ruleset_import }}
 
         run: |
