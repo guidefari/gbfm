@@ -1,3 +1,10 @@
+# [2.38.0](https://github.com/guidefari/gbfm/compare/v2.37.0...v2.38.0) (2026-05-09)
+
+
+### Features
+
+* **vps:** unified logger with sentry logs fanout ([767d4c9](https://github.com/guidefari/gbfm/commit/767d4c96e7860392f375f5ef4c2065eec56fed11))
+
 # [2.37.0](https://github.com/guidefari/gbfm/compare/v2.36.0...v2.37.0) (2026-05-09)
 
 
