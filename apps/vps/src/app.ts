@@ -95,7 +95,6 @@ const reminderLoopEffect = Effect.gen(function* () {
     : RECOVERY_INTERVAL_MS
   const sleepMs = Math.min(msUntilNext, RECOVERY_INTERVAL_MS)
 
-  // Wake up when the next reminder is due OR when a new one is signalled
   yield* Effect.race(Effect.sleep(Duration.millis(sleepMs)), awaitSignal)
 
   yield* processPendingReminders
