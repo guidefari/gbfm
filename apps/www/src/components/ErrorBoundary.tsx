@@ -1,5 +1,7 @@
 import { Component, type ReactNode } from 'react'
 import { Button } from '@/components/ui/button'
+import { RuntimeClient } from '@/runtime'
+import { captureException } from '@/services/analytics'
 
 interface Props {
   children: ReactNode
@@ -23,6 +25,11 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo)
+    void RuntimeClient.runPromise(
+      captureException(error, {
+        componentStack: errorInfo.componentStack
+      })
+    )
   }
 
   render() {

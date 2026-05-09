@@ -49,6 +49,7 @@ import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
 import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
 import { Route as AdminOverviewRouteImport } from './routes/admin/overview'
+import { Route as AdminCaptureRouteImport } from './routes/admin/capture'
 
 const UploadLazyRouteImport = createFileRoute('/upload')()
 const PostUploadLazyRouteImport = createFileRoute('/post-upload')()
@@ -265,6 +266,11 @@ const AdminOverviewRoute = AdminOverviewRouteImport.update({
   path: '/admin/overview',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminCaptureRoute = AdminCaptureRouteImport.update({
+  id: '/admin/capture',
+  path: '/admin/capture',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -286,6 +292,7 @@ export interface FileRoutesByFullPath {
   '/mix-upload': typeof MixUploadLazyRoute
   '/post-upload': typeof PostUploadLazyRoute
   '/upload': typeof UploadLazyRoute
+  '/admin/capture': typeof AdminCaptureRoute
   '/admin/overview': typeof AdminOverviewRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
@@ -325,6 +332,7 @@ export interface FileRoutesByTo {
   '/mix-upload': typeof MixUploadLazyRoute
   '/post-upload': typeof PostUploadLazyRoute
   '/upload': typeof UploadLazyRoute
+  '/admin/capture': typeof AdminCaptureRoute
   '/admin/overview': typeof AdminOverviewRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
@@ -370,6 +378,7 @@ export interface FileRoutesById {
   '/mix-upload': typeof MixUploadLazyRoute
   '/post-upload': typeof PostUploadLazyRoute
   '/upload': typeof UploadLazyRoute
+  '/admin/capture': typeof AdminCaptureRoute
   '/admin/overview': typeof AdminOverviewRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
@@ -416,6 +425,7 @@ export interface FileRouteTypes {
     | '/mix-upload'
     | '/post-upload'
     | '/upload'
+    | '/admin/capture'
     | '/admin/overview'
     | '/auth/forgot-password'
     | '/auth/reset-password'
@@ -455,6 +465,7 @@ export interface FileRouteTypes {
     | '/mix-upload'
     | '/post-upload'
     | '/upload'
+    | '/admin/capture'
     | '/admin/overview'
     | '/auth/forgot-password'
     | '/auth/reset-password'
@@ -499,6 +510,7 @@ export interface FileRouteTypes {
     | '/mix-upload'
     | '/post-upload'
     | '/upload'
+    | '/admin/capture'
     | '/admin/overview'
     | '/auth/forgot-password'
     | '/auth/reset-password'
@@ -544,6 +556,7 @@ export interface RootRouteChildren {
   MixUploadLazyRoute: typeof MixUploadLazyRoute
   PostUploadLazyRoute: typeof PostUploadLazyRoute
   UploadLazyRoute: typeof UploadLazyRoute
+  AdminCaptureRoute: typeof AdminCaptureRoute
   AdminOverviewRoute: typeof AdminOverviewRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute
@@ -855,6 +868,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminOverviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/capture': {
+      id: '/admin/capture'
+      path: '/admin/capture'
+      fullPath: '/admin/capture'
+      preLoaderRoute: typeof AdminCaptureRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -948,6 +968,7 @@ const rootRouteChildren: RootRouteChildren = {
   MixUploadLazyRoute: MixUploadLazyRoute,
   PostUploadLazyRoute: PostUploadLazyRoute,
   UploadLazyRoute: UploadLazyRoute,
+  AdminCaptureRoute: AdminCaptureRoute,
   AdminOverviewRoute: AdminOverviewRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthResetPasswordRoute: AuthResetPasswordRoute,
