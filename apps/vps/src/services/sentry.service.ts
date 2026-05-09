@@ -27,11 +27,22 @@ export const SentryServiceLive = Layer.scoped(
           Sentry.init({
             dsn: sentry.dsn,
             environment: sentry.environment,
+            debug: sentry.environment !== 'production',
             tracesSampleRate: sentry.environment === 'production' ? 0.1 : 1.0,
-            sendDefaultPii: false
+            sendDefaultPii: false,
+            beforeSend(event) {
+              console.log(
+                `[sentry] beforeSend event_id=${event.event_id} level=${event.level}`
+              )
+              return event
+            }
           })
         }),
-        () => Effect.promise(() => Sentry.close(2000).then(() => undefined))
+        () =>
+          Effect.promise(async () => {
+            await Sentry.flush(2000)
+            await Sentry.close(2000)
+          })
       )
       yield* Effect.log(
         `[sentry] connected env=${sentry.environment} traces=${sentry.environment === 'production' ? 0.1 : 1.0}`

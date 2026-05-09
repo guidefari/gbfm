@@ -37,6 +37,8 @@ await Effect.runPromise(
 
 const { default: app } = await import('./app')
 
+// console.log({envWatcher: process.env})
+
 export default {
   port: localVPSPort,
   fetch: app.fetch,
