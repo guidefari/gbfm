@@ -1,17 +1,9 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { Tag, X } from 'lucide-react'
 import { useMemo } from 'react'
 import { z } from 'zod'
 import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
-import { MDXRendrr } from '@/components/MDXRendrr'
-import { Badge } from '@/components/ui/badge'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
+import { PostsNav } from '@/components/PostsNav'
+import { TweetListCard } from '@/components/TweetListCard'
 import { usePosts } from '@/lib/http'
 import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'
 
@@ -29,7 +21,6 @@ export const Route = createFileRoute('/tweet/')({
 
 function TweetListPage() {
   const { tag } = Route.useSearch()
-  const navigate = Route.useNavigate()
   const { data, isPending, fetchNextPage, hasNextPage, isFetchingNextPage } =
     usePosts('micro', 5)
 
@@ -49,22 +40,26 @@ function TweetListPage() {
     return data.filter((post) => post.tags?.includes(tag))
   }, [data, tag])
 
-  const handleTagChange = (newTag: string) => {
-    navigate({
-      search: newTag === 'all' ? {} : { tag: newTag }
-    })
-  }
-
   if (isPending) {
     return (
       <div className='max-w-2xl mx-auto px-4 py-8'>
-        <div className='animate-pulse space-y-6'>
+        <div className='animate-pulse space-y-4'>
           {Array.from({ length: 3 }).map((_, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: static array.
-            <div key={i} className='space-y-2 pb-6 border-b border-border/20'>
-              <div className='h-4 w-24 bg-muted/50 rounded' />
-              <div className='h-3 w-full bg-muted/50 rounded' />
-              <div className='h-3 w-3/4 bg-muted/50 rounded' />
+            <div
+              key={i}
+              className='space-y-3 rounded-lg border border-border/40 bg-card/30 p-4'>
+              <div className='flex items-center gap-3'>
+                <div className='h-10 w-10 rounded-sm bg-muted/50' />
+                <div className='flex-1 space-y-2'>
+                  <div className='h-3 w-24 rounded bg-muted/50' />
+                  <div className='h-2.5 w-16 rounded bg-muted/50' />
+                </div>
+              </div>
+              <div className='space-y-2'>
+                <div className='h-3 w-full rounded bg-muted/50' />
+                <div className='h-3 w-3/4 rounded bg-muted/50' />
+              </div>
             </div>
           ))}
         </div>
@@ -74,86 +69,19 @@ function TweetListPage() {
 
   return (
     <div className='max-w-2xl mx-auto px-4 py-8'>
-      <div className='flex flex-row items-baseline justify-between gap-4 mb-8 border-b pb-4 border-border/40'>
-        <div className='flex items-baseline gap-6'>
-          <h1 className='text-2xl font-black tracking-tight'>Tweet</h1>
-          <Link
-            to='/editorial'
-            className='flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors relative group'>
-            Editorial
-            <span className='absolute bottom-[-17px] left-0 right-0 h-0.5 bg-foreground scale-x-0 group-hover:scale-x-100 transition-transform origin-left' />
-          </Link>
-        </div>
-        {allTags.length > 0 && (
-          <Select value={tag || 'all'} onValueChange={handleTagChange}>
-            <SelectTrigger className='w-auto min-w-[120px] h-9 text-xs font-semibold uppercase tracking-wider bg-transparent border-none shadow-none hover:bg-muted/50 transition-colors px-3'>
-              <div className='flex items-center gap-2'>
-                <Tag className='w-3 h-3' />
-                <SelectValue placeholder='Filter' />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='all'>All tags</SelectItem>
-              {allTags.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {t}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+      <PostsNav active='tweets' />
+
+      {allTags.length > 0 && <TagFilterStrip tags={allTags} activeTag={tag} />}
+
+      <div className='grid gap-4'>
+        {filteredData?.length === 0 && (
+          <p className='py-8 text-center text-sm text-muted-foreground'>
+            No tweets {tag ? `tagged "${tag}"` : 'yet'}.
+          </p>
         )}
-      </div>
-      {tag && (
-        <div className='flex items-center gap-2 mb-3'>
-          <Badge variant='secondary' className='gap-1'>
-            <Tag className='w-3 h-3' />
-            {tag}
-            <button
-              type='button'
-              onClick={() => navigate({ search: {} })}
-              className='ml-1 hover:text-foreground'
-              aria-label='Remove tag filter'>
-              <X className='w-3 h-3' />
-            </button>
-          </Badge>
-        </div>
-      )}
-      <div className='grid gap-0'>
+
         {filteredData?.map((post) => (
-          <Link
-            key={post.id}
-            to='/tweet/$slug'
-            params={{ slug: post.slug }}
-            className='block px-1 py-5 border-b border-border/30 transition-colors hover:bg-muted/30 cursor-pointer group'>
-            <div className='flex items-center gap-2 mb-2'>
-              <span className='font-bold text-sm text-foreground'>
-                {post.title}
-              </span>
-              <span className='text-muted-foreground/40'>·</span>
-              {post.createdAt && (
-                <span className='font-mono text-xs text-muted-foreground/50'>
-                  {new Date(post.createdAt).toLocaleDateString('en-US', {
-                    month: 'short',
-                    day: 'numeric'
-                  })}
-                </span>
-              )}
-            </div>
-            <div className='prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-p:leading-relaxed prose-a:pointer-events-none prose-headings:text-base prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0'>
-              <MDXRendrr mdxString={post.compiledContent ?? post.content} />
-            </div>
-            {post.tags && post.tags.length > 0 && (
-              <div className='flex flex-wrap gap-1.5 mt-3'>
-                {post.tags.map((t) => (
-                  <span
-                    key={t}
-                    className='text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50'>
-                    #{t}
-                  </span>
-                ))}
-              </div>
-            )}
-          </Link>
+          <TweetListCard key={post.id} post={post} />
         ))}
 
         <LoadMoreTrigger
@@ -163,5 +91,48 @@ function TweetListPage() {
         />
       </div>
     </div>
+  )
+}
+
+function TagFilterStrip({
+  tags,
+  activeTag
+}: {
+  tags: string[]
+  activeTag: string | undefined
+}) {
+  return (
+    <div className='-mx-4 mb-6 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
+      <div className='flex w-max items-center gap-x-4 text-sm'>
+        <TagLink label='all' to={null} active={!activeTag} />
+        {tags.map((t) => (
+          <TagLink key={t} label={t} to={t} active={activeTag === t} />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function TagLink({
+  label,
+  to,
+  active
+}: {
+  label: string
+  to: string | null
+  active: boolean
+}) {
+  const base = 'shrink-0 font-mono lowercase tracking-tight transition-colors'
+  const styles = active
+    ? 'text-foreground underline underline-offset-4 decoration-2'
+    : 'text-muted-foreground/70 hover:text-foreground'
+
+  return (
+    <Link
+      to='/tweet'
+      search={to ? { tag: to } : {}}
+      className={`${base} ${styles}`}>
+      #{label}
+    </Link>
   )
 }

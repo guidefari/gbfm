@@ -3,10 +3,10 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft, Tag } from 'lucide-react'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { ShareButton } from '@/components/ShareButton'
+import { TweetAuthorRow } from '@/components/TweetAuthorRow'
 import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
 import { Badge } from '@/components/ui/badge'
-import { DEFAULT_IMAGE_URL } from '@/lib/constants'
-import { fetcher, usePublicProfile, VPS_BASE_URL } from '@/lib/http'
+import { fetcher, VPS_BASE_URL } from '@/lib/http'
 import { generateMicroPostSEO, generateSEOMeta } from '@/lib/seo'
 
 export const Route = createFileRoute('/tweet/$slug')({
@@ -51,7 +51,7 @@ function TweetPostPage() {
       </Link>
       <article className='space-y-4 rounded-lg border border-border/60 bg-card/60 p-4 shadow-sm sm:p-5'>
         <div className='flex items-start justify-between gap-3'>
-          <AuthorRow
+          <TweetAuthorRow
             creators={post.creators ?? []}
             createdAt={post.createdAt}
           />
@@ -95,92 +95,6 @@ function TweetPostPage() {
           </div>
         )}
       </article>
-    </div>
-  )
-}
-
-function AuthorRow({
-  creators,
-  createdAt
-}: {
-  creators: NonNullable<SelectMdxCompiledPost['creators']>
-  createdAt?: string | Date | null
-}) {
-  const primaryCreator = creators[0]
-  const username = primaryCreator?.username ?? null
-  const { data: profile } = usePublicProfile(username || '')
-  const avatarUrl = profile?.image || DEFAULT_IMAGE_URL
-
-  if (!primaryCreator) {
-    return null
-  }
-
-  const formattedDate = createdAt
-    ? new Date(createdAt).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      })
-    : null
-
-  const avatarImg = (
-    <img
-      src={avatarUrl}
-      alt={`${primaryCreator.name}'s avatar`}
-      className='h-10 w-10 object-cover'
-      loading='lazy'
-    />
-  )
-
-  return (
-    <div className='flex min-w-0 items-center gap-3'>
-      {username ? (
-        <Link
-          to='/profile/$username'
-          params={{ username }}
-          className='shrink-0 overflow-hidden rounded-sm ring-1 ring-border/60 transition-transform hover:scale-[1.02]'>
-          {avatarImg}
-        </Link>
-      ) : (
-        <div className='shrink-0 overflow-hidden rounded-sm ring-1 ring-border/60'>
-          {avatarImg}
-        </div>
-      )}
-
-      <div className='min-w-0 leading-tight'>
-        {username ? (
-          <Link
-            to='/profile/$username'
-            params={{ username }}
-            className='block truncate font-bold text-foreground hover:underline'>
-            {primaryCreator.name}
-          </Link>
-        ) : (
-          <span className='block truncate font-bold text-foreground'>
-            {primaryCreator.name}
-          </span>
-        )}
-        <div className='flex items-center gap-1.5 truncate text-sm text-muted-foreground'>
-          {username ? (
-            <Link
-              to='/profile/$username'
-              params={{ username }}
-              className='truncate hover:text-foreground hover:underline'>
-              @{username}
-            </Link>
-          ) : null}
-          {username && formattedDate ? (
-            <span aria-hidden className='text-muted-foreground/50'>
-              ·
-            </span>
-          ) : null}
-          {formattedDate ? (
-            <span className='shrink-0 font-mono text-xs text-muted-foreground/70'>
-              {formattedDate}
-            </span>
-          ) : null}
-        </div>
-      </div>
     </div>
   )
 }

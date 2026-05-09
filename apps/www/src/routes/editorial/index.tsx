@@ -1,9 +1,10 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { Tag, X } from 'lucide-react'
 import { useMemo } from 'react'
 import { z } from 'zod'
 import { EditorialListItem } from '@/components/EditorialListItem'
 import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
+import { PostsNav } from '@/components/PostsNav'
 import { Badge } from '@/components/ui/badge'
 import {
   Select,
@@ -57,7 +58,7 @@ function EditorialListPage() {
 
   if (isPending) {
     return (
-      <div className='max-w-3xl mx-auto px-4 py-8'>
+      <div className='max-w-2xl mx-auto px-4 py-8'>
         <div className='animate-pulse space-y-4'>
           {Array.from({ length: 5 }).map((_, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: static array.
@@ -69,18 +70,10 @@ function EditorialListPage() {
   }
 
   return (
-    <div className='max-w-3xl mx-auto px-4 py-8'>
-      <div className='flex flex-row items-baseline justify-between gap-4 mb-8 border-b pb-4 border-border/40'>
-        <div className='flex items-baseline gap-6'>
-          <h1 className='text-2xl font-black tracking-tight'>Editorial</h1>
-          <Link
-            to='/tweet'
-            className='flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors relative group'>
-            Tweet
-            <span className='absolute bottom-[-17px] left-0 right-0 h-0.5 bg-foreground scale-x-0 group-hover:scale-x-100 transition-transform origin-left' />
-          </Link>
-        </div>
-        {allTags.length > 0 && (
+    <div className='max-w-2xl mx-auto px-4 py-8'>
+      <PostsNav active='editorial' />
+      {allTags.length > 0 && (
+        <div className='mb-6'>
           <Select value={tag || 'all'} onValueChange={handleTagChange}>
             <SelectTrigger className='w-auto min-w-[120px] h-9 text-xs font-semibold uppercase tracking-wider bg-transparent border-none shadow-none hover:bg-muted/50 transition-colors px-3'>
               <div className='flex items-center gap-2'>
@@ -97,8 +90,8 @@ function EditorialListPage() {
               ))}
             </SelectContent>
           </Select>
-        )}
-      </div>
+        </div>
+      )}
       {tag && (
         <div className='flex items-center gap-2 mb-3'>
           <Badge variant='secondary' className='gap-1'>
