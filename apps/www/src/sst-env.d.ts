@@ -8,6 +8,7 @@ interface ImportMetaEnv {
   readonly VITE_VPS_BASE_URL: string
   readonly VITE_PUBLIC_SENTRY_DSN: string
   readonly VITE_PUBLIC_SENTRY_ENVIRONMENT: string
+  readonly VITE_SPOTIFY_CLIENT_ID: string
 }
 interface ImportMeta {
   readonly env: ImportMetaEnv
