@@ -1,4 +1,4 @@
-import { ServiceMap, Layer } from 'effect'
+import { Context, Layer } from 'effect'
 import { db } from '@/db'
 import { OtlpLive } from '@/lib/otel'
 import { AudioServiceLive } from '@/services/audio.service'
@@ -32,7 +32,7 @@ export interface DatabaseService {
 }
 
 export const DatabaseService =
-  ServiceMap.Service<DatabaseService>('DatabaseService')
+  Context.Service<DatabaseService>('DatabaseService')
 
 export const DatabaseServiceLive = Layer.succeed(DatabaseService, {
   db

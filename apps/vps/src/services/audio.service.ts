@@ -1,5 +1,5 @@
 import { and, arrayContains, count, desc, eq, inArray, sql } from 'drizzle-orm'
-import { ServiceMap, Effect, Layer } from 'effect'
+import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import {
   audioCreators,
@@ -68,7 +68,7 @@ export interface AudioService {
   ) => Effect.Effect<{ playCount: number }, DatabaseError | NotFoundError>
 }
 
-export const AudioService = ServiceMap.Service<AudioService>('AudioService')
+export const AudioService = Context.Service<AudioService>('AudioService')
 
 const getByTypeEffect = (
   type: AudioType,

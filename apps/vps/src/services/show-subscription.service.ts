@@ -1,5 +1,5 @@
 import { and, count, desc, eq } from 'drizzle-orm'
-import { ServiceMap, Effect, Layer } from 'effect'
+import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { user as usersTable } from '@/db/auth.schema'
 import { favoritesTable } from '@/db/favorites.schema'
@@ -52,8 +52,9 @@ export interface ShowSubscriptionService {
   >
 }
 
-export const ShowSubscriptionService =
-  ServiceMap.Service<ShowSubscriptionService>('ShowSubscriptionService')
+export const ShowSubscriptionService = Context.Service<ShowSubscriptionService>(
+  'ShowSubscriptionService'
+)
 
 const subscribeEffect = (userId: string, showId: string) =>
   Effect.gen(function* () {

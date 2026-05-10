@@ -6,7 +6,7 @@ import {
   makeInMemoryJobQueue,
   processMix
 } from '@gbfm/core/mix-processing'
-import { ServiceMap, Effect, Layer } from 'effect'
+import { Context, Effect, Layer } from 'effect'
 import ffmpeg from 'ffmpeg-static'
 import { config } from './config.service'
 import { S3Service } from './s3.service'
@@ -19,7 +19,7 @@ export interface MixProcessingService {
   readonly getJobStatus: (jobId: string) => Effect.Effect<JobInfo | undefined>
 }
 
-export const MixProcessingService = ServiceMap.Service<MixProcessingService>(
+export const MixProcessingService = Context.Service<MixProcessingService>(
   'MixProcessingService'
 )
 

@@ -1,5 +1,5 @@
 import { and, asc, eq } from 'drizzle-orm'
-import { ServiceMap, Effect, Layer } from 'effect'
+import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import {
@@ -61,8 +61,7 @@ export interface ProfileService {
   ) => Effect.Effect<PublicProfile, DatabaseError | NotFoundError>
 }
 
-export const ProfileService =
-  ServiceMap.Service<ProfileService>('ProfileService')
+export const ProfileService = Context.Service<ProfileService>('ProfileService')
 
 export const getPublicProfileEffect = (username: string) =>
   Effect.gen(function* () {

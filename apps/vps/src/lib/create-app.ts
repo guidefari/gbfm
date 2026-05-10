@@ -64,13 +64,14 @@ export const createAppEffect = Effect.sync(() => {
   app.notFound(notFound)
   app.onError((err, c) => {
     runAppFork(
-      Effect.flatMap(SentryService, (sentry) =>
-        sentry.captureException(err, {
+      Effect.gen(function* () {
+        const sentry = yield* SentryService
+        yield* sentry.captureException(err, {
           path: c.req.path,
           method: c.req.method,
           requestId: c.get('requestId')
         })
-      )
+      })
     )
     return onError(err, c)
   })

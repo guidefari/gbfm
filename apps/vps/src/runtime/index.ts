@@ -1,4 +1,4 @@
-import { type Effect, ManagedRuntime } from 'effect'
+import { type Context, Effect, Exit, Layer, Scope } from 'effect'
 import type { AudioService } from '@/services/audio.service'
 import type { ConfigService } from '@/services/config.service'
 import type { EmailService } from '@/services/email.service'
@@ -49,7 +49,37 @@ type AppServices =
   | MixProcessingService
   | UserService
 
-export const AppRuntime = ManagedRuntime.make(AppLayer)
+let appContext: Context.Context<AppServices> | undefined
+
+const appScope = Scope.makeUnsafe()
+
+const appContextPromise = Effect.runPromise(
+  Layer.buildWithScope(AppLayer, appScope)
+).then((context) => {
+  appContext = context
+  return context
+})
+
+export const AppRuntime = {
+  runPromise: <A, E, R extends AppServices>(effect: Effect.Effect<A, E, R>) =>
+    appContextPromise.then((context) => Effect.runPromiseWith(context)(effect)),
+  runPromiseExit: <A, E, R extends AppServices>(
+    effect: Effect.Effect<A, E, R>
+  ) =>
+    appContextPromise.then((context) =>
+      Effect.runPromiseExitWith(context)(effect)
+    ),
+  runSync: <A, E, R extends AppServices>(effect: Effect.Effect<A, E, R>) => {
+    if (!appContext) {
+      throw new Error('App runtime context is not initialized')
+    }
+
+    return Effect.runSyncWith(appContext)(effect)
+  },
+  runFork: <A, E, R extends AppServices>(effect: Effect.Effect<A, E, R>) =>
+    appContextPromise.then((context) => Effect.runForkWith(context)(effect)),
+  dispose: () => Effect.runPromise(Scope.close(appScope, Exit.void))
+}
 
 export const runApp = <A, E, R extends AppServices>(
   effect: Effect.Effect<A, E, R>

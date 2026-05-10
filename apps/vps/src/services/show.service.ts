@@ -1,5 +1,5 @@
 import { and, count, desc, eq, inArray } from 'drizzle-orm'
-import { ServiceMap, Effect, Layer } from 'effect'
+import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
 import { user as usersTable } from '@/db/auth.schema'
@@ -75,7 +75,7 @@ export interface ShowService {
   >
 }
 
-export const ShowService = ServiceMap.Service<ShowService>('ShowService')
+export const ShowService = Context.Service<ShowService>('ShowService')
 
 const getAllEffect = (options: {
   limit: number

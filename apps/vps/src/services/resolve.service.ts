@@ -1,5 +1,5 @@
 import { and, eq } from 'drizzle-orm'
-import { ServiceMap, Effect, Layer } from 'effect'
+import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { user as userTable } from '@/db/auth.schema'
 import { showCreators, showsTable } from '@/db/show.schema'
@@ -34,8 +34,7 @@ export interface ResolveService {
   ) => Effect.Effect<ResolveResult, DatabaseError | NotFoundError>
 }
 
-export const ResolveService =
-  ServiceMap.Service<ResolveService>('ResolveService')
+export const ResolveService = Context.Service<ResolveService>('ResolveService')
 
 const resolveEffect = (slug: string) =>
   Effect.gen(function* () {

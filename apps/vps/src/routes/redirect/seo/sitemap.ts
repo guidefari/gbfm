@@ -10,7 +10,7 @@ const EMPTY_SITEMAP =
 export const sitemapXml = async (c: Context) => {
   const program = getCachedSitemap.pipe(
     Effect.map((data) => ({ data, status: 200 as const })),
-    Effect.catchAll((error) =>
+    Effect.catch((error) =>
       Effect.gen(function* () {
         yield* Effect.logError('[Sitemap] Error getting sitemap', {
           error: error instanceof Error ? error.message : String(error)

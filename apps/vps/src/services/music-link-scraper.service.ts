@@ -22,7 +22,7 @@
  *   2. Add it to the providers array in MusicLinkScraperServiceLive
  */
 
-import { ServiceMap, Data, Effect, Layer } from 'effect'
+import { Context, Data, Effect, Layer } from 'effect'
 import { getErrorMessage } from '@/errors'
 import type { MusicPlatform } from '../db/music-entity.schema'
 
@@ -450,8 +450,9 @@ export interface MusicLinkScraperService {
   ) => Effect.Effect<ScrapeResult, never>
 }
 
-export const MusicLinkScraperService =
-  ServiceMap.Service<MusicLinkScraperService>('MusicLinkScraperService')
+export const MusicLinkScraperService = Context.Service<MusicLinkScraperService>(
+  'MusicLinkScraperService'
+)
 
 function makeScraperWithProviders(
   providers: MusicDataProvider[]

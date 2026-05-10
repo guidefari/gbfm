@@ -1,4 +1,10 @@
-import { Effect } from 'effect'
+import { Data, Effect } from 'effect'
+
+class FetchError extends Data.TaggedError('FetchError')<{
+  readonly message: string
+  readonly cause?: unknown
+}> {}
+
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { getErrorMessage } from '@/errors'
 import type { AppRouteHandler } from '@/lib/types'
@@ -576,6 +582,7 @@ export const importSpotifyPlaylist: AppRouteHandler<
   ImportSpotifyPlaylistRoute
 > = async (c) => {
   const { url } = c.req.valid('json')
+  const user = c.get('user')
 
   const spotifyPlaylistId = getIdFromSpotifyUrl(url)
   if (!spotifyPlaylistId) {
@@ -587,9 +594,9 @@ export const importSpotifyPlaylist: AppRouteHandler<
 
   const program = Effect.gen(function* () {
     const svc = yield* MusicEntityService
-    yield* svc.importSpotifyPlaylist(url)
+    yield* svc.importSpotifyPlaylist(url, user.id)
   }).pipe(
-    Effect.catchAll((error) =>
+    Effect.catch((error) =>
       Effect.logError(
         '[MusicEntity] Background Spotify playlist import failed',
         {
@@ -651,7 +658,8 @@ const copyCoverImageEffect = (
 
     const response = yield* Effect.tryPromise({
       try: () => fetch(coverImageUrl),
-      catch: () => new Error(`Failed to fetch ${coverImageUrl}`)
+      catch: (cause) =>
+        new FetchError({ message: `Failed to fetch ${coverImageUrl}`, cause })
     })
 
     if (!response.ok) {
@@ -661,7 +669,8 @@ const copyCoverImageEffect = (
     const contentType = response.headers.get('content-type') || 'image/jpeg'
     const arrayBuffer = yield* Effect.tryPromise({
       try: () => response.arrayBuffer(),
-      catch: () => new Error(`Failed to read ${coverImageUrl}`)
+      catch: (cause) =>
+        new FetchError({ message: `Failed to read ${coverImageUrl}`, cause })
     })
     const buffer = Buffer.from(arrayBuffer)
     const key = `music/${entityType}/${entityId}/cover`
@@ -673,7 +682,7 @@ const copyCoverImageEffect = (
     )
 
     return `${config.urls.router}/user-content/${uploadedKey}`
-  }).pipe(Effect.catchAll(() => Effect.succeed(null)))
+  }).pipe(Effect.catch(() => Effect.succeed(null)))
 
 export const resolveMusicEntity: AppRouteHandler<
   ResolveMusicEntityRoute

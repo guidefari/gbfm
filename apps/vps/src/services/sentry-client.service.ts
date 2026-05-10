@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/bun'
 
 type Client = NonNullable<ReturnType<typeof Sentry.getClient>>
 
-import { ServiceMap, Effect, Layer } from 'effect'
+import { Context, Effect, Layer } from 'effect'
 import { ConfigService } from './config.service'
 
 export interface SentryClientService {
@@ -10,7 +10,7 @@ export interface SentryClientService {
   readonly enabled: boolean
 }
 
-export const SentryClientService = ServiceMap.Service<SentryClientService>(
+export const SentryClientService = Context.Service<SentryClientService>(
   'SentryClientService'
 )
 

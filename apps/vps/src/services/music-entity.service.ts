@@ -1,5 +1,5 @@
 import { and, desc, eq, inArray, sql } from 'drizzle-orm'
-import { ServiceMap, Data, Effect, Layer } from 'effect'
+import { Context, Data, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import {
   type InsertMusicEntityLink,
@@ -284,7 +284,7 @@ export interface MusicEntityService {
 }
 
 export const MusicEntityService =
-  ServiceMap.Service<MusicEntityService>('MusicEntityService')
+  Context.Service<MusicEntityService>('MusicEntityService')
 
 // ---------------------------------------------------------------------------
 // Helpers

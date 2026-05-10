@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { Effect, Schema } from 'effect'
+import { Data, Effect } from 'effect'
 import ffmpeg from 'ffmpeg-static'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import type { AppRouteHandler } from '@/lib/types'
@@ -30,28 +30,19 @@ import type {
 } from './content.routes'
 
 // Error types for upload processing
-class ValidationError extends Schema.TaggedError<ValidationError>()(
-  'ValidationError',
-  {
-    message: Schema.String
-  }
-) {}
+class ValidationError extends Data.TaggedError('ValidationError')<{
+  readonly message: string
+}> {}
 
-class ProcessingError extends Schema.TaggedError<ProcessingError>()(
-  'ProcessingError',
-  {
-    message: Schema.String,
-    code: Schema.optional(Schema.Number)
-  }
-) {}
+class ProcessingError extends Data.TaggedError('ProcessingError')<{
+  readonly message: string
+  readonly code?: number
+}> {}
 
-class FileSystemError extends Schema.TaggedError<FileSystemError>()(
-  'FileSystemError',
-  {
-    message: Schema.String,
-    path: Schema.optional(Schema.String)
-  }
-) {}
+class FileSystemError extends Data.TaggedError('FileSystemError')<{
+  readonly message: string
+  readonly path?: string
+}> {}
 
 export const getPosts: AppRouteHandler<GetPostsRoute> = async (c) => {
   const { limit, offset, type } = c.req.valid('query')
@@ -418,7 +409,7 @@ function processUploadHelper(
     const tmpDir = yield* Effect.tryPromise({
       try: () => fs.mkdtemp(path.join(os.tmpdir(), 'mix-')),
       catch: (error) =>
-        FileSystemError.make({
+        new FileSystemError({
           message: `Failed to create temp directory: ${error instanceof Error ? error.message : 'Unknown error'}`
         })
     })
@@ -432,7 +423,7 @@ function processUploadHelper(
     const album = formData.get('album') as string
 
     if (!audioFile || !imageFile) {
-      return yield* ValidationError.make({
+      return yield* new ValidationError({
         message: 'Missing required files: audioFile and coverImage are required'
       })
     }
@@ -440,7 +431,7 @@ function processUploadHelper(
     const audioBuffer = yield* Effect.tryPromise({
       try: () => audioFile.arrayBuffer(),
       catch: (error) =>
-        FileSystemError.make({
+        new FileSystemError({
           message: `Failed to read audio file: ${error instanceof Error ? error.message : 'Unknown error'}`
         })
     })
@@ -448,7 +439,7 @@ function processUploadHelper(
     const imageBuffer = yield* Effect.tryPromise({
       try: () => imageFile.arrayBuffer(),
       catch: (error) =>
-        FileSystemError.make({
+        new FileSystemError({
           message: `Failed to read image file: ${error instanceof Error ? error.message : 'Unknown error'}`
         })
     })
@@ -460,7 +451,7 @@ function processUploadHelper(
     yield* Effect.tryPromise({
       try: () => fs.writeFile(audioPath, Buffer.from(audioBuffer)),
       catch: (error) =>
-        FileSystemError.make({
+        new FileSystemError({
           message: `Failed to write audio file: ${error instanceof Error ? error.message : 'Unknown error'}`,
           path: audioPath
         })
@@ -469,7 +460,7 @@ function processUploadHelper(
     yield* Effect.tryPromise({
       try: () => fs.writeFile(imagePath, Buffer.from(imageBuffer)),
       catch: (error) =>
-        FileSystemError.make({
+        new FileSystemError({
           message: `Failed to write image file: ${error instanceof Error ? error.message : 'Unknown error'}`,
           path: imagePath
         })
@@ -510,7 +501,7 @@ export const processUpload: AppRouteHandler<ProcessMixUploadRoute> = async (
     const outputBuffer = yield* Effect.tryPromise({
       try: () => fs.readFile(outputPath),
       catch: (error) =>
-        FileSystemError.make({
+        new FileSystemError({
           message: `Failed to read output file: ${error instanceof Error ? error.message : 'Unknown error'}`,
           path: outputPath
         })
@@ -678,7 +669,7 @@ function createAudioOrVideo(
         }
       },
       catch: (error) =>
-        ProcessingError.make({
+        new ProcessingError({
           message: `FFmpeg processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
           code:
             error instanceof Error &&
@@ -696,20 +687,20 @@ function createAudioOrVideo(
 function cleanup(files: ProcessedFiles): Effect.Effect<void> {
   return Effect.gen(function* () {
     yield* Effect.tryPromise(() => fs.unlink(files.audioPath)).pipe(
-      Effect.catchAll(() => Effect.void)
+      Effect.catch(() => Effect.void)
     )
 
     yield* Effect.tryPromise(() => fs.unlink(files.imagePath)).pipe(
-      Effect.catchAll(() => Effect.void)
+      Effect.catch(() => Effect.void)
     )
 
     yield* Effect.tryPromise(() => fs.unlink(files.outputPath)).pipe(
-      Effect.catchAll(() => Effect.void)
+      Effect.catch(() => Effect.void)
     )
 
     yield* Effect.tryPromise(() =>
       fs.rmdir(path.dirname(files.audioPath))
-    ).pipe(Effect.catchAll(() => Effect.void))
+    ).pipe(Effect.catch(() => Effect.void))
   })
 }
 
@@ -729,7 +720,7 @@ export const submitMixProcessing: AppRouteHandler<
     const album = formData.get('album') as string
 
     if (!audioFile || !imageFile) {
-      return yield* ValidationError.make({
+      return yield* new ValidationError({
         message: 'Missing required files: audioFile and coverImage are required'
       })
     }
@@ -737,7 +728,7 @@ export const submitMixProcessing: AppRouteHandler<
     const audioBuffer = yield* Effect.tryPromise({
       try: () => audioFile.arrayBuffer().then((ab) => Buffer.from(ab)),
       catch: (error) =>
-        FileSystemError.make({
+        new FileSystemError({
           message: `Failed to read audio file: ${error instanceof Error ? error.message : 'Unknown error'}`
         })
     })
@@ -745,7 +736,7 @@ export const submitMixProcessing: AppRouteHandler<
     const imageBuffer = yield* Effect.tryPromise({
       try: () => imageFile.arrayBuffer().then((ab) => Buffer.from(ab)),
       catch: (error) =>
-        FileSystemError.make({
+        new FileSystemError({
           message: `Failed to read image file: ${error instanceof Error ? error.message : 'Unknown error'}`
         })
     })

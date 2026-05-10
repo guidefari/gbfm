@@ -68,7 +68,7 @@ const setupRoutesEffect = Effect.gen(function* () {
   app.get('/health', async (c) => {
     const program = healthCheckEffect.pipe(
       Effect.map(() => ({ data: { dbConnected: true }, status: 200 as const })),
-      Effect.catchAll(() =>
+      Effect.catch(() =>
         Effect.succeed({ data: { dbConnected: false }, status: 500 as const })
       )
     )
@@ -87,7 +87,7 @@ const reminderLoopEffect = Effect.gen(function* () {
   const { await: awaitSignal } = yield* ReminderSignalService
 
   const nextDate = yield* queryNextDueReminder.pipe(
-    Effect.catchAll(() => Effect.succeed(null))
+    Effect.catch(() => Effect.succeed(null))
   )
 
   const msUntilNext = nextDate
@@ -99,7 +99,7 @@ const reminderLoopEffect = Effect.gen(function* () {
 
   yield* processPendingReminders
 }).pipe(
-  Effect.catchAll((error) =>
+  Effect.catch((error) =>
     Effect.logError(
       `Reminder loop failed: ${error instanceof Error ? error.message : String(error)}`
     )
@@ -108,7 +108,7 @@ const reminderLoopEffect = Effect.gen(function* () {
 )
 
 const sitemapRegenerationEffect = regenerateSitemap.pipe(
-  Effect.catchAll((error) =>
+  Effect.catch((error) =>
     Effect.logError(
       `Sitemap regeneration failed: ${error instanceof Error ? error.message : String(error)}`
     )

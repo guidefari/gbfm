@@ -1,5 +1,5 @@
 import { count, desc, eq } from 'drizzle-orm'
-import { ServiceMap, Effect, Layer } from 'effect'
+import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { labelsTable } from '@/db/label.schema'
 import {
@@ -46,8 +46,7 @@ export interface ReleaseService {
   ) => Effect.Effect<void, DatabaseError | NotFoundError>
 }
 
-export const ReleaseService =
-  ServiceMap.Service<ReleaseService>('ReleaseService')
+export const ReleaseService = Context.Service<ReleaseService>('ReleaseService')
 
 const getByLabelSlugEffect = (
   labelSlug: string,

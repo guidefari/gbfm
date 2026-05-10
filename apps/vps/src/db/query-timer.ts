@@ -58,9 +58,9 @@ export async function timeQuery<T>(
   const exit = await AppRuntime.runPromiseExit(program)
   if (Exit.isSuccess(exit)) return exit.value
 
-  const failure = Cause.failureOption(exit.cause)
-  if (failure._tag === 'Some') {
-    const cause = failure.value.cause
+  const failure = exit.cause.reasons.find(Cause.isFailReason)
+  if (failure) {
+    const cause = failure.error.cause
     throw cause instanceof Error ? cause : new Error(String(cause))
   }
   throw new Error(Cause.pretty(exit.cause))

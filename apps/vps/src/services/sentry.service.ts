@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/bun'
-import { ServiceMap, Effect, Layer } from 'effect'
+import { Context, Effect, Layer } from 'effect'
 import { SentryClientService } from './sentry-client.service'
 
 export interface SentryService {
@@ -13,7 +13,7 @@ export interface SentryService {
   ) => Effect.Effect<void>
 }
 
-export const SentryService = ServiceMap.Service<SentryService>('SentryService')
+export const SentryService = Context.Service<SentryService>('SentryService')
 
 export const SentryServiceLive = Layer.effect(
   SentryService,

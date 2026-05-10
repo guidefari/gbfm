@@ -67,4 +67,4 @@ export const OtlpLive = Effect.gen(function* () {
       ? { tracerConfig: { sampler: new SentrySampler(sentry.client) } }
       : {})
   }))
-}).pipe(Layer.unwrapEffect)
+}).pipe(Layer.unwrap)

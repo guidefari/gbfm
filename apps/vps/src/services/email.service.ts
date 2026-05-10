@@ -1,6 +1,6 @@
 import { sendMusicReminderEmail } from '@gbfm/email/sender'
 import { eq } from 'drizzle-orm'
-import { ServiceMap, Effect, Layer } from 'effect'
+import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { user } from '@/db/auth.schema'
 import {
@@ -20,7 +20,7 @@ export interface EmailService {
 }
 
 // Service tag for dependency injection
-export const EmailService = ServiceMap.Service<EmailService>('EmailService')
+export const EmailService = Context.Service<EmailService>('EmailService')
 
 // Implementation
 export const EmailServiceLive = Layer.effect(

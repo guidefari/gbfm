@@ -1,4 +1,4 @@
-import { ServiceMap, Effect, Layer, Schema } from 'effect'
+import { Context, Effect, Layer, Schema } from 'effect'
 
 // Conditionally import Resource to avoid failures when running outside SST
 let Resource: { [key: string]: unknown } | null = null
@@ -131,7 +131,7 @@ const ConfigSchema = Schema.Struct({
 type ConfigSchemaType = typeof ConfigSchema.Type
 export interface ConfigService extends ConfigSchemaType {}
 
-export const ConfigService = ServiceMap.Service<ConfigService>('ConfigService')
+export const ConfigService = Context.Service<ConfigService>('ConfigService')
 
 export function createConfig(): ConfigService {
   const appStage = getResourceValue(

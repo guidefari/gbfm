@@ -70,27 +70,27 @@ const mirrorDistribution = (name: string, value: number, unit?: string) =>
 
 export const recordRequest = (duration: number, isError = false) =>
   Effect.gen(function* () {
-    yield* requestCount(Effect.succeed(1))
-    yield* responseTime(Effect.succeed(duration))
+    yield* Metric.update(requestCount, 1)
+    yield* Metric.update(responseTime, duration)
     yield* mirrorCount('request_count')
     yield* mirrorDistribution('response_time_ms', duration, 'millisecond')
 
     if (isError) {
-      yield* errorCount(Effect.succeed(1))
+      yield* Metric.update(errorCount, 1)
       yield* mirrorCount('error_count')
     }
 
     if (duration > SLOW_REQUEST_THRESHOLD) {
-      yield* slowRequestCount(Effect.succeed(1))
+      yield* Metric.update(slowRequestCount, 1)
       yield* mirrorCount('slow_request_count')
     }
   })
 
 export const checkPerformanceHealth = Effect.gen(function* () {
   const heapUsedMB = process.memoryUsage().heapUsed / 1024 / 1024
-  yield* heapUsed(Effect.succeed(heapUsedMB))
-  yield* uptime(Effect.succeed(process.uptime()))
-  yield* activeConnections(Effect.succeed(pool.totalCount))
+  yield* Metric.update(heapUsed, heapUsedMB)
+  yield* Metric.update(uptime, process.uptime())
+  yield* Metric.update(activeConnections, pool.totalCount)
   yield* mirrorGauge('heap_used_mb', heapUsedMB, 'megabyte')
   yield* mirrorGauge('uptime_seconds', process.uptime(), 'second')
   yield* mirrorGauge('active_db_connections', pool.totalCount)
@@ -104,47 +104,47 @@ export const checkPerformanceHealth = Effect.gen(function* () {
 })
 
 export const recordFavoriteAdd = () =>
-  Effect.zipRight(
-    favoriteAddCount(Effect.succeed(1)),
+  Effect.andThen(
+    Metric.update(favoriteAddCount, 1),
     mirrorCount('favorite_add_count')
   )
 export const recordFavoriteRemove = () =>
-  Effect.zipRight(
-    favoriteRemoveCount(Effect.succeed(1)),
+  Effect.andThen(
+    Metric.update(favoriteRemoveCount, 1),
     mirrorCount('favorite_remove_count')
   )
 export const recordShowSubscribe = () =>
-  Effect.zipRight(
-    showSubscribeCount(Effect.succeed(1)),
+  Effect.andThen(
+    Metric.update(showSubscribeCount, 1),
     mirrorCount('show_subscribe_count')
   )
 export const recordShowUnsubscribe = () =>
-  Effect.zipRight(
-    showUnsubscribeCount(Effect.succeed(1)),
+  Effect.andThen(
+    Metric.update(showUnsubscribeCount, 1),
     mirrorCount('show_unsubscribe_count')
   )
 export const recordAudioCreate = () =>
-  Effect.zipRight(
-    audioCreateCount(Effect.succeed(1)),
+  Effect.andThen(
+    Metric.update(audioCreateCount, 1),
     mirrorCount('audio_create_count')
   )
 export const recordEmailSend = () =>
-  Effect.zipRight(
-    emailSendCount(Effect.succeed(1)),
+  Effect.andThen(
+    Metric.update(emailSendCount, 1),
     mirrorCount('email_send_count')
   )
 export const recordEmailFail = () =>
-  Effect.zipRight(
-    emailFailCount(Effect.succeed(1)),
+  Effect.andThen(
+    Metric.update(emailFailCount, 1),
     mirrorCount('email_fail_count')
   )
 export const recordDbQueryDuration = (duration: number) =>
-  Effect.zipRight(
-    dbQueryDuration(Effect.succeed(duration)),
+  Effect.andThen(
+    Metric.update(dbQueryDuration, duration),
     mirrorDistribution('db_query_duration_ms', duration, 'millisecond')
   )
 export const recordActiveConnections = () =>
-  Effect.zipRight(
-    activeConnections(Effect.succeed(pool.totalCount)),
+  Effect.andThen(
+    Metric.update(activeConnections, pool.totalCount),
     mirrorGauge('active_db_connections', pool.totalCount)
   )

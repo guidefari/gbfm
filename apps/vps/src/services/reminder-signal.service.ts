@@ -1,4 +1,4 @@
-import { ServiceMap, Effect, Layer, Queue } from 'effect'
+import { Context, Effect, Layer, Queue } from 'effect'
 
 export interface ReminderSignalService {
   /** Signal that a reminder was created or updated — wakes the processor loop */
@@ -7,7 +7,7 @@ export interface ReminderSignalService {
   readonly await: Effect.Effect<void>
 }
 
-export const ReminderSignalService = ServiceMap.Service<ReminderSignalService>(
+export const ReminderSignalService = Context.Service<ReminderSignalService>(
   'ReminderSignalService'
 )
 

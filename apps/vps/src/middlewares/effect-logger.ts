@@ -70,7 +70,7 @@ export function effectLogger(): MiddlewareHandler {
     const { AppRuntime } = await import('@/runtime')
     await AppRuntime.runPromise(
       loggingEffect.pipe(
-        Effect.catchAll((error) =>
+        Effect.catch((error) =>
           Effect.logError('Request failed', {
             method: c.req.method,
             path: c.req.path,
@@ -78,7 +78,7 @@ export function effectLogger(): MiddlewareHandler {
             error: error._tag,
             message: error.message
           }).pipe(
-            Effect.zipRight(
+            Effect.andThen(
               Effect.fail(
                 error instanceof LoggerError
                   ? error

@@ -7,7 +7,7 @@ import {
   PutObjectCommand,
   S3Client
 } from '@aws-sdk/client-s3'
-import { ServiceMap, Effect, Layer } from 'effect'
+import { Context, Effect, Layer } from 'effect'
 import { S3Error } from '@/errors'
 
 // Service interface
@@ -47,7 +47,7 @@ export interface S3Service {
 }
 
 // Service tag for dependency injection
-export const S3Service = ServiceMap.Service<S3Service>('S3Service')
+export const S3Service = Context.Service<S3Service>('S3Service')
 
 // Helper to extract key prefix (first segment) for safe logging
 const getKeyPrefix = (key: string): string => {

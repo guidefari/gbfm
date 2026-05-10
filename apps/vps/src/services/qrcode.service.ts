@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import fontkit from '@pdf-lib/fontkit'
-import { ServiceMap, Effect, Layer } from 'effect'
+import { Context, Effect, Layer } from 'effect'
 import { PDFDocument, rgb } from 'pdf-lib'
 import QRCode from 'qrcode'
 import { DatabaseError, getErrorMessage } from '@/errors'
@@ -43,7 +43,7 @@ export interface QRCodeService {
   ) => Effect.Effect<{ url: string; cached: boolean }, DatabaseError>
 }
 
-export const QRCodeService = ServiceMap.Service<QRCodeService>('QRCodeService')
+export const QRCodeService = Context.Service<QRCodeService>('QRCodeService')
 
 const getCacheKey = (slug: string) => `qr-pdfs/qr/${slug}.pdf`
 

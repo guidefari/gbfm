@@ -1,18 +1,17 @@
 /**
- * Performance comparison: Direct Effect.runPromise vs ManagedRuntime
+ * Performance comparison: Direct Effect.runPromise vs reused Context
  *
- * This demonstrates why ManagedRuntime is more efficient for repeated executions
+ * This demonstrates why reusing a built Context is more efficient for repeated executions
  */
 
-import { Context, Effect, Layer, ManagedRuntime } from 'effect'
+import { Context, Effect, Exit, Layer, Scope } from 'effect'
 
 // Simulated expensive service initialization
 interface ExpensiveService {
   readonly doWork: () => Effect.Effect<string>
 }
 
-const ExpensiveService =
-  Context.GenericTag<ExpensiveService>('ExpensiveService')
+const ExpensiveService = Context.Service<ExpensiveService>('ExpensiveService')
 
 let initCount = 0
 let disposeCount = 0
@@ -39,7 +38,7 @@ const myEffect = Effect.gen(function* () {
 // APPROACH 1: Direct Effect.runPromise
 // ==========================================
 async function _approachWithoutRuntime() {
-  console.log('\n=== WITHOUT ManagedRuntime ===')
+  console.log('\n=== WITHOUT REUSED CONTEXT ===')
   const start = performance.now()
 
   // Run 10 times (like your cron job running 10 times)
@@ -54,26 +53,29 @@ async function _approachWithoutRuntime() {
 }
 
 // ==========================================
-// APPROACH 2: ManagedRuntime
+// APPROACH 2: Reused Context
 // ==========================================
 async function _approachWithRuntime() {
-  console.log('\n=== WITH ManagedRuntime ===')
+  console.log('\n=== WITH REUSED CONTEXT ===')
   initCount = 0
   disposeCount = 0
 
   const start = performance.now()
 
-  // Create runtime ONCE
-  const runtime = ManagedRuntime.make(ExpensiveServiceLive)
+  // Build services ONCE
+  const scope = Scope.makeUnsafe()
+  const services = await Effect.runPromise(
+    Layer.buildWithScope(ExpensiveServiceLive, scope)
+  )
 
   // Run 10 times (like your cron job running 10 times)
   for (let i = 0; i < 10; i++) {
-    await runtime.runPromise(myEffect)
+    await Effect.runPromiseWith(services)(myEffect)
     // Service is REUSED every time!
   }
 
   // Cleanup
-  await runtime.dispose()
+  await Effect.runPromise(Scope.close(scope, Exit.void))
 
   const duration = performance.now() - start
   console.log(`Time: ${duration.toFixed(2)}ms`)
@@ -92,4 +94,4 @@ async function _approachWithRuntime() {
 // await _approachWithRuntime()
 // // Expected output: 1 initialization, ~100ms
 //
-// Result: ManagedRuntime is ~10x faster and uses 1/10th the resources!
+// Result: reused Context is ~10x faster and uses 1/10th the resources!
