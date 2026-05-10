@@ -1,16 +1,8 @@
-import { Command, Options } from "@effect/cli";
-import { BunContext, BunRuntime, BunFileSystem } from "@effect/platform-bun";
-import { Effect, Console, Layer } from "effect";
+import { BunRuntime } from "@effect/platform-bun";
+import { Effect, Console } from "effect";
 import { spawnSync } from "child_process";
 
 type Target = "local" | "prod";
-
-const targetOption = Options.choice("target", ["local", "prod"]).pipe(
-	Options.withDescription(
-		"Database target: 'local' for development, 'prod' for production",
-	),
-	Options.withDefault("local" as const),
-);
 
 const createStudioEffect = (target: Target) =>
 	Effect.gen(function* () {
@@ -37,25 +29,10 @@ const createStudioEffect = (target: Target) =>
 		}
 
 		yield* Console.log("✅ Drizzle Studio closed");
-		return yield* Effect.void;
 	});
 
-const studioCommand = Command.make(
-	"studio",
-	{ target: targetOption },
-	({ target }) => createStudioEffect(target),
-).pipe(
-	Command.withDescription(
-		"Launch Drizzle Studio with database connection selection",
-	),
-);
-
-const cli = Command.run(studioCommand, {
-	name: "Drizzle Studio Launcher",
-	version: "1.0.0",
-});
-
 if (import.meta.main) {
-	const layers = Layer.merge(BunFileSystem.layer, BunContext.layer);
-	cli(process.argv).pipe(Effect.provide(layers), BunRuntime.runMain);
+	const targetArg = process.argv.find((a) => a.startsWith("--target="))?.split("=")[1];
+	const target: Target = targetArg === "prod" ? "prod" : "local";
+	createStudioEffect(target).pipe(BunRuntime.runMain);
 }

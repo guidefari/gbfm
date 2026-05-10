@@ -53,7 +53,7 @@ const sendNotificationEmail = (
           }),
   }).pipe(
     Effect.tap(() => Console.log(`📧 Notification email sent (${status})`)),
-    Effect.catchAll((error) =>
+    Effect.catch((error) =>
       Console.error(`Failed to send notification email: ${error}`)
     )
   );

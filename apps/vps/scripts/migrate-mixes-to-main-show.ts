@@ -1,11 +1,10 @@
-import { Effect, Layer, Context, Console, Data } from "effect";
+import { Effect, Layer, Context, Console, Data, Exit } from "effect";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { Pool } from "pg";
 import { eq } from "drizzle-orm";
 import { audioTable } from "../src/db/audio.schema";
 import { showsTable } from "../src/db/show.schema";
 
-// Error types
 class DatabaseError extends Data.TaggedError("DatabaseError")<{
   readonly cause: unknown;
 }> {}
@@ -15,52 +14,49 @@ class MigrationError extends Data.TaggedError("MigrationError")<{
   readonly cause: unknown;
 }> {}
 
-// Database service tag
-class DatabaseService extends Context.Tag("DatabaseService")<
-  DatabaseService,
-  {
-    readonly findMainShow: (
-      slug: string,
-    ) => Effect.Effect<
-      typeof showsTable.$inferSelect | null,
-      DatabaseError,
-      never
-    >;
-    readonly createMainShow: (
-      showData: typeof showsTable.$inferInsert,
-    ) => Effect.Effect<typeof showsTable.$inferSelect, DatabaseError, never>;
-    readonly findMixesWithoutShow: () => Effect.Effect<
-      Array<typeof audioTable.$inferSelect>,
-      DatabaseError,
-      never
-    >;
-    readonly updateMixWithShow: (
-      mixId: string,
-      showId: string,
-    ) => Effect.Effect<void, DatabaseError, never>;
-  }
->() {}
+interface DatabaseServiceShape {
+  readonly findMainShow: (
+    slug: string,
+  ) => Effect.Effect<typeof showsTable.$inferSelect | null, DatabaseError>;
+  readonly createMainShow: (
+    showData: typeof showsTable.$inferInsert,
+  ) => Effect.Effect<typeof showsTable.$inferSelect, DatabaseError>;
+  readonly findMixesWithoutShow: () => Effect.Effect<
+    Array<typeof audioTable.$inferSelect>,
+    DatabaseError
+  >;
+  readonly updateMixWithShow: (
+    mixId: string,
+    showId: string,
+  ) => Effect.Effect<void, DatabaseError>;
+}
 
-// Database service implementation
+interface MigrationServiceShape {
+  readonly migrateMixesToMainShow: () => Effect.Effect<
+    { migrated: number; errors: number; total: number },
+    MigrationError,
+    DatabaseServiceShape
+  >;
+}
+
+const DatabaseService = Context.Service<DatabaseServiceShape>("DatabaseService");
+const MigrationService = Context.Service<MigrationServiceShape>("MigrationService");
+
 const DatabaseServiceLive = Layer.effect(
   DatabaseService,
   Effect.gen(function* () {
     if (!process.env.PROD_DB_URL) {
       console.log(process.env);
-
       return yield* new DatabaseError({
         cause: "PROD_DB_URL environment variable is required",
       });
     }
 
-    const pool = new Pool({
-      connectionString: process.env.PROD_DB_URL,
-    });
-
+    const pool = new Pool({ connectionString: process.env.PROD_DB_URL });
     const db = drizzle(pool);
 
     return {
-      findMainShow: (slug) =>
+      findMainShow: (slug: string) =>
         Effect.tryPromise({
           try: () =>
             db
@@ -68,11 +64,11 @@ const DatabaseServiceLive = Layer.effect(
               .from(showsTable)
               .where(eq(showsTable.slug, slug))
               .limit(1)
-              .then((results) => results[0] || null),
+              .then((results) => results[0] ?? null),
           catch: (cause) => new DatabaseError({ cause }),
         }),
 
-      createMainShow: (showData) =>
+      createMainShow: (showData: typeof showsTable.$inferInsert) =>
         Effect.tryPromise({
           try: () =>
             db
@@ -81,9 +77,7 @@ const DatabaseServiceLive = Layer.effect(
               .returning()
               .then((results) => {
                 const result = results[0];
-                if (!result) {
-                  throw new Error("Failed to create show");
-                }
+                if (!result) throw new Error("Failed to create show");
                 return result;
               }),
           catch: (cause) => new DatabaseError({ cause }),
@@ -96,15 +90,12 @@ const DatabaseServiceLive = Layer.effect(
           catch: (cause) => new DatabaseError({ cause }),
         }),
 
-      updateMixWithShow: (mixId, showId) =>
+      updateMixWithShow: (mixId: string, showId: string) =>
         Effect.tryPromise({
           try: () =>
             db
               .update(audioTable)
-              .set({
-                showId,
-                updatedAt: new Date(),
-              })
+              .set({ showId, updatedAt: new Date() })
               .where(eq(audioTable.id, mixId)),
           catch: (cause) => new DatabaseError({ cause }),
         }),
@@ -112,19 +103,6 @@ const DatabaseServiceLive = Layer.effect(
   }),
 );
 
-// Migration service tag
-class MigrationService extends Context.Tag("MigrationService")<
-  MigrationService,
-  {
-    readonly migrateMixesToMainShow: () => Effect.Effect<
-      { migrated: number; errors: number; total: number },
-      MigrationError,
-      DatabaseService
-    >;
-  }
->() {}
-
-// Migration service implementation
 const MigrationServiceLive = Layer.effect(
   MigrationService,
   Effect.gen(function* () {
@@ -133,7 +111,6 @@ const MigrationServiceLive = Layer.effect(
         Effect.gen(function* () {
           const db = yield* DatabaseService;
 
-          // Find or create main show
           const mainShowSlug = "main";
           let mainShow = yield* db.findMainShow(mainShowSlug);
 
@@ -154,7 +131,6 @@ const MigrationServiceLive = Layer.effect(
             );
           }
 
-          // Find mixes to migrate
           const mixesToMigrate = yield* db.findMixesWithoutShow();
 
           if (mixesToMigrate.length === 0) {
@@ -164,29 +140,25 @@ const MigrationServiceLive = Layer.effect(
 
           yield* Console.log(`Found ${mixesToMigrate.length} mixes to migrate`);
 
-          // Migrate each mix
           let migrated = 0;
           let errors = 0;
 
           for (const mix of mixesToMigrate) {
-            const result = yield* Effect.either(
+            const result = yield* Effect.exit(
               db
                 .updateMixWithShow(mix.id, mainShow.id)
                 .pipe(
                   Effect.andThen(
-                    Console.log(`✅ Migrated mix: ${mix.title || mix.slug}`),
+                    Console.log(`✅ Migrated mix: ${mix.title ?? mix.slug}`),
                   ),
                 ),
             );
 
-            if (result._tag === "Right") {
+            if (Exit.isSuccess(result)) {
               migrated++;
             } else {
-              const error = result.left as DatabaseError;
-              yield* Console.error(
-                `❌ Error migrating mix ${mix.id}:`,
-                error.cause,
-              );
+              const failure = result.cause;
+              yield* Console.error(`❌ Error migrating mix ${mix.id}:`, failure);
               errors++;
             }
           }
@@ -212,20 +184,17 @@ const MigrationServiceLive = Layer.effect(
   }),
 );
 
-// Main program
 const program = Effect.gen(function* () {
   const migration = yield* MigrationService;
   return yield* migration.migrateMixesToMainShow();
 });
 
-// Layer composition
 const MainLayer = Layer.mergeAll(DatabaseServiceLive, MigrationServiceLive);
 
-// Run the migration
 Effect.runPromise(
   program.pipe(
     Effect.provide(MainLayer),
-    Effect.catchAll((error) =>
+    Effect.catch((error) =>
       Console.error("Migration failed:", error).pipe(
         Effect.andThen(Effect.fail(error)),
       ),

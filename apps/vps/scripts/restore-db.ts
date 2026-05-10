@@ -6,10 +6,8 @@ import {
   GetObjectCommand,
 } from "@aws-sdk/client-s3";
 import { Resource } from "sst";
-import { Command, Options } from "@effect/cli";
-import { BunContext, BunRuntime } from "@effect/platform-bun";
-import { BunFileSystem } from "@effect/platform-bun";
-import { Effect, Console, Layer } from "effect";
+import { BunRuntime } from "@effect/platform-bun";
+import { Effect, Console } from "effect";
 import { existsSync } from "node:fs";
 import path from "node:path";
 
@@ -194,35 +192,7 @@ function promptConfirmation(config: RestoreConfig, source: string): boolean {
   return response?.toLowerCase() === "yes";
 }
 
-const sourceOption = Options.text("source").pipe(
-  Options.withDescription(
-    "Source of backup: 's3' for latest S3 backup, or file path",
-  ),
-  Options.withDefault("s3" as const),
-);
-
-const destinationOption = Options.choice("destination", [
-  "local",
-  "remote",
-  "planetscale",
-]).pipe(
-  Options.withDescription("Which database to restore to"),
-  Options.withDefault("local" as const),
-);
-
-const skipConfirmOption = Options.boolean("skip-confirm").pipe(
-  Options.withDescription("Skip confirmation prompt (use with caution!)"),
-  Options.withDefault(false),
-);
-
-const restoreCommand = Command.make(
-  "restore",
-  {
-    source: sourceOption,
-    destination: destinationOption,
-    skipConfirm: skipConfirmOption,
-  },
-  ({ source, destination, skipConfirm }) =>
+const restoreEffect = (source: string, destination: "local" | "remote" | "planetscale", skipConfirm: boolean) =>
     Effect.gen(function* () {
       yield* Console.log("🔄 Starting database restore...");
       yield* Console.log(`   Source: ${source}`);
@@ -383,19 +353,12 @@ const restoreCommand = Command.make(
       }
 
       return yield* Effect.void;
-    }),
-).pipe(
-  Command.withDescription(
-    "Restore a PostgreSQL database from S3 or local backup file",
-  ),
-);
-
-const cli = Command.run(restoreCommand, {
-  name: "Database Restore",
-  version: "1.0.0",
-});
+    });
 
 if (import.meta.main) {
-  const layers = Layer.merge(BunFileSystem.layer, BunContext.layer);
-  cli(process.argv).pipe(Effect.provide(layers), BunRuntime.runMain);
+  const srcArg = process.argv.find((a) => a.startsWith("--source="))?.split("=")[1] ?? "s3";
+  const destArg = process.argv.find((a) => a.startsWith("--destination="))?.split("=")[1];
+  const destination = (destArg === "remote" || destArg === "planetscale") ? destArg : "local" as const;
+  const skipConfirm = process.argv.includes("--skip-confirm");
+  restoreEffect(srcArg, destination, skipConfirm).pipe(BunRuntime.runMain);
 }

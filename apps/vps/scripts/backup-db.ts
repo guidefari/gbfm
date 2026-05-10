@@ -1,12 +1,10 @@
 #!/usr/bin/env bun
 
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
-import { Command, Options } from "@effect/cli";
-import { FileSystem } from "@effect/platform";
-import { BunContext, BunFileSystem, BunRuntime } from "@effect/platform-bun";
+import { BunFileSystem, BunRuntime } from "@effect/platform-bun";
 import { sendBackupNotificationEmail } from "@gbfm/email/index";
 import type { ScheduledEvent } from "aws-lambda";
-import { Console, Effect, Layer } from "effect";
+import { Console, Effect, FileSystem } from "effect";
 import { Resource } from "sst";
 import {
   type BackupConfig,
@@ -64,20 +62,11 @@ const sendNotificationEmail = (
           }),
   }).pipe(
     Effect.tap(() => Console.log(`📧 Notification email sent (${status})`)),
-    Effect.catchAll((error) =>
+    Effect.catch((error) =>
       Console.error(`Failed to send notification email: ${error}`)
     )
   );
 
-const destinationOption = Options.choice("destination", ["s3", "local"]).pipe(
-  Options.withDescription("Where to save backup"),
-  Options.withDefault("s3" as const)
-);
-
-const sourceBackupOption = Options.choice("source", ["local", "remote"]).pipe(
-  Options.withDescription("Which database to backup"),
-  Options.withDefault("remote" as const)
-);
 
 function createBackupEffect(
   destination: BackupDestination,
@@ -282,7 +271,7 @@ function createBackupEffect(
           );
         })
       ),
-      Effect.catchAll((error) =>
+      Effect.catch((error) =>
         Console.error(`❌ Backup failed: ${error}`).pipe(
           Effect.flatMap(() => Effect.fail(error))
         )
@@ -290,21 +279,6 @@ function createBackupEffect(
     )
   );
 }
-
-const backupCommand = Command.make(
-  "backup",
-  { destination: destinationOption, source: sourceBackupOption },
-  ({ destination, source }) => createBackupEffect(destination, source)
-).pipe(
-  Command.withDescription(
-    "Create a PostgreSQL database backup and save it to S3 or local filesystem"
-  )
-);
-
-const cli = Command.run(backupCommand, {
-  name: "Database Backup",
-  version: "1.0.0",
-});
 
 export const handler = async (event: ScheduledEvent) => {
   console.log("Lambda cron triggered:", event.time);
@@ -328,6 +302,12 @@ export const handler = async (event: ScheduledEvent) => {
 };
 
 if (import.meta.main) {
-  const layers = Layer.merge(BunFileSystem.layer, BunContext.layer);
-  cli(process.argv).pipe(Effect.provide(layers), BunRuntime.runMain);
+  const destArg = process.argv.find((a) => a.startsWith("--destination="))?.split("=")[1];
+  const srcArg = process.argv.find((a) => a.startsWith("--source="))?.split("=")[1];
+  const destination: BackupDestination = destArg === "local" ? "local" : "s3";
+  const source: BackupSource = srcArg === "local" ? "local" : "remote";
+  createBackupEffect(destination, source).pipe(
+    Effect.provide(BunFileSystem.layer),
+    BunRuntime.runMain
+  );
 }
