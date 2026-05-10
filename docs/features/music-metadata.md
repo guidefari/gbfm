@@ -10,6 +10,7 @@ This feature stores music metadata (artists, albums, tracks, playlists) independ
 - **API Endpoints**: ✅ Complete (full CRUD for all 4 entity types + links + scraping + artist junctions)
 - **Scraper Service**: ✅ Complete (provider-first architecture — Odesli, MusicBrainz, optional Firecrawl)
 - **Review Queue**: ✅ Complete (links start as `pending_review`; PATCH endpoint approves/rejects)
+- **Playlist Import Enrichment**: ✅ Complete (Spotify playlist imports enqueue background non-Spotify link discovery)
 - **Seed Script**: ✅ Complete (`scripts/seed-music-lookups.ts`)
 
 ---
@@ -121,6 +122,21 @@ erDiagram
 | `status` on `music_entity_links` | Links scraped automatically start as `pending_review` — must be verified before appearing publicly |
 | Provider-first scraper | `MusicDataProvider` interface lets new data sources (Discogs, Last.fm, etc.) be added without touching service logic |
 | Unique constraint on `(entityType, entityId, platform)` | One link per platform per entity; upsert semantics on scrape |
+| Background enrichment for imported playlists | Spotify import stays fast; alternate links are discovered after commit and traced separately |
+
+## OTel / Tracing
+
+Playlist import and enrichment emit these spans:
+
+| Span | Purpose |
+|---|---|
+| `api.music.importSpotifyPlaylist` | HTTP handler for the import request |
+| `musicEntity.importSpotifyPlaylist` | Import service work inside the transaction |
+| `musicEntity.enrichImportedPlaylistLinks` | Background fan-out for imported tracks |
+| `musicEntity.enrichTrackLinks` | Per-track scraping and link persistence |
+| `musicScraper.scrape` and provider spans | External link discovery per provider |
+
+The background span is forked so it does not block the client response, but it still appears in OTel/Sentry with playlist and track attributes.
 
 ---
 
@@ -157,6 +173,27 @@ sequenceDiagram
     API->>DB: UPDATE status = "verified", verifiedAt = now()
     API-->>Client: updated link row
 ```
+
+### Spotify Playlist Import + Background Enrichment
+
+```mermaid
+sequenceDiagram
+    participant Client
+    participant API as POST /playlists/import/spotify
+    participant Spotify
+    participant DB as music_* tables
+    participant Scraper as MusicLinkScraperService
+
+    Client->>API: { url: "https://open.spotify.com/playlist/..." }
+    API->>Spotify: getPlaylistForImport(id)
+    Spotify-->>API: playlist + track list
+    API->>DB: upsert playlist, tracks, spotify links
+    API-->>Client: import result immediately
+    API->>Scraper: forkDaemon background enrichment
+    Scraper->>DB: add non-Spotify links per imported track
+```
+
+The import response stays fast. Alternate links are discovered after the transaction commits, then persisted in the background.
 
 ---
 

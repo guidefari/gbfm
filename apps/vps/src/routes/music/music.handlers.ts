@@ -1,7 +1,8 @@
 import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
+import { getErrorMessage } from '@/errors'
 import type { AppRouteHandler } from '@/lib/types'
-import { AppRuntime } from '@/runtime'
+import { AppRuntime, runAppFork } from '@/runtime'
 import { ConfigService } from '@/services/config.service'
 import { MusicEntityService } from '@/services/music-entity.service'
 import { S3Service } from '@/services/s3.service'
@@ -11,6 +12,7 @@ import {
   isSpotifyUrl,
   isYouTubeUrl
 } from '@/services/spotify.service'
+import { getIdFromSpotifyUrl } from '@/services/url-utils'
 import type {
   AddArtistToAlbumRoute,
   AddArtistToTrackRoute,
@@ -44,6 +46,7 @@ import type {
   ReorderPlaylistTracksRoute,
   ResolveMusicEntityRoute,
   ScrapeEntityLinksRoute,
+  SyncPlaylistLinksRoute,
   UpdateAlbumRoute,
   UpdateArtistRoute,
   UpdateEntityLinkStatusRoute,
@@ -574,32 +577,48 @@ export const importSpotifyPlaylist: AppRouteHandler<
 > = async (c) => {
   const { url } = c.req.valid('json')
 
+  const spotifyPlaylistId = getIdFromSpotifyUrl(url)
+  if (!spotifyPlaylistId) {
+    return c.json(
+      { error: 'Could not extract Spotify playlist ID from URL' },
+      HttpStatusCodes.BAD_REQUEST
+    )
+  }
+
   const program = Effect.gen(function* () {
     const svc = yield* MusicEntityService
-    return yield* svc.importSpotifyPlaylist(url)
+    yield* svc.importSpotifyPlaylist(url)
   }).pipe(
-    Effect.catchTag('SpotifyError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status:
-          e.statusCode === 400
-            ? HttpStatusCodes.BAD_REQUEST
-            : HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
+    Effect.catchAll((error) =>
+      Effect.logError(
+        '[MusicEntity] Background Spotify playlist import failed',
+        {
+          playlistId: spotifyPlaylistId,
+          error: getErrorMessage(error)
+        }
+      )
     ),
     Effect.withSpan('api.music.importSpotifyPlaylist')
   )
 
+  runAppFork(program)
+
+  return c.json({ status: 'Queued' as const }, HttpStatusCodes.ACCEPTED)
+}
+
+export const syncPlaylistLinks: AppRouteHandler<
+  SyncPlaylistLinksRoute
+> = async (c) => {
+  const { id } = c.req.valid('param')
+
+  const program = Effect.gen(function* () {
+    const svc = yield* MusicEntityService
+    return yield* svc.syncPlaylistLinks(id)
+  }).pipe(
+    Effect.withSpan('api.music.syncPlaylistLinks', { attributes: { id } })
+  )
+
   const result = await AppRuntime.runPromise(program)
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
   return c.json(result, HttpStatusCodes.OK)
 }
 

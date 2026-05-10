@@ -30,6 +30,7 @@ const router = createRouter()
   .openapi(routes.deletePlaylist, handlers.deletePlaylist)
   // Playlist tracks
   .openapi(routes.importSpotifyPlaylist, handlers.importSpotifyPlaylist)
+  .openapi(routes.syncPlaylistLinks, handlers.syncPlaylistLinks)
   .openapi(routes.reorderPlaylistTracks, handlers.reorderPlaylistTracks)
   .openapi(routes.addSpotifyTrackToPlaylist, handlers.addSpotifyTrackToPlaylist)
   .openapi(routes.getPlaylistTracks, handlers.getPlaylistTracks)

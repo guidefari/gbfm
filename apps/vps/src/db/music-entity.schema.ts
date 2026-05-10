@@ -673,5 +673,11 @@ export const importSpotifyPlaylistResultSchema = z
   })
   .openapi('ImportSpotifyPlaylistResult')
 
+export const importSpotifyPlaylistQueuedSchema = z
+  .object({
+    status: z.literal('Queued')
+  })
+  .openapi('ImportSpotifyPlaylistQueued')
+
 // Re-export enums for use in routes
 export { entityTypeEnum, linkStatusEnum, musicPlatformEnum }

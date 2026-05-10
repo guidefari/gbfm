@@ -5,7 +5,7 @@ import {
   addSpotifyTrackResultSchema,
   addSpotifyTrackToPlaylistSchema,
   entityTypeEnum,
-  importSpotifyPlaylistResultSchema,
+  importSpotifyPlaylistQueuedSchema,
   importSpotifyPlaylistSchema,
   insertMusicAlbumSchema,
   insertMusicArtistSchema,
@@ -502,14 +502,34 @@ export const importSpotifyPlaylist = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      importSpotifyPlaylistResultSchema,
-      'Imported playlist'
+    [HttpStatusCodes.ACCEPTED]: jsonContent(
+      importSpotifyPlaylistQueuedSchema,
+      'Queued playlist import'
     ),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(errorSchema, 'Invalid URL'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       errorSchema,
-      'Import failed'
+      'Failed to queue import'
+    )
+  }
+})
+
+export const syncPlaylistLinks = createRoute({
+  path: '/playlists/:id/sync-links',
+  method: 'post',
+  middleware: [requireAdminMiddleware],
+  request: {
+    params: z.object({ id: z.string().uuid() })
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.object({ playlistId: z.string().uuid(), queuedTrackCount: z.number() }),
+      'Queued playlist sync'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      errorSchema,
+      'Sync failed'
     )
   }
 })
@@ -839,6 +859,7 @@ export type GetPlaylistTracksRoute = typeof getPlaylistTracks
 export type AddTrackToPlaylistRoute = typeof addTrackToPlaylist
 export type RemoveTrackFromPlaylistRoute = typeof removeTrackFromPlaylist
 export type ImportSpotifyPlaylistRoute = typeof importSpotifyPlaylist
+export type SyncPlaylistLinksRoute = typeof syncPlaylistLinks
 export type ReorderPlaylistTracksRoute = typeof reorderPlaylistTracks
 export type AddSpotifyTrackToPlaylistRoute = typeof addSpotifyTrackToPlaylist
 

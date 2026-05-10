@@ -26,12 +26,14 @@ import {
   NotFoundError,
   SpotifyError
 } from '@/errors'
+import { ConfigService as ConfigServiceTag } from './config.service'
 import {
   type MusicLinkScraperService,
   MusicLinkScraperService as MusicLinkScraperServiceTag,
   type MusicScrapeInput
 } from './music-link-scraper.service'
 import { parseArtistNames } from './parse-artist-names'
+import { type S3Service, S3Service as S3ServiceTag } from './s3.service'
 import {
   getIdFromSpotifyUrl,
   type SpotifyImportPlaylist,
@@ -198,6 +200,13 @@ export interface MusicEntityService {
       trackCount: number
       createdTrackCount: number
       reusedTrackCount: number
+    },
+    DatabaseError | SpotifyError
+  >
+  readonly syncPlaylistLinks: (playlistId: string) => Effect.Effect<
+    {
+      playlistId: string
+      queuedTrackCount: number
     },
     DatabaseError | SpotifyError
   >
@@ -1055,7 +1064,338 @@ const uniqueSlug = async (
   }
 }
 
-const importSpotifyPlaylistEffect = (spotify: SpotifyService) =>
+type ImportedTrackTarget = {
+  trackId: string
+  trackUrl: string
+  title: string
+  artistNames: string[]
+}
+
+const copyCoverImageToCdnEffect = (
+  s3: S3Service,
+  routerUrl: string,
+  bucketName: string,
+  entityType: MusicEntityType,
+  entityId: string,
+  coverImageUrl: string
+) =>
+  Effect.gen(function* () {
+    const response = yield* Effect.tryPromise({
+      try: () => fetch(coverImageUrl),
+      catch: () => new Error(`Failed to fetch ${coverImageUrl}`)
+    })
+
+    if (!response.ok) {
+      return null
+    }
+
+    const contentType = response.headers.get('content-type') || 'image/jpeg'
+    const arrayBuffer = yield* Effect.tryPromise({
+      try: () => response.arrayBuffer(),
+      catch: () => new Error(`Failed to read ${coverImageUrl}`)
+    })
+    const buffer = Buffer.from(arrayBuffer)
+    const key = `music/${entityType}/${entityId}/cover`
+    const uploadedKey = yield* s3.uploadFile(
+      key,
+      buffer,
+      contentType,
+      bucketName
+    )
+
+    return `${routerUrl}/user-content/${uploadedKey}`
+  }).pipe(Effect.catchAll(() => Effect.succeed(null)))
+
+const enrichTrackLinksEffect = (
+  scraper: MusicLinkScraperService,
+  s3: S3Service,
+  routerUrl: string,
+  bucketName: string,
+  playlistId: string,
+  track: ImportedTrackTarget
+) =>
+  Effect.gen(function* () {
+    const existingLinks = yield* getLinksForEntityEffect('track', track.trackId)
+    const existingPlatforms = new Set(
+      existingLinks.map((link) => link.platform)
+    )
+
+    const scraped = yield* scraper.scrape({
+      url: track.trackUrl,
+      trackTitle: track.title,
+      artistName: track.artistNames.join(', ')
+    })
+
+    const linksToAdd = scraped.links.filter(
+      (link) =>
+        link.platform !== 'spotify' && !existingPlatforms.has(link.platform)
+    )
+
+    const persistedLinks = yield* Effect.forEach(
+      linksToAdd,
+      (link) =>
+        Effect.catchAll(
+          addLinkEffect({
+            entityType: 'track',
+            entityId: track.trackId,
+            platform: link.platform,
+            url: link.url,
+            status: 'pending_review',
+            scrapedAt: link.scrapedAt,
+            metadata: link.metadata
+          }),
+          (error) =>
+            Effect.zipRight(
+              Effect.logWarning(
+                '[MusicEntity] Failed to persist scraped track link',
+                {
+                  playlistId,
+                  trackId: track.trackId,
+                  platform: link.platform,
+                  error: getErrorMessage(error)
+                }
+              ),
+              Effect.succeed<SelectMusicEntityLink | null>(null)
+            )
+        ),
+      { concurrency: 1 }
+    )
+
+    if (scraped.entityMeta?.thumbnailUrl) {
+      const publicCoverImageUrl = yield* copyCoverImageToCdnEffect(
+        s3,
+        routerUrl,
+        bucketName,
+        'track',
+        track.trackId,
+        scraped.entityMeta.thumbnailUrl
+      )
+
+      if (publicCoverImageUrl) {
+        yield* updateTrackEffect(track.trackId, {
+          coverImageUrl: publicCoverImageUrl
+        })
+      }
+    }
+
+    return {
+      scrapedCount: linksToAdd.length,
+      insertedCount: persistedLinks.filter((link) => link !== null).length
+    }
+  }).pipe(
+    Effect.withSpan('musicEntity.enrichTrackLinks', {
+      attributes: {
+        playlistId,
+        trackId: track.trackId,
+        sourceUrl: track.trackUrl,
+        artistCount: track.artistNames.length
+      }
+    })
+  )
+
+const enrichImportedPlaylistLinksEffect = (
+  scraper: MusicLinkScraperService,
+  s3: S3Service,
+  routerUrl: string,
+  bucketName: string,
+  playlistId: string,
+  tracks: ImportedTrackTarget[]
+) =>
+  Effect.gen(function* () {
+    yield* Effect.logInfo(
+      '[MusicEntity] Starting background playlist link enrichment',
+      {
+        playlistId,
+        trackCount: tracks.length
+      }
+    )
+
+    const results = yield* Effect.forEach(
+      tracks,
+      (track) =>
+        enrichTrackLinksEffect(
+          scraper,
+          s3,
+          routerUrl,
+          bucketName,
+          playlistId,
+          track
+        ),
+      { concurrency: 1 }
+    )
+
+    const insertedCount = results.reduce(
+      (sum, result) => sum + result.insertedCount,
+      0
+    )
+
+    yield* Effect.logInfo(
+      '[MusicEntity] Completed background playlist link enrichment',
+      {
+        playlistId,
+        trackCount: tracks.length,
+        insertedCount
+      }
+    )
+
+    return { insertedCount }
+  }).pipe(
+    Effect.withSpan('musicEntity.enrichImportedPlaylistLinks', {
+      attributes: {
+        playlistId,
+        trackCount: tracks.length
+      }
+    }),
+    Effect.catchAll((error) =>
+      Effect.logError(
+        '[MusicEntity] Background playlist link enrichment failed',
+        {
+          playlistId,
+          error: getErrorMessage(error)
+        }
+      )
+    )
+  )
+
+const getPlaylistLinkSyncTargetsEffect = (playlistId: string) =>
+  Effect.gen(function* () {
+    const rows = yield* getPlaylistTracksEffect(playlistId)
+    return rows.flatMap((row) => {
+      const spotifyLink = row.links.find((link) => link.platform === 'spotify')
+      if (!spotifyLink) return []
+
+      return [
+        {
+          trackId: row.track.id,
+          trackUrl: spotifyLink.url,
+          title: row.track.title,
+          artistNames: row.track.artistNames ?? []
+        } satisfies ImportedTrackTarget
+      ]
+    })
+  }).pipe(
+    Effect.withSpan('musicEntity.getPlaylistLinkSyncTargets', {
+      attributes: { playlistId }
+    })
+  )
+
+const getSpotifyPlaylistUrlEffect = (playlistId: string) =>
+  Effect.tryPromise({
+    try: async () => {
+      const rows = await db
+        .select({ url: musicEntityLinksTable.url })
+        .from(musicEntityLinksTable)
+        .where(
+          and(
+            eq(musicEntityLinksTable.entityType, 'playlist'),
+            eq(musicEntityLinksTable.entityId, playlistId),
+            eq(musicEntityLinksTable.platform, 'spotify')
+          )
+        )
+        .limit(1)
+
+      return rows[0]?.url ?? null
+    },
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to load playlist Spotify URL: ${getErrorMessage(e)}`,
+        operation: 'select',
+        table: 'music_entity_links'
+      })
+  }).pipe(
+    Effect.withSpan('musicEntity.getSpotifyPlaylistUrl', {
+      attributes: { playlistId }
+    })
+  )
+
+const refreshPlaylistCoverImageEffect = (
+  spotify: SpotifyService,
+  s3: S3Service,
+  routerUrl: string,
+  bucketName: string,
+  playlistId: string
+) =>
+  Effect.gen(function* () {
+    const spotifyUrl = yield* getSpotifyPlaylistUrlEffect(playlistId)
+    if (!spotifyUrl) {
+      return { updated: false as const }
+    }
+
+    const spotifyPlaylistId = getIdFromSpotifyUrl(spotifyUrl)
+    if (!spotifyPlaylistId) {
+      return { updated: false as const }
+    }
+
+    const data = yield* spotify.getPlaylistForImport(spotifyPlaylistId)
+    if (!data.coverImageUrl) {
+      return { updated: false as const }
+    }
+
+    const publicCoverImageUrl = yield* copyCoverImageToCdnEffect(
+      s3,
+      routerUrl,
+      bucketName,
+      'playlist',
+      playlistId,
+      data.coverImageUrl
+    )
+
+    if (!publicCoverImageUrl || publicCoverImageUrl === data.coverImageUrl) {
+      return { updated: false as const }
+    }
+
+    const updated = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .update(musicPlaylistsTable)
+          .set({
+            coverImageUrl: publicCoverImageUrl,
+            updatedAt: new Date()
+          })
+          .where(eq(musicPlaylistsTable.id, playlistId))
+          .returning(),
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to update playlist cover image: ${getErrorMessage(e)}`,
+          operation: 'update',
+          table: 'music_playlists'
+        })
+    })
+
+    if (!updated[0]) {
+      return { updated: false as const }
+    }
+
+    return { updated: true as const, coverImageUrl: publicCoverImageUrl }
+  }).pipe(
+    Effect.withSpan('musicEntity.refreshPlaylistCoverImage', {
+      attributes: { playlistId }
+    })
+  )
+
+const storeSpotifyPlaylistCoverImageEffect = (
+  s3: S3Service,
+  routerUrl: string,
+  bucketName: string,
+  playlistId: string,
+  coverImageUrl: string
+) =>
+  copyCoverImageToCdnEffect(
+    s3,
+    routerUrl,
+    bucketName,
+    'playlist',
+    playlistId,
+    coverImageUrl
+  )
+
+const importSpotifyPlaylistEffect = (
+  spotify: SpotifyService,
+  scraper: MusicLinkScraperService,
+  s3: S3Service,
+  routerUrl: string,
+  bucketName: string
+) =>
   Effect.fn('musicEntity.importSpotifyPlaylist')(function* (url: string) {
     const id = getIdFromSpotifyUrl(url)
     if (!id) {
@@ -1067,8 +1407,18 @@ const importSpotifyPlaylistEffect = (spotify: SpotifyService) =>
     }
 
     const data: SpotifyImportPlaylist = yield* spotify.getPlaylistForImport(id)
+    const storedCoverImageUrl = data.coverImageUrl
+      ? yield* storeSpotifyPlaylistCoverImageEffect(
+          s3,
+          routerUrl,
+          bucketName,
+          id,
+          data.coverImageUrl
+        )
+      : null
+    const importedTracks: ImportedTrackTarget[] = []
 
-    return yield* Effect.tryPromise({
+    const result = yield* Effect.tryPromise({
       try: () =>
         db.transaction(async (tx) => {
           let createdTrackCount = 0
@@ -1087,7 +1437,7 @@ const importSpotifyPlaylistEffect = (spotify: SpotifyService) =>
               .set({
                 title: data.title,
                 description: data.description,
-                coverImageUrl: data.coverImageUrl,
+                coverImageUrl: storedCoverImageUrl ?? data.coverImageUrl,
                 updatedAt: new Date()
               })
               .where(eq(musicPlaylistsTable.id, existingPlaylistId))
@@ -1106,7 +1456,7 @@ const importSpotifyPlaylistEffect = (spotify: SpotifyService) =>
               .values({
                 title: data.title,
                 description: data.description,
-                coverImageUrl: data.coverImageUrl,
+                coverImageUrl: storedCoverImageUrl ?? data.coverImageUrl,
                 slug
               })
               .returning()
@@ -1189,6 +1539,13 @@ const importSpotifyPlaylistEffect = (spotify: SpotifyService) =>
                 ],
                 set: { position: i }
               })
+
+            importedTracks.push({
+              trackId,
+              trackUrl: t.trackUrl,
+              title: t.title,
+              artistNames: t.artistNames
+            })
           }
 
           return {
@@ -1205,6 +1562,81 @@ const importSpotifyPlaylistEffect = (spotify: SpotifyService) =>
           table: 'music_playlists'
         })
     })
+
+    if (importedTracks.length > 0) {
+      yield* Effect.logInfo(
+        '[MusicEntity] Scheduling background playlist link enrichment',
+        {
+          playlistId: result.playlist.id,
+          trackCount: importedTracks.length
+        }
+      )
+
+      yield* enrichImportedPlaylistLinksEffect(
+        scraper,
+        s3,
+        routerUrl,
+        bucketName,
+        result.playlist.id,
+        importedTracks
+      ).pipe(Effect.forkDaemon)
+    }
+
+    return result
+  })
+
+const syncPlaylistLinksEffect = (
+  spotify: SpotifyService,
+  scraper: MusicLinkScraperService,
+  s3: S3Service,
+  routerUrl: string,
+  bucketName: string
+) =>
+  Effect.fn('musicEntity.syncPlaylistLinks')(function* (playlistId: string) {
+    return yield* Effect.gen(function* () {
+      yield* refreshPlaylistCoverImageEffect(
+        spotify,
+        s3,
+        routerUrl,
+        bucketName,
+        playlistId
+      )
+
+      const targets = yield* getPlaylistLinkSyncTargetsEffect(playlistId)
+
+      if (targets.length === 0) {
+        return {
+          playlistId,
+          queuedTrackCount: 0
+        }
+      }
+
+      yield* Effect.logInfo(
+        '[MusicEntity] Scheduling manual playlist link sync',
+        {
+          playlistId,
+          trackCount: targets.length
+        }
+      )
+
+      yield* enrichImportedPlaylistLinksEffect(
+        scraper,
+        s3,
+        routerUrl,
+        bucketName,
+        playlistId,
+        targets
+      ).pipe(Effect.forkDaemon)
+
+      return {
+        playlistId,
+        queuedTrackCount: targets.length
+      }
+    }).pipe(
+      Effect.withSpan('musicEntity.syncPlaylistLinks', {
+        attributes: { playlistId }
+      })
+    )
   })
 
 const addSpotifyTrackToPlaylistEffect = (spotify: SpotifyService) =>
@@ -1818,6 +2250,8 @@ export const MusicEntityServiceLive = Layer.effect(
   Effect.gen(function* () {
     const scraper = yield* MusicLinkScraperServiceTag
     const spotify = yield* SpotifyServiceTag
+    const s3 = yield* S3ServiceTag
+    const config = yield* ConfigServiceTag
 
     return {
       createArtist: createArtistEffect,
@@ -1849,7 +2283,20 @@ export const MusicEntityServiceLive = Layer.effect(
       removeTrackFromPlaylist: removeTrackFromPlaylistEffect,
       reorderPlaylistTracks: reorderPlaylistTracksEffect,
       addSpotifyTrackToPlaylist: addSpotifyTrackToPlaylistEffect(spotify),
-      importSpotifyPlaylist: importSpotifyPlaylistEffect(spotify),
+      importSpotifyPlaylist: importSpotifyPlaylistEffect(
+        spotify,
+        scraper,
+        s3,
+        config.urls.router,
+        config.buckets.userContent
+      ),
+      syncPlaylistLinks: syncPlaylistLinksEffect(
+        spotify,
+        scraper,
+        s3,
+        config.urls.router,
+        config.buckets.userContent
+      ),
 
       addArtistToAlbum: addArtistToAlbumEffect,
       removeArtistFromAlbum: removeArtistFromAlbumEffect,
