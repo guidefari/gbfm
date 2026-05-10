@@ -15,7 +15,7 @@ import {
   verticalListSortingStrategy
 } from '@dnd-kit/sortable'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ExternalLink, Loader2 } from 'lucide-react'
+import { ExternalLink, Loader2, RefreshCw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -49,6 +49,11 @@ interface PlaylistTracksApiRow {
     platform: string
     url: string
   }>
+}
+
+interface SyncResult {
+  playlistId: string
+  queuedTrackCount: number
 }
 
 interface Props {
@@ -154,6 +159,30 @@ export function PlaylistEditor({ playlist }: Props) {
     onError: (error: Error) => {
       toast({
         title: 'Add failed',
+        description: error.message,
+        variant: 'destructive'
+      })
+    }
+  })
+
+  const syncLinksMutation = useMutation({
+    mutationFn: async () =>
+      fetcher<SyncResult>(
+        `${VPS_BASE_URL}/music/playlists/${playlist.id}/sync-links`,
+        { method: 'POST' }
+      ),
+    onSuccess: (data) => {
+      toast({
+        title: 'Sync queued',
+        description:
+          data.queuedTrackCount > 0
+            ? `Queued ${data.queuedTrackCount} tracks for background enrichment`
+            : 'No Spotify source links found to sync'
+      })
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Sync failed',
         description: error.message,
         variant: 'destructive'
       })
@@ -314,12 +343,27 @@ export function PlaylistEditor({ playlist }: Props) {
               ({orderedIds.length})
             </span>
           </h2>
-          {reorderMutation.isPending && (
-            <span className='text-xs text-muted-foreground'>
-              <Loader2 className='inline w-3 h-3 mr-1 animate-spin' />
-              Saving order
-            </span>
-          )}
+          <div className='flex items-center gap-2'>
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              onClick={() => syncLinksMutation.mutate()}
+              disabled={syncLinksMutation.isPending}>
+              {syncLinksMutation.isPending ? (
+                <Loader2 className='w-4 h-4 mr-2 animate-spin' />
+              ) : (
+                <RefreshCw className='w-4 h-4 mr-2' />
+              )}
+              Sync links
+            </Button>
+            {reorderMutation.isPending && (
+              <span className='text-xs text-muted-foreground'>
+                <Loader2 className='inline w-3 h-3 mr-1 animate-spin' />
+                Saving order
+              </span>
+            )}
+          </div>
         </div>
 
         <form onSubmit={handleAddSpotify} className='flex gap-2 shrink-0'>

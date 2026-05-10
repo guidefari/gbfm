@@ -15,10 +15,7 @@ import { fetcher, VPS_BASE_URL } from '@/lib/http'
 import { PlaylistEditor, type PlaylistSummary } from './-PlaylistEditor'
 
 interface ImportResult {
-  playlist: PlaylistSummary
-  trackCount: number
-  createdTrackCount: number
-  reusedTrackCount: number
+  status: 'Queued'
 }
 
 export function PlaylistsTab() {
@@ -45,17 +42,13 @@ export function PlaylistsTab() {
         method: 'POST',
         body: JSON.stringify({ url: playlistUrl })
       }),
-    onSuccess: (data) => {
+    onSuccess: () => {
       setUrl('')
       setImportOpen(false)
-      setSelectedId(data.playlist.id)
       queryClient.invalidateQueries({ queryKey: ['playlists'] })
-      queryClient.invalidateQueries({
-        queryKey: ['playlist-tracks', data.playlist.id]
-      })
       toast({
-        title: 'Playlist imported',
-        description: `${data.trackCount} tracks (${data.createdTrackCount} new, ${data.reusedTrackCount} reused)`
+        title: 'Import queued',
+        description: 'The playlist import is running in the background.'
       })
     },
     onError: (error: Error) => {
@@ -87,7 +80,7 @@ export function PlaylistsTab() {
         className={`flex-col w-full md:w-80 border-r shrink-0 md:flex ${
           showSidebar ? 'flex' : 'hidden'
         }`}>
-        <div className='border-b'>
+        <div className='mx-3 mt-3 overflow-hidden rounded-md border'>
           <button
             type='button'
             onClick={() => setImportOpen((v) => !v)}
@@ -103,7 +96,9 @@ export function PlaylistsTab() {
             )}
           </button>
           {importOpen && (
-            <form onSubmit={handleSubmit} className='px-4 pb-4 space-y-2'>
+            <form
+              onSubmit={handleSubmit}
+              className='px-4 pb-4 space-y-2 border-t'>
               <p className='text-xs text-muted-foreground'>
                 Tracks dedupe by Spotify URL. Re-import updates order.
               </p>
