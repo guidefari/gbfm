@@ -57,7 +57,7 @@ export const auth = betterAuth({
   },
   trustedOrigins: [
     env.FRONTEND_URL,
-    'http://localhost:5173',
+    'http://127.0.0.1:5173',
     /^exp:\/\/.+$/, // Expo dev
   ],
   advanced: {
@@ -143,7 +143,7 @@ BETTER_AUTH_URL: z.string().url(),
 **Add to `.env`:**
 ```bash
 BETTER_AUTH_SECRET=your-secret-key-min-32-chars
-BETTER_AUTH_URL=http://localhost:3003
+BETTER_AUTH_URL=http://127.0.0.1:3003
 ```
 
 ---
@@ -542,7 +542,7 @@ import { cors } from 'hono/cors'
 
 app.use('/*', cors({
   origin: [
-    'http://localhost:5173',
+    'http://127.0.0.1:5173',
     'https://goosebumps.fm',
     /^exp:\/\/.+$/, // Expo
   ],
@@ -586,18 +586,18 @@ Drop these tables:
 
 ```bash
 # Test signup
-curl -X POST http://localhost:3003/api/auth/sign-up/email \
+curl -X POST http://127.0.0.1:3003/api/auth/sign-up/email \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"password123","name":"Test User"}'
 
 # Test signin (save cookies)
-curl -X POST http://localhost:3003/api/auth/sign-in/email \
+curl -X POST http://127.0.0.1:3003/api/auth/sign-in/email \
   -H "Content-Type: application/json" \
   -d '{"email":"test@example.com","password":"password123"}' \
   -c cookies.txt
 
 # Test protected endpoint
-curl http://localhost:3003/auth/profile \
+curl http://127.0.0.1:3003/auth/profile \
   -b cookies.txt
 ```
 
