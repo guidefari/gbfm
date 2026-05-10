@@ -194,7 +194,10 @@ export interface MusicEntityService {
     { trackId: string; position: number; created: boolean },
     DatabaseError | SpotifyError
   >
-  readonly importSpotifyPlaylist: (url: string) => Effect.Effect<
+  readonly importSpotifyPlaylist: (
+    url: string,
+    curatorId?: string | null
+  ) => Effect.Effect<
     {
       playlist: SelectMusicPlaylist
       trackCount: number
@@ -276,7 +279,7 @@ export interface MusicEntityService {
 }
 
 export const MusicEntityService =
-  Context.GenericTag<MusicEntityService>('MusicEntityService')
+  Context.Service<MusicEntityService>('MusicEntityService')
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -1104,7 +1107,7 @@ const copyCoverImageToCdnEffect = (
     )
 
     return `${routerUrl}/user-content/${uploadedKey}`
-  }).pipe(Effect.catchAll(() => Effect.succeed(null)))
+  }).pipe(Effect.catch(() => Effect.succeed(null)))
 
 const enrichTrackLinksEffect = (
   scraper: MusicLinkScraperService,
@@ -1134,7 +1137,7 @@ const enrichTrackLinksEffect = (
     const persistedLinks = yield* Effect.forEach(
       linksToAdd,
       (link) =>
-        Effect.catchAll(
+        Effect.catch(
           addLinkEffect({
             entityType: 'track',
             entityId: track.trackId,
@@ -1246,7 +1249,7 @@ const enrichImportedPlaylistLinksEffect = (
         trackCount: tracks.length
       }
     }),
-    Effect.catchAll((error) =>
+    Effect.catch((error) =>
       Effect.logError(
         '[MusicEntity] Background playlist link enrichment failed',
         {
@@ -1396,7 +1399,10 @@ const importSpotifyPlaylistEffect = (
   routerUrl: string,
   bucketName: string
 ) =>
-  Effect.fn('musicEntity.importSpotifyPlaylist')(function* (url: string) {
+  Effect.fn('musicEntity.importSpotifyPlaylist')(function* (
+    url: string,
+    curatorId?: string | null
+  ) {
     const id = getIdFromSpotifyUrl(url)
     if (!id) {
       return yield* new SpotifyError({
@@ -1430,6 +1436,18 @@ const importSpotifyPlaylistEffect = (
             data.playlistUrl
           )
 
+          const existingPlaylistCuratorId = existingPlaylistId
+            ? ((
+                await tx
+                  .select({ curatorId: musicPlaylistsTable.curatorId })
+                  .from(musicPlaylistsTable)
+                  .where(eq(musicPlaylistsTable.id, existingPlaylistId))
+                  .limit(1)
+              )[0]?.curatorId ?? null)
+            : null
+          const playlistCuratorId =
+            existingPlaylistCuratorId ?? curatorId ?? null
+
           let playlist: SelectMusicPlaylist
           if (existingPlaylistId) {
             const updated = await tx
@@ -1438,6 +1456,7 @@ const importSpotifyPlaylistEffect = (
                 title: data.title,
                 description: data.description,
                 coverImageUrl: storedCoverImageUrl ?? data.coverImageUrl,
+                curatorId: playlistCuratorId,
                 updatedAt: new Date()
               })
               .where(eq(musicPlaylistsTable.id, existingPlaylistId))
@@ -1457,6 +1476,7 @@ const importSpotifyPlaylistEffect = (
                 title: data.title,
                 description: data.description,
                 coverImageUrl: storedCoverImageUrl ?? data.coverImageUrl,
+                curatorId: playlistCuratorId,
                 slug
               })
               .returning()
@@ -1579,7 +1599,7 @@ const importSpotifyPlaylistEffect = (
         bucketName,
         result.playlist.id,
         importedTracks
-      ).pipe(Effect.forkDaemon)
+      ).pipe(Effect.forkDetach)
     }
 
     return result
@@ -1626,7 +1646,7 @@ const syncPlaylistLinksEffect = (
         bucketName,
         playlistId,
         targets
-      ).pipe(Effect.forkDaemon)
+      ).pipe(Effect.forkDetach)
 
       return {
         playlistId,
@@ -2209,7 +2229,7 @@ const scrapeAndCreateEntityEffect =
       const entityId = entity.id
       const inserted: SelectMusicEntityLink[] = []
       for (const link of result.links) {
-        const row = yield* Effect.catchAll(
+        const row = yield* Effect.catch(
           addLinkEffect({
             entityType,
             entityId,

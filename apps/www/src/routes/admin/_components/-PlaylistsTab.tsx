@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label'
 import { toast } from '@/components/ui/use-toast'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
 import { PlaylistEditor, type PlaylistSummary } from './-PlaylistEditor'
+import { SpotifyConnectionCard } from './-SpotifyConnectionCard'
 
 interface ImportResult {
   status: 'Queued'
@@ -80,6 +81,8 @@ export function PlaylistsTab() {
         className={`flex-col w-full md:w-80 border-r shrink-0 md:flex ${
           showSidebar ? 'flex' : 'hidden'
         }`}>
+        <SpotifyConnectionCard />
+
         <div className='mx-3 mt-3 overflow-hidden rounded-md border'>
           <button
             type='button'
