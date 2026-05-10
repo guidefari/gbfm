@@ -1,5 +1,5 @@
 import { SpotifyApi as SpotifyApiClient } from '@spotify/web-api-ts-sdk'
-import { Context, Effect, Layer } from 'effect'
+import { ServiceMap, Effect, Layer } from 'effect'
 import { getErrorMessage, SpotifyError } from '@/errors'
 import {
   calculateBandcampTotalDuration,
@@ -89,7 +89,7 @@ export interface SpotifyService {
 }
 
 export const SpotifyService =
-  Context.GenericTag<SpotifyService>('SpotifyService')
+  ServiceMap.Service<SpotifyService>('SpotifyService')
 
 const spotifyClient = SpotifyApiClient.withClientCredentials(
   config.spotify.clientId,

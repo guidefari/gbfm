@@ -56,9 +56,11 @@ export const processPendingReminders = Effect.gen(function* () {
     (reminder) =>
       processSingleReminder(reminder).pipe(
         Effect.retry(
-          Schedule.exponential(1000).pipe(Schedule.upTo('30 seconds'))
+          Schedule.exponential(1000).pipe(
+            Schedule.both(Schedule.during('30 seconds'))
+          )
         ),
-        Effect.catchAll((error) =>
+        Effect.catch((error) =>
           Effect.logError(
             `Failed to process reminder ${reminder.id} after retries: ${
               error instanceof Error ? error.message : String(error)
@@ -100,7 +102,7 @@ const processSingleReminder = (reminder: typeof musicReminder.$inferSelect) =>
       artistName: reminder.artistName
     })
   }).pipe(
-    Effect.catchAll((error) =>
+    Effect.catch((error) =>
       Effect.gen(function* () {
         // Log the failure
         yield* Effect.logError(`Failed to send reminder ${reminder.id}`, {

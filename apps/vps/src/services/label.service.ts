@@ -1,5 +1,5 @@
 import { count, desc, eq } from 'drizzle-orm'
-import { Context, Effect, Layer } from 'effect'
+import { ServiceMap, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { user as usersTable } from '@/db/auth.schema'
 import {
@@ -48,7 +48,7 @@ export interface LabelService {
   >
 }
 
-export const LabelService = Context.GenericTag<LabelService>('LabelService')
+export const LabelService = ServiceMap.Service<LabelService>('LabelService')
 
 const getAllEffect = (options: { limit: number; offset: number }) =>
   Effect.gen(function* () {

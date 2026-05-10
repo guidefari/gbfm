@@ -1,5 +1,4 @@
-import { DevTools } from '@effect/experimental'
-import { Context, Layer } from 'effect'
+import { ServiceMap, Layer } from 'effect'
 import { db } from '@/db'
 import { OtlpLive } from '@/lib/otel'
 import { AudioServiceLive } from '@/services/audio.service'
@@ -33,14 +32,13 @@ export interface DatabaseService {
 }
 
 export const DatabaseService =
-  Context.GenericTag<DatabaseService>('DatabaseService')
+  ServiceMap.Service<DatabaseService>('DatabaseService')
 
 export const DatabaseServiceLive = Layer.succeed(DatabaseService, {
   db
 })
 
-const DevToolsLive: Layer.Layer<never> =
-  process.env.NODE_ENV === 'production' ? Layer.empty : DevTools.layer()
+const DevToolsLive: Layer.Layer<never> = Layer.empty
 
 const SentryClientLive = SentryClientServiceLive.pipe(
   Layer.provide(ConfigServiceLive)

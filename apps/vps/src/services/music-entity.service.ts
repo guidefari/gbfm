@@ -1,5 +1,5 @@
 import { and, desc, eq, inArray, sql } from 'drizzle-orm'
-import { Context, Effect, Layer } from 'effect'
+import { ServiceMap, Data, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import {
   type InsertMusicEntityLink,
@@ -41,6 +41,11 @@ import {
   SpotifyService as SpotifyServiceTag
 } from './spotify.service'
 import { toSlug } from './to-slug'
+
+class FetchError extends Data.TaggedError('FetchError')<{
+  readonly message: string
+  readonly cause?: unknown
+}> {}
 
 // ---------------------------------------------------------------------------
 // Input types (Drizzle insert types minus fields we handle separately)
@@ -279,7 +284,7 @@ export interface MusicEntityService {
 }
 
 export const MusicEntityService =
-  Context.Service<MusicEntityService>('MusicEntityService')
+  ServiceMap.Service<MusicEntityService>('MusicEntityService')
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -1085,7 +1090,8 @@ const copyCoverImageToCdnEffect = (
   Effect.gen(function* () {
     const response = yield* Effect.tryPromise({
       try: () => fetch(coverImageUrl),
-      catch: () => new Error(`Failed to fetch ${coverImageUrl}`)
+      catch: (cause) =>
+        new FetchError({ message: `Failed to fetch ${coverImageUrl}`, cause })
     })
 
     if (!response.ok) {
@@ -1095,7 +1101,8 @@ const copyCoverImageToCdnEffect = (
     const contentType = response.headers.get('content-type') || 'image/jpeg'
     const arrayBuffer = yield* Effect.tryPromise({
       try: () => response.arrayBuffer(),
-      catch: () => new Error(`Failed to read ${coverImageUrl}`)
+      catch: (cause) =>
+        new FetchError({ message: `Failed to read ${coverImageUrl}`, cause })
     })
     const buffer = Buffer.from(arrayBuffer)
     const key = `music/${entityType}/${entityId}/cover`
@@ -1148,7 +1155,7 @@ const enrichTrackLinksEffect = (
             metadata: link.metadata
           }),
           (error) =>
-            Effect.zipRight(
+            Effect.andThen(
               Effect.logWarning(
                 '[MusicEntity] Failed to persist scraped track link',
                 {
@@ -2240,7 +2247,7 @@ const scrapeAndCreateEntityEffect =
             metadata: link.metadata
           }),
           (e) =>
-            Effect.zipRight(
+            Effect.andThen(
               Effect.logWarning(
                 `Failed to persist scraped link ${link.platform}: ${e.message}`
               ),

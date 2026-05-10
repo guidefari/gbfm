@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm'
-import { Context, Effect, Layer } from 'effect'
+import { ServiceMap, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import {
@@ -123,7 +123,7 @@ export interface UserService {
 }
 
 // Service tag for dependency injection
-export const UserService = Context.GenericTag<UserService>('UserService')
+export const UserService = ServiceMap.Service<UserService>('UserService')
 
 // Core service logic - pure Effects with no service dependencies
 const getUserByIdEffect = (userId: string) =>

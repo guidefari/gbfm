@@ -1,4 +1,4 @@
-import { Context, Layer, Schema } from 'effect'
+import { ServiceMap, Effect, Layer, Schema } from 'effect'
 
 // Conditionally import Resource to avoid failures when running outside SST
 let Resource: { [key: string]: unknown } | null = null
@@ -131,7 +131,7 @@ const ConfigSchema = Schema.Struct({
 type ConfigSchemaType = typeof ConfigSchema.Type
 export interface ConfigService extends ConfigSchemaType {}
 
-export const ConfigService = Context.GenericTag<ConfigService>('ConfigService')
+export const ConfigService = ServiceMap.Service<ConfigService>('ConfigService')
 
 export function createConfig(): ConfigService {
   const appStage = getResourceValue(
@@ -155,11 +155,11 @@ export function createConfig(): ConfigService {
 
   // URLs
   const frontendUrl = isProd
-    ? getResourceValue('Urls.site', 'http://localhost:5173')
-    : process.env.FRONTEND_URL || 'http://localhost:5173'
+    ? getResourceValue('Urls.site', 'http://127.0.0.1:5173')
+    : process.env.FRONTEND_URL || 'http://127.0.0.1:5173'
   const vpsUrl = isProd
-    ? getResourceValue('Urls.vps', 'http://localhost:3003')
-    : process.env.VPS_URL || 'http://localhost:3003'
+    ? getResourceValue('Urls.vps', 'http://127.0.0.1:3003')
+    : process.env.VPS_URL || 'http://127.0.0.1:3003'
   const routerUrl =
     process.env.ROUTER_URL ||
     getResourceValue('Router.url', 'http://localhost:3000')
@@ -278,5 +278,5 @@ export const config = createConfig()
 
 export const ConfigServiceLive = Layer.effect(
   ConfigService,
-  Schema.decodeUnknown(ConfigSchema)(config)
+  Effect.sync(() => Schema.decodeUnknownSync(ConfigSchema)(config))
 )

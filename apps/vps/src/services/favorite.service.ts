@@ -1,5 +1,5 @@
 import { and, eq, isNotNull } from 'drizzle-orm'
-import { Context, Effect, Layer } from 'effect'
+import { ServiceMap, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
 import { favoritesTable, type SelectFavorite } from '@/db/favorites.schema'
@@ -70,7 +70,7 @@ export interface FavoriteService {
 
 // Service tag for dependency injection
 export const FavoriteService =
-  Context.GenericTag<FavoriteService>('FavoriteService')
+  ServiceMap.Service<FavoriteService>('FavoriteService')
 
 // Core service logic - pure Effects with no service dependencies
 const addFavoriteEffect = (userId: string, audioId: string) =>

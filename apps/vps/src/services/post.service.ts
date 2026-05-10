@@ -1,5 +1,5 @@
 import { arrayContains, count, desc, eq } from 'drizzle-orm'
-import { Context, Effect, Layer } from 'effect'
+import { ServiceMap, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { user as usersTable } from '@/db/auth.schema'
 import {
@@ -59,7 +59,7 @@ export interface PostService {
   >
 }
 
-export const PostService = Context.GenericTag<PostService>('PostService')
+export const PostService = ServiceMap.Service<PostService>('PostService')
 
 const buildPostWithCreators = (post: SelectPost) =>
   Effect.gen(function* () {

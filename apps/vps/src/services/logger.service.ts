@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/bun'
-import { HashMap, Layer, List, Logger, LogLevel } from 'effect'
+import { Logger, type LogLevel } from 'effect'
 import pino from 'pino'
 import pretty from 'pino-pretty'
 import { config } from './config.service'
@@ -55,13 +55,13 @@ const pinoInstance = pino(
 )
 
 function pinoLevel(level: LogLevel.LogLevel): pino.Level {
-  switch (level._tag) {
+  switch (level) {
     case 'Trace':
     case 'Debug':
       return 'debug'
     case 'Info':
       return 'info'
-    case 'Warning':
+    case 'Warn':
       return 'warn'
     case 'Error':
     case 'Fatal':
@@ -82,18 +82,15 @@ function formatMessage(message: unknown): string {
 }
 
 export const AppLogger = Logger.make(
-  ({ logLevel, message, annotations, spans, fiberId }) => {
+  ({ logLevel, message, cause, fiber, date }) => {
     const msg = formatMessage(message)
-    const annotationObj: Record<string, unknown> = {}
-    for (const [k, v] of HashMap.entries(annotations)) annotationObj[k] = v
-    const data = redactValue(annotationObj) as Record<string, unknown>
-
-    const spanObj: Record<string, number> = {}
-    for (const span of List.toArray(spans)) spanObj[span.label] = span.startTime
+    const data = redactValue({ cause, fiberId: fiber.id, date }) as Record<
+      string,
+      unknown
+    >
     const payload = {
       ...data,
-      ...(Object.keys(spanObj).length ? { spans: spanObj } : {}),
-      fiberId: fiberId.toString()
+      logLevel
     }
 
     pinoInstance[pinoLevel(logLevel)](payload, msg)
@@ -101,7 +98,7 @@ export const AppLogger = Logger.make(
     if (!Sentry.getClient()) return
 
     const sentryLogger = Sentry.logger
-    switch (logLevel._tag) {
+    switch (logLevel) {
       case 'Trace':
       case 'Debug':
         sentryLogger.debug(msg, payload)
@@ -109,7 +106,7 @@ export const AppLogger = Logger.make(
       case 'Info':
         sentryLogger.info(msg, payload)
         break
-      case 'Warning':
+      case 'Warn':
         sentryLogger.warn(msg, payload)
         break
       case 'Error':
@@ -124,7 +121,4 @@ export const AppLogger = Logger.make(
   }
 )
 
-export const AppLoggerLive = Layer.mergeAll(
-  Logger.replace(Logger.defaultLogger, AppLogger),
-  Logger.minimumLogLevel(LogLevel.Info)
-)
+export const AppLoggerLive = Logger.layer([AppLogger])

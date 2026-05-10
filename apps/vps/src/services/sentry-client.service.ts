@@ -2,7 +2,7 @@ import * as Sentry from '@sentry/bun'
 
 type Client = NonNullable<ReturnType<typeof Sentry.getClient>>
 
-import { Context, Effect, Layer } from 'effect'
+import { ServiceMap, Effect, Layer } from 'effect'
 import { ConfigService } from './config.service'
 
 export interface SentryClientService {
@@ -10,11 +10,11 @@ export interface SentryClientService {
   readonly enabled: boolean
 }
 
-export const SentryClientService = Context.GenericTag<SentryClientService>(
+export const SentryClientService = ServiceMap.Service<SentryClientService>(
   'SentryClientService'
 )
 
-export const SentryClientServiceLive = Layer.scoped(
+export const SentryClientServiceLive = Layer.effect(
   SentryClientService,
   Effect.gen(function* () {
     const { sentry } = yield* ConfigService
@@ -23,7 +23,7 @@ export const SentryClientServiceLive = Layer.scoped(
 
     if (!enabled) {
       yield* Effect.logWarning('[sentry] disabled (no SENTRY_BACKEND_DSN)')
-      return SentryClientService.of({ client: undefined, enabled: false })
+      return { client: undefined, enabled: false }
     }
 
     const debugSentry = process.env.SENTRY_DEBUG === 'true'
@@ -59,6 +59,6 @@ export const SentryClientServiceLive = Layer.scoped(
       })
     }
 
-    return SentryClientService.of({ client, enabled: true })
+    return { client, enabled: true }
   })
 )

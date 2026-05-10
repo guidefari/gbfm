@@ -1,5 +1,5 @@
 import { count, desc, eq } from 'drizzle-orm'
-import { Context, Effect, Layer } from 'effect'
+import { ServiceMap, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { labelsTable } from '@/db/label.schema'
 import {
@@ -47,7 +47,7 @@ export interface ReleaseService {
 }
 
 export const ReleaseService =
-  Context.GenericTag<ReleaseService>('ReleaseService')
+  ServiceMap.Service<ReleaseService>('ReleaseService')
 
 const getByLabelSlugEffect = (
   labelSlug: string,

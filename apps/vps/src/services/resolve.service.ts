@@ -1,5 +1,5 @@
 import { and, eq } from 'drizzle-orm'
-import { Context, Effect, Layer } from 'effect'
+import { ServiceMap, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { user as userTable } from '@/db/auth.schema'
 import { showCreators, showsTable } from '@/db/show.schema'
@@ -35,7 +35,7 @@ export interface ResolveService {
 }
 
 export const ResolveService =
-  Context.GenericTag<ResolveService>('ResolveService')
+  ServiceMap.Service<ResolveService>('ResolveService')
 
 const resolveEffect = (slug: string) =>
   Effect.gen(function* () {

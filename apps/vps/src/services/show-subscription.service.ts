@@ -1,5 +1,5 @@
 import { and, count, desc, eq } from 'drizzle-orm'
-import { Context, Effect, Layer } from 'effect'
+import { ServiceMap, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { user as usersTable } from '@/db/auth.schema'
 import { favoritesTable } from '@/db/favorites.schema'
@@ -53,7 +53,7 @@ export interface ShowSubscriptionService {
 }
 
 export const ShowSubscriptionService =
-  Context.GenericTag<ShowSubscriptionService>('ShowSubscriptionService')
+  ServiceMap.Service<ShowSubscriptionService>('ShowSubscriptionService')
 
 const subscribeEffect = (userId: string, showId: string) =>
   Effect.gen(function* () {
@@ -98,7 +98,7 @@ const subscribeEffect = (userId: string, showId: string) =>
 
     yield* Effect.tryPromise(() =>
       db.insert(favoritesTable).values({ userId, showId }).onConflictDoNothing()
-    ).pipe(Effect.catchAll(() => Effect.void))
+    ).pipe(Effect.catch(() => Effect.void))
 
     return subscription
   })

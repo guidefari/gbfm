@@ -22,7 +22,7 @@
  *   2. Add it to the providers array in MusicLinkScraperServiceLive
  */
 
-import { Context, Data, Effect, Layer } from 'effect'
+import { ServiceMap, Data, Effect, Layer } from 'effect'
 import { getErrorMessage } from '@/errors'
 import type { MusicPlatform } from '../db/music-entity.schema'
 
@@ -451,7 +451,7 @@ export interface MusicLinkScraperService {
 }
 
 export const MusicLinkScraperService =
-  Context.GenericTag<MusicLinkScraperService>('MusicLinkScraperService')
+  ServiceMap.Service<MusicLinkScraperService>('MusicLinkScraperService')
 
 function makeScraperWithProviders(
   providers: MusicDataProvider[]
@@ -464,18 +464,16 @@ function makeScraperWithProviders(
       let entityMeta: EntityMeta | undefined
 
       for (const provider of providers) {
-        const result = yield* Effect.catchAll(
-          provider.fetchLinks(input),
-          (err) =>
-            Effect.zipRight(
-              Effect.logWarning(
-                `[${provider.name}] scrape failed: ${err.message}`
-              ),
-              Effect.succeed({
-                links: [],
-                entityMeta: undefined
-              } satisfies ProviderResult)
-            )
+        const result = yield* Effect.catch(provider.fetchLinks(input), (err) =>
+          Effect.andThen(
+            Effect.logWarning(
+              `[${provider.name}] scrape failed: ${err.message}`
+            ),
+            Effect.succeed({
+              links: [],
+              entityMeta: undefined
+            } satisfies ProviderResult)
+          )
         )
 
         // Later providers override earlier ones for the same platform

@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import { Context, Effect, Layer } from 'effect'
+import { ServiceMap, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import {
   type MusicReminder,
@@ -34,7 +34,7 @@ export interface MusicReminderService {
   ) => Effect.Effect<void, DatabaseError | NotFoundError | UnauthorizedError>
 }
 
-export const MusicReminderService = Context.GenericTag<MusicReminderService>(
+export const MusicReminderService = ServiceMap.Service<MusicReminderService>(
   'MusicReminderService'
 )
 

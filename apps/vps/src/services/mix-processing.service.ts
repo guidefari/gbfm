@@ -6,7 +6,7 @@ import {
   makeInMemoryJobQueue,
   processMix
 } from '@gbfm/core/mix-processing'
-import { Context, Effect, Layer } from 'effect'
+import { ServiceMap, Effect, Layer } from 'effect'
 import ffmpeg from 'ffmpeg-static'
 import { config } from './config.service'
 import { S3Service } from './s3.service'
@@ -19,7 +19,7 @@ export interface MixProcessingService {
   readonly getJobStatus: (jobId: string) => Effect.Effect<JobInfo | undefined>
 }
 
-export const MixProcessingService = Context.GenericTag<MixProcessingService>(
+export const MixProcessingService = ServiceMap.Service<MixProcessingService>(
   'MixProcessingService'
 )
 
@@ -31,12 +31,12 @@ export const MixProcessingServiceLive = Layer.effect(
     const jobQueue = yield* MixJobQueue
     const s3 = yield* S3Service
 
-    return MixProcessingService.of({
+    return {
       submitJob: (jobId, input) =>
         Effect.gen(function* () {
           yield* jobQueue.submit(jobId)
 
-          yield* Effect.gen(function* () {
+          const background = Effect.gen(function* () {
             yield* jobQueue.updateStatus(jobId, { _tag: 'Processing' })
             yield* Effect.logInfo('[MixProcessing] Job started', { jobId })
 
@@ -67,12 +67,10 @@ export const MixProcessingServiceLive = Layer.effect(
               ffmpegPath: ffmpeg as string,
               introAudioPath: 'public/intro.wav'
             }),
-            Effect.catchAll((error) =>
+            Effect.catch((error) =>
               Effect.gen(function* () {
                 const errorMessage =
-                  '_tag' in error && 'message' in error
-                    ? (error as { message: string }).message
-                    : 'Unknown error'
+                  error instanceof Error ? error.message : String(error)
                 yield* jobQueue.updateStatus(jobId, {
                   _tag: 'Failed',
                   error: errorMessage
@@ -82,13 +80,14 @@ export const MixProcessingServiceLive = Layer.effect(
                   error: errorMessage
                 })
               })
-            ),
-            Effect.forkDaemon
+            )
           )
+
+          yield* Effect.forkDetach(background)
         }),
 
       getJobStatus: (jobId) => jobQueue.getStatus(jobId)
-    })
+    }
   })
 )
 

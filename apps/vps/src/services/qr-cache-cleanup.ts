@@ -42,7 +42,7 @@ export const cleanupExpiredQrPdfs = Effect.gen(function* () {
       s3
         .deleteFile(obj.key, bucketName)
         .pipe(
-          Effect.catchAll((error) =>
+          Effect.catch((error) =>
             Effect.logWarning(`Failed to delete ${obj.key}: ${error.message}`)
           )
         ),

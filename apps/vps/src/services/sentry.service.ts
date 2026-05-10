@@ -1,5 +1,5 @@
 import * as Sentry from '@sentry/bun'
-import { Context, Effect, Layer } from 'effect'
+import { ServiceMap, Effect, Layer } from 'effect'
 import { SentryClientService } from './sentry-client.service'
 
 export interface SentryService {
@@ -13,14 +13,14 @@ export interface SentryService {
   ) => Effect.Effect<void>
 }
 
-export const SentryService = Context.GenericTag<SentryService>('SentryService')
+export const SentryService = ServiceMap.Service<SentryService>('SentryService')
 
 export const SentryServiceLive = Layer.effect(
   SentryService,
   Effect.gen(function* () {
     const { enabled } = yield* SentryClientService
 
-    return SentryService.of({
+    return {
       captureException: (error, context) =>
         Effect.sync(() => {
           if (!enabled) return
@@ -34,6 +34,6 @@ export const SentryServiceLive = Layer.effect(
           if (!enabled) return
           Sentry.captureMessage(message, level)
         })
-    })
+    }
   })
 )
