@@ -1,4 +1,5 @@
-import { Effect, Layer } from 'effect'
+import * as Effect from 'effect/Effect'
+import * as Layer from 'effect/Layer'
 import { Analytics } from './service'
 
 const logLocalOnly = (method: string) =>
@@ -8,12 +9,9 @@ const logLocalOnly = (method: string) =>
     )
   })
 
-export const NoopAnalyticsLayer = Layer.succeed(
-  Analytics,
-  Analytics.of({
-    track: () => logLocalOnly('track'),
-    identify: () => logLocalOnly('identify'),
-    page: () => logLocalOnly('page'),
-    reset: () => logLocalOnly('reset')
-  })
-)
+export const NoopAnalyticsLayer = Layer.succeed(Analytics, {
+  track: () => logLocalOnly('track'),
+  identify: () => logLocalOnly('identify'),
+  page: () => logLocalOnly('page'),
+  reset: () => logLocalOnly('reset')
+})

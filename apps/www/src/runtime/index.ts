@@ -2,6 +2,7 @@ import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
 import { env } from '@/env'
 import {
+  type Analytics,
   makeSentryAnalyticsLayer,
   NoopAnalyticsLayer
 } from '@/services/analytics'
@@ -20,7 +21,7 @@ const mainLayerPromise = Effect.runPromise(
   Effect.scoped(Layer.build(analyticsLayer))
 )
 
-export const runAppEffect = <A, E>(effect: Effect.Effect<A, E>) =>
+export const runAppEffect = <A, E>(effect: Effect.Effect<A, E, Analytics>) =>
   mainLayerPromise
     .then((services) =>
       Effect.runPromise(effect.pipe(Effect.provide(services)))
@@ -29,3 +30,7 @@ export const runAppEffect = <A, E>(effect: Effect.Effect<A, E>) =>
       console.error('App effect failed', error)
       throw error
     })
+
+export const RuntimeClient = {
+  runPromise: runAppEffect
+}

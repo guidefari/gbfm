@@ -1,4 +1,4 @@
-import { Effect } from 'effect'
+import * as Effect from 'effect/Effect'
 import * as React from 'react'
 import { RuntimeClient } from '@/runtime'
 import { track } from '@/services/analytics'

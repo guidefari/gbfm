@@ -1,4 +1,5 @@
-import { Context, Effect } from 'effect'
+import * as Context from 'effect/Context'
+import type * as Effect from 'effect/Effect'
 
 /**
  * Generic event payload shape shared across analytics providers.
@@ -12,7 +13,7 @@ export type AnalyticsProperties = Record<string, unknown>
  * This interface is intentionally provider-agnostic so implementations can be
  * swapped without changing call sites.
  */
-export class Analytics extends Context.Tag('@gbfm/www/Analytics')<
+export class Analytics extends Context.Service<
   Analytics,
   {
     /**
@@ -41,30 +42,27 @@ export class Analytics extends Context.Tag('@gbfm/www/Analytics')<
      */
     readonly reset: () => Effect.Effect<void>
   }
->() {}
+>()('@gbfm/www/Analytics') {}
 
 /**
  * Accessor helper for `Analytics.track`.
  */
 export const track = (event: string, properties?: AnalyticsProperties) =>
-  Effect.flatMap(Analytics, (analytics) => analytics.track(event, properties))
+  Analytics.use((analytics) => analytics.track(event, properties))
 
 /**
  * Accessor helper for `Analytics.identify`.
  */
 export const identify = (userId: string, properties?: AnalyticsProperties) =>
-  Effect.flatMap(Analytics, (analytics) =>
-    analytics.identify(userId, properties)
-  )
+  Analytics.use((analytics) => analytics.identify(userId, properties))
 
 /**
  * Accessor helper for `Analytics.page`.
  */
 export const page = (name?: string, properties?: AnalyticsProperties) =>
-  Effect.flatMap(Analytics, (analytics) => analytics.page(name, properties))
+  Analytics.use((analytics) => analytics.page(name, properties))
 
 /**
  * Accessor helper for `Analytics.reset`.
  */
-export const reset = () =>
-  Effect.flatMap(Analytics, (analytics) => analytics.reset())
+export const reset = () => Analytics.use((analytics) => analytics.reset())

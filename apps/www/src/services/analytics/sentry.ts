@@ -1,5 +1,6 @@
 import * as Sentry from '@sentry/react'
-import { Effect, Layer } from 'effect'
+import * as Effect from 'effect/Effect'
+import * as Layer from 'effect/Layer'
 import type { AnalyticsProperties } from './service'
 import { Analytics } from './service'
 
@@ -12,28 +13,25 @@ export interface SentryAnalyticsOptions {
 }
 
 const makeSentryClientLayer = (options: SentryAnalyticsOptions) =>
-  Layer.scopedDiscard(
-    Effect.acquireRelease(
-      Effect.sync(() => {
-        Sentry.init({
-          dsn: options.dsn,
-          environment: options.environment,
-          debug: options.debug ?? false,
-          integrations: [
-            Sentry.browserTracingIntegration(),
-            Sentry.replayIntegration({
-              maskAllText: false,
-              blockAllMedia: false
-            })
-          ],
-          tracesSampleRate: options.tracesSampleRate ?? 0.1,
-          replaysSessionSampleRate: 0,
-          replaysOnErrorSampleRate: options.replaysOnErrorSampleRate ?? 1.0,
-          sendDefaultPii: false
-        })
-      }),
-      () => Effect.promise(() => Sentry.close(2000).then(() => undefined))
-    )
+  Layer.effectDiscard(
+    Effect.sync(() => {
+      Sentry.init({
+        dsn: options.dsn,
+        environment: options.environment,
+        debug: options.debug ?? false,
+        integrations: [
+          Sentry.browserTracingIntegration(),
+          Sentry.replayIntegration({
+            maskAllText: false,
+            blockAllMedia: false
+          })
+        ],
+        tracesSampleRate: options.tracesSampleRate ?? 0.1,
+        replaysSessionSampleRate: 0,
+        replaysOnErrorSampleRate: options.replaysOnErrorSampleRate ?? 1.0,
+        sendDefaultPii: false
+      })
+    })
   )
 
 const SentryAnalyticsImpl = Layer.sync(Analytics, () => {
@@ -75,7 +73,7 @@ const SentryAnalyticsImpl = Layer.sync(Analytics, () => {
     })
   )
 
-  return Analytics.of({ track, identify, page, reset })
+  return { track, identify, page, reset }
 })
 
 export const makeSentryAnalyticsLayer = (options: SentryAnalyticsOptions) =>
