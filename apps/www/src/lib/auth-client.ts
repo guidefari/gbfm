@@ -3,7 +3,7 @@ import { createAuthClient } from 'better-auth/react'
 import { ac, admin, creator, editor, userRole } from './auth-permissions'
 
 export const authClient = createAuthClient({
-  baseURL: import.meta.env.VITE_VPS_BASE_URL || 'http://localhost:3003',
+  baseURL: import.meta.env.VITE_VPS_BASE_URL || 'http://127.0.0.1:3003',
   basePath: '/auth',
   plugins: [
     usernameClient(),

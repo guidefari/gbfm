@@ -14,9 +14,9 @@ import type { AppBindings } from './types'
 export const corsConfig = {
   origin: (origin: string) => {
     const allowedOrigins = [
-      'http://localhost:5173',
+      'http://127.0.0.1:5173',
       'http://localhost:4173',
-      'http://localhost:3003',
+      'http://127.0.0.1:3003',
       'https://www.goosebumps.fm',
       'https://goosebumps.fm',
       config.urls.frontend
