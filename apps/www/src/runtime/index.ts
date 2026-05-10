@@ -1,4 +1,5 @@
-import { Layer, ManagedRuntime } from 'effect'
+import * as Effect from 'effect/Effect'
+import * as Layer from 'effect/Layer'
 import { env } from '@/env'
 import {
   makeSentryAnalyticsLayer,
@@ -15,6 +16,16 @@ const analyticsLayer = env.sentryDsn
     })
   : NoopAnalyticsLayer
 
-const MainLayer = Layer.mergeAll(analyticsLayer)
+const mainLayerPromise = Effect.runPromise(
+  Effect.scoped(Layer.build(analyticsLayer))
+)
 
-export const RuntimeClient = ManagedRuntime.make(MainLayer)
+export const runAppEffect = <A, E>(effect: Effect.Effect<A, E>) =>
+  mainLayerPromise
+    .then((services) =>
+      Effect.runPromise(effect.pipe(Effect.provide(services)))
+    )
+    .catch((error) => {
+      console.error('App effect failed', error)
+      throw error
+    })
