@@ -16,7 +16,7 @@ interface SignInData {
 }
 
 const BASE_URLS = [
-  { id: 'localhost', title: 'Localhost', url: 'http://localhost:3003' },
+  { id: 'localhost', title: 'Localhost', url: 'http://127.0.0.1:3003' },
   { id: 'production', title: 'Goosebumps.fm', url: 'https://api.goosebumps.fm' }
 ]
 

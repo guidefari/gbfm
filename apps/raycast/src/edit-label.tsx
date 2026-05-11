@@ -1,6 +1,6 @@
 import { stripEmptyValues } from '@gbfm/core/utils'
 import { Action, ActionPanel, Form, showToast, Toast } from '@raycast/api'
-import { Effect, Runtime } from 'effect'
+import { Effect } from 'effect'
 import { useEffect, useState } from 'react'
 import { get, parseJsonResponse, patch } from './api-client'
 
@@ -88,7 +88,7 @@ export default function EditLabel() {
       return allLabels
     })
 
-    Runtime.runPromise(Runtime.defaultRuntime)(fetchLabelsEffect)
+    Effect.runPromise(fetchLabelsEffect)
       .then((labelsData) => {
         console.log('Labels loaded:', labelsData)
         setLabels(labelsData)
@@ -126,7 +126,7 @@ export default function EditLabel() {
       return label
     })
 
-    Runtime.runPromise(Runtime.defaultRuntime)(fetchLabelEffect)
+    Effect.runPromise(fetchLabelEffect)
       .then((label) => {
         setFormData({
           title: label.title,
@@ -202,7 +202,7 @@ export default function EditLabel() {
     })
 
     try {
-      await Runtime.runPromise(Runtime.defaultRuntime)(updateLabelEffect)
+      await Effect.runPromise(updateLabelEffect)
       // popToRoot()
     } catch (error) {
       await showToast({

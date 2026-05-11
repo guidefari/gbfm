@@ -10,7 +10,7 @@ import {
   Toast,
   useNavigation
 } from '@raycast/api'
-import { Effect, Runtime } from 'effect'
+import { Effect } from 'effect'
 import { useEffect, useState } from 'react'
 import { get, parseJsonResponse, post } from './api-client'
 
@@ -363,10 +363,10 @@ export default function CreateRelease() {
     })
 
     try {
-      await Runtime.runPromise(Runtime.defaultRuntime)(createReleaseEffect)
+      await Effect.runPromise(createReleaseEffect)
       popToRoot()
     } catch (error) {
-      await Runtime.runPromise(Runtime.defaultRuntime)(
+      await Effect.runPromise(
         Effect.logError('Release creation failed with unhandled error', {
           error: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : undefined

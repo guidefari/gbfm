@@ -6,7 +6,7 @@ import {
   showToast,
   Toast
 } from '@raycast/api'
-import { Effect, Runtime } from 'effect'
+import { Effect } from 'effect'
 import { useState } from 'react'
 import { parseJsonResponse, post } from './api-client'
 
@@ -84,10 +84,10 @@ export default function QuickShare() {
     })
 
     try {
-      await Runtime.runPromise(Runtime.defaultRuntime)(createQuickShareEffect)
+      await Effect.runPromise(createQuickShareEffect)
       popToRoot()
     } catch (error) {
-      await Runtime.runPromise(Runtime.defaultRuntime)(
+      await Effect.runPromise(
         Effect.logError('Quick share creation failed', {
           error: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : undefined

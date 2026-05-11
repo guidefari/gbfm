@@ -7,7 +7,7 @@ import {
   showToast,
   Toast
 } from '@raycast/api'
-import { Effect, Runtime } from 'effect'
+import { Effect } from 'effect'
 import { useEffect, useState } from 'react'
 import { get, parseJsonResponse, patch } from './api-client'
 import { extractTracklistAsJSXEffect } from './util'
@@ -155,7 +155,7 @@ function MixEditForm({ mix }: { mix: Mix }) {
       const processedTracklist = yield* extractTracklistAsJSXEffect(
         values.tracklist
       ).pipe(
-        Effect.catchAll((error) =>
+        Effect.catch((error) =>
           Effect.gen(function* () {
             yield* Effect.logError('Failed to process tracklist', {
               error: error._tag,
@@ -214,10 +214,10 @@ function MixEditForm({ mix }: { mix: Mix }) {
     })
 
     try {
-      await Runtime.runPromise(Runtime.defaultRuntime)(updateMixEffect)
+      await Effect.runPromise(updateMixEffect)
       popToRoot()
     } catch (error) {
-      await Runtime.runPromise(Runtime.defaultRuntime)(
+      await Effect.runPromise(
         Effect.logError('Mix update failed with unhandled error', {
           error: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : undefined

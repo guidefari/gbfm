@@ -1,5 +1,5 @@
 import { LocalStorage } from '@raycast/api'
-import { Effect, Runtime } from 'effect'
+import { Effect } from 'effect'
 import {
   type ApiConfiguration,
   type ApiError,
@@ -9,6 +9,18 @@ import {
   ServerError,
   ValidationError
 } from './types/api'
+
+const Runtime = {
+  defaultRuntime: undefined,
+  runSync:
+    (_runtime: unknown) =>
+    <A, E>(effect: Effect.Effect<A, E>) =>
+      Effect.runSync(effect),
+  runPromise:
+    (_runtime: unknown) =>
+    <A, E>(effect: Effect.Effect<A, E>) =>
+      Effect.runPromise(effect)
+}
 
 const getConfiguration = async (): Promise<ApiConfiguration> => {
   const [baseUrl, accessToken, refreshToken] = await Promise.all([

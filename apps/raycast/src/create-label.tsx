@@ -6,7 +6,7 @@ import {
   showToast,
   Toast
 } from '@raycast/api'
-import { Effect, Runtime } from 'effect'
+import { Effect } from 'effect'
 import { useState } from 'react'
 import { parseJsonResponse, post } from './api-client'
 
@@ -86,10 +86,10 @@ export default function CreateLabel() {
     })
 
     try {
-      await Runtime.runPromise(Runtime.defaultRuntime)(createLabelEffect)
+      await Effect.runPromise(createLabelEffect)
       popToRoot()
     } catch (error) {
-      await Runtime.runPromise(Runtime.defaultRuntime)(
+      await Effect.runPromise(
         Effect.logError('Label creation failed with unhandled error', {
           error: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : undefined

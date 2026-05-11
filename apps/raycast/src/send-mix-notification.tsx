@@ -7,7 +7,7 @@ import {
   showToast,
   Toast
 } from '@raycast/api'
-import { Effect, Runtime } from 'effect'
+import { Effect } from 'effect'
 import { useEffect, useState } from 'react'
 import { get, parseJsonResponse, post } from './api-client'
 
@@ -70,12 +70,10 @@ export default function SendMixNotification() {
       })
 
       try {
-        const mixList = await Runtime.runPromise(Runtime.defaultRuntime)(
-          loadMixesEffect
-        )
+        const mixList = await Effect.runPromise(loadMixesEffect)
         setMixes(mixList)
       } catch (error) {
-        await Runtime.runPromise(Runtime.defaultRuntime)(
+        await Effect.runPromise(
           Effect.logError('Failed to load mixes', {
             error: error instanceof Error ? error.message : String(error)
           })
@@ -159,10 +157,10 @@ export default function SendMixNotification() {
     })
 
     try {
-      await Runtime.runPromise(Runtime.defaultRuntime)(sendNotificationEffect)
+      await Effect.runPromise(sendNotificationEffect)
       popToRoot()
     } catch (error) {
-      await Runtime.runPromise(Runtime.defaultRuntime)(
+      await Effect.runPromise(
         Effect.logError('Mix notification failed', {
           error: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : undefined
