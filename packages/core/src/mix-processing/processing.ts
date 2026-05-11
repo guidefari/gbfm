@@ -196,20 +196,20 @@ export function createAudioOrVideo(
 export function cleanup(files: ProcessedFiles): Effect.Effect<void> {
   return Effect.gen(function* () {
     yield* Effect.tryPromise(() => fs.unlink(files.audioPath)).pipe(
-      Effect.catchAll(() => Effect.void)
+      Effect.catch(() => Effect.void)
     )
 
     yield* Effect.tryPromise(() => fs.unlink(files.imagePath)).pipe(
-      Effect.catchAll(() => Effect.void)
+      Effect.catch(() => Effect.void)
     )
 
     yield* Effect.tryPromise(() => fs.unlink(files.outputPath)).pipe(
-      Effect.catchAll(() => Effect.void)
+      Effect.catch(() => Effect.void)
     )
 
     yield* Effect.tryPromise(() =>
       fs.rmdir(path.dirname(files.audioPath))
-    ).pipe(Effect.catchAll(() => Effect.void))
+    ).pipe(Effect.catch(() => Effect.void))
   })
 }
 

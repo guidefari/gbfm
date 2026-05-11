@@ -5,6 +5,6 @@ export interface MixProcessingConfig {
   readonly introAudioPath: string
 }
 
-export const MixProcessingConfig = Context.GenericTag<MixProcessingConfig>(
+export const MixProcessingConfig = Context.Service<MixProcessingConfig>(
   'MixProcessingConfig'
 )

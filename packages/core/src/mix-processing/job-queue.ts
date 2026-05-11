@@ -13,7 +13,7 @@ export interface MixJobQueue {
   readonly getAllJobs: () => Effect.Effect<JobInfo[]>
 }
 
-export const MixJobQueue = Context.GenericTag<MixJobQueue>('MixJobQueue')
+export const MixJobQueue = Context.Service<MixJobQueue>('MixJobQueue')
 
 export const makeInMemoryJobQueue = Effect.gen(function* () {
   const store = yield* Ref.make(HashMap.empty<string, JobInfo>())
@@ -42,7 +42,7 @@ export const makeInMemoryJobQueue = Effect.gen(function* () {
     )
   )
 
-  yield* Effect.forkDaemon(
+  yield* Effect.forkDetach(
     evictExpiredJobs.pipe(Effect.repeat(Schedule.fixed('10 minutes')))
   )
 

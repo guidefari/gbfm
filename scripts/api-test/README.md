@@ -4,7 +4,7 @@ TypeScript scripts for testing GBFM API endpoints, run with Bun.
 
 ## Configuration
 
-Set the API base URL (defaults to `http://localhost:3003`):
+Set the API base URL (defaults to `http://127.0.0.1:3003`):
 
 ```bash
 export GBFM_API_URL="https://api.example.com"

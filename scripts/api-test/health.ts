@@ -22,7 +22,7 @@ Options:
   -h, --help        Show this help message
 
 Environment:
-  GBFM_API_URL      Base URL (default: http://localhost:3003)`);
+  GBFM_API_URL      Base URL (default: http://127.0.0.1:3003)`);
   process.exit(0);
 }
 

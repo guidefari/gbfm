@@ -8,7 +8,7 @@ const NC = "\x1b[0m";
 
 export const colors = { RED, GREEN, YELLOW, BLUE, CYAN, DIM, NC };
 
-export const API_URL = process.env.GBFM_API_URL ?? "http://localhost:3003";
+export const API_URL = process.env.GBFM_API_URL ?? "http://127.0.0.1:3003";
 
 export interface ApiResponse {
   status: number;
