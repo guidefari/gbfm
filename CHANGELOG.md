@@ -1,3 +1,26 @@
+# [2.40.0](https://github.com/guidefari/gbfm/compare/v2.39.0...v2.40.0) (2026-05-11)
+
+
+### Bug Fixes
+
+* formatting ([4031b07](https://github.com/guidefari/gbfm/commit/4031b07fee61bffe8e146bc70c5183d17dcf1a3c))
+* **infra:** use 127.0.0.1 instead of localhost in CORS and auth origins ([a9649a4](https://github.com/guidefari/gbfm/commit/a9649a410e233bee6fe27461d07bcd70a72d9b28))
+* raycast runtime ([fc92d9a](https://github.com/guidefari/gbfm/commit/fc92d9ad14c616dcd26a5c85a10da19b7c72cec9))
+
+
+### Features
+
+* **vps:** add playlist import and management endpoints ([c7f0c09](https://github.com/guidefari/gbfm/commit/c7f0c0907838c0390f62fb36b60c55c8ffb8bd86))
+* **vps:** expose spotifyUrl on playlist payloads ([535ad31](https://github.com/guidefari/gbfm/commit/535ad310a0c000547662ff5aff664805875544e8))
+* **vps:** queue Spotify playlist enrichment ([cea1aad](https://github.com/guidefari/gbfm/commit/cea1aadf0b869a31058295d37634d0bb7b54d771))
+* **www,vps:** wire Spotify card into playlists and track curator on imports ([3b396a3](https://github.com/guidefari/gbfm/commit/3b396a32d09dbe4c7f58b8bae0c7d60ccc0c58b7))
+* **www:** add dedicated admin playlists page with editor ([c2170a7](https://github.com/guidefari/gbfm/commit/c2170a75928c1ac60e0d6356a4ef23fc5cb83920))
+* **www:** add Spotify client ID to environment ([72ef629](https://github.com/guidefari/gbfm/commit/72ef629dbe5f51e618e8375f41b7c618e606f3c4))
+* **www:** add Spotify PKCE auth library and connection card ([e450129](https://github.com/guidefari/gbfm/commit/e450129b20b2070f44e6e6998d0d9dfcc7eb30fe))
+* **www:** queue playlist imports and sync links ([3e77e5a](https://github.com/guidefari/gbfm/commit/3e77e5a602d36a949a07e8704b29296dbea818b7))
+* **www:** spotify playlist integration ([7468bdd](https://github.com/guidefari/gbfm/commit/7468bdd3b54b4ae2120a42a86236a76a3c8f98fa))
+* **www:** sync changelog content into app ([8d7df6d](https://github.com/guidefari/gbfm/commit/8d7df6d4c9d65e3f536ece57e8d4d1bd2eff12e0))
+
 # [2.39.0](https://github.com/guidefari/gbfm/compare/v2.38.1...v2.39.0) (2026-05-09)
 
 
