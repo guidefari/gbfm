@@ -65,20 +65,81 @@ const PLATFORM_ICONS: Record<string, { Icon: IconType; color: string }> = {
   musicbrainz: { Icon: SiMusicbrainz, color: '#BA478F' }
 }
 
-function pickPrimary(links: PlaylistTrackLink[]) {
-  if (!links || links.length === 0) return null
-  const order = [
-    'spotify',
-    'apple_music',
-    'youtube_music',
-    'youtube',
-    'bandcamp'
-  ]
-  for (const platform of order) {
+const PLATFORM_PRIORITY = [
+  'spotify',
+  'apple_music',
+  'youtube_music',
+  'youtube',
+  'bandcamp'
+]
+
+function pickPrimary(links: PlaylistTrackLink[]): PlaylistTrackLink | null {
+  if (!links.length) return null
+  for (const platform of PLATFORM_PRIORITY) {
     const found = links.find((l) => l.platform === platform)
     if (found) return found
   }
-  return links[0]
+  return links[0] ?? null
+}
+
+interface PlatformLinksProps {
+  links: PlaylistTrackLink[]
+}
+
+function PlatformLinks({ links }: PlatformLinksProps) {
+  if (links.length <= 1) return null
+  return (
+    <div className='mt-1 flex flex-wrap gap-1.5'>
+      {links.map((link) => {
+        const entry = PLATFORM_ICONS[link.platform]
+        const Icon = entry?.Icon ?? ExternalLink
+        const label = PLATFORM_LABELS[link.platform] ?? link.platform
+        return (
+          <a
+            key={link.id}
+            href={link.url}
+            target='_blank'
+            rel='noopener noreferrer'
+            title={label}
+            aria-label={label}
+            className='inline-flex items-center justify-center w-5 h-5 text-muted-foreground hover:text-foreground transition-colors'
+            style={
+              entry
+                ? ({ '--brand': entry.color } as React.CSSProperties)
+                : undefined
+            }
+            onMouseEnter={(e) => {
+              if (entry) e.currentTarget.style.color = entry.color
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = ''
+            }}>
+            <Icon className='w-full h-full' />
+          </a>
+        )
+      })}
+    </div>
+  )
+}
+
+interface TrackTitleProps {
+  title: string
+  links: PlaylistTrackLink[]
+}
+
+function TrackTitle({ title, links }: TrackTitleProps) {
+  const primary = pickPrimary(links)
+  if (!primary) return <>{title}</>
+  return (
+    <a
+      href={primary.url}
+      target='_blank'
+      rel='noopener noreferrer'
+      className='hover:underline'
+      title={`Open on ${PLATFORM_LABELS[primary.platform] ?? primary.platform}`}>
+      {title}
+    </a>
+  )
 }
 
 interface Props {
@@ -102,6 +163,8 @@ export function SortableTrackRow({ track, onRemove, removeDisabled }: Props) {
     transition,
     opacity: isDragging ? 0.5 : 1
   }
+
+  const spotifyLink = track.links.find((l) => l.platform === 'spotify')
 
   return (
     <div
@@ -130,68 +193,18 @@ export function SortableTrackRow({ track, onRemove, removeDisabled }: Props) {
       )}
       <div className='flex-1 min-w-0'>
         <div className='text-sm font-medium truncate'>
-          {(() => {
-            const primary = pickPrimary(track.links)
-            return primary ? (
-              <a
-                href={primary.url}
-                target='_blank'
-                rel='noopener noreferrer'
-                className='hover:underline'
-                title={`Open on ${PLATFORM_LABELS[primary.platform] ?? primary.platform}`}>
-                {track.title}
-              </a>
-            ) : (
-              track.title
-            )
-          })()}
+          <TrackTitle title={track.title} links={track.links} />
         </div>
         <div className='text-xs text-muted-foreground truncate'>
           {track.artistNames?.join(', ') ?? ''}
         </div>
-        {track.links && track.links.length > 1 && (
-          <div className='mt-1 flex flex-wrap gap-1.5'>
-            {track.links.map((link) => {
-              const entry = PLATFORM_ICONS[link.platform]
-              const Icon = entry?.Icon ?? ExternalLink
-              const label = PLATFORM_LABELS[link.platform] ?? link.platform
-              return (
-                <a
-                  key={link.id}
-                  href={link.url}
-                  target='_blank'
-                  rel='noopener noreferrer'
-                  title={label}
-                  aria-label={label}
-                  className='inline-flex items-center justify-center w-5 h-5 text-muted-foreground hover:text-foreground transition-colors'
-                  style={
-                    entry
-                      ? ({
-                          '--brand': entry.color
-                        } as React.CSSProperties)
-                      : undefined
-                  }
-                  onMouseEnter={(e) => {
-                    if (entry) e.currentTarget.style.color = entry.color
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = ''
-                  }}>
-                  <Icon className='w-full h-full' />
-                </a>
-              )
-            })}
-          </div>
-        )}
+        <PlatformLinks links={track.links} />
       </div>
-      {(() => {
-        const spotifyLink = track.links.find((l) => l.platform === 'spotify')
-        return spotifyLink ? (
-          <div className='opacity-0 group-hover:opacity-100 transition-opacity'>
-            <TrackPlaybackControls spotifyUrl={spotifyLink.url} />
-          </div>
-        ) : null
-      })()}
+      {spotifyLink && (
+        <div className='opacity-0 group-hover:opacity-100 transition-opacity'>
+          <TrackPlaybackControls spotifyUrl={spotifyLink.url} />
+        </div>
+      )}
       <Button
         type='button'
         variant='ghost'
