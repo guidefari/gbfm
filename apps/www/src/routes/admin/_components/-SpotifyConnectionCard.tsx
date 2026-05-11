@@ -11,11 +11,11 @@ import {
   getValidSpotifyAuthSessionEffect,
   logoutSpotifyEffect,
   readAuthorizationCallback,
-  spotifyErrorMessage,
-  type SpotifyRequestError,
   SPOTIFY_WEB_SCOPES,
   type SpotifyAuthSession,
   type SpotifyProfile,
+  type SpotifyRequestError,
+  spotifyErrorMessage,
   startSpotifyPkceLoginEffect
 } from '@/lib/spotify-pkce'
 import { runAppEffect } from '@/runtime'

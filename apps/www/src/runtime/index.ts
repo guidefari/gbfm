@@ -1,12 +1,12 @@
-import { Effect, Layer, Scope } from 'effect'
 import { SpotifyBrowser } from '@spotify-effect/browser'
+import { Effect, Layer, Scope } from 'effect'
 import { env } from '@/env'
+import { getSpotifyRedirectUri } from '@/lib/spotify-pkce'
 import {
   type Analytics,
   makeSentryAnalyticsLayer,
   NoopAnalyticsLayer
 } from '@/services/analytics'
-import { getSpotifyRedirectUri } from '@/lib/spotify-pkce'
 
 const analyticsLayer = env.sentryDsn
   ? makeSentryAnalyticsLayer({

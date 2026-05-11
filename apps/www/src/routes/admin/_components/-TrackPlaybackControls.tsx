@@ -7,9 +7,9 @@ import {
   addToQueueEffect,
   checkSavedTrackEffect,
   playTrackEffect,
+  type SpotifyRequestError,
   saveTrackEffect,
   spotifyErrorMessage,
-  type SpotifyRequestError,
   spotifyIdFromUrl,
   spotifyUriFromUrl
 } from '@/lib/spotify-pkce'
@@ -69,10 +69,12 @@ export function TrackPlaybackControls({ spotifyUrl }: Props) {
     setSavePending(true)
     await runAppEffect(
       saveTrackEffect(trackId).pipe(
-        Effect.map(() => {
-          setSaved(true)
-          toast({ title: 'Saved to library' })
-        }),
+        Effect.tap(() =>
+          Effect.sync(() => {
+            setSaved(true)
+            toast({ title: 'Saved to library' })
+          })
+        ),
         withSpotifyErrorToast('Save failed')
       )
     ).finally(() => setSavePending(false))
