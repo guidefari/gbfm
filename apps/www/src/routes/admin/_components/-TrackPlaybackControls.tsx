@@ -1,3 +1,4 @@
+import * as Effect from 'effect/Effect'
 import { Heart, ListPlus, Play } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -7,6 +8,8 @@ import {
   checkSavedTrackEffect,
   playTrackEffect,
   saveTrackEffect,
+  spotifyErrorMessage,
+  type SpotifyRequestError,
   spotifyIdFromUrl,
   spotifyUriFromUrl
 } from '@/lib/spotify-pkce'
@@ -15,6 +18,17 @@ import { runAppEffect } from '@/runtime'
 interface Props {
   spotifyUrl: string
 }
+
+const withSpotifyErrorToast = (title: string) =>
+  Effect.catch((e: SpotifyRequestError) =>
+    Effect.sync(() =>
+      toast({
+        title,
+        description: spotifyErrorMessage(e),
+        variant: 'destructive'
+      })
+    )
+  )
 
 export function TrackPlaybackControls({ spotifyUrl }: Props) {
   const uri = spotifyUriFromUrl(spotifyUrl)
@@ -36,46 +50,32 @@ export function TrackPlaybackControls({ spotifyUrl }: Props) {
 
   const handlePlay = async () => {
     setPlayPending(true)
-    try {
-      await runAppEffect(playTrackEffect(uri))
-    } catch {
-      toast({
-        title: 'Playback failed',
-        description: 'No active Spotify device?',
-        variant: 'destructive'
-      })
-    } finally {
-      setPlayPending(false)
-    }
+    await runAppEffect(
+      playTrackEffect(uri).pipe(withSpotifyErrorToast('Playback failed'))
+    ).finally(() => setPlayPending(false))
   }
 
   const handleQueue = async () => {
     setQueuePending(true)
-    try {
-      await runAppEffect(addToQueueEffect(uri))
-      toast({ title: 'Added to queue' })
-    } catch {
-      toast({
-        title: 'Queue failed',
-        description: 'No active Spotify device?',
-        variant: 'destructive'
-      })
-    } finally {
-      setQueuePending(false)
-    }
+    await runAppEffect(
+      addToQueueEffect(uri).pipe(
+        Effect.map(() => toast({ title: 'Added to queue' })),
+        withSpotifyErrorToast('Queue failed')
+      )
+    ).finally(() => setQueuePending(false))
   }
 
   const handleSave = async () => {
     setSavePending(true)
-    try {
-      await runAppEffect(saveTrackEffect(trackId))
-      setSaved(true)
-      toast({ title: 'Saved to library' })
-    } catch {
-      toast({ title: 'Save failed', variant: 'destructive' })
-    } finally {
-      setSavePending(false)
-    }
+    await runAppEffect(
+      saveTrackEffect(trackId).pipe(
+        Effect.map(() => {
+          setSaved(true)
+          toast({ title: 'Saved to library' })
+        }),
+        withSpotifyErrorToast('Save failed')
+      )
+    ).finally(() => setSavePending(false))
   }
 
   return (

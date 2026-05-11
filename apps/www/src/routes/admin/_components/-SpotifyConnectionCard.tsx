@@ -1,3 +1,4 @@
+import * as Effect from 'effect/Effect'
 import { useCallback, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/use-toast'
@@ -10,6 +11,8 @@ import {
   getValidSpotifyAuthSessionEffect,
   logoutSpotifyEffect,
   readAuthorizationCallback,
+  spotifyErrorMessage,
+  type SpotifyRequestError,
   SPOTIFY_WEB_SCOPES,
   type SpotifyAuthSession,
   type SpotifyProfile,
@@ -25,6 +28,11 @@ const formatExpiresIn = (expiresAt: number) => {
   return `~${Math.floor(minutes / 60)}h ${minutes % 60}m`
 }
 
+const toErrorMessage = (caught: unknown): string => {
+  if (caught instanceof Error) return caught.message
+  return String(caught)
+}
+
 export function SpotifyConnectionCard() {
   const [session, setSession] = useState<SpotifyAuthSession | undefined>()
   const [profile, setProfile] = useState<SpotifyProfile | undefined>()
@@ -33,10 +41,18 @@ export function SpotifyConnectionCard() {
   const [isConnecting, setIsConnecting] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
 
-  const loadProfile = useCallback(async () => {
-    const data = await runAppEffect(fetchSpotifyProfileEffect())
-    setProfile(data)
-  }, [])
+  const loadProfile = useCallback(
+    () =>
+      runAppEffect(
+        fetchSpotifyProfileEffect().pipe(
+          Effect.map(setProfile),
+          Effect.catch((e: SpotifyRequestError) =>
+            Effect.sync(() => setError(spotifyErrorMessage(e)))
+          )
+        )
+      ),
+    []
+  )
 
   useEffect(() => {
     const bootstrap = async () => {
@@ -46,12 +62,17 @@ export function SpotifyConnectionCard() {
 
         if (callback.error) {
           clearAuthorizationCallback(url)
-          throw new Error(callback.error)
+          setError(callback.error)
+          return
         }
 
         if (callback.code) {
           const exchanged = await runAppEffect(
-            exchangeSpotifyPkceCodeEffect(callback.code)
+            exchangeSpotifyPkceCodeEffect(callback.code).pipe(
+              Effect.catch((e: SpotifyRequestError) =>
+                Effect.fail(new Error(spotifyErrorMessage(e)))
+              )
+            )
           )
           setSession(exchanged)
           clearAuthorizationCallback(url)
@@ -60,13 +81,19 @@ export function SpotifyConnectionCard() {
           return
         }
 
-        const stored = await runAppEffect(getValidSpotifyAuthSessionEffect())
+        const stored = await runAppEffect(
+          getValidSpotifyAuthSessionEffect().pipe(
+            Effect.catch((e: SpotifyRequestError) =>
+              Effect.fail(new Error(spotifyErrorMessage(e)))
+            )
+          )
+        )
         if (stored) {
           setSession(stored)
           await loadProfile()
         }
       } catch (caught) {
-        setError(caught instanceof Error ? caught.message : String(caught))
+        setError(toErrorMessage(caught))
       } finally {
         setIsBootstrapping(false)
       }
@@ -80,39 +107,41 @@ export function SpotifyConnectionCard() {
       setError('Missing VITE_SPOTIFY_CLIENT_ID.')
       return
     }
-
     setError(null)
     setIsConnecting(true)
-
-    try {
-      const url = await runAppEffect(
-        startSpotifyPkceLoginEffect(SPOTIFY_WEB_SCOPES)
+    await runAppEffect(
+      startSpotifyPkceLoginEffect(SPOTIFY_WEB_SCOPES).pipe(
+        Effect.map((url) => window.location.assign(url)),
+        Effect.catch((e: SpotifyRequestError) =>
+          Effect.sync(() => setError(spotifyErrorMessage(e)))
+        )
       )
-      window.location.assign(url)
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught))
-      setIsConnecting(false)
-    }
+    ).finally(() => setIsConnecting(false))
   }
 
   const handleRefresh = async () => {
     setError(null)
     setIsRefreshing(true)
-
-    try {
-      const stored = await runAppEffect(getValidSpotifyAuthSessionEffect())
-      if (!stored) {
-        throw new Error('No Spotify session stored.')
-      }
-
-      setSession(stored)
-      await loadProfile()
-      toast({ title: 'Spotify session refreshed' })
-    } catch (caught) {
-      setError(caught instanceof Error ? caught.message : String(caught))
-    } finally {
-      setIsRefreshing(false)
-    }
+    await runAppEffect(
+      getValidSpotifyAuthSessionEffect().pipe(
+        Effect.flatMap((stored) => {
+          if (!stored)
+            return Effect.fail(new Error('No Spotify session stored.'))
+          setSession(stored)
+          return Effect.promise(() => loadProfile())
+        }),
+        Effect.map(() => toast({ title: 'Spotify session refreshed' })),
+        Effect.catch((e: SpotifyRequestError | Error) =>
+          Effect.sync(() =>
+            setError(
+              e instanceof Error
+                ? e.message
+                : spotifyErrorMessage(e as SpotifyRequestError)
+            )
+          )
+        )
+      )
+    ).finally(() => setIsRefreshing(false))
   }
 
   const handleLogout = () => {

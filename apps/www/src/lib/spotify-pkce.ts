@@ -3,7 +3,8 @@ import {
   readAuthorizationCallback,
   SpotifyBrowser
 } from '@spotify-effect/browser'
-import type { PrivateUser } from '@spotify-effect/core'
+import type { PrivateUser, SpotifyRequestError } from '@spotify-effect/core'
+import { SpotifyHttpError, SpotifyRateLimitError } from '@spotify-effect/core'
 import * as Effect from 'effect/Effect'
 
 export const SPOTIFY_WEB_SCOPES = [
@@ -109,3 +110,13 @@ export const checkSavedTrackEffect = Effect.fn('checkSavedTrack')(function* (
   const results = yield* spotify.library.areTracksSaved([spotifyTrackId])
   return results[0] ?? false
 })
+
+export const spotifyErrorMessage = (error: SpotifyRequestError): string => {
+  if (error instanceof SpotifyHttpError && error.status === 404)
+    return 'No active Spotify device'
+  if (error instanceof SpotifyRateLimitError)
+    return 'Too many requests, try again shortly'
+  return error.message
+}
+
+export type { SpotifyRequestError }
