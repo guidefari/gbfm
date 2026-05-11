@@ -8,4 +8,4 @@ To run:
 bun run dev
 ```
 
-open http://localhost:3003
+open http://127.0.0.1:3003

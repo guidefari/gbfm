@@ -16,6 +16,7 @@ import {
   SiYoutubemusic
 } from 'react-icons/si'
 import { Button } from '@/components/ui/button'
+import { TrackPlaybackControls } from './-TrackPlaybackControls'
 
 export interface PlaylistTrackLink {
   id: string
@@ -166,7 +167,7 @@ export function SortableTrackRow({ track, onRemove, removeDisabled }: Props) {
                   style={
                     entry
                       ? ({
-                          ['--brand']: entry.color
+                          '--brand': entry.color
                         } as React.CSSProperties)
                       : undefined
                   }
@@ -183,6 +184,14 @@ export function SortableTrackRow({ track, onRemove, removeDisabled }: Props) {
           </div>
         )}
       </div>
+      {(() => {
+        const spotifyLink = track.links.find((l) => l.platform === 'spotify')
+        return spotifyLink ? (
+          <div className='opacity-0 group-hover:opacity-100 transition-opacity'>
+            <TrackPlaybackControls spotifyUrl={spotifyLink.url} />
+          </div>
+        ) : null
+      })()}
       <Button
         type='button'
         variant='ghost'

@@ -27,7 +27,7 @@ export default defineConfig({
 	server: {
 		proxy: {
 			'/rss.xml': {
-				target: process.env.VITE_VPS_BASE_URL || 'http://localhost:3003',
+				target: process.env.VITE_VPS_BASE_URL || 'http://127.0.0.1:3003',
 				changeOrigin: true,
 				rewrite: (path) => path.replace(/^\/rss\.xml/, '/rss.xml')
 			}

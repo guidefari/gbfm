@@ -6,7 +6,7 @@ import {
   showToast,
   Toast
 } from '@raycast/api'
-import { Effect, Runtime } from 'effect'
+import { Effect } from 'effect'
 import { useState } from 'react'
 import { parseJsonResponse, post } from './api-client'
 import { extractTracklistAsJSXEffect } from './util'
@@ -51,7 +51,7 @@ export default function CreateMix() {
       const processedTracklist = yield* extractTracklistAsJSXEffect(
         values.tracklist
       ).pipe(
-        Effect.catchAll((error) =>
+        Effect.catch((error) =>
           Effect.gen(function* () {
             yield* Effect.logError('Failed to process tracklist', {
               error: error._tag,
@@ -115,10 +115,10 @@ export default function CreateMix() {
     })
 
     try {
-      await Runtime.runPromise(Runtime.defaultRuntime)(createMixEffect)
+      await Effect.runPromise(createMixEffect)
       popToRoot()
     } catch (error) {
-      await Runtime.runPromise(Runtime.defaultRuntime)(
+      await Effect.runPromise(
         Effect.logError('Mix creation failed with unhandled error', {
           error: error instanceof Error ? error.message : String(error),
           stack: error instanceof Error ? error.stack : undefined
@@ -137,9 +137,7 @@ export default function CreateMix() {
 
   const generateSlugFromUrl = (url: string) => {
     if (!url) {
-      Runtime.runSync(Runtime.defaultRuntime)(
-        Effect.logDebug('Empty URL provided for slug generation')
-      )
+      Effect.runSync(Effect.logDebug('Empty URL provided for slug generation'))
       return ''
     }
 
@@ -191,7 +189,7 @@ export default function CreateMix() {
       return result.slug
     })
 
-    return Runtime.runSync(Runtime.defaultRuntime)(generateSlugEffect)
+    return Effect.runSync(generateSlugEffect)
   }
 
   return (

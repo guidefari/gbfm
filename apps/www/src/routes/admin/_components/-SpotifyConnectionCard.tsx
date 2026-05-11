@@ -51,7 +51,7 @@ export function SpotifyConnectionCard() {
 
         if (callback.code) {
           const exchanged = await runAppEffect(
-            exchangeSpotifyPkceCodeEffect({ code: callback.code })
+            exchangeSpotifyPkceCodeEffect(callback.code)
           )
           setSession(exchanged)
           clearAuthorizationCallback(url)
@@ -86,7 +86,7 @@ export function SpotifyConnectionCard() {
 
     try {
       const url = await runAppEffect(
-        startSpotifyPkceLoginEffect({ scopes: SPOTIFY_WEB_SCOPES })
+        startSpotifyPkceLoginEffect(SPOTIFY_WEB_SCOPES)
       )
       window.location.assign(url)
     } catch (caught) {

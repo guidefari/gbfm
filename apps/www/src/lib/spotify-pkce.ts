@@ -5,7 +5,6 @@ import {
 } from '@spotify-effect/browser'
 import type { PrivateUser } from '@spotify-effect/core'
 import * as Effect from 'effect/Effect'
-import { env } from '@/env'
 
 export const SPOTIFY_WEB_SCOPES = [
   'user-read-email',
@@ -32,57 +31,81 @@ export const clearAuthorizationCallback = (url: URL) => {
 export const getSpotifyRedirectUri = () =>
   `${window.location.origin}/admin/playlists`
 
-const spotifyLayer = SpotifyBrowser.layer({
-  clientId: env.spotifyClientId,
-  redirectUri: getSpotifyRedirectUri(),
-  session: {
-    sessionStorage: window.sessionStorage,
-    localStorage: window.localStorage,
-    history: window.history
-  }
-})
+export const spotifyUriFromUrl = (url: string): string | null => {
+  const match = url.match(/spotify\.com\/track\/([A-Za-z0-9]+)/)
+  if (!match?.[1]) return null
+  return `spotify:track:${match[1]}`
+}
 
-export const startSpotifyPkceLoginEffect = ({
-  scopes
-}: {
-  scopes: readonly SpotifyWebScope[]
-}) =>
-  Effect.gen(function* () {
+export const spotifyIdFromUrl = (url: string): string | null => {
+  const match = url.match(/spotify\.com\/track\/([A-Za-z0-9]+)/)
+  return match?.[1] ?? null
+}
+
+export const startSpotifyPkceLoginEffect = Effect.fn('startSpotifyPkceLogin')(
+  function* (scopes: readonly SpotifyWebScope[]) {
     const spotify = yield* SpotifyBrowser
     return yield* spotify.auth.startPkceLogin({
       scopes,
       redirectUri: getSpotifyRedirectUri()
     })
-  }).pipe(Effect.provide(spotifyLayer))
+  }
+)
 
-export const exchangeSpotifyPkceCodeEffect = ({ code }: { code: string }) =>
-  Effect.gen(function* () {
-    const spotify = yield* SpotifyBrowser
-    return yield* spotify.auth.exchangeCode(code)
-  }).pipe(Effect.provide(spotifyLayer))
+export const exchangeSpotifyPkceCodeEffect = Effect.fn(
+  'exchangeSpotifyPkceCode'
+)(function* (code: string) {
+  const spotify = yield* SpotifyBrowser
+  return yield* spotify.auth.exchangeCode(code)
+})
 
-export const getValidSpotifyAuthSessionEffect = () =>
-  Effect.gen(function* () {
-    const spotify = yield* SpotifyBrowser
-    const session = spotify.auth.getTokens()
+export const getValidSpotifyAuthSessionEffect = Effect.fn(
+  'getValidSpotifyAuthSession'
+)(function* () {
+  const spotify = yield* SpotifyBrowser
+  const session = spotify.auth.getTokens()
+  if (!session) return undefined
+  if (session.accessTokenExpiresAt - Date.now() > 60_000) return session
+  return yield* spotify.auth.refreshToken(session.refreshToken)
+})
 
-    if (!session) return undefined
-
-    if (session.accessTokenExpiresAt - Date.now() > 60_000) {
-      return session
-    }
-
-    return yield* spotify.auth.refreshToken(session.refreshToken)
-  }).pipe(Effect.provide(spotifyLayer))
-
-export const fetchSpotifyProfileEffect = () =>
-  Effect.gen(function* () {
+export const fetchSpotifyProfileEffect = Effect.fn('fetchSpotifyProfile')(
+  function* () {
     const spotify = yield* SpotifyBrowser
     return yield* spotify.users.getCurrentUserProfile()
-  }).pipe(Effect.provide(spotifyLayer))
+  }
+)
 
-export const logoutSpotifyEffect = () =>
-  Effect.gen(function* () {
-    const spotify = yield* SpotifyBrowser
-    spotify.auth.logout()
-  }).pipe(Effect.provide(spotifyLayer))
+export const logoutSpotifyEffect = Effect.fn('logoutSpotify')(function* () {
+  const spotify = yield* SpotifyBrowser
+  spotify.auth.logout()
+})
+
+export const playTrackEffect = Effect.fn('playTrack')(function* (
+  spotifyTrackUri: string
+) {
+  const spotify = yield* SpotifyBrowser
+  yield* spotify.player.play({ uris: [spotifyTrackUri] })
+})
+
+export const addToQueueEffect = Effect.fn('addToQueue')(function* (
+  spotifyTrackUri: string
+) {
+  const spotify = yield* SpotifyBrowser
+  yield* spotify.player.addToQueue(spotifyTrackUri)
+})
+
+export const saveTrackEffect = Effect.fn('saveTrack')(function* (
+  spotifyTrackId: string
+) {
+  const spotify = yield* SpotifyBrowser
+  yield* spotify.library.saveTracks([spotifyTrackId])
+})
+
+export const checkSavedTrackEffect = Effect.fn('checkSavedTrack')(function* (
+  spotifyTrackId: string
+) {
+  const spotify = yield* SpotifyBrowser
+  const results = yield* spotify.library.areTracksSaved([spotifyTrackId])
+  return results[0] ?? false
+})

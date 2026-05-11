@@ -1,11 +1,12 @@
-import * as Effect from 'effect/Effect'
-import * as Layer from 'effect/Layer'
+import { Effect, Layer, Scope } from 'effect'
+import { SpotifyBrowser } from '@spotify-effect/browser'
 import { env } from '@/env'
 import {
   type Analytics,
   makeSentryAnalyticsLayer,
   NoopAnalyticsLayer
 } from '@/services/analytics'
+import { getSpotifyRedirectUri } from '@/lib/spotify-pkce'
 
 const analyticsLayer = env.sentryDsn
   ? makeSentryAnalyticsLayer({
@@ -17,15 +18,30 @@ const analyticsLayer = env.sentryDsn
     })
   : NoopAnalyticsLayer
 
-const mainLayerPromise = Effect.runPromise(
-  Effect.scoped(Layer.build(analyticsLayer))
+const spotifyLayer = Layer.suspend(() =>
+  SpotifyBrowser.layer({
+    clientId: env.spotifyClientId,
+    redirectUri: getSpotifyRedirectUri(),
+    session: {
+      sessionStorage: window.sessionStorage,
+      localStorage: window.localStorage,
+      history: window.history
+    }
+  })
 )
 
-export const runAppEffect = <A, E>(effect: Effect.Effect<A, E, Analytics>) =>
-  mainLayerPromise
-    .then((services) =>
-      Effect.runPromise(effect.pipe(Effect.provide(services)))
-    )
+const mainLayer = Layer.merge(analyticsLayer, spotifyLayer)
+
+type AppServices = Analytics | SpotifyBrowser
+
+const appScope = Scope.makeUnsafe()
+const appContextPromise = Effect.runPromise(
+  Layer.buildWithScope(mainLayer, appScope)
+)
+
+export const runAppEffect = <A, E>(effect: Effect.Effect<A, E, AppServices>) =>
+  appContextPromise
+    .then((context) => Effect.runPromiseWith(context)(effect))
     .catch((error) => {
       console.error('App effect failed', error)
       throw error
