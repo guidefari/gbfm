@@ -1,3 +1,10 @@
+## [2.40.1](https://github.com/guidefari/gbfm/compare/v2.40.0...v2.40.1) (2026-05-12)
+
+
+### Bug Fixes
+
+* **vps:** Removed the loopback hostname ([7149bbf](https://github.com/guidefari/gbfm/commit/7149bbf9895dd342d83506602ca228301d01dd03))
+
 # [2.40.0](https://github.com/guidefari/gbfm/compare/v2.39.0...v2.40.0) (2026-05-11)
 
 
