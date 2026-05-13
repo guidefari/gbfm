@@ -1,3 +1,11 @@
+# [2.41.0](https://github.com/guidefari/gbfm/compare/v2.40.1...v2.41.0) (2026-05-13)
+
+
+### Features
+
+* **admin:** add frontend error simulator ([654680b](https://github.com/guidefari/gbfm/commit/654680b62cbfdd8c882547f26d8c2f24f7ab8604))
+* **www:** report API outages to Sentry ([26ffc2c](https://github.com/guidefari/gbfm/commit/26ffc2cd6308740eb334532560a991bc3a83fbe1))
+
 ## [2.40.1](https://github.com/guidefari/gbfm/compare/v2.40.0...v2.40.1) (2026-05-12)
 
 
