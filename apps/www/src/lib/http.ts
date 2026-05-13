@@ -16,6 +16,8 @@ import {
   useQuery,
   useQueryClient
 } from '@tanstack/react-query'
+import { RuntimeClient } from '@/runtime'
+import { captureException } from '@/services/analytics'
 import type { User } from '@/store/auth'
 import { useAuthStore } from '@/store/auth'
 import type {
@@ -53,6 +55,35 @@ export type PaginatedResponse<T> = {
   pagination: PaginationMetadata
 }
 
+function getRequestUrl(input: RequestInfo) {
+  if (typeof input === 'string') return input
+  if (input instanceof URL) return input.toString()
+  return input.url
+}
+
+function getRequestMethod(input: RequestInfo, init: RequestInit) {
+  if (init.method) return init.method
+  if (input instanceof Request) return input.method
+  return 'GET'
+}
+
+function reportApiFailure(
+  error: unknown,
+  input: RequestInfo,
+  init: RequestInit,
+  context: Record<string, unknown> = {}
+) {
+  void RuntimeClient.runPromise(
+    captureException(error, {
+      url: getRequestUrl(input),
+      method: getRequestMethod(input, init),
+      ...context
+    })
+  ).catch((reportingError) => {
+    console.error(reportingError)
+  })
+}
+
 export async function fetcher<T>(input: RequestInfo, init: RequestInit = {}) {
   try {
     const isFormData = init.body instanceof FormData
@@ -74,13 +105,29 @@ export async function fetcher<T>(input: RequestInfo, init: RequestInit = {}) {
 
     if (!res.ok) {
       const errorText = await res.text()
-      throw new Error(`HTTP ${res.status}: ${errorText || res.statusText}`)
+      const error = new Error(
+        `HTTP ${res.status}: ${errorText || res.statusText}`
+      )
+
+      if (res.status >= 500) {
+        reportApiFailure(error, input, init, {
+          status: res.status,
+          statusText: res.statusText,
+          failureType: 'server_response'
+        })
+      }
+
+      throw error
     }
 
     const text = await res.text()
     if (!text) return undefined as T
     return JSON.parse(text) as T
   } catch (error) {
+    if (error instanceof TypeError) {
+      reportApiFailure(error, input, init, { failureType: 'network' })
+    }
+
     console.error(error)
     throw error
   }
@@ -969,11 +1016,7 @@ export function useResolveSlug(slug: string) {
   const { data, error, isPending } = useQuery<ResolveResult, Error>({
     queryKey: ['resolve', slug],
     queryFn: async () => {
-      const res = await fetch(`${VPS_BASE_URL}/resolve/${slug}`, {
-        credentials: 'include'
-      })
-      if (!res.ok) throw new Error('Not found')
-      return res.json()
+      return fetcher<ResolveResult>(`${VPS_BASE_URL}/resolve/${slug}`)
     },
     enabled: Boolean(slug),
     retry: false
@@ -1007,11 +1050,9 @@ export function usePublicProfile(username: string) {
   const { data, error, isPending } = useQuery<PublicProfile, Error>({
     queryKey: ['profile', username],
     queryFn: async () => {
-      const res = await fetch(`${VPS_BASE_URL}/profile/${username}`, {
-        credentials: 'include'
-      })
-      if (!res.ok) throw new Error('Profile not found')
-      const profile: PublicProfile = await res.json()
+      const profile = await fetcher<PublicProfile>(
+        `${VPS_BASE_URL}/profile/${username}`
+      )
       if (!profile?.id) throw new Error('Profile not found')
       return profile
     },

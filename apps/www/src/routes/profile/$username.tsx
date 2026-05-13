@@ -3,19 +3,21 @@ import {
   PublicProfilePage,
   PublicProfilePageSkeleton
 } from '@/components/profile/PublicProfilePage'
-import { type PublicProfile, usePublicProfile, VPS_BASE_URL } from '@/lib/http'
+import {
+  fetcher,
+  type PublicProfile,
+  usePublicProfile,
+  VPS_BASE_URL
+} from '@/lib/http'
 import { generateProfileSEO, generateSEOMeta } from '@/lib/seo'
 
 export const Route = createFileRoute('/profile/$username')({
   component: ProfilePage,
   loader: async ({ params }) => {
     try {
-      const response = await fetch(
-        `${VPS_BASE_URL}/profile/${params.username}`,
-        { credentials: 'include' }
+      const profile = await fetcher<PublicProfile>(
+        `${VPS_BASE_URL}/profile/${params.username}`
       )
-      if (!response.ok) return { profile: null }
-      const profile: PublicProfile = await response.json()
       if (!profile?.id) return { profile: null }
       return { profile }
     } catch {

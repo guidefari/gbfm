@@ -3,7 +3,12 @@ import {
   PublicProfilePage,
   PublicProfilePageSkeleton
 } from '@/components/profile/PublicProfilePage'
-import { type ResolveResult, useResolveSlug, VPS_BASE_URL } from '@/lib/http'
+import {
+  fetcher,
+  type ResolveResult,
+  useResolveSlug,
+  VPS_BASE_URL
+} from '@/lib/http'
 import {
   generateProfileSEO,
   generateResolvedShowSEO,
@@ -14,11 +19,9 @@ export const Route = createFileRoute('/$slug')({
   component: SlugPage,
   loader: async ({ params }) => {
     try {
-      const response = await fetch(`${VPS_BASE_URL}/resolve/${params.slug}`, {
-        credentials: 'include'
-      })
-      if (!response.ok) return { resolved: null }
-      const resolved: ResolveResult = await response.json()
+      const resolved = await fetcher<ResolveResult>(
+        `${VPS_BASE_URL}/resolve/${params.slug}`
+      )
       return { resolved }
     } catch {
       return { resolved: null }

@@ -1,3 +1,4 @@
+import type { SelectMdxCompiledShow } from '@gbfm/vps/schemas'
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { FavoriteButton } from '@/components/FavoriteButton'
@@ -6,23 +7,16 @@ import { ShareButton } from '@/components/ShareButton'
 import { EpisodeGrid } from '@/components/shows/EpisodeGrid'
 import { ReadMoreModal } from '@/components/shows/ReadMoreModal'
 import { ShowQRButton } from '@/components/shows/ShowQRButton'
-import { useShowBySlug } from '@/lib/http'
+import { fetcher, useShowBySlug } from '@/lib/http'
 import { generateSEOMeta, generateShowSEO } from '@/lib/seo'
 import { useContentStore } from '@/store'
 
 export const Route = createFileRoute('/shows/$showSlug')({
   component: ShowPage,
   loader: async ({ params }) => {
-    const response = await fetch(
-      `${import.meta.env.VITE_VPS_BASE_URL}/shows/${params.showSlug}`,
-      {
-        credentials: 'include'
-      }
+    const show = await fetcher<SelectMdxCompiledShow>(
+      `${import.meta.env.VITE_VPS_BASE_URL}/shows/${params.showSlug}`
     )
-    if (!response.ok) {
-      throw new Error('Show not found')
-    }
-    const show = await response.json()
     return { show }
   },
   head: ({ loaderData, params }) => {
