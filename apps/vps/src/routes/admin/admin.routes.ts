@@ -31,4 +31,50 @@ export const getAdminOverview = createRoute({
   }
 })
 
+export const simulateFrontendError = createRoute({
+  path: '/frontend-errors/{scenario}',
+  method: 'get',
+  middleware: [requireAdminMiddleware],
+  tags,
+  request: {
+    params: z.object({
+      scenario: z.enum([
+        'ok',
+        'bad-request',
+        'not-found',
+        'rate-limit',
+        'error',
+        'unavailable'
+      ])
+    })
+  },
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.object({ scenario: z.string(), message: z.string() }),
+      'Successful frontend error simulator response'
+    ),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
+      z.object({ error: z.string(), scenario: z.string() }),
+      'Simulated bad request'
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      z.object({ error: z.string(), scenario: z.string() }),
+      'Simulated not found'
+    ),
+    [HttpStatusCodes.TOO_MANY_REQUESTS]: jsonContent(
+      z.object({ error: z.string(), scenario: z.string() }),
+      'Simulated rate limit'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string(), scenario: z.string() }),
+      'Simulated server error'
+    ),
+    [HttpStatusCodes.SERVICE_UNAVAILABLE]: jsonContent(
+      z.object({ error: z.string(), scenario: z.string() }),
+      'Simulated service unavailable'
+    )
+  }
+})
+
 export type GetAdminOverviewRoute = typeof getAdminOverview
+export type SimulateFrontendErrorRoute = typeof simulateFrontendError

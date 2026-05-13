@@ -23,7 +23,10 @@ import { postsTable } from '@/db/post.schema'
 import { releasesTable } from '@/db/release.schema'
 import { showSubscriptionsTable, showsTable } from '@/db/show.schema'
 import type { AppRouteHandler } from '@/lib/types'
-import type { GetAdminOverviewRoute } from './admin.routes'
+import type {
+  GetAdminOverviewRoute,
+  SimulateFrontendErrorRoute
+} from './admin.routes'
 
 type ContentTable =
   | typeof audioTable
@@ -61,6 +64,45 @@ type RecentContentItem = {
     | 'release'
   createdAt: string
   draft: boolean
+}
+
+export const simulateFrontendError: AppRouteHandler<
+  SimulateFrontendErrorRoute
+> = async (c) => {
+  const { scenario } = c.req.valid('param')
+
+  switch (scenario) {
+    case 'ok':
+      return c.json(
+        { scenario, message: 'Frontend error simulator is reachable.' },
+        HttpStatusCodes.OK
+      )
+    case 'bad-request':
+      return c.json(
+        { scenario, error: 'Simulated 400 response.' },
+        HttpStatusCodes.BAD_REQUEST
+      )
+    case 'not-found':
+      return c.json(
+        { scenario, error: 'Simulated 404 response.' },
+        HttpStatusCodes.NOT_FOUND
+      )
+    case 'rate-limit':
+      return c.json(
+        { scenario, error: 'Simulated 429 response.' },
+        HttpStatusCodes.TOO_MANY_REQUESTS
+      )
+    case 'error':
+      return c.json(
+        { scenario, error: 'Simulated 500 response.' },
+        HttpStatusCodes.INTERNAL_SERVER_ERROR
+      )
+    case 'unavailable':
+      return c.json(
+        { scenario, error: 'Simulated 503 response.' },
+        HttpStatusCodes.SERVICE_UNAVAILABLE
+      )
+  }
 }
 
 function daysAgo(days: number) {

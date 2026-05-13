@@ -50,6 +50,7 @@ import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-passw
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
 import { Route as AdminPlaylistsRouteImport } from './routes/admin/playlists'
 import { Route as AdminOverviewRouteImport } from './routes/admin/overview'
+import { Route as AdminFrontendErrorsRouteImport } from './routes/admin/frontend-errors'
 import { Route as AdminCaptureRouteImport } from './routes/admin/capture'
 
 const UploadLazyRouteImport = createFileRoute('/upload')()
@@ -272,6 +273,11 @@ const AdminOverviewRoute = AdminOverviewRouteImport.update({
   path: '/admin/overview',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminFrontendErrorsRoute = AdminFrontendErrorsRouteImport.update({
+  id: '/admin/frontend-errors',
+  path: '/admin/frontend-errors',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminCaptureRoute = AdminCaptureRouteImport.update({
   id: '/admin/capture',
   path: '/admin/capture',
@@ -299,6 +305,7 @@ export interface FileRoutesByFullPath {
   '/post-upload': typeof PostUploadLazyRoute
   '/upload': typeof UploadLazyRoute
   '/admin/capture': typeof AdminCaptureRoute
+  '/admin/frontend-errors': typeof AdminFrontendErrorsRoute
   '/admin/overview': typeof AdminOverviewRoute
   '/admin/playlists': typeof AdminPlaylistsRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -340,6 +347,7 @@ export interface FileRoutesByTo {
   '/post-upload': typeof PostUploadLazyRoute
   '/upload': typeof UploadLazyRoute
   '/admin/capture': typeof AdminCaptureRoute
+  '/admin/frontend-errors': typeof AdminFrontendErrorsRoute
   '/admin/overview': typeof AdminOverviewRoute
   '/admin/playlists': typeof AdminPlaylistsRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -387,6 +395,7 @@ export interface FileRoutesById {
   '/post-upload': typeof PostUploadLazyRoute
   '/upload': typeof UploadLazyRoute
   '/admin/capture': typeof AdminCaptureRoute
+  '/admin/frontend-errors': typeof AdminFrontendErrorsRoute
   '/admin/overview': typeof AdminOverviewRoute
   '/admin/playlists': typeof AdminPlaylistsRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -435,6 +444,7 @@ export interface FileRouteTypes {
     | '/post-upload'
     | '/upload'
     | '/admin/capture'
+    | '/admin/frontend-errors'
     | '/admin/overview'
     | '/admin/playlists'
     | '/auth/forgot-password'
@@ -476,6 +486,7 @@ export interface FileRouteTypes {
     | '/post-upload'
     | '/upload'
     | '/admin/capture'
+    | '/admin/frontend-errors'
     | '/admin/overview'
     | '/admin/playlists'
     | '/auth/forgot-password'
@@ -522,6 +533,7 @@ export interface FileRouteTypes {
     | '/post-upload'
     | '/upload'
     | '/admin/capture'
+    | '/admin/frontend-errors'
     | '/admin/overview'
     | '/admin/playlists'
     | '/auth/forgot-password'
@@ -569,6 +581,7 @@ export interface RootRouteChildren {
   PostUploadLazyRoute: typeof PostUploadLazyRoute
   UploadLazyRoute: typeof UploadLazyRoute
   AdminCaptureRoute: typeof AdminCaptureRoute
+  AdminFrontendErrorsRoute: typeof AdminFrontendErrorsRoute
   AdminOverviewRoute: typeof AdminOverviewRoute
   AdminPlaylistsRoute: typeof AdminPlaylistsRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
@@ -888,6 +901,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminOverviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/frontend-errors': {
+      id: '/admin/frontend-errors'
+      path: '/admin/frontend-errors'
+      fullPath: '/admin/frontend-errors'
+      preLoaderRoute: typeof AdminFrontendErrorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/capture': {
       id: '/admin/capture'
       path: '/admin/capture'
@@ -989,6 +1009,7 @@ const rootRouteChildren: RootRouteChildren = {
   PostUploadLazyRoute: PostUploadLazyRoute,
   UploadLazyRoute: UploadLazyRoute,
   AdminCaptureRoute: AdminCaptureRoute,
+  AdminFrontendErrorsRoute: AdminFrontendErrorsRoute,
   AdminOverviewRoute: AdminOverviewRoute,
   AdminPlaylistsRoute: AdminPlaylistsRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,

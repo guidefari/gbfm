@@ -35,6 +35,9 @@ function AdminDashboard() {
               <Link to='/admin/playlists'>Playlists</Link>
             </Button>
             <Button asChild variant='outline'>
+              <Link to='/admin/frontend-errors'>Frontend errors</Link>
+            </Button>
+            <Button asChild variant='outline'>
               <Link to='/admin/overview'>
                 View overview
                 <ArrowRight className='w-4 h-4 ml-2' />
