@@ -54,6 +54,9 @@ jobs:
       - name: Type check all packages
         run: bun typecheck
 
+      - name: Run vps integration tests
+        run: cd apps/vps && bun run test
+
       - name: Build www package
         run: cd apps/www && bun run build
 

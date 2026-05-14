@@ -10,7 +10,7 @@ import { getErrorMessage } from '@/errors'
 import type { AppRouteHandler } from '@/lib/types'
 import { AppRuntime, runAppFork } from '@/runtime'
 import { ConfigService } from '@/services/config.service'
-import { MusicEntityService } from '@/services/music-entity.service'
+import { MusicEntityService } from '@/services/music-entity'
 import { S3Service } from '@/services/s3.service'
 import {
   isAppleMusicUrl,

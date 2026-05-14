@@ -5,7 +5,10 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
-    setupFiles: ['./src/test/setup.ts']
+    setupFiles: ['./src/test/setup.ts'],
+    globalSetup: ['./src/test/global-setup.ts'],
+    hookTimeout: 120_000,
+    pool: 'forks'
   },
   resolve: {
     alias: {

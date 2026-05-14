@@ -1,6 +1,10 @@
-import { Context, Layer } from 'effect'
-import { db } from '@/db'
+import { Layer } from 'effect'
 import { OtlpLive } from '@/lib/otel'
+import { DatabaseServiceLive } from '@/services/database.service'
+export {
+  DatabaseService,
+  DatabaseServiceLive
+} from '@/services/database.service'
 import { AudioServiceLive } from '@/services/audio.service'
 import { ConfigServiceLive } from '@/services/config.service'
 import { EmailServiceLive } from '@/services/email.service'
@@ -8,7 +12,7 @@ import { FavoriteServiceLive } from '@/services/favorite.service'
 import { LabelServiceLive } from '@/services/label.service'
 import { AppLoggerLive } from '@/services/logger.service'
 import { MixProcessingServiceLayer } from '@/services/mix-processing.service'
-import { MusicEntityServiceLive } from '@/services/music-entity.service'
+import { MusicEntityServiceLive } from '@/services/music-entity'
 import { MusicLinkScraperServiceLive } from '@/services/music-link-scraper.service'
 import { MusicReminderServiceLive } from '@/services/music-reminder.service'
 import { PostServiceLive } from '@/services/post.service'
@@ -26,17 +30,6 @@ import {
 } from '@/services/show.service'
 import { SpotifyServiceLive } from '@/services/spotify.service'
 import { UserServiceLive } from '@/services/user.service'
-
-export interface DatabaseService {
-  readonly db: typeof db
-}
-
-export const DatabaseService =
-  Context.Service<DatabaseService>('DatabaseService')
-
-export const DatabaseServiceLive = Layer.succeed(DatabaseService, {
-  db
-})
 
 const DevToolsLive: Layer.Layer<never> = Layer.empty
 

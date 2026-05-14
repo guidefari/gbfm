@@ -3,7 +3,14 @@ import 'dotenv/config'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
 
-const isProd = config.app.stage === 'prod'
+const stage = config.app.stage
+
+const sslByStage: Record<string, boolean | { rejectUnauthorized: boolean }> = {
+  prod: true,
+  test: false,
+  dev: { rejectUnauthorized: false }
+}
+const sslConfig = sslByStage[stage] ?? { rejectUnauthorized: false }
 
 const dbConfig = {
   host: config.database.host,
@@ -11,7 +18,7 @@ const dbConfig = {
   user: config.database.user,
   password: config.database.password,
   database: config.database.name,
-  ssl: isProd ? true : { rejectUnauthorized: false }
+  ssl: sslConfig
 }
 
 console.log(
