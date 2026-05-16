@@ -214,7 +214,7 @@ export function SortableTrackRow({ track, onRemove, removeDisabled }: Props) {
         aria-label='Edit track'
         className='opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground'>
         <Link
-          to='/admin/music/$entityType/$id'
+          to='/admin/music-entity/$entityType/$id'
           params={{ entityType: 'track', id: track.trackId }}>
           <Pencil className='w-4 h-4' />
         </Link>

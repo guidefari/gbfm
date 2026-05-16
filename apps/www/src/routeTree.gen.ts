@@ -53,7 +53,7 @@ import { Route as AdminOverviewRouteImport } from './routes/admin/overview'
 import { Route as AdminMusicRouteImport } from './routes/admin/music'
 import { Route as AdminFrontendErrorsRouteImport } from './routes/admin/frontend-errors'
 import { Route as AdminCaptureRouteImport } from './routes/admin/capture'
-import { Route as AdminMusicEntityTypeIdRouteImport } from './routes/admin/music.$entityType.$id'
+import { Route as AdminMusicEntityEntityTypeIdRouteImport } from './routes/admin/music-entity.$entityType.$id'
 
 const UploadLazyRouteImport = createFileRoute('/upload')()
 const PostUploadLazyRouteImport = createFileRoute('/post-upload')()
@@ -290,11 +290,12 @@ const AdminCaptureRoute = AdminCaptureRouteImport.update({
   path: '/admin/capture',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminMusicEntityTypeIdRoute = AdminMusicEntityTypeIdRouteImport.update({
-  id: '/$entityType/$id',
-  path: '/$entityType/$id',
-  getParentRoute: () => AdminMusicRoute,
-} as any)
+const AdminMusicEntityEntityTypeIdRoute =
+  AdminMusicEntityEntityTypeIdRouteImport.update({
+    id: '/admin/music-entity/$entityType/$id',
+    path: '/admin/music-entity/$entityType/$id',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -318,7 +319,7 @@ export interface FileRoutesByFullPath {
   '/upload': typeof UploadLazyRoute
   '/admin/capture': typeof AdminCaptureRoute
   '/admin/frontend-errors': typeof AdminFrontendErrorsRoute
-  '/admin/music': typeof AdminMusicRouteWithChildren
+  '/admin/music': typeof AdminMusicRoute
   '/admin/overview': typeof AdminOverviewRoute
   '/admin/playlists': typeof AdminPlaylistsRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -343,7 +344,7 @@ export interface FileRoutesByFullPath {
   '/shows/': typeof ShowsIndexRoute
   '/tracks/': typeof TracksIndexRoute
   '/tweet/': typeof TweetIndexRoute
-  '/admin/music/$entityType/$id': typeof AdminMusicEntityTypeIdRoute
+  '/admin/music-entity/$entityType/$id': typeof AdminMusicEntityEntityTypeIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -362,7 +363,7 @@ export interface FileRoutesByTo {
   '/upload': typeof UploadLazyRoute
   '/admin/capture': typeof AdminCaptureRoute
   '/admin/frontend-errors': typeof AdminFrontendErrorsRoute
-  '/admin/music': typeof AdminMusicRouteWithChildren
+  '/admin/music': typeof AdminMusicRoute
   '/admin/overview': typeof AdminOverviewRoute
   '/admin/playlists': typeof AdminPlaylistsRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -387,7 +388,7 @@ export interface FileRoutesByTo {
   '/shows': typeof ShowsIndexRoute
   '/tracks': typeof TracksIndexRoute
   '/tweet': typeof TweetIndexRoute
-  '/admin/music/$entityType/$id': typeof AdminMusicEntityTypeIdRoute
+  '/admin/music-entity/$entityType/$id': typeof AdminMusicEntityEntityTypeIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -412,7 +413,7 @@ export interface FileRoutesById {
   '/upload': typeof UploadLazyRoute
   '/admin/capture': typeof AdminCaptureRoute
   '/admin/frontend-errors': typeof AdminFrontendErrorsRoute
-  '/admin/music': typeof AdminMusicRouteWithChildren
+  '/admin/music': typeof AdminMusicRoute
   '/admin/overview': typeof AdminOverviewRoute
   '/admin/playlists': typeof AdminPlaylistsRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
@@ -437,7 +438,7 @@ export interface FileRoutesById {
   '/shows/': typeof ShowsIndexRoute
   '/tracks/': typeof TracksIndexRoute
   '/tweet/': typeof TweetIndexRoute
-  '/admin/music/$entityType/$id': typeof AdminMusicEntityTypeIdRoute
+  '/admin/music-entity/$entityType/$id': typeof AdminMusicEntityEntityTypeIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -488,7 +489,7 @@ export interface FileRouteTypes {
     | '/shows/'
     | '/tracks/'
     | '/tweet/'
-    | '/admin/music/$entityType/$id'
+    | '/admin/music-entity/$entityType/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -532,7 +533,7 @@ export interface FileRouteTypes {
     | '/shows'
     | '/tracks'
     | '/tweet'
-    | '/admin/music/$entityType/$id'
+    | '/admin/music-entity/$entityType/$id'
   id:
     | '__root__'
     | '/'
@@ -581,7 +582,7 @@ export interface FileRouteTypes {
     | '/shows/'
     | '/tracks/'
     | '/tweet/'
-    | '/admin/music/$entityType/$id'
+    | '/admin/music-entity/$entityType/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -606,7 +607,7 @@ export interface RootRouteChildren {
   UploadLazyRoute: typeof UploadLazyRoute
   AdminCaptureRoute: typeof AdminCaptureRoute
   AdminFrontendErrorsRoute: typeof AdminFrontendErrorsRoute
-  AdminMusicRoute: typeof AdminMusicRouteWithChildren
+  AdminMusicRoute: typeof AdminMusicRoute
   AdminOverviewRoute: typeof AdminOverviewRoute
   AdminPlaylistsRoute: typeof AdminPlaylistsRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
@@ -621,6 +622,7 @@ export interface RootRouteChildren {
   AdminIndexRoute: typeof AdminIndexRoute
   DjsIndexRoute: typeof DjsIndexRoute
   ShowsIndexRoute: typeof ShowsIndexRoute
+  AdminMusicEntityEntityTypeIdRoute: typeof AdminMusicEntityEntityTypeIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -947,12 +949,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCaptureRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/music/$entityType/$id': {
-      id: '/admin/music/$entityType/$id'
-      path: '/$entityType/$id'
-      fullPath: '/admin/music/$entityType/$id'
-      preLoaderRoute: typeof AdminMusicEntityTypeIdRouteImport
-      parentRoute: typeof AdminMusicRoute
+    '/admin/music-entity/$entityType/$id': {
+      id: '/admin/music-entity/$entityType/$id'
+      path: '/admin/music-entity/$entityType/$id'
+      fullPath: '/admin/music-entity/$entityType/$id'
+      preLoaderRoute: typeof AdminMusicEntityEntityTypeIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -1027,18 +1029,6 @@ const TweetRouteRouteWithChildren = TweetRouteRoute._addFileChildren(
   TweetRouteRouteChildren,
 )
 
-interface AdminMusicRouteChildren {
-  AdminMusicEntityTypeIdRoute: typeof AdminMusicEntityTypeIdRoute
-}
-
-const AdminMusicRouteChildren: AdminMusicRouteChildren = {
-  AdminMusicEntityTypeIdRoute: AdminMusicEntityTypeIdRoute,
-}
-
-const AdminMusicRouteWithChildren = AdminMusicRoute._addFileChildren(
-  AdminMusicRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   EditorialRouteRoute: EditorialRouteRouteWithChildren,
@@ -1061,7 +1051,7 @@ const rootRouteChildren: RootRouteChildren = {
   UploadLazyRoute: UploadLazyRoute,
   AdminCaptureRoute: AdminCaptureRoute,
   AdminFrontendErrorsRoute: AdminFrontendErrorsRoute,
-  AdminMusicRoute: AdminMusicRouteWithChildren,
+  AdminMusicRoute: AdminMusicRoute,
   AdminOverviewRoute: AdminOverviewRoute,
   AdminPlaylistsRoute: AdminPlaylistsRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
@@ -1076,6 +1066,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminIndexRoute: AdminIndexRoute,
   DjsIndexRoute: DjsIndexRoute,
   ShowsIndexRoute: ShowsIndexRoute,
+  AdminMusicEntityEntityTypeIdRoute: AdminMusicEntityEntityTypeIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

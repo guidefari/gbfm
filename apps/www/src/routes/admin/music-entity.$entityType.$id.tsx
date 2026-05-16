@@ -5,7 +5,7 @@ import { ArrowLeft } from 'lucide-react'
 import { AdminAccessGuard } from './_components/-AdminAccessGuard'
 import { MusicEntityDetailPage } from './_components/-MusicEntityDetailPage'
 
-export const Route = createFileRoute('/admin/music/$entityType/$id')({
+export const Route = createFileRoute('/admin/music-entity/$entityType/$id')({
   component: MusicDetailRoute
 })
 

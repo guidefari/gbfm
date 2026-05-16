@@ -188,7 +188,7 @@ export function PlaylistsTab() {
                     </div>
                   </button>
                   <Link
-                    to='/admin/music/$entityType/$id'
+                    to='/admin/music-entity/$entityType/$id'
                     params={{ entityType: 'playlist', id: p.id }}
                     aria-label='Edit playlist metadata'
                     className='absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground'>
@@ -223,7 +223,7 @@ export function PlaylistsTab() {
                 size='sm'
                 aria-label='Edit playlist'>
                 <Link
-                  to='/admin/music/$entityType/$id'
+                  to='/admin/music-entity/$entityType/$id'
                   params={{ entityType: 'playlist', id: selected.id }}>
                   <Pencil className='w-4 h-4' />
                 </Link>
