@@ -37,6 +37,11 @@ const navItems = [
     id: 'media-card',
     label: 'Media Card',
     description: 'Music-first product pattern'
+  },
+  {
+    id: 'music-entity',
+    label: 'Music Entity',
+    description: 'Admin detail/edit UI for music entities'
   }
 ] as const
 

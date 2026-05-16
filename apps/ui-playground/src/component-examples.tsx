@@ -1,4 +1,10 @@
 import {
+  MusicEntityDetail,
+  MusicEntityMetadataForm,
+  MusicEntityLinksPanel,
+  MusicEntityArtistsPanel
+} from '@gbfm/ui'
+import {
   Accordion,
   AccordionContent,
   AccordionItem,
@@ -78,6 +84,7 @@ function ComponentPreview({ panel }: ComponentPreviewProps) {
       {panel === 'menus' && <MenusPanel />}
       {panel === 'overlays' && <OverlaysPanel />}
       {panel === 'media-card' && <MediaCardPanel />}
+      {panel === 'music-entity' && <MusicEntityPanel />}
     </div>
   )
 }
@@ -451,6 +458,114 @@ function MediaCardPanel({ compact = false }: CompactPanelProps) {
             footer='Playback, sharing, and persistence stay outside @gbfm/ui.'
           />
         ))}
+      </div>
+    </div>
+  )
+}
+
+const MOCK_LINKS = [
+  {
+    id: 'link-1',
+    entityType: 'artist',
+    entityId: 'entity-1',
+    platform: 'spotify',
+    url: 'https://open.spotify.com/artist/example',
+    status: 'verified',
+    scrapedAt: null,
+    verifiedAt: new Date('2024-03-01'),
+    verifiedBy: null,
+    metadata: null,
+    createdAt: new Date('2024-01-01'),
+    updatedAt: new Date('2024-03-01')
+  },
+  {
+    id: 'link-2',
+    entityType: 'artist',
+    entityId: 'entity-1',
+    platform: 'bandcamp',
+    url: 'https://burial.bandcamp.com',
+    status: 'pending_review',
+    scrapedAt: null,
+    verifiedAt: null,
+    verifiedBy: null,
+    metadata: null,
+    createdAt: new Date('2024-02-15'),
+    updatedAt: new Date('2024-02-15')
+  }
+]
+
+const MOCK_ARTISTS = [
+  { artistId: 'a-1', artistName: 'Burial', role: 'primary', displayOrder: 0 },
+  { artistId: 'a-2', artistName: 'Four Tet', role: 'featured', displayOrder: 1 }
+]
+
+function MusicEntityPanel() {
+  return (
+    <div className='space-y-8'>
+      <PanelHeader
+        eyebrow='Admin UI'
+        title='Music entity detail'
+        description='Detail/edit shell for artists, albums, tracks, and playlists.'
+      />
+      <MusicEntityDetail
+        entityType='artist'
+        name='Burial'
+        imageUrl='https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&w=200&q=80'
+        publishedAt={new Date('2023-06-01')}
+        createdAt={new Date('2023-01-15')}
+        updatedAt={new Date('2024-03-10')}
+        createdBy={{ name: 'Guide Fari', email: 'guideg6@gmail.com' }}
+        metadataSlot={
+          <MusicEntityMetadataForm
+            entityType='artist'
+            initialData={{
+              name: 'Burial',
+              bio: 'Anonymous UK producer known for dark, atmospheric dubstep.',
+              imageUrl: null,
+              genres: ['dubstep', 'ambient', 'electronic'],
+              slug: 'burial',
+              publishedAt: new Date('2023-06-01')
+            }}
+            onSubmit={(d) => console.log('save', d)}
+          />
+        }
+        linksSlot={
+          <MusicEntityLinksPanel
+            links={MOCK_LINKS}
+            onAdd={(p, u) => console.log('add', p, u)}
+            onUpdateStatus={(id, s) => console.log('status', id, s)}
+            onDelete={(id) => console.log('delete', id)}
+          />
+        }
+        relationshipsSlot={
+          <MusicEntityArtistsPanel
+            artists={MOCK_ARTISTS}
+            onAdd={(id, role) => console.log('add artist', id, role)}
+            onRemove={(id) => console.log('remove artist', id)}
+          />
+        }
+        actionsSlot={
+          <Button variant='destructive' size='sm'>
+            Delete
+          </Button>
+        }
+      />
+      <div className='space-y-4'>
+        <h3 className='font-semibold'>Album form</h3>
+        <MusicEntityMetadataForm
+          entityType='album'
+          initialData={{
+            title: 'Untrue',
+            artistNames: ['Burial'],
+            releaseDate: new Date('2007-11-05'),
+            coverImageUrl: null,
+            genres: ['dubstep', 'ambient'],
+            albumType: 'LP',
+            slug: 'untrue',
+            publishedAt: new Date('2023-06-01')
+          }}
+          onSubmit={(d) => console.log('save album', d)}
+        />
       </div>
     </div>
   )

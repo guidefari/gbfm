@@ -35,3 +35,31 @@ export * from './components/toaster'
 export * from './components/tooltip'
 export * from './components/use-toast'
 export { cn } from './lib/cn'
+export { MusicEntityAudit } from './components/music-entity-audit'
+export type { MusicEntityAuditProps } from './components/music-entity-audit'
+export { MusicEntityLinksPanel } from './components/music-entity-links-panel'
+export type {
+  MusicEntityLink,
+  MusicEntityLinksPanelProps,
+  LinkStatus,
+  MusicPlatform
+} from './components/music-entity-links-panel'
+export { MusicEntityArtistsPanel } from './components/music-entity-artists-panel'
+export type {
+  ArtistJunction,
+  MusicEntityArtistsPanelProps
+} from './components/music-entity-artists-panel'
+export { MusicEntityMetadataForm } from './components/music-entity-metadata-form'
+export type {
+  MusicEntityType,
+  ArtistMetadata,
+  AlbumMetadata,
+  TrackMetadata,
+  PlaylistMetadata,
+  MusicEntityMetadataFormProps
+} from './components/music-entity-metadata-form'
+export {
+  MusicEntityDetail,
+  MusicEntityDetailSkeleton
+} from './components/music-entity-detail'
+export type { MusicEntityDetailProps } from './components/music-entity-detail'
