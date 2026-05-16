@@ -45,7 +45,7 @@ function LabelUploadPage() {
     bandcamp?: string
     discogs?: string
   }
-  const isEditMode = !!search.edit
+  const isEditMode = Boolean(search.edit)
 
   const [formData, setFormData] = useState<LabelFormData>(() => ({
     title: search.title || '',

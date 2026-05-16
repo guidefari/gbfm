@@ -41,7 +41,7 @@ export const useAuthStore = create<AuthStore>()(
           set(
             {
               user,
-              isAuthenticated: !!user
+              isAuthenticated: Boolean(user)
             },
             false,
             'auth/setUser'

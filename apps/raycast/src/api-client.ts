@@ -107,7 +107,7 @@ const makeRequest = async (
     Effect.logDebug('Making HTTP request', {
       url,
       method: options.method || 'GET',
-      hasBody: !!options.body
+      hasBody: Boolean(options.body)
     })
   )
 

@@ -1,15 +1,15 @@
+import { and, eq } from 'drizzle-orm'
 import { Data, Effect } from 'effect'
 import type { db as DbType } from '@/db'
 import {
   type MusicEntityType,
-  musicAlbumsTable,
-  musicArtistsTable,
+  type musicAlbumsTable,
+  type musicArtistsTable,
   musicEntityLinksTable,
-  musicPlaylistsTable,
-  musicTracksTable
+  type musicPlaylistsTable,
+  type musicTracksTable
 } from '@/db/music-entity.schema'
 import { DatabaseError, NotFoundError } from '@/errors'
-import { and, eq } from 'drizzle-orm'
 
 export class FetchError extends Data.TaggedError('FetchError')<{
   readonly message: string

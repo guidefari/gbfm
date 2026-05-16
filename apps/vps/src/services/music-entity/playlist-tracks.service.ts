@@ -10,14 +10,15 @@ import {
   type SelectMusicPlaylist
 } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage, SpotifyError } from '@/errors'
-import { type MusicLinkScraperService } from '@/services/music-link-scraper.service'
+import type { MusicLinkScraperService } from '@/services/music-link-scraper.service'
+import type { S3Service } from '@/services/s3.service'
 import {
   getIdFromSpotifyUrl,
   type SpotifyImportPlaylist,
   type SpotifyService
 } from '@/services/spotify.service'
-import { type S3Service } from '@/services/s3.service'
 import { toSlug } from '@/services/to-slug'
+import { addLinkEffect, getLinksForEntityEffect } from './link.service'
 import {
   FetchError,
   findEntityIdBySpotifyUrlTx,
@@ -25,7 +26,6 @@ import {
   requireInserted,
   uniqueSlug
 } from './shared'
-import { addLinkEffect, getLinksForEntityEffect } from './link.service'
 import { updateTrackEffect } from './track.service'
 
 export const getPlaylistTracksEffect =

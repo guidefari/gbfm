@@ -70,7 +70,7 @@ function MixUploadPage() {
     tags?: string[]
     type?: string
   }
-  const isEditMode = !!search.edit
+  const isEditMode = Boolean(search.edit)
   const editType = (search.type as 'mix') || 'mix'
 
   const { data: allMixes } = useAudioByType('mix')

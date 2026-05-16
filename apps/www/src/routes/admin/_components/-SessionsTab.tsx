@@ -54,7 +54,7 @@ export function SessionsTab() {
       if (!selectedUser) return { data: { sessions: [] } }
       return authClient.admin.listUserSessions({ userId: selectedUser.id })
     },
-    enabled: !!selectedUser
+    enabled: Boolean(selectedUser)
   })
 
   const revokeSessionMutation = useMutation({

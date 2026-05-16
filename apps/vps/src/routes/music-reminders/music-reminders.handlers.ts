@@ -35,8 +35,8 @@ export const createMusicReminder: AppRouteHandler<
     }
   })(
     Effect.gen(function* () {
-      yield* Effect.annotateCurrentSpan('hasAlbumCover', !!albumCoverUrl)
-      yield* Effect.annotateCurrentSpan('hasNotes', !!notes)
+      yield* Effect.annotateCurrentSpan('hasAlbumCover', Boolean(albumCoverUrl))
+      yield* Effect.annotateCurrentSpan('hasNotes', Boolean(notes))
       const service = yield* MusicReminderService
       const result = yield* service.create({
         userId: user.id,

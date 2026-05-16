@@ -7,7 +7,7 @@ import {
   type MusicEntityType,
   musicEntityLinksTable
 } from '@/db/music-entity.schema'
-import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
+import { DatabaseError, getErrorMessage } from '@/errors'
 import { requireInserted, requireOne } from './shared'
 
 export const getLinksForEntityEffect =

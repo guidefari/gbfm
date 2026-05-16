@@ -1,54 +1,42 @@
 import { Context, Effect, Layer } from 'effect'
-import type { db as DbType } from '@/db'
-import {
-  type InsertMusicEntityLink,
-  type LinkStatus,
-  type MusicEntityType,
-  type SelectMusicAlbum,
-  type SelectMusicArtist,
-  type SelectMusicEntityLink,
-  type SelectMusicPlaylist,
-  type SelectMusicPlaylistTrack,
-  type SelectMusicTrack
+import type {
+  InsertMusicEntityLink,
+  LinkStatus,
+  MusicEntityType,
+  SelectMusicAlbum,
+  SelectMusicArtist,
+  SelectMusicEntityLink,
+  SelectMusicPlaylist,
+  SelectMusicPlaylistTrack,
+  SelectMusicTrack
 } from '@/db/music-entity.schema'
-import {
-  type DatabaseError,
-  type NotFoundError,
-  type SpotifyError
-} from '@/errors'
-import { DatabaseService } from '@/services/database.service'
+import type { DatabaseError, NotFoundError, SpotifyError } from '@/errors'
 import { ConfigService as ConfigServiceTag } from '@/services/config.service'
+import { DatabaseService } from '@/services/database.service'
 import {
-  type MusicLinkScraperService,
   MusicLinkScraperService as MusicLinkScraperServiceTag,
   type MusicScrapeInput
 } from '@/services/music-link-scraper.service'
-import {
-  type S3Service,
-  S3Service as S3ServiceTag
-} from '@/services/s3.service'
-import {
-  type SpotifyService,
-  SpotifyService as SpotifyServiceTag
-} from '@/services/spotify.service'
+import { S3Service as S3ServiceTag } from '@/services/s3.service'
+import { SpotifyService as SpotifyServiceTag } from '@/services/spotify.service'
 
 import {
   addArtistToAlbumEffect,
+  type CreateAlbumInput,
   createAlbumEffect,
   deleteAlbumEffect,
   getAlbumByIdEffect,
   getAlbumsEffect,
   removeArtistFromAlbumEffect,
-  updateAlbumEffect,
-  type CreateAlbumInput
+  updateAlbumEffect
 } from './album.service'
 import {
+  type CreateArtistInput,
   createArtistEffect,
   deleteArtistEffect,
   getArtistByIdEffect,
   getArtistsEffect,
-  updateArtistEffect,
-  type CreateArtistInput
+  updateArtistEffect
 } from './artist.service'
 import {
   addLinkEffect,
@@ -58,6 +46,14 @@ import {
   updateLinkStatusEffect
 } from './link.service'
 import {
+  type CreatePlaylistInput,
+  createPlaylistEffect,
+  deletePlaylistEffect,
+  getPlaylistByIdEffect,
+  getPlaylistsEffect,
+  updatePlaylistEffect
+} from './playlist.service'
+import {
   addSpotifyTrackToPlaylistEffect,
   addTrackToPlaylistEffect,
   getPlaylistTracksEffect,
@@ -66,31 +62,23 @@ import {
   reorderPlaylistTracksEffect,
   syncPlaylistLinksEffect
 } from './playlist-tracks.service'
-import {
-  createPlaylistEffect,
-  deletePlaylistEffect,
-  getPlaylistByIdEffect,
-  getPlaylistsEffect,
-  updatePlaylistEffect,
-  type CreatePlaylistInput
-} from './playlist.service'
 import { scrapeAndCreateEntityEffect } from './scrape.service'
 import {
   addArtistToTrackEffect,
+  type CreateTrackInput,
   createTrackEffect,
   deleteTrackEffect,
   getTrackByIdEffect,
   getTracksEffect,
   removeArtistFromTrackEffect,
-  updateTrackEffect,
-  type CreateTrackInput
+  updateTrackEffect
 } from './track.service'
 
 export type {
-  CreateArtistInput,
   CreateAlbumInput,
-  CreateTrackInput,
-  CreatePlaylistInput
+  CreateArtistInput,
+  CreatePlaylistInput,
+  CreateTrackInput
 }
 
 export interface MusicEntityService {

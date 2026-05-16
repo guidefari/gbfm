@@ -19,7 +19,7 @@ export function useIntersectionObserver<T extends Element = Element>(
 
   useEffect(() => {
     const node = elementRef?.current
-    const hasIOSupport = !!window.IntersectionObserver
+    const hasIOSupport = Boolean(window.IntersectionObserver)
 
     if (!hasIOSupport || !node) {
       return

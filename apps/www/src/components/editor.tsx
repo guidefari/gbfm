@@ -89,7 +89,7 @@ export function Editor() {
       if (!id) return null
       return await fetcher(`${VPS_BASE_URL}/content/${id}`)
     },
-    enabled: !!id
+    enabled: Boolean(id)
   })
 
   const { mutate, isPending } = useMutation({

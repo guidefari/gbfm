@@ -37,7 +37,7 @@ export default function QuickShare() {
     const createQuickShareEffect = Effect.gen(function* () {
       yield* Effect.logInfo('Creating quick share', {
         url: values.url,
-        hasNotes: !!values.notes
+        hasNotes: Boolean(values.notes)
       })
 
       const content = values.notes

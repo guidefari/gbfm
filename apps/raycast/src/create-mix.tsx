@@ -82,7 +82,7 @@ export default function CreateMix() {
       yield* Effect.logDebug('Preparing to create mix', {
         title: values.title,
         slug: values.slug,
-        hasContent: !!finalContent
+        hasContent: Boolean(finalContent)
       })
 
       const response = yield* Effect.promise(() =>

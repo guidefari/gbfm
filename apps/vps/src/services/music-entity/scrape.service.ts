@@ -2,30 +2,30 @@ import { and, eq } from 'drizzle-orm'
 import { Effect } from 'effect'
 import type { db as DbType } from '@/db'
 import {
-  musicEntityLinksTable,
   type MusicEntityType,
+  musicEntityLinksTable,
   type SelectMusicAlbum,
   type SelectMusicArtist,
   type SelectMusicEntityLink,
   type SelectMusicPlaylist,
   type SelectMusicTrack
 } from '@/db/music-entity.schema'
-import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
-import {
-  type MusicLinkScraperService,
-  type MusicScrapeInput
+import { DatabaseError, getErrorMessage, type NotFoundError } from '@/errors'
+import type {
+  MusicLinkScraperService,
+  MusicScrapeInput
 } from '@/services/music-link-scraper.service'
 import { parseArtistNames } from '@/services/parse-artist-names'
 import { toSlug } from '@/services/to-slug'
-import { createAlbumEffect } from './album.service'
-import { findOrCreateArtist, findOrCreateArtistsByName } from './artist.service'
+import { createAlbumEffect, getAlbumByIdEffect } from './album.service'
+import {
+  findOrCreateArtist,
+  findOrCreateArtistsByName,
+  getArtistByIdEffect
+} from './artist.service'
 import { addLinkEffect, getLinksForEntityEffect } from './link.service'
-import { createPlaylistEffect } from './playlist.service'
-import { createTrackEffect } from './track.service'
-import { getArtistByIdEffect } from './artist.service'
-import { getAlbumByIdEffect } from './album.service'
-import { getTrackByIdEffect } from './track.service'
-import { getPlaylistByIdEffect } from './playlist.service'
+import { createPlaylistEffect, getPlaylistByIdEffect } from './playlist.service'
+import { createTrackEffect, getTrackByIdEffect } from './track.service'
 
 const findExistingEntityByUrl =
   (db: typeof DbType) => (url: string, entityType: MusicEntityType) =>

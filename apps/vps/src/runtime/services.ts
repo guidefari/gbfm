@@ -1,10 +1,12 @@
 import { Layer } from 'effect'
 import { OtlpLive } from '@/lib/otel'
 import { DatabaseServiceLive } from '@/services/database.service'
+
 export {
   DatabaseService,
   DatabaseServiceLive
 } from '@/services/database.service'
+
 import { AudioServiceLive } from '@/services/audio.service'
 import { ConfigServiceLive } from '@/services/config.service'
 import { EmailServiceLive } from '@/services/email.service'

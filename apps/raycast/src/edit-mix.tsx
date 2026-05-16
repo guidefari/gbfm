@@ -179,7 +179,7 @@ function MixEditForm({ mix }: { mix: Mix }) {
       yield* Effect.logDebug('Preparing to update mix', {
         title: values.title,
         slug: mix.slug,
-        hasContent: !!finalContent
+        hasContent: Boolean(finalContent)
       })
 
       const requestBody = {
