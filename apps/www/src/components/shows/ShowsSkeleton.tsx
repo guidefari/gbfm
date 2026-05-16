@@ -1,4 +1,4 @@
-import { Skeleton } from '@/components/ui/skeleton'
+import { Skeleton } from '@gbfm/ui'
 
 export function ShowsSkeleton() {
   return (

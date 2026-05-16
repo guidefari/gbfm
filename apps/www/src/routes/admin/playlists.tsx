@@ -1,6 +1,6 @@
+import { Button } from '@gbfm/ui'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { AdminAccessGuard } from './_components/-AdminAccessGuard'
 import { PlaylistsTab } from './_components/-PlaylistsTab'
 

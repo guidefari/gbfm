@@ -1,5 +1,5 @@
+import { Button } from '@gbfm/ui'
 import { FolderOpen, Upload } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 
 interface AudioDropZoneProps {
   onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void

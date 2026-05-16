@@ -1,7 +1,6 @@
+import { Button, toast } from '@gbfm/ui'
 import * as Effect from 'effect/Effect'
 import { useCallback, useEffect, useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { toast } from '@/components/ui/use-toast'
 import { env } from '@/env'
 import {
   clearAuthorizationCallback,

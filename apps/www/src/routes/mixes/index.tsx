@@ -1,3 +1,11 @@
+import {
+  Badge,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@gbfm/ui'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { Radio, Tag, X } from 'lucide-react'
 import { useMemo } from 'react'
@@ -8,14 +16,6 @@ import { MixListItem } from '@/components/MixListItem'
 import { MixMenu } from '@/components/MixMenu'
 import { MixTimeline, MixTimelineItem } from '@/components/MixTimeline'
 import { TrackContextMenu } from '@/components/TrackContextMenu'
-import { Badge } from '@/components/ui/badge'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
 import { useAudioByType } from '@/lib/http'
 import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'
 import { useUIStore } from '@/store'

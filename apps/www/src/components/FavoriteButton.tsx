@@ -1,6 +1,5 @@
+import { Button, toast } from '@gbfm/ui'
 import { Heart, Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { toast } from '@/components/ui/use-toast'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
 import {
   useAddFavorite,

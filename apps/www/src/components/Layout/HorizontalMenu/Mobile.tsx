@@ -1,8 +1,7 @@
 'use client'
+import { Button, Sheet, SheetContent, SheetTrigger } from '@gbfm/ui'
 import { Link } from '@tanstack/react-router'
 import React from 'react'
-import { Button } from '@/components/ui/button'
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'
 import { MenuIcon } from '../../common/icons'
 import { pagesAndPages } from '../NavLinks'
 

@@ -1,15 +1,15 @@
 import { useFeatureFlag } from '@gbfm/core/feature-flags'
-import type { SelectAudio } from '@gbfm/vps/schemas'
-import { Heart, HeartOff, Play, Plus, Share2 } from 'lucide-react'
-import type React from 'react'
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
-  ContextMenuTrigger
-} from '@/components/ui/context-menu'
-import { toast } from '@/components/ui/use-toast'
+  ContextMenuTrigger,
+  toast
+} from '@gbfm/ui'
+import type { SelectAudio } from '@gbfm/vps/schemas'
+import { Heart, HeartOff, Play, Plus, Share2 } from 'lucide-react'
+import type React from 'react'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
 import { useAddFavorite, useFavorites, useRemoveFavorite } from '@/lib/http'
 import { getShareUrl } from '@/lib/share'

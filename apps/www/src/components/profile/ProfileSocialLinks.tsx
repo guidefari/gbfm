@@ -1,5 +1,5 @@
+import { toast } from '@gbfm/ui'
 import { Share2 } from 'lucide-react'
-import { toast } from '@/components/ui/use-toast'
 import type { PublicProfile } from '@/lib/http'
 import { getShareUrl } from '@/lib/share'
 

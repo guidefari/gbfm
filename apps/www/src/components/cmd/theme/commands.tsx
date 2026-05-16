@@ -1,5 +1,5 @@
+import { CommandItem, CommandShortcut } from '@gbfm/ui'
 import { Monitor, Moon, Sun } from 'lucide-react'
-import { CommandItem, CommandShortcut } from '@/components/ui/command'
 
 interface ThemeCommandsProps {
   currentTheme: 'light' | 'dark' | 'system'

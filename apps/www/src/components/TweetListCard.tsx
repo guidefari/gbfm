@@ -1,10 +1,10 @@
+import { Badge } from '@gbfm/ui'
 import type { SelectMdxCompiledPost } from '@gbfm/vps/schemas'
 import { Link } from '@tanstack/react-router'
 import { Tag } from 'lucide-react'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { TweetAuthorRow } from '@/components/TweetAuthorRow'
 import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
-import { Badge } from '@/components/ui/badge'
 
 type Props = {
   post: SelectMdxCompiledPost

@@ -1,6 +1,6 @@
+import { Button } from '@gbfm/ui'
 import { CheckCircle2, ExternalLink, Loader2, Music } from 'lucide-react'
 import type { RefObject } from 'react'
-import { Button } from '@/components/ui/button'
 import type { TrackEntry } from './tracklist-editor'
 
 interface UploadSummaryCardProps {

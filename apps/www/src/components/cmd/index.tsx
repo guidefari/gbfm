@@ -1,9 +1,9 @@
 'use client'
 
 import { useFeatureFlag } from '@gbfm/core/feature-flags'
+import { CommandDialog, CommandInput } from '@gbfm/ui'
 import { useRouterState } from '@tanstack/react-router'
 import * as React from 'react'
-import { CommandDialog, CommandInput } from '@/components/ui/command'
 import { useUIStore } from '@/store'
 import { useAudioPlayerState } from '@/store/audioPlayer'
 import { useAuthStore } from '@/store/auth'

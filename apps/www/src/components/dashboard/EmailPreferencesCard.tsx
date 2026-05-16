@@ -1,6 +1,5 @@
+import { Card, CardContent, CardHeader, CardTitle, Label } from '@gbfm/ui'
 import { useEffect, useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Label } from '@/components/ui/label'
 import { useEmailPreferences, useUpdateEmailPreferences } from '@/lib/http'
 
 export function EmailPreferencesCard() {

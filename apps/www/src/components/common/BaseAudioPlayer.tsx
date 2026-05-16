@@ -1,5 +1,6 @@
 'use client'
 import { useFeatureFlag } from '@gbfm/core/feature-flags'
+import { Button, toast } from '@gbfm/ui'
 import { Link } from '@tanstack/react-router'
 import {
   Heart,
@@ -14,8 +15,6 @@ import {
 import { motion } from 'motion/react'
 import type React from 'react'
 import { useEffect, useRef } from 'react'
-import { Button } from '@/components/ui/button'
-import { toast } from '@/components/ui/use-toast'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { useAddFavorite, useFavorites, useRemoveFavorite } from '@/lib/http'

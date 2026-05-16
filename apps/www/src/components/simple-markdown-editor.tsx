@@ -1,6 +1,6 @@
+import { Button } from '@gbfm/ui'
 import { Music, Video } from 'lucide-react'
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
 import { MDXRendrr } from './MDXRendrr'
 import { ReactMde } from './react-mde'
 import 'react-mde/lib/styles/css/react-mde-toolbar.css'

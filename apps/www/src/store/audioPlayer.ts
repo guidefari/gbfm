@@ -1,8 +1,8 @@
 import { isFeatureEnabled } from '@gbfm/core/feature-flags'
+import { toast } from '@gbfm/ui'
 import type { SelectAudio, SelectMdxCompiledAudio } from '@gbfm/vps/schemas'
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
-import { toast } from '@/components/ui/use-toast'
 import { RuntimeClient } from '@/runtime'
 import { track } from '@/services/analytics'
 

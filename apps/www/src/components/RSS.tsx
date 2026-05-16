@@ -1,13 +1,13 @@
 'use client'
-import { CheckIcon } from '@radix-ui/react-icons'
-import { useState } from 'react'
-import { FaSquareRss } from 'react-icons/fa6'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger
-} from '@/components/ui/tooltip'
+} from '@gbfm/ui'
+import { CheckIcon } from '@radix-ui/react-icons'
+import { useState } from 'react'
+import { FaSquareRss } from 'react-icons/fa6'
 import { VPS_BASE_URL } from '@/lib/http'
 
 export const RSS = () => {

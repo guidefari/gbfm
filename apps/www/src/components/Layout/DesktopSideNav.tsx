@@ -1,11 +1,11 @@
-import { Link } from '@tanstack/react-router'
-import { FilePenLine, Music } from 'lucide-react'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger
-} from '@/components/ui/tooltip'
+} from '@gbfm/ui'
+import { Link } from '@tanstack/react-router'
+import { FilePenLine, Music } from 'lucide-react'
 import { MAIN_SCROLL_CONTAINER_ID } from '@/lib/constants'
 import { useUIStore } from '@/store'
 import { useAuthStore } from '@/store/auth'

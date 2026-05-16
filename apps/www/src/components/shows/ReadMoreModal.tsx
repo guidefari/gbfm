@@ -1,16 +1,14 @@
-import { useState } from 'react'
 import {
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
-import {
+  DialogTitle,
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle
-} from '@/components/ui/sheet'
+} from '@gbfm/ui'
+import { useState } from 'react'
 import { useIsDesktop } from '@/hooks/useMediaQuery'
 
 interface ReadMoreModalProps {

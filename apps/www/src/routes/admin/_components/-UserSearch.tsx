@@ -1,9 +1,7 @@
+import { Badge, Button, Input } from '@gbfm/ui'
 import { useQuery } from '@tanstack/react-query'
 import { X } from 'lucide-react'
 import { useId, useState } from 'react'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
 
 interface UserSearchResult {

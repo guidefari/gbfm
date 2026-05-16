@@ -1,14 +1,14 @@
-import { useNavigate } from '@tanstack/react-router'
-import { Bell, Disc3, Heart } from 'lucide-react'
-import { useEffect, useState } from 'react'
-import { Button } from '@/components/ui/button'
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle
-} from '@/components/ui/dialog'
+} from '@gbfm/ui'
+import { useNavigate } from '@tanstack/react-router'
+import { Bell, Disc3, Heart } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { useAuthStore } from '@/store/auth'
 import { useOnboardingStore } from '@/store/onboarding'
 

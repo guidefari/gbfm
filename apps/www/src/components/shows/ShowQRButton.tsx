@@ -1,7 +1,6 @@
+import { Button, useToast } from '@gbfm/ui'
 import { Loader2, QrCode } from 'lucide-react'
 import * as React from 'react'
-import { Button } from '@/components/ui/button'
-import { useToast } from '@/components/ui/use-toast'
 import { useShowQRPdf } from '@/lib/http'
 import { useAuthStore } from '@/store/auth'
 

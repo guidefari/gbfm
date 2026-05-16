@@ -1,9 +1,7 @@
+import { Button, Label, toast } from '@gbfm/ui'
 import { FolderOpen, ImageIcon, Loader2, Trash2, Upload } from 'lucide-react'
 import { useId, useState } from 'react'
 import { S3MediaFilePicker } from '@/components/mix-uploader/S3AudioFilePicker'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
-import { toast } from '@/components/ui/use-toast'
 import { VPS_BASE_URL } from '@/lib/http'
 
 interface ImageUploadFieldProps {

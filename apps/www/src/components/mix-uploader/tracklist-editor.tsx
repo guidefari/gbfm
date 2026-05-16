@@ -1,8 +1,6 @@
+import { Button, Input, ScrollArea } from '@gbfm/ui'
 import { Clock, Play, Plus, X } from 'lucide-react'
 import type React from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { ScrollArea } from '@/components/ui/scroll-area'
 
 export interface TrackEntry {
   id: number

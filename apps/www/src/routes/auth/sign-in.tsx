@@ -1,3 +1,4 @@
+import { toast } from '@gbfm/ui'
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
 import {
@@ -5,7 +6,6 @@ import {
   AuthStatusNotice
 } from '@/components/Auth/AuthPageLayout'
 import { GenericAuthForm } from '@/components/Auth/GenericForm'
-import { toast } from '@/components/ui/use-toast'
 import { signIn } from '@/lib/auth-client'
 import { useAuthStore } from '@/store/auth'
 

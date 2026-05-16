@@ -1,14 +1,14 @@
 import { useFeatureFlag } from '@gbfm/core/feature-flags'
-import type { SelectAudio } from '@gbfm/vps/schemas'
-import { Heart, HeartOff, MoreVertical, Play, Plus, Share2 } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
-import { toast } from '@/components/ui/use-toast'
+  DropdownMenuTrigger,
+  toast
+} from '@gbfm/ui'
+import type { SelectAudio } from '@gbfm/vps/schemas'
+import { Heart, HeartOff, MoreVertical, Play, Plus, Share2 } from 'lucide-react'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { useAddFavorite, useFavorites, useRemoveFavorite } from '@/lib/http'

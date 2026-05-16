@@ -1,3 +1,4 @@
+import { Card, CardContent, CardHeader, CardTitle } from '@gbfm/ui'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import {
   AlertTriangle,
@@ -8,7 +9,6 @@ import {
   Radio,
   Users
 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { AdminAccessGuard } from './_components/-AdminAccessGuard'
 import {
   type AdminOverviewContentBreakdown,

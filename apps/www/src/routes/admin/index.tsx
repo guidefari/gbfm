@@ -1,8 +1,16 @@
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
+} from '@gbfm/ui'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowRight } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AdminAccessGuard } from './_components/-AdminAccessGuard'
 import { ContentTab } from './_components/-ContentTab'
 import { EmailLogsTab } from './_components/-EmailLogsTab'

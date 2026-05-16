@@ -1,3 +1,4 @@
+import { Badge } from '@gbfm/ui'
 import type { SelectMdxCompiledPost } from '@gbfm/vps/schemas'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft, Tag } from 'lucide-react'
@@ -5,7 +6,6 @@ import { MDXRendrr } from '@/components/MDXRendrr'
 import { ShareButton } from '@/components/ShareButton'
 import { TweetAuthorRow } from '@/components/TweetAuthorRow'
 import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
-import { Badge } from '@/components/ui/badge'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
 import { generateMicroPostSEO, generateSEOMeta } from '@/lib/seo'
 

@@ -1,3 +1,9 @@
+import {
+  CommandEmpty,
+  CommandGroup,
+  CommandList,
+  CommandItem as UICommandItem
+} from '@gbfm/ui'
 import { Search } from 'lucide-react'
 import type { RefObject } from 'react'
 import {
@@ -7,12 +13,6 @@ import {
   useRef,
   useState
 } from 'react'
-import {
-  CommandEmpty,
-  CommandGroup,
-  CommandList,
-  CommandItem as UICommandItem
-} from '@/components/ui/command'
 import { cn } from '@/lib/utils'
 import type { CommandAction, CommandItem, CommandSection } from './types'
 

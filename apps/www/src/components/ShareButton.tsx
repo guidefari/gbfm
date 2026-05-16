@@ -1,7 +1,6 @@
 import { useFeatureFlag } from '@gbfm/core/feature-flags'
+import { Button, toast } from '@gbfm/ui'
 import { Share2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { toast } from '@/components/ui/use-toast'
 import { getShareUrl, type ShareContentType } from '@/lib/share'
 
 interface ShareButtonProps {

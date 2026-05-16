@@ -1,15 +1,15 @@
-import { Heart, Loader2 } from 'lucide-react'
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+  DialogTitle,
+  Input,
+  Label
+} from '@gbfm/ui'
+import { Heart, Loader2 } from 'lucide-react'
+import { useState } from 'react'
 import { signIn, signUp } from '@/lib/auth-client'
 import { useAuthStore } from '@/store/auth'
 import { useAuthPromptStore } from '@/store/authPrompt'

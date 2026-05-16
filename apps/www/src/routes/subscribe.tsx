@@ -1,8 +1,7 @@
+import { Button, Input } from '@gbfm/ui'
 import { createFileRoute } from '@tanstack/react-router'
 import { CheckCircle, Loader2, Mail } from 'lucide-react'
 import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { useNewsletterSubscribe } from '@/lib/http'
 
 export const Route = createFileRoute('/subscribe')({

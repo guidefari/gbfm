@@ -1,5 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
+import { Button } from '@gbfm/ui'
 import { ExternalLink, GripVertical, Trash2 } from 'lucide-react'
 import type { IconType } from 'react-icons'
 import {
@@ -15,7 +16,6 @@ import {
   SiYoutube,
   SiYoutubemusic
 } from 'react-icons/si'
-import { Button } from '@/components/ui/button'
 import { TrackPlaybackControls } from './-TrackPlaybackControls'
 
 export interface PlaylistTrackLink {

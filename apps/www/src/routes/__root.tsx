@@ -1,3 +1,4 @@
+import { Toaster } from '@gbfm/ui'
 import { FPSMeter } from '@overengineering/fps-meter'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
@@ -13,7 +14,6 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import AppShell from '@/components/Layout/AppShell'
 import { WelcomeModal } from '@/components/onboarding/WelcomeModal'
 import { ThemeProvider } from '@/components/ThemeProvider'
-import { Toaster } from '@/components/ui/toaster'
 import { env } from '@/env'
 import type { AuthState } from '@/store/auth'
 

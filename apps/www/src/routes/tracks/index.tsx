@@ -1,20 +1,21 @@
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@gbfm/ui'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { Calendar, FileMusic, Filter, Mic, Music, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
 import { MixesSkeleton } from '@/components/MixesSkeleton'
 import { TrackContextMenu } from '@/components/TrackContextMenu'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { useAudioByType } from '@/lib/http'
 import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'

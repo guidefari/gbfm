@@ -1,8 +1,7 @@
+import { Button, toast } from '@gbfm/ui'
 import * as Effect from 'effect/Effect'
 import { Heart, ListPlus, Play } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { toast } from '@/components/ui/use-toast'
 import {
   addToQueueEffect,
   checkSavedTrackEffect,

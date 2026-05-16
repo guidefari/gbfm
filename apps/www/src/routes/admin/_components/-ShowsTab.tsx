@@ -1,20 +1,20 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Edit, ExternalLink, Plus, Trash } from 'lucide-react'
-import { useState } from 'react'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import {
+  Badge,
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { toast } from '@/components/ui/use-toast'
+  DialogTitle,
+  Input,
+  Label,
+  Textarea,
+  toast
+} from '@gbfm/ui'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Edit, ExternalLink, Plus, Trash } from 'lucide-react'
+import { useState } from 'react'
 import { fetcher, type PaginatedResponse, VPS_BASE_URL } from '@/lib/http'
 import { ImageUploadField } from './-ImageUploadField'
 import { UserSearch } from './-UserSearch'

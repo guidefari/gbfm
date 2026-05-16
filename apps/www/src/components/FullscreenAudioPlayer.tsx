@@ -1,5 +1,6 @@
 'use client'
 import { useFeatureFlag } from '@gbfm/core/feature-flags'
+import { Button } from '@gbfm/ui'
 import { Link } from '@tanstack/react-router'
 import {
   ChevronDown,
@@ -16,7 +17,6 @@ import { AnimatePresence, motion } from 'motion/react'
 import type React from 'react'
 import { useEffect, useRef } from 'react'
 import { OverflowTitle } from '@/components/player/OverflowTitle'
-import { Button } from '@/components/ui/button'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { formatSeconds } from '@/lib/utils'
 import { attachVolumeScroll } from '@/lib/volumeScrollHandler'

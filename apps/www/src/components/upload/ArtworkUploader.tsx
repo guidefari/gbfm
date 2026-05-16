@@ -1,7 +1,6 @@
+import { Button, Card, CardContent, CardHeader, CardTitle } from '@gbfm/ui'
 import { ImageIcon, Upload, X } from 'lucide-react'
 import { useId } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 
 interface ArtworkUploaderProps {

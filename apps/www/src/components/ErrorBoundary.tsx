@@ -1,5 +1,5 @@
+import { Button } from '@gbfm/ui'
 import { Component, type ReactNode } from 'react'
-import { Button } from '@/components/ui/button'
 import { RuntimeClient } from '@/runtime'
 import { captureException } from '@/services/analytics'
 

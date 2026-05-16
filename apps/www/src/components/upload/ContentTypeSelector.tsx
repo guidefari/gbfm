@@ -1,3 +1,4 @@
+import { Button } from '@gbfm/ui'
 import { Link } from '@tanstack/react-router'
 import {
   ArrowRight,
@@ -7,7 +8,6 @@ import {
   Music,
   Sparkles
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 
 export type ContentType = 'mix' | 'track' | 'misc'
 

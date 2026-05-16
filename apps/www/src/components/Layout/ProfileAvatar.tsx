@@ -1,13 +1,13 @@
 'use client'
-import { Link, useNavigate } from '@tanstack/react-router'
-import { Button } from '@/components/ui/button'
 import {
+  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
+} from '@gbfm/ui'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { signOut } from '@/lib/auth-client'
 import { useAuthStore } from '@/store/auth'
 import { useUIStore } from '@/store/ui'

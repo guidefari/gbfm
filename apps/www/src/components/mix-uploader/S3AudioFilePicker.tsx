@@ -1,20 +1,18 @@
-import { useQuery } from '@tanstack/react-query'
-import { Check, ImageIcon, Loader2, Music, RefreshCw } from 'lucide-react'
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
-import {
+  DialogTitle,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select'
+} from '@gbfm/ui'
+import { useQuery } from '@tanstack/react-query'
+import { Check, ImageIcon, Loader2, Music, RefreshCw } from 'lucide-react'
+import { useState } from 'react'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
 
 interface S3Object {

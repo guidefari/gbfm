@@ -1,3 +1,4 @@
+import { Button, Card, CardContent, CardHeader, CardTitle } from '@gbfm/ui'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import {
   AlertTriangle,
@@ -6,8 +7,6 @@ import {
   RadioTower
 } from 'lucide-react'
 import * as React from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
 import { AdminAccessGuard } from './_components/-AdminAccessGuard'
 

@@ -2,6 +2,8 @@
 @import url(scrollbar.css);
 @import "tailwindcss";
 
+@source "../../../../packages/ui/src/**/*.{ts,tsx}";
+
 @plugin "@tailwindcss/typography";
 @plugin "tailwindcss-animate";
 

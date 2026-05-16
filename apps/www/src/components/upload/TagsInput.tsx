@@ -1,9 +1,14 @@
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Input
+} from '@gbfm/ui'
 import { X } from 'lucide-react'
 import { useState } from 'react'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
 
 interface TagsInputProps {
   tags: string[]

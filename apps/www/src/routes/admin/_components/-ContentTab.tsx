@@ -1,28 +1,29 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link } from '@tanstack/react-router'
-import { ArrowUpDown, Check, Plus, X } from 'lucide-react'
-import { useMemo, useState } from 'react'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import {
+  Badge,
+  Button,
   Command,
   CommandEmpty,
   CommandGroup,
   CommandInput,
   CommandItem,
-  CommandList
-} from '@/components/ui/command'
-import {
+  CommandList,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { toast } from '@/components/ui/use-toast'
+  DialogTitle,
+  Label,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  toast
+} from '@gbfm/ui'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link } from '@tanstack/react-router'
+import { ArrowUpDown, Check, Plus, X } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { fetcher, type PaginatedResponse, VPS_BASE_URL } from '@/lib/http'
 
 interface AudioItem {

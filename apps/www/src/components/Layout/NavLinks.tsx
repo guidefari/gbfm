@@ -1,4 +1,10 @@
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '@gbfm/ui'
+import {
   Disc3,
   Home,
   Mail,
@@ -11,12 +17,6 @@ import {
 } from 'lucide-react'
 import { TfiYoutube } from 'react-icons/tfi'
 import { RSS } from '@/components/RSS'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger
-} from '@/components/ui/tooltip'
 
 type BaseLink = {
   name: string

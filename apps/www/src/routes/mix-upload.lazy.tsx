@@ -1,5 +1,16 @@
 'use client'
 
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  toast
+} from '@gbfm/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createLazyFileRoute, useRouter } from '@tanstack/react-router'
 import { FileText, List, Loader2, Music } from 'lucide-react'
@@ -18,9 +29,6 @@ import {
 } from '@/components/mix-uploader/UploadProgress'
 import { UploadSummaryCard } from '@/components/mix-uploader/upload-summary-card'
 import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { toast } from '@/components/ui/use-toast'
 import { formatTime, generateSlug } from '@/hooks/useFileUpload'
 import { authClient } from '@/lib/auth-client'
 import {

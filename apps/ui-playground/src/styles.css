@@ -16,3 +16,29 @@
     font-family: var(--font-jetbrains);
   }
 }
+
+@layer utilities {
+  .workshop-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: var(--highlight) var(--muted);
+  }
+
+  .workshop-scrollbar::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  .workshop-scrollbar::-webkit-scrollbar-track {
+    background: var(--muted);
+  }
+
+  .workshop-scrollbar::-webkit-scrollbar-thumb {
+    background: var(--highlight);
+    border: 2px solid var(--muted);
+    border-radius: 999px;
+  }
+
+  .workshop-scrollbar::-webkit-scrollbar-corner {
+    background: var(--muted);
+  }
+}

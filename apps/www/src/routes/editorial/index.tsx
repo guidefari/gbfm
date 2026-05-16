@@ -1,3 +1,11 @@
+import {
+  Badge,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@gbfm/ui'
 import { createFileRoute } from '@tanstack/react-router'
 import { Tag, X } from 'lucide-react'
 import { useMemo } from 'react'
@@ -5,14 +13,6 @@ import { z } from 'zod'
 import { EditorialListItem } from '@/components/EditorialListItem'
 import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
 import { PostsNav } from '@/components/PostsNav'
-import { Badge } from '@/components/ui/badge'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select'
 import { usePosts } from '@/lib/http'
 import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'
 

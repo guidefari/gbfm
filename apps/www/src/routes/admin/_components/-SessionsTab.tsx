@@ -1,16 +1,16 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
 import {
+  Button,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogFooter,
   DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { toast } from '@/components/ui/use-toast'
+  DialogTitle,
+  Input,
+  toast
+} from '@gbfm/ui'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useState } from 'react'
 import { authClient } from '@/lib/auth-client'
 
 interface Session {

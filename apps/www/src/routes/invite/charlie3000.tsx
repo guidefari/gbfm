@@ -1,6 +1,6 @@
+import { Button } from '@gbfm/ui'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowRight, Headphones, LayoutGrid, Mic2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import { generateSEOMeta, generateStaticPageSEO } from '@/lib/seo'
 
 const pageSEO = generateStaticPageSEO(
