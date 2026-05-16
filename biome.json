@@ -12,6 +12,9 @@
     "rules": {
       "recommended": true,
       "correctness": {
+        "noConstAssign": "error",
+        "noConstantCondition": "error",
+        "noUnsafeOptionalChaining": "error",
         "noUnusedVariables": {
           "level": "error",
           "options": {
@@ -19,8 +22,29 @@
           }
         }
       },
+      "complexity": {
+        "noBannedTypes": "error",
+        "noImplicitCoercions": "error",
+        "noUselessTypeConstraint": "error",
+        "useLiteralKeys": "error"
+      },
       "suspicious": {
+        "noDoubleEquals": "error",
+        "noEvolvingTypes": "error",
+        "noExplicitAny": "error",
+        "noFallthroughSwitchClause": "error",
+        "noImplicitAnyLet": "error",
+        "noUnsafeDeclarationMerging": "error",
+        "noUnsafeNegation": "error",
         "noUnknownAtRules": "off"
+      },
+      "nursery": {
+        "noUnsafePlusOperands": "error",
+        "useExhaustiveSwitchCases": "error"
+      },
+      "style": {
+        "noEnum": "error",
+        "noNonNullAssertion": "error"
       }
     }
   },
