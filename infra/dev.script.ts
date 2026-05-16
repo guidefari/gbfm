@@ -21,8 +21,8 @@ new sst.x.DevCommand('ios', {
 
 new sst.x.DevCommand('UI_Playground', {
   dev: {
-    command: 'bun dev',
-    directory: './apps/ui-playground',
+    command: 'bun --filter @gbfm/ui dev',
+    directory: './',
     autostart: false
   }
 })

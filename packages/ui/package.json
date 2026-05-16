@@ -10,6 +10,8 @@
     "./styles.css": "./src/styles.css"
   },
   "scripts": {
+    "build": "ladle build",
+    "dev": "ladle serve --host 127.0.0.1 --port 6174",
     "typecheck": "tsgo --noEmit"
   },
   "dependencies": {
@@ -36,9 +38,14 @@
     "tailwind-merge": "3.5.0"
   },
   "devDependencies": {
+    "@ladle/react": "5.1.1",
+    "@tailwindcss/vite": "4.2.4",
     "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
     "react": "19.2.5",
-    "typescript": "6.0.3"
+    "react-dom": "19.2.5",
+    "typescript": "6.0.3",
+    "vite": "8.0.10"
   },
   "peerDependencies": {
     "react": "^19.0.0"
