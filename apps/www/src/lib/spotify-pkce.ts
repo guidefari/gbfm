@@ -13,6 +13,7 @@ export const SPOTIFY_WEB_SCOPES = [
   'user-read-playback-state',
   'user-modify-playback-state',
   'user-read-currently-playing',
+  'user-library-read',
   'streaming',
   'playlist-read-private',
   'playlist-modify-public',
