@@ -178,8 +178,8 @@
         "@radix-ui/react-icons": "1.3.2",
         "@radix-ui/react-scroll-area": "1.2.10",
         "@sentry/react": "10.52.0",
-        "@spotify-effect/browser": "0.6.2",
-        "@spotify-effect/core": "0.6.2",
+        "@spotify-effect/browser": "0.6.3",
+        "@spotify-effect/core": "0.6.3",
         "@tanstack/react-hotkeys": "0.10.0",
         "@tanstack/react-query": "5.100.6",
         "@tanstack/react-router": "1.168.25",
@@ -1606,9 +1606,9 @@
 
     "@socket.io/component-emitter": ["@socket.io/component-emitter@3.1.2", "", {}, "sha512-9BCxFwvbGg/RsZK9tjXd8s4UcwR0MWeFQ1XEKIQVVvAGJyINdrqKMcTRyLoK8Rse1GjzLV9cwjWV1olXRWEXVA=="],
 
-    "@spotify-effect/browser": ["@spotify-effect/browser@0.6.2", "", { "dependencies": { "@spotify-effect/core": "^0.6.2", "effect": "4.0.0-beta.65" } }, "sha512-ROEh9jw+zdoxQpYz2TteDeGrG+0Ymf5JB+FZj4K2k0Hn7ftn/KhCIcYGlbWWyNGiGiF9p/LL0HsOLDseyN5phQ=="],
+    "@spotify-effect/browser": ["@spotify-effect/browser@0.6.3", "", { "dependencies": { "@spotify-effect/core": "^0.6.3", "effect": "4.0.0-beta.65" } }, "sha512-58rhzH7uIJJElregk0miMm3PkGaidLd4cG7gWZ4M2V8cMZ2aJjflJaVqOLDU55EllQE069MXQ84VI9nSBcVrNg=="],
 
-    "@spotify-effect/core": ["@spotify-effect/core@0.6.2", "", { "dependencies": { "effect": "4.0.0-beta.65" } }, "sha512-k42ae8sMruvUXCMY87AVQeJI4MiR+EBHYgg8sYOGpYO86apROTqN1182kUJRmSU1IzYBJY2SJ/TBwxy7gtFwrA=="],
+    "@spotify-effect/core": ["@spotify-effect/core@0.6.3", "", { "dependencies": { "effect": "4.0.0-beta.65" } }, "sha512-WacmhP/scyoaeeijEwmhw7IIbC0Mk1WMfuUPGkEZAbDEKGv/7uCIchb3D7zbybgF2NkrwLNy2HlOQ27dcAeynA=="],
 
     "@spotify/web-api-ts-sdk": ["@spotify/web-api-ts-sdk@1.2.0", "", {}, "sha512-JUaebva3Ohwo5I5tuTqyW/FKGOMbb40YevJMySAOINRxP7qQ/AMjBzfJx0zeO6yS+wAPfQSoGNsZaUggHw8vsA=="],
 
