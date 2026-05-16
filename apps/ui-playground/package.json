@@ -1,0 +1,27 @@
+{
+  "name": "@gbfm/ui-playground",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1 --port 6174 --strictPort",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsgo --noEmit"
+  },
+  "dependencies": {
+    "@gbfm/ui": "workspace:*",
+    "@vitejs/plugin-react": "6.0.1",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
+    "tailwindcss": "4.2.4",
+    "vite": "8.0.10"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "4.2.4",
+    "@types/node": "25.6.0",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "typescript": "6.0.3"
+  }
+}

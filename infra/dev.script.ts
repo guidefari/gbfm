@@ -19,6 +19,14 @@ new sst.x.DevCommand('ios', {
   }
 })
 
+new sst.x.DevCommand('UI_Playground', {
+  dev: {
+    command: 'bun dev',
+    directory: './apps/ui-playground',
+    autostart: false
+  }
+})
+
 new sst.x.DevCommand('Studio_prod', {
   link: [...allSecrets, email],
   dev: {
