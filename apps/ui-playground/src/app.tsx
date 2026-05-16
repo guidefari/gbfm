@@ -10,7 +10,7 @@ import {
   MediaCard,
   Skeleton
 } from '@gbfm/ui'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 const themes = ['light', 'dark', 'studio'] as const
 
@@ -39,6 +39,10 @@ const mediaExamples = [
 
 function App() {
   const [theme, setTheme] = useState<Theme>('dark')
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+  }, [theme])
 
   return (
     <main
