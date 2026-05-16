@@ -1,6 +1,6 @@
 import type React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '../lib/cn'
 
 interface IconTile {
   id: string
@@ -26,8 +26,6 @@ export function IconGrid({
 }: IconGridProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const gridRef = useRef<HTMLDivElement>(null)
-
-  // Filter tiles based on authentication
   const availableTiles = tiles.filter(
     (tile) => !tile.requiresAuth || isAuthenticated
   )
@@ -36,18 +34,17 @@ export function IconGrid({
     (e: KeyboardEvent) => {
       if (!availableTiles.length) return
 
-      const cols = 4 // Number of columns in grid
+      const cols = 4
       const currentRow = Math.floor(selectedIndex / cols)
       const currentCol = selectedIndex % cols
       const maxRow = Math.floor((availableTiles.length - 1) / cols)
 
       switch (e.key) {
-        case 'ArrowUp':
+        case 'ArrowUp': {
           e.preventDefault()
           if (currentRow > 0) {
             setSelectedIndex(selectedIndex - cols)
           } else {
-            // Go to bottom row, same column
             const newIndex = Math.min(
               maxRow * cols + currentCol,
               availableTiles.length - 1
@@ -55,8 +52,9 @@ export function IconGrid({
             setSelectedIndex(newIndex)
           }
           break
+        }
 
-        case 'ArrowDown':
+        case 'ArrowDown': {
           e.preventDefault()
           if (currentRow < maxRow) {
             const newIndex = Math.min(
@@ -65,17 +63,16 @@ export function IconGrid({
             )
             setSelectedIndex(newIndex)
           } else {
-            // Go to top row, same column
             setSelectedIndex(currentCol)
           }
           break
+        }
 
-        case 'ArrowLeft':
+        case 'ArrowLeft': {
           e.preventDefault()
           if (currentCol > 0) {
             setSelectedIndex(selectedIndex - 1)
           } else {
-            // Go to end of current row or previous row
             const rowStart = currentRow * cols
             const rowEnd = Math.min(
               rowStart + cols - 1,
@@ -84,6 +81,7 @@ export function IconGrid({
             setSelectedIndex(rowEnd)
           }
           break
+        }
 
         case 'ArrowRight': {
           e.preventDefault()
@@ -94,7 +92,6 @@ export function IconGrid({
           if (selectedIndex < rowEnd) {
             setSelectedIndex(selectedIndex + 1)
           } else {
-            // Go to start of current row
             setSelectedIndex(currentRow * cols)
           }
           break
@@ -117,7 +114,6 @@ export function IconGrid({
     return () => document.removeEventListener('keydown', handleKeyDown)
   }, [handleKeyDown])
 
-  // Reset selection when tiles change
   useEffect(() => {
     setSelectedIndex(0)
   }, [])

@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@gbfm/ui'
 import { CheckCircle, Loader2 } from 'lucide-react'
+import { Card, CardContent, CardHeader, CardTitle } from './card'
 
 export type UploadStep =
   | 'idle'

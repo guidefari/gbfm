@@ -1,5 +1,7 @@
-type Props = {
-  children: React.ReactNode | string
+import type { ReactNode } from 'react'
+
+type CustomLinkProps = {
+  children: ReactNode | string
   className?: string
   href: string
   target?: string
@@ -12,7 +14,7 @@ export default function CustomLink({
   className,
   target,
   rel
-}: Props) {
+}: CustomLinkProps) {
   return (
     <a href={href} className={className} target={target} rel={rel}>
       {children}

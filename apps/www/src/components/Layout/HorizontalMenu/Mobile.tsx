@@ -1,8 +1,7 @@
 'use client'
-import { Button, Sheet, SheetContent, SheetTrigger } from '@gbfm/ui'
+import { Button, MenuIcon, Sheet, SheetContent, SheetTrigger } from '@gbfm/ui'
 import { Link } from '@tanstack/react-router'
 import React from 'react'
-import { MenuIcon } from '../../common/icons'
 import { pagesAndPages } from '../NavLinks'
 
 export const HamburgerMenu = () => {

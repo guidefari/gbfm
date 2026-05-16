@@ -1,6 +1,5 @@
-import { Input } from '@gbfm/ui'
+import { Input, SearchIcon } from '@gbfm/ui'
 import { Link } from '@tanstack/react-router'
-import { SearchIcon } from '@/components/common/icons'
 import ProfileAvatar from '../ProfileAvatar'
 import { HamburgerMenu } from './Mobile'
 

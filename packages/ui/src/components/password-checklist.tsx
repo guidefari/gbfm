@@ -1,20 +1,29 @@
 import { Check, Circle } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn } from '../lib/cn'
 
-type Rule = {
+export type PasswordRule = {
   label: string
   test: (password: string) => boolean
 }
 
-const rules: Rule[] = [
+const defaultPasswordRules: PasswordRule[] = [
   { label: 'At least 8 characters', test: (p) => p.length >= 8 }
 ]
 
-export function isPasswordValid(password: string) {
+export function isPasswordValid(
+  password: string,
+  rules = defaultPasswordRules
+) {
   return rules.every((r) => r.test(password))
 }
 
-export function PasswordChecklist({ password }: { password: string }) {
+export function PasswordChecklist({
+  password,
+  rules = defaultPasswordRules
+}: {
+  password: string
+  rules?: PasswordRule[]
+}) {
   return (
     <ul className='mt-2 space-y-1 text-xs'>
       {rules.map((rule) => {

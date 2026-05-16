@@ -4,6 +4,7 @@ import {
   Card,
   CardContent,
   Input,
+  MixesSkeleton,
   Select,
   SelectContent,
   SelectItem,
@@ -14,7 +15,6 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { Calendar, FileMusic, Filter, Mic, Music, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
-import { MixesSkeleton } from '@/components/MixesSkeleton'
 import { TrackContextMenu } from '@/components/TrackContextMenu'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { useAudioByType } from '@/lib/http'

@@ -1,3 +1,4 @@
+import { GenericAuthForm } from '@gbfm/ui'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { MailCheck } from 'lucide-react'
 import { useState } from 'react'
@@ -5,7 +6,6 @@ import {
   AuthPageLayout,
   AuthStatusNotice
 } from '@/components/Auth/AuthPageLayout'
-import { GenericAuthForm } from '@/components/Auth/GenericForm'
 import { authClient } from '@/lib/auth-client'
 import { useCooldown } from '@/lib/useCooldown'
 

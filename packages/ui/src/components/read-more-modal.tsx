@@ -1,20 +1,27 @@
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle
-} from '@gbfm/ui'
-import { useState } from 'react'
-import { useIsDesktop } from '@/hooks/useMediaQuery'
+import type React from 'react'
+import { useEffect, useState } from 'react'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './dialog'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from './sheet'
 
 interface ReadMoreModalProps {
   title: string
   children: React.ReactNode
   trigger: React.ReactNode
+}
+
+function useMediaQuery(query: string) {
+  const [matches, setMatches] = useState(false)
+
+  useEffect(() => {
+    const media = window.matchMedia(query)
+    setMatches(media.matches)
+
+    const listener = (e: MediaQueryListEvent) => setMatches(e.matches)
+    media.addEventListener('change', listener)
+    return () => media.removeEventListener('change', listener)
+  }, [query])
+
+  return matches
 }
 
 export function ReadMoreModal({
@@ -23,7 +30,7 @@ export function ReadMoreModal({
   trigger
 }: ReadMoreModalProps) {
   const [open, setOpen] = useState(false)
-  const isDesktop = useIsDesktop()
+  const isDesktop = useMediaQuery('(min-width: 1024px)')
 
   if (isDesktop) {
     return (

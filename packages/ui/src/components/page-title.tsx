@@ -1,11 +1,11 @@
 import type React from 'react'
 
-type Props = {
+type PageTitleProps = {
   title: string
   description?: string | React.ReactNode
 }
 
-export const PageTitle = ({ title, description }: Props) => {
+export function PageTitle({ title, description }: PageTitleProps) {
   return (
     <div className='flex flex-col p-3'>
       <h2 className='my-0 underline'>{title}</h2>

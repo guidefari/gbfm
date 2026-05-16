@@ -1,14 +1,17 @@
-import { Button } from '@gbfm/ui'
 import { FolderOpen, Upload } from 'lucide-react'
+import type { ChangeEvent } from 'react'
+import { Button } from './button'
 
 interface AudioDropZoneProps {
-  onFileSelect: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onFileSelect: (e: ChangeEvent<HTMLInputElement>) => void
   onPickFromS3?: () => void
+  secondaryActionLabel?: string
 }
 
 export function AudioDropZone({
   onFileSelect,
-  onPickFromS3
+  onPickFromS3,
+  secondaryActionLabel = 'Pick from S3 bucket'
 }: AudioDropZoneProps) {
   return (
     <div className='space-y-3'>
@@ -45,7 +48,7 @@ export function AudioDropZone({
           className='w-full border-gb-pastel-green-2/30 text-gb-pastel-green-1 hover:border-gb-highlight/50 hover:text-gb-highlight'
           onClick={onPickFromS3}>
           <FolderOpen className='w-4 h-4 mr-2' />
-          Pick from S3 bucket
+          {secondaryActionLabel}
         </Button>
       )}
     </div>

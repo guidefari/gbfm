@@ -1,3 +1,9 @@
+import {
+  GenericAuthForm,
+  isPasswordValid,
+  PasswordChecklist,
+  ProfilePreviewCard
+} from '@gbfm/ui'
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { MailCheck } from 'lucide-react'
 import { useState } from 'react'
@@ -5,12 +11,6 @@ import {
   AuthPageLayout,
   AuthStatusNotice
 } from '@/components/Auth/AuthPageLayout'
-import { GenericAuthForm } from '@/components/Auth/GenericForm'
-import {
-  isPasswordValid,
-  PasswordChecklist
-} from '@/components/Auth/PasswordChecklist'
-import { ProfilePreviewCard } from '@/components/Auth/ProfilePreviewCard'
 import { TermsConsent } from '@/components/Auth/TermsConsent'
 import {
   UsernameAvailability,

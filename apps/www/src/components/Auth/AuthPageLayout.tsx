@@ -1,5 +1,5 @@
+import { LockIcon } from '@gbfm/ui'
 import type { ReactNode } from 'react'
-import { LockIcon } from '@/components/common/icons'
 import { cn } from '@/lib/utils'
 
 type AuthPageLayoutProps = {

@@ -1,17 +1,19 @@
-import { Button, Input, Label } from '@gbfm/ui'
 import { Eye, EyeOff, Loader2 } from 'lucide-react'
-import type React from 'react'
-import {
-  type HTMLInputAutoCompleteAttribute,
-  type HTMLInputTypeAttribute,
-  type ReactNode,
-  useState
+import type {
+  FormEvent,
+  HTMLInputAutoCompleteAttribute,
+  HTMLInputTypeAttribute,
+  ReactNode
 } from 'react'
-import { cn } from '@/lib/utils'
+import { useState } from 'react'
+import { cn } from '../lib/cn'
+import { Button } from './button'
+import { Input } from './input'
+import { Label } from './label'
 
-type Props = {
+type GenericAuthFormProps = {
   fields: FormField[]
-  onSubmit: (event: React.FormEvent<HTMLFormElement>) => Promise<void>
+  onSubmit: (event: FormEvent<HTMLFormElement>) => Promise<void>
   formTitle: string
   submitButtonText?: string
   isSubmitting?: boolean
@@ -102,7 +104,7 @@ function FieldInput({ field }: { field: FormField }) {
   )
 }
 
-export const GenericAuthForm = ({
+export function GenericAuthForm({
   fields,
   onSubmit,
   formTitle,
@@ -110,7 +112,7 @@ export const GenericAuthForm = ({
   isSubmitting = false,
   submitDisabled = false,
   beforeSubmit
-}: Props) => {
+}: GenericAuthFormProps) {
   return (
     <form onSubmit={onSubmit} aria-label={formTitle}>
       <div className='grid gap-4'>

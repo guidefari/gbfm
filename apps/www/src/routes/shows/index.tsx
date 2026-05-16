@@ -1,6 +1,6 @@
+import { ShowsSkeleton } from '@gbfm/ui'
 import { createFileRoute } from '@tanstack/react-router'
 import { ShowCard } from '@/components/shows/ShowCard'
-import { ShowsSkeleton } from '@/components/shows/ShowsSkeleton'
 import { useAllShows } from '@/lib/http'
 import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'
 

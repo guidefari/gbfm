@@ -1,6 +1,8 @@
-import { Button, Input, ScrollArea } from '@gbfm/ui'
 import { Clock, Play, Plus, X } from 'lucide-react'
-import type React from 'react'
+import type { ChangeEvent } from 'react'
+import { Button } from './button'
+import { Input } from './input'
+import { ScrollArea } from './scroll-area'
 
 export interface TrackEntry {
   id: number
@@ -72,7 +74,7 @@ export function TracklistEditor({
                 <Input
                   type='text'
                   value={track.title}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  onChange={(e: ChangeEvent<HTMLInputElement>) =>
                     onUpdateTrack(idx, e.target.value)
                   }
                   className='flex-1 border-0 bg-transparent focus-visible:ring-0 text-gb-pastel-green-1'

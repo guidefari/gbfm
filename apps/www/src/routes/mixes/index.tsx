@@ -1,5 +1,6 @@
 import {
   Badge,
+  MixesListSkeleton,
   Select,
   SelectContent,
   SelectItem,
@@ -11,7 +12,6 @@ import { Radio, Tag, X } from 'lucide-react'
 import { useMemo } from 'react'
 import { z } from 'zod'
 import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
-import { MixesListSkeleton } from '@/components/MixesSkeleton'
 import { MixListItem } from '@/components/MixListItem'
 import { MixMenu } from '@/components/MixMenu'
 import { MixTimeline, MixTimelineItem } from '@/components/MixTimeline'

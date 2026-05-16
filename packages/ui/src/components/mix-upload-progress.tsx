@@ -1,17 +1,17 @@
 import { Loader2 } from 'lucide-react'
 
-export type UploadStep =
+export type MixUploadStep =
   | 'idle'
   | 'uploading-audio'
   | 'uploading-image'
   | 'creating-record'
   | 'success'
 
-interface UploadProgressProps {
-  step: UploadStep
+interface MixUploadProgressProps {
+  step: MixUploadStep
 }
 
-export function UploadProgress({ step }: UploadProgressProps) {
+export function MixUploadProgress({ step }: MixUploadProgressProps) {
   if (step === 'idle' || step === 'success') return null
 
   const progress =

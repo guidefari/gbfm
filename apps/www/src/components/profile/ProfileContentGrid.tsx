@@ -1,6 +1,6 @@
+import { HorizontalScrollCards } from '@gbfm/ui'
 import { Link } from '@tanstack/react-router'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import HorizontalScrollCards from '@/components/common/HorizontalScrollCards'
 import { useHorizontalScroll } from '@/hooks/useHorizontalScroll'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import type { PublicProfile } from '@/lib/http'

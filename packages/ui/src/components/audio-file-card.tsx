@@ -1,5 +1,6 @@
-import { Button, Card, CardContent, CardHeader, CardTitle } from '@gbfm/ui'
 import { Music, Trash2 } from 'lucide-react'
+import { Button } from './button'
+import { Card, CardContent, CardHeader, CardTitle } from './card'
 
 interface AudioFileCardProps {
   fileName?: string

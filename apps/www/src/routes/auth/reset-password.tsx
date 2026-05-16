@@ -1,3 +1,4 @@
+import { GenericAuthForm, isPasswordValid, PasswordChecklist } from '@gbfm/ui'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useEffect, useState } from 'react'
 import { z } from 'zod'
@@ -5,11 +6,6 @@ import {
   AuthPageLayout,
   AuthStatusNotice
 } from '@/components/Auth/AuthPageLayout'
-import { GenericAuthForm } from '@/components/Auth/GenericForm'
-import {
-  isPasswordValid,
-  PasswordChecklist
-} from '@/components/Auth/PasswordChecklist'
 import { authClient } from '@/lib/auth-client'
 
 export const searchSchema = z.object({

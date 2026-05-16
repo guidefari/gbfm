@@ -1,20 +1,23 @@
-import { Button, Card, CardContent, CardHeader, CardTitle } from '@gbfm/ui'
 import { ImageIcon, Upload, X } from 'lucide-react'
+import type { ChangeEvent } from 'react'
 import { useId } from 'react'
-import { DEFAULT_IMAGE_URL } from '@/lib/constants'
+import { Button } from './button'
+import { Card, CardContent, CardHeader, CardTitle } from './card'
 
 interface ArtworkUploaderProps {
   artworkFile: File | null
   artworkPreview: string | null
-  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onFileChange: (e: ChangeEvent<HTMLInputElement>) => void
   onRemove: () => void
+  fallbackImageUrl?: string
 }
 
 export function ArtworkUploader({
   artworkFile,
   artworkPreview,
   onFileChange,
-  onRemove
+  onRemove,
+  fallbackImageUrl = 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'
 }: ArtworkUploaderProps) {
   const inputId = useId()
 
@@ -60,7 +63,7 @@ export function ArtworkUploader({
           <div className='space-y-3'>
             <div className='relative overflow-hidden border rounded-sm aspect-square bg-gb-bg border-gb-pastel-green-2/20'>
               <img
-                src={artworkPreview || DEFAULT_IMAGE_URL}
+                src={artworkPreview || fallbackImageUrl}
                 alt='Artwork preview'
                 className='object-cover w-full h-full'
               />

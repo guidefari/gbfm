@@ -1,6 +1,6 @@
+import { CustomLink } from '@gbfm/ui'
 import type React from 'react'
 import { DEFAULT_IMAGE_URL } from '../lib/constants'
-import CustomLink from './CustomLink'
 
 interface Props {
   date?: string

@@ -1,4 +1,4 @@
-type Props = {
+type ProfilePreviewCardProps = {
   displayName: string
   username: string
 }
@@ -10,7 +10,10 @@ function getInitials(name: string) {
   return parts.map((p) => p[0]?.toUpperCase() ?? '').join('') || '?'
 }
 
-export function ProfilePreviewCard({ displayName, username }: Props) {
+export function ProfilePreviewCard({
+  displayName,
+  username
+}: ProfilePreviewCardProps) {
   const initials = getInitials(displayName)
   const handle = username.trim() ? `@${username.trim()}` : '@yourname'
   const name = displayName.trim() || 'Your Display Name'

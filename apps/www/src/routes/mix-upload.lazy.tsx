@@ -1,6 +1,8 @@
 'use client'
 
 import {
+  AudioDropZone,
+  AudioFileCard,
   Card,
   CardContent,
   CardHeader,
@@ -9,24 +11,18 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-  toast
+  type TrackEntry,
+  TracklistEditor,
+  toast,
+  MixUploadProgress as UploadProgress,
+  type MixUploadStep as UploadStep
 } from '@gbfm/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createLazyFileRoute, useRouter } from '@tanstack/react-router'
 import { FileText, List, Loader2, Music } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { AudioDropZone } from '@/components/mix-uploader/AudioDropZone'
-import { AudioFileCard } from '@/components/mix-uploader/AudioFileCard'
 import { MixDetailsForm } from '@/components/mix-uploader/MixDetailsForm'
 import { S3AudioFilePicker } from '@/components/mix-uploader/S3AudioFilePicker'
-import {
-  type TrackEntry,
-  TracklistEditor
-} from '@/components/mix-uploader/tracklist-editor'
-import {
-  UploadProgress,
-  type UploadStep
-} from '@/components/mix-uploader/UploadProgress'
 import { UploadSummaryCard } from '@/components/mix-uploader/upload-summary-card'
 import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
 import { formatTime, generateSlug } from '@/hooks/useFileUpload'

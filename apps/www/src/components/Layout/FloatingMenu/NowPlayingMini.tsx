@@ -1,6 +1,6 @@
+import { OverflowTitle } from '@gbfm/ui'
 import { Link } from '@tanstack/react-router'
 import { Pause, Play, SkipBack, SkipForward } from 'lucide-react'
-import { OverflowTitle } from '@/components/player/OverflowTitle'
 import { cn } from '@/lib/utils'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
 

@@ -1,11 +1,13 @@
-import { Button, Card, CardContent, CardHeader, CardTitle } from '@gbfm/ui'
 import { Music, Trash2, Upload } from 'lucide-react'
+import type { ChangeEvent } from 'react'
 import { useId } from 'react'
+import { Button } from './button'
+import { Card, CardContent, CardHeader, CardTitle } from './card'
 
 interface AudioUploaderProps {
   audioFile: File | null
   audioPreview: string | null
-  onFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onFileChange: (e: ChangeEvent<HTMLInputElement>) => void
   onRemove: () => void
 }
 

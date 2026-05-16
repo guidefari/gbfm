@@ -1,6 +1,6 @@
+import { LilDate } from '@gbfm/ui'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { getShareUrl, type ShareContentType } from '@/lib/share'
-import { LilDate } from '../common/LilDate'
 import { MinimalCard } from '../common/MinimalCard'
 import { MDXRendrr } from '../MDXRendrr'
 

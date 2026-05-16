@@ -1,6 +1,6 @@
 import type { CSSProperties } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { cn } from '@/lib/utils'
+import { cn } from '../lib/cn'
 
 type OverflowTitleProps = {
   text: string

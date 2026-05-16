@@ -1,10 +1,10 @@
+import { GB } from '@gbfm/ui'
 import * as ScrollArea from '@radix-ui/react-scroll-area'
 import { Link } from '@tanstack/react-router'
 import clsx from 'clsx'
 import { cn } from '@/lib/utils'
 import type { Track } from '@/types'
 import { DEFAULT_IMAGE_URL } from '../lib/constants'
-import { GB } from './common/icons'
 import { PlayPauseButton } from './PlayPauseButton'
 
 type Props = {
