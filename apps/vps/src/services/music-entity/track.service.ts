@@ -7,7 +7,7 @@ import {
 } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { toSlug } from '@/services/to-slug'
-import { deleteLinksForEntityTx, requireInserted, requireOne } from './shared'
+import { deleteLinksForEntityTx, requireOne } from './shared'
 
 export interface CreateTrackInput {
   title: string
@@ -18,6 +18,7 @@ export interface CreateTrackInput {
   trackNumber?: number | null
   slug: string
   publishedAt?: Date | null
+  createdById?: string | null
 }
 
 export const createTrackEffect = (db: typeof DbType) =>

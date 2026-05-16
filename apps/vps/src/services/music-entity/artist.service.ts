@@ -16,6 +16,7 @@ export interface CreateArtistInput {
   genres?: string[] | null
   slug: string
   publishedAt?: Date | null
+  createdById?: string | null
 }
 
 export const createArtistEffect = (db: typeof DbType) =>

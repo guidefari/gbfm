@@ -1,15 +1,15 @@
 import { Badge } from './badge'
 import { Card, CardContent } from './card'
-import { Skeleton } from './skeleton'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs'
+import type { MusicEntityArtistsPanelProps } from './music-entity-artists-panel'
 import type { MusicEntityAuditProps } from './music-entity-audit'
+import { MusicEntityAudit } from './music-entity-audit'
+import type { MusicEntityLinksPanelProps } from './music-entity-links-panel'
 import type {
   MusicEntityMetadataFormProps,
   MusicEntityType
 } from './music-entity-metadata-form'
-import type { MusicEntityLinksPanelProps } from './music-entity-links-panel'
-import type { MusicEntityArtistsPanelProps } from './music-entity-artists-panel'
-import { MusicEntityAudit } from './music-entity-audit'
+import { Skeleton } from './skeleton'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs'
 
 export interface MusicEntityDetailProps {
   entityType: MusicEntityType
@@ -45,7 +45,7 @@ export function MusicEntityDetail({
   relationshipsSlot,
   actionsSlot
 }: MusicEntityDetailProps) {
-  const isPublished = !!publishedAt && new Date(publishedAt) <= new Date()
+  const isPublished = publishedAt != null && new Date(publishedAt) <= new Date()
 
   return (
     <div className='space-y-6'>
@@ -136,8 +136,8 @@ export function MusicEntityDetailSkeleton() {
 }
 
 export type {
-  MusicEntityType,
-  MusicEntityMetadataFormProps,
+  MusicEntityArtistsPanelProps,
   MusicEntityLinksPanelProps,
-  MusicEntityArtistsPanelProps
+  MusicEntityMetadataFormProps,
+  MusicEntityType
 }

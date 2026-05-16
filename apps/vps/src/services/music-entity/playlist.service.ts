@@ -16,6 +16,7 @@ export interface CreatePlaylistInput {
   curatorId?: string | null
   slug: string
   publishedAt?: Date | null
+  createdById?: string | null
 }
 
 export const createPlaylistEffect = (db: typeof DbType) =>

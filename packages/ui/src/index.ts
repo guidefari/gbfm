@@ -24,6 +24,34 @@ export * from './components/input-otp'
 export * from './components/label'
 export type { MediaCardProps } from './components/media-card'
 export { MediaCard } from './components/media-card'
+export type {
+  ArtistJunction,
+  MusicEntityArtistsPanelProps
+} from './components/music-entity-artists-panel'
+export { MusicEntityArtistsPanel } from './components/music-entity-artists-panel'
+export type { MusicEntityAuditProps } from './components/music-entity-audit'
+export { MusicEntityAudit } from './components/music-entity-audit'
+export type { MusicEntityDetailProps } from './components/music-entity-detail'
+export {
+  MusicEntityDetail,
+  MusicEntityDetailSkeleton
+} from './components/music-entity-detail'
+export type {
+  LinkStatus,
+  MusicEntityLink,
+  MusicEntityLinksPanelProps,
+  MusicPlatform
+} from './components/music-entity-links-panel'
+export { MusicEntityLinksPanel } from './components/music-entity-links-panel'
+export type {
+  AlbumMetadata,
+  ArtistMetadata,
+  MusicEntityMetadataFormProps,
+  MusicEntityType,
+  PlaylistMetadata,
+  TrackMetadata
+} from './components/music-entity-metadata-form'
+export { MusicEntityMetadataForm } from './components/music-entity-metadata-form'
 export * from './components/scroll-area'
 export * from './components/select'
 export * from './components/sheet'
@@ -35,31 +63,3 @@ export * from './components/toaster'
 export * from './components/tooltip'
 export * from './components/use-toast'
 export { cn } from './lib/cn'
-export { MusicEntityAudit } from './components/music-entity-audit'
-export type { MusicEntityAuditProps } from './components/music-entity-audit'
-export { MusicEntityLinksPanel } from './components/music-entity-links-panel'
-export type {
-  MusicEntityLink,
-  MusicEntityLinksPanelProps,
-  LinkStatus,
-  MusicPlatform
-} from './components/music-entity-links-panel'
-export { MusicEntityArtistsPanel } from './components/music-entity-artists-panel'
-export type {
-  ArtistJunction,
-  MusicEntityArtistsPanelProps
-} from './components/music-entity-artists-panel'
-export { MusicEntityMetadataForm } from './components/music-entity-metadata-form'
-export type {
-  MusicEntityType,
-  ArtistMetadata,
-  AlbumMetadata,
-  TrackMetadata,
-  PlaylistMetadata,
-  MusicEntityMetadataFormProps
-} from './components/music-entity-metadata-form'
-export {
-  MusicEntityDetail,
-  MusicEntityDetailSkeleton
-} from './components/music-entity-detail'
-export type { MusicEntityDetailProps } from './components/music-entity-detail'

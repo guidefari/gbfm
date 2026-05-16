@@ -43,6 +43,9 @@ function AdminDashboard() {
               <Link to='/admin/playlists'>Playlists</Link>
             </Button>
             <Button asChild variant='outline'>
+              <Link to='/admin/music'>Music catalog</Link>
+            </Button>
+            <Button asChild variant='outline'>
               <Link to='/admin/frontend-errors'>Frontend errors</Link>
             </Button>
             <Button asChild variant='outline'>

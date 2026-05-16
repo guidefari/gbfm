@@ -1,10 +1,4 @@
 import {
-  MusicEntityDetail,
-  MusicEntityMetadataForm,
-  MusicEntityLinksPanel,
-  MusicEntityArtistsPanel
-} from '@gbfm/ui'
-import {
   Accordion,
   AccordionContent,
   AccordionItem,
@@ -41,6 +35,10 @@ import {
   InputOTPSlot,
   Label,
   MediaCard,
+  MusicEntityArtistsPanel,
+  MusicEntityDetail,
+  MusicEntityLinksPanel,
+  MusicEntityMetadataForm,
   ScrollArea,
   Select,
   SelectContent,

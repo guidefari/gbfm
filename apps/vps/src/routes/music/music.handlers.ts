@@ -76,9 +76,10 @@ export const listArtists: AppRouteHandler<ListArtistsRoute> = async (c) => {
 
 export const createArtist: AppRouteHandler<CreateArtistRoute> = async (c) => {
   const body = c.req.valid('json')
+  const user = c.get('user')
   const program = Effect.gen(function* () {
     const svc = yield* MusicEntityService
-    return yield* svc.createArtist(body)
+    return yield* svc.createArtist({ ...body, createdById: user?.id ?? null })
   }).pipe(
     Effect.catchTag('DatabaseError', (e) =>
       Effect.succeed({ error: e.message } as const)
@@ -176,9 +177,10 @@ export const listAlbums: AppRouteHandler<ListAlbumsRoute> = async (c) => {
 
 export const createAlbum: AppRouteHandler<CreateAlbumRoute> = async (c) => {
   const body = c.req.valid('json')
+  const user = c.get('user')
   const program = Effect.gen(function* () {
     const svc = yield* MusicEntityService
-    return yield* svc.createAlbum(body)
+    return yield* svc.createAlbum({ ...body, createdById: user?.id ?? null })
   }).pipe(
     Effect.catchTag('DatabaseError', (e) =>
       Effect.succeed({ error: e.message } as const)
@@ -276,9 +278,10 @@ export const listTracks: AppRouteHandler<ListTracksRoute> = async (c) => {
 
 export const createTrack: AppRouteHandler<CreateTrackRoute> = async (c) => {
   const body = c.req.valid('json')
+  const user = c.get('user')
   const program = Effect.gen(function* () {
     const svc = yield* MusicEntityService
-    return yield* svc.createTrack(body)
+    return yield* svc.createTrack({ ...body, createdById: user?.id ?? null })
   }).pipe(
     Effect.catchTag('DatabaseError', (e) =>
       Effect.succeed({ error: e.message } as const)
@@ -378,9 +381,10 @@ export const createPlaylist: AppRouteHandler<CreatePlaylistRoute> = async (
   c
 ) => {
   const body = c.req.valid('json')
+  const user = c.get('user')
   const program = Effect.gen(function* () {
     const svc = yield* MusicEntityService
-    return yield* svc.createPlaylist(body)
+    return yield* svc.createPlaylist({ ...body, createdById: user?.id ?? null })
   }).pipe(
     Effect.catchTag('DatabaseError', (e) =>
       Effect.succeed({ error: e.message } as const)

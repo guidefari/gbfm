@@ -1,7 +1,8 @@
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Button } from '@gbfm/ui'
-import { ExternalLink, GripVertical, Trash2 } from 'lucide-react'
+import { Link } from '@tanstack/react-router'
+import { ExternalLink, GripVertical, Pencil, Trash2 } from 'lucide-react'
 import type { IconType } from 'react-icons'
 import {
   SiApplemusic,
@@ -205,6 +206,19 @@ export function SortableTrackRow({ track, onRemove, removeDisabled }: Props) {
           <TrackPlaybackControls spotifyUrl={spotifyLink.url} />
         </div>
       )}
+      <Button
+        asChild
+        type='button'
+        variant='ghost'
+        size='sm'
+        aria-label='Edit track'
+        className='opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground'>
+        <Link
+          to='/admin/music/$entityType/$id'
+          params={{ entityType: 'track', id: track.trackId }}>
+          <Pencil className='w-4 h-4' />
+        </Link>
+      </Button>
       <Button
         type='button'
         variant='ghost'

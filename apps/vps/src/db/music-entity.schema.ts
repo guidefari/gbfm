@@ -100,6 +100,7 @@ export const musicArtistsTable = pgTable(
     genres: varchar({ length: 255 }).array(),
     slug: varchar({ length: 255 }).notNull().unique(),
     publishedAt: timestamp({ withTimezone: true }),
+    createdById: text().references(() => user.id, { onDelete: 'set null' }),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
   },
@@ -119,6 +120,7 @@ export const musicAlbumsTable = pgTable(
     albumType: varchar({ length: 50 }), // LP | EP | single | compilation
     slug: varchar({ length: 255 }).notNull().unique(),
     publishedAt: timestamp({ withTimezone: true }),
+    createdById: text().references(() => user.id, { onDelete: 'set null' }),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
   },
@@ -139,6 +141,7 @@ export const musicTracksTable = pgTable(
     trackNumber: integer(),
     slug: varchar({ length: 255 }).notNull().unique(),
     publishedAt: timestamp({ withTimezone: true }),
+    createdById: text().references(() => user.id, { onDelete: 'set null' }),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
   },
@@ -155,6 +158,7 @@ export const musicPlaylistsTable = pgTable(
     curatorId: text().references(() => user.id, { onDelete: 'set null' }),
     slug: varchar({ length: 255 }).notNull().unique(),
     publishedAt: timestamp({ withTimezone: true }),
+    createdById: text().references(() => user.id, { onDelete: 'set null' }),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
   },
@@ -420,6 +424,7 @@ export const selectMusicArtistSchema = z
     genres: z.array(z.string()).nullable(),
     slug: z.string(),
     publishedAt: z.date().nullable(),
+    createdById: z.string().nullable(),
     createdAt: z.date(),
     updatedAt: z.date()
   })
@@ -468,6 +473,7 @@ export const selectMusicAlbumSchema = z
     albumType: z.string().nullable(),
     slug: z.string(),
     publishedAt: z.date().nullable(),
+    createdById: z.string().nullable(),
     createdAt: z.date(),
     updatedAt: z.date()
   })
@@ -511,6 +517,7 @@ export const selectMusicTrackSchema = z
     trackNumber: z.number().nullable(),
     slug: z.string(),
     publishedAt: z.date().nullable(),
+    createdById: z.string().nullable(),
     createdAt: z.date(),
     updatedAt: z.date()
   })
@@ -542,6 +549,7 @@ export const selectMusicPlaylistSchema = z
     curatorId: z.string().nullable(),
     slug: z.string(),
     publishedAt: z.date().nullable(),
+    createdById: z.string().nullable(),
     createdAt: z.date(),
     updatedAt: z.date(),
     spotifyUrl: z.string().nullable().optional()

@@ -286,7 +286,7 @@ export function useEnrichTrackFromUrl(url: string) {
         method: 'POST',
         body: JSON.stringify({ url })
       }),
-    enabled: !!url && url.length > 10, // Only run if URL is reasonably long
+    enabled: Boolean(url) && url.length > 10, // Only run if URL is reasonably long
     staleTime: 15 * 60 * 1000
   })
   return {
@@ -321,7 +321,7 @@ export function useResolveMusicEntity(url: string) {
         method: 'POST',
         body: JSON.stringify({ url })
       }),
-    enabled: !!url && url.length > 10,
+    enabled: Boolean(url) && url.length > 10,
     staleTime: 15 * 60 * 1000
   })
 
@@ -1109,5 +1109,347 @@ export function useShowQRPdf(slug: string, enabled = false) {
       fetcher<QRPdfResponse>(`${VPS_BASE_URL}/shows/${slug}/qr-pdf`),
     enabled,
     staleTime: 1000 * 60 * 60 * 24
+  })
+}
+
+// ---------------------------------------------------------------------------
+// Music entities — admin hooks
+// ---------------------------------------------------------------------------
+
+export interface MusicArtist {
+  id: string
+  name: string
+  bio: string | null
+  imageUrl: string | null
+  genres: string[] | null
+  slug: string
+  publishedAt: string | null
+  createdById: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface MusicAlbum {
+  id: string
+  title: string
+  artistNames: string[] | null
+  releaseDate: string | null
+  coverImageUrl: string | null
+  genres: string[] | null
+  albumType: string | null
+  slug: string
+  publishedAt: string | null
+  createdById: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface MusicTrack {
+  id: string
+  title: string
+  artistNames: string[] | null
+  coverImageUrl: string | null
+  albumId: string | null
+  trackNumber: number | null
+  slug: string
+  publishedAt: string | null
+  createdById: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface AdminMusicEntityLink {
+  id: string
+  entityType: string
+  entityId: string
+  platform: string
+  url: string
+  status: string
+  scrapedAt: string | null
+  verifiedAt: string | null
+  verifiedBy: string | null
+  metadata: Record<string, unknown> | null
+  createdAt: string
+  updatedAt: string
+}
+
+export function useAdminArtists() {
+  return useQuery<MusicArtist[]>({
+    queryKey: ['admin', 'artists'],
+    queryFn: () => fetcher(`${VPS_BASE_URL}/music/artists`)
+  })
+}
+
+export function useAdminArtist(id: string) {
+  return useQuery<MusicArtist>({
+    queryKey: ['admin', 'artists', id],
+    queryFn: () => fetcher(`${VPS_BASE_URL}/music/artists/${id}`),
+    enabled: Boolean(id)
+  })
+}
+
+export function useUpdateAdminArtist() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
+      fetcher<MusicArtist>(`${VPS_BASE_URL}/music/artists/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data)
+      }),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'artists', id] })
+      qc.invalidateQueries({ queryKey: ['admin', 'artists'] })
+    }
+  })
+}
+
+export function useDeleteAdminArtist() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) =>
+      fetcher(`${VPS_BASE_URL}/music/artists/${id}`, { method: 'DELETE' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'artists'] })
+  })
+}
+
+export function useAdminAlbums() {
+  return useQuery<MusicAlbum[]>({
+    queryKey: ['admin', 'albums'],
+    queryFn: () => fetcher(`${VPS_BASE_URL}/music/albums`)
+  })
+}
+
+export function useAdminAlbum(id: string) {
+  return useQuery<MusicAlbum>({
+    queryKey: ['admin', 'albums', id],
+    queryFn: () => fetcher(`${VPS_BASE_URL}/music/albums/${id}`),
+    enabled: Boolean(id)
+  })
+}
+
+export function useUpdateAdminAlbum() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
+      fetcher<MusicAlbum>(`${VPS_BASE_URL}/music/albums/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data)
+      }),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'albums', id] })
+      qc.invalidateQueries({ queryKey: ['admin', 'albums'] })
+    }
+  })
+}
+
+export function useDeleteAdminAlbum() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) =>
+      fetcher(`${VPS_BASE_URL}/music/albums/${id}`, { method: 'DELETE' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'albums'] })
+  })
+}
+
+export function useAdminTracks() {
+  return useQuery<MusicTrack[]>({
+    queryKey: ['admin', 'tracks'],
+    queryFn: () => fetcher(`${VPS_BASE_URL}/music/tracks`)
+  })
+}
+
+export function useAdminTrack(id: string) {
+  return useQuery<MusicTrack>({
+    queryKey: ['admin', 'tracks', id],
+    queryFn: () => fetcher(`${VPS_BASE_URL}/music/tracks/${id}`),
+    enabled: Boolean(id)
+  })
+}
+
+export function useUpdateAdminTrack() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
+      fetcher<MusicTrack>(`${VPS_BASE_URL}/music/tracks/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(data)
+      }),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'tracks', id] })
+      qc.invalidateQueries({ queryKey: ['admin', 'tracks'] })
+    }
+  })
+}
+
+export function useDeleteAdminTrack() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (id: string) =>
+      fetcher(`${VPS_BASE_URL}/music/tracks/${id}`, { method: 'DELETE' }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'tracks'] })
+  })
+}
+
+export function useAdminEntityLinks(
+  entityType: string,
+  entityId: string,
+  enabled = true
+) {
+  return useQuery<AdminMusicEntityLink[]>({
+    queryKey: ['admin', 'links', entityType, entityId],
+    queryFn: () =>
+      fetcher(`${VPS_BASE_URL}/music/${entityType}/${entityId}/links`),
+    enabled: enabled && Boolean(entityId)
+  })
+}
+
+export function useAddAdminEntityLink() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      entityType,
+      entityId,
+      platform,
+      url
+    }: {
+      entityType: string
+      entityId: string
+      platform: string
+      url: string
+    }) =>
+      fetcher<AdminMusicEntityLink>(
+        `${VPS_BASE_URL}/music/${entityType}/${entityId}/links`,
+        { method: 'POST', body: JSON.stringify({ platform, url }) }
+      ),
+    onSuccess: (_, { entityType, entityId }) =>
+      qc.invalidateQueries({
+        queryKey: ['admin', 'links', entityType, entityId]
+      })
+  })
+}
+
+export function useUpdateAdminEntityLinkStatus() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      entityType,
+      entityId,
+      linkId,
+      status
+    }: {
+      entityType: string
+      entityId: string
+      linkId: string
+      status: string
+    }) =>
+      fetcher<AdminMusicEntityLink>(
+        `${VPS_BASE_URL}/music/${entityType}/${entityId}/links/${linkId}`,
+        { method: 'PATCH', body: JSON.stringify({ status }) }
+      ),
+    onSuccess: (_, { entityType, entityId }) =>
+      qc.invalidateQueries({
+        queryKey: ['admin', 'links', entityType, entityId]
+      })
+  })
+}
+
+export function useDeleteAdminEntityLink() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      entityType,
+      entityId,
+      linkId
+    }: {
+      entityType: string
+      entityId: string
+      linkId: string
+    }) =>
+      fetcher(
+        `${VPS_BASE_URL}/music/${entityType}/${entityId}/links/${linkId}`,
+        { method: 'DELETE' }
+      ),
+    onSuccess: (_, { entityType, entityId }) =>
+      qc.invalidateQueries({
+        queryKey: ['admin', 'links', entityType, entityId]
+      })
+  })
+}
+
+export function useAddArtistToAlbum() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      albumId,
+      artistId,
+      role
+    }: {
+      albumId: string
+      artistId: string
+      role?: string
+    }) =>
+      fetcher(`${VPS_BASE_URL}/music/albums/${albumId}/artists/${artistId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ role })
+      }),
+    onSuccess: (_, { albumId }) =>
+      qc.invalidateQueries({ queryKey: ['admin', 'links', 'album', albumId] })
+  })
+}
+
+export function useRemoveArtistFromAlbum() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      albumId,
+      artistId
+    }: {
+      albumId: string
+      artistId: string
+    }) =>
+      fetcher(`${VPS_BASE_URL}/music/albums/${albumId}/artists/${artistId}`, {
+        method: 'DELETE'
+      }),
+    onSuccess: (_, { albumId }) =>
+      qc.invalidateQueries({ queryKey: ['admin', 'links', 'album', albumId] })
+  })
+}
+
+export function useAddArtistToTrack() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      trackId,
+      artistId,
+      role
+    }: {
+      trackId: string
+      artistId: string
+      role?: string
+    }) =>
+      fetcher(`${VPS_BASE_URL}/music/tracks/${trackId}/artists/${artistId}`, {
+        method: 'PUT',
+        body: JSON.stringify({ role })
+      }),
+    onSuccess: (_, { trackId }) =>
+      qc.invalidateQueries({ queryKey: ['admin', 'links', 'track', trackId] })
+  })
+}
+
+export function useRemoveArtistFromTrack() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({
+      trackId,
+      artistId
+    }: {
+      trackId: string
+      artistId: string
+    }) =>
+      fetcher(`${VPS_BASE_URL}/music/tracks/${trackId}/artists/${artistId}`, {
+        method: 'DELETE'
+      }),
+    onSuccess: (_, { trackId }) =>
+      qc.invalidateQueries({ queryKey: ['admin', 'links', 'track', trackId] })
   })
 }

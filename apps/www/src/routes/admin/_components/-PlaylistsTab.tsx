@@ -1,10 +1,12 @@
 import { Button, Input, Label, toast } from '@gbfm/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link } from '@tanstack/react-router'
 import {
   ArrowLeft,
   ChevronDown,
   ChevronRight,
   Loader2,
+  Pencil,
   Plus
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
@@ -70,7 +72,7 @@ export function PlaylistsTab() {
   const selected = playlists.find((p) => p.id === selectedId) ?? null
 
   const showSidebar = !selected
-  const showEditor = !!selected
+  const showEditor = Boolean(selected)
 
   return (
     <div className='flex h-full'>
@@ -158,11 +160,11 @@ export function PlaylistsTab() {
             {playlists.map((p) => {
               const active = p.id === selectedId
               return (
-                <li key={p.id}>
+                <li key={p.id} className='group relative'>
                   <button
                     type='button'
                     onClick={() => setSelectedId(p.id)}
-                    className={`flex items-center w-full gap-3 px-4 py-2 text-left border-l-2 transition-colors ${
+                    className={`flex items-center w-full gap-3 px-4 py-2 pr-10 text-left border-l-2 transition-colors ${
                       active
                         ? 'bg-muted text-foreground border-primary'
                         : 'border-transparent hover:bg-muted/50 text-muted-foreground hover:text-foreground'
@@ -185,6 +187,13 @@ export function PlaylistsTab() {
                       </div>
                     </div>
                   </button>
+                  <Link
+                    to='/admin/music/$entityType/$id'
+                    params={{ entityType: 'playlist', id: p.id }}
+                    aria-label='Edit playlist metadata'
+                    className='absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground'>
+                    <Pencil className='w-3.5 h-3.5' />
+                  </Link>
                 </li>
               )
             })}
@@ -205,9 +214,20 @@ export function PlaylistsTab() {
                 <ArrowLeft className='w-4 h-4 mr-2' />
                 Playlists
               </Button>
-              <span className='text-sm font-medium truncate'>
+              <span className='flex-1 text-sm font-medium truncate'>
                 {selected.title}
               </span>
+              <Button
+                asChild
+                variant='ghost'
+                size='sm'
+                aria-label='Edit playlist'>
+                <Link
+                  to='/admin/music/$entityType/$id'
+                  params={{ entityType: 'playlist', id: selected.id }}>
+                  <Pencil className='w-4 h-4' />
+                </Link>
+              </Button>
             </div>
             <div className='flex-1 min-h-0 overflow-y-auto lg:overflow-hidden [&::-webkit-scrollbar]:hidden [scrollbar-width:none]'>
               <div className='p-4 md:p-6 lg:h-full'>
