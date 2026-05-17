@@ -1,5 +1,12 @@
 import { boolean, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
 
+export const defaultAuditFields = {
+  createdBy: uuid(),
+  updatedBy: uuid(),
+  deletedAt: timestamp({ withTimezone: true }),
+  deletedBy: uuid()
+}
+
 export const defaultContentFields = {
   id: uuid().primaryKey().defaultRandom(),
   title: varchar({ length: 255 }).notNull(),
