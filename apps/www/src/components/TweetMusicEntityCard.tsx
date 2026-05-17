@@ -61,6 +61,7 @@ export function TweetMusicEntityCard({ entityType, entityId }: Props) {
     enabled: Boolean(supportedType && entityId)
   })
 
+  // todo: we can probs consolidate this into the music entity query above
   const { data: links } = useQuery<EntityLink[]>({
     queryKey: ['music-entity-links', entityType, entityId],
     queryFn: () =>
