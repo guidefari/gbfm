@@ -303,6 +303,26 @@ function LinksPanel({
   updateLinkStatus,
   deleteLink
 }: LinksPanelProps) {
+  function handleEdit(linkId: string, platform: string, url: string) {
+    const existingLink = links.find((link) => link.id === linkId)
+    addLink.mutate(
+      { entityType, entityId, platform, url },
+      {
+        onSuccess: () => {
+          if (existingLink && existingLink.platform !== platform) {
+            deleteLink.mutate({ entityType, entityId, linkId })
+          }
+        },
+        onError: (e) =>
+          toast({
+            title: 'Failed to edit link',
+            description: e.message,
+            variant: 'destructive'
+          })
+      }
+    )
+  }
+
   return (
     <MusicEntityLinksPanel
       links={links}
@@ -319,6 +339,7 @@ function LinksPanel({
           }
         )
       }
+      onEdit={handleEdit}
       onUpdateStatus={(linkId, status) =>
         updateLinkStatus.mutate({ entityType, entityId, linkId, status })
       }

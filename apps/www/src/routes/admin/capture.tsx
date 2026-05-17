@@ -6,6 +6,7 @@ import {
   CardTitle,
   Input,
   Label,
+  MusicEntityLinksPanel,
   Textarea,
   toast
 } from '@gbfm/ui'
@@ -13,7 +14,15 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { ArrowLeft, Loader2, Music4, Send } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { fetcher, useResolveMusicEntity, VPS_BASE_URL } from '@/lib/http'
+import {
+  fetcher,
+  useAddAdminEntityLink,
+  useAdminEntityLinks,
+  useDeleteAdminEntityLink,
+  useResolveMusicEntity,
+  useUpdateAdminEntityLinkStatus,
+  VPS_BASE_URL
+} from '@/lib/http'
 import { useAuthStore } from '@/store'
 
 type PostType = 'post' | 'micro'
@@ -128,6 +137,87 @@ function MusicCapturePage() {
     resolved.data?.entity?.artistNames ??
     existingMusicEntity?.artistNames ??
     null
+  const currentEntityType = displayedEntityType
+  const currentEntityId =
+    resolved.data?.entity?.id ?? existingPost?.musicEntityId ?? null
+  const entityLinks = useAdminEntityLinks(
+    currentEntityType ?? '',
+    currentEntityId ?? '',
+    Boolean(currentEntityType && currentEntityId)
+  )
+  const addLink = useAddAdminEntityLink()
+  const updateLinkStatus = useUpdateAdminEntityLinkStatus()
+  const deleteLink = useDeleteAdminEntityLink()
+  const canManageLinks = user?.role === 'admin'
+
+  function handleAddLink(platform: string, url: string) {
+    if (!currentEntityType || !currentEntityId) return
+    addLink.mutate(
+      {
+        entityType: currentEntityType,
+        entityId: currentEntityId,
+        platform,
+        url
+      },
+      {
+        onError: (error) =>
+          toast({
+            title: 'Failed to add link',
+            description: error.message,
+            variant: 'destructive'
+          })
+      }
+    )
+  }
+
+  function handleEditLink(linkId: string, platform: string, url: string) {
+    if (!currentEntityType || !currentEntityId) return
+    const existingLink = entityLinks.data?.find((link) => link.id === linkId)
+    addLink.mutate(
+      {
+        entityType: currentEntityType,
+        entityId: currentEntityId,
+        platform,
+        url
+      },
+      {
+        onSuccess: () => {
+          if (existingLink && existingLink.platform !== platform) {
+            deleteLink.mutate({
+              entityType: currentEntityType,
+              entityId: currentEntityId,
+              linkId
+            })
+          }
+        },
+        onError: (error) =>
+          toast({
+            title: 'Failed to edit link',
+            description: error.message,
+            variant: 'destructive'
+          })
+      }
+    )
+  }
+
+  function handleUpdateLinkStatus(linkId: string, status: string) {
+    if (!currentEntityType || !currentEntityId) return
+    updateLinkStatus.mutate({
+      entityType: currentEntityType,
+      entityId: currentEntityId,
+      linkId,
+      status
+    })
+  }
+
+  function handleDeleteLink(linkId: string) {
+    if (!currentEntityType || !currentEntityId) return
+    deleteLink.mutate({
+      entityType: currentEntityType,
+      entityId: currentEntityId,
+      linkId
+    })
+  }
 
   const submitMutation = useMutation({
     mutationFn: async () => {
@@ -218,7 +308,7 @@ function MusicCapturePage() {
   }
 
   return (
-    <div className='container max-w-4xl py-8 mx-auto space-y-6'>
+    <div className='container max-w-6xl py-8 mx-auto space-y-6'>
       <div className='flex items-center justify-between gap-4'>
         <div>
           {isEditMode && existingPost ? (
@@ -253,134 +343,138 @@ function MusicCapturePage() {
         )}
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className='flex items-center gap-2'>
-            <Music4 className='w-5 h-5' />
-            Resolve Music
-          </CardTitle>
-        </CardHeader>
-        <CardContent className='space-y-4'>
-          <div className='space-y-2'>
-            <Label htmlFor='musicUrl'>Music URL</Label>
-            <Input
-              id='musicUrl'
-              value={musicUrl}
-              onChange={(e) => setMusicUrl(e.target.value)}
-              placeholder='https://open.spotify.com/track/...'
-            />
-          </div>
+      <div className='grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]'>
+        <Card>
+          <CardHeader>
+            <CardTitle>Post</CardTitle>
+          </CardHeader>
+          <CardContent className='space-y-4'>
+            <div className='space-y-2'>
+              <Label htmlFor='title'>Title</Label>
+              <Input
+                id='title'
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder='Short title for the tweet'
+              />
+            </div>
 
-          <div className='grid gap-4 md:grid-cols-[160px_1fr]'>
-            <div className='overflow-hidden border rounded-lg bg-muted aspect-square'>
-              {displayedCoverImageUrl ? (
-                // eslint-disable-next-line jsx-a11y/img-redundant-alt
-                <img
-                  src={displayedCoverImageUrl}
-                  alt='Cover art'
-                  className='object-cover w-full h-full'
+            <div className='space-y-2'>
+              <Label htmlFor='commentary'>Commentary</Label>
+              <Textarea
+                id='commentary'
+                value={commentary}
+                onChange={(e) => setCommentary(e.target.value)}
+                placeholder='Add your commentary in markdown...'
+                className='min-h-[360px]'
+                onKeyDown={(e) => {
+                  if (e.metaKey && e.key === 'Enter' && canSubmit) {
+                    e.preventDefault()
+                    submitMutation.mutate()
+                  }
+                }}
+              />
+            </div>
+
+            <div className='flex items-center gap-3'>
+              <Button
+                onClick={() => submitMutation.mutate()}
+                disabled={!canSubmit || submitMutation.isPending}
+                className='gap-2'>
+                {submitMutation.isPending ? (
+                  <Loader2 className='w-4 h-4 animate-spin' />
+                ) : (
+                  <Send className='w-4 h-4' />
+                )}
+                {isEditMode ? 'Update tweet' : 'Save tweet'}
+              </Button>
+              <span className='text-sm text-muted-foreground'>
+                Cmd+Enter submits
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+
+        <div className='space-y-6'>
+          <Card>
+            <CardHeader>
+              <CardTitle className='flex items-center gap-2'>
+                <Music4 className='w-5 h-5' />
+                Music
+              </CardTitle>
+            </CardHeader>
+            <CardContent className='space-y-4'>
+              <div className='space-y-2'>
+                <Label htmlFor='musicUrl'>Music URL</Label>
+                <Input
+                  id='musicUrl'
+                  value={musicUrl}
+                  onChange={(e) => setMusicUrl(e.target.value)}
+                  placeholder='https://open.spotify.com/track/...'
                 />
-              ) : (
-                <div className='flex items-center justify-center h-full text-muted-foreground'>
-                  {resolved.isLoading ? (
-                    <Loader2 className='w-5 h-5 animate-spin' />
+              </div>
+
+              <div className='grid gap-4 sm:grid-cols-[120px_1fr] lg:grid-cols-1'>
+                <div className='overflow-hidden border rounded-lg bg-muted aspect-square'>
+                  {displayedCoverImageUrl ? (
+                    <img
+                      src={displayedCoverImageUrl}
+                      alt='Cover art'
+                      className='object-cover w-full h-full'
+                    />
                   ) : (
-                    <Music4 className='w-5 h-5' />
+                    <div className='flex items-center justify-center h-full text-muted-foreground'>
+                      {resolved.isLoading ? (
+                        <Loader2 className='w-5 h-5 animate-spin' />
+                      ) : (
+                        <Music4 className='w-5 h-5' />
+                      )}
+                    </div>
                   )}
                 </div>
-              )}
-            </div>
 
-            <div className='space-y-3'>
-              <div>
-                <div className='text-sm text-muted-foreground'>
-                  Resolved type
-                </div>
-                <div className='font-medium'>
-                  {displayedEntityType || 'Waiting for a URL'}
-                </div>
-              </div>
-              <div>
-                <div className='text-sm text-muted-foreground'>Title</div>
-                <div className='font-medium'>
-                  {displayedEntityTitle || 'No entity resolved yet'}
-                </div>
-              </div>
-              {displayedArtistNames?.length ? (
-                <div>
-                  <div className='text-sm text-muted-foreground'>Artists</div>
-                  <div className='font-medium'>
-                    {displayedArtistNames.join(', ')}
+                <div className='space-y-3'>
+                  <div>
+                    <div className='text-sm text-muted-foreground'>
+                      Resolved type
+                    </div>
+                    <div className='font-medium'>
+                      {displayedEntityType || 'Waiting for a URL'}
+                    </div>
                   </div>
+                  <div>
+                    <div className='text-sm text-muted-foreground'>Title</div>
+                    <div className='font-medium'>
+                      {displayedEntityTitle || 'No entity resolved yet'}
+                    </div>
+                  </div>
+                  {displayedArtistNames?.length ? (
+                    <div>
+                      <div className='text-sm text-muted-foreground'>
+                        Artists
+                      </div>
+                      <div className='font-medium'>
+                        {displayedArtistNames.join(', ')}
+                      </div>
+                    </div>
+                  ) : null}
                 </div>
-              ) : null}
-              <div className='flex flex-wrap gap-2'>
-                {resolved.data?.links?.map((link) => (
-                  <a
-                    key={`${link.platform}-${link.url}`}
-                    href={link.url}
-                    target='_blank'
-                    rel='noreferrer'
-                    className='inline-flex items-center px-2 py-1 text-xs rounded-full bg-muted text-muted-foreground hover:text-foreground'>
-                    {link.platform}
-                  </a>
-                ))}
               </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Post</CardTitle>
-        </CardHeader>
-        <CardContent className='space-y-4'>
-          <div className='space-y-2'>
-            <Label htmlFor='title'>Title</Label>
-            <Input
-              id='title'
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder='Short title for the tweet'
+          {currentEntityType && currentEntityId ? (
+            <MusicEntityLinksPanel
+              links={entityLinks.data ?? []}
+              readOnly={!canManageLinks}
+              onAdd={handleAddLink}
+              onEdit={handleEditLink}
+              onUpdateStatus={handleUpdateLinkStatus}
+              onDelete={handleDeleteLink}
             />
-          </div>
-
-          <div className='space-y-2'>
-            <Label htmlFor='commentary'>Commentary</Label>
-            <Textarea
-              id='commentary'
-              value={commentary}
-              onChange={(e) => setCommentary(e.target.value)}
-              placeholder='Add your commentary in markdown...'
-              className='min-h-40'
-              onKeyDown={(e) => {
-                if (e.metaKey && e.key === 'Enter' && canSubmit) {
-                  e.preventDefault()
-                  submitMutation.mutate()
-                }
-              }}
-            />
-          </div>
-
-          <div className='flex items-center gap-3'>
-            <Button
-              onClick={() => submitMutation.mutate()}
-              disabled={!canSubmit || submitMutation.isPending}
-              className='gap-2'>
-              {submitMutation.isPending ? (
-                <Loader2 className='w-4 h-4 animate-spin' />
-              ) : (
-                <Send className='w-4 h-4' />
-              )}
-              {isEditMode ? 'Update tweet' : 'Save tweet'}
-            </Button>
-            <span className='text-sm text-muted-foreground'>
-              Cmd+Enter submits
-            </span>
-          </div>
-        </CardContent>
-      </Card>
+          ) : null}
+        </div>
+      </div>
     </div>
   )
 }
