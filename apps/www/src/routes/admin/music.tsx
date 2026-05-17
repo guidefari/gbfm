@@ -22,6 +22,7 @@ import {
   useAdminTracks
 } from '@/lib/http'
 import { AdminAccessGuard } from './_components/-AdminAccessGuard'
+import { PlaylistsTab } from './_components/-PlaylistsTab'
 
 export const Route = createFileRoute('/admin/music')({
   component: AdminMusicPage
@@ -30,39 +31,53 @@ export const Route = createFileRoute('/admin/music')({
 function AdminMusicPage() {
   return (
     <AdminAccessGuard>
-      <div className='flex flex-col h-[calc(100vh-8rem)]'>
-        <header className='flex items-center justify-between gap-4 px-6 py-4 border-b shrink-0'>
-          <div>
-            <h1 className='text-xl font-bold'>Music catalog</h1>
-            <p className='text-xs text-muted-foreground'>
-              Browse and manage artists, albums, and tracks.
-            </p>
-          </div>
-          <Button asChild variant='outline' size='sm'>
-            <Link to='/admin'>
-              <ArrowLeft className='w-4 h-4 mr-2' />
-              Back to admin
-            </Link>
-          </Button>
-        </header>
-        <div className='flex-1 min-h-0 overflow-auto p-6'>
-          <Tabs defaultValue='artists'>
-            <TabsList>
-              <TabsTrigger value='artists'>Artists</TabsTrigger>
-              <TabsTrigger value='albums'>Albums</TabsTrigger>
-              <TabsTrigger value='tracks'>Tracks</TabsTrigger>
-            </TabsList>
-            <TabsContent value='artists' className='mt-4'>
-              <ArtistsTab />
-            </TabsContent>
-            <TabsContent value='albums' className='mt-4'>
-              <AlbumsTab />
-            </TabsContent>
-            <TabsContent value='tracks' className='mt-4'>
-              <TracksTab />
-            </TabsContent>
-          </Tabs>
-        </div>
+      <div className='flex flex-col h-[calc(100vh-8rem)] overflow-hidden'>
+        <Tabs defaultValue='artists' className='flex flex-col flex-1 min-h-0'>
+          <header className='flex items-center justify-between gap-4 px-6 py-3 border-b shrink-0'>
+            <div>
+              <h1 className='text-xl font-bold'>Music catalog</h1>
+              <p className='text-xs text-muted-foreground'>
+                Artists, albums, tracks, and playlists.
+              </p>
+            </div>
+            <div className='flex items-center gap-3'>
+              <TabsList className='h-8 gap-0.5 bg-muted/60'>
+                <TabsTrigger value='artists' className='h-6 px-3 text-xs'>
+                  Artists
+                </TabsTrigger>
+                <TabsTrigger value='albums' className='h-6 px-3 text-xs'>
+                  Albums
+                </TabsTrigger>
+                <TabsTrigger value='tracks' className='h-6 px-3 text-xs'>
+                  Tracks
+                </TabsTrigger>
+                <TabsTrigger value='playlists' className='h-6 px-3 text-xs'>
+                  Playlists
+                </TabsTrigger>
+              </TabsList>
+              <Button asChild variant='outline' size='sm'>
+                <Link to='/admin'>
+                  <ArrowLeft className='w-4 h-4 mr-2' />
+                  Back to admin
+                </Link>
+              </Button>
+            </div>
+          </header>
+          <TabsContent
+            value='artists'
+            className='flex-1 overflow-auto p-6 mt-0'>
+            <ArtistsTab />
+          </TabsContent>
+          <TabsContent value='albums' className='flex-1 overflow-auto p-6 mt-0'>
+            <AlbumsTab />
+          </TabsContent>
+          <TabsContent value='tracks' className='flex-1 overflow-auto p-6 mt-0'>
+            <TracksTab />
+          </TabsContent>
+          <TabsContent value='playlists' className='flex-1 min-h-0 mt-0'>
+            <PlaylistsTab />
+          </TabsContent>
+        </Tabs>
       </div>
     </AdminAccessGuard>
   )
