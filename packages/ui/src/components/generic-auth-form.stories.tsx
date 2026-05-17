@@ -1,7 +1,7 @@
+import { useState } from 'react'
 import { GenericAuthForm } from './generic-auth-form'
 import { PasswordChecklist } from './password-checklist'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
-import { useState } from 'react'
 
 export default {
   title: '@gbfm/ui/GenericAuthForm'

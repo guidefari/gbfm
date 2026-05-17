@@ -1,4 +1,4 @@
-import { Music, Radio, User, Settings, Heart, Search } from 'lucide-react'
+import { Heart, Music, Radio, Search, Settings, User } from 'lucide-react'
 import { IconGrid } from './icon-grid'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 

@@ -1,5 +1,5 @@
-import YoutubeEmbed from './youtube-embed'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
+import YoutubeEmbed from './youtube-embed'
 
 export default {
   title: '@gbfm/ui/YoutubeEmbed'

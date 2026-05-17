@@ -1,5 +1,5 @@
-import { UploadProgress, type UploadStep } from './upload-progress'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
+import { UploadProgress, type UploadStep } from './upload-progress'
 
 export default {
   title: '@gbfm/ui/UploadProgress'

@@ -1,5 +1,5 @@
+import { Music, Radio, Search, User } from 'lucide-react'
 import { useState } from 'react'
-import { Music, Radio, User, Search } from 'lucide-react'
 import {
   Accordion,
   AccordionContent,
@@ -37,6 +37,11 @@ import {
   SelectValue
 } from './select'
 import { Skeleton } from './skeleton'
+import {
+  mediaExamples,
+  StoryPanelHeader,
+  storyPanelClassName
+} from './story-helpers'
 import { TagsInput } from './tags-input'
 import { Textarea } from './textarea'
 import {
@@ -46,11 +51,6 @@ import {
   TooltipTrigger
 } from './tooltip'
 import { UploadProgress } from './upload-progress'
-import {
-  StoryPanelHeader,
-  mediaExamples,
-  storyPanelClassName
-} from './story-helpers'
 
 export default {
   title: '@gbfm/ui/KitchenSink'
@@ -191,7 +191,7 @@ export function KitchenSink() {
               <Checkbox
                 id='public'
                 checked={checked}
-                onCheckedChange={(v) => setChecked(!!v)}
+                onCheckedChange={(v) => setChecked(Boolean(v))}
               />
               <Label htmlFor='public'>Make mix public</Label>
             </div>

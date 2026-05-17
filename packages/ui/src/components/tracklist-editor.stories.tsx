@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { TracklistEditor, type TrackEntry } from './tracklist-editor'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
+import { type TrackEntry, TracklistEditor } from './tracklist-editor'
 
 export default {
   title: '@gbfm/ui/TracklistEditor'

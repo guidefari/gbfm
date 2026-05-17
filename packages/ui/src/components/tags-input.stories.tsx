@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { TagsInput } from './tags-input'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
+import { TagsInput } from './tags-input'
 
 export default {
   title: '@gbfm/ui/TagsInput'

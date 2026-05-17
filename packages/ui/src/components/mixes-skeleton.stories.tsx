@@ -1,4 +1,4 @@
-import { MixesSkeleton, MixesListSkeleton } from './mixes-skeleton'
+import { MixesListSkeleton, MixesSkeleton } from './mixes-skeleton'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
