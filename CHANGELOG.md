@@ -1,3 +1,26 @@
+# [2.42.0](https://github.com/guidefari/gbfm/compare/v2.41.0...v2.42.0) (2026-05-17)
+
+
+### Bug Fixes
+
+* **admin:** move entity detail route out of music catalog nesting ([21e6f01](https://github.com/guidefari/gbfm/commit/21e6f01302fc4c20b8ba658996a13d3fcd365b17))
+* dialog animation ([b7dd375](https://github.com/guidefari/gbfm/commit/b7dd375aef6eefcd0d8b5bc702e1c97bcc9791f6))
+* **ui:** make playground themes switchable ([a3de85f](https://github.com/guidefari/gbfm/commit/a3de85f2993ce4755a7235a93c10d58e15953fb0))
+
+
+### Features
+
+* add stream links to tweet card ([0e4b414](https://github.com/guidefari/gbfm/commit/0e4b4142777afca164f49912cc5a356d585fbcb4))
+* **admin:** music entity catalog + edit pages ([669879d](https://github.com/guidefari/gbfm/commit/669879d1770dc2713ec2cd0dda3bf62908e3b9a3))
+* **db_schema:** defaultAuditFields ([e2e31a4](https://github.com/guidefari/gbfm/commit/e2e31a455763363dd44c6453ef40df89dd162ee9))
+* edit music entity links ([b4a5fe2](https://github.com/guidefari/gbfm/commit/b4a5fe2d89d27afc59f6ac3725a817748c2bdac6))
+* tweet edit flow ([67067da](https://github.com/guidefari/gbfm/commit/67067da65199b926e44f64ce13d32ed8cd4163e8))
+* **ui:** add internal design system playground ([93acdb6](https://github.com/guidefari/gbfm/commit/93acdb6d3ff8786323b5b11f5f9c3d954a41aa95))
+* **ui:** music entity detail/edit components + playground panel ([4b4b2fa](https://github.com/guidefari/gbfm/commit/4b4b2fa9a8992d941810e845a5ad95b1cb2754ac))
+* **ui:** replace playground with Ladle ([294b9e9](https://github.com/guidefari/gbfm/commit/294b9e913f50a08cf931b79bac507c6ffc0d746a))
+* **vps:** integration test infrastructure + music-entity service split ([561fa9b](https://github.com/guidefari/gbfm/commit/561fa9b1ef4e1654d52fcb47f0551c5c90eab01e))
+* **www:** add playlists tab to admin/music ([2b9d495](https://github.com/guidefari/gbfm/commit/2b9d495360482e14c41dbf44b932c5aa2fc6da21))
+
 # [2.41.0](https://github.com/guidefari/gbfm/compare/v2.40.1...v2.41.0) (2026-05-13)
 
 
