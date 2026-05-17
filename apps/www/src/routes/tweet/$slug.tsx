@@ -1,13 +1,14 @@
-import { Badge } from '@gbfm/ui'
+import { Badge, Button } from '@gbfm/ui'
 import type { SelectMdxCompiledPost } from '@gbfm/vps/schemas'
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowLeft, Tag } from 'lucide-react'
+import { ArrowLeft, Edit3, Tag } from 'lucide-react'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { ShareButton } from '@/components/ShareButton'
 import { TweetAuthorRow } from '@/components/TweetAuthorRow'
 import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
 import { generateMicroPostSEO, generateSEOMeta } from '@/lib/seo'
+import { useAuthStore } from '@/store/auth'
 
 export const Route = createFileRoute('/tweet/$slug')({
   component: TweetPostPage,
@@ -35,11 +36,21 @@ export const Route = createFileRoute('/tweet/$slug')({
 function TweetPostPage() {
   const { slug } = Route.useParams()
   const { post } = Route.useLoaderData()
+  const { user } = useAuthStore()
 
   if (!post) return <div>No data</div>
 
   const hasMusicEntity = Boolean(post.musicEntityType && post.musicEntityId)
   const titleDuplicatesEntity = hasMusicEntity
+  const canEdit = Boolean(
+    user &&
+      (user.role === 'admin' ||
+        post.creators?.some((creator) => creator.id === user.id))
+  )
+  const createdAt = post.createdAt ? new Date(post.createdAt).getTime() : null
+  const updatedAt = post.updatedAt ? new Date(post.updatedAt).getTime() : null
+  const editedAt =
+    createdAt && updatedAt && updatedAt > createdAt ? post.updatedAt : null
 
   return (
     <div className='max-w-xl px-4 py-6 mx-auto'>
@@ -51,17 +62,45 @@ function TweetPostPage() {
       </Link>
       <article className='space-y-4 rounded-lg border border-border/60 bg-card/60 p-4 shadow-sm sm:p-5'>
         <div className='flex items-start justify-between gap-3'>
-          <TweetAuthorRow
-            creators={post.creators ?? []}
-            createdAt={post.createdAt}
-          />
-          <ShareButton
-            type='post'
-            slug={slug}
-            variant='ghost'
-            size='icon'
-            className='h-8 w-8 shrink-0 rounded-md text-muted-foreground hover:text-foreground'
-          />
+          <div className='space-y-1'>
+            <TweetAuthorRow
+              creators={post.creators ?? []}
+              createdAt={post.createdAt}
+            />
+            {editedAt && (
+              <p className='pl-[52px] font-mono text-[11px] uppercase tracking-wider text-muted-foreground/60'>
+                Edited{' '}
+                {new Date(editedAt).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
+                })}
+              </p>
+            )}
+          </div>
+          <div className='flex shrink-0 items-center gap-1'>
+            {canEdit && (
+              <Button
+                asChild
+                variant='ghost'
+                size='icon'
+                className='h-8 w-8 rounded-md text-muted-foreground hover:text-foreground'>
+                <Link
+                  to='/admin/capture'
+                  search={{ edit: slug }}
+                  aria-label='Edit tweet'>
+                  <Edit3 className='h-4 w-4' />
+                </Link>
+              </Button>
+            )}
+            <ShareButton
+              type='post'
+              slug={slug}
+              variant='ghost'
+              size='icon'
+              className='h-8 w-8 rounded-md text-muted-foreground hover:text-foreground'
+            />
+          </div>
         </div>
 
         {!titleDuplicatesEntity && post.title && (
