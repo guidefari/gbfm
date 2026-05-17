@@ -1,0 +1,52 @@
+import { ExternalLink } from 'lucide-react'
+
+const PLATFORM_LABELS: Record<string, string> = {
+  spotify: 'Spotify',
+  youtube: 'YouTube',
+  youtube_music: 'YT Music',
+  apple_music: 'Apple Music',
+  bandcamp: 'Bandcamp',
+  soundcloud: 'SoundCloud',
+  tidal: 'Tidal',
+  deezer: 'Deezer',
+  amazon_music: 'Amazon Music',
+  website: 'Website',
+  other: 'Link'
+}
+
+type StreamLink = {
+  platform: string
+  url: string
+}
+
+type Props = {
+  links: StreamLink[]
+}
+
+export function StreamLinks({ links }: Props) {
+  if (!links.length) return null
+
+  return (
+    <div className='flex flex-wrap items-center gap-1.5'>
+      <span className='text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50'>
+        Stream
+      </span>
+      {links.map((link) => {
+        const label = PLATFORM_LABELS[link.platform] ?? link.platform
+
+        return (
+          <a
+            key={link.platform}
+            href={link.url}
+            target='_blank'
+            rel='noopener noreferrer'
+            onClick={(e) => e.stopPropagation()}
+            className='inline-flex items-center gap-1 rounded-sm bg-muted/50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'>
+            {label}
+            <ExternalLink className='h-2.5 w-2.5 opacity-50' />
+          </a>
+        )
+      })}
+    </div>
+  )
+}

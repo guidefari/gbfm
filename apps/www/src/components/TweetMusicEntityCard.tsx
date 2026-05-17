@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { Music4 } from 'lucide-react'
+import { StreamLinks } from '@/components/StreamLinks'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
 
 type MusicEntityType = 'album' | 'track' | 'playlist'
@@ -11,6 +12,13 @@ type MusicEntityPreview = {
   slug: string
   artistNames?: string[] | null
   description?: string | null
+}
+
+type EntityLink = {
+  id: string
+  platform: string
+  url: string
+  status: string
 }
 
 const entityPathByType: Record<MusicEntityType, string> = {
@@ -53,6 +61,15 @@ export function TweetMusicEntityCard({ entityType, entityId }: Props) {
     enabled: Boolean(supportedType && entityId)
   })
 
+  const { data: links } = useQuery<EntityLink[]>({
+    queryKey: ['music-entity-links', entityType, entityId],
+    queryFn: () =>
+      fetcher(
+        `${VPS_BASE_URL}/music/${entityType}/${entityId}/links?status=verified`
+      ),
+    enabled: Boolean(supportedType && entityId)
+  })
+
   if (!supportedType) {
     return null
   }
@@ -73,6 +90,8 @@ export function TweetMusicEntityCard({ entityType, entityId }: Props) {
   if (!data) {
     return null
   }
+
+  const verifiedLinks = links?.filter((l) => l.status === 'verified') ?? []
 
   return (
     <section className='not-prose overflow-hidden rounded-md border border-border/50 bg-muted/20 transition-colors hover:bg-muted/30'>
@@ -110,6 +129,12 @@ export function TweetMusicEntityCard({ entityType, entityId }: Props) {
           {data.description}
         </p>
       ) : null}
+
+      {verifiedLinks.length > 0 && (
+        <div className='border-t border-border/40 px-3 py-2.5'>
+          <StreamLinks links={verifiedLinks} />
+        </div>
+      )}
     </section>
   )
 }
