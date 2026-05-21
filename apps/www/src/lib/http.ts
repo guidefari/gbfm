@@ -1,3 +1,4 @@
+import type { EmailDeliveryStatus, LinkStatus } from '@gbfm/core/status'
 import type {
   SelectAudio,
   SelectLabel,
@@ -470,13 +471,7 @@ export function useUpdateEmailPreferences() {
   }
 }
 
-export type EmailLogStatus =
-  | 'PENDING'
-  | 'SENT'
-  | 'DELIVERED'
-  | 'BOUNCED'
-  | 'COMPLAINED'
-  | 'FAILED'
+export type EmailLogStatus = EmailDeliveryStatus
 
 export type AdminEmailLog = {
   id: string
@@ -1164,7 +1159,7 @@ export interface AdminMusicEntityLink {
   entityId: string
   platform: string
   url: string
-  status: string
+  status: LinkStatus
   scrapedAt: string | null
   verifiedAt: string | null
   verifiedBy: string | null
@@ -1316,10 +1311,11 @@ export function useAddAdminEntityLink() {
       entityId: string
       platform: string
       url: string
+      status?: LinkStatus
     }) =>
       fetcher<AdminMusicEntityLink>(
         `${VPS_BASE_URL}/music/${entityType}/${entityId}/links`,
-        { method: 'POST', body: JSON.stringify({ platform, url }) }
+        { method: 'POST', body: JSON.stringify({ platform, url, status }) }
       ),
     onSuccess: (_, { entityType, entityId }) =>
       qc.invalidateQueries({
@@ -1340,7 +1336,7 @@ export function useUpdateAdminEntityLinkStatus() {
       entityType: string
       entityId: string
       linkId: string
-      status: string
+      status: LinkStatus
     }) =>
       fetcher<AdminMusicEntityLink>(
         `${VPS_BASE_URL}/music/${entityType}/${entityId}/links/${linkId}`,

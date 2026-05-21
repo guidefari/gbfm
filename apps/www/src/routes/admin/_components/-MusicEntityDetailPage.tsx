@@ -1,3 +1,4 @@
+import { LINK_STATUS } from '@gbfm/core/status'
 import {
   type ArtistJunction,
   Button,
@@ -306,7 +307,7 @@ function LinksPanel({
   function handleEdit(linkId: string, platform: string, url: string) {
     const existingLink = links.find((link) => link.id === linkId)
     addLink.mutate(
-      { entityType, entityId, platform, url },
+      { entityType, entityId, platform, url, status: LINK_STATUS.VERIFIED },
       {
         onSuccess: () => {
           if (existingLink && existingLink.platform !== platform) {
@@ -328,7 +329,7 @@ function LinksPanel({
       links={links}
       onAdd={(platform, url) =>
         addLink.mutate(
-          { entityType, entityId, platform, url },
+          { entityType, entityId, platform, url, status: LINK_STATUS.VERIFIED },
           {
             onError: (e) =>
               toast({

@@ -1,3 +1,4 @@
+import { EMAIL_DELIVERY_STATUSES, REMINDER_STATUS } from '@gbfm/core/status'
 import {
   and,
   desc,
@@ -373,7 +374,7 @@ export const getAdminOverview: AppRouteHandler<GetAdminOverviewRoute> = async (
       db.$count(
         emailDeliveryLogsTable,
         and(
-          eq(emailDeliveryLogsTable.status, 'FAILED'),
+          eq(emailDeliveryLogsTable.status, EMAIL_DELIVERY_STATUSES.FAILED),
           gte(emailDeliveryLogsTable.createdAt, sevenDaysAgo)
         )
       ),
@@ -389,9 +390,9 @@ export const getAdminOverview: AppRouteHandler<GetAdminOverviewRoute> = async (
         .from(emailDeliveryLogsTable)
         .where(
           inArray(emailDeliveryLogsTable.status, [
-            'FAILED',
-            'BOUNCED',
-            'COMPLAINED'
+            EMAIL_DELIVERY_STATUSES.FAILED,
+            EMAIL_DELIVERY_STATUSES.BOUNCED,
+            EMAIL_DELIVERY_STATUSES.COMPLAINED
           ])
         )
         .orderBy(desc(emailDeliveryLogsTable.createdAt))
@@ -400,20 +401,23 @@ export const getAdminOverview: AppRouteHandler<GetAdminOverviewRoute> = async (
         .select({
           pending: db.$count(
             musicReminder,
-            eq(musicReminder.status, 'pending')
+            eq(musicReminder.status, REMINDER_STATUS.PENDING)
           ),
           processing: db.$count(
             musicReminder,
-            eq(musicReminder.status, 'processing')
+            eq(musicReminder.status, REMINDER_STATUS.PROCESSING)
           ),
-          failed: db.$count(musicReminder, eq(musicReminder.status, 'failed')),
+          failed: db.$count(
+            musicReminder,
+            eq(musicReminder.status, REMINDER_STATUS.FAILED)
+          ),
           dueNow: db.$count(
             musicReminder,
             and(
               lte(musicReminder.reminderDate, now),
               or(
-                eq(musicReminder.status, 'pending'),
-                eq(musicReminder.status, 'failed')
+                eq(musicReminder.status, REMINDER_STATUS.PENDING),
+                eq(musicReminder.status, REMINDER_STATUS.FAILED)
               )
             )
           )

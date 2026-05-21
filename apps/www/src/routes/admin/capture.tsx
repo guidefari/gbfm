@@ -1,3 +1,4 @@
+import { LINK_STATUS, type LinkStatus } from '@gbfm/core/status'
 import {
   Button,
   Card,
@@ -157,7 +158,8 @@ function MusicCapturePage() {
         entityType: currentEntityType,
         entityId: currentEntityId,
         platform,
-        url
+        url,
+        status: LINK_STATUS.VERIFIED
       },
       {
         onError: (error) =>
@@ -178,7 +180,8 @@ function MusicCapturePage() {
         entityType: currentEntityType,
         entityId: currentEntityId,
         platform,
-        url
+        url,
+        status: LINK_STATUS.VERIFIED
       },
       {
         onSuccess: () => {
@@ -200,7 +203,7 @@ function MusicCapturePage() {
     )
   }
 
-  function handleUpdateLinkStatus(linkId: string, status: string) {
+  function handleUpdateLinkStatus(linkId: string, status: LinkStatus) {
     if (!currentEntityType || !currentEntityId) return
     updateLinkStatus.mutate({
       entityType: currentEntityType,

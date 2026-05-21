@@ -1,3 +1,4 @@
+import { LINK_STATUS } from '@gbfm/core/status'
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import { Effect } from 'effect'
 import type { db as DbType } from '@/db'
@@ -264,7 +265,7 @@ const enrichTrackLinksEffect = (
             entityId: track.trackId,
             platform: link.platform,
             url: link.url,
-            status: 'pending_review',
+            status: LINK_STATUS.PENDING_REVIEW,
             scrapedAt: link.scrapedAt,
             metadata: link.metadata
           }),
@@ -535,7 +536,7 @@ export const addSpotifyTrackToPlaylistEffect = (
               entityId: trackId,
               platform: 'spotify',
               url: t.trackUrl,
-              status: 'verified',
+              status: LINK_STATUS.VERIFIED,
               metadata: {
                 spotifyTrackId: t.spotifyTrackId,
                 durationMs: t.durationMs,
@@ -689,7 +690,7 @@ export const importSpotifyPlaylistEffect = (
               entityId: playlist.id,
               platform: 'spotify',
               url: data.playlistUrl,
-              status: 'verified',
+              status: LINK_STATUS.VERIFIED,
               metadata: { spotifyPlaylistId: data.spotifyPlaylistId }
             })
           }
@@ -738,7 +739,7 @@ export const importSpotifyPlaylistEffect = (
                 entityId: trackId,
                 platform: 'spotify',
                 url: t.trackUrl,
-                status: 'verified',
+                status: LINK_STATUS.VERIFIED,
                 metadata: {
                   spotifyTrackId: t.spotifyTrackId,
                   durationMs: t.durationMs,

@@ -1,14 +1,14 @@
+import {
+  EMAIL_DELIVERY_STATUSES,
+  type EmailDeliveryStatus
+} from '@gbfm/core/status'
 import { and, desc, eq, gte, ilike, lt, type SQL, sql } from 'drizzle-orm'
 import { db } from '@/db'
 import {
-  EMAIL_DELIVERY_STATUSES,
   emailDeliveryLogsTable,
   type InsertEmailDeliveryLog
 } from '@/db/email.schema'
 import { createPaginationMetadata } from '@/lib/pagination'
-
-type EmailDeliveryStatus =
-  (typeof EMAIL_DELIVERY_STATUSES)[keyof typeof EMAIL_DELIVERY_STATUSES]
 
 export type GetAdminEmailLogsParams = {
   limit: number

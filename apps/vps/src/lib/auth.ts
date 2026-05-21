@@ -1,15 +1,12 @@
+import { EMAIL_DELIVERY_STATUSES } from '@gbfm/core/status'
 import { sendPasswordResetEmail, sendWelcomeEmail } from '@gbfm/email/index'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { admin, bearer, username } from 'better-auth/plugins'
 import { Effect } from 'effect'
-
 import { db } from '@/db'
 import * as authSchema from '@/db/auth.schema'
-import {
-  EMAIL_DELIVERY_STATUSES,
-  EMAIL_NOTIFICATION_TYPES
-} from '@/db/email.schema'
+import { EMAIL_NOTIFICATION_TYPES } from '@/db/email.schema'
 import { createEmailDeliveryLog } from '@/repositories/email-delivery-log.repository'
 import { config } from '@/services/config.service'
 import {

@@ -1,3 +1,4 @@
+import { REMINDER_STATUS, REMINDER_STATUSES } from '@gbfm/core/status'
 import {
   type InferInsertModel,
   type InferSelectModel,
@@ -15,10 +16,7 @@ import {
 import { user } from './auth.schema'
 
 export const reminderStatusEnum = pgEnum('reminder_status', [
-  'pending',
-  'processing',
-  'sent',
-  'failed'
+  ...REMINDER_STATUSES
 ])
 
 export const musicReminder = pgTable(
@@ -34,7 +32,9 @@ export const musicReminder = pgTable(
     albumCoverUrl: text('album_cover_url'),
     reminderDate: timestamp('reminder_date').notNull(),
     notes: text('notes'),
-    status: reminderStatusEnum('status').default('pending').notNull(),
+    status: reminderStatusEnum('status')
+      .default(REMINDER_STATUS.PENDING)
+      .notNull(),
     isSent: boolean('is_sent').default(false).notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')

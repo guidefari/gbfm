@@ -1,3 +1,4 @@
+import { REMINDER_STATUS } from '@gbfm/core/status'
 import { and, asc, eq, lte, or } from 'drizzle-orm'
 import { Chunk, Effect, Schedule } from 'effect'
 import { db } from '@/db'
@@ -16,19 +17,19 @@ export const processPendingReminders = Effect.gen(function* () {
       db
         .update(musicReminder)
         .set({
-          status: 'processing',
+          status: REMINDER_STATUS.PROCESSING,
           updatedAt: new Date()
         })
         .where(
           and(
             lte(musicReminder.reminderDate, now),
             or(
-              eq(musicReminder.status, 'pending'),
+              eq(musicReminder.status, REMINDER_STATUS.PENDING),
               and(
-                eq(musicReminder.status, 'processing'),
+                eq(musicReminder.status, REMINDER_STATUS.PROCESSING),
                 lte(musicReminder.updatedAt, fiveMinutesAgo)
               ),
-              eq(musicReminder.status, 'failed')
+              eq(musicReminder.status, REMINDER_STATUS.FAILED)
             )
           )
         )
@@ -83,7 +84,7 @@ const processSingleReminder = (reminder: typeof musicReminder.$inferSelect) =>
         db
           .update(musicReminder)
           .set({
-            status: 'sent',
+            status: REMINDER_STATUS.SENT,
             isSent: true,
             updatedAt: new Date()
           })
@@ -117,7 +118,7 @@ const processSingleReminder = (reminder: typeof musicReminder.$inferSelect) =>
             db
               .update(musicReminder)
               .set({
-                status: 'failed',
+                status: REMINDER_STATUS.FAILED,
                 updatedAt: new Date()
               })
               .where(eq(musicReminder.id, reminder.id)),
@@ -138,8 +139,8 @@ export const queryNextDueReminder = Effect.gen(function* () {
         .from(musicReminder)
         .where(
           or(
-            eq(musicReminder.status, 'pending'),
-            eq(musicReminder.status, 'failed')
+            eq(musicReminder.status, REMINDER_STATUS.PENDING),
+            eq(musicReminder.status, REMINDER_STATUS.FAILED)
           )
         )
         .orderBy(asc(musicReminder.reminderDate))
@@ -167,8 +168,8 @@ export const getReminderStats = Effect.gen(function* () {
           totalPending: db.$count(
             musicReminder,
             or(
-              eq(musicReminder.status, 'pending'),
-              eq(musicReminder.status, 'failed')
+              eq(musicReminder.status, REMINDER_STATUS.PENDING),
+              eq(musicReminder.status, REMINDER_STATUS.FAILED)
             )
           ),
           dueNow: db.$count(
@@ -176,14 +177,14 @@ export const getReminderStats = Effect.gen(function* () {
             and(
               lte(musicReminder.reminderDate, now),
               or(
-                eq(musicReminder.status, 'pending'),
-                eq(musicReminder.status, 'failed')
+                eq(musicReminder.status, REMINDER_STATUS.PENDING),
+                eq(musicReminder.status, REMINDER_STATUS.FAILED)
               )
             )
           ),
           processing: db.$count(
             musicReminder,
-            eq(musicReminder.status, 'processing')
+            eq(musicReminder.status, REMINDER_STATUS.PROCESSING)
           )
         })
         .from(musicReminder),

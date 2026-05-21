@@ -1,3 +1,4 @@
+import { LINK_STATUS } from '@gbfm/core/status'
 import { useQuery } from '@tanstack/react-query'
 import { Music4 } from 'lucide-react'
 import { StreamLinks } from '@/components/StreamLinks'
@@ -92,7 +93,8 @@ export function TweetMusicEntityCard({ entityType, entityId }: Props) {
     return null
   }
 
-  const verifiedLinks = links?.filter((l) => l.status === 'verified') ?? []
+  const verifiedLinks =
+    links?.filter((l) => l.status === LINK_STATUS.VERIFIED) ?? []
 
   return (
     <section className='not-prose overflow-hidden rounded-md border border-border/50 bg-muted/20 transition-colors hover:bg-muted/30'>

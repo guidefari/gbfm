@@ -1,3 +1,4 @@
+import { LINK_STATUS, LINK_STATUSES } from '@gbfm/core/status'
 import { z } from '@hono/zod-openapi'
 import {
   type InferInsertModel,
@@ -61,9 +62,6 @@ export const MUSIC_PLATFORMS = [
   'other'
 ] as const
 export type MusicPlatform = (typeof MUSIC_PLATFORMS)[number]
-
-export const LINK_STATUSES = ['pending_review', 'verified', 'rejected'] as const
-export type LinkStatus = (typeof LINK_STATUSES)[number]
 
 export const ALBUM_TYPES = ['LP', 'EP', 'single', 'compilation'] as const
 export type AlbumType = (typeof ALBUM_TYPES)[number]
@@ -248,7 +246,9 @@ export const musicEntityLinksTable = pgTable(
       .notNull()
       .references(() => musicPlatformsTable.id),
     url: varchar({ length: 2048 }).notNull(),
-    status: varchar({ length: 50 }).notNull().default('pending_review'),
+    status: varchar({ length: 50 })
+      .notNull()
+      .default(LINK_STATUS.PENDING_REVIEW),
     scrapedAt: timestamp({ withTimezone: true }),
     verifiedAt: timestamp({ withTimezone: true }),
     verifiedBy: text().references(() => user.id, { onDelete: 'set null' }),
@@ -394,9 +394,7 @@ const musicPlatformEnum = z
   .enum([...MUSIC_PLATFORMS] as [MusicPlatform, ...MusicPlatform[]])
   .openapi('MusicPlatform')
 
-const linkStatusEnum = z
-  .enum([...LINK_STATUSES] as [LinkStatus, ...LinkStatus[]])
-  .openapi('LinkStatus')
+const linkStatusEnum = z.enum(LINK_STATUSES).openapi('LinkStatus')
 
 const entityTypeEnum = z
   .enum([...MUSIC_ENTITY_TYPES] as [MusicEntityType, ...MusicEntityType[]])
@@ -571,7 +569,7 @@ export const insertMusicEntityLinkSchema = z
     entityId: z.string().uuid(),
     platform: musicPlatformEnum,
     url: z.string().url(),
-    status: linkStatusEnum.optional().default('pending_review'),
+    status: linkStatusEnum.optional().default(LINK_STATUS.PENDING_REVIEW),
     scrapedAt: z.coerce.date().optional(),
     metadata: z.record(z.string(), z.unknown()).optional()
   })

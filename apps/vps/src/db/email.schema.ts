@@ -1,3 +1,7 @@
+import {
+  EMAIL_DELIVERY_STATUSES,
+  EMAIL_DELIVERY_STATUS_VALUES
+} from '@gbfm/core/status'
 import { z } from '@hono/zod-openapi'
 import {
   type InferInsertModel,
@@ -23,19 +27,8 @@ export const EMAIL_NOTIFICATION_TYPES = {
   SYSTEM: 'SYSTEM'
 } as const
 
-export const EMAIL_DELIVERY_STATUSES = {
-  PENDING: 'PENDING',
-  SENT: 'SENT',
-  DELIVERED: 'DELIVERED',
-  BOUNCED: 'BOUNCED',
-  COMPLAINED: 'COMPLAINED',
-  FAILED: 'FAILED'
-} as const
-
 export type EmailNotificationType =
   (typeof EMAIL_NOTIFICATION_TYPES)[keyof typeof EMAIL_NOTIFICATION_TYPES]
-export type EmailDeliveryStatus =
-  (typeof EMAIL_DELIVERY_STATUSES)[keyof typeof EMAIL_DELIVERY_STATUSES]
 
 // Email delivery logs table - tracks all email sending attempts
 export const emailDeliveryLogsTable = pgTable(
@@ -48,7 +41,9 @@ export const emailDeliveryLogsTable = pgTable(
     emailType: varchar({ length: 50 }).notNull(),
     templateName: varchar({ length: 100 }).notNull(), // e.g., 'welcome', 'mix-notification'
     subject: varchar({ length: 500 }).notNull(),
-    status: varchar({ length: 50 }).notNull().default('PENDING'),
+    status: varchar({ length: 50 })
+      .notNull()
+      .default(EMAIL_DELIVERY_STATUSES.PENDING),
     sesMessageId: varchar({ length: 255 }), // SES response message ID
     metadata: jsonb(), // Additional context (mix ID, etc.)
     errorMessage: text(), // Error details if failed
@@ -101,6 +96,10 @@ export type InsertAuthorEmailPreferences = InferInsertModel<
 >
 
 // Zod schemas for API validation
+const emailDeliveryStatusEnum = z
+  .enum(EMAIL_DELIVERY_STATUS_VALUES)
+  .openapi('EmailDeliveryStatus')
+
 export const selectEmailDeliveryLogSchema = z.object({
   id: z.string(),
   userId: z.string().nullable(),
@@ -109,14 +108,7 @@ export const selectEmailDeliveryLogSchema = z.object({
   emailType: z.enum(['TRANSACTIONAL', 'MIX_RELEASE', 'PROMOTIONAL', 'SYSTEM']),
   templateName: z.string(),
   subject: z.string(),
-  status: z.enum([
-    'PENDING',
-    'SENT',
-    'DELIVERED',
-    'BOUNCED',
-    'COMPLAINED',
-    'FAILED'
-  ]),
+  status: emailDeliveryStatusEnum,
   sesMessageId: z.string().nullable(),
   metadata: z.record(z.string(), z.unknown()).nullable(),
   errorMessage: z.string().nullable(),
@@ -135,9 +127,7 @@ export const insertEmailDeliveryLogSchema = z.object({
   emailType: z.enum(['TRANSACTIONAL', 'MIX_RELEASE', 'PROMOTIONAL', 'SYSTEM']),
   templateName: z.string(),
   subject: z.string(),
-  status: z
-    .enum(['PENDING', 'SENT', 'DELIVERED', 'BOUNCED', 'COMPLAINED', 'FAILED'])
-    .optional(),
+  status: emailDeliveryStatusEnum.optional(),
   sesMessageId: z.string().optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
   errorMessage: z.string().optional(),

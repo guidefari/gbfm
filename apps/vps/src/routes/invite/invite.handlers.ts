@@ -1,13 +1,11 @@
+import { EMAIL_DELIVERY_STATUSES } from '@gbfm/core/status'
 import { sendInviteEmail } from '@gbfm/email/sender'
 import { eq } from 'drizzle-orm'
 import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
 import { user as usersTable, verification } from '@/db/auth.schema'
-import {
-  EMAIL_DELIVERY_STATUSES,
-  EMAIL_NOTIFICATION_TYPES
-} from '@/db/email.schema'
+import { EMAIL_NOTIFICATION_TYPES } from '@/db/email.schema'
 import type { AppRouteHandler } from '@/lib/types'
 import {
   createEmailDeliveryLog,

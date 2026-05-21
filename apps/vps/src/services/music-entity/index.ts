@@ -1,7 +1,7 @@
+import type { LinkStatus } from '@gbfm/core/status'
 import { Context, Effect, Layer } from 'effect'
 import type {
   InsertMusicEntityLink,
-  LinkStatus,
   MusicEntityType,
   SelectMusicAlbum,
   SelectMusicArtist,

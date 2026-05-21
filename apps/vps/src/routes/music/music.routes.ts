@@ -607,7 +607,8 @@ export const addEntityLink = createRoute({
     body: jsonContentRequired(
       z.object({
         platform: musicPlatformEnum,
-        url: z.string().url()
+        url: z.string().url(),
+        status: linkStatusEnum.optional()
       }),
       'Link to add'
     )

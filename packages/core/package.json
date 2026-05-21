@@ -6,7 +6,8 @@
     "./utils": "./src/utils/index.ts",
     "./api": "./src/api/index.ts",
     "./feature-flags": "./src/feature-flags/index.ts",
-    "./mix-processing": "./src/mix-processing/index.ts"
+    "./mix-processing": "./src/mix-processing/index.ts",
+    "./status": "./src/status/index.ts"
   },
   "scripts": {
     "typecheck": "tsgo --noEmit",

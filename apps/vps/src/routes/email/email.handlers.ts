@@ -1,3 +1,4 @@
+import { EMAIL_DELIVERY_STATUSES } from '@gbfm/core/status'
 import { sendMixNotificationEmail } from '@gbfm/email/sender'
 import { and, eq } from 'drizzle-orm'
 import { Effect } from 'effect'
@@ -6,7 +7,6 @@ import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
 import { user as usersTable } from '@/db/auth.schema'
 import {
-  EMAIL_DELIVERY_STATUSES,
   EMAIL_NOTIFICATION_TYPES,
   type SelectEmailDeliveryLog,
   selectEmailDeliveryLogSchema

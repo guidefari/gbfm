@@ -1,9 +1,9 @@
+import { LINK_STATUS, type LinkStatus } from '@gbfm/core/status'
 import { and, desc, eq, sql } from 'drizzle-orm'
 import { Effect } from 'effect'
 import type { db as DbType } from '@/db'
 import {
   type InsertMusicEntityLink,
-  type LinkStatus,
   type MusicEntityType,
   musicEntityLinksTable
 } from '@/db/music-entity.schema'
@@ -57,7 +57,7 @@ export const addLinkEffect = (db: typeof DbType) =>
             ],
             set: {
               url: data.url,
-              status: data.status ?? 'pending_review',
+              status: data.status ?? LINK_STATUS.PENDING_REVIEW,
               metadata: data.metadata,
               updatedAt: sql`now()`
             }
@@ -89,7 +89,7 @@ export const updateLinkStatusEffect =
         status,
         updatedAt: now
       }
-      if (status === 'verified') {
+      if (status === LINK_STATUS.VERIFIED) {
         updateData.verifiedAt = now
         updateData.verifiedBy = verifiedBy
       }
@@ -161,7 +161,7 @@ export const getPendingLinksEffect =
           db
             .select()
             .from(musicEntityLinksTable)
-            .where(eq(musicEntityLinksTable.status, 'pending_review'))
+            .where(eq(musicEntityLinksTable.status, LINK_STATUS.PENDING_REVIEW))
             .orderBy(desc(musicEntityLinksTable.scrapedAt))
             .limit(opts?.limit ?? 50)
             .offset(opts?.offset ?? 0),

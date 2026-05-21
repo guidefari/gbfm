@@ -1,3 +1,4 @@
+import { LINK_STATUS } from '@gbfm/core/status'
 import { and, eq } from 'drizzle-orm'
 import { Effect } from 'effect'
 import type { db as DbType } from '@/db'
@@ -169,7 +170,7 @@ export const scrapeAndCreateEntityEffect =
             entityId,
             platform: link.platform,
             url: link.url,
-            status: 'pending_review',
+            status: LINK_STATUS.PENDING_REVIEW,
             scrapedAt: link.scrapedAt,
             metadata: link.metadata
           }),

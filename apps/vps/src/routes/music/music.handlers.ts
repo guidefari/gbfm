@@ -5,6 +5,7 @@ class FetchError extends Data.TaggedError('FetchError')<{
   readonly cause?: unknown
 }> {}
 
+import { LINK_STATUS } from '@gbfm/core/status'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { getErrorMessage } from '@/errors'
 import type { AppRouteHandler } from '@/lib/types'
@@ -785,10 +786,10 @@ export const listEntityLinks: AppRouteHandler<ListEntityLinksRoute> = async (
 
 export const addEntityLink: AppRouteHandler<AddEntityLinkRoute> = async (c) => {
   const { entityType, entityId } = c.req.valid('param')
-  const { platform, url } = c.req.valid('json')
+  const { platform, url, status } = c.req.valid('json')
   const program = Effect.gen(function* () {
     const svc = yield* MusicEntityService
-    return yield* svc.addLink({ entityType, entityId, platform, url })
+    return yield* svc.addLink({ entityType, entityId, platform, url, status })
   }).pipe(
     Effect.catchTag('DatabaseError', (e) =>
       Effect.succeed({ error: e.message } as const)
@@ -813,7 +814,7 @@ export const updateEntityLinkStatus: AppRouteHandler<
   const { entityType, entityId, linkId } = c.req.valid('param')
   const { status, metadata } = c.req.valid('json')
   const user = c.get('user')
-  const userId = status === 'verified' ? user.id : undefined
+  const userId = status === LINK_STATUS.VERIFIED ? user.id : undefined
 
   const program = Effect.gen(function* () {
     const svc = yield* MusicEntityService

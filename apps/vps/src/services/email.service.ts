@@ -1,10 +1,10 @@
+import { EMAIL_DELIVERY_STATUSES } from '@gbfm/core/status'
 import { sendMusicReminderEmail } from '@gbfm/email/sender'
 import { eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { user } from '@/db/auth.schema'
 import {
-  EMAIL_DELIVERY_STATUSES,
   EMAIL_NOTIFICATION_TYPES,
   emailDeliveryLogsTable
 } from '@/db/email.schema'
