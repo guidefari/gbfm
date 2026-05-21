@@ -129,7 +129,11 @@ export const insertPostSchema = z
       description: 'URL slug for the post',
       example: 'my-blog-post'
     }),
-    content: z.string().openapi({ description: 'Content of the post' }),
+    content: z
+      .string()
+      .optional()
+      .default('')
+      .openapi({ description: 'Content of the post' }),
     draft: z
       .boolean()
       .optional()

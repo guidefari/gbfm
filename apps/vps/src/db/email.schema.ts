@@ -1,6 +1,6 @@
 import {
-  EMAIL_DELIVERY_STATUSES,
-  EMAIL_DELIVERY_STATUS_VALUES
+  EMAIL_DELIVERY_STATUS_VALUES,
+  EMAIL_DELIVERY_STATUSES
 } from '@gbfm/core/status'
 import { z } from '@hono/zod-openapi'
 import {

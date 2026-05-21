@@ -14,7 +14,7 @@ import {
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { ArrowLeft, Loader2, Music4, Send } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { type KeyboardEvent, useEffect, useMemo, useState } from 'react'
 import {
   fetcher,
   useAddAdminEntityLink,
@@ -222,6 +222,20 @@ function MusicCapturePage() {
     })
   }
 
+  function handleSubmitShortcut(
+    event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) {
+    if (
+      event.metaKey &&
+      event.key === 'Enter' &&
+      canSubmit &&
+      !submitMutation.isPending
+    ) {
+      event.preventDefault()
+      submitMutation.mutate()
+    }
+  }
+
   const submitMutation = useMutation({
     mutationFn: async () => {
       if (!user) {
@@ -358,8 +372,13 @@ function MusicCapturePage() {
                 id='title'
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
+                onKeyDown={handleSubmitShortcut}
                 placeholder='Short title for the tweet'
+                maxLength={255}
               />
+              <p className='text-right text-xs text-muted-foreground'>
+                {title.length}/255
+              </p>
             </div>
 
             <div className='space-y-2'>
@@ -368,14 +387,8 @@ function MusicCapturePage() {
                 id='commentary'
                 value={commentary}
                 onChange={(e) => setCommentary(e.target.value)}
-                placeholder='Add your commentary in markdown...'
-                className='min-h-[360px]'
-                onKeyDown={(e) => {
-                  if (e.metaKey && e.key === 'Enter' && canSubmit) {
-                    e.preventDefault()
-                    submitMutation.mutate()
-                  }
-                }}
+                placeholder='Optional commentary in markdown...'
+                onKeyDown={handleSubmitShortcut}
               />
             </div>
 
