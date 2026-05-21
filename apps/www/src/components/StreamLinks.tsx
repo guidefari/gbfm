@@ -27,7 +27,7 @@ export function StreamLinks({ links }: Props) {
   if (!links.length) return null
 
   return (
-    <div className='flex flex-wrap items-center gap-1.5'>
+    <div className='pointer-events-auto flex flex-wrap items-center gap-1.5'>
       <span className='text-[10px] font-bold uppercase tracking-widest text-muted-foreground/50'>
         Stream
       </span>

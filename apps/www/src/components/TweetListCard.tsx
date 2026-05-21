@@ -13,13 +13,17 @@ type Props = {
 export function TweetListCard({ post }: Props) {
   const hasMusicEntity = Boolean(post.musicEntityType && post.musicEntityId)
   const titleDuplicatesEntity = hasMusicEntity
+  const tweetLinkLabel = post.title ? `Open tweet: ${post.title}` : 'Open tweet'
 
   return (
-    <Link
-      to='/tweet/$slug'
-      params={{ slug: post.slug }}
-      className='block rounded-lg border border-border/60 bg-card/40 p-4 shadow-sm transition-colors hover:bg-card/70 sm:p-5'>
-      <div className='space-y-3'>
+    <article className='relative block rounded-lg border border-border/60 bg-card/40 p-4 shadow-sm transition-colors hover:bg-card/70 sm:p-5'>
+      <Link
+        aria-label={tweetLinkLabel}
+        className='absolute inset-0 z-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+        params={{ slug: post.slug }}
+        to='/tweet/$slug'
+      />
+      <div className='pointer-events-none relative z-10 space-y-3'>
         <TweetAuthorRow
           creators={post.creators ?? []}
           createdAt={post.createdAt}
@@ -57,6 +61,6 @@ export function TweetListCard({ post }: Props) {
           </div>
         )}
       </div>
-    </Link>
+    </article>
   )
 }

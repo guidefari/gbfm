@@ -53,13 +53,15 @@ function TweetPostPage() {
     createdAt && updatedAt && updatedAt > createdAt ? post.updatedAt : null
 
   return (
-    <div className='max-w-xl px-4 py-6 mx-auto'>
-      <Link
-        to='/tweet'
-        className='inline-flex items-center gap-1 mb-6 text-sm transition-colors text-muted-foreground hover:text-foreground'>
-        <ArrowLeft className='w-4 h-4' />
-        Tweet
-      </Link>
+    <div className='max-w-2xl px-4 py-8 mx-auto'>
+      <nav className='mb-6 flex items-end gap-6 border-b border-border/40'>
+        <Link
+          to='/tweet'
+          className='-mb-px inline-flex items-center gap-1 border-b-2 border-transparent pb-3 text-lg font-black tracking-tight text-muted-foreground transition-colors hover:border-border hover:text-foreground'>
+          <ArrowLeft className='w-4 h-4' />
+          Tweets
+        </Link>
+      </nav>
       <article className='space-y-4 rounded-lg border border-border/60 bg-card/60 p-4 shadow-sm sm:p-5'>
         <div className='flex items-start justify-between gap-3'>
           <div className='space-y-1'>
