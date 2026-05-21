@@ -1,3 +1,15 @@
+# [2.43.0](https://github.com/guidefari/gbfm/compare/v2.42.0...v2.43.0) (2026-05-21)
+
+
+### Bug Fixes
+
+* automatically verify manually added links + TS! ([e879b98](https://github.com/guidefari/gbfm/commit/e879b9897a611e80c3f61a6f8fb36f77438b2690))
+
+
+### Features
+
+* tweets ([97ca3d6](https://github.com/guidefari/gbfm/commit/97ca3d65fd858f277bf3c90e575b7f4e56057f57))
+
 # [2.42.0](https://github.com/guidefari/gbfm/compare/v2.41.0...v2.42.0) (2026-05-17)
 
 
