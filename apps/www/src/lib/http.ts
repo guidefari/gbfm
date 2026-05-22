@@ -3,8 +3,9 @@ import type {
   SelectAudio,
   SelectLabel,
   SelectMdxCompiledAudio,
+  SelectMdxCompiledEditorialPost,
   SelectMdxCompiledLabel,
-  SelectMdxCompiledPost,
+  SelectMdxCompiledMicroPost,
   SelectMdxCompiledRelease,
   SelectMdxCompiledShow,
   SelectRelease,
@@ -183,7 +184,7 @@ export function useAudioBySlug(type: 'mix' | 'track' | 'misc', slug: string) {
   }
 }
 
-export function usePosts(type?: 'post' | 'micro', limit = 20) {
+export function useEditorialPosts(limit = 20) {
   const {
     data,
     error,
@@ -191,14 +192,18 @@ export function usePosts(type?: 'post' | 'micro', limit = 20) {
     hasNextPage,
     isFetchingNextPage,
     isPending
-  } = useInfiniteQuery<PaginatedResponse<SelectMdxCompiledPost>, Error>({
-    queryKey: ['posts', type, limit].filter(Boolean),
+  } = useInfiniteQuery<
+    PaginatedResponse<SelectMdxCompiledEditorialPost>,
+    Error
+  >({
+    queryKey: ['posts', 'editorials', limit],
     queryFn: async ({ pageParam = 0 }) => {
-      const url = new URL(`${VPS_BASE_URL}/content/posts`)
+      const url = new URL(`${VPS_BASE_URL}/content/posts/editorials`)
       url.searchParams.set('limit', String(limit))
       url.searchParams.set('offset', String(pageParam))
-      if (type) url.searchParams.set('type', type)
-      return fetcher<PaginatedResponse<SelectMdxCompiledPost>>(url.toString())
+      return fetcher<PaginatedResponse<SelectMdxCompiledEditorialPost>>(
+        url.toString()
+      )
     },
     initialPageParam: 0,
     getNextPageParam: (lastPage) =>
@@ -217,10 +222,66 @@ export function usePosts(type?: 'post' | 'micro', limit = 20) {
   }
 }
 
-export function usePostBySlug(slug: string) {
-  const { data, error, isPending } = useQuery<SelectMdxCompiledPost, Error>({
-    queryKey: ['post', slug],
-    queryFn: async () => fetcher(`${VPS_BASE_URL}/content/posts/${slug}`),
+export function useMicroPosts(limit = 20) {
+  const {
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isPending
+  } = useInfiniteQuery<PaginatedResponse<SelectMdxCompiledMicroPost>, Error>({
+    queryKey: ['posts', 'micro', limit],
+    queryFn: async ({ pageParam = 0 }) => {
+      const url = new URL(`${VPS_BASE_URL}/content/posts/micro`)
+      url.searchParams.set('limit', String(limit))
+      url.searchParams.set('offset', String(pageParam))
+      return fetcher<PaginatedResponse<SelectMdxCompiledMicroPost>>(
+        url.toString()
+      )
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.hasMore
+        ? lastPage.pagination.offset + lastPage.pagination.limit
+        : undefined
+  })
+
+  return {
+    data: data?.pages.flatMap((page) => page.data) ?? [],
+    error,
+    isPending,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
+  }
+}
+
+export function useEditorialPostBySlug(slug: string) {
+  const { data, error, isPending } = useQuery<
+    SelectMdxCompiledEditorialPost,
+    Error
+  >({
+    queryKey: ['post', 'editorial', slug],
+    queryFn: async () =>
+      fetcher(`${VPS_BASE_URL}/content/posts/editorials/${slug}`),
+    enabled: Boolean(slug)
+  })
+
+  return {
+    data,
+    error,
+    isPending
+  }
+}
+
+export function useMicroPostBySlug(slug: string) {
+  const { data, error, isPending } = useQuery<
+    SelectMdxCompiledMicroPost,
+    Error
+  >({
+    queryKey: ['post', 'micro', slug],
+    queryFn: async () => fetcher(`${VPS_BASE_URL}/content/posts/micro/${slug}`),
     enabled: Boolean(slug)
   })
 
@@ -977,7 +1038,7 @@ export type PublicProfile = {
     }>
     tweets: Array<{
       id: string
-      title: string
+      title: string | null
       slug: string
       createdAt: string
     }>

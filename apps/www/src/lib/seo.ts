@@ -1,7 +1,8 @@
 import type {
   SelectMdxCompiledAudio,
+  SelectMdxCompiledEditorialPost,
   SelectMdxCompiledLabel,
-  SelectMdxCompiledPost,
+  SelectMdxCompiledMicroPost,
   SelectMdxCompiledRelease,
   SelectMdxCompiledShow
 } from '@gbfm/vps/schemas'
@@ -138,7 +139,7 @@ export function generateTrackSEO(
 }
 
 export function generatePostSEO(
-  post: SelectMdxCompiledPost,
+  post: SelectMdxCompiledEditorialPost,
   slug: string
 ): SEOHeadData {
   const title = post.title || slug
@@ -156,7 +157,7 @@ export function generatePostSEO(
 }
 
 export function generateMicroPostSEO(
-  post: SelectMdxCompiledPost,
+  post: SelectMdxCompiledMicroPost,
   slug: string
 ): SEOHeadData {
   const title = post.title || slug

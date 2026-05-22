@@ -239,6 +239,13 @@
       "when": 1778960996921,
       "tag": "0036_broad_lady_vermin",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1779390161165,
+      "tag": "0037_friendly_kid_colt",
+      "breakpoints": true
     }
   ]
 }

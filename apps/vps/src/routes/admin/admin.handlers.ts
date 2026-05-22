@@ -52,7 +52,7 @@ type CreatedAtColumn =
 
 type RecentContentItem = {
   id: string
-  title: string
+  title: string | null
   slug: string
   type:
     | 'mix'

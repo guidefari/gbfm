@@ -1,12 +1,12 @@
 import { getMixRecencyLabel } from '@gbfm/core/utils'
 import { Badge } from '@gbfm/ui'
-import type { SelectMdxCompiledPost } from '@gbfm/vps/schemas'
+import type { SelectMdxCompiledEditorialPost } from '@gbfm/vps/schemas'
 import { Link } from '@tanstack/react-router'
 import { CalendarDays, Sparkles } from 'lucide-react'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 
 interface EditorialListItemProps {
-  post: SelectMdxCompiledPost
+  post: SelectMdxCompiledEditorialPost
 }
 
 export function EditorialListItem({ post }: EditorialListItemProps) {

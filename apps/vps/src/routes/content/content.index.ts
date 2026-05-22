@@ -9,6 +9,10 @@ import * as releaseRoutes from './release.routes'
 
 const router = createRouter()
   .openapi(routes.getPosts, handlers.getPosts)
+  .openapi(routes.getEditorialPosts, handlers.getEditorialPosts)
+  .openapi(routes.getEditorialPostBySlug, handlers.getEditorialPostBySlug)
+  .openapi(routes.getMicroPosts, handlers.getMicroPosts)
+  .openapi(routes.getMicroPostBySlug, handlers.getMicroPostBySlug)
   .openapi(routes.getPostBySlug, handlers.getPostBySlug)
   .openapi(routes.createPost, handlers.createPost)
   .openapi(routes.updatePostBySlug, handlers.updatePostBySlug)

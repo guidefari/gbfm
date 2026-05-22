@@ -45,7 +45,7 @@ const resolveResponseSchema = z
           tweets: z.array(
             z.object({
               id: z.string(),
-              title: z.string(),
+              title: z.string().nullable(),
               slug: z.string(),
               createdAt: z.date()
             })

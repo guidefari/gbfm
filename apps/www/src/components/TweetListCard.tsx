@@ -1,5 +1,5 @@
 import { Badge } from '@gbfm/ui'
-import type { SelectMdxCompiledPost } from '@gbfm/vps/schemas'
+import type { SelectMdxCompiledMicroPost } from '@gbfm/vps/schemas'
 import { Link } from '@tanstack/react-router'
 import { Tag } from 'lucide-react'
 import { MDXRendrr } from '@/components/MDXRendrr'
@@ -7,7 +7,7 @@ import { TweetAuthorRow } from '@/components/TweetAuthorRow'
 import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
 
 type Props = {
-  post: SelectMdxCompiledPost
+  post: SelectMdxCompiledMicroPost
 }
 
 export function TweetListCard({ post }: Props) {
@@ -37,7 +37,7 @@ export function TweetListCard({ post }: Props) {
         )}
 
         <div className='prose prose-sm dark:prose-invert max-w-none prose-p:my-0 prose-p:leading-relaxed prose-headings:text-base prose-headings:my-1 prose-a:text-foreground prose-a:underline prose-a:pointer-events-none [&_iframe]:hidden [&_img]:hidden [&_video]:hidden [&_audio]:hidden line-clamp-4'>
-          <MDXRendrr mdxString={post.compiledContent ?? post.content} />
+          <MDXRendrr mdxString={post.compiledContent ?? post.content ?? ''} />
         </div>
 
         {hasMusicEntity && post.musicEntityType && post.musicEntityId && (

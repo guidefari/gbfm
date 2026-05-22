@@ -69,9 +69,11 @@ function ProfileTweetCard({ tweet }: { tweet: Tweet }) {
       to='/tweet/$slug'
       params={{ slug: tweet.slug }}
       className={`${CARD_CLASS} group flex flex-col gap-1 rounded-sm border border-border bg-card p-3 transition-colors hover:bg-muted/50`}>
-      <h3 className='line-clamp-2 font-mono text-sm font-semibold leading-tight text-foreground transition-colors group-hover:text-highlight'>
-        {tweet.title}
-      </h3>
+      {tweet.title && (
+        <h3 className='line-clamp-2 font-mono text-sm font-semibold leading-tight text-foreground transition-colors group-hover:text-highlight'>
+          {tweet.title}
+        </h3>
+      )}
       <p className='font-mono text-xs text-muted-foreground'>{date}</p>
     </Link>
   )

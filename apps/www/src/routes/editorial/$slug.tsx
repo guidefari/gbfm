@@ -1,5 +1,5 @@
 import { Badge } from '@gbfm/ui'
-import type { SelectMdxCompiledPost } from '@gbfm/vps/schemas'
+import type { SelectMdxCompiledEditorialPost } from '@gbfm/vps/schemas'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft, Tag } from 'lucide-react'
 import * as React from 'react'
@@ -12,8 +12,8 @@ import { generatePostSEO, generateSEOMeta } from '@/lib/seo'
 export const Route = createFileRoute('/editorial/$slug')({
   component: EditorialPostPage,
   loader: async ({ params }) => {
-    const post = await fetcher<SelectMdxCompiledPost>(
-      `${VPS_BASE_URL}/content/posts/${params.slug}`
+    const post = await fetcher<SelectMdxCompiledEditorialPost>(
+      `${VPS_BASE_URL}/content/posts/editorials/${params.slug}`
     )
     return { post }
   },
@@ -55,7 +55,7 @@ function PostDetails({
   post,
   slug
 }: {
-  post: SelectMdxCompiledPost
+  post: SelectMdxCompiledEditorialPost
   slug: string
 }) {
   return (

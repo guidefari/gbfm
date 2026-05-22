@@ -17,6 +17,10 @@ import type {
   CreatePostRoute,
   GetAudioBySlugRoute,
   GetAudioByTypeRoute,
+  GetEditorialPostBySlugRoute,
+  GetEditorialPostsRoute,
+  GetMicroPostBySlugRoute,
+  GetMicroPostsRoute,
   GetMixJobStatusRoute,
   GetMixQRPdfRoute,
   GetPostBySlugRoute,
@@ -98,6 +102,120 @@ export const getPostBySlug: AppRouteHandler<GetPostBySlugRoute> = async (c) => {
   return c.json(result, HttpStatusCodes.OK)
 }
 
+export const getEditorialPosts: AppRouteHandler<
+  GetEditorialPostsRoute
+> = async (c) => {
+  const { limit, offset } = c.req.valid('query')
+
+  const program = Effect.gen(function* () {
+    const postService = yield* PostService
+    return yield* postService.getEditorials({ limit, offset })
+  }).pipe(
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    )
+  )
+
+  const result = await AppRuntime.runPromise(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
+  }
+
+  return c.json(result, HttpStatusCodes.OK)
+}
+
+export const getEditorialPostBySlug: AppRouteHandler<
+  GetEditorialPostBySlugRoute
+> = async (c) => {
+  const { slug } = c.req.valid('param')
+
+  const program = Effect.gen(function* () {
+    const postService = yield* PostService
+    return yield* postService.getEditorialBySlug(slug)
+  }).pipe(
+    Effect.catchTag('NotFoundError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    )
+  )
+
+  const result = await AppRuntime.runPromise(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
+  }
+
+  return c.json(result, HttpStatusCodes.OK)
+}
+
+export const getMicroPosts: AppRouteHandler<GetMicroPostsRoute> = async (c) => {
+  const { limit, offset } = c.req.valid('query')
+
+  const program = Effect.gen(function* () {
+    const postService = yield* PostService
+    return yield* postService.getMicroPosts({ limit, offset })
+  }).pipe(
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    )
+  )
+
+  const result = await AppRuntime.runPromise(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
+  }
+
+  return c.json(result, HttpStatusCodes.OK)
+}
+
+export const getMicroPostBySlug: AppRouteHandler<
+  GetMicroPostBySlugRoute
+> = async (c) => {
+  const { slug } = c.req.valid('param')
+
+  const program = Effect.gen(function* () {
+    const postService = yield* PostService
+    return yield* postService.getMicroPostBySlug(slug)
+  }).pipe(
+    Effect.catchTag('NotFoundError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.NOT_FOUND
+      } as const)
+    ),
+    Effect.catchTag('DatabaseError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    )
+  )
+
+  const result = await AppRuntime.runPromise(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
+  }
+
+  return c.json(result, HttpStatusCodes.OK)
+}
+
 export const createPost: AppRouteHandler<CreatePostRoute> = async (c) => {
   const { creatorIds, ...postData } = c.req.valid('json')
   const user = c.get('user')
@@ -117,6 +235,12 @@ export const createPost: AppRouteHandler<CreatePostRoute> = async (c) => {
         status: HttpStatusCodes.INTERNAL_SERVER_ERROR
       } as const)
     ),
+    Effect.catchTag('ValidationError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.UNPROCESSABLE_ENTITY
+      } as const)
+    ),
     Effect.catchTag('DatabaseError', (e) =>
       Effect.succeed({
         error: e.message,
@@ -128,6 +252,13 @@ export const createPost: AppRouteHandler<CreatePostRoute> = async (c) => {
   const result = await AppRuntime.runPromise(program)
 
   if ('error' in result) {
+    if (result.status === HttpStatusCodes.UNPROCESSABLE_ENTITY) {
+      return c.json(
+        { error: result.error },
+        HttpStatusCodes.UNPROCESSABLE_ENTITY
+      )
+    }
+
     return c.json({ error: result.error }, result.status)
   }
 
@@ -159,6 +290,12 @@ export const updatePostBySlug: AppRouteHandler<UpdatePostBySlugRoute> = async (
         status: HttpStatusCodes.FORBIDDEN
       } as const)
     ),
+    Effect.catchTag('ValidationError', (e) =>
+      Effect.succeed({
+        error: e.message,
+        status: HttpStatusCodes.UNPROCESSABLE_ENTITY
+      } as const)
+    ),
     Effect.catchTag('DatabaseError', (e) =>
       Effect.succeed({
         error: e.message,
@@ -170,6 +307,13 @@ export const updatePostBySlug: AppRouteHandler<UpdatePostBySlugRoute> = async (
   const result = await AppRuntime.runPromise(program)
 
   if ('error' in result) {
+    if (result.status === HttpStatusCodes.UNPROCESSABLE_ENTITY) {
+      return c.json(
+        { error: result.error },
+        HttpStatusCodes.UNPROCESSABLE_ENTITY
+      )
+    }
+
     return c.json({ error: result.error }, result.status)
   }
 

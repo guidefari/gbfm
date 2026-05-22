@@ -1,10 +1,10 @@
-import type { SelectMdxCompiledPost } from '@gbfm/vps/schemas'
+import type { SelectMdxCompiledMicroPost } from '@gbfm/vps/schemas'
 import { Link } from '@tanstack/react-router'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { usePublicProfile } from '@/lib/http'
 
 type Props = {
-  creators: NonNullable<SelectMdxCompiledPost['creators']>
+  creators: NonNullable<SelectMdxCompiledMicroPost['creators']>
   createdAt?: string | Date | null
   interactive?: boolean
 }

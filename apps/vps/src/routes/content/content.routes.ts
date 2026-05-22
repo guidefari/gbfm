@@ -10,6 +10,8 @@ import {
 } from '@/db/audio.schema'
 import {
   createPostSchema,
+  selectMdxCompiledEditorialPostSchema,
+  selectMdxCompiledMicroPostSchema,
   selectMdxCompiledPostSchema,
   selectPostSchema,
   updatePostSchema
@@ -87,6 +89,94 @@ export const getPostBySlug = createRoute({
   }
 })
 
+export const getEditorialPosts = createRoute({
+  path: '/posts/editorials',
+  method: 'get',
+  request: {
+    query: paginationQuerySchema
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      createPaginatedResponseSchema(selectMdxCompiledEditorialPostSchema),
+      'Paginated list of editorial posts'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to fetch editorial posts'
+    )
+  }
+})
+
+export const getEditorialPostBySlug = createRoute({
+  path: '/posts/editorials/{slug}',
+  method: 'get',
+  request: {
+    params: z.object({
+      slug: z.string().openapi({ description: 'Post slug' })
+    })
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      selectMdxCompiledEditorialPostSchema,
+      'Single editorial post'
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      z.object({ error: z.string() }),
+      'Editorial post not found'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to fetch editorial post'
+    )
+  }
+})
+
+export const getMicroPosts = createRoute({
+  path: '/posts/micro',
+  method: 'get',
+  request: {
+    query: paginationQuerySchema
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      createPaginatedResponseSchema(selectMdxCompiledMicroPostSchema),
+      'Paginated list of micro posts'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to fetch micro posts'
+    )
+  }
+})
+
+export const getMicroPostBySlug = createRoute({
+  path: '/posts/micro/{slug}',
+  method: 'get',
+  request: {
+    params: z.object({
+      slug: z.string().openapi({ description: 'Post slug' })
+    })
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      selectMdxCompiledMicroPostSchema,
+      'Single micro post'
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      z.object({ error: z.string() }),
+      'Micro post not found'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to fetch micro post'
+    )
+  }
+})
+
 export const createPost = createRoute({
   path: '/post',
   method: 'post',
@@ -113,7 +203,7 @@ export const createPost = createRoute({
       'Failed to create post'
     ),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
-      createErrorSchema(createPostSchema),
+      z.object({ error: z.string() }),
       'Validation error'
     )
   }
@@ -159,6 +249,10 @@ export const updatePostBySlug = createRoute({
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to update post'
+    ),
+    [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
+      z.object({ error: z.string() }),
+      'Validation error'
     )
   }
 })
@@ -547,6 +641,10 @@ export const getMixJobStatus = createRoute({
 // Export types
 export type GetPostsRoute = typeof getPosts
 export type GetPostBySlugRoute = typeof getPostBySlug
+export type GetEditorialPostsRoute = typeof getEditorialPosts
+export type GetEditorialPostBySlugRoute = typeof getEditorialPostBySlug
+export type GetMicroPostsRoute = typeof getMicroPosts
+export type GetMicroPostBySlugRoute = typeof getMicroPostBySlug
 export type CreatePostRoute = typeof createPost
 export type UpdatePostBySlugRoute = typeof updatePostBySlug
 export type GetPostsByTagRoute = typeof getPostsByTag

@@ -1,5 +1,5 @@
 import { Badge, Button } from '@gbfm/ui'
-import type { SelectMdxCompiledPost } from '@gbfm/vps/schemas'
+import type { SelectMdxCompiledMicroPost } from '@gbfm/vps/schemas'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft, Edit3, Tag } from 'lucide-react'
 import { MDXRendrr } from '@/components/MDXRendrr'
@@ -13,8 +13,8 @@ import { useAuthStore } from '@/store/auth'
 export const Route = createFileRoute('/tweet/$slug')({
   component: TweetPostPage,
   loader: async ({ params }) => {
-    const post = await fetcher<SelectMdxCompiledPost>(
-      `${VPS_BASE_URL}/content/posts/${params.slug}`
+    const post = await fetcher<SelectMdxCompiledMicroPost>(
+      `${VPS_BASE_URL}/content/posts/micro/${params.slug}`
     )
     return { post }
   },
@@ -112,7 +112,7 @@ function TweetPostPage() {
         )}
 
         <div className='prose prose-base dark:prose-invert max-w-none prose-headings:font-black prose-headings:tracking-tighter prose-p:leading-relaxed prose-p:my-0 prose-a:text-foreground prose-a:underline'>
-          <MDXRendrr mdxString={post.compiledContent ?? post.content} />
+          <MDXRendrr mdxString={post.compiledContent ?? post.content ?? ''} />
         </div>
 
         {hasMusicEntity && post.musicEntityType && post.musicEntityId && (

@@ -48,7 +48,7 @@ export type PublicProfile = {
     }>
     tweets: Array<{
       id: string
-      title: string
+      title: string | null
       slug: string
       createdAt: Date
     }>
@@ -200,7 +200,9 @@ export const getPublicProfileEffect = (username: string) =>
     })
 
     const editorials = userPosts
-      .filter((p) => p.type === 'post')
+      .filter((p): p is typeof p & { title: string } =>
+        Boolean(p.type === 'post' && p.title)
+      )
       .map(({ type, ...rest }) => rest)
 
     const tweets = userPosts

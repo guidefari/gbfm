@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
 import { PostsNav } from '@/components/PostsNav'
 import { TweetListCard } from '@/components/TweetListCard'
-import { usePosts } from '@/lib/http'
+import { useMicroPosts } from '@/lib/http'
 import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'
 
 const searchSchema = z.object({
@@ -22,7 +22,7 @@ export const Route = createFileRoute('/tweet/')({
 function TweetListPage() {
   const { tag } = Route.useSearch()
   const { data, isPending, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    usePosts('micro', 5)
+    useMicroPosts(5)
 
   const allTags = useMemo(() => {
     if (!data) return []

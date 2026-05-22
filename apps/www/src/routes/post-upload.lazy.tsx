@@ -35,10 +35,10 @@ type PostType = 'post' | 'micro'
 
 interface PostItem {
   id: string
-  title: string
+  title: string | null
   description: string | null
   slug: string
-  content: string
+  content: string | null
   thumbnailUrl: string | null
   tags: string[] | null
   draft: boolean
@@ -118,6 +118,14 @@ function PostUploadPage() {
     [formData.type]
   )
 
+  const canSave = useMemo(() => {
+    if (formData.type === 'micro') {
+      return Boolean(formData.title.trim() || formData.content.trim())
+    }
+
+    return Boolean(formData.title.trim() && formData.content.trim())
+  }, [formData.type, formData.title, formData.content])
+
   const generateSlug = (title: string) => {
     return title
       .toLowerCase()
@@ -154,11 +162,12 @@ function PostUploadPage() {
 
       setUploadStep('saving')
 
+      const generatedSlug = data.slug || generateSlug(data.title)
       const payload = {
-        title: data.title,
+        title: data.title.trim() || null,
         description: data.description,
-        slug: data.slug || generateSlug(data.title),
-        content: data.content,
+        slug: generatedSlug || `${data.type}-${Date.now().toString(36)}`,
+        content: data.content.trim() ? data.content : null,
         thumbnailUrl: imageUrl || null,
         tags: data.tags,
         draft: data.draft,
@@ -184,7 +193,7 @@ function PostUploadPage() {
       setUploadStep('success')
       toast({
         title: isEditMode ? 'Post updated' : 'Post created',
-        description: `"${savedPost.title}" saved successfully.`
+        description: `${savedPost.title || savedPost.slug} saved successfully.`
       })
 
       const savedType = savedPost.type || formData.type
@@ -301,9 +310,7 @@ function PostUploadPage() {
             </Button>
             <Button
               onClick={() => saveMutation.mutate(formData)}
-              disabled={
-                saveMutation.isPending || !formData.title || !formData.content
-              }>
+              disabled={saveMutation.isPending || !canSave}>
               {saveMutation.isPending ? (
                 <>
                   <Loader2 className='w-4 h-4 mr-2 animate-spin' />

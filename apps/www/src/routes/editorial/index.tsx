@@ -13,7 +13,7 @@ import { z } from 'zod'
 import { EditorialListItem } from '@/components/EditorialListItem'
 import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
 import { PostsNav } from '@/components/PostsNav'
-import { usePosts } from '@/lib/http'
+import { useEditorialPosts } from '@/lib/http'
 import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'
 
 const searchSchema = z.object({
@@ -32,7 +32,7 @@ function EditorialListPage() {
   const { tag } = Route.useSearch()
   const navigate = Route.useNavigate()
   const { data, isPending, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    usePosts('post')
+    useEditorialPosts()
 
   const allTags = useMemo(() => {
     if (!data) return []

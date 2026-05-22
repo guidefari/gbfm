@@ -26,11 +26,11 @@ async function migrateLabelsFromPosts() {
         const [newLabel] = await tx
           .insert(labelsTable)
           .values({
-            title: post.title,
+            title: post.title ?? post.slug,
             description: post.description,
             thumbnailUrl: post.thumbnailUrl,
             slug: post.slug,
-            content: post.content,
+            content: post.content ?? '',
             draft: post.draft,
             tags: post.tags,
             createdAt: post.createdAt,

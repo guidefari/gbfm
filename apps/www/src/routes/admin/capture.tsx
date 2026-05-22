@@ -46,10 +46,10 @@ const entityPathByType: Record<MusicEntityType, string> = {
 
 interface PostItem {
   id: string
-  title: string
+  title: string | null
   description: string | null
   slug: string
-  content: string
+  content: string | null
   thumbnailUrl: string | null
   tags: string[] | null
   draft: boolean
@@ -108,19 +108,13 @@ function MusicCapturePage() {
 
   useEffect(() => {
     if (!existingPost) return
-    setTitle(existingPost.title)
-    setCommentary(existingPost.content)
+    setTitle(existingPost.title ?? '')
+    setCommentary(existingPost.content ?? '')
   }, [existingPost])
 
-  useEffect(() => {
-    if (resolved.data?.entity?.title && !title && !isEditMode) {
-      setTitle(resolved.data.entity.title)
-    }
-  }, [isEditMode, resolved.data, title])
-
   const canSubmit = useMemo(() => {
-    return Boolean(title.trim())
-  }, [title])
+    return Boolean(title.trim() || commentary.trim())
+  }, [title, commentary])
 
   const canAccess = Boolean(
     user &&
@@ -254,10 +248,10 @@ function MusicCapturePage() {
         : [user.id]
 
       const payload = {
-        title: title.trim(),
+        title: title.trim() || null,
         description: existingPost?.description ?? undefined,
         slug,
-        content: commentary,
+        content: commentary.trim() ? commentary : null,
         thumbnailUrl: existingPost?.thumbnailUrl ?? undefined,
         tags: existingPost?.tags ?? [],
         draft: existingPost?.draft ?? false,
@@ -373,7 +367,7 @@ function MusicCapturePage() {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 onKeyDown={handleSubmitShortcut}
-                placeholder='Short title for the tweet'
+                placeholder='Optional title for the tweet'
                 maxLength={255}
               />
               <p className='text-right text-xs text-muted-foreground'>

@@ -10,7 +10,8 @@ import {
   pgTable,
   primaryKey,
   text,
-  uuid
+  uuid,
+  varchar
 } from 'drizzle-orm/pg-core'
 import { user } from './auth.schema'
 import { defaultContentFields } from './util'
@@ -22,10 +23,14 @@ export const postTypeEnum = pgEnum('post_type', ['post', 'micro'])
 // todo: derive this at some point bossman
 export type PostType = 'post' | 'micro'
 
+const { title, content, ...postContentFields } = defaultContentFields
+
 export const postsTable = pgTable(
   'posts',
   {
-    ...defaultContentFields,
+    ...postContentFields,
+    title: varchar({ length: 255 }),
+    content: text(),
     type: postTypeEnum(),
     musicEntityType: text('music_entity_type'),
     musicEntityId: uuid('music_entity_id')
@@ -51,10 +56,20 @@ export type SelectMdxCompiledPost = SelectPost & {
   }>
 }
 
+export type SelectMdxCompiledEditorialPost = SelectMdxCompiledPost & {
+  title: string
+  content: string
+  type: 'post'
+}
+
+export type SelectMdxCompiledMicroPost = SelectMdxCompiledPost & {
+  type: 'micro'
+}
+
 export const selectPostSchema = z
   .object({
     id: z.string().openapi({ description: 'Unique identifier for the post' }),
-    title: z.string().openapi({ description: 'Title of the post' }),
+    title: z.string().nullable().openapi({ description: 'Title of the post' }),
     description: z
       .string()
       .nullable()
@@ -64,7 +79,10 @@ export const selectPostSchema = z
       .nullable()
       .openapi({ description: 'Thumbnail URL for the post' }),
     slug: z.string().openapi({ description: 'URL slug for the post' }),
-    content: z.string().openapi({ description: 'Content of the post' }),
+    content: z
+      .string()
+      .nullable()
+      .openapi({ description: 'Content of the post' }),
     draft: z.boolean().openapi({ description: 'Whether the post is a draft' }),
     tags: z
       .array(z.string())
@@ -111,11 +129,26 @@ export const selectMdxCompiledPostSchema = selectPostSchema
   })
   .openapi('CompiledPost')
 
+export const selectMdxCompiledEditorialPostSchema = selectMdxCompiledPostSchema
+  .extend({
+    title: z.string().openapi({ description: 'Title of the post' }),
+    content: z.string().openapi({ description: 'Content of the post' }),
+    type: z.literal('post')
+  })
+  .openapi('CompiledEditorialPost')
+
+export const selectMdxCompiledMicroPostSchema = selectMdxCompiledPostSchema
+  .extend({
+    type: z.literal('micro')
+  })
+  .openapi('CompiledMicroPost')
+
 export const insertPostSchema = z
   .object({
     title: z
       .string()
-      .min(1)
+      .nullable()
+      .optional()
       .openapi({ description: 'Title of the post', example: 'My Blog Post' }),
     description: z
       .string()
@@ -131,8 +164,8 @@ export const insertPostSchema = z
     }),
     content: z
       .string()
+      .nullable()
       .optional()
-      .default('')
       .openapi({ description: 'Content of the post' }),
     draft: z
       .boolean()

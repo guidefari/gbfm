@@ -8,7 +8,7 @@ export const adminOverviewContentBreakdownSchema = z.object({
 
 export const adminOverviewRecentContentItemSchema = z.object({
   id: z.string(),
-  title: z.string(),
+  title: z.string().nullable(),
   slug: z.string(),
   type: z.enum([
     'mix',

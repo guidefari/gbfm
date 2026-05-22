@@ -20,6 +20,10 @@ import {
   TabsTrigger,
   toast
 } from '@gbfm/ui'
+import type {
+  SelectMdxCompiledEditorialPost,
+  SelectMdxCompiledMicroPost
+} from '@gbfm/vps/schemas'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ArrowUpDown, Check, Plus, X } from 'lucide-react'
@@ -50,13 +54,19 @@ interface LabelItem {
   createdAt: string
 }
 
-interface PostItem {
-  id: string
-  title: string
-  slug: string
-  type: 'post' | 'micro' | null
+type EditorialPostItem = Omit<
+  SelectMdxCompiledEditorialPost,
+  'createdAt' | 'updatedAt' | 'creators'
+> & {
   createdAt: string
-  tags?: string[] | null
+  creators?: Array<{ id: string; name: string }>
+}
+
+type TweetPostItem = Omit<
+  SelectMdxCompiledMicroPost,
+  'createdAt' | 'updatedAt' | 'creators'
+> & {
+  createdAt: string
   creators?: Array<{ id: string; name: string }>
 }
 
@@ -98,15 +108,15 @@ export function ContentTab() {
   const { data: editorialData, isPending: editorialPending } = useQuery({
     queryKey: ['admin', 'posts', 'post'],
     queryFn: () =>
-      fetcher<PaginatedResponse<PostItem>>(
-        `${VPS_BASE_URL}/content/posts?type=post&limit=50&offset=0`
+      fetcher<PaginatedResponse<EditorialPostItem>>(
+        `${VPS_BASE_URL}/content/posts/editorials?limit=50&offset=0`
       )
   })
   const { data: tweetData, isPending: tweetPending } = useQuery({
     queryKey: ['admin', 'posts', 'micro'],
     queryFn: () =>
-      fetcher<PaginatedResponse<PostItem>>(
-        `${VPS_BASE_URL}/content/posts?type=micro&limit=50&offset=0`
+      fetcher<PaginatedResponse<TweetPostItem>>(
+        `${VPS_BASE_URL}/content/posts/micro?limit=50&offset=0`
       )
   })
 
@@ -418,7 +428,7 @@ export function ContentTab() {
                 <tbody>
                   {tweetPosts.map((post) => (
                     <tr key={post.id} className='border-b hover:bg-muted/50'>
-                      <td className='px-4 py-3'>{post.title}</td>
+                      <td className='px-4 py-3'>{post.title || 'Tweet'}</td>
                       <td className='px-4 py-3 text-muted-foreground'>
                         {post.slug}
                       </td>
