@@ -10,6 +10,9 @@ import {
 } from './errors'
 import type { MixProcessingInput, ProcessedFiles } from './types'
 
+/**
+ * @deprecated This formatting logic is part of the deprecated mix-processing pipeline.
+ */
 export function formatTracklist(tracklist: string): string {
   return tracklist
     .split('\n')
@@ -24,6 +27,9 @@ export function formatTracklist(tracklist: string): string {
     .join('\n')
 }
 
+/**
+ * @deprecated This filesystem staging step is part of the deprecated mix-processing pipeline.
+ */
 export function writeFilesToDisk(
   input: MixProcessingInput
 ): Effect.Effect<ProcessedFiles, MixFileSystemError | MixValidationError> {
@@ -76,6 +82,9 @@ export function writeFilesToDisk(
   })
 }
 
+/**
+ * @deprecated This FFmpeg orchestration is part of the deprecated mix-processing pipeline.
+ */
 export function createAudioOrVideo(
   files: ProcessedFiles,
   outputFormat: string
@@ -193,6 +202,9 @@ export function createAudioOrVideo(
   })
 }
 
+/**
+ * @deprecated This cleanup helper is part of the deprecated mix-processing pipeline.
+ */
 export function cleanup(files: ProcessedFiles): Effect.Effect<void> {
   return Effect.gen(function* () {
     yield* Effect.tryPromise(() => fs.unlink(files.audioPath)).pipe(
@@ -213,6 +225,9 @@ export function cleanup(files: ProcessedFiles): Effect.Effect<void> {
   })
 }
 
+/**
+ * @deprecated Use the replacement mix-processing seam introduced in a follow-up.
+ */
 export function processMix(
   input: MixProcessingInput
 ): Effect.Effect<
