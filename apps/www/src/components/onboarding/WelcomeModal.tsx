@@ -16,7 +16,7 @@ export function WelcomeModal() {
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
   const { data: session } = useSession()
-  const isAuthenticated = !!session?.user
+  const isAuthenticated = Boolean(session?.user)
   const user = session?.user
   const { hasSeenWelcome, markWelcomeSeen } = useOnboardingStore()
 

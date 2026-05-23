@@ -16,8 +16,8 @@ import { createLazyFileRoute, useRouter } from '@tanstack/react-router'
 import { ImageIcon, Loader2, Upload, X } from 'lucide-react'
 import { useId, useState } from 'react'
 import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
-import { fetcher, VPS_BASE_URL } from '@/lib/http'
 import { useSession } from '@/lib/auth-client'
+import { fetcher, VPS_BASE_URL } from '@/lib/http'
 
 export const Route = createLazyFileRoute('/label-upload')({
   component: LabelUploadPage

@@ -33,6 +33,7 @@ type User = {
   updatedAt: Date
   role?: string | null
 }
+
 import type {
   AlbumApiResponse,
   PlaylistApiResponse,
@@ -724,7 +725,7 @@ export type FavoritesResponse = {
 
 export function useFavorites() {
   const { data: session } = useSession()
-  const isAuthenticated = !!session?.user
+  const isAuthenticated = Boolean(session?.user)
   const { data, error, isPending, refetch } = useQuery<
     FavoritesResponse,
     Error
@@ -954,7 +955,7 @@ export type SubscriptionWithShow = SelectShowSubscription & {
 
 export function useUserSubscriptions() {
   const { data: session } = useSession()
-  const isAuthenticated = !!session?.user
+  const isAuthenticated = Boolean(session?.user)
   const { data, error, isPending } = useQuery<
     PaginatedResponse<SubscriptionWithShow>,
     Error

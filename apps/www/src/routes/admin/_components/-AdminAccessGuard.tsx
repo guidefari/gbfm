@@ -3,7 +3,7 @@ import { useSession } from '@/lib/auth-client'
 
 export function AdminAccessGuard({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession()
-  const isAuthenticated = !!session?.user
+  const isAuthenticated = Boolean(session?.user)
   const user = session?.user
 
   if (!isAuthenticated || user?.role !== 'admin') {

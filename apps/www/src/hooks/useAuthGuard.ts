@@ -6,7 +6,7 @@ type ContentType = 'mix' | 'show'
 
 export function useAuthGuard(contentType: ContentType = 'mix') {
   const { data: session } = useSession()
-  const isAuthenticated = !!session?.user
+  const isAuthenticated = Boolean(session?.user)
   const open = useAuthPromptStore((s) => s.open)
 
   const requireAuth = useCallback(

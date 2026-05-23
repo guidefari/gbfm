@@ -44,7 +44,7 @@ function App() {
   const { data: session } = useSession()
   const auth = {
     user: session?.user ?? null,
-    isAuthenticated: !!session?.user
+    isAuthenticated: Boolean(session?.user)
   }
 
   React.useEffect(() => {

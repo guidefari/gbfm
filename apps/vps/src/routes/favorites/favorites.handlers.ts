@@ -1,9 +1,9 @@
 import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
-import type { AppRouteHandler } from '@/lib/types'
 import { runEffect } from '@/lib/effect-hono'
-import { FavoriteService } from '@/services/favorite.service'
+import type { AppRouteHandler } from '@/lib/types'
 import { runAppFork } from '@/runtime'
+import { FavoriteService } from '@/services/favorite.service'
 
 import type {
   AddFavoriteRoute,

@@ -1,7 +1,7 @@
 import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
-import type { AppRouteHandler } from '@/lib/types'
 import { runEffect } from '@/lib/effect-hono'
+import type { AppRouteHandler } from '@/lib/types'
 import { LabelService } from '@/services/label.service'
 
 import type {

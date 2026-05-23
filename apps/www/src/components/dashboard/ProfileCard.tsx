@@ -8,8 +8,8 @@ import {
   Label
 } from '@gbfm/ui'
 import { useId, useState } from 'react'
-import { useUpdateProfile } from '@/lib/http'
 import type { useSession } from '@/lib/auth-client'
+import { useUpdateProfile } from '@/lib/http'
 
 type SessionUser = NonNullable<ReturnType<typeof useSession>['data']>['user']
 

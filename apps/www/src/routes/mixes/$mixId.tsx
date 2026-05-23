@@ -24,12 +24,12 @@ import * as React from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
 import { FavoriteButton } from '@/components/FavoriteButton'
 import { MDXRendrr } from '@/components/MDXRendrr'
+import { useSession } from '@/lib/auth-client'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { fetcher, useMixQRPdf, useShowById, VPS_BASE_URL } from '@/lib/http'
 import { getShareUrl } from '@/lib/share'
 import { useContentStore } from '@/store'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
-import { useSession } from '@/lib/auth-client'
 
 export const Route = createFileRoute('/mixes/$mixId')({
   component: MixPage,

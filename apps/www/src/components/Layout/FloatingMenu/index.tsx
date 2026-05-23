@@ -2,8 +2,8 @@ import { Link } from '@tanstack/react-router'
 import { Bell, Disc3, Home, LogIn, Menu, Radio, User, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useState } from 'react'
-import { cn } from '@/lib/utils'
 import { useSession } from '@/lib/auth-client'
+import { cn } from '@/lib/utils'
 import { useAudioPlayerState } from '@/store/audioPlayer'
 import { NowPlayingMini } from './NowPlayingMini'
 
@@ -22,7 +22,7 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const { audioSrc, isFullscreenVisible } = useAudioPlayerState()
   const { data: session } = useSession()
-  const isAuthenticated = !!session?.user
+  const isAuthenticated = Boolean(session?.user)
 
   const hasActiveAudio = Boolean(audioSrc)
 

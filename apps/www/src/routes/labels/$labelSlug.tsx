@@ -6,10 +6,10 @@ import * as React from 'react'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { ReleasesTable } from '@/components/ReleasesTable'
 import { ShareButton } from '@/components/ShareButton'
+import { useSession } from '@/lib/auth-client'
 import { fetcher, useLabelBySlug, useReleasesByLabel } from '@/lib/http'
 import { generateLabelSEO, generateSEOMeta } from '@/lib/seo'
 import { useContentStore } from '@/store'
-import { useSession } from '@/lib/auth-client'
 
 export const Route = createFileRoute('/labels/$labelSlug')({
   component: LabelPage,

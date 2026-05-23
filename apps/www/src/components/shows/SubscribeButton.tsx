@@ -1,12 +1,12 @@
 import { Button, toast } from '@gbfm/ui'
 import { useNavigate } from '@tanstack/react-router'
 import { Bell, BellOff, Loader2 } from 'lucide-react'
+import { useSession } from '@/lib/auth-client'
 import {
   useSubscribeToShow,
   useUnsubscribeFromShow,
   useUserSubscriptions
 } from '@/lib/http'
-import { useSession } from '@/lib/auth-client'
 
 interface SubscribeButtonProps {
   showId: string
@@ -15,7 +15,7 @@ interface SubscribeButtonProps {
 
 export function SubscribeButton({ showId, showTitle }: SubscribeButtonProps) {
   const { data: session } = useSession()
-  const isAuthenticated = !!session?.user
+  const isAuthenticated = Boolean(session?.user)
   const navigate = useNavigate()
   const { data: subscriptions } = useUserSubscriptions()
   const { subscribe, isPending: isSubscribing } = useSubscribeToShow()

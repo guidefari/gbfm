@@ -6,9 +6,9 @@ import { MDXRendrr } from '@/components/MDXRendrr'
 import { ShareButton } from '@/components/ShareButton'
 import { TweetAuthorRow } from '@/components/TweetAuthorRow'
 import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
+import { useSession } from '@/lib/auth-client'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
 import { generateMicroPostSEO, generateSEOMeta } from '@/lib/seo'
-import { useSession } from '@/lib/auth-client'
 
 export const Route = createFileRoute('/tweet/$slug')({
   component: TweetPostPage,

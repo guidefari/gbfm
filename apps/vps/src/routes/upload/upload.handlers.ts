@@ -1,7 +1,7 @@
 import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
-import type { AppRouteHandler } from '@/lib/types'
 import { runEffect } from '@/lib/effect-hono'
+import type { AppRouteHandler } from '@/lib/types'
 import { ConfigService } from '@/services/config.service'
 import { S3Service } from '@/services/s3.service'
 
@@ -52,12 +52,12 @@ export const uploadFile: AppRouteHandler<UploadFileRoute> = async (c) => {
     const config = yield* ConfigService
     const s3Service = yield* S3Service
     const fileBuffer = Buffer.from(
-      yield* Effect.promise(() => file!.arrayBuffer())
+      yield* Effect.promise(() => file?.arrayBuffer())
     )
     const key = yield* s3Service.uploadFile(
       fileName,
       fileBuffer,
-      file!.type,
+      file?.type,
       config.buckets.userContent
     )
     return { url: `${config.urls.router}/user-content/${key}`, key }
@@ -67,7 +67,7 @@ export const uploadFile: AppRouteHandler<UploadFileRoute> = async (c) => {
       Effect.logError('[Upload] File upload error', {
         fileName,
         fileType,
-        fileSize: file!.size,
+        fileSize: file?.size,
         error: (e as { message?: string }).message ?? String(e)
       })
     )

@@ -26,7 +26,7 @@ import { S3AudioFilePicker } from '@/components/mix-uploader/S3AudioFilePicker'
 import { UploadSummaryCard } from '@/components/mix-uploader/upload-summary-card'
 import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
 import { formatTime, generateSlug } from '@/hooks/useFileUpload'
-import { authClient } from '@/lib/auth-client'
+import { authClient, useSession } from '@/lib/auth-client'
 import {
   fetcher,
   useAllShows,
@@ -34,7 +34,6 @@ import {
   useAudioByType,
   VPS_BASE_URL
 } from '@/lib/http'
-import { useSession } from '@/lib/auth-client'
 
 export const Route = createLazyFileRoute('/mix-upload')({
   component: MixUploadPage

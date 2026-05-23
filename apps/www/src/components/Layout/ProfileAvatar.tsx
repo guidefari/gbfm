@@ -15,7 +15,7 @@ const ProfileAvatar = () => {
   const navigate = useNavigate()
   const { data: session } = useSession()
   const user = session?.user
-  const isAuthenticated = !!session?.user
+  const isAuthenticated = Boolean(session?.user)
   const resetUI = useUIStore((s) => s.resetUI)
 
   const handleSignOut = async () => {

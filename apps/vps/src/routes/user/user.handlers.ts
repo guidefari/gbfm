@@ -1,8 +1,7 @@
 import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
-import type { AppRouteHandler } from '@/lib/types'
 import { runEffect } from '@/lib/effect-hono'
-import { AppRuntime } from '@/runtime'
+import type { AppRouteHandler } from '@/lib/types'
 import { ShowSubscriptionService } from '@/services/show.service'
 import { UserService } from '@/services/user.service'
 

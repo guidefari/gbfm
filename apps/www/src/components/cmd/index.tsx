@@ -4,9 +4,9 @@ import { useFeatureFlag } from '@gbfm/core/feature-flags'
 import { CommandDialog, CommandInput } from '@gbfm/ui'
 import { useRouterState } from '@tanstack/react-router'
 import * as React from 'react'
+import { useSession } from '@/lib/auth-client'
 import { useUIStore } from '@/store'
 import { useAudioPlayerState } from '@/store/audioPlayer'
-import { useSession } from '@/lib/auth-client'
 import { version } from '../../../../../package.json'
 import { useAudioPlayerCmdActions } from './audio/actions'
 import { createCommandData } from './commandData'
@@ -28,7 +28,7 @@ export function CommandDialogDemo() {
   const { Cmd, openCmd, closeCmd, toggleCmd } = useUIStore()
   const { data: session } = useSession()
   const user = session?.user
-  const isAuthenticated = !!session?.user
+  const isAuthenticated = Boolean(session?.user)
   const { audioSrc } = useAudioPlayerState()
   const isQueueEnabled = useFeatureFlag('ui.queue')
   const isAdmin = user?.role === 'admin'

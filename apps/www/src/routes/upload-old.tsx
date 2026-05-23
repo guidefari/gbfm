@@ -8,7 +8,7 @@ export const Route = createFileRoute('/upload-old')({
 
 function Dashboard() {
   const { data: session } = useSession()
-  const isAuthenticated = !!session?.user
+  const isAuthenticated = Boolean(session?.user)
   const formRef = useRef<HTMLFormElement>(null)
   const titleId = useId()
   const artistId = useId()
