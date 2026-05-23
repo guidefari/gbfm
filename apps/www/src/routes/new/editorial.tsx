@@ -9,29 +9,23 @@ import {
   Checkbox,
   Input,
   Label,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   Textarea,
   toast
 } from '@gbfm/ui'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { createLazyFileRoute, useRouter } from '@tanstack/react-router'
+import { createFileRoute, useRouter } from '@tanstack/react-router'
 import { ImageIcon, Loader2, Save, Upload, X } from 'lucide-react'
-import { useEffect, useId, useMemo, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
+import { PostPageHeader } from '@/components/PostPageHeader'
 import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
 import { TagsInput } from '@/components/upload'
 import { useSession } from '@/lib/auth-client'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
-import { UserSearch } from './admin/_components/-UserSearch'
+import { UserSearch } from '../admin/_components/-UserSearch'
 
-export const Route = createLazyFileRoute('/post-upload')({
+export const Route = createFileRoute('/new/editorial')({
   component: PostUploadPage
 })
-
-type PostType = 'post' | 'micro'
 
 interface PostItem {
   id: string
@@ -42,7 +36,7 @@ interface PostItem {
   thumbnailUrl: string | null
   tags: string[] | null
   draft: boolean
-  type: PostType | null
+  type: 'post' | 'micro' | null
   creators?: Array<{ id: string; name: string }>
 }
 
@@ -54,14 +48,10 @@ interface PostFormData {
   thumbnailUrl: string
   tags: string[]
   draft: boolean
-  type: PostType
 }
 
 function PostUploadPage() {
-  const search = Route.useSearch() as {
-    edit?: string
-    type?: PostType
-  }
+  const search = Route.useSearch() as { edit?: string }
   const isEditMode = Boolean(search.edit)
   const router = useRouter()
   const { data: session } = useSession()
@@ -75,8 +65,7 @@ function PostUploadPage() {
     content: '',
     thumbnailUrl: '',
     tags: [],
-    draft: false,
-    type: search.type ?? 'post'
+    draft: false
   })
   const [artworkFile, setArtworkFile] = useState<File | null>(null)
   const [artworkPreview, setArtworkPreview] = useState<string | null>(null)
@@ -103,29 +92,17 @@ function PostUploadPage() {
       content: existingPost.content || '',
       thumbnailUrl: existingPost.thumbnailUrl || '',
       tags: existingPost.tags || [],
-      draft: existingPost.draft ?? false,
-      type: existingPost.type || search.type || 'post'
+      draft: existingPost.draft ?? false
     })
     setSelectedCreators(existingPost.creators || [])
-  }, [existingPost, search.type])
+  }, [existingPost])
 
   useEffect(() => {
     if (isEditMode || !user) return
     setSelectedCreators([{ id: user.id, name: user.name || 'You' }])
   }, [isEditMode, user])
 
-  const heading = useMemo(
-    () => (formData.type === 'micro' ? 'Tweet' : 'Editorial'),
-    [formData.type]
-  )
-
-  const canSave = useMemo(() => {
-    if (formData.type === 'micro') {
-      return Boolean(formData.title.trim() || formData.content.trim())
-    }
-
-    return Boolean(formData.title.trim() && formData.content.trim())
-  }, [formData.type, formData.title, formData.content])
+  const canSave = Boolean(formData.title.trim() && formData.content.trim())
 
   const generateSlug = (title: string) => {
     return title
@@ -167,12 +144,12 @@ function PostUploadPage() {
       const payload = {
         title: data.title.trim() || null,
         description: data.description,
-        slug: generatedSlug || `${data.type}-${Date.now().toString(36)}`,
+        slug: generatedSlug || `post-${Date.now().toString(36)}`,
         content: data.content.trim() ? data.content : null,
         thumbnailUrl: imageUrl || null,
         tags: data.tags,
         draft: data.draft,
-        type: data.type,
+        type: 'post' as const,
         creatorIds:
           selectedCreators.length > 0
             ? selectedCreators.map((creator) => creator.id)
@@ -197,14 +174,11 @@ function PostUploadPage() {
         description: `${savedPost.title || savedPost.slug} saved successfully.`
       })
 
-      const savedType = savedPost.type || formData.type
-      const targetPath =
-        savedType === 'micro'
-          ? `/tweet/${savedPost.slug}`
-          : `/editorial/${savedPost.slug}`
-
       setTimeout(() => {
-        router.navigate({ to: targetPath })
+        router.navigate({
+          to: '/editorial/$slug',
+          params: { slug: savedPost.slug }
+        })
       }, 500)
     },
     onError: (error) => {
@@ -260,8 +234,7 @@ function PostUploadPage() {
         content: existingPost.content || '',
         thumbnailUrl: existingPost.thumbnailUrl || '',
         tags: existingPost.tags || [],
-        draft: existingPost.draft ?? false,
-        type: existingPost.type || 'post'
+        draft: existingPost.draft ?? false
       })
       return
     }
@@ -273,8 +246,7 @@ function PostUploadPage() {
       content: '',
       thumbnailUrl: '',
       tags: [],
-      draft: false,
-      type: search.type || 'post'
+      draft: false
     })
     removeArtworkFile()
   }
@@ -289,20 +261,23 @@ function PostUploadPage() {
   }
 
   return (
-    <div className='px-4 py-8 mx-auto max-w-7xl sm:px-6 lg:px-8'>
-      <header className='mb-8'>
-        <div className='flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-start'>
-          <div>
-            <h1 className='text-3xl font-bold text-gb-highlight'>
-              {isEditMode ? `Edit ${heading}` : `Create ${heading}`}
-            </h1>
-            <p className='mt-1 text-gb-default-text'>
-              {heading === 'Tweet'
-                ? 'Write and publish short-form micro posts.'
-                : 'Write and publish long-form editorial posts.'}
-            </p>
-          </div>
-          <div className='flex gap-3'>
+    <div className='px-4 py-8 mx-auto max-w-6xl sm:px-6 lg:px-8'>
+      <PostPageHeader
+        title={isEditMode ? 'Edit Editorial' : 'Create Editorial'}
+        description='Write and publish long-form editorial posts.'
+        isEditMode={isEditMode}
+        backTo={
+          isEditMode && existingPost
+            ? {
+                to: '/editorial/$slug',
+                label: 'Back to post',
+                params: { slug: existingPost.slug }
+              }
+            : undefined
+        }
+        switchTo={{ to: '/new/tweet', label: 'Switch to tweet capture' }}
+        actions={
+          <>
             <Button
               variant='outline'
               onClick={handleDiscard}
@@ -326,9 +301,9 @@ function PostUploadPage() {
                 </>
               )}
             </Button>
-          </div>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <div className='grid gap-8 xl:grid-cols-[1fr_320px]'>
         <div className='space-y-6'>
@@ -364,24 +339,6 @@ function PostUploadPage() {
                   }
                   placeholder='Short description'
                 />
-              </div>
-              <div className='grid gap-4 md:grid-cols-2'>
-                <div className='space-y-2'>
-                  <Label className='text-gb-pastel-green-1'>Type</Label>
-                  <Select
-                    value={formData.type}
-                    onValueChange={(value) =>
-                      handleInputChange('type', value as PostType)
-                    }>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value='post'>Editorial</SelectItem>
-                      <SelectItem value='micro'>Tweet</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
               <div className='flex items-center justify-between rounded-sm border p-3'>
                 <div>
@@ -486,7 +443,7 @@ function PostUploadPage() {
                 tags: prev.tags.filter((existing) => existing !== tag)
               }))
             }
-            contentTypeLabel={heading}
+            contentTypeLabel='Editorial'
           />
 
           <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
@@ -497,7 +454,9 @@ function PostUploadPage() {
               <UserSearch
                 label='Post Creator'
                 selectedUsers={selectedCreators}
-                onSelectionChange={(users) =>
+                onSelectionChange={(
+                  users: Array<{ id: string; name: string }>
+                ) =>
                   setSelectedCreators(
                     users.length > 1 ? [users[users.length - 1]] : users
                   )

@@ -37,11 +37,6 @@ function AdminDashboard() {
           </div>
           <div className='flex gap-2'>
             <Button asChild variant='outline'>
-              <Link to='/admin/capture' search={{ edit: undefined }}>
-                Capture tweet
-              </Link>
-            </Button>
-            <Button asChild variant='outline'>
               <Link to='/admin/playlists'>Playlists</Link>
             </Button>
             <Button asChild variant='outline'>

@@ -13,8 +13,9 @@ import {
 } from '@gbfm/ui'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
-import { ArrowLeft, Loader2, Music4, Send } from 'lucide-react'
+import { Loader2, Music4, Send } from 'lucide-react'
 import { type KeyboardEvent, useEffect, useMemo, useState } from 'react'
+import { PostPageHeader } from '@/components/PostPageHeader'
 import { useSession } from '@/lib/auth-client'
 import {
   fetcher,
@@ -59,7 +60,7 @@ interface PostItem {
   creators?: Array<{ id: string; name: string; username: string | null }>
 }
 
-export const Route = createFileRoute('/admin/capture')({
+export const Route = createFileRoute('/new/tweet')({
   validateSearch: (search) => ({
     edit: typeof search.edit === 'string' ? search.edit : undefined
   }),
@@ -279,7 +280,7 @@ function MusicCapturePage() {
         description: `Saved as ${savedPost.slug}`
       })
 
-      router.navigate({ to: `/tweet/${savedPost.slug}` })
+      router.navigate({ to: '/tweet/$slug', params: { slug: savedPost.slug } })
     },
     onError: (error) => {
       toast({
@@ -320,49 +321,37 @@ function MusicCapturePage() {
   }
 
   return (
-    <div className='container max-w-6xl py-8 mx-auto space-y-6'>
-      <div className='flex items-center justify-between gap-4'>
-        <div>
-          {isEditMode && existingPost ? (
-            <Link
-              to='/tweet/$slug'
-              params={{ slug: existingPost.slug }}
-              className='inline-flex items-center gap-2 mb-3 text-sm text-muted-foreground hover:text-foreground'>
-              <ArrowLeft className='w-4 h-4' />
-              Back to tweet
-            </Link>
-          ) : (
-            <Link
-              to='/admin'
-              className='inline-flex items-center gap-2 mb-3 text-sm text-muted-foreground hover:text-foreground'>
-              <ArrowLeft className='w-4 h-4' />
-              Back to admin
-            </Link>
-          )}
-          <h1 className='text-3xl font-black tracking-tight'>
-            {isEditMode ? 'Edit Tweet' : 'Tweet Capture'}
-          </h1>
-          <p className='mt-2 text-muted-foreground'>
-            {isEditMode
-              ? 'Update the tweet commentary or replace the attached music.'
-              : 'Paste a music link, let the system resolve it, and capture the post fast.'}
-          </p>
-        </div>
-        {user?.role === 'admin' && (
-          <Button asChild variant='outline'>
-            <Link to='/admin/overview'>Overview</Link>
-          </Button>
-        )}
-      </div>
+    <div className='px-4 py-8 mx-auto max-w-6xl sm:px-6 lg:px-8'>
+      <PostPageHeader
+        title={isEditMode ? 'Edit Tweet' : 'Tweet Capture'}
+        description={
+          isEditMode
+            ? 'Update the tweet commentary or replace the attached music.'
+            : 'Paste a music link, let the system resolve it, and capture the post fast.'
+        }
+        isEditMode={isEditMode}
+        backTo={
+          isEditMode && existingPost
+            ? {
+                to: '/tweet/$slug',
+                label: 'Back to tweet',
+                params: { slug: existingPost.slug }
+              }
+            : undefined
+        }
+        switchTo={{ to: '/new/editorial', label: 'Switch to editorial' }}
+      />
 
       <div className='grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]'>
-        <Card>
+        <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
           <CardHeader>
-            <CardTitle>Post</CardTitle>
+            <CardTitle className='text-gb-pastel-green-1'>Post</CardTitle>
           </CardHeader>
           <CardContent className='space-y-4'>
             <div className='space-y-2'>
-              <Label htmlFor='title'>Title</Label>
+              <Label htmlFor='title' className='text-gb-pastel-green-1'>
+                Title
+              </Label>
               <Input
                 id='title'
                 value={title}
@@ -377,7 +366,9 @@ function MusicCapturePage() {
             </div>
 
             <div className='space-y-2'>
-              <Label htmlFor='commentary'>Commentary</Label>
+              <Label htmlFor='commentary' className='text-gb-pastel-green-1'>
+                Commentary
+              </Label>
               <Textarea
                 id='commentary'
                 value={commentary}
@@ -407,16 +398,18 @@ function MusicCapturePage() {
         </Card>
 
         <div className='space-y-6'>
-          <Card>
+          <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
             <CardHeader>
-              <CardTitle className='flex items-center gap-2'>
+              <CardTitle className='flex items-center gap-2 text-gb-pastel-green-1'>
                 <Music4 className='w-5 h-5' />
                 Music
               </CardTitle>
             </CardHeader>
             <CardContent className='space-y-4'>
               <div className='space-y-2'>
-                <Label htmlFor='musicUrl'>Music URL</Label>
+                <Label htmlFor='musicUrl' className='text-gb-pastel-green-1'>
+                  Music URL
+                </Label>
                 <Input
                   id='musicUrl'
                   value={musicUrl}

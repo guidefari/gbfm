@@ -39,6 +39,8 @@ import { Route as TracksTrackIdRouteImport } from './routes/tracks/$trackId'
 import { Route as ShowsShowSlugRouteImport } from './routes/shows/$showSlug'
 import { Route as ReleasesSlugRouteImport } from './routes/releases/$slug'
 import { Route as ProfileUsernameRouteImport } from './routes/profile/$username'
+import { Route as NewTweetRouteImport } from './routes/new/tweet'
+import { Route as NewEditorialRouteImport } from './routes/new/editorial'
 import { Route as MixesMixIdRouteImport } from './routes/mixes/$mixId'
 import { Route as LabelsLabelSlugRouteImport } from './routes/labels/$labelSlug'
 import { Route as InviteCharlie3000RouteImport } from './routes/invite/charlie3000'
@@ -52,11 +54,9 @@ import { Route as AdminPlaylistsRouteImport } from './routes/admin/playlists'
 import { Route as AdminOverviewRouteImport } from './routes/admin/overview'
 import { Route as AdminMusicRouteImport } from './routes/admin/music'
 import { Route as AdminFrontendErrorsRouteImport } from './routes/admin/frontend-errors'
-import { Route as AdminCaptureRouteImport } from './routes/admin/capture'
 import { Route as AdminMusicEntityEntityTypeIdRouteImport } from './routes/admin/music-entity.$entityType.$id'
 
 const UploadLazyRouteImport = createFileRoute('/upload')()
-const PostUploadLazyRouteImport = createFileRoute('/post-upload')()
 const MixUploadLazyRouteImport = createFileRoute('/mix-upload')()
 const LabelUploadLazyRouteImport = createFileRoute('/label-upload')()
 
@@ -65,11 +65,6 @@ const UploadLazyRoute = UploadLazyRouteImport.update({
   path: '/upload',
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() => import('./routes/upload.lazy').then((d) => d.Route))
-const PostUploadLazyRoute = PostUploadLazyRouteImport.update({
-  id: '/post-upload',
-  path: '/post-upload',
-  getParentRoute: () => rootRouteImport,
-} as any).lazy(() => import('./routes/post-upload.lazy').then((d) => d.Route))
 const MixUploadLazyRoute = MixUploadLazyRouteImport.update({
   id: '/mix-upload',
   path: '/mix-upload',
@@ -220,6 +215,16 @@ const ProfileUsernameRoute = ProfileUsernameRouteImport.update({
   path: '/profile/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
+const NewTweetRoute = NewTweetRouteImport.update({
+  id: '/new/tweet',
+  path: '/new/tweet',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NewEditorialRoute = NewEditorialRouteImport.update({
+  id: '/new/editorial',
+  path: '/new/editorial',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MixesMixIdRoute = MixesMixIdRouteImport.update({
   id: '/$mixId',
   path: '/$mixId',
@@ -285,11 +290,6 @@ const AdminFrontendErrorsRoute = AdminFrontendErrorsRouteImport.update({
   path: '/admin/frontend-errors',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminCaptureRoute = AdminCaptureRouteImport.update({
-  id: '/admin/capture',
-  path: '/admin/capture',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AdminMusicEntityEntityTypeIdRoute =
   AdminMusicEntityEntityTypeIdRouteImport.update({
     id: '/admin/music-entity/$entityType/$id',
@@ -315,9 +315,7 @@ export interface FileRoutesByFullPath {
   '/upload-old': typeof UploadOldRoute
   '/label-upload': typeof LabelUploadLazyRoute
   '/mix-upload': typeof MixUploadLazyRoute
-  '/post-upload': typeof PostUploadLazyRoute
   '/upload': typeof UploadLazyRoute
-  '/admin/capture': typeof AdminCaptureRoute
   '/admin/frontend-errors': typeof AdminFrontendErrorsRoute
   '/admin/music': typeof AdminMusicRoute
   '/admin/overview': typeof AdminOverviewRoute
@@ -331,6 +329,8 @@ export interface FileRoutesByFullPath {
   '/invite/charlie3000': typeof InviteCharlie3000Route
   '/labels/$labelSlug': typeof LabelsLabelSlugRoute
   '/mixes/$mixId': typeof MixesMixIdRoute
+  '/new/editorial': typeof NewEditorialRoute
+  '/new/tweet': typeof NewTweetRoute
   '/profile/$username': typeof ProfileUsernameRoute
   '/releases/$slug': typeof ReleasesSlugRoute
   '/shows/$showSlug': typeof ShowsShowSlugRoute
@@ -359,9 +359,7 @@ export interface FileRoutesByTo {
   '/upload-old': typeof UploadOldRoute
   '/label-upload': typeof LabelUploadLazyRoute
   '/mix-upload': typeof MixUploadLazyRoute
-  '/post-upload': typeof PostUploadLazyRoute
   '/upload': typeof UploadLazyRoute
-  '/admin/capture': typeof AdminCaptureRoute
   '/admin/frontend-errors': typeof AdminFrontendErrorsRoute
   '/admin/music': typeof AdminMusicRoute
   '/admin/overview': typeof AdminOverviewRoute
@@ -375,6 +373,8 @@ export interface FileRoutesByTo {
   '/invite/charlie3000': typeof InviteCharlie3000Route
   '/labels/$labelSlug': typeof LabelsLabelSlugRoute
   '/mixes/$mixId': typeof MixesMixIdRoute
+  '/new/editorial': typeof NewEditorialRoute
+  '/new/tweet': typeof NewTweetRoute
   '/profile/$username': typeof ProfileUsernameRoute
   '/releases/$slug': typeof ReleasesSlugRoute
   '/shows/$showSlug': typeof ShowsShowSlugRoute
@@ -409,9 +409,7 @@ export interface FileRoutesById {
   '/upload-old': typeof UploadOldRoute
   '/label-upload': typeof LabelUploadLazyRoute
   '/mix-upload': typeof MixUploadLazyRoute
-  '/post-upload': typeof PostUploadLazyRoute
   '/upload': typeof UploadLazyRoute
-  '/admin/capture': typeof AdminCaptureRoute
   '/admin/frontend-errors': typeof AdminFrontendErrorsRoute
   '/admin/music': typeof AdminMusicRoute
   '/admin/overview': typeof AdminOverviewRoute
@@ -425,6 +423,8 @@ export interface FileRoutesById {
   '/invite/charlie3000': typeof InviteCharlie3000Route
   '/labels/$labelSlug': typeof LabelsLabelSlugRoute
   '/mixes/$mixId': typeof MixesMixIdRoute
+  '/new/editorial': typeof NewEditorialRoute
+  '/new/tweet': typeof NewTweetRoute
   '/profile/$username': typeof ProfileUsernameRoute
   '/releases/$slug': typeof ReleasesSlugRoute
   '/shows/$showSlug': typeof ShowsShowSlugRoute
@@ -460,9 +460,7 @@ export interface FileRouteTypes {
     | '/upload-old'
     | '/label-upload'
     | '/mix-upload'
-    | '/post-upload'
     | '/upload'
-    | '/admin/capture'
     | '/admin/frontend-errors'
     | '/admin/music'
     | '/admin/overview'
@@ -476,6 +474,8 @@ export interface FileRouteTypes {
     | '/invite/charlie3000'
     | '/labels/$labelSlug'
     | '/mixes/$mixId'
+    | '/new/editorial'
+    | '/new/tweet'
     | '/profile/$username'
     | '/releases/$slug'
     | '/shows/$showSlug'
@@ -504,9 +504,7 @@ export interface FileRouteTypes {
     | '/upload-old'
     | '/label-upload'
     | '/mix-upload'
-    | '/post-upload'
     | '/upload'
-    | '/admin/capture'
     | '/admin/frontend-errors'
     | '/admin/music'
     | '/admin/overview'
@@ -520,6 +518,8 @@ export interface FileRouteTypes {
     | '/invite/charlie3000'
     | '/labels/$labelSlug'
     | '/mixes/$mixId'
+    | '/new/editorial'
+    | '/new/tweet'
     | '/profile/$username'
     | '/releases/$slug'
     | '/shows/$showSlug'
@@ -553,9 +553,7 @@ export interface FileRouteTypes {
     | '/upload-old'
     | '/label-upload'
     | '/mix-upload'
-    | '/post-upload'
     | '/upload'
-    | '/admin/capture'
     | '/admin/frontend-errors'
     | '/admin/music'
     | '/admin/overview'
@@ -569,6 +567,8 @@ export interface FileRouteTypes {
     | '/invite/charlie3000'
     | '/labels/$labelSlug'
     | '/mixes/$mixId'
+    | '/new/editorial'
+    | '/new/tweet'
     | '/profile/$username'
     | '/releases/$slug'
     | '/shows/$showSlug'
@@ -603,9 +603,7 @@ export interface RootRouteChildren {
   UploadOldRoute: typeof UploadOldRoute
   LabelUploadLazyRoute: typeof LabelUploadLazyRoute
   MixUploadLazyRoute: typeof MixUploadLazyRoute
-  PostUploadLazyRoute: typeof PostUploadLazyRoute
   UploadLazyRoute: typeof UploadLazyRoute
-  AdminCaptureRoute: typeof AdminCaptureRoute
   AdminFrontendErrorsRoute: typeof AdminFrontendErrorsRoute
   AdminMusicRoute: typeof AdminMusicRoute
   AdminOverviewRoute: typeof AdminOverviewRoute
@@ -616,6 +614,8 @@ export interface RootRouteChildren {
   AuthSignUpRoute: typeof AuthSignUpRoute
   AuthVerifyEmailRoute: typeof AuthVerifyEmailRoute
   InviteCharlie3000Route: typeof InviteCharlie3000Route
+  NewEditorialRoute: typeof NewEditorialRoute
+  NewTweetRoute: typeof NewTweetRoute
   ProfileUsernameRoute: typeof ProfileUsernameRoute
   ReleasesSlugRoute: typeof ReleasesSlugRoute
   ShowsShowSlugRoute: typeof ShowsShowSlugRoute
@@ -632,13 +632,6 @@ declare module '@tanstack/react-router' {
       path: '/upload'
       fullPath: '/upload'
       preLoaderRoute: typeof UploadLazyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/post-upload': {
-      id: '/post-upload'
-      path: '/post-upload'
-      fullPath: '/post-upload'
-      preLoaderRoute: typeof PostUploadLazyRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mix-upload': {
@@ -851,6 +844,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/new/tweet': {
+      id: '/new/tweet'
+      path: '/new/tweet'
+      fullPath: '/new/tweet'
+      preLoaderRoute: typeof NewTweetRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/new/editorial': {
+      id: '/new/editorial'
+      path: '/new/editorial'
+      fullPath: '/new/editorial'
+      preLoaderRoute: typeof NewEditorialRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/mixes/$mixId': {
       id: '/mixes/$mixId'
       path: '/$mixId'
@@ -940,13 +947,6 @@ declare module '@tanstack/react-router' {
       path: '/admin/frontend-errors'
       fullPath: '/admin/frontend-errors'
       preLoaderRoute: typeof AdminFrontendErrorsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/capture': {
-      id: '/admin/capture'
-      path: '/admin/capture'
-      fullPath: '/admin/capture'
-      preLoaderRoute: typeof AdminCaptureRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/music-entity/$entityType/$id': {
@@ -1047,9 +1047,7 @@ const rootRouteChildren: RootRouteChildren = {
   UploadOldRoute: UploadOldRoute,
   LabelUploadLazyRoute: LabelUploadLazyRoute,
   MixUploadLazyRoute: MixUploadLazyRoute,
-  PostUploadLazyRoute: PostUploadLazyRoute,
   UploadLazyRoute: UploadLazyRoute,
-  AdminCaptureRoute: AdminCaptureRoute,
   AdminFrontendErrorsRoute: AdminFrontendErrorsRoute,
   AdminMusicRoute: AdminMusicRoute,
   AdminOverviewRoute: AdminOverviewRoute,
@@ -1060,6 +1058,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthSignUpRoute: AuthSignUpRoute,
   AuthVerifyEmailRoute: AuthVerifyEmailRoute,
   InviteCharlie3000Route: InviteCharlie3000Route,
+  NewEditorialRoute: NewEditorialRoute,
+  NewTweetRoute: NewTweetRoute,
   ProfileUsernameRoute: ProfileUsernameRoute,
   ReleasesSlugRoute: ReleasesSlugRoute,
   ShowsShowSlugRoute: ShowsShowSlugRoute,

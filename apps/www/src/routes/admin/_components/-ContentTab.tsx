@@ -224,13 +224,13 @@ export function ContentTab() {
     <div className='space-y-4'>
       <div className='flex flex-wrap gap-2'>
         <Button asChild size='sm'>
-          <Link to='/post-upload' search={{ type: 'post' }}>
+          <Link to='/new/editorial'>
             <Plus className='w-4 h-4 mr-2' />
             New editorial
           </Link>
         </Button>
         <Button asChild size='sm' variant='outline'>
-          <Link to='/post-upload' search={{ type: 'micro' }}>
+          <Link to='/new/tweet' search={{ edit: undefined }}>
             <Plus className='w-4 h-4 mr-2' />
             New tweet
           </Link>
@@ -378,13 +378,12 @@ export function ContentTab() {
                               View
                             </Link>
                           </Button>
-                          <Button
-                            variant='outline'
-                            size='sm'
-                            onClick={() => {
-                              window.location.href = `/post-upload?edit=${encodeURIComponent(post.slug)}&type=post`
-                            }}>
-                            Edit
+                          <Button variant='outline' size='sm' asChild>
+                            <Link
+                              to='/new/editorial'
+                              search={{ edit: post.slug }}>
+                              Edit
+                            </Link>
                           </Button>
                         </div>
                       </td>
@@ -450,13 +449,10 @@ export function ContentTab() {
                               View
                             </Link>
                           </Button>
-                          <Button
-                            variant='outline'
-                            size='sm'
-                            onClick={() => {
-                              window.location.href = `/post-upload?edit=${encodeURIComponent(post.slug)}&type=micro`
-                            }}>
-                            Edit
+                          <Button variant='outline' size='sm' asChild>
+                            <Link to='/new/tweet' search={{ edit: post.slug }}>
+                              Edit
+                            </Link>
                           </Button>
                         </div>
                       </td>

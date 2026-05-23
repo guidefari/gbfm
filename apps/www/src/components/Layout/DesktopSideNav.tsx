@@ -5,7 +5,7 @@ import {
   TooltipTrigger
 } from '@gbfm/ui'
 import { Link } from '@tanstack/react-router'
-import { FilePenLine, Music } from 'lucide-react'
+import { FilePenLine, MessageSquare, Music } from 'lucide-react'
 import { useSession } from '@/lib/auth-client'
 import { MAIN_SCROLL_CONTAINER_ID } from '@/lib/constants'
 import { useUIStore } from '@/store'
@@ -57,20 +57,35 @@ export const DesktopSideNav = () => {
           )
         })}
         {isAdmin && (
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  to='/post-upload'
-                  search={{ type: 'post' }}
-                  className='flex items-center justify-center transition-colors rounded-sm h-9 w-9 text-foreground hover:text-highlight md:h-8 md:w-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
-                  <FilePenLine className='w-5 h-5 transition-all group-hover:scale-110' />
-                  <span className='sr-only'>Post Upload</span>
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side='right'>Post Upload</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    to='/new/editorial'
+                    className='flex items-center justify-center transition-colors rounded-sm h-9 w-9 text-foreground hover:text-highlight md:h-8 md:w-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
+                    <FilePenLine className='w-5 h-5 transition-all group-hover:scale-110' />
+                    <span className='sr-only'>New Editorial</span>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side='right'>New Editorial</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Link
+                    to='/new/tweet'
+                    search={{ edit: undefined }}
+                    className='flex items-center justify-center transition-colors rounded-sm h-9 w-9 text-foreground hover:text-highlight md:h-8 md:w-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
+                    <MessageSquare className='w-5 h-5 transition-all group-hover:scale-110' />
+                    <span className='sr-only'>New Tweet</span>
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side='right'>New Tweet</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </>
         )}
       </nav>
       <nav className='flex flex-col items-center gap-4 px-2 mt-auto sm:py-5'>

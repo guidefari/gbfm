@@ -1,5 +1,15 @@
 import { Link } from '@tanstack/react-router'
-import { Bell, Disc3, Home, LogIn, Menu, Radio, User, X } from 'lucide-react'
+import {
+  Bell,
+  Disc3,
+  FileText,
+  Home,
+  LogIn,
+  Menu,
+  Radio,
+  User,
+  X
+} from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useState } from 'react'
 import { useSession } from '@/lib/auth-client'
@@ -70,6 +80,12 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
       action: closeMenu
     },
     {
+      id: 'tweets',
+      icon: <FileText className='w-6 h-6' />,
+      label: 'Tweets',
+      action: closeMenu
+    },
+    {
       id: 'reminders',
       icon: <Bell className='w-6 h-6' />,
       label: 'Reminder',
@@ -98,6 +114,8 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
         return '/mixes'
       case 'shows':
         return '/shows'
+      case 'tweets':
+        return '/tweet'
       case 'reminders':
         return '/reminders'
       case 'profile':

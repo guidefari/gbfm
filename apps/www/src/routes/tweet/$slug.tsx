@@ -89,7 +89,7 @@ function TweetPostPage() {
                 size='icon'
                 className='h-8 w-8 rounded-md text-muted-foreground hover:text-foreground'>
                 <Link
-                  to='/admin/capture'
+                  to='/new/tweet'
                   search={{ edit: slug }}
                   aria-label='Edit tweet'>
                   <Edit3 className='h-4 w-4' />

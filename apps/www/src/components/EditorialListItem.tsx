@@ -15,28 +15,25 @@ export function EditorialListItem({ post }: EditorialListItemProps) {
 
   return (
     <article className='group relative flex gap-3 items-start border border-border bg-card p-3 sm:p-4 transition-all duration-200 hover:bg-muted hover:border-foreground hover:shadow-sm'>
-      {recencyLabel && (
-        <div className='absolute top-3 right-3 z-10'>
-          <Badge
-            variant='secondary'
-            className={
-              recencyLabel === 'new'
-                ? 'rounded-none border-none bg-highlight text-background text-[10px] uppercase tracking-widest font-bold gap-1 shadow-sm'
-                : 'rounded-none border-none bg-foreground text-black text-[10px] uppercase tracking-widest font-bold gap-1 shadow-sm'
-            }>
-            <Sparkles className='w-3 h-3' />
-            {recencyLabel}
-          </Badge>
-        </div>
-      )}
-
       <img
         src={post.thumbnailUrl || DEFAULT_IMAGE_URL}
         alt={post.title}
-        className='object-cover transition-transform duration-300 border w-20 h-20 border-border bg-background group-hover:scale-101 shrink-0'
+        className='object-cover transition-transform duration-300 border w-16 h-16 sm:w-20 sm:h-20 border-border bg-background group-hover:scale-101 shrink-0'
       />
 
-      <div className='flex-1 min-w-0 pr-20 sm:pr-24'>
+      <div className='flex-1 min-w-0'>
+        {recencyLabel && (
+          <Badge
+            variant='secondary'
+            className={`mb-1 ${
+              recencyLabel === 'new'
+                ? 'rounded-none border-none bg-highlight text-background text-[10px] uppercase tracking-widest font-bold gap-1 shadow-sm'
+                : 'rounded-none border-none bg-foreground text-black text-[10px] uppercase tracking-widest font-bold gap-1 shadow-sm'
+            }`}>
+            <Sparkles className='w-3 h-3' />
+            {recencyLabel}
+          </Badge>
+        )}
         <Link
           to='/editorial/$slug'
           params={{ slug: post.slug }}
