@@ -1,6 +1,7 @@
 import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import type { AppRouteHandler } from '@/lib/types'
+import { runEffect } from '@/lib/effect-hono'
 import { AppRuntime } from '@/runtime'
 import { QRCodeService } from '@/services/qrcode.service'
 import { ShowService, ShowSubscriptionService } from '@/services/show.service'
@@ -24,23 +25,9 @@ export const getAllShows: AppRouteHandler<GetAllShowsRoute> = async (c) => {
   const program = Effect.gen(function* () {
     const showService = yield* ShowService
     return yield* showService.getAll({ limit, offset, includeDrafts: isAdmin })
-  }).pipe(
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    ),
-    Effect.withSpan('api.show.getAll')
-  )
+  }).pipe(Effect.withSpan('api.show.getAll'))
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
+  return runEffect<GetAllShowsRoute>(c, program)
 }
 
 export const getShowBySlug: AppRouteHandler<GetShowBySlugRoute> = async (c) => {
@@ -49,66 +36,22 @@ export const getShowBySlug: AppRouteHandler<GetShowBySlugRoute> = async (c) => {
   const program = Effect.gen(function* () {
     const showService = yield* ShowService
     return yield* showService.getBySlug(slug)
-  }).pipe(
-    Effect.catchTag('NotFoundError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    ),
-    Effect.withSpan('api.show.getBySlug', { attributes: { slug } })
-  )
+  }).pipe(Effect.withSpan('api.show.getBySlug', { attributes: { slug } }))
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
+  return runEffect<GetShowBySlugRoute>(c, program)
 }
 
 export const createShow: AppRouteHandler<CreateShowRoute> = async (c) => {
   const { hostIds, ...showData } = c.req.valid('json')
   const user = c.get('user')
-
-  let finalHostIds: string[] = hostIds || []
-  if (finalHostIds.length === 0) {
-    finalHostIds = [user.id]
-  }
+  const finalHostIds = hostIds?.length ? hostIds : [user.id]
 
   const program = Effect.gen(function* () {
     const showService = yield* ShowService
     return yield* showService.create(showData, finalHostIds)
-  }).pipe(
-    Effect.catchTag('ConflictError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.CONFLICT
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    ),
-    Effect.withSpan('api.show.create')
-  )
+  }).pipe(Effect.withSpan('api.show.create'))
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.CREATED)
+  return runEffect<CreateShowRoute>(c, program, HttpStatusCodes.CREATED)
 }
 
 export const updateShowBySlug: AppRouteHandler<UpdateShowBySlugRoute> = async (
@@ -126,35 +69,9 @@ export const updateShowBySlug: AppRouteHandler<UpdateShowBySlugRoute> = async (
       user.role || 'user',
       updateData
     )
-  }).pipe(
-    Effect.catchTag('NotFoundError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    ),
-    Effect.catchTag('UnauthorizedError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.UNAUTHORIZED
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    ),
-    Effect.withSpan('api.show.update', { attributes: { slug } })
-  )
+  }).pipe(Effect.withSpan('api.show.update', { attributes: { slug } }))
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
+  return runEffect<UpdateShowBySlugRoute>(c, program)
 }
 
 export const deleteShowBySlug: AppRouteHandler<DeleteShowBySlugRoute> = async (
@@ -168,32 +85,27 @@ export const deleteShowBySlug: AppRouteHandler<DeleteShowBySlugRoute> = async (
     return yield* showService.delete(slug, user.id, user.role || 'user')
   }).pipe(
     Effect.catchTag('NotFoundError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
+      Effect.succeed({ error: e.message, notFound: true } as const)
     ),
     Effect.catchTag('UnauthorizedError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.UNAUTHORIZED
-      } as const)
+      Effect.succeed({ error: e.message, unauthorized: true } as const)
     ),
     Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
+      Effect.succeed({ error: e.message, serverError: true } as const)
     ),
     Effect.withSpan('api.show.delete', { attributes: { slug } })
   )
 
   const result = await AppRuntime.runPromise(program)
-
-  if (result && 'error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
+  if (result && 'notFound' in result)
+    return c.json({ error: result.error }, HttpStatusCodes.NOT_FOUND)
+  if (result && 'unauthorized' in result)
+    return c.json({ error: result.error }, HttpStatusCodes.UNAUTHORIZED)
+  if (result && 'serverError' in result)
+    return c.json(
+      { error: result.error },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
   return c.body(null, HttpStatusCodes.NO_CONTENT)
 }
 
@@ -206,29 +118,9 @@ export const getShowEpisodes: AppRouteHandler<GetShowEpisodesRoute> = async (
   const program = Effect.gen(function* () {
     const showService = yield* ShowService
     return yield* showService.getEpisodes(slug, { limit, offset })
-  }).pipe(
-    Effect.catchTag('NotFoundError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    ),
-    Effect.withSpan('api.show.getEpisodes', { attributes: { slug } })
-  )
+  }).pipe(Effect.withSpan('api.show.getEpisodes', { attributes: { slug } }))
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
+  return runEffect<GetShowEpisodesRoute>(c, program)
 }
 
 export const subscribeToShow: AppRouteHandler<SubscribeToShowRoute> = async (
@@ -240,29 +132,9 @@ export const subscribeToShow: AppRouteHandler<SubscribeToShowRoute> = async (
   const program = Effect.gen(function* () {
     const subscriptionService = yield* ShowSubscriptionService
     return yield* subscriptionService.subscribe(user.id, showId)
-  }).pipe(
-    Effect.catchTag('ConflictError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.CONFLICT
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    ),
-    Effect.withSpan('api.show.subscribe', { attributes: { showId } })
-  )
+  }).pipe(Effect.withSpan('api.show.subscribe', { attributes: { showId } }))
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.CREATED)
+  return runEffect<SubscribeToShowRoute>(c, program, HttpStatusCodes.CREATED)
 }
 
 export const unsubscribeFromShow: AppRouteHandler<
@@ -276,26 +148,22 @@ export const unsubscribeFromShow: AppRouteHandler<
     return yield* subscriptionService.unsubscribe(user.id, showId)
   }).pipe(
     Effect.catchTag('NotFoundError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
+      Effect.succeed({ error: e.message, notFound: true } as const)
     ),
     Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
+      Effect.succeed({ error: e.message, serverError: true } as const)
     ),
     Effect.withSpan('api.show.unsubscribe', { attributes: { showId } })
   )
 
   const result = await AppRuntime.runPromise(program)
-
-  if (result && 'error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
+  if (result && 'notFound' in result)
+    return c.json({ error: result.error }, HttpStatusCodes.NOT_FOUND)
+  if (result && 'serverError' in result)
+    return c.json(
+      { error: result.error },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
   return c.body(null, HttpStatusCodes.NO_CONTENT)
 }
 
@@ -306,9 +174,7 @@ export const getShowQRPdf: AppRouteHandler<GetShowQRPdfRoute> = async (c) => {
   const program = Effect.gen(function* () {
     const showService = yield* ShowService
     const qrService = yield* QRCodeService
-
     const show = yield* showService.getBySlug(slug)
-
     return yield* qrService.generateShowQRPdf(
       {
         slug: show.slug,
@@ -318,27 +184,7 @@ export const getShowQRPdf: AppRouteHandler<GetShowQRPdfRoute> = async (c) => {
       },
       force
     )
-  }).pipe(
-    Effect.catchTag('NotFoundError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    ),
-    Effect.withSpan('api.show.getQRPdf', { attributes: { slug } })
-  )
+  }).pipe(Effect.withSpan('api.show.getQRPdf', { attributes: { slug } }))
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
+  return runEffect<GetShowQRPdfRoute>(c, program)
 }

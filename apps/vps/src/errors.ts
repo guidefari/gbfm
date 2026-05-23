@@ -153,3 +153,18 @@ export class LoggerError extends Data.TaggedError('LoggerError')<{
   readonly message: string
   readonly operation: string
 }> {}
+
+export class FetchError extends Data.TaggedError('FetchError')<{
+  readonly message: string
+  readonly cause?: unknown
+}> {}
+
+export class ProcessingError extends Data.TaggedError('ProcessingError')<{
+  readonly message: string
+  readonly code?: number
+}> {}
+
+export class FileSystemError extends Data.TaggedError('FileSystemError')<{
+  readonly message: string
+  readonly path?: string
+}> {}

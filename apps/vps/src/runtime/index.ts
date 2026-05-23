@@ -25,7 +25,7 @@ import type { UserService } from '@/services/user.service'
 import type { DatabaseService } from './services'
 import { AppLayer } from './services'
 
-type AppServices =
+export type AppServices =
   | ConfigService
   | DatabaseService
   | EmailService

@@ -1,7 +1,7 @@
 import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import type { AppRouteHandler } from '@/lib/types'
-import { runApp } from '@/runtime'
+import { runEffect } from '@/lib/effect-hono'
 import { ConfigService } from '@/services/config.service'
 import { S3Service } from '@/services/s3.service'
 
@@ -12,7 +12,6 @@ export const uploadFile: AppRouteHandler<UploadFileRoute> = async (c) => {
   const fileType = formData.get('fileType') as string
 
   let file: File | null = null
-
   if (fileType === 'audio') {
     file = formData.get('audioFile') as File
   } else if (fileType === 'image') {
@@ -26,9 +25,7 @@ export const uploadFile: AppRouteHandler<UploadFileRoute> = async (c) => {
   const maxSize = fileType === 'audio' ? 200 * 1024 * 1024 : 10 * 1024 * 1024
   if (file.size > maxSize) {
     return c.json(
-      {
-        error: `File too large. Maximum size is ${maxSize / (1024 * 1024)}MB`
-      },
+      { error: `File too large. Maximum size is ${maxSize / (1024 * 1024)}MB` },
       HttpStatusCodes.BAD_REQUEST
     )
   }
@@ -55,47 +52,26 @@ export const uploadFile: AppRouteHandler<UploadFileRoute> = async (c) => {
     const config = yield* ConfigService
     const s3Service = yield* S3Service
     const fileBuffer = Buffer.from(
-      yield* Effect.promise(() => file.arrayBuffer())
+      yield* Effect.promise(() => file!.arrayBuffer())
     )
-    const bucketName = config.buckets.userContent
-
     const key = yield* s3Service.uploadFile(
       fileName,
       fileBuffer,
-      file.type,
-      bucketName
+      file!.type,
+      config.buckets.userContent
     )
-
-    const publicUrl = `${config.urls.router}/user-content/${key}`
-    return { url: publicUrl, key }
-  })
-
-  const uploadProgram = program.pipe(
-    Effect.withSpan('api.upload.file', {
-      attributes: { fileType, fileName }
-    }),
-    Effect.map((data) => ({ data, status: HttpStatusCodes.OK }) as const),
-    Effect.catchTag('S3Error', (error) =>
-      Effect.gen(function* () {
-        yield* Effect.logError('[Upload] File upload error', {
-          fileName,
-          fileType,
-          fileSize: file.size,
-          error: error.message
-        })
-        return {
-          error: 'Failed to upload file',
-          status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-        } as const
+    return { url: `${config.urls.router}/user-content/${key}`, key }
+  }).pipe(
+    Effect.withSpan('api.upload.file', { attributes: { fileType, fileName } }),
+    Effect.tapError((e) =>
+      Effect.logError('[Upload] File upload error', {
+        fileName,
+        fileType,
+        fileSize: file!.size,
+        error: (e as { message?: string }).message ?? String(e)
       })
     )
   )
 
-  const result = await runApp(uploadProgram)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result.data, result.status)
+  return runEffect<UploadFileRoute>(c, program)
 }

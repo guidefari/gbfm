@@ -1,8 +1,9 @@
 import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import type { AppRouteHandler } from '@/lib/types'
-import { AppRuntime } from '@/runtime'
+import { runEffect } from '@/lib/effect-hono'
 import { SpotifyService } from '@/services/spotify.service'
+
 import type {
   EnrichTrackFromUrlRoute,
   GetAlbumRoute,
@@ -16,31 +17,10 @@ export const getTrack: AppRouteHandler<GetTrackRoute> = async (c) => {
 
   const program = Effect.gen(function* () {
     const spotifyService = yield* SpotifyService
-    const track = yield* spotifyService.getTrack(id)
-    return track
-  }).pipe(
-    Effect.catchTag('SpotifyError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status:
-          e.statusCode === 400
-            ? HttpStatusCodes.NOT_FOUND
-            : HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+    return yield* spotifyService.getTrack(id)
+  }).pipe(Effect.withSpan('api.spotify.getTrack', { attributes: { id } }))
 
-  const result = await AppRuntime.runPromise(
-    program.pipe(
-      Effect.withSpan('api.spotify.getTrack', { attributes: { id } })
-    )
-  )
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
+  return runEffect<GetTrackRoute>(c, program)
 }
 
 export const getAlbum: AppRouteHandler<GetAlbumRoute> = async (c) => {
@@ -48,31 +28,10 @@ export const getAlbum: AppRouteHandler<GetAlbumRoute> = async (c) => {
 
   const program = Effect.gen(function* () {
     const spotifyService = yield* SpotifyService
-    const album = yield* spotifyService.getAlbum(id)
-    return album
-  }).pipe(
-    Effect.catchTag('SpotifyError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status:
-          e.statusCode === 400
-            ? HttpStatusCodes.NOT_FOUND
-            : HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+    return yield* spotifyService.getAlbum(id)
+  }).pipe(Effect.withSpan('api.spotify.getAlbum', { attributes: { id } }))
 
-  const result = await AppRuntime.runPromise(
-    program.pipe(
-      Effect.withSpan('api.spotify.getAlbum', { attributes: { id } })
-    )
-  )
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
+  return runEffect<GetAlbumRoute>(c, program)
 }
 
 export const getPlaylist: AppRouteHandler<GetPlaylistRoute> = async (c) => {
@@ -80,31 +39,10 @@ export const getPlaylist: AppRouteHandler<GetPlaylistRoute> = async (c) => {
 
   const program = Effect.gen(function* () {
     const spotifyService = yield* SpotifyService
-    const playlist = yield* spotifyService.getPlaylist(id)
-    return playlist
-  }).pipe(
-    Effect.catchTag('SpotifyError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status:
-          e.statusCode === 400
-            ? HttpStatusCodes.NOT_FOUND
-            : HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+    return yield* spotifyService.getPlaylist(id)
+  }).pipe(Effect.withSpan('api.spotify.getPlaylist', { attributes: { id } }))
 
-  const result = await AppRuntime.runPromise(
-    program.pipe(
-      Effect.withSpan('api.spotify.getPlaylist', { attributes: { id } })
-    )
-  )
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
+  return runEffect<GetPlaylistRoute>(c, program)
 }
 
 export const searchAlbums: AppRouteHandler<SearchAlbumsRoute> = async (c) => {
@@ -112,35 +50,12 @@ export const searchAlbums: AppRouteHandler<SearchAlbumsRoute> = async (c) => {
 
   const program = Effect.gen(function* () {
     const spotifyService = yield* SpotifyService
-    const searchResult = yield* spotifyService.searchAlbums(
-      query,
-      limit,
-      offset
-    )
-    return searchResult
+    return yield* spotifyService.searchAlbums(query, limit, offset)
   }).pipe(
-    Effect.catchTag('SpotifyError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status:
-          e.statusCode === 400
-            ? HttpStatusCodes.BAD_REQUEST
-            : HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
+    Effect.withSpan('api.spotify.searchAlbums', { attributes: { query } })
   )
 
-  const result = await AppRuntime.runPromise(
-    program.pipe(
-      Effect.withSpan('api.spotify.searchAlbums', { attributes: { query } })
-    )
-  )
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
+  return runEffect<SearchAlbumsRoute>(c, program)
 }
 
 export const enrichTrackFromUrl: AppRouteHandler<
@@ -150,31 +65,10 @@ export const enrichTrackFromUrl: AppRouteHandler<
 
   const program = Effect.gen(function* () {
     const spotifyService = yield* SpotifyService
-    const enrichedTrack = yield* spotifyService.enrichTrackFromUrl(url)
-    return enrichedTrack
+    return yield* spotifyService.enrichTrackFromUrl(url)
   }).pipe(
-    Effect.catchTag('SpotifyError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status:
-          e.statusCode === 400
-            ? HttpStatusCodes.BAD_REQUEST
-            : e.statusCode === 404
-              ? HttpStatusCodes.NOT_FOUND
-              : HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
+    Effect.withSpan('api.spotify.enrichTrackFromUrl', { attributes: { url } })
   )
 
-  const result = await AppRuntime.runPromise(
-    program.pipe(
-      Effect.withSpan('api.spotify.enrichTrackFromUrl', { attributes: { url } })
-    )
-  )
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
+  return runEffect<EnrichTrackFromUrlRoute>(c, program)
 }

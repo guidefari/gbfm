@@ -1,7 +1,8 @@
 import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import type { AppRouteHandler } from '@/lib/types'
-import { AppRuntime, runApp } from '@/runtime'
+import { runEffect } from '@/lib/effect-hono'
+import { AppRuntime } from '@/runtime'
 import { ShowSubscriptionService } from '@/services/show.service'
 import { UserService } from '@/services/user.service'
 
@@ -40,7 +41,6 @@ export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
 
   if (contentType.includes('multipart/form-data')) {
     const formData = await c.req.formData()
-
     for (const [key, value] of formData.entries()) {
       if (
         key === 'avatar' &&
@@ -69,30 +69,9 @@ export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
   const program = Effect.gen(function* () {
     const userService = yield* UserService
     return yield* userService.updateUserProfile(user.id, updateData)
-  }).pipe(
-    Effect.withSpan('api.user.updateProfile'),
-    Effect.map((data) => ({ data, status: HttpStatusCodes.OK }) as const),
-    Effect.catchTag('NotFoundError', (error) =>
-      Effect.succeed({
-        error: error.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', () =>
-      Effect.succeed({
-        error: 'Failed to update profile',
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  }).pipe(Effect.withSpan('api.user.updateProfile'))
 
-  const result = await runApp(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result.data, result.status)
+  return runEffect<UpdateProfileRoute>(c, program)
 }
 
 export const getProfile: AppRouteHandler<GetProfileRoute> = async (c) => {
@@ -108,45 +87,18 @@ export const getProfile: AppRouteHandler<GetProfileRoute> = async (c) => {
       userService.getUserById(user.id),
       userService.getUserSocialLinks(user.id)
     ])
-    return { profile, socialLinks }
-  }).pipe(
-    Effect.withSpan('api.user.getProfile'),
-    Effect.map(
-      (data) =>
-        ({
-          data: {
-            ...data.profile,
-            username: data.profile.username,
-            avatarUrl: data.profile.image,
-            image: data.profile.image,
-            verified: data.profile.emailVerified,
-            emailVerified: data.profile.emailVerified,
-            socialLinks: data.socialLinks
-          },
-          status: HttpStatusCodes.OK
-        }) as const
-    ),
-    Effect.catchTag('NotFoundError', (error) =>
-      Effect.succeed({
-        error: error.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', () =>
-      Effect.succeed({
-        error: 'Failed to fetch profile',
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    )
-  )
+    return {
+      ...profile,
+      username: profile.username,
+      avatarUrl: profile.image,
+      image: profile.image,
+      verified: profile.emailVerified,
+      emailVerified: profile.emailVerified,
+      socialLinks
+    }
+  }).pipe(Effect.withSpan('api.user.getProfile'))
 
-  const result = await runApp(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result.data, result.status)
+  return runEffect<GetProfileRoute>(c, program)
 }
 
 export const getSocialLinks: AppRouteHandler<GetSocialLinksRoute> = async (
@@ -161,30 +113,9 @@ export const getSocialLinks: AppRouteHandler<GetSocialLinksRoute> = async (
   const program = Effect.gen(function* () {
     const userService = yield* UserService
     return yield* userService.getUserSocialLinks(user.id)
-  }).pipe(
-    Effect.withSpan('api.user.getSocialLinks'),
-    Effect.map((data) => ({ data, status: HttpStatusCodes.OK }) as const),
-    Effect.catchTag('NotFoundError', (error) =>
-      Effect.succeed({
-        error: error.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', () =>
-      Effect.succeed({
-        error: 'Failed to fetch social links',
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  }).pipe(Effect.withSpan('api.user.getSocialLinks'))
 
-  const result = await runApp(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result.data, result.status)
+  return runEffect<GetSocialLinksRoute>(c, program)
 }
 
 export const replaceSocialLinks: AppRouteHandler<
@@ -201,30 +132,9 @@ export const replaceSocialLinks: AppRouteHandler<
   const program = Effect.gen(function* () {
     const userService = yield* UserService
     return yield* userService.replaceUserSocialLinks(user.id, links)
-  }).pipe(
-    Effect.withSpan('api.user.replaceSocialLinks'),
-    Effect.map((data) => ({ data, status: HttpStatusCodes.OK }) as const),
-    Effect.catchTag('NotFoundError', (error) =>
-      Effect.succeed({
-        error: error.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', () =>
-      Effect.succeed({
-        error: 'Failed to replace social links',
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  }).pipe(Effect.withSpan('api.user.replaceSocialLinks'))
 
-  const result = await runApp(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result.data, result.status)
+  return runEffect<ReplaceSocialLinksRoute>(c, program)
 }
 
 export const getAdminUserSocialLinks: AppRouteHandler<
@@ -235,7 +145,6 @@ export const getAdminUserSocialLinks: AppRouteHandler<
   if (!user) {
     return c.json({ error: 'Unauthorized' }, HttpStatusCodes.UNAUTHORIZED)
   }
-
   if (user.role !== 'admin') {
     return c.json({ error: 'Admin access required' }, HttpStatusCodes.FORBIDDEN)
   }
@@ -245,30 +154,9 @@ export const getAdminUserSocialLinks: AppRouteHandler<
   const program = Effect.gen(function* () {
     const userService = yield* UserService
     return yield* userService.getUserSocialLinks(userId)
-  }).pipe(
-    Effect.withSpan('api.user.getAdminUserSocialLinks'),
-    Effect.map((data) => ({ data, status: HttpStatusCodes.OK }) as const),
-    Effect.catchTag('NotFoundError', (error) =>
-      Effect.succeed({
-        error: error.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', () =>
-      Effect.succeed({
-        error: 'Failed to fetch admin social links',
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  }).pipe(Effect.withSpan('api.user.getAdminUserSocialLinks'))
 
-  const result = await runApp(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result.data, result.status)
+  return runEffect<GetAdminUserSocialLinksRoute>(c, program)
 }
 
 export const replaceAdminUserSocialLinks: AppRouteHandler<
@@ -279,7 +167,6 @@ export const replaceAdminUserSocialLinks: AppRouteHandler<
   if (!user) {
     return c.json({ error: 'Unauthorized' }, HttpStatusCodes.UNAUTHORIZED)
   }
-
   if (user.role !== 'admin') {
     return c.json({ error: 'Admin access required' }, HttpStatusCodes.FORBIDDEN)
   }
@@ -290,30 +177,9 @@ export const replaceAdminUserSocialLinks: AppRouteHandler<
   const program = Effect.gen(function* () {
     const userService = yield* UserService
     return yield* userService.replaceUserSocialLinks(userId, links)
-  }).pipe(
-    Effect.withSpan('api.user.replaceAdminUserSocialLinks'),
-    Effect.map((data) => ({ data, status: HttpStatusCodes.OK }) as const),
-    Effect.catchTag('NotFoundError', (error) =>
-      Effect.succeed({
-        error: error.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', () =>
-      Effect.succeed({
-        error: 'Failed to replace admin social links',
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  }).pipe(Effect.withSpan('api.user.replaceAdminUserSocialLinks'))
 
-  const result = await runApp(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result.data, result.status)
+  return runEffect<ReplaceAdminUserSocialLinksRoute>(c, program)
 }
 
 export const updateAdminUserBio: AppRouteHandler<
@@ -324,7 +190,6 @@ export const updateAdminUserBio: AppRouteHandler<
   if (!user) {
     return c.json({ error: 'Unauthorized' }, HttpStatusCodes.UNAUTHORIZED)
   }
-
   if (user.role !== 'admin') {
     return c.json({ error: 'Admin access required' }, HttpStatusCodes.FORBIDDEN)
   }
@@ -338,30 +203,9 @@ export const updateAdminUserBio: AppRouteHandler<
       bio: bio ?? undefined
     })
     return { bio: updated.bio }
-  }).pipe(
-    Effect.withSpan('api.user.updateAdminUserBio'),
-    Effect.map((data) => ({ data, status: HttpStatusCodes.OK }) as const),
-    Effect.catchTag('NotFoundError', (error) =>
-      Effect.succeed({
-        error: error.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', () =>
-      Effect.succeed({
-        error: 'Failed to update admin user bio',
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  }).pipe(Effect.withSpan('api.user.updateAdminUserBio'))
 
-  const result = await runApp(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result.data, result.status)
+  return runEffect<UpdateAdminUserBioRoute>(c, program)
 }
 
 export const getAdminUserBio: AppRouteHandler<GetAdminUserBioRoute> = async (
@@ -372,7 +216,6 @@ export const getAdminUserBio: AppRouteHandler<GetAdminUserBioRoute> = async (
   if (!user) {
     return c.json({ error: 'Unauthorized' }, HttpStatusCodes.UNAUTHORIZED)
   }
-
   if (user.role !== 'admin') {
     return c.json({ error: 'Admin access required' }, HttpStatusCodes.FORBIDDEN)
   }
@@ -383,30 +226,9 @@ export const getAdminUserBio: AppRouteHandler<GetAdminUserBioRoute> = async (
     const userService = yield* UserService
     const targetUser = yield* userService.getUserById(userId)
     return { bio: targetUser.bio }
-  }).pipe(
-    Effect.withSpan('api.user.getAdminUserBio'),
-    Effect.map((data) => ({ data, status: HttpStatusCodes.OK }) as const),
-    Effect.catchTag('NotFoundError', (error) =>
-      Effect.succeed({
-        error: error.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', () =>
-      Effect.succeed({
-        error: 'Failed to fetch admin user bio',
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  }).pipe(Effect.withSpan('api.user.getAdminUserBio'))
 
-  const result = await runApp(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result.data, result.status)
+  return runEffect<GetAdminUserBioRoute>(c, program)
 }
 
 export const getEmailPreferences: AppRouteHandler<
@@ -421,24 +243,9 @@ export const getEmailPreferences: AppRouteHandler<
   const program = Effect.gen(function* () {
     const userService = yield* UserService
     return yield* userService.getUserEmailPreferences(user.id)
-  }).pipe(
-    Effect.withSpan('api.user.getEmailPreferences'),
-    Effect.map((data) => ({ data, status: HttpStatusCodes.OK }) as const),
-    Effect.catchTag('DatabaseError', () =>
-      Effect.succeed({
-        error: 'Failed to fetch email preferences',
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  }).pipe(Effect.withSpan('api.user.getEmailPreferences'))
 
-  const result = await runApp(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result.data, result.status)
+  return runEffect<GetEmailPreferencesRoute>(c, program)
 }
 
 export const updateEmailPreferences: AppRouteHandler<
@@ -455,24 +262,9 @@ export const updateEmailPreferences: AppRouteHandler<
   const program = Effect.gen(function* () {
     const userService = yield* UserService
     return yield* userService.updateUserEmailPreferences(user.id, updates)
-  }).pipe(
-    Effect.withSpan('api.user.updateEmailPreferences'),
-    Effect.map((data) => ({ data, status: HttpStatusCodes.OK }) as const),
-    Effect.catchTag('DatabaseError', () =>
-      Effect.succeed({
-        error: 'Failed to update email preferences',
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  }).pipe(Effect.withSpan('api.user.updateEmailPreferences'))
 
-  const result = await runApp(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result.data, result.status)
+  return runEffect<UpdateEmailPreferencesRoute>(c, program)
 }
 
 export const getUserSubscriptions: AppRouteHandler<
@@ -487,47 +279,18 @@ export const getUserSubscriptions: AppRouteHandler<
       limit,
       offset
     })
-  }).pipe(
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    ),
-    Effect.withSpan('api.user.getSubscriptions')
-  )
+  }).pipe(Effect.withSpan('api.user.getSubscriptions'))
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
+  return runEffect<GetUserSubscriptionsRoute>(c, program)
 }
 
 export const listDjs: AppRouteHandler<ListDjsRoute> = async (c) => {
   const program = Effect.gen(function* () {
     const userService = yield* UserService
     return yield* userService.listDjs()
-  }).pipe(
-    Effect.withSpan('api.user.listDjs'),
-    Effect.map((data) => ({ data, status: HttpStatusCodes.OK }) as const),
-    Effect.catchTag('DatabaseError', () =>
-      Effect.succeed({
-        error: 'Failed to list DJs',
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  }).pipe(Effect.withSpan('api.user.listDjs'))
 
-  const result = await runApp(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result.data, result.status)
+  return runEffect<ListDjsRoute>(c, program)
 }
 
 export const searchUsers: AppRouteHandler<SearchUsersRoute> = async (c) => {
@@ -542,22 +305,7 @@ export const searchUsers: AppRouteHandler<SearchUsersRoute> = async (c) => {
   const program = Effect.gen(function* () {
     const userService = yield* UserService
     return yield* userService.searchUsers(q)
-  }).pipe(
-    Effect.withSpan('api.user.searchUsers'),
-    Effect.map((data) => ({ data, status: HttpStatusCodes.OK }) as const),
-    Effect.catchTag('DatabaseError', () =>
-      Effect.succeed({
-        error: 'Failed to search users',
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  }).pipe(Effect.withSpan('api.user.searchUsers'))
 
-  const result = await runApp(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result.data, result.status)
+  return runEffect<SearchUsersRoute>(c, program)
 }

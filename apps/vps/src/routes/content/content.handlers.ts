@@ -1,10 +1,12 @@
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
-import { Data, Effect } from 'effect'
+import { Effect } from 'effect'
 import ffmpeg from 'ffmpeg-static'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
+import { FileSystemError, ProcessingError, ValidationError } from '@/errors'
 import type { AppRouteHandler } from '@/lib/types'
+import { runEffect } from '@/lib/effect-hono'
 import { AppRuntime, runAppFork } from '@/runtime'
 import { AudioService } from '@/services/audio.service'
 import { MixProcessingService } from '@/services/mix-processing.service'
@@ -33,43 +35,15 @@ import type {
   UpdatePostBySlugRoute
 } from './content.routes'
 
-// Error types for upload processing
-class ValidationError extends Data.TaggedError('ValidationError')<{
-  readonly message: string
-}> {}
-
-class ProcessingError extends Data.TaggedError('ProcessingError')<{
-  readonly message: string
-  readonly code?: number
-}> {}
-
-class FileSystemError extends Data.TaggedError('FileSystemError')<{
-  readonly message: string
-  readonly path?: string
-}> {}
-
 export const getPosts: AppRouteHandler<GetPostsRoute> = async (c) => {
   const { limit, offset, type } = c.req.valid('query')
 
   const program = Effect.gen(function* () {
     const postService = yield* PostService
     return yield* postService.getAll({ limit, offset, type })
-  }).pipe(
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  })
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
+  return runEffect<GetPostsRoute>(c, program)
 }
 
 export const getPostBySlug: AppRouteHandler<GetPostBySlugRoute> = async (c) => {
@@ -78,28 +52,9 @@ export const getPostBySlug: AppRouteHandler<GetPostBySlugRoute> = async (c) => {
   const program = Effect.gen(function* () {
     const postService = yield* PostService
     return yield* postService.getBySlug(slug)
-  }).pipe(
-    Effect.catchTag('NotFoundError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  })
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
+  return runEffect<GetPostBySlugRoute>(c, program)
 }
 
 export const getEditorialPosts: AppRouteHandler<
@@ -110,22 +65,9 @@ export const getEditorialPosts: AppRouteHandler<
   const program = Effect.gen(function* () {
     const postService = yield* PostService
     return yield* postService.getEditorials({ limit, offset })
-  }).pipe(
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  })
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
+  return runEffect<GetEditorialPostsRoute>(c, program)
 }
 
 export const getEditorialPostBySlug: AppRouteHandler<
@@ -136,28 +78,9 @@ export const getEditorialPostBySlug: AppRouteHandler<
   const program = Effect.gen(function* () {
     const postService = yield* PostService
     return yield* postService.getEditorialBySlug(slug)
-  }).pipe(
-    Effect.catchTag('NotFoundError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  })
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
+  return runEffect<GetEditorialPostBySlugRoute>(c, program)
 }
 
 export const getMicroPosts: AppRouteHandler<GetMicroPostsRoute> = async (c) => {
@@ -166,22 +89,9 @@ export const getMicroPosts: AppRouteHandler<GetMicroPostsRoute> = async (c) => {
   const program = Effect.gen(function* () {
     const postService = yield* PostService
     return yield* postService.getMicroPosts({ limit, offset })
-  }).pipe(
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  })
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
+  return runEffect<GetMicroPostsRoute>(c, program)
 }
 
 export const getMicroPostBySlug: AppRouteHandler<
@@ -192,77 +102,22 @@ export const getMicroPostBySlug: AppRouteHandler<
   const program = Effect.gen(function* () {
     const postService = yield* PostService
     return yield* postService.getMicroPostBySlug(slug)
-  }).pipe(
-    Effect.catchTag('NotFoundError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  })
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
+  return runEffect<GetMicroPostBySlugRoute>(c, program)
 }
 
 export const createPost: AppRouteHandler<CreatePostRoute> = async (c) => {
   const { creatorIds, ...postData } = c.req.valid('json')
   const user = c.get('user')
-
-  let finalCreatorIds: string[] = creatorIds || []
-  if (finalCreatorIds.length === 0) {
-    finalCreatorIds = [user.id]
-  }
+  const finalCreatorIds = creatorIds?.length ? creatorIds : [user.id]
 
   const program = Effect.gen(function* () {
     const postService = yield* PostService
     return yield* postService.create(postData, finalCreatorIds)
-  }).pipe(
-    Effect.catchTag('ConflictError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    ),
-    Effect.catchTag('ValidationError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.UNPROCESSABLE_ENTITY
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  })
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    if (result.status === HttpStatusCodes.UNPROCESSABLE_ENTITY) {
-      return c.json(
-        { error: result.error },
-        HttpStatusCodes.UNPROCESSABLE_ENTITY
-      )
-    }
-
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.CREATED)
+  return runEffect<CreatePostRoute>(c, program, HttpStatusCodes.CREATED)
 }
 
 export const updatePostBySlug: AppRouteHandler<UpdatePostBySlugRoute> = async (
@@ -277,110 +132,34 @@ export const updatePostBySlug: AppRouteHandler<UpdatePostBySlugRoute> = async (
     return yield* postService.update(slug, user.id, user.role || 'user', {
       ...updateData
     })
-  }).pipe(
-    Effect.catchTag('NotFoundError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    ),
-    Effect.catchTag('UnauthorizedError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.FORBIDDEN
-      } as const)
-    ),
-    Effect.catchTag('ValidationError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.UNPROCESSABLE_ENTITY
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  })
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    if (result.status === HttpStatusCodes.UNPROCESSABLE_ENTITY) {
-      return c.json(
-        { error: result.error },
-        HttpStatusCodes.UNPROCESSABLE_ENTITY
-      )
-    }
-
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
+  return runEffect<UpdatePostBySlugRoute>(c, program)
 }
 
 export const getPostsByTag: AppRouteHandler<GetPostsByTagRoute> = async (c) => {
-  const params = c.req.valid('param')
-  const tag = params.tag
+  const { tag } = c.req.valid('param')
   const { limit, offset } = c.req.valid('query')
 
   const program = Effect.gen(function* () {
     const postService = yield* PostService
     return yield* postService.getByTag(tag, { limit, offset })
-  }).pipe(
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  })
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
+  return runEffect<GetPostsByTagRoute>(c, program)
 }
 
-// Mix management handlers
 export const createMix: AppRouteHandler<CreateMixRoute> = async (c) => {
   const { creatorIds, ...mixData } = c.req.valid('json')
   const user = c.get('user')
-
-  let finalCreatorIds: string[] = creatorIds || []
-  if (finalCreatorIds.length === 0) {
-    finalCreatorIds = [user.id]
-  }
+  const finalCreatorIds = creatorIds?.length ? creatorIds : [user.id]
 
   const program = Effect.gen(function* () {
     const audioService = yield* AudioService
     return yield* audioService.create(mixData, finalCreatorIds)
-  }).pipe(
-    Effect.catchTag('ConflictError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  })
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.CREATED)
+  return runEffect<CreateMixRoute>(c, program, HttpStatusCodes.CREATED)
 }
 
 export const getAudioByType: AppRouteHandler<GetAudioByTypeRoute> = async (
@@ -396,24 +175,9 @@ export const getAudioByType: AppRouteHandler<GetAudioByTypeRoute> = async (
       offset,
       tag
     })
-  }).pipe(
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  }).pipe(Effect.withSpan('getAudioByType'))
 
-  const instrumented = program.pipe(Effect.withSpan('getAudioByType'))
-
-  const result = await AppRuntime.runPromise(instrumented)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
+  return runEffect<GetAudioByTypeRoute>(c, program)
 }
 
 export const getAudioBySlug: AppRouteHandler<GetAudioBySlugRoute> = async (
@@ -424,30 +188,9 @@ export const getAudioBySlug: AppRouteHandler<GetAudioBySlugRoute> = async (
   const program = Effect.gen(function* () {
     const audioService = yield* AudioService
     return yield* audioService.getBySlug(type as 'mix' | 'track' | 'misc', slug)
-  }).pipe(
-    Effect.catchTag('NotFoundError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  }).pipe(Effect.withSpan('getAudioBySlug'))
 
-  const instrumented = program.pipe(Effect.withSpan('getAudioBySlug'))
-
-  const result = await AppRuntime.runPromise(instrumented)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
+  return runEffect<GetAudioBySlugRoute>(c, program)
 }
 
 export const updateAudioBySlug: AppRouteHandler<
@@ -466,72 +209,61 @@ export const updateAudioBySlug: AppRouteHandler<
       user.role || 'user',
       updateData
     )
-  }).pipe(
-    Effect.catchTag('NotFoundError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    ),
-    Effect.catchTag('UnauthorizedError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.FORBIDDEN
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  }).pipe(Effect.withSpan('updateAudioBySlug'))
 
-  const instrumented = program.pipe(Effect.withSpan('updateAudioBySlug'))
-
-  const result = await AppRuntime.runPromise(instrumented)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
+  return runEffect<UpdateAudioBySlugRoute>(c, program)
 }
 
 export const createAudio: AppRouteHandler<CreateAudioRoute> = async (c) => {
   const { creatorIds, ...audioData } = c.req.valid('json')
   const user = c.get('user')
-
-  let finalCreatorIds: string[] = creatorIds || []
-  if (finalCreatorIds.length === 0) {
-    finalCreatorIds = [user.id]
-  }
+  const finalCreatorIds = creatorIds?.length ? creatorIds : [user.id]
 
   const program = Effect.gen(function* () {
     const audioService = yield* AudioService
     return yield* audioService.create(audioData, finalCreatorIds)
-  }).pipe(
-    Effect.catchTag('ConflictError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
+  })
+
+  return runEffect<CreateAudioRoute>(c, program, HttpStatusCodes.CREATED)
+}
+
+export const trackAudioPlay: AppRouteHandler<TrackAudioPlayRoute> = async (
+  c
+) => {
+  const { id } = c.req.valid('param')
+  const clientIp =
+    c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ||
+    c.req.header('x-real-ip') ||
+    'unknown'
+
+  const program = Effect.gen(function* () {
+    const audioService = yield* AudioService
+    return yield* audioService.trackPlay(id, clientIp)
+  })
+
+  return runEffect<TrackAudioPlayRoute>(c, program)
+}
+
+export const getMixQRPdf: AppRouteHandler<GetMixQRPdfRoute> = async (c) => {
+  const { slug } = c.req.valid('param')
+  const { force } = c.req.valid('query')
+
+  const program = Effect.gen(function* () {
+    const audioService = yield* AudioService
+    const qrService = yield* QRCodeService
+    const mix = yield* audioService.getBySlug('mix', slug)
+    return yield* qrService.generateMixQRPdf(
+      {
+        slug: mix.slug,
+        title: mix.title,
+        thumbnailUrl: mix.thumbnailUrl,
+        creators: mix.creators
+      },
+      force
     )
-  )
+  })
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.CREATED)
+  return runEffect<GetMixQRPdfRoute>(c, program)
 }
 
 interface ProcessedFiles {
@@ -545,7 +277,6 @@ interface ProcessedFiles {
   album?: string
 }
 
-// Private helper, not exported
 function processUploadHelper(
   formData: FormData
 ): Effect.Effect<ProcessedFiles, ValidationError | FileSystemError> {
@@ -638,9 +369,7 @@ export const processUpload: AppRouteHandler<ProcessMixUploadRoute> = async (
   const program = Effect.gen(function* () {
     const files = yield* processUploadHelper(formData)
     const { outputFormat, title } = files
-
     const safeTitle = title.replace(/[^a-z0-9]/gi, '_').toLowerCase()
-
     const outputPath = yield* createAudioOrVideo(files, outputFormat)
     const outputBuffer = yield* Effect.tryPromise({
       try: () => fs.readFile(outputPath),
@@ -650,9 +379,7 @@ export const processUpload: AppRouteHandler<ProcessMixUploadRoute> = async (
           path: outputPath
         })
     })
-
     yield* cleanup(files)
-
     return { outputBuffer, outputFormat, safeTitle }
   }).pipe(
     Effect.catchTag('ValidationError', (error) =>
@@ -681,7 +408,6 @@ export const processUpload: AppRouteHandler<ProcessMixUploadRoute> = async (
     return c.json({ error: result.error }, result.status)
   }
 
-  // Return file response for successful processing
   Effect.logInfo('[Content] File processing completed successfully', {
     userId: user.id,
     title: result.safeTitle,
@@ -698,16 +424,114 @@ export const processUpload: AppRouteHandler<ProcessMixUploadRoute> = async (
   })
 }
 
+export const submitMixProcessing: AppRouteHandler<
+  SubmitMixProcessingRoute
+> = async (c) => {
+  const user = c.get('user')
+  const formData = await c.req.formData()
+
+  const program = Effect.gen(function* () {
+    const audioFile = formData.get('audioFile') as File
+    const imageFile = formData.get('coverImage') as File
+    const outputFormat = (formData.get('outputFormat') as string) || 'mp4'
+    const title = formData.get('title') as string
+    const description = formData.get('description') as string
+    const artist = formData.get('artist') as string
+    const album = formData.get('album') as string
+
+    if (!audioFile || !imageFile) {
+      return yield* new ValidationError({
+        message: 'Missing required files: audioFile and coverImage are required'
+      })
+    }
+
+    const audioBuffer = yield* Effect.tryPromise({
+      try: () => audioFile.arrayBuffer().then((ab) => Buffer.from(ab)),
+      catch: (error) =>
+        new FileSystemError({
+          message: `Failed to read audio file: ${error instanceof Error ? error.message : 'Unknown error'}`
+        })
+    })
+
+    const imageBuffer = yield* Effect.tryPromise({
+      try: () => imageFile.arrayBuffer().then((ab) => Buffer.from(ab)),
+      catch: (error) =>
+        new FileSystemError({
+          message: `Failed to read image file: ${error instanceof Error ? error.message : 'Unknown error'}`
+        })
+    })
+
+    const jobId = crypto.randomUUID()
+    const mixProcessing = yield* MixProcessingService
+    yield* mixProcessing.submitJob(jobId, {
+      audioBuffer,
+      imageBuffer,
+      outputFormat: outputFormat as 'mp3' | 'mp4',
+      title,
+      description,
+      artist,
+      album
+    })
+
+    yield* Effect.logInfo('[Content] Mix processing job submitted', {
+      jobId,
+      userId: user.id,
+      title
+    })
+
+    return { jobId, status: 'Queued' as const }
+  }).pipe(
+    Effect.catchTag('ValidationError', (error) =>
+      Effect.succeed({
+        error: error.message,
+        status: HttpStatusCodes.BAD_REQUEST
+      } as const)
+    ),
+    Effect.catchTag('FileSystemError', (error) =>
+      Effect.succeed({
+        error: error.message,
+        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
+      } as const)
+    )
+  )
+
+  const result = await AppRuntime.runPromise(program)
+
+  if ('error' in result) {
+    return c.json({ error: result.error }, result.status)
+  }
+
+  return c.json(result, HttpStatusCodes.ACCEPTED)
+}
+
+export const getMixJobStatus: AppRouteHandler<GetMixJobStatusRoute> = async (
+  c
+) => {
+  const { jobId } = c.req.valid('param')
+
+  const program = Effect.gen(function* () {
+    const mixProcessing = yield* MixProcessingService
+    return yield* mixProcessing.getJobStatus(jobId)
+  })
+
+  const result = await AppRuntime.runPromise(program)
+
+  if (!result) {
+    return c.json({ error: 'Job not found' }, HttpStatusCodes.NOT_FOUND)
+  }
+
+  return c.json(result, HttpStatusCodes.OK)
+}
+
 function formatTracklist(tracklist: string): string {
   return tracklist
     .split('\n')
-    .filter((line) => line.trim() && !line.startsWith('#')) // Skip header and empty lines
+    .filter((line) => line.trim() && !line.startsWith('#'))
     .map((line) => {
       const [number, artist, ...titleParts] = line
         .split('\t')
         .map((part) => part.trim())
-      const title = titleParts.join(' ') // Rejoin title parts in case they contain tabs
-      return `${number}. ${artist} - ${title}`
+      return `${number}. ${artist} - ${titleParts.join(' ')}`
     })
     .join('\n')
 }
@@ -796,18 +620,15 @@ function createAudioOrVideo(
           stdout: 'pipe',
           stderr: 'pipe'
         })
-
         const [stderr, exitCode] = await Promise.all([
           new Response(ffmpegProcess.stderr).text(),
           ffmpegProcess.exited
         ])
-
         if (stderr.trim()) {
           Effect.logInfo('[Content] FFmpeg processing', {
             output: stderr.trim()
           }).pipe(runAppFork)
         }
-
         if (exitCode !== 0) {
           throw new Error(`FFmpeg process exited with code ${exitCode}`)
         }
@@ -833,196 +654,14 @@ function cleanup(files: ProcessedFiles): Effect.Effect<void> {
     yield* Effect.tryPromise(() => fs.unlink(files.audioPath)).pipe(
       Effect.catch(() => Effect.void)
     )
-
     yield* Effect.tryPromise(() => fs.unlink(files.imagePath)).pipe(
       Effect.catch(() => Effect.void)
     )
-
     yield* Effect.tryPromise(() => fs.unlink(files.outputPath)).pipe(
       Effect.catch(() => Effect.void)
     )
-
     yield* Effect.tryPromise(() =>
       fs.rmdir(path.dirname(files.audioPath))
     ).pipe(Effect.catch(() => Effect.void))
   })
-}
-
-export const submitMixProcessing: AppRouteHandler<
-  SubmitMixProcessingRoute
-> = async (c) => {
-  const user = c.get('user')
-  const formData = await c.req.formData()
-
-  const program = Effect.gen(function* () {
-    const audioFile = formData.get('audioFile') as File
-    const imageFile = formData.get('coverImage') as File
-    const outputFormat = (formData.get('outputFormat') as string) || 'mp4'
-    const title = formData.get('title') as string
-    const description = formData.get('description') as string
-    const artist = formData.get('artist') as string
-    const album = formData.get('album') as string
-
-    if (!audioFile || !imageFile) {
-      return yield* new ValidationError({
-        message: 'Missing required files: audioFile and coverImage are required'
-      })
-    }
-
-    const audioBuffer = yield* Effect.tryPromise({
-      try: () => audioFile.arrayBuffer().then((ab) => Buffer.from(ab)),
-      catch: (error) =>
-        new FileSystemError({
-          message: `Failed to read audio file: ${error instanceof Error ? error.message : 'Unknown error'}`
-        })
-    })
-
-    const imageBuffer = yield* Effect.tryPromise({
-      try: () => imageFile.arrayBuffer().then((ab) => Buffer.from(ab)),
-      catch: (error) =>
-        new FileSystemError({
-          message: `Failed to read image file: ${error instanceof Error ? error.message : 'Unknown error'}`
-        })
-    })
-
-    const jobId = crypto.randomUUID()
-    const mixProcessing = yield* MixProcessingService
-
-    yield* mixProcessing.submitJob(jobId, {
-      audioBuffer,
-      imageBuffer,
-      outputFormat: outputFormat as 'mp3' | 'mp4',
-      title,
-      description,
-      artist,
-      album
-    })
-
-    yield* Effect.logInfo('[Content] Mix processing job submitted', {
-      jobId,
-      userId: user.id,
-      title
-    })
-
-    return { jobId, status: 'Queued' as const }
-  }).pipe(
-    Effect.catchTag('ValidationError', (error) =>
-      Effect.succeed({
-        error: error.message,
-        status: HttpStatusCodes.BAD_REQUEST
-      } as const)
-    ),
-    Effect.catchTag('FileSystemError', (error) =>
-      Effect.succeed({
-        error: error.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
-
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.ACCEPTED)
-}
-
-export const getMixJobStatus: AppRouteHandler<GetMixJobStatusRoute> = async (
-  c
-) => {
-  const { jobId } = c.req.valid('param')
-
-  const program = Effect.gen(function* () {
-    const mixProcessing = yield* MixProcessingService
-    return yield* mixProcessing.getJobStatus(jobId)
-  })
-
-  const result = await AppRuntime.runPromise(program)
-
-  if (!result) {
-    return c.json({ error: 'Job not found' }, HttpStatusCodes.NOT_FOUND)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
-}
-
-export const trackAudioPlay: AppRouteHandler<TrackAudioPlayRoute> = async (
-  c
-) => {
-  const { id } = c.req.valid('param')
-  const clientIp =
-    c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ||
-    c.req.header('x-real-ip') ||
-    'unknown'
-
-  const program = Effect.gen(function* () {
-    const audioService = yield* AudioService
-    return yield* audioService.trackPlay(id, clientIp)
-  }).pipe(
-    Effect.catchTag('NotFoundError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
-
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
-}
-
-export const getMixQRPdf: AppRouteHandler<GetMixQRPdfRoute> = async (c) => {
-  const { slug } = c.req.valid('param')
-  const { force } = c.req.valid('query')
-
-  const program = Effect.gen(function* () {
-    const audioService = yield* AudioService
-    const qrService = yield* QRCodeService
-
-    const mix = yield* audioService.getBySlug('mix', slug)
-
-    return yield* qrService.generateMixQRPdf(
-      {
-        slug: mix.slug,
-        title: mix.title,
-        thumbnailUrl: mix.thumbnailUrl,
-        creators: mix.creators
-      },
-      force
-    )
-  }).pipe(
-    Effect.catchTag('NotFoundError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: 404 as const
-      })
-    ),
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: 500 as const
-      })
-    )
-  )
-
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
 }

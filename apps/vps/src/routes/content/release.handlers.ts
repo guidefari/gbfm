@@ -1,7 +1,7 @@
 import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import type { AppRouteHandler } from '@/lib/types'
-import { AppRuntime } from '@/runtime'
+import { runEffect } from '@/lib/effect-hono'
 import { ReleaseService } from '@/services/release.service'
 
 import type {
@@ -21,34 +21,9 @@ export const createRelease: AppRouteHandler<CreateReleaseRoute> = async (c) => {
       ...releaseData,
       releaseDate: new Date(releaseData.releaseDate)
     })
-  }).pipe(
-    Effect.catchTag('NotFoundError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    ),
-    Effect.catchTag('ConflictError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  })
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.CREATED)
+  return runEffect<CreateReleaseRoute>(c, program, HttpStatusCodes.CREATED)
 }
 
 export const getReleasesByLabel: AppRouteHandler<
@@ -60,28 +35,9 @@ export const getReleasesByLabel: AppRouteHandler<
   const program = Effect.gen(function* () {
     const releaseService = yield* ReleaseService
     return yield* releaseService.getByLabelSlug(labelSlug, { limit, offset })
-  }).pipe(
-    Effect.catchTag('NotFoundError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  })
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
+  return runEffect<GetReleasesByLabelRoute>(c, program)
 }
 
 export const getReleaseBySlug: AppRouteHandler<GetReleaseBySlugRoute> = async (
@@ -92,28 +48,9 @@ export const getReleaseBySlug: AppRouteHandler<GetReleaseBySlugRoute> = async (
   const program = Effect.gen(function* () {
     const releaseService = yield* ReleaseService
     return yield* releaseService.getBySlug(slug)
-  }).pipe(
-    Effect.catchTag('NotFoundError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  })
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
+  return runEffect<GetReleaseBySlugRoute>(c, program)
 }
 
 export const updateReleaseBySlug: AppRouteHandler<
@@ -130,28 +67,9 @@ export const updateReleaseBySlug: AppRouteHandler<
         ? new Date(updateData.releaseDate)
         : undefined
     })
-  }).pipe(
-    Effect.catchTag('NotFoundError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  })
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
+  return runEffect<UpdateReleaseBySlugRoute>(c, program)
 }
 
 export const deleteReleaseBySlug: AppRouteHandler<
@@ -163,26 +81,7 @@ export const deleteReleaseBySlug: AppRouteHandler<
     const releaseService = yield* ReleaseService
     yield* releaseService.delete(slug)
     return { message: 'Release deleted successfully' } as const
-  }).pipe(
-    Effect.catchTag('NotFoundError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  })
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.OK)
+  return runEffect<DeleteReleaseBySlugRoute>(c, program)
 }

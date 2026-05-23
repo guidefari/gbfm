@@ -1,8 +1,9 @@
 import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import type { AppRouteHandler } from '@/lib/types'
-import { AppRuntime, runAppFork } from '@/runtime'
+import { runEffect } from '@/lib/effect-hono'
 import { FavoriteService } from '@/services/favorite.service'
+import { runAppFork } from '@/runtime'
 
 import type {
   AddFavoriteRoute,
@@ -17,7 +18,6 @@ export const addFavorite: AppRouteHandler<AddFavoriteRoute> = async (c) => {
 
   Effect.annotateCurrentSpan('userId', user.id).pipe(runAppFork)
   Effect.annotateCurrentSpan('operation', 'add-favorite').pipe(runAppFork)
-
   Effect.logInfo('[API] Add favorite requested', {
     userId: user.id,
     audioId,
@@ -25,47 +25,13 @@ export const addFavorite: AppRouteHandler<AddFavoriteRoute> = async (c) => {
   }).pipe(runAppFork)
 
   const program = Effect.gen(function* () {
-    const favoriteService = yield* FavoriteService
-    if (audioId) {
-      yield* favoriteService.addFavorite(user.id, audioId)
-    } else if (showId) {
-      yield* favoriteService.addShowFavorite(user.id, showId)
-    }
+    const svc = yield* FavoriteService
+    if (audioId) yield* svc.addFavorite(user.id, audioId)
+    else if (showId) yield* svc.addShowFavorite(user.id, showId)
     return { success: true, message: 'Added to favorites' } as const
-  }).pipe(
-    Effect.catchTag('NotFoundError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    ),
-    Effect.catchTag('ConflictError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.CONFLICT
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  })
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    Effect.logWarning('[API] Add favorite failed', {
-      userId: user.id,
-      audioId,
-      error: result.error,
-      statusCode: result.status
-    }).pipe(runAppFork)
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result, HttpStatusCodes.CREATED)
+  return runEffect<AddFavoriteRoute>(c, program, HttpStatusCodes.CREATED)
 }
 
 export const removeFavorite: AppRouteHandler<RemoveFavoriteRoute> = async (
@@ -80,31 +46,12 @@ export const removeFavorite: AppRouteHandler<RemoveFavoriteRoute> = async (
   }).pipe(runAppFork)
 
   const program = Effect.gen(function* () {
-    const favoriteService = yield* FavoriteService
-    yield* favoriteService.removeFavorite(user.id, audioId)
+    const svc = yield* FavoriteService
+    yield* svc.removeFavorite(user.id, audioId)
     return { success: true, message: 'Removed from favorites' } as const
-  }).pipe(
-    Effect.catchTag('NotFoundError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  })
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result)
+  return runEffect<RemoveFavoriteRoute>(c, program)
 }
 
 export const removeShowFavorite: AppRouteHandler<
@@ -119,31 +66,12 @@ export const removeShowFavorite: AppRouteHandler<
   }).pipe(runAppFork)
 
   const program = Effect.gen(function* () {
-    const favoriteService = yield* FavoriteService
-    yield* favoriteService.removeShowFavorite(user.id, showId)
+    const svc = yield* FavoriteService
+    yield* svc.removeShowFavorite(user.id, showId)
     return { success: true, message: 'Removed from favorites' } as const
-  }).pipe(
-    Effect.catchTag('NotFoundError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.NOT_FOUND
-      } as const)
-    ),
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  })
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result)
+  return runEffect<RemoveShowFavoriteRoute>(c, program)
 }
 
 export const getFavorites: AppRouteHandler<GetFavoritesRoute> = async (c) => {
@@ -151,35 +79,17 @@ export const getFavorites: AppRouteHandler<GetFavoritesRoute> = async (c) => {
   const { limit, offset } = c.req.valid('query')
 
   const program = Effect.gen(function* () {
-    const favoriteService = yield* FavoriteService
-    const favorites = yield* favoriteService.getFavorites(
-      user.id,
-      limit,
-      offset
-    )
-    const formattedFavorites = favorites.map((fav) => ({
-      ...fav,
-      createdAt: fav.createdAt.toISOString()
-    }))
+    const svc = yield* FavoriteService
+    const favorites = yield* svc.getFavorites(user.id, limit, offset)
     return {
       success: true,
-      favorites: formattedFavorites,
+      favorites: favorites.map((fav) => ({
+        ...fav,
+        createdAt: fav.createdAt.toISOString()
+      })),
       total: favorites.length
     } as const
-  }).pipe(
-    Effect.catchTag('DatabaseError', (e) =>
-      Effect.succeed({
-        error: e.message,
-        status: HttpStatusCodes.INTERNAL_SERVER_ERROR
-      } as const)
-    )
-  )
+  })
 
-  const result = await AppRuntime.runPromise(program)
-
-  if ('error' in result) {
-    return c.json({ error: result.error }, result.status)
-  }
-
-  return c.json(result)
+  return runEffect<GetFavoritesRoute>(c, program)
 }
