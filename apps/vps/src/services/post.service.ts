@@ -7,6 +7,8 @@ import {
   type PostType,
   postCreators,
   postsTable,
+  type SelectMdxCompiledEditorialPost,
+  type SelectMdxCompiledMicroPost,
   type SelectMdxCompiledPost,
   type SelectPost
 } from '@/db/post.schema'
@@ -16,7 +18,8 @@ import {
   DatabaseError,
   getErrorMessage,
   NotFoundError,
-  type UnauthorizedError
+  type UnauthorizedError,
+  ValidationError
 } from '@/errors'
 import { requireCreatorOrAdmin } from '@/lib/authorization'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
@@ -24,6 +27,7 @@ import {
   createPaginationMetadata,
   type PaginationMetadata
 } from '@/lib/pagination'
+import { SentryService } from '@/services/sentry.service'
 
 export interface PostService {
   readonly getAll: (options: {
@@ -37,6 +41,31 @@ export interface PostService {
   readonly getBySlug: (
     slug: string
   ) => Effect.Effect<SelectMdxCompiledPost, DatabaseError | NotFoundError>
+  readonly getEditorials: (options: {
+    limit: number
+    offset: number
+  }) => Effect.Effect<
+    { data: SelectMdxCompiledEditorialPost[]; pagination: PaginationMetadata },
+    DatabaseError,
+    SentryService
+  >
+  readonly getEditorialBySlug: (
+    slug: string
+  ) => Effect.Effect<
+    SelectMdxCompiledEditorialPost,
+    DatabaseError | NotFoundError
+  >
+  readonly getMicroPosts: (options: {
+    limit: number
+    offset: number
+  }) => Effect.Effect<
+    { data: SelectMdxCompiledMicroPost[]; pagination: PaginationMetadata },
+    DatabaseError,
+    SentryService
+  >
+  readonly getMicroPostBySlug: (
+    slug: string
+  ) => Effect.Effect<SelectMdxCompiledMicroPost, DatabaseError | NotFoundError>
   readonly getByTag: (
     tag: string,
     options: { limit: number; offset: number }
@@ -47,7 +76,10 @@ export interface PostService {
   readonly create: (
     data: InsertPost,
     creatorIds: string[]
-  ) => Effect.Effect<SelectPost, DatabaseError | ConflictError>
+  ) => Effect.Effect<
+    SelectPost,
+    DatabaseError | ConflictError | ValidationError
+  >
   readonly update: (
     slug: string,
     userId: string,
@@ -55,11 +87,72 @@ export interface PostService {
     data: Partial<InsertPost> & { creatorIds?: string[] }
   ) => Effect.Effect<
     SelectMdxCompiledPost,
-    DatabaseError | NotFoundError | UnauthorizedError
+    DatabaseError | NotFoundError | UnauthorizedError | ValidationError
   >
 }
 
 export const PostService = Context.Service<PostService>('PostService')
+
+const isNonBlankString = (value: unknown): value is string =>
+  typeof value === 'string' && value.trim().length > 0
+
+const normalizeBlankString = (value: string | null | undefined) =>
+  typeof value === 'string' && value.trim().length === 0 ? null : value
+
+export const validatePostData = (
+  data: Partial<InsertPost>
+): Effect.Effect<void, ValidationError> => {
+  if (data.type === 'micro') {
+    return isNonBlankString(data.title) || isNonBlankString(data.content)
+      ? Effect.void
+      : Effect.fail(
+          new ValidationError({ message: 'Tweet title or body is required' })
+        )
+  }
+
+  if (!isNonBlankString(data.title)) {
+    return Effect.fail(
+      new ValidationError({ message: 'Post title is required' })
+    )
+  }
+
+  if (!isNonBlankString(data.content)) {
+    return Effect.fail(
+      new ValidationError({ message: 'Post content is required' })
+    )
+  }
+
+  return Effect.void
+}
+
+export function normalizePostData(
+  data: InsertPost,
+  type: PostType | null | undefined
+): InsertPost
+export function normalizePostData(
+  data: Partial<InsertPost>,
+  type: PostType | null | undefined
+): Partial<InsertPost>
+export function normalizePostData(
+  data: Partial<InsertPost>,
+  type: PostType | null | undefined
+): Partial<InsertPost> {
+  if (type !== 'micro') {
+    return data
+  }
+
+  const normalizedData = { ...data }
+
+  if ('title' in normalizedData) {
+    normalizedData.title = normalizeBlankString(normalizedData.title)
+  }
+
+  if ('content' in normalizedData) {
+    normalizedData.content = normalizeBlankString(normalizedData.content)
+  }
+
+  return normalizedData
+}
 
 const buildPostWithCreators = (post: SelectPost) =>
   Effect.gen(function* () {
@@ -92,9 +185,11 @@ const buildPostWithCreators = (post: SelectPost) =>
       }))
     }
 
-    if (post.content) {
+    const content = post.content
+
+    if (content) {
       const mdxResult = yield* Effect.tryPromise({
-        try: () => compileMDX(post.content),
+        try: () => compileMDX(content),
         catch: (error) =>
           new DatabaseError({
             message: `Failed to compile MDX: ${getErrorMessage(error)}`,
@@ -113,6 +208,45 @@ const buildPostWithCreators = (post: SelectPost) =>
 
     return processedPost
   })
+
+export const toEditorialPost = (
+  post: SelectMdxCompiledPost
+): Effect.Effect<SelectMdxCompiledEditorialPost, DatabaseError> =>
+  Effect.gen(function* () {
+    const { title, content } = post
+
+    if (
+      post.type === 'post' &&
+      isNonBlankString(title) &&
+      isNonBlankString(content)
+    ) {
+      return {
+        ...post,
+        title,
+        content,
+        type: 'post' as const
+      }
+    }
+
+    return yield* new DatabaseError({
+      message: `Expected editorial post with title and content: ${post.slug}`,
+      operation: 'post_type_refinement',
+      table: 'posts'
+    })
+  })
+
+export const toMicroPost = (
+  post: SelectMdxCompiledPost
+): Effect.Effect<SelectMdxCompiledMicroPost, DatabaseError> =>
+  post.type === 'micro'
+    ? Effect.succeed({ ...post, type: 'micro' })
+    : Effect.fail(
+        new DatabaseError({
+          message: `Expected micro post: ${post.slug}`,
+          operation: 'post_type_refinement',
+          table: 'posts'
+        })
+      )
 
 const getAllEffect = (options: {
   limit: number
@@ -183,6 +317,68 @@ const getAllEffect = (options: {
     return {
       data: compiledData,
       pagination: createPaginationMetadata(total, limit, offset)
+    }
+  })
+
+const getEditorialsEffect = (options: { limit: number; offset: number }) =>
+  Effect.gen(function* () {
+    const posts = yield* getAllEffect({ ...options, type: 'post' })
+    const sentry = yield* SentryService
+    const rawData = yield* Effect.forEach(
+      posts.data,
+      (post) =>
+        toEditorialPost(post).pipe(
+          Effect.catchTag('DatabaseError', (e) =>
+            Effect.andThen(
+              sentry.captureException(e, {
+                slug: post.slug,
+                type: post.type,
+                operation: 'toEditorialPost'
+              }),
+              Effect.succeed<SelectMdxCompiledEditorialPost | null>(null)
+            )
+          )
+        ),
+      { concurrency: 5 }
+    )
+    const data = rawData.filter(
+      (p): p is SelectMdxCompiledEditorialPost => p !== null
+    )
+
+    return {
+      ...posts,
+      data
+    }
+  })
+
+const getMicroPostsEffect = (options: { limit: number; offset: number }) =>
+  Effect.gen(function* () {
+    const posts = yield* getAllEffect({ ...options, type: 'micro' })
+    const sentry = yield* SentryService
+    const rawData = yield* Effect.forEach(
+      posts.data,
+      (post) =>
+        toMicroPost(post).pipe(
+          Effect.catchTag('DatabaseError', (e) =>
+            Effect.andThen(
+              sentry.captureException(e, {
+                slug: post.slug,
+                type: post.type,
+                operation: 'toMicroPost'
+              }),
+              Effect.succeed<SelectMdxCompiledMicroPost | null>(null)
+            )
+          )
+        ),
+      { concurrency: 5 }
+    )
+    const data = rawData.filter(
+      (p): p is SelectMdxCompiledMicroPost => p !== null
+    )
+
+    return {
+      ...posts,
+      data
     }
   })
 
@@ -286,12 +482,48 @@ const getBySlugEffect = Effect.fn('post.getBySlug')(function* (slug: string) {
   return processedPost
 })
 
+const getEditorialBySlugEffect = (slug: string) =>
+  Effect.gen(function* () {
+    const post = yield* getBySlugEffect(slug)
+    return yield* toEditorialPost(post).pipe(
+      Effect.mapError(
+        () =>
+          new NotFoundError({
+            message: 'Editorial post not found',
+            resource: 'post',
+            id: slug
+          })
+      )
+    )
+  })
+
+const getMicroPostBySlugEffect = (slug: string) =>
+  Effect.gen(function* () {
+    const post = yield* getBySlugEffect(slug)
+    return yield* toMicroPost(post).pipe(
+      Effect.mapError(
+        () =>
+          new NotFoundError({
+            message: 'Micro post not found',
+            resource: 'post',
+            id: slug
+          })
+      )
+    )
+  })
+
 const createEffect = (data: InsertPost, creatorIds: string[]) =>
   Effect.gen(function* () {
+    const normalizedData = normalizePostData(data, data.type)
+    yield* validatePostData(normalizedData)
+
     const result = yield* Effect.tryPromise({
       try: () =>
         db.transaction(async (tx) => {
-          const [newPost] = await tx.insert(postsTable).values(data).returning()
+          const [newPost] = await tx
+            .insert(postsTable)
+            .values(normalizedData)
+            .returning()
 
           if (!newPost) {
             throw new Error('Failed to create post')
@@ -374,15 +606,26 @@ const updateEffect = (
 
     yield* requireCreatorOrAdmin('post', existingPost.id, userId, userRole)
 
+    const nextPostData = { ...existingPost, ...data }
+    const normalizedNextPostData = normalizePostData(
+      nextPostData,
+      nextPostData.type
+    )
+    yield* validatePostData(normalizedNextPostData)
+
     const { creatorIds, ...updateData } = data
+    const normalizedUpdateData = normalizePostData(
+      updateData,
+      nextPostData.type
+    )
     let updatedPost = existingPost
 
-    if (Object.keys(updateData).length > 0) {
+    if (Object.keys(normalizedUpdateData).length > 0) {
       const updatedRecords = yield* Effect.tryPromise({
         try: () =>
           db
             .update(postsTable)
-            .set({ ...updateData, updatedAt: new Date() })
+            .set({ ...normalizedUpdateData, updatedAt: new Date() })
             .where(eq(postsTable.id, existingPost.id))
             .returning(),
         catch: (error) =>
@@ -431,6 +674,10 @@ const updateEffect = (
 export const PostServiceLive = Layer.succeed(PostService, {
   getAll: getAllEffect,
   getBySlug: getBySlugEffect,
+  getEditorials: getEditorialsEffect,
+  getEditorialBySlug: getEditorialBySlugEffect,
+  getMicroPosts: getMicroPostsEffect,
+  getMicroPostBySlug: getMicroPostBySlugEffect,
   getByTag: getByTagEffect,
   create: createEffect,
   update: updateEffect
