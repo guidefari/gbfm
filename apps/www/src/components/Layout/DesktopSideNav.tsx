@@ -7,14 +7,14 @@ import {
 import { Link } from '@tanstack/react-router'
 import { FilePenLine, Music } from 'lucide-react'
 import { MAIN_SCROLL_CONTAINER_ID } from '@/lib/constants'
+import { useSession } from '@/lib/auth-client'
 import { useUIStore } from '@/store'
-import { useAuthStore } from '@/store/auth'
 import { pagesAndPages } from './NavLinks'
 import ProfileAvatar from './ProfileAvatar'
 
 export const DesktopSideNav = () => {
-  const { user } = useAuthStore()
-  const isAdmin = user?.role === 'admin'
+  const { data: session } = useSession()
+  const isAdmin = session?.user?.role === 'admin'
 
   const filteredPages = pagesAndPages.filter((page) => {
     if (page.adminOnly && !isAdmin) return false

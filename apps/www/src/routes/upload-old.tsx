@@ -1,13 +1,14 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { useId, useRef } from 'react'
-import { useAuthStore } from '@/store/auth'
+import { useSession } from '@/lib/auth-client'
 
 export const Route = createFileRoute('/upload-old')({
   component: Dashboard
 })
 
 function Dashboard() {
-  const { isAuthenticated } = useAuthStore()
+  const { data: session } = useSession()
+  const isAuthenticated = !!session?.user
   const formRef = useRef<HTMLFormElement>(null)
   const titleId = useId()
   const artistId = useId()

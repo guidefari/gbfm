@@ -1,12 +1,11 @@
-import { useAuthStore } from '@/store/auth'
+import { signOut } from '@/lib/auth-client'
 import { useUIStore } from '@/store/ui'
 
 export const useSettingsActions = (closeCmd: () => void) => {
-  const { clearAuth } = useAuthStore()
   const resetUI = useUIStore((s) => s.resetUI)
 
-  const handleLogout = () => {
-    clearAuth()
+  const handleLogout = async () => {
+    await signOut()
     resetUI()
     closeCmd()
   }

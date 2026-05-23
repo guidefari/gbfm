@@ -15,10 +15,17 @@ import AppShell from '@/components/Layout/AppShell'
 import { WelcomeModal } from '@/components/onboarding/WelcomeModal'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { env } from '@/env'
-import type { AuthState } from '@/store/auth'
-
 export interface MyRouterContext {
-  auth: AuthState
+  auth: {
+    user: {
+      id: string
+      name: string
+      email: string
+      role?: string | null
+      image?: string | null
+    } | null
+    isAuthenticated: boolean
+  }
 }
 
 const queryClient = new QueryClient({

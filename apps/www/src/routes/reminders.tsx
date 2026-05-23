@@ -4,7 +4,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { CalendarClock } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { fetcher, useEnrichTrackFromUrl, VPS_BASE_URL } from '@/lib/http'
-import { useAuthStore } from '@/store'
+import { useSession } from '@/lib/auth-client'
 
 interface MusicReminder {
   id: string
@@ -44,7 +44,8 @@ const formatReminderDateValue = (value: string) => {
 }
 
 function MusicReminders() {
-  const { isAuthenticated } = useAuthStore()
+  const { data: session } = useSession()
+  const isAuthenticated = !!session?.user
   console.log('isAuthenticated:', isAuthenticated)
   const queryClient = useQueryClient()
   const [musicUrl, setMusicUrl] = useState('')

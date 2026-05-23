@@ -9,8 +9,7 @@ import { MAIN_SCROLL_CONTAINER_ID } from './lib/constants'
 import { routeTree } from './routeTree.gen'
 import './styles/main.css'
 import { ThemeProvider } from './components/ThemeProvider'
-import { useAuthSync } from './hooks/useAuthSync'
-import { useAuthStore } from './store/auth'
+import { useSession } from './lib/auth-client'
 
 const router = createRouter({
   routeTree,
@@ -42,8 +41,11 @@ const queryClient = new QueryClient({
 })
 
 function App() {
-  const auth = useAuthStore()
-  useAuthSync()
+  const { data: session } = useSession()
+  const auth = {
+    user: session?.user ?? null,
+    isAuthenticated: !!session?.user
+  }
 
   React.useEffect(() => {
     void RuntimeClient.runPromise(

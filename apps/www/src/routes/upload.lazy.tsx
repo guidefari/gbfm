@@ -18,8 +18,8 @@ import {
   type UploadStep
 } from '@/components/upload'
 import { generateSlug, useFileUpload } from '@/hooks/useFileUpload'
+import { useSession } from '@/lib/auth-client'
 import { fetcher, useAudioBySlug, VPS_BASE_URL } from '@/lib/http'
-import { useAuthStore } from '@/store'
 
 export const Route = createLazyFileRoute('/upload')({
   component: UploadPage
@@ -111,7 +111,8 @@ function UploadPage() {
   })
   const artworkUpload = useFileUpload()
 
-  const { user } = useAuthStore()
+  const { data: session } = useSession()
+  const user = session?.user
   const router = useRouter()
 
   useEffect(() => {

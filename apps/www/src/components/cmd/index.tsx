@@ -6,7 +6,7 @@ import { useRouterState } from '@tanstack/react-router'
 import * as React from 'react'
 import { useUIStore } from '@/store'
 import { useAudioPlayerState } from '@/store/audioPlayer'
-import { useAuthStore } from '@/store/auth'
+import { useSession } from '@/lib/auth-client'
 import { version } from '../../../../../package.json'
 import { useAudioPlayerCmdActions } from './audio/actions'
 import { createCommandData } from './commandData'
@@ -26,7 +26,9 @@ export function CommandDialogDemo() {
   const scrollContainerRef = React.useRef<HTMLDivElement>(null)
   const routerState = useRouterState()
   const { Cmd, openCmd, closeCmd, toggleCmd } = useUIStore()
-  const { user, isAuthenticated } = useAuthStore()
+  const { data: session } = useSession()
+  const user = session?.user
+  const isAuthenticated = !!session?.user
   const { audioSrc } = useAudioPlayerState()
   const isQueueEnabled = useFeatureFlag('ui.queue')
   const isAdmin = user?.role === 'admin'

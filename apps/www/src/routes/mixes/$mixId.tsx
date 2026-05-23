@@ -29,7 +29,7 @@ import { fetcher, useMixQRPdf, useShowById, VPS_BASE_URL } from '@/lib/http'
 import { getShareUrl } from '@/lib/share'
 import { useContentStore } from '@/store'
 import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
-import { useAuthStore } from '@/store/auth'
+import { useSession } from '@/lib/auth-client'
 
 export const Route = createFileRoute('/mixes/$mixId')({
   component: MixPage,
@@ -213,7 +213,8 @@ function MixActionBar({ actions }: { actions: MixAction[] }) {
 function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
   const isQueueEnabled = useFeatureFlag('ui.queue')
   const isShareEnabled = useFeatureFlag('ui.share')
-  const { user } = useAuthStore()
+  const { data: session } = useSession()
+  const user = session?.user
   const { toast } = useToast()
   const navigate = useNavigate()
   const isAdmin = user?.role === 'admin'

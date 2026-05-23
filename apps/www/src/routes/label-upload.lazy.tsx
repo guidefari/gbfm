@@ -17,7 +17,7 @@ import { ImageIcon, Loader2, Upload, X } from 'lucide-react'
 import { useId, useState } from 'react'
 import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
-import { useAuthStore } from '@/store'
+import { useSession } from '@/lib/auth-client'
 
 export const Route = createLazyFileRoute('/label-upload')({
   component: LabelUploadPage
@@ -63,7 +63,8 @@ function LabelUploadPage() {
   const [artworkFile, setArtworkFile] = useState<File | null>(null)
   const [artworkPreview, setArtworkPreview] = useState<string | null>(null)
 
-  const { user } = useAuthStore()
+  const { data: session } = useSession()
+  const user = session?.user
   const router = useRouter()
 
   const artworkUploadId = useId()

@@ -18,7 +18,6 @@ import {
 } from '@/components/Auth/UsernameAvailability'
 import { authClient, signUp } from '@/lib/auth-client'
 import { useCooldown } from '@/lib/useCooldown'
-import { useAuthStore } from '@/store/auth'
 
 export const Route = createFileRoute('/auth/sign-up')({
   beforeLoad: ({ context }) => {
@@ -45,7 +44,6 @@ function SignUpPage() {
   const [isResending, setIsResending] = useState(false)
   const usernameStatus = useUsernameAvailability(username)
   const cooldown = useCooldown(RESEND_COOLDOWN_SECONDS)
-  const { setUser } = useAuthStore()
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -67,7 +65,6 @@ function SignUpPage() {
       if (result.data) {
         setError('')
         setErrorIsExistingEmail(false)
-        setUser(result.data.user)
         setSignedUpEmail(email)
         cooldown.start()
       } else if (result.error) {

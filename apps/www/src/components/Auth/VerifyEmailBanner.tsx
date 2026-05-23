@@ -1,14 +1,14 @@
 import { MailWarning, X } from 'lucide-react'
 import { useState } from 'react'
-import { authClient } from '@/lib/auth-client'
+import { authClient, useSession } from '@/lib/auth-client'
 import { useCooldown } from '@/lib/useCooldown'
-import { useAuthStore } from '@/store/auth'
 
 const RESEND_COOLDOWN_SECONDS = 30
 const DISMISS_KEY = 'verify-email-banner-dismissed'
 
 export function VerifyEmailBanner() {
-  const user = useAuthStore((s) => s.user)
+  const { data: session } = useSession()
+  const user = session?.user
   const [dismissed, setDismissed] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false
     return sessionStorage.getItem(DISMISS_KEY) === '1'

@@ -9,10 +9,12 @@ import {
 } from '@gbfm/ui'
 import { useId, useState } from 'react'
 import { useUpdateProfile } from '@/lib/http'
-import type { User } from '@/store/auth'
+import type { useSession } from '@/lib/auth-client'
+
+type SessionUser = NonNullable<ReturnType<typeof useSession>['data']>['user']
 
 interface ProfileCardProps {
-  user: User
+  user: SessionUser
 }
 
 export function ProfileCard({ user }: ProfileCardProps) {

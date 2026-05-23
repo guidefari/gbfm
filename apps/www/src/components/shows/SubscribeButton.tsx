@@ -6,7 +6,7 @@ import {
   useUnsubscribeFromShow,
   useUserSubscriptions
 } from '@/lib/http'
-import { useAuthStore } from '@/store/auth'
+import { useSession } from '@/lib/auth-client'
 
 interface SubscribeButtonProps {
   showId: string
@@ -14,7 +14,8 @@ interface SubscribeButtonProps {
 }
 
 export function SubscribeButton({ showId, showTitle }: SubscribeButtonProps) {
-  const { isAuthenticated } = useAuthStore()
+  const { data: session } = useSession()
+  const isAuthenticated = !!session?.user
   const navigate = useNavigate()
   const { data: subscriptions } = useUserSubscriptions()
   const { subscribe, isPending: isSubscribing } = useSubscribeToShow()

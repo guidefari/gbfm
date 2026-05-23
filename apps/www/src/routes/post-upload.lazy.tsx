@@ -24,7 +24,7 @@ import { useEffect, useId, useMemo, useState } from 'react'
 import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
 import { TagsInput } from '@/components/upload'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
-import { useAuthStore } from '@/store'
+import { useSession } from '@/lib/auth-client'
 import { UserSearch } from './admin/_components/-UserSearch'
 
 export const Route = createLazyFileRoute('/post-upload')({
@@ -64,7 +64,8 @@ function PostUploadPage() {
   }
   const isEditMode = Boolean(search.edit)
   const router = useRouter()
-  const { user } = useAuthStore()
+  const { data: session } = useSession()
+  const user = session?.user
   const artworkUploadId = useId()
 
   const [formData, setFormData] = useState<PostFormData>({

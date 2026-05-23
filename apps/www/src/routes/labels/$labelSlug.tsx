@@ -9,7 +9,7 @@ import { ShareButton } from '@/components/ShareButton'
 import { fetcher, useLabelBySlug, useReleasesByLabel } from '@/lib/http'
 import { generateLabelSEO, generateSEOMeta } from '@/lib/seo'
 import { useContentStore } from '@/store'
-import { useAuthStore } from '@/store/auth'
+import { useSession } from '@/lib/auth-client'
 
 export const Route = createFileRoute('/labels/$labelSlug')({
   component: LabelPage,
@@ -44,9 +44,9 @@ export const Route = createFileRoute('/labels/$labelSlug')({
 function LabelPage() {
   const { labelSlug } = Route.useParams()
   const { setCurrentContent } = useContentStore()
-  const { user } = useAuthStore()
+  const { data: session } = useSession()
   const navigate = useNavigate()
-  const isAdmin = user?.role === 'admin'
+  const isAdmin = session?.user?.role === 'admin'
 
   const { data, error, isPending } = useLabelBySlug(labelSlug)
 

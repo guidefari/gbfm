@@ -24,7 +24,7 @@ import {
   useUpdateAdminEntityLinkStatus,
   VPS_BASE_URL
 } from '@/lib/http'
-import { useAuthStore } from '@/store'
+import { useSession } from '@/lib/auth-client'
 
 type PostType = 'post' | 'micro'
 type MusicEntityType = 'album' | 'track' | 'playlist'
@@ -74,7 +74,8 @@ const generateSlug = (value: string) =>
 
 function MusicCapturePage() {
   const router = useRouter()
-  const { user } = useAuthStore()
+  const { data: session } = useSession()
+  const user = session?.user
   const search = Route.useSearch()
   const isEditMode = Boolean(search.edit)
 

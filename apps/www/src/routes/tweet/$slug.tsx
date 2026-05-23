@@ -8,7 +8,7 @@ import { TweetAuthorRow } from '@/components/TweetAuthorRow'
 import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
 import { generateMicroPostSEO, generateSEOMeta } from '@/lib/seo'
-import { useAuthStore } from '@/store/auth'
+import { useSession } from '@/lib/auth-client'
 
 export const Route = createFileRoute('/tweet/$slug')({
   component: TweetPostPage,
@@ -36,7 +36,8 @@ export const Route = createFileRoute('/tweet/$slug')({
 function TweetPostPage() {
   const { slug } = Route.useParams()
   const { post } = Route.useLoaderData()
-  const { user } = useAuthStore()
+  const { data: session } = useSession()
+  const user = session?.user
 
   if (!post) return <div>No data</div>
 

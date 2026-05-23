@@ -11,7 +11,6 @@ import {
 import { Heart, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { signIn, signUp } from '@/lib/auth-client'
-import { useAuthStore } from '@/store/auth'
 import { useAuthPromptStore } from '@/store/authPrompt'
 
 type AuthMode = 'choice' | 'sign-in' | 'sign-up'
@@ -21,8 +20,6 @@ export function AuthPromptDialog() {
   const [mode, setMode] = useState<AuthMode>('choice')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const { setUser } = useAuthStore()
-
   const handleClose = (isOpen: boolean) => {
     if (!isOpen) {
       setMode('choice')
@@ -52,7 +49,6 @@ export function AuthPromptDialog() {
         : await signIn.username({ username: identifier, password })
 
       if (result.data) {
-        setUser(result.data.user)
         handleAuthSuccess()
       } else if (result.error) {
         setError(result.error.message || 'Failed to sign in')
@@ -84,7 +80,6 @@ export function AuthPromptDialog() {
       })
 
       if (result.data) {
-        setUser(result.data.user)
         handleAuthSuccess()
       } else if (result.error) {
         setError(result.error.message || 'Failed to sign up')

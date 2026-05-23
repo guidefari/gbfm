@@ -8,18 +8,18 @@ import {
   DropdownMenuTrigger
 } from '@gbfm/ui'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { signOut } from '@/lib/auth-client'
-import { useAuthStore } from '@/store/auth'
+import { signOut, useSession } from '@/lib/auth-client'
 import { useUIStore } from '@/store/ui'
 
 const ProfileAvatar = () => {
   const navigate = useNavigate()
-  const { user, isAuthenticated, clearAuth } = useAuthStore()
+  const { data: session } = useSession()
+  const user = session?.user
+  const isAuthenticated = !!session?.user
   const resetUI = useUIStore((s) => s.resetUI)
 
   const handleSignOut = async () => {
     await signOut()
-    clearAuth()
     resetUI()
     navigate({ to: '/' })
   }

@@ -1,8 +1,8 @@
 import { Button, useToast } from '@gbfm/ui'
 import { Loader2, QrCode } from 'lucide-react'
 import * as React from 'react'
+import { useSession } from '@/lib/auth-client'
 import { useShowQRPdf } from '@/lib/http'
-import { useAuthStore } from '@/store/auth'
 
 interface ShowQRButtonProps {
   slug: string
@@ -17,8 +17,8 @@ export function ShowQRButton({
   size = 'sm',
   className
 }: ShowQRButtonProps) {
-  const { user } = useAuthStore()
-  const isAdmin = user?.role === 'admin'
+  const { data: session } = useSession()
+  const isAdmin = session?.user?.role === 'admin'
   const { toast } = useToast()
 
   const [enabled, setEnabled] = React.useState(false)

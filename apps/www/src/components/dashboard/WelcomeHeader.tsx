@@ -1,7 +1,9 @@
-import type { User } from '@/store/auth'
+import type { useSession } from '@/lib/auth-client'
+
+type SessionUser = NonNullable<ReturnType<typeof useSession>['data']>['user']
 
 interface WelcomeHeaderProps {
-  user: User
+  user: SessionUser
 }
 
 export function WelcomeHeader({ user }: WelcomeHeaderProps) {

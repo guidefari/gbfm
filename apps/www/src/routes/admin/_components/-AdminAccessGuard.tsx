@@ -1,8 +1,10 @@
 import { Link } from '@tanstack/react-router'
-import { useAuthStore } from '@/store/auth'
+import { useSession } from '@/lib/auth-client'
 
 export function AdminAccessGuard({ children }: { children: React.ReactNode }) {
-  const { user, isAuthenticated } = useAuthStore()
+  const { data: session } = useSession()
+  const isAuthenticated = !!session?.user
+  const user = session?.user
 
   if (!isAuthenticated || user?.role !== 'admin') {
     return (

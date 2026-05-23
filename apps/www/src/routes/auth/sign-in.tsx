@@ -6,7 +6,6 @@ import {
   AuthStatusNotice
 } from '@/components/Auth/AuthPageLayout'
 import { signIn } from '@/lib/auth-client'
-import { useAuthStore } from '@/store/auth'
 
 export const Route = createFileRoute('/auth/sign-in')({
   beforeLoad: ({ context }) => {
@@ -23,7 +22,6 @@ function SignInPage() {
   const [error, setError] = useState<string>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const navigate = Route.useNavigate()
-  const { setUser } = useAuthStore()
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -45,7 +43,6 @@ function SignInPage() {
           variant: 'default'
         })
         setError('')
-        setUser(result.data.user)
         navigate({ to: '/' })
       } else if (result.error) {
         setError(result.error.message || 'Failed to sign in')

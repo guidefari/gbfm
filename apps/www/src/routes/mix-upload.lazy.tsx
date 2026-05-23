@@ -34,7 +34,7 @@ import {
   useAudioByType,
   VPS_BASE_URL
 } from '@/lib/http'
-import { useAuthStore } from '@/store'
+import { useSession } from '@/lib/auth-client'
 
 export const Route = createLazyFileRoute('/mix-upload')({
   component: MixUploadPage
@@ -56,7 +56,8 @@ interface MixFormData {
 }
 
 function MixUploadPage() {
-  const { user } = useAuthStore()
+  const { data: session } = useSession()
+  const user = session?.user
   const search = Route.useSearch() as {
     edit?: string
     title?: string

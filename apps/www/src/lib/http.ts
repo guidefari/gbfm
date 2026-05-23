@@ -20,8 +20,19 @@ import {
 } from '@tanstack/react-query'
 import { RuntimeClient } from '@/runtime'
 import { captureException } from '@/services/analytics'
-import type { User } from '@/store/auth'
-import { useAuthStore } from '@/store/auth'
+import { useSession } from './auth-client'
+
+type User = {
+  id: string
+  name: string
+  email: string
+  emailVerified: boolean
+  image?: string | null
+  username?: string | null
+  createdAt: Date
+  updatedAt: Date
+  role?: string | null
+}
 import type {
   AlbumApiResponse,
   PlaylistApiResponse,
@@ -712,7 +723,8 @@ export type FavoritesResponse = {
 }
 
 export function useFavorites() {
-  const { isAuthenticated } = useAuthStore()
+  const { data: session } = useSession()
+  const isAuthenticated = !!session?.user
   const { data, error, isPending, refetch } = useQuery<
     FavoritesResponse,
     Error
@@ -941,7 +953,8 @@ export type SubscriptionWithShow = SelectShowSubscription & {
 }
 
 export function useUserSubscriptions() {
-  const { isAuthenticated } = useAuthStore()
+  const { data: session } = useSession()
+  const isAuthenticated = !!session?.user
   const { data, error, isPending } = useQuery<
     PaginatedResponse<SubscriptionWithShow>,
     Error

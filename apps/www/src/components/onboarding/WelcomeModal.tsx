@@ -9,13 +9,15 @@ import {
 import { useNavigate } from '@tanstack/react-router'
 import { Bell, Disc3, Heart } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { useAuthStore } from '@/store/auth'
+import { useSession } from '@/lib/auth-client'
 import { useOnboardingStore } from '@/store/onboarding'
 
 export function WelcomeModal() {
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
-  const { isAuthenticated, user } = useAuthStore()
+  const { data: session } = useSession()
+  const isAuthenticated = !!session?.user
+  const user = session?.user
   const { hasSeenWelcome, markWelcomeSeen } = useOnboardingStore()
 
   useEffect(() => {
