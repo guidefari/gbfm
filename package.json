@@ -26,7 +26,7 @@
     "@effect/platform": "0.96.1",
     "effect": "4.0.0-beta.65",
     "gray-matter": "4.0.3",
-    "sst": "4.13.1",
+    "sst": "4.14.3",
     "vitest": "4.1.5",
     "zod": "4.4.3"
   },
