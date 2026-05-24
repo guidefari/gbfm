@@ -1,3 +1,10 @@
+## [2.45.1](https://github.com/guidefari/gbfm/compare/v2.45.0...v2.45.1) (2026-05-24)
+
+
+### Bug Fixes
+
+* **ci:** trigger prod deploy explicitly ([58df86e](https://github.com/guidefari/gbfm/commit/58df86e27204b34527024b83c0234183d413b55c))
+
 # [2.45.0](https://github.com/guidefari/gbfm/compare/v2.44.0...v2.45.0) (2026-05-24)
 
 
