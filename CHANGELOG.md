@@ -1,3 +1,18 @@
+# [2.48.0](https://github.com/guidefari/gbfm/compare/v2.47.0...v2.48.0) (2026-05-24)
+
+
+### Bug Fixes
+
+* **backup:** use direct port 5432, typed errors for email alerts ([9aa97ee](https://github.com/guidefari/gbfm/commit/9aa97ee2700892a83d0e38667902bd624b1f724b))
+* dockerfile ([5eb7a3d](https://github.com/guidefari/gbfm/commit/5eb7a3dc9b68f3a76e96c4b2e431fc02a94abab3))
+* **docker:** upgrade backup task to postgresql18-client ([a097693](https://github.com/guidefari/gbfm/commit/a097693d25f5c252743790f28ae0b56c91a46c16))
+* **vps:** switch sentry tracing to bun preload ([592ff15](https://github.com/guidefari/gbfm/commit/592ff15e896f630f637660cc2a0c2b556960fa72))
+
+
+### Features
+
+* **backup:** add verify-backup script and dev commands ([87a3c4c](https://github.com/guidefari/gbfm/commit/87a3c4ca9692712825bd9707f695aa28cf33adf0))
+
 # [2.47.0](https://github.com/guidefari/gbfm/compare/v2.46.0...v2.47.0) (2026-05-24)
 
 
