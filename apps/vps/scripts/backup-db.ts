@@ -134,7 +134,7 @@ function createBackupEffect(
           user: getResourceOrEnv("DatabaseUser", "DatabaseUser"),
           host: getResourceOrEnv("DatabaseHost", "DatabaseHost"),
           database: getResourceOrEnv("DatabaseName", "DatabaseName"),
-          port: getResourceOrEnv("DatabasePort", "DatabasePort"),
+          port: process.env.DB_DIRECT_PORT ?? "5432",
         };
       }
 
@@ -158,12 +158,15 @@ function createBackupEffect(
       }
 
       yield* Console.log("✓ Using pg_dump (recommended)");
-      const sqlDump = yield* Effect.promise(() => createBackupWithPgDump(backupConfig));
+      const sqlDump = yield* Effect.tryPromise({
+        try: () => createBackupWithPgDump(backupConfig),
+        catch: (error) => new Error(error instanceof Error ? error.message : String(error)),
+      });
 
       const backupData = Buffer.from(sqlDump);
       const MIN_BACKUP_BYTES = 1024;
       if (backupData.length < MIN_BACKUP_BYTES) {
-        return yield* Effect.die(
+        return yield* Effect.fail(
           new Error(`Backup integrity check failed: dump is only ${backupData.length} bytes, expected at least ${MIN_BACKUP_BYTES}`)
         );
       }
