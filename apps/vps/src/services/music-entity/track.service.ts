@@ -65,20 +65,18 @@ export const createTrackEffect = (db: typeof DbType) =>
   })
 
 export const getTracksEffect = (db: typeof DbType) => () =>
-  Effect.gen(function* () {
-    return yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select()
-          .from(musicTracksTable)
-          .orderBy(desc(musicTracksTable.createdAt)),
-      catch: (e) =>
-        new DatabaseError({
-          message: `Failed to list tracks: ${getErrorMessage(e)}`,
-          operation: 'select',
-          table: 'music_tracks'
-        })
-    })
+  Effect.tryPromise({
+    try: () =>
+      db
+        .select()
+        .from(musicTracksTable)
+        .orderBy(desc(musicTracksTable.createdAt)),
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to list tracks: ${getErrorMessage(e)}`,
+        operation: 'select',
+        table: 'music_tracks'
+      })
   }).pipe(Effect.withSpan('musicEntity.getTracks'))
 
 export const getTrackByIdEffect = (db: typeof DbType) => (id: string) =>
@@ -177,31 +175,29 @@ export const addArtistToTrackEffect =
     artistId: string,
     opts?: { role?: string; displayOrder?: number }
   ) =>
-    Effect.gen(function* () {
-      return yield* Effect.tryPromise({
-        try: () =>
-          db
-            .insert(musicTrackArtistsTable)
-            .values({
-              trackId,
-              artistId,
-              role: opts?.role,
-              displayOrder: opts?.displayOrder ?? 0
-            })
-            .onConflictDoUpdate({
-              target: [
-                musicTrackArtistsTable.trackId,
-                musicTrackArtistsTable.artistId
-              ],
-              set: { role: opts?.role, displayOrder: opts?.displayOrder ?? 0 }
-            }),
-        catch: (e) =>
-          new DatabaseError({
-            message: `Failed to add artist to track: ${getErrorMessage(e)}`,
-            operation: 'insert',
-            table: 'music_track_artists'
+    Effect.tryPromise({
+      try: () =>
+        db
+          .insert(musicTrackArtistsTable)
+          .values({
+            trackId,
+            artistId,
+            role: opts?.role,
+            displayOrder: opts?.displayOrder ?? 0
           })
-      })
+          .onConflictDoUpdate({
+            target: [
+              musicTrackArtistsTable.trackId,
+              musicTrackArtistsTable.artistId
+            ],
+            set: { role: opts?.role, displayOrder: opts?.displayOrder ?? 0 }
+          }),
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to add artist to track: ${getErrorMessage(e)}`,
+          operation: 'insert',
+          table: 'music_track_artists'
+        })
     }).pipe(
       Effect.asVoid,
       Effect.withSpan('musicEntity.addArtistToTrack', {
@@ -211,24 +207,22 @@ export const addArtistToTrackEffect =
 
 export const removeArtistFromTrackEffect =
   (db: typeof DbType) => (trackId: string, artistId: string) =>
-    Effect.gen(function* () {
-      return yield* Effect.tryPromise({
-        try: () =>
-          db
-            .delete(musicTrackArtistsTable)
-            .where(
-              and(
-                eq(musicTrackArtistsTable.trackId, trackId),
-                eq(musicTrackArtistsTable.artistId, artistId)
-              )
-            ),
-        catch: (e) =>
-          new DatabaseError({
-            message: `Failed to remove artist from track: ${getErrorMessage(e)}`,
-            operation: 'delete',
-            table: 'music_track_artists'
-          })
-      })
+    Effect.tryPromise({
+      try: () =>
+        db
+          .delete(musicTrackArtistsTable)
+          .where(
+            and(
+              eq(musicTrackArtistsTable.trackId, trackId),
+              eq(musicTrackArtistsTable.artistId, artistId)
+            )
+          ),
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to remove artist from track: ${getErrorMessage(e)}`,
+          operation: 'delete',
+          table: 'music_track_artists'
+        })
     }).pipe(
       Effect.asVoid,
       Effect.withSpan('musicEntity.removeArtistFromTrack', {

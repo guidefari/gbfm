@@ -34,20 +34,18 @@ export const createArtistEffect = (db: typeof DbType) =>
   })
 
 export const getArtistsEffect = (db: typeof DbType) => () =>
-  Effect.gen(function* () {
-    return yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select()
-          .from(musicArtistsTable)
-          .orderBy(desc(musicArtistsTable.createdAt)),
-      catch: (e) =>
-        new DatabaseError({
-          message: `Failed to list artists: ${getErrorMessage(e)}`,
-          operation: 'select',
-          table: 'music_artists'
-        })
-    })
+  Effect.tryPromise({
+    try: () =>
+      db
+        .select()
+        .from(musicArtistsTable)
+        .orderBy(desc(musicArtistsTable.createdAt)),
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to list artists: ${getErrorMessage(e)}`,
+        operation: 'select',
+        table: 'music_artists'
+      })
   }).pipe(Effect.withSpan('musicEntity.getArtists'))
 
 export const getArtistByIdEffect = (db: typeof DbType) => (id: string) =>
@@ -115,21 +113,19 @@ export const deleteArtistEffect = (db: typeof DbType) => (id: string) =>
   }).pipe(Effect.withSpan('musicEntity.deleteArtist', { attributes: { id } }))
 
 const findArtistByNameCI = (db: typeof DbType) => (name: string) =>
-  Effect.gen(function* () {
-    return yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select()
-          .from(musicArtistsTable)
-          .where(sql`lower(${musicArtistsTable.name}) = lower(${name})`)
-          .limit(1),
-      catch: (e) =>
-        new DatabaseError({
-          message: `Failed to find artist: ${getErrorMessage(e)}`,
-          operation: 'select',
-          table: 'music_artists'
-        })
-    })
+  Effect.tryPromise({
+    try: () =>
+      db
+        .select()
+        .from(musicArtistsTable)
+        .where(sql`lower(${musicArtistsTable.name}) = lower(${name})`)
+        .limit(1),
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to find artist: ${getErrorMessage(e)}`,
+        operation: 'select',
+        table: 'music_artists'
+      })
   }).pipe(Effect.withSpan('musicEntity.findArtistByNameCI'))
 
 export const findOrCreateArtist = (db: typeof DbType) =>

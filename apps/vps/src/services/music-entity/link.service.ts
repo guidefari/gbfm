@@ -13,29 +13,27 @@ import { requireInserted, requireOne } from './shared'
 export const getLinksForEntityEffect =
   (db: typeof DbType) =>
   (entityType: MusicEntityType, entityId: string, statusFilter?: LinkStatus) =>
-    Effect.gen(function* () {
-      return yield* Effect.tryPromise({
-        try: () => {
-          const conditions = [
-            eq(musicEntityLinksTable.entityType, entityType),
-            eq(musicEntityLinksTable.entityId, entityId)
-          ]
-          if (statusFilter) {
-            conditions.push(eq(musicEntityLinksTable.status, statusFilter))
-          }
-          return db
-            .select()
-            .from(musicEntityLinksTable)
-            .where(and(...conditions))
-            .orderBy(musicEntityLinksTable.platform)
-        },
-        catch: (e) =>
-          new DatabaseError({
-            message: `Failed to get links: ${getErrorMessage(e)}`,
-            operation: 'select',
-            table: 'music_entity_links'
-          })
-      })
+    Effect.tryPromise({
+      try: () => {
+        const conditions = [
+          eq(musicEntityLinksTable.entityType, entityType),
+          eq(musicEntityLinksTable.entityId, entityId)
+        ]
+        if (statusFilter) {
+          conditions.push(eq(musicEntityLinksTable.status, statusFilter))
+        }
+        return db
+          .select()
+          .from(musicEntityLinksTable)
+          .where(and(...conditions))
+          .orderBy(musicEntityLinksTable.platform)
+      },
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to get links: ${getErrorMessage(e)}`,
+          operation: 'select',
+          table: 'music_entity_links'
+        })
     }).pipe(
       Effect.withSpan('musicEntity.getLinksForEntity', {
         attributes: { entityType, entityId }
@@ -155,21 +153,19 @@ export const deleteLinkEffect =
 
 export const getPendingLinksEffect =
   (db: typeof DbType) => (opts?: { limit?: number; offset?: number }) =>
-    Effect.gen(function* () {
-      return yield* Effect.tryPromise({
-        try: () =>
-          db
-            .select()
-            .from(musicEntityLinksTable)
-            .where(eq(musicEntityLinksTable.status, LINK_STATUS.PENDING_REVIEW))
-            .orderBy(desc(musicEntityLinksTable.scrapedAt))
-            .limit(opts?.limit ?? 50)
-            .offset(opts?.offset ?? 0),
-        catch: (e) =>
-          new DatabaseError({
-            message: `Failed to get pending links: ${getErrorMessage(e)}`,
-            operation: 'select',
-            table: 'music_entity_links'
-          })
-      })
+    Effect.tryPromise({
+      try: () =>
+        db
+          .select()
+          .from(musicEntityLinksTable)
+          .where(eq(musicEntityLinksTable.status, LINK_STATUS.PENDING_REVIEW))
+          .orderBy(desc(musicEntityLinksTable.scrapedAt))
+          .limit(opts?.limit ?? 50)
+          .offset(opts?.offset ?? 0),
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to get pending links: ${getErrorMessage(e)}`,
+          operation: 'select',
+          table: 'music_entity_links'
+        })
     }).pipe(Effect.withSpan('musicEntity.getPendingLinks'))

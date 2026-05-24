@@ -36,33 +36,31 @@ export const createPlaylistEffect = (db: typeof DbType) =>
   })
 
 export const getPlaylistsEffect = (db: typeof DbType) => () =>
-  Effect.gen(function* () {
-    return yield* Effect.tryPromise({
-      try: async () => {
-        const rows = await db
-          .select({
-            playlist: musicPlaylistsTable,
-            spotifyUrl: musicEntityLinksTable.url
-          })
-          .from(musicPlaylistsTable)
-          .leftJoin(
-            musicEntityLinksTable,
-            and(
-              eq(musicEntityLinksTable.entityType, 'playlist'),
-              eq(musicEntityLinksTable.entityId, musicPlaylistsTable.id),
-              eq(musicEntityLinksTable.platform, 'spotify')
-            )
-          )
-          .orderBy(desc(musicPlaylistsTable.createdAt))
-        return rows.map((r) => ({ ...r.playlist, spotifyUrl: r.spotifyUrl }))
-      },
-      catch: (e) =>
-        new DatabaseError({
-          message: `Failed to list playlists: ${getErrorMessage(e)}`,
-          operation: 'select',
-          table: 'music_playlists'
+  Effect.tryPromise({
+    try: async () => {
+      const rows = await db
+        .select({
+          playlist: musicPlaylistsTable,
+          spotifyUrl: musicEntityLinksTable.url
         })
-    })
+        .from(musicPlaylistsTable)
+        .leftJoin(
+          musicEntityLinksTable,
+          and(
+            eq(musicEntityLinksTable.entityType, 'playlist'),
+            eq(musicEntityLinksTable.entityId, musicPlaylistsTable.id),
+            eq(musicEntityLinksTable.platform, 'spotify')
+          )
+        )
+        .orderBy(desc(musicPlaylistsTable.createdAt))
+      return rows.map((r) => ({ ...r.playlist, spotifyUrl: r.spotifyUrl }))
+    },
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to list playlists: ${getErrorMessage(e)}`,
+        operation: 'select',
+        table: 'music_playlists'
+      })
   }).pipe(Effect.withSpan('musicEntity.getPlaylists'))
 
 export const getPlaylistByIdEffect = (db: typeof DbType) => (id: string) =>

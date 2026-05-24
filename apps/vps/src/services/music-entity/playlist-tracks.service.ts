@@ -31,56 +31,54 @@ import { updateTrackEffect } from './track.service'
 
 export const getPlaylistTracksEffect =
   (db: typeof DbType) => (playlistId: string) =>
-    Effect.gen(function* () {
-      return yield* Effect.tryPromise({
-        try: async () => {
-          const rows = await db
-            .select({
-              track: musicTracksTable,
-              position: musicPlaylistTracksTable.position,
-              addedAt: musicPlaylistTracksTable.addedAt
-            })
-            .from(musicPlaylistTracksTable)
-            .innerJoin(
-              musicTracksTable,
-              eq(musicPlaylistTracksTable.trackId, musicTracksTable.id)
-            )
-            .where(eq(musicPlaylistTracksTable.playlistId, playlistId))
-            .orderBy(musicPlaylistTracksTable.position)
-
-          const trackIds = rows.map((r) => r.track.id)
-          const linkRows =
-            trackIds.length === 0
-              ? []
-              : await db
-                  .select()
-                  .from(musicEntityLinksTable)
-                  .where(
-                    and(
-                      eq(musicEntityLinksTable.entityType, 'track'),
-                      inArray(musicEntityLinksTable.entityId, trackIds)
-                    )
-                  )
-
-          const linksByTrackId = new Map<string, SelectMusicEntityLink[]>()
-          for (const link of linkRows) {
-            const list = linksByTrackId.get(link.entityId) ?? []
-            list.push(link)
-            linksByTrackId.set(link.entityId, list)
-          }
-
-          return rows.map((r) => ({
-            ...r,
-            links: linksByTrackId.get(r.track.id) ?? []
-          }))
-        },
-        catch: (e) =>
-          new DatabaseError({
-            message: `Failed to get playlist tracks: ${getErrorMessage(e)}`,
-            operation: 'select',
-            table: 'music_playlist_tracks'
+    Effect.tryPromise({
+      try: async () => {
+        const rows = await db
+          .select({
+            track: musicTracksTable,
+            position: musicPlaylistTracksTable.position,
+            addedAt: musicPlaylistTracksTable.addedAt
           })
-      })
+          .from(musicPlaylistTracksTable)
+          .innerJoin(
+            musicTracksTable,
+            eq(musicPlaylistTracksTable.trackId, musicTracksTable.id)
+          )
+          .where(eq(musicPlaylistTracksTable.playlistId, playlistId))
+          .orderBy(musicPlaylistTracksTable.position)
+
+        const trackIds = rows.map((r) => r.track.id)
+        const linkRows =
+          trackIds.length === 0
+            ? []
+            : await db
+                .select()
+                .from(musicEntityLinksTable)
+                .where(
+                  and(
+                    eq(musicEntityLinksTable.entityType, 'track'),
+                    inArray(musicEntityLinksTable.entityId, trackIds)
+                  )
+                )
+
+        const linksByTrackId = new Map<string, SelectMusicEntityLink[]>()
+        for (const link of linkRows) {
+          const list = linksByTrackId.get(link.entityId) ?? []
+          list.push(link)
+          linksByTrackId.set(link.entityId, list)
+        }
+
+        return rows.map((r) => ({
+          ...r,
+          links: linksByTrackId.get(r.track.id) ?? []
+        }))
+      },
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to get playlist tracks: ${getErrorMessage(e)}`,
+          operation: 'select',
+          table: 'music_playlist_tracks'
+        })
     }).pipe(
       Effect.withSpan('musicEntity.getPlaylistTracks', {
         attributes: { playlistId }
@@ -118,24 +116,22 @@ export const addTrackToPlaylistEffect = (db: typeof DbType) =>
 
 export const removeTrackFromPlaylistEffect =
   (db: typeof DbType) => (playlistId: string, trackId: string) =>
-    Effect.gen(function* () {
-      return yield* Effect.tryPromise({
-        try: () =>
-          db
-            .delete(musicPlaylistTracksTable)
-            .where(
-              and(
-                eq(musicPlaylistTracksTable.playlistId, playlistId),
-                eq(musicPlaylistTracksTable.trackId, trackId)
-              )
-            ),
-        catch: (e) =>
-          new DatabaseError({
-            message: `Failed to remove track from playlist: ${getErrorMessage(e)}`,
-            operation: 'delete',
-            table: 'music_playlist_tracks'
-          })
-      })
+    Effect.tryPromise({
+      try: () =>
+        db
+          .delete(musicPlaylistTracksTable)
+          .where(
+            and(
+              eq(musicPlaylistTracksTable.playlistId, playlistId),
+              eq(musicPlaylistTracksTable.trackId, trackId)
+            )
+          ),
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to remove track from playlist: ${getErrorMessage(e)}`,
+          operation: 'delete',
+          table: 'music_playlist_tracks'
+        })
     }).pipe(
       Effect.asVoid,
       Effect.withSpan('musicEntity.removeTrackFromPlaylist', {
@@ -145,46 +141,44 @@ export const removeTrackFromPlaylistEffect =
 
 export const reorderPlaylistTracksEffect =
   (db: typeof DbType) => (playlistId: string, trackIds: string[]) =>
-    Effect.gen(function* () {
-      return yield* Effect.tryPromise({
-        try: () =>
-          db.transaction(async (tx) => {
-            const existing = await tx
-              .select({ trackId: musicPlaylistTracksTable.trackId })
-              .from(musicPlaylistTracksTable)
-              .where(eq(musicPlaylistTracksTable.playlistId, playlistId))
+    Effect.tryPromise({
+      try: () =>
+        db.transaction(async (tx) => {
+          const existing = await tx
+            .select({ trackId: musicPlaylistTracksTable.trackId })
+            .from(musicPlaylistTracksTable)
+            .where(eq(musicPlaylistTracksTable.playlistId, playlistId))
 
-            const existingSet = new Set(existing.map((r) => r.trackId))
-            const incomingSet = new Set(trackIds)
+          const existingSet = new Set(existing.map((r) => r.trackId))
+          const incomingSet = new Set(trackIds)
 
-            if (
-              existingSet.size !== incomingSet.size ||
-              [...existingSet].some((id) => !incomingSet.has(id))
-            ) {
-              throw new Error(
-                'Reorder track set must match current playlist tracks exactly'
-              )
-            }
+          if (
+            existingSet.size !== incomingSet.size ||
+            [...existingSet].some((id) => !incomingSet.has(id))
+          ) {
+            throw new Error(
+              'Reorder track set must match current playlist tracks exactly'
+            )
+          }
 
-            for (let i = 0; i < trackIds.length; i += 1) {
-              await tx
-                .update(musicPlaylistTracksTable)
-                .set({ position: i })
-                .where(
-                  and(
-                    eq(musicPlaylistTracksTable.playlistId, playlistId),
-                    eq(musicPlaylistTracksTable.trackId, trackIds[i] as string)
-                  )
+          for (let i = 0; i < trackIds.length; i += 1) {
+            await tx
+              .update(musicPlaylistTracksTable)
+              .set({ position: i })
+              .where(
+                and(
+                  eq(musicPlaylistTracksTable.playlistId, playlistId),
+                  eq(musicPlaylistTracksTable.trackId, trackIds[i] as string)
                 )
-            }
-          }),
-        catch: (e) =>
-          new DatabaseError({
-            message: `Failed to reorder tracks: ${getErrorMessage(e)}`,
-            operation: 'update',
-            table: 'music_playlist_tracks'
-          })
-      })
+              )
+          }
+        }),
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to reorder tracks: ${getErrorMessage(e)}`,
+          operation: 'update',
+          table: 'music_playlist_tracks'
+        })
     }).pipe(
       Effect.asVoid,
       Effect.withSpan('musicEntity.reorderPlaylistTracks', {
@@ -394,29 +388,27 @@ const getPlaylistLinkSyncTargetsEffect =
 
 const getSpotifyPlaylistUrlEffect =
   (db: typeof DbType) => (playlistId: string) =>
-    Effect.gen(function* () {
-      return yield* Effect.tryPromise({
-        try: async () => {
-          const rows = await db
-            .select({ url: musicEntityLinksTable.url })
-            .from(musicEntityLinksTable)
-            .where(
-              and(
-                eq(musicEntityLinksTable.entityType, 'playlist'),
-                eq(musicEntityLinksTable.entityId, playlistId),
-                eq(musicEntityLinksTable.platform, 'spotify')
-              )
+    Effect.tryPromise({
+      try: async () => {
+        const rows = await db
+          .select({ url: musicEntityLinksTable.url })
+          .from(musicEntityLinksTable)
+          .where(
+            and(
+              eq(musicEntityLinksTable.entityType, 'playlist'),
+              eq(musicEntityLinksTable.entityId, playlistId),
+              eq(musicEntityLinksTable.platform, 'spotify')
             )
-            .limit(1)
-          return rows[0]?.url ?? null
-        },
-        catch: (e) =>
-          new DatabaseError({
-            message: `Failed to load playlist Spotify URL: ${getErrorMessage(e)}`,
-            operation: 'select',
-            table: 'music_entity_links'
-          })
-      })
+          )
+          .limit(1)
+        return rows[0]?.url ?? null
+      },
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to load playlist Spotify URL: ${getErrorMessage(e)}`,
+          operation: 'select',
+          table: 'music_entity_links'
+        })
     }).pipe(
       Effect.withSpan('musicEntity.getSpotifyPlaylistUrl', {
         attributes: { playlistId }
@@ -813,42 +805,36 @@ export const syncPlaylistLinksEffect = (
   bucketName: string
 ) =>
   Effect.fn('musicEntity.syncPlaylistLinks')(function* (playlistId: string) {
-    return yield* Effect.gen(function* () {
-      yield* refreshPlaylistCoverImageEffect(
-        db,
-        spotify,
-        s3,
-        routerUrl,
-        bucketName,
-        playlistId
-      )
-
-      const targets = yield* getPlaylistLinkSyncTargetsEffect(db)(playlistId)
-
-      if (targets.length === 0) return { playlistId, queuedTrackCount: 0 }
-
-      yield* Effect.logInfo(
-        '[MusicEntity] Scheduling manual playlist link sync',
-        {
-          playlistId,
-          trackCount: targets.length
-        }
-      )
-
-      yield* enrichImportedPlaylistLinksEffect(
-        db,
-        scraper,
-        s3,
-        routerUrl,
-        bucketName,
-        playlistId,
-        targets
-      ).pipe(Effect.forkDetach)
-
-      return { playlistId, queuedTrackCount: targets.length }
-    }).pipe(
-      Effect.withSpan('musicEntity.syncPlaylistLinks', {
-        attributes: { playlistId }
-      })
+    yield* refreshPlaylistCoverImageEffect(
+      db,
+      spotify,
+      s3,
+      routerUrl,
+      bucketName,
+      playlistId
     )
+
+    const targets = yield* getPlaylistLinkSyncTargetsEffect(db)(playlistId)
+
+    if (targets.length === 0) return { playlistId, queuedTrackCount: 0 }
+
+    yield* Effect.logInfo(
+      '[MusicEntity] Scheduling manual playlist link sync',
+      {
+        playlistId,
+        trackCount: targets.length
+      }
+    )
+
+    yield* enrichImportedPlaylistLinksEffect(
+      db,
+      scraper,
+      s3,
+      routerUrl,
+      bucketName,
+      playlistId,
+      targets
+    ).pipe(Effect.forkDetach)
+
+    return { playlistId, queuedTrackCount: targets.length }
   })

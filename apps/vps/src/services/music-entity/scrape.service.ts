@@ -30,26 +30,24 @@ import { createTrackEffect, getTrackByIdEffect } from './track.service'
 
 const findExistingEntityByUrl =
   (db: typeof DbType) => (url: string, entityType: MusicEntityType) =>
-    Effect.gen(function* () {
-      return yield* Effect.tryPromise({
-        try: () =>
-          db
-            .select()
-            .from(musicEntityLinksTable)
-            .where(
-              and(
-                eq(musicEntityLinksTable.url, url),
-                eq(musicEntityLinksTable.entityType, entityType)
-              )
+    Effect.tryPromise({
+      try: () =>
+        db
+          .select()
+          .from(musicEntityLinksTable)
+          .where(
+            and(
+              eq(musicEntityLinksTable.url, url),
+              eq(musicEntityLinksTable.entityType, entityType)
             )
-            .limit(1),
-        catch: (e) =>
-          new DatabaseError({
-            message: `Failed to check existing link: ${getErrorMessage(e)}`,
-            operation: 'select',
-            table: 'music_entity_links'
-          })
-      })
+          )
+          .limit(1),
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to check existing link: ${getErrorMessage(e)}`,
+          operation: 'select',
+          table: 'music_entity_links'
+        })
     }).pipe(Effect.withSpan('musicEntity.findExistingEntityByUrl'))
 
 const getEntityById =

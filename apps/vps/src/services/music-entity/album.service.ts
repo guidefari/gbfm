@@ -66,20 +66,18 @@ export const createAlbumEffect = (db: typeof DbType) =>
   })
 
 export const getAlbumsEffect = (db: typeof DbType) => () =>
-  Effect.gen(function* () {
-    return yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select()
-          .from(musicAlbumsTable)
-          .orderBy(desc(musicAlbumsTable.createdAt)),
-      catch: (e) =>
-        new DatabaseError({
-          message: `Failed to list albums: ${getErrorMessage(e)}`,
-          operation: 'select',
-          table: 'music_albums'
-        })
-    })
+  Effect.tryPromise({
+    try: () =>
+      db
+        .select()
+        .from(musicAlbumsTable)
+        .orderBy(desc(musicAlbumsTable.createdAt)),
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to list albums: ${getErrorMessage(e)}`,
+        operation: 'select',
+        table: 'music_albums'
+      })
   }).pipe(Effect.withSpan('musicEntity.getAlbums'))
 
 export const getAlbumByIdEffect = (db: typeof DbType) => (id: string) =>
@@ -178,31 +176,29 @@ export const addArtistToAlbumEffect =
     artistId: string,
     opts?: { role?: string; displayOrder?: number }
   ) =>
-    Effect.gen(function* () {
-      return yield* Effect.tryPromise({
-        try: () =>
-          db
-            .insert(musicAlbumArtistsTable)
-            .values({
-              albumId,
-              artistId,
-              role: opts?.role,
-              displayOrder: opts?.displayOrder ?? 0
-            })
-            .onConflictDoUpdate({
-              target: [
-                musicAlbumArtistsTable.albumId,
-                musicAlbumArtistsTable.artistId
-              ],
-              set: { role: opts?.role, displayOrder: opts?.displayOrder ?? 0 }
-            }),
-        catch: (e) =>
-          new DatabaseError({
-            message: `Failed to add artist to album: ${getErrorMessage(e)}`,
-            operation: 'insert',
-            table: 'music_album_artists'
+    Effect.tryPromise({
+      try: () =>
+        db
+          .insert(musicAlbumArtistsTable)
+          .values({
+            albumId,
+            artistId,
+            role: opts?.role,
+            displayOrder: opts?.displayOrder ?? 0
           })
-      })
+          .onConflictDoUpdate({
+            target: [
+              musicAlbumArtistsTable.albumId,
+              musicAlbumArtistsTable.artistId
+            ],
+            set: { role: opts?.role, displayOrder: opts?.displayOrder ?? 0 }
+          }),
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to add artist to album: ${getErrorMessage(e)}`,
+          operation: 'insert',
+          table: 'music_album_artists'
+        })
     }).pipe(
       Effect.asVoid,
       Effect.withSpan('musicEntity.addArtistToAlbum', {
@@ -212,22 +208,20 @@ export const addArtistToAlbumEffect =
 
 export const removeArtistFromAlbumEffect =
   (db: typeof DbType) => (albumId: string, artistId: string) =>
-    Effect.gen(function* () {
-      return yield* Effect.tryPromise({
-        try: () =>
-          db
-            .delete(musicAlbumArtistsTable)
-            .where(
-              eq(musicAlbumArtistsTable.albumId, albumId) &&
-                eq(musicAlbumArtistsTable.artistId, artistId)
-            ),
-        catch: (e) =>
-          new DatabaseError({
-            message: `Failed to remove artist from album: ${getErrorMessage(e)}`,
-            operation: 'delete',
-            table: 'music_album_artists'
-          })
-      })
+    Effect.tryPromise({
+      try: () =>
+        db
+          .delete(musicAlbumArtistsTable)
+          .where(
+            eq(musicAlbumArtistsTable.albumId, albumId) &&
+              eq(musicAlbumArtistsTable.artistId, artistId)
+          ),
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to remove artist from album: ${getErrorMessage(e)}`,
+          operation: 'delete',
+          table: 'music_album_artists'
+        })
     }).pipe(
       Effect.asVoid,
       Effect.withSpan('musicEntity.removeArtistFromAlbum', {
