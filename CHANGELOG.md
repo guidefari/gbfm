@@ -1,3 +1,16 @@
+# [2.47.0](https://github.com/guidefari/gbfm/compare/v2.46.0...v2.47.0) (2026-05-24)
+
+
+### Bug Fixes
+
+* **vps-tracing:** add parent span. ([292b700](https://github.com/guidefari/gbfm/commit/292b70073439dde6a24f2ad9b5de456109edb681))
+
+
+### Features
+
+* **vps-health:** cache responses ([b0e9e0c](https://github.com/guidefari/gbfm/commit/b0e9e0cbc3eac3c1798c95644ee33411e3d7c96b))
+* **vps-health:** split live and ready check ([78a2169](https://github.com/guidefari/gbfm/commit/78a21695e2f73b9394e07f0eb81a7527be91c6db))
+
 # [2.46.0](https://github.com/guidefari/gbfm/compare/v2.45.1...v2.46.0) (2026-05-24)
 
 
