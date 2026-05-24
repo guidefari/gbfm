@@ -31,7 +31,8 @@
     "react-native-web": "0.21.2",
     "react-native-worklets": "0.8.1",
     "tailwindcss": "4.2.4",
-    "zustand": "5.0.12"
+    "zustand": "5.0.12",
+    "@gbfm/theme": "workspace:*"
   },
   "devDependencies": {
     "@babel/core": "7.29.0",

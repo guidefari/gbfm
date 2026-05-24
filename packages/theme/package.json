@@ -1,0 +1,20 @@
+{
+  "name": "@gbfm/theme",
+  "version": "0.0.1",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./styles.css": "./styles/theme.css"
+  },
+  "sideEffects": [
+    "./styles/theme.css"
+  ],
+  "scripts": {
+    "build:css": "bun src/css.ts",
+    "typecheck": "tsgo --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "1.3.13",
+    "typescript": "6.0.3"
+  }
+}

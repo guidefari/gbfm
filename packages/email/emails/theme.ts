@@ -1,9 +1,9 @@
+import { brand, light, typography } from '@gbfm/theme'
+
 export const emailTheme = {
-  // Synced with apps/www/src/styles/main.css custom colors.
   typography: {
-    sans: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-    sansAlt:
-      '-apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif',
+    sans: typography.fontSans,
+    sansAlt: typography.fontSans,
     mono: 'monospace'
   },
   radius: {
@@ -14,28 +14,28 @@ export const emailTheme = {
   },
   colors: {
     brand: {
-      page: '#111827',
-      container: 'hsl(202, 61%, 22%)',
-      header: '#4e8c71',
-      textPrimary: '#9bfd9e',
-      textSecondary: 'hsl(194, 52%, 67%)',
-      textTertiary: '#b6fadf',
-      textInverse: '#111827',
+      page: light.background,
+      container: light.card,
+      header: brand['pastel-green-2'],
+      textPrimary: light.primary,
+      textSecondary: light.foreground,
+      textTertiary: brand['pastel-green-2'],
+      textInverse: light.primaryForeground,
       white: '#ffffff'
     },
     status: {
-      failureContainer: '#5a1a1a',
-      failureSurface: '#8c4e4e'
+      failureContainer: '#fde8e8',
+      failureSurface: '#f87171'
     },
     mono: {
-      page: '#111827',
-      border: 'hsl(202, 61%, 22%)',
+      page: light.background,
+      border: light.border,
       white: '#ffffff',
       black: '#000000',
-      textMuted: '#4e8c71',
-      textSecondary: 'hsl(194, 52%, 67%)',
-      textPrimary: '#9bfd9e',
-      textTertiary: '#b6fadf'
+      textMuted: light.mutedForeground,
+      textSecondary: light.foreground,
+      textPrimary: light.primary,
+      textTertiary: brand['pastel-green-2']
     }
   }
 } as const

@@ -10,6 +10,11 @@ pre-commit:
     #   glob: "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc,css}"
     #   run: bun biome check --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
     #   stage_fixed: true
+
+    theme-css-build:
+      glob: "packages/theme/src/**/*.ts"
+      run: cd packages/theme && bun run build:css && git add styles/theme.css
+      exclude: "packages/theme/src/build-css.ts"
 # pre-push:
 #   parallel: false
 #   commands:

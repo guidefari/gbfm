@@ -1,15 +1,6 @@
 import { Head } from '@react-email/components'
 
-const forcedColorSchemeCss = `
-:root {
-  color-scheme: dark;
-  supported-color-schemes: dark;
-}
-
-body {
-  background-color: #111827 !important;
-}
-
+const baseCss = `
 a[x-apple-data-detectors] {
   color: inherit !important;
   text-decoration: inherit !important;
@@ -19,9 +10,9 @@ a[x-apple-data-detectors] {
 export function EmailHead() {
   return (
     <Head>
-      <meta content='dark' name='color-scheme' />
-      <meta content='dark' name='supported-color-schemes' />
-      <style>{forcedColorSchemeCss}</style>
+      <meta content='light dark' name='color-scheme' />
+      <meta content='light dark' name='supported-color-schemes' />
+      <style>{baseCss}</style>
     </Head>
   )
 }

@@ -1,6 +1,7 @@
 @import url(fonts.css);
 @import url(scrollbar.css);
 @import "tailwindcss";
+@import "@gbfm/theme/styles.css";
 
 @source "../../../../packages/ui/src/**/*.{ts,tsx}";
 
@@ -118,82 +119,6 @@
       calc(var(--font-size-4) * var(--scale-ratio)),
       3rem
     );
-
-    /* my colors */
-    --highlight: #9bfd9e;
-    --highlight-rgb: 155, 253, 158;
-    --bg: hsl(202, 61%, 22%);
-    --darker-bg: #111827;
-    --pastel-green-1: #b6fadf;
-    --pastel-green-2: #4e8c71;
-    --default-text: hsl(194, 52%, 67%);
-
-    /* shadcn theme */
-    --background: hsl(194, 52%, 67%);
-    --foreground: hsl(215 6.1% 0.88);
-
-    --card: hsl(0, 0%, 100%);
-    --card-foreground: hsl(224, 71.4%, 4.1%);
-
-    --popover: hsl(0, 0%, 100%);
-    --popover-foreground: hsl(224, 71.4%, 4.1%);
-
-    --primary: hsl(220.9, 39.3%, 11%);
-    --primary-foreground: hsl(194, 52%, 67%);
-
-    --secondary: hsl(220, 14.3%, 95.9%);
-    --secondary-foreground: hsl(220.9, 39.3%, 11%);
-
-    --muted: hsl(220, 14.3%, 95.9%);
-    --muted-foreground: hsl(220, 15%, 40%);
-
-    --accent: hsl(220, 14.3%, 95.9%);
-    --accent-foreground: hsl(220.9, 39.3%, 11%);
-
-    --destructive: hsl(0, 84.2%, 60.2%);
-    --destructive-foreground: hsl(194, 52%, 67%);
-
-    --border: hsl(215, 27.9%, 16.9%);
-    --input: hsl(220, 13%, 91%);
-    --ring: hsl(224, 71.4%, 4.1%);
-
-    --radius: 0px;
-
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-  }
-
-  .dark {
-    --background: hsl(202, 61%, 22%);
-    --foreground: hsl(194, 52%, 67%);
-
-    --card: hsl(224, 71.4%, 4.1%);
-    --card-foreground: hsl(194, 52%, 67%);
-
-    --popover: hsl(224, 71.4%, 4.1%);
-    --popover-foreground: hsl(194, 52%, 67%);
-
-    --primary: hsl(194, 52%, 67%);
-    --primary-foreground: hsl(220.9, 39.3%, 11%);
-
-    --secondary: hsl(215, 27.9%, 16.9%);
-    --secondary-foreground: hsl(194, 52%, 67%);
-
-    --muted: hsl(215, 27.9%, 18%);
-    --muted-foreground: hsl(194, 40%, 60%);
-
-    --accent: hsl(215, 27.9%, 16.9%);
-    --accent-foreground: hsl(194, 52%, 67%);
-
-    --destructive: hsl(0, 62.8%, 30.6%);
-    --destructive-foreground: hsl(194, 52%, 67%);
-
-    --border: hsl(220, 13%, 91%);
-    --input: hsl(215, 27.9%, 16.9%);
-    --ring: hsl(216, 12.2%, 83.9%);
   }
 
   .prose {
