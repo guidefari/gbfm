@@ -161,6 +161,13 @@ function createBackupEffect(
       const sqlDump = yield* Effect.promise(() => createBackupWithPgDump(backupConfig));
 
       const backupData = Buffer.from(sqlDump);
+      const MIN_BACKUP_BYTES = 1024;
+      if (backupData.length < MIN_BACKUP_BYTES) {
+        return yield* Effect.die(
+          new Error(`Backup integrity check failed: dump is only ${backupData.length} bytes, expected at least ${MIN_BACKUP_BYTES}`)
+        );
+      }
+
       yield* Console.log(
         `✅ Backup size: ${(backupData.length / 1024 / 1024).toFixed(2)} MB`
       );
