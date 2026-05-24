@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import { Data, Duration, Effect, Schedule } from 'effect'
+import type { Context } from 'hono'
 import configureOpenAPI from '@/lib/configure-open-api'
 import { createAppEffect } from '@/lib/create-app'
 import admin from '@/routes/admin/admin.index'
@@ -65,7 +66,9 @@ const setupRoutesEffect = Effect.gen(function* () {
   app.route('', rss)
   app.route('', seoRouter)
 
-  app.get('/health', async (c) => {
+  app.get('/health/live', (c) => c.json({ ok: true }, 200))
+
+  const readinessHealthRoute = async (c: Context) => {
     const program = healthCheckEffect.pipe(
       Effect.map(() => ({ data: { dbConnected: true }, status: 200 as const })),
       Effect.catch(() =>
@@ -75,7 +78,10 @@ const setupRoutesEffect = Effect.gen(function* () {
 
     const result = await runApp(program)
     return c.json(result.data, result.status)
-  })
+  }
+
+  app.get('/health/ready', readinessHealthRoute)
+  app.get('/health', readinessHealthRoute)
 
   return app
 })
