@@ -14,9 +14,11 @@ export const emailTheme = {
   },
   colors: {
     brand: {
-      page: light.background,
+      page: '#f0f9ff',
       container: light.card,
-      header: brand['pastel-green-2'],
+      header: brand.bg,
+      headerText: '#ffffff',
+      headerSubtext: brand['pastel-green-1'],
       textPrimary: light.primary,
       textSecondary: light.foreground,
       textTertiary: brand['pastel-green-2'],

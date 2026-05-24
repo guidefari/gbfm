@@ -2,7 +2,6 @@ import {
   Body,
   Button,
   Container,
-  Heading,
   Html,
   Link,
   Preview,
@@ -11,6 +10,7 @@ import {
 } from '@react-email/components'
 import type * as React from 'react'
 import { EmailHead } from './email-head'
+import { EmailHeader } from './email-header'
 import { emailTheme } from './theme'
 
 interface PasswordResetEmailProps {
@@ -27,54 +27,33 @@ export const PasswordResetEmail: React.FC<
       <Preview>Reset your goosebumps.fm password</Preview>
       <Body style={main}>
         <Container style={container}>
-          <Section style={header}>
-            <Heading style={h1}>goosebumps.fm</Heading>
-            <Text style={subtitle}>Password Reset</Text>
-          </Section>
+          <EmailHeader tagline='password reset' />
 
-          <Section style={content}>
-            <Heading style={h2}>Reset Your Password</Heading>
-            <Text style={text}>
-              We received a request to reset your password for your
-              goosebumps.fm account.
+          <Section style={hero}>
+            <Text style={label}>ACCOUNT</Text>
+            <Text style={headline}>Reset your password.</Text>
+            <Text style={subtext}>
+              We received a request to reset your password. This link expires in{' '}
+              {expiresIn} and can only be used once.
             </Text>
-
-            <Text style={text}>
-              Click the button below to create a new password:
-            </Text>
-
-            <Button style={button} href={resetUrl}>
-              Reset Password
+            <Button style={ctaButton} href={resetUrl}>
+              Reset password
             </Button>
-
-            <Text style={text}>
-              This link will expire in {expiresIn}. If you didn't request this
-              password reset, you can safely ignore this email.
+            <Text style={fallback}>
+              Button not working?{' '}
+              <Link href={resetUrl} style={fallbackLink}>
+                Copy this link
+              </Link>
             </Text>
-
-            <Text style={text}>
-              For security reasons, this link can only be used once. If you need
-              to reset your password again, please request a new reset link.
+            <Text style={warning}>
+              If you didn't request this, ignore this email, your password won't
+              change.
             </Text>
           </Section>
 
           <Section style={footer}>
             <Text style={footerText}>
-              If you're having trouble with the button above, copy and paste
-              this URL into your browser:
-            </Text>
-            <Text style={urlText}>
-              <Link href={resetUrl} style={link}>
-                {resetUrl}
-              </Link>
-            </Text>
-            <Text style={footerText}>
-              Best regards,
-              <br />
-              The goosebumps.fm Team
-            </Text>
-            <Text style={footerText}>
-              <Link href='https://goosebumps.fm' style={link}>
+              <Link href='https://goosebumps.fm' style={footerLink}>
                 goosebumps.fm
               </Link>
             </Text>
@@ -86,94 +65,90 @@ export const PasswordResetEmail: React.FC<
 }
 
 const main = {
-  backgroundColor: emailTheme.colors.brand.page,
-  fontFamily: emailTheme.typography.sans
+  backgroundColor: emailTheme.colors.mono.page,
+  fontFamily: emailTheme.typography.sansAlt
 }
 
 const container = {
-  backgroundColor: emailTheme.colors.brand.container,
+  backgroundColor: emailTheme.colors.mono.page,
   margin: '0 auto',
-  padding: '20px 0 48px',
-  marginBottom: '64px'
+  padding: '0',
+  maxWidth: '600px'
 }
 
-const header = {
-  textAlign: 'center' as const,
-  padding: '48px 0',
-  backgroundColor: emailTheme.colors.brand.header,
-  color: emailTheme.colors.brand.white
-}
-
-const h1 = {
-  color: emailTheme.colors.brand.textPrimary,
-  fontSize: '32px',
-  fontWeight: 'bold',
-  margin: '0 0 8px',
+const hero = {
+  padding: '60px 40px',
   textAlign: 'center' as const
 }
 
-const subtitle = {
-  color: emailTheme.colors.brand.textSecondary,
-  fontSize: '16px',
-  margin: '0',
-  textAlign: 'center' as const
+const label = {
+  fontSize: '11px',
+  letterSpacing: '3px',
+  color: emailTheme.colors.mono.textMuted,
+  margin: '0 0 20px',
+  textTransform: 'uppercase' as const
 }
 
-const content = {
-  padding: '48px 24px'
-}
-
-const h2 = {
-  color: emailTheme.colors.brand.textPrimary,
-  fontSize: '24px',
-  fontWeight: 'bold',
+const headline = {
+  fontSize: '28px',
+  fontWeight: '700',
+  color: emailTheme.colors.mono.white,
   margin: '0 0 16px'
 }
 
-const text = {
-  color: emailTheme.colors.brand.textSecondary,
+const subtext = {
   fontSize: '16px',
   lineHeight: '24px',
-  margin: '0 0 16px'
+  color: emailTheme.colors.mono.textSecondary,
+  margin: '0 0 32px'
 }
 
-const button = {
-  backgroundColor: emailTheme.colors.brand.textPrimary,
-  borderRadius: emailTheme.radius.md,
-  color: emailTheme.colors.brand.textInverse,
-  fontSize: '16px',
-  fontWeight: 'bold',
+const ctaButton = {
+  backgroundColor: emailTheme.colors.mono.white,
+  color: emailTheme.colors.mono.black,
+  fontSize: '14px',
+  fontWeight: '600',
+  letterSpacing: '1px',
+  textTransform: 'uppercase' as const,
+  padding: '14px 40px',
+  borderRadius: emailTheme.radius.pill,
   textDecoration: 'none',
-  textAlign: 'center' as const,
-  display: 'block',
-  width: '200px',
-  padding: '12px',
-  margin: '32px auto'
+  display: 'inline-block'
+}
+
+const fallback = {
+  fontSize: '12px',
+  color: emailTheme.colors.mono.textMuted,
+  margin: '16px 0 0',
+  wordBreak: 'break-all' as const
+}
+
+const fallbackLink = {
+  color: emailTheme.colors.mono.textMuted,
+  textDecoration: 'underline'
+}
+
+const warning = {
+  fontSize: '13px',
+  color: emailTheme.colors.mono.textMuted,
+  margin: '24px 0 0',
+  fontStyle: 'italic' as const
 }
 
 const footer = {
-  borderTop: `1px solid ${emailTheme.colors.brand.header}`,
-  padding: '32px 24px',
+  borderTop: `1px solid ${emailTheme.colors.mono.border}`,
+  padding: '24px 40px',
   textAlign: 'center' as const
 }
 
 const footerText = {
-  color: emailTheme.colors.brand.textSecondary,
-  fontSize: '14px',
-  lineHeight: '20px',
-  margin: '0 0 8px'
-}
-
-const urlText = {
-  color: emailTheme.colors.brand.textSecondary,
   fontSize: '12px',
-  lineHeight: '16px',
-  margin: '16px 0',
-  wordBreak: 'break-all' as const
+  color: emailTheme.colors.mono.textMuted,
+  margin: '0'
 }
 
-const link = {
-  color: emailTheme.colors.brand.textPrimary,
+const footerLink = {
+  color: emailTheme.colors.mono.textMuted,
   textDecoration: 'underline'
 }
 

@@ -4,6 +4,7 @@ import {
   Container,
   Heading,
   Html,
+  Link,
   // Img,
   Preview,
   Section,
@@ -11,6 +12,7 @@ import {
 } from '@react-email/components'
 import type * as React from 'react'
 import { EmailHead } from './email-head'
+import { EmailHeader } from './email-header'
 import { emailTheme } from './theme'
 
 interface NewMixNotificationProps {
@@ -43,11 +45,7 @@ export const NewMixNotification: React.FC<
       </Preview>
       <Body style={main}>
         <Container style={container}>
-          {/* Header */}
-          <Section style={header}>
-            <Text style={logoText}>GOOSEBUMPS</Text>
-            <Text style={tagline}>curated mixes</Text>
-          </Section>
+          <EmailHeader tagline='curated mixes' />
 
           {/* Hero Section */}
           <Section style={hero}>
@@ -84,25 +82,17 @@ export const NewMixNotification: React.FC<
             <Text style={dateInfo}>Released {releaseDate}</Text>
           </Section>
 
-          {/* Footer */}
-          {/* <Section style={footer}>
-              <Text style={footerText}>
-                <Link href="https://goosebumps.fm" style={footerLink}>
-                  goosebumps.fm
-                </Link>
-                {' · '}
-                <Link href="https://goosebumps.fm/settings" style={footerLink}>
-                  Settings
-                </Link>
-                {' · '}
-                <Link href="https://goosebumps.fm/unsubscribe" style={footerLink}>
-                  Unsubscribe
-                </Link>
-              </Text>
-              <Text style={footerTextSmall}>
-                You're receiving this because you follow {artistName} on Goosebumps.
-              </Text>
-            </Section> */}
+          <Section style={footer}>
+            <Text style={footerText}>
+              <Link href='https://goosebumps.fm' style={footerLink}>
+                goosebumps.fm
+              </Link>
+              {' · '}
+              <Link href='https://goosebumps.fm/settings' style={footerLink}>
+                Settings
+              </Link>
+            </Text>
+          </Section>
         </Container>
       </Body>
     </Html>
@@ -120,29 +110,6 @@ const container = {
   margin: '0 auto',
   padding: '0',
   maxWidth: '600px'
-}
-
-const header = {
-  padding: '40px 20px 30px',
-  textAlign: 'center' as const,
-  borderBottom: `1px solid ${emailTheme.colors.mono.border}`
-}
-
-const logoText = {
-  fontSize: '20px',
-  fontWeight: '700',
-  letterSpacing: '4px',
-  color: emailTheme.colors.mono.white,
-  margin: '0 0 4px',
-  textTransform: 'uppercase' as const
-}
-
-const tagline = {
-  fontSize: '11px',
-  letterSpacing: '2px',
-  color: emailTheme.colors.mono.textMuted,
-  margin: '0',
-  textTransform: 'uppercase' as const
 }
 
 const hero = {
@@ -210,6 +177,23 @@ const artistText = {
   fontSize: '18px',
   margin: '0 0 8px',
   textAlign: 'center' as const
+}
+
+const footer = {
+  borderTop: `1px solid ${emailTheme.colors.mono.border}`,
+  padding: '24px 40px',
+  textAlign: 'center' as const
+}
+
+const footerText = {
+  fontSize: '12px',
+  color: emailTheme.colors.mono.textMuted,
+  margin: '0'
+}
+
+const footerLink = {
+  color: emailTheme.colors.mono.textMuted,
+  textDecoration: 'underline'
 }
 
 export default NewMixNotification
