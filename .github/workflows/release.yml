@@ -96,3 +96,10 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           bunx semantic-release
+
+      - name: Trigger Prod Deployment
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          LATEST_TAG=$(git describe --tags --abbrev=0)
+          gh workflow run deploy.yml --ref=prod -f ref="$LATEST_TAG"
