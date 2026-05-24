@@ -38,7 +38,7 @@ const sendNotificationEmail = (
   Effect.tryPromise({
     try: () =>
       sendBackupNotificationEmail({
-        to: "guidefari@icloud.com",
+        to: process.env.ADMIN_EMAIL ?? "guidefari@icloud.com",
         status,
         timestamp: new Date().toISOString(),
         database: backupConfig.database,
@@ -52,13 +52,13 @@ const sendNotificationEmail = (
       }),
     catch: (error) => 
       error instanceof Error 
-        ? new EmailError({ 
-            message: `Failed to send email: ${error.message}`, 
-            emailAddress: "guidefari@icloud.com" 
+        ? new EmailError({
+            message: `Failed to send email: ${error.message}`,
+            emailAddress: process.env.ADMIN_EMAIL ?? "guidefari@icloud.com"
           })
-        : new EmailError({ 
-            message: `Failed to send email: Unknown error: ${String(error)}`, 
-            emailAddress: "guidefari@icloud.com" 
+        : new EmailError({
+            message: `Failed to send email: Unknown error: ${String(error)}`,
+            emailAddress: process.env.ADMIN_EMAIL ?? "guidefari@icloud.com"
           }),
   }).pipe(
     Effect.tap(() => Console.log(`📧 Notification email sent (${status})`)),

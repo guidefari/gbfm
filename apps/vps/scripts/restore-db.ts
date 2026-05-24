@@ -340,7 +340,6 @@ const restoreEffect = (source: string, destination: "local" | "remote" | "planet
         yield* Console.log("\n🎉 Database restore complete!");
         yield* Console.log(`📊 Database: ${config.database}`);
         yield* Console.log(`📊 User: ${config.user}`);
-        yield* Console.log(`📊 Password: ${config.password}`);
         yield* Console.log(`   Host: ${config.host}:${config.port}`);
       } finally {
         if (isTemporaryFile) {

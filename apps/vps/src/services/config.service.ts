@@ -125,7 +125,8 @@ const ConfigSchema = Schema.Struct({
   sentry: Schema.Struct({
     dsn: Schema.String,
     environment: Schema.String
-  })
+  }),
+  adminEmail: Schema.String
 })
 
 type ConfigSchemaType = typeof ConfigSchema.Type
@@ -215,6 +216,10 @@ export function createConfig(): ConfigService {
     process.env.OTEL_EXPORTER_OTLP_HEADERS ||
     getResourceValue('OTEL_EXPORTER_OTLP_HEADERS', '')
 
+  const adminEmail =
+    process.env.ADMIN_EMAIL ||
+    getResourceValue('AdminEmail', 'guidefari@icloud.com')
+
   const sentryDsn =
     process.env.SENTRY_BACKEND_DSN || getResourceValue('SENTRY_BACKEND_DSN', '')
   const sentryEnvironment =
@@ -267,6 +272,7 @@ export function createConfig(): ConfigService {
       dsn: sentryDsn,
       environment: sentryEnvironment
     },
+    adminEmail,
     resources: {
       available: Resource !== null
     }

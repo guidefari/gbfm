@@ -11,6 +11,7 @@ export {
   sendBackupNotificationEmail,
   sendEmail,
   sendInviteEmail,
+  sendNewsletterAdminNotificationEmail,
   sendPasswordResetEmail,
   sendTestEmail,
   sendWelcomeEmail

@@ -109,7 +109,7 @@ function Row({
   error = false
 }: {
   label: string
-  value?: string
+  value: string | undefined
   error?: boolean
 }) {
   return (

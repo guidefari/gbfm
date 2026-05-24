@@ -261,6 +261,37 @@ export async function sendNewsletterWelcomeEmail({
   })
 }
 
+export async function sendNewsletterAdminNotificationEmail({
+  to,
+  event,
+  email,
+  timestamp = new Date().toISOString()
+}: {
+  to: string | string[]
+  event: 'subscribed' | 'unsubscribed'
+  email: string
+  timestamp?: string
+}): Promise<void> {
+  const { NewsletterAdminNotification } = await import(
+    '../emails/newsletter-admin-notification'
+  )
+
+  await sendEmail({
+    to,
+    template: {
+      subject:
+        event === 'subscribed'
+          ? `New subscriber: ${email}`
+          : `Unsubscribe: ${email}`,
+      component: React.createElement(NewsletterAdminNotification, {
+        event,
+        email,
+        timestamp
+      })
+    }
+  })
+}
+
 export async function sendBackupNotificationEmail({
   to,
   status,
