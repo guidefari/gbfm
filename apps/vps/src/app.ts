@@ -40,6 +40,9 @@ const healthCheckEffect = Effect.tryPromise({
   catch: (cause) => new HealthCheckError({ cause })
 })
 
+const READINESS_CACHE_MS = 5_000
+let readinessCache: { checkedAt: number; status: 200 | 500 } | undefined
+
 const setupRoutesEffect = Effect.gen(function* () {
   yield* SentryService
   const app = yield* createAppEffect
@@ -69,6 +72,14 @@ const setupRoutesEffect = Effect.gen(function* () {
   app.get('/health/live', (c) => c.json({ ok: true }, 200))
 
   const readinessHealthRoute = async (c: Context) => {
+    const cache = readinessCache
+    const cachedStatus =
+      cache && Date.now() - cache.checkedAt < READINESS_CACHE_MS
+
+    if (cachedStatus) {
+      return c.json({ dbConnected: cache.status === 200 }, cache.status)
+    }
+
     const program = healthCheckEffect.pipe(
       Effect.map(() => ({ data: { dbConnected: true }, status: 200 as const })),
       Effect.catch(() =>
@@ -77,6 +88,10 @@ const setupRoutesEffect = Effect.gen(function* () {
     )
 
     const result = await runApp(program)
+    readinessCache = {
+      checkedAt: Date.now(),
+      status: result.status
+    }
     return c.json(result.data, result.status)
   }
 
