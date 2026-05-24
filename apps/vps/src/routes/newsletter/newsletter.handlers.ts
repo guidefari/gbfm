@@ -1,8 +1,10 @@
+import { sendNewsletterWelcomeEmail } from '@gbfm/email/sender'
+import { eq } from 'drizzle-orm'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
 import { newsletterSubscribersTable } from '@/db/newsletter.schema'
 import type { AppRouteHandler } from '@/lib/types'
-import type { SubscribeRoute } from './newsletter.routes'
+import type { SubscribeRoute, UnsubscribeRoute } from './newsletter.routes'
 
 export const subscribe: AppRouteHandler<SubscribeRoute> = async (c) => {
   const { email, source } = c.req.valid('json')
@@ -25,6 +27,14 @@ export const subscribe: AppRouteHandler<SubscribeRoute> = async (c) => {
       )
     }
 
+    const row = result[0]
+    if (row?.unsubscribeToken) {
+      const unsubscribeUrl = `${process.env.APP_URL ?? 'https://goosebumps.fm'}/unsubscribe?token=${row.unsubscribeToken}`
+      sendNewsletterWelcomeEmail({ to: normalizedEmail, unsubscribeUrl }).catch(
+        (err) => console.error('Newsletter welcome email failed:', err)
+      )
+    }
+
     return c.json(
       { subscribed: true, email: normalizedEmail },
       HttpStatusCodes.CREATED
@@ -36,4 +46,20 @@ export const subscribe: AppRouteHandler<SubscribeRoute> = async (c) => {
       HttpStatusCodes.INTERNAL_SERVER_ERROR
     )
   }
+}
+
+export const unsubscribe: AppRouteHandler<UnsubscribeRoute> = async (c) => {
+  const { token } = c.req.valid('json')
+
+  const result = await db
+    .update(newsletterSubscribersTable)
+    .set({ unsubscribedAt: new Date() })
+    .where(eq(newsletterSubscribersTable.unsubscribeToken, token))
+    .returning({ id: newsletterSubscribersTable.id })
+
+  if (result.length === 0) {
+    return c.json({ success: false }, HttpStatusCodes.NOT_FOUND)
+  }
+
+  return c.json({ success: true }, HttpStatusCodes.OK)
 }

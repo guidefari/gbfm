@@ -241,6 +241,26 @@ export async function sendInviteEmail({
   })
 }
 
+export async function sendNewsletterWelcomeEmail({
+  to,
+  unsubscribeUrl
+}: {
+  to: string
+  unsubscribeUrl: string
+}): Promise<void> {
+  const { NewsletterWelcomeEmail } = await import(
+    '../emails/newsletter-welcome'
+  )
+
+  await sendEmail({
+    to,
+    template: {
+      subject: "You're subscribed to goosebumps.fm",
+      component: React.createElement(NewsletterWelcomeEmail, { unsubscribeUrl })
+    }
+  })
+}
+
 export async function sendBackupNotificationEmail({
   to,
   status,

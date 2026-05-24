@@ -8,6 +8,8 @@ export const newsletterSubscribersTable = pgTable(
     id: uuid().primaryKey().defaultRandom(),
     email: varchar({ length: 255 }).notNull().unique(),
     source: varchar({ length: 50 }),
+    unsubscribeToken: uuid().unique().defaultRandom(),
+    unsubscribedAt: timestamp({ withTimezone: true }),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow()
   },
@@ -29,4 +31,12 @@ export const insertNewsletterSubscriberSchema = z.object({
 export const subscribeResponseSchema = z.object({
   subscribed: z.boolean(),
   email: z.string().email()
+})
+
+export const unsubscribeSchema = z.object({
+  token: z.string().uuid()
+})
+
+export const unsubscribeResponseSchema = z.object({
+  success: z.boolean()
 })

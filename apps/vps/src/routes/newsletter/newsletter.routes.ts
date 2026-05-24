@@ -4,7 +4,9 @@ import { jsonContent, jsonContentRequired } from 'stoker/openapi/helpers'
 import { createErrorSchema } from 'stoker/openapi/schemas'
 import {
   insertNewsletterSubscriberSchema,
-  subscribeResponseSchema
+  subscribeResponseSchema,
+  unsubscribeResponseSchema,
+  unsubscribeSchema
 } from '@/db/newsletter.schema'
 
 const tags = ['Newsletter']
@@ -41,4 +43,28 @@ export const subscribe = createRoute({
   }
 })
 
+export const unsubscribe = createRoute({
+  path: '/unsubscribe',
+  method: 'post',
+  request: {
+    body: jsonContentRequired(unsubscribeSchema, 'Unsubscribe token')
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      unsubscribeResponseSchema,
+      'Unsubscribed successfully'
+    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(
+      unsubscribeResponseSchema,
+      'Token not found'
+    ),
+    [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
+      createErrorSchema(unsubscribeSchema),
+      'Validation error'
+    )
+  }
+})
+
 export type SubscribeRoute = typeof subscribe
+export type UnsubscribeRoute = typeof unsubscribe

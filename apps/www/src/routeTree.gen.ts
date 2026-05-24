@@ -12,6 +12,7 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UploadOldRouteImport } from './routes/upload-old'
+import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SubscribeRouteImport } from './routes/subscribe'
 import { Route as SettingsRouteImport } from './routes/settings'
@@ -77,6 +78,11 @@ const LabelUploadLazyRoute = LabelUploadLazyRouteImport.update({
 const UploadOldRoute = UploadOldRouteImport.update({
   id: '/upload-old',
   path: '/upload-old',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UnsubscribeRoute = UnsubscribeRouteImport.update({
+  id: '/unsubscribe',
+  path: '/unsubscribe',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TermsRoute = TermsRouteImport.update({
@@ -306,6 +312,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/subscribe': typeof SubscribeRoute
   '/terms': typeof TermsRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/upload-old': typeof UploadOldRoute
   '/label-upload': typeof LabelUploadLazyRoute
   '/mix-upload': typeof MixUploadLazyRoute
@@ -350,6 +357,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/subscribe': typeof SubscribeRoute
   '/terms': typeof TermsRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/upload-old': typeof UploadOldRoute
   '/label-upload': typeof LabelUploadLazyRoute
   '/mix-upload': typeof MixUploadLazyRoute
@@ -399,6 +407,7 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/subscribe': typeof SubscribeRoute
   '/terms': typeof TermsRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/upload-old': typeof UploadOldRoute
   '/label-upload': typeof LabelUploadLazyRoute
   '/mix-upload': typeof MixUploadLazyRoute
@@ -449,6 +458,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/subscribe'
     | '/terms'
+    | '/unsubscribe'
     | '/upload-old'
     | '/label-upload'
     | '/mix-upload'
@@ -493,6 +503,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/subscribe'
     | '/terms'
+    | '/unsubscribe'
     | '/upload-old'
     | '/label-upload'
     | '/mix-upload'
@@ -541,6 +552,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/subscribe'
     | '/terms'
+    | '/unsubscribe'
     | '/upload-old'
     | '/label-upload'
     | '/mix-upload'
@@ -590,6 +602,7 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   SubscribeRoute: typeof SubscribeRoute
   TermsRoute: typeof TermsRoute
+  UnsubscribeRoute: typeof UnsubscribeRoute
   UploadOldRoute: typeof UploadOldRoute
   LabelUploadLazyRoute: typeof LabelUploadLazyRoute
   MixUploadLazyRoute: typeof MixUploadLazyRoute
@@ -643,6 +656,13 @@ declare module '@tanstack/react-router' {
       path: '/upload-old'
       fullPath: '/upload-old'
       preLoaderRoute: typeof UploadOldRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/unsubscribe': {
+      id: '/unsubscribe'
+      path: '/unsubscribe'
+      fullPath: '/unsubscribe'
+      preLoaderRoute: typeof UnsubscribeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/terms': {
@@ -1025,6 +1045,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   SubscribeRoute: SubscribeRoute,
   TermsRoute: TermsRoute,
+  UnsubscribeRoute: UnsubscribeRoute,
   UploadOldRoute: UploadOldRoute,
   LabelUploadLazyRoute: LabelUploadLazyRoute,
   MixUploadLazyRoute: MixUploadLazyRoute,

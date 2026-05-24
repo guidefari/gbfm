@@ -1161,6 +1161,16 @@ export function useNewsletterSubscribe() {
   })
 }
 
+export function useNewsletterUnsubscribe() {
+  return useMutation<{ success: boolean }, Error, { token: string }>({
+    mutationFn: async ({ token }) =>
+      fetcher<{ success: boolean }>(`${VPS_BASE_URL}/newsletter/unsubscribe`, {
+        method: 'POST',
+        body: JSON.stringify({ token })
+      })
+  })
+}
+
 type QRPdfResponse = {
   url: string
   cached: boolean
