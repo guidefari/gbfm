@@ -5,7 +5,10 @@ import { Link } from '@tanstack/react-router'
 import { Pause, Play } from 'lucide-react'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { cn } from '@/lib/utils'
-import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
+import {
+  useAudioPlayerActions,
+  useAudioPlayerPlaybackState
+} from '@/store/audioPlayer'
 
 interface MixListItemProps {
   mix: SelectAudio
@@ -13,7 +16,7 @@ interface MixListItemProps {
 }
 
 export function MixListItem({ mix, actions }: MixListItemProps) {
-  const { isPlaying, nowPlayingContext } = useAudioPlayerState()
+  const { isPlaying, nowPlayingContext } = useAudioPlayerPlaybackState()
   const { loadTrack } = useAudioPlayerActions()
 
   const isActive = nowPlayingContext?.title === mix.title

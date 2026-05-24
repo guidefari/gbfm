@@ -14,7 +14,10 @@ import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useState } from 'react'
 import { useSession } from '@/lib/auth-client'
 import { cn } from '@/lib/utils'
-import { useAudioPlayerState } from '@/store/audioPlayer'
+import {
+  useAudioPlayerPlaybackState,
+  useAudioPlayerVisibilityState
+} from '@/store/audioPlayer'
 import { NowPlayingMini } from './NowPlayingMini'
 
 type MenuItemConfig = {
@@ -30,7 +33,8 @@ type FloatingMenuProps = {
 
 export function FloatingMenu({ className }: FloatingMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const { audioSrc, isFullscreenVisible } = useAudioPlayerState()
+  const { audioSrc } = useAudioPlayerPlaybackState()
+  const { isFullscreenVisible } = useAudioPlayerVisibilityState()
   const { data: session } = useSession()
   const isAuthenticated = Boolean(session?.user)
 

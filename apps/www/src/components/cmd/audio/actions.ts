@@ -8,7 +8,13 @@ import {
   Volume2,
   VolumeX
 } from 'lucide-react'
-import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
+import {
+  useAudioPlayerActions,
+  useAudioPlayerPlaybackState,
+  useAudioPlayerQueueState,
+  useAudioPlayerVisibilityState,
+  useAudioPlayerVolumeState
+} from '@/store/audioPlayer'
 
 export const useAudioPlayerCmdActions = (closeCmd: () => void) => {
   const {
@@ -24,15 +30,11 @@ export const useAudioPlayerCmdActions = (closeCmd: () => void) => {
     playPrevious
   } = useAudioPlayerActions()
 
-  const {
-    isPlaying,
-    volume,
-    isMuted,
-    isQueueVisible,
-    isFullscreenVisible,
-    queue,
-    currentIndex
-  } = useAudioPlayerState()
+  const { isPlaying } = useAudioPlayerPlaybackState()
+  const { isQueueVisible, isFullscreenVisible } =
+    useAudioPlayerVisibilityState()
+  const { queue, currentIndex } = useAudioPlayerQueueState()
+  const { volume, isMuted } = useAudioPlayerVolumeState()
 
   const handleTogglePlayPause = () => {
     togglePlayPause()

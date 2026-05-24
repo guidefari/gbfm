@@ -8,7 +8,10 @@ import { useAudioPlayerInitializer } from '@/hooks/useAudioPlayer'
 import { useMixPlayTracking } from '@/hooks/useMixPlayTracking'
 import { MAIN_SCROLL_CONTAINER_ID } from '@/lib/constants'
 import { useUIStore } from '@/store'
-import { useAudioPlayerState } from '@/store/audioPlayer'
+import {
+  useAudioPlayerPlaybackState,
+  useAudioPlayerVisibilityState
+} from '@/store/audioPlayer'
 
 import { DesktopSideNav } from './DesktopSideNav'
 import { FloatingMenu } from './FloatingMenu'
@@ -24,7 +27,8 @@ export default function AppShell({ children }: Props) {
   useMixPlayTracking()
   const isQueueEnabled = useFeatureFlag('ui.queue')
 
-  const { audioSrc, isFullscreenVisible } = useAudioPlayerState()
+  const { audioSrc } = useAudioPlayerPlaybackState()
+  const { isFullscreenVisible } = useAudioPlayerVisibilityState()
   const { preferredPlayerType, showCompactPlayer } = useUIStore()
   const hasActiveAudio = Boolean(audioSrc)
   const showFullPlayer = !isFullscreenVisible && preferredPlayerType === 'full'

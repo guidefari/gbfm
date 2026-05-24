@@ -1,6 +1,6 @@
 import type { SelectAudio } from '@gbfm/vps/schemas'
 import { cn } from '@/lib/utils'
-import { useAudioPlayerState } from '@/store/audioPlayer'
+import { useAudioPlayerPlaybackState } from '@/store/audioPlayer'
 
 interface MixTimelineProps {
   children: React.ReactNode
@@ -16,7 +16,7 @@ interface MixTimelineItemProps {
 }
 
 export function MixTimelineItem({ mix, children }: MixTimelineItemProps) {
-  const { nowPlayingContext } = useAudioPlayerState()
+  const { nowPlayingContext } = useAudioPlayerPlaybackState()
   const isActive = nowPlayingContext?.title === mix.title
 
   return (

@@ -22,7 +22,11 @@ import { attachVolumeScroll } from '@/lib/volumeScrollHandler'
 import {
   type Creator,
   useAudioPlayerActions,
-  useAudioPlayerState
+  useAudioPlayerPlaybackState,
+  useAudioPlayerProgressState,
+  useAudioPlayerQueueState,
+  useAudioPlayerVisibilityState,
+  useAudioPlayerVolumeState
 } from '@/store/audioPlayer'
 
 type Props = {
@@ -59,19 +63,12 @@ function CreatorLinks({ creators, onClick }: Props) {
 
 const FullscreenAudioPlayer = () => {
   const isQueueEnabled = useFeatureFlag('ui.queue')
-  const {
-    audioSrc,
-    isPlaying,
-    thumbnailUrl,
-    progress,
-    nowPlayingContext,
-    currentTime,
-    duration,
-    volume,
-    isMuted,
-    queue,
-    isFullscreenVisible
-  } = useAudioPlayerState()
+  const { audioSrc, isPlaying, thumbnailUrl, nowPlayingContext } =
+    useAudioPlayerPlaybackState()
+  const { queue } = useAudioPlayerQueueState()
+  const { isFullscreenVisible } = useAudioPlayerVisibilityState()
+  const { progress, currentTime, duration } = useAudioPlayerProgressState()
+  const { volume, isMuted } = useAudioPlayerVolumeState()
 
   const {
     play,
@@ -120,6 +117,7 @@ const FullscreenAudioPlayer = () => {
   const currentTrack = audioSrc
     ? {
         title: nowPlayingContext.title,
+        slug: nowPlayingContext.slug,
         thumbnailUrl: thumbnailUrl,
         creators: nowPlayingContext.creators
       }
@@ -158,11 +156,25 @@ const FullscreenAudioPlayer = () => {
 
               <div className='mb-4 sm:mb-8 shrink-0'>
                 <div className='flex items-center justify-between mb-2'>
-                  <OverflowTitle
-                    text={currentTrack.title}
-                    className='flex-1 min-w-0 pr-4'
-                    textClassName='text-xl sm:text-2xl font-semibold leading-tight text-foreground'
-                  />
+                  {currentTrack.slug ? (
+                    <Link
+                      to='/mixes/$mixId'
+                      params={{ mixId: currentTrack.slug }}
+                      onClick={toggleFullscreen}
+                      className='flex-1 min-w-0 pr-4'>
+                      <OverflowTitle
+                        text={currentTrack.title}
+                        className='min-w-0'
+                        textClassName='text-xl sm:text-2xl font-semibold leading-tight text-foreground hover:underline'
+                      />
+                    </Link>
+                  ) : (
+                    <OverflowTitle
+                      text={currentTrack.title}
+                      className='flex-1 min-w-0 pr-4'
+                      textClassName='text-xl sm:text-2xl font-semibold leading-tight text-foreground'
+                    />
+                  )}
                   <div className='flex items-center shrink-0 gap-1 sm:gap-2'>
                     <Button
                       variant='ghost'

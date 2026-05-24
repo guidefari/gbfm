@@ -1,6 +1,9 @@
 'use client'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
-import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
+import {
+  useAudioPlayerActions,
+  useAudioPlayerPlaybackState
+} from '@/store/audioPlayer'
 import { DEFAULT_IMAGE_URL } from '../lib/constants'
 
 type PlayPauseButtonProps = {
@@ -16,7 +19,7 @@ export const PlayPauseButton = ({
   title,
   trackId
 }: PlayPauseButtonProps) => {
-  const { audioSrc, isPlaying } = useAudioPlayerState()
+  const { audioSrc, isPlaying } = useAudioPlayerPlaybackState()
   const { loadTrack } = useAudioPlayerActions()
 
   const handleClick = () =>

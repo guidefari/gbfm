@@ -4,6 +4,7 @@ import type { SelectAudio, SelectMdxCompiledAudio } from '@gbfm/vps/schemas'
 import * as Effect from 'effect/Effect'
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
+import { useShallow } from 'zustand/react/shallow'
 import { RuntimeClient } from '@/runtime'
 import { track } from '@/services/analytics'
 import {
@@ -24,6 +25,7 @@ import {
 
 let lastPersistTime = 0
 const PERSIST_INTERVAL = 5000
+let progressFrameId: number | null = null
 
 const pageUrl = () =>
   typeof window !== 'undefined' ? window.location.pathname : '/'
@@ -71,6 +73,8 @@ interface AudioPlayerActions {
   closeFullscreen: () => void
 
   updateProgress: () => void
+  startProgressTracking: () => void
+  stopProgressTracking: () => void
   updatePlayingState: (playing: boolean) => void
   updateNowPlaying: (context: Partial<NowPlayingContext>) => void
 
@@ -88,6 +92,31 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
           label: string
         ) => set((state) => playerReducer(state, action), false, label)
 
+        const stopProgressTracking = () => {
+          if (progressFrameId === null) return
+
+          window.cancelAnimationFrame(progressFrameId)
+          progressFrameId = null
+        }
+
+        const scheduleProgressTracking = () => {
+          if (typeof window === 'undefined' || progressFrameId !== null) return
+
+          const tick = () => {
+            progressFrameId = null
+            const { audioRef, isPlaying } = get()
+
+            if (!audioRef || !isPlaying) {
+              return
+            }
+
+            get().updateProgress()
+            progressFrameId = window.requestAnimationFrame(tick)
+          }
+
+          progressFrameId = window.requestAnimationFrame(tick)
+        }
+
         return {
           ...initialPlayerState,
           audioRef: null,
@@ -95,9 +124,13 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
           setAudioRef: (ref) => {
             set(() => ({ audioRef: ref }), false, 'audioPlayer/setAudioRef')
 
-            if (!ref) return
+            if (!ref) {
+              stopProgressTracking()
+              return
+            }
 
             ref.onended = () => {
+              stopProgressTracking()
               const {
                 queue,
                 currentIndex,
@@ -129,8 +162,6 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
               }
             }
 
-            ref.ontimeupdate = () => get().updateProgress()
-
             ref.onloadedmetadata = () => {
               send(
                 {
@@ -143,6 +174,14 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
               void RuntimeClient.runPromise(
                 setPositionState(ref.duration || 0, ref.currentTime)
               )
+            }
+
+            ref.onplay = () => {
+              scheduleProgressTracking()
+            }
+
+            ref.onpause = () => {
+              stopProgressTracking()
             }
 
             ref.onerror = () => {
@@ -288,6 +327,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
               { type: 'SET_TIME', percentage, duration: audioRef.duration },
               'audioPlayer/setTime'
             )
+            get().updateProgress()
             void RuntimeClient.runPromise(
               track('audio_seek', {
                 trackId: get().currentTrackId,
@@ -437,6 +477,14 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
             }
           },
 
+          startProgressTracking: () => {
+            scheduleProgressTracking()
+          },
+
+          stopProgressTracking: () => {
+            stopProgressTracking()
+          },
+
           updatePlayingState: (playing) => {
             send(
               { type: 'UPDATE_PLAYING_STATE', playing },
@@ -473,6 +521,14 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
                         'loadedmetadata',
                         () => {
                           audioRef.currentTime = savedTime
+                          send(
+                            {
+                              type: 'UPDATE_PROGRESS',
+                              currentTime: savedTime,
+                              duration: audioRef.duration || 0
+                            },
+                            'audioPlayer/restoreProgress'
+                          )
                         },
                         { once: true }
                       )
@@ -610,7 +666,32 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
 )
 
 export const useAudioPlayerActions = () => {
-  const store = useAudioPlayerStore()
+  const store = useAudioPlayerStore(
+    useShallow((state) => ({
+      play: state.play,
+      pause: state.pause,
+      togglePlayPause: state.togglePlayPause,
+      jumpForward: state.jumpForward,
+      jumpBackward: state.jumpBackward,
+      loadTrack: state.loadTrack,
+      preloadTrack: state.preloadTrack,
+      setTimeUsingPercentage: state.setTimeUsingPercentage,
+      setVolume: state.setVolume,
+      toggleMute: state.toggleMute,
+      addToQueue: state.addToQueue,
+      removeFromQueue: state.removeFromQueue,
+      clearQueue: state.clearQueue,
+      reorderQueue: state.reorderQueue,
+      playFromQueue: state.playFromQueue,
+      playNext: state.playNext,
+      playPrevious: state.playPrevious,
+      toggleQueue: state.toggleQueue,
+      toggleFullscreen: state.toggleFullscreen,
+      closeFullscreen: state.closeFullscreen,
+      startProgressTracking: state.startProgressTracking,
+      stopProgressTracking: state.stopProgressTracking
+    }))
+  )
   return {
     play: store.play,
     pause: store.pause,
@@ -631,7 +712,9 @@ export const useAudioPlayerActions = () => {
     playPrevious: store.playPrevious,
     toggleQueue: store.toggleQueue,
     toggleFullscreen: store.toggleFullscreen,
-    closeFullscreen: store.closeFullscreen
+    closeFullscreen: store.closeFullscreen,
+    startProgressTracking: store.startProgressTracking,
+    stopProgressTracking: store.stopProgressTracking
   }
 }
 
@@ -656,5 +739,49 @@ export const useAudioPlayerState = () => {
     isInitialized: store.isInitialized
   }
 }
+
+export const useAudioPlayerPlaybackState = () =>
+  useAudioPlayerStore(
+    useShallow((state) => ({
+      audioSrc: state.audioSrc,
+      isPlaying: state.isPlaying,
+      thumbnailUrl: state.thumbnailUrl,
+      nowPlayingContext: state.nowPlayingContext,
+      currentTrackId: state.currentTrackId
+    }))
+  )
+
+export const useAudioPlayerVisibilityState = () =>
+  useAudioPlayerStore(
+    useShallow((state) => ({
+      isFullscreenVisible: state.isFullscreenVisible,
+      isQueueVisible: state.isQueueVisible
+    }))
+  )
+
+export const useAudioPlayerQueueState = () =>
+  useAudioPlayerStore(
+    useShallow((state) => ({
+      queue: state.queue,
+      currentIndex: state.currentIndex
+    }))
+  )
+
+export const useAudioPlayerProgressState = () =>
+  useAudioPlayerStore(
+    useShallow((state) => ({
+      progress: state.progress,
+      currentTime: state.currentTime,
+      duration: state.duration
+    }))
+  )
+
+export const useAudioPlayerVolumeState = () =>
+  useAudioPlayerStore(
+    useShallow((state) => ({
+      volume: state.volume,
+      isMuted: state.isMuted
+    }))
+  )
 
 export type { Creator, NowPlayingContext, QueueItem }

@@ -1,10 +1,16 @@
 import { useEffect } from 'react'
+import { useShallow } from 'zustand/react/shallow'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { useAudioByType } from '@/lib/http'
-import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
+import { useAudioPlayerActions, useAudioPlayerStore } from '@/store/audioPlayer'
 
 export function useDefaultTrackPreloader() {
-  const { audioSrc, isInitialized } = useAudioPlayerState()
+  const { audioSrc, isInitialized } = useAudioPlayerStore(
+    useShallow((state) => ({
+      audioSrc: state.audioSrc,
+      isInitialized: state.isInitialized
+    }))
+  )
   const { preloadTrack } = useAudioPlayerActions()
   const { data: mixes } = useAudioByType('mix')
 

@@ -30,7 +30,10 @@ import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { fetcher, useMixQRPdf, useShowById, VPS_BASE_URL } from '@/lib/http'
 import { getShareUrl } from '@/lib/share'
 import { useContentStore } from '@/store'
-import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
+import {
+  useAudioPlayerActions,
+  useAudioPlayerPlaybackState
+} from '@/store/audioPlayer'
 
 export const Route = createFileRoute('/mixes/$mixId')({
   component: MixPage,
@@ -222,7 +225,7 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
   const isAdmin = user?.role === 'admin'
   const isCreator = user?.role === 'creator'
   const canDownloadQr = isAdmin || isCreator
-  const { isPlaying, nowPlayingContext } = useAudioPlayerState()
+  const { isPlaying, nowPlayingContext } = useAudioPlayerPlaybackState()
   const { loadTrack, togglePlayPause, addToQueue } = useAudioPlayerActions()
   const { data: show } = useShowById(mix.showId)
 

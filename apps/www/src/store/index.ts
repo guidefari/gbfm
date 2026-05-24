@@ -1,7 +1,12 @@
 export {
   useAudioPlayerActions,
+  useAudioPlayerPlaybackState,
+  useAudioPlayerProgressState,
+  useAudioPlayerQueueState,
   useAudioPlayerState,
-  useAudioPlayerStore
+  useAudioPlayerStore,
+  useAudioPlayerVisibilityState,
+  useAudioPlayerVolumeState
 } from './audioPlayer'
 export { useContentStore } from './content'
 export { useUIStore } from './ui'

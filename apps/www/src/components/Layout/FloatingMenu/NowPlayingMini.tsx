@@ -2,18 +2,23 @@ import { OverflowTitle } from '@gbfm/ui'
 import { Link } from '@tanstack/react-router'
 import { Pause, Play, SkipBack, SkipForward } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
+import {
+  useAudioPlayerActions,
+  useAudioPlayerPlaybackState
+} from '@/store/audioPlayer'
 
 type NowPlayingMiniProps = {
   onClose?: () => void
 }
 
 export function NowPlayingMini({ onClose }: NowPlayingMiniProps) {
-  const { thumbnailUrl, nowPlayingContext, isPlaying } = useAudioPlayerState()
+  const { thumbnailUrl, nowPlayingContext, isPlaying } =
+    useAudioPlayerPlaybackState()
   const { togglePlayPause, playNext, playPrevious, toggleFullscreen } =
     useAudioPlayerActions()
 
   const title = nowPlayingContext?.title || 'Unknown Track'
+  const slug = nowPlayingContext?.slug
 
   const handleOpenFullscreen = () => {
     onClose?.()
@@ -47,14 +52,29 @@ export function NowPlayingMini({ onClose }: NowPlayingMiniProps) {
         </button>
 
         <div className='min-w-0 flex-1'>
-          <button
-            type='button'
-            onClick={handleOpenFullscreen}
-            className='block w-full text-left focus:outline-none'>
-            <OverflowTitle
-              text={title}
-              textClassName='text-sm font-semibold text-foreground'
-            />
+          <div className='block w-full text-left'>
+            {slug ? (
+              <Link
+                to='/mixes/$mixId'
+                params={{ mixId: slug }}
+                onClick={onClose}
+                className='hover:underline'>
+                <OverflowTitle
+                  text={title}
+                  textClassName='text-sm font-semibold text-foreground'
+                />
+              </Link>
+            ) : (
+              <button
+                type='button'
+                onClick={handleOpenFullscreen}
+                className='focus:outline-none'>
+                <OverflowTitle
+                  text={title}
+                  textClassName='text-sm font-semibold text-foreground'
+                />
+              </button>
+            )}
             <div className='mt-0.5 truncate text-xs text-muted-foreground'>
               {creators.length > 0 ? (
                 creators.map((creator, index) => (
@@ -77,7 +97,7 @@ export function NowPlayingMini({ onClose }: NowPlayingMiniProps) {
                 <span>Unknown creator</span>
               )}
             </div>
-          </button>
+          </div>
 
           <div className='mt-1.5 flex items-center gap-1'>
             <button

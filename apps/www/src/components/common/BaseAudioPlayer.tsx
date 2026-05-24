@@ -23,7 +23,10 @@ import { attachVolumeScroll } from '@/lib/volumeScrollHandler'
 import {
   type Creator,
   useAudioPlayerActions,
-  useAudioPlayerState
+  useAudioPlayerPlaybackState,
+  useAudioPlayerProgressState,
+  useAudioPlayerQueueState,
+  useAudioPlayerVolumeState
 } from '@/store/audioPlayer'
 
 function CreatorLinks({ creators }: { creators?: Creator[] }) {
@@ -78,15 +81,12 @@ export function BaseAudioPlayer({
     audioSrc,
     isPlaying,
     thumbnailUrl,
-    progress,
     nowPlayingContext,
-    currentTime,
-    duration,
-    volume,
-    isMuted,
-    queue,
     currentTrackId
-  } = useAudioPlayerState()
+  } = useAudioPlayerPlaybackState()
+  const { queue } = useAudioPlayerQueueState()
+  const { progress, currentTime, duration } = useAudioPlayerProgressState()
+  const { volume, isMuted } = useAudioPlayerVolumeState()
 
   const { requireAuth } = useAuthGuard('mix')
 

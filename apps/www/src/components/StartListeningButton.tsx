@@ -5,7 +5,10 @@ import { motion } from 'motion/react'
 import { useState } from 'react'
 import { useFeaturedMix } from '@/lib/useFeaturedMix'
 import { cn } from '@/lib/utils'
-import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
+import {
+  useAudioPlayerActions,
+  useAudioPlayerPlaybackState
+} from '@/store/audioPlayer'
 
 interface PlayButtonProps {
   featuredMix?: SelectAudio | null
@@ -20,7 +23,7 @@ export function StartListeningButton({
 }: PlayButtonProps) {
   const { data: featuredMix, isPending } = useFeaturedMix()
   const { loadTrack, play, pause } = useAudioPlayerActions()
-  const { audioSrc, isPlaying } = useAudioPlayerState()
+  const { audioSrc, isPlaying } = useAudioPlayerPlaybackState()
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
 

@@ -25,17 +25,18 @@ import {
 } from '@gbfm/ui'
 import { Play } from 'lucide-react'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
-import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
+import {
+  useAudioPlayerActions,
+  useAudioPlayerPlaybackState,
+  useAudioPlayerQueueState,
+  useAudioPlayerVisibilityState
+} from '@/store/audioPlayer'
 import { QueueItem } from './QueueItem'
 
 export const QueueColumn = () => {
-  const {
-    queue,
-    currentIndex,
-    nowPlayingContext,
-    thumbnailUrl,
-    isQueueVisible
-  } = useAudioPlayerState()
+  const { nowPlayingContext, thumbnailUrl } = useAudioPlayerPlaybackState()
+  const { queue, currentIndex } = useAudioPlayerQueueState()
+  const { isQueueVisible } = useAudioPlayerVisibilityState()
   const { reorderQueue, toggleQueue } = useAudioPlayerActions()
 
   const sensors = useSensors(
