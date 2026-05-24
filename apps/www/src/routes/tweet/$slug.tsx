@@ -3,6 +3,7 @@ import type { SelectMdxCompiledMicroPost } from '@gbfm/vps/schemas'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft, Edit3, Tag } from 'lucide-react'
 import { MDXRendrr } from '@/components/MDXRendrr'
+import { RouteError } from '@/components/RouteError'
 import { ShareButton } from '@/components/ShareButton'
 import { TweetAuthorRow } from '@/components/TweetAuthorRow'
 import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
@@ -12,6 +13,19 @@ import { generateMicroPostSEO, generateSEOMeta } from '@/lib/seo'
 
 export const Route = createFileRoute('/tweet/$slug')({
   component: TweetPostPage,
+  errorComponent: ({ error }) => (
+    <RouteError
+      error={error}
+      backLink={
+        <Link
+          to='/tweet'
+          className='-mb-px inline-flex items-center gap-1 border-b-2 border-transparent pb-3 text-lg font-black tracking-tight text-muted-foreground transition-colors hover:border-border hover:text-foreground'>
+          <ArrowLeft className='w-4 h-4' />
+          Tweets
+        </Link>
+      }
+    />
+  ),
   loader: async ({ params }) => {
     const post = await fetcher<SelectMdxCompiledMicroPost>(
       `${VPS_BASE_URL}/content/posts/micro/${params.slug}`
@@ -39,7 +53,7 @@ function TweetPostPage() {
   const { data: session } = useSession()
   const user = session?.user
 
-  if (!post) return <div>No data</div>
+  if (!post) return null
 
   const hasMusicEntity = Boolean(post.musicEntityType && post.musicEntityId)
   const titleDuplicatesEntity = hasMusicEntity

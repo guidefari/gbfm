@@ -69,10 +69,9 @@ function EditorialListPage() {
       <div className='max-w-2xl mx-auto px-4 py-8'>
         <PostsNav active='editorial' />
         <div className='animate-pulse space-y-3'>
-          {Array.from({ length: 5 }).map((_, i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: static array.
+          {Array.from({ length: 5 }, (_, i) => `skeleton-${i}`).map((key) => (
             <div
-              key={i}
+              key={key}
               className='flex gap-3 items-start border border-border bg-card p-3 sm:p-4'>
               <div className='h-16 w-16 sm:h-20 sm:w-20 shrink-0 bg-muted/60' />
               <div className='flex-1 min-w-0 space-y-2'>

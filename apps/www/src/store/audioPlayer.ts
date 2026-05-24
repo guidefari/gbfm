@@ -7,19 +7,19 @@ import { devtools, persist } from 'zustand/middleware'
 import { RuntimeClient } from '@/runtime'
 import { track } from '@/services/analytics'
 import {
-  playerReducer,
-  initialPlayerState,
-  readPosition,
-  writePosition,
+  type Creator,
   clearPosition,
+  initialPlayerState,
+  type NowPlayingContext,
+  type PlayerState,
+  playerReducer,
+  type QueueItem,
+  readPosition,
+  setActionHandlers,
   setMetadata,
   setPlaybackState,
   setPositionState,
-  setActionHandlers,
-  type Creator,
-  type NowPlayingContext,
-  type PlayerState,
-  type QueueItem
+  writePosition
 } from '@/services/audio-player'
 
 let lastPersistTime = 0

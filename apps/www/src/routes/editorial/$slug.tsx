@@ -4,6 +4,7 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { ArrowLeft, Tag } from 'lucide-react'
 import * as React from 'react'
 import { MDXRendrr } from '@/components/MDXRendrr'
+import { RouteError } from '@/components/RouteError'
 import { ShareButton } from '@/components/ShareButton'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
@@ -11,6 +12,19 @@ import { generatePostSEO, generateSEOMeta } from '@/lib/seo'
 
 export const Route = createFileRoute('/editorial/$slug')({
   component: EditorialPostPage,
+  errorComponent: ({ error }) => (
+    <RouteError
+      error={error}
+      backLink={
+        <Link
+          to='/editorial'
+          className='inline-flex items-center gap-1 text-sm transition-colors text-muted-foreground hover:text-foreground'>
+          <ArrowLeft className='w-4 h-4' />
+          Editorial
+        </Link>
+      }
+    />
+  ),
   loader: async ({ params }) => {
     const post = await fetcher<SelectMdxCompiledEditorialPost>(
       `${VPS_BASE_URL}/content/posts/editorials/${params.slug}`
@@ -36,7 +50,7 @@ function EditorialPostPage() {
   const { slug } = Route.useParams()
   const { post } = Route.useLoaderData()
 
-  if (!post) return <div>No data</div>
+  if (!post) return null
 
   return (
     <div className='max-w-3xl px-4 py-6 mx-auto'>

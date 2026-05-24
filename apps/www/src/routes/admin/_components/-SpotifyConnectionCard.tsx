@@ -1,4 +1,5 @@
 import { Button, toast } from '@gbfm/ui'
+import * as Data from 'effect/Data'
 import * as Effect from 'effect/Effect'
 import { useCallback, useEffect, useState } from 'react'
 import { env } from '@/env'
@@ -26,6 +27,10 @@ const formatExpiresIn = (expiresAt: number) => {
   if (minutes < 60) return `~${minutes}m`
   return `~${Math.floor(minutes / 60)}h ${minutes % 60}m`
 }
+
+class SpotifyError extends Data.TaggedError('SpotifyError')<{
+  message: string
+}> {}
 
 const toErrorMessage = (caught: unknown): string => {
   if (caught instanceof Error) return caught.message
@@ -68,8 +73,9 @@ export function SpotifyConnectionCard() {
         if (callback.code) {
           const exchanged = await runAppEffect(
             exchangeSpotifyPkceCodeEffect(callback.code).pipe(
-              Effect.catch((e: SpotifyRequestError) =>
-                Effect.fail(new Error(spotifyErrorMessage(e)))
+              Effect.mapError(
+                (e: SpotifyRequestError) =>
+                  new SpotifyError({ message: spotifyErrorMessage(e) })
               )
             )
           )
@@ -82,8 +88,9 @@ export function SpotifyConnectionCard() {
 
         const stored = await runAppEffect(
           getValidSpotifyAuthSessionEffect().pipe(
-            Effect.catch((e: SpotifyRequestError) =>
-              Effect.fail(new Error(spotifyErrorMessage(e)))
+            Effect.mapError(
+              (e: SpotifyRequestError) =>
+                new SpotifyError({ message: spotifyErrorMessage(e) })
             )
           )
         )
@@ -125,7 +132,9 @@ export function SpotifyConnectionCard() {
       getValidSpotifyAuthSessionEffect().pipe(
         Effect.flatMap((stored) => {
           if (!stored)
-            return Effect.fail(new Error('No Spotify session stored.'))
+            return Effect.fail(
+              new SpotifyError({ message: 'No Spotify session stored.' })
+            )
           setSession(stored)
           return Effect.promise(() => loadProfile())
         }),

@@ -8,9 +8,9 @@ import {
   NoopAnalyticsLayer
 } from '@/services/analytics'
 import {
-  AudioStorage,
+  type AudioStorage,
   AudioStorageLive,
-  MediaSessionService,
+  type MediaSessionService,
   MediaSessionServiceLive
 } from '@/services/audio-player'
 

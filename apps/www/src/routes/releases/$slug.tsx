@@ -2,12 +2,14 @@ import type { SelectMdxCompiledRelease } from '@gbfm/vps/schemas'
 import { createFileRoute } from '@tanstack/react-router'
 import * as React from 'react'
 import { LongPost } from '@/components/Layout/LongPost'
+import { RouteError } from '@/components/RouteError'
 import { fetcher, useReleaseBySlug } from '@/lib/http'
 import { generateReleaseSEO, generateSEOMeta } from '@/lib/seo'
 import { useContentStore } from '@/store'
 
 export const Route = createFileRoute('/releases/$slug')({
   component: ReleasePage,
+  errorComponent: ({ error }) => <RouteError error={error} />,
   loader: async ({ params }) => {
     const release = await fetcher<SelectMdxCompiledRelease>(
       `${import.meta.env.VITE_VPS_BASE_URL}/content/releases/${params.slug}`
