@@ -78,8 +78,14 @@ function getClientKey(c: Context): string {
 
 export function rateLimiter(config: Partial<RateLimiterConfig> = {}) {
   const finalConfig = { ...DEFAULT_CONFIG, ...config }
+  const excludedPaths = new Set(['/health', '/health/live', '/health/ready'])
 
   return async (c: Context, next: Next) => {
+    if (excludedPaths.has(c.req.path)) {
+      await next()
+      return
+    }
+
     const keyGenerator = finalConfig.keyGenerator ?? getClientKey
     const key = `${c.req.path}:${keyGenerator(c)}`
 
