@@ -1,3 +1,16 @@
+# [2.46.0](https://github.com/guidefari/gbfm/compare/v2.45.1...v2.46.0) (2026-05-24)
+
+
+### Bug Fixes
+
+* **ci:** gate prod release on docker build ([f9ced51](https://github.com/guidefari/gbfm/commit/f9ced513a5b39efb7c076edfc0e90c3e55b7370a))
+
+
+### Features
+
+* **db-backup:** minimal integrity check ([091ce72](https://github.com/guidefari/gbfm/commit/091ce72b2062f1da7064beb7992a181090e8f495))
+* expire old backups ([9b87da7](https://github.com/guidefari/gbfm/commit/9b87da76135dda7a7aa531528c64018dc1115cf2))
+
 ## [2.45.1](https://github.com/guidefari/gbfm/compare/v2.45.0...v2.45.1) (2026-05-24)
 
 
