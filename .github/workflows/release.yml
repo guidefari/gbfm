@@ -70,9 +70,42 @@ jobs:
       - name: Build www package
         run: cd apps/www && bun run build
 
-  release:
+  build-vps-images:
     runs-on: ubuntu-24.04
     needs: [lint, typecheck, tests, build-www]
+    permissions:
+      actions: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [release, backup-task]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: ./.github/actions/setup-bun-workspace
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build apps/vps image (${{ matrix.target }})
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/vps/Dockerfile
+          target: ${{ matrix.target }}
+          push: false
+          load: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  release:
+    runs-on: ubuntu-24.04
+    needs: [lint, typecheck, tests, build-www, build-vps-images]
     if: github.event_name == 'push' && github.ref == 'refs/heads/prod'
     permissions:
       actions: write

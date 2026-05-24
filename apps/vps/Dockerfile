@@ -9,17 +9,21 @@ COPY package.json ./
 COPY apps/vps/package.json ./apps/vps/
 COPY packages/email/package.json ./packages/email/
 COPY packages/core/package.json ./packages/core/
+COPY packages/theme/package.json ./packages/theme/
 
 RUN bun install --omit dev --ignore-scripts
 
 COPY packages/email/src ./packages/email/src
 COPY packages/email/emails ./packages/email/emails
 COPY packages/core/src ./packages/core/src
+COPY packages/theme/src ./packages/theme/src
+COPY packages/theme/styles ./packages/theme/styles
 COPY apps/vps/src ./apps/vps/src
 COPY apps/vps/scripts ./apps/vps/scripts
 COPY apps/vps/package.json apps/vps/tsconfig.json ./apps/vps/
 COPY packages/email/package.json packages/email/tsconfig.json ./packages/email/
 COPY packages/core/package.json packages/core/tsconfig.json ./packages/core/
+COPY packages/theme/package.json packages/theme/tsconfig.json ./packages/theme/
 COPY tsconfig.json ./
 
 # --- Shared production base ---
@@ -30,6 +34,7 @@ COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=deps /usr/src/app/package.json ./package.json
 COPY --from=deps /usr/src/app/packages/email ./packages/email
 COPY --from=deps /usr/src/app/packages/core ./packages/core
+COPY --from=deps /usr/src/app/packages/theme ./packages/theme
 COPY --from=deps /usr/src/app/apps/vps ./apps/vps
 COPY --from=deps /usr/src/app/tsconfig.json ./tsconfig.json
 
@@ -53,6 +58,7 @@ COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=deps /usr/src/app/package.json ./package.json
 COPY --from=deps /usr/src/app/packages/email ./packages/email
 COPY --from=deps /usr/src/app/packages/core ./packages/core
+COPY --from=deps /usr/src/app/packages/theme ./packages/theme
 COPY --from=deps /usr/src/app/apps/vps ./apps/vps
 COPY --from=deps /usr/src/app/tsconfig.json ./tsconfig.json
 
