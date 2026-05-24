@@ -4,9 +4,6 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 on:
-  pull_request:
-    branches:
-      - prod
   push:
     branches:
       - prod
@@ -17,52 +14,65 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  quality-checks:
+  lint:
     runs-on: ubuntu-24.04
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: ".nvmrc"
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Cache Bun dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-bun-
-
-      - name: Install dependencies
-        run: bun install
+      - uses: ./.github/actions/setup-bun-workspace
 
       - name: Run Biome checks
         run: bun run biome:ci
 
-      - name: Type check all packages
-        run: bun typecheck
+  typecheck:
+    runs-on: ubuntu-24.04
 
-      - name: Run vps integration tests
-        run: cd apps/vps && bun run test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: ./.github/actions/setup-bun-workspace
+
+      - name: Type check all packages
+        run: bun run typecheck
+
+  tests:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: ./.github/actions/setup-bun-workspace
+
+      - name: Run unit and integration tests
+        run: bun run test
+
+  build-www:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: ./.github/actions/setup-bun-workspace
 
       - name: Build www package
         run: cd apps/www && bun run build
 
   release:
     runs-on: ubuntu-24.04
-    needs: [quality-checks]
+    needs: [lint, typecheck, tests, build-www]
     if: github.event_name == 'push' && github.ref == 'refs/heads/prod'
     permissions:
       actions: write
@@ -78,18 +88,7 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: ".nvmrc"
-
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: Install dependencies
-        run: bun install
+      - uses: ./.github/actions/setup-bun-workspace
 
       - name: Release
         id: release
@@ -97,12 +96,3 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           bunx semantic-release
-
-      - name: Trigger Prod Deployment
-        if: steps.release.outcome == 'success'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          LATEST_TAG=$(git describe --tags --abbrev=0)
-          gh workflow run deploy.yml --ref="$LATEST_TAG"
-          echo "🚀 Triggered deployment for tag: $LATEST_TAG"

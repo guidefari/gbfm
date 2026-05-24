@@ -28,6 +28,7 @@ on:
 
 concurrency:
   group: ${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -64,20 +65,7 @@ jobs:
           ref: ${{ steps.deployment-ref.outputs.ref }}
           fetch-depth: 0
 
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: ".nvmrc"
-
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
+      - uses: ./.github/actions/setup-bun-workspace
 
       - name: Configure Production AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -85,9 +73,6 @@ jobs:
           role-to-assume: ${{secrets.AWS_ROLE_ARN}}
           role-duration-seconds: 3600 #adjust as needed for your build time
           aws-region: us-east-1
-
-      - name: deps
-        run: bun install
 
       # SST Ion manages its own Pulumi binaries. The system-wide ones pre-installed in
       # the GH Actions runner can be outdated and cause "flag provided but not defined: -root" errors.
