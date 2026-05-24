@@ -4,9 +4,9 @@
     "./schemas": "./src/db/exports.ts"
   },
   "scripts": {
-    "dev": "bun run --hot src/index.ts",
-    "dev:proddb": "DB_STAGE=prod bun run --hot src/index.ts",
-    "start": "bun run src/index.ts",
+    "dev": "bun --hot --preload ./src/instrument.ts src/index.ts",
+    "dev:proddb": "DB_STAGE=prod bun --hot --preload ./src/instrument.ts src/index.ts",
+    "start": "bun --preload ./src/instrument.ts src/index.ts",
     "test": "TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock DOCKER_HOST=unix:///var/run/docker.sock vitest run",
     "test:watch": "TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock DOCKER_HOST=unix:///var/run/docker.sock vitest",
     "typecheck": "tsgo --noEmit",

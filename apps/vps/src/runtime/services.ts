@@ -1,5 +1,4 @@
 import { Layer } from 'effect'
-import { OtlpLive } from '@/lib/otel'
 import { DatabaseServiceLive } from '@/services/database.service'
 
 export {
@@ -69,12 +68,4 @@ const ServicesLayer = Layer.mergeAll(
   MusicEntityServiceLive.pipe(Layer.provide(BaseServicesLayer))
 )
 
-export const AppLayer = ServicesLayer.pipe(
-  Layer.provide(
-    OtlpLive.pipe(
-      Layer.provide(ConfigServiceLive),
-      Layer.provide(SentryClientLive)
-    )
-  ),
-  Layer.provide(AppLoggerLive)
-)
+export const AppLayer = ServicesLayer.pipe(Layer.provide(AppLoggerLive))

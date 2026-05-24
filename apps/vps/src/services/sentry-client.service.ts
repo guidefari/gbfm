@@ -26,16 +26,25 @@ export const SentryClientServiceLive = Layer.effect(
       return { client: undefined, enabled: false }
     }
 
+    const existingClient = Sentry.getClient()
+    if (existingClient) {
+      yield* Effect.sync(() => {
+        console.warn(
+          `[sentry] client already initialized env=${sentry.environment}`
+        )
+      })
+      return { client: existingClient, enabled: true }
+    }
+
     const debugSentry = process.env.SENTRY_DEBUG === 'true'
     const client = yield* Effect.acquireRelease(
       Effect.sync(() =>
         Sentry.init({
           dsn: sentry.dsn,
           environment: sentry.environment,
-          tracesSampleRate: sentry.environment === 'production' ? 0.1 : 1.0,
+          tracesSampleRate: 1.0,
           sendDefaultPii: false,
           enableLogs: true,
-          skipOpenTelemetrySetup: true,
           debug: debugSentry
         })
       ),
@@ -46,9 +55,9 @@ export const SentryClientServiceLive = Layer.effect(
         })
     )
 
-    yield* Effect.log(
-      `[sentry] init env=${sentry.environment} traces=${sentry.environment === 'production' ? 0.1 : 1.0}`
-    )
+    yield* Effect.sync(() => {
+      console.warn(`[sentry] init env=${sentry.environment} traces=1`)
+    })
 
     if (debugSentry) {
       yield* Effect.sync(() => {
