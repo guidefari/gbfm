@@ -1,5 +1,5 @@
-import { dark, light, studio, type SemanticTokens } from './tokens/shadcn'
 import { brand } from './tokens/brand'
+import { dark, light, type SemanticTokens, studio } from './tokens/shadcn'
 
 export function toKebab(s: string): string {
   if (s.includes('-')) return s

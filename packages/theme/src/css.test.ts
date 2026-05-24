@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest'
-import { toKebab, toVars, semanticToVars, generateCSS } from './css'
-import { dark, light, studio } from './tokens/shadcn'
+import { describe, expect, it } from 'vitest'
+import { generateCSS, semanticToVars, toKebab, toVars } from './css'
 import { brand } from './tokens/brand'
+import { dark, light, studio } from './tokens/shadcn'
 
 describe('toKebab', () => {
   it('converts camelCase to kebab-case', () => {
