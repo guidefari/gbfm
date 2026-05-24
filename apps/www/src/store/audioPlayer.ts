@@ -1,123 +1,37 @@
 import { isFeatureEnabled } from '@gbfm/core/feature-flags'
 import { toast } from '@gbfm/ui'
 import type { SelectAudio, SelectMdxCompiledAudio } from '@gbfm/vps/schemas'
+import * as Effect from 'effect/Effect'
 import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 import { RuntimeClient } from '@/runtime'
 import { track } from '@/services/analytics'
+import {
+  playerReducer,
+  initialPlayerState,
+  readPosition,
+  writePosition,
+  clearPosition,
+  setMetadata,
+  setPlaybackState,
+  setPositionState,
+  setActionHandlers,
+  type Creator,
+  type NowPlayingContext,
+  type PlayerState,
+  type QueueItem
+} from '@/services/audio-player'
 
 let lastPersistTime = 0
 const PERSIST_INTERVAL = 5000
 
-const hasMediaSession = () =>
-  typeof navigator !== 'undefined' && 'mediaSession' in navigator
-
-const setMediaSessionMetadata = (
-  title: string,
-  creators: Creator[] | undefined,
-  thumbnailUrl: string
-) => {
-  if (!hasMediaSession()) return
-
-  const artist = creators?.map((c) => c.name).join(', ') ?? ''
-  const artwork = thumbnailUrl ? [{ src: thumbnailUrl }] : []
-
-  navigator.mediaSession.metadata = new MediaMetadata({
-    title,
-    artist,
-    artwork
-  })
-}
-
-const setMediaSessionPlaybackState = (playing: boolean) => {
-  if (!hasMediaSession()) return
-  navigator.mediaSession.playbackState = playing ? 'playing' : 'paused'
-}
-
-const setMediaSessionPositionState = (
-  duration: number,
-  currentTime: number
-) => {
-  if (!hasMediaSession() || !duration || !Number.isFinite(duration)) return
-  try {
-    navigator.mediaSession.setPositionState({
-      duration,
-      playbackRate: 1,
-      position: Math.min(currentTime, duration)
-    })
-  } catch {
-    // Ignore errors from invalid state
-  }
-}
-
-const persistTimeToStorage = (time: number) => {
-  try {
-    const stored = localStorage.getItem('audio-player-store')
-    if (stored) {
-      const parsed = JSON.parse(stored)
-      parsed.state.currentTime = time
-      localStorage.setItem('audio-player-store', JSON.stringify(parsed))
-    }
-  } catch {
-    // Ignore storage errors
-  }
-}
-
-export type Creator = NonNullable<SelectMdxCompiledAudio['creators']>[number]
-
-interface NowPlayingContext {
-  url: string
-  title: string
-  slug?: string
-  creators?: Creator[]
-}
-
-interface QueueItem {
-  queueId: string // Unique queue entry ID
-  id: string // Original track ID
-  title: string
-  url: string
-  thumbnailUrl: string
-  slug?: string
-  addedAt: number
-  creators?: Creator[]
-}
-
-interface AudioPlayerState {
-  // Audio element ref (not persisted)
-  audioRef: HTMLAudioElement | null
-
-  // Playback state
-  isPlaying: boolean
-  progress: number
-  currentTime: number
-  duration: number
-
-  // Volume state (persisted)
-  volume: number // 0-100
-  isMuted: boolean
-
-  // Track info (persisted)
-  audioSrc: string | null
-  thumbnailUrl: string
-  nowPlayingContext: NowPlayingContext
-  currentTrackId: string | null
-
-  // Queue state (persisted)
-  queue: QueueItem[]
-  currentIndex: number
-  isQueueVisible: boolean
-
-  // State management
-  isInitialized: boolean
-  isFullscreenVisible: boolean
-}
+const pageUrl = () =>
+  typeof window !== 'undefined' ? window.location.pathname : '/'
 
 interface AudioPlayerActions {
-  // Audio ref management
+  audioRef: HTMLAudioElement | null
   setAudioRef: (ref: HTMLAudioElement | null) => void
 
-  // Playback controls
   play: (title?: string) => void
   pause: () => void
   togglePlayPause: () => void
@@ -125,11 +39,9 @@ interface AudioPlayerActions {
   jumpBackward: (seconds?: number) => void
   setTimeUsingPercentage: (percentage: number) => void
 
-  // Volume controls
   setVolume: (volume: number) => void
   toggleMute: () => void
 
-  // Track management
   loadTrack: (
     src: string,
     thumbnailUrl: string,
@@ -147,7 +59,6 @@ interface AudioPlayerActions {
     slug?: string
   ) => void
 
-  // Queue management
   addToQueue: (mix: SelectAudio | SelectMdxCompiledAudio) => void
   removeFromQueue: (itemId: string) => void
   clearQueue: () => void
@@ -159,541 +70,524 @@ interface AudioPlayerActions {
   toggleFullscreen: () => void
   closeFullscreen: () => void
 
-  // State updates (called by audio events)
   updateProgress: () => void
   updatePlayingState: (playing: boolean) => void
   updateNowPlaying: (context: Partial<NowPlayingContext>) => void
 
-  // Initialization
   initialize: () => void
 }
 
-type AudioPlayerStore = AudioPlayerState & AudioPlayerActions
-
-const defaultNowPlayingContext: NowPlayingContext = {
-  url: '/',
-  title: 'Nothing playing, yet'
-}
+type AudioPlayerStore = PlayerState & AudioPlayerActions
 
 export const useAudioPlayerStore = create<AudioPlayerStore>()(
   devtools(
     persist(
-      (set, get) => ({
-        // State
-        audioRef: null,
-        isPlaying: false,
-        progress: 0,
-        currentTime: 0,
-        duration: 0,
-        volume: 100, // Default to 100%
-        isMuted: false,
-        audioSrc: null,
-        thumbnailUrl: '',
-        nowPlayingContext: defaultNowPlayingContext,
-        currentTrackId: null,
+      (set, get) => {
+        const send = (
+          action: Parameters<typeof playerReducer>[1],
+          label: string
+        ) => set((state) => playerReducer(state, action), false, label)
 
-        // Queue state
-        queue: [],
-        currentIndex: -1,
-        isQueueVisible: false,
+        return {
+          ...initialPlayerState,
+          audioRef: null,
 
-        isInitialized: false,
-        isFullscreenVisible: false,
+          setAudioRef: (ref) => {
+            set(() => ({ audioRef: ref }), false, 'audioPlayer/setAudioRef')
 
-        // Actions
-        setAudioRef: (ref) => {
-          set({ audioRef: ref }, false, 'audioPlayer/setAudioRef')
+            if (!ref) return
 
-          if (ref) {
             ref.onended = () => {
-              const { queue, currentIndex } = get()
+              const {
+                queue,
+                currentIndex,
+                currentTrackId,
+                nowPlayingContext,
+                duration
+              } = get()
+
+              void RuntimeClient.runPromise(
+                Effect.gen(function* () {
+                  yield* setPlaybackState('none')
+
+                  if (currentTrackId) {
+                    yield* clearPosition(currentTrackId)
+                  }
+
+                  yield* track('audio_completed', {
+                    trackId: currentTrackId,
+                    title: nowPlayingContext.title,
+                    duration
+                  })
+                })
+              )
 
               if (queue.length > 0 && currentIndex < queue.length - 1) {
                 get().playNext()
               } else {
-                get().pause()
+                send({ type: 'TRACK_ENDED' }, 'audioPlayer/trackEnded')
               }
             }
 
-            ref.ontimeupdate = () => {
-              get().updateProgress()
-            }
+            ref.ontimeupdate = () => get().updateProgress()
 
             ref.onloadedmetadata = () => {
-              set(
-                { duration: ref.duration || 0 },
-                false,
+              send(
+                {
+                  type: 'UPDATE_PROGRESS',
+                  currentTime: ref.currentTime,
+                  duration: ref.duration || 0
+                },
                 'audioPlayer/updateDuration'
               )
-              setMediaSessionPositionState(ref.duration || 0, ref.currentTime)
+              void RuntimeClient.runPromise(
+                setPositionState(ref.duration || 0, ref.currentTime)
+              )
             }
 
-            const handleVisibilityChange = () => {
+            ref.onerror = () => {
+              const { currentTrackId, nowPlayingContext } = get()
+              void RuntimeClient.runPromise(
+                track('audio_error', {
+                  trackId: currentTrackId,
+                  title: nowPlayingContext.title,
+                  errorMessage: ref.error?.message ?? 'unknown'
+                })
+              )
+            }
+
+            document.addEventListener('visibilitychange', () => {
               if (document.hidden) {
-                const { currentTime } = get()
-                if (currentTime > 0) {
-                  persistTimeToStorage(currentTime)
+                const { currentTime, currentTrackId } = get()
+                if (currentTime > 0 && currentTrackId) {
+                  void RuntimeClient.runPromise(
+                    writePosition(currentTrackId, currentTime)
+                  )
                   lastPersistTime = Date.now()
                 }
               }
-            }
+            })
 
-            document.addEventListener(
-              'visibilitychange',
-              handleVisibilityChange
-            )
-
-            if (hasMediaSession()) {
-              navigator.mediaSession.setActionHandler('play', () =>
-                get().play()
-              )
-              navigator.mediaSession.setActionHandler('pause', () =>
-                get().pause()
-              )
-              navigator.mediaSession.setActionHandler(
-                'seekbackward',
-                (details) => get().jumpBackward(details.seekOffset ?? 15)
-              )
-              navigator.mediaSession.setActionHandler(
-                'seekforward',
-                (details) => get().jumpForward(details.seekOffset ?? 30)
-              )
-              navigator.mediaSession.setActionHandler('previoustrack', () =>
-                get().playPrevious()
-              )
-              navigator.mediaSession.setActionHandler('nexttrack', () =>
-                get().playNext()
-              )
-              navigator.mediaSession.setActionHandler('seekto', (details) => {
-                const { audioRef: ar } = get()
-                if (ar && details.seekTime != null) {
-                  ar.currentTime = details.seekTime
+            void RuntimeClient.runPromise(
+              setActionHandlers({
+                onPlay: () => get().play(),
+                onPause: () => get().pause(),
+                onSeekBackward: (offset) => get().jumpBackward(offset),
+                onSeekForward: (offset) => get().jumpForward(offset),
+                onPreviousTrack: () => get().playPrevious(),
+                onNextTrack: () => get().playNext(),
+                onSeekTo: (time) => {
+                  const { audioRef: ar } = get()
+                  if (ar) ar.currentTime = time
                 }
               })
-            }
+            )
 
             if (!get().isInitialized) {
               get().initialize()
             }
-          }
-        },
+          },
 
-        play: (title) => {
-          const { audioRef, nowPlayingContext } = get()
-          if (!audioRef) return
+          play: (title) => {
+            const { audioRef } = get()
+            if (!audioRef) return
 
-          audioRef.play()
-          set({ isPlaying: true }, false, 'audioPlayer/play')
-          setMediaSessionPlaybackState(true)
+            void audioRef.play().catch((err: unknown) => {
+              void RuntimeClient.runPromise(
+                track('audio_error', {
+                  trackId: get().currentTrackId,
+                  title: get().nowPlayingContext.title,
+                  errorMessage:
+                    err instanceof Error ? err.message : 'play() rejected'
+                })
+              )
+            })
 
-          if (title) {
-            set(
-              {
-                nowPlayingContext: {
-                  ...nowPlayingContext,
-                  title,
-                  url:
-                    typeof window !== 'undefined'
-                      ? window.location.pathname
-                      : '/'
+            send(
+              { type: 'PLAY', title, pageUrl: pageUrl() },
+              'audioPlayer/play'
+            )
+            void RuntimeClient.runPromise(setPlaybackState('playing'))
+          },
+
+          pause: () => {
+            const {
+              audioRef,
+              currentTime,
+              currentTrackId,
+              nowPlayingContext,
+              progress
+            } = get()
+            if (!audioRef) return
+
+            audioRef.pause()
+            send({ type: 'PAUSE' }, 'audioPlayer/pause')
+
+            void RuntimeClient.runPromise(
+              Effect.gen(function* () {
+                yield* setPlaybackState('paused')
+
+                if (currentTime > 0 && currentTrackId) {
+                  yield* writePosition(currentTrackId, currentTime)
                 }
+
+                yield* track('audio_paused', {
+                  trackId: currentTrackId,
+                  title: nowPlayingContext.title,
+                  progressPercent: progress,
+                  currentTime
+                })
+              })
+            )
+            lastPersistTime = Date.now()
+          },
+
+          togglePlayPause: () => {
+            const { isPlaying } = get()
+            if (isPlaying) get().pause()
+            else get().play()
+          },
+
+          jumpForward: (seconds = 30) => {
+            const { audioRef } = get()
+            if (!audioRef?.src) return
+            const from = audioRef.currentTime
+            audioRef.currentTime += seconds
+            void RuntimeClient.runPromise(
+              track('audio_seek', {
+                trackId: get().currentTrackId,
+                fromTime: from,
+                toTime: audioRef.currentTime,
+                method: 'keyboard'
+              })
+            )
+          },
+
+          jumpBackward: (seconds = 15) => {
+            const { audioRef } = get()
+            if (!audioRef?.src) return
+            const from = audioRef.currentTime
+            audioRef.currentTime -= seconds
+            void RuntimeClient.runPromise(
+              track('audio_seek', {
+                trackId: get().currentTrackId,
+                fromTime: from,
+                toTime: audioRef.currentTime,
+                method: 'keyboard'
+              })
+            )
+          },
+
+          setTimeUsingPercentage: (percentage) => {
+            const { audioRef } = get()
+            if (!audioRef) return
+            const from = audioRef.currentTime
+            const newTime = (percentage / 100) * audioRef.duration
+            audioRef.currentTime = newTime
+            send(
+              { type: 'SET_TIME', percentage, duration: audioRef.duration },
+              'audioPlayer/setTime'
+            )
+            void RuntimeClient.runPromise(
+              track('audio_seek', {
+                trackId: get().currentTrackId,
+                fromTime: from,
+                toTime: newTime,
+                method: 'scrub'
+              })
+            )
+          },
+
+          setVolume: (volume) => {
+            const { audioRef } = get()
+            if (!audioRef) return
+            const clamped = Math.max(0, Math.min(100, volume))
+            audioRef.volume = clamped / 100
+            send(
+              { type: 'SET_VOLUME', volume: clamped },
+              'audioPlayer/setVolume'
+            )
+          },
+
+          toggleMute: () => {
+            const { audioRef, isMuted, volume } = get()
+            if (!audioRef) return
+            audioRef.volume = isMuted ? volume / 100 : 0
+            send({ type: 'TOGGLE_MUTE' }, 'audioPlayer/toggleMute')
+          },
+
+          loadTrack: (src, thumbnailUrl, title, trackId, creators, slug) => {
+            const {
+              audioRef,
+              isPlaying,
+              audioSrc,
+              currentTime,
+              currentTrackId
+            } = get()
+            if (!audioRef) return
+
+            if (!src) {
+              toast({
+                title: 'No preview available',
+                description: "There's no preview audio for this track",
+                variant: 'destructive'
+              })
+              return
+            }
+
+            if (src === audioSrc && !isPlaying) {
+              get().play(title)
+              return
+            }
+
+            if (src === audioSrc && isPlaying) {
+              get().pause()
+              return
+            }
+
+            if (currentTrackId && currentTime > 0) {
+              void RuntimeClient.runPromise(
+                writePosition(currentTrackId, currentTime)
+              )
+            }
+
+            audioRef.src = src
+            send(
+              {
+                type: 'LOAD_TRACK',
+                src,
+                thumbnailUrl,
+                title,
+                trackId,
+                creators,
+                slug,
+                pageUrl: pageUrl()
               },
+              'audioPlayer/loadTrack'
+            )
+
+            void RuntimeClient.runPromise(
+              Effect.gen(function* () {
+                yield* setMetadata(
+                  title,
+                  creators?.map((c) => c.name) ?? [],
+                  thumbnailUrl
+                )
+
+                yield* track('audio_played', {
+                  trackId: trackId ?? null,
+                  title,
+                  slug: slug ?? null,
+                  pageUrl: pageUrl()
+                })
+              })
+            )
+
+            get().play(title)
+          },
+
+          preloadTrack: (src, thumbnailUrl, title, trackId, creators, slug) => {
+            const { audioRef } = get()
+            if (!audioRef || !src) return
+
+            audioRef.src = src
+            send(
+              {
+                type: 'PRELOAD_TRACK',
+                src,
+                thumbnailUrl,
+                title,
+                trackId,
+                creators,
+                slug,
+                pageUrl: pageUrl()
+              },
+              'audioPlayer/preloadTrack'
+            )
+          },
+
+          updateProgress: () => {
+            const { audioRef } = get()
+            if (!audioRef) return
+
+            const now = Date.now()
+            send(
+              {
+                type: 'UPDATE_PROGRESS',
+                currentTime: audioRef.currentTime,
+                duration: audioRef.duration || 0
+              },
+              'audioPlayer/updateProgress'
+            )
+
+            if (now - lastPersistTime >= PERSIST_INTERVAL) {
+              lastPersistTime = now
+              const { currentTrackId } = get()
+              if (currentTrackId) {
+                void RuntimeClient.runPromise(
+                  Effect.gen(function* () {
+                    yield* writePosition(currentTrackId, audioRef.currentTime)
+                    yield* setPositionState(
+                      audioRef.duration || 0,
+                      audioRef.currentTime
+                    )
+                  })
+                )
+              }
+            }
+          },
+
+          updatePlayingState: (playing) => {
+            send(
+              { type: 'UPDATE_PLAYING_STATE', playing },
+              'audioPlayer/updatePlayingState'
+            )
+          },
+
+          updateNowPlaying: (context) => {
+            set(
+              (state) => ({
+                nowPlayingContext: { ...state.nowPlayingContext, ...context }
+              }),
               false,
               'audioPlayer/updateNowPlaying'
             )
-          }
-        },
+          },
 
-        pause: () => {
-          const { audioRef, currentTime } = get()
-          if (!audioRef) return
+          initialize: () => {
+            const { audioRef, audioSrc, volume, isMuted, currentTrackId } =
+              get()
+            if (!audioRef) return
 
-          audioRef.pause()
-          set({ isPlaying: false }, false, 'audioPlayer/pause')
-          setMediaSessionPlaybackState(false)
-          if (currentTime > 0) {
-            persistTimeToStorage(currentTime)
-            lastPersistTime = Date.now()
-          }
-        },
+            audioRef.volume = isMuted ? 0 : volume / 100
 
-        togglePlayPause: () => {
-          const { isPlaying } = get()
-          if (isPlaying) {
-            get().pause()
-          } else {
-            get().play()
-          }
-        },
+            if (audioSrc) {
+              audioRef.src = audioSrc
 
-        jumpForward: (seconds = 30) => {
-          const { audioRef } = get()
-          if (!audioRef?.src) return
-
-          audioRef.currentTime += seconds
-        },
-
-        jumpBackward: (seconds = 15) => {
-          const { audioRef } = get()
-          if (!audioRef?.src) return
-
-          audioRef.currentTime -= seconds
-        },
-
-        setTimeUsingPercentage: (percentage) => {
-          const { audioRef } = get()
-          if (!audioRef) return
-
-          const newTime = (percentage / 100) * audioRef.duration
-          audioRef.currentTime = newTime
-          set(
-            {
-              progress: percentage,
-              currentTime: newTime
-            },
-            false,
-            'audioPlayer/setTime'
-          )
-        },
-
-        setVolume: (volume) => {
-          const { audioRef } = get()
-          if (!audioRef) return
-
-          // Clamp volume between 0 and 100
-          const clampedVolume = Math.max(0, Math.min(100, volume))
-
-          // Set HTML audio volume (0-1 range)
-          audioRef.volume = clampedVolume / 100
-
-          // Update state
-          set(
-            {
-              volume: clampedVolume,
-              isMuted: clampedVolume === 0
-            },
-            false,
-            'audioPlayer/setVolume'
-          )
-        },
-
-        toggleMute: () => {
-          const { audioRef, isMuted, volume } = get()
-          if (!audioRef) return
-
-          if (isMuted) {
-            // Unmute: restore previous volume
-            audioRef.volume = volume / 100
-            set({ isMuted: false }, false, 'audioPlayer/unmute')
-          } else {
-            // Mute: set volume to 0 but keep volume state
-            audioRef.volume = 0
-            set({ isMuted: true }, false, 'audioPlayer/mute')
-          }
-        },
-
-        loadTrack: (src, thumbnailUrl, title, trackId, creators, slug) => {
-          const { audioRef, isPlaying, audioSrc, currentTime } = get()
-          if (!audioRef) return
-
-          if (!src) {
-            toast({
-              title: 'No preview available',
-              description: "There's no preview audio for this track",
-              variant: 'destructive'
-            })
-            return
-          }
-
-          if (src === audioSrc && !isPlaying) {
-            get().play(title)
-            return
-          }
-
-          if (src === audioSrc && isPlaying) {
-            get().pause()
-            return
-          }
-
-          if (audioSrc && currentTime > 0) {
-            persistTimeToStorage(currentTime)
-          }
-
-          audioRef.src = src
-          set(
-            {
-              audioSrc: src,
-              thumbnailUrl,
-              nowPlayingContext: {
-                title,
-                url:
-                  typeof window !== 'undefined'
-                    ? window.location.pathname
-                    : '/',
-                slug,
-                creators
-              },
-              currentTrackId: trackId || null,
-              currentTime: 0,
-              progress: 0
-            },
-            false,
-            'audioPlayer/loadTrack'
-          )
-
-          setMediaSessionMetadata(title, creators, thumbnailUrl)
-
-          void RuntimeClient.runPromise(
-            track('audio_played', {
-              trackId: trackId ?? null,
-              title,
-              slug: slug ?? null,
-              pageUrl:
-                typeof window !== 'undefined' ? window.location.pathname : null
-            })
-          )
-
-          get().play(title)
-        },
-
-        preloadTrack: (src, thumbnailUrl, title, trackId, creators, slug) => {
-          const { audioRef } = get()
-          if (!audioRef || !src) return
-
-          audioRef.src = src
-          set(
-            {
-              audioSrc: src,
-              thumbnailUrl,
-              nowPlayingContext: {
-                title,
-                url:
-                  typeof window !== 'undefined'
-                    ? window.location.pathname
-                    : '/',
-                slug,
-                creators
-              },
-              currentTrackId: trackId || null,
-              currentTime: 0,
-              progress: 0
-            },
-            false,
-            'audioPlayer/preloadTrack'
-          )
-        },
-
-        updateProgress: () => {
-          const { audioRef } = get()
-          if (!audioRef) return
-
-          const progress = (audioRef.currentTime / audioRef.duration) * 100 || 0
-          const now = Date.now()
-
-          set(
-            {
-              progress,
-              currentTime: audioRef.currentTime,
-              duration: audioRef.duration || 0
-            },
-            false,
-            'audioPlayer/updateProgress'
-          )
-
-          if (now - lastPersistTime >= PERSIST_INTERVAL) {
-            lastPersistTime = now
-            persistTimeToStorage(audioRef.currentTime)
-            setMediaSessionPositionState(
-              audioRef.duration || 0,
-              audioRef.currentTime
-            )
-          }
-        },
-
-        updatePlayingState: (playing) => {
-          set({ isPlaying: playing }, false, 'audioPlayer/updatePlayingState')
-        },
-
-        updateNowPlaying: (context) => {
-          set(
-            (state) => ({
-              nowPlayingContext: { ...state.nowPlayingContext, ...context }
-            }),
-            false,
-            'audioPlayer/updateNowPlaying'
-          )
-        },
-
-        initialize: () => {
-          const { audioRef, audioSrc, volume, isMuted, currentTime } = get()
-          if (!audioRef) return
-
-          audioRef.volume = isMuted ? 0 : volume / 100
-
-          if (audioSrc) {
-            audioRef.src = audioSrc
-            if (currentTime > 0) {
-              audioRef.addEventListener(
-                'loadedmetadata',
-                () => {
-                  audioRef.currentTime = currentTime
-                },
-                { once: true }
-              )
+              if (currentTrackId) {
+                void RuntimeClient.runPromise(
+                  Effect.gen(function* () {
+                    const savedTime = yield* readPosition(currentTrackId)
+                    if (savedTime && savedTime > 0) {
+                      audioRef.addEventListener(
+                        'loadedmetadata',
+                        () => {
+                          audioRef.currentTime = savedTime
+                        },
+                        { once: true }
+                      )
+                    }
+                  })
+                )
+              }
             }
+
+            send({ type: 'SET_INITIALIZED' }, 'audioPlayer/initialize')
+          },
+
+          addToQueue: (mix) => {
+            if (!isFeatureEnabled('ui.queue')) return
+            send({ type: 'ADD_TO_QUEUE', mix }, 'audioPlayer/addToQueue')
+            void RuntimeClient.runPromise(
+              track('audio_queue_action', {
+                action: 'add',
+                trackId: mix.id,
+                queueLength: get().queue.length
+              })
+            )
+          },
+
+          removeFromQueue: (queueId) => {
+            send(
+              { type: 'REMOVE_FROM_QUEUE', queueId },
+              'audioPlayer/removeFromQueue'
+            )
+            void RuntimeClient.runPromise(
+              track('audio_queue_action', {
+                action: 'remove',
+                queueLength: get().queue.length
+              })
+            )
+          },
+
+          clearQueue: () => {
+            send({ type: 'CLEAR_QUEUE' }, 'audioPlayer/clearQueue')
+            void RuntimeClient.runPromise(
+              track('audio_queue_action', {
+                action: 'clear',
+                queueLength: 0
+              })
+            )
+          },
+
+          reorderQueue: (fromIndex, toIndex) => {
+            send(
+              { type: 'REORDER_QUEUE', fromIndex, toIndex },
+              'audioPlayer/reorderQueue'
+            )
+            void RuntimeClient.runPromise(
+              track('audio_queue_action', {
+                action: 'reorder',
+                queueLength: get().queue.length
+              })
+            )
+          },
+
+          playFromQueue: (index) => {
+            const { queue } = get()
+            if (index < 0 || index >= queue.length) return
+            const item = queue[index]
+            send(
+              { type: 'SET_CURRENT_INDEX', index },
+              'audioPlayer/setCurrentIndex'
+            )
+            void RuntimeClient.runPromise(
+              track('audio_queue_action', {
+                action: 'play_from',
+                trackId: item.id,
+                queueLength: queue.length
+              })
+            )
+            get().loadTrack(
+              item.url,
+              item.thumbnailUrl || '',
+              item.title,
+              item.id,
+              item.creators,
+              item.slug
+            )
+          },
+
+          playNext: () => {
+            const { queue, currentIndex } = get()
+            if (queue.length === 0) return
+            const nextIndex = currentIndex + 1
+            if (nextIndex >= queue.length) return
+            get().playFromQueue(nextIndex)
+          },
+
+          playPrevious: () => {
+            const { queue, currentIndex } = get()
+            if (queue.length === 0) return
+            const prevIndex =
+              currentIndex - 1 < 0 ? queue.length - 1 : currentIndex - 1
+            get().playFromQueue(prevIndex)
+          },
+
+          toggleQueue: () => {
+            if (!isFeatureEnabled('ui.queue')) return
+            send({ type: 'TOGGLE_QUEUE' }, 'audioPlayer/toggleQueue')
+          },
+
+          toggleFullscreen: () => {
+            send({ type: 'TOGGLE_FULLSCREEN' }, 'audioPlayer/toggleFullscreen')
+          },
+
+          closeFullscreen: () => {
+            send({ type: 'CLOSE_FULLSCREEN' }, 'audioPlayer/closeFullscreen')
           }
-
-          set({ isInitialized: true }, false, 'audioPlayer/initialize')
-        },
-
-        // Queue management actions
-        addToQueue: (mix) => {
-          if (!isFeatureEnabled('ui.queue')) return
-
-          const queueItem: QueueItem = {
-            queueId: `queue-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            id: mix.id,
-            title: mix.title,
-            url: mix.url,
-            thumbnailUrl: mix.thumbnailUrl || '',
-            slug: mix.slug,
-            addedAt: Date.now(),
-            creators: 'creators' in mix ? mix.creators : undefined
-          }
-
-          set(
-            (state) => ({ queue: [...state.queue, queueItem] }),
-            false,
-            'audioPlayer/addToQueue'
-          )
-        },
-
-        removeFromQueue: (queueId) => {
-          set(
-            (state) => {
-              const newQueue = state.queue.filter(
-                (item) => item.queueId !== queueId
-              )
-              let newCurrentIndex = state.currentIndex
-
-              // Adjust current index if needed
-              const removedIndex = state.queue.findIndex(
-                (item) => item.queueId === queueId
-              )
-              if (removedIndex !== -1 && removedIndex <= state.currentIndex) {
-                newCurrentIndex = Math.max(-1, state.currentIndex - 1)
-              }
-
-              return {
-                queue: newQueue,
-                currentIndex:
-                  newCurrentIndex >= newQueue.length ? -1 : newCurrentIndex
-              }
-            },
-            false,
-            'audioPlayer/removeFromQueue'
-          )
-        },
-
-        clearQueue: () => {
-          set({ queue: [], currentIndex: -1 }, false, 'audioPlayer/clearQueue')
-        },
-
-        reorderQueue: (fromIndex, toIndex) => {
-          set(
-            (state) => {
-              const newQueue = [...state.queue]
-              const [movedItem] = newQueue.splice(fromIndex, 1)
-              newQueue.splice(toIndex, 0, movedItem)
-
-              // Update current index if current track was moved
-              let newCurrentIndex = state.currentIndex
-              if (fromIndex === state.currentIndex) {
-                newCurrentIndex = toIndex
-              } else if (
-                fromIndex < state.currentIndex &&
-                toIndex >= state.currentIndex
-              ) {
-                newCurrentIndex = state.currentIndex - 1
-              } else if (
-                fromIndex > state.currentIndex &&
-                toIndex <= state.currentIndex
-              ) {
-                newCurrentIndex = state.currentIndex + 1
-              }
-
-              return { queue: newQueue, currentIndex: newCurrentIndex }
-            },
-            false,
-            'audioPlayer/reorderQueue'
-          )
-        },
-
-        playFromQueue: (index) => {
-          const { queue } = get()
-          if (index < 0 || index >= queue.length) return
-
-          const item = queue[index]
-          set({ currentIndex: index }, false, 'audioPlayer/setCurrentIndex')
-          get().loadTrack(
-            item.url,
-            item.thumbnailUrl || '',
-            item.title,
-            item.id,
-            item.creators,
-            item.slug
-          )
-        },
-
-        playNext: () => {
-          const { queue, currentIndex } = get()
-          if (queue.length === 0) return
-
-          const nextIndex = currentIndex + 1
-
-          if (nextIndex >= queue.length) {
-            return // End of queue
-          }
-
-          get().playFromQueue(nextIndex)
-        },
-
-        playPrevious: () => {
-          const { queue, currentIndex } = get()
-          if (queue.length === 0) return
-
-          const prevIndex =
-            currentIndex - 1 < 0 ? queue.length - 1 : currentIndex - 1
-
-          get().playFromQueue(prevIndex)
-        },
-
-        toggleQueue: () => {
-          if (!isFeatureEnabled('ui.queue')) return
-
-          set(
-            (state) => ({ isQueueVisible: !state.isQueueVisible }),
-            false,
-            'audioPlayer/toggleQueue'
-          )
-        },
-
-        toggleFullscreen: () => {
-          set(
-            (state) => ({ isFullscreenVisible: !state.isFullscreenVisible }),
-            false,
-            'audioPlayer/toggleFullscreen'
-          )
-        },
-
-        closeFullscreen: () => {
-          set(
-            { isFullscreenVisible: false },
-            false,
-            'audioPlayer/closeFullscreen'
-          )
         }
-      }),
+      },
       {
         name: 'audio-player-store',
         partialize: (state) => ({
@@ -711,13 +605,10 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
         })
       }
     ),
-    {
-      name: 'audioPlayer'
-    }
+    { name: 'audioPlayer' }
   )
 )
 
-// Convenience hook for common audio player actions
 export const useAudioPlayerActions = () => {
   const store = useAudioPlayerStore()
   return {
@@ -731,7 +622,6 @@ export const useAudioPlayerActions = () => {
     setTimeUsingPercentage: store.setTimeUsingPercentage,
     setVolume: store.setVolume,
     toggleMute: store.toggleMute,
-    // Queue actions
     addToQueue: store.addToQueue,
     removeFromQueue: store.removeFromQueue,
     clearQueue: store.clearQueue,
@@ -745,7 +635,6 @@ export const useAudioPlayerActions = () => {
   }
 }
 
-// Hook for accessing audio player state
 export const useAudioPlayerState = () => {
   const store = useAudioPlayerStore()
   return {
@@ -760,7 +649,6 @@ export const useAudioPlayerState = () => {
     nowPlayingContext: store.nowPlayingContext,
     currentTrackId: store.currentTrackId,
     audioRef: store.audioRef,
-    // Queue state
     queue: store.queue,
     currentIndex: store.currentIndex,
     isQueueVisible: store.isQueueVisible,
@@ -768,3 +656,5 @@ export const useAudioPlayerState = () => {
     isInitialized: store.isInitialized
   }
 }
+
+export type { Creator, NowPlayingContext, QueueItem }

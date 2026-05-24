@@ -203,7 +203,8 @@ export function useEditorialPosts(limit = 20) {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-    isPending
+    isPending,
+    refetch
   } = useInfiniteQuery<
     PaginatedResponse<SelectMdxCompiledEditorialPost>,
     Error
@@ -230,7 +231,8 @@ export function useEditorialPosts(limit = 20) {
     isPending,
     fetchNextPage,
     hasNextPage,
-    isFetchingNextPage
+    isFetchingNextPage,
+    refetch
   }
 }
 
@@ -241,7 +243,8 @@ export function useMicroPosts(limit = 20) {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-    isPending
+    isPending,
+    refetch
   } = useInfiniteQuery<PaginatedResponse<SelectMdxCompiledMicroPost>, Error>({
     queryKey: ['posts', 'micro', limit],
     queryFn: async ({ pageParam = 0 }) => {
@@ -265,7 +268,8 @@ export function useMicroPosts(limit = 20) {
     isPending,
     fetchNextPage,
     hasNextPage,
-    isFetchingNextPage
+    isFetchingNextPage,
+    refetch
   }
 }
 

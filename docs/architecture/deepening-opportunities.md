@@ -1,75 +1,55 @@
 # Architectural Deepening Opportunities
 
-Surfaced via `/improve-codebase-architecture` — 2026-05-23.
+Surfaced via `/improve-codebase-architecture` on 2026-05-23.
 
 ---
 
-## 1. Error handler is a shallow pass-through
+## 1. `apps/www/src/lib/http.ts` is very shallow
 
-**Files**: every `*.handlers.ts` in `/apps/vps/src/routes/*/`
+**Files**: `apps/www/src/lib/http.ts`
 
-**Problem**: Each handler manually repeats `Effect.catchTag('DatabaseError', ...)` + `Effect.catchTag('NotFoundError', ...)` etc. The error-to-HTTP mapping lives scattered across ~12 handler files. The mapping logic is identical everywhere.
+**Problem**: This Module mixes transport, auth redirect, error reporting, pagination, and a long list of query and mutation hooks. The Interface is wide, but the leverage is low because callers still need to know too much about request shape and failure behaviour.
 
-**Solution**: Single `effectToHono` wrapper that runs any Effect and maps the error union to HTTP responses. Handlers become pure Effect programs; the seam owns all HTTP error translation.
+**Solution**: Split the shared request/error/reporting seam from domain-specific adapters, so the shared Module only owns request execution and cross-cutting failure handling.
 
-**Benefits**: Error mapping logic concentrated in one place (locality). New error types added in one file. Handlers testable as pure Effects with no HTTP scaffolding.
-
----
-
-## 2. Music entity services are five shallow copies
-
-**Files**: `/apps/vps/src/services/music-entity/{artist,album,track,playlist,link}.service.ts`
-
-**Problem**: All five implement near-identical CRUD patterns against the same `music_entity_*` tables. Each is a thin wrapper over Drizzle with minor field differences. The differentiation is in the schema, not the behaviour.
-
-**Solution**: Generic `MusicEntityService<T>` backed by a single deep module that takes a schema descriptor. Individual entity services become thin adapters (one line each) that configure the generic.
-
-**Benefits**: Bug fixes to CRUD logic apply everywhere. New entity type = one descriptor, not a new file. Tests cover the generic; entity-specific tests only cover entity-specific constraints.
+**Benefits**: Higher Locality for request policy changes, smaller Interface to learn, and better tests because transport can be covered once while each domain adapter gets focused tests.
 
 ---
 
-## 3. Music link scraper has no seam
+## 2. `apps/www/src/store/audioPlayer.ts` mixes state with browser adapters
 
-**Files**: `/apps/vps/src/services/music-link-scraper.service.ts`, `spotify.service.ts`
+**Files**: `apps/www/src/store/audioPlayer.ts`
 
-**Problem**: Spotify URL detection (`isSpotifyUrl`, etc.) lives in `spotify.service.ts` but is used by the scraper. The scraper calls Odesli, MusicBrainz, and Firecrawl directly — three external APIs with no adapter seam.
+**Problem**: This Module mixes player state with `localStorage`, `document` listeners, `navigator.mediaSession`, analytics, and runtime calls. The bug surface is in the orchestration, not the state shape.
 
-**Solution**: Define a `MusicLinkProvider` interface. Each external API becomes an adapter. The scraper becomes a coordinator that asks providers, not a blob that knows all three APIs.
+**Solution**: Separate the pure player state machine from the browser adapter, so state transitions can be exercised without a DOM.
 
-**Benefits**: Each provider testable in isolation. Adding a new platform = new adapter, scraper unchanged. URL detection moves to providers where it belongs.
-
----
-
-## 4. Mix processing has hidden coupling to filesystem paths (deprecated)
-
-**Files**: `/packages/core/src/mix-processing/processing.ts`, `filesystem.ts`
-
-**Problem**: The processing pipeline writes temp files to disk and calls FFmpeg via subprocess — both are hard-coded side effects inside what could be a pure transformation pipeline. Tests mock the filesystem but the real bugs are in the orchestration (no locality).
-
-**Solution**: Explicit `MixProcessingEnv` interface carrying `writeFile`, `execProcess`, `tempDir`. The pipeline becomes a pure Effect program parameterised on its environment. No mocks needed — tests inject fakes through the interface.
-
-**Benefits**: Pipeline testable end-to-end without touching disk or spawning FFmpeg. Switching from local FFmpeg to a cloud transcoder = swap one adapter.
+**Benefits**: Better Locality for playback bugs, higher Leverage for tests, and fewer mocks because the state machine becomes a clean test surface.
 
 ---
 
-## 5. Frontend store + query are doing the same job ⬅ exploring first
+## 3. `apps/vps/src/routes/user/user.handlers.ts` and `apps/vps/src/services/user.service.ts` span too many concerns
 
-**Files**: `/apps/www/src/store/`, hooks that also use TanStack Query
+**Files**: `apps/vps/src/routes/user/user.handlers.ts`, `apps/vps/src/services/user.service.ts`
 
-**Problem**: Server state appears in both Zustand store and TanStack Query cache simultaneously. Two sources of truth for the same data. Callers must know which to read from.
+**Problem**: The route file still handles auth checks, multipart parsing, and admin gating, while `UserService` spans profile edits, social links, email preferences, DJ listing, and directory lookup. That’s a broad Interface over several different concerns.
 
-**Solution**: Hard seam — TanStack Query owns all server state. Zustand owns only UI/ephemeral state (player queue, modal open state). Remove server data from the store.
+**Solution**: Deepen the user Module by splitting profile editing, social-link management, preferences, and directory lookup into narrower Modules, leaving the route file as a thin adapter.
 
-**Benefits**: No cache invalidation bugs from dual-write. Clear interface: "is this server data? use the query hook. is this UI state? use the store."
+**Benefits**: Better Locality when one user concern changes, smaller tests per Module, and a clearer Interface for callers and future readers.
 
 ---
 
-## Status
+## 4. `apps/vps/src/services/music-entity/playlist-tracks.service.ts` hides multiple workflows
 
-| # | Title | Status |
-|---|-------|--------|
-| 1 | Error handler pass-through | backlog |
-| 2 | Music entity shallow copies | backlog |
-| 3 | Music link scraper no seam | backlog |
-| 4 | Mix processing filesystem coupling | deprecated |
-| 5 | Frontend store/query dual state | **in progress** |
+**Files**: `apps/vps/src/services/music-entity/playlist-tracks.service.ts`, `apps/vps/src/services/music-entity/index.ts`, `apps/vps/src/routes/music/music.handlers.ts`
+
+**Problem**: This Module coordinates playlist-track CRUD, reorder validation, Spotify import, scraper enrichment, and S3 cover copying across DB, network, and storage Seams. The CRUD work and the orchestration work want different depths.
+
+**Solution**: Keep playlist-track CRUD deep, and move import/sync/enrichment into separate orchestration Modules that depend on the CRUD Module.
+
+**Benefits**: Better Locality because failures stay in one workflow, stronger test leverage because CRUD and orchestration can be tested separately, and less cognitive load because the Interface stops hiding multiple workflows in one place.
+
+---
+
+Which of these would you like to explore?

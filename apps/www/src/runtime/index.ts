@@ -7,6 +7,12 @@ import {
   makeSentryAnalyticsLayer,
   NoopAnalyticsLayer
 } from '@/services/analytics'
+import {
+  AudioStorage,
+  AudioStorageLive,
+  MediaSessionService,
+  MediaSessionServiceLive
+} from '@/services/audio-player'
 
 const analyticsLayer = env.sentryDsn
   ? makeSentryAnalyticsLayer({
@@ -30,9 +36,21 @@ const spotifyLayer = Layer.suspend(() =>
   })
 )
 
-const mainLayer = Layer.merge(analyticsLayer, spotifyLayer)
+const audioStorageLayer = AudioStorageLive
+const mediaSessionLayer = MediaSessionServiceLive
 
-type AppServices = Analytics | SpotifyBrowser
+const mainLayer = Layer.mergeAll(
+  analyticsLayer,
+  spotifyLayer,
+  audioStorageLayer,
+  mediaSessionLayer
+)
+
+type AppServices =
+  | Analytics
+  | SpotifyBrowser
+  | AudioStorage
+  | MediaSessionService
 
 const appScope = Scope.makeUnsafe()
 const appContextPromise = Effect.runPromise(
