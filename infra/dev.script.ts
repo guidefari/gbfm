@@ -3,21 +3,21 @@ import { dbBackupBucket } from './bucket'
 import { email } from './email'
 import { allSecrets, secret } from './secret'
 
-new sst.x.DevCommand('raycast', {
-  dev: {
-    command: 'bun dev',
-    directory: './apps/raycast',
-    autostart: false
-  }
-})
+// new sst.x.DevCommand('raycast', {
+//   dev: {
+//     command: 'bun dev',
+//     directory: './apps/raycast',
+//     autostart: false
+//   }
+// })
 
-new sst.x.DevCommand('ios', {
-  dev: {
-    command: 'bun ios',
-    directory: './apps/mobile',
-    autostart: false
-  }
-})
+// new sst.x.DevCommand('ios', {
+//   dev: {
+//     command: 'bun ios',
+//     directory: './apps/mobile',
+//     autostart: false
+//   }
+// })
 
 new sst.x.DevCommand('UI_Playground', {
   dev: {
@@ -35,14 +35,14 @@ new sst.x.DevCommand('Studio_prod', {
     autostart: false
   }
 })
-new sst.x.DevCommand('Studio_local', {
-  link: [...allSecrets, email],
-  dev: {
-    command: 'bun scripts/drizzle-studio.ts --target=local',
-    directory: './apps/vps',
-    autostart: false
-  }
-})
+// new sst.x.DevCommand('Studio_local', {
+//   link: [...allSecrets, email],
+//   dev: {
+//     command: 'bun scripts/drizzle-studio.ts --target=local',
+//     directory: './apps/vps',
+//     autostart: false
+//   }
+// })
 
 new sst.x.DevCommand('db_gen', {
   link: [...allSecrets, email],
@@ -65,14 +65,14 @@ new sst.x.DevCommand('betterAuthGen', {
   }
 })
 
-new sst.x.DevCommand('db_pushLocal', {
-  link: [...allSecrets, email],
-  dev: {
-    command: 'npx drizzle-kit push --config drizzle.config.local.ts',
-    directory: './apps/vps',
-    autostart: false
-  }
-})
+// new sst.x.DevCommand('db_pushLocal', {
+//   link: [...allSecrets, email],
+//   dev: {
+//     command: 'npx drizzle-kit push --config drizzle.config.local.ts',
+//     directory: './apps/vps',
+//     autostart: false
+//   }
+// })
 
 new sst.x.DevCommand('db_pushProd', {
   link: [...allSecrets, email],
@@ -206,22 +206,34 @@ new sst.x.DevCommand('Backup_Database_Prod', {
 //   }
 // })
 
-new sst.x.DevCommand('Restore_Planetscale_Database', {
+// new sst.x.DevCommand('Restore_Prod_Database', {
+//   link: [...allSecrets, email, dbBackupBucket],
+//   dev: {
+//     command: 'bun scripts/restore-db.ts --source=s3 --destination=planetscale',
+//     directory: './apps/vps',
+//     autostart: false
+//   },
+//   environment: {
+//     PLANETSCALE_DB_URL: process.env.PROD_DB_URL || ''
+//   }
+// })
+
+new sst.x.DevCommand('Verify_Backup', {
   link: [...allSecrets, email, dbBackupBucket],
   dev: {
-    command: 'bun scripts/restore-db.ts --source=s3 --destination=planetscale',
+    command: 'bun scripts/verify-backup.ts',
     directory: './apps/vps',
     autostart: false
   },
   environment: {
-    PLANETSCALE_DB_URL: process.env.PLANETSCALE_DB_URL || ''
+    DATABASE_BACKUP_BUCKET: dbBackupBucket.name
   }
 })
 
 // new sst.x.DevCommand('Restore_Local_Database', {
 //   link: [...allSecrets, email, dbBackupBucket],
 //   dev: {
-//     command: 'bun scripts/restore-db.ts --destination=remote',
+//     command: 'bun scripts/restore-db.ts --source=s3 --destination=local',
 //     directory: './apps/vps',
 //     autostart: false
 //   },
