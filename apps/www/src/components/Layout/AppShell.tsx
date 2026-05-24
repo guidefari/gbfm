@@ -36,7 +36,7 @@ export default function AppShell({ children }: Props) {
     showCompactPlayer
 
   return (
-    <div className='grid h-screen w-full bg-background sm:grid-cols-[auto_1fr]'>
+    <div className='grid h-screen w-full grid-cols-1 bg-background sm:grid-cols-[auto_1fr]'>
       <div className='hidden sm:block'>
         <DesktopSideNav />
       </div>

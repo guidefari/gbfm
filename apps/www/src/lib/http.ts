@@ -154,7 +154,8 @@ export function useAudioByType(type: 'mix' | 'track' | 'misc', tag?: string) {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-    isPending
+    isPending,
+    refetch
   } = useInfiniteQuery<PaginatedResponse<SelectAudio>, Error>({
     queryKey: ['audio', type, tag].filter(Boolean),
     queryFn: async ({ pageParam = 0 }) => {
@@ -177,7 +178,8 @@ export function useAudioByType(type: 'mix' | 'track' | 'misc', tag?: string) {
     isPending,
     fetchNextPage,
     hasNextPage,
-    isFetchingNextPage
+    isFetchingNextPage,
+    refetch
   }
 }
 

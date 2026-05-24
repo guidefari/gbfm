@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import { z } from 'zod'
 import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
 import { PostsNav } from '@/components/PostsNav'
+import { QueryError } from '@/components/QueryError'
 import { TweetListCard } from '@/components/TweetListCard'
 import { useMicroPosts } from '@/lib/http'
 import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'
@@ -21,8 +22,15 @@ export const Route = createFileRoute('/tweet/')({
 
 function TweetListPage() {
   const { tag } = Route.useSearch()
-  const { data, isPending, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useMicroPosts(5)
+  const {
+    data,
+    error,
+    isPending,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
+  } = useMicroPosts(5)
 
   const allTags = useMemo(() => {
     if (!data) return []
@@ -40,26 +48,48 @@ function TweetListPage() {
     return data.filter((post) => post.tags?.includes(tag))
   }, [data, tag])
 
+  if (error) {
+    return (
+      <div className='max-w-2xl mx-auto px-4 py-8'>
+        <PostsNav active='tweets' />
+        <QueryError error={error} onRetry={() => refetch()} />
+      </div>
+    )
+  }
+
   if (isPending) {
     return (
       <div className='max-w-2xl mx-auto px-4 py-8'>
+        <PostsNav active='tweets' />
         <div className='animate-pulse space-y-4'>
           {Array.from({ length: 3 }).map((_, i) => (
             <div
               // biome-ignore lint/suspicious/noArrayIndexKey: static array.
               key={i}
-              className='space-y-3 rounded-lg border border-border/40 bg-card/30 p-4'>
+              className='space-y-3 overflow-hidden rounded-lg border border-border/40 bg-card/30 p-4 sm:p-5'>
               <div className='flex items-center gap-3'>
-                <div className='h-10 w-10 rounded-sm bg-muted/50' />
+                <div className='h-12 w-12 shrink-0 rounded-sm bg-muted/60' />
                 <div className='flex-1 space-y-2'>
-                  <div className='h-3 w-24 rounded bg-muted/50' />
-                  <div className='h-2.5 w-16 rounded bg-muted/50' />
+                  <div className='h-3.5 w-28 rounded bg-muted/60' />
+                  <div className='h-2.5 w-40 rounded bg-muted/50' />
                 </div>
               </div>
               <div className='space-y-2'>
+                <div className='h-5 w-48 rounded bg-muted/60' />
                 <div className='h-3 w-full rounded bg-muted/50' />
-                <div className='h-3 w-3/4 rounded bg-muted/50' />
+                <div className='h-3 w-full rounded bg-muted/50' />
+                <div className='h-3 w-2/3 rounded bg-muted/50' />
               </div>
+              {i % 2 === 0 && (
+                <div className='flex gap-4 rounded-md border border-border/40 bg-muted/20 p-3'>
+                  <div className='h-24 w-24 shrink-0 rounded-sm bg-muted/60' />
+                  <div className='flex-1 space-y-2 self-center'>
+                    <div className='h-2.5 w-12 rounded bg-muted/50' />
+                    <div className='h-4 w-3/4 rounded bg-muted/60' />
+                    <div className='h-3 w-1/2 rounded bg-muted/50' />
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>

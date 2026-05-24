@@ -34,11 +34,6 @@ export const useNavigationActions = (closeCmd: () => void) => {
     closeCmd()
   }, [router, closeCmd])
 
-  const routeToTracks = React.useCallback(() => {
-    router({ to: '/tracks' })
-    closeCmd()
-  }, [router, closeCmd])
-
   const routeToLabels = React.useCallback(() => {
     router({ to: '/labels' })
     closeCmd()
@@ -81,7 +76,6 @@ export const useNavigationActions = (closeCmd: () => void) => {
     routeToSettings,
     routeToDashboard,
     routeToHome,
-    routeToTracks,
     routeToLabels,
     routeToUpload,
     routeToAdmin,

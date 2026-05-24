@@ -24,6 +24,7 @@ import * as React from 'react'
 import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
 import { FavoriteButton } from '@/components/FavoriteButton'
 import { MDXRendrr } from '@/components/MDXRendrr'
+import { RouteError } from '@/components/RouteError'
 import { useSession } from '@/lib/auth-client'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { fetcher, useMixQRPdf, useShowById, VPS_BASE_URL } from '@/lib/http'
@@ -33,6 +34,7 @@ import { useAudioPlayerActions, useAudioPlayerState } from '@/store/audioPlayer'
 
 export const Route = createFileRoute('/mixes/$mixId')({
   component: MixPage,
+  errorComponent: ({ error }) => <RouteError error={error} />,
   loader: async ({ params }) => {
     const mix = await fetcher<SelectMdxCompiledAudio>(
       `${VPS_BASE_URL}/content/audio/mix/${params.mixId}`

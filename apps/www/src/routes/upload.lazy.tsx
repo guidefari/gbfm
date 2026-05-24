@@ -234,7 +234,7 @@ function UploadPage() {
         setUploadStep('idle')
         setSelectedType(null)
 
-        router.navigate({ to: '/tracks' })
+        router.navigate({ to: '/mixes' })
       }, 2000)
     },
     onError: (error) => {

@@ -3,6 +3,7 @@ import type { SelectMdxCompiledShow } from '@gbfm/vps/schemas'
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { FavoriteButton } from '@/components/FavoriteButton'
+import { RouteError } from '@/components/RouteError'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { ShareButton } from '@/components/ShareButton'
 import { EpisodeGrid } from '@/components/shows/EpisodeGrid'
@@ -13,6 +14,7 @@ import { useContentStore } from '@/store'
 
 export const Route = createFileRoute('/shows/$showSlug')({
   component: ShowPage,
+  errorComponent: ({ error }) => <RouteError error={error} />,
   loader: async ({ params }) => {
     const show = await fetcher<SelectMdxCompiledShow>(
       `${import.meta.env.VITE_VPS_BASE_URL}/shows/${params.showSlug}`

@@ -8,6 +8,7 @@ import {
 } from '@tanstack/react-router'
 import { Suspense } from 'react'
 import { VerifyEmailBanner } from '@/components/Auth/VerifyEmailBanner'
+import { OfflineBanner } from '@/components/OfflineBanner'
 import { AuthPromptDialog } from '@/components/AuthPromptDialog'
 import { CommandDialogDemo } from '@/components/cmd'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -66,6 +67,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
                   height={40}
                 />
               )}
+              <OfflineBanner />
               <VerifyEmailBanner />
               <CommandDialogDemo />
               <WelcomeModal />

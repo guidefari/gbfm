@@ -14,6 +14,7 @@ import { z } from 'zod'
 import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
 import { MixListItem } from '@/components/MixListItem'
 import { MixMenu } from '@/components/MixMenu'
+import { QueryError } from '@/components/QueryError'
 import { MixTimeline, MixTimelineItem } from '@/components/MixTimeline'
 import { TrackContextMenu } from '@/components/TrackContextMenu'
 import { useAudioByType } from '@/lib/http'
@@ -35,8 +36,15 @@ export const Route = createFileRoute('/mixes/')({
 function MixesListPage() {
   const { tag } = Route.useSearch()
   const navigate = Route.useNavigate()
-  const { data, isPending, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useAudioByType('mix', tag)
+  const {
+    data,
+    error,
+    isPending,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
+  } = useAudioByType('mix', tag)
   const { data: allMixesForTags } = useAudioByType('mix')
   const { mixesSorting } = useUIStore()
 
@@ -78,6 +86,14 @@ function MixesListPage() {
 
     return sorted
   }, [data, mixesSorting.sortBy, mixesSorting.sortOrder])
+
+  if (error) {
+    return (
+      <div className='max-w-3xl mx-auto px-4 py-8'>
+        <QueryError error={error} onRetry={() => refetch()} />
+      </div>
+    )
+  }
 
   return (
     <div className='max-w-3xl mx-auto px-4 py-8'>

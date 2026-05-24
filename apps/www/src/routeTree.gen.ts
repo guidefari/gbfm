@@ -27,7 +27,6 @@ import { Route as LabelsRouteRouteImport } from './routes/labels/route'
 import { Route as EditorialRouteRouteImport } from './routes/editorial/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TweetIndexRouteImport } from './routes/tweet/index'
-import { Route as TracksIndexRouteImport } from './routes/tracks/index'
 import { Route as ShowsIndexRouteImport } from './routes/shows/index'
 import { Route as MixesIndexRouteImport } from './routes/mixes/index'
 import { Route as LabelsIndexRouteImport } from './routes/labels/index'
@@ -154,11 +153,6 @@ const TweetIndexRoute = TweetIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => TweetRouteRoute,
-} as any)
-const TracksIndexRoute = TracksIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => TracksRouteRoute,
 } as any)
 const ShowsIndexRoute = ShowsIndexRouteImport.update({
   id: '/shows/',
@@ -342,12 +336,12 @@ export interface FileRoutesByFullPath {
   '/labels/': typeof LabelsIndexRoute
   '/mixes/': typeof MixesIndexRoute
   '/shows/': typeof ShowsIndexRoute
-  '/tracks/': typeof TracksIndexRoute
   '/tweet/': typeof TweetIndexRoute
   '/admin/music-entity/$entityType/$id': typeof AdminMusicEntityEntityTypeIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/tracks': typeof TracksRouteRouteWithChildren
   '/$slug': typeof SlugRoute
   '/changelog': typeof ChangelogRoute
   '/dashboard': typeof DashboardRoute
@@ -386,7 +380,6 @@ export interface FileRoutesByTo {
   '/labels': typeof LabelsIndexRoute
   '/mixes': typeof MixesIndexRoute
   '/shows': typeof ShowsIndexRoute
-  '/tracks': typeof TracksIndexRoute
   '/tweet': typeof TweetIndexRoute
   '/admin/music-entity/$entityType/$id': typeof AdminMusicEntityEntityTypeIdRoute
 }
@@ -436,7 +429,6 @@ export interface FileRoutesById {
   '/labels/': typeof LabelsIndexRoute
   '/mixes/': typeof MixesIndexRoute
   '/shows/': typeof ShowsIndexRoute
-  '/tracks/': typeof TracksIndexRoute
   '/tweet/': typeof TweetIndexRoute
   '/admin/music-entity/$entityType/$id': typeof AdminMusicEntityEntityTypeIdRoute
 }
@@ -487,12 +479,12 @@ export interface FileRouteTypes {
     | '/labels/'
     | '/mixes/'
     | '/shows/'
-    | '/tracks/'
     | '/tweet/'
     | '/admin/music-entity/$entityType/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/tracks'
     | '/$slug'
     | '/changelog'
     | '/dashboard'
@@ -531,7 +523,6 @@ export interface FileRouteTypes {
     | '/labels'
     | '/mixes'
     | '/shows'
-    | '/tracks'
     | '/tweet'
     | '/admin/music-entity/$entityType/$id'
   id:
@@ -580,7 +571,6 @@ export interface FileRouteTypes {
     | '/labels/'
     | '/mixes/'
     | '/shows/'
-    | '/tracks/'
     | '/tweet/'
     | '/admin/music-entity/$entityType/$id'
   fileRoutesById: FileRoutesById
@@ -759,13 +749,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/tweet/'
       preLoaderRoute: typeof TweetIndexRouteImport
       parentRoute: typeof TweetRouteRoute
-    }
-    '/tracks/': {
-      id: '/tracks/'
-      path: '/'
-      fullPath: '/tracks/'
-      preLoaderRoute: typeof TracksIndexRouteImport
-      parentRoute: typeof TracksRouteRoute
     }
     '/shows/': {
       id: '/shows/'
@@ -1003,12 +986,10 @@ const MixesRouteRouteWithChildren = MixesRouteRoute._addFileChildren(
 
 interface TracksRouteRouteChildren {
   TracksTrackIdRoute: typeof TracksTrackIdRoute
-  TracksIndexRoute: typeof TracksIndexRoute
 }
 
 const TracksRouteRouteChildren: TracksRouteRouteChildren = {
   TracksTrackIdRoute: TracksTrackIdRoute,
-  TracksIndexRoute: TracksIndexRoute,
 }
 
 const TracksRouteRouteWithChildren = TracksRouteRoute._addFileChildren(

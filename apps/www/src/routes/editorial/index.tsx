@@ -13,6 +13,7 @@ import { z } from 'zod'
 import { EditorialListItem } from '@/components/EditorialListItem'
 import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
 import { PostsNav } from '@/components/PostsNav'
+import { QueryError } from '@/components/QueryError'
 import { useEditorialPosts } from '@/lib/http'
 import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'
 
@@ -31,8 +32,15 @@ export const Route = createFileRoute('/editorial/')({
 function EditorialListPage() {
   const { tag } = Route.useSearch()
   const navigate = Route.useNavigate()
-  const { data, isPending, fetchNextPage, hasNextPage, isFetchingNextPage } =
-    useEditorialPosts()
+  const {
+    data,
+    error,
+    isPending,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
+  } = useEditorialPosts()
 
   const allTags = useMemo(() => {
     if (!data) return []
@@ -59,12 +67,33 @@ function EditorialListPage() {
   if (isPending) {
     return (
       <div className='max-w-2xl mx-auto px-4 py-8'>
-        <div className='animate-pulse space-y-4'>
+        <PostsNav active='editorial' />
+        <div className='animate-pulse space-y-3'>
           {Array.from({ length: 5 }).map((_, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: static array.
-            <div key={i} className='h-24 bg-muted/50 rounded-sm' />
+            <div
+              key={i}
+              className='flex gap-3 items-start border border-border bg-card p-3 sm:p-4'>
+              <div className='h-16 w-16 sm:h-20 sm:w-20 shrink-0 bg-muted/60' />
+              <div className='flex-1 min-w-0 space-y-2'>
+                <div className='h-2.5 w-8 rounded bg-muted/50' />
+                <div className='h-5 w-full rounded bg-muted/60' />
+                <div className='h-4 w-4/5 rounded bg-muted/60' />
+                <div className='h-3 w-full rounded bg-muted/40' />
+                <div className='h-3 w-2/3 rounded bg-muted/40' />
+              </div>
+            </div>
           ))}
         </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className='max-w-2xl mx-auto px-4 py-8'>
+        <PostsNav active='editorial' />
+        <QueryError error={error} onRetry={() => refetch()} />
       </div>
     )
   }

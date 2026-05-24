@@ -16,7 +16,7 @@ export function TweetListCard({ post }: Props) {
   const tweetLinkLabel = post.title ? `Open tweet: ${post.title}` : 'Open tweet'
 
   return (
-    <article className='relative block rounded-lg border border-border/60 bg-card/40 p-4 shadow-sm transition-colors hover:bg-card/70 sm:p-5'>
+    <article className='relative block overflow-hidden rounded-lg border border-border/60 bg-card/40 p-4 shadow-sm transition-colors hover:bg-card/70 sm:p-5'>
       <Link
         aria-label={tweetLinkLabel}
         className='absolute inset-0 z-0 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'

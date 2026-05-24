@@ -2,12 +2,14 @@ import type { SelectMdxCompiledAudio } from '@gbfm/vps/schemas'
 import { createFileRoute } from '@tanstack/react-router'
 import * as React from 'react'
 import { LongPost } from '@/components/Layout/LongPost'
+import { RouteError } from '@/components/RouteError'
 import { fetcher, useAudioBySlug } from '@/lib/http'
 import { generateSEOMeta, generateTrackSEO } from '@/lib/seo'
 import { useContentStore } from '@/store'
 
 export const Route = createFileRoute('/tracks/$trackId')({
   component: TrackPage,
+  errorComponent: ({ error }) => <RouteError error={error} />,
   loader: async ({ params }) => {
     const track = await fetcher<SelectMdxCompiledAudio>(
       `${import.meta.env.VITE_VPS_BASE_URL}/content/audio/track/${params.trackId}`

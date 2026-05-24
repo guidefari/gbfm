@@ -5,6 +5,7 @@ import { Edit } from 'lucide-react'
 import * as React from 'react'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { ReleasesTable } from '@/components/ReleasesTable'
+import { RouteError } from '@/components/RouteError'
 import { ShareButton } from '@/components/ShareButton'
 import { useSession } from '@/lib/auth-client'
 import { fetcher, useLabelBySlug, useReleasesByLabel } from '@/lib/http'
@@ -13,6 +14,7 @@ import { useContentStore } from '@/store'
 
 export const Route = createFileRoute('/labels/$labelSlug')({
   component: LabelPage,
+  errorComponent: ({ error }) => <RouteError error={error} />,
   loader: async ({ params }) => {
     const label = await fetcher<SelectMdxCompiledLabel>(
       `${import.meta.env.VITE_VPS_BASE_URL}/content/labels/${params.labelSlug}`
