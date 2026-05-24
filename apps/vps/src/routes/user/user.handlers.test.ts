@@ -1,3 +1,4 @@
+import { Exit } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as runtime from '@/runtime'
@@ -48,16 +49,15 @@ describe('user.handlers social links', () => {
   })
 
   it('returns social links from getSocialLinks', async () => {
-    vi.spyOn(runtime, 'runApp').mockResolvedValueOnce({
-      data: [
+    vi.spyOn(runtime.AppRuntime, 'runPromiseExit').mockResolvedValueOnce(
+      Exit.succeed([
         {
           platform: 'soundcloud',
           url: 'https://soundcloud.com/example',
           position: 0
         }
-      ],
-      status: HttpStatusCodes.OK
-    })
+      ])
+    )
 
     const c = createContext({ user: { id: 'user_1' } })
     const response = await (getSocialLinks as unknown as TestHandler)(
@@ -85,16 +85,15 @@ describe('user.handlers social links', () => {
   })
 
   it('returns replaced links from replaceSocialLinks', async () => {
-    vi.spyOn(runtime, 'runApp').mockResolvedValueOnce({
-      data: [
+    vi.spyOn(runtime.AppRuntime, 'runPromiseExit').mockResolvedValueOnce(
+      Exit.succeed([
         {
           platform: 'instagram',
           url: 'https://instagram.com/example',
           position: 0
         }
-      ],
-      status: HttpStatusCodes.OK
-    })
+      ])
+    )
 
     const c = createContext({
       user: { id: 'user_1' },
