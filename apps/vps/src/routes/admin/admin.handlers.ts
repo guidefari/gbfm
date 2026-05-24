@@ -26,6 +26,7 @@ import { showSubscriptionsTable, showsTable } from '@/db/show.schema'
 import type { AppRouteHandler } from '@/lib/types'
 import type {
   GetAdminOverviewRoute,
+  GetNewsletterSubscribersRoute,
   SimulateFrontendErrorRoute
 } from './admin.routes'
 
@@ -612,4 +613,31 @@ export const getAdminOverview: AppRouteHandler<GetAdminOverviewRoute> = async (
       HttpStatusCodes.INTERNAL_SERVER_ERROR
     )
   }
+}
+
+export const getNewsletterSubscribers: AppRouteHandler<
+  GetNewsletterSubscribersRoute
+> = async (c) => {
+  const rows = await db
+    .select({
+      id: newsletterSubscribersTable.id,
+      email: newsletterSubscribersTable.email,
+      name: newsletterSubscribersTable.name,
+      source: newsletterSubscribersTable.source,
+      unsubscribedAt: newsletterSubscribersTable.unsubscribedAt,
+      createdAt: newsletterSubscribersTable.createdAt
+    })
+    .from(newsletterSubscribersTable)
+    .orderBy(desc(newsletterSubscribersTable.createdAt))
+
+  return c.json(
+    {
+      subscribers: rows.map((r) => ({
+        ...r,
+        unsubscribedAt: r.unsubscribedAt?.toISOString() ?? null,
+        createdAt: r.createdAt.toISOString()
+      }))
+    },
+    HttpStatusCodes.OK
+  )
 }

@@ -76,5 +76,38 @@ export const simulateFrontendError = createRoute({
   }
 })
 
+export const getNewsletterSubscribers = createRoute({
+  path: '/newsletter-subscribers',
+  method: 'get',
+  middleware: [requireAdminMiddleware],
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.object({
+        subscribers: z.array(
+          z.object({
+            id: z.string(),
+            email: z.string(),
+            name: z.string().nullable(),
+            source: z.string().nullable(),
+            unsubscribedAt: z.string().nullable(),
+            createdAt: z.string()
+          })
+        )
+      }),
+      'Newsletter subscribers list'
+    ),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
+      z.object({ error: z.string() }),
+      'Unauthorized'
+    ),
+    [HttpStatusCodes.FORBIDDEN]: jsonContent(
+      z.object({ error: z.string() }),
+      'Forbidden'
+    )
+  }
+})
+
 export type GetAdminOverviewRoute = typeof getAdminOverview
 export type SimulateFrontendErrorRoute = typeof simulateFrontendError
+export type GetNewsletterSubscribersRoute = typeof getNewsletterSubscribers

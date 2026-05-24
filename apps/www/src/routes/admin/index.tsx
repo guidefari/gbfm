@@ -15,6 +15,7 @@ import { AdminAccessGuard } from './_components/-AdminAccessGuard'
 import { ContentTab } from './_components/-ContentTab'
 import { EmailLogsTab } from './_components/-EmailLogsTab'
 import { FilesTab } from './_components/-FilesTab'
+import { NewsletterTab } from './_components/-NewsletterTab'
 import { SessionsTab } from './_components/-SessionsTab'
 import { ShowsTab } from './_components/-ShowsTab'
 import { UsersTab } from './_components/-UsersTab'
@@ -66,6 +67,7 @@ function AdminDashboard() {
                 <TabsTrigger value='shows'>Shows</TabsTrigger>
                 <TabsTrigger value='sessions'>Sessions</TabsTrigger>
                 <TabsTrigger value='email-logs'>Email Logs</TabsTrigger>
+                <TabsTrigger value='newsletter'>Newsletter</TabsTrigger>
                 <TabsTrigger value='files'>Files</TabsTrigger>
               </TabsList>
 
@@ -87,6 +89,10 @@ function AdminDashboard() {
 
               <TabsContent value='email-logs'>
                 <EmailLogsTab />
+              </TabsContent>
+
+              <TabsContent value='newsletter'>
+                <NewsletterTab />
               </TabsContent>
 
               <TabsContent value='files'>
