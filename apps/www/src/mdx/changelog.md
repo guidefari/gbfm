@@ -1,3 +1,53 @@
+# [2.47.0](https://github.com/guidefari/gbfm/compare/v2.46.0...v2.47.0) (2026-05-24)
+
+
+### Bug Fixes
+
+* **vps-tracing:** add parent span. ([292b700](https://github.com/guidefari/gbfm/commit/292b70073439dde6a24f2ad9b5de456109edb681))
+
+
+### Features
+
+* **vps-health:** cache responses ([b0e9e0c](https://github.com/guidefari/gbfm/commit/b0e9e0cbc3eac3c1798c95644ee33411e3d7c96b))
+* **vps-health:** split live and ready check ([78a2169](https://github.com/guidefari/gbfm/commit/78a21695e2f73b9394e07f0eb81a7527be91c6db))
+
+# [2.46.0](https://github.com/guidefari/gbfm/compare/v2.45.1...v2.46.0) (2026-05-24)
+
+
+### Bug Fixes
+
+* **ci:** gate prod release on docker build ([f9ced51](https://github.com/guidefari/gbfm/commit/f9ced513a5b39efb7c076edfc0e90c3e55b7370a))
+
+
+### Features
+
+* **db-backup:** minimal integrity check ([091ce72](https://github.com/guidefari/gbfm/commit/091ce72b2062f1da7064beb7992a181090e8f495))
+* expire old backups ([9b87da7](https://github.com/guidefari/gbfm/commit/9b87da76135dda7a7aa531528c64018dc1115cf2))
+
+## [2.45.1](https://github.com/guidefari/gbfm/compare/v2.45.0...v2.45.1) (2026-05-24)
+
+
+### Bug Fixes
+
+* **ci:** trigger prod deploy explicitly ([58df86e](https://github.com/guidefari/gbfm/commit/58df86e27204b34527024b83c0234183d413b55c))
+
+# [2.45.0](https://github.com/guidefari/gbfm/compare/v2.44.0...v2.45.0) (2026-05-24)
+
+
+### Bug Fixes
+
+* **email:** theme & layout ([d64f932](https://github.com/guidefari/gbfm/commit/d64f932d46f3b3cceb0a45c9c06cef904b912be5))
+* test ([e6c4f31](https://github.com/guidefari/gbfm/commit/e6c4f31dcb1d42b4a3e0df0ec698c94943220f2a))
+
+
+### Features
+
+* network error ui ([aebb1c5](https://github.com/guidefari/gbfm/commit/aebb1c56d284c59d42d92c4f7b1fff6bacbbfb95))
+* newsletter improvements ([93690a1](https://github.com/guidefari/gbfm/commit/93690a1e94faa54a1aab4e2731013250671ca9f7))
+* ui ([e180f59](https://github.com/guidefari/gbfm/commit/e180f59a09ad19c42bae734986a30f4668ab5e21))
+* **vps:** add admin notifications ([d185f9c](https://github.com/guidefari/gbfm/commit/d185f9cd012d9900ab8b3a264f0f67eae79d41e0))
+* **www:** split new content capture flows ([0c6e7b1](https://github.com/guidefari/gbfm/commit/0c6e7b1822f1ec599a16a5b1816e329c3f38e285))
+
 # [2.44.0](https://github.com/guidefari/gbfm/compare/v2.43.0...v2.44.0) (2026-05-21)
 
 
