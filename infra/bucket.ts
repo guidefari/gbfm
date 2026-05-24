@@ -26,7 +26,18 @@ export const mixesBucket = new sst.aws.Bucket('Mixes', {
 })
 
 export const dbBackupBucket = new sst.aws.Bucket('DatabaseBackups', {
-  access: 'cloudfront'
+  access: 'cloudfront',
+  transform: {
+    bucket: {
+      lifecycleRules: [
+        {
+          id: 'expire-old-backups',
+          enabled: true,
+          expiration: { days: 30 }
+        }
+      ]
+    }
+  }
 })
 
 export const fileRouter = new sst.aws.Router('Router', {
