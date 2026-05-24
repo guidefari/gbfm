@@ -1,3 +1,4 @@
+import { SpanStatusCode, trace } from '@opentelemetry/api'
 import { Effect } from 'effect'
 import type { MiddlewareHandler } from 'hono'
 import { LoggerError } from '@/errors'
@@ -12,10 +13,32 @@ const VERY_SLOW_REQUEST_THRESHOLD = 2000
 export function effectLogger(): MiddlewareHandler {
   return async (c, next) => {
     const start = Date.now()
+    const tracer = trace.getTracer('gbfm.vps')
+    const spanName = `${c.req.method} ${c.req.path}`
 
     const loggingEffect = Effect.gen(function* () {
       yield* Effect.tryPromise({
-        try: () => next(),
+        try: () =>
+          tracer.startActiveSpan(spanName, async (span) => {
+            try {
+              await next()
+            } catch (error) {
+              span.recordException(
+                error instanceof Error ? error : new Error(String(error))
+              )
+              span.setStatus({
+                code: SpanStatusCode.ERROR,
+                message: error instanceof Error ? error.message : String(error)
+              })
+              throw error
+            } finally {
+              span.setAttribute('http.method', c.req.method)
+              span.setAttribute('http.route', c.req.path)
+              span.setAttribute('http.status_code', c.res.status)
+              span.setAttribute('http.duration_ms', Date.now() - start)
+              span.end()
+            }
+          }),
         catch: (error) =>
           error instanceof Error
             ? new LoggerError({
