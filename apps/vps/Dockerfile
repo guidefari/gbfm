@@ -51,7 +51,7 @@ CMD ["bun", "run", "src/index.ts"]
 
 # --- Database backup task ---
 FROM oven/bun:alpine AS backup-task
-RUN apk add --no-cache postgresql17-client
+RUN apk add --no-cache postgresql18-client
 WORKDIR /usr/src/app
 
 COPY --from=deps /usr/src/app/node_modules ./node_modules
