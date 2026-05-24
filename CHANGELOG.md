@@ -1,3 +1,10 @@
+# [2.44.0](https://github.com/guidefari/gbfm/compare/v2.43.0...v2.44.0) (2026-05-21)
+
+
+### Features
+
+* **ux:** tweets ([565c737](https://github.com/guidefari/gbfm/commit/565c737d37d369c7a37c51078d2d64c4d22169f6))
+
 # [2.43.0](https://github.com/guidefari/gbfm/compare/v2.42.0...v2.43.0) (2026-05-21)
 
 
