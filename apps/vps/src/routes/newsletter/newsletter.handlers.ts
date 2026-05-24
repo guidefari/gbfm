@@ -25,7 +25,7 @@ function notifyAdmin(
 }
 
 export const subscribe: AppRouteHandler<SubscribeRoute> = async (c) => {
-  const { email, source } = c.req.valid('json')
+  const { email, name, source } = c.req.valid('json')
   const normalizedEmail = email.trim().toLowerCase()
 
   try {
@@ -33,6 +33,7 @@ export const subscribe: AppRouteHandler<SubscribeRoute> = async (c) => {
       .insert(newsletterSubscribersTable)
       .values({
         email: normalizedEmail,
+        ...(name && { name: name.trim() }),
         source: source || 'subscribe_page'
       })
       .onConflictDoNothing({ target: newsletterSubscribersTable.email })

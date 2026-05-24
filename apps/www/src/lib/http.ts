@@ -1149,13 +1149,17 @@ type NewsletterSubscribeResponse = {
 }
 
 export function useNewsletterSubscribe() {
-  return useMutation<NewsletterSubscribeResponse, Error, { email: string }>({
-    mutationFn: async ({ email }) =>
+  return useMutation<
+    NewsletterSubscribeResponse,
+    Error,
+    { email: string; name?: string }
+  >({
+    mutationFn: async ({ email, name }) =>
       fetcher<NewsletterSubscribeResponse>(
         `${VPS_BASE_URL}/newsletter/subscribe`,
         {
           method: 'POST',
-          body: JSON.stringify({ email, source: 'subscribe_page' })
+          body: JSON.stringify({ email, name, source: 'subscribe_page' })
         }
       )
   })

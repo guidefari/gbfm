@@ -10,13 +10,14 @@ export const Route = createFileRoute('/subscribe')({
 
 function Subscribe() {
   const [email, setEmail] = useState('')
+  const [name, setName] = useState('')
   const { mutate, isPending, isSuccess, isError, error, data } =
     useNewsletterSubscribe()
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (email.trim()) {
-      mutate({ email: email.trim() })
+      mutate({ email: email.trim(), name: name.trim() || undefined })
     }
   }
 
@@ -49,29 +50,37 @@ function Subscribe() {
           </div>
         </div>
       ) : (
-        <form
-          onSubmit={handleSubmit}
-          className='flex flex-col sm:flex-row gap-3'>
+        <form onSubmit={handleSubmit} className='flex flex-col gap-3'>
           <Input
-            type='email'
-            name='email'
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder='Enter your email'
-            required
+            type='text'
+            name='name'
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder='Your name (optional)'
             disabled={isPending}
-            className='flex-1'
           />
-          <Button type='submit' disabled={isPending || !email.trim()}>
-            {isPending ? (
-              <>
-                <Loader2 className='w-4 h-4 mr-2 animate-spin' />
-                Subscribing...
-              </>
-            ) : (
-              'Subscribe'
-            )}
-          </Button>
+          <div className='flex flex-col sm:flex-row gap-3'>
+            <Input
+              type='email'
+              name='email'
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder='Enter your email'
+              required
+              disabled={isPending}
+              className='flex-1'
+            />
+            <Button type='submit' disabled={isPending || !email.trim()}>
+              {isPending ? (
+                <>
+                  <Loader2 className='w-4 h-4 mr-2 animate-spin' />
+                  Subscribing...
+                </>
+              ) : (
+                'Subscribe'
+              )}
+            </Button>
+          </div>
         </form>
       )}
 

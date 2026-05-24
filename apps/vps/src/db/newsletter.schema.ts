@@ -7,6 +7,7 @@ export const newsletterSubscribersTable = pgTable(
   {
     id: uuid().primaryKey().defaultRandom(),
     email: varchar({ length: 255 }).notNull().unique(),
+    name: varchar({ length: 100 }),
     source: varchar({ length: 50 }),
     unsubscribeToken: uuid().unique().defaultRandom(),
     unsubscribedAt: timestamp({ withTimezone: true }),
@@ -25,6 +26,7 @@ export type InsertNewsletterSubscriber = InferInsertModel<
 
 export const insertNewsletterSubscriberSchema = z.object({
   email: z.string().email(),
+  name: z.string().max(100).optional(),
   source: z.string().optional()
 })
 
