@@ -244,6 +244,28 @@ export async function sendInviteEmail({
   })
 }
 
+export async function sendNewsletterUnsubscribeLinkEmail({
+  to,
+  unsubscribeUrl
+}: {
+  to: string
+  unsubscribeUrl: string
+}): Promise<void> {
+  const { NewsletterUnsubscribeLink } = await import(
+    '../emails/newsletter-unsubscribe-link'
+  )
+
+  await sendEmail({
+    to,
+    template: {
+      subject: 'Your unsubscribe link',
+      component: React.createElement(NewsletterUnsubscribeLink, {
+        unsubscribeUrl
+      })
+    }
+  })
+}
+
 export async function sendNewsletterWelcomeEmail({
   to,
   unsubscribeUrl

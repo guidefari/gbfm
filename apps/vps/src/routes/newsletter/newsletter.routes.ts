@@ -4,6 +4,8 @@ import { jsonContent, jsonContentRequired } from 'stoker/openapi/helpers'
 import { createErrorSchema } from 'stoker/openapi/schemas'
 import {
   insertNewsletterSubscriberSchema,
+  requestUnsubscribeResponseSchema,
+  requestUnsubscribeSchema,
   subscribeResponseSchema,
   unsubscribeResponseSchema,
   unsubscribeSchema
@@ -66,5 +68,25 @@ export const unsubscribe = createRoute({
   }
 })
 
+export const requestUnsubscribe = createRoute({
+  path: '/request-unsubscribe',
+  method: 'post',
+  request: {
+    body: jsonContentRequired(requestUnsubscribeSchema, 'Email address')
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      requestUnsubscribeResponseSchema,
+      'Unsubscribe email sent if address is on the list'
+    ),
+    [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
+      createErrorSchema(requestUnsubscribeSchema),
+      'Validation error'
+    )
+  }
+})
+
 export type SubscribeRoute = typeof subscribe
 export type UnsubscribeRoute = typeof unsubscribe
+export type RequestUnsubscribeRoute = typeof requestUnsubscribe

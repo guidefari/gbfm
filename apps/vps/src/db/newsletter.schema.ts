@@ -42,3 +42,11 @@ export const unsubscribeSchema = z.object({
 export const unsubscribeResponseSchema = z.object({
   success: z.boolean()
 })
+
+export const requestUnsubscribeSchema = z.object({
+  email: z.string().email()
+})
+
+export const requestUnsubscribeResponseSchema = z.object({
+  sent: z.boolean()
+})

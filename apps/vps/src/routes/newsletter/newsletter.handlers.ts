@@ -1,15 +1,20 @@
 import {
   sendNewsletterAdminNotificationEmail,
+  sendNewsletterUnsubscribeLinkEmail,
   sendNewsletterWelcomeEmail
 } from '@gbfm/email/sender'
 import * as Sentry from '@sentry/bun'
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
 import { newsletterSubscribersTable } from '@/db/newsletter.schema'
 import type { AppRouteHandler } from '@/lib/types'
 import { config } from '@/services/config.service'
-import type { SubscribeRoute, UnsubscribeRoute } from './newsletter.routes'
+import type {
+  RequestUnsubscribeRoute,
+  SubscribeRoute,
+  UnsubscribeRoute
+} from './newsletter.routes'
 
 function notifyAdmin(
   event: 'subscribed' | 'unsubscribed',
@@ -88,4 +93,32 @@ export const unsubscribe: AppRouteHandler<UnsubscribeRoute> = async (c) => {
   notifyAdmin('unsubscribed', result[0]?.email ?? token)
 
   return c.json({ success: true }, HttpStatusCodes.OK)
+}
+
+export const requestUnsubscribe: AppRouteHandler<
+  RequestUnsubscribeRoute
+> = async (c) => {
+  const { email } = c.req.valid('json')
+  const normalizedEmail = email.trim().toLowerCase()
+
+  const [row] = await db
+    .select({ unsubscribeToken: newsletterSubscribersTable.unsubscribeToken })
+    .from(newsletterSubscribersTable)
+    .where(
+      and(
+        eq(newsletterSubscribersTable.email, normalizedEmail),
+        isNull(newsletterSubscribersTable.unsubscribedAt)
+      )
+    )
+    .limit(1)
+
+  if (row?.unsubscribeToken) {
+    const unsubscribeUrl = `${process.env.APP_URL ?? 'https://goosebumps.fm'}/unsubscribe?token=${row.unsubscribeToken}`
+    sendNewsletterUnsubscribeLinkEmail({
+      to: normalizedEmail,
+      unsubscribeUrl
+    }).catch((err) => console.error('Request unsubscribe email failed:', err))
+  }
+
+  return c.json({ sent: true }, HttpStatusCodes.OK)
 }

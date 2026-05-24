@@ -614,6 +614,22 @@ export function useAdminEmailLogs({
   })
 }
 
+type NewsletterSubscriber = {
+  id: string
+  email: string
+  name: string | null
+  source: string | null
+  unsubscribedAt: string | null
+  createdAt: string
+}
+
+export function useAdminNewsletterSubscribers() {
+  return useQuery<{ subscribers: NewsletterSubscriber[] }, Error>({
+    queryKey: ['admin', 'newsletter-subscribers'],
+    queryFn: async () => fetcher(`${VPS_BASE_URL}/admin/newsletter-subscribers`)
+  })
+}
+
 export function useAllLabels() {
   const {
     data,
@@ -1172,6 +1188,19 @@ export function useNewsletterUnsubscribe() {
         method: 'POST',
         body: JSON.stringify({ token })
       })
+  })
+}
+
+export function useRequestNewsletterUnsubscribe() {
+  return useMutation<{ sent: boolean }, Error, { email: string }>({
+    mutationFn: async ({ email }) =>
+      fetcher<{ sent: boolean }>(
+        `${VPS_BASE_URL}/newsletter/request-unsubscribe`,
+        {
+          method: 'POST',
+          body: JSON.stringify({ email })
+        }
+      )
   })
 }
 

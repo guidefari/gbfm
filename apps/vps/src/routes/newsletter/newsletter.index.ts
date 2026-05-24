@@ -10,5 +10,6 @@ router.use('*', strictRateLimiter())
 router
   .openapi(routes.subscribe, handlers.subscribe)
   .openapi(routes.unsubscribe, handlers.unsubscribe)
+  .openapi(routes.requestUnsubscribe, handlers.requestUnsubscribe)
 
 export default router
