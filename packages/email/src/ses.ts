@@ -33,6 +33,7 @@ export interface SendTemplateEmailProps {
   subject: string
   html: string
   text?: string
+  replyTo?: string
   attachments?: Attachment[]
 }
 
@@ -64,12 +65,14 @@ function buildRawMessage({
   subject,
   html,
   text,
+  replyTo,
   attachments
 }: SendTemplateEmailProps & { from: string; to: string[] }): string {
   const boundary = `boundary-${Date.now().toString(16)}`
   let content = [
     `From: goosebumps.fm <${from}>`,
     `To: ${to.join(', ')}`,
+    ...(replyTo ? [`Reply-To: ${replyTo}`] : []),
     `Subject: ${subject}`,
     'MIME-Version: 1.0',
     `Content-Type: multipart/alternative; boundary="${boundary}"`,
@@ -179,6 +182,7 @@ export async function sendTemplate({
   subject,
   html,
   text,
+  replyTo,
   attachments
 }: SendTemplateEmailProps): Promise<void> {
   const fromAddress = getFromAddress(from)
@@ -190,6 +194,7 @@ export async function sendTemplate({
     subject,
     html,
     ...(text && { text }),
+    ...(replyTo && { replyTo }),
     ...(attachments && { attachments })
   })
 

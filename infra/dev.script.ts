@@ -117,6 +117,15 @@ new sst.x.DevCommand('db_pushProd', {
 //   }
 // })
 
+new sst.x.DevCommand('Send_Personal_Welcome', {
+  link: [email, ...allSecrets],
+  dev: {
+    command: 'bun scripts/send-personal-welcome.ts',
+    directory: './apps/vps',
+    autostart: false
+  }
+})
+
 new sst.x.DevCommand('Email_Preview', {
   link: [email, ...allSecrets],
   dev: {

@@ -12,12 +12,14 @@ export interface EmailTemplate {
 export interface SendEmailOptions {
   to: string | string[]
   from?: string
+  replyTo?: string
   template: EmailTemplate
 }
 
 export async function sendEmail({
   to,
   from = 'noreply',
+  replyTo,
   template
 }: SendEmailOptions): Promise<void> {
   Effect.logInfo('[Email] Starting template render', {
@@ -70,7 +72,8 @@ export async function sendEmail({
     from,
     to,
     subject: template.subject,
-    html
+    html,
+    ...(replyTo && { replyTo })
   })
 }
 
@@ -287,6 +290,33 @@ export async function sendNewsletterAdminNotificationEmail({
         event,
         email,
         timestamp
+      })
+    }
+  })
+}
+
+export async function sendPersonalWelcomeEmail({
+  to,
+  name,
+  unsubscribeUrl = 'https://goosebumps.fm/unsubscribe'
+}: {
+  to: string
+  name?: string
+  unsubscribeUrl?: string
+}): Promise<void> {
+  const { NewsletterPersonalWelcome } = await import(
+    '../emails/newsletter-personal-welcome'
+  )
+
+  await sendEmail({
+    to,
+    from: 'guide',
+    replyTo: 'guidefari@icloud.com',
+    template: {
+      subject: 'Welcome to goosebumps.fm',
+      component: React.createElement(NewsletterPersonalWelcome, {
+        name,
+        unsubscribeUrl
       })
     }
   })
