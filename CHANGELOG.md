@@ -1,3 +1,13 @@
+# [2.49.0](https://github.com/guidefari/gbfm/compare/v2.48.0...v2.49.0) (2026-05-24)
+
+
+### Features
+
+* **admin:** add newsletter subscribers tab ([080c07a](https://github.com/guidefari/gbfm/commit/080c07a07dc3e1802b61d4f2f03f6caf639879fe))
+* **email:** add personal newsletter welcome email with reply-to support ([eab6f81](https://github.com/guidefari/gbfm/commit/eab6f8136b3e9240a2e20a341e0c00eb2048f50d))
+* **newsletter:** add email-based unsubscribe flow ([b2dd9f3](https://github.com/guidefari/gbfm/commit/b2dd9f3059f31649af4a7272bfcb544a1504c5d7))
+* **newsletter:** collect optional name on subscribe ([6a00921](https://github.com/guidefari/gbfm/commit/6a00921a1c23dfcbd254b626a5be70c801b3b493))
+
 # [2.48.0](https://github.com/guidefari/gbfm/compare/v2.47.0...v2.48.0) (2026-05-24)
 
 
