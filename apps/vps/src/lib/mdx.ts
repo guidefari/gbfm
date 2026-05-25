@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { compile } from '@mdx-js/mdx'
 import { Effect } from 'effect'
 
@@ -10,22 +11,27 @@ export interface MDXError {
   details?: string
 }
 
-/**
- * Compiles MDX content to executable function body
- * @param mdxContent - Raw MDX content string (without frontmatter)
- * @returns Compiled MDX or error
- */
+const mdxCache = new Map<string, string>()
+
+function contentKey(content: string): string {
+  return createHash('sha256').update(content).digest('hex')
+}
+
 export async function compileMDX(
   mdxContent: string
 ): Promise<MDXCompilationResult | MDXError> {
+  const key = contentKey(mdxContent)
+  const cached = mdxCache.get(key)
+  if (cached !== undefined) return { compiled: cached }
+
   try {
     const compiled = await compile(mdxContent, {
       outputFormat: 'function-body'
     })
 
-    return {
-      compiled: compiled.toString()
-    }
+    const result = compiled.toString()
+    mdxCache.set(key, result)
+    return { compiled: result }
   } catch (error) {
     const { runAppFork } = await import('@/runtime')
     runAppFork(
@@ -41,26 +47,24 @@ export async function compileMDX(
   }
 }
 
-/**
- * Type guard to check if MDX compilation was successful
- */
 export function isMDXCompilationResult(
   result: MDXCompilationResult | MDXError
 ): result is MDXCompilationResult {
   return !('error' in result)
 }
 
-/**
- * Compiles raw markdown/MDX to function body string
- * @param content - Raw markdown/MDX content
- * @returns Compiled function body string
- */
 export async function compileMDXToString(content: string): Promise<string> {
+  const key = contentKey(content)
+  const cached = mdxCache.get(key)
+  if (cached !== undefined) return cached
+
   try {
     const compiled = await compile(content, {
       outputFormat: 'function-body'
     })
-    return compiled.toString()
+    const result = compiled.toString()
+    mdxCache.set(key, result)
+    return result
   } catch (error) {
     const { runAppFork } = await import('@/runtime')
     runAppFork(

@@ -14,7 +14,7 @@ import { EditorialListItem } from '@/components/EditorialListItem'
 import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
 import { PostsNav } from '@/components/PostsNav'
 import { QueryError } from '@/components/QueryError'
-import { useEditorialPosts } from '@/lib/http'
+import { useEditorialPosts, useEditorialTags } from '@/lib/http'
 import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'
 
 const searchSchema = z.object({
@@ -42,16 +42,7 @@ function EditorialListPage() {
     isFetchingNextPage
   } = useEditorialPosts()
 
-  const allTags = useMemo(() => {
-    if (!data) return []
-    const tagSet = new Set<string>()
-    data.forEach((post) => {
-      post.tags?.forEach((t) => {
-        tagSet.add(t)
-      })
-    })
-    return Array.from(tagSet).sort()
-  }, [data])
+  const { data: allTags } = useEditorialTags()
 
   const filteredData = useMemo(() => {
     if (!tag || !data) return data

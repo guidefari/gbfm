@@ -377,6 +377,41 @@ export const processMixUpload = createRoute({
   }
 })
 
+export const getAudioTags = createRoute({
+  path: '/audio/{type}/tags',
+  method: 'get',
+  request: {
+    params: z.object({ type: z.enum(['mix', 'track', 'misc']) })
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.array(z.string()),
+      'Unique tags for audio of the given type'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to fetch tags'
+    )
+  }
+})
+
+export const getEditorialTags = createRoute({
+  path: '/posts/editorials/tags',
+  method: 'get',
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      z.array(z.string()),
+      'Unique tags for editorial posts'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to fetch tags'
+    )
+  }
+})
+
 export const getAudioByType = createRoute({
   path: '/audio/{type}',
   method: 'get',
@@ -639,6 +674,8 @@ export const getMixJobStatus = createRoute({
 })
 
 // Export types
+export type GetAudioTagsRoute = typeof getAudioTags
+export type GetEditorialTagsRoute = typeof getEditorialTags
 export type GetPostsRoute = typeof getPosts
 export type GetPostBySlugRoute = typeof getPostBySlug
 export type GetEditorialPostsRoute = typeof getEditorialPosts

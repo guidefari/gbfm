@@ -1,4 +1,4 @@
-import { arrayContains, count, desc, eq } from 'drizzle-orm'
+import { arrayContains, count, desc, eq, inArray, sql } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { user as usersTable } from '@/db/auth.schema'
@@ -66,6 +66,7 @@ export interface PostService {
   readonly getMicroPostBySlug: (
     slug: string
   ) => Effect.Effect<SelectMdxCompiledMicroPost, DatabaseError | NotFoundError>
+  readonly getEditorialTags: () => Effect.Effect<string[], DatabaseError>
   readonly getByTag: (
     tag: string,
     options: { limit: number; offset: number }
@@ -175,14 +176,18 @@ const buildPostWithCreators = (post: SelectPost) =>
         })
     })
 
+    return yield* buildPostWithPreloadedCreators(post, creators)
+  })
+
+const buildPostWithPreloadedCreators = (
+  post: SelectPost,
+  creators: Array<{ id: string; name: string; username: string | null }>
+) =>
+  Effect.gen(function* () {
     let processedPost: SelectMdxCompiledPost = {
       ...post,
       compiledContent: '',
-      creators: creators.map((creator) => ({
-        id: creator.id,
-        name: creator.name,
-        username: creator.username
-      }))
+      creators
     }
 
     const content = post.content
@@ -308,9 +313,58 @@ const getAllEffect = (options: {
       offset
     })
 
+    const postIds = data.map((p) => p.id)
+
+    const creatorsData =
+      postIds.length > 0
+        ? yield* Effect.tryPromise({
+            try: () =>
+              db
+                .select({
+                  postId: postCreators.postId,
+                  creatorId: usersTable.id,
+                  creatorName: usersTable.name,
+                  creatorUsername: usersTable.username
+                })
+                .from(postCreators)
+                .innerJoin(
+                  usersTable,
+                  eq(postCreators.creatorId, usersTable.id)
+                )
+                .where(inArray(postCreators.postId, postIds)),
+            catch: (error) =>
+              new DatabaseError({
+                message: `Failed to fetch creators: ${getErrorMessage(error)}`,
+                operation: 'select',
+                table: 'post_creators'
+              })
+          })
+        : []
+
+    const creatorsByPostId: Record<
+      string,
+      Array<{ id: string; name: string; username: string | null }>
+    > = {}
+    for (const row of creatorsData) {
+      const existing = creatorsByPostId[row.postId]
+      const creator = {
+        id: row.creatorId,
+        name: row.creatorName,
+        username: row.creatorUsername
+      }
+      if (existing) {
+        existing.push(creator)
+      } else {
+        creatorsByPostId[row.postId] = [creator]
+      }
+    }
+
     const compiledData: SelectMdxCompiledPost[] = yield* Effect.forEach(
       data,
-      (post) => buildPostWithCreators(post),
+      (post) => {
+        const creators = creatorsByPostId[post.id] ?? []
+        return buildPostWithPreloadedCreators(post, creators)
+      },
       { concurrency: 5 }
     )
 
@@ -323,6 +377,30 @@ const getAllEffect = (options: {
       attributes: { 'post.type': options.type ?? 'all' }
     })
   )
+
+const getEditorialTagsEffect = () =>
+  Effect.gen(function* () {
+    const rows = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .selectDistinct({
+            tag: sql<string | null>`unnest(${postsTable.tags})`
+          })
+          .from(postsTable)
+          .where(eq(postsTable.type, 'post')),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch editorial tags: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'posts'
+        })
+    })
+
+    return rows
+      .map((r) => r.tag)
+      .filter((t): t is string => typeof t === 'string' && t.length > 0)
+      .sort()
+  })
 
 const getEditorialsEffect = (options: { limit: number; offset: number }) =>
   Effect.gen(function* () {
@@ -682,6 +760,7 @@ export const PostServiceLive = Layer.succeed(PostService, {
   getEditorialBySlug: getEditorialBySlugEffect,
   getMicroPosts: getMicroPostsEffect,
   getMicroPostBySlug: getMicroPostBySlugEffect,
+  getEditorialTags: getEditorialTagsEffect,
   getByTag: getByTagEffect,
   create: createEffect,
   update: updateEffect

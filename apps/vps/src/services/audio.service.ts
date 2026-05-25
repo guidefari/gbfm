@@ -44,6 +44,9 @@ export interface AudioService {
     { data: AudioWithCreators[]; pagination: PaginationMetadata },
     DatabaseError
   >
+  readonly getTags: (
+    type: AudioType
+  ) => Effect.Effect<string[], DatabaseError>
   readonly getBySlug: (
     type: AudioType,
     slug: string
@@ -190,6 +193,30 @@ const getByTypeEffect = (
       data,
       pagination: createPaginationMetadata(total, limit, offset)
     }
+  })
+
+const getTagsEffect = (type: AudioType) =>
+  Effect.gen(function* () {
+    const rows = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .selectDistinct({
+            tag: sql<string | null>`unnest(${audioTable.tags})`
+          })
+          .from(audioTable)
+          .where(eq(audioTable.type, type)),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch audio tags: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'audio'
+        })
+    })
+
+    return rows
+      .map((r) => r.tag)
+      .filter((t): t is string => typeof t === 'string' && t.length > 0)
+      .sort()
   })
 
 const getBySlugEffect = (type: AudioType, slug: string) =>
@@ -561,6 +588,10 @@ export const AudioServiceLive = Layer.succeed(AudioService, {
   getByType: (type, options) =>
     getByTypeEffect(type, options).pipe(
       Effect.withSpan('audio.getByType', { attributes: { type } })
+    ),
+  getTags: (type) =>
+    getTagsEffect(type).pipe(
+      Effect.withSpan('audio.getTags', { attributes: { type } })
     ),
   getBySlug: (type, slug) =>
     getBySlugEffect(type, slug).pipe(

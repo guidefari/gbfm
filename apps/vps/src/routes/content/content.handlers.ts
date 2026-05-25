@@ -19,8 +19,10 @@ import type {
   CreatePostRoute,
   GetAudioBySlugRoute,
   GetAudioByTypeRoute,
+  GetAudioTagsRoute,
   GetEditorialPostBySlugRoute,
   GetEditorialPostsRoute,
+  GetEditorialTagsRoute,
   GetMicroPostBySlugRoute,
   GetMicroPostsRoute,
   GetMixJobStatusRoute,
@@ -67,6 +69,7 @@ export const getEditorialPosts: AppRouteHandler<
     return yield* postService.getEditorials({ limit, offset })
   })
 
+  c.header('Cache-Control', 'public, max-age=60, stale-while-revalidate=300')
   return runEffect<GetEditorialPostsRoute>(c, program)
 }
 
@@ -162,6 +165,36 @@ export const createMix: AppRouteHandler<CreateMixRoute> = async (c) => {
   return runEffect<CreateMixRoute>(c, program, HttpStatusCodes.CREATED)
 }
 
+export const getAudioTags: AppRouteHandler<GetAudioTagsRoute> = async (c) => {
+  const { type } = c.req.valid('param')
+
+  const program = Effect.gen(function* () {
+    const audioService = yield* AudioService
+    return yield* audioService.getTags(type as 'mix' | 'track' | 'misc')
+  }).pipe(Effect.withSpan('getAudioTags'))
+
+  c.header(
+    'Cache-Control',
+    'public, max-age=3600, stale-while-revalidate=86400'
+  )
+  return runEffect<GetAudioTagsRoute>(c, program)
+}
+
+export const getEditorialTags: AppRouteHandler<
+  GetEditorialTagsRoute
+> = async (c) => {
+  const program = Effect.gen(function* () {
+    const postService = yield* PostService
+    return yield* postService.getEditorialTags()
+  }).pipe(Effect.withSpan('getEditorialTags'))
+
+  c.header(
+    'Cache-Control',
+    'public, max-age=3600, stale-while-revalidate=86400'
+  )
+  return runEffect<GetEditorialTagsRoute>(c, program)
+}
+
 export const getAudioByType: AppRouteHandler<GetAudioByTypeRoute> = async (
   c
 ) => {
@@ -177,6 +210,7 @@ export const getAudioByType: AppRouteHandler<GetAudioByTypeRoute> = async (
     })
   }).pipe(Effect.withSpan('getAudioByType'))
 
+  c.header('Cache-Control', 'public, max-age=60, stale-while-revalidate=300')
   return runEffect<GetAudioByTypeRoute>(c, program)
 }
 

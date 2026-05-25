@@ -183,6 +183,26 @@ export function useAudioByType(type: 'mix' | 'track' | 'misc', tag?: string) {
   }
 }
 
+export function useAudioTags(type: 'mix' | 'track' | 'misc') {
+  const { data, error, isPending } = useQuery<string[], Error>({
+    queryKey: ['audio-tags', type],
+    queryFn: async () =>
+      fetcher<string[]>(`${VPS_BASE_URL}/content/audio/${type}/tags`),
+    staleTime: 1000 * 60 * 60
+  })
+  return { data: data ?? [], error, isPending }
+}
+
+export function useEditorialTags() {
+  const { data, error, isPending } = useQuery<string[], Error>({
+    queryKey: ['editorial-tags'],
+    queryFn: async () =>
+      fetcher<string[]>(`${VPS_BASE_URL}/content/posts/editorials/tags`),
+    staleTime: 1000 * 60 * 60
+  })
+  return { data: data ?? [], error, isPending }
+}
+
 export function useAudioBySlug(type: 'mix' | 'track' | 'misc', slug: string) {
   const { data, error, isPending } = useQuery<SelectMdxCompiledAudio, Error>({
     queryKey: ['audio', type, slug],

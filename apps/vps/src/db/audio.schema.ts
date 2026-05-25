@@ -32,7 +32,13 @@ export const audioTable = pgTable(
   },
   (table) => [
     index('audio_slug_idx').on(table.slug),
-    index('audio_show_idx').on(table.showId)
+    index('audio_show_idx').on(table.showId),
+    index('audio_type_draft_created_idx').on(
+      table.type,
+      table.draft,
+      table.createdAt
+    ),
+    index('audio_tags_gin_idx').using('gin', table.tags)
   ]
 )
 
