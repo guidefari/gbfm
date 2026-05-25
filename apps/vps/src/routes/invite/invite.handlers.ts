@@ -15,7 +15,9 @@ import {
 import { runAppFork } from '@/runtime'
 import { config } from '@/services/config.service'
 
-import type { SendInviteRoute } from './invite.routes'
+import { auth } from '@/lib/auth'
+
+import type { ConfirmInviteRoute, SendInviteRoute } from './invite.routes'
 
 function generateToken(length: number): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
@@ -99,4 +101,58 @@ export const sendInviteHandler: AppRouteHandler<SendInviteRoute> = async (
       HttpStatusCodes.INTERNAL_SERVER_ERROR
     )
   }
+}
+
+export const confirmInviteHandler: AppRouteHandler<ConfirmInviteRoute> = async (
+  c
+) => {
+  const { token, password } = c.req.valid('json')
+
+  const identifier = `reset-password:${token}`
+  const [verificationRecord] = await db
+    .select()
+    .from(verification)
+    .where(eq(verification.identifier, identifier))
+    .limit(1)
+
+  if (!verificationRecord || verificationRecord.expiresAt < new Date()) {
+    return c.json(
+      { error: 'Invalid or expired invite link' },
+      HttpStatusCodes.BAD_REQUEST
+    )
+  }
+
+  const userId = verificationRecord.value
+  const [targetUser] = await db
+    .select()
+    .from(usersTable)
+    .where(eq(usersTable.id, userId))
+    .limit(1)
+
+  if (!targetUser) {
+    return c.json({ error: 'User not found' }, HttpStatusCodes.BAD_REQUEST)
+  }
+
+  const resetResult = await auth.api.resetPassword({
+    body: { token, newPassword: password }
+  })
+
+  if (!resetResult.status) {
+    return c.json(
+      { error: 'Failed to reset password' },
+      HttpStatusCodes.INTERNAL_SERVER_ERROR
+    )
+  }
+
+  const signInResult = await auth.api.signInEmail({
+    body: { email: targetUser.email, password },
+    returnHeaders: true
+  })
+
+  const setCookieHeader = signInResult.headers.get('set-cookie')
+  if (setCookieHeader) {
+    c.header('set-cookie', setCookieHeader)
+  }
+
+  return c.json({ success: true }, HttpStatusCodes.OK)
 }

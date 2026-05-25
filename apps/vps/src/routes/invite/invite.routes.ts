@@ -48,3 +48,40 @@ export const sendInvite = createRoute({
 })
 
 export type SendInviteRoute = typeof sendInvite
+
+const confirmInviteBodySchema = z.object({
+  token: z.string().min(1, 'Token is required'),
+  password: z.string().min(8, 'Password must be at least 8 characters')
+})
+
+const confirmInviteResponseSchema = z.object({
+  success: z.boolean()
+})
+
+export const confirmInvite = createRoute({
+  path: '/confirm',
+  method: 'post',
+  request: {
+    body: jsonContentRequired(
+      confirmInviteBodySchema,
+      'Confirm invite and set password'
+    )
+  },
+  tags,
+  responses: {
+    [HttpStatusCodes.OK]: jsonContent(
+      confirmInviteResponseSchema,
+      'Password set and session created'
+    ),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
+      z.object({ error: z.string() }),
+      'Invalid or expired token'
+    ),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
+      z.object({ error: z.string() }),
+      'Failed to confirm invite'
+    )
+  }
+})
+
+export type ConfirmInviteRoute = typeof confirmInvite

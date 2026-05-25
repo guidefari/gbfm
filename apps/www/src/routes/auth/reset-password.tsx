@@ -6,7 +6,8 @@ import {
   AuthPageLayout,
   AuthStatusNotice
 } from '@/components/Auth/AuthPageLayout'
-import { authClient } from '@/lib/auth-client'
+import { useSession } from '@/lib/auth-client'
+import { VPS_BASE_URL } from '@/lib/http'
 
 export const searchSchema = z.object({
   token: z.string().optional(),
@@ -21,6 +22,7 @@ export const Route = createFileRoute('/auth/reset-password')({
 function ResetPasswordPage() {
   const search = Route.useSearch()
   const navigate = useNavigate()
+  const { refetch: refetchSession } = useSession()
   const [message, setMessage] = useState<string>('')
   const [error, setError] = useState<string>('')
   const [isValidToken, setIsValidToken] = useState<boolean>(false)
@@ -67,22 +69,24 @@ function ResetPasswordPage() {
     }
 
     try {
-      const result = await authClient.resetPassword({
-        newPassword: password,
-        token: search.token
+      const res = await fetch(`${VPS_BASE_URL}/invite/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ token: search.token, password })
       })
 
-      if (result.error) {
-        setError(result.error.message || 'Failed to reset password')
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setError(
+          (data as { error?: string }).error || 'Failed to reset password'
+        )
         setMessage('')
       } else {
-        setMessage(
-          'Password reset successful! You can now log in with your new password.'
-        )
+        setMessage('Password set! Taking you in...')
         setError('')
-        setTimeout(() => {
-          navigate({ to: '/auth/sign-in' })
-        }, 1500)
+        await refetchSession()
+        navigate({ to: '/' })
       }
     } catch (_err) {
       setError('Failed to reset password')
@@ -127,7 +131,7 @@ function ResetPasswordPage() {
     <AuthPageLayout
       badge='Reset Password'
       title='Choose a new password'
-      description='Set a fresh password for your account and we will send you back to sign in.'
+      description='Set a fresh password for your account and we will log you straight in.'
       status={
         message ? (
           <AuthStatusNotice variant='success'>{message}</AuthStatusNotice>

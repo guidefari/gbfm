@@ -1,3 +1,4 @@
+export { ChangePasswordCard } from './ChangePasswordCard'
 export { EmailPreferencesCard } from './EmailPreferencesCard'
 export { FavoritesSection } from './FavoritesSection'
 export { PlayerPreferencesCard } from './PlayerPreferencesCard'

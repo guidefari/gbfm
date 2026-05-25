@@ -10,6 +10,7 @@ import {
 } from 'lucide-react'
 import { useState } from 'react'
 import {
+  ChangePasswordCard,
   EmailPreferencesCard,
   PlayerPreferencesCard,
   ProfileCard,
@@ -107,8 +108,9 @@ function SettingsPage() {
           {/* Settings Content */}
           <div className='flex-1 border-l border-border pl-12 min-h-[500px]'>
             {activeSettingTab === 'profile' && (
-              <div className='animate-in fade-in slide-in-from-left-2 duration-300'>
+              <div className='animate-in fade-in slide-in-from-left-2 duration-300 space-y-6'>
                 <ProfileCard user={session.user} />
+                <ChangePasswordCard email={session.user.email} />
               </div>
             )}
             {activeSettingTab === 'appearance' && (
