@@ -1,50 +1,44 @@
-# React + TypeScript + Vite
+# `@gbfm/www`
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Changelog page
 
-Currently, two official plugins are available:
+`src/routes/changelog.tsx` renders the repo root `CHANGELOG.md` as the public changelog page.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+The repo intentionally uses `CHANGELOG.md` as the only source of truth.
 
-## Expanding the ESLint configuration
+We do not keep a second tracked copy under `apps/www/src/` anymore because that drifted after releases:
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+- `semantic-release` updates the root `CHANGELOG.md`
+- the old `sync-changelog.ts` script copied it into the app
+- local `dev` or `build` runs would then create seemingly random diffs when the copied file lagged behind
 
-- Configure the top-level `parserOptions` property like this:
+## Why there is a Vite plugin
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+Yes: `plugins/repo-changelog.ts` is a small manually written Vite plugin.
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+It exists because the app needs the root `CHANGELOG.md` content at build/dev time, but importing `.md` directly from the app goes through the MDX pipeline. For the changelog route we want the raw file contents first, then we compile that content intentionally inside the route loader.
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+The plugin provides a virtual module called `virtual:repo-changelog` that:
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
+- reads `../../CHANGELOG.md` from the repo root
+- returns the file contents as a string export
+- watches that file during dev so edits trigger reloads
+
+Then `src/routes/changelog.tsx`:
+
+- imports `virtual:repo-changelog`
+- compiles the string with `@mdx-js/mdx`
+- renders it with `MDXRendrr`
+
+## Files involved
+
+- `CHANGELOG.md`
+- `apps/www/plugins/repo-changelog.ts`
+- `apps/www/src/routes/changelog.tsx`
+- `apps/www/src/virtual-modules.d.ts`
+
+## References
+
+- Vite plugin API: `https://vite.dev/guide/api-plugin.html`
+- Vite virtual modules convention: `https://vite.dev/guide/api-plugin.html#virtual-modules-convention`
+- MDX package docs: `https://mdxjs.com/packages/mdx/`

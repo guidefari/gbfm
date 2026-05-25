@@ -4,9 +4,8 @@
   "version": "0.4.7",
   "type": "module",
   "scripts": {
-    "dev": "bun scripts/sync-changelog.ts && vite --host",
-    "build": "bun scripts/sync-changelog.ts && vite build",
-    "sync:changelog": "bun scripts/sync-changelog.ts",
+    "dev": "vite --host",
+    "build": "vite build",
     "bio": "biome lint ./src --write && biome format --write ./src",
     "preview": "vite preview",
     "typecheck": "tsgo --noEmit",

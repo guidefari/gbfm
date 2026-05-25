@@ -5,11 +5,13 @@ import { fileURLToPath } from "node:url";
 import { tanstackRouter } from "@tanstack/router-plugin/vite";
 import mdx from "@mdx-js/rollup";
 import tailwindcss from "@tailwindcss/vite";
+import { repoChangelogPlugin } from "./plugins/repo-changelog";
 
 // https://vitejs.dev/config/
 export default defineConfig({
 	plugins: [
 		tailwindcss(),
+		repoChangelogPlugin(),
 		{
 			enforce: "pre",
 			...mdx({
