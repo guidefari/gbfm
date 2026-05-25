@@ -45,4 +45,19 @@ describe('toSlug', () => {
   test('handles numbers', () => {
     expect(stripSlugSuffix(toSlug('Album 2024'))).toBe('album-2024')
   })
+
+  test('truncates long slug bases', () => {
+    const slugBase = stripSlugSuffix(
+      toSlug(
+        'This is a very long title that should not keep going forever in the generated slug'
+      )
+    )
+
+    expect(slugBase).toBe('this-is-a-very-long-title-that-s')
+    expect(slugBase.length).toBeLessThanOrEqual(32)
+  })
+
+  test('falls back when the text has no slug characters', () => {
+    expect(stripSlugSuffix(toSlug('!!!'))).toBe('item')
+  })
 })

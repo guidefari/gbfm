@@ -12,7 +12,6 @@ type Props = {
 
 export function TweetListCard({ post }: Props) {
   const hasMusicEntity = Boolean(post.musicEntityType && post.musicEntityId)
-  const titleDuplicatesEntity = hasMusicEntity
   const tweetLinkLabel = post.title ? `Open tweet: ${post.title}` : 'Open tweet'
 
   return (
@@ -30,7 +29,7 @@ export function TweetListCard({ post }: Props) {
           interactive={false}
         />
 
-        {!titleDuplicatesEntity && post.title && (
+        {post.title && (
           <h2 className='text-base font-black leading-tight tracking-tight'>
             {post.title}
           </h2>

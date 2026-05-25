@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     "./utils": "./src/utils/index.ts",
+    "./utils/slug": "./src/utils/slug.ts",
     "./api": "./src/api/index.ts",
     "./feature-flags": "./src/feature-flags/index.ts",
     "./mix-processing": "./src/mix-processing/index.ts",

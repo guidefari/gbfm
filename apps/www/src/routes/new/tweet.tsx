@@ -1,4 +1,5 @@
 import { LINK_STATUS, type LinkStatus } from '@gbfm/core/status'
+import { normalizeSlugBase } from '@gbfm/core/utils/slug'
 import {
   Button,
   Card,
@@ -66,12 +67,6 @@ export const Route = createFileRoute('/new/tweet')({
   }),
   component: MusicCapturePage
 })
-
-const generateSlug = (value: string) =>
-  value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '')
 
 function MusicCapturePage() {
   const router = useRouter()
@@ -242,7 +237,7 @@ function MusicCapturePage() {
         throw new Error('Tweet is still loading')
       }
 
-      const slugBase = generateSlug(title.trim() || 'tweet')
+      const slugBase = normalizeSlugBase(title.trim() || 'tweet') || 'tweet'
       const slug =
         existingPost?.slug ?? `${slugBase}-${Date.now().toString(36)}`
       const creatorIds = isEditMode

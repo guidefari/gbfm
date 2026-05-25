@@ -1,3 +1,5 @@
+import { normalizeSlugBase } from '@gbfm/core/utils/slug'
+
 /**
  * Generates a URL-safe slug from text, appended with an 8-char random suffix for uniqueness.
  *
@@ -5,11 +7,10 @@
  * toSlug('Four Tet') // => 'four-tet-a1b2c3d4'
  * toSlug('Burial & Four Tet!') // => 'burial-four-tet-e5f6g7h8'
  */
-export const toSlug = (text: string) =>
-  `${text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-|-$/g, '')}-${crypto.randomUUID().slice(0, 8)}`
+export const toSlug = (text: string) => {
+  const slugBase = normalizeSlugBase(text) || 'item'
+  return `${slugBase}-${crypto.randomUUID().slice(0, 8)}`
+}
 
 /**
  * Returns the slug without its trailing random suffix (everything after the last hyphen).

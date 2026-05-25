@@ -56,7 +56,6 @@ function TweetPostPage() {
   if (!post) return null
 
   const hasMusicEntity = Boolean(post.musicEntityType && post.musicEntityId)
-  const titleDuplicatesEntity = hasMusicEntity
   const canEdit = Boolean(
     user &&
       (user.role === 'admin' ||
@@ -120,7 +119,7 @@ function TweetPostPage() {
           </div>
         </div>
 
-        {!titleDuplicatesEntity && post.title && (
+        {post.title && (
           <h1 className='text-xl font-black leading-tight tracking-tight'>
             {post.title}
           </h1>
