@@ -1,3 +1,10 @@
+## [2.50.1](https://github.com/guidefari/gbfm/compare/v2.50.0...v2.50.1) (2026-05-25)
+
+
+### Bug Fixes
+
+* **tweet:** restore titles and shorten slugs ([33e9702](https://github.com/guidefari/gbfm/commit/33e97021995f144932a26fb199144a12c5578a5e))
+
 # [2.50.0](https://github.com/guidefari/gbfm/compare/v2.49.0...v2.50.0) (2026-05-25)
 
 
