@@ -1,3 +1,16 @@
+# [2.50.0](https://github.com/guidefari/gbfm/compare/v2.49.0...v2.50.0) (2026-05-25)
+
+
+### Bug Fixes
+
+*  replaced search.token! with a guarded mutation ([9fcf975](https://github.com/guidefari/gbfm/commit/9fcf9758e19b6feb2f1e9b02ef7a5c17c17759e2))
+
+
+### Features
+
+* **design:** newsletter page ([64eb243](https://github.com/guidefari/gbfm/commit/64eb24339866103ea67a12c7ffab2ab1689d765e))
+* password reset flow ([9d621f3](https://github.com/guidefari/gbfm/commit/9d621f399c1a5d97fb491fdaec11d424edaf4864))
+
 # [2.49.0](https://github.com/guidefari/gbfm/compare/v2.48.0...v2.49.0) (2026-05-24)
 
 
