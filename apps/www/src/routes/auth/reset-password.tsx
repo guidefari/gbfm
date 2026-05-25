@@ -44,8 +44,13 @@ function ResetPasswordPage() {
   const isValidToken = !search.error && Boolean(search.token)
 
   const { mutate, isPending, isSuccess, error } = useMutation({
-    mutationFn: ({ password }: { password: string }) =>
-      confirmInvite(search.token!, password),
+    mutationFn: ({ password }: { password: string }) => {
+      if (!search.token) {
+        throw new Error('Missing reset token')
+      }
+
+      return confirmInvite(search.token, password)
+    },
     onSuccess: async () => {
       await refetchSession()
       navigate({ to: '/' })
