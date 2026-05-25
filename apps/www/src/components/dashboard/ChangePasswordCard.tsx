@@ -40,7 +40,7 @@ export function ChangePasswordCard({ email }: ChangePasswordCardProps) {
         </p>
         {status === 'sent' ? (
           <p className='text-sm text-gb-pastel-green-1 font-medium'>
-            Reset link sent — check your inbox.
+            Reset link sent, check your inbox.
           </p>
         ) : status === 'error' ? (
           <p className='text-sm text-destructive'>

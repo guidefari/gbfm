@@ -6,6 +6,7 @@ import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
 import { user as usersTable, verification } from '@/db/auth.schema'
 import { EMAIL_NOTIFICATION_TYPES } from '@/db/email.schema'
+import { auth } from '@/lib/auth'
 import type { AppRouteHandler } from '@/lib/types'
 import {
   createEmailDeliveryLog,
@@ -14,8 +15,6 @@ import {
 } from '@/repositories/email-delivery-log.repository'
 import { runAppFork } from '@/runtime'
 import { config } from '@/services/config.service'
-
-import { auth } from '@/lib/auth'
 
 import type { ConfirmInviteRoute, SendInviteRoute } from './invite.routes'
 

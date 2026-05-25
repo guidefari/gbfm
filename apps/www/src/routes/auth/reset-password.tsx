@@ -1,6 +1,7 @@
 import { GenericAuthForm, isPasswordValid, PasswordChecklist } from '@gbfm/ui'
+import { useMutation } from '@tanstack/react-query'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { z } from 'zod'
 import {
   AuthPageLayout,
@@ -19,81 +20,49 @@ export const Route = createFileRoute('/auth/reset-password')({
   validateSearch: searchSchema
 })
 
+async function confirmInvite(token: string, password: string) {
+  const res = await fetch(`${VPS_BASE_URL}/invite/confirm`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ token, password })
+  })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}))
+    throw new Error(
+      (data as { error?: string }).error || 'Failed to reset password'
+    )
+  }
+}
+
 function ResetPasswordPage() {
   const search = Route.useSearch()
   const navigate = useNavigate()
   const { refetch: refetchSession } = useSession()
-  const [message, setMessage] = useState<string>('')
-  const [error, setError] = useState<string>('')
-  const [isValidToken, setIsValidToken] = useState<boolean>(false)
-  const [isSubmitting, setIsSubmitting] = useState(false)
   const [password, setPassword] = useState('')
 
-  useEffect(() => {
-    if (search.error) {
-      setError(
-        'Invalid or expired reset link. Please request a new password reset.'
-      )
-      return
+  const isValidToken = !search.error && Boolean(search.token)
+
+  const { mutate, isPending, isSuccess, error } = useMutation({
+    mutationFn: ({ password }: { password: string }) =>
+      confirmInvite(search.token!, password),
+    onSuccess: async () => {
+      await refetchSession()
+      navigate({ to: '/' })
     }
-    if (!search.token) {
-      setError('Invalid reset link. Please request a new password reset.')
-      return
-    }
-    setIsValidToken(true)
-  }, [search.token, search.error])
+  })
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
-    setIsSubmitting(true)
     const formData = new FormData(event.currentTarget)
     const password = formData.get('password') as string
     const confirmPassword = formData.get('confirmPassword') as string
 
-    if (!isPasswordValid(password)) {
-      setError('Password does not meet requirements')
-      setIsSubmitting(false)
-      return
-    }
+    if (!isPasswordValid(password)) return
+    if (password !== confirmPassword) return
+    if (!search.token) return
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match')
-      setIsSubmitting(false)
-      return
-    }
-
-    if (!search.token) {
-      setError('Invalid reset token')
-      setIsSubmitting(false)
-      return
-    }
-
-    try {
-      const res = await fetch(`${VPS_BASE_URL}/invite/confirm`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ token: search.token, password })
-      })
-
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        setError(
-          (data as { error?: string }).error || 'Failed to reset password'
-        )
-        setMessage('')
-      } else {
-        setMessage('Password set! Taking you in...')
-        setError('')
-        await refetchSession()
-        navigate({ to: '/' })
-      }
-    } catch (_err) {
-      setError('Failed to reset password')
-      setMessage('')
-    } finally {
-      setIsSubmitting(false)
-    }
+    mutate({ password })
   }
 
   if (!isValidToken) {
@@ -103,8 +72,11 @@ function ResetPasswordPage() {
         title='That reset link is no longer valid'
         description='Request a fresh password reset email and we will help you back in.'
         status={
-          error ? (
-            <AuthStatusNotice variant='error'>{error}</AuthStatusNotice>
+          search.error ? (
+            <AuthStatusNotice variant='error'>
+              Invalid or expired reset link. Please request a new password
+              reset.
+            </AuthStatusNotice>
           ) : null
         }
         footer={
@@ -133,10 +105,12 @@ function ResetPasswordPage() {
       title='Choose a new password'
       description='Set a fresh password for your account and we will log you straight in.'
       status={
-        message ? (
-          <AuthStatusNotice variant='success'>{message}</AuthStatusNotice>
+        isSuccess ? (
+          <AuthStatusNotice variant='success'>
+            Password set! Taking you in...
+          </AuthStatusNotice>
         ) : error ? (
-          <AuthStatusNotice variant='error'>{error}</AuthStatusNotice>
+          <AuthStatusNotice variant='error'>{error.message}</AuthStatusNotice>
         ) : null
       }
       footer={
@@ -176,7 +150,7 @@ function ResetPasswordPage() {
         ]}
         onSubmit={onSubmit}
         submitButtonText='Reset Password'
-        isSubmitting={isSubmitting}
+        isSubmitting={isPending}
         submitDisabled={!isPasswordValid(password)}
       />
     </AuthPageLayout>
