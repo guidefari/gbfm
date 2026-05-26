@@ -27,7 +27,14 @@ export const corsConfig = {
     return 'https://goosebumps.fm'
   },
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowHeaders: ['Content-Type', 'Authorization', 'Cookie', 'Refresh-Token'],
+  allowHeaders: [
+    'Content-Type',
+    'Authorization',
+    'Cookie',
+    'Refresh-Token',
+    'sentry-trace',
+    'baggage'
+  ],
   exposeHeaders: ['Set-Cookie'],
   credentials: true
 }
