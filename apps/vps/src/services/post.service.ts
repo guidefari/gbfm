@@ -577,7 +577,11 @@ const getEditorialBySlugEffect = (slug: string, mdx: MdxService) =>
           })
       )
     )
-  }).pipe(Effect.withSpan('post.getEditorialBySlug', { attributes: { 'post.slug': slug } }))
+  }).pipe(
+    Effect.withSpan('post.getEditorialBySlug', {
+      attributes: { 'post.slug': slug }
+    })
+  )
 
 const getMicroPostBySlugEffect = (slug: string, mdx: MdxService) =>
   Effect.gen(function* () {
@@ -592,7 +596,11 @@ const getMicroPostBySlugEffect = (slug: string, mdx: MdxService) =>
           })
       )
     )
-  }).pipe(Effect.withSpan('post.getMicroPostBySlug', { attributes: { 'post.slug': slug } }))
+  }).pipe(
+    Effect.withSpan('post.getMicroPostBySlug', {
+      attributes: { 'post.slug': slug }
+    })
+  )
 
 const createEffect = (data: InsertPost, creatorIds: string[]) =>
   Effect.gen(function* () {
