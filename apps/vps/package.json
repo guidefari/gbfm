@@ -8,6 +8,7 @@
     "dev:proddb": "DB_STAGE=prod bun --hot --preload ./src/instrument.ts src/index.ts",
     "start": "bun --preload ./src/instrument.ts src/index.ts",
     "test": "TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock DOCKER_HOST=unix:///var/run/docker.sock vitest run",
+    "test:unit": "vitest run --config vitest.unit.config.ts",
     "test:watch": "TESTCONTAINERS_DOCKER_SOCKET_OVERRIDE=/var/run/docker.sock DOCKER_HOST=unix:///var/run/docker.sock vitest",
     "typecheck": "tsgo --noEmit",
     "db:studio": "drizzle-kit studio",

@@ -19,7 +19,7 @@ import {
   type UnauthorizedError
 } from '@/errors'
 import { requireCreatorOrAdmin } from '@/lib/authorization'
-import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
+import { MdxService } from '@/lib/mdx'
 import {
   createPaginationMetadata,
   type PaginationMetadata
@@ -44,6 +44,7 @@ export interface AudioService {
     { data: AudioWithCreators[]; pagination: PaginationMetadata },
     DatabaseError
   >
+  readonly getTags: (type: AudioType) => Effect.Effect<string[], DatabaseError>
   readonly getBySlug: (
     type: AudioType,
     slug: string
@@ -192,7 +193,31 @@ const getByTypeEffect = (
     }
   })
 
-const getBySlugEffect = (type: AudioType, slug: string) =>
+const getTagsEffect = (type: AudioType) =>
+  Effect.gen(function* () {
+    const rows = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .selectDistinct({
+            tag: sql<string | null>`unnest(${audioTable.tags})`
+          })
+          .from(audioTable)
+          .where(eq(audioTable.type, type)),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch audio tags: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'audio'
+        })
+    })
+
+    return rows
+      .map((r) => r.tag)
+      .filter((t): t is string => typeof t === 'string' && t.length > 0)
+      .sort()
+  })
+
+const getBySlugEffect = (type: AudioType, slug: string, mdx: MdxService) =>
   Effect.gen(function* () {
     const audioRecords = yield* Effect.tryPromise({
       try: () =>
@@ -237,36 +262,22 @@ const getBySlugEffect = (type: AudioType, slug: string) =>
         })
     })
 
-    let processedAudio: SelectMdxCompiledAudio = {
+    let compiledContent = ''
+    if (audio.content) {
+      compiledContent = yield* mdx
+        .compile(audio.content)
+        .pipe(Effect.orElseSucceed(() => ''))
+    }
+
+    return {
       ...audio,
-      compiledContent: '',
+      compiledContent,
       creators: creators.map((creator) => ({
         id: creator.id,
         name: creator.name,
         username: creator.username
       }))
     }
-
-    if (audio.content) {
-      const mdxResult = yield* Effect.tryPromise({
-        try: () => compileMDX(audio.content),
-        catch: (error) =>
-          new DatabaseError({
-            message: `Failed to compile MDX: ${getErrorMessage(error)}`,
-            operation: 'mdx_compile',
-            table: 'audio'
-          })
-      })
-
-      if (isMDXCompilationResult(mdxResult)) {
-        processedAudio = {
-          ...processedAudio,
-          compiledContent: mdxResult.compiled
-        }
-      }
-    }
-
-    return processedAudio
   })
 
 const createEffect = (data: InsertAudio, creatorIds: string[]) =>
@@ -364,7 +375,8 @@ const updateEffect = (
   slug: string,
   userId: string,
   userRole: string,
-  data: Partial<InsertAudio> & { creatorIds?: string[] }
+  data: Partial<InsertAudio> & { creatorIds?: string[] },
+  mdx: MdxService
 ) =>
   Effect.gen(function* () {
     const existingRecords = yield* Effect.tryPromise({
@@ -465,36 +477,22 @@ const updateEffect = (
         })
     })
 
-    const baseProcessedAudio: SelectMdxCompiledAudio = {
+    let compiledContent = ''
+    if (updatedAudio.content) {
+      compiledContent = yield* mdx
+        .compile(updatedAudio.content)
+        .pipe(Effect.orElseSucceed(() => ''))
+    }
+
+    return {
       ...updatedAudio,
-      compiledContent: '',
+      compiledContent,
       creators: creators.map((creator) => ({
         id: creator.id,
         name: creator.name,
         username: creator.username
       }))
     }
-
-    if (updatedAudio.content) {
-      const mdxResult = yield* Effect.tryPromise({
-        try: () => compileMDX(updatedAudio.content),
-        catch: (error) =>
-          new DatabaseError({
-            message: `Failed to compile MDX: ${getErrorMessage(error)}`,
-            operation: 'mdx_compile',
-            table: 'audio'
-          })
-      })
-
-      if (isMDXCompilationResult(mdxResult)) {
-        return {
-          ...baseProcessedAudio,
-          compiledContent: mdxResult.compiled
-        }
-      }
-    }
-
-    return baseProcessedAudio
   })
 
 const PLAY_DEDUP_WINDOW_MS = 5 * 60 * 1000 // 5 minutes
@@ -557,23 +555,33 @@ const trackPlayEffect = (id: string, clientIp?: string) =>
     return { playCount: updated[0]?.playCount ?? 0 }
   })
 
-export const AudioServiceLive = Layer.succeed(AudioService, {
-  getByType: (type, options) =>
-    getByTypeEffect(type, options).pipe(
-      Effect.withSpan('audio.getByType', { attributes: { type } })
-    ),
-  getBySlug: (type, slug) =>
-    getBySlugEffect(type, slug).pipe(
-      Effect.withSpan('audio.getBySlug', { attributes: { type, slug } })
-    ),
-  create: (data, creatorIds) =>
-    createEffect(data, creatorIds).pipe(Effect.withSpan('audio.create')),
-  update: (type, slug, userId, userRole, data) =>
-    updateEffect(type, slug, userId, userRole, data).pipe(
-      Effect.withSpan('audio.update', { attributes: { type, slug } })
-    ),
-  trackPlay: (id, clientIp) =>
-    trackPlayEffect(id, clientIp).pipe(
-      Effect.withSpan('audio.trackPlay', { attributes: { id } })
-    )
-})
+export const AudioServiceLive = Layer.effect(
+  AudioService,
+  Effect.gen(function* () {
+    const mdx = yield* MdxService
+    return {
+      getByType: (type, options) =>
+        getByTypeEffect(type, options).pipe(
+          Effect.withSpan('audio.getByType', { attributes: { type } })
+        ),
+      getTags: (type) =>
+        getTagsEffect(type).pipe(
+          Effect.withSpan('audio.getTags', { attributes: { type } })
+        ),
+      getBySlug: (type, slug) =>
+        getBySlugEffect(type, slug, mdx).pipe(
+          Effect.withSpan('audio.getBySlug', { attributes: { type, slug } })
+        ),
+      create: (data, creatorIds) =>
+        createEffect(data, creatorIds).pipe(Effect.withSpan('audio.create')),
+      update: (type, slug, userId, userRole, data) =>
+        updateEffect(type, slug, userId, userRole, data, mdx).pipe(
+          Effect.withSpan('audio.update', { attributes: { type, slug } })
+        ),
+      trackPlay: (id, clientIp) =>
+        trackPlayEffect(id, clientIp).pipe(
+          Effect.withSpan('audio.trackPlay', { attributes: { id } })
+        )
+    }
+  })
+)

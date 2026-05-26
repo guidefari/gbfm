@@ -8,13 +8,12 @@ import {
 } from '@gbfm/ui'
 import { createFileRoute } from '@tanstack/react-router'
 import { Tag, X } from 'lucide-react'
-import { useMemo } from 'react'
 import { z } from 'zod'
 import { EditorialListItem } from '@/components/EditorialListItem'
 import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
 import { PostsNav } from '@/components/PostsNav'
 import { QueryError } from '@/components/QueryError'
-import { useEditorialPosts } from '@/lib/http'
+import { useEditorialPosts, useEditorialTags } from '@/lib/http'
 import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'
 
 const searchSchema = z.object({
@@ -40,23 +39,9 @@ function EditorialListPage() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage
-  } = useEditorialPosts()
+  } = useEditorialPosts(tag)
 
-  const allTags = useMemo(() => {
-    if (!data) return []
-    const tagSet = new Set<string>()
-    data.forEach((post) => {
-      post.tags?.forEach((t) => {
-        tagSet.add(t)
-      })
-    })
-    return Array.from(tagSet).sort()
-  }, [data])
-
-  const filteredData = useMemo(() => {
-    if (!tag || !data) return data
-    return data.filter((post) => post.tags?.includes(tag))
-  }, [data, tag])
+  const { data: allTags } = useEditorialTags()
 
   const handleTagChange = (newTag: string) => {
     navigate({
@@ -136,7 +121,7 @@ function EditorialListPage() {
         </div>
       )}
       <div className='grid gap-3'>
-        {filteredData?.map((post) => (
+        {data?.map((post) => (
           <EditorialListItem key={post.id} post={post} />
         ))}
 

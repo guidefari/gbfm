@@ -69,6 +69,35 @@ export type PaginatedResponse<T> = {
   pagination: PaginationMetadata
 }
 
+export type PaginationOptions = {
+  limit?: number
+}
+
+type UseAudioByTypeOptions = PaginationOptions & {
+  tag?: string
+}
+
+type UseAudioByTypeResult = {
+  data: SelectAudio[]
+  error: Error | null
+  fetchNextPage: () => Promise<unknown>
+  hasNextPage: boolean
+  isFetchingNextPage: boolean
+  isPending: boolean
+  refetch: () => Promise<unknown>
+}
+
+export const DEFAULT_PAGE_SIZE = 5
+
+function setPaginationParams(
+  url: URL,
+  pageParam: number,
+  { limit = DEFAULT_PAGE_SIZE }: PaginationOptions = {}
+) {
+  url.searchParams.set('limit', String(limit))
+  url.searchParams.set('offset', String(pageParam))
+}
+
 function getRequestUrl(input: RequestInfo) {
   if (typeof input === 'string') return input
   if (input instanceof URL) return input.toString()
@@ -147,7 +176,10 @@ export async function fetcher<T>(input: RequestInfo, init: RequestInit = {}) {
   }
 }
 
-export function useAudioByType(type: 'mix' | 'track' | 'misc', tag?: string) {
+export function useAudioByType(
+  type: 'mix' | 'track' | 'misc',
+  { tag, limit = DEFAULT_PAGE_SIZE }: UseAudioByTypeOptions = {}
+): UseAudioByTypeResult {
   const {
     data,
     error,
@@ -157,11 +189,10 @@ export function useAudioByType(type: 'mix' | 'track' | 'misc', tag?: string) {
     isPending,
     refetch
   } = useInfiniteQuery<PaginatedResponse<SelectAudio>, Error>({
-    queryKey: ['audio', type, tag].filter(Boolean),
+    queryKey: ['audio', type, tag ?? null, limit],
     queryFn: async ({ pageParam = 0 }) => {
       const url = new URL(`${VPS_BASE_URL}/content/audio/${type}`)
-      url.searchParams.set('limit', '20')
-      url.searchParams.set('offset', String(pageParam))
+      setPaginationParams(url, Number(pageParam), { limit })
       if (tag) url.searchParams.set('tag', tag)
       return fetcher<PaginatedResponse<SelectAudio>>(url.toString())
     },
@@ -177,10 +208,30 @@ export function useAudioByType(type: 'mix' | 'track' | 'misc', tag?: string) {
     error,
     isPending,
     fetchNextPage,
-    hasNextPage,
+    hasNextPage: hasNextPage ?? false,
     isFetchingNextPage,
     refetch
   }
+}
+
+export function useAudioTags(type: 'mix' | 'track' | 'misc') {
+  const { data, error, isPending } = useQuery<string[], Error>({
+    queryKey: ['audio-tags', type],
+    queryFn: async () =>
+      fetcher<string[]>(`${VPS_BASE_URL}/content/audio/${type}/tags`),
+    staleTime: 1000 * 60 * 60
+  })
+  return { data: data ?? [], error, isPending }
+}
+
+export function useEditorialTags() {
+  const { data, error, isPending } = useQuery<string[], Error>({
+    queryKey: ['editorial-tags'],
+    queryFn: async () =>
+      fetcher<string[]>(`${VPS_BASE_URL}/content/posts/editorials/tags`),
+    staleTime: 1000 * 60 * 60
+  })
+  return { data: data ?? [], error, isPending }
 }
 
 export function useAudioBySlug(type: 'mix' | 'track' | 'misc', slug: string) {
@@ -198,7 +249,7 @@ export function useAudioBySlug(type: 'mix' | 'track' | 'misc', slug: string) {
   }
 }
 
-export function useEditorialPosts(limit = 20) {
+export function useEditorialPosts(tag?: string, limit = DEFAULT_PAGE_SIZE) {
   const {
     data,
     error,
@@ -211,11 +262,12 @@ export function useEditorialPosts(limit = 20) {
     PaginatedResponse<SelectMdxCompiledEditorialPost>,
     Error
   >({
-    queryKey: ['posts', 'editorials', limit],
+    queryKey: ['posts', 'editorials', tag, limit],
     queryFn: async ({ pageParam = 0 }) => {
       const url = new URL(`${VPS_BASE_URL}/content/posts/editorials`)
       url.searchParams.set('limit', String(limit))
       url.searchParams.set('offset', String(pageParam))
+      if (tag) url.searchParams.set('tag', tag)
       return fetcher<PaginatedResponse<SelectMdxCompiledEditorialPost>>(
         url.toString()
       )
@@ -238,7 +290,7 @@ export function useEditorialPosts(limit = 20) {
   }
 }
 
-export function useMicroPosts(limit = 20) {
+export function useMicroPosts(limit = DEFAULT_PAGE_SIZE) {
   const {
     data,
     error,
@@ -582,7 +634,7 @@ export type AdminEmailLogsFilters = {
 }
 
 export function useAdminEmailLogs({
-  limit = 20,
+  limit = 10,
   offset = 0,
   status,
   recipientEmail,
@@ -630,7 +682,9 @@ export function useAdminNewsletterSubscribers() {
   })
 }
 
-export function useAllLabels() {
+export function useAllLabels({
+  limit = DEFAULT_PAGE_SIZE
+}: PaginationOptions = {}) {
   const {
     data,
     error,
@@ -639,11 +693,12 @@ export function useAllLabels() {
     isFetchingNextPage,
     isPending
   } = useInfiniteQuery<PaginatedResponse<SelectLabel>, Error>({
-    queryKey: ['labels'],
-    queryFn: async ({ pageParam = 0 }) =>
-      fetcher<PaginatedResponse<SelectLabel>>(
-        `${VPS_BASE_URL}/content/labels?limit=20&offset=${pageParam}`
-      ),
+    queryKey: ['labels', limit],
+    queryFn: async ({ pageParam = 0 }) => {
+      const url = new URL(`${VPS_BASE_URL}/content/labels`)
+      setPaginationParams(url, Number(pageParam), { limit })
+      return fetcher<PaginatedResponse<SelectLabel>>(url.toString())
+    },
     initialPageParam: 0,
     getNextPageParam: (lastPage) =>
       lastPage.pagination.hasMore
@@ -675,7 +730,10 @@ export function useLabelBySlug(slug: string) {
   }
 }
 
-export function useReleasesByLabel(labelSlug: string) {
+export function useReleasesByLabel(
+  labelSlug: string,
+  { limit = DEFAULT_PAGE_SIZE }: PaginationOptions = {}
+) {
   const {
     data,
     error,
@@ -684,11 +742,14 @@ export function useReleasesByLabel(labelSlug: string) {
     isFetchingNextPage,
     isPending
   } = useInfiniteQuery<PaginatedResponse<SelectRelease>, Error>({
-    queryKey: ['releases', 'label', labelSlug],
-    queryFn: async ({ pageParam = 0 }) =>
-      fetcher<PaginatedResponse<SelectRelease>>(
-        `${VPS_BASE_URL}/content/labels/${labelSlug}/releases?limit=20&offset=${pageParam}`
-      ),
+    queryKey: ['releases', 'label', labelSlug, limit],
+    queryFn: async ({ pageParam = 0 }) => {
+      const url = new URL(
+        `${VPS_BASE_URL}/content/labels/${labelSlug}/releases`
+      )
+      setPaginationParams(url, Number(pageParam), { limit })
+      return fetcher<PaginatedResponse<SelectRelease>>(url.toString())
+    },
     initialPageParam: 0,
     getNextPageParam: (lastPage) =>
       lastPage.pagination.hasMore
@@ -860,7 +921,9 @@ export type ShowWithHosts = SelectShow & {
   hosts: Array<{ id: string; name: string }>
 }
 
-export function useAllShows() {
+export function useAllShows({
+  limit = DEFAULT_PAGE_SIZE
+}: PaginationOptions = {}) {
   const {
     data,
     error,
@@ -869,11 +932,12 @@ export function useAllShows() {
     isFetchingNextPage,
     isPending
   } = useInfiniteQuery<PaginatedResponse<ShowWithHosts>, Error>({
-    queryKey: ['shows'],
-    queryFn: async ({ pageParam = 0 }) =>
-      fetcher<PaginatedResponse<ShowWithHosts>>(
-        `${VPS_BASE_URL}/shows?limit=20&offset=${pageParam}`
-      ),
+    queryKey: ['shows', limit],
+    queryFn: async ({ pageParam = 0 }) => {
+      const url = new URL(`${VPS_BASE_URL}/shows`)
+      setPaginationParams(url, Number(pageParam), { limit })
+      return fetcher<PaginatedResponse<ShowWithHosts>>(url.toString())
+    },
     initialPageParam: 0,
     getNextPageParam: (lastPage) =>
       lastPage.pagination.hasMore
@@ -939,7 +1003,10 @@ export function useShowById(id: string | null | undefined) {
   }
 }
 
-export function useShowEpisodes(slug: string) {
+export function useShowEpisodes(
+  slug: string,
+  { limit = DEFAULT_PAGE_SIZE }: PaginationOptions = {}
+) {
   const {
     data,
     error,
@@ -948,11 +1015,12 @@ export function useShowEpisodes(slug: string) {
     isFetchingNextPage,
     isPending
   } = useInfiniteQuery<PaginatedResponse<SelectAudio>, Error>({
-    queryKey: ['show-episodes', slug],
-    queryFn: async ({ pageParam = 0 }) =>
-      fetcher<PaginatedResponse<SelectAudio>>(
-        `${VPS_BASE_URL}/shows/${slug}/episodes?limit=20&offset=${pageParam}`
-      ),
+    queryKey: ['show-episodes', slug, limit],
+    queryFn: async ({ pageParam = 0 }) => {
+      const url = new URL(`${VPS_BASE_URL}/shows/${slug}/episodes`)
+      setPaginationParams(url, Number(pageParam), { limit })
+      return fetcher<PaginatedResponse<SelectAudio>>(url.toString())
+    },
     initialPageParam: 0,
     getNextPageParam: (lastPage) =>
       lastPage.pagination.hasMore

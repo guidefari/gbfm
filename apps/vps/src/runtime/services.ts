@@ -1,4 +1,5 @@
 import { Layer } from 'effect'
+import { MdxServiceLive } from '@/lib/mdx'
 import { DatabaseServiceLive } from '@/services/database.service'
 
 export {
@@ -47,8 +48,8 @@ const BaseServicesLayer = Layer.mergeAll(
   MusicReminderServiceLive,
   ReminderSignalServiceLive,
   MusicLinkScraperServiceLive,
-  AudioServiceLive,
-  PostServiceLive,
+  AudioServiceLive.pipe(Layer.provide(MdxServiceLive)),
+  PostServiceLive.pipe(Layer.provide(MdxServiceLive)),
   LabelServiceLive,
   ProfileServiceLive,
   ResolveServiceLive,

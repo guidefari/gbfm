@@ -17,7 +17,7 @@ import { MixMenu } from '@/components/MixMenu'
 import { MixTimeline, MixTimelineItem } from '@/components/MixTimeline'
 import { QueryError } from '@/components/QueryError'
 import { TrackContextMenu } from '@/components/TrackContextMenu'
-import { useAudioByType } from '@/lib/http'
+import { useAudioByType, useAudioTags } from '@/lib/http'
 import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'
 import { useUIStore } from '@/store'
 
@@ -44,20 +44,9 @@ function MixesListPage() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage
-  } = useAudioByType('mix', tag)
-  const { data: allMixesForTags } = useAudioByType('mix')
+  } = useAudioByType('mix', { tag })
+  const { data: allTags } = useAudioTags('mix')
   const { mixesSorting } = useUIStore()
-
-  const allTags = useMemo(() => {
-    if (!allMixesForTags) return []
-    const tagSet = new Set<string>()
-    allMixesForTags.forEach((mix) => {
-      mix.tags?.forEach((t) => {
-        tagSet.add(t)
-      })
-    })
-    return Array.from(tagSet).sort()
-  }, [allMixesForTags])
 
   const handleTagChange = (newTag: string) => {
     navigate({
