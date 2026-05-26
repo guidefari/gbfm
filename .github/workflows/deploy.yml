@@ -97,6 +97,7 @@ jobs:
           OTEL_EXPORTER_OTLP_ENDPOINT: ${{ secrets.OTEL_EXPORTER_OTLP_ENDPOINT }}
           OTEL_EXPORTER_OTLP_HEADERS: ${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
           CF_RULESET_IMPORT: ${{ inputs.cf_ruleset_import }}
+          SENTRY_RELEASE: ${{ steps.deployment-ref.outputs.ref }}
 
         run: |
           if [ "${{ inputs.refresh }}" = "true" ]; then
