@@ -1,3 +1,10 @@
+## [2.50.3](https://github.com/guidefari/gbfm/compare/v2.50.2...v2.50.3) (2026-05-26)
+
+
+### Bug Fixes
+
+* **cors:** add sentry headers ([86ecbf2](https://github.com/guidefari/gbfm/commit/86ecbf2c0abda3d2c5641e30eadf443e6f715b10))
+
 ## [2.50.2](https://github.com/guidefari/gbfm/compare/v2.50.1...v2.50.2) (2026-05-26)
 
 
