@@ -8,25 +8,32 @@
  */
 
 // Slugs derived from frontend routes
-// TODO: generate this file programmatically
 const ROUTE_SLUGS = [
   'admin',
   'auth',
   'changelog',
   'dashboard',
+  'djs',
+  'editorial',
+  'invite',
   'label-upload',
   'labels',
   'mix-upload',
   'mixes',
+  'new',
+  'privacy',
   'profile',
   'releases',
   'reminders',
   'settings',
   'shows',
   'subscribe',
+  'terms',
   'tracks',
+  'tweet',
+  'unsubscribe',
   'upload',
-  'upload-old'
+  'upload-old',
 ] as const
 
 // Additional reserved words
@@ -59,7 +66,7 @@ const ADDITIONAL_RESERVED = [
   'undefined',
   'user',
   'users',
-  'www'
+  'www',
 ] as const
 
 export const RESERVED_SLUGS: Set<string> = new Set([
