@@ -5,7 +5,9 @@ import { useAudioByType } from '@/lib/http'
 import { PlayPauseButton } from '../PlayPauseButton'
 
 export function RecentMixesSection() {
-  const { data: mixes, isPending } = useAudioByType('mix')
+  const { data: mixes, isPending } = useAudioByType('mix', undefined, {
+    limit: 6
+  })
 
   if (isPending) {
     return (
@@ -18,8 +20,6 @@ export function RecentMixesSection() {
       </div>
     )
   }
-
-  const recentMixes = mixes.slice(0, 6)
 
   return (
     <div>
@@ -35,7 +35,7 @@ export function RecentMixesSection() {
         </Link>
       </div>
       <div className='grid gap-8 sm:grid-cols-2 lg:grid-cols-3'>
-        {recentMixes.map((mix) => (
+        {mixes.map((mix) => (
           <div
             key={mix.id}
             className='flex flex-col gap-4 p-4 rounded-sm bg-card/20 hover:bg-accent/50 transition-all duration-300 group'>

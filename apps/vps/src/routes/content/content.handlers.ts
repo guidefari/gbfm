@@ -62,11 +62,11 @@ export const getPostBySlug: AppRouteHandler<GetPostBySlugRoute> = async (c) => {
 export const getEditorialPosts: AppRouteHandler<
   GetEditorialPostsRoute
 > = async (c) => {
-  const { limit, offset } = c.req.valid('query')
+  const { limit, offset, tag } = c.req.valid('query')
 
   const program = Effect.gen(function* () {
     const postService = yield* PostService
-    return yield* postService.getEditorials({ limit, offset })
+    return yield* postService.getEditorials({ limit, offset, tag })
   })
 
   c.header('Cache-Control', 'public, max-age=60, stale-while-revalidate=300')

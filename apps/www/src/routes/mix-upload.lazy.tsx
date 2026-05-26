@@ -20,7 +20,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createLazyFileRoute, useRouter } from '@tanstack/react-router'
 import { FileText, List, Loader2, Music } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { MixDetailsForm } from '@/components/mix-uploader/MixDetailsForm'
 import { S3AudioFilePicker } from '@/components/mix-uploader/S3AudioFilePicker'
 import { UploadSummaryCard } from '@/components/mix-uploader/upload-summary-card'
@@ -31,7 +31,7 @@ import {
   fetcher,
   useAllShows,
   useAudioBySlug,
-  useAudioByType,
+  useAudioTags,
   VPS_BASE_URL
 } from '@/lib/http'
 
@@ -69,18 +69,8 @@ function MixUploadPage() {
   const isEditMode = Boolean(search.edit)
   const editType = (search.type as 'mix') || 'mix'
 
-  const { data: allMixes } = useAudioByType('mix')
-  const { data: allShows } = useAllShows()
-
-  const availableTags = useMemo(() => {
-    const tagSet = new Set<string>()
-    allMixes?.forEach((mix) => {
-      mix.tags?.forEach((t: string) => {
-        tagSet.add(t)
-      })
-    })
-    return Array.from(tagSet).sort()
-  }, [allMixes])
+  const { data: availableTags } = useAudioTags('mix')
+  const { data: allShows } = useAllShows({ limit: 100 })
 
   const { data: existingMix, isPending: mixLoading } = useAudioBySlug(
     editType,

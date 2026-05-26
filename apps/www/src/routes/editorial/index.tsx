@@ -8,7 +8,6 @@ import {
 } from '@gbfm/ui'
 import { createFileRoute } from '@tanstack/react-router'
 import { Tag, X } from 'lucide-react'
-import { useMemo } from 'react'
 import { z } from 'zod'
 import { EditorialListItem } from '@/components/EditorialListItem'
 import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
@@ -40,14 +39,9 @@ function EditorialListPage() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage
-  } = useEditorialPosts()
+  } = useEditorialPosts(tag)
 
   const { data: allTags } = useEditorialTags()
-
-  const filteredData = useMemo(() => {
-    if (!tag || !data) return data
-    return data.filter((post) => post.tags?.includes(tag))
-  }, [data, tag])
 
   const handleTagChange = (newTag: string) => {
     navigate({
@@ -127,7 +121,7 @@ function EditorialListPage() {
         </div>
       )}
       <div className='grid gap-3'>
-        {filteredData?.map((post) => (
+        {data?.map((post) => (
           <EditorialListItem key={post.id} post={post} />
         ))}
 

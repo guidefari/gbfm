@@ -93,7 +93,9 @@ export const getEditorialPosts = createRoute({
   path: '/posts/editorials',
   method: 'get',
   request: {
-    query: paginationQuerySchema
+    query: paginationQuerySchema.extend({
+      tag: z.string().optional().openapi({ description: 'Filter by tag' })
+    })
   },
   tags,
   responses: {

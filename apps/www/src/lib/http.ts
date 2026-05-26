@@ -236,7 +236,7 @@ export function useAudioBySlug(type: 'mix' | 'track' | 'misc', slug: string) {
   }
 }
 
-export function useEditorialPosts(limit = DEFAULT_PAGE_SIZE) {
+export function useEditorialPosts(tag?: string, limit = DEFAULT_PAGE_SIZE) {
   const {
     data,
     error,
@@ -249,11 +249,12 @@ export function useEditorialPosts(limit = DEFAULT_PAGE_SIZE) {
     PaginatedResponse<SelectMdxCompiledEditorialPost>,
     Error
   >({
-    queryKey: ['posts', 'editorials', limit],
+    queryKey: ['posts', 'editorials', tag, limit],
     queryFn: async ({ pageParam = 0 }) => {
       const url = new URL(`${VPS_BASE_URL}/content/posts/editorials`)
       url.searchParams.set('limit', String(limit))
       url.searchParams.set('offset', String(pageParam))
+      if (tag) url.searchParams.set('tag', tag)
       return fetcher<PaginatedResponse<SelectMdxCompiledEditorialPost>>(
         url.toString()
       )

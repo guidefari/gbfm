@@ -1,4 +1,4 @@
-import { arrayContains, count, desc, eq, inArray, sql } from 'drizzle-orm'
+import { and, arrayContains, count, desc, eq, inArray, sql } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { user as usersTable } from '@/db/auth.schema'
@@ -44,6 +44,7 @@ export interface PostService {
   readonly getEditorials: (options: {
     limit: number
     offset: number
+    tag?: string
   }) => Effect.Effect<
     { data: SelectMdxCompiledEditorialPost[]; pagination: PaginationMetadata },
     DatabaseError,
@@ -240,12 +241,19 @@ export const toMicroPost = (
       )
 
 const getAllEffect = (
-  options: { limit: number; offset: number; type?: PostType },
+  options: { limit: number; offset: number; type?: PostType; tag?: string },
   mdx: MdxService
 ) =>
   Effect.gen(function* () {
-    const { limit, offset, type } = options
-    const whereCondition = type ? eq(postsTable.type, type) : undefined
+    const { limit, offset, type, tag } = options
+    const whereCondition =
+      type && tag
+        ? and(eq(postsTable.type, type), arrayContains(postsTable.tags, [tag]))
+        : type
+          ? eq(postsTable.type, type)
+          : tag
+            ? arrayContains(postsTable.tags, [tag])
+            : undefined
 
     const countResult = yield* Effect.tryPromise({
       try: () =>
@@ -388,7 +396,7 @@ const getEditorialTagsEffect = () =>
   })
 
 const getEditorialsEffect = (
-  options: { limit: number; offset: number },
+  options: { limit: number; offset: number; tag?: string },
   mdx: MdxService
 ) =>
   Effect.gen(function* () {
