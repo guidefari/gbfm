@@ -13,6 +13,7 @@ export const www = new sst.aws.StaticSite('gbfm-www', {
     VITE_VPS_BASE_URL: isLocal ? 'http://127.0.0.1:3003' : vps_gateway.url,
     VITE_PUBLIC_SENTRY_DSN: secret.VITE_PUBLIC_SENTRY_DSN.value,
     VITE_PUBLIC_SENTRY_ENVIRONMENT: $app.stage,
+    VITE_PUBLIC_SENTRY_RELEASE: process.env.SENTRY_RELEASE ?? '',
     VITE_SPOTIFY_CLIENT_ID: secret.SpotifyClientId.value
   },
   domain: {

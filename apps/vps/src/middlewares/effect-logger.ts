@@ -32,8 +32,15 @@ export function effectLogger(): MiddlewareHandler {
               })
               throw error
             } finally {
+              // Use matched route pattern (e.g. /content/posts/:slug) so
+              // transaction names aggregate by route rather than per-slug URL
+              const routePattern =
+                (c.req as unknown as { routePath?: string }).routePath ??
+                c.req.path
+              const normalizedName = `${c.req.method} ${routePattern}`
+              span.updateName(normalizedName)
               span.setAttribute('http.method', c.req.method)
-              span.setAttribute('http.route', c.req.path)
+              span.setAttribute('http.route', routePattern)
               span.setAttribute('http.status_code', c.res.status)
               span.setAttribute('http.duration_ms', Date.now() - start)
               span.end()
