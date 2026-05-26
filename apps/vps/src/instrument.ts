@@ -15,6 +15,4 @@ if (dsn) {
     enableLogs: true,
     debug: process.env.SENTRY_DEBUG === 'true'
   })
-
-  console.warn(`[sentry] preload init env=${environment} traces=1`)
 }

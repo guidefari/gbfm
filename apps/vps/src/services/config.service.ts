@@ -118,10 +118,6 @@ const ConfigSchema = Schema.Struct({
     dbStage: Schema.optional(Schema.String),
     logLevel: Schema.optional(Schema.String)
   }),
-  otel: Schema.Struct({
-    endpoint: Schema.optional(Schema.String),
-    headers: Schema.optional(Schema.String)
-  }),
   sentry: Schema.Struct({
     dsn: Schema.String,
     environment: Schema.String
@@ -209,13 +205,6 @@ export function createConfig(): ConfigService {
   const dbStage = process.env.DB_STAGE
   const logLevel = process.env.LOG_LEVEL
 
-  const otelEndpoint =
-    process.env.OTEL_EXPORTER_OTLP_ENDPOINT ||
-    getResourceValue('OTEL_EXPORTER_OTLP_ENDPOINT', '')
-  const otelHeaders =
-    process.env.OTEL_EXPORTER_OTLP_HEADERS ||
-    getResourceValue('OTEL_EXPORTER_OTLP_HEADERS', '')
-
   const adminEmail =
     process.env.ADMIN_EMAIL ||
     getResourceValue('AdminEmail', 'guidefari@icloud.com')
@@ -263,10 +252,6 @@ export function createConfig(): ConfigService {
       nodeEnv,
       dbStage,
       logLevel
-    },
-    otel: {
-      endpoint: otelEndpoint,
-      headers: otelHeaders
     },
     sentry: {
       dsn: sentryDsn,
