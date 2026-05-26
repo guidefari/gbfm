@@ -73,6 +73,20 @@ export type PaginationOptions = {
   limit?: number
 }
 
+type UseAudioByTypeOptions = PaginationOptions & {
+  tag?: string
+}
+
+type UseAudioByTypeResult = {
+  data: SelectAudio[]
+  error: Error | null
+  fetchNextPage: () => Promise<unknown>
+  hasNextPage: boolean
+  isFetchingNextPage: boolean
+  isPending: boolean
+  refetch: () => Promise<unknown>
+}
+
 export const DEFAULT_PAGE_SIZE = 5
 
 function setPaginationParams(
@@ -164,9 +178,8 @@ export async function fetcher<T>(input: RequestInfo, init: RequestInit = {}) {
 
 export function useAudioByType(
   type: 'mix' | 'track' | 'misc',
-  tag?: string,
-  { limit = DEFAULT_PAGE_SIZE }: PaginationOptions = {}
-) {
+  { tag, limit = DEFAULT_PAGE_SIZE }: UseAudioByTypeOptions = {}
+): UseAudioByTypeResult {
   const {
     data,
     error,
@@ -176,7 +189,7 @@ export function useAudioByType(
     isPending,
     refetch
   } = useInfiniteQuery<PaginatedResponse<SelectAudio>, Error>({
-    queryKey: ['audio', type, tag, limit].filter(Boolean),
+    queryKey: ['audio', type, tag ?? null, limit],
     queryFn: async ({ pageParam = 0 }) => {
       const url = new URL(`${VPS_BASE_URL}/content/audio/${type}`)
       setPaginationParams(url, Number(pageParam), { limit })
@@ -195,7 +208,7 @@ export function useAudioByType(
     error,
     isPending,
     fetchNextPage,
-    hasNextPage,
+    hasNextPage: hasNextPage ?? false,
     isFetchingNextPage,
     refetch
   }

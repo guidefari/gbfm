@@ -44,7 +44,7 @@ function MixesListPage() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage
-  } = useAudioByType('mix', tag)
+  } = useAudioByType('mix', { tag })
   const { data: allTags } = useAudioTags('mix')
   const { mixesSorting } = useUIStore()
 

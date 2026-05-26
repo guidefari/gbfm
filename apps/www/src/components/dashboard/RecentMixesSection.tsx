@@ -5,7 +5,7 @@ import { useAudioByType } from '@/lib/http'
 import { PlayPauseButton } from '../PlayPauseButton'
 
 export function RecentMixesSection() {
-  const { data: mixes, isPending } = useAudioByType('mix', undefined, {
+  const { data: mixes, isPending } = useAudioByType('mix', {
     limit: 6
   })
 
