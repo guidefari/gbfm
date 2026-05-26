@@ -180,9 +180,9 @@ export const getAudioTags: AppRouteHandler<GetAudioTagsRoute> = async (c) => {
   return runEffect<GetAudioTagsRoute>(c, program)
 }
 
-export const getEditorialTags: AppRouteHandler<
-  GetEditorialTagsRoute
-> = async (c) => {
+export const getEditorialTags: AppRouteHandler<GetEditorialTagsRoute> = async (
+  c
+) => {
   const program = Effect.gen(function* () {
     const postService = yield* PostService
     return yield* postService.getEditorialTags()
