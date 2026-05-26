@@ -44,6 +44,9 @@ export const service = new sst.aws.Service('gbfm_vps', {
     target: 'release',
     dockerfile: 'apps/vps/Dockerfile'
   },
+  environment: {
+    SENTRY_RELEASE: process.env.SENTRY_RELEASE ?? ''
+  },
   link: [
     // database,
     email,
