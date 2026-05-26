@@ -19,8 +19,15 @@ const analyticsLayer = env.sentryDsn
       dsn: env.sentryDsn,
       environment:
         env.sentryEnvironment ?? (env.isDev ? 'development' : 'production'),
+      release: env.sentryRelease,
       debug: env.isDev,
-      tracesSampleRate: env.isDev ? 1.0 : 0.1
+      // temporarily raised to 1.0 for end-to-end trace investigation
+      tracesSampleRate: 1.0,
+      tracePropagationTargets: [
+        'https://vps.goosebumps.fm',
+        'http://127.0.0.1:3003',
+        'http://localhost:3003'
+      ]
     })
   : NoopAnalyticsLayer
 

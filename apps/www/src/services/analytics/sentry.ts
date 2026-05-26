@@ -10,6 +10,8 @@ export interface SentryAnalyticsOptions {
   readonly debug?: boolean
   readonly tracesSampleRate?: number
   readonly replaysOnErrorSampleRate?: number
+  readonly tracePropagationTargets?: (string | RegExp)[]
+  readonly release?: string
 }
 
 const makeSentryClientLayer = (options: SentryAnalyticsOptions) =>
@@ -18,6 +20,7 @@ const makeSentryClientLayer = (options: SentryAnalyticsOptions) =>
       Sentry.init({
         dsn: options.dsn,
         environment: options.environment,
+        release: options.release,
         debug: options.debug ?? false,
         integrations: [
           Sentry.browserTracingIntegration(),
@@ -27,6 +30,7 @@ const makeSentryClientLayer = (options: SentryAnalyticsOptions) =>
           })
         ],
         tracesSampleRate: options.tracesSampleRate ?? 0.1,
+        tracePropagationTargets: options.tracePropagationTargets,
         replaysSessionSampleRate: 0,
         replaysOnErrorSampleRate: options.replaysOnErrorSampleRate ?? 1.0,
         sendDefaultPii: false

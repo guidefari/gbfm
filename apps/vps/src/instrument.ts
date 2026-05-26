@@ -9,6 +9,7 @@ if (dsn) {
   Sentry.init({
     dsn,
     environment,
+    release: process.env.SENTRY_RELEASE,
     tracesSampleRate: 1.0,
     sendDefaultPii: false,
     enableLogs: true,

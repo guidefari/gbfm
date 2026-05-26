@@ -318,7 +318,11 @@ const getAllEffect = (options: {
       data: compiledData,
       pagination: createPaginationMetadata(total, limit, offset)
     }
-  })
+  }).pipe(
+    Effect.withSpan('post.getAll', {
+      attributes: { 'post.type': options.type ?? 'all' }
+    })
+  )
 
 const getEditorialsEffect = (options: { limit: number; offset: number }) =>
   Effect.gen(function* () {
@@ -349,7 +353,7 @@ const getEditorialsEffect = (options: { limit: number; offset: number }) =>
       ...posts,
       data
     }
-  })
+  }).pipe(Effect.withSpan('post.getEditorials'))
 
 const getMicroPostsEffect = (options: { limit: number; offset: number }) =>
   Effect.gen(function* () {
@@ -380,7 +384,7 @@ const getMicroPostsEffect = (options: { limit: number; offset: number }) =>
       ...posts,
       data
     }
-  })
+  }).pipe(Effect.withSpan('post.getMicroPosts'))
 
 const getByTagEffect = (
   tag: string,
@@ -495,7 +499,7 @@ const getEditorialBySlugEffect = (slug: string) =>
           })
       )
     )
-  })
+  }).pipe(Effect.withSpan('post.getEditorialBySlug', { attributes: { 'post.slug': slug } }))
 
 const getMicroPostBySlugEffect = (slug: string) =>
   Effect.gen(function* () {
@@ -510,7 +514,7 @@ const getMicroPostBySlugEffect = (slug: string) =>
           })
       )
     )
-  })
+  }).pipe(Effect.withSpan('post.getMicroPostBySlug', { attributes: { 'post.slug': slug } }))
 
 const createEffect = (data: InsertPost, creatorIds: string[]) =>
   Effect.gen(function* () {

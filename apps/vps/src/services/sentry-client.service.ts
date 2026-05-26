@@ -42,6 +42,7 @@ export const SentryClientServiceLive = Layer.effect(
         Sentry.init({
           dsn: sentry.dsn,
           environment: sentry.environment,
+          release: process.env.SENTRY_RELEASE,
           tracesSampleRate: 1.0,
           sendDefaultPii: false,
           enableLogs: true,
