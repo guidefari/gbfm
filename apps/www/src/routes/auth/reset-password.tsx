@@ -10,7 +10,7 @@ import {
 import { useSession } from '@/lib/auth-client'
 import { VPS_BASE_URL } from '@/lib/http'
 
-export const searchSchema = z.object({
+const searchSchema = z.object({
   token: z.string().optional(),
   error: z.string().optional()
 })

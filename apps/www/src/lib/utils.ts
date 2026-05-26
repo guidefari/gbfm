@@ -24,7 +24,3 @@ export function formatSeconds(seconds: number) {
 
   return `${h > 0 ? hString : ''}${mString}${sString}`
 }
-
-export function capitalizeFirstLetter(string: string): string {
-  return string.charAt(0).toUpperCase() + string.slice(1)
-}

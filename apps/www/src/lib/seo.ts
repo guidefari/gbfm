@@ -8,9 +8,8 @@ import type {
 } from '@gbfm/vps/schemas'
 import type { PublicProfile } from './http'
 
-export const SITE_URL = 'https://goosebumps.fm'
-export const DEFAULT_OG_IMAGE =
-  'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'
+const SITE_URL = 'https://goosebumps.fm'
+const DEFAULT_OG_IMAGE = 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'
 
 export interface SEOHeadData {
   title: string
@@ -98,25 +97,6 @@ export function generateSEOMeta(data: SEOHeadData) {
   }
 
   return meta
-}
-
-export function generateMixSEO(
-  mix: SelectMdxCompiledAudio,
-  mixId: string
-): SEOHeadData {
-  const title = mix.title || mixId
-  const description = mix.description || `Listen to ${title} on goosebumps.fm`
-  const url = `${SITE_URL}/mixes/${mixId}`
-  const image = mix.thumbnailUrl || DEFAULT_OG_IMAGE
-
-  return {
-    title,
-    description,
-    url,
-    image,
-    type: 'music.song',
-    audioUrl: mix.url || undefined
-  }
 }
 
 export function generateTrackSEO(

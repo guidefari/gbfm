@@ -8,7 +8,6 @@ export {
 } from '@gbfm/ui'
 export { AudioDetailsForm } from './AudioDetailsForm'
 export {
-  CONTENT_TYPE_CONFIG,
   type ContentType,
   ContentTypeSelector,
   getTypeLabel

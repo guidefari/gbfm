@@ -76,7 +76,7 @@ export type PlayerAction =
   | { type: 'SET_INITIALIZED' }
   | { type: 'TRACK_ENDED' }
 
-export const defaultNowPlayingContext: NowPlayingContext = {
+const defaultNowPlayingContext: NowPlayingContext = {
   url: '/',
   title: 'Nothing playing, yet'
 }

@@ -718,28 +718,6 @@ export const useAudioPlayerActions = () => {
   }
 }
 
-export const useAudioPlayerState = () => {
-  const store = useAudioPlayerStore()
-  return {
-    isPlaying: store.isPlaying,
-    progress: store.progress,
-    currentTime: store.currentTime,
-    duration: store.duration,
-    volume: store.volume,
-    isMuted: store.isMuted,
-    audioSrc: store.audioSrc,
-    thumbnailUrl: store.thumbnailUrl,
-    nowPlayingContext: store.nowPlayingContext,
-    currentTrackId: store.currentTrackId,
-    audioRef: store.audioRef,
-    queue: store.queue,
-    currentIndex: store.currentIndex,
-    isQueueVisible: store.isQueueVisible,
-    isFullscreenVisible: store.isFullscreenVisible,
-    isInitialized: store.isInitialized
-  }
-}
-
 export const useAudioPlayerPlaybackState = () =>
   useAudioPlayerStore(
     useShallow((state) => ({

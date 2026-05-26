@@ -11,7 +11,7 @@ import {
 
 export type ContentType = 'mix' | 'track' | 'misc'
 
-export const CONTENT_TYPE_CONFIG = {
+const CONTENT_TYPE_CONFIG = {
   mix: {
     icon: Disc3,
     title: 'DJ Mix',

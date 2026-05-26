@@ -87,7 +87,7 @@ type UseAudioByTypeResult = {
   refetch: () => Promise<unknown>
 }
 
-export const DEFAULT_PAGE_SIZE = 5
+const DEFAULT_PAGE_SIZE = 5
 
 function setPaginationParams(
   url: URL,
@@ -327,41 +327,6 @@ export function useMicroPosts(limit = DEFAULT_PAGE_SIZE) {
   }
 }
 
-export function useEditorialPostBySlug(slug: string) {
-  const { data, error, isPending } = useQuery<
-    SelectMdxCompiledEditorialPost,
-    Error
-  >({
-    queryKey: ['post', 'editorial', slug],
-    queryFn: async () =>
-      fetcher(`${VPS_BASE_URL}/content/posts/editorials/${slug}`),
-    enabled: Boolean(slug)
-  })
-
-  return {
-    data,
-    error,
-    isPending
-  }
-}
-
-export function useMicroPostBySlug(slug: string) {
-  const { data, error, isPending } = useQuery<
-    SelectMdxCompiledMicroPost,
-    Error
-  >({
-    queryKey: ['post', 'micro', slug],
-    queryFn: async () => fetcher(`${VPS_BASE_URL}/content/posts/micro/${slug}`),
-    enabled: Boolean(slug)
-  })
-
-  return {
-    data,
-    error,
-    isPending
-  }
-}
-
 type SpotifyContentType = 'album' | 'track' | 'playlist'
 
 type SpotifyProxyInput<T extends SpotifyContentType> = {
@@ -464,19 +429,6 @@ export function useResolveMusicEntity(url: string) {
   }
 }
 
-export function useUserLOL() {
-  const { data, error, isPending } = useQuery<User, Error>({
-    queryKey: ['user'],
-    queryFn: async () => fetcher(`${VPS_BASE_URL}/user/profile`)
-  })
-
-  return {
-    data,
-    error,
-    isPending
-  }
-}
-
 export function useUpdateProfile() {
   const { mutateAsync: updateProfile, isPending } = useMutation<
     User,
@@ -527,23 +479,6 @@ export function useReplaceAdminUserSocialLinks() {
         queryKey: ['admin', 'user-social-links', variables.userId]
       })
     }
-  })
-}
-
-export function useUpdateAdminUserBio() {
-  return useMutation<
-    { bio: string | null },
-    Error,
-    { userId: string; bio: string }
-  >({
-    mutationFn: ({ userId, bio }) =>
-      fetcher<{ bio: string | null }>(
-        `${VPS_BASE_URL}/user/admin/${userId}/bio`,
-        {
-          method: 'PATCH',
-          body: JSON.stringify({ bio })
-        }
-      )
   })
 }
 

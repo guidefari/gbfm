@@ -3,7 +3,6 @@ export {
   useAudioPlayerPlaybackState,
   useAudioPlayerProgressState,
   useAudioPlayerQueueState,
-  useAudioPlayerState,
   useAudioPlayerStore,
   useAudioPlayerVisibilityState,
   useAudioPlayerVolumeState

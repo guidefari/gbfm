@@ -34,6 +34,7 @@ function VerifyEmailPage() {
   useEffect(() => {
     if (!token || searchError) return
     let cancelled = false
+    let timeoutId: ReturnType<typeof setTimeout>
     ;(async () => {
       const { error } = await authClient.verifyEmail({ query: { token } })
       if (cancelled) return
@@ -44,7 +45,7 @@ function VerifyEmailPage() {
       }
       setStatus('success')
       const redirectTo = callbackURL || '/'
-      setTimeout(() => {
+      timeoutId = setTimeout(() => {
         if (redirectTo.startsWith('/')) {
           navigate({ to: redirectTo })
         } else {
@@ -54,6 +55,7 @@ function VerifyEmailPage() {
     })()
     return () => {
       cancelled = true
+      clearTimeout(timeoutId)
     }
   }, [token, searchError, callbackURL, navigate])
 

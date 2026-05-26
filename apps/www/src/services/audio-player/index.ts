@@ -1,6 +1,5 @@
 export type { AudioEventName, AudioEventProperties } from './events'
 export {
-  defaultNowPlayingContext,
   initialPlayerState,
   type NowPlayingContext,
   type PlayerAction,
@@ -12,7 +11,6 @@ export {
   type MediaSessionHandlers,
   MediaSessionService,
   MediaSessionServiceLive,
-  MediaSessionServiceTest,
   setActionHandlers,
   setMetadata,
   setPlaybackState,
@@ -20,9 +18,7 @@ export {
 } from './media-session'
 export {
   AudioStorage,
-  AudioStorageInMemory,
   AudioStorageLive,
-  AudioStorageTest,
   clearPosition,
   readPosition,
   writePosition

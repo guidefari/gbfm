@@ -103,11 +103,3 @@ export const setPositionState = (duration: number, position: number) =>
 
 export const setActionHandlers = (handlers: MediaSessionHandlers) =>
   Effect.andThen(MediaSessionService, (s) => s.setActionHandlers(handlers))
-
-export const MediaSessionServiceTest = Layer.succeed(MediaSessionService, {
-  setMetadata: (_title: string, _artists: string[], _artwork?: string) =>
-    Effect.void,
-  setPlaybackState: (_state: 'playing' | 'paused' | 'none') => Effect.void,
-  setPositionState: (_duration: number, _position: number) => Effect.void,
-  setActionHandlers: (_handlers: MediaSessionHandlers) => Effect.void
-})

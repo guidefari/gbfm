@@ -51,25 +51,3 @@ export const writePosition = (trackId: string, time: number) =>
 
 export const clearPosition = (trackId: string) =>
   Effect.andThen(AudioStorage, (s) => s.clear(trackId))
-
-export const AudioStorageTest = Layer.succeed(AudioStorage, {
-  readPosition: (_trackId: string) => Effect.succeed(null),
-  writePosition: (_trackId: string, _time: number) => Effect.void,
-  clear: (_trackId: string) => Effect.void
-})
-
-export const AudioStorageInMemory = Layer.sync(AudioStorage, () => {
-  const store = new Map<string, number>()
-  return {
-    readPosition: (trackId: string) =>
-      Effect.sync(() => store.get(trackId) ?? null),
-    writePosition: (trackId: string, time: number) =>
-      Effect.sync(() => {
-        store.set(trackId, time)
-      }),
-    clear: (trackId: string) =>
-      Effect.sync(() => {
-        store.delete(trackId)
-      })
-  }
-})

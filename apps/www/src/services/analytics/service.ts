@@ -51,18 +51,7 @@ export const track = (event: string, properties?: AnalyticsProperties) =>
   Analytics.use((analytics) => analytics.track(event, properties))
 
 /**
- * Accessor helper for `Analytics.identify`.
- */
-export const identify = (userId: string, properties?: AnalyticsProperties) =>
-  Analytics.use((analytics) => analytics.identify(userId, properties))
-
-/**
  * Accessor helper for `Analytics.page`.
  */
 export const page = (name?: string, properties?: AnalyticsProperties) =>
   Analytics.use((analytics) => analytics.page(name, properties))
-
-/**
- * Accessor helper for `Analytics.reset`.
- */
-export const reset = () => Analytics.use((analytics) => analytics.reset())

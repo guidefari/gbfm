@@ -7,8 +7,6 @@ export {
 export {
   Analytics,
   type AnalyticsProperties,
-  identify,
   page,
-  reset,
   track
 } from './service'
