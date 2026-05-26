@@ -1,3 +1,10 @@
+## [2.50.2](https://github.com/guidefari/gbfm/compare/v2.50.1...v2.50.2) (2026-05-26)
+
+
+### Bug Fixes
+
+* apply biome formatting to pass CI lint check ([#115](https://github.com/guidefari/gbfm/issues/115)) ([f34772a](https://github.com/guidefari/gbfm/commit/f34772a71e7934f26caca6433f9b10ccbebc43b9))
+
 ## [2.50.1](https://github.com/guidefari/gbfm/compare/v2.50.0...v2.50.1) (2026-05-25)
 
 
