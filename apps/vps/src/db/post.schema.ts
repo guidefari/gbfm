@@ -41,11 +41,7 @@ export const postsTable = pgTable(
       table.musicEntityType,
       table.musicEntityId
     ),
-    index('posts_type_draft_created_idx').on(
-      table.type,
-      table.draft,
-      table.createdAt
-    ),
+    index('posts_type_created_idx').on(table.type, table.createdAt),
     index('posts_tags_gin_idx').using('gin', table.tags)
   ]
 )

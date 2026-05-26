@@ -4,7 +4,14 @@ import {
   type InferSelectModel,
   relations
 } from 'drizzle-orm'
-import { pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
+import {
+  index,
+  pgTable,
+  text,
+  timestamp,
+  unique,
+  uuid
+} from 'drizzle-orm/pg-core'
 import { audioTable } from './audio.schema'
 import { user } from './auth.schema'
 import { showsTable } from './show.schema'
@@ -27,6 +34,7 @@ export const favoritesTable = pgTable(
       .notNull()
   },
   (t) => [
+    index('favorites_user_created_idx').on(t.userId, t.createdAt),
     unique('unique_user_audio').on(t.userId, t.audioId),
     unique('unique_user_show').on(t.userId, t.showId)
   ]

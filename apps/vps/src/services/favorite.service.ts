@@ -1,4 +1,4 @@
-import { and, eq, isNotNull } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
@@ -462,7 +462,7 @@ const getFavoritesEffect = (
     attributes: { userId, limit, offset }
   })(
     Effect.gen(function* () {
-      const audioFavorites = yield* Effect.tryPromise({
+      const favorites = yield* Effect.tryPromise({
         try: () =>
           db
             .select({
@@ -478,36 +478,7 @@ const getFavoritesEffect = (
                 thumbnailUrl: audioTable.thumbnailUrl,
                 type: audioTable.type,
                 url: audioTable.url
-              }
-            })
-            .from(favoritesTable)
-            .innerJoin(audioTable, eq(favoritesTable.audioId, audioTable.id))
-            .where(
-              and(
-                eq(favoritesTable.userId, userId),
-                isNotNull(favoritesTable.audioId)
-              )
-            )
-            .orderBy(favoritesTable.createdAt)
-            .limit(limit)
-            .offset(offset),
-        catch: (error) =>
-          new DatabaseError({
-            message: `Failed to get audio favorites: ${getErrorMessage(error)}`,
-            operation: 'select',
-            table: 'favorites'
-          })
-      })
-
-      const showFavorites = yield* Effect.tryPromise({
-        try: () =>
-          db
-            .select({
-              id: favoritesTable.id,
-              userId: favoritesTable.userId,
-              audioId: favoritesTable.audioId,
-              showId: favoritesTable.showId,
-              createdAt: favoritesTable.createdAt,
+              },
               show: {
                 id: showsTable.id,
                 title: showsTable.title,
@@ -516,41 +487,32 @@ const getFavoritesEffect = (
               }
             })
             .from(favoritesTable)
-            .innerJoin(showsTable, eq(favoritesTable.showId, showsTable.id))
-            .where(
-              and(
-                eq(favoritesTable.userId, userId),
-                isNotNull(favoritesTable.showId)
-              )
-            )
-            .orderBy(favoritesTable.createdAt)
+            .leftJoin(audioTable, eq(favoritesTable.audioId, audioTable.id))
+            .leftJoin(showsTable, eq(favoritesTable.showId, showsTable.id))
+            .where(eq(favoritesTable.userId, userId))
+            .orderBy(desc(favoritesTable.createdAt))
             .limit(limit)
             .offset(offset),
         catch: (error) =>
           new DatabaseError({
-            message: `Failed to get show favorites: ${getErrorMessage(error)}`,
+            message: `Failed to get favorites: ${getErrorMessage(error)}`,
             operation: 'select',
             table: 'favorites'
           })
       })
 
-      const combined: FavoriteWithContent[] = [
-        ...audioFavorites.map((f) => ({ ...f, show: null })),
-        ...showFavorites.map((f) => ({ ...f, audio: null }))
-      ].sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      )
-
       yield* Effect.logInfo('[Favorites] Favorites retrieved', {
         userId,
-        audioCount: audioFavorites.length,
-        showCount: showFavorites.length,
+        count: favorites.length,
         limit,
         offset
       })
 
-      return combined
+      return favorites.map((favorite) => ({
+        ...favorite,
+        audio: favorite.audio?.id ? favorite.audio : null,
+        show: favorite.show?.id ? favorite.show : null
+      }))
     })
   )
 
