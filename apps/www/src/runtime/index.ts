@@ -24,7 +24,8 @@ const analyticsLayer = env.sentryDsn
       // temporarily raised to 1.0 for end-to-end trace investigation
       tracesSampleRate: 1.0,
       tracePropagationTargets: [
-        'https://vps.goosebumps.fm',
+        'https://www.goosebumps.fm',
+        'https://goosebumps.fm',
         'http://127.0.0.1:3003',
         'http://localhost:3003'
       ]

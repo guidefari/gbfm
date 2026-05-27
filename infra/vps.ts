@@ -45,7 +45,8 @@ export const service = new sst.aws.Service('gbfm_vps', {
     dockerfile: 'apps/vps/Dockerfile'
   },
   environment: {
-    SENTRY_RELEASE: process.env.SENTRY_RELEASE ?? ''
+    SENTRY_RELEASE: process.env.SENTRY_RELEASE ?? '',
+    BETTER_AUTH_URL: isLocal ? 'http://127.0.0.1:3003' : `https://www.${domain}/api`
   },
   link: [
     // database,

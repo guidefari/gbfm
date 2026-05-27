@@ -14,6 +14,6 @@ export type ShareContentType =
  * The redirect service provides OG meta tags for social media previews.
  */
 export function getShareUrl(type: ShareContentType, slug: string): string {
-  const baseUrl = VPS_BASE_URL || 'https://vps.goosebumps.fm'
+  const baseUrl = VPS_BASE_URL || 'https://www.goosebumps.fm/api'
   return `${baseUrl}/s/${type}/${slug}`
 }

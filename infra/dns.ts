@@ -10,7 +10,7 @@ export const urls = new sst.Linkable('Urls', {
     //   openapi: `https://api.${domain}/doc`,
     site: $app.stage === 'dev' ? 'http://127.0.0.1:5173' : `https://${domain}`,
     vps:
-      $app.stage === 'dev' ? 'http://127.0.0.1:3003' : `https://vps.${domain}`
+      $app.stage === 'dev' ? 'http://127.0.0.1:3003' : `https://www.${domain}/api`
   }
 })
 
@@ -24,6 +24,27 @@ if ($app.stage === 'prod') {
   })
 
   const importId = process.env.CF_RULESET_IMPORT || undefined
+
+  // Proxy goosebumps.fm/api/* and www.goosebumps.fm/api/* to the VPS backend,
+  // making API calls same-origin from the browser's perspective (no CORS needed).
+  const apiProxy = new sst.cloudflare.Worker('ApiProxy', {
+    handler: './apps/workers/api-proxy.ts',
+    environment: {
+      VPS_HOSTNAME: `vps.${domain}`
+    }
+  })
+
+  new cloudflare.WorkersRoute('ApiProxyApex', {
+    zoneId: zone.zoneId,
+    pattern: `${domain}/api/*`,
+    scriptName: apiProxy.nodes.worker.scriptName
+  })
+
+  new cloudflare.WorkersRoute('ApiProxyWww', {
+    zoneId: zone.zoneId,
+    pattern: `www.${domain}/api/*`,
+    scriptName: apiProxy.nodes.worker.scriptName
+  })
 
   new cloudflare.Ruleset(
     'vps-redirects',
