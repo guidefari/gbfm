@@ -11,9 +11,6 @@ export default $config({
         aws: {
           region: 'us-east-1'
         }
-      },
-      watch: {
-        paths: ['.env']
       }
     }
   },
