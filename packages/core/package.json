@@ -12,7 +12,7 @@
   },
   "scripts": {
     "process-mix": "bun run ./src/mix-processing/cli.ts",
-    "process-mix-job": "bun run ./src/mix-processing/process-job.ts",
+    "process-mix-job": "bun run ./src/mix-processing/cli.ts",
     "typecheck": "tsgo --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"

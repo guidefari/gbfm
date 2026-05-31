@@ -28,6 +28,7 @@ export type {
   JobStatus,
   MixJobRecord,
   MixJobStatus,
+  MixProcessingJobFile,
   MixProcessingInput,
   ProcessedFiles
 } from './types'

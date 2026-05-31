@@ -1,35 +1,59 @@
 # Mix Processing
 
-Local CLI pipeline that takes a raw audio file + cover image, runs FFmpeg to embed metadata/artwork (MP3) or produce a video with a still image (MP4), and writes the result to disk.
+Local CLI pipeline that takes a job JSON file, reads a raw audio file plus cover image, runs FFmpeg to embed metadata and artwork for MP3 or produce a video with a still image for MP4, then writes the result to disk.
 
 ## CLI
 
-`bun run process-mix --audio <path> --image <path> --title <title> --description <tracklist> --format <mp3|mp4> [--artist <name>] [--album <name>] [--output <path>] [--intro <path>]`
+`bun run process-mix --job <path-to-job.json>`
 
-| Flag | Type | Required |
+`bun run process-mix <path-to-job.json>`
+
+Job file fields:
+
+| Field | Type | Required |
 |---|---|---|
-| `--audio` | path | yes |
-| `--image` | path | yes |
+| `audioPath` | path | yes |
+| `imagePath` | path | yes |
 | `title` | string | yes |
-| `--description` | string | yes |
-| `--format` | `mp3` \| `mp4` | yes |
-| `--artist` | string | no |
-| `--album` | string | no |
-| `--output` | path | no |
+| `description` | string | yes |
+| `outputFormat` | `mp3` \| `mp4` | yes |
+| `outputPath` | path | no |
+| `artist` | string | no |
+| `album` | string | no |
+| `introAudioPath` | path | no |
+
+All paths inside the job file are resolved relative to the job file itself.
+
+Example:
+
+```json
+{
+  "audioPath": "./input/mix.wav",
+  "imagePath": "./input/cover.jpg",
+  "title": "Late Night Transmission",
+  "description": "01. Artist - Track\n02. Artist - Track",
+  "outputFormat": "mp3",
+  "outputPath": "./output/late-night-transmission.mp3",
+  "artist": "GBFM",
+  "album": "GBFM",
+  "introAudioPath": "./input/intro.wav"
+}
+```
 
 Prints the output file path to stdout on success.
 
 ## Architecture
 
 ```
-Raycast / terminal
+job json
   → bun run process-mix
     → packages/core/src/mix-processing/cli.ts
-      → processMix (core package)
-        → writeFilesToDisk
-        → createAudioOrVideo
-        → read output buffer
-        → cleanup(files)
+      → runMixProcessing
+        → processMix
+          → writeFilesToDisk
+          → createAudioOrVideo
+          → read output buffer
+          → cleanup(files)
       → write final output to requested path
 ```
 
@@ -39,11 +63,15 @@ Raycast / terminal
 
 ## Known Limitations
 
-- **No batch mode**: each invocation processes one mix.
-- **No concurrency limit**: running many CLI jobs in parallel can still exhaust memory or file descriptors.
+- Each invocation processes one job file.
+- Running many jobs in parallel can still exhaust memory or file descriptors.
 
 ## Gotchas
 
 ### Output path default
 
-If `--output` is omitted, the CLI writes to `./<safe_title>.<format>` in the current working directory.
+If `outputPath` is omitted, the CLI writes to `<safe_title>.<format>` next to the job file.
+
+### Default intro audio
+
+If `introAudioPath` is omitted, the CLI uses `apps/vps/public/intro.wav` from this repository.

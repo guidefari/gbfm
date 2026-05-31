@@ -17,6 +17,18 @@ export interface MixProcessingInput {
   album?: string
 }
 
+export interface MixProcessingJobFile {
+  audioPath: string
+  imagePath: string
+  outputFormat: 'mp3' | 'mp4'
+  title: string
+  description: string
+  outputPath?: string
+  artist?: string
+  album?: string
+  introAudioPath?: string
+}
+
 export type JobStatus =
   | { readonly _tag: 'Queued' }
   | { readonly _tag: 'Processing' }

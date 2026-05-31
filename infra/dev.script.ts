@@ -3,14 +3,6 @@ import { dbBackupBucket } from './bucket'
 import { email } from './email'
 import { allSecrets, secret } from './secret'
 
-// new sst.x.DevCommand('raycast', {
-//   dev: {
-//     command: 'bun dev',
-//     directory: './apps/raycast',
-//     autostart: false
-//   }
-// })
-
 // new sst.x.DevCommand('ios', {
 //   dev: {
 //     command: 'bun ios',

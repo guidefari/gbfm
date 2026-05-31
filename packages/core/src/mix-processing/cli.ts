@@ -2,88 +2,137 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { Effect } from 'effect'
 import ffmpeg from 'ffmpeg-static'
+import { toSafeMixTitle } from './jobs'
 import { runMixProcessing } from './run'
-import type { MixProcessingInput } from './types'
+import type { MixProcessingInput, MixProcessingJobFile } from './types'
 
 interface MixCliOptions {
-  audio: string
-  image: string
-  title: string
-  description: string
-  format: 'mp3' | 'mp4'
-  output?: string
-  artist?: string
-  album?: string
-  intro?: string
+  jobPath: string
 }
 
 function parseArgs(argv: string[]): MixCliOptions {
-  const entries = new Map<string, string>()
+  if (argv.length === 1 && argv[0] && !argv[0].startsWith('-')) {
+    return { jobPath: argv[0] }
+  }
 
   for (let index = 0; index < argv.length; index += 1) {
     const key = argv[index]
     const value = argv[index + 1]
 
-    if (!key?.startsWith('--') || !value || value.startsWith('--')) {
-      continue
+    if ((key === '--job' || key === '-j') && value && !value.startsWith('-')) {
+      return { jobPath: value }
     }
-
-    entries.set(key.slice(2), value)
-    index += 1
   }
 
-  const audio = entries.get('audio')
-  const image = entries.get('image')
-  const title = entries.get('title')
-  const description = entries.get('description')
-  const format = entries.get('format')
+  throw new Error('Usage: bun run process-mix --job <path-to-job.json>')
+}
 
-  if (!audio || !image || !title || !description || !format) {
-    throw new Error(
-      'Usage: bun run process-mix --audio <path> --image <path> --title <title> --description <tracklist> --format <mp3|mp4> [--artist <name>] [--album <name>] [--output <path>] [--intro <path>]'
-    )
+function readRequiredString(value: unknown, fieldName: keyof MixProcessingJobFile): string {
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new Error(`Job file is missing required string field: ${fieldName}`)
   }
 
-  if (format !== 'mp3' && format !== 'mp4') {
-    throw new Error('Invalid format, expected mp3 or mp4')
+  return value
+}
+
+function readOptionalString(
+  value: unknown,
+  fieldName: keyof MixProcessingJobFile
+): string | undefined {
+  if (value === undefined) {
+    return undefined
   }
+
+  if (typeof value !== 'string' || value.length === 0) {
+    throw new Error(`Job file field must be a non-empty string: ${fieldName}`)
+  }
+
+  return value
+}
+
+function parseJobFile(raw: unknown): MixProcessingJobFile {
+  if (!raw || typeof raw !== 'object') {
+    throw new Error('Job file must contain a JSON object')
+  }
+
+  const audioPath = readRequiredString(Reflect.get(raw, 'audioPath'), 'audioPath')
+  const imagePath = readRequiredString(Reflect.get(raw, 'imagePath'), 'imagePath')
+  const title = readRequiredString(Reflect.get(raw, 'title'), 'title')
+  const description = readRequiredString(Reflect.get(raw, 'description'), 'description')
+  const outputFormat = readRequiredString(Reflect.get(raw, 'outputFormat'), 'outputFormat')
+
+  if (outputFormat !== 'mp3' && outputFormat !== 'mp4') {
+    throw new Error('Job file outputFormat must be mp3 or mp4')
+  }
+
+  const outputPath = readOptionalString(Reflect.get(raw, 'outputPath'), 'outputPath')
+  const artist = readOptionalString(Reflect.get(raw, 'artist'), 'artist')
+  const album = readOptionalString(Reflect.get(raw, 'album'), 'album')
+  const introAudioPath = readOptionalString(Reflect.get(raw, 'introAudioPath'), 'introAudioPath')
 
   return {
-    audio,
-    image,
+    audioPath,
+    imagePath,
+    outputFormat,
     title,
     description,
-    format,
-    output: entries.get('output'),
-    artist: entries.get('artist'),
-    album: entries.get('album'),
-    intro: entries.get('intro')
+    ...(outputPath ? { outputPath } : {}),
+    ...(artist ? { artist } : {}),
+    ...(album ? { album } : {}),
+    ...(introAudioPath ? { introAudioPath } : {})
   }
 }
 
-async function buildInput(options: MixCliOptions): Promise<MixProcessingInput> {
+async function readJobFile(jobPath: string) {
+  const resolvedJobPath = path.resolve(jobPath)
+  const raw = await fs.readFile(resolvedJobPath, 'utf8')
+  const job = parseJobFile(JSON.parse(raw))
+
+  return {
+    job,
+    jobDir: path.dirname(resolvedJobPath)
+  }
+}
+
+function resolveJobPaths(job: MixProcessingJobFile, jobDir: string): MixProcessingJobFile {
+  const outputPath = job.outputPath
+    ? path.resolve(jobDir, job.outputPath)
+    : path.resolve(jobDir, `${toSafeMixTitle(job.title)}.${job.outputFormat}`)
+
+  return {
+    ...job,
+    audioPath: path.resolve(jobDir, job.audioPath),
+    imagePath: path.resolve(jobDir, job.imagePath),
+    outputPath,
+    ...(job.introAudioPath ? { introAudioPath: path.resolve(jobDir, job.introAudioPath) } : {})
+  }
+}
+
+async function buildInput(job: MixProcessingJobFile): Promise<MixProcessingInput> {
   const [audioBuffer, imageBuffer] = await Promise.all([
-    fs.readFile(options.audio),
-    fs.readFile(options.image)
+    fs.readFile(job.audioPath),
+    fs.readFile(job.imagePath)
   ])
 
   return {
     audioBuffer,
     imageBuffer,
-    outputFormat: options.format,
-    title: options.title,
-    description: options.description,
-    artist: options.artist,
-    album: options.album
+    outputFormat: job.outputFormat,
+    title: job.title,
+    description: job.description,
+    ...(job.artist ? { artist: job.artist } : {}),
+    ...(job.album ? { album: job.album } : {})
   }
 }
 
 async function main() {
   const options = parseArgs(process.argv.slice(2))
-  const input = await buildInput(options)
+  const { job, jobDir } = await readJobFile(options.jobPath)
+  const resolvedJob = resolveJobPaths(job, jobDir)
+  const input = await buildInput(resolvedJob)
   const repoRoot = path.resolve(import.meta.dir, '../../../../')
-  const introAudioPath = options.intro
-    ? path.resolve(options.intro)
+  const introAudioPath = resolvedJob.introAudioPath
+    ? resolvedJob.introAudioPath
     : path.join(repoRoot, 'apps/vps/public/intro.wav')
 
   const result = await Effect.runPromise(
@@ -93,10 +142,10 @@ async function main() {
     })
   )
 
-  const outputPath = options.output
-    ? path.resolve(options.output)
-    : path.resolve(`${result.safeTitle}.${input.outputFormat}`)
+  const outputPath =
+    resolvedJob.outputPath ?? path.resolve(jobDir, `${result.safeTitle}.${input.outputFormat}`)
 
+  await fs.mkdir(path.dirname(outputPath), { recursive: true })
   await fs.writeFile(outputPath, result.outputBuffer)
   console.log(outputPath)
 }
