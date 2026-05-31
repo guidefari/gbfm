@@ -21,6 +21,7 @@ const analyticsLayer = env.sentryDsn
         env.sentryEnvironment ?? (env.isDev ? 'development' : 'production'),
       release: env.sentryRelease,
       debug: env.isDev,
+      enableSessionReplay: !env.isDev,
       // temporarily raised to 1.0 for end-to-end trace investigation
       tracesSampleRate: 1.0,
       tracePropagationTargets: [
