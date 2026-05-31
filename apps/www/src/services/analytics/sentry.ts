@@ -8,6 +8,7 @@ export interface SentryAnalyticsOptions {
   readonly dsn: string
   readonly environment?: string
   readonly debug?: boolean
+  readonly enableSessionReplay?: boolean
   readonly tracesSampleRate?: number
   readonly replaysOnErrorSampleRate?: number
   readonly tracePropagationTargets?: (string | RegExp)[]
@@ -17,6 +18,8 @@ export interface SentryAnalyticsOptions {
 const makeSentryClientLayer = (options: SentryAnalyticsOptions) =>
   Layer.effectDiscard(
     Effect.sync(() => {
+      const enableSessionReplay = options.enableSessionReplay ?? true
+
       Sentry.init({
         dsn: options.dsn,
         environment: options.environment,
@@ -24,15 +27,21 @@ const makeSentryClientLayer = (options: SentryAnalyticsOptions) =>
         debug: options.debug ?? false,
         integrations: [
           Sentry.browserTracingIntegration(),
-          Sentry.replayIntegration({
-            maskAllText: false,
-            blockAllMedia: false
-          })
+          ...(enableSessionReplay
+            ? [
+                Sentry.replayIntegration({
+                  maskAllText: false,
+                  blockAllMedia: false
+                })
+              ]
+            : [])
         ],
         tracesSampleRate: options.tracesSampleRate ?? 0.1,
         tracePropagationTargets: options.tracePropagationTargets,
         replaysSessionSampleRate: 0,
-        replaysOnErrorSampleRate: options.replaysOnErrorSampleRate ?? 1.0,
+        replaysOnErrorSampleRate: enableSessionReplay
+          ? (options.replaysOnErrorSampleRate ?? 1.0)
+          : 0,
         sendDefaultPii: false
       })
     })

@@ -1,8 +1,7 @@
-import { Check } from 'lucide-react'
 import { useUIStore } from '@/store/ui'
 
 export function PlayerPreferencesCard() {
-  const { preferredPlayerType, setPreferredPlayerType } = useUIStore()
+  const { showBottomPlayer, setShowBottomPlayer } = useUIStore()
 
   return (
     <div className='space-y-8'>
@@ -15,56 +14,31 @@ export function PlayerPreferencesCard() {
         </p>
       </div>
 
-      <div className='flex flex-col md:flex-row gap-6'>
-        <PlayerOption
-          active={preferredPlayerType === 'full'}
-          onClick={() => setPreferredPlayerType('full')}
-          title='Full Player'
-          description='Bottom bar with all controls'
-        />
-        <PlayerOption
-          active={preferredPlayerType === 'compact'}
-          onClick={() => setPreferredPlayerType('compact')}
-          title='Compact Player'
-          description='Floating mini player'
-        />
-      </div>
-    </div>
-  )
-}
-
-function PlayerOption({
-  active,
-  onClick,
-  title,
-  description
-}: {
-  active: boolean
-  onClick: () => void
-  title: string
-  description: string
-}) {
-  return (
-    <button
-      type='button'
-      onClick={onClick}
-      className={`
-        flex-1 flex flex-col gap-2 p-6 rounded-none border-2 transition-all duration-300 text-left relative
-        ${
-          active
-            ? 'border-primary bg-muted text-foreground'
-            : 'border-border text-muted-foreground hover:border-primary/50'
-        }
-      `}>
-      {active && (
-        <div className='absolute top-4 right-4'>
-          <Check className='w-4 h-4 text-primary' />
+      <button
+        type='button'
+        onClick={() => setShowBottomPlayer(!showBottomPlayer)}
+        aria-pressed={showBottomPlayer}
+        className='flex items-center justify-between w-full max-w-md gap-6 p-6 text-left transition-all border-2 rounded-none border-border hover:border-primary/50'>
+        <div className='space-y-2'>
+          <div className='text-sm font-bold uppercase tracking-widest text-foreground'>
+            Bottom Player
+          </div>
+          <div className='text-xs font-medium uppercase tracking-wider text-muted-foreground leading-relaxed'>
+            Full-width bar with all controls on desktop. When off, use the menu
+            player.
+          </div>
         </div>
-      )}
-      <div className='text-sm font-bold uppercase tracking-widest'>{title}</div>
-      <div className='text-xs font-medium uppercase tracking-wider opacity-70 leading-relaxed'>
-        {description}
-      </div>
-    </button>
+        <span
+          className={`relative h-6 w-11 shrink-0 rounded-sm transition-colors ${
+            showBottomPlayer ? 'bg-primary' : 'bg-muted'
+          }`}>
+          <span
+            className={`absolute top-0.5 h-5 w-5 rounded-sm bg-background transition-transform ${
+              showBottomPlayer ? 'translate-x-[1.375rem]' : 'translate-x-0.5'
+            }`}
+          />
+        </span>
+      </button>
+    </div>
   )
 }

@@ -87,15 +87,24 @@ function MixesListPage() {
   return (
     <div className='max-w-3xl mx-auto px-4 py-8'>
       <div className='flex flex-row items-baseline justify-between gap-4 mb-8 border-b pb-4 border-border/40'>
-        <div className='flex items-baseline gap-6'>
-          <h1 className='text-2xl font-black tracking-tight'>Mixes</h1>
-          <Link
-            to='/shows'
-            className='flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors relative group'>
-            <Radio className='w-4 h-4' />
-            Radio Shows
-            <span className='absolute bottom-[-17px] left-0 right-0 h-0.5 bg-foreground scale-x-0 group-hover:scale-x-100 transition-transform origin-left' />
-          </Link>
+        <div className='flex flex-col gap-1'>
+          <div className='flex items-baseline gap-6'>
+            <h1 className='text-2xl font-black tracking-tight'>Mixes</h1>
+            <Link
+              to='/shows'
+              className='flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors relative group'>
+              <Radio className='w-4 h-4' />
+              Radio Shows
+              <span className='absolute bottom-[-17px] left-0 right-0 h-0.5 bg-foreground scale-x-0 group-hover:scale-x-100 transition-transform origin-left' />
+            </Link>
+          </div>
+          <p className='text-sm text-muted-foreground'>
+            Every mix in one feed. For curated series, browse{' '}
+            <Link to='/shows' className='underline hover:text-foreground'>
+              radio shows
+            </Link>
+            .
+          </p>
         </div>
         {allTags.length > 0 ? (
           <Select value={tag || 'all'} onValueChange={handleTagChange}>
