@@ -4,7 +4,7 @@ runs:
   using: composite
   steps:
     - name: Setup Node
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@v6
       with:
         node-version-file: '.nvmrc'
 
@@ -14,7 +14,7 @@ runs:
         bun-version: latest
 
     - name: Cache Bun dependencies
-      uses: actions/cache@v4
+      uses: actions/cache@v5
       with:
         path: |
           ~/.bun/install/cache
