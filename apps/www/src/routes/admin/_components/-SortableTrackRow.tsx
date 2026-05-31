@@ -77,8 +77,9 @@ const PLATFORM_PRIORITY = [
 
 function pickPrimary(links: PlaylistTrackLink[]): PlaylistTrackLink | null {
   if (!links.length) return null
+  const linksByPlatform = new Map(links.map((link) => [link.platform, link]))
   for (const platform of PLATFORM_PRIORITY) {
-    const found = links.find((l) => l.platform === platform)
+    const found = linksByPlatform.get(platform)
     if (found) return found
   }
   return links[0] ?? null
@@ -104,7 +105,7 @@ function PlatformLinks({ links }: PlatformLinksProps) {
             rel='noopener noreferrer'
             title={label}
             aria-label={label}
-            className='inline-flex items-center justify-center w-5 h-5 text-muted-foreground hover:text-foreground transition-colors'
+            className='inline-flex size-5 items-center justify-center text-muted-foreground transition-colors hover:text-foreground'
             style={
               entry
                 ? ({ '--brand': entry.color } as React.CSSProperties)
@@ -188,7 +189,7 @@ export function SortableTrackRow({
         {...attributes}
         {...listeners}
         aria-label='Drag handle'>
-        <GripVertical className='w-4 h-4' />
+        <GripVertical className='size-4' />
       </button>
       <span className='text-xs text-muted-foreground w-6 text-right'>
         {track.position + 1}
@@ -197,10 +198,10 @@ export function SortableTrackRow({
         <img
           src={track.coverImageUrl}
           alt=''
-          className='w-10 h-10 rounded object-cover'
+          className='size-10 rounded object-cover'
         />
       ) : (
-        <div className='w-10 h-10 rounded bg-muted' />
+        <div className='size-10 rounded bg-muted' />
       )}
       <div className='flex-1 min-w-0'>
         <div className='text-sm font-medium truncate'>
@@ -230,7 +231,7 @@ export function SortableTrackRow({
         <Link
           to='/admin/music-entity/$entityType/$id'
           params={{ entityType: 'track', id: track.trackId }}>
-          <Pencil className='w-4 h-4' />
+          <Pencil className='size-4' />
         </Link>
       </Button>
       <Button
@@ -241,7 +242,7 @@ export function SortableTrackRow({
         disabled={removeDisabled}
         aria-label='Remove track'
         className='opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive'>
-        <Trash2 className='w-4 h-4' />
+        <Trash2 className='size-4' />
       </Button>
     </div>
   )

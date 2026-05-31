@@ -78,32 +78,32 @@ export function TrackPlaybackControls({ spotifyUrl, saved, onSaved }: Props) {
         type='button'
         variant='ghost'
         size='icon'
-        className='w-7 h-7 text-muted-foreground hover:text-foreground'
+        className='size-7 text-muted-foreground hover:text-foreground'
         onClick={handlePlay}
         disabled={playPending}
         aria-label='Play track'>
-        <Play className='w-3.5 h-3.5' />
+        <Play className='size-3.5' />
       </Button>
       <Button
         type='button'
         variant='ghost'
         size='icon'
-        className='w-7 h-7 text-muted-foreground hover:text-foreground'
+        className='size-7 text-muted-foreground hover:text-foreground'
         onClick={handleQueue}
         disabled={queuePending}
         aria-label='Add to queue'>
-        <ListPlus className='w-3.5 h-3.5' />
+        <ListPlus className='size-3.5' />
       </Button>
       <Button
         type='button'
         variant='ghost'
         size='icon'
-        className='w-7 h-7'
+        className='size-7'
         onClick={handleSave}
         disabled={savePending || saved === true}
         aria-label={saved ? 'Saved to library' : 'Save to library'}
         style={{ color: saved ? '#1DB954' : undefined }}>
-        <Heart className={`w-3.5 h-3.5 ${saved ? 'fill-current' : ''}`} />
+        <Heart className={`size-3.5 ${saved ? 'fill-current' : ''}`} />
       </Button>
     </div>
   )
