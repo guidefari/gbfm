@@ -8,7 +8,7 @@ import { RouteError } from '@/components/RouteError'
 import { ShareButton } from '@/components/ShareButton'
 import { EpisodeGrid } from '@/components/shows/EpisodeGrid'
 import { ShowQRButton } from '@/components/shows/ShowQRButton'
-import { fetcher, useShowBySlug } from '@/lib/http'
+import { fetcher } from '@/lib/http'
 import { generateSEOMeta, generateShowSEO } from '@/lib/seo'
 import { useContentStore } from '@/store'
 
@@ -45,9 +45,8 @@ export const Route = createFileRoute('/shows/$showSlug')({
 
 function ShowPage() {
   const { showSlug } = Route.useParams()
+  const { show: data } = Route.useLoaderData()
   const { setCurrentContent } = useContentStore()
-
-  const { data, error, isPending } = useShowBySlug(showSlug)
 
   useEffect(() => {
     if (data?.hosts) {
@@ -62,13 +61,6 @@ function ShowPage() {
     return () => setCurrentContent(null)
   }, [data, showSlug, setCurrentContent])
 
-  if (isPending) return <div className='p-4 text-center'>Loading...</div>
-  if (error)
-    return (
-      <div className='p-4 text-center text-destructive'>
-        Error: {error.message}
-      </div>
-    )
   if (!data) return <div className='p-4 text-center'>No data</div>
 
   const hostNames = data.hosts?.map((h) => h.name).join(', ')
