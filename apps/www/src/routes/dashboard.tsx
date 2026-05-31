@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { ChevronRight, Settings } from 'lucide-react'
 import {
+  CreatorActions,
   FavoritesSection,
-  QuickActions,
   RecentMixesSection,
   RemindersCard,
   WelcomeHeader
@@ -49,9 +49,7 @@ function Dashboard() {
     <div className='px-4 py-6 sm:px-6 sm:py-12 mx-auto space-y-10 sm:space-y-16 max-w-7xl font-jetbrains'>
       <div className='space-y-6 sm:space-y-12'>
         <WelcomeHeader user={session.user} />
-        <div>
-          <QuickActions />
-        </div>
+        <CreatorActions />
       </div>
 
       <div className='grid grid-cols-1 gap-8 sm:gap-12 lg:grid-cols-12'>

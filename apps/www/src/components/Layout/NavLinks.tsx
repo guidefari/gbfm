@@ -23,6 +23,7 @@ type BaseNavItem = {
   tier: NavTier
   surfaces: NavSurface[]
   adminOnly?: boolean
+  authOnly?: boolean
 }
 
 export type NavItem =

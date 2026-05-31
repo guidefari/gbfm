@@ -1,14 +1,6 @@
-'use client'
-
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { z } from 'zod'
-import { TweetCapturePage } from './-TweetCapturePage'
 
-const searchSchema = z.object({
-  edit: z.string().optional()
-})
-
-export const Route = createFileRoute('/new/tweet')({
+export const Route = createFileRoute('/label-upload')({
   beforeLoad: ({ context }) => {
     if (!context.auth.isAuthenticated) {
       throw redirect({ to: '/auth/sign-in' })
@@ -16,7 +8,5 @@ export const Route = createFileRoute('/new/tweet')({
     if (context.auth.user?.role !== 'admin') {
       throw redirect({ to: '/' })
     }
-  },
-  validateSearch: searchSchema,
-  component: TweetCapturePage
+  }
 })

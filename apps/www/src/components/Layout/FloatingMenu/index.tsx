@@ -59,7 +59,8 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
   }, [isOpen])
 
   const navItems = navItemsForSurface('overlay').filter(
-    (item) => !item.adminOnly || isAdmin
+    (item) =>
+      (!item.adminOnly || isAdmin) && (!item.authOnly || isAuthenticated)
   )
 
   const accountTile = isAuthenticated

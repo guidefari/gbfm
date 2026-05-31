@@ -8,8 +8,6 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { createFileRoute } from '@tanstack/react-router'
-
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as TermsRouteImport } from './routes/terms'
@@ -17,6 +15,8 @@ import { Route as SubscribeRouteImport } from './routes/subscribe'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RemindersRouteImport } from './routes/reminders'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as MixUploadRouteImport } from './routes/mix-upload'
+import { Route as LabelUploadRouteImport } from './routes/label-upload'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ChangelogRouteImport } from './routes/changelog'
 import { Route as SlugRouteImport } from './routes/$slug'
@@ -55,19 +55,6 @@ import { Route as AdminMusicRouteImport } from './routes/admin/music'
 import { Route as AdminFrontendErrorsRouteImport } from './routes/admin/frontend-errors'
 import { Route as AdminMusicEntityEntityTypeIdRouteImport } from './routes/admin/music-entity.$entityType.$id'
 
-const MixUploadLazyRouteImport = createFileRoute('/mix-upload')()
-const LabelUploadLazyRouteImport = createFileRoute('/label-upload')()
-
-const MixUploadLazyRoute = MixUploadLazyRouteImport.update({
-  id: '/mix-upload',
-  path: '/mix-upload',
-  getParentRoute: () => rootRouteImport,
-} as any).lazy(() => import('./routes/mix-upload.lazy').then((d) => d.Route))
-const LabelUploadLazyRoute = LabelUploadLazyRouteImport.update({
-  id: '/label-upload',
-  path: '/label-upload',
-  getParentRoute: () => rootRouteImport,
-} as any).lazy(() => import('./routes/label-upload.lazy').then((d) => d.Route))
 const UnsubscribeRoute = UnsubscribeRouteImport.update({
   id: '/unsubscribe',
   path: '/unsubscribe',
@@ -98,6 +85,16 @@ const PrivacyRoute = PrivacyRouteImport.update({
   path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MixUploadRoute = MixUploadRouteImport.update({
+  id: '/mix-upload',
+  path: '/mix-upload',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() => import('./routes/mix-upload.lazy').then((d) => d.Route))
+const LabelUploadRoute = LabelUploadRouteImport.update({
+  id: '/label-upload',
+  path: '/label-upload',
+  getParentRoute: () => rootRouteImport,
+} as any).lazy(() => import('./routes/label-upload.lazy').then((d) => d.Route))
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -295,14 +292,14 @@ export interface FileRoutesByFullPath {
   '/$slug': typeof SlugRoute
   '/changelog': typeof ChangelogRoute
   '/dashboard': typeof DashboardRoute
+  '/label-upload': typeof LabelUploadRoute
+  '/mix-upload': typeof MixUploadRoute
   '/privacy': typeof PrivacyRoute
   '/reminders': typeof RemindersRoute
   '/settings': typeof SettingsRoute
   '/subscribe': typeof SubscribeRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
-  '/label-upload': typeof LabelUploadLazyRoute
-  '/mix-upload': typeof MixUploadLazyRoute
   '/admin/frontend-errors': typeof AdminFrontendErrorsRoute
   '/admin/music': typeof AdminMusicRoute
   '/admin/overview': typeof AdminOverviewRoute
@@ -338,14 +335,14 @@ export interface FileRoutesByTo {
   '/$slug': typeof SlugRoute
   '/changelog': typeof ChangelogRoute
   '/dashboard': typeof DashboardRoute
+  '/label-upload': typeof LabelUploadRoute
+  '/mix-upload': typeof MixUploadRoute
   '/privacy': typeof PrivacyRoute
   '/reminders': typeof RemindersRoute
   '/settings': typeof SettingsRoute
   '/subscribe': typeof SubscribeRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
-  '/label-upload': typeof LabelUploadLazyRoute
-  '/mix-upload': typeof MixUploadLazyRoute
   '/admin/frontend-errors': typeof AdminFrontendErrorsRoute
   '/admin/music': typeof AdminMusicRoute
   '/admin/overview': typeof AdminOverviewRoute
@@ -386,14 +383,14 @@ export interface FileRoutesById {
   '/$slug': typeof SlugRoute
   '/changelog': typeof ChangelogRoute
   '/dashboard': typeof DashboardRoute
+  '/label-upload': typeof LabelUploadRoute
+  '/mix-upload': typeof MixUploadRoute
   '/privacy': typeof PrivacyRoute
   '/reminders': typeof RemindersRoute
   '/settings': typeof SettingsRoute
   '/subscribe': typeof SubscribeRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
-  '/label-upload': typeof LabelUploadLazyRoute
-  '/mix-upload': typeof MixUploadLazyRoute
   '/admin/frontend-errors': typeof AdminFrontendErrorsRoute
   '/admin/music': typeof AdminMusicRoute
   '/admin/overview': typeof AdminOverviewRoute
@@ -435,14 +432,14 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/changelog'
     | '/dashboard'
+    | '/label-upload'
+    | '/mix-upload'
     | '/privacy'
     | '/reminders'
     | '/settings'
     | '/subscribe'
     | '/terms'
     | '/unsubscribe'
-    | '/label-upload'
-    | '/mix-upload'
     | '/admin/frontend-errors'
     | '/admin/music'
     | '/admin/overview'
@@ -478,14 +475,14 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/changelog'
     | '/dashboard'
+    | '/label-upload'
+    | '/mix-upload'
     | '/privacy'
     | '/reminders'
     | '/settings'
     | '/subscribe'
     | '/terms'
     | '/unsubscribe'
-    | '/label-upload'
-    | '/mix-upload'
     | '/admin/frontend-errors'
     | '/admin/music'
     | '/admin/overview'
@@ -525,14 +522,14 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/changelog'
     | '/dashboard'
+    | '/label-upload'
+    | '/mix-upload'
     | '/privacy'
     | '/reminders'
     | '/settings'
     | '/subscribe'
     | '/terms'
     | '/unsubscribe'
-    | '/label-upload'
-    | '/mix-upload'
     | '/admin/frontend-errors'
     | '/admin/music'
     | '/admin/overview'
@@ -573,14 +570,14 @@ export interface RootRouteChildren {
   SlugRoute: typeof SlugRoute
   ChangelogRoute: typeof ChangelogRoute
   DashboardRoute: typeof DashboardRoute
+  LabelUploadRoute: typeof LabelUploadRoute
+  MixUploadRoute: typeof MixUploadRoute
   PrivacyRoute: typeof PrivacyRoute
   RemindersRoute: typeof RemindersRoute
   SettingsRoute: typeof SettingsRoute
   SubscribeRoute: typeof SubscribeRoute
   TermsRoute: typeof TermsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
-  LabelUploadLazyRoute: typeof LabelUploadLazyRoute
-  MixUploadLazyRoute: typeof MixUploadLazyRoute
   AdminFrontendErrorsRoute: typeof AdminFrontendErrorsRoute
   AdminMusicRoute: typeof AdminMusicRoute
   AdminOverviewRoute: typeof AdminOverviewRoute
@@ -604,20 +601,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/mix-upload': {
-      id: '/mix-upload'
-      path: '/mix-upload'
-      fullPath: '/mix-upload'
-      preLoaderRoute: typeof MixUploadLazyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/label-upload': {
-      id: '/label-upload'
-      path: '/label-upload'
-      fullPath: '/label-upload'
-      preLoaderRoute: typeof LabelUploadLazyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/unsubscribe': {
       id: '/unsubscribe'
       path: '/unsubscribe'
@@ -658,6 +641,20 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mix-upload': {
+      id: '/mix-upload'
+      path: '/mix-upload'
+      fullPath: '/mix-upload'
+      preLoaderRoute: typeof MixUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/label-upload': {
+      id: '/label-upload'
+      path: '/label-upload'
+      fullPath: '/label-upload'
+      preLoaderRoute: typeof LabelUploadRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -1000,14 +997,14 @@ const rootRouteChildren: RootRouteChildren = {
   SlugRoute: SlugRoute,
   ChangelogRoute: ChangelogRoute,
   DashboardRoute: DashboardRoute,
+  LabelUploadRoute: LabelUploadRoute,
+  MixUploadRoute: MixUploadRoute,
   PrivacyRoute: PrivacyRoute,
   RemindersRoute: RemindersRoute,
   SettingsRoute: SettingsRoute,
   SubscribeRoute: SubscribeRoute,
   TermsRoute: TermsRoute,
   UnsubscribeRoute: UnsubscribeRoute,
-  LabelUploadLazyRoute: LabelUploadLazyRoute,
-  MixUploadLazyRoute: MixUploadLazyRoute,
   AdminFrontendErrorsRoute: AdminFrontendErrorsRoute,
   AdminMusicRoute: AdminMusicRoute,
   AdminOverviewRoute: AdminOverviewRoute,
