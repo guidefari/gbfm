@@ -1,15 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import {
-  Bell,
-  Disc3,
-  FileText,
-  Home,
-  LogIn,
-  Menu,
-  Radio,
-  User,
-  X
-} from 'lucide-react'
+import { LogIn, Menu, User, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useState } from 'react'
 import { useSession } from '@/lib/auth-client'
@@ -18,14 +8,8 @@ import {
   useAudioPlayerPlaybackState,
   useAudioPlayerVisibilityState
 } from '@/store/audioPlayer'
+import { navItemsForSurface } from '../NavLinks'
 import { NowPlayingMini } from './NowPlayingMini'
-
-type MenuItemConfig = {
-  id: string
-  icon: React.ReactNode
-  label: string
-  action: () => void
-}
 
 type FloatingMenuProps = {
   className?: string
@@ -64,72 +48,43 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
     }
   }, [isOpen])
 
-  const navItems: MenuItemConfig[] = [
-    {
-      id: 'home',
-      icon: <Home className='w-6 h-6' />,
-      label: 'Home',
-      action: closeMenu
-    },
-    {
-      id: 'mixes',
-      icon: <Disc3 className='w-6 h-6' />,
-      label: 'Mixes',
-      action: closeMenu
-    },
-    {
-      id: 'shows',
-      icon: <Radio className='w-6 h-6' />,
-      label: 'Shows',
-      action: closeMenu
-    },
-    {
-      id: 'tweets',
-      icon: <FileText className='w-6 h-6' />,
-      label: 'Tweets',
-      action: closeMenu
-    },
-    {
-      id: 'reminders',
-      icon: <Bell className='w-6 h-6' />,
-      label: 'Reminder',
-      action: closeMenu
-    },
-    isAuthenticated
-      ? {
-          id: 'profile',
-          icon: <User className='w-6 h-6' />,
-          label: 'Profile',
-          action: closeMenu
-        }
-      : {
-          id: 'login',
-          icon: <LogIn className='w-6 h-6' />,
-          label: 'Login',
-          action: closeMenu
-        }
-  ].filter(Boolean)
-
-  const getItemRoute = (id: string): string | null => {
-    switch (id) {
-      case 'home':
-        return '/'
-      case 'mixes':
-        return '/mixes'
-      case 'shows':
-        return '/shows'
-      case 'tweets':
-        return '/tweet'
-      case 'reminders':
-        return '/reminders'
-      case 'profile':
-        return '/dashboard'
-      case 'login':
-        return '/auth/sign-in'
-      default:
-        return null
-    }
+  type Tile = {
+    id: string
+    slug: string
+    label: string
+    icon: React.ReactNode
   }
+
+  const navTiles = navItemsForSurface('floating').reduce<Tile[]>(
+    (acc, item) => {
+      if (typeof item.slug === 'string') {
+        acc.push({
+          id: item.id,
+          slug: item.slug,
+          label: item.name,
+          icon: item.icon
+        })
+      }
+      return acc
+    },
+    []
+  )
+
+  const accountTile: Tile = isAuthenticated
+    ? {
+        id: 'account',
+        slug: '/dashboard',
+        label: 'Profile',
+        icon: <User className='w-6 h-6' />
+      }
+    : {
+        id: 'account',
+        slug: '/auth/sign-in',
+        label: 'Login',
+        icon: <LogIn className='w-6 h-6' />
+      }
+
+  const tiles = [...navTiles, accountTile]
 
   return (
     <div className={cn('z-50', className)}>
@@ -165,9 +120,8 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
               exit={{ opacity: 0, y: 30 }}
               transition={{ duration: 0.2 }}
               className='relative grid grid-cols-3 gap-3 px-4 mb-24'>
-              {navItems.map((item) => {
-                const route = getItemRoute(item.id)
-                const content = (
+              {tiles.map((item) => (
+                <Link key={item.id} to={item.slug} onClick={closeMenu}>
                   <div
                     className={cn(
                       'flex flex-col items-center justify-center gap-2 py-4 rounded-sm',
@@ -177,30 +131,8 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
                     {item.icon}
                     <span className='text-xs font-medium'>{item.label}</span>
                   </div>
-                )
-
-                if (route) {
-                  return (
-                    <Link key={item.id} to={route} onClick={item.action}>
-                      {content}
-                    </Link>
-                  )
-                }
-                return (
-                  <button
-                    type='button'
-                    key={item.id}
-                    onClick={item.action}
-                    className={cn(
-                      'flex flex-col items-center justify-center gap-2 py-4 rounded-sm',
-                      'bg-card/50 border border-border/50',
-                      'active:scale-95 active:bg-card transition-transform'
-                    )}>
-                    {item.icon}
-                    <span className='text-xs font-medium'>{item.label}</span>
-                  </button>
-                )
-              })}
+                </Link>
+              ))}
             </motion.nav>
           </motion.div>
         )}
