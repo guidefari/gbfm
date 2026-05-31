@@ -12,7 +12,7 @@ import {
 import { TfiYoutube } from 'react-icons/tfi'
 import { RSS } from '@/components/RSS'
 
-export type NavSurface = 'sidebar' | 'floating' | 'hamburger' | 'cmd' | 'footer'
+export type NavSurface = 'overlay'
 
 export type NavTier = 'primary' | 'secondary' | 'utility'
 
@@ -40,7 +40,6 @@ export type NavItem =
 
 const iconSytles = 'h-5 w-5 transition-all group-hover:scale-110'
 
-// https://www.youtube.com/watch?v=KyYQcms0Shg
 export const navConfig: NavItem[] = [
   {
     id: 'home',
@@ -48,7 +47,7 @@ export const navConfig: NavItem[] = [
     slug: '/',
     icon: <Home className={iconSytles} />,
     tier: 'primary',
-    surfaces: ['sidebar', 'floating', 'hamburger', 'cmd']
+    surfaces: ['overlay']
   },
   {
     id: 'shows',
@@ -56,7 +55,7 @@ export const navConfig: NavItem[] = [
     slug: '/shows',
     icon: <Radio className={iconSytles} />,
     tier: 'primary',
-    surfaces: ['sidebar', 'floating', 'hamburger', 'cmd']
+    surfaces: ['overlay']
   },
   {
     id: 'editorial',
@@ -64,7 +63,7 @@ export const navConfig: NavItem[] = [
     slug: '/editorial',
     icon: <Newspaper className={iconSytles} />,
     tier: 'primary',
-    surfaces: ['sidebar', 'floating', 'hamburger', 'cmd']
+    surfaces: ['overlay']
   },
   {
     id: 'subscribe',
@@ -72,7 +71,7 @@ export const navConfig: NavItem[] = [
     slug: '/subscribe',
     icon: <Mail className={iconSytles} />,
     tier: 'primary',
-    surfaces: ['sidebar', 'floating', 'hamburger']
+    surfaces: ['overlay']
   },
   {
     id: 'mixes',
@@ -80,7 +79,7 @@ export const navConfig: NavItem[] = [
     slug: '/mixes',
     icon: <Disc3 className={iconSytles} />,
     tier: 'secondary',
-    surfaces: ['sidebar', 'hamburger', 'cmd']
+    surfaces: ['overlay']
   },
   {
     id: 'tweets',
@@ -88,7 +87,7 @@ export const navConfig: NavItem[] = [
     slug: '/tweet',
     icon: <MessageSquare className={iconSytles} />,
     tier: 'secondary',
-    surfaces: ['sidebar', 'hamburger', 'cmd']
+    surfaces: ['overlay']
   },
   {
     id: 'labels',
@@ -96,14 +95,14 @@ export const navConfig: NavItem[] = [
     slug: '/labels',
     icon: <Tag className={iconSytles} />,
     tier: 'secondary',
-    surfaces: ['hamburger']
+    surfaces: ['overlay']
   },
   {
     id: 'rss',
     name: 'Mixes via RSS',
     icon: <Rss className={iconSytles} />,
     tier: 'utility',
-    surfaces: ['sidebar', 'hamburger'],
+    surfaces: ['overlay'],
     CustomComponent: <RSS />
   },
   {
@@ -111,7 +110,7 @@ export const navConfig: NavItem[] = [
     name: 'Mixes via Youtube',
     icon: <TfiYoutube className={iconSytles} />,
     tier: 'utility',
-    surfaces: ['sidebar', 'hamburger'],
+    surfaces: ['overlay'],
     external: 'https://youtube.com/@goosebumpsfm'
   },
   {
@@ -120,18 +119,10 @@ export const navConfig: NavItem[] = [
     slug: '/admin',
     icon: <Settings className={iconSytles} />,
     tier: 'secondary',
-    surfaces: ['sidebar', 'hamburger', 'cmd'],
+    surfaces: ['overlay'],
     adminOnly: true
   }
 ]
 
 export const navItemsForSurface = (surface: NavSurface) =>
   navConfig.filter((item) => item.surfaces.includes(surface))
-
-export type CmdNavItem = { id: string; name: string; slug: string }
-
-export const cmdNavItems: CmdNavItem[] = navConfig.flatMap((item) =>
-  item.surfaces.includes('cmd') && typeof item.slug === 'string'
-    ? [{ id: item.id, name: item.name, slug: item.slug }]
-    : []
-)

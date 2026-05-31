@@ -9,7 +9,6 @@ import {
 import { Suspense } from 'react'
 import { VerifyEmailBanner } from '@/components/Auth/VerifyEmailBanner'
 import { AuthPromptDialog } from '@/components/AuthPromptDialog'
-import { CommandDialogDemo } from '@/components/cmd'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import AppShell from '@/components/Layout/AppShell'
 import { OfflineBanner } from '@/components/OfflineBanner'
@@ -69,7 +68,6 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
               )}
               <OfflineBanner />
               <VerifyEmailBanner />
-              <CommandDialogDemo />
               <WelcomeModal />
               <AuthPromptDialog />
               <Outlet />

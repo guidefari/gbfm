@@ -1,3 +1,4 @@
+import { useHotkey } from '@tanstack/react-hotkeys'
 import { Link } from '@tanstack/react-router'
 import { LogIn, Menu, User, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
@@ -15,17 +16,26 @@ type FloatingMenuProps = {
   className?: string
 }
 
+const tileClass = cn(
+  'flex flex-col items-center justify-center gap-2 py-4 rounded-sm',
+  'bg-card/50 border border-border/50',
+  'active:scale-95 active:bg-card transition-transform hover:bg-card'
+)
+
 export function FloatingMenu({ className }: FloatingMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const { audioSrc } = useAudioPlayerPlaybackState()
   const { isFullscreenVisible } = useAudioPlayerVisibilityState()
   const { data: session } = useSession()
   const isAuthenticated = Boolean(session?.user)
+  const isAdmin = session?.user?.role === 'admin'
 
   const hasActiveAudio = Boolean(audioSrc)
 
   const toggleMenu = useCallback(() => setIsOpen((prev) => !prev), [])
   const closeMenu = useCallback(() => setIsOpen(false), [])
+
+  useHotkey('Mod+K', () => toggleMenu())
 
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
@@ -48,43 +58,21 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
     }
   }, [isOpen])
 
-  type Tile = {
-    id: string
-    slug: string
-    label: string
-    icon: React.ReactNode
-  }
-
-  const navTiles = navItemsForSurface('floating').reduce<Tile[]>(
-    (acc, item) => {
-      if (typeof item.slug === 'string') {
-        acc.push({
-          id: item.id,
-          slug: item.slug,
-          label: item.name,
-          icon: item.icon
-        })
-      }
-      return acc
-    },
-    []
+  const navItems = navItemsForSurface('overlay').filter(
+    (item) => !item.adminOnly || isAdmin
   )
 
-  const accountTile: Tile = isAuthenticated
+  const accountTile = isAuthenticated
     ? {
-        id: 'account',
         slug: '/dashboard',
         label: 'Profile',
         icon: <User className='w-6 h-6' />
       }
     : {
-        id: 'account',
         slug: '/auth/sign-in',
         label: 'Login',
         icon: <LogIn className='w-6 h-6' />
       }
-
-  const tiles = [...navTiles, accountTile]
 
   return (
     <div className={cn('z-50', className)}>
@@ -95,10 +83,10 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className='fixed inset-0 z-40 flex flex-col justify-end'>
+            className='fixed inset-0 z-40 flex flex-col justify-end overflow-y-auto'>
             <button
               type='button'
-              className='absolute inset-0 bg-background/95 backdrop-blur-md'
+              className='fixed inset-0 bg-background/95 backdrop-blur-md'
               onClick={closeMenu}
               aria-label='Close menu'
               tabIndex={-1}
@@ -109,7 +97,7 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: 20 }}
                 transition={{ duration: 0.2 }}
-                className='relative px-4 mb-6'>
+                className='relative px-4 mb-6 mx-auto w-full max-w-2xl'>
                 <NowPlayingMini onClose={closeMenu} />
               </motion.div>
             )}
@@ -119,20 +107,48 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 30 }}
               transition={{ duration: 0.2 }}
-              className='relative grid grid-cols-3 gap-3 px-4 mb-24'>
-              {tiles.map((item) => (
-                <Link key={item.id} to={item.slug} onClick={closeMenu}>
-                  <div
-                    className={cn(
-                      'flex flex-col items-center justify-center gap-2 py-4 rounded-sm',
-                      'bg-card/50 border border-border/50',
-                      'active:scale-95 active:bg-card transition-transform'
-                    )}>
+              className='relative grid grid-cols-3 sm:grid-cols-4 gap-3 px-4 mb-24 mx-auto w-full max-w-2xl'>
+              {navItems.map((item) => {
+                if (item.external) {
+                  return (
+                    <a
+                      key={item.id}
+                      href={item.external}
+                      target='_blank'
+                      rel='noreferrer'
+                      onClick={closeMenu}
+                      className={tileClass}>
+                      {item.icon}
+                      <span className='text-xs font-medium'>{item.name}</span>
+                    </a>
+                  )
+                }
+                if (item.CustomComponent) {
+                  return (
+                    <div key={item.id} className={tileClass}>
+                      {item.CustomComponent}
+                      <span className='text-xs font-medium'>{item.name}</span>
+                    </div>
+                  )
+                }
+                return (
+                  <Link
+                    key={item.id}
+                    to={item.slug}
+                    onClick={closeMenu}
+                    className={tileClass}>
                     {item.icon}
-                    <span className='text-xs font-medium'>{item.label}</span>
-                  </div>
-                </Link>
-              ))}
+                    <span className='text-xs font-medium'>{item.name}</span>
+                  </Link>
+                )
+              })}
+              <Link
+                to={accountTile.slug}
+                onClick={closeMenu}
+                className={tileClass}>
+                {accountTile.icon}
+                <span className='text-xs font-medium'>{accountTile.label}</span>
+              </Link>
             </motion.nav>
           </motion.div>
         )}

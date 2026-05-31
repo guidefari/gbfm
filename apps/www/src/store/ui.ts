@@ -5,27 +5,19 @@ export type SortOption = 'date' | 'title'
 export type PlayerType = 'full' | 'compact'
 
 interface UIState {
-  Cmd: {
-    isOpen: boolean
-  }
   mixesSorting: {
     sortBy: SortOption
     sortOrder: 'asc' | 'desc'
   }
   showCompactPlayer: boolean
   preferredPlayerType: PlayerType
-  sidebarCollapsed: boolean
 }
 
 interface UIActions {
-  openCmd: () => void
-  closeCmd: () => void
-  toggleCmd: () => void
   setSortBy: (sortBy: SortOption) => void
   toggleSortOrder: () => void
   toggleCompactPlayer: () => void
   setPreferredPlayerType: (playerType: PlayerType) => void
-  toggleSidebar: () => void
   resetUI: () => void
 }
 
@@ -35,40 +27,12 @@ export const useUIStore = create<UIStore>()(
   devtools(
     persist(
       (set) => ({
-        Cmd: {
-          isOpen: false
-        },
         mixesSorting: {
           sortBy: 'date',
           sortOrder: 'desc'
         },
         showCompactPlayer: false,
         preferredPlayerType: 'full',
-        sidebarCollapsed: false,
-        openCmd: () =>
-          set(
-            (state: UIStore) => ({
-              Cmd: { ...state.Cmd, isOpen: true }
-            }),
-            false,
-            'ui/Cmd/open'
-          ),
-        closeCmd: () =>
-          set(
-            (state: UIStore) => ({
-              Cmd: { ...state.Cmd, isOpen: false }
-            }),
-            false,
-            'ui/Cmd/close'
-          ),
-        toggleCmd: () =>
-          set(
-            (state: UIStore) => ({
-              Cmd: { ...state.Cmd, isOpen: !state.Cmd.isOpen }
-            }),
-            false,
-            'ui/Cmd/toggle'
-          ),
         setSortBy: (sortBy: SortOption) =>
           set(
             (state: UIStore) => ({
@@ -106,21 +70,12 @@ export const useUIStore = create<UIStore>()(
             false,
             'ui/setPreferredPlayerType'
           ),
-        toggleSidebar: () =>
-          set(
-            (state: UIStore) => ({
-              sidebarCollapsed: !state.sidebarCollapsed
-            }),
-            false,
-            'ui/toggleSidebar'
-          ),
         resetUI: () =>
           set(
             {
               mixesSorting: { sortBy: 'date', sortOrder: 'desc' },
               showCompactPlayer: false,
-              preferredPlayerType: 'full',
-              sidebarCollapsed: false
+              preferredPlayerType: 'full'
             },
             false,
             'ui/reset'
@@ -131,8 +86,7 @@ export const useUIStore = create<UIStore>()(
         partialize: (state) => ({
           mixesSorting: state.mixesSorting,
           showCompactPlayer: state.showCompactPlayer,
-          preferredPlayerType: state.preferredPlayerType,
-          sidebarCollapsed: state.sidebarCollapsed
+          preferredPlayerType: state.preferredPlayerType
         })
       }
     ),

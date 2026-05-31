@@ -7,7 +7,6 @@ import {
   useAudioPlayerActions,
   useAudioPlayerPlaybackState
 } from '@/store/audioPlayer'
-import { useUIStore } from '@/store/ui'
 
 function CreatorNames({
   creators
@@ -27,7 +26,6 @@ export function FeaturedMixHero() {
   const { loadTrack, play, pause } = useAudioPlayerActions()
   const { audioSrc, isPlaying, currentTrackId } = useAudioPlayerPlaybackState()
   const navigate = useNavigate()
-  const openCmd = useUIStore((s) => s.openCmd)
   const [error, setError] = useState<string | null>(null)
 
   const isThisMixLoaded =
@@ -132,22 +130,6 @@ export function FeaturedMixHero() {
         </button>
 
         {error && <p className='text-sm text-center text-red-500'>{error}</p>}
-
-        <button
-          type='button'
-          onClick={openCmd}
-          className='hidden lg:flex items-center gap-2 mt-1 text-secondary-foreground transition-colors hover:text-highlight'>
-          <kbd className='inline-flex h-5 bg-muted text-secondary-foreground items-center gap-1 border px-1.5 font-mono text-[10px] font-medium select-none'>
-            <span className='text-xs'>
-              {typeof navigator !== 'undefined' &&
-              navigator.platform.includes('Mac')
-                ? '⌘'
-                : 'Ctrl'}
-            </span>
-            K
-          </kbd>
-          <span className='text-xs'>navigate</span>
-        </button>
       </div>
     </div>
   )
