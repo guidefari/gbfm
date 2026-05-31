@@ -109,7 +109,7 @@ const getBySlugEffect = (slug: string) =>
           operation: 'select',
           table: 'labels'
         })
-    })
+    }).pipe(Effect.withSpan('label.getBySlug.selectLabel'))
 
     const label = labelRecords[0]
     if (!label) {
@@ -136,7 +136,7 @@ const getBySlugEffect = (slug: string) =>
           operation: 'select',
           table: 'label_creators'
         })
-    })
+    }).pipe(Effect.withSpan('label.getBySlug.selectCreators'))
 
     let processedLabel: SelectMdxCompiledLabel = {
       ...label,
@@ -156,7 +156,7 @@ const getBySlugEffect = (slug: string) =>
             operation: 'mdx_compile',
             table: 'labels'
           })
-      })
+      }).pipe(Effect.withSpan('label.getBySlug.compileMdx'))
 
       if (isMDXCompilationResult(mdxResult)) {
         processedLabel = {
