@@ -112,8 +112,7 @@ export const DesktopSideNav = () => {
           Skip to main content
         </a>
 
-        <div
-          className={`flex items-center px-3 pt-3 ${collapsed ? 'justify-center' : 'justify-end'}`}>
+        <div className='flex items-center px-3 pt-3 justify-start'>
           <Row
             collapsed={collapsed}
             label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}>

@@ -7,6 +7,7 @@ import {
   useAudioPlayerActions,
   useAudioPlayerPlaybackState
 } from '@/store/audioPlayer'
+import { useUIStore } from '@/store/ui'
 
 function CreatorNames({
   creators
@@ -26,6 +27,7 @@ export function FeaturedMixHero() {
   const { loadTrack, play, pause } = useAudioPlayerActions()
   const { audioSrc, isPlaying, currentTrackId } = useAudioPlayerPlaybackState()
   const navigate = useNavigate()
+  const openCmd = useUIStore((s) => s.openCmd)
   const [error, setError] = useState<string | null>(null)
 
   const isThisMixLoaded =
@@ -58,9 +60,9 @@ export function FeaturedMixHero() {
   const showPause = isThisMixLoaded && isPlaying
 
   return (
-    <div className='flex flex-col items-center w-full max-w-md gap-6'>
-      {featuredMix && (
-        <div className='flex flex-col items-center w-full gap-4'>
+    <div className='flex flex-col items-center w-full gap-6'>
+      <div className='flex flex-col items-center w-full gap-4'>
+        {featuredMix ? (
           <Link
             to='/mixes/$mixId'
             params={{ mixId: featuredMix.slug }}
@@ -71,20 +73,31 @@ export function FeaturedMixHero() {
               className='object-cover w-40 h-40 transition-opacity rounded-sm md:w-48 md:h-48 group-hover:opacity-80'
             />
           </Link>
-          <div className='text-center'>
-            <p className='text-xs tracking-wider uppercase text-muted-foreground/70'>
-              Featured mix
-            </p>
-            <Link
-              to='/mixes/$mixId'
-              params={{ mixId: featuredMix.slug }}
-              className='text-lg font-semibold hover:underline'>
-              {featuredMix.title}
-            </Link>
-            <CreatorNames creators={featuredMix.creators} />
-          </div>
+        ) : (
+          <div className='w-40 h-40 rounded-sm md:w-48 md:h-48 bg-muted animate-pulse' />
+        )}
+        <div className='text-center'>
+          <p className='text-xs tracking-wider uppercase text-muted-foreground/70'>
+            Featured mix
+          </p>
+          {featuredMix ? (
+            <>
+              <Link
+                to='/mixes/$mixId'
+                params={{ mixId: featuredMix.slug }}
+                className='text-lg font-semibold hover:underline'>
+                {featuredMix.title}
+              </Link>
+              <CreatorNames creators={featuredMix.creators} />
+            </>
+          ) : (
+            <>
+              <div className='w-40 h-6 mx-auto rounded-sm bg-muted animate-pulse' />
+              <div className='w-24 h-4 mx-auto mt-1 rounded-sm bg-muted animate-pulse' />
+            </>
+          )}
         </div>
-      )}
+      </div>
 
       <div className='flex flex-col items-stretch w-full gap-3'>
         <button
@@ -119,6 +132,22 @@ export function FeaturedMixHero() {
         </button>
 
         {error && <p className='text-sm text-center text-red-500'>{error}</p>}
+
+        <button
+          type='button'
+          onClick={openCmd}
+          className='hidden lg:flex items-center gap-2 mt-1 text-secondary-foreground transition-colors hover:text-highlight'>
+          <kbd className='inline-flex h-5 bg-muted text-secondary-foreground items-center gap-1 border px-1.5 font-mono text-[10px] font-medium select-none'>
+            <span className='text-xs'>
+              {typeof navigator !== 'undefined' &&
+              navigator.platform.includes('Mac')
+                ? '⌘'
+                : 'Ctrl'}
+            </span>
+            K
+          </kbd>
+          <span className='text-xs'>navigate</span>
+        </button>
       </div>
     </div>
   )
