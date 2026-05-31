@@ -68,11 +68,11 @@ export function FeaturedMixHero() {
             <img
               src={featuredMix.thumbnailUrl || DEFAULT_IMAGE_URL}
               alt={featuredMix.title}
-              className='object-cover w-40 h-40 transition-opacity rounded-sm md:w-48 md:h-48 group-hover:opacity-80'
+              className='object-cover w-36 h-36 transition-opacity rounded-sm md:w-48 md:h-48 lg:w-40 lg:h-40 group-hover:opacity-80'
             />
           </Link>
         ) : (
-          <div className='w-40 h-40 rounded-sm md:w-48 md:h-48 bg-muted animate-pulse' />
+          <div className='w-36 h-36 rounded-sm md:w-48 md:h-48 lg:w-40 lg:h-40 bg-muted animate-pulse' />
         )}
         <div className='text-center'>
           <p className='text-xs tracking-wider uppercase text-muted-foreground/70'>

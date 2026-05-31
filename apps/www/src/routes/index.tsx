@@ -11,15 +11,15 @@ export const Route = createFileRoute('/')({
 
 function Index() {
   return (
-    <div className='flex min-h-full items-center justify-center px-6 py-12'>
-      <div className='flex w-fit flex-col items-center gap-10 xl:flex-row xl:items-center xl:gap-12'>
-        <h1 className='my-0 w-fit shrink-0 text-center font-bold leading-[0.85] tracking-tight text-[min(12vw,4.5rem)] md:text-8xl xl:text-right xl:text-9xl xl:border-r-2 xl:border-foreground/30 xl:pr-12'>
+    <div className='flex min-h-full items-center justify-center px-6 py-8 lg:py-0'>
+      <div className='flex w-fit flex-col items-center gap-8 lg:flex-row lg:items-center lg:gap-12'>
+        <h1 className='my-0 w-fit shrink-0 text-center font-bold leading-[0.85] tracking-tight text-[min(12vw,4.5rem)] md:text-8xl lg:text-right lg:text-7xl lg:border-r-2 lg:border-foreground/30 lg:pr-12 xl:text-9xl'>
           goosebumps.
           <br />
           <span className='text-highlight'>fm</span>
         </h1>
 
-        <div className='flex w-full max-w-sm shrink-0 xl:w-80'>
+        <div className='flex w-full max-w-xs shrink-0 lg:w-72 xl:w-80'>
           <FeaturedMixHero />
         </div>
       </div>
