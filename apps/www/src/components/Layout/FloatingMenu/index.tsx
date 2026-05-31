@@ -18,8 +18,8 @@ type FloatingMenuProps = {
 
 const tileClass = cn(
   'flex flex-col items-center justify-center gap-2 py-4 rounded-sm',
-  'bg-card/50 border border-border/50',
-  'active:scale-95 active:bg-card transition-transform hover:bg-card'
+  'bg-card/50 border border-border/50 text-foreground',
+  'transition-colors hover:bg-foreground/10 hover:border-foreground active:scale-95'
 )
 
 export function FloatingMenu({ className }: FloatingMenuProps) {
