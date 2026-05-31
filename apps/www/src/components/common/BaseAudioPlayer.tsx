@@ -297,7 +297,7 @@ export function BaseAudioPlayer({
       className={`shrink-0 border-t backdrop-blur-md bg-background/95 border-border min-h-[104px] ${className}`}>
       <div className='px-4 py-3 mx-auto max-w-(--breakpoint-2xl)'>
         {/* Desktop Layout */}
-        <div className='hidden md:grid md:grid-cols-3 md:items-center md:gap-4'>
+        <div className='hidden lg:grid lg:grid-cols-3 lg:items-center lg:gap-4'>
           {/* Left: Track Info */}
           <div className='flex items-center min-w-0 gap-3'>
             {showFullscreenToggle && (
@@ -446,7 +446,7 @@ export function BaseAudioPlayer({
         </div>
 
         {/* Mobile Layout */}
-        <div className='md:hidden'>
+        <div className='lg:hidden'>
           <div className='flex items-center gap-3 mb-3'>
             {showFullscreenToggle && (
               <button
