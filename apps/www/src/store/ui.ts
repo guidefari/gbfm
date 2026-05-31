@@ -2,22 +2,19 @@ import { create } from 'zustand'
 import { devtools, persist } from 'zustand/middleware'
 
 export type SortOption = 'date' | 'title'
-export type PlayerType = 'full' | 'compact'
 
 interface UIState {
   mixesSorting: {
     sortBy: SortOption
     sortOrder: 'asc' | 'desc'
   }
-  showCompactPlayer: boolean
-  preferredPlayerType: PlayerType
+  showBottomPlayer: boolean
 }
 
 interface UIActions {
   setSortBy: (sortBy: SortOption) => void
   toggleSortOrder: () => void
-  toggleCompactPlayer: () => void
-  setPreferredPlayerType: (playerType: PlayerType) => void
+  setShowBottomPlayer: (show: boolean) => void
   resetUI: () => void
 }
 
@@ -31,8 +28,7 @@ export const useUIStore = create<UIStore>()(
           sortBy: 'date',
           sortOrder: 'desc'
         },
-        showCompactPlayer: false,
-        preferredPlayerType: 'full',
+        showBottomPlayer: true,
         setSortBy: (sortBy: SortOption) =>
           set(
             (state: UIStore) => ({
@@ -53,29 +49,17 @@ export const useUIStore = create<UIStore>()(
             false,
             'ui/mixesSorting/toggleSortOrder'
           ),
-        toggleCompactPlayer: () =>
+        setShowBottomPlayer: (show: boolean) =>
           set(
-            (state: UIStore) => ({
-              showCompactPlayer: !state.showCompactPlayer
-            }),
+            () => ({ showBottomPlayer: show }),
             false,
-            'ui/toggleCompactPlayer'
-          ),
-        setPreferredPlayerType: (playerType: PlayerType) =>
-          set(
-            () => ({
-              preferredPlayerType: playerType,
-              showCompactPlayer: playerType === 'compact'
-            }),
-            false,
-            'ui/setPreferredPlayerType'
+            'ui/setShowBottomPlayer'
           ),
         resetUI: () =>
           set(
             {
               mixesSorting: { sortBy: 'date', sortOrder: 'desc' },
-              showCompactPlayer: false,
-              preferredPlayerType: 'full'
+              showBottomPlayer: true
             },
             false,
             'ui/reset'
@@ -85,8 +69,7 @@ export const useUIStore = create<UIStore>()(
         name: 'gbfm-ui-store',
         partialize: (state) => ({
           mixesSorting: state.mixesSorting,
-          showCompactPlayer: state.showCompactPlayer,
-          preferredPlayerType: state.preferredPlayerType
+          showBottomPlayer: state.showBottomPlayer
         })
       }
     ),
