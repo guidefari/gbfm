@@ -19,6 +19,8 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ExternalLink, Loader2, RefreshCw } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
+import { checkSavedTracksEffect, spotifyIdFromUrl } from '@/lib/spotify-pkce'
+import { runAppEffect } from '@/runtime'
 import { ImageUploadField } from './-ImageUploadField'
 import { type PlaylistTrackRow, SortableTrackRow } from './-SortableTrackRow'
 
@@ -64,6 +66,9 @@ export function PlaylistEditor({ playlist }: Props) {
     playlist.coverImageUrl ?? ''
   )
   const [orderedIds, setOrderedIds] = useState<string[]>([])
+  const [savedSpotifyTrackIds, setSavedSpotifyTrackIds] = useState<
+    Map<string, boolean>
+  >(new Map())
   const [spotifyTrackUrl, setSpotifyTrackUrl] = useState('')
 
   const tracksQuery = useQuery({
@@ -77,6 +82,35 @@ export function PlaylistEditor({ playlist }: Props) {
   useEffect(() => {
     if (tracksQuery.data) {
       setOrderedIds(tracksQuery.data.map((r) => r.track.id))
+    }
+  }, [tracksQuery.data])
+
+  useEffect(() => {
+    if (!tracksQuery.data) return
+
+    const spotifyTrackIds = Array.from(
+      new Set(
+        tracksQuery.data.flatMap((row) =>
+          row.links.flatMap((link) => {
+            if (link.platform !== 'spotify') return []
+            const id = spotifyIdFromUrl(link.url)
+            return id ? [id] : []
+          })
+        )
+      )
+    )
+
+    let active = true
+    runAppEffect(checkSavedTracksEffect(spotifyTrackIds))
+      .then((results) => {
+        if (active) setSavedSpotifyTrackIds(results)
+      })
+      .catch(() => {
+        if (active) setSavedSpotifyTrackIds(new Map())
+      })
+
+    return () => {
+      active = false
     }
   }, [tracksQuery.data])
 
@@ -409,6 +443,12 @@ export function PlaylistEditor({ playlist }: Props) {
                     <SortableTrackRow
                       key={id}
                       track={row}
+                      savedSpotifyTrackIds={savedSpotifyTrackIds}
+                      onSpotifyTrackSaved={(spotifyTrackId) =>
+                        setSavedSpotifyTrackIds((current) =>
+                          new Map(current).set(spotifyTrackId, true)
+                        )
+                      }
                       onRemove={(trackId) => removeMutation.mutate(trackId)}
                       removeDisabled={removeMutation.isPending}
                     />

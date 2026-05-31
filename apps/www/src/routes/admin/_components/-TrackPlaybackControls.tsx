@@ -1,10 +1,9 @@
 import { Button, toast } from '@gbfm/ui'
 import * as Effect from 'effect/Effect'
 import { Heart, ListPlus, Play } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import {
   addToQueueEffect,
-  checkSavedTrackEffect,
   playTrackEffect,
   type SpotifyRequestError,
   saveTrackEffect,
@@ -16,6 +15,8 @@ import { runAppEffect } from '@/runtime'
 
 interface Props {
   spotifyUrl: string
+  saved: boolean | null
+  onSaved: (trackId: string) => void
 }
 
 const withSpotifyErrorToast = (title: string) =>
@@ -29,21 +30,13 @@ const withSpotifyErrorToast = (title: string) =>
     )
   )
 
-export function TrackPlaybackControls({ spotifyUrl }: Props) {
+export function TrackPlaybackControls({ spotifyUrl, saved, onSaved }: Props) {
   const uri = spotifyUriFromUrl(spotifyUrl)
   const trackId = spotifyIdFromUrl(spotifyUrl)
 
-  const [saved, setSaved] = useState<boolean | null>(null)
   const [savePending, setSavePending] = useState(false)
   const [playPending, setPlayPending] = useState(false)
   const [queuePending, setQueuePending] = useState(false)
-
-  useEffect(() => {
-    if (!trackId) return
-    runAppEffect(checkSavedTrackEffect(trackId))
-      .then(setSaved)
-      .catch(() => setSaved(null))
-  }, [trackId])
 
   if (!uri || !trackId) return null
 
@@ -70,7 +63,7 @@ export function TrackPlaybackControls({ spotifyUrl }: Props) {
       saveTrackEffect(trackId).pipe(
         Effect.tap(() =>
           Effect.sync(() => {
-            setSaved(true)
+            onSaved(trackId)
             toast({ title: 'Saved to library' })
           })
         ),

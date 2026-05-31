@@ -17,6 +17,7 @@ import {
   SiYoutube,
   SiYoutubemusic
 } from 'react-icons/si'
+import { spotifyIdFromUrl } from '@/lib/spotify-pkce'
 import { TrackPlaybackControls } from './-TrackPlaybackControls'
 
 export interface PlaylistTrackLink {
@@ -145,11 +146,19 @@ function TrackTitle({ title, links }: TrackTitleProps) {
 
 interface Props {
   track: PlaylistTrackRow
+  savedSpotifyTrackIds: Map<string, boolean>
+  onSpotifyTrackSaved: (spotifyTrackId: string) => void
   onRemove: (trackId: string) => void
   removeDisabled: boolean
 }
 
-export function SortableTrackRow({ track, onRemove, removeDisabled }: Props) {
+export function SortableTrackRow({
+  track,
+  savedSpotifyTrackIds,
+  onSpotifyTrackSaved,
+  onRemove,
+  removeDisabled
+}: Props) {
   const {
     attributes,
     listeners,
@@ -166,6 +175,7 @@ export function SortableTrackRow({ track, onRemove, removeDisabled }: Props) {
   }
 
   const spotifyLink = track.links.find((l) => l.platform === 'spotify')
+  const spotifyTrackId = spotifyLink ? spotifyIdFromUrl(spotifyLink.url) : null
 
   return (
     <div
@@ -201,9 +211,13 @@ export function SortableTrackRow({ track, onRemove, removeDisabled }: Props) {
         </div>
         <PlatformLinks links={track.links} />
       </div>
-      {spotifyLink && (
+      {spotifyLink && spotifyTrackId && (
         <div className='opacity-0 group-hover:opacity-100 transition-opacity'>
-          <TrackPlaybackControls spotifyUrl={spotifyLink.url} />
+          <TrackPlaybackControls
+            spotifyUrl={spotifyLink.url}
+            saved={savedSpotifyTrackIds.get(spotifyTrackId) ?? null}
+            onSaved={onSpotifyTrackSaved}
+          />
         </div>
       )}
       <Button

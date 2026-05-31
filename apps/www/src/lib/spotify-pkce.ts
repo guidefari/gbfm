@@ -104,12 +104,31 @@ export const saveTrackEffect = Effect.fn('saveTrack')(function* (
   yield* spotify.library.saveTracks([spotifyTrackId])
 })
 
+export const checkSavedTracksEffect = Effect.fn('checkSavedTracks')(function* (
+  spotifyTrackIds: string[]
+) {
+  const spotify = yield* SpotifyBrowser
+  if (spotifyTrackIds.length === 0) return new Map<string, boolean>()
+
+  const entries: Array<[string, boolean]> = []
+  for (let i = 0; i < spotifyTrackIds.length; i += 50) {
+    const batch = spotifyTrackIds.slice(i, i + 50)
+    const results = yield* spotify.library.areTracksSaved(batch)
+    for (let j = 0; j < batch.length; j += 1) {
+      const id = batch[j]
+      if (!id) continue
+      entries.push([id, results[j] ?? false])
+    }
+  }
+
+  return new Map(entries)
+})
+
 export const checkSavedTrackEffect = Effect.fn('checkSavedTrack')(function* (
   spotifyTrackId: string
 ) {
-  const spotify = yield* SpotifyBrowser
-  const results = yield* spotify.library.areTracksSaved([spotifyTrackId])
-  return results[0] ?? false
+  const results = yield* checkSavedTracksEffect([spotifyTrackId])
+  return results.get(spotifyTrackId) ?? false
 })
 
 export const spotifyErrorMessage = (error: SpotifyRequestError): string => {
