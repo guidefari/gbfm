@@ -147,7 +147,7 @@ await runApp(program)  // ✅ Runtime provides service
 - [x] `/share/*` (1 route migrated - shareMix)
 
 ### Routes Remaining
-- [ ] `/content/*` (1 route remaining - processMixUpload - complex ffmpeg processing)
+- [x] `/content/*`
 
 ## Implementation Patterns
 
@@ -215,7 +215,7 @@ if (error instanceof ConflictError) return c.json({ error }, 409)
 1. **Circuit breakers and retries** for external API calls
 2. **Observability and monitoring** with Effect
 3. **Testing infrastructure** with Effect-based test runtimes
-4. **Migrate processMixUpload** (complex ffmpeg processing)
+4. Removed the mix-processing HTTP endpoints in favor of a local CLI workflow.
 
 ## Success Metrics
 

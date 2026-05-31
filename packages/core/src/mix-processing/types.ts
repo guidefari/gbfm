@@ -29,3 +29,23 @@ export interface JobInfo {
   readonly createdAt: number
   readonly updatedAt: number
 }
+
+export type MixJobStatus = 'queued' | 'processing' | 'completed' | 'failed'
+
+export interface MixJobRecord {
+  id: string
+  title: string
+  outputFormat: 'mp3' | 'mp4'
+  status: MixJobStatus
+  createdAt: number
+  updatedAt: number
+  outputPath: string
+  stdoutLogPath: string
+  stderrLogPath: string
+  audioPath: string
+  imagePath: string
+  artist?: string
+  album?: string
+  pid?: number
+  error?: string
+}

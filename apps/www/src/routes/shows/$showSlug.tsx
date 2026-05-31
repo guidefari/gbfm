@@ -11,6 +11,7 @@ import { ShowQRButton } from '@/components/shows/ShowQRButton'
 import { fetcher } from '@/lib/http'
 import { generateSEOMeta, generateShowSEO } from '@/lib/seo'
 import { useContentStore } from '@/store'
+import { ShowMetadataManager } from './_components/-ShowMetadataManager'
 
 export const Route = createFileRoute('/shows/$showSlug')({
   component: ShowPage,
@@ -82,15 +83,9 @@ function ShowPage() {
             </div>
 
             <div className='space-y-3 min-w-0'>
-              <h1 className='text-2xl font-bold wrap-break-word'>
-                {data.title}
-              </h1>
+              <h1 className='text-2xl font-bold wrap-break-word'>{data.title}</h1>
 
-              {hostNames && (
-                <p className='text-sm text-muted-foreground'>
-                  Hosted by {hostNames}
-                </p>
-              )}
+              {hostNames && <p className='text-sm text-muted-foreground'>Hosted by {hostNames}</p>}
 
               {(data.description || data.compiledContent) && (
                 <ShowDescription
@@ -100,14 +95,11 @@ function ShowPage() {
                 />
               )}
 
-              <div className='flex gap-2'>
-                <FavoriteButton
-                  contentType='show'
-                  contentId={data.id}
-                  contentTitle={data.title}
-                />
+              <div className='flex gap-2 flex-wrap'>
+                <FavoriteButton contentType='show' contentId={data.id} contentTitle={data.title} />
                 <ShareButton type='show' slug={showSlug} />
                 <ShowQRButton slug={showSlug} />
+                <ShowMetadataManager show={data} />
               </div>
             </div>
           </div>
@@ -135,11 +127,7 @@ function ShowDescription({
   return (
     <div>
       <div className='text-sm text-muted-foreground line-clamp-4 prose prose-sm prose-neutral dark:prose-invert max-w-none wrap-break-word overflow-hidden [&_p]:text-muted-foreground [&_p]:text-sm'>
-        {compiledContent ? (
-          <MDXRendrr mdxString={compiledContent} />
-        ) : (
-          <p>{description}</p>
-        )}
+        {compiledContent ? <MDXRendrr mdxString={compiledContent} /> : <p>{description}</p>}
       </div>
       {hasExpandableContent && (
         <ReadMoreModal
@@ -149,11 +137,7 @@ function ShowDescription({
               read more
             </span>
           }>
-          {compiledContent ? (
-            <MDXRendrr mdxString={compiledContent} />
-          ) : (
-            <p>{description}</p>
-          )}
+          {compiledContent ? <MDXRendrr mdxString={compiledContent} /> : <p>{description}</p>}
         </ReadMoreModal>
       )}
     </div>

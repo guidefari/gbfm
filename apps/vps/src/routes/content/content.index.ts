@@ -24,9 +24,6 @@ const router = createRouter()
   .openapi(routes.updateAudioBySlug, handlers.updateAudioBySlug)
   .openapi(routes.createMix, handlers.createMix)
   .openapi(routes.createAudio, handlers.createAudio)
-  .openapi(routes.submitMixProcessing, handlers.submitMixProcessing)
-  .openapi(routes.getMixJobStatus, handlers.getMixJobStatus)
-  .openapi(routes.processMixUpload, handlers.processUpload)
   .openapi(routes.getMixQRPdf, handlers.getMixQRPdf)
   .openapi(routes.trackAudioPlay, handlers.trackAudioPlay)
   .openapi(labelRoutes.createLabel, labelHandlers.createLabel)
@@ -36,13 +33,7 @@ const router = createRouter()
   .openapi(releaseRoutes.createRelease, releaseHandlers.createRelease)
   .openapi(releaseRoutes.getReleasesByLabel, releaseHandlers.getReleasesByLabel)
   .openapi(releaseRoutes.getReleaseBySlug, releaseHandlers.getReleaseBySlug)
-  .openapi(
-    releaseRoutes.updateReleaseBySlug,
-    releaseHandlers.updateReleaseBySlug
-  )
-  .openapi(
-    releaseRoutes.deleteReleaseBySlug,
-    releaseHandlers.deleteReleaseBySlug
-  )
+  .openapi(releaseRoutes.updateReleaseBySlug, releaseHandlers.updateReleaseBySlug)
+  .openapi(releaseRoutes.deleteReleaseBySlug, releaseHandlers.deleteReleaseBySlug)
 
 export default router

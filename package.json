@@ -1,8 +1,12 @@
 {
   "name": "gbfm",
   "version": "2.50.4",
-  "sideEffects": false,
   "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "sideEffects": false,
   "scripts": {
     "dev": "sst dev --stage=dev --verbose",
     "refresh": "sst refresh --stage=dev",
@@ -16,6 +20,8 @@
     "lint:fix": "biome lint --write .",
     "format": "biome format --write .",
     "check": "biome check --write .",
+    "process-mix": "bun --filter @gbfm/core run process-mix",
+    "process-mix-job": "bun --filter @gbfm/core run process-mix-job",
     "biome:ci": "biome ci",
     "precommit": "bun run format && bun run check && bun run typecheck",
     "ci": "bun run biome:ci && bun run typecheck && bun run test && cd apps/www && bun run build",
@@ -45,14 +51,10 @@
     "typescript": "6.0.3"
   },
   "overrides": {
+    "effect": "4.0.0-beta.70",
     "react": "19.2.5",
-    "react-dom": "19.2.5",
-    "effect": "4.0.0-beta.70"
+    "react-dom": "19.2.5"
   },
-  "workspaces": [
-    "packages/*",
-    "apps/*"
-  ],
   "trustedDependencies": [
     "@biomejs/biome",
     "aws-sdk",
