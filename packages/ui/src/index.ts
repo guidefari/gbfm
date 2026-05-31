@@ -2,6 +2,7 @@ export * from './components/accordion'
 export { ArtworkUploader } from './components/artwork-uploader'
 export { AudioDropZone } from './components/audio-drop-zone'
 export { AudioFileCard } from './components/audio-file-card'
+export { AudioPlayerWithTimestamp } from './components/audio-player-with-timestamp'
 export { AudioUploader } from './components/audio-uploader'
 export type { BadgeProps } from './components/badge'
 export { Badge, badgeVariants } from './components/badge'
@@ -37,6 +38,7 @@ export * from './components/label'
 export { LilDate } from './components/lil-date'
 export type { MediaCardProps } from './components/media-card'
 export { MediaCard } from './components/media-card'
+export { MixDetailsForm } from './components/mix-details-form'
 export {
   MixUploadProgress,
   type MixUploadStep
@@ -79,6 +81,13 @@ export {
 } from './components/password-checklist'
 export { ProfilePreviewCard } from './components/profile-preview-card'
 export { ReadMoreModal } from './components/read-more-modal'
+export {
+  type BucketConfig,
+  getS3PublicUrl,
+  S3MediaFilePicker,
+  type S3MediaFilePickerProps,
+  type S3Object
+} from './components/s3-media-file-picker'
 export * from './components/scroll-area'
 export { Section } from './components/section'
 export * from './components/select'
@@ -97,9 +106,11 @@ export {
   UploadProgress,
   type UploadStep
 } from './components/upload-progress'
+export { UploadSummaryCard } from './components/upload-summary-card'
 export * from './components/use-toast'
 export {
   default as YoutubeEmbed,
   YoutubeEmbed as YoutubeEmbedComponent
 } from './components/youtube-embed'
 export { cn } from './lib/cn'
+export { formatTime, generateSlug } from './lib/format'

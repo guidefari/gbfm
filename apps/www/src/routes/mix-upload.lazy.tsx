@@ -7,6 +7,9 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  formatTime,
+  generateSlug,
+  MixDetailsForm,
   Tabs,
   TabsContent,
   TabsList,
@@ -15,17 +18,15 @@ import {
   TracklistEditor,
   toast,
   MixUploadProgress as UploadProgress,
-  type MixUploadStep as UploadStep
+  type MixUploadStep as UploadStep,
+  UploadSummaryCard
 } from '@gbfm/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createLazyFileRoute, useRouter } from '@tanstack/react-router'
 import { FileText, List, Loader2, Music } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { MixDetailsForm } from '@/components/mix-uploader/MixDetailsForm'
 import { S3AudioFilePicker } from '@/components/mix-uploader/S3AudioFilePicker'
-import { UploadSummaryCard } from '@/components/mix-uploader/upload-summary-card'
 import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
-import { formatTime, generateSlug } from '@/hooks/useFileUpload'
 import { authClient, useSession } from '@/lib/auth-client'
 import {
   fetcher,

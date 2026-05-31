@@ -1,7 +1,7 @@
-import type { TrackEntry } from '@gbfm/ui'
-import { Button } from '@gbfm/ui'
 import { CheckCircle2, ExternalLink, Loader2, Music } from 'lucide-react'
 import type { RefObject } from 'react'
+import { Button } from './button'
+import type { TrackEntry } from './tracklist-editor'
 
 interface UploadSummaryCardProps {
   audioRef: RefObject<HTMLAudioElement | null>

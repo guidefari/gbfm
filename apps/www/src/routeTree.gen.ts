@@ -11,7 +11,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as UploadOldRouteImport } from './routes/upload-old'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SubscribeRouteImport } from './routes/subscribe'
@@ -56,15 +55,9 @@ import { Route as AdminMusicRouteImport } from './routes/admin/music'
 import { Route as AdminFrontendErrorsRouteImport } from './routes/admin/frontend-errors'
 import { Route as AdminMusicEntityEntityTypeIdRouteImport } from './routes/admin/music-entity.$entityType.$id'
 
-const UploadLazyRouteImport = createFileRoute('/upload')()
 const MixUploadLazyRouteImport = createFileRoute('/mix-upload')()
 const LabelUploadLazyRouteImport = createFileRoute('/label-upload')()
 
-const UploadLazyRoute = UploadLazyRouteImport.update({
-  id: '/upload',
-  path: '/upload',
-  getParentRoute: () => rootRouteImport,
-} as any).lazy(() => import('./routes/upload.lazy').then((d) => d.Route))
 const MixUploadLazyRoute = MixUploadLazyRouteImport.update({
   id: '/mix-upload',
   path: '/mix-upload',
@@ -75,11 +68,6 @@ const LabelUploadLazyRoute = LabelUploadLazyRouteImport.update({
   path: '/label-upload',
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() => import('./routes/label-upload.lazy').then((d) => d.Route))
-const UploadOldRoute = UploadOldRouteImport.update({
-  id: '/upload-old',
-  path: '/upload-old',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const UnsubscribeRoute = UnsubscribeRouteImport.update({
   id: '/unsubscribe',
   path: '/unsubscribe',
@@ -313,10 +301,8 @@ export interface FileRoutesByFullPath {
   '/subscribe': typeof SubscribeRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
-  '/upload-old': typeof UploadOldRoute
   '/label-upload': typeof LabelUploadLazyRoute
   '/mix-upload': typeof MixUploadLazyRoute
-  '/upload': typeof UploadLazyRoute
   '/admin/frontend-errors': typeof AdminFrontendErrorsRoute
   '/admin/music': typeof AdminMusicRoute
   '/admin/overview': typeof AdminOverviewRoute
@@ -358,10 +344,8 @@ export interface FileRoutesByTo {
   '/subscribe': typeof SubscribeRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
-  '/upload-old': typeof UploadOldRoute
   '/label-upload': typeof LabelUploadLazyRoute
   '/mix-upload': typeof MixUploadLazyRoute
-  '/upload': typeof UploadLazyRoute
   '/admin/frontend-errors': typeof AdminFrontendErrorsRoute
   '/admin/music': typeof AdminMusicRoute
   '/admin/overview': typeof AdminOverviewRoute
@@ -408,10 +392,8 @@ export interface FileRoutesById {
   '/subscribe': typeof SubscribeRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
-  '/upload-old': typeof UploadOldRoute
   '/label-upload': typeof LabelUploadLazyRoute
   '/mix-upload': typeof MixUploadLazyRoute
-  '/upload': typeof UploadLazyRoute
   '/admin/frontend-errors': typeof AdminFrontendErrorsRoute
   '/admin/music': typeof AdminMusicRoute
   '/admin/overview': typeof AdminOverviewRoute
@@ -459,10 +441,8 @@ export interface FileRouteTypes {
     | '/subscribe'
     | '/terms'
     | '/unsubscribe'
-    | '/upload-old'
     | '/label-upload'
     | '/mix-upload'
-    | '/upload'
     | '/admin/frontend-errors'
     | '/admin/music'
     | '/admin/overview'
@@ -504,10 +484,8 @@ export interface FileRouteTypes {
     | '/subscribe'
     | '/terms'
     | '/unsubscribe'
-    | '/upload-old'
     | '/label-upload'
     | '/mix-upload'
-    | '/upload'
     | '/admin/frontend-errors'
     | '/admin/music'
     | '/admin/overview'
@@ -553,10 +531,8 @@ export interface FileRouteTypes {
     | '/subscribe'
     | '/terms'
     | '/unsubscribe'
-    | '/upload-old'
     | '/label-upload'
     | '/mix-upload'
-    | '/upload'
     | '/admin/frontend-errors'
     | '/admin/music'
     | '/admin/overview'
@@ -603,10 +579,8 @@ export interface RootRouteChildren {
   SubscribeRoute: typeof SubscribeRoute
   TermsRoute: typeof TermsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
-  UploadOldRoute: typeof UploadOldRoute
   LabelUploadLazyRoute: typeof LabelUploadLazyRoute
   MixUploadLazyRoute: typeof MixUploadLazyRoute
-  UploadLazyRoute: typeof UploadLazyRoute
   AdminFrontendErrorsRoute: typeof AdminFrontendErrorsRoute
   AdminMusicRoute: typeof AdminMusicRoute
   AdminOverviewRoute: typeof AdminOverviewRoute
@@ -630,13 +604,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/upload': {
-      id: '/upload'
-      path: '/upload'
-      fullPath: '/upload'
-      preLoaderRoute: typeof UploadLazyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/mix-upload': {
       id: '/mix-upload'
       path: '/mix-upload'
@@ -649,13 +616,6 @@ declare module '@tanstack/react-router' {
       path: '/label-upload'
       fullPath: '/label-upload'
       preLoaderRoute: typeof LabelUploadLazyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/upload-old': {
-      id: '/upload-old'
-      path: '/upload-old'
-      fullPath: '/upload-old'
-      preLoaderRoute: typeof UploadOldRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/unsubscribe': {
@@ -1046,10 +1006,8 @@ const rootRouteChildren: RootRouteChildren = {
   SubscribeRoute: SubscribeRoute,
   TermsRoute: TermsRoute,
   UnsubscribeRoute: UnsubscribeRoute,
-  UploadOldRoute: UploadOldRoute,
   LabelUploadLazyRoute: LabelUploadLazyRoute,
   MixUploadLazyRoute: MixUploadLazyRoute,
-  UploadLazyRoute: UploadLazyRoute,
   AdminFrontendErrorsRoute: AdminFrontendErrorsRoute,
   AdminMusicRoute: AdminMusicRoute,
   AdminOverviewRoute: AdminOverviewRoute,

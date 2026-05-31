@@ -1,5 +1,6 @@
 import { Clock, Play, Plus, X } from 'lucide-react'
 import type { ChangeEvent } from 'react'
+import { formatTime } from '../lib/format'
 import { Button } from './button'
 import { Input } from './input'
 import { ScrollArea } from './scroll-area'
@@ -17,12 +18,6 @@ interface TracklistEditorProps {
   onUpdateTrack: (index: number, title: string) => void
   onRemoveTrack: (id: number) => void
   onSeekTo: (seconds: number) => void
-}
-
-function formatTime(seconds: number): string {
-  const mins = Math.floor(seconds / 60)
-  const secs = Math.floor(seconds % 60)
-  return `${mins}:${secs.toString().padStart(2, '0')}`
 }
 
 export function TracklistEditor({

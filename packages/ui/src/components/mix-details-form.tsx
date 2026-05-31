@@ -1,20 +1,19 @@
+import { ImageIcon, Loader2, Tag, Upload, X } from 'lucide-react'
+import { useId } from 'react'
+import { generateSlug } from '../lib/format'
+import { Badge } from './badge'
+import { Button } from './button'
+import { Card, CardContent } from './card'
+import { Input } from './input'
+import { Label } from './label'
 import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  Input,
-  Label,
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue,
-  Textarea
-} from '@gbfm/ui'
-import { ImageIcon, Loader2, Tag, Upload, X } from 'lucide-react'
-import { useId } from 'react'
-import { generateSlug } from '@/hooks/useFileUpload'
+  SelectValue
+} from './select'
+import { Textarea } from './textarea'
 
 interface Show {
   id: string
