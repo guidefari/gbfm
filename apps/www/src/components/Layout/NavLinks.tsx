@@ -78,7 +78,7 @@ export const navConfig: NavItem[] = [
     slug: '/subscribe',
     icon: <Mail className={iconSytles} />,
     tier: 'primary',
-    surfaces: ['sidebar', 'floating', 'hamburger', 'cmd']
+    surfaces: ['sidebar', 'floating', 'hamburger']
   },
   {
     id: 'mixes',
@@ -102,7 +102,7 @@ export const navConfig: NavItem[] = [
     slug: '/labels',
     icon: <Tag className={iconSytles} />,
     tier: 'secondary',
-    surfaces: ['hamburger', 'cmd']
+    surfaces: ['hamburger']
   },
   {
     id: 'rss',
@@ -149,3 +149,11 @@ export const navConfig: NavItem[] = [
 
 export const navItemsForSurface = (surface: NavSurface) =>
   navConfig.filter((item) => item.surfaces.includes(surface))
+
+export type CmdNavItem = { id: string; name: string; slug: string }
+
+export const cmdNavItems: CmdNavItem[] = navConfig.flatMap((item) =>
+  item.surfaces.includes('cmd') && typeof item.slug === 'string'
+    ? [{ id: item.id, name: item.name, slug: item.slug }]
+    : []
+)

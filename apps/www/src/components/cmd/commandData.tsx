@@ -30,11 +30,30 @@ import {
   VolumeX,
   Wrench
 } from 'lucide-react'
+import { cmdNavItems } from '@/components/Layout/NavLinks'
 import { env } from '@/env'
 import type { CommandItem } from './types'
 
+const cmdNavIcons: Record<string, typeof Home> = {
+  home: Home,
+  shows: Radio,
+  editorial: Newspaper,
+  mixes: Disc3,
+  tweets: MessageSquare
+}
+
 export const createCommandData = (
-  navigationActions: Record<string, () => void>,
+  navigationActions: {
+    routeTo: (to: string) => void
+    routeToMixes: () => void
+    routeToLogin: () => void
+    routeToSettings: () => void
+    routeToDashboard: () => void
+    routeToUpload: () => void
+    routeToAdmin: () => void
+    routeToLabelUpload: () => void
+    routeToReminders: () => void
+  },
   sortingActions: Record<string, () => void>,
   settingsActions: Record<string, () => void>,
   contentActions: { editContent: (archetype: string, id: string) => void },
@@ -85,18 +104,19 @@ export const createCommandData = (
     }
   }
 
+  const navItems: CommandItem[] = cmdNavItems
+    .filter((item) => !(item.id === 'home' && pathname === '/'))
+    .map((item) => ({
+      id: item.id,
+      label: item.name,
+      icon: cmdNavIcons[item.id] ?? Home,
+      type: 'action',
+      onSelect: () => navigationActions.routeTo(item.slug),
+      requiresAuth: false
+    }))
+
   const items: (CommandItem | null)[] = [
-    // Direct navigation actions
-    pathname !== '/'
-      ? {
-          id: 'home',
-          label: 'Home',
-          icon: Home,
-          type: 'action',
-          onSelect: navigationActions.routeToHome,
-          requiresAuth: false
-        }
-      : null,
+    ...navItems,
     {
       id: 'theme-toggle',
       label: getThemeLabel(),
@@ -104,88 +124,6 @@ export const createCommandData = (
       type: 'action',
       onSelect: themeActions.cycleTheme,
       requiresAuth: false
-    },
-    // {
-    //   id: 'words',
-    //   label: 'Words',
-    //   icon: BookOpen,
-    //   type: 'action',
-    //   onSelect: () => {
-    //     closeCmd()
-    //     window.location.href = '/words'
-    //   },
-    //   requiresAuth: false
-    // },
-    // {
-    //   id: 'micro',
-    //   label: 'Micro',
-    //   icon: Mic,
-    //   type: 'action',
-    //   onSelect: () => {
-    //     closeCmd()
-    //     window.location.href = '/micro'
-    //   },
-    //   requiresAuth: false
-    // },
-
-    // Music section with sub-items
-    // {
-    //   id: 'music',
-    //   label: 'Explore Music',
-    //   icon: Headphones,
-    //   type: 'section',
-    //   requiresAuth: false,
-    //   items: [
-    //     {
-    //       id: 'mixes',
-    //       label: 'Mixes',
-    //       icon: Headphones,
-    //       onSelect: navigationActions.routeToMixes,
-    //       shortcut: '0'
-    //     },
-    //     {
-    //       id: 'tracks',
-    //       label: 'All Tracks',
-    //       icon: Music,
-    //       onSelect: navigationActions.routeToTracks
-    //     }
-    //     // {
-    //     //   id: 'labels',
-    //     //   label: 'Record Labels',
-    //     //   icon: Music,
-    //     //   onSelect: navigationActions.routeToLabels
-    //     // }
-    //   ]
-    // }
-    {
-      id: 'tweets',
-      label: 'Tweets',
-      icon: MessageSquare,
-      type: 'action',
-      onSelect: navigationActions.routeToTweets,
-      requiresAuth: false
-    },
-    {
-      id: 'editorial',
-      label: 'Editorial',
-      icon: Newspaper,
-      type: 'action',
-      onSelect: navigationActions.routeToEditorial,
-      requiresAuth: false
-    },
-    {
-      id: 'mixes',
-      label: 'Mixes',
-      icon: Disc3,
-      type: 'action',
-      onSelect: navigationActions.routeToMixes
-    },
-    {
-      id: 'shows',
-      label: 'Radio Shows',
-      icon: Radio,
-      type: 'action',
-      onSelect: navigationActions.routeToShows
     },
     {
       id: 'dashboard',

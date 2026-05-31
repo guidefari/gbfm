@@ -44,18 +44,6 @@ export function CommandDialogDemo() {
   const isOnMixesPage = routerState.location.pathname === '/mixes'
   const pathname = routerState.location.pathname
 
-  // Check if we're on a read page and can edit current content
-  const readPageMatch = routerState.location.pathname.match(
-    /^\/read\/([^/]+)\/([^/]+)$/
-  )
-  const currentArchetype = readPageMatch?.[1]
-  const currentId = readPageMatch?.[2]
-
-  // For now, allow editing for authenticated users on audio content
-  const isAudioContent =
-    currentArchetype && ['mix', 'track', 'misc'].includes(currentArchetype)
-  const canEdit = isAuthenticated && Boolean(isAudioContent)
-
   // Create command data
   const commandItems = React.useMemo(
     () =>
@@ -70,11 +58,11 @@ export function CommandDialogDemo() {
         closeCmd,
         isAuthenticated,
         isOnMixesPage,
-        canEdit,
+        false,
         isAdmin,
         isQueueEnabled,
-        currentArchetype,
-        currentId,
+        undefined,
+        undefined,
         audioSrc,
         pathname
       ),
@@ -89,11 +77,8 @@ export function CommandDialogDemo() {
       closeCmd,
       isAuthenticated,
       isOnMixesPage,
-      canEdit,
       isAdmin,
       isQueueEnabled,
-      currentArchetype,
-      currentId,
       audioSrc,
       pathname
     ]
