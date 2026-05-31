@@ -3,7 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import * as React from 'react'
 import { LongPost } from '@/components/Layout/LongPost'
 import { RouteError } from '@/components/RouteError'
-import { fetcher, useAudioBySlug } from '@/lib/http'
+import { fetcher } from '@/lib/http'
 import { generateSEOMeta, generateTrackSEO } from '@/lib/seo'
 import { useContentStore } from '@/store'
 
@@ -40,9 +40,8 @@ export const Route = createFileRoute('/tracks/$trackId')({
 
 function TrackPage() {
   const { trackId } = Route.useParams()
+  const { track: data } = Route.useLoaderData()
   const { setCurrentContent } = useContentStore()
-
-  const { data, error, isPending } = useAudioBySlug('track', trackId)
 
   React.useEffect(() => {
     if (data?.creators) {
@@ -57,8 +56,6 @@ function TrackPage() {
     return () => setCurrentContent(null)
   }, [data, trackId, setCurrentContent])
 
-  if (isPending) return <div>Loading...</div>
-  if (error) return <div>Error: {error.message}</div>
   if (!data) return <div>No data</div>
 
   return (

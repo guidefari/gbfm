@@ -1,14 +1,6 @@
 import { createFileRoute, Link, Navigate } from '@tanstack/react-router'
-import {
-  PublicProfilePage,
-  PublicProfilePageSkeleton
-} from '@/components/profile/PublicProfilePage'
-import {
-  fetcher,
-  type ResolveResult,
-  useResolveSlug,
-  VPS_BASE_URL
-} from '@/lib/http'
+import { PublicProfilePage } from '@/components/profile/PublicProfilePage'
+import { fetcher, type ResolveResult, VPS_BASE_URL } from '@/lib/http'
 import {
   generateProfileSEO,
   generateResolvedShowSEO,
@@ -79,16 +71,9 @@ function NotFound({ slug }: { slug: string }) {
 
 function SlugPage() {
   const { slug } = Route.useParams()
-  const { resolved: loaderResolved } = Route.useLoaderData()
-  const { data, error, isPending } = useResolveSlug(slug)
+  const { resolved } = Route.useLoaderData()
 
-  const resolved = data ?? loaderResolved
-
-  if (isPending && !resolved) {
-    return <PublicProfilePageSkeleton />
-  }
-
-  if (!resolved || error) {
+  if (!resolved) {
     return <NotFound slug={slug} />
   }
 

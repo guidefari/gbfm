@@ -3,7 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import * as React from 'react'
 import { LongPost } from '@/components/Layout/LongPost'
 import { RouteError } from '@/components/RouteError'
-import { fetcher, useReleaseBySlug } from '@/lib/http'
+import { fetcher } from '@/lib/http'
 import { generateReleaseSEO, generateSEOMeta } from '@/lib/seo'
 import { useContentStore } from '@/store'
 
@@ -40,9 +40,8 @@ export const Route = createFileRoute('/releases/$slug')({
 
 function ReleasePage() {
   const { slug } = Route.useParams()
+  const { release: data } = Route.useLoaderData()
   const { setCurrentContent } = useContentStore()
-
-  const { data, error, isPending } = useReleaseBySlug(slug)
 
   React.useEffect(() => {
     if (data) {
@@ -57,13 +56,6 @@ function ReleasePage() {
     return () => setCurrentContent(null)
   }, [data, slug, setCurrentContent])
 
-  if (isPending) return <div className='p-4 text-center'>Loading...</div>
-  if (error)
-    return (
-      <div className='p-4 text-center text-destructive'>
-        Error: {error.message}
-      </div>
-    )
   if (!data) return <div className='p-4 text-center'>No data</div>
 
   return (

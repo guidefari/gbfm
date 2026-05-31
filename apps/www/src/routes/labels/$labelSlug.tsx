@@ -8,7 +8,7 @@ import { ReleasesTable } from '@/components/ReleasesTable'
 import { RouteError } from '@/components/RouteError'
 import { ShareButton } from '@/components/ShareButton'
 import { useSession } from '@/lib/auth-client'
-import { fetcher, useLabelBySlug, useReleasesByLabel } from '@/lib/http'
+import { fetcher, useReleasesByLabel } from '@/lib/http'
 import { generateLabelSEO, generateSEOMeta } from '@/lib/seo'
 import { useContentStore } from '@/store'
 
@@ -45,12 +45,11 @@ export const Route = createFileRoute('/labels/$labelSlug')({
 
 function LabelPage() {
   const { labelSlug } = Route.useParams()
+  const { label: data } = Route.useLoaderData()
   const { setCurrentContent } = useContentStore()
   const { data: session } = useSession()
   const navigate = useNavigate()
   const isAdmin = session?.user?.role === 'admin'
-
-  const { data, error, isPending } = useLabelBySlug(labelSlug)
 
   const handleEdit = () => {
     navigate({
@@ -89,13 +88,6 @@ function LabelPage() {
     return () => setCurrentContent(null)
   }, [data, labelSlug, setCurrentContent])
 
-  if (isPending) return <div className='p-4 text-center'>Loading...</div>
-  if (error)
-    return (
-      <div className='p-4 text-center text-destructive'>
-        Error: {error.message}
-      </div>
-    )
   if (!data) return <div className='p-4 text-center'>No data</div>
 
   return (

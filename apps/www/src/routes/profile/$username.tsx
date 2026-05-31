@@ -1,14 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import {
-  PublicProfilePage,
-  PublicProfilePageSkeleton
-} from '@/components/profile/PublicProfilePage'
-import {
-  fetcher,
-  type PublicProfile,
-  usePublicProfile,
-  VPS_BASE_URL
-} from '@/lib/http'
+import { PublicProfilePage } from '@/components/profile/PublicProfilePage'
+import { fetcher, type PublicProfile, VPS_BASE_URL } from '@/lib/http'
 import { generateProfileSEO, generateSEOMeta } from '@/lib/seo'
 
 export const Route = createFileRoute('/profile/$username')({
@@ -69,16 +61,9 @@ function ProfileNotFound({ username }: { username: string }) {
 
 function ProfilePage() {
   const { username } = Route.useParams()
-  const { profile: loaderProfile } = Route.useLoaderData()
-  const { data, error, isPending } = usePublicProfile(username)
+  const { profile } = Route.useLoaderData()
 
-  const profile = data ?? loaderProfile
-
-  if (isPending && !profile) {
-    return <PublicProfilePageSkeleton />
-  }
-
-  if (!profile || error) {
+  if (!profile) {
     return <ProfileNotFound username={username} />
   }
 
