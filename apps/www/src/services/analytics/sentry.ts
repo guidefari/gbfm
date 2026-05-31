@@ -4,6 +4,16 @@ import * as Layer from 'effect/Layer'
 import type { AnalyticsProperties } from './service'
 import { Analytics } from './service'
 
+const isLocalUrl = (value: unknown) =>
+  typeof value === 'string' &&
+  (value.includes('127.0.0.1') || value.includes('localhost'))
+
+const hasLocalUrl = (event: Sentry.Event) =>
+  isLocalUrl(event.request?.url) ||
+  event.spans?.some(
+    (span) => isLocalUrl(span.description) || isLocalUrl(span.data?.url)
+  )
+
 export interface SentryAnalyticsOptions {
   readonly dsn: string
   readonly environment?: string
@@ -42,7 +52,13 @@ const makeSentryClientLayer = (options: SentryAnalyticsOptions) =>
         replaysOnErrorSampleRate: enableSessionReplay
           ? (options.replaysOnErrorSampleRate ?? 1.0)
           : 0,
-        sendDefaultPii: false
+        sendDefaultPii: false,
+        beforeSend: (event) => {
+          return hasLocalUrl(event) ? null : event
+        },
+        beforeSendTransaction: (event) => {
+          return hasLocalUrl(event) ? null : event
+        }
       })
     })
   )
@@ -51,10 +67,11 @@ const SentryAnalyticsImpl = Layer.sync(Analytics, () => {
   const track = Effect.fn('Analytics.track')(
     (event: string, properties?: AnalyticsProperties) =>
       Effect.sync(() => {
-        Sentry.captureEvent({
+        Sentry.addBreadcrumb({
+          category: 'analytics.track',
           message: event,
           level: 'info',
-          extra: properties
+          data: properties
         })
       })
   )
@@ -70,11 +87,11 @@ const SentryAnalyticsImpl = Layer.sync(Analytics, () => {
   const page = Effect.fn('Analytics.page')(
     (name?: string, properties?: AnalyticsProperties) =>
       Effect.sync(() => {
-        Sentry.captureEvent({
+        Sentry.addBreadcrumb({
+          category: 'analytics.page',
           message: name ?? 'pageview',
           level: 'info',
-          transaction: name,
-          extra: properties
+          data: properties
         })
       })
   )

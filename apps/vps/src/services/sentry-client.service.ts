@@ -3,6 +3,7 @@ import * as Sentry from '@sentry/bun'
 type Client = NonNullable<ReturnType<typeof Sentry.getClient>>
 
 import { Context, Effect, Layer } from 'effect'
+import { hasLocalSentryContext, shouldEnableSentry } from '@/lib/sentry'
 import { ConfigService } from './config.service'
 
 export interface SentryClientService {
@@ -18,8 +19,7 @@ export const SentryClientServiceLive = Layer.effect(
   SentryClientService,
   Effect.gen(function* () {
     const { sentry } = yield* ConfigService
-    const enabled =
-      sentry.dsn.length > 0 || process.env.SENTRY_ENABLED === 'true'
+    const enabled = shouldEnableSentry(sentry.dsn, sentry.environment)
 
     if (!enabled) {
       yield* Effect.logWarning('[sentry] disabled (no SENTRY_BACKEND_DSN)')
@@ -46,7 +46,13 @@ export const SentryClientServiceLive = Layer.effect(
           tracesSampleRate: 1.0,
           sendDefaultPii: false,
           enableLogs: true,
-          debug: debugSentry
+          debug: debugSentry,
+          beforeSend: (event) => {
+            return hasLocalSentryContext(event) ? null : event
+          },
+          beforeSendTransaction: (event) => {
+            return hasLocalSentryContext(event) ? null : event
+          }
         })
       ),
       () =>

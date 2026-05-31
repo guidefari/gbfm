@@ -26,7 +26,12 @@ function notifyAdmin(
     event,
     email
   }).catch((err) => console.error('Admin newsletter notification failed:', err))
-  Sentry.captureMessage(`newsletter.${event}: ${email}`, 'info')
+  Sentry.addBreadcrumb({
+    category: 'newsletter',
+    message: `newsletter.${event}`,
+    level: 'info',
+    data: { email }
+  })
 }
 
 export const subscribe: AppRouteHandler<SubscribeRoute> = async (c) => {

@@ -14,7 +14,10 @@ import {
   MediaSessionServiceLive
 } from '@/services/audio-player'
 
-const analyticsLayer = env.sentryDsn
+const enableSentry =
+  Boolean(env.sentryDsn) && (!env.isDev || env.sentryEnableLocal)
+
+const analyticsLayer = enableSentry
   ? makeSentryAnalyticsLayer({
       dsn: env.sentryDsn,
       environment:
@@ -24,11 +27,13 @@ const analyticsLayer = env.sentryDsn
       enableSessionReplay: !env.isDev,
       // temporarily raised to 1.0 for end-to-end trace investigation
       tracesSampleRate: 1.0,
-      tracePropagationTargets: [
-        'https://vps.goosebumps.fm',
-        'http://127.0.0.1:3003',
-        'http://localhost:3003'
-      ]
+      tracePropagationTargets: env.isDev
+        ? [
+            'https://vps.goosebumps.fm',
+            'http://127.0.0.1:3003',
+            'http://localhost:3003'
+          ]
+        : ['https://vps.goosebumps.fm']
     })
   : NoopAnalyticsLayer
 
