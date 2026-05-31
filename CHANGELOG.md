@@ -1,3 +1,16 @@
+# [2.51.0](https://github.com/guidefari/gbfm/compare/v2.50.4...v2.51.0) (2026-05-31)
+
+
+### Bug Fixes
+
+* **sentry:** reduce local analytics noise ([613127b](https://github.com/guidefari/gbfm/commit/613127b9c95b88c53ea1a0944e5a3a5eea2fcc73))
+* **www:** batch playlist saved-track checks ([499e1c4](https://github.com/guidefari/gbfm/commit/499e1c4f7e3884295804e50aaf7df94ee416f485))
+
+
+### Features
+
+* **www:** add creator actions to dashboard ([96ac92c](https://github.com/guidefari/gbfm/commit/96ac92c9680e85a679b3d71041f7a75b12f5136c))
+
 ## [2.50.4](https://github.com/guidefari/gbfm/compare/v2.50.3...v2.50.4) (2026-05-31)
 
 ### Bug Fixes
