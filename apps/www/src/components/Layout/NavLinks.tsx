@@ -18,66 +18,106 @@ import {
 import { TfiYoutube } from 'react-icons/tfi'
 import { RSS } from '@/components/RSS'
 
-type BaseLink = {
+export type NavSurface = 'sidebar' | 'floating' | 'hamburger' | 'cmd' | 'footer'
+
+export type NavTier = 'primary' | 'secondary' | 'utility'
+
+type BaseNavItem = {
+  id: string
   name: string
-  external?: { link: string }
   icon: React.ReactNode
+  tier: NavTier
+  surfaces: NavSurface[]
   adminOnly?: boolean
-  hideInSideNav?: boolean
 }
 
-type lol =
-  | (BaseLink & { slug: string; CustomComponent?: never })
-  | (BaseLink & { slug?: never; CustomComponent: React.JSX.Element })
+export type NavItem =
+  | (BaseNavItem & { slug: string; external?: never; CustomComponent?: never })
+  | (BaseNavItem & {
+      slug?: never
+      external: string
+      CustomComponent?: never
+    })
+  | (BaseNavItem & {
+      slug?: never
+      external?: never
+      CustomComponent: React.JSX.Element
+    })
 
 const iconSytles = 'h-5 w-5 transition-all group-hover:scale-110'
 
 // https://www.youtube.com/watch?v=KyYQcms0Shg
-export const pagesAndPages: lol[] = [
+export const navConfig: NavItem[] = [
   {
+    id: 'home',
     name: 'Home',
     slug: '/',
-    icon: <Home className={iconSytles} />
+    icon: <Home className={iconSytles} />,
+    tier: 'primary',
+    surfaces: ['sidebar', 'floating', 'hamburger', 'cmd']
   },
   {
-    name: 'Tweets',
-    slug: '/tweet',
-    icon: <MessageSquare className={iconSytles} />
-  },
-  {
-    name: 'Editorial',
-    slug: '/editorial',
-    icon: <Newspaper className={iconSytles} />
-  },
-  {
-    name: 'Mixes',
-    slug: '/mixes',
-    icon: <Disc3 className={iconSytles} />
-  },
-  {
+    id: 'shows',
     name: 'Radio Shows',
     slug: '/shows',
-    icon: <Radio className={iconSytles} />
+    icon: <Radio className={iconSytles} />,
+    tier: 'primary',
+    surfaces: ['sidebar', 'floating', 'hamburger', 'cmd']
   },
   {
+    id: 'editorial',
+    name: 'Editorial',
+    slug: '/editorial',
+    icon: <Newspaper className={iconSytles} />,
+    tier: 'primary',
+    surfaces: ['sidebar', 'floating', 'hamburger', 'cmd']
+  },
+  {
+    id: 'subscribe',
+    name: 'Subscribe',
+    slug: '/subscribe',
+    icon: <Mail className={iconSytles} />,
+    tier: 'primary',
+    surfaces: ['sidebar', 'floating', 'hamburger', 'cmd']
+  },
+  {
+    id: 'mixes',
+    name: 'Mixes',
+    slug: '/mixes',
+    icon: <Disc3 className={iconSytles} />,
+    tier: 'secondary',
+    surfaces: ['sidebar', 'hamburger', 'cmd']
+  },
+  {
+    id: 'tweets',
+    name: 'Tweets',
+    slug: '/tweet',
+    icon: <MessageSquare className={iconSytles} />,
+    tier: 'secondary',
+    surfaces: ['sidebar', 'hamburger', 'cmd']
+  },
+  {
+    id: 'labels',
     name: 'Record Labels',
     slug: '/labels',
     icon: <Tag className={iconSytles} />,
-    hideInSideNav: true
+    tier: 'secondary',
+    surfaces: ['hamburger', 'cmd']
   },
   {
-    name: 'Subscribe',
-    slug: '/subscribe',
-    icon: <Mail className={iconSytles} />
-  },
-  {
-    icon: <Rss className={iconSytles} />,
+    id: 'rss',
     name: 'Mixes via RSS',
+    icon: <Rss className={iconSytles} />,
+    tier: 'utility',
+    surfaces: ['sidebar', 'hamburger'],
     CustomComponent: <RSS />
   },
   {
-    icon: <TfiYoutube className={iconSytles} />,
+    id: 'youtube',
     name: 'Mixes via Youtube',
+    icon: <TfiYoutube className={iconSytles} />,
+    tier: 'utility',
+    surfaces: ['sidebar', 'hamburger'],
     CustomComponent: (
       <TooltipProvider>
         <Tooltip>
@@ -97,9 +137,15 @@ export const pagesAndPages: lol[] = [
     )
   },
   {
+    id: 'admin',
     name: 'Admin',
     slug: '/admin',
     icon: <Settings className={iconSytles} />,
+    tier: 'secondary',
+    surfaces: ['sidebar', 'hamburger', 'cmd'],
     adminOnly: true
   }
 ]
+
+export const navItemsForSurface = (surface: NavSurface) =>
+  navConfig.filter((item) => item.surfaces.includes(surface))

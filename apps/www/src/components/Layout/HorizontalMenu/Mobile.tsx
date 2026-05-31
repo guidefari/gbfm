@@ -2,7 +2,7 @@
 import { Button, MenuIcon, Sheet, SheetContent, SheetTrigger } from '@gbfm/ui'
 import { Link } from '@tanstack/react-router'
 import React from 'react'
-import { pagesAndPages } from '../NavLinks'
+import { navItemsForSurface } from '../NavLinks'
 
 export const HamburgerMenu = () => {
   const [open, setOpen] = React.useState(false)
@@ -23,7 +23,7 @@ export const HamburgerMenu = () => {
         side='left'
         className='flex flex-col sm:max-w-xs space-between'>
         <nav className='grid gap-6 text-lg font-medium'>
-          {pagesAndPages.map((page) => {
+          {navItemsForSurface('hamburger').map((page) => {
             if (page.CustomComponent) {
               return (
                 <div

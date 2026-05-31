@@ -9,16 +9,15 @@ import { FilePenLine, MessageSquare, Music } from 'lucide-react'
 import { useSession } from '@/lib/auth-client'
 import { MAIN_SCROLL_CONTAINER_ID } from '@/lib/constants'
 import { useUIStore } from '@/store'
-import { pagesAndPages } from './NavLinks'
+import { navItemsForSurface } from './NavLinks'
 import ProfileAvatar from './ProfileAvatar'
 
 export const DesktopSideNav = () => {
   const { data: session } = useSession()
   const isAdmin = session?.user?.role === 'admin'
 
-  const filteredPages = pagesAndPages.filter((page) => {
+  const filteredPages = navItemsForSurface('sidebar').filter((page) => {
     if (page.adminOnly && !isAdmin) return false
-    if (page.hideInSideNav) return false
     return true
   })
 
