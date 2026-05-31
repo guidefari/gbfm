@@ -27,7 +27,7 @@ export const HamburgerMenu = () => {
             if (page.CustomComponent) {
               return (
                 <div
-                  key={page.name}
+                  key={page.id}
                   className='flex gap-4 items-center text-muted-foreground hover:text-foreground'>
                   {page.CustomComponent}
                   {page.name}
@@ -35,9 +35,24 @@ export const HamburgerMenu = () => {
               )
             }
 
+            if (page.external) {
+              return (
+                <a
+                  key={page.id}
+                  href={page.external}
+                  target='_blank'
+                  rel='noreferrer'
+                  onClick={() => setOpen(false)}
+                  className='flex gap-4 items-center text-muted-foreground hover:text-foreground'>
+                  {page.icon}
+                  {page.name}
+                </a>
+              )
+            }
+
             return (
               <Link
-                key={page.slug}
+                key={page.id}
                 to={page.slug}
                 onClick={() => setOpen(false)}
                 className='flex gap-4 items-center text-muted-foreground hover:text-foreground'>

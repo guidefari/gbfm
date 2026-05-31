@@ -1,10 +1,4 @@
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger
-} from '@gbfm/ui'
-import {
   Disc3,
   Home,
   Mail,
@@ -118,23 +112,7 @@ export const navConfig: NavItem[] = [
     icon: <TfiYoutube className={iconSytles} />,
     tier: 'utility',
     surfaces: ['sidebar', 'hamburger'],
-    CustomComponent: (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <a
-              href='https://youtube.com/@goosebumpsfm'
-              target='_blank'
-              rel='noreferrer'
-              className='flex items-center justify-center transition-colors rounded-sm h-9 w-9 text-foreground hover:text-highlight md:h-8 md:w-8 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
-              <TfiYoutube className={iconSytles} />
-              <span className='sr-only'>Mixes via Youtube</span>
-            </a>
-          </TooltipTrigger>
-          <TooltipContent side='right'>Mixes via Youtube</TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-    )
+    external: 'https://youtube.com/@goosebumpsfm'
   },
   {
     id: 'admin',
