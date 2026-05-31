@@ -1,3 +1,11 @@
+## [2.50.4](https://github.com/guidefari/gbfm/compare/v2.50.3...v2.50.4) (2026-05-31)
+
+
+### Bug Fixes
+
+* duplicate req ([bb1102c](https://github.com/guidefari/gbfm/commit/bb1102ceeaf18367ffc0d22a453046f1214eb5f1))
+* **www:** duplicate req cont. ([96cfcd4](https://github.com/guidefari/gbfm/commit/96cfcd44056260cd42a67c7f87d8d9e8058f92ce))
+
 ## [2.50.3](https://github.com/guidefari/gbfm/compare/v2.50.2...v2.50.3) (2026-05-26)
 
 
