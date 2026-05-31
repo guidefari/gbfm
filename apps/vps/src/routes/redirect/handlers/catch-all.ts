@@ -7,10 +7,7 @@ import { buildErrorHtml, buildOGHtml } from '../redirect.template'
 
 type HtmlResponse = { html: string; status: ContentfulStatusCode }
 
-const buildSuccessResponse = (
-  resolved: ResolveResult,
-  slug: string
-): HtmlResponse => {
+const buildSuccessResponse = (resolved: ResolveResult, slug: string): HtmlResponse => {
   if (resolved.type === 'profile') {
     const { data } = resolved
     const displayName = data.name
@@ -33,9 +30,7 @@ const buildSuccessResponse = (
       html: buildOGHtml({
         type: 'website',
         title: data.title || slug,
-        description:
-          data.description ||
-          `Check out ${data.title || slug} on goosebumps.fm`,
+        description: data.description || `Check out ${data.title || slug} on goosebumps.fm`,
         image: data.bannerImageUrl || data.thumbnailUrl,
         canonicalPath: `/${data.slug}`,
         creators: data.hosts.map((h) => h.name),

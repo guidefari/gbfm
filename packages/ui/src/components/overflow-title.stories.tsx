@@ -15,9 +15,7 @@ export function OverflowTitles() {
       />
       <div className='space-y-6'>
         <div>
-          <p className='text-xs text-muted-foreground mb-2'>
-            Short title (no marquee)
-          </p>
+          <p className='text-xs text-muted-foreground mb-2'>Short title (no marquee)</p>
           <div className='w-64 border border-border p-2'>
             <OverflowTitle text='Burial – Untrue' />
           </div>
@@ -31,9 +29,7 @@ export function OverflowTitles() {
           </div>
         </div>
         <div>
-          <p className='text-xs text-muted-foreground mb-2'>
-            Wide container (no marquee)
-          </p>
+          <p className='text-xs text-muted-foreground mb-2'>Wide container (no marquee)</p>
           <div className='w-full border border-border p-2'>
             <OverflowTitle text='Late Night Transmissions Vol. 04 — A Journey Through Dub and Leftfield Electronics' />
           </div>

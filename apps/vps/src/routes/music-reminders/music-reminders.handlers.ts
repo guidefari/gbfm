@@ -12,18 +12,10 @@ import type {
   UpdateMusicReminderRoute
 } from './music-reminders.routes'
 
-export const createMusicReminder: AppRouteHandler<
-  CreateMusicReminderRoute
-> = async (c) => {
+export const createMusicReminder: AppRouteHandler<CreateMusicReminderRoute> = async (c) => {
   const user = c.get('user')
-  const {
-    musicTitle,
-    artistName,
-    musicUrl,
-    albumCoverUrl,
-    reminderDate,
-    notes
-  } = c.req.valid('json')
+  const { musicTitle, artistName, musicUrl, albumCoverUrl, reminderDate, notes } =
+    c.req.valid('json')
 
   const program = Effect.withSpan('api.music-reminder.create', {
     attributes: {
@@ -62,16 +54,10 @@ export const createMusicReminder: AppRouteHandler<
     })
   )
 
-  return runEffect<CreateMusicReminderRoute>(
-    c,
-    program,
-    HttpStatusCodes.CREATED
-  )
+  return runEffect<CreateMusicReminderRoute>(c, program, HttpStatusCodes.CREATED)
 }
 
-export const getMusicReminders: AppRouteHandler<
-  GetMusicRemindersRoute
-> = async (c) => {
+export const getMusicReminders: AppRouteHandler<GetMusicRemindersRoute> = async (c) => {
   const user = c.get('user')
 
   const program = Effect.gen(function* () {
@@ -92,9 +78,7 @@ export const getMusicReminders: AppRouteHandler<
   return runEffect<GetMusicRemindersRoute>(c, program)
 }
 
-export const updateMusicReminder: AppRouteHandler<
-  UpdateMusicReminderRoute
-> = async (c) => {
+export const updateMusicReminder: AppRouteHandler<UpdateMusicReminderRoute> = async (c) => {
   const user = c.get('user')
   const { id } = c.req.valid('param')
   const updateData = c.req.valid('json')
@@ -106,9 +90,7 @@ export const updateMusicReminder: AppRouteHandler<
       artistName: updateData.artistName,
       musicUrl: updateData.musicUrl,
       albumCoverUrl: updateData.albumCoverUrl,
-      reminderDate: updateData.reminderDate
-        ? new Date(updateData.reminderDate)
-        : undefined,
+      reminderDate: updateData.reminderDate ? new Date(updateData.reminderDate) : undefined,
       notes: updateData.notes
     })
     const signal = yield* ReminderSignalService
@@ -128,9 +110,7 @@ export const updateMusicReminder: AppRouteHandler<
   return runEffect<UpdateMusicReminderRoute>(c, program)
 }
 
-export const deleteMusicReminder: AppRouteHandler<
-  DeleteMusicReminderRoute
-> = async (c) => {
+export const deleteMusicReminder: AppRouteHandler<DeleteMusicReminderRoute> = async (c) => {
   const user = c.get('user')
   const { id } = c.req.valid('param')
 

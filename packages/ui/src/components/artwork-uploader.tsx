@@ -33,9 +33,7 @@ export function ArtworkUploader({
         {!artworkFile && !artworkPreview ? (
           <div className='p-4 text-center transition-colors border-2 border-dashed rounded-sm border-gb-pastel-green-2/30 hover:border-gb-highlight/50'>
             <ImageIcon className='w-6 h-6 mx-auto mb-2 text-gb-pastel-green-2' />
-            <p className='mb-2 text-xs text-gb-default-text'>
-              Upload cover artwork
-            </p>
+            <p className='mb-2 text-xs text-gb-default-text'>Upload cover artwork</p>
             <input
               type='file'
               accept='image/*'
@@ -55,9 +53,7 @@ export function ArtworkUploader({
                 </span>
               </Button>
             </label>
-            <p className='mt-1 text-xs text-gb-default-text/70'>
-              JPG, PNG, WebP (Max 10MB)
-            </p>
+            <p className='mt-1 text-xs text-gb-default-text/70'>JPG, PNG, WebP (Max 10MB)</p>
           </div>
         ) : (
           <div className='space-y-3'>
@@ -77,8 +73,7 @@ export function ArtworkUploader({
             </div>
             {artworkFile && (
               <p className='text-xs text-center text-gb-default-text'>
-                {artworkFile.name} (
-                {(artworkFile.size / (1024 * 1024)).toFixed(2)} MB)
+                {artworkFile.name} ({(artworkFile.size / (1024 * 1024)).toFixed(2)} MB)
               </p>
             )}
           </div>

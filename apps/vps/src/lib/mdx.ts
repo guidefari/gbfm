@@ -37,9 +37,7 @@ const ttl = (exit: Exit.Exit<string, MDXCompileError>) =>
 const defaultFn = (content: string): Promise<string> =>
   compile(content, { outputFormat: 'function-body' }).then((r) => r.toString())
 
-const makeService = (
-  fn: (content: string) => Promise<string>
-): Effect.Effect<MdxService> =>
+const makeService = (fn: (content: string) => Promise<string>): Effect.Effect<MdxService> =>
   Effect.gen(function* () {
     const cache = yield* Cache.makeWith(makeLookup(fn), {
       capacity: 256,
@@ -86,9 +84,7 @@ const shimCache: Cache.Cache<string, string, MDXCompileError> = Effect.runSync(
   Cache.makeWith(makeLookup(defaultFn), { capacity: 256, timeToLive: ttl })
 )
 
-export async function compileMDX(
-  mdxContent: string
-): Promise<MDXCompilationResult | MDXError> {
+export async function compileMDX(mdxContent: string): Promise<MDXCompilationResult | MDXError> {
   return Effect.runPromise(
     Cache.get(shimCache, mdxContent).pipe(
       Effect.map((compiled) => ({ compiled }) as MDXCompilationResult),

@@ -72,11 +72,7 @@ export function requireCreatorOrAdmin(
       return
     }
 
-    const isCreator = yield* checkCreatorAuthorship(
-      tableType,
-      resourceId,
-      userId
-    )
+    const isCreator = yield* checkCreatorAuthorship(tableType, resourceId, userId)
 
     if (!isCreator) {
       return yield* new UnauthorizedError({
@@ -87,17 +83,9 @@ export function requireCreatorOrAdmin(
   })
 }
 
-export function requireCreator(
-  tableType: CreatorTableType,
-  resourceId: string,
-  userId: string
-) {
+export function requireCreator(tableType: CreatorTableType, resourceId: string, userId: string) {
   return Effect.gen(function* () {
-    const isCreator = yield* checkCreatorAuthorship(
-      tableType,
-      resourceId,
-      userId
-    )
+    const isCreator = yield* checkCreatorAuthorship(tableType, resourceId, userId)
 
     if (!isCreator) {
       return yield* new UnauthorizedError({

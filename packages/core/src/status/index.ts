@@ -4,12 +4,7 @@ export {
   type EmailDeliveryStatus,
   emailDeliveryStatusSchema
 } from './email'
-export {
-  LINK_STATUS,
-  LINK_STATUSES,
-  type LinkStatus,
-  linkStatusSchema
-} from './link'
+export { LINK_STATUS, LINK_STATUSES, type LinkStatus, linkStatusSchema } from './link'
 
 export {
   REMINDER_STATUS,

@@ -74,12 +74,7 @@ import {
   updateTrackEffect
 } from './track.service'
 
-export type {
-  CreateAlbumInput,
-  CreateArtistInput,
-  CreatePlaylistInput,
-  CreateTrackInput
-}
+export type { CreateAlbumInput, CreateArtistInput, CreatePlaylistInput, CreateTrackInput }
 
 export interface MusicEntityService {
   readonly createArtist: (
@@ -93,13 +88,9 @@ export interface MusicEntityService {
     id: string,
     data: Partial<CreateArtistInput>
   ) => Effect.Effect<SelectMusicArtist, DatabaseError | NotFoundError>
-  readonly deleteArtist: (
-    id: string
-  ) => Effect.Effect<void, DatabaseError | NotFoundError>
+  readonly deleteArtist: (id: string) => Effect.Effect<void, DatabaseError | NotFoundError>
 
-  readonly createAlbum: (
-    data: CreateAlbumInput
-  ) => Effect.Effect<SelectMusicAlbum, DatabaseError>
+  readonly createAlbum: (data: CreateAlbumInput) => Effect.Effect<SelectMusicAlbum, DatabaseError>
   readonly getAlbums: () => Effect.Effect<SelectMusicAlbum[], DatabaseError>
   readonly getAlbumById: (
     id: string
@@ -108,13 +99,9 @@ export interface MusicEntityService {
     id: string,
     data: Partial<CreateAlbumInput>
   ) => Effect.Effect<SelectMusicAlbum, DatabaseError | NotFoundError>
-  readonly deleteAlbum: (
-    id: string
-  ) => Effect.Effect<void, DatabaseError | NotFoundError>
+  readonly deleteAlbum: (id: string) => Effect.Effect<void, DatabaseError | NotFoundError>
 
-  readonly createTrack: (
-    data: CreateTrackInput
-  ) => Effect.Effect<SelectMusicTrack, DatabaseError>
+  readonly createTrack: (data: CreateTrackInput) => Effect.Effect<SelectMusicTrack, DatabaseError>
   readonly getTracks: () => Effect.Effect<SelectMusicTrack[], DatabaseError>
   readonly getTrackById: (
     id: string
@@ -123,9 +110,7 @@ export interface MusicEntityService {
     id: string,
     data: Partial<CreateTrackInput>
   ) => Effect.Effect<SelectMusicTrack, DatabaseError | NotFoundError>
-  readonly deleteTrack: (
-    id: string
-  ) => Effect.Effect<void, DatabaseError | NotFoundError>
+  readonly deleteTrack: (id: string) => Effect.Effect<void, DatabaseError | NotFoundError>
 
   readonly createPlaylist: (
     data: CreatePlaylistInput
@@ -144,9 +129,7 @@ export interface MusicEntityService {
     id: string,
     data: Partial<CreatePlaylistInput>
   ) => Effect.Effect<SelectMusicPlaylist, DatabaseError | NotFoundError>
-  readonly deletePlaylist: (
-    id: string
-  ) => Effect.Effect<void, DatabaseError | NotFoundError>
+  readonly deletePlaylist: (id: string) => Effect.Effect<void, DatabaseError | NotFoundError>
 
   readonly getPlaylistTracks: (playlistId: string) => Effect.Effect<
     Array<{
@@ -191,10 +174,7 @@ export interface MusicEntityService {
   >
   readonly syncPlaylistLinks: (
     playlistId: string
-  ) => Effect.Effect<
-    { playlistId: string; queuedTrackCount: number },
-    DatabaseError | SpotifyError
-  >
+  ) => Effect.Effect<{ playlistId: string; queuedTrackCount: number }, DatabaseError | SpotifyError>
 
   readonly addArtistToAlbum: (
     albumId: string,
@@ -246,19 +226,14 @@ export interface MusicEntityService {
     input: MusicScrapeInput
   ) => Effect.Effect<
     {
-      entity:
-        | SelectMusicArtist
-        | SelectMusicAlbum
-        | SelectMusicTrack
-        | SelectMusicPlaylist
+      entity: SelectMusicArtist | SelectMusicAlbum | SelectMusicTrack | SelectMusicPlaylist
       links: SelectMusicEntityLink[]
     },
     DatabaseError
   >
 }
 
-export const MusicEntityService =
-  Context.Service<MusicEntityService>('MusicEntityService')
+export const MusicEntityService = Context.Service<MusicEntityService>('MusicEntityService')
 
 export const MusicEntityServiceLive = Layer.effect(
   MusicEntityService,

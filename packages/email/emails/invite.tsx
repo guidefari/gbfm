@@ -39,10 +39,8 @@ export const InviteEmail: React.FC<Readonly<InviteEmailProps>> = ({
             <Text style={headline}>Hey {name}.</Text>
             <Text style={subtext}>
               You've been invited to join goosebumps.fm as a{' '}
-              <strong style={{ color: emailTheme.colors.mono.white }}>
-                {role}
-              </strong>
-              . This link expires in {expiresIn}.
+              <strong style={{ color: emailTheme.colors.mono.white }}>{role}</strong>. This link
+              expires in {expiresIn}.
             </Text>
             <Button style={ctaButton} href={inviteUrl}>
               Set your password
@@ -56,9 +54,7 @@ export const InviteEmail: React.FC<Readonly<InviteEmailProps>> = ({
           </Section>
 
           <Section style={footer}>
-            <Text style={footerText}>
-              If you didn't expect this invitation, ignore this email.
-            </Text>
+            <Text style={footerText}>If you didn't expect this invitation, ignore this email.</Text>
             <Text style={footerText}>
               <Link href='https://goosebumps.fm' style={footerLink}>
                 goosebumps.fm

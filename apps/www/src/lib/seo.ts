@@ -9,8 +9,7 @@ import type {
 import type { PublicProfile } from './http'
 
 export const SITE_URL = 'https://goosebumps.fm'
-export const DEFAULT_OG_IMAGE =
-  'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'
+export const DEFAULT_OG_IMAGE = 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'
 
 export interface SEOHeadData {
   title: string
@@ -22,14 +21,7 @@ export interface SEOHeadData {
 }
 
 export function generateSEOMeta(data: SEOHeadData) {
-  const {
-    title,
-    description,
-    url,
-    image = DEFAULT_OG_IMAGE,
-    type = 'website',
-    audioUrl
-  } = data
+  const { title, description, url, image = DEFAULT_OG_IMAGE, type = 'website', audioUrl } = data
 
   const meta = [
     {
@@ -100,10 +92,7 @@ export function generateSEOMeta(data: SEOHeadData) {
   return meta
 }
 
-export function generateMixSEO(
-  mix: SelectMdxCompiledAudio,
-  mixId: string
-): SEOHeadData {
+export function generateMixSEO(mix: SelectMdxCompiledAudio, mixId: string): SEOHeadData {
   const title = mix.title || mixId
   const description = mix.description || `Listen to ${title} on goosebumps.fm`
   const url = `${SITE_URL}/mixes/${mixId}`
@@ -119,10 +108,7 @@ export function generateMixSEO(
   }
 }
 
-export function generateTrackSEO(
-  track: SelectMdxCompiledAudio,
-  trackId: string
-): SEOHeadData {
+export function generateTrackSEO(track: SelectMdxCompiledAudio, trackId: string): SEOHeadData {
   const title = track.title || trackId
   const description = track.description || `Listen to ${title} on goosebumps.fm`
   const url = `${SITE_URL}/tracks/${trackId}`
@@ -138,10 +124,7 @@ export function generateTrackSEO(
   }
 }
 
-export function generatePostSEO(
-  post: SelectMdxCompiledEditorialPost,
-  slug: string
-): SEOHeadData {
+export function generatePostSEO(post: SelectMdxCompiledEditorialPost, slug: string): SEOHeadData {
   const title = post.title || slug
   const description = post.description || `Read ${title} on goosebumps.fm`
   const url = `${SITE_URL}/editorial/${slug}`
@@ -156,10 +139,7 @@ export function generatePostSEO(
   }
 }
 
-export function generateMicroPostSEO(
-  post: SelectMdxCompiledMicroPost,
-  slug: string
-): SEOHeadData {
+export function generateMicroPostSEO(post: SelectMdxCompiledMicroPost, slug: string): SEOHeadData {
   const title = post.title || slug
   const description = post.description || `Read ${title} on goosebumps.fm`
   const url = `${SITE_URL}/tweet/${slug}`
@@ -174,13 +154,9 @@ export function generateMicroPostSEO(
   }
 }
 
-export function generateLabelSEO(
-  label: SelectMdxCompiledLabel,
-  labelSlug: string
-): SEOHeadData {
+export function generateLabelSEO(label: SelectMdxCompiledLabel, labelSlug: string): SEOHeadData {
   const title = label.title || labelSlug
-  const description =
-    label.description || `Explore music from ${title} on goosebumps.fm`
+  const description = label.description || `Explore music from ${title} on goosebumps.fm`
   const url = `${SITE_URL}/labels/${labelSlug}`
   const image = label.thumbnailUrl || DEFAULT_OG_IMAGE
 
@@ -193,13 +169,9 @@ export function generateLabelSEO(
   }
 }
 
-export function generateReleaseSEO(
-  release: SelectMdxCompiledRelease,
-  slug: string
-): SEOHeadData {
+export function generateReleaseSEO(release: SelectMdxCompiledRelease, slug: string): SEOHeadData {
   const title = release.title || slug
-  const description =
-    release.description || `Discover ${title} on goosebumps.fm`
+  const description = release.description || `Discover ${title} on goosebumps.fm`
   const url = `${SITE_URL}/releases/${slug}`
   const image = release.thumbnailUrl || DEFAULT_OG_IMAGE
 
@@ -212,10 +184,7 @@ export function generateReleaseSEO(
   }
 }
 
-export function generateShowSEO(
-  show: SelectMdxCompiledShow,
-  slug: string
-): SEOHeadData {
+export function generateShowSEO(show: SelectMdxCompiledShow, slug: string): SEOHeadData {
   const title = show.title || slug
   const hostNames = show.hosts?.map((h) => h.name).join(', ')
   const description =
@@ -258,10 +227,7 @@ export type ResolvedShowData = {
   hosts: Array<{ id: string; name: string }>
 }
 
-export function generateResolvedShowSEO(
-  show: ResolvedShowData,
-  slug: string
-): SEOHeadData {
+export function generateResolvedShowSEO(show: ResolvedShowData, slug: string): SEOHeadData {
   const title = show.title || slug
   const hostNames = show.hosts?.map((h) => h.name).join(', ')
   const description =
@@ -281,14 +247,9 @@ export function generateResolvedShowSEO(
   }
 }
 
-export function generateProfileSEO(
-  profile: PublicProfile,
-  username: string
-): SEOHeadData {
+export function generateProfileSEO(profile: PublicProfile, username: string): SEOHeadData {
   const displayName = profile.name
-  const contentCount =
-    (profile.content?.mixes?.length ?? 0) +
-    (profile.content?.shows?.length ?? 0)
+  const contentCount = (profile.content?.mixes?.length ?? 0) + (profile.content?.shows?.length ?? 0)
   const description =
     contentCount > 0
       ? `${displayName} has ${contentCount} ${contentCount === 1 ? 'contribution' : 'contributions'} on goosebumps.fm`

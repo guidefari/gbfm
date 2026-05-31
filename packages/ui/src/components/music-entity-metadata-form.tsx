@@ -4,13 +4,7 @@ import { Button } from './button'
 import { Card, CardContent, CardHeader, CardTitle } from './card'
 import { Input } from './input'
 import { Label } from './label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from './select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select'
 import { Textarea } from './textarea'
 
 export type MusicEntityType = 'artist' | 'album' | 'track' | 'playlist'
@@ -164,10 +158,7 @@ export function MusicEntityMetadataForm<T extends MusicEntityType>({
 }: MusicEntityMetadataFormProps<T>) {
   const [data, setData] = useState<MetadataByType[T]>(initialData)
 
-  function set<K extends keyof MetadataByType[T]>(
-    key: K,
-    value: MetadataByType[T][K]
-  ) {
+  function set<K extends keyof MetadataByType[T]>(key: K, value: MetadataByType[T][K]) {
     setData((prev) => ({ ...prev, [key]: value }))
   }
 
@@ -184,28 +175,16 @@ export function MusicEntityMetadataForm<T extends MusicEntityType>({
       <CardContent>
         <form onSubmit={handleSubmit} className='space-y-4'>
           {entityType === 'artist' && (
-            <ArtistFields
-              data={data as ArtistMetadata}
-              set={set as SetFn<ArtistMetadata>}
-            />
+            <ArtistFields data={data as ArtistMetadata} set={set as SetFn<ArtistMetadata>} />
           )}
           {entityType === 'album' && (
-            <AlbumFields
-              data={data as AlbumMetadata}
-              set={set as SetFn<AlbumMetadata>}
-            />
+            <AlbumFields data={data as AlbumMetadata} set={set as SetFn<AlbumMetadata>} />
           )}
           {entityType === 'track' && (
-            <TrackFields
-              data={data as TrackMetadata}
-              set={set as SetFn<TrackMetadata>}
-            />
+            <TrackFields data={data as TrackMetadata} set={set as SetFn<TrackMetadata>} />
           )}
           {entityType === 'playlist' && (
-            <PlaylistFields
-              data={data as PlaylistMetadata}
-              set={set as SetFn<PlaylistMetadata>}
-            />
+            <PlaylistFields data={data as PlaylistMetadata} set={set as SetFn<PlaylistMetadata>} />
           )}
           <Button type='submit' disabled={isSaving} size='sm'>
             {isSaving ? 'Saving…' : 'Save changes'}
@@ -218,21 +197,12 @@ export function MusicEntityMetadataForm<T extends MusicEntityType>({
 
 type SetFn<T> = <K extends keyof T>(key: K, value: T[K]) => void
 
-function ArtistFields({
-  data,
-  set
-}: {
-  data: ArtistMetadata
-  set: SetFn<ArtistMetadata>
-}) {
+function ArtistFields({ data, set }: { data: ArtistMetadata; set: SetFn<ArtistMetadata> }) {
   return (
     <>
       <Row>
         <Field label='Name' className='flex-[2]'>
-          <Input
-            value={data.name}
-            onChange={(e) => set('name', e.target.value)}
-          />
+          <Input value={data.name} onChange={(e) => set('name', e.target.value)} />
         </Field>
         <Field label='Slug' className='flex-1'>
           <Input
@@ -251,21 +221,13 @@ function ArtistFields({
       </Field>
       <Row>
         <Field label='Image URL' className='flex-1'>
-          <ImageField
-            value={data.imageUrl}
-            onChange={(v) => set('imageUrl', v)}
-          />
+          <ImageField value={data.imageUrl} onChange={(v) => set('imageUrl', v)} />
         </Field>
         <Field label='Published at' className='w-44 shrink-0'>
           <Input
             type='date'
             value={toDateInputValue(data.publishedAt)}
-            onChange={(e) =>
-              set(
-                'publishedAt',
-                e.target.value ? new Date(e.target.value) : null
-              )
-            }
+            onChange={(e) => set('publishedAt', e.target.value ? new Date(e.target.value) : null)}
           />
         </Field>
       </Row>
@@ -276,21 +238,12 @@ function ArtistFields({
   )
 }
 
-function AlbumFields({
-  data,
-  set
-}: {
-  data: AlbumMetadata
-  set: SetFn<AlbumMetadata>
-}) {
+function AlbumFields({ data, set }: { data: AlbumMetadata; set: SetFn<AlbumMetadata> }) {
   return (
     <>
       <Row>
         <Field label='Title' className='flex-[2]'>
-          <Input
-            value={data.title}
-            onChange={(e) => set('title', e.target.value)}
-          />
+          <Input value={data.title} onChange={(e) => set('title', e.target.value)} />
         </Field>
         <Field label='Slug' className='flex-1'>
           <Input
@@ -302,9 +255,7 @@ function AlbumFields({
       </Row>
       <Row>
         <Field label='Album type' className='w-40 shrink-0'>
-          <Select
-            value={data.albumType ?? ''}
-            onValueChange={(v) => set('albumType', v)}>
+          <Select value={data.albumType ?? ''} onValueChange={(v) => set('albumType', v)}>
             <SelectTrigger>
               <SelectValue placeholder='Type' />
             </SelectTrigger>
@@ -321,32 +272,19 @@ function AlbumFields({
           <Input
             type='date'
             value={toDateInputValue(data.releaseDate)}
-            onChange={(e) =>
-              set(
-                'releaseDate',
-                e.target.value ? new Date(e.target.value) : null
-              )
-            }
+            onChange={(e) => set('releaseDate', e.target.value ? new Date(e.target.value) : null)}
           />
         </Field>
         <Field label='Published at' className='w-44 shrink-0'>
           <Input
             type='date'
             value={toDateInputValue(data.publishedAt)}
-            onChange={(e) =>
-              set(
-                'publishedAt',
-                e.target.value ? new Date(e.target.value) : null
-              )
-            }
+            onChange={(e) => set('publishedAt', e.target.value ? new Date(e.target.value) : null)}
           />
         </Field>
       </Row>
       <Field label='Cover image URL'>
-        <ImageField
-          value={data.coverImageUrl}
-          onChange={(v) => set('coverImageUrl', v)}
-        />
+        <ImageField value={data.coverImageUrl} onChange={(v) => set('coverImageUrl', v)} />
       </Field>
       <Field label='Genres'>
         <GenreTagInput value={data.genres} onChange={(v) => set('genres', v)} />
@@ -355,21 +293,12 @@ function AlbumFields({
   )
 }
 
-function TrackFields({
-  data,
-  set
-}: {
-  data: TrackMetadata
-  set: SetFn<TrackMetadata>
-}) {
+function TrackFields({ data, set }: { data: TrackMetadata; set: SetFn<TrackMetadata> }) {
   return (
     <>
       <Row>
         <Field label='Title' className='flex-[2]'>
-          <Input
-            value={data.title}
-            onChange={(e) => set('title', e.target.value)}
-          />
+          <Input value={data.title} onChange={(e) => set('title', e.target.value)} />
         </Field>
         <Field label='Slug' className='flex-1'>
           <Input
@@ -384,50 +313,31 @@ function TrackFields({
           <Input
             type='number'
             value={data.trackNumber ?? ''}
-            onChange={(e) =>
-              set('trackNumber', e.target.value ? Number(e.target.value) : null)
-            }
+            onChange={(e) => set('trackNumber', e.target.value ? Number(e.target.value) : null)}
           />
         </Field>
         <Field label='Published at' className='w-44 shrink-0'>
           <Input
             type='date'
             value={toDateInputValue(data.publishedAt)}
-            onChange={(e) =>
-              set(
-                'publishedAt',
-                e.target.value ? new Date(e.target.value) : null
-              )
-            }
+            onChange={(e) => set('publishedAt', e.target.value ? new Date(e.target.value) : null)}
           />
         </Field>
         <div className='flex-1' />
       </Row>
       <Field label='Cover image URL'>
-        <ImageField
-          value={data.coverImageUrl}
-          onChange={(v) => set('coverImageUrl', v)}
-        />
+        <ImageField value={data.coverImageUrl} onChange={(v) => set('coverImageUrl', v)} />
       </Field>
     </>
   )
 }
 
-function PlaylistFields({
-  data,
-  set
-}: {
-  data: PlaylistMetadata
-  set: SetFn<PlaylistMetadata>
-}) {
+function PlaylistFields({ data, set }: { data: PlaylistMetadata; set: SetFn<PlaylistMetadata> }) {
   return (
     <>
       <Row>
         <Field label='Title' className='flex-[2]'>
-          <Input
-            value={data.title}
-            onChange={(e) => set('title', e.target.value)}
-          />
+          <Input value={data.title} onChange={(e) => set('title', e.target.value)} />
         </Field>
         <Field label='Slug' className='flex-1'>
           <Input
@@ -445,10 +355,7 @@ function PlaylistFields({
         />
       </Field>
       <Field label='Cover image URL'>
-        <ImageField
-          value={data.coverImageUrl}
-          onChange={(v) => set('coverImageUrl', v)}
-        />
+        <ImageField value={data.coverImageUrl} onChange={(v) => set('coverImageUrl', v)} />
       </Field>
     </>
   )

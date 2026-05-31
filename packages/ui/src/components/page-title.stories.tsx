@@ -15,10 +15,7 @@ export function PageTitles() {
       />
       <div className='space-y-8 border border-border'>
         <PageTitle title='Mixes' />
-        <PageTitle
-          title='Artists'
-          description='Browse all artists in the catalog.'
-        />
+        <PageTitle title='Artists' description='Browse all artists in the catalog.' />
         <PageTitle
           title='Admin Dashboard'
           description={

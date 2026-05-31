@@ -23,9 +23,7 @@ export function WelcomeHeader({ user }: WelcomeHeaderProps) {
         <h1 className='text-lg sm:text-2xl font-bold leading-tight tracking-tight truncate'>
           Welcome back, {firstName}
         </h1>
-        <p className='text-sm sm:text-base text-muted-foreground'>
-          Here's what's happening
-        </p>
+        <p className='text-sm sm:text-base text-muted-foreground'>Here's what's happening</p>
       </div>
     </div>
   )

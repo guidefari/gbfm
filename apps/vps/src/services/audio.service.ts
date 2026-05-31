@@ -20,10 +20,7 @@ import {
 } from '@/errors'
 import { requireCreatorOrAdmin } from '@/lib/authorization'
 import { MdxService } from '@/lib/mdx'
-import {
-  createPaginationMetadata,
-  type PaginationMetadata
-} from '@/lib/pagination'
+import { createPaginationMetadata, type PaginationMetadata } from '@/lib/pagination'
 import { recordAudioCreate } from '@/lib/performance-monitoring'
 
 type AudioType = 'mix' | 'track' | 'misc'
@@ -40,10 +37,7 @@ export interface AudioService {
   readonly getByType: (
     type: AudioType,
     options: { limit: number; offset: number; tag?: string }
-  ) => Effect.Effect<
-    { data: AudioWithCreators[]; pagination: PaginationMetadata },
-    DatabaseError
-  >
+  ) => Effect.Effect<{ data: AudioWithCreators[]; pagination: PaginationMetadata }, DatabaseError>
   readonly getTags: (type: AudioType) => Effect.Effect<string[], DatabaseError>
   readonly getBySlug: (
     type: AudioType,
@@ -59,10 +53,7 @@ export interface AudioService {
     userId: string,
     userRole: string,
     data: Partial<InsertAudio> & { creatorIds?: string[] }
-  ) => Effect.Effect<
-    SelectMdxCompiledAudio,
-    DatabaseError | NotFoundError | UnauthorizedError
-  >
+  ) => Effect.Effect<SelectMdxCompiledAudio, DatabaseError | NotFoundError | UnauthorizedError>
   readonly trackPlay: (
     id: string,
     clientIp?: string
@@ -88,11 +79,7 @@ const getByTypeEffect = (
     const countResult = yield* Effect.tryPromise({
       try: () =>
         timeQuery(
-          () =>
-            db
-              .select({ total: count() })
-              .from(audioTable)
-              .where(whereCondition),
+          () => db.select({ total: count() }).from(audioTable).where(whereCondition),
           'get-audio-by-type-count'
         ),
       catch: (error) =>
@@ -146,10 +133,7 @@ const getByTypeEffect = (
                   creatorUsername: usersTable.username
                 })
                 .from(audioCreators)
-                .innerJoin(
-                  usersTable,
-                  eq(audioCreators.creatorId, usersTable.id)
-                )
+                .innerJoin(usersTable, eq(audioCreators.creatorId, usersTable.id))
                 .where(inArray(audioCreators.audioId, audioIds)),
             catch: (error) =>
               new DatabaseError({
@@ -214,7 +198,7 @@ const getTagsEffect = (type: AudioType) =>
     return rows
       .map((r) => r.tag)
       .filter((t): t is string => typeof t === 'string' && t.length > 0)
-      .sort()
+      .toSorted()
   })
 
 const getBySlugEffect = (type: AudioType, slug: string, mdx: MdxService) =>
@@ -264,9 +248,7 @@ const getBySlugEffect = (type: AudioType, slug: string, mdx: MdxService) =>
 
     let compiledContent = ''
     if (audio.content) {
-      compiledContent = yield* mdx
-        .compile(audio.content)
-        .pipe(Effect.orElseSucceed(() => ''))
+      compiledContent = yield* mdx.compile(audio.content).pipe(Effect.orElseSucceed(() => ''))
     }
 
     return {
@@ -311,10 +293,7 @@ const createEffect = (data: InsertAudio, creatorIds: string[]) =>
         timeQuery(
           () =>
             db.transaction(async (tx) => {
-              const [newAudio] = await tx
-                .insert(audioTable)
-                .values(audioData)
-                .returning()
+              const [newAudio] = await tx.insert(audioTable).values(audioData).returning()
 
               if (!newAudio) {
                 throw new Error('Failed to create audio')
@@ -438,9 +417,7 @@ const updateEffect = (
       yield* Effect.tryPromise({
         try: () =>
           db.transaction(async (tx) => {
-            await tx
-              .delete(audioCreators)
-              .where(eq(audioCreators.audioId, updatedAudio.id))
+            await tx.delete(audioCreators).where(eq(audioCreators.audioId, updatedAudio.id))
 
             await tx.insert(audioCreators).values(
               creatorIds.map((creatorId) => ({
@@ -565,9 +542,7 @@ export const AudioServiceLive = Layer.effect(
           Effect.withSpan('audio.getByType', { attributes: { type } })
         ),
       getTags: (type) =>
-        getTagsEffect(type).pipe(
-          Effect.withSpan('audio.getTags', { attributes: { type } })
-        ),
+        getTagsEffect(type).pipe(Effect.withSpan('audio.getTags', { attributes: { type } })),
       getBySlug: (type, slug) =>
         getBySlugEffect(type, slug, mdx).pipe(
           Effect.withSpan('audio.getBySlug', { attributes: { type, slug } })

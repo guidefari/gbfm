@@ -2,15 +2,8 @@ import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { audioCreators, audioTable } from '@/db/audio.schema'
-import {
-  type SocialLinkPlatform,
-  userSocialLinks,
-  user as userTable
-} from '@/db/auth.schema'
-import type {
-  InsertAuthorEmailPreferences,
-  SelectAuthorEmailPreferences
-} from '@/db/email.schema'
+import { type SocialLinkPlatform, userSocialLinks, user as userTable } from '@/db/auth.schema'
+import type { InsertAuthorEmailPreferences, SelectAuthorEmailPreferences } from '@/db/email.schema'
 import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
 import {
   getOrCreateEmailPreferencesByUserId,
@@ -129,8 +122,7 @@ export const UserService = Context.Service<UserService>('UserService')
 const getUserByIdEffect = (userId: string) =>
   Effect.gen(function* () {
     const userRecords = yield* Effect.tryPromise({
-      try: () =>
-        db.select().from(userTable).where(eq(userTable.id, userId)).limit(1),
+      try: () => db.select().from(userTable).where(eq(userTable.id, userId)).limit(1),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to get user: ${getErrorMessage(error)}`,
@@ -166,12 +158,7 @@ const updateUserProfileEffect = (
 
     // Update user profile
     const updatedRecords = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .update(userTable)
-          .set(data)
-          .where(eq(userTable.id, userId))
-          .returning(),
+      try: () => db.update(userTable).set(data).where(eq(userTable.id, userId)).returning(),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to update user profile: ${getErrorMessage(error)}`,
@@ -206,12 +193,7 @@ const searchUsersEffect = (query: string) =>
             image: userTable.image
           })
           .from(userTable)
-          .where(
-            or(
-              ilike(userTable.name, searchPattern),
-              ilike(userTable.username, searchPattern)
-            )
-          )
+          .where(or(ilike(userTable.name, searchPattern), ilike(userTable.username, searchPattern)))
           .limit(10),
       catch: (error) =>
         new DatabaseError({
@@ -279,9 +261,7 @@ const replaceUserSocialLinksEffect = (
     const updatedLinks = yield* Effect.tryPromise({
       try: () =>
         db.transaction(async (tx) => {
-          await tx
-            .delete(userSocialLinks)
-            .where(eq(userSocialLinks.userId, userId))
+          await tx.delete(userSocialLinks).where(eq(userSocialLinks.userId, userId))
 
           if (links.length > 0) {
             await tx.insert(userSocialLinks).values(
@@ -338,13 +318,7 @@ const listDjsEffect = () =>
           .innerJoin(audioCreators, eq(audioCreators.creatorId, userTable.id))
           .innerJoin(audioTable, eq(audioTable.id, audioCreators.audioId))
           .where(and(eq(userTable.banned, false), eq(audioTable.draft, false)))
-          .groupBy(
-            userTable.id,
-            userTable.name,
-            userTable.username,
-            userTable.image,
-            userTable.bio
-          )
+          .groupBy(userTable.id, userTable.name, userTable.username, userTable.image, userTable.bio)
           .orderBy(desc(mixCountExpr), asc(userTable.name)),
       catch: (error) =>
         new DatabaseError({
@@ -386,13 +360,9 @@ const updateUserEmailPreferencesEffect = (
 // Implementation - simple layer that provides access to the Effects
 export const UserServiceLive = Layer.succeed(UserService, {
   getUserById: (userId) =>
-    getUserByIdEffect(userId).pipe(
-      Effect.withSpan('user.getById', { attributes: { userId } })
-    ),
+    getUserByIdEffect(userId).pipe(Effect.withSpan('user.getById', { attributes: { userId } })),
   searchUsers: (query) =>
-    searchUsersEffect(query).pipe(
-      Effect.withSpan('user.searchUsers', { attributes: { query } })
-    ),
+    searchUsersEffect(query).pipe(Effect.withSpan('user.searchUsers', { attributes: { query } })),
   updateUserProfile: (userId, data) =>
     updateUserProfileEffect(userId, data).pipe(
       Effect.withSpan('user.updateProfile', { attributes: { userId } })

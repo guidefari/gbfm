@@ -10,14 +10,8 @@ import {
   selectSubscriptionSchema,
   updateShowSchema
 } from '@/db/show.schema'
-import {
-  createPaginatedResponseSchema,
-  paginationQuerySchema
-} from '@/lib/pagination'
-import {
-  attachSessionContext,
-  betterAuthMiddleware
-} from '@/middlewares/better-auth.middleware'
+import { createPaginatedResponseSchema, paginationQuerySchema } from '@/lib/pagination'
+import { attachSessionContext, betterAuthMiddleware } from '@/middlewares/better-auth.middleware'
 
 const tags = ['Shows']
 
@@ -64,14 +58,8 @@ export const getShowBySlug = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      selectMdxCompiledShowSchema,
-      'Single show with compiled MDX'
-    ),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'Show not found'
-    ),
+    [HttpStatusCodes.OK]: jsonContent(selectMdxCompiledShowSchema, 'Single show with compiled MDX'),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'Show not found'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to fetch show'
@@ -88,14 +76,8 @@ export const createShow = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.CREATED]: jsonContent(
-      selectShowSchema,
-      'The created show'
-    ),
-    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
-      'Unauthorized'
-    ),
+    [HttpStatusCodes.CREATED]: jsonContent(selectShowSchema, 'The created show'),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(z.object({ error: z.string() }), 'Unauthorized'),
     [HttpStatusCodes.CONFLICT]: jsonContent(
       z.object({ error: z.string() }),
       'Show with this slug already exists or invalid host id'
@@ -123,14 +105,8 @@ export const updateShowBySlug = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      selectMdxCompiledShowSchema,
-      'Updated show'
-    ),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'Show not found'
-    ),
+    [HttpStatusCodes.OK]: jsonContent(selectMdxCompiledShowSchema, 'Updated show'),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'Show not found'),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
       z.object({ error: z.string() }),
       'Not authorized to edit this show'
@@ -156,10 +132,7 @@ export const deleteShowBySlug = createRoute({
     [HttpStatusCodes.NO_CONTENT]: {
       description: 'Show deleted successfully'
     },
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'Show not found'
-    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'Show not found'),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
       z.object({ error: z.string() }),
       'Not authorized to delete this show'
@@ -186,10 +159,7 @@ export const getShowEpisodes = createRoute({
       createPaginatedResponseSchema(selectAudioSchema),
       'Paginated list of episodes'
     ),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'Show not found'
-    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'Show not found'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to fetch episodes'
@@ -208,14 +178,8 @@ export const subscribeToShow = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.CREATED]: jsonContent(
-      selectSubscriptionSchema,
-      'Subscription created'
-    ),
-    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
-      'Unauthorized'
-    ),
+    [HttpStatusCodes.CREATED]: jsonContent(selectSubscriptionSchema, 'Subscription created'),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(z.object({ error: z.string() }), 'Unauthorized'),
     [HttpStatusCodes.CONFLICT]: jsonContent(
       z.object({ error: z.string() }),
       'Already subscribed or show not found'
@@ -241,10 +205,7 @@ export const unsubscribeFromShow = createRoute({
     [HttpStatusCodes.NO_CONTENT]: {
       description: 'Unsubscribed successfully'
     },
-    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
-      'Unauthorized'
-    ),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(z.object({ error: z.string() }), 'Unauthorized'),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(
       z.object({ error: z.string() }),
       'Subscription not found'
@@ -280,10 +241,7 @@ export const getShowQRPdf = createRoute({
       }),
       'QR PDF URL'
     ),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'Show not found'
-    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'Show not found'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to generate QR PDF'

@@ -1,11 +1,4 @@
-import {
-  Body,
-  Container,
-  Html,
-  Preview,
-  Section,
-  Text
-} from '@react-email/components'
+import { Body, Container, Html, Preview, Section, Text } from '@react-email/components'
 import { EmailHead } from './email-head'
 import { emailTheme } from './theme'
 
@@ -24,15 +17,11 @@ export function NewsletterAdminNotification({
   return (
     <Html>
       <EmailHead />
-      <Preview>
-        {isSubscribe ? `New subscriber: ${email}` : `Unsubscribe: ${email}`}
-      </Preview>
+      <Preview>{isSubscribe ? `New subscriber: ${email}` : `Unsubscribe: ${email}`}</Preview>
       <Body style={main}>
         <Container style={container}>
           <Section style={content}>
-            <Text style={label}>
-              {isSubscribe ? 'NEW SUBSCRIBER' : 'UNSUBSCRIBE'}
-            </Text>
+            <Text style={label}>{isSubscribe ? 'NEW SUBSCRIBER' : 'UNSUBSCRIBE'}</Text>
             <Text style={emailText}>{email}</Text>
             <Text style={meta}>{timestamp}</Text>
           </Section>

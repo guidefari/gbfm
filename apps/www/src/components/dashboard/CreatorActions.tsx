@@ -50,15 +50,11 @@ export function CreatorActions() {
   const { data: session } = useSession()
   const isAdmin = session?.user?.role === 'admin'
 
-  const visibleActions = actions.filter(
-    (action) => !action.adminOnly || isAdmin
-  )
+  const visibleActions = actions.filter((action) => !action.adminOnly || isAdmin)
 
   return (
     <section className='space-y-4'>
-      <h3 className='text-sm font-bold tracking-widest uppercase text-muted-foreground'>
-        Create
-      </h3>
+      <h3 className='text-sm font-bold tracking-widest uppercase text-muted-foreground'>Create</h3>
       <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'>
         {visibleActions.map((action) => (
           <Link key={action.id} to={action.to} className='no-underline group'>
@@ -68,9 +64,7 @@ export function CreatorActions() {
                   <span className='text-foreground'>{action.icon}</span>
                   <span className='text-lg font-semibold'>{action.label}</span>
                 </div>
-                <p className='text-sm text-muted-foreground'>
-                  {action.description}
-                </p>
+                <p className='text-sm text-muted-foreground'>{action.description}</p>
                 <span className='inline-flex items-center gap-1 mt-auto text-xs font-medium tracking-widest uppercase text-primary'>
                   <Upload className='w-3 h-3' />
                   Start

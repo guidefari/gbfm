@@ -10,16 +10,7 @@ export const adminOverviewRecentContentItemSchema = z.object({
   id: z.string(),
   title: z.string().nullable(),
   slug: z.string(),
-  type: z.enum([
-    'mix',
-    'track',
-    'misc',
-    'show',
-    'post',
-    'micro',
-    'label',
-    'release'
-  ]),
+  type: z.enum(['mix', 'track', 'misc', 'show', 'post', 'micro', 'label', 'release']),
   createdAt: z.string(),
   draft: z.boolean()
 })
@@ -130,6 +121,4 @@ export const adminOverviewResponseSchema = z.object({
 })
 
 export type AdminOverview = z.infer<typeof adminOverviewResponseSchema>
-export type AdminOverviewContentBreakdown = z.infer<
-  typeof adminOverviewContentBreakdownSchema
->
+export type AdminOverviewContentBreakdown = z.infer<typeof adminOverviewContentBreakdownSchema>

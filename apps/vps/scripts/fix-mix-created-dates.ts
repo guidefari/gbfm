@@ -12,7 +12,7 @@ if (!process.env.DATABASE_URL) {
 }
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: process.env.DATABASE_URL
 })
 
 const db = drizzle(pool)
@@ -41,7 +41,7 @@ function parseDate(dateString: string): Date {
     nov: 10,
     november: 10,
     dec: 11,
-    december: 11,
+    december: 11
   }
 
   const match = dateString.match(/^(\w+)\s+(\d{1,2})\s+(\d{4})$/)

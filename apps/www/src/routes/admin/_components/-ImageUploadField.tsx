@@ -91,11 +91,7 @@ export function ImageUploadField({
           className='relative overflow-hidden border rounded-md shrink-0 bg-muted group'
           style={{ width: dim, height: dim }}>
           {displayUrl ? (
-            <img
-              src={displayUrl}
-              alt={label}
-              className='object-cover w-full h-full'
-            />
+            <img src={displayUrl} alt={label} className='object-cover w-full h-full' />
           ) : (
             <label
               htmlFor={inputId}
@@ -172,11 +168,7 @@ export function ImageUploadField({
       <div className='flex items-start gap-4'>
         <div className='relative w-32 h-32 overflow-hidden border rounded-md shrink-0 bg-muted'>
           {displayUrl ? (
-            <img
-              src={displayUrl}
-              alt={label}
-              className='object-cover w-full h-full'
-            />
+            <img src={displayUrl} alt={label} className='object-cover w-full h-full' />
           ) : (
             <label
               htmlFor={inputId}
@@ -202,12 +194,7 @@ export function ImageUploadField({
 
         <div className='flex flex-col flex-1 min-w-0 gap-2'>
           <div className='flex flex-wrap gap-2'>
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              asChild
-              disabled={isUploading}>
+            <Button type='button' variant='outline' size='sm' asChild disabled={isUploading}>
               <label htmlFor={inputId} className='cursor-pointer'>
                 <Upload className='w-3.5 h-3.5 mr-2' />
                 {displayUrl ? 'Replace' : 'Upload'}

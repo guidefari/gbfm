@@ -13,11 +13,7 @@ function formatDate(d: Date | string) {
   })
 }
 
-export function MusicEntityAudit({
-  createdAt,
-  updatedAt,
-  createdBy
-}: MusicEntityAuditProps) {
+export function MusicEntityAudit({ createdAt, updatedAt, createdBy }: MusicEntityAuditProps) {
   const byLine = createdBy?.name ?? createdBy?.email ?? 'Unknown'
 
   return (

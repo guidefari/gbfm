@@ -125,9 +125,7 @@ function LabelPage() {
                 </div>
               </div>
 
-              {data.description && (
-                <p className='text-muted-foreground'>{data.description}</p>
-              )}
+              {data.description && <p className='text-muted-foreground'>{data.description}</p>}
 
               {(data.website || data.bandcamp || data.discogs) && (
                 <div>
@@ -176,9 +174,7 @@ function LabelPage() {
 
           {/* Releases section */}
           {releasesPending ? (
-            <div className='text-center text-muted-foreground'>
-              Loading releases...
-            </div>
+            <div className='text-center text-muted-foreground'>Loading releases...</div>
           ) : releasesError ? (
             <div className='text-center text-destructive'>
               Error loading releases: {releasesError.message}

@@ -41,10 +41,7 @@ export const listArtists = createRoute({
   method: 'get',
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      z.array(selectMusicArtistSchema),
-      'List of artists'
-    )
+    [HttpStatusCodes.OK]: jsonContent(z.array(selectMusicArtistSchema), 'List of artists')
   }
 })
 
@@ -57,15 +54,9 @@ export const createArtist = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.CREATED]: jsonContent(
-      selectMusicArtistSchema,
-      'Created artist'
-    ),
+    [HttpStatusCodes.CREATED]: jsonContent(selectMusicArtistSchema, 'Created artist'),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(errorSchema, 'Validation error'),
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      errorSchema,
-      'Server error'
-    )
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(errorSchema, 'Server error')
   }
 })
 
@@ -92,15 +83,9 @@ export const updateArtist = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      selectMusicArtistSchema,
-      'Updated artist'
-    ),
+    [HttpStatusCodes.OK]: jsonContent(selectMusicArtistSchema, 'Updated artist'),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(errorSchema, 'Not found'),
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      errorSchema,
-      'Server error'
-    )
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(errorSchema, 'Server error')
   }
 })
 
@@ -127,10 +112,7 @@ export const listAlbums = createRoute({
   method: 'get',
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      z.array(selectMusicAlbumSchema),
-      'List of albums'
-    )
+    [HttpStatusCodes.OK]: jsonContent(z.array(selectMusicAlbumSchema), 'List of albums')
   }
 })
 
@@ -143,15 +125,9 @@ export const createAlbum = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.CREATED]: jsonContent(
-      selectMusicAlbumSchema,
-      'Created album'
-    ),
+    [HttpStatusCodes.CREATED]: jsonContent(selectMusicAlbumSchema, 'Created album'),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(errorSchema, 'Validation error'),
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      errorSchema,
-      'Server error'
-    )
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(errorSchema, 'Server error')
   }
 })
 
@@ -180,10 +156,7 @@ export const updateAlbum = createRoute({
   responses: {
     [HttpStatusCodes.OK]: jsonContent(selectMusicAlbumSchema, 'Updated album'),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(errorSchema, 'Not found'),
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      errorSchema,
-      'Server error'
-    )
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(errorSchema, 'Server error')
   }
 })
 
@@ -210,10 +183,7 @@ export const listTracks = createRoute({
   method: 'get',
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      z.array(selectMusicTrackSchema),
-      'List of tracks'
-    )
+    [HttpStatusCodes.OK]: jsonContent(z.array(selectMusicTrackSchema), 'List of tracks')
   }
 })
 
@@ -226,15 +196,9 @@ export const createTrack = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.CREATED]: jsonContent(
-      selectMusicTrackSchema,
-      'Created track'
-    ),
+    [HttpStatusCodes.CREATED]: jsonContent(selectMusicTrackSchema, 'Created track'),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(errorSchema, 'Validation error'),
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      errorSchema,
-      'Server error'
-    )
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(errorSchema, 'Server error')
   }
 })
 
@@ -263,10 +227,7 @@ export const updateTrack = createRoute({
   responses: {
     [HttpStatusCodes.OK]: jsonContent(selectMusicTrackSchema, 'Updated track'),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(errorSchema, 'Not found'),
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      errorSchema,
-      'Server error'
-    )
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(errorSchema, 'Server error')
   }
 })
 
@@ -293,10 +254,7 @@ export const listPlaylists = createRoute({
   method: 'get',
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      z.array(selectMusicPlaylistSchema),
-      'List of playlists'
-    )
+    [HttpStatusCodes.OK]: jsonContent(z.array(selectMusicPlaylistSchema), 'List of playlists')
   }
 })
 
@@ -309,15 +267,9 @@ export const createPlaylist = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.CREATED]: jsonContent(
-      selectMusicPlaylistSchema,
-      'Created playlist'
-    ),
+    [HttpStatusCodes.CREATED]: jsonContent(selectMusicPlaylistSchema, 'Created playlist'),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(errorSchema, 'Validation error'),
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      errorSchema,
-      'Server error'
-    )
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(errorSchema, 'Server error')
   }
 })
 
@@ -344,15 +296,9 @@ export const updatePlaylist = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      selectMusicPlaylistSchema,
-      'Updated playlist'
-    ),
+    [HttpStatusCodes.OK]: jsonContent(selectMusicPlaylistSchema, 'Updated playlist'),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(errorSchema, 'Not found'),
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      errorSchema,
-      'Server error'
-    )
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(errorSchema, 'Server error')
   }
 })
 
@@ -417,10 +363,7 @@ export const addTrackToPlaylist = createRoute({
       }),
       'Added'
     ),
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      errorSchema,
-      'Server error'
-    )
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(errorSchema, 'Server error')
   }
 })
 
@@ -446,22 +389,13 @@ export const reorderPlaylistTracks = createRoute({
   middleware: [requireAdminMiddleware],
   request: {
     params: z.object({ id: z.string().uuid() }),
-    body: jsonContentRequired(
-      reorderPlaylistTracksSchema,
-      'New ordering of trackIds'
-    )
+    body: jsonContentRequired(reorderPlaylistTracksSchema, 'New ordering of trackIds')
   },
   tags,
   responses: {
     [HttpStatusCodes.NO_CONTENT]: { description: 'Reordered' },
-    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
-      errorSchema,
-      'Mismatched track set'
-    ),
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      errorSchema,
-      'Server error'
-    )
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(errorSchema, 'Mismatched track set'),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(errorSchema, 'Server error')
   }
 })
 
@@ -471,22 +405,13 @@ export const addSpotifyTrackToPlaylist = createRoute({
   middleware: [requireAdminMiddleware, strictRateLimiter()],
   request: {
     params: z.object({ id: z.string().uuid() }),
-    body: jsonContentRequired(
-      addSpotifyTrackToPlaylistSchema,
-      'Spotify track URL'
-    )
+    body: jsonContentRequired(addSpotifyTrackToPlaylistSchema, 'Spotify track URL')
   },
   tags,
   responses: {
-    [HttpStatusCodes.CREATED]: jsonContent(
-      addSpotifyTrackResultSchema,
-      'Added'
-    ),
+    [HttpStatusCodes.CREATED]: jsonContent(addSpotifyTrackResultSchema, 'Added'),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(errorSchema, 'Invalid URL'),
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      errorSchema,
-      'Server error'
-    )
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(errorSchema, 'Server error')
   }
 })
 
@@ -495,10 +420,7 @@ export const importSpotifyPlaylist = createRoute({
   method: 'post',
   middleware: [requireAdminMiddleware, strictRateLimiter()],
   request: {
-    body: jsonContentRequired(
-      importSpotifyPlaylistSchema,
-      'Spotify playlist URL'
-    )
+    body: jsonContentRequired(importSpotifyPlaylistSchema, 'Spotify playlist URL')
   },
   tags,
   responses: {
@@ -507,10 +429,7 @@ export const importSpotifyPlaylist = createRoute({
       'Queued playlist import'
     ),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(errorSchema, 'Invalid URL'),
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      errorSchema,
-      'Failed to queue import'
-    )
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(errorSchema, 'Failed to queue import')
   }
 })
 
@@ -527,10 +446,7 @@ export const syncPlaylistLinks = createRoute({
       z.object({ playlistId: z.string().uuid(), queuedTrackCount: z.number() }),
       'Queued playlist sync'
     ),
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      errorSchema,
-      'Sync failed'
-    )
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(errorSchema, 'Sync failed')
   }
 })
 
@@ -546,8 +462,7 @@ export const resolveMusicEntity = createRoute({
     body: jsonContentRequired(
       z.object({
         url: z.string().url().openapi({
-          description:
-            'Any supported music URL (Spotify, Apple Music, Bandcamp, YouTube)'
+          description: 'Any supported music URL (Spotify, Apple Music, Bandcamp, YouTube)'
         })
       }),
       'URL to resolve'
@@ -564,10 +479,7 @@ export const resolveMusicEntity = createRoute({
       }),
       'Resolved music entity'
     ),
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      errorSchema,
-      'Server error'
-    )
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(errorSchema, 'Server error')
   }
 })
 
@@ -591,10 +503,7 @@ export const listEntityLinks = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      z.array(selectMusicEntityLinkSchema),
-      'Links for this entity'
-    )
+    [HttpStatusCodes.OK]: jsonContent(z.array(selectMusicEntityLinkSchema), 'Links for this entity')
   }
 })
 
@@ -615,14 +524,8 @@ export const addEntityLink = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.CREATED]: jsonContent(
-      selectMusicEntityLinkSchema,
-      'Added link'
-    ),
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      errorSchema,
-      'Server error'
-    )
+    [HttpStatusCodes.CREATED]: jsonContent(selectMusicEntityLinkSchema, 'Added link'),
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(errorSchema, 'Server error')
   }
 })
 
@@ -632,22 +535,13 @@ export const updateEntityLinkStatus = createRoute({
   middleware: [requireAdminMiddleware],
   request: {
     params: entityParams.extend({ linkId: z.string().uuid() }),
-    body: jsonContentRequired(
-      updateMusicEntityLinkStatusSchema,
-      'Status update'
-    )
+    body: jsonContentRequired(updateMusicEntityLinkStatusSchema, 'Status update')
   },
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      selectMusicEntityLinkSchema,
-      'Updated link'
-    ),
+    [HttpStatusCodes.OK]: jsonContent(selectMusicEntityLinkSchema, 'Updated link'),
     [HttpStatusCodes.NOT_FOUND]: jsonContent(errorSchema, 'Not found'),
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      errorSchema,
-      'Server error'
-    )
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(errorSchema, 'Server error')
   }
 })
 
@@ -690,10 +584,7 @@ export const scrapeEntityLinks = createRoute({
         artistName: z.string().optional(),
         albumTitle: z.string().optional(),
         trackTitle: z.string().optional(),
-        mbid: z
-          .string()
-          .optional()
-          .openapi({ description: 'MusicBrainz ID for direct lookup' }),
+        mbid: z.string().optional().openapi({ description: 'MusicBrainz ID for direct lookup' }),
         isrc: z
           .string()
           .optional()
@@ -707,17 +598,13 @@ export const scrapeEntityLinks = createRoute({
     [HttpStatusCodes.OK]: jsonContent(
       z.object({
         entity: z.record(z.string(), z.unknown()).openapi({
-          description:
-            'The auto-created entity (artist, album, track, or playlist)'
+          description: 'The auto-created entity (artist, album, track, or playlist)'
         }),
         links: z.array(selectMusicEntityLinkSchema)
       }),
       'Entity created and links scraped'
     ),
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      errorSchema,
-      'Server error'
-    )
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(errorSchema, 'Server error')
   }
 })
 
@@ -774,10 +661,7 @@ export const addArtistToAlbum = createRoute({
   tags,
   responses: {
     [HttpStatusCodes.NO_CONTENT]: { description: 'Artist added/updated' },
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      errorSchema,
-      'Server error'
-    )
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(errorSchema, 'Server error')
   }
 })
 
@@ -789,10 +673,7 @@ export const removeArtistFromAlbum = createRoute({
   tags,
   responses: {
     [HttpStatusCodes.NO_CONTENT]: { description: 'Artist removed' },
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      errorSchema,
-      'Server error'
-    )
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(errorSchema, 'Server error')
   }
 })
 
@@ -807,10 +688,7 @@ export const addArtistToTrack = createRoute({
   tags,
   responses: {
     [HttpStatusCodes.NO_CONTENT]: { description: 'Artist added/updated' },
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      errorSchema,
-      'Server error'
-    )
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(errorSchema, 'Server error')
   }
 })
 
@@ -822,10 +700,7 @@ export const removeArtistFromTrack = createRoute({
   tags,
   responses: {
     [HttpStatusCodes.NO_CONTENT]: { description: 'Artist removed' },
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
-      errorSchema,
-      'Server error'
-    )
+    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(errorSchema, 'Server error')
   }
 })
 

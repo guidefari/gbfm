@@ -23,10 +23,7 @@ import {
 } from '@/errors'
 import { requireCreatorOrAdmin } from '@/lib/authorization'
 import { MdxService } from '@/lib/mdx'
-import {
-  createPaginationMetadata,
-  type PaginationMetadata
-} from '@/lib/pagination'
+import { createPaginationMetadata, type PaginationMetadata } from '@/lib/pagination'
 import { SentryService } from '@/services/sentry.service'
 
 export interface PostService {
@@ -52,10 +49,7 @@ export interface PostService {
   >
   readonly getEditorialBySlug: (
     slug: string
-  ) => Effect.Effect<
-    SelectMdxCompiledEditorialPost,
-    DatabaseError | NotFoundError
-  >
+  ) => Effect.Effect<SelectMdxCompiledEditorialPost, DatabaseError | NotFoundError>
   readonly getMicroPosts: (options: {
     limit: number
     offset: number
@@ -71,17 +65,11 @@ export interface PostService {
   readonly getByTag: (
     tag: string,
     options: { limit: number; offset: number }
-  ) => Effect.Effect<
-    { data: SelectPost[]; pagination: PaginationMetadata },
-    DatabaseError
-  >
+  ) => Effect.Effect<{ data: SelectPost[]; pagination: PaginationMetadata }, DatabaseError>
   readonly create: (
     data: InsertPost,
     creatorIds: string[]
-  ) => Effect.Effect<
-    SelectPost,
-    DatabaseError | ConflictError | ValidationError
-  >
+  ) => Effect.Effect<SelectPost, DatabaseError | ConflictError | ValidationError>
   readonly update: (
     slug: string,
     userId: string,
@@ -107,30 +95,21 @@ export const validatePostData = (
   if (data.type === 'micro') {
     return isNonBlankString(data.title) || isNonBlankString(data.content)
       ? Effect.void
-      : Effect.fail(
-          new ValidationError({ message: 'Tweet title or body is required' })
-        )
+      : Effect.fail(new ValidationError({ message: 'Tweet title or body is required' }))
   }
 
   if (!isNonBlankString(data.title)) {
-    return Effect.fail(
-      new ValidationError({ message: 'Post title is required' })
-    )
+    return Effect.fail(new ValidationError({ message: 'Post title is required' }))
   }
 
   if (!isNonBlankString(data.content)) {
-    return Effect.fail(
-      new ValidationError({ message: 'Post content is required' })
-    )
+    return Effect.fail(new ValidationError({ message: 'Post content is required' }))
   }
 
   return Effect.void
 }
 
-export function normalizePostData(
-  data: InsertPost,
-  type: PostType | null | undefined
-): InsertPost
+export function normalizePostData(data: InsertPost, type: PostType | null | undefined): InsertPost
 export function normalizePostData(
   data: Partial<InsertPost>,
   type: PostType | null | undefined
@@ -189,9 +168,7 @@ const buildPostWithPreloadedCreators = (
     let compiledContent = ''
 
     if (post.content) {
-      compiledContent = yield* mdx
-        .compile(post.content)
-        .pipe(Effect.orElseSucceed(() => ''))
+      compiledContent = yield* mdx.compile(post.content).pipe(Effect.orElseSucceed(() => ''))
     }
 
     return {
@@ -207,11 +184,7 @@ export const toEditorialPost = (
   Effect.gen(function* () {
     const { title, content } = post
 
-    if (
-      post.type === 'post' &&
-      isNonBlankString(title) &&
-      isNonBlankString(content)
-    ) {
+    if (post.type === 'post' && isNonBlankString(title) && isNonBlankString(content)) {
       return {
         ...post,
         title,
@@ -258,11 +231,7 @@ const getAllEffect = (
     const countResult = yield* Effect.tryPromise({
       try: () =>
         timeQuery(
-          () =>
-            db
-              .select({ total: count() })
-              .from(postsTable)
-              .where(whereCondition),
+          () => db.select({ total: count() }).from(postsTable).where(whereCondition),
           'get-posts-count'
         ),
       catch: (error) =>
@@ -320,10 +289,7 @@ const getAllEffect = (
                   creatorUsername: usersTable.username
                 })
                 .from(postCreators)
-                .innerJoin(
-                  usersTable,
-                  eq(postCreators.creatorId, usersTable.id)
-                )
+                .innerJoin(usersTable, eq(postCreators.creatorId, usersTable.id))
                 .where(inArray(postCreators.postId, postIds)),
             catch: (error) =>
               new DatabaseError({
@@ -392,7 +358,7 @@ const getEditorialTagsEffect = () =>
     return rows
       .map((r) => r.tag)
       .filter((t): t is string => typeof t === 'string' && t.length > 0)
-      .sort()
+      .toSorted()
   })
 
 const getEditorialsEffect = (
@@ -419,9 +385,7 @@ const getEditorialsEffect = (
         ),
       { concurrency: 5 }
     )
-    const data = rawData.filter(
-      (p): p is SelectMdxCompiledEditorialPost => p !== null
-    )
+    const data = rawData.filter((p): p is SelectMdxCompiledEditorialPost => p !== null)
 
     return {
       ...posts,
@@ -429,10 +393,7 @@ const getEditorialsEffect = (
     }
   }).pipe(Effect.withSpan('post.getEditorials'))
 
-const getMicroPostsEffect = (
-  options: { limit: number; offset: number },
-  mdx: MdxService
-) =>
+const getMicroPostsEffect = (options: { limit: number; offset: number }, mdx: MdxService) =>
   Effect.gen(function* () {
     const posts = yield* getAllEffect({ ...options, type: 'micro' }, mdx)
     const sentry = yield* SentryService
@@ -453,9 +414,7 @@ const getMicroPostsEffect = (
         ),
       { concurrency: 5 }
     )
-    const data = rawData.filter(
-      (p): p is SelectMdxCompiledMicroPost => p !== null
-    )
+    const data = rawData.filter((p): p is SelectMdxCompiledMicroPost => p !== null)
 
     return {
       ...posts,
@@ -463,10 +422,7 @@ const getMicroPostsEffect = (
     }
   }).pipe(Effect.withSpan('post.getMicroPosts'))
 
-const getByTagEffect = (
-  tag: string,
-  options: { limit: number; offset: number }
-) =>
+const getByTagEffect = (tag: string, options: { limit: number; offset: number }) =>
   Effect.gen(function* () {
     const { limit, offset } = options
     const whereCondition = arrayContains(postsTable.tags, [tag])
@@ -474,11 +430,7 @@ const getByTagEffect = (
     const countResult = yield* Effect.tryPromise({
       try: () =>
         timeQuery(
-          () =>
-            db
-              .select({ total: count() })
-              .from(postsTable)
-              .where(whereCondition),
+          () => db.select({ total: count() }).from(postsTable).where(whereCondition),
           'get-posts-by-tag-count'
         ),
       catch: (error) =>
@@ -533,8 +485,7 @@ const getByTagEffect = (
 const getBySlugEffect = (slug: string, mdx: MdxService) =>
   Effect.gen(function* () {
     const postRecords = yield* Effect.tryPromise({
-      try: () =>
-        db.select().from(postsTable).where(eq(postsTable.slug, slug)).limit(1),
+      try: () => db.select().from(postsTable).where(eq(postsTable.slug, slug)).limit(1),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to fetch post: ${getErrorMessage(error)}`,
@@ -610,10 +561,7 @@ const createEffect = (data: InsertPost, creatorIds: string[]) =>
     const result = yield* Effect.tryPromise({
       try: () =>
         db.transaction(async (tx) => {
-          const [newPost] = await tx
-            .insert(postsTable)
-            .values(normalizedData)
-            .returning()
+          const [newPost] = await tx.insert(postsTable).values(normalizedData).returning()
 
           if (!newPost) {
             throw new Error('Failed to create post')
@@ -676,8 +624,7 @@ const updateEffect = (
 ) =>
   Effect.gen(function* () {
     const existingRecords = yield* Effect.tryPromise({
-      try: () =>
-        db.select().from(postsTable).where(eq(postsTable.slug, slug)).limit(1),
+      try: () => db.select().from(postsTable).where(eq(postsTable.slug, slug)).limit(1),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to check post existence: ${getErrorMessage(error)}`,
@@ -698,17 +645,11 @@ const updateEffect = (
     yield* requireCreatorOrAdmin('post', existingPost.id, userId, userRole)
 
     const nextPostData = { ...existingPost, ...data }
-    const normalizedNextPostData = normalizePostData(
-      nextPostData,
-      nextPostData.type
-    )
+    const normalizedNextPostData = normalizePostData(nextPostData, nextPostData.type)
     yield* validatePostData(normalizedNextPostData)
 
     const { creatorIds, ...updateData } = data
-    const normalizedUpdateData = normalizePostData(
-      updateData,
-      nextPostData.type
-    )
+    const normalizedUpdateData = normalizePostData(updateData, nextPostData.type)
     let updatedPost = existingPost
 
     if (Object.keys(normalizedUpdateData).length > 0) {
@@ -740,9 +681,7 @@ const updateEffect = (
     if (creatorIds && creatorIds.length > 0) {
       yield* Effect.tryPromise({
         try: async () => {
-          await db
-            .delete(postCreators)
-            .where(eq(postCreators.postId, updatedPost.id))
+          await db.delete(postCreators).where(eq(postCreators.postId, updatedPost.id))
           await db.insert(postCreators).values(
             creatorIds.map((creatorId) => ({
               postId: updatedPost.id,
@@ -776,8 +715,7 @@ export const PostServiceLive = Layer.effect(
       getEditorialTags: getEditorialTagsEffect,
       getByTag: getByTagEffect,
       create: createEffect,
-      update: (slug, userId, userRole, data) =>
-        updateEffect(slug, userId, userRole, data, mdx)
+      update: (slug, userId, userRole, data) => updateEffect(slug, userId, userRole, data, mdx)
     }
   })
 )

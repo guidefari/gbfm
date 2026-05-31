@@ -26,15 +26,10 @@ export function Tracklist() {
           tracklist={tracks}
           currentTime={currentTime}
           onAddTrack={() => {
-            setTracks((prev) => [
-              ...prev,
-              { id: Date.now(), time: currentTime, title: '' }
-            ])
+            setTracks((prev) => [...prev, { id: Date.now(), time: currentTime, title: '' }])
           }}
           onUpdateTrack={(index, title) => {
-            setTracks((prev) =>
-              prev.map((t, i) => (i === index ? { ...t, title } : t))
-            )
+            setTracks((prev) => prev.map((t, i) => (i === index ? { ...t, title } : t)))
           }}
           onRemoveTrack={(id) => {
             setTracks((prev) => prev.filter((t) => t.id !== id))

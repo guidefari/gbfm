@@ -2,20 +2,15 @@ import { OverflowTitle } from '@gbfm/ui'
 import { Link } from '@tanstack/react-router'
 import { Pause, Play, SkipBack, SkipForward } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import {
-  useAudioPlayerActions,
-  useAudioPlayerPlaybackState
-} from '@/store/audioPlayer'
+import { useAudioPlayerActions, useAudioPlayerPlaybackState } from '@/store/audioPlayer'
 
 type NowPlayingMiniProps = {
   onClose?: () => void
 }
 
 export function NowPlayingMini({ onClose }: NowPlayingMiniProps) {
-  const { thumbnailUrl, nowPlayingContext, isPlaying } =
-    useAudioPlayerPlaybackState()
-  const { togglePlayPause, playNext, playPrevious, toggleFullscreen } =
-    useAudioPlayerActions()
+  const { thumbnailUrl, nowPlayingContext, isPlaying } = useAudioPlayerPlaybackState()
+  const { togglePlayPause, playNext, playPrevious, toggleFullscreen } = useAudioPlayerActions()
 
   const title = nowPlayingContext?.title || 'Unknown Track'
   const slug = nowPlayingContext?.slug
@@ -39,11 +34,7 @@ export function NowPlayingMini({ onClose }: NowPlayingMiniProps) {
           onClick={handleOpenFullscreen}
           className='relative h-14 w-14 shrink-0 overflow-hidden rounded-sm border border-border bg-muted focus:outline-none focus:ring-2 focus:ring-ring'>
           {thumbnailUrl ? (
-            <img
-              src={thumbnailUrl}
-              alt={title}
-              className='h-full w-full object-cover'
-            />
+            <img src={thumbnailUrl} alt={title} className='h-full w-full object-cover' />
           ) : (
             <div className='flex h-full w-full items-center justify-center bg-muted'>
               <Play className='h-6 w-6 text-muted-foreground' />
@@ -59,20 +50,11 @@ export function NowPlayingMini({ onClose }: NowPlayingMiniProps) {
                 params={{ mixId: slug }}
                 onClick={onClose}
                 className='hover:underline'>
-                <OverflowTitle
-                  text={title}
-                  textClassName='text-sm font-semibold text-foreground'
-                />
+                <OverflowTitle text={title} textClassName='text-sm font-semibold text-foreground' />
               </Link>
             ) : (
-              <button
-                type='button'
-                onClick={handleOpenFullscreen}
-                className='focus:outline-none'>
-                <OverflowTitle
-                  text={title}
-                  textClassName='text-sm font-semibold text-foreground'
-                />
+              <button type='button' onClick={handleOpenFullscreen} className='focus:outline-none'>
+                <OverflowTitle text={title} textClassName='text-sm font-semibold text-foreground' />
               </button>
             )}
             <div className='mt-0.5 truncate text-xs text-muted-foreground'>
@@ -119,11 +101,7 @@ export function NowPlayingMini({ onClose }: NowPlayingMiniProps) {
                 'hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring'
               )}
               aria-label={isPlaying ? 'Pause' : 'Play'}>
-              {isPlaying ? (
-                <Pause className='h-4 w-4' />
-              ) : (
-                <Play className='h-4 w-4' />
-              )}
+              {isPlaying ? <Pause className='h-4 w-4' /> : <Play className='h-4 w-4' />}
             </button>
 
             <button

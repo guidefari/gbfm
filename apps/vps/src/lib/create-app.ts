@@ -62,11 +62,7 @@ export const createAppEffect = Effect.sync(() => {
   const app = createRouter()
 
   app.use('*', cors(corsConfig))
-  app
-    .use(requestId())
-    .use(serveEmojiFavicon('🪿'))
-    .use(effectLogger())
-    .use(standardRateLimiter())
+  app.use(requestId()).use(serveEmojiFavicon('🪿')).use(effectLogger()).use(standardRateLimiter())
 
   app.notFound(notFound)
   app.onError((err, c) => {

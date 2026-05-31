@@ -1,11 +1,5 @@
 import { Button } from './button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from './card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './card'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
@@ -23,9 +17,7 @@ export function Buttons() {
       <Card>
         <CardHeader>
           <CardTitle>Variants</CardTitle>
-          <CardDescription>
-            Hover, focus, active, and disabled states.
-          </CardDescription>
+          <CardDescription>Hover, focus, active, and disabled states.</CardDescription>
         </CardHeader>
         <CardContent className='space-y-5'>
           <div className='flex flex-wrap gap-3'>

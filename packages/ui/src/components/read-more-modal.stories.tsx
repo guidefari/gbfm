@@ -21,13 +21,12 @@ export function ReadMoreModals() {
           </span>
         }>
         <p>
-          Dubwise pressure, loose percussion, and slow-burning warehouse
-          records. Recorded live at The Bunker, this set traces a line from dub
-          techno to fourth-world ambience.
+          Dubwise pressure, loose percussion, and slow-burning warehouse records. Recorded live at
+          The Bunker, this set traces a line from dub techno to fourth-world ambience.
         </p>
         <p>
-          Tracklist included. All tracks sourced from independent labels and
-          Bandcamp releases. Support the artists.
+          Tracklist included. All tracks sourced from independent labels and Bandcamp releases.
+          Support the artists.
         </p>
       </ReadMoreModal>
     </div>

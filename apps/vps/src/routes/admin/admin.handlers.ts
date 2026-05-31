@@ -1,16 +1,5 @@
 import { EMAIL_DELIVERY_STATUSES, REMINDER_STATUS } from '@gbfm/core/status'
-import {
-  and,
-  desc,
-  eq,
-  gt,
-  gte,
-  inArray,
-  lte,
-  or,
-  type SQL,
-  sql
-} from 'drizzle-orm'
+import { and, desc, eq, gt, gte, inArray, lte, or, type SQL, sql } from 'drizzle-orm'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
 import { audioCreators, audioTable } from '@/db/audio.schema'
@@ -55,22 +44,12 @@ type RecentContentItem = {
   id: string
   title: string | null
   slug: string
-  type:
-    | 'mix'
-    | 'track'
-    | 'misc'
-    | 'show'
-    | 'post'
-    | 'micro'
-    | 'label'
-    | 'release'
+  type: 'mix' | 'track' | 'misc' | 'show' | 'post' | 'micro' | 'label' | 'release'
   createdAt: string
   draft: boolean
 }
 
-export const simulateFrontendError: AppRouteHandler<
-  SimulateFrontendErrorRoute
-> = async (c) => {
+export const simulateFrontendError: AppRouteHandler<SimulateFrontendErrorRoute> = async (c) => {
   const { scenario } = c.req.valid('param')
 
   switch (scenario) {
@@ -80,15 +59,9 @@ export const simulateFrontendError: AppRouteHandler<
         HttpStatusCodes.OK
       )
     case 'bad-request':
-      return c.json(
-        { scenario, error: 'Simulated 400 response.' },
-        HttpStatusCodes.BAD_REQUEST
-      )
+      return c.json({ scenario, error: 'Simulated 400 response.' }, HttpStatusCodes.BAD_REQUEST)
     case 'not-found':
-      return c.json(
-        { scenario, error: 'Simulated 404 response.' },
-        HttpStatusCodes.NOT_FOUND
-      )
+      return c.json({ scenario, error: 'Simulated 404 response.' }, HttpStatusCodes.NOT_FOUND)
     case 'rate-limit':
       return c.json(
         { scenario, error: 'Simulated 429 response.' },
@@ -128,15 +101,11 @@ async function getContentBreakdown(
   const [published, drafts, newLast7Days] = await Promise.all([
     db.$count(
       table,
-      extraCondition
-        ? and(eq(draftColumn, false), extraCondition)
-        : eq(draftColumn, false)
+      extraCondition ? and(eq(draftColumn, false), extraCondition) : eq(draftColumn, false)
     ),
     db.$count(
       table,
-      extraCondition
-        ? and(eq(draftColumn, true), extraCondition)
-        : eq(draftColumn, true)
+      extraCondition ? and(eq(draftColumn, true), extraCondition) : eq(draftColumn, true)
     ),
     db.$count(
       table,
@@ -153,9 +122,7 @@ async function getContentBreakdown(
   }
 }
 
-export const getAdminOverview: AppRouteHandler<GetAdminOverviewRoute> = async (
-  c
-) => {
+export const getAdminOverview: AppRouteHandler<GetAdminOverviewRoute> = async (c) => {
   const now = new Date()
   const sevenDaysAgo = daysAgo(7)
   const thirtyDaysAgo = daysAgo(30)
@@ -250,29 +217,16 @@ export const getAdminOverview: AppRouteHandler<GetAdminOverviewRoute> = async (
         postsTable.createdAt,
         eq(postsTable.type, 'micro')
       ),
-      getContentBreakdown(
-        labelsTable,
-        labelsTable.draft,
-        labelsTable.createdAt
-      ),
-      getContentBreakdown(
-        releasesTable,
-        releasesTable.draft,
-        releasesTable.createdAt
-      ),
+      getContentBreakdown(labelsTable, labelsTable.draft, labelsTable.createdAt),
+      getContentBreakdown(releasesTable, releasesTable.draft, releasesTable.createdAt),
       db
         .select({
-          total: sql<number>`coalesce(sum(${audioTable.playCount}), 0)`.mapWith(
-            Number
-          )
+          total: sql<number>`coalesce(sum(${audioTable.playCount}), 0)`.mapWith(Number)
         })
         .from(audioTable),
       db.$count(
         audioTable,
-        and(
-          eq(audioTable.type, 'mix'),
-          gte(audioTable.createdAt, thirtyDaysAgo)
-        )
+        and(eq(audioTable.type, 'mix'), gte(audioTable.createdAt, thirtyDaysAgo))
       ),
       db
         .select({
@@ -400,18 +354,12 @@ export const getAdminOverview: AppRouteHandler<GetAdminOverviewRoute> = async (
         .limit(5),
       db
         .select({
-          pending: db.$count(
-            musicReminder,
-            eq(musicReminder.status, REMINDER_STATUS.PENDING)
-          ),
+          pending: db.$count(musicReminder, eq(musicReminder.status, REMINDER_STATUS.PENDING)),
           processing: db.$count(
             musicReminder,
             eq(musicReminder.status, REMINDER_STATUS.PROCESSING)
           ),
-          failed: db.$count(
-            musicReminder,
-            eq(musicReminder.status, REMINDER_STATUS.FAILED)
-          ),
+          failed: db.$count(musicReminder, eq(musicReminder.status, REMINDER_STATUS.FAILED)),
           dueNow: db.$count(
             musicReminder,
             and(
@@ -431,12 +379,7 @@ export const getAdminOverview: AppRouteHandler<GetAdminOverviewRoute> = async (
         id: item.id,
         title: item.title,
         slug: item.slug,
-        type:
-          item.type === 'mix'
-            ? 'mix'
-            : item.type === 'track'
-              ? 'track'
-              : 'misc',
+        type: item.type === 'mix' ? 'mix' : item.type === 'track' ? 'track' : 'misc',
         createdAt: iso(item.createdAt),
         draft: item.draft
       })),
@@ -473,10 +416,7 @@ export const getAdminOverview: AppRouteHandler<GetAdminOverviewRoute> = async (
         draft: item.draft
       }))
     ]
-      .sort(
-        (a, b) =>
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      )
+      .toSorted((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
       .slice(0, 10)
 
     const topMixIds = topMixRows.map((mix) => mix.id)
@@ -615,9 +555,9 @@ export const getAdminOverview: AppRouteHandler<GetAdminOverviewRoute> = async (
   }
 }
 
-export const getNewsletterSubscribers: AppRouteHandler<
-  GetNewsletterSubscribersRoute
-> = async (c) => {
+export const getNewsletterSubscribers: AppRouteHandler<GetNewsletterSubscribersRoute> = async (
+  c
+) => {
   const rows = await db
     .select({
       id: newsletterSubscribersTable.id,

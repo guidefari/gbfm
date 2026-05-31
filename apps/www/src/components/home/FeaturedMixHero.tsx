@@ -1,10 +1,7 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useFeaturedMix } from '@/lib/useFeaturedMix'
-import {
-  useAudioPlayerActions,
-  useAudioPlayerPlaybackState
-} from '@/store/audioPlayer'
+import { useAudioPlayerActions, useAudioPlayerPlaybackState } from '@/store/audioPlayer'
 import { VariantOverlay } from './featuredMix/VariantOverlay'
 
 export function FeaturedMixHero() {
@@ -14,8 +11,7 @@ export function FeaturedMixHero() {
   const navigate = useNavigate()
   const [error, setError] = useState<string | null>(null)
 
-  const isThisMixLoaded =
-    Boolean(audioSrc) && currentTrackId === featuredMix?.id
+  const isThisMixLoaded = Boolean(audioSrc) && currentTrackId === featuredMix?.id
 
   const handlePlay = () => {
     if (!featuredMix) return

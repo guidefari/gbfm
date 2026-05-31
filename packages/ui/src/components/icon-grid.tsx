@@ -18,17 +18,10 @@ interface IconGridProps {
   className?: string
 }
 
-export function IconGrid({
-  tiles,
-  onTileSelect,
-  isAuthenticated,
-  className
-}: IconGridProps) {
+export function IconGrid({ tiles, onTileSelect, isAuthenticated, className }: IconGridProps) {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const gridRef = useRef<HTMLDivElement>(null)
-  const availableTiles = tiles.filter(
-    (tile) => !tile.requiresAuth || isAuthenticated
-  )
+  const availableTiles = tiles.filter((tile) => !tile.requiresAuth || isAuthenticated)
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
@@ -45,10 +38,7 @@ export function IconGrid({
           if (currentRow > 0) {
             setSelectedIndex(selectedIndex - cols)
           } else {
-            const newIndex = Math.min(
-              maxRow * cols + currentCol,
-              availableTiles.length - 1
-            )
+            const newIndex = Math.min(maxRow * cols + currentCol, availableTiles.length - 1)
             setSelectedIndex(newIndex)
           }
           break
@@ -57,10 +47,7 @@ export function IconGrid({
         case 'ArrowDown': {
           e.preventDefault()
           if (currentRow < maxRow) {
-            const newIndex = Math.min(
-              selectedIndex + cols,
-              availableTiles.length - 1
-            )
+            const newIndex = Math.min(selectedIndex + cols, availableTiles.length - 1)
             setSelectedIndex(newIndex)
           } else {
             setSelectedIndex(currentCol)
@@ -74,10 +61,7 @@ export function IconGrid({
             setSelectedIndex(selectedIndex - 1)
           } else {
             const rowStart = currentRow * cols
-            const rowEnd = Math.min(
-              rowStart + cols - 1,
-              availableTiles.length - 1
-            )
+            const rowEnd = Math.min(rowStart + cols - 1, availableTiles.length - 1)
             setSelectedIndex(rowEnd)
           }
           break
@@ -85,10 +69,7 @@ export function IconGrid({
 
         case 'ArrowRight': {
           e.preventDefault()
-          const rowEnd = Math.min(
-            (currentRow + 1) * cols - 1,
-            availableTiles.length - 1
-          )
+          const rowEnd = Math.min((currentRow + 1) * cols - 1, availableTiles.length - 1)
           if (selectedIndex < rowEnd) {
             setSelectedIndex(selectedIndex + 1)
           } else {
@@ -154,9 +135,7 @@ export function IconGrid({
               <span
                 className={cn(
                   'text-xs mt-1 px-2 py-1 rounded bg-muted transition-colors',
-                  isSelected
-                    ? 'text-accent-foreground/80'
-                    : 'text-muted-foreground/60'
+                  isSelected ? 'text-accent-foreground/80' : 'text-muted-foreground/60'
                 )}>
                 {tile.shortcut}
               </span>

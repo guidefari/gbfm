@@ -7,9 +7,7 @@ interface ChangePasswordCardProps {
 }
 
 export function ChangePasswordCard({ email }: ChangePasswordCardProps) {
-  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>(
-    'idle'
-  )
+  const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle')
 
   const handleRequest = async () => {
     setStatus('sending')
@@ -43,9 +41,7 @@ export function ChangePasswordCard({ email }: ChangePasswordCardProps) {
             Reset link sent, check your inbox.
           </p>
         ) : status === 'error' ? (
-          <p className='text-sm text-destructive'>
-            Something went wrong. Try again.
-          </p>
+          <p className='text-sm text-destructive'>Something went wrong. Try again.</p>
         ) : null}
         <Button
           type='button'

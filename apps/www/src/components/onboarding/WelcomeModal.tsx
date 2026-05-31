@@ -70,9 +70,7 @@ export function WelcomeModal() {
             </div>
             <div>
               <p className='text-sm font-medium'>Get notified</p>
-              <p className='text-xs text-muted-foreground'>
-                Know when new mixes drop
-              </p>
+              <p className='text-xs text-muted-foreground'>Know when new mixes drop</p>
             </div>
           </div>
 
@@ -82,9 +80,7 @@ export function WelcomeModal() {
             </div>
             <div>
               <p className='text-sm font-medium'>Contribute</p>
-              <p className='text-xs text-muted-foreground'>
-                Upload your own mixes to the archive
-              </p>
+              <p className='text-xs text-muted-foreground'>Upload your own mixes to the archive</p>
             </div>
           </div>
         </div>

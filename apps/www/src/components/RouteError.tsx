@@ -13,8 +13,7 @@ export function RouteError({ error, backLink }: RouteErrorProps) {
   const router = useRouter()
   const isOnline = useOnlineStatus()
   const message = error instanceof Error ? error.message : String(error)
-  const isOffline =
-    !isOnline || message.toLowerCase().includes('failed to fetch')
+  const isOffline = !isOnline || message.toLowerCase().includes('failed to fetch')
 
   return (
     <div className='max-w-3xl px-4 py-6 mx-auto'>

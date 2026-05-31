@@ -14,7 +14,5 @@ declare module '*.md' {
   import type { MDXComponents } from 'mdx/types'
   import type { ReactElement } from 'react'
 
-  export default function MDXContent(props: {
-    components?: MDXComponents
-  }): ReactElement
+  export default function MDXContent(props: { components?: MDXComponents }): ReactElement
 }

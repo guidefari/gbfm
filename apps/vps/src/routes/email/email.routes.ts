@@ -3,16 +3,11 @@ import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { jsonContent, jsonContentRequired } from 'stoker/openapi/helpers'
 import { createErrorSchema } from 'stoker/openapi/schemas'
 import { selectEmailDeliveryLogSchema } from '@/db/email.schema'
-import {
-  createPaginatedResponseSchema,
-  paginationQuerySchema
-} from '@/lib/pagination'
+import { createPaginatedResponseSchema, paginationQuerySchema } from '@/lib/pagination'
 import { requireAdminMiddleware } from '@/middlewares/better-auth.middleware'
 
 const tags = ['Email']
-const utcDateSchema = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
+const utcDateSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format')
 
 export const emailLogStatusSchema = z.enum([
   'PENDING',
@@ -24,9 +19,7 @@ export const emailLogStatusSchema = z.enum([
 ])
 
 export const sendMixNotificationSchema = z.object({
-  recipients: z
-    .array(z.string().email())
-    .min(1, 'At least one recipient is required'),
+  recipients: z.array(z.string().email()).min(1, 'At least one recipient is required'),
   mixSlug: z.string().min(1, 'Mix slug is required'),
   metadata: z
     .object({
@@ -62,18 +55,9 @@ export const sendMixNotification = createRoute({
       sendMixNotificationResponseSchema,
       'Emails sent successfully'
     ),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'Mix not found'
-    ),
-    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
-      'Unauthorized'
-    ),
-    [HttpStatusCodes.FORBIDDEN]: jsonContent(
-      z.object({ error: z.string() }),
-      'Forbidden'
-    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'Mix not found'),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(z.object({ error: z.string() }), 'Unauthorized'),
+    [HttpStatusCodes.FORBIDDEN]: jsonContent(z.object({ error: z.string() }), 'Forbidden'),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
       createErrorSchema(sendMixNotificationSchema),
       'Validation error'
@@ -116,14 +100,8 @@ export const getEmailLogs = createRoute({
       createPaginatedResponseSchema(selectEmailDeliveryLogSchema),
       'Paginated email delivery logs'
     ),
-    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
-      'Unauthorized'
-    ),
-    [HttpStatusCodes.FORBIDDEN]: jsonContent(
-      z.object({ error: z.string() }),
-      'Forbidden'
-    ),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(z.object({ error: z.string() }), 'Unauthorized'),
+    [HttpStatusCodes.FORBIDDEN]: jsonContent(z.object({ error: z.string() }), 'Forbidden'),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
       createErrorSchema(emailLogsQuerySchema),
       'Validation error'

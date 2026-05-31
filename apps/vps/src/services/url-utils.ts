@@ -20,11 +20,9 @@ export const isSpotifyUrl = (url: string): boolean =>
 export const isYouTubeUrl = (url: string): boolean =>
   url.includes('youtube.com') || url.includes('youtu.be')
 
-export const isAppleMusicUrl = (url: string): boolean =>
-  url.includes('music.apple.com')
+export const isAppleMusicUrl = (url: string): boolean => url.includes('music.apple.com')
 
-export const isBandcampUrl = (url: string): boolean =>
-  url.includes('bandcamp.com')
+export const isBandcampUrl = (url: string): boolean => url.includes('bandcamp.com')
 
 export const extractSpotifyId = (url: string): string | null => {
   const patterns = [
@@ -62,7 +60,6 @@ export const extractYouTubeId = (url: string): string | null => {
 
 export const extractBandcampId = (url: string): string | null => {
   const match =
-    url.match(/bandcamp\.com\/album\/([^/?]+)/) ||
-    url.match(/bandcamp\.com\/track\/([^/?]+)/)
+    url.match(/bandcamp\.com\/album\/([^/?]+)/) || url.match(/bandcamp\.com\/track\/([^/?]+)/)
   return match?.[1] || null
 }

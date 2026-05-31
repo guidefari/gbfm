@@ -54,29 +54,20 @@ export const createShow: AppRouteHandler<CreateShowRoute> = async (c) => {
   return runEffect<CreateShowRoute>(c, program, HttpStatusCodes.CREATED)
 }
 
-export const updateShowBySlug: AppRouteHandler<UpdateShowBySlugRoute> = async (
-  c
-) => {
+export const updateShowBySlug: AppRouteHandler<UpdateShowBySlugRoute> = async (c) => {
   const { slug } = c.req.valid('param')
   const updateData = c.req.valid('json')
   const user = c.get('user')
 
   const program = Effect.gen(function* () {
     const showService = yield* ShowService
-    return yield* showService.update(
-      slug,
-      user.id,
-      user.role || 'user',
-      updateData
-    )
+    return yield* showService.update(slug, user.id, user.role || 'user', updateData)
   }).pipe(Effect.withSpan('api.show.update', { attributes: { slug } }))
 
   return runEffect<UpdateShowBySlugRoute>(c, program)
 }
 
-export const deleteShowBySlug: AppRouteHandler<DeleteShowBySlugRoute> = async (
-  c
-) => {
+export const deleteShowBySlug: AppRouteHandler<DeleteShowBySlugRoute> = async (c) => {
   const { slug } = c.req.valid('param')
   const user = c.get('user')
 
@@ -102,16 +93,11 @@ export const deleteShowBySlug: AppRouteHandler<DeleteShowBySlugRoute> = async (
   if (result && 'unauthorized' in result)
     return c.json({ error: result.error }, HttpStatusCodes.UNAUTHORIZED)
   if (result && 'serverError' in result)
-    return c.json(
-      { error: result.error },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
-    )
+    return c.json({ error: result.error }, HttpStatusCodes.INTERNAL_SERVER_ERROR)
   return c.body(null, HttpStatusCodes.NO_CONTENT)
 }
 
-export const getShowEpisodes: AppRouteHandler<GetShowEpisodesRoute> = async (
-  c
-) => {
+export const getShowEpisodes: AppRouteHandler<GetShowEpisodesRoute> = async (c) => {
   const { slug } = c.req.valid('param')
   const { limit, offset } = c.req.valid('query')
 
@@ -123,9 +109,7 @@ export const getShowEpisodes: AppRouteHandler<GetShowEpisodesRoute> = async (
   return runEffect<GetShowEpisodesRoute>(c, program)
 }
 
-export const subscribeToShow: AppRouteHandler<SubscribeToShowRoute> = async (
-  c
-) => {
+export const subscribeToShow: AppRouteHandler<SubscribeToShowRoute> = async (c) => {
   const { id: showId } = c.req.valid('param')
   const user = c.get('user')
 
@@ -137,9 +121,7 @@ export const subscribeToShow: AppRouteHandler<SubscribeToShowRoute> = async (
   return runEffect<SubscribeToShowRoute>(c, program, HttpStatusCodes.CREATED)
 }
 
-export const unsubscribeFromShow: AppRouteHandler<
-  UnsubscribeFromShowRoute
-> = async (c) => {
+export const unsubscribeFromShow: AppRouteHandler<UnsubscribeFromShowRoute> = async (c) => {
   const { id: showId } = c.req.valid('param')
   const user = c.get('user')
 
@@ -160,10 +142,7 @@ export const unsubscribeFromShow: AppRouteHandler<
   if (result && 'notFound' in result)
     return c.json({ error: result.error }, HttpStatusCodes.NOT_FOUND)
   if (result && 'serverError' in result)
-    return c.json(
-      { error: result.error },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
-    )
+    return c.json({ error: result.error }, HttpStatusCodes.INTERNAL_SERVER_ERROR)
   return c.body(null, HttpStatusCodes.NO_CONTENT)
 }
 

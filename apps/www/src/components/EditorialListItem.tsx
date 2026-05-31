@@ -54,9 +54,7 @@ export function EditorialListItem({ post }: EditorialListItemProps) {
                     {creator.name}
                   </Link>
                 ) : (
-                  <span className='font-semibold text-foreground/90'>
-                    {creator.name}
-                  </span>
+                  <span className='font-semibold text-foreground/90'>{creator.name}</span>
                 )}
                 {index < (post.creators?.length || 0) - 1 && (
                   <span className='mx-1 opacity-50'>&</span>

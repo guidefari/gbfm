@@ -44,9 +44,7 @@ function isMusicEntityType(value: string): value is MusicEntityType {
 }
 
 export function TweetMusicEntityCard({ entityType, entityId }: Props) {
-  const supportedType: MusicEntityType | null = isMusicEntityType(entityType)
-    ? entityType
-    : null
+  const supportedType: MusicEntityType | null = isMusicEntityType(entityType) ? entityType : null
 
   const { data, isPending } = useQuery<MusicEntityPreview>({
     queryKey: ['music-entity', entityType, entityId],
@@ -55,9 +53,7 @@ export function TweetMusicEntityCard({ entityType, entityId }: Props) {
         return Promise.reject(new Error('Unsupported music entity type'))
       }
 
-      return fetcher(
-        `${VPS_BASE_URL}/music/${entityPathByType[supportedType]}/${entityId}`
-      )
+      return fetcher(`${VPS_BASE_URL}/music/${entityPathByType[supportedType]}/${entityId}`)
     },
     enabled: Boolean(supportedType && entityId)
   })
@@ -65,10 +61,7 @@ export function TweetMusicEntityCard({ entityType, entityId }: Props) {
   // todo: we can probs consolidate this into the music entity query above
   const { data: links } = useQuery<EntityLink[]>({
     queryKey: ['music-entity-links', entityType, entityId],
-    queryFn: () =>
-      fetcher(
-        `${VPS_BASE_URL}/music/${entityType}/${entityId}/links?status=verified`
-      ),
+    queryFn: () => fetcher(`${VPS_BASE_URL}/music/${entityType}/${entityId}/links?status=verified`),
     enabled: Boolean(supportedType && entityId)
   })
 
@@ -93,8 +86,7 @@ export function TweetMusicEntityCard({ entityType, entityId }: Props) {
     return null
   }
 
-  const verifiedLinks =
-    links?.filter((l) => l.status === LINK_STATUS.VERIFIED) ?? []
+  const verifiedLinks = links?.filter((l) => l.status === LINK_STATUS.VERIFIED) ?? []
 
   return (
     <section className='not-prose overflow-hidden rounded-md border border-border/50 bg-muted/20 transition-colors hover:bg-muted/30'>
@@ -120,9 +112,7 @@ export function TweetMusicEntityCard({ entityType, entityId }: Props) {
             {data.title}
           </h2>
           {data.artistNames?.length ? (
-            <p className='truncate text-sm text-muted-foreground'>
-              {data.artistNames.join(', ')}
-            </p>
+            <p className='truncate text-sm text-muted-foreground'>{data.artistNames.join(', ')}</p>
           ) : null}
         </div>
       </div>

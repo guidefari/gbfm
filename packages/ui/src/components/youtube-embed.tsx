@@ -5,12 +5,7 @@ type YoutubeEmbedProps = {
   className?: string
 }
 
-export function YoutubeEmbed({
-  id,
-  width,
-  height,
-  className
-}: YoutubeEmbedProps) {
+export function YoutubeEmbed({ id, width, height, className }: YoutubeEmbedProps) {
   return (
     <iframe
       width={width ?? '100%'}

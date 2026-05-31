@@ -21,10 +21,7 @@ import {
 import { canReceiveEmail } from '@/repositories/email-preferences.repository'
 import { runAppFork } from '@/runtime'
 
-import type {
-  GetEmailLogsRoute,
-  SendMixNotificationRoute
-} from './email.routes'
+import type { GetEmailLogsRoute, SendMixNotificationRoute } from './email.routes'
 
 const EMAIL_TYPE_NORMALIZATION_MAP: Record<string, string> = {
   TRANSACTIONAL: EMAIL_NOTIFICATION_TYPES.TRANSACTIONAL,
@@ -55,26 +52,18 @@ function normalizeLogToken(value: string | null | undefined) {
     .replace(/^_+|_+$/g, '')
 }
 
-function normalizeEmailLogRecord(
-  log: SelectEmailDeliveryLog
-): SelectEmailDeliveryLog {
+function normalizeEmailLogRecord(log: SelectEmailDeliveryLog): SelectEmailDeliveryLog {
   const normalizedTypeToken = normalizeLogToken(log.emailType)
   const normalizedStatusToken = normalizeLogToken(log.status)
 
   return {
     ...log,
-    emailType:
-      EMAIL_TYPE_NORMALIZATION_MAP[normalizedTypeToken] ??
-      EMAIL_NOTIFICATION_TYPES.SYSTEM,
-    status:
-      EMAIL_STATUS_NORMALIZATION_MAP[normalizedStatusToken] ??
-      EMAIL_DELIVERY_STATUSES.FAILED
+    emailType: EMAIL_TYPE_NORMALIZATION_MAP[normalizedTypeToken] ?? EMAIL_NOTIFICATION_TYPES.SYSTEM,
+    status: EMAIL_STATUS_NORMALIZATION_MAP[normalizedStatusToken] ?? EMAIL_DELIVERY_STATUSES.FAILED
   }
 }
 
-export const sendMixNotification: AppRouteHandler<
-  SendMixNotificationRoute
-> = async (c) => {
+export const sendMixNotification: AppRouteHandler<SendMixNotificationRoute> = async (c) => {
   const { recipients, mixSlug, metadata } = c.req.valid('json')
 
   const [mix] = await db
@@ -84,10 +73,7 @@ export const sendMixNotification: AppRouteHandler<
     .limit(1)
 
   if (!mix) {
-    return c.json(
-      { error: `Mix not found: ${mixSlug}` },
-      HttpStatusCodes.NOT_FOUND
-    )
+    return c.json({ error: `Mix not found: ${mixSlug}` }, HttpStatusCodes.NOT_FOUND)
   }
 
   const mixUrl = `https://goosebumps.fm/mixes/${mix.slug}`
@@ -121,28 +107,16 @@ export const sendMixNotification: AppRouteHandler<
         .where(eq(usersTable.email, recipient))
         .limit(1)
 
-      const username =
-        user?.name ||
-        metadata?.username ||
-        recipient.split('@')[0] ||
-        'listener'
+      const username = user?.name || metadata?.username || recipient.split('@')[0] || 'listener'
 
       // Check email preferences if author exists
       if (user) {
-        const canReceive = await canReceiveEmail(
-          user.id,
-          EMAIL_NOTIFICATION_TYPES.MIX_RELEASE
-        )
+        const canReceive = await canReceiveEmail(user.id, EMAIL_NOTIFICATION_TYPES.MIX_RELEASE)
 
         if (!canReceive) {
-          Effect.annotateCurrentSpan('totalRecipients', recipients.length).pipe(
-            runAppFork
-          )
+          Effect.annotateCurrentSpan('totalRecipients', recipients.length).pipe(runAppFork)
           Effect.annotateCurrentSpan('mixSlug', mixSlug).pipe(runAppFork)
-          Effect.annotateCurrentSpan(
-            'mixTitle',
-            metadata?.mixTitle || mix.title
-          ).pipe(runAppFork)
+          Effect.annotateCurrentSpan('mixTitle', metadata?.mixTitle || mix.title).pipe(runAppFork)
 
           Effect.logInfo('[Email] Sending mix notification emails', {
             totalRecipients: recipients.length,
@@ -199,18 +173,13 @@ export const sendMixNotification: AppRouteHandler<
           mixSlug,
           mixTitle: metadata?.mixTitle || mix.title,
           emailLogId: deliveryLog.id,
-          error:
-            emailError instanceof Error
-              ? emailError.message
-              : String(emailError)
+          error: emailError instanceof Error ? emailError.message : String(emailError)
         }).pipe(runAppFork)
 
         // Mark as failed in the log
         await markEmailDeliveryLogAsFailed(
           deliveryLog.id,
-          emailError instanceof Error
-            ? emailError.message
-            : 'Unknown error occurred'
+          emailError instanceof Error ? emailError.message : 'Unknown error occurred'
         )
 
         errors.push(recipient)
@@ -218,10 +187,7 @@ export const sendMixNotification: AppRouteHandler<
     }
 
     if (sentTo.length === 0 && skipped.length === 0) {
-      return c.json(
-        { error: 'Failed to send any emails' },
-        HttpStatusCodes.INTERNAL_SERVER_ERROR
-      )
+      return c.json({ error: 'Failed to send any emails' }, HttpStatusCodes.INTERNAL_SERVER_ERROR)
     }
 
     return c.json(
@@ -230,19 +196,14 @@ export const sendMixNotification: AppRouteHandler<
         sentTo,
         emailIds,
         message: `Successfully sent ${sentTo.length} notification(s)${
-          skipped.length > 0
-            ? ` (${skipped.length} skipped due to preferences)`
-            : ''
+          skipped.length > 0 ? ` (${skipped.length} skipped due to preferences)` : ''
         }${errors.length > 0 ? ` (${errors.length} failed)` : ''}`
       },
       HttpStatusCodes.OK
     )
   } catch (error) {
     console.error('Failed to send mix notification emails:', error)
-    return c.json(
-      { error: 'Failed to send emails' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
-    )
+    return c.json({ error: 'Failed to send emails' }, HttpStatusCodes.INTERNAL_SERVER_ERROR)
   }
 }
 
@@ -257,9 +218,6 @@ export const getEmailLogs: AppRouteHandler<GetEmailLogsRoute> = async (c) => {
     return c.json({ data, pagination: result.pagination }, HttpStatusCodes.OK)
   } catch (error) {
     console.error('Failed to fetch email logs:', error)
-    return c.json(
-      { error: 'Failed to fetch email logs' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
-    )
+    return c.json({ error: 'Failed to fetch email logs' }, HttpStatusCodes.INTERNAL_SERVER_ERROR)
   }
 }

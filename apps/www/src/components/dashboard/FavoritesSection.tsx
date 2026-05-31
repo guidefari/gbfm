@@ -22,9 +22,7 @@ export function FavoritesSection() {
     )
   }
 
-  const audioFavorites = favorites.filter(
-    (f): f is AudioFavorite => f.audio !== null
-  )
+  const audioFavorites = favorites.filter((f): f is AudioFavorite => f.audio !== null)
 
   if (audioFavorites.length === 0) {
     return null

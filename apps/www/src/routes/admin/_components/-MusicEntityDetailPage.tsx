@@ -61,8 +61,7 @@ function ArtistDetailPage({ id }: { id: string }) {
   if (!data) return <NotFound />
 
   async function handleDelete() {
-    if (!confirm(`Delete artist "${data?.name}"? This cannot be undone.`))
-      return
+    if (!confirm(`Delete artist "${data?.name}"? This cannot be undone.`)) return
     await del.mutateAsync(id)
     toast({ title: 'Artist deleted' })
     navigate({ to: '/admin/music' })
@@ -77,11 +76,7 @@ function ArtistDetailPage({ id }: { id: string }) {
       createdAt={data.createdAt}
       updatedAt={data.updatedAt}
       actionsSlot={
-        <Button
-          size='sm'
-          variant='destructive'
-          onClick={handleDelete}
-          disabled={del.isPending}>
+        <Button size='sm' variant='destructive' onClick={handleDelete} disabled={del.isPending}>
           Delete
         </Button>
       }
@@ -128,17 +123,14 @@ function AlbumDetailPage({ id }: { id: string }) {
   if (isLoading) return <MusicEntityDetailSkeleton />
   if (!data) return <NotFound />
 
-  const artistJunctions: ArtistJunction[] = (data.artistNames ?? []).map(
-    (name, i) => ({
-      artistId: `unknown-${i}`,
-      artistName: name,
-      displayOrder: i
-    })
-  )
+  const artistJunctions: ArtistJunction[] = (data.artistNames ?? []).map((name, i) => ({
+    artistId: `unknown-${i}`,
+    artistName: name,
+    displayOrder: i
+  }))
 
   async function handleDelete() {
-    if (!confirm(`Delete album "${data?.title}"? This cannot be undone.`))
-      return
+    if (!confirm(`Delete album "${data?.title}"? This cannot be undone.`)) return
     await del.mutateAsync(id)
     toast({ title: 'Album deleted' })
     navigate({ to: '/admin/music' })
@@ -153,11 +145,7 @@ function AlbumDetailPage({ id }: { id: string }) {
       createdAt={data.createdAt}
       updatedAt={data.updatedAt}
       actionsSlot={
-        <Button
-          size='sm'
-          variant='destructive'
-          onClick={handleDelete}
-          disabled={del.isPending}>
+        <Button size='sm' variant='destructive' onClick={handleDelete} disabled={del.isPending}>
           Delete
         </Button>
       }
@@ -188,12 +176,8 @@ function AlbumDetailPage({ id }: { id: string }) {
       relationshipsSlot={
         <MusicEntityArtistsPanel
           artists={artistJunctions}
-          onAdd={(artistId, role) =>
-            addArtist.mutate({ albumId: id, artistId, role })
-          }
-          onRemove={(artistId) =>
-            removeArtist.mutate({ albumId: id, artistId })
-          }
+          onAdd={(artistId, role) => addArtist.mutate({ albumId: id, artistId, role })}
+          onRemove={(artistId) => removeArtist.mutate({ albumId: id, artistId })}
         />
       }
     />
@@ -215,17 +199,14 @@ function TrackDetailPage({ id }: { id: string }) {
   if (isLoading) return <MusicEntityDetailSkeleton />
   if (!data) return <NotFound />
 
-  const artistJunctions: ArtistJunction[] = (data.artistNames ?? []).map(
-    (name, i) => ({
-      artistId: `unknown-${i}`,
-      artistName: name,
-      displayOrder: i
-    })
-  )
+  const artistJunctions: ArtistJunction[] = (data.artistNames ?? []).map((name, i) => ({
+    artistId: `unknown-${i}`,
+    artistName: name,
+    displayOrder: i
+  }))
 
   async function handleDelete() {
-    if (!confirm(`Delete track "${data?.title}"? This cannot be undone.`))
-      return
+    if (!confirm(`Delete track "${data?.title}"? This cannot be undone.`)) return
     await del.mutateAsync(id)
     toast({ title: 'Track deleted' })
     navigate({ to: '/admin/music' })
@@ -240,11 +221,7 @@ function TrackDetailPage({ id }: { id: string }) {
       createdAt={data.createdAt}
       updatedAt={data.updatedAt}
       actionsSlot={
-        <Button
-          size='sm'
-          variant='destructive'
-          onClick={handleDelete}
-          disabled={del.isPending}>
+        <Button size='sm' variant='destructive' onClick={handleDelete} disabled={del.isPending}>
           Delete
         </Button>
       }
@@ -275,12 +252,8 @@ function TrackDetailPage({ id }: { id: string }) {
       relationshipsSlot={
         <MusicEntityArtistsPanel
           artists={artistJunctions}
-          onAdd={(artistId, role) =>
-            addArtist.mutate({ trackId: id, artistId, role })
-          }
-          onRemove={(artistId) =>
-            removeArtist.mutate({ trackId: id, artistId })
-          }
+          onAdd={(artistId, role) => addArtist.mutate({ trackId: id, artistId, role })}
+          onRemove={(artistId) => removeArtist.mutate({ trackId: id, artistId })}
         />
       }
     />
@@ -350,11 +323,7 @@ function LinksPanel({
 }
 
 function NotFound() {
-  return (
-    <div className='p-8 text-center text-muted-foreground'>
-      Entity not found.
-    </div>
-  )
+  return <div className='p-8 text-center text-muted-foreground'>Entity not found.</div>
 }
 
 function toArtistMetadata(a: MusicArtist) {

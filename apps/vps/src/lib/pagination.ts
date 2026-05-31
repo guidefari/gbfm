@@ -28,9 +28,7 @@ export const paginationMetadataSchema = z
     total: z.number().openapi({ description: 'Total number of items' }),
     limit: z.number().openapi({ description: 'Items per page' }),
     offset: z.number().openapi({ description: 'Current offset' }),
-    hasMore: z
-      .boolean()
-      .openapi({ description: 'Whether there are more items available' })
+    hasMore: z.boolean().openapi({ description: 'Whether there are more items available' })
   })
   .openapi('PaginationMeta')
 
@@ -44,9 +42,7 @@ export const paginationMetadataSchema = z
  * @example
  * const postListSchema = createPaginatedResponseSchema(postSchema)
  */
-export function createPaginatedResponseSchema<T extends z.ZodType>(
-  dataSchema: T
-) {
+export function createPaginatedResponseSchema<T extends z.ZodType>(dataSchema: T) {
   return z
     .object({
       data: z.array(dataSchema).openapi({ description: 'Array of data items' }),
@@ -87,11 +83,7 @@ export type PaginatedResponse<T> = {
  * const hasMore = calculateHasMore(100, 20, 20) // true (items 40-99 remain)
  * const hasMore = calculateHasMore(100, 90, 20) // false (only 10 items remain)
  */
-export function calculateHasMore(
-  total: number,
-  offset: number,
-  limit: number
-): boolean {
+export function calculateHasMore(total: number, offset: number, limit: number): boolean {
   return offset + limit < total
 }
 

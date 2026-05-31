@@ -55,24 +55,16 @@ export function OverflowTitle({
   }, [overflowPx])
 
   return (
-    <div
-      ref={containerRef}
-      className={cn('relative overflow-hidden', className)}>
+    <div ref={containerRef} className={cn('relative overflow-hidden', className)}>
       <span
         ref={measureRef}
-        className={cn(
-          'pointer-events-none invisible absolute whitespace-nowrap',
-          textClassName
-        )}>
+        className={cn('pointer-events-none invisible absolute whitespace-nowrap', textClassName)}>
         {text}
       </span>
 
       {overflowPx > 0 ? (
         <div
-          className={cn(
-            'overflow-title-marquee whitespace-nowrap',
-            animationClassName
-          )}
+          className={cn('overflow-title-marquee whitespace-nowrap', animationClassName)}
           style={marqueeStyle}>
           <span className={textClassName}>{text}</span>
         </div>

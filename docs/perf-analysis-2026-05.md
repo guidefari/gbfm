@@ -1,5 +1,6 @@
 # goosebumps.fm — Performance Analysis & Recommendations
-*Session: May 2026 · Branch: `claude/website-perf-profiling-GIyef` · PR: #111*
+
+_Session: May 2026 · Branch: `claude/website-perf-profiling-GIyef` · PR: #111_
 
 ---
 
@@ -27,6 +28,7 @@ All items in this section are **shipped and pushed**.
 **Problem:** Both pages fired a second full `useAudioByType` / `useEditorialPosts` fetch just to extract unique tag strings for the filter dropdown. On the mixes page this loaded potentially hundreds of items into memory to produce a `string[]`.
 
 **Fix:**
+
 - Added `GET /content/audio/{type}/tags` → `string[]` endpoint
 - Added `GET /content/posts/editorials/tags` → `string[]` endpoint
 - Added `useAudioTags(type)` and `useEditorialTags()` React Query hooks with 1-hour `staleTime`
@@ -56,6 +58,7 @@ const creatorsData = postIds.length > 0
 **Problem:** The original `compileMDX` used a plain `Map<string, string>` with no capacity bound, no TTL, no deduplication for concurrent requests to the same key, and failures were silently dropped (no retry).
 
 **Fix:** Full rewrite of `apps/vps/src/lib/mdx.ts` using Effect's `Cache` primitive:
+
 - Content-addressed keys (SHA-256 of the MDX string) — editing a post naturally routes to a new key
 - Capacity: 256 entries (LRU eviction)
 - TTL: 1 hour on successes, **zero on failures** (transient compile errors are retried immediately)
@@ -91,6 +94,7 @@ index('posts_tags_gin_idx').using('gin', table.tags)
 **Problem:** No `Cache-Control` headers on API responses, so Cloudflare could not cache them at the edge. Every request reached API Gateway → VPC → ECS.
 
 **Fix:**
+
 - List endpoints (`GET /audio/{type}`, `GET /posts/editorials`): `Cache-Control: public, max-age=60, stale-while-revalidate=300`
 - Tags endpoints (`GET /audio/{type}/tags`, `GET /posts/editorials/tags`): `Cache-Control: public, max-age=3600, stale-while-revalidate=86400`
 
@@ -120,7 +124,7 @@ Expected impact: query planner uses the composite index on `(type, draft, create
 **File:** `apps/vps/src/instrument.ts`
 
 ```typescript
-tracesSampleRate: 1.0  // ← currently 100%
+tracesSampleRate: 1.0 // ← currently 100%
 ```
 
 At scale, 100% sampling adds latency overhead on every request (serialising spans, network egress to Sentry). Once baseline numbers are captured, drop to `0.2`. You'll still have statistically valid P50/P95 data. Change when you're confident in the baseline; leaving it at 1.0 during active profiling is fine.
@@ -132,7 +136,7 @@ At scale, 100% sampling adds latency overhead on every request (serialising span
 **File:** `infra/vps.ts:57`
 
 ```typescript
-capacity: 'spot'  // currently pure Spot
+capacity: 'spot' // currently pure Spot
 ```
 
 Pure Spot means a single Spot interruption takes the entire API offline until ECS reschedules (typically 60–120 s). This shows up in Sentry as spikes of 502 errors.
@@ -146,6 +150,7 @@ Pure Spot means a single Spot interruption takes the entire API offline until EC
 ### R4 — First-load waterfall: consider route-level prefetching
 
 The SPA architecture means first paint always waits for:
+
 1. CloudFront → `index.html` + JS bundle (fast, CDN)
 2. React bootstrap (fast, Bun-built + code-split)
 3. API call completes (this is where latency lives)
@@ -166,6 +171,7 @@ SST supports Lambda streaming + React Server Components. This would let the serv
 ### R5 — Verify Sentry traces for API span breakdown
 
 Now that the codebase has OTEL + Sentry wired at 100% sampling, pull a slow trace for `GET /content/audio/mix` and check the span breakdown. You should see:
+
 1. DB count query
 2. DB data query
 3. Creator batch query (single span, not per-item — this was fixed in item 2)
@@ -178,6 +184,7 @@ If any span is still unexpectedly large, the trace will point exactly where. Jae
 ### R6 — PlanetScale Query Insights
 
 Check these specific queries in PlanetScale's Query Insights dashboard:
+
 - `SELECT count(*) FROM audio WHERE type = 'mix'`
 - `SELECT * FROM audio WHERE type = 'mix' ORDER BY created_at DESC LIMIT ? OFFSET ?`
 - `SELECT DISTINCT unnest(tags) FROM audio WHERE type = 'mix'`
@@ -202,11 +209,11 @@ Key metrics to watch: **LCP** (should improve as API responds faster), **TTFB** 
 
 ## Architecture Notes
 
-| Layer | Current state | Notes |
-|---|---|---|
-| CDN | CloudFront (static assets) + Cloudflare (API DNS) | Cache-Control headers now enable Cloudflare edge caching for API responses |
-| API | Hono on ECS Spot, behind API Gateway V2 | Single AZ pure Spot — see R3 |
-| DB | PlanetScale (PostgreSQL-compatible) | Missing indexes — see R1 |
-| Observability | Sentry (1.0 sampling), OTEL + Jaeger locally | Drop sampling after baseline captured — see R2 |
-| Caching | Effect.Cache in-process for MDX, React Query on client (staleTime varies) | No Redis/shared cache between ECS tasks |
-| NAT | Disabled (intentional) | ECS tasks cannot reach internet — affects Spotify/Bandcamp integrations if they're in the request path |
+| Layer         | Current state                                                             | Notes                                                                                                  |
+| ------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| CDN           | CloudFront (static assets) + Cloudflare (API DNS)                         | Cache-Control headers now enable Cloudflare edge caching for API responses                             |
+| API           | Hono on ECS Spot, behind API Gateway V2                                   | Single AZ pure Spot — see R3                                                                           |
+| DB            | PlanetScale (PostgreSQL-compatible)                                       | Missing indexes — see R1                                                                               |
+| Observability | Sentry (1.0 sampling), OTEL + Jaeger locally                              | Drop sampling after baseline captured — see R2                                                         |
+| Caching       | Effect.Cache in-process for MDX, React Query on client (staleTime varies) | No Redis/shared cache between ECS tasks                                                                |
+| NAT           | Disabled (intentional)                                                    | ECS tasks cannot reach internet — affects Spotify/Bandcamp integrations if they're in the request path |

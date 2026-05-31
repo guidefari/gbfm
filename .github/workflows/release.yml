@@ -25,8 +25,8 @@ jobs:
 
       - uses: ./.github/actions/setup-bun-workspace
 
-      - name: Run Biome checks
-        run: bun run biome:ci
+      - name: Run OXC checks
+        run: bun run oxc:ci
 
   typecheck:
     runs-on: ubuntu-24.04

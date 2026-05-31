@@ -4,14 +4,9 @@ import { auth } from '@/lib/auth'
 const betterAuthApp = new Hono()
 
 function prepareAuthRequest(request: Request) {
-  const hasOrigin =
-    request.headers.has('origin') || request.headers.has('referer')
+  const hasOrigin = request.headers.has('origin') || request.headers.has('referer')
 
-  if (
-    request.method === 'POST' &&
-    !hasOrigin &&
-    request.headers.has('cookie')
-  ) {
+  if (request.method === 'POST' && !hasOrigin && request.headers.has('cookie')) {
     const headers = new Headers(request.headers)
     headers.delete('cookie')
     return new Request(request, { headers })

@@ -9,9 +9,7 @@ export function NewsletterTab() {
   }
 
   if (isError) {
-    return (
-      <p className='text-sm text-destructive'>Failed to load subscribers.</p>
-    )
+    return <p className='text-sm text-destructive'>Failed to load subscribers.</p>
   }
 
   const subscribers = data?.subscribers ?? []
@@ -37,12 +35,8 @@ export function NewsletterTab() {
             {subscribers.map((sub) => (
               <tr key={sub.id} className='border-b last:border-0'>
                 <td className='py-2 pr-4'>{sub.email}</td>
-                <td className='py-2 pr-4 text-muted-foreground'>
-                  {sub.name ?? '-'}
-                </td>
-                <td className='py-2 pr-4 text-muted-foreground'>
-                  {sub.source ?? '-'}
-                </td>
+                <td className='py-2 pr-4 text-muted-foreground'>{sub.name ?? '-'}</td>
+                <td className='py-2 pr-4 text-muted-foreground'>{sub.source ?? '-'}</td>
                 <td className='py-2 pr-4'>
                   {sub.unsubscribedAt ? (
                     <Badge variant='destructive'>Unsubscribed</Badge>

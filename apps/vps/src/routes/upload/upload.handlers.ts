@@ -31,17 +31,11 @@ export const uploadFile: AppRouteHandler<UploadFileRoute> = async (c) => {
   }
 
   if (fileType === 'audio' && !file.type.startsWith('audio/')) {
-    return c.json(
-      { error: 'Invalid audio file type' },
-      HttpStatusCodes.BAD_REQUEST
-    )
+    return c.json({ error: 'Invalid audio file type' }, HttpStatusCodes.BAD_REQUEST)
   }
 
   if (fileType === 'image' && !file.type.startsWith('image/')) {
-    return c.json(
-      { error: 'Invalid image file type' },
-      HttpStatusCodes.BAD_REQUEST
-    )
+    return c.json({ error: 'Invalid image file type' }, HttpStatusCodes.BAD_REQUEST)
   }
 
   const timestamp = Date.now()
@@ -51,9 +45,7 @@ export const uploadFile: AppRouteHandler<UploadFileRoute> = async (c) => {
   const program = Effect.gen(function* () {
     const config = yield* ConfigService
     const s3Service = yield* S3Service
-    const fileBuffer = Buffer.from(
-      yield* Effect.promise(() => file?.arrayBuffer())
-    )
+    const fileBuffer = Buffer.from(yield* Effect.promise(() => file?.arrayBuffer()))
     const key = yield* s3Service.uploadFile(
       fileName,
       fileBuffer,

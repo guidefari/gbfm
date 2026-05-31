@@ -147,13 +147,10 @@ interface ProfileSocialLinksProps {
   socialLinks: PublicProfile['socialLinks']
 }
 
-export function ProfileSocialLinks({
-  username,
-  socialLinks
-}: ProfileSocialLinksProps) {
+export function ProfileSocialLinks({ username, socialLinks }: ProfileSocialLinksProps) {
   if (!socialLinks.length && !username) return null
 
-  const sorted = [...socialLinks].sort((a, b) => a.position - b.position)
+  const sorted = [...socialLinks].toSorted((a, b) => a.position - b.position)
   const shareUrl = username ? getShareUrl('profile', username) : null
 
   const handleCopyShareUrl = async () => {
@@ -192,11 +189,7 @@ export function ProfileSocialLinks({
             {Icon ? (
               <span
                 className={'className' in config ? config.className : undefined}
-                style={
-                  'color' in config && config.color
-                    ? { color: config.color }
-                    : undefined
-                }>
+                style={'color' in config && config.color ? { color: config.color } : undefined}>
                 <Icon />
               </span>
             ) : (
@@ -228,9 +221,7 @@ export function ProfileSocialLinks({
           onClick={handleCopyShareUrl}
           className='flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-muted/30'>
           <Share2 className='h-3.5 w-3.5 shrink-0 text-[#4e8c71]' />
-          <span className='flex-1 font-mono text-sm text-foreground'>
-            Copy profile link
-          </span>
+          <span className='flex-1 font-mono text-sm text-foreground'>Copy profile link</span>
         </button>
       )}
     </div>

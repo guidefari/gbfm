@@ -2,21 +2,9 @@ import { useState } from 'react'
 import { Badge } from './badge'
 import { Button } from './button'
 import { Card, CardContent, CardHeader, CardTitle } from './card'
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from './dialog'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from './dialog'
 import { Input } from './input'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from './select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select'
 
 export type LinkStatus = 'pending_review' | 'verified' | 'rejected'
 
@@ -70,10 +58,7 @@ const PLATFORMS: MusicPlatform[] = [
   'other'
 ]
 
-const STATUS_VARIANTS: Record<
-  string,
-  'default' | 'secondary' | 'destructive' | 'outline'
-> = {
+const STATUS_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   verified: 'default',
   pending_review: 'secondary',
   rejected: 'destructive'
@@ -150,9 +135,7 @@ export function MusicEntityLinksPanel({
         )}
       </CardHeader>
       <CardContent className='space-y-4'>
-        {links.length === 0 && (
-          <p className='text-sm text-muted-foreground'>No links yet.</p>
-        )}
+        {links.length === 0 && <p className='text-sm text-muted-foreground'>No links yet.</p>}
         <div className='space-y-2'>
           {links.map((link) => (
             <div key={link.id} className='rounded-md border px-3 py-2 text-sm'>
@@ -176,10 +159,7 @@ export function MusicEntityLinksPanel({
                 </div>
                 {!readOnly && (
                   <div className='flex flex-wrap gap-1'>
-                    <Button
-                      size='sm'
-                      variant='ghost'
-                      onClick={() => openEditDialog(link)}>
+                    <Button size='sm' variant='ghost' onClick={() => openEditDialog(link)}>
                       Edit
                     </Button>
                     {link.status !== 'verified' && (
@@ -213,15 +193,11 @@ export function MusicEntityLinksPanel({
         </div>
       </CardContent>
 
-      <Dialog
-        open={dialogMode !== null}
-        onOpenChange={(open) => !open && closeDialog()}>
+      <Dialog open={dialogMode !== null} onOpenChange={(open) => !open && closeDialog()}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {dialogMode === 'edit'
-                ? 'Edit streaming link'
-                : 'Add streaming link'}
+              {dialogMode === 'edit' ? 'Edit streaming link' : 'Add streaming link'}
             </DialogTitle>
           </DialogHeader>
           <div className='space-y-3'>

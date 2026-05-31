@@ -4,16 +4,8 @@ import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
 import { favoritesTable, type SelectFavorite } from '@/db/favorites.schema'
 import { showSubscriptionsTable, showsTable } from '@/db/show.schema'
-import {
-  ConflictError,
-  DatabaseError,
-  getErrorMessage,
-  NotFoundError
-} from '@/errors'
-import {
-  recordFavoriteAdd,
-  recordFavoriteRemove
-} from '@/lib/performance-monitoring'
+import { ConflictError, DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
+import { recordFavoriteAdd, recordFavoriteRemove } from '@/lib/performance-monitoring'
 
 type FavoriteWithContent = {
   id: string
@@ -42,17 +34,11 @@ export interface FavoriteService {
   readonly addFavorite: (
     userId: string,
     audioId: string
-  ) => Effect.Effect<
-    SelectFavorite,
-    DatabaseError | NotFoundError | ConflictError
-  >
+  ) => Effect.Effect<SelectFavorite, DatabaseError | NotFoundError | ConflictError>
   readonly addShowFavorite: (
     userId: string,
     showId: string
-  ) => Effect.Effect<
-    SelectFavorite,
-    DatabaseError | NotFoundError | ConflictError
-  >
+  ) => Effect.Effect<SelectFavorite, DatabaseError | NotFoundError | ConflictError>
   readonly removeFavorite: (
     userId: string,
     audioId: string
@@ -69,8 +55,7 @@ export interface FavoriteService {
 }
 
 // Service tag for dependency injection
-export const FavoriteService =
-  Context.Service<FavoriteService>('FavoriteService')
+export const FavoriteService = Context.Service<FavoriteService>('FavoriteService')
 
 // Core service logic - pure Effects with no service dependencies
 const addFavoriteEffect = (userId: string, audioId: string) =>
@@ -80,12 +65,7 @@ const addFavoriteEffect = (userId: string, audioId: string) =>
     Effect.gen(function* () {
       // Check if audio exists
       const audioRecords = yield* Effect.tryPromise({
-        try: () =>
-          db
-            .select()
-            .from(audioTable)
-            .where(eq(audioTable.id, audioId))
-            .limit(1),
+        try: () => db.select().from(audioTable).where(eq(audioTable.id, audioId)).limit(1),
         catch: (error) =>
           new DatabaseError({
             message: `Failed to check audio existence: ${getErrorMessage(error)}`,
@@ -108,12 +88,7 @@ const addFavoriteEffect = (userId: string, audioId: string) =>
           db
             .select()
             .from(favoritesTable)
-            .where(
-              and(
-                eq(favoritesTable.userId, userId),
-                eq(favoritesTable.audioId, audioId)
-              )
-            )
+            .where(and(eq(favoritesTable.userId, userId), eq(favoritesTable.audioId, audioId)))
             .limit(1),
         catch: (error) =>
           new DatabaseError({
@@ -189,12 +164,7 @@ const removeFavoriteEffect = (userId: string, audioId: string) =>
           db
             .select()
             .from(favoritesTable)
-            .where(
-              and(
-                eq(favoritesTable.userId, userId),
-                eq(favoritesTable.audioId, audioId)
-              )
-            )
+            .where(and(eq(favoritesTable.userId, userId), eq(favoritesTable.audioId, audioId)))
             .limit(1),
         catch: (error) =>
           new DatabaseError({
@@ -217,12 +187,7 @@ const removeFavoriteEffect = (userId: string, audioId: string) =>
         try: () =>
           db
             .delete(favoritesTable)
-            .where(
-              and(
-                eq(favoritesTable.userId, userId),
-                eq(favoritesTable.audioId, audioId)
-              )
-            ),
+            .where(and(eq(favoritesTable.userId, userId), eq(favoritesTable.audioId, audioId))),
         catch: (error) =>
           new DatabaseError({
             message: `Failed to remove favorite: ${getErrorMessage(error)}`,
@@ -246,12 +211,7 @@ const addShowFavoriteEffect = (userId: string, showId: string) =>
   })(
     Effect.gen(function* () {
       const showRecords = yield* Effect.tryPromise({
-        try: () =>
-          db
-            .select()
-            .from(showsTable)
-            .where(eq(showsTable.id, showId))
-            .limit(1),
+        try: () => db.select().from(showsTable).where(eq(showsTable.id, showId)).limit(1),
         catch: (error) =>
           new DatabaseError({
             message: `Failed to check show existence: ${getErrorMessage(error)}`,
@@ -273,12 +233,7 @@ const addShowFavoriteEffect = (userId: string, showId: string) =>
           db
             .select()
             .from(favoritesTable)
-            .where(
-              and(
-                eq(favoritesTable.userId, userId),
-                eq(favoritesTable.showId, showId)
-              )
-            )
+            .where(and(eq(favoritesTable.userId, userId), eq(favoritesTable.showId, showId)))
             .limit(1),
         catch: (error) =>
           new DatabaseError({
@@ -345,8 +300,7 @@ const addShowFavoriteEffect = (userId: string, showId: string) =>
 
       if (existingSubscription.length === 0) {
         yield* Effect.tryPromise({
-          try: () =>
-            db.insert(showSubscriptionsTable).values({ userId, showId }),
+          try: () => db.insert(showSubscriptionsTable).values({ userId, showId }),
           catch: (error) =>
             new DatabaseError({
               message: `Failed to subscribe: ${getErrorMessage(error)}`,
@@ -381,12 +335,7 @@ const removeShowFavoriteEffect = (userId: string, showId: string) =>
           db
             .select()
             .from(favoritesTable)
-            .where(
-              and(
-                eq(favoritesTable.userId, userId),
-                eq(favoritesTable.showId, showId)
-              )
-            )
+            .where(and(eq(favoritesTable.userId, userId), eq(favoritesTable.showId, showId)))
             .limit(1),
         catch: (error) =>
           new DatabaseError({
@@ -408,12 +357,7 @@ const removeShowFavoriteEffect = (userId: string, showId: string) =>
         try: () =>
           db
             .delete(favoritesTable)
-            .where(
-              and(
-                eq(favoritesTable.userId, userId),
-                eq(favoritesTable.showId, showId)
-              )
-            ),
+            .where(and(eq(favoritesTable.userId, userId), eq(favoritesTable.showId, showId))),
         catch: (error) =>
           new DatabaseError({
             message: `Failed to remove favorite: ${getErrorMessage(error)}`,

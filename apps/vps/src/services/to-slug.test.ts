@@ -11,15 +11,11 @@ describe('toSlug', () => {
   })
 
   test('replaces special characters with hyphens', () => {
-    expect(stripSlugSuffix(toSlug('Burial & Four Tet!'))).toBe(
-      'burial-four-tet'
-    )
+    expect(stripSlugSuffix(toSlug('Burial & Four Tet!'))).toBe('burial-four-tet')
   })
 
   test('collapses consecutive special chars into single hyphen', () => {
-    expect(stripSlugSuffix(toSlug('Burial --- Four Tet'))).toBe(
-      'burial-four-tet'
-    )
+    expect(stripSlugSuffix(toSlug('Burial --- Four Tet'))).toBe('burial-four-tet')
   })
 
   test('strips leading and trailing hyphens before suffix', () => {
@@ -48,9 +44,7 @@ describe('toSlug', () => {
 
   test('truncates long slug bases', () => {
     const slugBase = stripSlugSuffix(
-      toSlug(
-        'This is a very long title that should not keep going forever in the generated slug'
-      )
+      toSlug('This is a very long title that should not keep going forever in the generated slug')
     )
 
     expect(slugBase).toBe('this-is-a-very-long-title-that-s')

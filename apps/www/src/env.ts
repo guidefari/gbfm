@@ -5,7 +5,5 @@ export const env = {
   /** Local frontend Sentry is opt-in to keep dev traces out of prod dashboards. */
   sentryEnableLocal: import.meta.env.VITE_PUBLIC_SENTRY_ENABLE_LOCAL === 'true',
   sentryEnvironment: import.meta.env.VITE_PUBLIC_SENTRY_ENVIRONMENT,
-  sentryRelease: import.meta.env.VITE_PUBLIC_SENTRY_RELEASE as
-    | string
-    | undefined
+  sentryRelease: import.meta.env.VITE_PUBLIC_SENTRY_RELEASE as string | undefined
 }

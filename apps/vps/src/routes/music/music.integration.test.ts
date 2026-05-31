@@ -17,9 +17,7 @@ describe('Music API — artists', () => {
   })
 
   it('GET /music/artists/:id returns 404 for unknown id', async () => {
-    const res = await app.request(
-      '/music/artists/00000000-0000-0000-0000-000000000000'
-    )
+    const res = await app.request('/music/artists/00000000-0000-0000-0000-000000000000')
     expect(res.status).toBe(404)
   })
 
@@ -42,9 +40,7 @@ describe('Music API — albums', () => {
   })
 
   it('GET /music/albums/:id returns 404 for unknown id', async () => {
-    const res = await app.request(
-      '/music/albums/00000000-0000-0000-0000-000000000000'
-    )
+    const res = await app.request('/music/albums/00000000-0000-0000-0000-000000000000')
     expect(res.status).toBe(404)
   })
 
@@ -67,9 +63,7 @@ describe('Music API — tracks', () => {
   })
 
   it('GET /music/tracks/:id returns 404 for unknown id', async () => {
-    const res = await app.request(
-      '/music/tracks/00000000-0000-0000-0000-000000000000'
-    )
+    const res = await app.request('/music/tracks/00000000-0000-0000-0000-000000000000')
     expect(res.status).toBe(404)
   })
 
@@ -92,16 +86,12 @@ describe('Music API — playlists', () => {
   })
 
   it('GET /music/playlists/:id returns 404 for unknown id', async () => {
-    const res = await app.request(
-      '/music/playlists/00000000-0000-0000-0000-000000000000'
-    )
+    const res = await app.request('/music/playlists/00000000-0000-0000-0000-000000000000')
     expect(res.status).toBe(404)
   })
 
   it('GET /music/playlists/:id/tracks returns 200 with empty array for unknown playlist', async () => {
-    const res = await app.request(
-      '/music/playlists/00000000-0000-0000-0000-000000000000/tracks'
-    )
+    const res = await app.request('/music/playlists/00000000-0000-0000-0000-000000000000/tracks')
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(Array.isArray(body)).toBe(true)

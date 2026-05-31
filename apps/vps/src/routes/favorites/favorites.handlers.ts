@@ -34,9 +34,7 @@ export const addFavorite: AppRouteHandler<AddFavoriteRoute> = async (c) => {
   return runEffect<AddFavoriteRoute>(c, program, HttpStatusCodes.CREATED)
 }
 
-export const removeFavorite: AppRouteHandler<RemoveFavoriteRoute> = async (
-  c
-) => {
+export const removeFavorite: AppRouteHandler<RemoveFavoriteRoute> = async (c) => {
   const user = c.get('user')
   const { audioId } = c.req.valid('param')
 
@@ -54,9 +52,7 @@ export const removeFavorite: AppRouteHandler<RemoveFavoriteRoute> = async (
   return runEffect<RemoveFavoriteRoute>(c, program)
 }
 
-export const removeShowFavorite: AppRouteHandler<
-  RemoveShowFavoriteRoute
-> = async (c) => {
+export const removeShowFavorite: AppRouteHandler<RemoveShowFavoriteRoute> = async (c) => {
   const user = c.get('user')
   const { showId } = c.req.valid('param')
 

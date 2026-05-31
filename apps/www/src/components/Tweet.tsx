@@ -33,18 +33,10 @@ export const Tweet: React.FC<Props> = ({
         <div className='flex justify-between'>
           <div className='flex items-center'>
             <a className='flex w-12 h-12 mr-3' href={`/curator/${handle}`}>
-              <img
-                alt={authorName}
-                src={avatarUrl}
-                width={48}
-                height={48}
-                className='rounded-sm'
-              />
+              <img alt={authorName} src={avatarUrl} width={48} height={48} className='rounded-sm' />
             </a>
             <a href={`/curator/${handle}`} className='flex flex-col ml-4'>
-              <span
-                className='flex items-center font-bold leading-5 '
-                title={authorName}>
+              <span className='flex items-center font-bold leading-5 ' title={authorName}>
                 {authorName}
               </span>
             </a>

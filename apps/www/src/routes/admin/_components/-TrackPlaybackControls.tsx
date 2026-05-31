@@ -42,9 +42,9 @@ export function TrackPlaybackControls({ spotifyUrl, saved, onSaved }: Props) {
 
   const handlePlay = async () => {
     setPlayPending(true)
-    await runAppEffect(
-      playTrackEffect(uri).pipe(withSpotifyErrorToast('Playback failed'))
-    ).finally(() => setPlayPending(false))
+    await runAppEffect(playTrackEffect(uri).pipe(withSpotifyErrorToast('Playback failed'))).finally(
+      () => setPlayPending(false)
+    )
   }
 
   const handleQueue = async () => {

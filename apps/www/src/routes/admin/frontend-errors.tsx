@@ -1,11 +1,6 @@
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@gbfm/ui'
 import { createFileRoute, Link } from '@tanstack/react-router'
-import {
-  AlertTriangle,
-  ArrowLeft,
-  CheckCircle2,
-  RadioTower
-} from 'lucide-react'
+import { AlertTriangle, ArrowLeft, CheckCircle2, RadioTower } from 'lucide-react'
 import * as React from 'react'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
 import { AdminAccessGuard } from './_components/-AdminAccessGuard'
@@ -23,13 +18,7 @@ type DemoResult = {
 type Scenario = {
   label: string
   description: string
-  scenario:
-    | 'ok'
-    | 'bad-request'
-    | 'not-found'
-    | 'rate-limit'
-    | 'error'
-    | 'unavailable'
+  scenario: 'ok' | 'bad-request' | 'not-found' | 'rate-limit' | 'error' | 'unavailable'
   shouldReport: boolean
 }
 
@@ -81,9 +70,7 @@ function FrontendErrorsPage() {
     setResult(null)
 
     try {
-      await fetcher<unknown>(
-        `${VPS_BASE_URL}/admin/frontend-errors/${scenario.scenario}`
-      )
+      await fetcher<unknown>(`${VPS_BASE_URL}/admin/frontend-errors/${scenario.scenario}`)
       setResult({
         label: scenario.label,
         ok: true,
@@ -132,12 +119,10 @@ function FrontendErrorsPage() {
             <ArrowLeft className='w-4 h-4' />
             Back to management
           </Link>
-          <h1 className='text-3xl font-black tracking-tight'>
-            Frontend Errors
-          </h1>
+          <h1 className='text-3xl font-black tracking-tight'>Frontend Errors</h1>
           <p className='mt-2 max-w-2xl text-muted-foreground'>
-            Simulate frontend-observed API failures and confirm which ones
-            report to Sentry through the shared fetcher.
+            Simulate frontend-observed API failures and confirm which ones report to Sentry through
+            the shared fetcher.
           </p>
         </div>
 
@@ -147,15 +132,11 @@ function FrontendErrorsPage() {
           </CardHeader>
           <CardContent className='grid gap-3 md:grid-cols-2'>
             {scenarios.map((scenario) => (
-              <div
-                key={scenario.scenario}
-                className='flex flex-col gap-3 rounded-lg border p-4'>
+              <div key={scenario.scenario} className='flex flex-col gap-3 rounded-lg border p-4'>
                 <div className='flex items-start justify-between gap-3'>
                   <div>
                     <div className='font-semibold'>{scenario.label}</div>
-                    <p className='mt-1 text-sm text-muted-foreground'>
-                      {scenario.description}
-                    </p>
+                    <p className='mt-1 text-sm text-muted-foreground'>{scenario.description}</p>
                   </div>
                   <div className='shrink-0 rounded-full border px-2 py-1 text-xs text-muted-foreground'>
                     {scenario.shouldReport ? 'Sentry' : 'Quiet'}
@@ -180,17 +161,12 @@ function FrontendErrorsPage() {
             <div>
               <p className='font-semibold'>Failed fetch / unreachable host</p>
               <p className='mt-1 text-sm text-muted-foreground'>
-                Calls an unreachable loopback URL to trigger the fetcher network
-                failure reporting path.
+                Calls an unreachable loopback URL to trigger the fetcher network failure reporting
+                path.
               </p>
             </div>
-            <Button
-              variant='destructive'
-              onClick={runNetworkFailure}
-              disabled={Boolean(pending)}>
-              {pending === 'Network failure'
-                ? 'Running...'
-                : 'Run network failure'}
+            <Button variant='destructive' onClick={runNetworkFailure} disabled={Boolean(pending)}>
+              {pending === 'Network failure' ? 'Running...' : 'Run network failure'}
             </Button>
           </CardContent>
         </Card>
@@ -209,9 +185,7 @@ function FrontendErrorsPage() {
               )}
               <div>
                 <div className='font-semibold'>{result.label}</div>
-                <p className='mt-1 text-sm text-muted-foreground'>
-                  {result.message}
-                </p>
+                <p className='mt-1 text-sm text-muted-foreground'>{result.message}</p>
               </div>
             </CardContent>
           </Card>

@@ -76,9 +76,7 @@ export function UploadProgress({ step, title }: UploadProgressProps) {
             />
           </div>
           <p className='text-sm text-gb-default-text'>
-            {isSuccess
-              ? `"${title}" has been uploaded successfully! Redirecting...`
-              : stepText}
+            {isSuccess ? `"${title}" has been uploaded successfully! Redirecting...` : stepText}
           </p>
         </div>
       </CardContent>

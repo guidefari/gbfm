@@ -115,26 +115,26 @@ erDiagram
 
 ### Design Decisions
 
-| Decision | Rationale |
-|---|---|
-| Seeded lookup tables instead of `pgEnum` | FK constraints at the DB level without a schema migration per new platform; metadata (displayName, websiteUrl) is queryable |
-| `artistNames varchar[]` alongside junction table | Fast display in list views without a join; junction table (`music_album_artists`, `music_track_artists`) is the source of truth for structured queries |
-| `status` on `music_entity_links` | Links scraped automatically start as `pending_review` — must be verified before appearing publicly |
-| Provider-first scraper | `MusicDataProvider` interface lets new data sources (Discogs, Last.fm, etc.) be added without touching service logic |
-| Unique constraint on `(entityType, entityId, platform)` | One link per platform per entity; upsert semantics on scrape |
-| Background enrichment for imported playlists | Spotify import stays fast; alternate links are discovered after commit and traced separately |
+| Decision                                                | Rationale                                                                                                                                              |
+| ------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Seeded lookup tables instead of `pgEnum`                | FK constraints at the DB level without a schema migration per new platform; metadata (displayName, websiteUrl) is queryable                            |
+| `artistNames varchar[]` alongside junction table        | Fast display in list views without a join; junction table (`music_album_artists`, `music_track_artists`) is the source of truth for structured queries |
+| `status` on `music_entity_links`                        | Links scraped automatically start as `pending_review` — must be verified before appearing publicly                                                     |
+| Provider-first scraper                                  | `MusicDataProvider` interface lets new data sources (Discogs, Last.fm, etc.) be added without touching service logic                                   |
+| Unique constraint on `(entityType, entityId, platform)` | One link per platform per entity; upsert semantics on scrape                                                                                           |
+| Background enrichment for imported playlists            | Spotify import stays fast; alternate links are discovered after commit and traced separately                                                           |
 
 ## OTel / Tracing
 
 Playlist import and enrichment emit these spans:
 
-| Span | Purpose |
-|---|---|
-| `api.music.importSpotifyPlaylist` | HTTP handler for the import request |
-| `musicEntity.importSpotifyPlaylist` | Import service work inside the transaction |
-| `musicEntity.enrichImportedPlaylistLinks` | Background fan-out for imported tracks |
-| `musicEntity.enrichTrackLinks` | Per-track scraping and link persistence |
-| `musicScraper.scrape` and provider spans | External link discovery per provider |
+| Span                                      | Purpose                                    |
+| ----------------------------------------- | ------------------------------------------ |
+| `api.music.importSpotifyPlaylist`         | HTTP handler for the import request        |
+| `musicEntity.importSpotifyPlaylist`       | Import service work inside the transaction |
+| `musicEntity.enrichImportedPlaylistLinks` | Background fan-out for imported tracks     |
+| `musicEntity.enrichTrackLinks`            | Per-track scraping and link persistence    |
+| `musicScraper.scrape` and provider spans  | External link discovery per provider       |
 
 The background span is forked so it does not block the client response, but it still appears in OTel/Sentry with playlist and track attributes.
 
@@ -203,58 +203,58 @@ Base path: `https://api.gbfm.co.za/music`
 
 ### Artists
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/artists` | List all artists |
-| `POST` | `/artists` | Create an artist |
-| `GET` | `/artists/:id` | Get artist by UUID |
-| `PATCH` | `/artists/:id` | Update artist |
-| `DELETE` | `/artists/:id` | Delete artist |
+| Method   | Path           | Description        |
+| -------- | -------------- | ------------------ |
+| `GET`    | `/artists`     | List all artists   |
+| `POST`   | `/artists`     | Create an artist   |
+| `GET`    | `/artists/:id` | Get artist by UUID |
+| `PATCH`  | `/artists/:id` | Update artist      |
+| `DELETE` | `/artists/:id` | Delete artist      |
 
 ### Albums
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/albums` | List all albums |
-| `POST` | `/albums` | Create an album |
-| `GET` | `/albums/:id` | Get album by UUID |
-| `PATCH` | `/albums/:id` | Update album |
-| `DELETE` | `/albums/:id` | Delete album |
-| `PUT` | `/albums/:albumId/artists/:artistId` | Add/update artist on album |
-| `DELETE` | `/albums/:albumId/artists/:artistId` | Remove artist from album |
+| Method   | Path                                 | Description                |
+| -------- | ------------------------------------ | -------------------------- |
+| `GET`    | `/albums`                            | List all albums            |
+| `POST`   | `/albums`                            | Create an album            |
+| `GET`    | `/albums/:id`                        | Get album by UUID          |
+| `PATCH`  | `/albums/:id`                        | Update album               |
+| `DELETE` | `/albums/:id`                        | Delete album               |
+| `PUT`    | `/albums/:albumId/artists/:artistId` | Add/update artist on album |
+| `DELETE` | `/albums/:albumId/artists/:artistId` | Remove artist from album   |
 
 ### Tracks
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/tracks` | List all tracks |
-| `POST` | `/tracks` | Create a track |
-| `GET` | `/tracks/:id` | Get track by UUID |
-| `PATCH` | `/tracks/:id` | Update track |
-| `DELETE` | `/tracks/:id` | Delete track |
-| `PUT` | `/tracks/:trackId/artists/:artistId` | Add/update artist on track |
-| `DELETE` | `/tracks/:trackId/artists/:artistId` | Remove artist from track |
+| Method   | Path                                 | Description                |
+| -------- | ------------------------------------ | -------------------------- |
+| `GET`    | `/tracks`                            | List all tracks            |
+| `POST`   | `/tracks`                            | Create a track             |
+| `GET`    | `/tracks/:id`                        | Get track by UUID          |
+| `PATCH`  | `/tracks/:id`                        | Update track               |
+| `DELETE` | `/tracks/:id`                        | Delete track               |
+| `PUT`    | `/tracks/:trackId/artists/:artistId` | Add/update artist on track |
+| `DELETE` | `/tracks/:trackId/artists/:artistId` | Remove artist from track   |
 
 ### Playlists
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/playlists` | List all playlists |
-| `POST` | `/playlists` | Create a playlist |
-| `GET` | `/playlists/:id` | Get playlist by UUID |
-| `PATCH` | `/playlists/:id` | Update playlist |
-| `DELETE` | `/playlists/:id` | Delete playlist |
+| Method   | Path             | Description          |
+| -------- | ---------------- | -------------------- |
+| `GET`    | `/playlists`     | List all playlists   |
+| `POST`   | `/playlists`     | Create a playlist    |
+| `GET`    | `/playlists/:id` | Get playlist by UUID |
+| `PATCH`  | `/playlists/:id` | Update playlist      |
+| `DELETE` | `/playlists/:id` | Delete playlist      |
 
 ### Links & Scraping
 
-| Method | Path | Description |
-|---|---|---|
-| `GET` | `/:entityType/:entityId/links` | List links for an entity (filter by `?status=`) |
-| `POST` | `/:entityType/:entityId/links` | Manually add a link |
-| `PATCH` | `/:entityType/:entityId/links/:linkId` | Update link status (verify/reject) |
-| `DELETE` | `/:entityType/:entityId/links/:linkId` | Delete a link |
-| `POST` | `/:entityType/:entityId/scrape` | Trigger link discovery |
-| `GET` | `/links/pending` | Admin: all pending-review links (paginated) |
+| Method   | Path                                   | Description                                     |
+| -------- | -------------------------------------- | ----------------------------------------------- |
+| `GET`    | `/:entityType/:entityId/links`         | List links for an entity (filter by `?status=`) |
+| `POST`   | `/:entityType/:entityId/links`         | Manually add a link                             |
+| `PATCH`  | `/:entityType/:entityId/links/:linkId` | Update link status (verify/reject)              |
+| `DELETE` | `/:entityType/:entityId/links/:linkId` | Delete a link                                   |
+| `POST`   | `/:entityType/:entityId/scrape`        | Trigger link discovery                          |
+| `GET`    | `/links/pending`                       | Admin: all pending-review links (paginated)     |
 
 ---
 
@@ -275,6 +275,7 @@ Content-Type: application/json
 ```
 
 Response `201`:
+
 ```json
 {
   "id": "a1b2c3d4-…",
@@ -324,6 +325,7 @@ Content-Type: application/json
 ```
 
 Or by text identifiers (no streaming URL needed):
+
 ```json
 {
   "artistName": "Burial",
@@ -332,6 +334,7 @@ Or by text identifiers (no streaming URL needed):
 ```
 
 Response `200`:
+
 ```json
 {
   "scraped": 6,
@@ -388,11 +391,11 @@ Content-Type: application/json
 
 The `MusicLinkScraperService` uses a provider-first architecture. Providers are run in order; later providers override earlier ones for the same platform.
 
-| Provider | Auth | Use Case |
-|---|---|---|
-| **Odesli** | None (rate-limited) | Convert one streaming URL to 15+ platform links |
-| **MusicBrainz** | None (1 req/sec) | MusicBrainz links, MBIDs, recording-oriented text search |
-| **Firecrawl** | `FIRECRAWL_API_KEY` env var | AI-powered scrape of artist pages for social/Discord links |
+| Provider        | Auth                        | Use Case                                                   |
+| --------------- | --------------------------- | ---------------------------------------------------------- |
+| **Odesli**      | None (rate-limited)         | Convert one streaming URL to 15+ platform links            |
+| **MusicBrainz** | None (1 req/sec)            | MusicBrainz links, MBIDs, recording-oriented text search   |
+| **Firecrawl**   | `FIRECRAWL_API_KEY` env var | AI-powered scrape of artist pages for social/Discord links |
 
 ### Adding a new provider
 

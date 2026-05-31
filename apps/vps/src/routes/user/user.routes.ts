@@ -1,19 +1,13 @@
 import { createRoute, z } from '@hono/zod-openapi'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { jsonContent, jsonContentRequired } from 'stoker/openapi/helpers'
-import {
-  socialLinkPlatformSchema,
-  userSocialLinksSchema
-} from '@/db/auth.schema'
+import { socialLinkPlatformSchema, userSocialLinksSchema } from '@/db/auth.schema'
 import {
   selectAuthorEmailPreferencesSchema,
   updateAuthorEmailPreferencesSchema
 } from '@/db/email.schema'
 import { subscriptionWithShowSchema } from '@/db/show.schema'
-import {
-  createPaginatedResponseSchema,
-  paginationQuerySchema
-} from '@/lib/pagination'
+import { createPaginatedResponseSchema, paginationQuerySchema } from '@/lib/pagination'
 
 // Better Auth compatible schemas
 const selectUserSchema = z.object({
@@ -83,18 +77,9 @@ export const updateProfile = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      userResponseSchema,
-      'Profile updated successfully'
-    ),
-    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
-      z.object({ error: z.string() }),
-      'Invalid input'
-    ),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'User not found'
-    ),
+    [HttpStatusCodes.OK]: jsonContent(userResponseSchema, 'Profile updated successfully'),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(z.object({ error: z.string() }), 'Invalid input'),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'User not found'),
     [HttpStatusCodes.FORBIDDEN]: jsonContent(
       z.object({ error: z.string() }),
       'Forbidden - can only update own profile'
@@ -103,10 +88,7 @@ export const updateProfile = createRoute({
       z.object({ error: z.string() }),
       'Failed to update profile'
     ),
-    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
-      'Unauthorized mf'
-    )
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(z.object({ error: z.string() }), 'Unauthorized mf')
   }
 })
 
@@ -116,14 +98,8 @@ export const getProfile = createRoute({
   middleware: [betterAuthMiddleware],
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      userResponseSchema,
-      'Profile retrieved successfully'
-    ),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'User not found'
-    ),
+    [HttpStatusCodes.OK]: jsonContent(userResponseSchema, 'Profile retrieved successfully'),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'User not found'),
     [HttpStatusCodes.FORBIDDEN]: jsonContent(
       z.object({ error: z.string() }),
       'Forbidden - can only get own profile'
@@ -147,14 +123,8 @@ export const getSocialLinks = createRoute({
       z.array(socialLinkInputSchema),
       'Social links retrieved successfully'
     ),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'User not found'
-    ),
-    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
-      'Unauthorized'
-    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'User not found'),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(z.object({ error: z.string() }), 'Unauthorized'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to fetch social links'
@@ -167,10 +137,7 @@ export const replaceSocialLinks = createRoute({
   method: 'put',
   middleware: [betterAuthMiddleware],
   request: {
-    body: jsonContentRequired(
-      z.array(socialLinkInputSchema),
-      'Ordered list of social links'
-    )
+    body: jsonContentRequired(z.array(socialLinkInputSchema), 'Ordered list of social links')
   },
   tags,
   responses: {
@@ -178,18 +145,9 @@ export const replaceSocialLinks = createRoute({
       z.array(socialLinkInputSchema),
       'Social links replaced successfully'
     ),
-    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
-      z.object({ error: z.string() }),
-      'Invalid input'
-    ),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'User not found'
-    ),
-    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
-      'Unauthorized'
-    ),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(z.object({ error: z.string() }), 'Invalid input'),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'User not found'),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(z.object({ error: z.string() }), 'Unauthorized'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to replace social links'
@@ -212,18 +170,12 @@ export const getAdminUserSocialLinks = createRoute({
       z.array(socialLinkInputSchema),
       'Admin social links retrieved successfully'
     ),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'User not found'
-    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'User not found'),
     [HttpStatusCodes.FORBIDDEN]: jsonContent(
       z.object({ error: z.string() }),
       'Admin access required'
     ),
-    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
-      'Unauthorized'
-    ),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(z.object({ error: z.string() }), 'Unauthorized'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to fetch admin social links'
@@ -239,10 +191,7 @@ export const replaceAdminUserSocialLinks = createRoute({
     params: z.object({
       userId: z.string().openapi({ description: 'Target user ID' })
     }),
-    body: jsonContentRequired(
-      z.array(socialLinkInputSchema),
-      'Ordered list of social links'
-    )
+    body: jsonContentRequired(z.array(socialLinkInputSchema), 'Ordered list of social links')
   },
   tags,
   responses: {
@@ -250,22 +199,13 @@ export const replaceAdminUserSocialLinks = createRoute({
       z.array(socialLinkInputSchema),
       'Admin social links replaced successfully'
     ),
-    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
-      z.object({ error: z.string() }),
-      'Invalid input'
-    ),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'User not found'
-    ),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(z.object({ error: z.string() }), 'Invalid input'),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'User not found'),
     [HttpStatusCodes.FORBIDDEN]: jsonContent(
       z.object({ error: z.string() }),
       'Admin access required'
     ),
-    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
-      'Unauthorized'
-    ),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(z.object({ error: z.string() }), 'Unauthorized'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to replace admin social links'
@@ -290,22 +230,13 @@ export const updateAdminUserBio = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      z.object({ bio: z.string().nullable() }),
-      'User bio updated'
-    ),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'User not found'
-    ),
+    [HttpStatusCodes.OK]: jsonContent(z.object({ bio: z.string().nullable() }), 'User bio updated'),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'User not found'),
     [HttpStatusCodes.FORBIDDEN]: jsonContent(
       z.object({ error: z.string() }),
       'Admin access required'
     ),
-    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
-      'Unauthorized'
-    ),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(z.object({ error: z.string() }), 'Unauthorized'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to update admin user bio'
@@ -328,18 +259,12 @@ export const getAdminUserBio = createRoute({
       z.object({ bio: z.string().nullable() }),
       'User bio retrieved'
     ),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'User not found'
-    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'User not found'),
     [HttpStatusCodes.FORBIDDEN]: jsonContent(
       z.object({ error: z.string() }),
       'Admin access required'
     ),
-    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
-      'Unauthorized'
-    ),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(z.object({ error: z.string() }), 'Unauthorized'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to fetch admin user bio'
@@ -361,10 +286,7 @@ export const getEmailPreferences = createRoute({
       z.object({ error: z.string() }),
       'Email preferences not found'
     ),
-    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
-      'Unauthorized'
-    ),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(z.object({ error: z.string() }), 'Unauthorized'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Internal server error'
@@ -377,10 +299,7 @@ export const updateEmailPreferences = createRoute({
   method: 'patch',
   middleware: [betterAuthMiddleware],
   request: {
-    body: jsonContentRequired(
-      updateAuthorEmailPreferencesSchema,
-      'Email preferences to update'
-    )
+    body: jsonContentRequired(updateAuthorEmailPreferencesSchema, 'Email preferences to update')
   },
   tags,
   responses: {
@@ -388,18 +307,9 @@ export const updateEmailPreferences = createRoute({
       selectAuthorEmailPreferencesSchema,
       'Email preferences updated successfully'
     ),
-    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
-      z.object({ error: z.string() }),
-      'Invalid input'
-    ),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'User not found'
-    ),
-    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
-      'Unauthorized'
-    ),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(z.object({ error: z.string() }), 'Invalid input'),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'User not found'),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(z.object({ error: z.string() }), 'Unauthorized'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to update email preferences'
@@ -420,10 +330,7 @@ export const getUserSubscriptions = createRoute({
       createPaginatedResponseSchema(subscriptionWithShowSchema),
       'User subscriptions'
     ),
-    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
-      'Unauthorized'
-    ),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(z.object({ error: z.string() }), 'Unauthorized'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to fetch subscriptions'
@@ -478,10 +385,7 @@ export const searchUsers = createRoute({
       z.array(searchUserResultSchema),
       'Users matching search query'
     ),
-    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
-      'Unauthorized'
-    ),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(z.object({ error: z.string() }), 'Unauthorized'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to search users'
@@ -494,8 +398,7 @@ export type GetProfileRoute = typeof getProfile
 export type GetSocialLinksRoute = typeof getSocialLinks
 export type ReplaceSocialLinksRoute = typeof replaceSocialLinks
 export type GetAdminUserSocialLinksRoute = typeof getAdminUserSocialLinks
-export type ReplaceAdminUserSocialLinksRoute =
-  typeof replaceAdminUserSocialLinks
+export type ReplaceAdminUserSocialLinksRoute = typeof replaceAdminUserSocialLinks
 export type UpdateAdminUserBioRoute = typeof updateAdminUserBio
 export type GetAdminUserBioRoute = typeof getAdminUserBio
 export type GetEmailPreferencesRoute = typeof getEmailPreferences

@@ -56,17 +56,11 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
 }) => {
   const isShareEnabled = useFeatureFlag('ui.share')
   const isQueueEnabled = useFeatureFlag('ui.queue')
-  const { playFromQueue, removeFromQueue, addToQueue, loadTrack } =
-    useAudioPlayerActions()
+  const { playFromQueue, removeFromQueue, addToQueue, loadTrack } = useAudioPlayerActions()
 
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging
-  } = useSortable({ id: track.queueId })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: track.queueId
+  })
 
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
     isOpen: false,
@@ -131,14 +125,7 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
   }, [contextMenu.isOpen, closeContextMenu])
 
   const handlePlayNow = () => {
-    loadTrack(
-      track.url,
-      track.thumbnailUrl,
-      track.title,
-      track.id,
-      track.creators,
-      track.slug
-    )
+    loadTrack(track.url, track.thumbnailUrl, track.title, track.id, track.creators, track.slug)
     closeContextMenu()
   }
 
@@ -210,7 +197,7 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
 
   return (
     <>
-      {/* biome-ignore lint/a11y/useSemanticElements: Div required for drag-and-drop functionality with @dnd-kit/sortable */}
+      {/* oxlint-disable-next-line jsx-a11y/prefer-tag-over-role */}
       <div
         ref={setNodeRef}
         style={style}
@@ -264,12 +251,7 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
                 isCompact && 'w-6 h-6',
                 isFullscreen && 'w-8 h-8'
               )}>
-              <Play
-                className={cn(
-                  isCompact && 'w-3 h-3',
-                  isFullscreen && 'w-4 h-4'
-                )}
-              />
+              <Play className={cn(isCompact && 'w-3 h-3', isFullscreen && 'w-4 h-4')} />
             </Button>
           </div>
         </div>
@@ -284,18 +266,11 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
               isCurrentTrack ? 'text-white' : 'text-foreground'
             ]
           )}>
-          <div
-            className={cn(isCompact && 'truncate', isFullscreen && 'truncate')}>
+          <div className={cn(isCompact && 'truncate', isFullscreen && 'truncate')}>
             {track.title}
           </div>
           {isFullscreen && (
-            <p
-              className={cn(
-                'text-muted-foreground',
-                getSubtitleFontSizeClasses()
-              )}>
-              Mix
-            </p>
+            <p className={cn('text-muted-foreground', getSubtitleFontSizeClasses())}>Mix</p>
           )}
         </div>
 

@@ -1,7 +1,6 @@
 {
   "editor.codeActionsOnSave": {
-    "source.fixAll.biome": "explicit",
-    "source.organizeImports.biome": "explicit",
+    "source.fixAll.oxlint": "explicit",
     "source.removeUnused.ts": "explicit"
   },
   "workbench.colorCustomizations": {
@@ -13,6 +12,3 @@
   "typescript.tsdk": "./node_modules/typescript/lib",
   "typescript.enablePromptUseWorkspaceTsdk": true
 }
-
-
-

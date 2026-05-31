@@ -7,10 +7,7 @@ export interface SentryService {
     error: unknown,
     context?: Record<string, unknown>
   ) => Effect.Effect<void>
-  readonly captureMessage: (
-    message: string,
-    level?: Sentry.SeverityLevel
-  ) => Effect.Effect<void>
+  readonly captureMessage: (message: string, level?: Sentry.SeverityLevel) => Effect.Effect<void>
 }
 
 export const SentryService = Context.Service<SentryService>('SentryService')
@@ -24,10 +21,7 @@ export const SentryServiceLive = Layer.effect(
       captureException: (error, context) =>
         Effect.sync(() => {
           if (!enabled) return
-          Sentry.captureException(
-            error,
-            context ? { extra: context } : undefined
-          )
+          Sentry.captureException(error, context ? { extra: context } : undefined)
         }),
       captureMessage: (message, level) =>
         Effect.sync(() => {

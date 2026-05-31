@@ -13,12 +13,7 @@ export const escapeHtml = (text: string): string => {
   return text.replace(/[&<>"']/g, (char) => map[char] || char)
 }
 
-export type OGType =
-  | 'music.song'
-  | 'music.album'
-  | 'profile'
-  | 'article'
-  | 'website'
+export type OGType = 'music.song' | 'music.album' | 'profile' | 'article' | 'website'
 
 export interface OGData {
   type: OGType
@@ -57,9 +52,7 @@ export const buildOGHtml = (data: OGData): string => {
 
   const title = escapeHtml(data.title)
   const description = escapeHtml(data.description)
-  const creatorNames = data.creators?.length
-    ? escapeHtml(data.creators.join(', '))
-    : null
+  const creatorNames = data.creators?.length ? escapeHtml(data.creators.join(', ')) : null
 
   // Type-specific OG tags
   const typeSpecificTags = buildTypeSpecificTags(data, creatorNames)
@@ -239,10 +232,7 @@ const buildJsonLd = (
   })
 }
 
-const buildTypeSpecificTags = (
-  data: OGData,
-  creatorNames: string | null
-): string => {
+const buildTypeSpecificTags = (data: OGData, creatorNames: string | null): string => {
   const tags: string[] = []
 
   if (data.type === 'music.song' || data.type === 'music.album') {

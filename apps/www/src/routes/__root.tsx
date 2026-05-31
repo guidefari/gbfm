@@ -1,11 +1,7 @@
 import { Toaster } from '@gbfm/ui'
 import { FPSMeter } from '@overengineering/fps-meter'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import {
-  createRootRouteWithContext,
-  HeadContent,
-  Outlet
-} from '@tanstack/react-router'
+import { createRootRouteWithContext, HeadContent, Outlet } from '@tanstack/react-router'
 import { Suspense } from 'react'
 import { VerifyEmailBanner } from '@/components/Auth/VerifyEmailBanner'
 import { AuthPromptDialog } from '@/components/AuthPromptDialog'
@@ -61,10 +57,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
           <QueryClientProvider client={queryClient}>
             <AppShell showFooter={location.pathname !== '/'}>
               {env.isDev && (
-                <FPSMeter
-                  className='fixed top-0 right-0 z-50 hidden sm:block'
-                  height={40}
-                />
+                <FPSMeter className='fixed top-0 right-0 z-50 hidden sm:block' height={40} />
               )}
               <OfflineBanner />
               <VerifyEmailBanner />

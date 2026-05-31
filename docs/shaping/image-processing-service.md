@@ -63,16 +63,16 @@ export interface ImageProcessingService {
 ```typescript
 export type ImageContext = 'avatar' | 'thumbnail' | 'hero' | 'general'
 
-export type ImageVariant = 
-  | 'avatar_small'    // 64x64
-  | 'avatar_medium'   // 128x128  
-  | 'avatar_large'    // 256x256
+export type ImageVariant =
+  | 'avatar_small' // 64x64
+  | 'avatar_medium' // 128x128
+  | 'avatar_large' // 256x256
   | 'thumbnail_small' // 200x200
-  | 'thumbnail_medium'// 400x400
+  | 'thumbnail_medium' // 400x400
   | 'thumbnail_large' // 800x600
-  | 'hero_small'      // 800x450
-  | 'hero_medium'     // 1200x675
-  | 'hero_large'      // 1920x1080
+  | 'hero_small' // 800x450
+  | 'hero_medium' // 1200x675
+  | 'hero_large' // 1920x1080
 
 export interface ProcessingJob {
   id: ProcessingJobId
@@ -85,35 +85,34 @@ export interface ProcessingJob {
   error?: string
 }
 
-export type ProcessingStatus = 
-  | 'queued'
-  | 'processing' 
-  | 'completed'
-  | 'failed'
+export type ProcessingStatus = 'queued' | 'processing' | 'completed' | 'failed'
 ```
 
 ## Image Variant Specifications
 
 ### Avatar Images (Square, High Quality)
-| Variant | Dimensions | WebP Quality | JPEG Fallback | Use Case |
-|---------|-------------|---------------|---------------|----------|
-| `avatar_small` | 64x64 | 85% | 90% | User list views |
-| `avatar_medium` | 128x128 | 85% | 90% | Profile cards |
-| `avatar_large` | 256x256 | 85% | 90% | Profile pages |
+
+| Variant         | Dimensions | WebP Quality | JPEG Fallback | Use Case        |
+| --------------- | ---------- | ------------ | ------------- | --------------- |
+| `avatar_small`  | 64x64      | 85%          | 90%           | User list views |
+| `avatar_medium` | 128x128    | 85%          | 90%           | Profile cards   |
+| `avatar_large`  | 256x256    | 85%          | 90%           | Profile pages   |
 
 ### Thumbnail Images (Content-Aware Crop)
-| Variant | Dimensions | WebP Quality | JPEG Fallback | Use Case |
-|---------|-------------|---------------|---------------|----------|
-| `thumbnail_small` | 200x200 | 80% | 85% | List views |
-| `thumbnail_medium` | 400x400 | 80% | 85% | Grid displays |
-| `thumbnail_large` | 800x600 | 80% | 85% | Previews |
+
+| Variant            | Dimensions | WebP Quality | JPEG Fallback | Use Case      |
+| ------------------ | ---------- | ------------ | ------------- | ------------- |
+| `thumbnail_small`  | 200x200    | 80%          | 85%           | List views    |
+| `thumbnail_medium` | 400x400    | 80%          | 85%           | Grid displays |
+| `thumbnail_large`  | 800x600    | 80%          | 85%           | Previews      |
 
 ### Hero Images (16:9 Aspect Ratio)
-| Variant | Dimensions | WebP Quality | JPEG Fallback | Use Case |
-|---------|-------------|---------------|---------------|----------|
-| `hero_small` | 800x450 | 75% | 80% | Mobile headers |
-| `hero_medium` | 1200x675 | 75% | 80% | Desktop views |
-| `hero_large` | 1920x1080 | 75% | 80% | Full screen |
+
+| Variant       | Dimensions | WebP Quality | JPEG Fallback | Use Case       |
+| ------------- | ---------- | ------------ | ------------- | -------------- |
+| `hero_small`  | 800x450    | 75%          | 80%           | Mobile headers |
+| `hero_medium` | 1200x675   | 75%          | 80%           | Desktop views  |
+| `hero_large`  | 1920x1080  | 75%          | 80%           | Full screen    |
 
 ## File Naming Convention
 
@@ -141,7 +140,7 @@ CREATE TABLE image_processing_jobs (
   completed_at TIMESTAMP,
   variants TEXT[], -- Array of completed variants
   error TEXT,
-  
+
   -- Indexes for performance
   INDEX idx_image_jobs_original_key ON image_processing_jobs(original_key),
   INDEX idx_image_jobs_status ON image_processing_jobs(status),
@@ -150,6 +149,7 @@ CREATE TABLE image_processing_jobs (
 ```
 
 **Key Fields:**
+
 - `original_key`: Reference to S3 original image
 - `context`: Processing context (avatar/thumbnail/hero)
 - `variants`: Array of successfully generated variants
@@ -165,53 +165,44 @@ import { Effect, Layer, Context } from 'effect'
 import { S3Service } from './s3.service'
 import { ConfigService } from './config.service'
 
-const ImageProcessingService = Context.GenericTag<ImageProcessingService>(
-  'ImageProcessingService'
-)
+const ImageProcessingService = Context.GenericTag<ImageProcessingService>('ImageProcessingService')
 
-const queueImageProcessing = (
-  originalKey: string,
-  context: ImageContext = 'general'
-) =>
+const queueImageProcessing = (originalKey: string, context: ImageContext = 'general') =>
   Effect.gen(function* () {
     const s3Service = yield* S3Service
     const config = yield* ConfigService
-    
+
     // Create job record
     const jobId = yield* createProcessingJob(originalKey, context)
-    
+
     // Queue for async processing
     yield* JobQueueService.enqueue('image-processing', {
       jobId,
       originalKey,
       context
     })
-    
+
     return jobId
   })
 
-const getImageUrl = (
-  originalKey: string,
-  variant: ImageVariant,
-  context?: ImageContext
-) =>
+const getImageUrl = (originalKey: string, variant: ImageVariant, context?: ImageContext) =>
   Effect.gen(function* () {
     const s3Service = yield* S3Service
     const config = yield* ConfigService
-    
+
     const variantKey = getVariantKey(originalKey, variant)
-    
+
     // Check if variant exists
-    const exists = yield* s3Service.fileExists(variantKey).pipe(
-      Effect.catchAll(() => Effect.succeed(false))
-    )
-    
+    const exists = yield* s3Service
+      .fileExists(variantKey)
+      .pipe(Effect.catchAll(() => Effect.succeed(false)))
+
     if (!exists) {
       // Queue for processing + return original temporarily
       yield* queueImageProcessing(originalKey, context || 'general')
       return getOriginalUrl(originalKey, config)
     }
-    
+
     return getVariantUrl(variantKey, config)
   })
 ```
@@ -226,29 +217,31 @@ const processImageJob = (job: ImageProcessingJob) =>
   Effect.gen(function* () {
     const s3Service = yield* S3Service
     const config = yield* ConfigService
-    
+
     // Download original image
     const originalBuffer = yield* s3Service.getFile(job.originalKey)
-    
+
     // Get image metadata
     const metadata = yield* Effect.tryPromise({
       try: () => sharp(originalBuffer).metadata(),
-      catch: (error) => new ImageProcessingError({
-        message: `Failed to read image metadata: ${error.message}`,
-        operation: 'process',
-        originalKey: job.originalKey
-      })
+      catch: (error) =>
+        new ImageProcessingError({
+          message: `Failed to read image metadata: ${error.message}`,
+          operation: 'process',
+          originalKey: job.originalKey
+        })
     })
-    
+
     // Determine variants to generate based on context
     const variants = getVariantsForContext(job.context)
-    
+
     // Process each variant
-    yield* Effect.forEach(variants, variant =>
-      generateVariant(originalBuffer, variant, metadata, s3Service, config),
+    yield* Effect.forEach(
+      variants,
+      (variant) => generateVariant(originalBuffer, variant, metadata, s3Service, config),
       { concurrency: 2 }
     )
-    
+
     // Update job status
     yield* updateProcessingJob(job.id, {
       status: 'completed',
@@ -267,38 +260,36 @@ const generateVariant = (
   Effect.gen(function* () {
     const variantConfig = getVariantConfig(variant)
     const originalKey = metadata
-    
+
     // Process image with Sharp
     const processedBuffer = yield* Effect.tryPromise({
       try: async () => {
-        let processor = sharp(originalBuffer)
-          .resize(variantConfig.width, variantConfig.height, {
-            fit: variantConfig.fit,
-            withoutEnlargement: true
-          })
-        
+        let processor = sharp(originalBuffer).resize(variantConfig.width, variantConfig.height, {
+          fit: variantConfig.fit,
+          withoutEnlargement: true
+        })
+
         // Apply format-specific optimizations
         if (variantConfig.format === 'webp') {
           processor = processor.webp({ quality: variantConfig.quality })
         } else {
           processor = processor.jpeg({ quality: variantConfig.quality })
         }
-        
+
         return processor.toBuffer()
       },
-      catch: (error) => new ImageProcessingError({
-        message: `Failed to process variant ${variant}: ${error.message}`,
-        operation: 'process',
-        variant
-      })
+      catch: (error) =>
+        new ImageProcessingError({
+          message: `Failed to process variant ${variant}: ${error.message}`,
+          operation: 'process',
+          variant
+        })
     })
-    
+
     // Upload to S3
     const variantKey = getVariantKey(originalKey, variant)
-    const contentType = variantConfig.format === 'webp' 
-      ? 'image/webp' 
-      : 'image/jpeg'
-    
+    const contentType = variantConfig.format === 'webp' ? 'image/webp' : 'image/jpeg'
+
     yield* s3Service.uploadFile(
       variantKey,
       processedBuffer,
@@ -314,34 +305,32 @@ const generateVariant = (
 // apps/vps/src/routes/upload/upload.handlers.ts
 export const uploadFile: AppRouteHandler<UploadFileRoute> = async (c) => {
   // ... existing validation logic
-  
+
   const program = Effect.gen(function* () {
     const config = yield* ConfigService
     const s3Service = yield* S3Service
     const imageService = yield* ImageProcessingService
-    
+
     // Upload original file
-    const fileBuffer = Buffer.from(
-      yield* Effect.promise(() => file.arrayBuffer())
-    )
-    
+    const fileBuffer = Buffer.from(yield* Effect.promise(() => file.arrayBuffer()))
+
     const key = yield* s3Service.uploadFile(
       fileName,
       fileBuffer,
       file.type,
       config.buckets.userContent
     )
-    
+
     // Queue for processing if it's an image
     if (fileType === 'image') {
       const context = inferImageContext(key, file.name)
       yield* imageService.queueImageProcessing(key, context)
     }
-    
+
     const publicUrl = `${config.urls.router}/user-content/${key}`
     return { url: publicUrl, key }
   })
-  
+
   // ... existing error handling
 }
 ```
@@ -354,17 +343,17 @@ export async function uploadAvatar(file: File): Promise<CDN_URL> {
   const program = Effect.gen(function* () {
     const imageService = yield* ImageProcessingService
     const config = yield* ConfigService
-    
+
     // Upload original
     const key = yield* uploadOriginalImage(file)
-    
+
     // Queue for avatar processing
     yield* imageService.queueImageProcessing(key, 'avatar')
-    
+
     // Return small avatar for immediate use
     return yield* imageService.getImageUrl(key, 'avatar_small', 'avatar')
   })
-  
+
   return await AppRuntime.runPromise(program)
 }
 ```
@@ -393,16 +382,10 @@ export const reprocessImage = createRoute({
   method: 'post',
   middleware: [requireAdmin],
   request: {
-    body: jsonContentRequired(
-      z.object({ originalKey: z.string() }),
-      'Image to reprocess'
-    )
+    body: jsonContentRequired(z.object({ originalKey: z.string() }), 'Image to reprocess')
   },
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      z.object({ jobId: z.string() }),
-      'Reprocessing started'
-    )
+    [HttpStatusCodes.OK]: jsonContent(z.object({ jobId: z.string() }), 'Reprocessing started')
   }
 })
 
@@ -434,22 +417,23 @@ export const getProcessingStats = createRoute({
 export const processExistingImages = Effect.gen(function* () {
   const s3Service = yield* S3Service
   const imageService = yield* ImageProcessingService
-  
+
   // List all existing images
   const imageKeys = yield* s3Service.listFiles('user-content/', '.jpg|.png|.jpeg|.webp')
-  
+
   // Filter out already processed images
-  const unprocessedKeys = yield* Effect.filter(imageKeys, async key => {
+  const unprocessedKeys = yield* Effect.filter(imageKeys, async (key) => {
     const status = await getProcessingStatus(key)
     return !status || status.status === 'failed'
   })
-  
+
   // Process in batches to avoid overwhelming the system
-  yield* Effect.forEach(unprocessedKeys, key =>
-    imageService.queueImageProcessing(key, inferImageContext(key)),
+  yield* Effect.forEach(
+    unprocessedKeys,
+    (key) => imageService.queueImageProcessing(key, inferImageContext(key)),
     { concurrency: 5 }
   )
-  
+
   yield* Effect.log(`Queued ${unprocessedKeys.length} images for processing`)
 })
 ```
@@ -461,18 +445,18 @@ export const processExistingImages = Effect.gen(function* () {
 const shouldProcessImage = (key: string) =>
   Effect.gen(function* () {
     const config = yield* ConfigService
-    
+
     // Check rollout percentage
     const rolloutPercentage = config.imageProcessing.rolloutPercentage || 0
-    
+
     if (rolloutPercentage === 0) {
       return false // Feature disabled
     }
-    
+
     if (rolloutPercentage === 100) {
       return true // Feature fully enabled
     }
-    
+
     // Hash-based consistent sampling
     const hash = hashString(key)
     return hash % 100 < rolloutPercentage
@@ -508,7 +492,7 @@ export class ImageProcessingQueueError extends Data.TaggedError('ImageProcessing
 ```typescript
 const retryFailedJobs = Effect.gen(function* () {
   const db = yield* DatabaseService
-  
+
   // Find jobs that failed more than 1 hour ago
   const failedJobs = yield* db.query.imageProcessingJobs.findMany({
     where: and(
@@ -517,21 +501,24 @@ const retryFailedJobs = Effect.gen(function* () {
     ),
     limit: 10
   })
-  
+
   // Requeue with exponential backoff
-  yield* Effect.forEach(failedJobs, job =>
-    Effect.gen(function* () {
-      yield* JobQueueService.enqueue('image-processing', {
-        jobId: job.id,
-        originalKey: job.originalKey,
-        context: job.context,
-        retryCount: (job.retryCount || 0) + 1
-      })
-      
-      yield* db.update(imageProcessingJobs)
-        .set({ status: 'queued' })
-        .where(eq(imageProcessingJobs.id, job.id))
-    }),
+  yield* Effect.forEach(
+    failedJobs,
+    (job) =>
+      Effect.gen(function* () {
+        yield* JobQueueService.enqueue('image-processing', {
+          jobId: job.id,
+          originalKey: job.originalKey,
+          context: job.context,
+          retryCount: (job.retryCount || 0) + 1
+        })
+
+        yield* db
+          .update(imageProcessingJobs)
+          .set({ status: 'queued' })
+          .where(eq(imageProcessingJobs.id, job.id))
+      }),
     { concurrency: 3 }
   )
 })
@@ -555,9 +542,7 @@ const processImageWithLimits = (job: ImageProcessingJob) =>
     // Apply resource limits
     return yield* processImageJob(job).pipe(
       Effect.timeout(workerConfig.jobTimeout),
-      Effect.retry(Schedule.exponential(1000).pipe(
-        Schedule.compose(Schedule.recurs(3))
-      )),
+      Effect.retry(Schedule.exponential(1000).pipe(Schedule.compose(Schedule.recurs(3)))),
       Effect.withSpan('image.processing', {
         attributes: {
           'image.original_key': job.originalKey,
@@ -579,13 +564,13 @@ const processingMetrics = {
     help: 'Total number of image processing jobs',
     labelNames: ['status', 'context']
   }),
-  
+
   processingDuration: new Histogram({
     name: 'image_processing_duration_seconds',
     help: 'Time spent processing images',
     labelNames: ['context', 'variant_count']
   }),
-  
+
   queueDepth: new Gauge({
     name: 'image_processing_queue_depth',
     help: 'Number of jobs waiting to be processed'
@@ -607,33 +592,27 @@ describe('ImageProcessingService', () => {
   it('should queue image for processing', async () => {
     const program = Effect.gen(function* () {
       const imageService = yield* ImageProcessingService
-      
-      const jobId = yield* imageService.queueImageProcessing(
-        'test/image.jpg',
-        'avatar'
-      )
-      
+
+      const jobId = yield* imageService.queueImageProcessing('test/image.jpg', 'avatar')
+
       expect(jobId).toBeDefined()
-      
+
       const status = yield* imageService.getProcessingStatus(jobId)
       expect(status.status).toBe('queued')
     })
-    
+
     await Effect.runPromise(program)
   })
-  
+
   it('should return original URL when variant not processed', async () => {
     const program = Effect.gen(function* () {
       const imageService = yield* ImageProcessingService
-      
-      const url = yield* imageService.getImageUrl(
-        'test/image.jpg',
-        'avatar_small'
-      )
-      
+
+      const url = yield* imageService.getImageUrl('test/image.jpg', 'avatar_small')
+
       expect(url).toContain('test/image.jpg')
     })
-    
+
     await Effect.runPromise(program)
   })
 })
@@ -646,22 +625,22 @@ describe('ImageProcessingService', () => {
 describe('Upload Integration', () => {
   it('should process uploaded images', async () => {
     const testImage = Buffer.from('fake-image-data')
-    
+
     const response = await app.request('/upload/file', {
       method: 'POST',
       body: new FormData()
         .append('imageFile', new Blob([testImage]), 'test.jpg')
         .append('fileType', 'image')
     })
-    
+
     expect(response.status).toBe(200)
     const { key } = await response.json()
-    
+
     // Check if processing job was created
     const job = await db.query.imageProcessingJobs.findFirst({
       where: eq(imageProcessingJobs.originalKey, key)
     })
-    
+
     expect(job).toBeDefined()
     expect(job.status).toBe('queued')
   })
@@ -676,43 +655,44 @@ describe('Upload Integration', () => {
 const validateImageFile = (file: File) =>
   Effect.gen(function* () {
     // File type validation
-    const allowedTypes = [
-      'image/jpeg',
-      'image/png', 
-      'image/webp',
-      'image/gif'
-    ]
-    
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
+
     if (!allowedTypes.includes(file.type)) {
-      return yield* Effect.fail(new ImageProcessingError({
-        message: `Unsupported file type: ${file.type}`,
-        operation: 'queue'
-      }))
+      return yield* Effect.fail(
+        new ImageProcessingError({
+          message: `Unsupported file type: ${file.type}`,
+          operation: 'queue'
+        })
+      )
     }
-    
+
     // File size validation
     const maxSize = 50 * 1024 * 1024 // 50MB
     if (file.size > maxSize) {
-      return yield* Effect.fail(new ImageProcessingError({
-        message: `File too large: ${file.size} bytes`,
-        operation: 'queue'
-      }))
+      return yield* Effect.fail(
+        new ImageProcessingError({
+          message: `File too large: ${file.size} bytes`,
+          operation: 'queue'
+        })
+      )
     }
-    
+
     // Image header validation (basic magic number check)
     const buffer = Buffer.from(await file.arrayBuffer())
     const isValidImage = yield* Effect.tryPromise({
       try: () => sharp(buffer).metadata(),
       catch: () => null
     })
-    
+
     if (!isValidImage) {
-      return yield* Effect.fail(new ImageProcessingError({
-        message: 'Invalid image file',
-        operation: 'queue'
-      }))
+      return yield* Effect.fail(
+        new ImageProcessingError({
+          message: 'Invalid image file',
+          operation: 'queue'
+        })
+      )
     }
-    
+
     return file
   })
 ```
@@ -723,7 +703,7 @@ const validateImageFile = (file: File) =>
 const protectAgainstAbuse = (userId: string) =>
   Effect.gen(function* () {
     const db = yield* DatabaseService
-    
+
     // Rate limiting: max 10 jobs per hour per user
     const recentJobs = await db.query.imageProcessingJobs.count({
       where: and(
@@ -731,23 +711,27 @@ const protectAgainstAbuse = (userId: string) =>
         gt(imageProcessingJobs.createdAt, new Date(Date.now() - 3600000))
       )
     })
-    
+
     if (recentJobs >= 10) {
-      return yield* Effect.fail(new ImageProcessingError({
-        message: 'Too many image processing requests',
-        operation: 'queue'
-      }))
+      return yield* Effect.fail(
+        new ImageProcessingError({
+          message: 'Too many image processing requests',
+          operation: 'queue'
+        })
+      )
     }
-    
+
     // Storage quota: check user's total image storage
     const totalStorage = await calculateUserStorageUsage(userId)
     const maxStorage = 500 * 1024 * 1024 // 500MB
-    
+
     if (totalStorage > maxStorage) {
-      return yield* Effect.fail(new ImageProcessingError({
-        message: 'Storage quota exceeded',
-        operation: 'queue'
-      }))
+      return yield* Effect.fail(
+        new ImageProcessingError({
+          message: 'Storage quota exceeded',
+          operation: 'queue'
+        })
+      )
     }
   })
 ```
@@ -777,24 +761,24 @@ const protectAgainstAbuse = (userId: string) =>
 // apps/vps/src/config/image-processing.config.ts
 export const imageProcessingConfig = {
   // Rollout percentage (0-100)
-  rolloutPercentage: process.env.IMAGE_PROCESSING_ROLLOUT 
-    ? parseInt(process.env.IMAGE_PROCESSING_ROLLOUT) 
+  rolloutPercentage: process.env.IMAGE_PROCESSING_ROLLOUT
+    ? parseInt(process.env.IMAGE_PROCESSING_ROLLOUT)
     : 0,
-  
+
   // Worker settings
   maxConcurrentJobs: process.env.IMAGE_PROCESSING_CONCURRENCY
     ? parseInt(process.env.IMAGE_PROCESSING_CONCURRENCY)
     : 3,
-  
+
   // File limits
   maxFileSize: process.env.IMAGE_PROCESSING_MAX_SIZE
     ? parseInt(process.env.IMAGE_PROCESSING_MAX_SIZE)
     : 50 * 1024 * 1024, // 50MB
-    
+
   // Storage quotas
   maxUserStorage: process.env.IMAGE_PROCESSING_USER_QUOTA
     ? parseInt(process.env.IMAGE_PROCESSING_USER_QUOTA)
-    : 500 * 1024 * 1024, // 500MB
+    : 500 * 1024 * 1024 // 500MB
 }
 ```
 

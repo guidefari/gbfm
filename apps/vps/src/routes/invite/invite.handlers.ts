@@ -24,9 +24,7 @@ function generateToken(length: number): string {
   return Array.from(bytes, (b) => chars[b % chars.length]).join('')
 }
 
-export const sendInviteHandler: AppRouteHandler<SendInviteRoute> = async (
-  c
-) => {
+export const sendInviteHandler: AppRouteHandler<SendInviteRoute> = async (c) => {
   const currentUser = c.get('user')
 
   if (currentUser.role !== 'admin') {
@@ -35,11 +33,7 @@ export const sendInviteHandler: AppRouteHandler<SendInviteRoute> = async (
 
   const { userId } = c.req.valid('json')
 
-  const [targetUser] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.id, userId))
-    .limit(1)
+  const [targetUser] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1)
 
   if (!targetUser) {
     return c.json({ error: 'User not found' }, HttpStatusCodes.NOT_FOUND)
@@ -78,10 +72,7 @@ export const sendInviteHandler: AppRouteHandler<SendInviteRoute> = async (
 
     await markEmailDeliveryLogAsSent(deliveryLog.id)
 
-    return c.json(
-      { success: true, emailId: deliveryLog.id },
-      HttpStatusCodes.OK
-    )
+    return c.json({ success: true, emailId: deliveryLog.id }, HttpStatusCodes.OK)
   } catch (error) {
     Effect.logError('[Invite] Failed to send invite email', {
       userId: targetUser.id,
@@ -95,16 +86,11 @@ export const sendInviteHandler: AppRouteHandler<SendInviteRoute> = async (
       error instanceof Error ? error.message : 'Unknown error'
     )
 
-    return c.json(
-      { error: 'Failed to send invite email' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
-    )
+    return c.json({ error: 'Failed to send invite email' }, HttpStatusCodes.INTERNAL_SERVER_ERROR)
   }
 }
 
-export const confirmInviteHandler: AppRouteHandler<ConfirmInviteRoute> = async (
-  c
-) => {
+export const confirmInviteHandler: AppRouteHandler<ConfirmInviteRoute> = async (c) => {
   const { token, password } = c.req.valid('json')
 
   const identifier = `reset-password:${token}`
@@ -115,18 +101,11 @@ export const confirmInviteHandler: AppRouteHandler<ConfirmInviteRoute> = async (
     .limit(1)
 
   if (!verificationRecord || verificationRecord.expiresAt < new Date()) {
-    return c.json(
-      { error: 'Invalid or expired invite link' },
-      HttpStatusCodes.BAD_REQUEST
-    )
+    return c.json({ error: 'Invalid or expired invite link' }, HttpStatusCodes.BAD_REQUEST)
   }
 
   const userId = verificationRecord.value
-  const [targetUser] = await db
-    .select()
-    .from(usersTable)
-    .where(eq(usersTable.id, userId))
-    .limit(1)
+  const [targetUser] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1)
 
   if (!targetUser) {
     return c.json({ error: 'User not found' }, HttpStatusCodes.BAD_REQUEST)
@@ -137,10 +116,7 @@ export const confirmInviteHandler: AppRouteHandler<ConfirmInviteRoute> = async (
   })
 
   if (!resetResult.status) {
-    return c.json(
-      { error: 'Failed to reset password' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
-    )
+    return c.json({ error: 'Failed to reset password' }, HttpStatusCodes.INTERNAL_SERVER_ERROR)
   }
 
   const signInResult = await auth.api.signInEmail({

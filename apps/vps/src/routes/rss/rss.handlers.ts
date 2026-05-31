@@ -46,7 +46,7 @@ export const getRSSFeed: AppRouteHandler<GetRSSFeedRoute> = async (c) => {
   }
 
   const mixes = result.data
-  const sortedMixes = mixes.sort(
+  const sortedMixes = mixes.toSorted(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   )
 

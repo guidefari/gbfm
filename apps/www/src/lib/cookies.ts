@@ -45,12 +45,12 @@ export namespace Cookies {
       cookieString += '; httpOnly'
     }
 
-    // biome-ignore lint/suspicious/noDocumentCookie: Cookie utility requires direct document.cookie access for client-side session management
+    // oxlint-disable-next-line unicorn/no-document-cookie
     document.cookie = cookieString
   }
 
   export function remove(key: string): void {
-    // biome-ignore lint/suspicious/noDocumentCookie: Cookie utility requires direct document.cookie access for client-side session management
+    // oxlint-disable-next-line unicorn/no-document-cookie
     document.cookie = `${encodeURIComponent(key)}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
   }
 }

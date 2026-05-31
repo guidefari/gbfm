@@ -61,9 +61,7 @@ export function VerifyEmailBanner() {
               ? `Resend in ${cooldown.remaining}s`
               : 'Resend email'}
         </button>
-        {message ? (
-          <span className='ml-2 text-muted-foreground'>{message}</span>
-        ) : null}
+        {message ? <span className='ml-2 text-muted-foreground'>{message}</span> : null}
       </p>
       <button
         type='button'

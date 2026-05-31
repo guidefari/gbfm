@@ -18,6 +18,7 @@ We use **offset-based pagination** with limit/offset parameters, consistent with
 - **Good for moderate datasets**: Our current data volumes make this approach suitable
 
 **Trade-offs considered:**
+
 - Cursor-based pagination is better for very large datasets or real-time data
 - For future optimization, we could migrate to cursor-based pagination if needed
 
@@ -25,10 +26,10 @@ We use **offset-based pagination** with limit/offset parameters, consistent with
 
 All paginated GET endpoints accept these query parameters:
 
-| Parameter | Type | Default | Min | Max | Description |
-|-----------|------|---------|-----|-----|-------------|
-| `limit` | number | 20 | 1 | 100 | Number of items to return per page |
-| `offset` | number | 0 | 0 | ∞ | Number of items to skip before starting to return results |
+| Parameter | Type   | Default | Min | Max | Description                                               |
+| --------- | ------ | ------- | --- | --- | --------------------------------------------------------- |
+| `limit`   | number | 20      | 1   | 100 | Number of items to return per page                        |
+| `offset`  | number | 0       | 0   | ∞   | Number of items to skip before starting to return results |
 
 ### Validation Rules
 
@@ -40,6 +41,7 @@ const paginationQuerySchema = z.object({
 ```
 
 **Notes:**
+
 - Use `z.coerce.number()` to handle query string conversion
 - Max limit of 100 prevents excessive data transfer
 - Default limit of 20 provides good balance for most use cases
@@ -138,9 +140,7 @@ export const listPublications: AppRouteHandler<ListPublicationsRoute> = async (c
     const { limit, offset } = c.req.valid('query')
 
     // Get total count
-    const [{ total }] = await db
-      .select({ total: count() })
-      .from(publicationsTable)
+    const [{ total }] = await db.select({ total: count() }).from(publicationsTable)
 
     // Get paginated data
     const data = await db
@@ -153,22 +153,21 @@ export const listPublications: AppRouteHandler<ListPublicationsRoute> = async (c
     // Calculate hasMore
     const hasMore = offset + limit < total
 
-    return c.json({
-      data,
-      pagination: {
-        total,
-        limit,
-        offset,
-        hasMore
-      }
-    }, HttpStatusCodes.OK)
-
+    return c.json(
+      {
+        data,
+        pagination: {
+          total,
+          limit,
+          offset,
+          hasMore
+        }
+      },
+      HttpStatusCodes.OK
+    )
   } catch (error) {
     console.error('Error listing publications:', error)
-    return c.json(
-      { message: 'Failed to list publications' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
-    )
+    return c.json({ message: 'Failed to list publications' }, HttpStatusCodes.INTERNAL_SERVER_ERROR)
   }
 }
 ```
@@ -182,16 +181,10 @@ export const getAudioByType: AppRouteHandler<GetAudioByTypeRoute> = async (c) =>
     const { limit, offset } = c.req.valid('query')
 
     // Build where condition
-    const whereCondition = and(
-      eq(audioTable.type, type),
-      eq(audioTable.draft, false)
-    )
+    const whereCondition = and(eq(audioTable.type, type), eq(audioTable.draft, false))
 
     // Get total count with filter
-    const [{ total }] = await db
-      .select({ total: count() })
-      .from(audioTable)
-      .where(whereCondition)
+    const [{ total }] = await db.select({ total: count() }).from(audioTable).where(whereCondition)
 
     // Get paginated data with filter
     const data = await db
@@ -204,11 +197,13 @@ export const getAudioByType: AppRouteHandler<GetAudioByTypeRoute> = async (c) =>
 
     const hasMore = offset + limit < total
 
-    return c.json({
-      data,
-      pagination: { total, limit, offset, hasMore }
-    }, HttpStatusCodes.OK)
-
+    return c.json(
+      {
+        data,
+        pagination: { total, limit, offset, hasMore }
+      },
+      HttpStatusCodes.OK
+    )
   } catch (error) {
     console.error(`Error fetching ${type} audio:`, error)
     return c.json(
@@ -258,17 +253,16 @@ export const getReleasesByLabel: AppRouteHandler<GetReleasesByLabelRoute> = asyn
 
     const hasMore = offset + limit < total
 
-    return c.json({
-      data,
-      pagination: { total, limit, offset, hasMore }
-    }, HttpStatusCodes.OK)
-
+    return c.json(
+      {
+        data,
+        pagination: { total, limit, offset, hasMore }
+      },
+      HttpStatusCodes.OK
+    )
   } catch (error) {
     console.error('Error fetching releases:', error)
-    return c.json(
-      { message: 'Failed to fetch releases' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
-    )
+    return c.json({ message: 'Failed to fetch releases' }, HttpStatusCodes.INTERNAL_SERVER_ERROR)
   }
 }
 ```
@@ -276,6 +270,7 @@ export const getReleasesByLabel: AppRouteHandler<GetReleasesByLabelRoute> = asyn
 ## Best Practices
 
 ### 1. Always Specify Order
+
 ```typescript
 // ✅ GOOD: Consistent ordering
 .orderBy(desc(table.createdAt))
@@ -285,16 +280,19 @@ export const getReleasesByLabel: AppRouteHandler<GetReleasesByLabelRoute> = asyn
 ```
 
 Without explicit ordering, database may return rows in any order, causing:
+
 - Duplicate items across pages
 - Missing items when paginating
 - Inconsistent results
 
 **Recommended ordering strategies:**
+
 - **Time-based**: `desc(table.createdAt)` - newest first
 - **Alphabetical**: `asc(table.name)` - A-Z sorting
 - **Custom**: `desc(table.priority), desc(table.createdAt)` - multiple columns
 
 ### 2. Handle Empty Results Gracefully
+
 ```typescript
 // Returns valid pagination even with 0 results
 {
@@ -323,10 +321,7 @@ const [{ total }] = await db.select({ total: count() }).from(table)
 // Option 3: Limit count queries
 // If you only need to know "has more than X items", you can optimize:
 const maxCount = 10000
-const [{ total }] = await db
-  .select({ total: count() })
-  .from(table)
-  .limit(maxCount)
+const [{ total }] = await db.select({ total: count() }).from(table).limit(maxCount)
 // Then cap total at maxCount in response
 ```
 
@@ -335,21 +330,25 @@ const [{ total }] = await db
 ```typescript
 // If offset exceeds total, return empty array (not an error)
 if (offset >= total && total > 0) {
-  return c.json({
-    data: [],
-    pagination: {
-      total,
-      limit,
-      offset,
-      hasMore: false
-    }
-  }, HttpStatusCodes.OK)
+  return c.json(
+    {
+      data: [],
+      pagination: {
+        total,
+        limit,
+        offset,
+        hasMore: false
+      }
+    },
+    HttpStatusCodes.OK
+  )
 }
 ```
 
 ### 5. Use Consistent Field Names
 
 Always use `data` and `pagination` in responses:
+
 - ✅ `{ data: [], pagination: {} }`
 - ❌ `{ items: [], meta: {} }`
 - ❌ `{ results: [], page_info: {} }`
@@ -388,6 +387,7 @@ When adding pagination to an existing endpoint:
 ### Breaking Change Notice
 
 Changing from:
+
 ```typescript
 // Before
 GET /api/resource
@@ -395,6 +395,7 @@ Response: Resource[]
 ```
 
 To:
+
 ```typescript
 // After
 GET /api/resource?limit=20&offset=0
@@ -406,12 +407,14 @@ This is a **breaking change** for API consumers.
 ### Migration Strategies
 
 **Option 1: Version the API** (Recommended for public APIs)
+
 ```
 /api/v1/resource -> old format
 /api/v2/resource -> new format
 ```
 
 **Option 2: Support both formats** (Add complexity)
+
 ```typescript
 // Check if client requests pagination
 const usePagination = 'limit' in c.req.query || 'offset' in c.req.query
@@ -424,6 +427,7 @@ if (usePagination) {
 ```
 
 **Option 3: Immediate breaking change** (Simplest, requires coordination)
+
 - Update all endpoints at once
 - Update all clients simultaneously
 - Document migration guide
@@ -488,6 +492,7 @@ function PublicationsList() {
 The following VPS endpoints currently return unbounded lists and MUST be paginated:
 
 ### High Priority (User-facing, likely to grow)
+
 1. ✅ `GET /publication/` - List all publications
 2. ✅ `GET /auth/users` - List all users
 3. ✅ `GET /content/audio/{type}` - Get audio by type (mix, track, misc)
@@ -496,9 +501,11 @@ The following VPS endpoints currently return unbounded lists and MUST be paginat
 6. ✅ `GET /content/tag/{tag}` - Get posts filtered by tag
 
 ### Medium Priority (Internal/utility)
+
 7. `GET /rss.xml` - RSS feed (may want to limit to recent N items)
 
 ### Exempt (Single resource lookups)
+
 - `GET /content/audio/{type}/{slug}` - Single item, no pagination needed
 - `GET /content/labels/{slug}` - Single item, no pagination needed
 - `GET /content/releases/{slug}` - Single item, no pagination needed
@@ -633,11 +640,13 @@ const data = await db
 ```
 
 **Benefits:**
+
 - Consistent pagination even with concurrent inserts/deletes
 - Better performance on large datasets
 - No "page drift" issues
 
 **Trade-offs:**
+
 - Cannot jump to arbitrary pages
 - More complex implementation
 - Less familiar to developers

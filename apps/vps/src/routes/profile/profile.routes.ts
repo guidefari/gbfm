@@ -12,9 +12,7 @@ const publicProfileResponseSchema = z
     username: z.string().nullable().openapi({ description: 'Username' }),
     image: z.string().nullable().openapi({ description: 'User profile image' }),
     bio: z.string().nullable().openapi({ description: 'User biography' }),
-    socialLinks: z
-      .array(userSocialLinkSchema)
-      .openapi({ description: 'Ordered social links' }),
+    socialLinks: z.array(userSocialLinkSchema).openapi({ description: 'Ordered social links' }),
     createdAt: z.date().openapi({ description: 'Account creation date' }),
     content: z.object({
       mixes: z.array(
@@ -48,14 +46,8 @@ export const getPublicProfile = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      publicProfileResponseSchema,
-      'Public profile data'
-    ),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'User not found'
-    ),
+    [HttpStatusCodes.OK]: jsonContent(publicProfileResponseSchema, 'Public profile data'),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'User not found'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to fetch profile'

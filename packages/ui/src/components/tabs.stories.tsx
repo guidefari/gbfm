@@ -1,10 +1,4 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from './card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './card'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs'
 
@@ -32,15 +26,9 @@ export function TabSet() {
               <TabsTrigger value='history'>History</TabsTrigger>
               <TabsTrigger value='drafts'>Drafts</TabsTrigger>
             </TabsList>
-            <TabsContent value='queue'>
-              Upcoming reviewed tracks and mixes.
-            </TabsContent>
-            <TabsContent value='history'>
-              Recently published catalog updates.
-            </TabsContent>
-            <TabsContent value='drafts'>
-              Unfinished notes and uploads.
-            </TabsContent>
+            <TabsContent value='queue'>Upcoming reviewed tracks and mixes.</TabsContent>
+            <TabsContent value='history'>Recently published catalog updates.</TabsContent>
+            <TabsContent value='drafts'>Unfinished notes and uploads.</TabsContent>
           </Tabs>
         </CardContent>
       </Card>

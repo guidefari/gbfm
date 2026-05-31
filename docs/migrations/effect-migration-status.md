@@ -15,11 +15,13 @@ This document tracks the systematic migration of the VPS backend from imperative
 ## Current Status
 
 ### ✅ **Phase 1: Foundation** - Complete
+
 - **Effect Handler Helper**: `apps/vps/src/lib/effect-handler.ts`
 - **Error Types**: Extended error system with HTTP status mapping
 - **Runtime Infrastructure**: ManagedRuntime with service layers
 
 ### ✅ **Phase 2: Simple Services** - Complete
+
 - **FavoriteService**: Full Effect-based service implementation
 - **MusicReminderService**: CRUD operations with authorization checks
 - **Database Operations**: Type-safe CRUD with error handling
@@ -27,6 +29,7 @@ This document tracks the systematic migration of the VPS backend from imperative
 - **Service Pattern**: `Layer.succeed` with pure Effects (R = never)
 
 ### ✅ **Phase 3: SpotifyService** - Complete
+
 - **SpotifyService**: Complete Effect-based service with 5 methods
 - **External API Integration**: Spotify Web API calls wrapped in Effect
 - **URL Enrichment**: Multi-platform track enrichment (Spotify, YouTube, Apple Music)
@@ -34,6 +37,7 @@ This document tracks the systematic migration of the VPS backend from imperative
 - **Type Safety**: Full TypeScript coverage for all operations
 
 ### ✅ **Phase 4: Content Services** - Complete
+
 - **AudioService**: `getByType`, `getBySlug`, `create`, `update` with MDX compilation
 - **PostService**: `getByTag`, `create` with transaction support
 - **LabelService**: `getAll`, `getBySlug`, `create`, `update` with creator management
@@ -41,11 +45,13 @@ This document tracks the systematic migration of the VPS backend from imperative
 - **Transaction Patterns**: Multi-table operations with Effect
 
 ### ✅ **Phase 5: Remaining Services** - Complete
+
 - **S3Service**: File upload/storage operations with Effect-based error handling
 - **PublicationService**: Content publication workflow with member and post management
 - **UserService**: Authentication and user management operations
 
 ### ✅ **Phase 6: Handler Migration** - Complete
+
 - ✅ Content handlers migrated to use AudioService, PostService (7/8 routes)
 - ✅ Label handlers migrated to use LabelService (4/4 routes)
 - ✅ Release handlers migrated to use ReleaseService (5/5 routes)
@@ -94,26 +100,29 @@ await runApp(program)  // ✅ Runtime provides service
 
 ### Performance Improvements
 
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| Service Initializations | 60/hour (cron) | 1 (startup) | **60x fewer** |
-| Memory Usage | Constant GC | Stable | Lower pressure |
-| Type Checking | Runtime errors | Compile-time | **100% safety** |
-| Error Handling | Try/catch | Tagged unions | **Type-safe** |
+| Metric                  | Before         | After         | Improvement     |
+| ----------------------- | -------------- | ------------- | --------------- |
+| Service Initializations | 60/hour (cron) | 1 (startup)   | **60x fewer**   |
+| Memory Usage            | Constant GC    | Stable        | Lower pressure  |
+| Type Checking           | Runtime errors | Compile-time  | **100% safety** |
+| Error Handling          | Try/catch      | Tagged unions | **Type-safe**   |
 
 ## Challenges Resolved
 
 ### Circular Type Inference Issue
+
 **Problem**: TypeScript incorrectly inferred circular dependencies between services and their methods.
 
 **Solution**: Restructured services using `Layer.succeed` with pure Effects defined outside the layer context, eliminating type inference cycles.
 
 ### OpenAPI Strict Typing Conflict
+
 **Problem**: Stoker's strict route typing conflicted with flexible Effect error handling.
 
 **Solution**: Modified route schemas to include all possible response status codes (including 500 for internal errors), allowing both success and error responses while maintaining OpenAPI compliance.
 
 ### Service Environment Dependencies
+
 **Problem**: Effects requiring services in their environment caused type conflicts.
 
 **Solution**: Ensured all service methods return Effects with `R = never` by using only database and external dependencies.
@@ -121,6 +130,7 @@ await runApp(program)  // ✅ Runtime provides service
 ## Migration Checklist
 
 ### Services Completed
+
 - [x] EmailService (existing)
 - [x] FavoriteService (Phase 2)
 - [x] MusicReminderService (Phase 2b)
@@ -134,6 +144,7 @@ await runApp(program)  // ✅ Runtime provides service
 - [x] UserService (Phase 5)
 
 ### Routes Migrated
+
 - [x] `/favorites/*` (3 routes - complete)
 - [x] `/spotify/*` (5 routes - complete)
 - [x] `/music-reminders/*` (4 routes - complete)
@@ -147,16 +158,19 @@ await runApp(program)  // ✅ Runtime provides service
 - [x] `/share/*` (1 route migrated - shareMix)
 
 ### Routes Remaining
+
 - [x] `/content/*`
 
 ## Implementation Patterns
 
 ### Service Definition Pattern
+
 ```typescript
 // 1. Pure Effect functions (R = never)
-const serviceMethodEffect = (params) => Effect.gen(function* () {
-  // Business logic with error handling
-})
+const serviceMethodEffect = (params) =>
+  Effect.gen(function* () {
+    // Business logic with error handling
+  })
 
 // 2. Service interface
 export interface Service {
@@ -170,10 +184,11 @@ export const ServiceLive = Layer.succeed(Service, {
 ```
 
 ### Handler Pattern
+
 ```typescript
 export const handler = async (c: Context) => {
   const program = Effect.gen(function* () {
-    const service = yield* Service  // Type-safe injection
+    const service = yield* Service // Type-safe injection
     return yield* service.method(params)
   })
 
@@ -192,6 +207,7 @@ export const handler = async (c: Context) => {
 ```
 
 ### Error Handling Pattern
+
 ```typescript
 // Tagged errors with automatic HTTP mapping
 export class NotFoundError extends Data.TaggedError('NotFoundError')<{
@@ -212,6 +228,7 @@ if (error instanceof ConflictError) return c.json({ error }, 409)
 ## Next Steps
 
 ### Long Term (Advanced Patterns)
+
 1. **Circuit breakers and retries** for external API calls
 2. **Observability and monitoring** with Effect
 3. **Testing infrastructure** with Effect-based test runtimes

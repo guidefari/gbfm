@@ -7,12 +7,14 @@ Add the ability to favorite mixes and shows, with a combined favorite+subscribe 
 ## Current State
 
 **What exists:**
+
 - `SubscribeButton` component for shows - redirects to sign-in for unauthenticated users
 - Favorites API: Full backend support for favoriting both audio (mixes) and shows
 - Frontend hooks: `useFavorites`, `useAddFavorite`, `useRemoveFavorite` (audio only)
 - Auth flow: Toast notification + redirect to `/auth/sign-in`
 
 **Gaps:**
+
 - Mix page has no favorite button
 - No "favorite show" frontend implementation (only subscribe)
 - Current UX for unauthenticated users is disruptive (immediate redirect)
@@ -21,9 +23,9 @@ Add the ability to favorite mixes and shows, with a combined favorite+subscribe 
 
 ### Logged-in Users
 
-| Content | Action | Behavior |
-|---------|--------|----------|
-| **Mix** | Favorite | Toggle heart, toast feedback |
+| Content  | Action   | Behavior                                       |
+| -------- | -------- | ---------------------------------------------- |
+| **Mix**  | Favorite | Toggle heart, toast feedback                   |
 | **Show** | Favorite | Toggle heart + auto-subscribe to notifications |
 
 ### First-time / Unauthenticated Users
@@ -45,6 +47,7 @@ Reusable heart button component.
 **Location:** `apps/www/src/components/FavoriteButton.tsx`
 
 **Props:**
+
 ```typescript
 interface FavoriteButtonProps {
   contentType: 'mix' | 'show'
@@ -54,6 +57,7 @@ interface FavoriteButtonProps {
 ```
 
 **Behavior:**
+
 - Uses `useFavorites()` to check if already favorited
 - For shows: calls both favorite + subscribe endpoints
 - Handles loading/optimistic states
@@ -66,6 +70,7 @@ Inline auth prompt modal.
 **Location:** `apps/www/src/components/AuthPromptDialog.tsx`
 
 **Features:**
+
 - Modal overlay (not page redirect)
 - "Sign in to save favorites" messaging
 - Sign in / Create account buttons
@@ -79,6 +84,7 @@ Stores action to complete after auth.
 **Location:** `apps/www/src/hooks/usePendingAction.ts`
 
 **Features:**
+
 - Persists to localStorage (survives auth redirect if user chooses that path)
 - Clears after execution
 - Shape: `{ type: 'favorite', contentType: 'mix' | 'show', contentId: string }`
@@ -88,7 +94,7 @@ Stores action to complete after auth.
 Add to `apps/www/src/lib/http.ts`:
 
 ```typescript
-useAddShowFavorite()    // POST /favorites { showId }
+useAddShowFavorite() // POST /favorites { showId }
 useRemoveShowFavorite() // Need to verify endpoint exists
 ```
 
@@ -101,7 +107,7 @@ Add `FavoriteButton` to the action bar alongside ShareButton:
 ```tsx
 <div className='flex flex-shrink-0 gap-2'>
   <ShareButton type='mix' slug={mix.slug} />
-  <FavoriteButton contentType="mix" contentId={mix.id} contentTitle={mix.title} />
+  <FavoriteButton contentType='mix' contentId={mix.id} contentTitle={mix.title} />
   {/* existing QR and Edit buttons */}
 </div>
 ```
@@ -112,7 +118,7 @@ Replace `SubscribeButton` with combined `FavoriteButton`:
 
 ```tsx
 <div className='flex gap-2'>
-  <FavoriteButton contentType="show" contentId={data.id} contentTitle={data.title} />
+  <FavoriteButton contentType='show' contentId={data.id} contentTitle={data.title} />
   <ShareButton type='show' slug={showSlug} />
 </div>
 ```
@@ -138,6 +144,7 @@ Replace `SubscribeButton` with combined `FavoriteButton`:
 ### Database Schema
 
 `favorites` table already supports both audio and shows:
+
 - `audioId` (nullable) - for mixes
 - `showId` (nullable) - for shows
 - Unique constraints on `(userId, audioId)` and `(userId, showId)`

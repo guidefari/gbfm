@@ -30,9 +30,7 @@ export default function Profile() {
       />
       <ScrollView className='flex-1 p-4'>
         <View className='mb-6'>
-          <Text className='text-3xl font-bold text-white mb-2'>
-            {user.name}
-          </Text>
+          <Text className='text-3xl font-bold text-white mb-2'>{user.name}</Text>
           <Text className='text-lg text-gray-300'>@{user.username}</Text>
         </View>
 
@@ -44,9 +42,7 @@ export default function Profile() {
             className='bg-gray-800 rounded-lg p-4 mb-4'>
             <View className='flex-row items-center justify-between'>
               <View>
-                <Text className='text-white font-semibold text-lg'>
-                  Music Reminders
-                </Text>
+                <Text className='text-white font-semibold text-lg'>Music Reminders</Text>
                 <Text className='text-gray-300 text-sm mt-1'>
                   Never forget to listen to your favorite tracks
                 </Text>
@@ -64,9 +60,7 @@ export default function Profile() {
 
           <View>
             <Text className='text-sm text-gray-400 mb-1'>Verified</Text>
-            <Text className='text-white text-lg'>
-              {user.verified ? 'Yes' : 'No'}
-            </Text>
+            <Text className='text-white text-lg'>{user.verified ? 'Yes' : 'No'}</Text>
           </View>
 
           <View>

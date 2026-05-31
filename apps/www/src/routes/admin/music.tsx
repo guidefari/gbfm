@@ -63,9 +63,7 @@ function AdminMusicPage() {
               </Button>
             </div>
           </header>
-          <TabsContent
-            value='artists'
-            className='flex-1 overflow-auto p-6 mt-0'>
+          <TabsContent value='artists' className='flex-1 overflow-auto p-6 mt-0'>
             <ArtistsTab />
           </TabsContent>
           <TabsContent value='albums' className='flex-1 overflow-auto p-6 mt-0'>
@@ -116,13 +114,7 @@ function TracksTab() {
   )
 }
 
-function EntityList({
-  isLoading,
-  children
-}: {
-  isLoading: boolean
-  children: React.ReactNode
-}) {
+function EntityList({ isLoading, children }: { isLoading: boolean; children: React.ReactNode }) {
   if (isLoading) {
     return (
       <div className='space-y-2'>
@@ -135,9 +127,7 @@ function EntityList({
   return (
     <Card>
       <CardHeader className='pb-2'>
-        <CardTitle className='text-sm font-medium text-muted-foreground'>
-          Entities
-        </CardTitle>
+        <CardTitle className='text-sm font-medium text-muted-foreground'>Entities</CardTitle>
       </CardHeader>
       <CardContent className='p-0'>
         <ul className='divide-y'>{children}</ul>
@@ -150,11 +140,7 @@ function ArtistRow({ artist }: { artist: MusicArtist }) {
   return (
     <li className='flex items-center gap-4 px-6 py-3 hover:bg-muted/40 transition-colors'>
       {artist.imageUrl && (
-        <img
-          src={artist.imageUrl}
-          alt=''
-          className='h-9 w-9 rounded-sm object-cover shrink-0'
-        />
+        <img src={artist.imageUrl} alt='' className='h-9 w-9 rounded-sm object-cover shrink-0' />
       )}
       <div className='flex-1 min-w-0'>
         <p className='font-medium truncate'>{artist.name}</p>

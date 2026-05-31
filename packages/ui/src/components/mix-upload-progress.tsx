@@ -26,9 +26,7 @@ export function MixUploadProgress({ step }: MixUploadProgressProps) {
   return (
     <div className='w-full p-4 border rounded-sm md:w-64 bg-gb-darker-bg border-gb-pastel-green-2/20'>
       <div className='flex justify-between mb-2 text-sm'>
-        <span className='font-medium text-gb-pastel-green-1'>
-          Uploading Mix...
-        </span>
+        <span className='font-medium text-gb-pastel-green-1'>Uploading Mix...</span>
         <Loader2 className='w-4 h-4 animate-spin text-gb-highlight' />
       </div>
       <div className='w-full h-2 rounded-sm bg-gb-bg'>

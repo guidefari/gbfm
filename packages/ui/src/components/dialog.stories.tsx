@@ -1,11 +1,5 @@
 import { Button } from './button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from './card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './card'
 import {
   Dialog,
   DialogContent,
@@ -31,9 +25,7 @@ export function Dialogs() {
       <Card>
         <CardHeader>
           <CardTitle>Confirmation</CardTitle>
-          <CardDescription>
-            Open to inspect focus and portal behavior.
-          </CardDescription>
+          <CardDescription>Open to inspect focus and portal behavior.</CardDescription>
         </CardHeader>
         <CardContent>
           <Dialog>

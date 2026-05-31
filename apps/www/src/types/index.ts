@@ -42,10 +42,7 @@ export interface PlaylistApiResponse {
   playlistUrl: string
 }
 
-export type AlbumSingleTrackApiResponse = Omit<
-  TrackAPIResponse,
-  'album_type' | 'albumImageUrl'
->
+export type AlbumSingleTrackApiResponse = Omit<TrackAPIResponse, 'album_type' | 'albumImageUrl'>
 
 export type AlbumApiResponse = {
   albumType?: string

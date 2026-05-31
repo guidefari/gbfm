@@ -1,19 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@gbfm/ui'
 import { createFileRoute, Link } from '@tanstack/react-router'
-import {
-  AlertTriangle,
-  ArrowLeft,
-  Clock3,
-  Disc3,
-  Mail,
-  Radio,
-  Users
-} from 'lucide-react'
+import { AlertTriangle, ArrowLeft, Clock3, Disc3, Mail, Radio, Users } from 'lucide-react'
 import { AdminAccessGuard } from './_components/-AdminAccessGuard'
-import {
-  type AdminOverviewContentBreakdown,
-  useAdminOverview
-} from './-overview.data'
+import { type AdminOverviewContentBreakdown, useAdminOverview } from './-overview.data'
 
 export const Route = createFileRoute('/admin/overview')({
   component: AdminOverviewPage
@@ -46,15 +35,11 @@ function KpiCard({
   return (
     <Card>
       <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-        <CardTitle className='text-sm font-medium text-muted-foreground'>
-          {title}
-        </CardTitle>
+        <CardTitle className='text-sm font-medium text-muted-foreground'>{title}</CardTitle>
         <Icon className='w-4 h-4 text-muted-foreground' />
       </CardHeader>
       <CardContent>
-        <div className='text-3xl font-black tracking-tight'>
-          {formatCount(value)}
-        </div>
+        <div className='text-3xl font-black tracking-tight'>{formatCount(value)}</div>
         <p className='mt-2 text-sm text-muted-foreground'>{detail}</p>
       </CardContent>
     </Card>
@@ -76,21 +61,15 @@ function ContentBreakdownCard({
       <CardContent className='grid grid-cols-3 gap-3 text-sm'>
         <div>
           <div className='text-muted-foreground'>Published</div>
-          <div className='mt-1 text-xl font-bold'>
-            {formatCount(stats.published)}
-          </div>
+          <div className='mt-1 text-xl font-bold'>{formatCount(stats.published)}</div>
         </div>
         <div>
           <div className='text-muted-foreground'>Drafts</div>
-          <div className='mt-1 text-xl font-bold'>
-            {formatCount(stats.drafts)}
-          </div>
+          <div className='mt-1 text-xl font-bold'>{formatCount(stats.drafts)}</div>
         </div>
         <div>
           <div className='text-muted-foreground'>New 7d</div>
-          <div className='mt-1 text-xl font-bold'>
-            {formatCount(stats.newLast7Days)}
-          </div>
+          <div className='mt-1 text-xl font-bold'>{formatCount(stats.newLast7Days)}</div>
         </div>
       </CardContent>
     </Card>
@@ -111,12 +90,9 @@ function AdminOverviewPage() {
               <ArrowLeft className='w-4 h-4' />
               Back to management
             </Link>
-            <h1 className='text-3xl font-black tracking-tight'>
-              Admin Overview
-            </h1>
+            <h1 className='text-3xl font-black tracking-tight'>Admin Overview</h1>
             <p className='mt-2 text-muted-foreground'>
-              A quick read on growth, publishing, engagement, and operational
-              health.
+              A quick read on growth, publishing, engagement, and operational health.
             </p>
           </div>
         </div>
@@ -177,38 +153,14 @@ function AdminOverviewPage() {
                   <CardTitle>Publishing Pulse</CardTitle>
                 </CardHeader>
                 <CardContent className='grid gap-4 md:grid-cols-2'>
-                  <ContentBreakdownCard
-                    title='Mixes'
-                    stats={data.publishing.mixes}
-                  />
-                  <ContentBreakdownCard
-                    title='Tracks'
-                    stats={data.publishing.tracks}
-                  />
-                  <ContentBreakdownCard
-                    title='Shows'
-                    stats={data.publishing.shows}
-                  />
-                  <ContentBreakdownCard
-                    title='Posts'
-                    stats={data.publishing.posts}
-                  />
-                  <ContentBreakdownCard
-                    title='Micros'
-                    stats={data.publishing.micros}
-                  />
-                  <ContentBreakdownCard
-                    title='Labels'
-                    stats={data.publishing.labels}
-                  />
-                  <ContentBreakdownCard
-                    title='Releases'
-                    stats={data.publishing.releases}
-                  />
-                  <ContentBreakdownCard
-                    title='Misc Audio'
-                    stats={data.publishing.miscAudio}
-                  />
+                  <ContentBreakdownCard title='Mixes' stats={data.publishing.mixes} />
+                  <ContentBreakdownCard title='Tracks' stats={data.publishing.tracks} />
+                  <ContentBreakdownCard title='Shows' stats={data.publishing.shows} />
+                  <ContentBreakdownCard title='Posts' stats={data.publishing.posts} />
+                  <ContentBreakdownCard title='Micros' stats={data.publishing.micros} />
+                  <ContentBreakdownCard title='Labels' stats={data.publishing.labels} />
+                  <ContentBreakdownCard title='Releases' stats={data.publishing.releases} />
+                  <ContentBreakdownCard title='Misc Audio' stats={data.publishing.miscAudio} />
                 </CardContent>
               </Card>
 
@@ -219,17 +171,13 @@ function AdminOverviewPage() {
                   </CardHeader>
                   <CardContent className='space-y-3 text-sm'>
                     <div className='flex items-center justify-between'>
-                      <span className='text-muted-foreground'>
-                        Verified users
-                      </span>
+                      <span className='text-muted-foreground'>Verified users</span>
                       <span className='font-semibold'>
                         {formatCount(data.community.users.verified)}
                       </span>
                     </div>
                     <div className='flex items-center justify-between'>
-                      <span className='text-muted-foreground'>
-                        Active sessions
-                      </span>
+                      <span className='text-muted-foreground'>Active sessions</span>
                       <span className='font-semibold'>
                         {formatCount(data.community.sessions.active)}
                       </span>
@@ -241,19 +189,13 @@ function AdminOverviewPage() {
                       </span>
                     </div>
                     <div className='flex items-center justify-between'>
-                      <span className='text-muted-foreground'>
-                        Show subscriptions
-                      </span>
+                      <span className='text-muted-foreground'>Show subscriptions</span>
                       <span className='font-semibold'>
-                        {formatCount(
-                          data.community.engagement.showSubscriptionsTotal
-                        )}
+                        {formatCount(data.community.engagement.showSubscriptionsTotal)}
                       </span>
                     </div>
                     <div className='flex items-center justify-between'>
-                      <span className='text-muted-foreground'>
-                        Admins / Editors / Creators
-                      </span>
+                      <span className='text-muted-foreground'>Admins / Editors / Creators</span>
                       <span className='font-semibold'>
                         {formatCount(data.community.users.admins)} /{' '}
                         {formatCount(data.community.users.editors)} /{' '}
@@ -269,25 +211,19 @@ function AdminOverviewPage() {
                   </CardHeader>
                   <CardContent className='space-y-3 text-sm'>
                     <div className='flex items-center justify-between'>
-                      <span className='text-muted-foreground'>
-                        Emails failed in 7d
-                      </span>
+                      <span className='text-muted-foreground'>Emails failed in 7d</span>
                       <span className='font-semibold'>
                         {formatCount(data.operations.emails.failedLast7Days)}
                       </span>
                     </div>
                     <div className='flex items-center justify-between'>
-                      <span className='text-muted-foreground'>
-                        Pending reminders
-                      </span>
+                      <span className='text-muted-foreground'>Pending reminders</span>
                       <span className='font-semibold'>
                         {formatCount(data.operations.reminders.pending)}
                       </span>
                     </div>
                     <div className='flex items-center justify-between'>
-                      <span className='text-muted-foreground'>
-                        Processing reminders
-                      </span>
+                      <span className='text-muted-foreground'>Processing reminders</span>
                       <span className='font-semibold'>
                         {formatCount(data.operations.reminders.processing)}
                       </span>
@@ -300,9 +236,7 @@ function AdminOverviewPage() {
                     </div>
                     <div className='flex items-center justify-between'>
                       <span className='text-muted-foreground'>Generated</span>
-                      <span className='font-semibold'>
-                        {formatDate(data.generatedAt)}
-                      </span>
+                      <span className='font-semibold'>{formatDate(data.generatedAt)}</span>
                     </div>
                   </CardContent>
                 </Card>
@@ -320,9 +254,7 @@ function AdminOverviewPage() {
                       key={`${item.type}-${item.id}`}
                       className='flex items-start justify-between gap-4'>
                       <div>
-                        <div className='font-medium'>
-                          {item.title || item.slug}
-                        </div>
+                        <div className='font-medium'>{item.title || item.slug}</div>
                         <div className='text-xs uppercase tracking-wide text-muted-foreground'>
                           {item.type}
                           {item.draft ? ' · draft' : ' · published'}
@@ -342,9 +274,7 @@ function AdminOverviewPage() {
                 </CardHeader>
                 <CardContent className='space-y-4'>
                   {data.publishing.topMixes.map((mix) => (
-                    <div
-                      key={mix.id}
-                      className='flex items-start justify-between gap-4'>
+                    <div key={mix.id} className='flex items-start justify-between gap-4'>
                       <div>
                         <div className='font-medium'>{mix.title}</div>
                         <div className='text-xs text-muted-foreground'>
@@ -367,20 +297,15 @@ function AdminOverviewPage() {
                 </CardHeader>
                 <CardContent className='space-y-4'>
                   {data.operations.emails.recentFailures.length === 0 ? (
-                    <div className='text-sm text-muted-foreground'>
-                      No recent failures.
-                    </div>
+                    <div className='text-sm text-muted-foreground'>No recent failures.</div>
                   ) : (
                     data.operations.emails.recentFailures.map((item) => (
                       <div key={item.id} className='flex items-start gap-3'>
                         <AlertTriangle className='w-4 h-4 mt-0.5 text-destructive' />
                         <div className='min-w-0'>
-                          <div className='font-medium truncate'>
-                            {item.subject}
-                          </div>
+                          <div className='font-medium truncate'>{item.subject}</div>
                           <div className='text-xs text-muted-foreground'>
-                            {item.recipientEmail} · {item.status} ·{' '}
-                            {formatDate(item.createdAt)}
+                            {item.recipientEmail} · {item.status} · {formatDate(item.createdAt)}
                           </div>
                           {item.errorMessage && (
                             <div className='mt-1 text-xs text-muted-foreground line-clamp-2'>
@@ -402,9 +327,7 @@ function AdminOverviewPage() {
                 </CardHeader>
                 <CardContent className='space-y-4'>
                   {data.community.recentUsers.map((item) => (
-                    <div
-                      key={item.id}
-                      className='flex items-start justify-between gap-4'>
+                    <div key={item.id} className='flex items-start justify-between gap-4'>
                       <div>
                         <div className='font-medium'>{item.name}</div>
                         <div className='text-xs text-muted-foreground'>
@@ -427,9 +350,7 @@ function AdminOverviewPage() {
                 </CardHeader>
                 <CardContent className='space-y-4'>
                   {data.community.recentSubscribers.map((item) => (
-                    <div
-                      key={item.id}
-                      className='flex items-start justify-between gap-4'>
+                    <div key={item.id} className='flex items-start justify-between gap-4'>
                       <div>
                         <div className='font-medium'>{item.email}</div>
                         <div className='text-xs text-muted-foreground'>

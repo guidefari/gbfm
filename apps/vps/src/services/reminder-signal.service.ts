@@ -7,9 +7,7 @@ export interface ReminderSignalService {
   readonly await: Effect.Effect<void>
 }
 
-export const ReminderSignalService = Context.Service<ReminderSignalService>(
-  'ReminderSignalService'
-)
+export const ReminderSignalService = Context.Service<ReminderSignalService>('ReminderSignalService')
 
 export const ReminderSignalServiceLive = Layer.effect(
   ReminderSignalService,

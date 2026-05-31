@@ -17,7 +17,7 @@ function createEnvConfig() {
       console.error('❌ Invalid env:')
       console.error(JSON.stringify(z.treeifyError(error), null, 2))
     }
-    throw new Error('Failed to load environment configuration')
+    throw new Error('Failed to load environment configuration', { cause: error })
   }
 }
 

@@ -5,12 +5,7 @@ export default {
   title: '@gbfm/ui/UploadProgress'
 }
 
-const steps: UploadStep[] = [
-  'uploading-audio',
-  'uploading-image',
-  'creating-record',
-  'success'
-]
+const steps: UploadStep[] = ['uploading-audio', 'uploading-image', 'creating-record', 'success']
 
 export function UploadProgressStates() {
   return (
@@ -22,11 +17,7 @@ export function UploadProgressStates() {
       />
       <div className='grid gap-4 max-w-md'>
         {steps.map((step) => (
-          <UploadProgress
-            key={step}
-            step={step}
-            title='Late Night Transmissions 04'
-          />
+          <UploadProgress key={step} step={step} title='Late Night Transmissions 04' />
         ))}
       </div>
     </div>

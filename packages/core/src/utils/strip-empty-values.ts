@@ -1,12 +1,6 @@
 import { Effect } from 'effect'
 
-type JsonValue =
-  | string
-  | number
-  | boolean
-  | null
-  | JsonValue[]
-  | { [key: string]: JsonValue }
+type JsonValue = string | number | boolean | null | JsonValue[] | { [key: string]: JsonValue }
 
 function isEmptyValue(value: JsonValue): boolean {
   if (value === null || value === undefined) return true
@@ -15,9 +9,7 @@ function isEmptyValue(value: JsonValue): boolean {
   return false
 }
 
-function stripEmptyValuesSync<T extends Record<string, JsonValue>>(
-  obj: T
-): Partial<T> {
+function stripEmptyValuesSync<T extends Record<string, JsonValue>>(obj: T): Partial<T> {
   const result: Partial<T> = {}
 
   for (const key in obj) {
@@ -40,9 +32,7 @@ function stripEmptyValuesSync<T extends Record<string, JsonValue>>(
   return result
 }
 
-export function stripEmptyValues<T extends Record<string, JsonValue>>(
-  obj: T
-): Promise<Partial<T>> {
+export function stripEmptyValues<T extends Record<string, JsonValue>>(obj: T): Promise<Partial<T>> {
   return Effect.gen(function* () {
     yield* Effect.logDebug('Stripping empty values from object', {
       originalKeys: Object.keys(obj),

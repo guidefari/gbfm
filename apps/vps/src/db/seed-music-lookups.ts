@@ -1,8 +1,5 @@
 import { db } from '@/db'
-import {
-  musicEntityTypesTable,
-  musicPlatformsTable
-} from '@/db/music-entity.schema'
+import { musicEntityTypesTable, musicPlatformsTable } from '@/db/music-entity.schema'
 
 const entityTypes = [
   { id: 'artist', displayName: 'Artist' },

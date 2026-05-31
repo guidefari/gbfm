@@ -17,21 +17,12 @@ export const subscribe = createRoute({
   path: '/subscribe',
   method: 'post',
   request: {
-    body: jsonContentRequired(
-      insertNewsletterSubscriberSchema,
-      'Newsletter subscription data'
-    )
+    body: jsonContentRequired(insertNewsletterSubscriberSchema, 'Newsletter subscription data')
   },
   tags,
   responses: {
-    [HttpStatusCodes.CREATED]: jsonContent(
-      subscribeResponseSchema,
-      'Successfully subscribed'
-    ),
-    [HttpStatusCodes.OK]: jsonContent(
-      subscribeResponseSchema,
-      'Already subscribed'
-    ),
+    [HttpStatusCodes.CREATED]: jsonContent(subscribeResponseSchema, 'Successfully subscribed'),
+    [HttpStatusCodes.OK]: jsonContent(subscribeResponseSchema, 'Already subscribed'),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
       createErrorSchema(insertNewsletterSubscriberSchema),
       'Validation error'
@@ -53,14 +44,8 @@ export const unsubscribe = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      unsubscribeResponseSchema,
-      'Unsubscribed successfully'
-    ),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      unsubscribeResponseSchema,
-      'Token not found'
-    ),
+    [HttpStatusCodes.OK]: jsonContent(unsubscribeResponseSchema, 'Unsubscribed successfully'),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(unsubscribeResponseSchema, 'Token not found'),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
       createErrorSchema(unsubscribeSchema),
       'Validation error'

@@ -22,7 +22,7 @@ export function EpisodeGrid({ showSlug }: EpisodeGridProps) {
       <div className='grid gap-2'>
         {Array.from({ length: 5 }).map((_, i) => (
           <div
-            // biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton loader - items never reorder
+            // oxlint-disable-next-line react/no-array-index-key
             key={i}
             className='flex gap-3 items-start p-2'>
             <div className='w-14 h-14 rounded-sm bg-muted/50 animate-pulse shrink-0' />
@@ -45,11 +45,7 @@ export function EpisodeGrid({ showSlug }: EpisodeGridProps) {
   }
 
   if (!episodes || episodes.length === 0) {
-    return (
-      <div className='text-center text-muted-foreground py-8'>
-        No episodes yet
-      </div>
-    )
+    return <div className='text-center text-muted-foreground py-8'>No episodes yet</div>
   }
 
   return (

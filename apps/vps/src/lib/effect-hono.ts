@@ -83,12 +83,8 @@ const mapErrors = <A, R>(program: Effect.Effect<A, AppDomainError, R>) =>
     })
   )
 
-type RouteContext<Route extends RouteConfig> = Parameters<
-  RouteHandler<Route, AppBindings>
->[0]
-type RouteResponse<Route extends RouteConfig> = ReturnType<
-  RouteHandler<Route, AppBindings>
->
+type RouteContext<Route extends RouteConfig> = Parameters<RouteHandler<Route, AppBindings>>[0]
+type RouteResponse<Route extends RouteConfig> = ReturnType<RouteHandler<Route, AppBindings>>
 
 export async function runEffect<
   Route extends RouteConfig,
@@ -115,7 +111,5 @@ export async function runEffect<
     ) as unknown as Awaited<RouteResponse<Route>>
   }
 
-  return c.json(exit.value, successStatus) as unknown as Awaited<
-    RouteResponse<Route>
-  >
+  return c.json(exit.value, successStatus) as unknown as Awaited<RouteResponse<Route>>
 }

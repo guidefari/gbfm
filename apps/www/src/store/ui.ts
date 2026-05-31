@@ -42,19 +42,14 @@ export const useUIStore = create<UIStore>()(
             (state: UIStore) => ({
               mixesSorting: {
                 ...state.mixesSorting,
-                sortOrder:
-                  state.mixesSorting.sortOrder === 'asc' ? 'desc' : 'asc'
+                sortOrder: state.mixesSorting.sortOrder === 'asc' ? 'desc' : 'asc'
               }
             }),
             false,
             'ui/mixesSorting/toggleSortOrder'
           ),
         setShowBottomPlayer: (show: boolean) =>
-          set(
-            () => ({ showBottomPlayer: show }),
-            false,
-            'ui/setShowBottomPlayer'
-          ),
+          set(() => ({ showBottomPlayer: show }), false, 'ui/setShowBottomPlayer'),
         resetUI: () =>
           set(
             {

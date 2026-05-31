@@ -1,31 +1,31 @@
 {
-	"$schema": "https://json.schemastore.org/tsconfig",
-	"compilerOptions": {
-		"target": "esnext",
-		"useDefineForClassFields": true,
-		"lib": ["ESNext", "DOM", "DOM.Iterable", "ES2023"],
-		"module": "ESNext",
-		"skipLibCheck": true,
-		"allowImportingTsExtensions": true,
-		"noEmit": true,
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "compilerOptions": {
+    "target": "esnext",
+    "useDefineForClassFields": true,
+    "lib": ["ESNext", "DOM", "DOM.Iterable", "ES2023"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
 
-		/* Bundler mode */
-		"moduleResolution": "bundler",
-		"isolatedModules": true,
-		"moduleDetection": "force",
-		"jsx": "react-jsx",
-		"incremental": true,
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "isolatedModules": true,
+    "moduleDetection": "force",
+    "jsx": "react-jsx",
+    "incremental": true,
 
-		/* Linting */
-		"strict": true,
-		"noUnusedLocals": true,
-		"noUnusedParameters": true,
-		"noFallthroughCasesInSwitch": true,
-		"plugins": [{ "name": "@effect/language-service" }],
+    /* Linting */
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "plugins": [{ "name": "@effect/language-service" }],
 
-		"paths": {
-			"@/*": ["./src/*"]
-		}
-	},
-	"include": ["src", "vite.config.ts", "e2e/**/*", "playwright.config.ts"]
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  },
+  "include": ["src", "vite.config.ts", "e2e/**/*", "playwright.config.ts"]
 }

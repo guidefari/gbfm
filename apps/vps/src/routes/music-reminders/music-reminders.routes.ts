@@ -114,10 +114,7 @@ export const updateMusicReminder = createRoute({
   middleware: [betterAuthMiddleware],
   request: {
     params: z.object({ id: z.string().uuid() }),
-    body: jsonContentRequired(
-      updateMusicReminderSchema,
-      'Updated music reminder data'
-    )
+    body: jsonContentRequired(updateMusicReminderSchema, 'Updated music reminder data')
   },
   responses: {
     [HttpStatusCodes.OK]: jsonContent(

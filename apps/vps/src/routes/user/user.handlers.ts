@@ -41,12 +41,7 @@ export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
   if (contentType.includes('multipart/form-data')) {
     const formData = await c.req.formData()
     for (const [key, value] of formData.entries()) {
-      if (
-        key === 'avatar' &&
-        value &&
-        typeof value === 'object' &&
-        'arrayBuffer' in value
-      ) {
+      if (key === 'avatar' && value && typeof value === 'object' && 'arrayBuffer' in value) {
         avatarFile = value as File
       } else if (typeof value === 'string' && key !== 'avatar') {
         if (key === 'email' || key === 'username' || key === 'bio') {
@@ -100,9 +95,7 @@ export const getProfile: AppRouteHandler<GetProfileRoute> = async (c) => {
   return runEffect<GetProfileRoute>(c, program)
 }
 
-export const getSocialLinks: AppRouteHandler<GetSocialLinksRoute> = async (
-  c
-) => {
+export const getSocialLinks: AppRouteHandler<GetSocialLinksRoute> = async (c) => {
   const user = c.get('user')
 
   if (!user) {
@@ -117,9 +110,7 @@ export const getSocialLinks: AppRouteHandler<GetSocialLinksRoute> = async (
   return runEffect<GetSocialLinksRoute>(c, program)
 }
 
-export const replaceSocialLinks: AppRouteHandler<
-  ReplaceSocialLinksRoute
-> = async (c) => {
+export const replaceSocialLinks: AppRouteHandler<ReplaceSocialLinksRoute> = async (c) => {
   const user = c.get('user')
 
   if (!user) {
@@ -136,9 +127,7 @@ export const replaceSocialLinks: AppRouteHandler<
   return runEffect<ReplaceSocialLinksRoute>(c, program)
 }
 
-export const getAdminUserSocialLinks: AppRouteHandler<
-  GetAdminUserSocialLinksRoute
-> = async (c) => {
+export const getAdminUserSocialLinks: AppRouteHandler<GetAdminUserSocialLinksRoute> = async (c) => {
   const user = c.get('user')
 
   if (!user) {
@@ -181,9 +170,7 @@ export const replaceAdminUserSocialLinks: AppRouteHandler<
   return runEffect<ReplaceAdminUserSocialLinksRoute>(c, program)
 }
 
-export const updateAdminUserBio: AppRouteHandler<
-  UpdateAdminUserBioRoute
-> = async (c) => {
+export const updateAdminUserBio: AppRouteHandler<UpdateAdminUserBioRoute> = async (c) => {
   const user = c.get('user')
 
   if (!user) {
@@ -207,9 +194,7 @@ export const updateAdminUserBio: AppRouteHandler<
   return runEffect<UpdateAdminUserBioRoute>(c, program)
 }
 
-export const getAdminUserBio: AppRouteHandler<GetAdminUserBioRoute> = async (
-  c
-) => {
+export const getAdminUserBio: AppRouteHandler<GetAdminUserBioRoute> = async (c) => {
   const user = c.get('user')
 
   if (!user) {
@@ -230,9 +215,7 @@ export const getAdminUserBio: AppRouteHandler<GetAdminUserBioRoute> = async (
   return runEffect<GetAdminUserBioRoute>(c, program)
 }
 
-export const getEmailPreferences: AppRouteHandler<
-  GetEmailPreferencesRoute
-> = async (c) => {
+export const getEmailPreferences: AppRouteHandler<GetEmailPreferencesRoute> = async (c) => {
   const user = c.get('user')
 
   if (!user) {
@@ -247,9 +230,7 @@ export const getEmailPreferences: AppRouteHandler<
   return runEffect<GetEmailPreferencesRoute>(c, program)
 }
 
-export const updateEmailPreferences: AppRouteHandler<
-  UpdateEmailPreferencesRoute
-> = async (c) => {
+export const updateEmailPreferences: AppRouteHandler<UpdateEmailPreferencesRoute> = async (c) => {
   const user = c.get('user')
 
   if (!user) {
@@ -266,9 +247,7 @@ export const updateEmailPreferences: AppRouteHandler<
   return runEffect<UpdateEmailPreferencesRoute>(c, program)
 }
 
-export const getUserSubscriptions: AppRouteHandler<
-  GetUserSubscriptionsRoute
-> = async (c) => {
+export const getUserSubscriptions: AppRouteHandler<GetUserSubscriptionsRoute> = async (c) => {
   const { limit, offset } = c.req.valid('query')
   const user = c.get('user')
 

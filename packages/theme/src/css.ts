@@ -12,10 +12,7 @@ export function toVars(obj: Record<string, string>, indent = '    '): string {
     .join('\n')
 }
 
-export function semanticToVars(
-  tokens: SemanticTokens,
-  indent = '    '
-): string {
+export function semanticToVars(tokens: SemanticTokens, indent = '    '): string {
   const { radius, ...rest } = tokens
   return `${toVars(rest as Record<string, string>, indent)}\n${indent}--radius: ${radius};`
 }

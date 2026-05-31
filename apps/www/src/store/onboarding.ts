@@ -18,8 +18,7 @@ export const useOnboardingStore = create<OnboardingStore>()(
       (set) => ({
         hasSeenWelcome: false,
 
-        markWelcomeSeen: () =>
-          set({ hasSeenWelcome: true }, false, 'onboarding/welcomeSeen'),
+        markWelcomeSeen: () => set({ hasSeenWelcome: true }, false, 'onboarding/welcomeSeen'),
 
         reset: () =>
           set(

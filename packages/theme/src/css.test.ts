@@ -126,12 +126,8 @@ describe('semanticToVars', () => {
   it('dark and light produce different background values', () => {
     const darkResult = semanticToVars(dark)
     const lightResult = semanticToVars(light)
-    const darkBg = darkResult
-      .split('\n')
-      .find((l) => l.match(/^\s+--background:/))
-    const lightBg = lightResult
-      .split('\n')
-      .find((l) => l.match(/^\s+--background:/))
+    const darkBg = darkResult.split('\n').find((l) => l.match(/^\s+--background:/))
+    const lightBg = lightResult.split('\n').find((l) => l.match(/^\s+--background:/))
     expect(darkBg).not.toBe(lightBg)
   })
 

@@ -25,11 +25,7 @@ export function ShowCard({ show }: ShowCardProps) {
         <h2 className='text-sm font-semibold leading-tight transition-colors text-foreground group-hover:text-highlight line-clamp-2'>
           {show.title}
         </h2>
-        {hostNames && (
-          <p className='text-xs p-0 text-muted-foreground line-clamp-1'>
-            {hostNames}
-          </p>
-        )}
+        {hostNames && <p className='text-xs p-0 text-muted-foreground line-clamp-1'>{hostNames}</p>}
       </div>
     </Link>
   )

@@ -1,10 +1,7 @@
 import { execSync } from 'node:child_process'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import {
-  PostgreSqlContainer,
-  type StartedPostgreSqlContainer
-} from '@testcontainers/postgresql'
+import { PostgreSqlContainer, type StartedPostgreSqlContainer } from '@testcontainers/postgresql'
 import { Pool } from 'pg'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))

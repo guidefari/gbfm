@@ -11,9 +11,7 @@ export interface SentryClientService {
   readonly enabled: boolean
 }
 
-export const SentryClientService = Context.Service<SentryClientService>(
-  'SentryClientService'
-)
+export const SentryClientService = Context.Service<SentryClientService>('SentryClientService')
 
 export const SentryClientServiceLive = Layer.effect(
   SentryClientService,
@@ -29,9 +27,7 @@ export const SentryClientServiceLive = Layer.effect(
     const existingClient = Sentry.getClient()
     if (existingClient) {
       yield* Effect.sync(() => {
-        console.warn(
-          `[sentry] client already initialized env=${sentry.environment}`
-        )
+        console.warn(`[sentry] client already initialized env=${sentry.environment}`)
       })
       return { client: existingClient, enabled: true }
     }
@@ -68,10 +64,7 @@ export const SentryClientServiceLive = Layer.effect(
 
     if (debugSentry) {
       yield* Effect.sync(() => {
-        Sentry.startSpan(
-          { name: 'sentry.boot.smoke-test', op: 'boot' },
-          () => {}
-        )
+        Sentry.startSpan({ name: 'sentry.boot.smoke-test', op: 'boot' }, () => {})
       })
     }
 

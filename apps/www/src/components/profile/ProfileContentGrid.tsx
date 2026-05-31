@@ -94,9 +94,7 @@ function SectionHeader({
 }) {
   return (
     <div className='mb-3 flex items-center gap-2'>
-      <h2 className='flex-1 font-mono text-lg font-bold text-highlight'>
-        {title}
-      </h2>
+      <h2 className='flex-1 font-mono text-lg font-bold text-highlight'>{title}</h2>
       <button
         type='button'
         onClick={onPrev}
@@ -115,15 +113,8 @@ function SectionHeader({
   )
 }
 
-function ContentSection({
-  title,
-  children
-}: {
-  title: string
-  children: React.ReactNode
-}) {
-  const { containerRef, canScrollLeft, canScrollRight, scroll } =
-    useHorizontalScroll()
+function ContentSection({ title, children }: { title: string; children: React.ReactNode }) {
+  const { containerRef, canScrollLeft, canScrollRight, scroll } = useHorizontalScroll()
 
   return (
     <section className='py-4'>
@@ -146,8 +137,7 @@ export function ProfileContentGrid({ content }: ProfileContentGridProps) {
   const editorials = content?.editorials ?? []
   const tweets = content?.tweets ?? []
 
-  const hasContent =
-    mixes.length > 0 || editorials.length > 0 || tweets.length > 0
+  const hasContent = mixes.length > 0 || editorials.length > 0 || tweets.length > 0
 
   if (!hasContent) {
     return (

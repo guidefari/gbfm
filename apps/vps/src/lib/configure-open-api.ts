@@ -21,8 +21,7 @@ type AuthEndpoint = {
  * but Scalar (and other OpenAPI clients) expect braces to interpolate
  * path variables into the actual request URL.
  */
-const colonToOpenApiBraces = (path: string) =>
-  path.replaceAll(/:([^/]+)/g, '{$1}')
+const colonToOpenApiBraces = (path: string) => path.replaceAll(/:([^/]+)/g, '{$1}')
 
 const toOpenApiPath = (path: string) => `/auth${colonToOpenApiBraces(path)}`
 

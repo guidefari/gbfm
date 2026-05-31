@@ -5,9 +5,11 @@
 ### Completed Items
 
 #### 1. OpenTelemetry SDK Initialization (Imperative Approach)
+
 Due to type incompatibilities between `@effect/opentelemetry` and the main Effect package (the Effect layer provided a `Resource` type that couldn't be merged with service layers), we switched to an imperative OpenTelemetry initialization.
 
 **File: `apps/vps/src/lib/otel.ts`**
+
 - Initializes `NodeTracerProvider` on module load
 - Configured with environment-based exporter switching:
   - Development: `ConsoleSpanExporter` with `SimpleSpanProcessor`
@@ -16,20 +18,26 @@ Due to type incompatibilities between `@effect/opentelemetry` and the main Effec
 - Resource attributes include service name, version, and deployment environment
 
 **Environment Variables:**
+
 - `NODE_ENV` - Controls development vs production behavior
 - `OTEL_EXPORTER_OTLP_ENDPOINT` - URL for OTLP collector (required for production export)
 - `OTEL_SAMPLING_RATE` - Optional sampling rate override (0.0-1.0)
 
 #### 2. Entry Point Integration
+
 **File: `apps/vps/src/index.ts`**
+
 - OTel initialization is imported at the top to ensure tracing is set up before any other code runs
 
 #### 3. Runtime Configuration
+
 **Files:**
+
 - `apps/vps/src/runtime/services.ts` - Service layer unchanged (no OTel layer merge needed)
 - `apps/vps/src/runtime/index.ts` - ManagedRuntime unchanged
 
 ### Packages Installed
+
 ```json
 {
   "@effect/opentelemetry": "^0.60.0",
@@ -43,16 +51,19 @@ Due to type incompatibilities between `@effect/opentelemetry` and the main Effec
 ### Existing Span Coverage
 
 Services that already have `Effect.withSpan`:
+
 - `favorite.service.ts` - Full span coverage with attributes
 - `music-reminder.service.ts` - Full span coverage with attributes
 
 Services with `Effect.annotateCurrentSpan` (annotations only, no wrapping spans):
+
 - `audio.service.ts` - Partial annotations in `createEffect`
 - `post.service.ts` - Annotations in `getByTagEffect` and `createEffect`
 
 ### Remaining Work
 
 #### High Priority
+
 1. **Add `Effect.withSpan` wrappers to services** - The annotations are present but won't be captured without parent spans
    - `audio.service.ts` - Add spans to `getByType`, `getBySlug`, `create`, `update`
    - `post.service.ts` - Add spans to `getByTag`, `create`
@@ -68,6 +79,7 @@ Services with `Effect.annotateCurrentSpan` (annotations only, no wrapping spans)
    - Consider `@opentelemetry/instrumentation-http` or Hono middleware
 
 #### Low Priority
+
 3. **Metrics Collection** - Add `@effect/opentelemetry` metrics setup
 4. **Trace Context Propagation** - For distributed tracing across services
 
@@ -94,6 +106,7 @@ The imperative approach (`NodeTracerProvider` initialization) works correctly wi
 ### Testing Locally
 
 **Option 1: Console output (default)**
+
 1. Run the dev server: `bun dev`
 2. Make API requests
 3. Observe span output in console (with `ConsoleSpanExporter`)
@@ -110,6 +123,7 @@ The project includes a pre-configured observability stack with Grafana Tempo for
 5. View traces at http://localhost:3000 (Grafana) → Explore → Select "Tempo" datasource
 
 The stack includes:
+
 - **Tempo** (port 3200): Trace storage and query backend
 - **Grafana** (port 3000): Visualization UI (default password: admin123)
 - **Prometheus** (port 9090): Metrics collection

@@ -18,9 +18,10 @@ interface PasswordResetEmailProps {
   expiresIn?: string
 }
 
-export const PasswordResetEmail: React.FC<
-  Readonly<PasswordResetEmailProps>
-> = ({ resetUrl, expiresIn = '1 hour' }) => {
+export const PasswordResetEmail: React.FC<Readonly<PasswordResetEmailProps>> = ({
+  resetUrl,
+  expiresIn = '1 hour'
+}) => {
   return (
     <Html>
       <EmailHead />
@@ -33,8 +34,8 @@ export const PasswordResetEmail: React.FC<
             <Text style={label}>ACCOUNT</Text>
             <Text style={headline}>Reset your password.</Text>
             <Text style={subtext}>
-              We received a request to reset your password. This link expires in{' '}
-              {expiresIn} and can only be used once.
+              We received a request to reset your password. This link expires in {expiresIn} and can
+              only be used once.
             </Text>
             <Button style={ctaButton} href={resetUrl}>
               Reset password
@@ -46,8 +47,7 @@ export const PasswordResetEmail: React.FC<
               </Link>
             </Text>
             <Text style={warning}>
-              If you didn't request this, ignore this email, your password won't
-              change.
+              If you didn't request this, ignore this email, your password won't change.
             </Text>
           </Section>
 

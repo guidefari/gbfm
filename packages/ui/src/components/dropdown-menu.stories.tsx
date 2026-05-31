@@ -1,11 +1,5 @@
 import { Button } from './button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from './card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './card'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,9 +25,7 @@ export function DropdownMenus() {
       <Card>
         <CardHeader>
           <CardTitle>Track actions</CardTitle>
-          <CardDescription>
-            Open the trigger to inspect menu placement.
-          </CardDescription>
+          <CardDescription>Open the trigger to inspect menu placement.</CardDescription>
         </CardHeader>
         <CardContent>
           <DropdownMenu>

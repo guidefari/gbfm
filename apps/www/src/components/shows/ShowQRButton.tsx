@@ -22,10 +22,7 @@ export function ShowQRButton({
   const { toast } = useToast()
 
   const [enabled, setEnabled] = React.useState(false)
-  const { data: qrPdf, isFetching: isGeneratingPdf } = useShowQRPdf(
-    slug,
-    enabled
-  )
+  const { data: qrPdf, isFetching: isGeneratingPdf } = useShowQRPdf(slug, enabled)
 
   React.useEffect(() => {
     if (qrPdf?.url && enabled) {
@@ -46,11 +43,7 @@ export function ShowQRButton({
   if (!isAdmin) return null
 
   return (
-    <Button
-      variant={variant}
-      size={size}
-      className={className}
-      onClick={handleDownloadQR}>
+    <Button variant={variant} size={size} className={className} onClick={handleDownloadQR}>
       {isGeneratingPdf ? (
         <Loader2 className='w-4 h-4 animate-spin' />
       ) : (

@@ -1,14 +1,7 @@
 import { Button, Input, Label, toast } from '@gbfm/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import {
-  ArrowLeft,
-  ChevronDown,
-  ChevronRight,
-  Loader2,
-  Pencil,
-  Plus
-} from 'lucide-react'
+import { ArrowLeft, ChevronDown, ChevronRight, Loader2, Pencil, Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
 import { PlaylistEditor, type PlaylistSummary } from './-PlaylistEditor'
@@ -26,8 +19,7 @@ export function PlaylistsTab() {
 
   const playlistsQuery = useQuery({
     queryKey: ['playlists'],
-    queryFn: async () =>
-      fetcher<PlaylistSummary[]>(`${VPS_BASE_URL}/music/playlists`)
+    queryFn: async () => fetcher<PlaylistSummary[]>(`${VPS_BASE_URL}/music/playlists`)
   })
 
   useEffect(() => {
@@ -98,9 +90,7 @@ export function PlaylistsTab() {
             )}
           </button>
           {importOpen && (
-            <form
-              onSubmit={handleSubmit}
-              className='px-4 pb-4 space-y-2 border-t'>
+            <form onSubmit={handleSubmit} className='px-4 pb-4 space-y-2 border-t'>
               <p className='text-xs text-muted-foreground'>
                 Tracks dedupe by Spotify URL. Re-import updates order.
               </p>
@@ -142,19 +132,13 @@ export function PlaylistsTab() {
 
         <div className='flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none]'>
           {playlistsQuery.isLoading && (
-            <div className='px-4 py-2 text-sm text-muted-foreground'>
-              Loading…
-            </div>
+            <div className='px-4 py-2 text-sm text-muted-foreground'>Loading…</div>
           )}
           {playlistsQuery.error && (
-            <div className='px-4 py-2 text-sm text-destructive'>
-              Failed to load
-            </div>
+            <div className='px-4 py-2 text-sm text-destructive'>Failed to load</div>
           )}
           {!playlistsQuery.isLoading && playlists.length === 0 && (
-            <div className='px-4 py-2 text-sm text-muted-foreground'>
-              No playlists yet.
-            </div>
+            <div className='px-4 py-2 text-sm text-muted-foreground'>No playlists yet.</div>
           )}
           <ul className='py-1'>
             {playlists.map((p) => {
@@ -179,12 +163,8 @@ export function PlaylistsTab() {
                       <div className='w-10 h-10 rounded bg-muted shrink-0' />
                     )}
                     <div className='min-w-0'>
-                      <div className='text-sm font-medium truncate'>
-                        {p.title}
-                      </div>
-                      <div className='text-xs truncate text-muted-foreground'>
-                        {p.slug}
-                      </div>
+                      <div className='text-sm font-medium truncate'>{p.title}</div>
+                      <div className='text-xs truncate text-muted-foreground'>{p.slug}</div>
                     </div>
                   </button>
                   <Link
@@ -201,27 +181,16 @@ export function PlaylistsTab() {
         </div>
       </aside>
 
-      <main
-        className={`flex-1 min-w-0 ${showEditor ? 'flex' : 'hidden md:flex'} flex-col`}>
+      <main className={`flex-1 min-w-0 ${showEditor ? 'flex' : 'hidden md:flex'} flex-col`}>
         {selected ? (
           <>
             <div className='flex items-center gap-2 px-4 py-2 border-b md:hidden shrink-0'>
-              <Button
-                type='button'
-                variant='ghost'
-                size='sm'
-                onClick={() => setSelectedId(null)}>
+              <Button type='button' variant='ghost' size='sm' onClick={() => setSelectedId(null)}>
                 <ArrowLeft className='w-4 h-4 mr-2' />
                 Playlists
               </Button>
-              <span className='flex-1 text-sm font-medium truncate'>
-                {selected.title}
-              </span>
-              <Button
-                asChild
-                variant='ghost'
-                size='sm'
-                aria-label='Edit playlist'>
+              <span className='flex-1 text-sm font-medium truncate'>{selected.title}</span>
+              <Button asChild variant='ghost' size='sm' aria-label='Edit playlist'>
                 <Link
                   to='/admin/music-entity/$entityType/$id'
                   params={{ entityType: 'playlist', id: selected.id }}>

@@ -1,15 +1,15 @@
-import { Effect } from "effect";
+import { Effect } from 'effect'
 
 /**
  * Shared backup utilities
  */
 
 export interface BackupConfig {
-  host: string;
-  port: string;
-  user: string;
-  password: string;
-  database: string;
+  host: string
+  port: string
+  user: string
+  password: string
+  database: string
 }
 
 /**
@@ -17,66 +17,57 @@ export interface BackupConfig {
  * Tries common variants like pg_dump, pg_dump-17, pg_dump-16, etc.
  */
 export async function findPgDumpPath(): Promise<string | null> {
-  const isLambda = !!process.env.AWS_LAMBDA_FUNCTION_NAME;
+  const isLambda = Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME)
 
   const pathsToTry = isLambda
-    ? ["/opt/bin/pg_dump"]
-    : [
-        "pg_dump",
-        "pg_dump-17",
-        "pg_dump-16",
-        "pg_dump-15",
-        "pg_dump-14",
-        "pg_dump-13",
-      ];
+    ? ['/opt/bin/pg_dump']
+    : ['pg_dump', 'pg_dump-17', 'pg_dump-16', 'pg_dump-15', 'pg_dump-14', 'pg_dump-13']
 
   for (const path of pathsToTry) {
     try {
-      const proc = Bun.spawn([path, "--version"], {
-        stdout: "pipe",
-        stderr: "pipe",
-      });
-      await proc.exited;
+      const proc = Bun.spawn([path, '--version'], {
+        stdout: 'pipe',
+        stderr: 'pipe'
+      })
+      await proc.exited
 
       if (proc.exitCode === 0) {
-        return path;
+        return path
       }
     } catch (error) {
-      continue;
+      continue
     }
   }
 
-  return null;
+  return null
 }
 
 /**
  * Check if Bun is available on the system
  */
 export async function isBunAvailable(): Promise<boolean> {
-  const bunPath = process.env.AWS_LAMBDA_FUNCTION_NAME
-    ? "/opt/bin/bun"
-    : "bun";
+  const bunPath = process.env.AWS_LAMBDA_FUNCTION_NAME ? '/opt/bin/bun' : 'bun'
 
   try {
-    const proc = Bun.spawn([bunPath, "--version"], {
-      stdout: "pipe",
-      stderr: "pipe",
-    });
-    await proc.exited;
-    const isAvailable = proc.exitCode === 0;
+    const proc = Bun.spawn([bunPath, '--version'], {
+      stdout: 'pipe',
+      stderr: 'pipe'
+    })
+    await proc.exited
+    const isAvailable = proc.exitCode === 0
 
     if (isAvailable) {
-      const version = await new Response(proc.stdout).text();
-      console.log(`✓ Bun runtime detected at ${bunPath}`);
-      console.log(`  Version: ${version.trim()}`);
+      const version = await new Response(proc.stdout).text()
+      console.log(`✓ Bun runtime detected at ${bunPath}`)
+      console.log(`  Version: ${version.trim()}`)
     } else {
-      console.log(`⚠️  Bun not found at ${bunPath}`);
+      console.log(`⚠️  Bun not found at ${bunPath}`)
     }
 
-    return isAvailable;
+    return isAvailable
   } catch (error) {
-    console.log(`⚠️  Bun not available at ${bunPath}`);
-    return false;
+    console.log(`⚠️  Bun not available at ${bunPath}`)
+    return false
   }
 }
 
@@ -84,31 +75,31 @@ export async function isBunAvailable(): Promise<boolean> {
  * Check if pg_dump is available on the system
  */
 export async function isPgDumpAvailable(): Promise<boolean> {
-  const pgDumpPath = await findPgDumpPath();
+  const pgDumpPath = await findPgDumpPath()
 
   if (!pgDumpPath) {
-    console.log("⚠️  pg_dump not found in any common location");
-    return false;
+    console.log('⚠️  pg_dump not found in any common location')
+    return false
   }
 
   try {
-    const proc = Bun.spawn([pgDumpPath, "--version"], {
-      stdout: "pipe",
-      stderr: "pipe",
-    });
-    await proc.exited;
-    const isAvailable = proc.exitCode === 0;
+    const proc = Bun.spawn([pgDumpPath, '--version'], {
+      stdout: 'pipe',
+      stderr: 'pipe'
+    })
+    await proc.exited
+    const isAvailable = proc.exitCode === 0
 
     if (isAvailable) {
-      const version = await new Response(proc.stdout).text();
-      console.log(`✓ pg_dump found at ${pgDumpPath}`);
-      console.log(`  Version: ${version.trim()}`);
+      const version = await new Response(proc.stdout).text()
+      console.log(`✓ pg_dump found at ${pgDumpPath}`)
+      console.log(`  Version: ${version.trim()}`)
     }
 
-    return isAvailable;
+    return isAvailable
   } catch (error) {
-    console.log(`⚠️  pg_dump not available at ${pgDumpPath}`);
-    return false;
+    console.log(`⚠️  pg_dump not available at ${pgDumpPath}`)
+    return false
   }
 }
 
@@ -116,12 +107,12 @@ export async function isPgDumpAvailable(): Promise<boolean> {
  * Create a database backup using pg_dump
  */
 export async function createBackupWithPgDump(config: BackupConfig): Promise<string> {
-  console.log("📦 Creating database dump using pg_dump...");
+  console.log('📦 Creating database dump using pg_dump...')
 
-  const pgDumpPath = await findPgDumpPath();
+  const pgDumpPath = await findPgDumpPath()
 
   if (!pgDumpPath) {
-    throw new Error("pg_dump not found in any common location");
+    throw new Error('pg_dump not found in any common location')
   }
 
   const env = {
@@ -129,29 +120,29 @@ export async function createBackupWithPgDump(config: BackupConfig): Promise<stri
     PGUSER: config.user,
     PGHOST: config.host,
     PGDATABASE: config.database,
-    PGPORT: config.port,
-  };
+    PGPORT: config.port
+  }
 
-  const proc = Bun.spawn([pgDumpPath, "--no-owner", "--no-acl", "--clean", "--if-exists"], {
+  const proc = Bun.spawn([pgDumpPath, '--no-owner', '--no-acl', '--clean', '--if-exists'], {
     env: { ...process.env, ...env },
-    stdout: "pipe",
-    stderr: "pipe",
-  });
+    stdout: 'pipe',
+    stderr: 'pipe'
+  })
 
-  const stdout = await new Response(proc.stdout).text();
-  const stderr = await new Response(proc.stderr).text();
-  const exitCode = await proc.exited;
+  const stdout = await new Response(proc.stdout).text()
+  const stderr = await new Response(proc.stderr).text()
+  const exitCode = await proc.exited
 
   if (exitCode !== 0) {
-    throw new Error(`pg_dump failed with exit code ${exitCode}: ${stderr}`);
+    throw new Error(`pg_dump failed with exit code ${exitCode}: ${stderr}`)
   }
 
   if (stderr && !stderr.includes('NOTICE')) {
-    console.warn("⚠️  pg_dump warnings:", stderr);
+    console.warn('⚠️  pg_dump warnings:', stderr)
   }
 
-  console.log(`✅ Database dump created (${(stdout.length / 1024).toFixed(2)} KB)`);
-  return stdout;
+  console.log(`✅ Database dump created (${(stdout.length / 1024).toFixed(2)} KB)`)
+  return stdout
 }
 
 /**
@@ -159,47 +150,45 @@ export async function createBackupWithPgDump(config: BackupConfig): Promise<stri
  * Uses Effect's Ref for state management and acquireRelease for cleanup.
  */
 export interface LogCapture {
-  readonly getLogs: Effect.Effect<string>;
+  readonly getLogs: Effect.Effect<string>
 }
 
 export const makeLogCapture = Effect.sync(() => {
-  const logs: string[] = [];
+  const logs: string[] = []
 
   const originalConsole = {
     log: console.log,
     error: console.error,
-    warn: console.warn,
-  };
+    warn: console.warn
+  }
 
-  const captureLog = (level: "log" | "error" | "warn", ...args: unknown[]) => {
-    const timestamp = new Date().toISOString();
+  const captureLog = (level: 'log' | 'error' | 'warn', ...args: unknown[]) => {
+    const timestamp = new Date().toISOString()
     const message = args
-      .map((arg) =>
-        typeof arg === "object" ? JSON.stringify(arg, null, 2) : String(arg)
-      )
-      .join(" ");
+      .map((arg) => (typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)))
+      .join(' ')
 
-    const logEntry = `[${timestamp}] [${level.toUpperCase()}] ${message}`;
+    const logEntry = `[${timestamp}] [${level.toUpperCase()}] ${message}`
 
-    logs.push(logEntry);
-    originalConsole[level](...args);
-  };
+    logs.push(logEntry)
+    originalConsole[level](...args)
+  }
 
-  console.log = (...args) => captureLog("log", ...args);
-  console.error = (...args) => captureLog("error", ...args);
-  console.warn = (...args) => captureLog("warn", ...args);
+  console.log = (...args) => captureLog('log', ...args)
+  console.error = (...args) => captureLog('error', ...args)
+  console.warn = (...args) => captureLog('warn', ...args)
 
   const restore = () => {
-    console.log = originalConsole.log;
-    console.error = originalConsole.error;
-    console.warn = originalConsole.warn;
-  };
+    console.log = originalConsole.log
+    console.error = originalConsole.error
+    console.warn = originalConsole.warn
+  }
 
   return {
-    getLogs: Effect.sync(() => logs.join("\n")),
-    restore,
-  };
-});
+    getLogs: Effect.sync(() => logs.join('\n')),
+    restore
+  }
+})
 
 /**
  * Scoped log capture that automatically restores console on scope close.
@@ -212,4 +201,4 @@ export const withLogCapture = <A, E, R>(
     makeLogCapture,
     (capture) => fn({ getLogs: capture.getLogs }),
     (capture) => Effect.sync(() => capture.restore())
-  );
+  )

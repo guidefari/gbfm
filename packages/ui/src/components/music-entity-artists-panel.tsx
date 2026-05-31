@@ -51,9 +51,7 @@ export function MusicEntityArtistsPanel({
                 className='flex items-center gap-3 rounded-md border px-3 py-2 text-sm'>
                 <span className='flex-1 font-medium'>{a.artistName}</span>
                 {a.role && (
-                  <span className='text-xs capitalize text-muted-foreground'>
-                    {a.role}
-                  </span>
+                  <span className='text-xs capitalize text-muted-foreground'>{a.role}</span>
                 )}
                 {!readOnly && (
                   <Button

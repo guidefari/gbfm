@@ -3,10 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { CheckCircle, Loader2, Mail, XCircle } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { z } from 'zod'
-import {
-  useNewsletterUnsubscribe,
-  useRequestNewsletterUnsubscribe
-} from '@/lib/http'
+import { useNewsletterUnsubscribe, useRequestNewsletterUnsubscribe } from '@/lib/http'
 
 const searchSchema = z.object({
   token: z.string().optional()
@@ -37,9 +34,7 @@ function UnsubscribeWithToken({ token }: { token: string }) {
   return (
     <section className='max-w-2xl mx-auto px-4 py-20'>
       <div className='flex flex-col items-center gap-4 p-6 rounded-lg bg-muted/50'>
-        {isPending && (
-          <Loader2 className='w-12 h-12 animate-spin text-muted-foreground' />
-        )}
+        {isPending && <Loader2 className='w-12 h-12 animate-spin text-muted-foreground' />}
         {isSuccess && (
           <>
             <CheckCircle className='w-12 h-12 text-green-500' />
@@ -69,8 +64,7 @@ function UnsubscribeWithToken({ token }: { token: string }) {
 
 function RequestUnsubscribeForm() {
   const [email, setEmail] = useState('')
-  const { mutate, isPending, isSuccess, isError } =
-    useRequestNewsletterUnsubscribe()
+  const { mutate, isPending, isSuccess, isError } = useRequestNewsletterUnsubscribe()
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -102,9 +96,7 @@ function RequestUnsubscribeForm() {
           </div>
         </div>
       ) : (
-        <form
-          onSubmit={handleSubmit}
-          className='flex flex-col sm:flex-row gap-3'>
+        <form onSubmit={handleSubmit} className='flex flex-col sm:flex-row gap-3'>
           <Input
             type='email'
             name='email'

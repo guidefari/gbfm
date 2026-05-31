@@ -38,10 +38,9 @@ describe('MdxService', () => {
 
       const result = await withService(fn, (svc) =>
         Effect.gen(function* () {
-          const [r1, r2] = yield* Effect.all(
-            [svc.compile('# Same'), svc.compile('# Same')],
-            { concurrency: 'unbounded' }
-          )
+          const [r1, r2] = yield* Effect.all([svc.compile('# Same'), svc.compile('# Same')], {
+            concurrency: 'unbounded'
+          })
           return [r1, r2]
         })
       )

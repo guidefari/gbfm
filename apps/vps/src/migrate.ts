@@ -6,9 +6,7 @@ export const migrate = async (path: string) => {
   console.log('Running migrations...')
   await migratePostgres(db, { migrationsFolder: path })
   const { entityTypeCount, platformCount } = await seedMusicLookups()
-  console.log(
-    `Seeded ${entityTypeCount} music entity types and ${platformCount} music platforms.`
-  )
+  console.log(`Seeded ${entityTypeCount} music entity types and ${platformCount} music platforms.`)
   console.log('Migrations completed.')
 }
 migrate('./drizzle/')

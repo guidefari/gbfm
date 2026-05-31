@@ -13,11 +13,7 @@ export const cleanupExpiredQrPdfs = Effect.gen(function* () {
 
   const objects = yield* s3
     .listObjects(QR_PDFS_PREFIX, bucketName)
-    .pipe(
-      Effect.tapError((e) =>
-        Effect.logError(`S3 listObjects failed: ${e.message}`)
-      )
-    )
+    .pipe(Effect.tapError((e) => Effect.logError(`S3 listObjects failed: ${e.message}`)))
 
   if (objects.length === 0) {
     yield* Effect.logInfo('No QR PDFs found to clean up')
@@ -25,9 +21,7 @@ export const cleanupExpiredQrPdfs = Effect.gen(function* () {
   }
 
   const now = Date.now()
-  const expiredObjects = objects.filter(
-    (obj) => now - obj.lastModified.getTime() > MAX_AGE_MS
-  )
+  const expiredObjects = objects.filter((obj) => now - obj.lastModified.getTime() > MAX_AGE_MS)
 
   if (expiredObjects.length === 0) {
     yield* Effect.logInfo(`Found ${objects.length} QR PDFs, none expired`)

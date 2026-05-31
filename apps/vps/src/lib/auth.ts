@@ -9,13 +9,7 @@ import * as authSchema from '@/db/auth.schema'
 import { EMAIL_NOTIFICATION_TYPES } from '@/db/email.schema'
 import { createEmailDeliveryLog } from '@/repositories/email-delivery-log.repository'
 import { config } from '@/services/config.service'
-import {
-  ac,
-  admin as adminRole,
-  creator,
-  editor,
-  userRole
-} from './auth-permissions'
+import { ac, admin as adminRole, creator, editor, userRole } from './auth-permissions'
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -70,8 +64,7 @@ export const auth = betterAuth({
           sentAt: new Date()
         })
       } catch (cause) {
-        const errorMessage =
-          cause instanceof Error ? cause.message : String(cause)
+        const errorMessage = cause instanceof Error ? cause.message : String(cause)
         await createEmailDeliveryLog({
           ...baseLogFields,
           status: EMAIL_DELIVERY_STATUSES.FAILED,
@@ -108,8 +101,7 @@ export const auth = betterAuth({
   plugins: [
     bearer(),
     username({
-      displayUsernameNormalization: (displayUsername) =>
-        displayUsername.toLowerCase()
+      displayUsernameNormalization: (displayUsername) => displayUsername.toLowerCase()
     }),
     admin({
       ac,

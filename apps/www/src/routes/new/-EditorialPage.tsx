@@ -107,15 +107,11 @@ function EditorialDetailsCard({
         <div className='flex items-center justify-between rounded-sm border p-3'>
           <div>
             <p className='font-medium'>Draft</p>
-            <p className='text-xs text-muted-foreground'>
-              Keep unpublished while editing.
-            </p>
+            <p className='text-xs text-muted-foreground'>Keep unpublished while editing.</p>
           </div>
           <Checkbox
             checked={formData.draft}
-            onCheckedChange={(checked) =>
-              onInputChange('draft', checked === true)
-            }
+            onCheckedChange={(checked) => onInputChange('draft', checked === true)}
           />
         </div>
       </CardContent>
@@ -175,12 +171,8 @@ function ArtworkCard({
             className='flex flex-col gap-3 justify-center items-center p-8 text-center rounded-sm border-2 border-dashed cursor-pointer transition-colors border-gb-pastel-green-2/40 hover:border-gb-highlight'>
             <ImageIcon className='size-8 text-gb-pastel-green-1' />
             <div>
-              <p className='font-medium text-gb-pastel-green-1'>
-                Upload artwork
-              </p>
-              <p className='text-xs text-gb-default-text'>
-                PNG, JPG, WEBP up to 10MB
-              </p>
+              <p className='font-medium text-gb-pastel-green-1'>Upload artwork</p>
+              <p className='text-xs text-gb-default-text'>PNG, JPG, WEBP up to 10MB</p>
             </div>
             <Upload className='size-4' />
           </label>
@@ -264,17 +256,14 @@ export function EditorialPage() {
   })
   const [artworkFile, setArtworkFile] = useState<File | null>(null)
   const [artworkPreview, setArtworkPreview] = useState<string | null>(null)
-  const [uploadStep, setUploadStep] = useState<
-    'idle' | 'uploading-image' | 'saving' | 'success'
-  >('idle')
-  const [selectedCreators, setSelectedCreators] = useState<
-    Array<{ id: string; name: string }>
-  >([])
+  const [uploadStep, setUploadStep] = useState<'idle' | 'uploading-image' | 'saving' | 'success'>(
+    'idle'
+  )
+  const [selectedCreators, setSelectedCreators] = useState<Array<{ id: string; name: string }>>([])
 
   const { data: existingPost, isPending: loadingPost } = useQuery({
     queryKey: ['post', search.edit],
-    queryFn: () =>
-      fetcher<PostItem>(`${VPS_BASE_URL}/content/posts/${search.edit}`),
+    queryFn: () => fetcher<PostItem>(`${VPS_BASE_URL}/content/posts/${search.edit}`),
     enabled: isEditMode && Boolean(search.edit)
   })
 
@@ -331,9 +320,7 @@ export function EditorialPage() {
         draft: data.draft,
         type: 'post' as const,
         creatorIds:
-          selectedCreators.length > 0
-            ? selectedCreators.map((creator) => creator.id)
-            : [user.id]
+          selectedCreators.length > 0 ? selectedCreators.map((creator) => creator.id) : [user.id]
       }
 
       const endpoint = isEditMode
@@ -371,10 +358,7 @@ export function EditorialPage() {
     onError: (error) => {
       toast({
         title: 'Failed to save post',
-        description:
-          error instanceof Error
-            ? error.message
-            : 'An unexpected error occurred.',
+        description: error instanceof Error ? error.message : 'An unexpected error occurred.',
         variant: 'destructive'
       })
       setUploadStep('idle')
@@ -397,10 +381,7 @@ export function EditorialPage() {
     setFormData((prev) => ({ ...prev, thumbnailUrl: '' }))
   }
 
-  const handleInputChange = (
-    field: keyof PostFormData,
-    value: string | boolean
-  ) => {
+  const handleInputChange = (field: keyof PostFormData, value: string | boolean) => {
     setFormData((prev) => {
       const updated = { ...prev, [field]: value }
       if (field === 'title' && !prev.slug && typeof value === 'string') {
@@ -455,10 +436,7 @@ export function EditorialPage() {
         switchTo={{ to: '/new/tweet', label: 'Switch to tweet capture' }}
         actions={
           <>
-            <Button
-              variant='outline'
-              onClick={handleDiscard}
-              disabled={saveMutation.isPending}>
+            <Button variant='outline' onClick={handleDiscard} disabled={saveMutation.isPending}>
               Discard
             </Button>
             <Button
@@ -482,10 +460,7 @@ export function EditorialPage() {
 
       <div className='grid gap-8 xl:grid-cols-[1fr_320px]'>
         <div className='space-y-6'>
-          <EditorialDetailsCard
-            formData={formData}
-            onInputChange={handleInputChange}
-          />
+          <EditorialDetailsCard formData={formData} onInputChange={handleInputChange} />
           <EditorialContentCard
             content={formData.content}
             onChange={(value) => handleInputChange('content', value)}
@@ -500,9 +475,7 @@ export function EditorialPage() {
             thumbnailUrl={formData.thumbnailUrl}
             onArtworkFileChange={handleArtworkFileChange}
             onRemoveArtworkFile={removeArtworkFile}
-            onThumbnailUrlChange={(value) =>
-              handleInputChange('thumbnailUrl', value)
-            }
+            onThumbnailUrlChange={(value) => handleInputChange('thumbnailUrl', value)}
           />
 
           <TagsInput
@@ -525,9 +498,7 @@ export function EditorialPage() {
           <CreatorCard
             selectedCreators={selectedCreators}
             onSelectionChange={(users) =>
-              setSelectedCreators(
-                users.length > 1 ? [users[users.length - 1]] : users
-              )
+              setSelectedCreators(users.length > 1 ? [users[users.length - 1]] : users)
             }
           />
         </div>

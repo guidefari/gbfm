@@ -6,9 +6,5 @@ interface ProviderProps {
 }
 
 export const Provider = ({ children }: ProviderProps) => {
-  return (
-    <div className='min-h-screen bg-background p-6 text-foreground'>
-      {children}
-    </div>
-  )
+  return <div className='min-h-screen bg-background p-6 text-foreground'>{children}</div>
 }

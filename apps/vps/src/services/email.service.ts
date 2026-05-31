@@ -4,10 +4,7 @@ import { eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { user } from '@/db/auth.schema'
-import {
-  EMAIL_NOTIFICATION_TYPES,
-  emailDeliveryLogsTable
-} from '@/db/email.schema'
+import { EMAIL_NOTIFICATION_TYPES, emailDeliveryLogsTable } from '@/db/email.schema'
 import type { MusicReminder } from '@/db/music-reminder.schema'
 import { DatabaseError, EmailError, getErrorMessage } from '@/errors'
 import { recordEmailFail, recordEmailSend } from '@/lib/performance-monitoring'
@@ -27,8 +24,7 @@ export const EmailServiceLive = Layer.effect(
   EmailService,
   Effect.gen(function* () {
     return {
-      sendMusicReminderEmail: (reminder: MusicReminder) =>
-        sendReminderEmail(reminder)
+      sendMusicReminderEmail: (reminder: MusicReminder) => sendReminderEmail(reminder)
     }
   })
 )
@@ -43,11 +39,7 @@ const sendReminderEmail = (reminder: MusicReminder) =>
     // Get user email address
     const userRecords = yield* Effect.tryPromise({
       try: () =>
-        db
-          .select({ email: user.email })
-          .from(user)
-          .where(eq(user.id, reminder.userId))
-          .limit(1),
+        db.select({ email: user.email }).from(user).where(eq(user.id, reminder.userId)).limit(1),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to fetch user email: ${getErrorMessage(error)}`,
@@ -167,8 +159,7 @@ const sendReminderEmail = (reminder: MusicReminder) =>
       ),
       Effect.catch((sendError) => {
         // Update log on failure
-        const errorMessage =
-          sendError instanceof EmailError ? sendError.message : 'Unknown error'
+        const errorMessage = sendError instanceof EmailError ? sendError.message : 'Unknown error'
 
         return Effect.tryPromise({
           try: () =>

@@ -25,8 +25,7 @@ const REDACT_PATHS = [
   'betterAuthSession'
 ]
 
-const PII_KEY_PATTERN =
-  /password|token|authorization|cookie|secret|email|session/i
+const PII_KEY_PATTERN = /password|token|authorization|cookie|secret|email|session/i
 
 function redactValue(value: unknown, depth = 0): unknown {
   if (depth > 4) return '[Truncated]'
@@ -35,9 +34,7 @@ function redactValue(value: unknown, depth = 0): unknown {
   if (typeof value === 'object') {
     const out: Record<string, unknown> = {}
     for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      out[k] = PII_KEY_PATTERN.test(k)
-        ? '[Redacted]'
-        : redactValue(v, depth + 1)
+      out[k] = PII_KEY_PATTERN.test(k) ? '[Redacted]' : redactValue(v, depth + 1)
     }
     return out
   }
@@ -81,44 +78,39 @@ function formatMessage(message: unknown): string {
   }
 }
 
-export const AppLogger = Logger.make(
-  ({ logLevel, message, cause, fiber, date }) => {
-    const msg = formatMessage(message)
-    const data = redactValue({ cause, fiberId: fiber.id, date }) as Record<
-      string,
-      unknown
-    >
-    const payload = {
-      ...data,
-      logLevel
-    }
-
-    pinoInstance[pinoLevel(logLevel)](payload, msg)
-
-    if (!Sentry.getClient()) return
-
-    const sentryLogger = Sentry.logger
-    switch (logLevel) {
-      case 'Trace':
-      case 'Debug':
-        sentryLogger.debug(msg, payload)
-        break
-      case 'Info':
-        sentryLogger.info(msg, payload)
-        break
-      case 'Warn':
-        sentryLogger.warn(msg, payload)
-        break
-      case 'Error':
-        sentryLogger.error(msg, payload)
-        break
-      case 'Fatal':
-        sentryLogger.fatal(msg, payload)
-        break
-      default:
-        sentryLogger.info(msg, payload)
-    }
+export const AppLogger = Logger.make(({ logLevel, message, cause, fiber, date }) => {
+  const msg = formatMessage(message)
+  const data = redactValue({ cause, fiberId: fiber.id, date }) as Record<string, unknown>
+  const payload = {
+    ...data,
+    logLevel
   }
-)
+
+  pinoInstance[pinoLevel(logLevel)](payload, msg)
+
+  if (!Sentry.getClient()) return
+
+  const sentryLogger = Sentry.logger
+  switch (logLevel) {
+    case 'Trace':
+    case 'Debug':
+      sentryLogger.debug(msg, payload)
+      break
+    case 'Info':
+      sentryLogger.info(msg, payload)
+      break
+    case 'Warn':
+      sentryLogger.warn(msg, payload)
+      break
+    case 'Error':
+      sentryLogger.error(msg, payload)
+      break
+    case 'Fatal':
+      sentryLogger.fatal(msg, payload)
+      break
+    default:
+      sentryLogger.info(msg, payload)
+  }
+})
 
 export const AppLoggerLive = Logger.layer([AppLogger])

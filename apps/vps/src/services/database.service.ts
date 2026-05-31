@@ -5,7 +5,6 @@ export interface DatabaseService {
   readonly db: typeof db
 }
 
-export const DatabaseService =
-  Context.Service<DatabaseService>('DatabaseService')
+export const DatabaseService = Context.Service<DatabaseService>('DatabaseService')
 
 export const DatabaseServiceLive = Layer.succeed(DatabaseService, { db })

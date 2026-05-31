@@ -21,6 +21,7 @@
 > "Let me show you the problem we're solving. Here's our audio player built with React Context."
 
 **[Demo the issues]:**
+
 1. Start playing a mix
 2. Navigate to different pages - audio continues ✅
 3. Refresh the page - audio player disappears ❌
@@ -29,9 +30,11 @@
 > "This is frustrating for users listening to long DJ mixes. They lose their progress every time they refresh. The root cause? We were using React Context with manual localStorage, but we weren't properly persisting the audio source URL."
 
 **[Show code snippet of old context]**
+
 ```typescript
 // Old approach - complex and error-prone
-const [audioRef, handlers, isPlaying, thumbnailUrl, progress, nowPlayingContext] = useAudioPlayerContext()
+const [audioRef, handlers, isPlaying, thumbnailUrl, progress, nowPlayingContext] =
+  useAudioPlayerContext()
 ```
 
 > "This API was also hard to work with - array destructuring, lots of unused values, and no tree-shaking support."
@@ -43,27 +46,29 @@ const [audioRef, handlers, isPlaying, thumbnailUrl, progress, nowPlayingContext]
 > "Here's our new approach with Zustand. First, let's look at the store structure."
 
 **[Highlight key parts of the store]**
+
 ```typescript
 interface AudioPlayerState {
-  audioRef: HTMLAudioElement | null;
-  isPlaying: boolean;
-  currentTime: number;
-  duration: number;
-  audioSrc: string | null; // 🔑 This is the key!
-  thumbnailUrl: string;
-  nowPlayingContext: NowPlayingContext;
+  audioRef: HTMLAudioElement | null
+  isPlaying: boolean
+  currentTime: number
+  duration: number
+  audioSrc: string | null // 🔑 This is the key!
+  thumbnailUrl: string
+  nowPlayingContext: NowPlayingContext
 }
 ```
 
 > "The magic is in this `audioSrc` field. By persisting the source URL separately from the HTML audio element, we can properly restore the audio player state."
 
 **[Show persistence configuration]**
+
 ```typescript
 partialize: (state) => ({
   currentTime: state.currentTime,
   audioSrc: state.audioSrc, // ✨ Persisted
   thumbnailUrl: state.thumbnailUrl,
-  nowPlayingContext: state.nowPlayingContext,
+  nowPlayingContext: state.nowPlayingContext
   // audioRef is NOT persisted - it's recreated
 })
 ```
@@ -71,6 +76,7 @@ partialize: (state) => ({
 > "Zustand's persist middleware handles all the localStorage complexity for us. We just specify what to persist, and it handles serialization, deserialization, and hydration automatically."
 
 **[Show the new hook APIs]**
+
 ```typescript
 // New approach - clean and focused
 const { isPlaying, currentTime, duration } = useAudioPlayerState()
@@ -88,23 +94,29 @@ const { play, pause, loadTrack } = useAudioPlayerActions()
 **[Step through the code]**
 
 1. **Audio Element Creation**
+
 ```typescript
 // useAudioPlayerInitializer hook
 const audioRef = useMemo(() => {
-  if (typeof window === "undefined") return null;
-  return new Audio();
-}, []);
+  if (typeof window === 'undefined') return null
+  return new Audio()
+}, [])
 ```
 
 2. **State Restoration**
+
 ```typescript
 // initialize action in store
 if (audioSrc) {
-  audioRef.src = audioSrc;
+  audioRef.src = audioSrc
   if (currentTime > 0) {
-    audioRef.addEventListener('loadedmetadata', () => {
-      audioRef.currentTime = currentTime;
-    }, { once: true });
+    audioRef.addEventListener(
+      'loadedmetadata',
+      () => {
+        audioRef.currentTime = currentTime
+      },
+      { once: true }
+    )
   }
 }
 ```
@@ -125,6 +137,7 @@ const { loadTrack } = useAudioPlayerActions()
 ```
 
 **[Show Redux DevTools in action]**
+
 > "And here's a bonus - we get Redux DevTools integration for free! Watch these actions fire as I interact with the audio player."
 
 ## UX Improvements (6:00 - 7:00)
@@ -134,12 +147,14 @@ const { loadTrack } = useAudioPlayerActions()
 > "While we were refactoring, we also added a small but important UX improvement - time remaining display."
 
 **[Demo the time display]**
+
 - Show elapsed time on left: `2:30`
 - Show remaining time on right: `-42:30`
 
 > "This helps users understand their progress through longer mixes. The minus sign clearly indicates remaining time, following common audio player conventions."
 
 **[Show the simple implementation]**
+
 ```typescript
 <p className='text-xs'>{formatSeconds(currentTime)}</p>
 <input type='range' value={progress} onInput={changeRange} />
@@ -155,6 +170,7 @@ const { loadTrack } = useAudioPlayerActions()
 > "Let's test our solution. I'll start playing this mix..."
 
 **[Demo flow]:**
+
 1. Load a mix and start playing
 2. Seek to a specific position
 3. Navigate to different pages
@@ -166,9 +182,11 @@ const { loadTrack } = useAudioPlayerActions()
 > "Perfect! The audio player now truly persists across sessions."
 
 **[Show mobile/different browsers]**
+
 > "This works across different browsers and devices too. The localStorage-based persistence is universally supported."
 
 **[Show dev tools]**
+
 > "And for debugging, we can see exactly what's happening in Redux DevTools. Each action is logged with a clear name, making it easy to track down issues."
 
 ## Key Takeaways (8:30 - 9:30)
@@ -204,12 +222,14 @@ const { loadTrack } = useAudioPlayerActions()
 ## Technical Notes for Recording
 
 ### Screen Recording Setup
+
 - **Resolution**: 1920x1080 minimum
 - **Frame Rate**: 60fps for smooth audio player animations
 - **Audio**: High-quality microphone, eliminate background noise
 - **Browser**: Use Chrome with DevTools open for Redux DevTools demos
 
 ### Code Snippets to Prepare
+
 1. Old React Context implementation
 2. New Zustand store structure
 3. Persistence configuration
@@ -217,12 +237,14 @@ const { loadTrack } = useAudioPlayerActions()
 5. Initialization flow code
 
 ### Demo Assets Needed
+
 - A test mix file (at least 5+ minutes long)
 - Multiple browser windows/tabs ready
 - Redux DevTools extension installed and configured
 - Clean browser state to show the persistence from scratch
 
 ### Visual Elements
+
 - Zoom in on code snippets for readability
 - Use syntax highlighting
 - Circle/highlight important parts of code
@@ -230,6 +252,7 @@ const { loadTrack } = useAudioPlayerActions()
 - Use cursor highlighting for important UI elements
 
 ### Pacing Notes
+
 - Pause after each major concept
 - Allow time for viewers to read code snippets
 - Keep demos snappy but clear

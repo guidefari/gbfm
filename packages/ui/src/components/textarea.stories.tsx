@@ -1,10 +1,4 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from './card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './card'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 import { Textarea } from './textarea'
 

@@ -1,67 +1,53 @@
 #!/usr/bin/env bun
 
-import {
-  S3Client,
-  ListObjectsV2Command,
-  GetObjectCommand,
-} from "@aws-sdk/client-s3";
-import { Resource } from "sst";
-import { BunRuntime } from "@effect/platform-bun";
-import { Effect, Console } from "effect";
-import { existsSync } from "node:fs";
-import path from "node:path";
+import { S3Client, ListObjectsV2Command, GetObjectCommand } from '@aws-sdk/client-s3'
+import { Resource } from 'sst'
+import { BunRuntime } from '@effect/platform-bun'
+import { Effect, Console } from 'effect'
+import { existsSync } from 'node:fs'
+import path from 'node:path'
 
 interface RestoreConfig {
-  host: string;
-  port: string;
-  user: string;
-  password: string;
-  database: string;
+  host: string
+  port: string
+  user: string
+  password: string
+  database: string
 }
 
 async function findPsqlPath(): Promise<string | null> {
-  const pathsToTry = [
-    "psql",
-    "psql-17",
-    "psql-16",
-    "psql-15",
-    "psql-14",
-    "psql-13",
-  ];
+  const pathsToTry = ['psql', 'psql-17', 'psql-16', 'psql-15', 'psql-14', 'psql-13']
 
   for (const path of pathsToTry) {
     try {
-      const proc = Bun.spawn([path, "--version"], {
-        stdout: "pipe",
-        stderr: "pipe",
-      });
-      await proc.exited;
+      const proc = Bun.spawn([path, '--version'], {
+        stdout: 'pipe',
+        stderr: 'pipe'
+      })
+      await proc.exited
 
       if (proc.exitCode === 0) {
-        return path;
+        return path
       }
     } catch (error) {
-      continue;
+      continue
     }
   }
 
-  return null;
+  return null
 }
 
 async function isPsqlAvailable(): Promise<boolean> {
-  const psqlPath = await findPsqlPath();
-  return psqlPath !== null;
+  const psqlPath = await findPsqlPath()
+  return psqlPath !== null
 }
 
-async function restoreWithPsql(
-  config: RestoreConfig,
-  filePath: string,
-): Promise<void> {
-  console.log("📦 Restoring database using psql...");
+async function restoreWithPsql(config: RestoreConfig, filePath: string): Promise<void> {
+  console.log('📦 Restoring database using psql...')
 
-  const psqlPath = await findPsqlPath();
+  const psqlPath = await findPsqlPath()
   if (!psqlPath) {
-    throw new Error("psql not found");
+    throw new Error('psql not found')
   }
 
   const env = {
@@ -69,295 +55,275 @@ async function restoreWithPsql(
     PGUSER: config.user,
     PGHOST: config.host,
     PGDATABASE: config.database,
-    PGPORT: config.port,
-  };
+    PGPORT: config.port
+  }
 
-  const proc = Bun.spawn([psqlPath, "-f", filePath], {
+  const proc = Bun.spawn([psqlPath, '-f', filePath], {
     env: { ...process.env, ...env },
-    stdout: "pipe",
-    stderr: "pipe",
-  });
+    stdout: 'pipe',
+    stderr: 'pipe'
+  })
 
-  const stdout = await new Response(proc.stdout).text();
-  const stderr = await new Response(proc.stderr).text();
-  const exitCode = await proc.exited;
+  const stdout = await new Response(proc.stdout).text()
+  const stderr = await new Response(proc.stderr).text()
+  const exitCode = await proc.exited
 
   if (exitCode !== 0) {
-    throw new Error(`psql failed with exit code ${exitCode}: ${stderr}`);
+    throw new Error(`psql failed with exit code ${exitCode}: ${stderr}`)
   }
 
   if (stdout) {
-    console.log(stdout);
+    console.log(stdout)
   }
 
-  if (stderr && !stderr.includes("NOTICE")) {
-    console.warn("⚠️  psql warnings:", stderr);
+  if (stderr && !stderr.includes('NOTICE')) {
+    console.warn('⚠️  psql warnings:', stderr)
   }
 
-  console.log("✅ Database restored successfully using psql");
+  console.log('✅ Database restored successfully using psql')
 }
 
 async function getLatestS3Backup(): Promise<{ key: string; filePath: string }> {
-  const s3Client = new S3Client({});
+  const s3Client = new S3Client({})
 
   const getBucketName = (): string => {
     try {
-      return (
-        (Resource as any).DatabaseBackups?.name ||
-        process.env.DATABASE_BACKUP_BUCKET ||
-        ""
-      );
+      return (Resource as any).DatabaseBackups?.name || process.env.DATABASE_BACKUP_BUCKET || ''
     } catch {
-      return process.env.DATABASE_BACKUP_BUCKET || "";
+      return process.env.DATABASE_BACKUP_BUCKET || ''
     }
-  };
-
-  const bucketName = getBucketName();
-
-  if (!bucketName) {
-    throw new Error("Database backup bucket not configured");
   }
 
-  console.log(`📦 Fetching latest backup from S3 bucket: ${bucketName}`);
+  const bucketName = getBucketName()
+
+  if (!bucketName) {
+    throw new Error('Database backup bucket not configured')
+  }
+
+  console.log(`📦 Fetching latest backup from S3 bucket: ${bucketName}`)
 
   const listCommand = new ListObjectsV2Command({
     Bucket: bucketName,
-    MaxKeys: 100,
-  });
+    MaxKeys: 100
+  })
 
-  const listResponse = await s3Client.send(listCommand);
+  const listResponse = await s3Client.send(listCommand)
 
   if (!listResponse.Contents || listResponse.Contents.length === 0) {
-    throw new Error("No backups found in S3 bucket");
+    throw new Error('No backups found in S3 bucket')
   }
 
   const sortedBackups = listResponse.Contents.filter(
-    (obj) => obj.Key && obj.Key.endsWith(".sql"),
-  ).sort((a, b) => {
-    const timeA = a.LastModified?.getTime() || 0;
-    const timeB = b.LastModified?.getTime() || 0;
-    return timeB - timeA;
-  });
+    (obj) => obj.Key && obj.Key.endsWith('.sql')
+  ).toSorted((a, b) => {
+    const timeA = a.LastModified?.getTime() || 0
+    const timeB = b.LastModified?.getTime() || 0
+    return timeB - timeA
+  })
 
   if (sortedBackups.length === 0) {
-    throw new Error("No .sql backup files found in S3 bucket");
+    throw new Error('No .sql backup files found in S3 bucket')
   }
 
-  const latestBackup = sortedBackups[0];
+  const latestBackup = sortedBackups[0]
 
   if (!latestBackup) {
-    throw new Error("No backups found in S3 bucket");
+    throw new Error('No backups found in S3 bucket')
   }
 
-  console.log(`✅ Latest backup: ${latestBackup.Key}`);
-  console.log(`   Created: ${latestBackup.LastModified?.toISOString()}`);
-  console.log(
-    `   Size: ${((latestBackup.Size || 0) / 1024 / 1024).toFixed(2)} MB`,
-  );
+  console.log(`✅ Latest backup: ${latestBackup.Key}`)
+  console.log(`   Created: ${latestBackup.LastModified?.toISOString()}`)
+  console.log(`   Size: ${((latestBackup.Size || 0) / 1024 / 1024).toFixed(2)} MB`)
 
   const getCommand = new GetObjectCommand({
     Bucket: bucketName,
-    Key: latestBackup.Key,
-  });
+    Key: latestBackup.Key
+  })
 
-  const getResponse = await s3Client.send(getCommand);
-  const content = (await getResponse.Body?.transformToString()) || "";
+  const getResponse = await s3Client.send(getCommand)
+  const content = (await getResponse.Body?.transformToString()) || ''
 
   // Save to temp file
-  const tempDir = path.join(process.cwd(), ".tmp");
-  const tempFilePath = path.join(tempDir, `restore-${Date.now()}.sql`);
+  const tempDir = path.join(process.cwd(), '.tmp')
+  const tempFilePath = path.join(tempDir, `restore-${Date.now()}.sql`)
 
   // Create temp directory if it doesn't exist
-  await Bun.write(tempFilePath, content);
+  await Bun.write(tempFilePath, content)
 
-  console.log(`💾 Downloaded to: ${tempFilePath}`);
+  console.log(`💾 Downloaded to: ${tempFilePath}`)
 
-  return { key: latestBackup.Key!, filePath: tempFilePath };
+  return { key: latestBackup.Key!, filePath: tempFilePath }
 }
 
 function promptConfirmation(config: RestoreConfig, source: string): boolean {
-  console.log("\n⚠️  WARNING: DESTRUCTIVE OPERATION");
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log(`Source: ${source}`);
-  console.log(`Target database: ${config.database}`);
-  console.log(`Host: ${config.host}:${config.port}`);
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("This operation will:");
-  console.log("  • DROP existing tables");
-  console.log("  • DELETE all current data");
-  console.log("  • REPLACE with backup data");
-  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n");
+  console.log('\n⚠️  WARNING: DESTRUCTIVE OPERATION')
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+  console.log(`Source: ${source}`)
+  console.log(`Target database: ${config.database}`)
+  console.log(`Host: ${config.host}:${config.port}`)
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')
+  console.log('This operation will:')
+  console.log('  • DROP existing tables')
+  console.log('  • DELETE all current data')
+  console.log('  • REPLACE with backup data')
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n')
 
-  const response = prompt("Type 'yes' to continue: ");
-  return response?.toLowerCase() === "yes";
+  const response = prompt("Type 'yes' to continue: ")
+  return response?.toLowerCase() === 'yes'
 }
 
-const restoreEffect = (source: string, destination: "local" | "remote" | "planetscale", skipConfirm: boolean) =>
-    Effect.gen(function* () {
-      yield* Console.log("🔄 Starting database restore...");
-      yield* Console.log(`   Source: ${source}`);
-      yield* Console.log(`   Destination: ${destination} database`);
-      yield* Console.log(
-        "   💡 Run with --help to see all available options\n",
-      );
+const restoreEffect = (
+  source: string,
+  destination: 'local' | 'remote' | 'planetscale',
+  skipConfirm: boolean
+) =>
+  Effect.gen(function* () {
+    yield* Console.log('🔄 Starting database restore...')
+    yield* Console.log(`   Source: ${source}`)
+    yield* Console.log(`   Destination: ${destination} database`)
+    yield* Console.log('   💡 Run with --help to see all available options\n')
 
-      let filePath: string;
-      let sourceName: string;
-      let isTemporaryFile = false;
+    let filePath: string
+    let sourceName: string
+    let isTemporaryFile = false
 
-      if (source === "s3") {
-        const { key, filePath: tempPath } = yield* Effect.promise(() =>
-          getLatestS3Backup(),
-        );
-        filePath = tempPath;
-        sourceName = `S3: ${key}`;
-        isTemporaryFile = true;
-      } else {
-        const resolvedPath = path.isAbsolute(source)
-          ? source
-          : path.join(process.cwd(), source);
+    if (source === 's3') {
+      const { key, filePath: tempPath } = yield* Effect.promise(() => getLatestS3Backup())
+      filePath = tempPath
+      sourceName = `S3: ${key}`
+      isTemporaryFile = true
+    } else {
+      const resolvedPath = path.isAbsolute(source) ? source : path.join(process.cwd(), source)
 
-        if (!existsSync(resolvedPath)) {
-          yield* Console.error(`❌ Error: File not found: ${resolvedPath}`);
-          return yield* Effect.die(new Error("File not found"));
-        }
-
-        yield* Console.log(`📁 Backup file: ${resolvedPath}`);
-        const fileSize = yield* Effect.promise(
-          async () => Bun.file(resolvedPath).size,
-        );
-        yield* Console.log(
-          `📦 File size: ${(fileSize / 1024 / 1024).toFixed(2)} MB`,
-        );
-
-        filePath = resolvedPath;
-        sourceName = resolvedPath;
+      if (!existsSync(resolvedPath)) {
+        yield* Console.error(`❌ Error: File not found: ${resolvedPath}`)
+        return yield* Effect.die(new Error('File not found'))
       }
 
-      let config: RestoreConfig;
+      yield* Console.log(`📁 Backup file: ${resolvedPath}`)
+      const fileSize = yield* Effect.promise(async () => Bun.file(resolvedPath).size)
+      yield* Console.log(`📦 File size: ${(fileSize / 1024 / 1024).toFixed(2)} MB`)
 
-      if (destination === "local") {
-        const localDbUrl = process.env.LOCAL_DB_URL;
-        if (!localDbUrl) {
-          yield* Console.error(
-            "❌ LOCAL_DB_URL environment variable is required when using --destination=local",
-          );
-          yield* Console.error(
-            "   Format: postgres://user:password@host:port/database",
-          );
-          return yield* Effect.die(new Error("LOCAL_DB_URL not set"));
-        }
+      filePath = resolvedPath
+      sourceName = resolvedPath
+    }
 
-        yield* Console.log("🔗 Using LOCAL_DB_URL connection string");
-        const url = new URL(localDbUrl);
+    let config: RestoreConfig
 
-        yield* Console.log(url.toString());
-
-        config = {
-          password: url.password || "",
-          user: url.username,
-          host: url.hostname,
-          database: url.pathname.slice(1),
-          port: url.port || "5432",
-        };
-      } else if (destination === "planetscale") {
-        const planetscaleUrl = process.env.PLANETSCALE_DB_URL;
-        if (!planetscaleUrl) {
-          yield* Console.error(
-            "❌ PLANETSCALE_DB_URL environment variable is required when using --destination=planetscale",
-          );
-          yield* Console.error(
-            "   Format: mysql://user:password@host:port/database",
-          );
-          return yield* Effect.die(new Error("PLANETSCALE_DB_URL not set"));
-        }
-
-        yield* Console.log("🔗 Using PLANETSCALE_DB_URL connection string");
-        yield* Console.log(planetscaleUrl);
-
-        const url = new URL(planetscaleUrl);
-
-        config = {
-          password: url.password || "",
-          user: url.username,
-          host: url.hostname,
-          database: url.pathname.slice(1),
-          port: url.port || "5432",
-        };
-      } else {
-        yield* Console.log("🔗 Using SST Resource configuration");
-
-        const getResourceOrEnv = (
-          resourceKey: string,
-          envKey: string,
-        ): string => {
-          try {
-            return (
-              (Resource as any)[resourceKey]?.value || process.env[envKey] || ""
-            );
-          } catch {
-            return process.env[envKey] || "";
-          }
-        };
-
-        config = {
-          password: getResourceOrEnv("DatabasePassword", "DatabasePassword"),
-          user: getResourceOrEnv("DatabaseUser", "DatabaseUser"),
-          host: getResourceOrEnv("DatabaseHost", "DatabaseHost"),
-          database: getResourceOrEnv("DatabaseName", "DatabaseName"),
-          port: getResourceOrEnv("DatabasePort", "DatabasePort"),
-        };
+    if (destination === 'local') {
+      const localDbUrl = process.env.LOCAL_DB_URL
+      if (!localDbUrl) {
+        yield* Console.error(
+          '❌ LOCAL_DB_URL environment variable is required when using --destination=local'
+        )
+        yield* Console.error('   Format: postgres://user:password@host:port/database')
+        return yield* Effect.die(new Error('LOCAL_DB_URL not set'))
       }
 
-      if (!skipConfirm) {
-        const confirmed = promptConfirmation(config, sourceName);
-        if (!confirmed) {
-          yield* Console.log("❌ Restore cancelled by user");
-          return yield* Effect.void;
+      yield* Console.log('🔗 Using LOCAL_DB_URL connection string')
+      const url = new URL(localDbUrl)
+
+      yield* Console.log(url.toString())
+
+      config = {
+        password: url.password || '',
+        user: url.username,
+        host: url.hostname,
+        database: url.pathname.slice(1),
+        port: url.port || '5432'
+      }
+    } else if (destination === 'planetscale') {
+      const planetscaleUrl = process.env.PLANETSCALE_DB_URL
+      if (!planetscaleUrl) {
+        yield* Console.error(
+          '❌ PLANETSCALE_DB_URL environment variable is required when using --destination=planetscale'
+        )
+        yield* Console.error('   Format: mysql://user:password@host:port/database')
+        return yield* Effect.die(new Error('PLANETSCALE_DB_URL not set'))
+      }
+
+      yield* Console.log('🔗 Using PLANETSCALE_DB_URL connection string')
+      yield* Console.log(planetscaleUrl)
+
+      const url = new URL(planetscaleUrl)
+
+      config = {
+        password: url.password || '',
+        user: url.username,
+        host: url.hostname,
+        database: url.pathname.slice(1),
+        port: url.port || '5432'
+      }
+    } else {
+      yield* Console.log('🔗 Using SST Resource configuration')
+
+      const getResourceOrEnv = (resourceKey: string, envKey: string): string => {
+        try {
+          return (Resource as any)[resourceKey]?.value || process.env[envKey] || ''
+        } catch {
+          return process.env[envKey] || ''
         }
       }
 
-      yield* Console.log("\n🚀 Starting restore operation...");
-
-      const hasPsql = yield* Effect.promise(() => isPsqlAvailable());
-
-      if (!hasPsql) {
-        if (isTemporaryFile) {
-          yield* Effect.promise(async () => {
-            const fs = await import("node:fs/promises");
-            await fs.unlink(filePath).catch(() => {});
-          });
-        }
-        yield* Console.log("⚠️  psql not found, exiting");
-        return yield* Effect.die(new Error("psql not available"));
+      config = {
+        password: getResourceOrEnv('DatabasePassword', 'DatabasePassword'),
+        user: getResourceOrEnv('DatabaseUser', 'DatabaseUser'),
+        host: getResourceOrEnv('DatabaseHost', 'DatabaseHost'),
+        database: getResourceOrEnv('DatabaseName', 'DatabaseName'),
+        port: getResourceOrEnv('DatabasePort', 'DatabasePort')
       }
+    }
 
-      yield* Console.log("✓ Using psql");
-
-      try {
-        yield* Effect.promise(() => restoreWithPsql(config, filePath));
-
-        yield* Console.log("\n🎉 Database restore complete!");
-        yield* Console.log(`📊 Database: ${config.database}`);
-        yield* Console.log(`📊 User: ${config.user}`);
-        yield* Console.log(`   Host: ${config.host}:${config.port}`);
-      } finally {
-        if (isTemporaryFile) {
-          yield* Effect.promise(async () => {
-            const fs = await import("node:fs/promises");
-            await fs.unlink(filePath).catch(() => {});
-            console.log(`🧹 Cleaned up temp file: ${filePath}`);
-          });
-        }
+    if (!skipConfirm) {
+      const confirmed = promptConfirmation(config, sourceName)
+      if (!confirmed) {
+        yield* Console.log('❌ Restore cancelled by user')
+        return yield* Effect.void
       }
+    }
 
-      return yield* Effect.void;
-    });
+    yield* Console.log('\n🚀 Starting restore operation...')
+
+    const hasPsql = yield* Effect.promise(() => isPsqlAvailable())
+
+    if (!hasPsql) {
+      if (isTemporaryFile) {
+        yield* Effect.promise(async () => {
+          const fs = await import('node:fs/promises')
+          await fs.unlink(filePath).catch(() => {})
+        })
+      }
+      yield* Console.log('⚠️  psql not found, exiting')
+      return yield* Effect.die(new Error('psql not available'))
+    }
+
+    yield* Console.log('✓ Using psql')
+
+    try {
+      yield* Effect.promise(() => restoreWithPsql(config, filePath))
+
+      yield* Console.log('\n🎉 Database restore complete!')
+      yield* Console.log(`📊 Database: ${config.database}`)
+      yield* Console.log(`📊 User: ${config.user}`)
+      yield* Console.log(`   Host: ${config.host}:${config.port}`)
+    } finally {
+      if (isTemporaryFile) {
+        yield* Effect.promise(async () => {
+          const fs = await import('node:fs/promises')
+          await fs.unlink(filePath).catch(() => {})
+          console.log(`🧹 Cleaned up temp file: ${filePath}`)
+        })
+      }
+    }
+
+    return yield* Effect.void
+  })
 
 if (import.meta.main) {
-  const srcArg = process.argv.find((a) => a.startsWith("--source="))?.split("=")[1] ?? "s3";
-  const destArg = process.argv.find((a) => a.startsWith("--destination="))?.split("=")[1];
-  const destination = (destArg === "remote" || destArg === "planetscale") ? destArg : "local" as const;
-  const skipConfirm = process.argv.includes("--skip-confirm");
-  restoreEffect(srcArg, destination, skipConfirm).pipe(BunRuntime.runMain);
+  const srcArg = process.argv.find((a) => a.startsWith('--source='))?.split('=')[1] ?? 's3'
+  const destArg = process.argv.find((a) => a.startsWith('--destination='))?.split('=')[1]
+  const destination =
+    destArg === 'remote' || destArg === 'planetscale' ? destArg : ('local' as const)
+  const skipConfirm = process.argv.includes('--skip-confirm')
+  restoreEffect(srcArg, destination, skipConfirm).pipe(BunRuntime.runMain)
 }

@@ -22,10 +22,10 @@ The `prepare` script in root `package.json` runs:
 
 This patches two files inside `node_modules/typescript/lib/`:
 
-| File | What it does | Affects |
-|------|-------------|---------|
+| File            | What it does                          | Affects       |
+| --------------- | ------------------------------------- | ------------- |
 | `typescript.js` | Language service (editor integration) | VS Code, IDEs |
-| `_tsc.js` | CLI compiler (`tsc --noEmit`) | Terminal, CI |
+| `_tsc.js`       | CLI compiler (`tsc --noEmit`)         | Terminal, CI  |
 
 When `_tsc.js` is patched, running `tsc --noEmit` emits Effect diagnostics as warnings/messages. Warnings cause exit code 2 by default.
 

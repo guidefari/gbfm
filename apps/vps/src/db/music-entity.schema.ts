@@ -1,10 +1,6 @@
 import { LINK_STATUS, LINK_STATUSES } from '@gbfm/core/status'
 import { z } from '@hono/zod-openapi'
-import {
-  type InferInsertModel,
-  type InferSelectModel,
-  relations
-} from 'drizzle-orm'
+import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
 import {
   index,
   integer,
@@ -36,12 +32,7 @@ import { user } from './auth.schema'
 // constant below so app-level type safety stays in sync.
 // ---------------------------------------------------------------------------
 
-export const MUSIC_ENTITY_TYPES = [
-  'artist',
-  'album',
-  'track',
-  'playlist'
-] as const
+export const MUSIC_ENTITY_TYPES = ['artist', 'album', 'track', 'playlist'] as const
 export type MusicEntityType = (typeof MUSIC_ENTITY_TYPES)[number]
 
 export const MUSIC_PLATFORMS = [
@@ -215,10 +206,7 @@ export const musicPlaylistTracksTable = pgTable(
   },
   (table) => [
     primaryKey({ columns: [table.playlistId, table.trackId] }),
-    index('music_playlist_tracks_position_idx').on(
-      table.playlistId,
-      table.position
-    )
+    index('music_playlist_tracks_position_idx').on(table.playlistId, table.position)
   ]
 )
 
@@ -246,9 +234,7 @@ export const musicEntityLinksTable = pgTable(
       .notNull()
       .references(() => musicPlatformsTable.id),
     url: varchar({ length: 2048 }).notNull(),
-    status: varchar({ length: 50 })
-      .notNull()
-      .default(LINK_STATUS.PENDING_REVIEW),
+    status: varchar({ length: 50 }).notNull().default(LINK_STATUS.PENDING_REVIEW),
     scrapedAt: timestamp({ withTimezone: true }),
     verifiedAt: timestamp({ withTimezone: true }),
     verifiedBy: text().references(() => user.id, { onDelete: 'set null' }),
@@ -273,9 +259,7 @@ export const musicEntityLinksTable = pgTable(
 // TypeScript types
 // ---------------------------------------------------------------------------
 
-export type SelectMusicEntityType = InferSelectModel<
-  typeof musicEntityTypesTable
->
+export type SelectMusicEntityType = InferSelectModel<typeof musicEntityTypesTable>
 export type SelectMusicPlatform = InferSelectModel<typeof musicPlatformsTable>
 
 export type SelectMusicArtist = InferSelectModel<typeof musicArtistsTable>
@@ -290,101 +274,75 @@ export type InsertMusicTrack = InferInsertModel<typeof musicTracksTable>
 export type SelectMusicPlaylist = InferSelectModel<typeof musicPlaylistsTable>
 export type InsertMusicPlaylist = InferInsertModel<typeof musicPlaylistsTable>
 
-export type SelectMusicPlaylistTrack = InferSelectModel<
-  typeof musicPlaylistTracksTable
->
-export type InsertMusicPlaylistTrack = InferInsertModel<
-  typeof musicPlaylistTracksTable
->
+export type SelectMusicPlaylistTrack = InferSelectModel<typeof musicPlaylistTracksTable>
+export type InsertMusicPlaylistTrack = InferInsertModel<typeof musicPlaylistTracksTable>
 
-export type SelectMusicEntityLink = InferSelectModel<
-  typeof musicEntityLinksTable
->
-export type InsertMusicEntityLink = InferInsertModel<
-  typeof musicEntityLinksTable
->
+export type SelectMusicEntityLink = InferSelectModel<typeof musicEntityLinksTable>
+export type InsertMusicEntityLink = InferInsertModel<typeof musicEntityLinksTable>
 
 // ---------------------------------------------------------------------------
 // Drizzle relations
 // ---------------------------------------------------------------------------
 
-export const musicArtistsRelations = relations(
-  musicArtistsTable,
-  ({ many }) => ({
-    albumArtists: many(musicAlbumArtistsTable),
-    trackArtists: many(musicTrackArtistsTable)
-  })
-)
+export const musicArtistsRelations = relations(musicArtistsTable, ({ many }) => ({
+  albumArtists: many(musicAlbumArtistsTable),
+  trackArtists: many(musicTrackArtistsTable)
+}))
 
 export const musicAlbumsRelations = relations(musicAlbumsTable, ({ many }) => ({
   albumArtists: many(musicAlbumArtistsTable),
   tracks: many(musicTracksTable)
 }))
 
-export const musicTracksRelations = relations(
-  musicTracksTable,
-  ({ one, many }) => ({
-    album: one(musicAlbumsTable, {
-      fields: [musicTracksTable.albumId],
-      references: [musicAlbumsTable.id]
-    }),
-    trackArtists: many(musicTrackArtistsTable),
-    playlistTracks: many(musicPlaylistTracksTable)
-  })
-)
+export const musicTracksRelations = relations(musicTracksTable, ({ one, many }) => ({
+  album: one(musicAlbumsTable, {
+    fields: [musicTracksTable.albumId],
+    references: [musicAlbumsTable.id]
+  }),
+  trackArtists: many(musicTrackArtistsTable),
+  playlistTracks: many(musicPlaylistTracksTable)
+}))
 
-export const musicAlbumArtistsRelations = relations(
-  musicAlbumArtistsTable,
-  ({ one }) => ({
-    album: one(musicAlbumsTable, {
-      fields: [musicAlbumArtistsTable.albumId],
-      references: [musicAlbumsTable.id]
-    }),
-    artist: one(musicArtistsTable, {
-      fields: [musicAlbumArtistsTable.artistId],
-      references: [musicArtistsTable.id]
-    })
+export const musicAlbumArtistsRelations = relations(musicAlbumArtistsTable, ({ one }) => ({
+  album: one(musicAlbumsTable, {
+    fields: [musicAlbumArtistsTable.albumId],
+    references: [musicAlbumsTable.id]
+  }),
+  artist: one(musicArtistsTable, {
+    fields: [musicAlbumArtistsTable.artistId],
+    references: [musicArtistsTable.id]
   })
-)
+}))
 
-export const musicTrackArtistsRelations = relations(
-  musicTrackArtistsTable,
-  ({ one }) => ({
-    track: one(musicTracksTable, {
-      fields: [musicTrackArtistsTable.trackId],
-      references: [musicTracksTable.id]
-    }),
-    artist: one(musicArtistsTable, {
-      fields: [musicTrackArtistsTable.artistId],
-      references: [musicArtistsTable.id]
-    })
+export const musicTrackArtistsRelations = relations(musicTrackArtistsTable, ({ one }) => ({
+  track: one(musicTracksTable, {
+    fields: [musicTrackArtistsTable.trackId],
+    references: [musicTracksTable.id]
+  }),
+  artist: one(musicArtistsTable, {
+    fields: [musicTrackArtistsTable.artistId],
+    references: [musicArtistsTable.id]
   })
-)
+}))
 
-export const musicPlaylistsRelations = relations(
-  musicPlaylistsTable,
-  ({ one, many }) => ({
-    curator: one(user, {
-      fields: [musicPlaylistsTable.curatorId],
-      references: [user.id]
-    }),
-    playlistTracks: many(musicPlaylistTracksTable)
-  })
-)
+export const musicPlaylistsRelations = relations(musicPlaylistsTable, ({ one, many }) => ({
+  curator: one(user, {
+    fields: [musicPlaylistsTable.curatorId],
+    references: [user.id]
+  }),
+  playlistTracks: many(musicPlaylistTracksTable)
+}))
 
-export const musicPlaylistTracksRelations = relations(
-  musicPlaylistTracksTable,
-  ({ one }) => ({
-    playlist: one(musicPlaylistsTable, {
-      fields: [musicPlaylistTracksTable.playlistId],
-      references: [musicPlaylistsTable.id]
-    }),
-    track: one(musicTracksTable, {
-      fields: [musicPlaylistTracksTable.trackId],
-      references: [musicTracksTable.id]
-    })
+export const musicPlaylistTracksRelations = relations(musicPlaylistTracksTable, ({ one }) => ({
+  playlist: one(musicPlaylistsTable, {
+    fields: [musicPlaylistTracksTable.playlistId],
+    references: [musicPlaylistsTable.id]
+  }),
+  track: one(musicTracksTable, {
+    fields: [musicPlaylistTracksTable.trackId],
+    references: [musicTracksTable.id]
   })
-)
+}))
 
 // ---------------------------------------------------------------------------
 // Zod schemas for API validation
@@ -445,16 +403,12 @@ export const insertMusicAlbumSchema = z
         example: ['Burial']
       }),
     artistIds: z.array(z.string().uuid()).optional().openapi({
-      description:
-        'UUIDs of existing music_artists rows to link via junction table'
+      description: 'UUIDs of existing music_artists rows to link via junction table'
     }),
     releaseDate: z.coerce.date().optional(),
     coverImageUrl: z.string().url().optional(),
     genres: z.array(z.string()).optional(),
-    albumType: z
-      .enum(['LP', 'EP', 'single', 'compilation'])
-      .optional()
-      .openapi({ example: 'LP' }),
+    albumType: z.enum(['LP', 'EP', 'single', 'compilation']).optional().openapi({ example: 'LP' }),
     slug: z.string().min(1).openapi({ example: 'untrue' }),
     publishedAt: z.coerce.date().optional()
   })
@@ -477,9 +431,7 @@ export const selectMusicAlbumSchema = z
   })
   .openapi('MusicAlbum')
 
-export const updateMusicAlbumSchema = insertMusicAlbumSchema
-  .partial()
-  .openapi('UpdateMusicAlbum')
+export const updateMusicAlbumSchema = insertMusicAlbumSchema.partial().openapi('UpdateMusicAlbum')
 
 // --- Track ---
 
@@ -494,8 +446,7 @@ export const insertMusicTrackSchema = z
         example: ['Burial']
       }),
     artistIds: z.array(z.string().uuid()).optional().openapi({
-      description:
-        'UUIDs of existing music_artists rows to link via junction table'
+      description: 'UUIDs of existing music_artists rows to link via junction table'
     }),
     coverImageUrl: z.string().url().optional(),
     albumId: z.string().uuid().optional(),
@@ -521,9 +472,7 @@ export const selectMusicTrackSchema = z
   })
   .openapi('MusicTrack')
 
-export const updateMusicTrackSchema = insertMusicTrackSchema
-  .partial()
-  .openapi('UpdateMusicTrack')
+export const updateMusicTrackSchema = insertMusicTrackSchema.partial().openapi('UpdateMusicTrack')
 
 // --- Playlist ---
 

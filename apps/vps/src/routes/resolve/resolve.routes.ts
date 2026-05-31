@@ -78,14 +78,8 @@ export const resolveSlug = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      resolveResponseSchema,
-      'Resolved entity (profile or show)'
-    ),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'Slug not found'
-    ),
+    [HttpStatusCodes.OK]: jsonContent(resolveResponseSchema, 'Resolved entity (profile or show)'),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'Slug not found'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to resolve slug'

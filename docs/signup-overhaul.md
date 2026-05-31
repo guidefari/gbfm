@@ -18,44 +18,54 @@ Current `/auth/sign-up` works but misses several industry standards: no password
 ## Files to modify / create
 
 ### Backend (`apps/vps`)
+
 - `src/lib/auth.ts` — flip `requireEmailVerification: true`, `sendOnSignUp: true`, `autoSignInAfterVerification: true`. Implement `sendVerificationEmail` to call new combined template via existing email-send util. Add custom plugin (or inline endpoint) `checkUsername` that queries user table for `username` (lowercase-normalized to match plugin behavior). Ensure `databaseHooks.user.create.after` no longer sends the standalone welcome email since it's combined now.
 - New: lightweight rate limit on the username check endpoint (in-memory token bucket per IP is fine for indie scale; or skip if better-auth's built-in suffices).
 
 ### Email (`packages/email`)
+
 - `emails/welcome.tsx` — refactor into combined "Welcome + verify" template. Add `verificationUrl` prop, big CTA button, keep welcome copy. Or create new `welcome-verify.tsx` and delete old one.
 - Confirm send path: whatever util fires `welcome.tsx` today must accept the new prop or be replaced by `sendVerificationEmail`.
 
 ### Frontend (`apps/www`)
 
 **Sign-up route** — `src/routes/auth/sign-up.tsx`
+
 - After successful signup: don't navigate away. Switch to a "Check your inbox to verify" success state (mirroring the forgot-password pattern we just built — same `MailCheck` icon, resend button w/ 30s cooldown using `authClient.sendVerificationEmail`).
 - "User already exists" error: surface inline w/ a "Sign in instead →" link as part of the notice.
 - Pass `helperText` to password field (rules summary). Live checklist component renders below the GenericAuthForm or replaces the `helperText` slot.
 - Add Terms/Privacy consent line above submit button.
 
 **AuthPageLayout** — `src/components/Auth/AuthPageLayout.tsx`
+
 - Outer container: `max-h-[100dvh]` + flex column. Card section gets `overflow-y-auto` with hidden scrollbar (`scrollbar-hide` Tailwind plugin if present, else inline style: `scrollbar-width:none; &::-webkit-scrollbar{display:none}` via `main.css` utility class — match the `.bg-vinyl-rings` pattern).
 - Add `.no-scrollbar` utility in `apps/www/src/styles/main.css` under `@layer utilities`.
 
 **GenericForm** — `src/components/Auth/GenericForm.tsx`
+
 - Extend `FormField` with optional `onChange?: (val: string) => void` and `rightSlot?: ReactNode` (so password show/hide and username availability indicator can live inside the input wrapper).
 - Add a `PasswordInput` wrapper — handles show/hide eye toggle. Use lucide `Eye` / `EyeOff` (already a dep).
 - Add `belowField?: ReactNode` to `FormField` so the live password checklist mounts in-line under the password input without forking the form.
 
 **New components** — `src/components/Auth/`
+
 - `PasswordChecklist.tsx` — props `{ password: string }`. Single rule for now: `≥ 8 chars`. Renders a tiny list w/ ✓/○ icons, color shifts to `gb-pastel-green-1` when satisfied. Easy to extend later.
 - `UsernameAvailability.tsx` — props `{ username: string }`. Debounces 400ms, calls `authClient.checkUsername({ username })` (or whatever the plugin exposes), shows ✓ available / ✗ taken / spinner. No-op for `< 3` chars.
 
 **Reset-password** — `src/routes/auth/reset-password.tsx`
+
 - Wire same `PasswordChecklist` under the new-password field. Enforce min-8 client-side before submit (matches server).
 
 **Verification banner** — new `src/components/Auth/VerifyEmailBanner.tsx`
+
 - Reads current user from `useAuthStore`, shows if `user.emailVerified === false`. Sticky top bar, dismissible-for-session, "Resend verification" button hooks into `authClient.sendVerificationEmail`. Mount in root layout (`src/routes/__root.tsx` or wherever the app shell lives).
 
 **Verify-email callback** — `src/routes/auth/verify-email.tsx`
+
 - Better-auth handles the token verification, but we need the redirect landing page. Show success state ("Email verified, you're all set") and link back home.
 
 **Auth-client** — `src/lib/auth-client.ts`
+
 - Add `usernameClient` plugin call if not present, ensure `checkUsername` is exposed. Add the verify email plugin client side.
 
 **Terms / Privacy stubs** — `src/routes/terms.tsx`, `src/routes/privacy.tsx` (single placeholder paragraph each — content later).

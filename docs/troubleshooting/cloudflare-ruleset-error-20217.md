@@ -66,12 +66,14 @@ The import gets rolled back, leaving you back at square one. This approach only 
 1. **Confirm the error** — look for error code `20217` in deploy logs.
 
 2. **Inspect existing rulesets** via API:
+
    ```
    GET https://api.cloudflare.com/client/v4/zones/{zone_id}/rulesets
    Authorization: Bearer {CF_API_TOKEN}
    ```
 
 3. **Filter to the redirect phase:**
+
    ```
    GET https://api.cloudflare.com/client/v4/zones/{zone_id}/rulesets/phases/http_request_dynamic_redirect/entrypoint
    Authorization: Bearer {CF_API_TOKEN}

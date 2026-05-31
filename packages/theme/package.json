@@ -2,13 +2,13 @@
   "name": "@gbfm/theme",
   "version": "0.0.1",
   "type": "module",
+  "sideEffects": [
+    "./styles/theme.css"
+  ],
   "exports": {
     ".": "./src/index.ts",
     "./styles.css": "./styles/theme.css"
   },
-  "sideEffects": [
-    "./styles/theme.css"
-  ],
   "scripts": {
     "build:css": "bun src/build-css.ts",
     "typecheck": "tsgo --noEmit",

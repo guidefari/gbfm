@@ -7,12 +7,15 @@ Improve CMS experience in `apps/www` for capturing tweet-style micro-posts. Each
 ## User Prompts (verbatim intent)
 
 ### Prompt 1 — kickoff
+
 > I want to improve on the cms experience for capturing a tweet in `@apps/www/` - I think for now it's okay to have a completely standalone page for it, while we hone in the design. we may also need to extend the data model in `@apps/vps/src/db/post.schema.ts` - ultimately I have a song to share, or album, playlist, etc. from many different platforms, and also usually have commentary to go along with that thing I'm sharing. how can we present this in an intuitive and quick way for the person capturing?
 
 ### Prompt 2 — direction chosen
+
 > yeah let's do the json embed. spotify, youtube, bandcamp, apple music. but also, I want to reuse the music service to capture metadata from one link.
 
 ### Prompt 3 — planning method
+
 > use the grill me with docs skill for us to plan this out.
 
 (Skill not loading in this session — defer to new session.)
@@ -47,6 +50,7 @@ musicEntityId: uuid('music_entity_id').nullable()
 ```
 
 Update zod schemas:
+
 - `selectPostSchema` — add `musicEntityType`, `musicEntityId`
 - `insertPostSchema` / `updatePostSchema` — add optional `musicEntityType`, `musicEntityId`
 
@@ -57,6 +61,7 @@ Migration: add nullable polymorphic reference fields. No backfill needed for the
 Route: `/admin/capture` (or similar) in `apps/www`.
 
 Flow:
+
 1. Big paste box at top — single input.
 2. On paste/blur: detect platform via host regex → call `apps/vps` endpoint → resolves or creates the matching music entity.
 3. Preview card renders below paste box (thumbnail, title, artist, platform badges/links from entity links).

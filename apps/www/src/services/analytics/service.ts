@@ -19,24 +19,15 @@ export class Analytics extends Context.Service<
     /**
      * Capture an arbitrary event with optional properties.
      */
-    readonly track: (
-      event: string,
-      properties?: AnalyticsProperties
-    ) => Effect.Effect<void>
+    readonly track: (event: string, properties?: AnalyticsProperties) => Effect.Effect<void>
     /**
      * Associate future events with a stable user identity.
      */
-    readonly identify: (
-      userId: string,
-      properties?: AnalyticsProperties
-    ) => Effect.Effect<void>
+    readonly identify: (userId: string, properties?: AnalyticsProperties) => Effect.Effect<void>
     /**
      * Record a page/screen view event.
      */
-    readonly page: (
-      name?: string,
-      properties?: AnalyticsProperties
-    ) => Effect.Effect<void>
+    readonly page: (name?: string, properties?: AnalyticsProperties) => Effect.Effect<void>
     /**
      * Clear analytics identity/session state on the current client.
      */

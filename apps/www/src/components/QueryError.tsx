@@ -11,8 +11,7 @@ interface QueryErrorProps {
 export function QueryError({ error, onRetry, message }: QueryErrorProps) {
   const isOnline = useOnlineStatus()
   const errorMessage = error instanceof Error ? error.message : String(error)
-  const isOffline =
-    !isOnline || errorMessage.toLowerCase().includes('failed to fetch')
+  const isOffline = !isOnline || errorMessage.toLowerCase().includes('failed to fetch')
 
   return (
     <div className='flex flex-col items-center justify-center gap-3 py-16 text-center'>

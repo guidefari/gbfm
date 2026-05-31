@@ -11,21 +11,25 @@ Add a "Shows" feature for recurring DJ residencies. Shows have multiple hosts, e
 ### 1. New File: `apps/vps/src/db/show.schema.ts`
 
 **`shows` table:**
+
 - Uses `defaultContentFields` (id, title, description, thumbnailUrl, slug, content, draft, tags, createdAt, updatedAt)
 - Additional fields: `scheduleDescription`, `website`, `instagram`, `soundcloud`, `mixcloud`, `genres[]`
 
 **`show_creators` junction table:**
+
 - `showId` (UUID, FK → shows)
 - `creatorId` (text, FK → users)
 - Composite primary key
 
 **`show_subscriptions` table:**
+
 - `id`, `userId`, `showId`, `createdAt`
 - Unique constraint on (userId, showId)
 
 ### 2. Modify: `apps/vps/src/db/audio.schema.ts`
 
 Add to `audioTable`:
+
 - `showId: uuid('show_id').references(() => showsTable.id, { onDelete: 'set null' })`
 - `episodeNumber: integer('episode_number')`
 - Index on `showId`
@@ -40,10 +44,10 @@ Run `bun db:gen` and `bun db:migrate` after schema changes.
 
 ### Services
 
-| File | Purpose |
-|------|---------|
-| `src/services/show.service.ts` | CRUD for shows, getEpisodes, MDX compilation |
-| `src/services/show-subscription.service.ts` | subscribe, unsubscribe, getStatus |
+| File                                        | Purpose                                      |
+| ------------------------------------------- | -------------------------------------------- |
+| `src/services/show.service.ts`              | CRUD for shows, getEpisodes, MDX compilation |
+| `src/services/show-subscription.service.ts` | subscribe, unsubscribe, getStatus            |
 
 Follow `LabelService` pattern with Effect layers.
 
@@ -87,26 +91,27 @@ src/app.ts                               # MODIFY - mount /shows routes
 
 ### Routes
 
-| File | Purpose |
-|------|---------|
-| `src/routes/shows/$showSlug.tsx` | Show detail page with hero + episode grid |
+| File                                          | Purpose                                                  |
+| --------------------------------------------- | -------------------------------------------------------- |
+| `src/routes/shows/$showSlug.tsx`              | Show detail page with hero + episode grid                |
 | `src/routes/shows/$showSlug/$episodeSlug.tsx` | Episode detail (optional, can link to existing mix page) |
 
 ### Components
 
 Create in `src/components/shows/`:
 
-| Component | Purpose |
-|-----------|---------|
-| `ShowHero.tsx` | Artwork, title, description, subscribe CTA, play latest CTA |
-| `EpisodeGrid.tsx` | Grid of episodes with pagination |
-| `EpisodeCard.tsx` | Single episode card with play button |
-| `ShowAboutSection.tsx` | MDX bio, social links |
-| `SubscribeButton.tsx` | Handles auth state, subscribe/unsubscribe |
+| Component              | Purpose                                                     |
+| ---------------------- | ----------------------------------------------------------- |
+| `ShowHero.tsx`         | Artwork, title, description, subscribe CTA, play latest CTA |
+| `EpisodeGrid.tsx`      | Grid of episodes with pagination                            |
+| `EpisodeCard.tsx`      | Single episode card with play button                        |
+| `ShowAboutSection.tsx` | MDX bio, social links                                       |
+| `SubscribeButton.tsx`  | Handles auth state, subscribe/unsubscribe                   |
 
 ### Data Fetching (`src/lib/http.ts`)
 
 Add hooks:
+
 - `useAllShows()` - infinite query
 - `useShowBySlug(slug)` - single show query
 - `useShowEpisodes(showSlug)` - infinite query for episodes
@@ -125,31 +130,37 @@ Add hooks:
 ## Implementation Order
 
 ### Phase 1: Database
+
 1. Create `show.schema.ts` with tables, relations, Zod schemas
 2. Modify `audio.schema.ts` to add `showId`, `episodeNumber`
 3. Export from `db/index.ts`
 4. Generate and run migration
 
 ### Phase 2: Backend Services
+
 1. Create `show.service.ts` (Effect pattern)
 2. Create `show-subscription.service.ts`
 3. Register in runtime layer
 
 ### Phase 3: API Routes
+
 1. Create show routes + handlers under `/content/shows`
 2. Create subscription routes + handlers under `/shows`
 3. Mount in `content.index.ts` and `app.ts`
 
 ### Phase 4: Frontend Data Layer
+
 1. Add query hooks to `http.ts`
 
 ### Phase 5: Frontend UI
+
 1. Create `shows/$showSlug.tsx` route with loader
 2. Create ShowHero, EpisodeGrid, EpisodeCard components
 3. Create ShowAboutSection component
 4. Create SubscribeButton with auth handling
 
 ### Phase 6: Polish
+
 1. SEO meta tags via route `head` function
 2. Loading states, error handling
 3. Test audio player integration

@@ -52,9 +52,7 @@ export function FormWithValidation() {
                 <FormControl>
                   <Input placeholder='you@example.com' {...field} />
                 </FormControl>
-                <FormDescription>
-                  Used for account notifications.
-                </FormDescription>
+                <FormDescription>Used for account notifications.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -72,9 +70,7 @@ export function FormWithValidation() {
                 <FormControl>
                   <Input placeholder='burial' {...field} />
                 </FormControl>
-                <FormDescription>
-                  Your unique handle on the platform.
-                </FormDescription>
+                <FormDescription>Your unique handle on the platform.</FormDescription>
                 <FormMessage />
               </FormItem>
             )}

@@ -12,18 +12,9 @@ export const getAdminOverview = createRoute({
   middleware: [requireAdminMiddleware],
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      adminOverviewResponseSchema,
-      'Admin overview dashboard data'
-    ),
-    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
-      'Unauthorized'
-    ),
-    [HttpStatusCodes.FORBIDDEN]: jsonContent(
-      z.object({ error: z.string() }),
-      'Forbidden'
-    ),
+    [HttpStatusCodes.OK]: jsonContent(adminOverviewResponseSchema, 'Admin overview dashboard data'),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(z.object({ error: z.string() }), 'Unauthorized'),
+    [HttpStatusCodes.FORBIDDEN]: jsonContent(z.object({ error: z.string() }), 'Forbidden'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to fetch admin overview'
@@ -38,14 +29,7 @@ export const simulateFrontendError = createRoute({
   tags,
   request: {
     params: z.object({
-      scenario: z.enum([
-        'ok',
-        'bad-request',
-        'not-found',
-        'rate-limit',
-        'error',
-        'unavailable'
-      ])
+      scenario: z.enum(['ok', 'bad-request', 'not-found', 'rate-limit', 'error', 'unavailable'])
     })
   },
   responses: {
@@ -97,14 +81,8 @@ export const getNewsletterSubscribers = createRoute({
       }),
       'Newsletter subscribers list'
     ),
-    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
-      'Unauthorized'
-    ),
-    [HttpStatusCodes.FORBIDDEN]: jsonContent(
-      z.object({ error: z.string() }),
-      'Forbidden'
-    )
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(z.object({ error: z.string() }), 'Unauthorized'),
+    [HttpStatusCodes.FORBIDDEN]: jsonContent(z.object({ error: z.string() }), 'Forbidden')
   }
 })
 

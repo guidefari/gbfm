@@ -29,12 +29,10 @@ export function useUsernameAvailability(username: string) {
     enabled
   })
 
-  if (!enabled)
-    return { state: 'idle' as const, available: false, isFetching: false }
+  if (!enabled) return { state: 'idle' as const, available: false, isFetching: false }
   if (isFetching || debounced !== trimmed)
     return { state: 'checking' as const, available: false, isFetching: true }
-  if (data?.available)
-    return { state: 'available' as const, available: true, isFetching: false }
+  if (data?.available) return { state: 'available' as const, available: true, isFetching: false }
   return { state: 'taken' as const, available: false, isFetching: false }
 }
 
@@ -50,11 +48,6 @@ export function UsernameAvailability({ username }: { username: string }) {
       />
     )
   if (state === 'available')
-    return (
-      <Check
-        className='h-4 w-4 text-gb-pastel-green-2'
-        aria-label='Username available'
-      />
-    )
+    return <Check className='h-4 w-4 text-gb-pastel-green-2' aria-label='Username available' />
   return <X className='h-4 w-4 text-red-400' aria-label='Username taken' />
 }

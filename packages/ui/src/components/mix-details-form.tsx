@@ -6,13 +6,7 @@ import { Button } from './button'
 import { Card, CardContent } from './card'
 import { Input } from './input'
 import { Label } from './label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from './select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select'
 import { Textarea } from './textarea'
 
 interface Show {
@@ -118,9 +112,7 @@ export function MixDetailsForm({
             className='bg-gb-bg border-gb-pastel-green-2/30'
           />
           {title && !slug && (
-            <p className='text-xs text-muted-foreground'>
-              Will be: {generateSlug(title)}
-            </p>
+            <p className='text-xs text-muted-foreground'>Will be: {generateSlug(title)}</p>
           )}
         </div>
 
@@ -149,14 +141,10 @@ export function MixDetailsForm({
 
         {allShows && (
           <div className='space-y-2'>
-            <Label className='text-gb-pastel-green-1'>
-              Radio Show (Optional)
-            </Label>
+            <Label className='text-gb-pastel-green-1'>Radio Show (Optional)</Label>
             <Select
               value={showId}
-              onValueChange={(value) =>
-                onShowChange(value === 'none' ? '' : value)
-              }>
+              onValueChange={(value) => onShowChange(value === 'none' ? '' : value)}>
               <SelectTrigger className='bg-gb-bg border-gb-pastel-green-2/30'>
                 <SelectValue placeholder='Select show' />
               </SelectTrigger>
@@ -242,9 +230,7 @@ export function MixDetailsForm({
           {!artworkPreview ? (
             <div className='p-4 text-center transition-colors border-2 border-dashed rounded-sm border-gb-pastel-green-2/30 hover:border-gb-highlight/50'>
               <ImageIcon className='w-6 h-6 mx-auto mb-2 text-gb-pastel-green-2' />
-              <p className='mb-2 text-xs text-muted-foreground'>
-                Upload cover artwork
-              </p>
+              <p className='mb-2 text-xs text-muted-foreground'>Upload cover artwork</p>
               <input
                 type='file'
                 accept='image/*'

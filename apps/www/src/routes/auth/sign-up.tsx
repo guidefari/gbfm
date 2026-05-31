@@ -1,16 +1,8 @@
-import {
-  GenericAuthForm,
-  isPasswordValid,
-  PasswordChecklist,
-  ProfilePreviewCard
-} from '@gbfm/ui'
+import { GenericAuthForm, isPasswordValid, PasswordChecklist, ProfilePreviewCard } from '@gbfm/ui'
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { MailCheck } from 'lucide-react'
 import { useState } from 'react'
-import {
-  AuthPageLayout,
-  AuthStatusNotice
-} from '@/components/Auth/AuthPageLayout'
+import { AuthPageLayout, AuthStatusNotice } from '@/components/Auth/AuthPageLayout'
 import { TermsConsent } from '@/components/Auth/TermsConsent'
 import {
   UsernameAvailability,
@@ -111,11 +103,7 @@ function SignUpPage() {
           ? 'We sent a verification link. Click it to confirm your email and finish setting up.'
           : 'Save favorites, follow the people you love, and keep your place in the archive.'
       }
-      aside={
-        isSent ? null : (
-          <ProfilePreviewCard displayName={displayName} username={username} />
-        )
-      }
+      aside={isSent ? null : <ProfilePreviewCard displayName={displayName} username={username} />}
       status={
         !isSent && error ? (
           <AuthStatusNotice variant='error'>
@@ -159,17 +147,11 @@ function SignUpPage() {
         <div className='space-y-5'>
           <div className='flex flex-col items-center gap-3 border border-gb-pastel-green-2/30 bg-gb-pastel-green-2/10 px-6 py-8 text-center'>
             <MailCheck className='h-10 w-10 text-gb-pastel-green-1' />
-            <p className='text-sm text-muted-foreground'>
-              Verification email sent to
-            </p>
-            <p className='text-base font-semibold break-all text-foreground'>
-              {signedUpEmail}
-            </p>
+            <p className='text-sm text-muted-foreground'>Verification email sent to</p>
+            <p className='text-base font-semibold break-all text-foreground'>{signedUpEmail}</p>
           </div>
 
-          {resendError ? (
-            <AuthStatusNotice variant='error'>{resendError}</AuthStatusNotice>
-          ) : null}
+          {resendError ? <AuthStatusNotice variant='error'>{resendError}</AuthStatusNotice> : null}
 
           <div className='space-y-2 text-sm'>
             <p className='text-muted-foreground'>
@@ -235,9 +217,7 @@ function SignUpPage() {
             onSubmit={onSubmit}
             submitButtonText='Sign Up'
             isSubmitting={isSubmitting}
-            submitDisabled={
-              !isPasswordValid(password) || usernameStatus.state === 'taken'
-            }
+            submitDisabled={!isPasswordValid(password) || usernameStatus.state === 'taken'}
             beforeSubmit={<TermsConsent />}
           />
         </div>
@@ -249,10 +229,7 @@ function SignUpPage() {
 function isExistingEmailError(message: string): boolean {
   const m = message.toLowerCase()
   return (
-    m.includes('already') ||
-    m.includes('exists') ||
-    m.includes('in use') ||
-    m.includes('taken')
+    m.includes('already') || m.includes('exists') || m.includes('in use') || m.includes('taken')
   )
 }
 

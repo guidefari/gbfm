@@ -12,12 +12,7 @@ import type {
   SelectShow,
   SelectShowSubscription
 } from '@gbfm/vps/schemas'
-import {
-  useInfiniteQuery,
-  useMutation,
-  useQuery,
-  useQueryClient
-} from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { RuntimeClient } from '@/runtime'
 import { captureException } from '@/services/analytics'
 import { useSession } from './auth-client'
@@ -34,11 +29,7 @@ type User = {
   role?: string | null
 }
 
-import type {
-  AlbumApiResponse,
-  PlaylistApiResponse,
-  TrackAPIResponse
-} from '@/types'
+import type { AlbumApiResponse, PlaylistApiResponse, TrackAPIResponse } from '@/types'
 
 export const VPS_BASE_URL = import.meta.env.VITE_VPS_BASE_URL
 
@@ -148,9 +139,7 @@ export async function fetcher<T>(input: RequestInfo, init: RequestInit = {}) {
 
     if (!res.ok) {
       const errorText = await res.text()
-      const error = new Error(
-        `HTTP ${res.status}: ${errorText || res.statusText}`
-      )
+      const error = new Error(`HTTP ${res.status}: ${errorText || res.statusText}`)
 
       if (res.status >= 500) {
         reportApiFailure(error, input, init, {
@@ -180,28 +169,21 @@ export function useAudioByType(
   type: 'mix' | 'track' | 'misc',
   { tag, limit = DEFAULT_PAGE_SIZE }: UseAudioByTypeOptions = {}
 ): UseAudioByTypeResult {
-  const {
-    data,
-    error,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isPending,
-    refetch
-  } = useInfiniteQuery<PaginatedResponse<SelectAudio>, Error>({
-    queryKey: ['audio', type, tag ?? null, limit],
-    queryFn: async ({ pageParam = 0 }) => {
-      const url = new URL(`${VPS_BASE_URL}/content/audio/${type}`)
-      setPaginationParams(url, Number(pageParam), { limit })
-      if (tag) url.searchParams.set('tag', tag)
-      return fetcher<PaginatedResponse<SelectAudio>>(url.toString())
-    },
-    initialPageParam: 0,
-    getNextPageParam: (lastPage) =>
-      lastPage.pagination.hasMore
-        ? lastPage.pagination.offset + lastPage.pagination.limit
-        : undefined
-  })
+  const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage, isPending, refetch } =
+    useInfiniteQuery<PaginatedResponse<SelectAudio>, Error>({
+      queryKey: ['audio', type, tag ?? null, limit],
+      queryFn: async ({ pageParam = 0 }) => {
+        const url = new URL(`${VPS_BASE_URL}/content/audio/${type}`)
+        setPaginationParams(url, Number(pageParam), { limit })
+        if (tag) url.searchParams.set('tag', tag)
+        return fetcher<PaginatedResponse<SelectAudio>>(url.toString())
+      },
+      initialPageParam: 0,
+      getNextPageParam: (lastPage) =>
+        lastPage.pagination.hasMore
+          ? lastPage.pagination.offset + lastPage.pagination.limit
+          : undefined
+    })
 
   return {
     data: data?.pages.flatMap((page) => page.data) ?? [],
@@ -217,8 +199,7 @@ export function useAudioByType(
 export function useAudioTags(type: 'mix' | 'track' | 'misc') {
   const { data, error, isPending } = useQuery<string[], Error>({
     queryKey: ['audio-tags', type],
-    queryFn: async () =>
-      fetcher<string[]>(`${VPS_BASE_URL}/content/audio/${type}/tags`),
+    queryFn: async () => fetcher<string[]>(`${VPS_BASE_URL}/content/audio/${type}/tags`),
     staleTime: 1000 * 60 * 60
   })
   return { data: data ?? [], error, isPending }
@@ -227,8 +208,7 @@ export function useAudioTags(type: 'mix' | 'track' | 'misc') {
 export function useEditorialTags() {
   const { data, error, isPending } = useQuery<string[], Error>({
     queryKey: ['editorial-tags'],
-    queryFn: async () =>
-      fetcher<string[]>(`${VPS_BASE_URL}/content/posts/editorials/tags`),
+    queryFn: async () => fetcher<string[]>(`${VPS_BASE_URL}/content/posts/editorials/tags`),
     staleTime: 1000 * 60 * 60
   })
   return { data: data ?? [], error, isPending }
@@ -237,8 +217,7 @@ export function useEditorialTags() {
 export function useAudioBySlug(type: 'mix' | 'track' | 'misc', slug: string) {
   const { data, error, isPending } = useQuery<SelectMdxCompiledAudio, Error>({
     queryKey: ['audio', type, slug],
-    queryFn: async () =>
-      fetcher(`${VPS_BASE_URL}/content/audio/${type}/${slug}`),
+    queryFn: async () => fetcher(`${VPS_BASE_URL}/content/audio/${type}/${slug}`),
     enabled: Boolean(slug) // Only run query if slug is provided
   })
 
@@ -250,34 +229,22 @@ export function useAudioBySlug(type: 'mix' | 'track' | 'misc', slug: string) {
 }
 
 export function useEditorialPosts(tag?: string, limit = DEFAULT_PAGE_SIZE) {
-  const {
-    data,
-    error,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isPending,
-    refetch
-  } = useInfiniteQuery<
-    PaginatedResponse<SelectMdxCompiledEditorialPost>,
-    Error
-  >({
-    queryKey: ['posts', 'editorials', tag, limit],
-    queryFn: async ({ pageParam = 0 }) => {
-      const url = new URL(`${VPS_BASE_URL}/content/posts/editorials`)
-      url.searchParams.set('limit', String(limit))
-      url.searchParams.set('offset', String(pageParam))
-      if (tag) url.searchParams.set('tag', tag)
-      return fetcher<PaginatedResponse<SelectMdxCompiledEditorialPost>>(
-        url.toString()
-      )
-    },
-    initialPageParam: 0,
-    getNextPageParam: (lastPage) =>
-      lastPage.pagination.hasMore
-        ? lastPage.pagination.offset + lastPage.pagination.limit
-        : undefined
-  })
+  const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage, isPending, refetch } =
+    useInfiniteQuery<PaginatedResponse<SelectMdxCompiledEditorialPost>, Error>({
+      queryKey: ['posts', 'editorials', tag, limit],
+      queryFn: async ({ pageParam = 0 }) => {
+        const url = new URL(`${VPS_BASE_URL}/content/posts/editorials`)
+        url.searchParams.set('limit', String(limit))
+        url.searchParams.set('offset', String(pageParam))
+        if (tag) url.searchParams.set('tag', tag)
+        return fetcher<PaginatedResponse<SelectMdxCompiledEditorialPost>>(url.toString())
+      },
+      initialPageParam: 0,
+      getNextPageParam: (lastPage) =>
+        lastPage.pagination.hasMore
+          ? lastPage.pagination.offset + lastPage.pagination.limit
+          : undefined
+    })
 
   return {
     data: data?.pages.flatMap((page) => page.data) ?? [],
@@ -291,30 +258,21 @@ export function useEditorialPosts(tag?: string, limit = DEFAULT_PAGE_SIZE) {
 }
 
 export function useMicroPosts(limit = DEFAULT_PAGE_SIZE) {
-  const {
-    data,
-    error,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isPending,
-    refetch
-  } = useInfiniteQuery<PaginatedResponse<SelectMdxCompiledMicroPost>, Error>({
-    queryKey: ['posts', 'micro', limit],
-    queryFn: async ({ pageParam = 0 }) => {
-      const url = new URL(`${VPS_BASE_URL}/content/posts/micro`)
-      url.searchParams.set('limit', String(limit))
-      url.searchParams.set('offset', String(pageParam))
-      return fetcher<PaginatedResponse<SelectMdxCompiledMicroPost>>(
-        url.toString()
-      )
-    },
-    initialPageParam: 0,
-    getNextPageParam: (lastPage) =>
-      lastPage.pagination.hasMore
-        ? lastPage.pagination.offset + lastPage.pagination.limit
-        : undefined
-  })
+  const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage, isPending, refetch } =
+    useInfiniteQuery<PaginatedResponse<SelectMdxCompiledMicroPost>, Error>({
+      queryKey: ['posts', 'micro', limit],
+      queryFn: async ({ pageParam = 0 }) => {
+        const url = new URL(`${VPS_BASE_URL}/content/posts/micro`)
+        url.searchParams.set('limit', String(limit))
+        url.searchParams.set('offset', String(pageParam))
+        return fetcher<PaginatedResponse<SelectMdxCompiledMicroPost>>(url.toString())
+      },
+      initialPageParam: 0,
+      getNextPageParam: (lastPage) =>
+        lastPage.pagination.hasMore
+          ? lastPage.pagination.offset + lastPage.pagination.limit
+          : undefined
+    })
 
   return {
     data: data?.pages.flatMap((page) => page.data) ?? [],
@@ -328,13 +286,9 @@ export function useMicroPosts(limit = DEFAULT_PAGE_SIZE) {
 }
 
 export function useEditorialPostBySlug(slug: string) {
-  const { data, error, isPending } = useQuery<
-    SelectMdxCompiledEditorialPost,
-    Error
-  >({
+  const { data, error, isPending } = useQuery<SelectMdxCompiledEditorialPost, Error>({
     queryKey: ['post', 'editorial', slug],
-    queryFn: async () =>
-      fetcher(`${VPS_BASE_URL}/content/posts/editorials/${slug}`),
+    queryFn: async () => fetcher(`${VPS_BASE_URL}/content/posts/editorials/${slug}`),
     enabled: Boolean(slug)
   })
 
@@ -346,10 +300,7 @@ export function useEditorialPostBySlug(slug: string) {
 }
 
 export function useMicroPostBySlug(slug: string) {
-  const { data, error, isPending } = useQuery<
-    SelectMdxCompiledMicroPost,
-    Error
-  >({
+  const { data, error, isPending } = useQuery<SelectMdxCompiledMicroPost, Error>({
     queryKey: ['post', 'micro', slug],
     queryFn: async () => fetcher(`${VPS_BASE_URL}/content/posts/micro/${slug}`),
     enabled: Boolean(slug)
@@ -381,9 +332,7 @@ export function useSpotifyProxy<T extends SpotifyContentType>({
   id,
   spotifyContentType
 }: SpotifyProxyInput<T>) {
-  const { data, error, isLoading } = useQuery<
-    SpotifyProxyResponseType<typeof spotifyContentType>
-  >({
+  const { data, error, isLoading } = useQuery<SpotifyProxyResponseType<typeof spotifyContentType>>({
     queryKey: ['spotify/proxy', spotifyContentType, id],
 
     queryFn: async () =>
@@ -478,11 +427,7 @@ export function useUserLOL() {
 }
 
 export function useUpdateProfile() {
-  const { mutateAsync: updateProfile, isPending } = useMutation<
-    User,
-    Error,
-    FormData | User
-  >({
+  const { mutateAsync: updateProfile, isPending } = useMutation<User, Error, FormData | User>({
     mutationFn: async (data) =>
       fetcher(`${VPS_BASE_URL}/user/profile`, {
         method: 'PATCH',
@@ -499,29 +444,19 @@ export function useUpdateProfile() {
 export function useAdminUserSocialLinks(userId: string) {
   return useQuery<SocialLink[], Error>({
     queryKey: ['admin', 'user-social-links', userId],
-    queryFn: () =>
-      fetcher<SocialLink[]>(
-        `${VPS_BASE_URL}/user/admin/${userId}/social-links`
-      ),
+    queryFn: () => fetcher<SocialLink[]>(`${VPS_BASE_URL}/user/admin/${userId}/social-links`),
     enabled: Boolean(userId)
   })
 }
 
 export function useReplaceAdminUserSocialLinks() {
   const queryClient = useQueryClient()
-  return useMutation<
-    SocialLink[],
-    Error,
-    { userId: string; links: SocialLink[] }
-  >({
+  return useMutation<SocialLink[], Error, { userId: string; links: SocialLink[] }>({
     mutationFn: ({ userId, links }) =>
-      fetcher<SocialLink[]>(
-        `${VPS_BASE_URL}/user/admin/${userId}/social-links`,
-        {
-          method: 'PUT',
-          body: JSON.stringify(links)
-        }
-      ),
+      fetcher<SocialLink[]>(`${VPS_BASE_URL}/user/admin/${userId}/social-links`, {
+        method: 'PUT',
+        body: JSON.stringify(links)
+      }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: ['admin', 'user-social-links', variables.userId]
@@ -531,29 +466,19 @@ export function useReplaceAdminUserSocialLinks() {
 }
 
 export function useUpdateAdminUserBio() {
-  return useMutation<
-    { bio: string | null },
-    Error,
-    { userId: string; bio: string }
-  >({
+  return useMutation<{ bio: string | null }, Error, { userId: string; bio: string }>({
     mutationFn: ({ userId, bio }) =>
-      fetcher<{ bio: string | null }>(
-        `${VPS_BASE_URL}/user/admin/${userId}/bio`,
-        {
-          method: 'PATCH',
-          body: JSON.stringify({ bio })
-        }
-      )
+      fetcher<{ bio: string | null }>(`${VPS_BASE_URL}/user/admin/${userId}/bio`, {
+        method: 'PATCH',
+        body: JSON.stringify({ bio })
+      })
   })
 }
 
 export function useAdminUserBio(userId: string) {
   return useQuery<{ bio: string | null }, Error>({
     queryKey: ['admin', 'user-bio', userId],
-    queryFn: () =>
-      fetcher<{ bio: string | null }>(
-        `${VPS_BASE_URL}/user/admin/${userId}/bio`
-      ),
+    queryFn: () => fetcher<{ bio: string | null }>(`${VPS_BASE_URL}/user/admin/${userId}/bio`),
     enabled: Boolean(userId)
   })
 }
@@ -642,16 +567,7 @@ export function useAdminEmailLogs({
   dateTo
 }: AdminEmailLogsFilters) {
   return useQuery<PaginatedResponse<AdminEmailLog>, Error>({
-    queryKey: [
-      'admin',
-      'email-logs',
-      limit,
-      offset,
-      status,
-      recipientEmail,
-      dateFrom,
-      dateTo
-    ],
+    queryKey: ['admin', 'email-logs', limit, offset, status, recipientEmail, dateFrom, dateTo],
     queryFn: async () => {
       const url = new URL(`${VPS_BASE_URL}/email/logs`)
       url.searchParams.set('limit', String(limit))
@@ -682,29 +598,21 @@ export function useAdminNewsletterSubscribers() {
   })
 }
 
-export function useAllLabels({
-  limit = DEFAULT_PAGE_SIZE
-}: PaginationOptions = {}) {
-  const {
-    data,
-    error,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isPending
-  } = useInfiniteQuery<PaginatedResponse<SelectLabel>, Error>({
-    queryKey: ['labels', limit],
-    queryFn: async ({ pageParam = 0 }) => {
-      const url = new URL(`${VPS_BASE_URL}/content/labels`)
-      setPaginationParams(url, Number(pageParam), { limit })
-      return fetcher<PaginatedResponse<SelectLabel>>(url.toString())
-    },
-    initialPageParam: 0,
-    getNextPageParam: (lastPage) =>
-      lastPage.pagination.hasMore
-        ? lastPage.pagination.offset + lastPage.pagination.limit
-        : undefined
-  })
+export function useAllLabels({ limit = DEFAULT_PAGE_SIZE }: PaginationOptions = {}) {
+  const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
+    useInfiniteQuery<PaginatedResponse<SelectLabel>, Error>({
+      queryKey: ['labels', limit],
+      queryFn: async ({ pageParam = 0 }) => {
+        const url = new URL(`${VPS_BASE_URL}/content/labels`)
+        setPaginationParams(url, Number(pageParam), { limit })
+        return fetcher<PaginatedResponse<SelectLabel>>(url.toString())
+      },
+      initialPageParam: 0,
+      getNextPageParam: (lastPage) =>
+        lastPage.pagination.hasMore
+          ? lastPage.pagination.offset + lastPage.pagination.limit
+          : undefined
+    })
 
   return {
     data: data?.pages.flatMap((page) => page.data) ?? [],
@@ -734,29 +642,21 @@ export function useReleasesByLabel(
   labelSlug: string,
   { limit = DEFAULT_PAGE_SIZE }: PaginationOptions = {}
 ) {
-  const {
-    data,
-    error,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isPending
-  } = useInfiniteQuery<PaginatedResponse<SelectRelease>, Error>({
-    queryKey: ['releases', 'label', labelSlug, limit],
-    queryFn: async ({ pageParam = 0 }) => {
-      const url = new URL(
-        `${VPS_BASE_URL}/content/labels/${labelSlug}/releases`
-      )
-      setPaginationParams(url, Number(pageParam), { limit })
-      return fetcher<PaginatedResponse<SelectRelease>>(url.toString())
-    },
-    initialPageParam: 0,
-    getNextPageParam: (lastPage) =>
-      lastPage.pagination.hasMore
-        ? lastPage.pagination.offset + lastPage.pagination.limit
-        : undefined,
-    enabled: Boolean(labelSlug)
-  })
+  const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
+    useInfiniteQuery<PaginatedResponse<SelectRelease>, Error>({
+      queryKey: ['releases', 'label', labelSlug, limit],
+      queryFn: async ({ pageParam = 0 }) => {
+        const url = new URL(`${VPS_BASE_URL}/content/labels/${labelSlug}/releases`)
+        setPaginationParams(url, Number(pageParam), { limit })
+        return fetcher<PaginatedResponse<SelectRelease>>(url.toString())
+      },
+      initialPageParam: 0,
+      getNextPageParam: (lastPage) =>
+        lastPage.pagination.hasMore
+          ? lastPage.pagination.offset + lastPage.pagination.limit
+          : undefined,
+      enabled: Boolean(labelSlug)
+    })
 
   return {
     data: data?.pages.flatMap((page) => page.data) ?? [],
@@ -809,10 +709,7 @@ export type FavoritesResponse = {
 export function useFavorites() {
   const { data: session } = useSession()
   const isAuthenticated = Boolean(session?.user)
-  const { data, error, isPending, refetch } = useQuery<
-    FavoritesResponse,
-    Error
-  >({
+  const { data, error, isPending, refetch } = useQuery<FavoritesResponse, Error>({
     queryKey: ['favorites'],
     queryFn: async () => fetcher(`${VPS_BASE_URL}/favorites`),
     enabled: isAuthenticated
@@ -921,29 +818,21 @@ export type ShowWithHosts = SelectShow & {
   hosts: Array<{ id: string; name: string }>
 }
 
-export function useAllShows({
-  limit = DEFAULT_PAGE_SIZE
-}: PaginationOptions = {}) {
-  const {
-    data,
-    error,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isPending
-  } = useInfiniteQuery<PaginatedResponse<ShowWithHosts>, Error>({
-    queryKey: ['shows', limit],
-    queryFn: async ({ pageParam = 0 }) => {
-      const url = new URL(`${VPS_BASE_URL}/shows`)
-      setPaginationParams(url, Number(pageParam), { limit })
-      return fetcher<PaginatedResponse<ShowWithHosts>>(url.toString())
-    },
-    initialPageParam: 0,
-    getNextPageParam: (lastPage) =>
-      lastPage.pagination.hasMore
-        ? lastPage.pagination.offset + lastPage.pagination.limit
-        : undefined
-  })
+export function useAllShows({ limit = DEFAULT_PAGE_SIZE }: PaginationOptions = {}) {
+  const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
+    useInfiniteQuery<PaginatedResponse<ShowWithHosts>, Error>({
+      queryKey: ['shows', limit],
+      queryFn: async ({ pageParam = 0 }) => {
+        const url = new URL(`${VPS_BASE_URL}/shows`)
+        setPaginationParams(url, Number(pageParam), { limit })
+        return fetcher<PaginatedResponse<ShowWithHosts>>(url.toString())
+      },
+      initialPageParam: 0,
+      getNextPageParam: (lastPage) =>
+        lastPage.pagination.hasMore
+          ? lastPage.pagination.offset + lastPage.pagination.limit
+          : undefined
+    })
 
   return {
     data: data?.pages.flatMap((page) => page.data) ?? [],
@@ -1007,27 +896,21 @@ export function useShowEpisodes(
   slug: string,
   { limit = DEFAULT_PAGE_SIZE }: PaginationOptions = {}
 ) {
-  const {
-    data,
-    error,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-    isPending
-  } = useInfiniteQuery<PaginatedResponse<SelectAudio>, Error>({
-    queryKey: ['show-episodes', slug, limit],
-    queryFn: async ({ pageParam = 0 }) => {
-      const url = new URL(`${VPS_BASE_URL}/shows/${slug}/episodes`)
-      setPaginationParams(url, Number(pageParam), { limit })
-      return fetcher<PaginatedResponse<SelectAudio>>(url.toString())
-    },
-    initialPageParam: 0,
-    getNextPageParam: (lastPage) =>
-      lastPage.pagination.hasMore
-        ? lastPage.pagination.offset + lastPage.pagination.limit
-        : undefined,
-    enabled: Boolean(slug)
-  })
+  const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
+    useInfiniteQuery<PaginatedResponse<SelectAudio>, Error>({
+      queryKey: ['show-episodes', slug, limit],
+      queryFn: async ({ pageParam = 0 }) => {
+        const url = new URL(`${VPS_BASE_URL}/shows/${slug}/episodes`)
+        setPaginationParams(url, Number(pageParam), { limit })
+        return fetcher<PaginatedResponse<SelectAudio>>(url.toString())
+      },
+      initialPageParam: 0,
+      getNextPageParam: (lastPage) =>
+        lastPage.pagination.hasMore
+          ? lastPage.pagination.offset + lastPage.pagination.limit
+          : undefined,
+      enabled: Boolean(slug)
+    })
 
   return {
     data: data?.pages.flatMap((page) => page.data) ?? [],
@@ -1046,15 +929,10 @@ export type SubscriptionWithShow = SelectShowSubscription & {
 export function useUserSubscriptions() {
   const { data: session } = useSession()
   const isAuthenticated = Boolean(session?.user)
-  const { data, error, isPending } = useQuery<
-    PaginatedResponse<SubscriptionWithShow>,
-    Error
-  >({
+  const { data, error, isPending } = useQuery<PaginatedResponse<SubscriptionWithShow>, Error>({
     queryKey: ['user-subscriptions'],
     queryFn: async () =>
-      fetcher<PaginatedResponse<SubscriptionWithShow>>(
-        `${VPS_BASE_URL}/user/subscriptions`
-      ),
+      fetcher<PaginatedResponse<SubscriptionWithShow>>(`${VPS_BASE_URL}/user/subscriptions`),
     enabled: isAuthenticated
   })
 
@@ -1089,11 +967,7 @@ export function useSubscribeToShow() {
 
 export function useUnsubscribeFromShow() {
   const queryClient = useQueryClient()
-  const { mutateAsync: unsubscribe, isPending } = useMutation<
-    void,
-    Error,
-    { showId: string }
-  >({
+  const { mutateAsync: unsubscribe, isPending } = useMutation<void, Error, { showId: string }>({
     mutationFn: async ({ showId }) =>
       fetcher(`${VPS_BASE_URL}/shows/${showId}/unsubscribe`, {
         method: 'DELETE'
@@ -1210,9 +1084,7 @@ export function usePublicProfile(username: string) {
   const { data, error, isPending } = useQuery<PublicProfile, Error>({
     queryKey: ['profile', username],
     queryFn: async () => {
-      const profile = await fetcher<PublicProfile>(
-        `${VPS_BASE_URL}/profile/${username}`
-      )
+      const profile = await fetcher<PublicProfile>(`${VPS_BASE_URL}/profile/${username}`)
       if (!profile?.id) throw new Error('Profile not found')
       return profile
     },
@@ -1233,19 +1105,12 @@ type NewsletterSubscribeResponse = {
 }
 
 export function useNewsletterSubscribe() {
-  return useMutation<
-    NewsletterSubscribeResponse,
-    Error,
-    { email: string; name?: string }
-  >({
+  return useMutation<NewsletterSubscribeResponse, Error, { email: string; name?: string }>({
     mutationFn: async ({ email, name }) =>
-      fetcher<NewsletterSubscribeResponse>(
-        `${VPS_BASE_URL}/newsletter/subscribe`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ email, name, source: 'subscribe_page' })
-        }
-      )
+      fetcher<NewsletterSubscribeResponse>(`${VPS_BASE_URL}/newsletter/subscribe`, {
+        method: 'POST',
+        body: JSON.stringify({ email, name, source: 'subscribe_page' })
+      })
   })
 }
 
@@ -1262,13 +1127,10 @@ export function useNewsletterUnsubscribe() {
 export function useRequestNewsletterUnsubscribe() {
   return useMutation<{ sent: boolean }, Error, { email: string }>({
     mutationFn: async ({ email }) =>
-      fetcher<{ sent: boolean }>(
-        `${VPS_BASE_URL}/newsletter/request-unsubscribe`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ email })
-        }
-      )
+      fetcher<{ sent: boolean }>(`${VPS_BASE_URL}/newsletter/request-unsubscribe`, {
+        method: 'POST',
+        body: JSON.stringify({ email })
+      })
   })
 }
 
@@ -1280,10 +1142,7 @@ type QRPdfResponse = {
 export function useMixQRPdf(slug: string, enabled = false) {
   return useQuery<QRPdfResponse>({
     queryKey: ['mix-qr-pdf', slug],
-    queryFn: () =>
-      fetcher<QRPdfResponse>(
-        `${VPS_BASE_URL}/content/audio/mix/${slug}/qr-pdf`
-      ),
+    queryFn: () => fetcher<QRPdfResponse>(`${VPS_BASE_URL}/content/audio/mix/${slug}/qr-pdf`),
     enabled,
     staleTime: 1000 * 60 * 60 * 24
   })
@@ -1292,8 +1151,7 @@ export function useMixQRPdf(slug: string, enabled = false) {
 export function useShowQRPdf(slug: string, enabled = false) {
   return useQuery<QRPdfResponse>({
     queryKey: ['show-qr-pdf', slug],
-    queryFn: () =>
-      fetcher<QRPdfResponse>(`${VPS_BASE_URL}/shows/${slug}/qr-pdf`),
+    queryFn: () => fetcher<QRPdfResponse>(`${VPS_BASE_URL}/shows/${slug}/qr-pdf`),
     enabled,
     staleTime: 1000 * 60 * 60 * 24
   })
@@ -1432,8 +1290,7 @@ export function useUpdateAdminAlbum() {
 export function useDeleteAdminAlbum() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) =>
-      fetcher(`${VPS_BASE_URL}/music/albums/${id}`, { method: 'DELETE' }),
+    mutationFn: (id: string) => fetcher(`${VPS_BASE_URL}/music/albums/${id}`, { method: 'DELETE' }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'albums'] })
   })
 }
@@ -1471,21 +1328,15 @@ export function useUpdateAdminTrack() {
 export function useDeleteAdminTrack() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) =>
-      fetcher(`${VPS_BASE_URL}/music/tracks/${id}`, { method: 'DELETE' }),
+    mutationFn: (id: string) => fetcher(`${VPS_BASE_URL}/music/tracks/${id}`, { method: 'DELETE' }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'tracks'] })
   })
 }
 
-export function useAdminEntityLinks(
-  entityType: string,
-  entityId: string,
-  enabled = true
-) {
+export function useAdminEntityLinks(entityType: string, entityId: string, enabled = true) {
   return useQuery<AdminMusicEntityLink[]>({
     queryKey: ['admin', 'links', entityType, entityId],
-    queryFn: () =>
-      fetcher(`${VPS_BASE_URL}/music/${entityType}/${entityId}/links`),
+    queryFn: () => fetcher(`${VPS_BASE_URL}/music/${entityType}/${entityId}/links`),
     enabled: enabled && Boolean(entityId)
   })
 }
@@ -1505,10 +1356,10 @@ export function useAddAdminEntityLink() {
       url: string
       status?: LinkStatus
     }) =>
-      fetcher<AdminMusicEntityLink>(
-        `${VPS_BASE_URL}/music/${entityType}/${entityId}/links`,
-        { method: 'POST', body: JSON.stringify({ platform, url, status }) }
-      ),
+      fetcher<AdminMusicEntityLink>(`${VPS_BASE_URL}/music/${entityType}/${entityId}/links`, {
+        method: 'POST',
+        body: JSON.stringify({ platform, url, status })
+      }),
     onSuccess: (_, { entityType, entityId }) =>
       qc.invalidateQueries({
         queryKey: ['admin', 'links', entityType, entityId]
@@ -1553,10 +1404,9 @@ export function useDeleteAdminEntityLink() {
       entityId: string
       linkId: string
     }) =>
-      fetcher(
-        `${VPS_BASE_URL}/music/${entityType}/${entityId}/links/${linkId}`,
-        { method: 'DELETE' }
-      ),
+      fetcher(`${VPS_BASE_URL}/music/${entityType}/${entityId}/links/${linkId}`, {
+        method: 'DELETE'
+      }),
     onSuccess: (_, { entityType, entityId }) =>
       qc.invalidateQueries({
         queryKey: ['admin', 'links', entityType, entityId]
@@ -1588,13 +1438,7 @@ export function useAddArtistToAlbum() {
 export function useRemoveArtistFromAlbum() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({
-      albumId,
-      artistId
-    }: {
-      albumId: string
-      artistId: string
-    }) =>
+    mutationFn: ({ albumId, artistId }: { albumId: string; artistId: string }) =>
       fetcher(`${VPS_BASE_URL}/music/albums/${albumId}/artists/${artistId}`, {
         method: 'DELETE'
       }),
@@ -1627,13 +1471,7 @@ export function useAddArtistToTrack() {
 export function useRemoveArtistFromTrack() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({
-      trackId,
-      artistId
-    }: {
-      trackId: string
-      artistId: string
-    }) =>
+    mutationFn: ({ trackId, artistId }: { trackId: string; artistId: string }) =>
       fetcher(`${VPS_BASE_URL}/music/tracks/${trackId}/artists/${artistId}`, {
         method: 'DELETE'
       }),

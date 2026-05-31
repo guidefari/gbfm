@@ -1,18 +1,6 @@
 import { z } from '@hono/zod-openapi'
-import {
-  type InferInsertModel,
-  type InferSelectModel,
-  relations
-} from 'drizzle-orm'
-import {
-  index,
-  pgTable,
-  primaryKey,
-  text,
-  timestamp,
-  unique,
-  uuid
-} from 'drizzle-orm/pg-core'
+import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
+import { index, pgTable, primaryKey, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
 import { user } from './auth.schema'
 import { defaultContentFields } from './util'
 
@@ -61,21 +49,14 @@ export const showSubscriptionsTable = pgTable(
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow()
   },
   (table) => [
-    unique('show_subscriptions_user_show_unique').on(
-      table.userId,
-      table.showId
-    ),
+    unique('show_subscriptions_user_show_unique').on(table.userId, table.showId),
     index('show_subscriptions_user_idx').on(table.userId),
     index('show_subscriptions_show_idx').on(table.showId)
   ]
 )
 
-export type SelectShowSubscription = InferSelectModel<
-  typeof showSubscriptionsTable
->
-export type InsertShowSubscription = InferInsertModel<
-  typeof showSubscriptionsTable
->
+export type SelectShowSubscription = InferSelectModel<typeof showSubscriptionsTable>
+export type InsertShowSubscription = InferInsertModel<typeof showSubscriptionsTable>
 
 export const showsRelations = relations(showsTable, ({ many }) => ({
   showCreators: many(showCreators),
@@ -93,32 +74,23 @@ export const showCreatorsRelations = relations(showCreators, ({ one }) => ({
   })
 }))
 
-export const showSubscriptionsRelations = relations(
-  showSubscriptionsTable,
-  ({ one }) => ({
-    user: one(user, {
-      fields: [showSubscriptionsTable.userId],
-      references: [user.id]
-    }),
-    show: one(showsTable, {
-      fields: [showSubscriptionsTable.showId],
-      references: [showsTable.id]
-    })
+export const showSubscriptionsRelations = relations(showSubscriptionsTable, ({ one }) => ({
+  user: one(user, {
+    fields: [showSubscriptionsTable.userId],
+    references: [user.id]
+  }),
+  show: one(showsTable, {
+    fields: [showSubscriptionsTable.showId],
+    references: [showsTable.id]
   })
-)
+}))
 
 export const selectShowSchema = z
   .object({
     id: z.string().openapi({ description: 'Unique identifier for the show' }),
     title: z.string().openapi({ description: 'Title of the show' }),
-    description: z
-      .string()
-      .nullable()
-      .openapi({ description: 'Description of the show' }),
-    thumbnailUrl: z
-      .string()
-      .nullable()
-      .openapi({ description: 'Thumbnail URL for the show' }),
+    description: z.string().nullable().openapi({ description: 'Description of the show' }),
+    thumbnailUrl: z.string().nullable().openapi({ description: 'Thumbnail URL for the show' }),
     bannerImageUrl: z
       .string()
       .nullable()
@@ -126,10 +98,7 @@ export const selectShowSchema = z
     slug: z.string().openapi({ description: 'URL slug for the show' }),
     content: z.string().openapi({ description: 'Content of the show' }),
     draft: z.boolean().openapi({ description: 'Whether the show is a draft' }),
-    tags: z
-      .array(z.string())
-      .nullable()
-      .openapi({ description: 'Tags associated with the show' }),
+    tags: z.array(z.string()).nullable().openapi({ description: 'Tags associated with the show' }),
     createdAt: z.date().openapi({ description: 'Creation timestamp' }),
     updatedAt: z.date().openapi({ description: 'Last update timestamp' })
   })
@@ -137,9 +106,7 @@ export const selectShowSchema = z
 
 export const selectMdxCompiledShowSchema = selectShowSchema
   .extend({
-    compiledContent: z
-      .string()
-      .openapi({ description: 'Compiled MDX content' }),
+    compiledContent: z.string().openapi({ description: 'Compiled MDX content' }),
     hosts: z
       .array(
         z
@@ -160,14 +127,8 @@ export const insertShowSchema = z
       description: 'Title of the show',
       example: 'Friday Sessions'
     }),
-    description: z
-      .string()
-      .optional()
-      .openapi({ description: 'Description of the show' }),
-    thumbnailUrl: z
-      .string()
-      .optional()
-      .openapi({ description: 'Thumbnail URL for the show' }),
+    description: z.string().optional().openapi({ description: 'Description of the show' }),
+    thumbnailUrl: z.string().optional().openapi({ description: 'Thumbnail URL for the show' }),
     bannerImageUrl: z
       .string()
       .optional()
@@ -181,38 +142,26 @@ export const insertShowSchema = z
       .boolean()
       .optional()
       .openapi({ description: 'Whether this is a draft', default: false }),
-    tags: z
-      .array(z.string())
-      .optional()
-      .openapi({ description: 'Tags for the show' })
+    tags: z.array(z.string()).optional().openapi({ description: 'Tags for the show' })
   })
   .openapi('InsertShow')
 
 export const createShowSchema = insertShowSchema
   .extend({
-    hostIds: z
-      .array(z.string())
-      .min(1)
-      .optional()
-      .openapi({ description: 'IDs of show hosts' })
+    hostIds: z.array(z.string()).min(1).optional().openapi({ description: 'IDs of show hosts' })
   })
   .openapi('CreateShowRequest')
 
 export const updateShowSchema = insertShowSchema
   .partial()
   .extend({
-    hostIds: z
-      .array(z.string())
-      .optional()
-      .openapi({ description: 'IDs of show hosts' })
+    hostIds: z.array(z.string()).optional().openapi({ description: 'IDs of show hosts' })
   })
   .openapi('UpdateShowRequest')
 
 export const selectSubscriptionSchema = z
   .object({
-    id: z
-      .string()
-      .openapi({ description: 'Unique identifier for the subscription' }),
+    id: z.string().openapi({ description: 'Unique identifier for the subscription' }),
     userId: z.string().openapi({ description: 'ID of the subscribed user' }),
     showId: z.string().openapi({ description: 'ID of the show' }),
     createdAt: z.date().openapi({ description: 'Subscription timestamp' })

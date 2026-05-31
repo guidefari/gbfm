@@ -1,9 +1,7 @@
 {
   "compilerOptions": {
     "paths": {
-      "@/*": [
-        "./src/*"
-      ]
+      "@/*": ["./src/*"]
     },
     "types": ["node", "nativewind/types"]
   },

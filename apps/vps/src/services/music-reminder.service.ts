@@ -6,37 +6,23 @@ import {
   musicReminder,
   type NewMusicReminder
 } from '@/db/music-reminder.schema'
-import {
-  DatabaseError,
-  getErrorMessage,
-  NotFoundError,
-  UnauthorizedError
-} from '@/errors'
+import { DatabaseError, getErrorMessage, NotFoundError, UnauthorizedError } from '@/errors'
 
 export interface MusicReminderService {
-  readonly create: (
-    data: NewMusicReminder
-  ) => Effect.Effect<MusicReminder, DatabaseError>
-  readonly getByUserId: (
-    userId: string
-  ) => Effect.Effect<MusicReminder[], DatabaseError>
+  readonly create: (data: NewMusicReminder) => Effect.Effect<MusicReminder, DatabaseError>
+  readonly getByUserId: (userId: string) => Effect.Effect<MusicReminder[], DatabaseError>
   readonly update: (
     id: string,
     userId: string,
     data: Partial<NewMusicReminder>
-  ) => Effect.Effect<
-    MusicReminder,
-    DatabaseError | NotFoundError | UnauthorizedError
-  >
+  ) => Effect.Effect<MusicReminder, DatabaseError | NotFoundError | UnauthorizedError>
   readonly delete: (
     id: string,
     userId: string
   ) => Effect.Effect<void, DatabaseError | NotFoundError | UnauthorizedError>
 }
 
-export const MusicReminderService = Context.Service<MusicReminderService>(
-  'MusicReminderService'
-)
+export const MusicReminderService = Context.Service<MusicReminderService>('MusicReminderService')
 
 const createEffect = (data: NewMusicReminder) =>
   Effect.withSpan('music-reminder.create', {
@@ -103,19 +89,10 @@ const getByUserIdEffect = (userId: string) =>
     return reminders
   })
 
-const updateEffect = (
-  id: string,
-  userId: string,
-  data: Partial<NewMusicReminder>
-) =>
+const updateEffect = (id: string, userId: string, data: Partial<NewMusicReminder>) =>
   Effect.gen(function* () {
     const existingRecords = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select()
-          .from(musicReminder)
-          .where(eq(musicReminder.id, id))
-          .limit(1),
+      try: () => db.select().from(musicReminder).where(eq(musicReminder.id, id)).limit(1),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to check reminder existence: ${getErrorMessage(error)}`,
@@ -144,19 +121,13 @@ const updateEffect = (
     if (data.musicTitle !== undefined) updateValues.musicTitle = data.musicTitle
     if (data.artistName !== undefined) updateValues.artistName = data.artistName
     if (data.musicUrl !== undefined) updateValues.musicUrl = data.musicUrl
-    if (data.albumCoverUrl !== undefined)
-      updateValues.albumCoverUrl = data.albumCoverUrl
-    if (data.reminderDate !== undefined)
-      updateValues.reminderDate = data.reminderDate
+    if (data.albumCoverUrl !== undefined) updateValues.albumCoverUrl = data.albumCoverUrl
+    if (data.reminderDate !== undefined) updateValues.reminderDate = data.reminderDate
     if (data.notes !== undefined) updateValues.notes = data.notes
 
     const updatedRecords = yield* Effect.tryPromise({
       try: () =>
-        db
-          .update(musicReminder)
-          .set(updateValues)
-          .where(eq(musicReminder.id, id))
-          .returning(),
+        db.update(musicReminder).set(updateValues).where(eq(musicReminder.id, id)).returning(),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to update music reminder: ${getErrorMessage(error)}`,
@@ -187,12 +158,7 @@ const updateEffect = (
 const deleteEffect = (id: string, userId: string) =>
   Effect.gen(function* () {
     const existingRecords = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select()
-          .from(musicReminder)
-          .where(eq(musicReminder.id, id))
-          .limit(1),
+      try: () => db.select().from(musicReminder).where(eq(musicReminder.id, id)).limit(1),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to check reminder existence: ${getErrorMessage(error)}`,

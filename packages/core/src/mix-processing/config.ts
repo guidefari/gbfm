@@ -5,6 +5,4 @@ export interface MixProcessingConfig {
   readonly introAudioPath: string
 }
 
-export const MixProcessingConfig = Context.Service<MixProcessingConfig>(
-  'MixProcessingConfig'
-)
+export const MixProcessingConfig = Context.Service<MixProcessingConfig>('MixProcessingConfig')

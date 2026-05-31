@@ -50,24 +50,18 @@ export const searchAlbums: AppRouteHandler<SearchAlbumsRoute> = async (c) => {
   const program = Effect.gen(function* () {
     const spotifyService = yield* SpotifyService
     return yield* spotifyService.searchAlbums(query, limit, offset)
-  }).pipe(
-    Effect.withSpan('api.spotify.searchAlbums', { attributes: { query } })
-  )
+  }).pipe(Effect.withSpan('api.spotify.searchAlbums', { attributes: { query } }))
 
   return runEffect<SearchAlbumsRoute>(c, program)
 }
 
-export const enrichTrackFromUrl: AppRouteHandler<
-  EnrichTrackFromUrlRoute
-> = async (c) => {
+export const enrichTrackFromUrl: AppRouteHandler<EnrichTrackFromUrlRoute> = async (c) => {
   const { url } = c.req.valid('json')
 
   const program = Effect.gen(function* () {
     const spotifyService = yield* SpotifyService
     return yield* spotifyService.enrichTrackFromUrl(url)
-  }).pipe(
-    Effect.withSpan('api.spotify.enrichTrackFromUrl', { attributes: { url } })
-  )
+  }).pipe(Effect.withSpan('api.spotify.enrichTrackFromUrl', { attributes: { url } }))
 
   return runEffect<EnrichTrackFromUrlRoute>(c, program)
 }

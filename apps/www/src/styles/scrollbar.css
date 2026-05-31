@@ -1,6 +1,6 @@
-@import "@radix-ui/colors/black-alpha.css";
-@import "@radix-ui/colors/mauve.css";
-@import "@radix-ui/colors/violet.css";
+@import '@radix-ui/colors/black-alpha.css';
+@import '@radix-ui/colors/mauve.css';
+@import '@radix-ui/colors/violet.css';
 
 .ScrollAreaRoot {
   border-radius: 4px;
@@ -27,10 +27,10 @@
 .ScrollAreaScrollbar:hover {
   background: var(--black-a8);
 }
-.ScrollAreaScrollbar[data-orientation="vertical"] {
+.ScrollAreaScrollbar[data-orientation='vertical'] {
   width: var(--scrollbar-size);
 }
-.ScrollAreaScrollbar[data-orientation="horizontal"] {
+.ScrollAreaScrollbar[data-orientation='horizontal'] {
   flex-direction: column;
   height: var(--scrollbar-size);
 }
@@ -43,7 +43,7 @@
 }
 /* increase target size for touch devices https://www.w3.org/WAI/WCAG21/Understanding/target-size.html */
 .ScrollAreaThumb::before {
-  content: "";
+  content: '';
   position: absolute;
   top: 50%;
   left: 50%;

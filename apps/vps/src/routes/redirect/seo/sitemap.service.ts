@@ -12,18 +12,8 @@ import { config } from '@/services/config.service'
 import { buildSitemapXml, type SitemapData } from './sitemap.utils'
 
 // Re-export types and pure functions from utils
-export type {
-  PostEntry,
-  ProfileEntry,
-  SitemapData,
-  SitemapEntry
-} from './sitemap.utils'
-export {
-  buildSitemapIndexXml,
-  buildSitemapXml,
-  buildUrlEntry,
-  formatDate
-} from './sitemap.utils'
+export type { PostEntry, ProfileEntry, SitemapData, SitemapEntry } from './sitemap.utils'
+export { buildSitemapIndexXml, buildSitemapXml, buildUrlEntry, formatDate } from './sitemap.utils'
 
 // Cache for generated sitemap
 let sitemapCache: { xml: string; generatedAt: Date } | null = null

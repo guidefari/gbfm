@@ -3,11 +3,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { Effect } from 'effect'
 import { MixProcessingConfig } from './config'
-import {
-  MixFileSystemError,
-  MixProcessingError,
-  MixValidationError
-} from './errors'
+import { MixFileSystemError, MixProcessingError, MixValidationError } from './errors'
 import type { MixProcessingInput, ProcessedFiles } from './types'
 
 /**
@@ -18,9 +14,7 @@ export function formatTracklist(tracklist: string): string {
     .split('\n')
     .filter((line) => line.trim() && !line.startsWith('#'))
     .map((line) => {
-      const [number, artist, ...titleParts] = line
-        .split('\t')
-        .map((part) => part.trim())
+      const [number, artist, ...titleParts] = line.split('\t').map((part) => part.trim())
       const title = titleParts.join(' ')
       return `${number}. ${artist} - ${title}`
     })
@@ -36,8 +30,7 @@ export function writeFilesToDisk(
   return Effect.gen(function* () {
     if (!input.audioBuffer || !input.imageBuffer) {
       return yield* new MixValidationError({
-        message:
-          'Missing required files: audioBuffer and imageBuffer are required'
+        message: 'Missing required files: audioBuffer and imageBuffer are required'
       })
     }
 
@@ -207,21 +200,17 @@ export function createAudioOrVideo(
  */
 export function cleanup(files: ProcessedFiles): Effect.Effect<void> {
   return Effect.gen(function* () {
-    yield* Effect.tryPromise(() => fs.unlink(files.audioPath)).pipe(
-      Effect.catch(() => Effect.void)
-    )
+    yield* Effect.tryPromise(() => fs.unlink(files.audioPath)).pipe(Effect.catch(() => Effect.void))
 
-    yield* Effect.tryPromise(() => fs.unlink(files.imagePath)).pipe(
-      Effect.catch(() => Effect.void)
-    )
+    yield* Effect.tryPromise(() => fs.unlink(files.imagePath)).pipe(Effect.catch(() => Effect.void))
 
     yield* Effect.tryPromise(() => fs.unlink(files.outputPath)).pipe(
       Effect.catch(() => Effect.void)
     )
 
-    yield* Effect.tryPromise(() =>
-      fs.rmdir(path.dirname(files.audioPath))
-    ).pipe(Effect.catch(() => Effect.void))
+    yield* Effect.tryPromise(() => fs.rmdir(path.dirname(files.audioPath))).pipe(
+      Effect.catch(() => Effect.void)
+    )
   })
 }
 

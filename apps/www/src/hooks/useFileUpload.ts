@@ -18,9 +18,7 @@ export function useFileUpload(options: UseFileUploadOptions = {}) {
 
         if (inferTitle && options.onTitleInfer) {
           const fileName = selectedFile.name.replace(/\.[^/.]+$/, '')
-          const cleanTitle = fileName
-            .replace(/[-_]/g, ' ')
-            .replace(/\b\w/g, (l) => l.toUpperCase())
+          const cleanTitle = fileName.replace(/[-_]/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
           options.onTitleInfer(cleanTitle)
         }
       }

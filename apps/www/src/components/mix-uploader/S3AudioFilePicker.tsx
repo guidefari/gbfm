@@ -33,10 +33,7 @@ export function S3MediaFilePicker({
   })
 
   const effectiveBucket =
-    selectedBucket ||
-    configData?.buckets.userContent ||
-    configData?.availableBuckets[0] ||
-    ''
+    selectedBucket || configData?.buckets.userContent || configData?.availableBuckets[0] || ''
 
   const {
     data: listData,

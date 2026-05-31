@@ -1,17 +1,6 @@
 import { z } from '@hono/zod-openapi'
-import {
-  type InferInsertModel,
-  type InferSelectModel,
-  relations
-} from 'drizzle-orm'
-import {
-  index,
-  pgTable,
-  text,
-  timestamp,
-  unique,
-  uuid
-} from 'drizzle-orm/pg-core'
+import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
+import { index, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
 import { audioTable } from './audio.schema'
 import { user } from './auth.schema'
 import { showsTable } from './show.schema'
@@ -29,9 +18,7 @@ export const favoritesTable = pgTable(
     showId: uuid('show_id').references(() => showsTable.id, {
       onDelete: 'cascade'
     }),
-    createdAt: timestamp('created_at', { withTimezone: true })
-      .defaultNow()
-      .notNull()
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull()
   },
   (t) => [
     index('favorites_user_created_idx').on(t.userId, t.createdAt),
@@ -60,24 +47,11 @@ export const favoritesRelations = relations(favoritesTable, ({ one }) => ({
 
 export const selectFavoriteSchema = z
   .object({
-    id: z
-      .string()
-      .uuid()
-      .openapi({ description: 'Unique identifier for the favorite' }),
+    id: z.string().uuid().openapi({ description: 'Unique identifier for the favorite' }),
     userId: z.string().openapi({ description: 'User ID who favorited' }),
-    audioId: z
-      .string()
-      .uuid()
-      .nullable()
-      .openapi({ description: 'Audio ID that was favorited' }),
-    showId: z
-      .string()
-      .uuid()
-      .nullable()
-      .openapi({ description: 'Show ID that was favorited' }),
-    createdAt: z
-      .date()
-      .openapi({ description: 'When the favorite was created' })
+    audioId: z.string().uuid().nullable().openapi({ description: 'Audio ID that was favorited' }),
+    showId: z.string().uuid().nullable().openapi({ description: 'Show ID that was favorited' }),
+    createdAt: z.date().openapi({ description: 'When the favorite was created' })
   })
   .openapi('Favorite')
 

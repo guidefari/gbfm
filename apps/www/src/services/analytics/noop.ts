@@ -4,9 +4,7 @@ import { Analytics } from './service'
 
 const logLocalOnly = (method: string) =>
   Effect.sync(() => {
-    console.info(
-      `[analytics:no-op] analytics event captured locally only (${method})`
-    )
+    console.info(`[analytics:no-op] analytics event captured locally only (${method})`)
   })
 
 export const NoopAnalyticsLayer = Layer.succeed(Analytics, {

@@ -1,9 +1,11 @@
 # User Social Links + Bio Implementation Plan
 
 ## Goal
+
 Implement ordered user social links with a relational model (non-JSONB), add user bio support, and expose both in public/authenticated profile APIs.
 
 ## Decisions
+
 - Social links stored in `user_social_links` table.
 - `bio` stored on Better Auth `user` table.
 - Allowed platforms: `bandcamp`, `substack`, `soundcloud`, `instagram`, `twitter`, `tiktok`.
@@ -11,6 +13,7 @@ Implement ordered user social links with a relational model (non-JSONB), add use
 - Duplicate platforms allowed.
 
 ## TODO
+
 - [x] Extend `apps/vps/src/db/auth.schema.ts`:
   - [x] Add `bio` on `user`
   - [x] Add `user_social_links` table + relations + platform schemas/types

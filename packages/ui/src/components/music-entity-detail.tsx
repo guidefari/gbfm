@@ -4,10 +4,7 @@ import type { MusicEntityArtistsPanelProps } from './music-entity-artists-panel'
 import type { MusicEntityAuditProps } from './music-entity-audit'
 import { MusicEntityAudit } from './music-entity-audit'
 import type { MusicEntityLinksPanelProps } from './music-entity-links-panel'
-import type {
-  MusicEntityMetadataFormProps,
-  MusicEntityType
-} from './music-entity-metadata-form'
+import type { MusicEntityMetadataFormProps, MusicEntityType } from './music-entity-metadata-form'
 import { Skeleton } from './skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs'
 
@@ -52,11 +49,7 @@ export function MusicEntityDetail({
       <Card>
         <CardContent className='flex gap-5 pt-6'>
           {imageUrl ? (
-            <img
-              src={imageUrl}
-              alt={name}
-              className='h-24 w-24 shrink-0 rounded-md object-cover'
-            />
+            <img src={imageUrl} alt={name} className='h-24 w-24 shrink-0 rounded-md object-cover' />
           ) : (
             <div className='flex h-24 w-24 shrink-0 items-center justify-center rounded-md bg-muted text-3xl text-muted-foreground'>
               {entityType === 'artist'
@@ -85,9 +78,7 @@ export function MusicEntityDetail({
         <TabsList>
           <TabsTrigger value='metadata'>Metadata</TabsTrigger>
           <TabsTrigger value='links'>Links</TabsTrigger>
-          {relationshipsSlot && (
-            <TabsTrigger value='relationships'>Relationships</TabsTrigger>
-          )}
+          {relationshipsSlot && <TabsTrigger value='relationships'>Relationships</TabsTrigger>}
           <TabsTrigger value='audit'>Audit</TabsTrigger>
         </TabsList>
 
@@ -106,11 +97,7 @@ export function MusicEntityDetail({
         )}
 
         <TabsContent value='audit' className='mt-4'>
-          <MusicEntityAudit
-            createdAt={createdAt}
-            updatedAt={updatedAt}
-            createdBy={createdBy}
-          />
+          <MusicEntityAudit createdAt={createdAt} updatedAt={updatedAt} createdBy={createdBy} />
         </TabsContent>
       </Tabs>
     </div>

@@ -45,19 +45,14 @@ export async function sendEmail({
         htmlLength: html.length
       }).pipe(Effect.runPromise)
     } catch (fallbackError) {
-      Effect.logError(
-        '[Email] Both React Email and React DOM rendering failed',
-        {
-          reactEmailError:
-            error instanceof Error ? error.message : String(error),
-          reactDomError:
-            fallbackError instanceof Error
-              ? fallbackError.message
-              : String(fallbackError)
-        }
-      ).pipe(Effect.runPromise)
+      Effect.logError('[Email] Both React Email and React DOM rendering failed', {
+        reactEmailError: error instanceof Error ? error.message : String(error),
+        reactDomError:
+          fallbackError instanceof Error ? fallbackError.message : String(fallbackError)
+      }).pipe(Effect.runPromise)
       throw new Error(
-        `Both React Email and React DOM rendering failed: ${error}, ${fallbackError}`
+        `Both React Email and React DOM rendering failed: ${error}, ${fallbackError}`,
+        { cause: fallbackError }
       )
     }
   }
@@ -251,9 +246,7 @@ export async function sendNewsletterUnsubscribeLinkEmail({
   to: string
   unsubscribeUrl: string
 }): Promise<void> {
-  const { NewsletterUnsubscribeLink } = await import(
-    '../emails/newsletter-unsubscribe-link'
-  )
+  const { NewsletterUnsubscribeLink } = await import('../emails/newsletter-unsubscribe-link')
 
   await sendEmail({
     to,
@@ -273,9 +266,7 @@ export async function sendNewsletterWelcomeEmail({
   to: string
   unsubscribeUrl: string
 }): Promise<void> {
-  const { NewsletterWelcomeEmail } = await import(
-    '../emails/newsletter-welcome'
-  )
+  const { NewsletterWelcomeEmail } = await import('../emails/newsletter-welcome')
 
   await sendEmail({
     to,
@@ -297,17 +288,12 @@ export async function sendNewsletterAdminNotificationEmail({
   email: string
   timestamp?: string
 }): Promise<void> {
-  const { NewsletterAdminNotification } = await import(
-    '../emails/newsletter-admin-notification'
-  )
+  const { NewsletterAdminNotification } = await import('../emails/newsletter-admin-notification')
 
   await sendEmail({
     to,
     template: {
-      subject:
-        event === 'subscribed'
-          ? `New subscriber: ${email}`
-          : `Unsubscribe: ${email}`,
+      subject: event === 'subscribed' ? `New subscriber: ${email}` : `Unsubscribe: ${email}`,
       component: React.createElement(NewsletterAdminNotification, {
         event,
         email,
@@ -326,9 +312,7 @@ export async function sendPersonalWelcomeEmail({
   name?: string
   unsubscribeUrl?: string
 }): Promise<void> {
-  const { NewsletterPersonalWelcome } = await import(
-    '../emails/newsletter-personal-welcome'
-  )
+  const { NewsletterPersonalWelcome } = await import('../emails/newsletter-personal-welcome')
 
   await sendEmail({
     to,

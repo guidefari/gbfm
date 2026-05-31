@@ -1,10 +1,7 @@
 import { and, desc, eq } from 'drizzle-orm'
 import { Effect } from 'effect'
 import type { db as DbType } from '@/db'
-import {
-  musicEntityLinksTable,
-  musicPlaylistsTable
-} from '@/db/music-entity.schema'
+import { musicEntityLinksTable, musicPlaylistsTable } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { toSlug } from '@/services/to-slug'
 import { deleteLinksForEntityTx, requireInserted, requireOne } from './shared'
@@ -20,9 +17,7 @@ export interface CreatePlaylistInput {
 }
 
 export const createPlaylistEffect = (db: typeof DbType) =>
-  Effect.fn('musicEntity.createPlaylist')(function* (
-    data: CreatePlaylistInput
-  ) {
+  Effect.fn('musicEntity.createPlaylist')(function* (data: CreatePlaylistInput) {
     const rows = yield* Effect.tryPromise({
       try: () => db.insert(musicPlaylistsTable).values(data).returning(),
       catch: (e) =>
@@ -93,9 +88,7 @@ export const getPlaylistByIdEffect = (db: typeof DbType) => (id: string) =>
         })
     })
     return yield* requireOne(rows, 'MusicPlaylist', id)
-  }).pipe(
-    Effect.withSpan('musicEntity.getPlaylistById', { attributes: { id } })
-  )
+  }).pipe(Effect.withSpan('musicEntity.getPlaylistById', { attributes: { id } }))
 
 export const updatePlaylistEffect =
   (db: typeof DbType) => (id: string, data: Partial<CreatePlaylistInput>) =>
@@ -119,9 +112,7 @@ export const updatePlaylistEffect =
           })
       })
       return yield* requireOne(rows, 'MusicPlaylist', id)
-    }).pipe(
-      Effect.withSpan('musicEntity.updatePlaylist', { attributes: { id } })
-    )
+    }).pipe(Effect.withSpan('musicEntity.updatePlaylist', { attributes: { id } }))
 
 export const deletePlaylistEffect = (db: typeof DbType) => (id: string) =>
   Effect.gen(function* () {

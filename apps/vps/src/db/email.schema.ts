@@ -1,23 +1,7 @@
-import {
-  EMAIL_DELIVERY_STATUS_VALUES,
-  EMAIL_DELIVERY_STATUSES
-} from '@gbfm/core/status'
+import { EMAIL_DELIVERY_STATUS_VALUES, EMAIL_DELIVERY_STATUSES } from '@gbfm/core/status'
 import { z } from '@hono/zod-openapi'
-import {
-  type InferInsertModel,
-  type InferSelectModel,
-  relations
-} from 'drizzle-orm'
-import {
-  boolean,
-  index,
-  jsonb,
-  pgTable,
-  text,
-  timestamp,
-  uuid,
-  varchar
-} from 'drizzle-orm/pg-core'
+import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
+import { boolean, index, jsonb, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
 import { user } from './auth.schema'
 
 export const EMAIL_NOTIFICATION_TYPES = {
@@ -41,9 +25,7 @@ export const emailDeliveryLogsTable = pgTable(
     emailType: varchar({ length: 50 }).notNull(),
     templateName: varchar({ length: 100 }).notNull(), // e.g., 'welcome', 'mix-notification'
     subject: varchar({ length: 500 }).notNull(),
-    status: varchar({ length: 50 })
-      .notNull()
-      .default(EMAIL_DELIVERY_STATUSES.PENDING),
+    status: varchar({ length: 50 }).notNull().default(EMAIL_DELIVERY_STATUSES.PENDING),
     sesMessageId: varchar({ length: 255 }), // SES response message ID
     metadata: jsonb(), // Additional context (mix ID, etc.)
     errorMessage: text(), // Error details if failed
@@ -82,23 +64,13 @@ export const userEmailPreferencesTable = pgTable('user_email_preferences', {
 })
 
 // Type exports for Drizzle
-export type SelectEmailDeliveryLog = InferSelectModel<
-  typeof emailDeliveryLogsTable
->
-export type InsertEmailDeliveryLog = InferInsertModel<
-  typeof emailDeliveryLogsTable
->
-export type SelectAuthorEmailPreferences = InferSelectModel<
-  typeof userEmailPreferencesTable
->
-export type InsertAuthorEmailPreferences = InferInsertModel<
-  typeof userEmailPreferencesTable
->
+export type SelectEmailDeliveryLog = InferSelectModel<typeof emailDeliveryLogsTable>
+export type InsertEmailDeliveryLog = InferInsertModel<typeof emailDeliveryLogsTable>
+export type SelectAuthorEmailPreferences = InferSelectModel<typeof userEmailPreferencesTable>
+export type InsertAuthorEmailPreferences = InferInsertModel<typeof userEmailPreferencesTable>
 
 // Zod schemas for API validation
-const emailDeliveryStatusEnum = z
-  .enum(EMAIL_DELIVERY_STATUS_VALUES)
-  .openapi('EmailDeliveryStatus')
+const emailDeliveryStatusEnum = z.enum(EMAIL_DELIVERY_STATUS_VALUES).openapi('EmailDeliveryStatus')
 
 export const selectEmailDeliveryLogSchema = z.object({
   id: z.string(),
@@ -166,22 +138,16 @@ export const updateAuthorEmailPreferencesSchema = z.object({
 })
 
 // Relations
-export const emailDeliveryLogsRelations = relations(
-  emailDeliveryLogsTable,
-  ({ one }) => ({
-    user: one(user, {
-      fields: [emailDeliveryLogsTable.userId],
-      references: [user.id]
-    })
+export const emailDeliveryLogsRelations = relations(emailDeliveryLogsTable, ({ one }) => ({
+  user: one(user, {
+    fields: [emailDeliveryLogsTable.userId],
+    references: [user.id]
   })
-)
+}))
 
-export const authorEmailPreferencesRelations = relations(
-  userEmailPreferencesTable,
-  ({ one }) => ({
-    user: one(user, {
-      fields: [userEmailPreferencesTable.userId],
-      references: [user.id]
-    })
+export const authorEmailPreferencesRelations = relations(userEmailPreferencesTable, ({ one }) => ({
+  user: one(user, {
+    fields: [userEmailPreferencesTable.userId],
+    references: [user.id]
   })
-)
+}))

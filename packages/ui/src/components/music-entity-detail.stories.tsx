@@ -3,12 +3,7 @@ import { MusicEntityArtistsPanel } from './music-entity-artists-panel'
 import { MusicEntityDetail } from './music-entity-detail'
 import { MusicEntityLinksPanel } from './music-entity-links-panel'
 import { MusicEntityMetadataForm } from './music-entity-metadata-form'
-import {
-  mockArtists,
-  mockLinks,
-  StoryPanelHeader,
-  storyPanelClassName
-} from './story-helpers'
+import { mockArtists, mockLinks, StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
   title: '@gbfm/ui/MusicEntityDetail'

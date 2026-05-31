@@ -24,9 +24,7 @@ export function MixTimelineItem({ mix, children }: MixTimelineItemProps) {
       <div
         className={cn(
           'timeline-line absolute left-2 top-0 bottom-0 w-px -translate-x-1/2 transition-opacity duration-300',
-          isActive
-            ? 'bg-highlight/40 opacity-100'
-            : 'bg-border opacity-75 group-hover:opacity-95'
+          isActive ? 'bg-highlight/40 opacity-100' : 'bg-border opacity-75 group-hover:opacity-95'
         )}
       />
       <div className='flex items-center justify-center'>
@@ -42,16 +40,12 @@ export function MixTimelineItem({ mix, children }: MixTimelineItemProps) {
       <span
         className={cn(
           'inline-flex w-fit items-center gap-2 py-0.5 text-[11px] font-mono tracking-widest uppercase transition-colors duration-300 sm:gap-3 sm:text-xs',
-          isActive
-            ? 'text-highlight'
-            : 'text-highlight/75 group-hover:text-highlight/90'
+          isActive ? 'text-highlight' : 'text-highlight/75 group-hover:text-highlight/90'
         )}>
         <span
           className={cn(
             'h-px w-4 transition-colors duration-300',
-            isActive
-              ? 'bg-highlight/60'
-              : 'bg-border group-hover:bg-highlight/30'
+            isActive ? 'bg-highlight/60' : 'bg-border group-hover:bg-highlight/30'
           )}
         />
         {new Date(mix.createdAt)

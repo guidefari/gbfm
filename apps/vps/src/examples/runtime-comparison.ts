@@ -64,9 +64,7 @@ async function _approachWithRuntime() {
 
   // Build services ONCE
   const scope = Scope.makeUnsafe()
-  const services = await Effect.runPromise(
-    Layer.buildWithScope(ExpensiveServiceLive, scope)
-  )
+  const services = await Effect.runPromise(Layer.buildWithScope(ExpensiveServiceLive, scope))
 
   // Run 10 times (like your cron job running 10 times)
   for (let i = 0; i < 10; i++) {

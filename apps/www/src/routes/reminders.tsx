@@ -59,17 +59,12 @@ function MusicReminders() {
 
   const handleDateInputPointerDown = () => {
     const input = dateInputRef.current
-    if (
-      input &&
-      'showPicker' in input &&
-      typeof input.showPicker === 'function'
-    ) {
+    if (input && 'showPicker' in input && typeof input.showPicker === 'function') {
       input.showPicker()
     }
   }
   // Enrich track details when URL changes
-  const { data: enrichedTrack, isLoading: isEnriching } =
-    useEnrichTrackFromUrl(musicUrl)
+  const { data: enrichedTrack, isLoading: isEnriching } = useEnrichTrackFromUrl(musicUrl)
 
   // Auto-fill fields when track is enriched
   useEffect(() => {
@@ -83,11 +78,10 @@ function MusicReminders() {
   }, [enrichedTrack, musicTitle, artistName])
 
   // Query existing reminders
-  const { data: reminders, isLoading: isLoadingReminders } =
-    useQuery<RemindersResponse>({
-      queryKey: ['reminders'],
-      queryFn: () => fetcher(`${VPS_BASE_URL}/music-reminders`)
-    })
+  const { data: reminders, isLoading: isLoadingReminders } = useQuery<RemindersResponse>({
+    queryKey: ['reminders'],
+    queryFn: () => fetcher(`${VPS_BASE_URL}/music-reminders`)
+  })
 
   // Create reminder mutation
   const createReminderMutation = useMutation({
@@ -178,8 +172,8 @@ function MusicReminders() {
     <div className='max-w-4xl p-4 mx-auto'>
       <h1 className='mb-6 text-3xl font-bold'>Music Reminders</h1>
       <p className='mb-8 text-muted-foreground'>
-        Add links to music you want to be reminded to listen to later. We'll
-        send you an email when the date comes!
+        Add links to music you want to be reminded to listen to later. We'll send you an email when
+        the date comes!
       </p>
 
       <div className='space-y-6'>
@@ -188,9 +182,7 @@ function MusicReminders() {
           <h2 className='mb-4 text-xl font-semibold'>Add New Reminder</h2>
           <form className='space-y-4' onSubmit={handleSubmit}>
             <div>
-              <label
-                htmlFor='musicUrl'
-                className='block mb-1 text-sm font-medium'>
+              <label htmlFor='musicUrl' className='block mb-1 text-sm font-medium'>
                 Music URL (Spotify, YouTube, etc.)
               </label>
               <Input
@@ -205,9 +197,7 @@ function MusicReminders() {
               />
               <input type='hidden' name='albumCoverUrl' value={albumCoverUrl} />
               {isEnriching && (
-                <p className='mt-1 text-muted-foreground'>
-                  Loading track details...
-                </p>
+                <p className='mt-1 text-muted-foreground'>Loading track details...</p>
               )}
               {enrichedTrack && (
                 <div className='p-3 mt-2  bg-muted'>
@@ -238,9 +228,7 @@ function MusicReminders() {
             </div>
             <div className='grid gap-4 md:grid-cols-2'>
               <div>
-                <label
-                  htmlFor='musicTitle'
-                  className='block mb-1 text-sm font-medium'>
+                <label htmlFor='musicTitle' className='block mb-1 text-sm font-medium'>
                   Music Title
                 </label>
                 <Input
@@ -255,9 +243,7 @@ function MusicReminders() {
                 />
               </div>
               <div>
-                <label
-                  htmlFor='artistName'
-                  className='block mb-1 text-sm font-medium'>
+                <label htmlFor='artistName' className='block mb-1 text-sm font-medium'>
                   Artist Name
                 </label>
                 <Input
@@ -274,9 +260,7 @@ function MusicReminders() {
             </div>
             <div className='grid gap-4 md:grid-cols-2'>
               <div>
-                <label
-                  htmlFor='reminderDate'
-                  className='block mb-1 text-sm font-medium'>
+                <label htmlFor='reminderDate' className='block mb-1 text-sm font-medium'>
                   Reminder Date
                 </label>
                 <div className='relative w-full h-10 overflow-hidden border  border-input bg-background'>
@@ -284,13 +268,9 @@ function MusicReminders() {
                     <CalendarClock className='shrink-0 w-4 h-4 text-muted-foreground' />
                     <span
                       className={
-                        reminderDate
-                          ? 'truncate text-base'
-                          : 'truncate text-muted-foreground'
+                        reminderDate ? 'truncate text-base' : 'truncate text-muted-foreground'
                       }>
-                      {reminderDate
-                        ? formatReminderDateValue(reminderDate)
-                        : 'Pick date and time'}
+                      {reminderDate ? formatReminderDateValue(reminderDate) : 'Pick date and time'}
                     </span>
                   </div>
                   <Input
@@ -307,9 +287,7 @@ function MusicReminders() {
                 </div>
               </div>
               <div>
-                <label
-                  htmlFor='notes'
-                  className='block mb-2 text-sm font-medium'>
+                <label htmlFor='notes' className='block mb-2 text-sm font-medium'>
                   Notes (Optional)
                 </label>
                 <Textarea
@@ -326,9 +304,7 @@ function MusicReminders() {
               type='submit'
               disabled={createReminderMutation.isPending}
               className='inline-flex items-center justify-center px-4 py-2 text-sm font-medium  bg-primary text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50'>
-              {createReminderMutation.isPending
-                ? 'Creating...'
-                : 'Add Reminder'}
+              {createReminderMutation.isPending ? 'Creating...' : 'Add Reminder'}
             </button>
           </form>
         </div>
@@ -343,10 +319,8 @@ function MusicReminders() {
           ) : reminders?.reminders && reminders?.reminders?.length > 0 ? (
             <div className='space-y-4'>
               {reminders?.reminders
-                .sort(
-                  (a, b) =>
-                    new Date(b.reminderDate).getTime() -
-                    new Date(a.reminderDate).getTime()
+                .toSorted(
+                  (a, b) => new Date(b.reminderDate).getTime() - new Date(a.reminderDate).getTime()
                 )
                 .map((reminder: MusicReminder) => (
                   <div
@@ -362,9 +336,7 @@ function MusicReminders() {
                       )}
                       <div>
                         <p className='font-medium'>{reminder.musicTitle}</p>
-                        <p className='text-sm text-muted-foreground'>
-                          by {reminder.artistName}
-                        </p>
+                        <p className='text-sm text-muted-foreground'>by {reminder.artistName}</p>
                         <p className='text-xs text-muted-foreground'>
                           {new Date(reminder.reminderDate).toLocaleString()}
                         </p>

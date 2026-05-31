@@ -52,12 +52,8 @@ export function FilesTab() {
     staleTime: Infinity
   })
 
-  const [bucketA, setBucketA] = useState(
-    () => localStorage.getItem(STORAGE_KEY_BUCKET_A) ?? ''
-  )
-  const [bucketB, setBucketB] = useState(
-    () => localStorage.getItem(STORAGE_KEY_BUCKET_B) ?? ''
-  )
+  const [bucketA, setBucketA] = useState(() => localStorage.getItem(STORAGE_KEY_BUCKET_A) ?? '')
+  const [bucketB, setBucketB] = useState(() => localStorage.getItem(STORAGE_KEY_BUCKET_B) ?? '')
   const [isCustomBucketA, setIsCustomBucketA] = useState(false)
   const [isCustomBucketB, setIsCustomBucketB] = useState(false)
   const [recentBuckets, setRecentBuckets] = useState<string[]>(() => {
@@ -66,9 +62,7 @@ export function FilesTab() {
       if (!raw) return []
       const parsed = JSON.parse(raw)
       if (!Array.isArray(parsed)) return []
-      return parsed.filter(
-        (value): value is string => typeof value === 'string'
-      )
+      return parsed.filter((value): value is string => typeof value === 'string')
     } catch {
       return []
     }
@@ -77,10 +71,7 @@ export function FilesTab() {
   const rememberBucket = useCallback((bucketName: string) => {
     if (!bucketName.trim()) return
     setRecentBuckets((prev) => {
-      const next = [
-        bucketName,
-        ...prev.filter((item) => item !== bucketName)
-      ].slice(0, 8)
+      const next = [bucketName, ...prev.filter((item) => item !== bucketName)].slice(0, 8)
       localStorage.setItem(STORAGE_KEY_RECENT_BUCKETS, JSON.stringify(next))
       return next
     })
@@ -126,14 +117,10 @@ export function FilesTab() {
       ...configData.availableBuckets
     ])
     setIsCustomBucketA((prev) =>
-      prev
-        ? !knownBucketValues.has(bucketA)
-        : Boolean(bucketA) && !knownBucketValues.has(bucketA)
+      prev ? !knownBucketValues.has(bucketA) : Boolean(bucketA) && !knownBucketValues.has(bucketA)
     )
     setIsCustomBucketB((prev) =>
-      prev
-        ? !knownBucketValues.has(bucketB)
-        : Boolean(bucketB) && !knownBucketValues.has(bucketB)
+      prev ? !knownBucketValues.has(bucketB) : Boolean(bucketB) && !knownBucketValues.has(bucketB)
     )
   }, [bucketA, bucketB, configData])
 
@@ -189,7 +176,7 @@ export function FilesTab() {
   })
 
   // All unique keys across both buckets
-  const allKeys = Array.from(new Set([...keysInA, ...keysInB])).sort()
+  const allKeys = Array.from(new Set([...keysInA, ...keysInB])).toSorted()
 
   const getStatus = (key: string) => {
     const inA = keysInA.has(key)
@@ -201,30 +188,20 @@ export function FilesTab() {
 
   const stageBuckets = configData
     ? Object.entries(configData.buckets).filter(
-        ([, bucket], index, arr) =>
-          arr.findIndex(([, value]) => value === bucket) === index
+        ([, bucket], index, arr) => arr.findIndex(([, value]) => value === bucket) === index
       )
     : []
   const stageBucketValues = new Set(stageBuckets.map(([, bucket]) => bucket))
   const availableBuckets = configData
     ? Array.from(new Set(configData.availableBuckets)).filter(Boolean)
     : []
-  const discoveredBuckets = availableBuckets.filter(
-    (bucket) => !stageBucketValues.has(bucket)
-  )
+  const discoveredBuckets = availableBuckets.filter((bucket) => !stageBucketValues.has(bucket))
   const selectableCustomBuckets = recentBuckets.filter(
-    (bucket) =>
-      !stageBucketValues.has(bucket) && !availableBuckets.includes(bucket)
+    (bucket) => !stageBucketValues.has(bucket) && !availableBuckets.includes(bucket)
   )
-  const selectValueA = isCustomBucketA
-    ? CUSTOM_BUCKET_VALUE
-    : bucketA || undefined
-  const selectValueB = isCustomBucketB
-    ? CUSTOM_BUCKET_VALUE
-    : bucketB || undefined
-  const isSameBucketSelected = Boolean(
-    bucketA && bucketB && bucketA === bucketB
-  )
+  const selectValueA = isCustomBucketA ? CUSTOM_BUCKET_VALUE : bucketA || undefined
+  const selectValueB = isCustomBucketB ? CUSTOM_BUCKET_VALUE : bucketB || undefined
+  const isSameBucketSelected = Boolean(bucketA && bucketB && bucketA === bucketB)
 
   return (
     <div className='space-y-6'>
@@ -236,8 +213,7 @@ export function FilesTab() {
 
       <div className='flex items-center justify-between gap-2'>
         <p className='text-xs text-muted-foreground'>
-          Pick from known buckets first. Use custom mode only for external or
-          one-off buckets.
+          Pick from known buckets first. Use custom mode only for external or one-off buckets.
         </p>
         <Button
           type='button'
@@ -284,10 +260,7 @@ export function FilesTab() {
                 </SelectItem>
               ))}
               {selectableCustomBuckets.map((bucket) => (
-                <SelectItem
-                  key={`saved-a-${bucket}`}
-                  value={bucket}
-                  className='text-xs font-mono'>
+                <SelectItem key={`saved-a-${bucket}`} value={bucket} className='text-xs font-mono'>
                   saved · {bucket}
                 </SelectItem>
               ))}
@@ -337,10 +310,7 @@ export function FilesTab() {
                 </SelectItem>
               ))}
               {selectableCustomBuckets.map((bucket) => (
-                <SelectItem
-                  key={`saved-b-${bucket}`}
-                  value={bucket}
-                  className='text-xs font-mono'>
+                <SelectItem key={`saved-b-${bucket}`} value={bucket} className='text-xs font-mono'>
                   saved · {bucket}
                 </SelectItem>
               ))}
@@ -370,8 +340,7 @@ export function FilesTab() {
 
       {isSameBucketSelected && (
         <div className='rounded-sm border border-yellow-300 bg-yellow-50 px-3 py-2 text-xs text-yellow-900 dark:border-yellow-900/50 dark:bg-yellow-950/30 dark:text-yellow-300'>
-          Bucket A and Bucket B are the same. Choose two different buckets to
-          compare or copy files.
+          Bucket A and Bucket B are the same. Choose two different buckets to compare or copy files.
         </div>
       )}
 
@@ -393,14 +362,11 @@ export function FilesTab() {
                 const objA = listA?.objects.find((o) => o.key === key)
                 const objB = listB?.objects.find((o) => o.key === key)
                 const size = objA?.size ?? objB?.size ?? 0
-                const isCopying =
-                  copyMutation.isPending && copyMutation.variables?.key === key
+                const isCopying = copyMutation.isPending && copyMutation.variables?.key === key
 
                 return (
                   <tr key={key} className='border-b hover:bg-muted/50'>
-                    <td className='px-4 py-3 font-mono text-xs max-w-xs truncate'>
-                      {key}
-                    </td>
+                    <td className='px-4 py-3 font-mono text-xs max-w-xs truncate'>{key}</td>
                     <td className='px-4 py-3 text-muted-foreground text-xs whitespace-nowrap'>
                       {formatBytes(size)}
                     </td>
@@ -476,9 +442,7 @@ export function FilesTab() {
                             <Button
                               variant='ghost'
                               size='sm'
-                              disabled={
-                                isCopying || !bucketB || isSameBucketSelected
-                              }
+                              disabled={isCopying || !bucketB || isSameBucketSelected}
                               title='Re-copy A → B'
                               onClick={() =>
                                 copyMutation.mutate({
@@ -493,9 +457,7 @@ export function FilesTab() {
                             <Button
                               variant='ghost'
                               size='sm'
-                              disabled={
-                                isCopying || !bucketA || isSameBucketSelected
-                              }
+                              disabled={isCopying || !bucketA || isSameBucketSelected}
                               title='Re-copy B → A'
                               onClick={() =>
                                 copyMutation.mutate({
@@ -520,15 +482,11 @@ export function FilesTab() {
       )}
 
       {listA && listB && allKeys.length === 0 && (
-        <div className='py-8 text-center text-muted-foreground text-sm'>
-          Both buckets are empty
-        </div>
+        <div className='py-8 text-center text-muted-foreground text-sm'>Both buckets are empty</div>
       )}
 
       {!listA && !listB && bucketA && bucketB && (
-        <div className='py-8 text-center text-muted-foreground text-sm'>
-          Loading...
-        </div>
+        <div className='py-8 text-center text-muted-foreground text-sm'>Loading...</div>
       )}
 
       {(!bucketA || !bucketB) && (

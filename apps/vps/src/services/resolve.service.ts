@@ -6,10 +6,7 @@ import { showCreators, showsTable } from '@/db/show.schema'
 import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
 import { isReservedSlug } from '@/lib/reserved-slugs'
-import {
-  getPublicProfileEffect,
-  type PublicProfile
-} from '@/services/profile.service'
+import { getPublicProfileEffect, type PublicProfile } from '@/services/profile.service'
 
 type ShowData = {
   id: string
@@ -29,9 +26,7 @@ export type ResolveResult =
   | { type: 'show'; data: ShowData }
 
 export interface ResolveService {
-  readonly resolve: (
-    slug: string
-  ) => Effect.Effect<ResolveResult, DatabaseError | NotFoundError>
+  readonly resolve: (slug: string) => Effect.Effect<ResolveResult, DatabaseError | NotFoundError>
 }
 
 export const ResolveService = Context.Service<ResolveService>('ResolveService')
@@ -156,7 +151,5 @@ const resolveEffect = (slug: string) =>
 
 export const ResolveServiceLive = Layer.succeed(ResolveService, {
   resolve: (slug) =>
-    resolveEffect(slug).pipe(
-      Effect.withSpan('resolve.slug', { attributes: { slug } })
-    )
+    resolveEffect(slug).pipe(Effect.withSpan('resolve.slug', { attributes: { slug } }))
 })

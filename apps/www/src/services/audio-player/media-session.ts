@@ -13,20 +13,13 @@ export interface MediaSessionHandlers {
 }
 
 export interface MediaSessionServiceShape {
-  setMetadata: (
-    title: string,
-    artists: string[],
-    artwork?: string
-  ) => Effect.Effect<void>
-  setPlaybackState: (
-    state: 'playing' | 'paused' | 'none'
-  ) => Effect.Effect<void>
+  setMetadata: (title: string, artists: string[], artwork?: string) => Effect.Effect<void>
+  setPlaybackState: (state: 'playing' | 'paused' | 'none') => Effect.Effect<void>
   setPositionState: (duration: number, position: number) => Effect.Effect<void>
   setActionHandlers: (handlers: MediaSessionHandlers) => Effect.Effect<void>
 }
 
-const hasMediaSession = () =>
-  typeof navigator !== 'undefined' && 'mediaSession' in navigator
+const hasMediaSession = () => typeof navigator !== 'undefined' && 'mediaSession' in navigator
 
 export class MediaSessionService extends Context.Service<
   MediaSessionService,
@@ -73,10 +66,7 @@ export const MediaSessionServiceLive = Layer.sync(MediaSessionService, () => ({
       navigator.mediaSession.setActionHandler('seekforward', (d) =>
         handlers.onSeekForward(d.seekOffset ?? 30)
       )
-      navigator.mediaSession.setActionHandler(
-        'previoustrack',
-        handlers.onPreviousTrack
-      )
+      navigator.mediaSession.setActionHandler('previoustrack', handlers.onPreviousTrack)
       navigator.mediaSession.setActionHandler('nexttrack', handlers.onNextTrack)
       navigator.mediaSession.setActionHandler('seekto', (d) => {
         if (d.seekTime != null) handlers.onSeekTo(d.seekTime)
@@ -84,29 +74,20 @@ export const MediaSessionServiceLive = Layer.sync(MediaSessionService, () => ({
     })
 }))
 
-export const setMetadata = (
-  title: string,
-  artists: string[],
-  artwork?: string
-) =>
-  Effect.andThen(MediaSessionService, (s) =>
-    s.setMetadata(title, artists, artwork)
-  )
+export const setMetadata = (title: string, artists: string[], artwork?: string) =>
+  Effect.andThen(MediaSessionService, (s) => s.setMetadata(title, artists, artwork))
 
 export const setPlaybackState = (state: 'playing' | 'paused' | 'none') =>
   Effect.andThen(MediaSessionService, (s) => s.setPlaybackState(state))
 
 export const setPositionState = (duration: number, position: number) =>
-  Effect.andThen(MediaSessionService, (s) =>
-    s.setPositionState(duration, position)
-  )
+  Effect.andThen(MediaSessionService, (s) => s.setPositionState(duration, position))
 
 export const setActionHandlers = (handlers: MediaSessionHandlers) =>
   Effect.andThen(MediaSessionService, (s) => s.setActionHandlers(handlers))
 
 export const MediaSessionServiceTest = Layer.succeed(MediaSessionService, {
-  setMetadata: (_title: string, _artists: string[], _artwork?: string) =>
-    Effect.void,
+  setMetadata: (_title: string, _artists: string[], _artwork?: string) => Effect.void,
   setPlaybackState: (_state: 'playing' | 'paused' | 'none') => Effect.void,
   setPositionState: (_duration: number, _position: number) => Effect.void,
   setActionHandlers: (_handlers: MediaSessionHandlers) => Effect.void

@@ -1,13 +1,6 @@
 import { VPS_BASE_URL } from './http'
 
-export type ShareContentType =
-  | 'mix'
-  | 'track'
-  | 'show'
-  | 'profile'
-  | 'release'
-  | 'label'
-  | 'post'
+export type ShareContentType = 'mix' | 'track' | 'show' | 'profile' | 'release' | 'label' | 'post'
 
 /**
  * Generates a share URL for the redirect service.

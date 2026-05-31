@@ -72,12 +72,9 @@ export const shareLabel = async (c: Context) => {
 
     const creators = yield* fetchCreators(label.id)
 
-    const description =
-      label.description || `Check out ${label.title || slug} on goosebumps.fm`
+    const description = label.description || `Check out ${label.title || slug} on goosebumps.fm`
     const genresSuffix =
-      label.genres && label.genres.length > 0
-        ? ` | Genres: ${label.genres.join(', ')}`
-        : ''
+      label.genres && label.genres.length > 0 ? ` | Genres: ${label.genres.join(', ')}` : ''
 
     return {
       html: buildOGHtml({

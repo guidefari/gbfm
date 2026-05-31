@@ -40,9 +40,7 @@ export function ContextMenus() {
               Add to queue <ContextMenuShortcut>⌘Q</ContextMenuShortcut>
             </ContextMenuItem>
             <ContextMenuSeparator />
-            <ContextMenuCheckboxItem checked>
-              Show in library
-            </ContextMenuCheckboxItem>
+            <ContextMenuCheckboxItem checked>Show in library</ContextMenuCheckboxItem>
             <ContextMenuCheckboxItem>Download</ContextMenuCheckboxItem>
             <ContextMenuSeparator />
             <ContextMenuSub>
@@ -53,9 +51,7 @@ export function ContextMenus() {
               </ContextMenuSubContent>
             </ContextMenuSub>
             <ContextMenuSeparator />
-            <ContextMenuItem className='text-destructive'>
-              Delete
-            </ContextMenuItem>
+            <ContextMenuItem className='text-destructive'>Delete</ContextMenuItem>
           </ContextMenuContent>
         </ContextMenu>
       </div>

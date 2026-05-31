@@ -39,9 +39,7 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "publications_slug_unique": {
-          "columns": [
-            "slug"
-          ],
+          "columns": ["slug"],
           "nullsNotDistinct": false,
           "name": "publications_slug_unique"
         }
@@ -256,12 +254,8 @@
           "tableFrom": "posts",
           "tableTo": "publications",
           "schemaTo": "public",
-          "columnsFrom": [
-            "publicationId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["publicationId"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -334,16 +328,12 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "authors_username_unique": {
-          "columns": [
-            "username"
-          ],
+          "columns": ["username"],
           "nullsNotDistinct": false,
           "name": "authors_username_unique"
         },
         "authors_email_unique": {
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "nullsNotDistinct": false,
           "name": "authors_email_unique"
         }
@@ -376,12 +366,8 @@
           "tableFrom": "publication_authors",
           "tableTo": "publications",
           "schemaTo": "public",
-          "columnsFrom": [
-            "publicationId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["publicationId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -390,12 +376,8 @@
           "tableFrom": "publication_authors",
           "tableTo": "authors",
           "schemaTo": "public",
-          "columnsFrom": [
-            "authorId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["authorId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -430,12 +412,8 @@
           "tableFrom": "publication_posts",
           "tableTo": "publications",
           "schemaTo": "public",
-          "columnsFrom": [
-            "publicationId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["publicationId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -444,12 +422,8 @@
           "tableFrom": "publication_posts",
           "tableTo": "posts",
           "schemaTo": "public",
-          "columnsFrom": [
-            "postId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["postId"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -484,12 +458,8 @@
           "tableFrom": "mixes_to_authors",
           "tableTo": "mixes",
           "schemaTo": "public",
-          "columnsFrom": [
-            "mixId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["mixId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -498,12 +468,8 @@
           "tableFrom": "mixes_to_authors",
           "tableTo": "authors",
           "schemaTo": "public",
-          "columnsFrom": [
-            "authorId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["authorId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -511,10 +477,7 @@
       "compositePrimaryKeys": {
         "mixes_to_authors_mixId_authorId_pk": {
           "name": "mixes_to_authors_mixId_authorId_pk",
-          "columns": [
-            "mixId",
-            "authorId"
-          ]
+          "columns": ["mixId", "authorId"]
         }
       },
       "uniqueConstraints": {},
@@ -546,12 +509,8 @@
           "tableFrom": "posts_to_authors",
           "tableTo": "posts",
           "schemaTo": "public",
-          "columnsFrom": [
-            "postId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["postId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -560,12 +519,8 @@
           "tableFrom": "posts_to_authors",
           "tableTo": "authors",
           "schemaTo": "public",
-          "columnsFrom": [
-            "authorId"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["authorId"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -573,10 +528,7 @@
       "compositePrimaryKeys": {
         "posts_to_authors_postId_authorId_pk": {
           "name": "posts_to_authors_postId_authorId_pk",
-          "columns": [
-            "postId",
-            "authorId"
-          ]
+          "columns": ["postId", "authorId"]
         }
       },
       "uniqueConstraints": {},
@@ -588,11 +540,7 @@
   "enums": {
     "public.post_type": {
       "name": "post_type",
-      "values": [
-        "post",
-        "micro",
-        "label"
-      ],
+      "values": ["post", "micro", "label"],
       "schema": "public"
     }
   },

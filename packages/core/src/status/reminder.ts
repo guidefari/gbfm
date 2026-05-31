@@ -1,11 +1,6 @@
 import { Schema } from 'effect'
 
-export const REMINDER_STATUSES = [
-  'pending',
-  'processing',
-  'sent',
-  'failed'
-] as const
+export const REMINDER_STATUSES = ['pending', 'processing', 'sent', 'failed'] as const
 
 export const reminderStatusSchema = Schema.Literals(REMINDER_STATUSES)
 

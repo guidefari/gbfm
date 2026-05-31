@@ -18,10 +18,6 @@ export const EMAIL_DELIVERY_STATUS_VALUES = [
   'FAILED'
 ] as const
 
-export const emailDeliveryStatusSchema = Schema.Literals(
-  EMAIL_DELIVERY_STATUS_VALUES
-)
+export const emailDeliveryStatusSchema = Schema.Literals(EMAIL_DELIVERY_STATUS_VALUES)
 
-export type EmailDeliveryStatus = Schema.Schema.Type<
-  typeof emailDeliveryStatusSchema
->
+export type EmailDeliveryStatus = Schema.Schema.Type<typeof emailDeliveryStatusSchema>

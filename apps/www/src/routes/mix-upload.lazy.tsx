@@ -28,13 +28,7 @@ import { useEffect, useRef, useState } from 'react'
 import { S3AudioFilePicker } from '@/components/mix-uploader/S3AudioFilePicker'
 import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
 import { authClient, useSession } from '@/lib/auth-client'
-import {
-  fetcher,
-  useAllShows,
-  useAudioBySlug,
-  useAudioTags,
-  VPS_BASE_URL
-} from '@/lib/http'
+import { fetcher, useAllShows, useAudioBySlug, useAudioTags, VPS_BASE_URL } from '@/lib/http'
 
 export const Route = createLazyFileRoute('/mix-upload')({
   component: MixUploadPage
@@ -73,10 +67,7 @@ function MixUploadPage() {
   const { data: availableTags } = useAudioTags('mix')
   const { data: allShows } = useAllShows({ limit: 100 })
 
-  const { data: existingMix, isPending: mixLoading } = useAudioBySlug(
-    editType,
-    search.edit || ''
-  )
+  const { data: existingMix, isPending: mixLoading } = useAudioBySlug(editType, search.edit || '')
 
   const [formData, setFormData] = useState<MixFormData>(() => ({
     title: search.title || '',
@@ -225,9 +216,9 @@ function MixUploadPage() {
         url: audioUrl,
         type: 'mix',
         tags: data.tags,
-        creatorIds: [
-          data.creatorId === 'current' ? user?.id : data.creatorId || user?.id
-        ].filter(Boolean),
+        creatorIds: [data.creatorId === 'current' ? user?.id : data.creatorId || user?.id].filter(
+          Boolean
+        ),
         showId: data.showId,
         episodeNumber: data.episodeNumber ? Number(data.episodeNumber) : null
       }
@@ -266,8 +257,7 @@ function MixUploadPage() {
     onError: (error) => {
       toast({
         title: 'Upload failed',
-        description:
-          error instanceof Error ? error.message : 'An unexpected error.',
+        description: error instanceof Error ? error.message : 'An unexpected error.',
         variant: 'destructive'
       })
       setUploadStep('idle')
@@ -289,9 +279,7 @@ function MixUploadPage() {
       setAudioPreview(URL.createObjectURL(file))
       if (!formData.title) {
         const fileName = file.name.replace(/\.[^/.]+$/, '')
-        const cleanTitle = fileName
-          .replace(/[-_]/g, ' ')
-          .replace(/\b\w/g, (l) => l.toUpperCase())
+        const cleanTitle = fileName.replace(/[-_]/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
         handleInputChange('title', cleanTitle)
       }
     }
@@ -371,7 +359,7 @@ function MixUploadPage() {
     }
     setFormData((prev) => ({
       ...prev,
-      tracklist: [...prev.tracklist, newTrack].sort((a, b) => a.time - b.time)
+      tracklist: [...prev.tracklist, newTrack].toSorted((a, b) => a.time - b.time)
     }))
   }
 
@@ -401,8 +389,7 @@ function MixUploadPage() {
     if (!isEditMode && !audioFile && !formData.url) {
       toast({
         title: 'Audio file required',
-        description:
-          'Please select an audio file to upload or pick one from S3.',
+        description: 'Please select an audio file to upload or pick one from S3.',
         variant: 'destructive'
       })
       return
@@ -483,15 +470,11 @@ function MixUploadPage() {
           <div className='space-y-6 lg:col-span-7'>
             <Tabs defaultValue='details' className='w-full'>
               <TabsList className='w-fit'>
-                <TabsTrigger
-                  value='details'
-                  className='flex items-center gap-2'>
+                <TabsTrigger value='details' className='flex items-center gap-2'>
                   <Music className='w-4 h-4' />
                   Details
                 </TabsTrigger>
-                <TabsTrigger
-                  value='tracklist'
-                  className='flex items-center gap-2'>
+                <TabsTrigger value='tracklist' className='flex items-center gap-2'>
                   <List className='w-4 h-4' />
                   Tracklist
                 </TabsTrigger>
@@ -530,15 +513,11 @@ function MixUploadPage() {
                   isUpdatingTags={updateTagsMutation.isPending}
                   newTag={newTag}
                   onTitleChange={(v) => handleInputChange('title', v)}
-                  onDescriptionChange={(v) =>
-                    handleInputChange('description', v)
-                  }
+                  onDescriptionChange={(v) => handleInputChange('description', v)}
                   onSlugChange={(v) => handleInputChange('slug', v)}
                   onCreatorChange={(v) => handleInputChange('creatorId', v)}
                   onShowChange={(v) => handleInputChange('showId', v)}
-                  onEpisodeNumberChange={(v) =>
-                    handleInputChange('episodeNumber', v)
-                  }
+                  onEpisodeNumberChange={(v) => handleInputChange('episodeNumber', v)}
                   onToggleTag={toggleTag}
                   onNewTagChange={setNewTag}
                   onAddNewTag={addNewTag}
@@ -554,8 +533,7 @@ function MixUploadPage() {
                       Mark Tracklist Timestamps
                     </CardTitle>
                     <p className='text-sm text-muted-foreground'>
-                      Play your mix and click "Mark Track Start" when each track
-                      begins.
+                      Play your mix and click "Mark Track Start" when each track begins.
                     </p>
                   </CardHeader>
                   <CardContent>

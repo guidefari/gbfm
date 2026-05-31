@@ -1,17 +1,5 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from './card'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from './select'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {

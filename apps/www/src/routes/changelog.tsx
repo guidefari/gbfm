@@ -25,8 +25,8 @@ function ChangelogPage() {
         </h1>
 
         <p className='mt-4 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-base'>
-          Latest release notes, updates, and fixes. This page is generated from
-          the repository changelog so it stays in lockstep with each publish.
+          Latest release notes, updates, and fixes. This page is generated from the repository
+          changelog so it stays in lockstep with each publish.
         </p>
       </section>
 

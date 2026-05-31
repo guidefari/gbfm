@@ -18,19 +18,13 @@ import {
 } from '@/errors'
 import { requireCreator } from '@/lib/authorization'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
-import {
-  createPaginationMetadata,
-  type PaginationMetadata
-} from '@/lib/pagination'
+import { createPaginationMetadata, type PaginationMetadata } from '@/lib/pagination'
 
 export interface LabelService {
   readonly getAll: (options: {
     limit: number
     offset: number
-  }) => Effect.Effect<
-    { data: SelectLabel[]; pagination: PaginationMetadata },
-    DatabaseError
-  >
+  }) => Effect.Effect<{ data: SelectLabel[]; pagination: PaginationMetadata }, DatabaseError>
   readonly getBySlug: (
     slug: string
   ) => Effect.Effect<SelectMdxCompiledLabel, DatabaseError | NotFoundError>
@@ -42,10 +36,7 @@ export interface LabelService {
     slug: string,
     userId: string,
     data: Partial<InsertLabel>
-  ) => Effect.Effect<
-    SelectMdxCompiledLabel,
-    DatabaseError | NotFoundError | UnauthorizedError
-  >
+  ) => Effect.Effect<SelectMdxCompiledLabel, DatabaseError | NotFoundError | UnauthorizedError>
 }
 
 export const LabelService = Context.Service<LabelService>('LabelService')
@@ -58,8 +49,7 @@ const getAllEffect = (options: { limit: number; offset: number }) =>
     const whereCondition = eq(labelsTable.draft, false)
 
     const countResult = yield* Effect.tryPromise({
-      try: () =>
-        db.select({ total: count() }).from(labelsTable).where(whereCondition),
+      try: () => db.select({ total: count() }).from(labelsTable).where(whereCondition),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to count labels: ${getErrorMessage(error)}`,
@@ -97,12 +87,7 @@ const getBySlugEffect = (slug: string) =>
   Effect.gen(function* () {
     yield* Effect.annotateCurrentSpan('label.slug', slug)
     const labelRecords = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select()
-          .from(labelsTable)
-          .where(eq(labelsTable.slug, slug))
-          .limit(1),
+      try: () => db.select().from(labelsTable).where(eq(labelsTable.slug, slug)).limit(1),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to fetch label: ${getErrorMessage(error)}`,
@@ -176,10 +161,7 @@ const createEffect = (data: InsertLabel, creatorIds: string[]) =>
     const result = yield* Effect.tryPromise({
       try: () =>
         db.transaction(async (tx) => {
-          const [newLabel] = await tx
-            .insert(labelsTable)
-            .values(data)
-            .returning()
+          const [newLabel] = await tx.insert(labelsTable).values(data).returning()
 
           if (!newLabel) {
             throw new Error('Failed to create label')
@@ -219,24 +201,12 @@ const createEffect = (data: InsertLabel, creatorIds: string[]) =>
     return result
   })
 
-const updateEffect = (
-  slug: string,
-  userId: string,
-  data: Partial<InsertLabel>
-) =>
+const updateEffect = (slug: string, userId: string, data: Partial<InsertLabel>) =>
   Effect.gen(function* () {
     yield* Effect.annotateCurrentSpan('label.slug', slug)
-    yield* Effect.annotateCurrentSpan(
-      'fields.updated',
-      Object.keys(data).join(',')
-    )
+    yield* Effect.annotateCurrentSpan('fields.updated', Object.keys(data).join(','))
     const existingRecords = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select()
-          .from(labelsTable)
-          .where(eq(labelsTable.slug, slug))
-          .limit(1),
+      try: () => db.select().from(labelsTable).where(eq(labelsTable.slug, slug)).limit(1),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to check label existence: ${getErrorMessage(error)}`,
@@ -339,11 +309,8 @@ const getBySlugWithSpan = (slug: string) =>
 const createWithSpan = (data: InsertLabel, creatorIds: string[]) =>
   createEffect(data, creatorIds).pipe(Effect.withSpan('label.create'))
 
-const updateWithSpan = (
-  slug: string,
-  userId: string,
-  data: Partial<InsertLabel>
-) => updateEffect(slug, userId, data).pipe(Effect.withSpan('label.update'))
+const updateWithSpan = (slug: string, userId: string, data: Partial<InsertLabel>) =>
+  updateEffect(slug, userId, data).pipe(Effect.withSpan('label.update'))
 
 export const LabelServiceLive = Layer.succeed(LabelService, {
   getAll: getAllWithSpan,

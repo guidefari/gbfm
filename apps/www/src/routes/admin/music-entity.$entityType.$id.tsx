@@ -17,9 +17,7 @@ function MusicDetailRoute() {
   if (!VALID_TYPES.includes(entityType as MusicEntityType)) {
     return (
       <AdminAccessGuard>
-        <p className='p-8 text-muted-foreground'>
-          Unknown entity type: {entityType}
-        </p>
+        <p className='p-8 text-muted-foreground'>Unknown entity type: {entityType}</p>
       </AdminAccessGuard>
     )
   }
@@ -36,10 +34,7 @@ function MusicDetailRoute() {
           </Button>
         </header>
         <div className='flex-1 p-6 max-w-4xl mx-auto w-full'>
-          <MusicEntityDetailPage
-            entityType={entityType as MusicEntityType}
-            id={id}
-          />
+          <MusicEntityDetailPage entityType={entityType as MusicEntityType} id={id} />
         </div>
       </div>
     </AdminAccessGuard>

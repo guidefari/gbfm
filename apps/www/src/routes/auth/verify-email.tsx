@@ -2,10 +2,7 @@ import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { Loader2, MailCheck } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { z } from 'zod'
-import {
-  AuthPageLayout,
-  AuthStatusNotice
-} from '@/components/Auth/AuthPageLayout'
+import { AuthPageLayout, AuthStatusNotice } from '@/components/Auth/AuthPageLayout'
 import { authClient } from '@/lib/auth-client'
 
 const searchSchema = z.object({
@@ -62,20 +59,8 @@ function VerifyEmailPage() {
 
   return (
     <AuthPageLayout
-      badge={
-        isVerifying
-          ? 'Verifying'
-          : isError
-            ? 'Verification Failed'
-            : 'Email Verified'
-      }
-      title={
-        isVerifying
-          ? 'Hang tight.'
-          : isError
-            ? "That didn't work."
-            : "You're all set."
-      }
+      badge={isVerifying ? 'Verifying' : isError ? 'Verification Failed' : 'Email Verified'}
+      title={isVerifying ? 'Hang tight.' : isError ? "That didn't work." : "You're all set."}
       description={
         isVerifying
           ? 'Confirming your email now.'
@@ -104,16 +89,12 @@ function VerifyEmailPage() {
       {isVerifying ? (
         <div className='flex flex-col items-center gap-3 border border-gb-pastel-green-2/30 bg-gb-pastel-green-2/10 px-6 py-8 text-center'>
           <Loader2 className='h-10 w-10 animate-spin text-gb-pastel-green-1' />
-          <p className='text-base font-semibold text-foreground'>
-            Verifying your email
-          </p>
+          <p className='text-base font-semibold text-foreground'>Verifying your email</p>
         </div>
       ) : !isError ? (
         <div className='flex flex-col items-center gap-3 border border-gb-pastel-green-2/30 bg-gb-pastel-green-2/10 px-6 py-8 text-center'>
           <MailCheck className='h-10 w-10 text-gb-pastel-green-1' />
-          <p className='text-base font-semibold text-foreground'>
-            Email verified
-          </p>
+          <p className='text-base font-semibold text-foreground'>Email verified</p>
           <p className='text-sm text-muted-foreground'>
             Thanks for confirming. Redirecting you now.
           </p>

@@ -40,15 +40,7 @@ import {
   toast
 } from '@gbfm/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import {
-  Check,
-  Edit,
-  ExternalLink,
-  GripVertical,
-  Mail,
-  Plus,
-  X
-} from 'lucide-react'
+import { Check, Edit, ExternalLink, GripVertical, Mail, Plus, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { authClient } from '@/lib/auth-client'
 import {
@@ -117,10 +109,9 @@ function SortableSocialLinkRow({
   onChange: (next: SocialLink) => void
   onRemove: () => void
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({
-      id: `${link.platform}-${link.position}-${link.url}`
-    })
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+    id: `${link.platform}-${link.position}-${link.url}`
+  })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -143,9 +134,7 @@ function SortableSocialLinkRow({
 
       <Select
         value={link.platform}
-        onValueChange={(value: SocialLinkPlatform) =>
-          onChange({ ...link, platform: value })
-        }>
+        onValueChange={(value: SocialLinkPlatform) => onChange({ ...link, platform: value })}>
         <SelectTrigger>
           <SelectValue />
         </SelectTrigger>
@@ -195,9 +184,7 @@ export function UsersTab() {
   })
   const [debouncedUsername, setDebouncedUsername] = useState('')
   const [editUserDialog, setEditUserDialog] = useState(false)
-  const [editDialogTab, setEditDialogTab] = useState<
-    'details' | 'social-links'
-  >('details')
+  const [editDialogTab, setEditDialogTab] = useState<'details' | 'social-links'>('details')
   const [editUser, setEditUser] = useState<{
     id: string
     name: string
@@ -215,9 +202,9 @@ export function UsersTab() {
     bio: '',
     emailVerified: false
   })
-  const [socialLinksDraft, setSocialLinksDraft] = useState<
-    Array<SocialLink & { tempId: string }>
-  >([])
+  const [socialLinksDraft, setSocialLinksDraft] = useState<Array<SocialLink & { tempId: string }>>(
+    []
+  )
   const [debouncedEditUsername, setDebouncedEditUsername] = useState('')
   const [originalUsername, setOriginalUsername] = useState('')
 
@@ -252,7 +239,7 @@ export function UsersTab() {
     setSocialLinksDraft(
       socialLinksQuery.data
         .slice()
-        .sort((a, b) => a.position - b.position)
+        .toSorted((a, b) => a.position - b.position)
         .map((link, index) => ({
           ...link,
           tempId: `${link.platform}-${index}-${crypto.randomUUID()}`
@@ -291,29 +278,23 @@ export function UsersTab() {
     enabled: debouncedUsername.length >= 2
   })
 
-  const { data: editUsernameAvailability, isPending: checkingEditUsername } =
-    useQuery({
-      queryKey: ['username', 'availability', debouncedEditUsername],
-      queryFn: async () => {
-        const result = await authClient.isUsernameAvailable({
-          username: debouncedEditUsername
-        })
-        return result.data
-      },
-      enabled:
-        debouncedEditUsername.length >= 2 &&
-        debouncedEditUsername !== originalUsername
-    })
+  const { data: editUsernameAvailability, isPending: checkingEditUsername } = useQuery({
+    queryKey: ['username', 'availability', debouncedEditUsername],
+    queryFn: async () => {
+      const result = await authClient.isUsernameAvailable({
+        username: debouncedEditUsername
+      })
+      return result.data
+    },
+    enabled: debouncedEditUsername.length >= 2 && debouncedEditUsername !== originalUsername
+  })
 
   const sendInviteMutation = useMutation({
     mutationFn: async (userId: string) =>
-      fetcher<{ success: boolean; emailId: string }>(
-        `${VPS_BASE_URL}/invite/send`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ userId })
-        }
-      ),
+      fetcher<{ success: boolean; emailId: string }>(`${VPS_BASE_URL}/invite/send`, {
+        method: 'POST',
+        body: JSON.stringify({ userId })
+      }),
     onSuccess: () => {
       toast({ title: 'Invite email sent' })
     },
@@ -328,9 +309,7 @@ export function UsersTab() {
 
   const createUserMutation = useMutation({
     mutationFn: async () => {
-      const email =
-        newUser.email ||
-        `${newUser.username || crypto.randomUUID()}@placeholder.local`
+      const email = newUser.email || `${newUser.username || crypto.randomUUID()}@placeholder.local`
       const password = newUser.password || crypto.randomUUID()
       const name = newUser.name || newUser.username || 'User'
 
@@ -382,13 +361,10 @@ export function UsersTab() {
         }
       })
 
-      return fetcher<{ bio: string | null }>(
-        `${VPS_BASE_URL}/user/admin/${editUser.id}/bio`,
-        {
-          method: 'PATCH',
-          body: JSON.stringify({ bio: editUser.bio })
-        }
-      )
+      return fetcher<{ bio: string | null }>(`${VPS_BASE_URL}/user/admin/${editUser.id}/bio`, {
+        method: 'PATCH',
+        body: JSON.stringify({ bio: editUser.bio })
+      })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'users'] })
@@ -408,13 +384,7 @@ export function UsersTab() {
   })
 
   const setRoleMutation = useMutation({
-    mutationFn: async ({
-      userId,
-      role
-    }: {
-      userId: string
-      role: UserRole
-    }) => {
+    mutationFn: async ({ userId, role }: { userId: string; role: UserRole }) => {
       return authClient.admin.setRole({
         userId,
         role: role as 'admin' | 'user'
@@ -434,13 +404,7 @@ export function UsersTab() {
   })
 
   const banMutation = useMutation({
-    mutationFn: async ({
-      userId,
-      banReason
-    }: {
-      userId: string
-      banReason?: string
-    }) => {
+    mutationFn: async ({ userId, banReason }: { userId: string; banReason?: string }) => {
       return authClient.admin.banUser({ userId, banReason })
     },
     onSuccess: () => {
@@ -573,9 +537,7 @@ export function UsersTab() {
       </div>
 
       {isPending ? (
-        <div className='py-8 text-center text-muted-foreground'>
-          Loading users...
-        </div>
+        <div className='py-8 text-center text-muted-foreground'>Loading users...</div>
       ) : (
         <div className='overflow-x-auto border rounded-sm'>
           <table className='w-full text-sm'>
@@ -592,9 +554,7 @@ export function UsersTab() {
               {users.map((user) => (
                 <tr key={user.id} className='border-b hover:bg-muted/50'>
                   <td className='px-4 py-3'>{user.name}</td>
-                  <td className='px-4 py-3 text-muted-foreground'>
-                    {user.email}
-                  </td>
+                  <td className='px-4 py-3 text-muted-foreground'>{user.email}</td>
                   <td className='px-4 py-3'>
                     <Select
                       value={user.role ?? 'user'}
@@ -623,10 +583,7 @@ export function UsersTab() {
                     <div className='flex items-center gap-2'>
                       {user.username && (
                         <Button variant='outline' size='sm' asChild>
-                          <a
-                            href={`/${user.username}`}
-                            target='_blank'
-                            rel='noopener noreferrer'>
+                          <a href={`/${user.username}`} target='_blank' rel='noopener noreferrer'>
                             <ExternalLink className='w-4 h-4' />
                             <span className='sr-only'>View Profile</span>
                           </a>
@@ -702,9 +659,7 @@ export function UsersTab() {
               ))}
               {users.length === 0 && (
                 <tr>
-                  <td
-                    colSpan={5}
-                    className='px-4 py-8 text-center text-muted-foreground'>
+                  <td colSpan={5} className='px-4 py-8 text-center text-muted-foreground'>
                     No users found
                   </td>
                 </tr>
@@ -718,9 +673,7 @@ export function UsersTab() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Create New User</DialogTitle>
-            <DialogDescription>
-              Manually add a new user to the system.
-            </DialogDescription>
+            <DialogDescription>Manually add a new user to the system.</DialogDescription>
           </DialogHeader>
           <div className='py-4 space-y-4'>
             <div className='space-y-2'>
@@ -728,9 +681,7 @@ export function UsersTab() {
               <Input
                 id='name'
                 value={newUser.name}
-                onChange={(e) =>
-                  setNewUser({ ...newUser, name: e.target.value })
-                }
+                onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
                 placeholder='John Doe'
               />
             </div>
@@ -764,9 +715,7 @@ export function UsersTab() {
               {newUser.username.length >= 2 &&
                 !checkingUsername &&
                 !usernameAvailability?.available && (
-                  <p className='text-xs text-destructive'>
-                    Username is already taken
-                  </p>
+                  <p className='text-xs text-destructive'>Username is already taken</p>
                 )}
             </div>
             <div className='space-y-2'>
@@ -775,9 +724,7 @@ export function UsersTab() {
                 id='email'
                 type='email'
                 value={newUser.email}
-                onChange={(e) =>
-                  setNewUser({ ...newUser, email: e.target.value })
-                }
+                onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                 placeholder='john@example.com'
               />
             </div>
@@ -787,9 +734,7 @@ export function UsersTab() {
                 id='password'
                 type='password'
                 value={newUser.password}
-                onChange={(e) =>
-                  setNewUser({ ...newUser, password: e.target.value })
-                }
+                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
                 placeholder='••••••••'
               />
             </div>
@@ -797,9 +742,7 @@ export function UsersTab() {
               <Label htmlFor='role'>Role</Label>
               <Select
                 value={newUser.role}
-                onValueChange={(role: UserRole) =>
-                  setNewUser({ ...newUser, role })
-                }>
+                onValueChange={(role: UserRole) => setNewUser({ ...newUser, role })}>
                 <SelectTrigger id='role'>
                   <SelectValue placeholder='Select role' />
                 </SelectTrigger>
@@ -825,8 +768,7 @@ export function UsersTab() {
               disabled={
                 createUserMutation.isPending ||
                 (!newUser.email && !newUser.username) ||
-                (newUser.username.length >= 2 &&
-                  !usernameAvailability?.available)
+                (newUser.username.length >= 2 && !usernameAvailability?.available)
               }>
               {createUserMutation.isPending ? 'Creating...' : 'Create User'}
             </Button>
@@ -842,9 +784,7 @@ export function UsersTab() {
           </DialogHeader>
           <Tabs
             value={editDialogTab}
-            onValueChange={(value) =>
-              setEditDialogTab(value as 'details' | 'social-links')
-            }
+            onValueChange={(value) => setEditDialogTab(value as 'details' | 'social-links')}
             className='py-4 space-y-4'>
             <TabsList>
               <TabsTrigger value='details'>Details</TabsTrigger>
@@ -862,9 +802,7 @@ export function UsersTab() {
                 <Input
                   id='edit-name'
                   value={editUser.name}
-                  onChange={(e) =>
-                    setEditUser({ ...editUser, name: e.target.value })
-                  }
+                  onChange={(e) => setEditUser({ ...editUser, name: e.target.value })}
                   placeholder='John Doe'
                 />
               </div>
@@ -877,34 +815,29 @@ export function UsersTab() {
                     onChange={(e) =>
                       setEditUser({
                         ...editUser,
-                        username: e.target.value
-                          .toLowerCase()
-                          .replace(/\s/g, '')
+                        username: e.target.value.toLowerCase().replace(/\s/g, '')
                       })
                     }
                     placeholder='johndoe'
                     className='pr-8'
                   />
-                  {editUser.username.length >= 2 &&
-                    editUser.username !== originalUsername && (
-                      <div className='absolute -translate-y-1/2 right-2 top-1/2'>
-                        {checkingEditUsername ? (
-                          <div className='w-4 h-4 border-2 rounded-full animate-spin border-muted-foreground border-t-transparent' />
-                        ) : editUsernameAvailability?.available ? (
-                          <Check className='w-4 h-4 text-green-500' />
-                        ) : (
-                          <X className='w-4 h-4 text-destructive' />
-                        )}
-                      </div>
-                    )}
+                  {editUser.username.length >= 2 && editUser.username !== originalUsername && (
+                    <div className='absolute -translate-y-1/2 right-2 top-1/2'>
+                      {checkingEditUsername ? (
+                        <div className='w-4 h-4 border-2 rounded-full animate-spin border-muted-foreground border-t-transparent' />
+                      ) : editUsernameAvailability?.available ? (
+                        <Check className='w-4 h-4 text-green-500' />
+                      ) : (
+                        <X className='w-4 h-4 text-destructive' />
+                      )}
+                    </div>
+                  )}
                 </div>
                 {editUser.username.length >= 2 &&
                   editUser.username !== originalUsername &&
                   !checkingEditUsername &&
                   !editUsernameAvailability?.available && (
-                    <p className='text-xs text-destructive'>
-                      Username is already taken
-                    </p>
+                    <p className='text-xs text-destructive'>Username is already taken</p>
                   )}
               </div>
               <div className='space-y-2'>
@@ -913,9 +846,7 @@ export function UsersTab() {
                   id='edit-email'
                   type='email'
                   value={editUser.email}
-                  onChange={(e) =>
-                    setEditUser({ ...editUser, email: e.target.value })
-                  }
+                  onChange={(e) => setEditUser({ ...editUser, email: e.target.value })}
                   placeholder='john@example.com'
                 />
               </div>
@@ -933,9 +864,7 @@ export function UsersTab() {
                   placeholder='Write a short bio...'
                   className='min-h-[110px]'
                 />
-                <p className='text-xs text-muted-foreground'>
-                  {editUser.bio.length}/500
-                </p>
+                <p className='text-xs text-muted-foreground'>{editUser.bio.length}/500</p>
               </div>
               <div className='flex items-center space-x-2'>
                 <Checkbox
@@ -962,20 +891,14 @@ export function UsersTab() {
                     Drag to reorder. Empty URLs are ignored on save.
                   </p>
                 </div>
-                <Button
-                  type='button'
-                  variant='outline'
-                  size='sm'
-                  onClick={handleAddSocialLink}>
+                <Button type='button' variant='outline' size='sm' onClick={handleAddSocialLink}>
                   <Plus className='mr-2 h-4 w-4' />
                   Add Link
                 </Button>
               </div>
 
               {socialLinksQuery.isPending ? (
-                <p className='text-sm text-muted-foreground'>
-                  Loading social links...
-                </p>
+                <p className='text-sm text-muted-foreground'>Loading social links...</p>
               ) : socialLinksDraft.length === 0 ? (
                 <div className='rounded-sm border border-dashed p-4 text-sm text-muted-foreground'>
                   No social links yet.
@@ -1025,8 +948,7 @@ export function UsersTab() {
               variant='outline'
               onClick={() => setEditUserDialog(false)}
               disabled={
-                updateUserMutation.isPending ||
-                replaceAdminUserSocialLinksMutation.isPending
+                updateUserMutation.isPending || replaceAdminUserSocialLinksMutation.isPending
               }>
               Cancel
             </Button>
@@ -1047,9 +969,7 @@ export function UsersTab() {
               <Button
                 onClick={handleSaveSocialLinks}
                 disabled={replaceAdminUserSocialLinksMutation.isPending}>
-                {replaceAdminUserSocialLinksMutation.isPending
-                  ? 'Saving...'
-                  : 'Save Social Links'}
+                {replaceAdminUserSocialLinksMutation.isPending ? 'Saving...' : 'Save Social Links'}
               </Button>
             )}
           </DialogFooter>
@@ -1063,8 +983,8 @@ export function UsersTab() {
           <DialogHeader>
             <DialogTitle>Ban User</DialogTitle>
             <DialogDescription>
-              Are you sure you want to ban {banDialog.userName}? This will
-              revoke all their sessions.
+              Are you sure you want to ban {banDialog.userName}? This will revoke all their
+              sessions.
             </DialogDescription>
           </DialogHeader>
           <div className='py-4'>
@@ -1077,9 +997,7 @@ export function UsersTab() {
           <DialogFooter>
             <Button
               variant='outline'
-              onClick={() =>
-                setBanDialog({ open: false, userId: '', userName: '' })
-              }>
+              onClick={() => setBanDialog({ open: false, userId: '', userName: '' })}>
               Cancel
             </Button>
             <Button
@@ -1104,16 +1022,14 @@ export function UsersTab() {
           <DialogHeader>
             <DialogTitle>Delete User</DialogTitle>
             <DialogDescription>
-              Are you sure you want to permanently delete{' '}
-              {deleteDialog.userName}? This action cannot be undone.
+              Are you sure you want to permanently delete {deleteDialog.userName}? This action
+              cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button
               variant='outline'
-              onClick={() =>
-                setDeleteDialog({ open: false, userId: '', userName: '' })
-              }>
+              onClick={() => setDeleteDialog({ open: false, userId: '', userName: '' })}>
               Cancel
             </Button>
             <Button

@@ -1,12 +1,4 @@
-import {
-  Button,
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  Input,
-  Label
-} from '@gbfm/ui'
+import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '@gbfm/ui'
 import { useId, useState } from 'react'
 import type { useSession } from '@/lib/auth-client'
 import { useUpdateProfile } from '@/lib/http'
@@ -121,10 +113,7 @@ export function ProfileCard({ user }: ProfileCardProps) {
                 />
               </div>
             ))}
-            <Button
-              type='submit'
-              className='w-full'
-              disabled={isUpdatingProfile}>
+            <Button type='submit' className='w-full' disabled={isUpdatingProfile}>
               {isUpdatingProfile ? 'Saving...' : 'Save Profile'}
             </Button>
           </div>

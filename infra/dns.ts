@@ -9,8 +9,7 @@ export const urls = new sst.Linkable('Urls', {
     //   api: `https://api.${domain}`,
     //   openapi: `https://api.${domain}/doc`,
     site: $app.stage === 'dev' ? 'http://127.0.0.1:5173' : `https://${domain}`,
-    vps:
-      $app.stage === 'dev' ? 'http://127.0.0.1:3003' : `https://vps.${domain}`
+    vps: $app.stage === 'dev' ? 'http://127.0.0.1:3003' : `https://vps.${domain}`
   }
 })
 

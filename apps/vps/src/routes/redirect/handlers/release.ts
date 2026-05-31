@@ -25,9 +25,7 @@ const fetchReleaseBySlug = (slug: string) =>
           releaseDate: releasesTable.releaseDate
         })
         .from(releasesTable)
-        .where(
-          and(eq(releasesTable.slug, slug), eq(releasesTable.draft, false))
-        )
+        .where(and(eq(releasesTable.slug, slug), eq(releasesTable.draft, false)))
         .limit(1),
     catch: (error) =>
       new DatabaseError({
@@ -86,9 +84,7 @@ export const shareRelease = async (c: Context) => {
       html: buildOGHtml({
         type: 'music.album',
         title: release.title || slug,
-        description:
-          release.description ||
-          `Check out ${release.title || slug} on goosebumps.fm`,
+        description: release.description || `Check out ${release.title || slug} on goosebumps.fm`,
         image: release.thumbnailUrl,
         canonicalPath: `/releases/${slug}`,
         creators: label ? [label.title] : undefined,

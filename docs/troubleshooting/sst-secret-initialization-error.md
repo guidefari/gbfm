@@ -58,13 +58,13 @@ This error is thrown when:
 
 ### Version Details
 
-| Package/Tool | Version |
-|-------------|---------|
-| **SST** | 3.17.23 |
-| **Project** | gbfm v0.36.0 |
-| **Node.js** | (Runtime dependent) |
-| **Pulumi Provider** | Bundled with SST 3.17.23 |
-| **Source Map Support** | (Bundled with Pulumi) |
+| Package/Tool           | Version                  |
+| ---------------------- | ------------------------ |
+| **SST**                | 3.17.23                  |
+| **Project**            | gbfm v0.36.0             |
+| **Node.js**            | (Runtime dependent)      |
+| **Pulumi Provider**    | Bundled with SST 3.17.23 |
+| **Source Map Support** | (Bundled with Pulumi)    |
 
 ### Infrastructure Stack
 
@@ -88,12 +88,12 @@ SST's `sst.Secret` constructor expects a valid string value (or undefined for pl
 export const secret = {
   SpotifyClientId: new sst.Secret(
     'SpotifyClientId',
-    process.env.SPOTIFY_CLIENT_ID  // ❌ May be undefined
+    process.env.SPOTIFY_CLIENT_ID // ❌ May be undefined
   ),
   DatabaseHost: new sst.Secret(
     'DatabaseHost',
-    process.env.DB_HOST  // ❌ May be undefined
-  ),
+    process.env.DB_HOST // ❌ May be undefined
+  )
   // ... more secrets
 }
 ```
@@ -131,8 +131,8 @@ bun dev
 ```
 
 ### Option 2: Use SST's Built-in Secret Management
->
->I want to try this one out, move from setting the values via `process.env`
+
+> I want to try this one out, move from setting the values via `process.env`
 
 Instead of passing values at initialization, set secrets using SST CLI:
 
@@ -151,7 +151,7 @@ Then update `infra/secret.ts`:
 export const secret = {
   // Let SST manage the secret value
   SpotifyClientId: new sst.Secret('SpotifyClientId'),
-  SpotifyClientSecret: new sst.Secret('SpotifyClientSecret'),
+  SpotifyClientSecret: new sst.Secret('SpotifyClientSecret')
   // ... etc
 }
 ```
@@ -170,7 +170,7 @@ export const secret = {
   SpotifyClientId: new sst.Secret(
     'SpotifyClientId',
     process.env.SPOTIFY_CLIENT_ID || (isLocal ? 'dev-placeholder' : undefined)
-  ),
+  )
   // ... etc
 }
 ```
@@ -195,10 +195,7 @@ function getRequiredEnv(key: string): string | undefined {
 }
 
 export const secret = {
-  SpotifyClientId: new sst.Secret(
-    'SpotifyClientId',
-    getRequiredEnv('SPOTIFY_CLIENT_ID')
-  ),
+  SpotifyClientId: new sst.Secret('SpotifyClientId', getRequiredEnv('SPOTIFY_CLIENT_ID'))
   // ... etc
 }
 ```
@@ -231,10 +228,7 @@ export const secret = {
 const isLocal = ['local', 'dev'].includes($app.stage)
 
 export const secret = {
-  ApiKey: new sst.Secret(
-    'ApiKey',
-    isLocal ? process.env.API_KEY : undefined
-  )
+  ApiKey: new sst.Secret('ApiKey', isLocal ? process.env.API_KEY : undefined)
 }
 ```
 
@@ -327,6 +321,6 @@ All secrets are currently initialized with `process.env.*` values, making them s
 
 ## Changelog
 
-| Date | Change | Author |
-|------|--------|--------|
+| Date       | Change                | Author |
+| ---------- | --------------------- | ------ |
 | 2025-11-23 | Initial documentation | Claude |

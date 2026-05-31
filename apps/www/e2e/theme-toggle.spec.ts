@@ -60,9 +60,7 @@ test.describe('Theme Provider', () => {
     await lightButton.click()
 
     await expect(page.locator('html')).toHaveClass(/light/)
-    const storedTheme = await page.evaluate(() =>
-      localStorage.getItem('vite-ui-theme')
-    )
+    const storedTheme = await page.evaluate(() => localStorage.getItem('vite-ui-theme'))
     expect(storedTheme).toBe('light')
   })
 

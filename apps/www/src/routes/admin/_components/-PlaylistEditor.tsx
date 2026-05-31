@@ -62,21 +62,15 @@ export function PlaylistEditor({ playlist }: Props) {
   const queryClient = useQueryClient()
   const [title, setTitle] = useState(playlist.title)
   const [description, setDescription] = useState(playlist.description ?? '')
-  const [coverImageUrl, setCoverImageUrl] = useState(
-    playlist.coverImageUrl ?? ''
-  )
+  const [coverImageUrl, setCoverImageUrl] = useState(playlist.coverImageUrl ?? '')
   const [orderedIds, setOrderedIds] = useState<string[]>([])
-  const [savedSpotifyTrackIds, setSavedSpotifyTrackIds] = useState<
-    Map<string, boolean>
-  >(new Map())
+  const [savedSpotifyTrackIds, setSavedSpotifyTrackIds] = useState<Map<string, boolean>>(new Map())
   const [spotifyTrackUrl, setSpotifyTrackUrl] = useState('')
 
   const tracksQuery = useQuery({
     queryKey: ['playlist-tracks', playlist.id],
     queryFn: async () =>
-      fetcher<PlaylistTracksApiRow[]>(
-        `${VPS_BASE_URL}/music/playlists/${playlist.id}/tracks`
-      )
+      fetcher<PlaylistTracksApiRow[]>(`${VPS_BASE_URL}/music/playlists/${playlist.id}/tracks`)
   })
 
   useEffect(() => {
@@ -155,10 +149,9 @@ export function PlaylistEditor({ playlist }: Props) {
 
   const removeMutation = useMutation({
     mutationFn: async (trackId: string) =>
-      fetcher(
-        `${VPS_BASE_URL}/music/playlists/${playlist.id}/tracks/${trackId}`,
-        { method: 'DELETE' }
-      ),
+      fetcher(`${VPS_BASE_URL}/music/playlists/${playlist.id}/tracks/${trackId}`, {
+        method: 'DELETE'
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ['playlist-tracks', playlist.id]
@@ -197,10 +190,9 @@ export function PlaylistEditor({ playlist }: Props) {
 
   const syncLinksMutation = useMutation({
     mutationFn: async () =>
-      fetcher<SyncResult>(
-        `${VPS_BASE_URL}/music/playlists/${playlist.id}/sync-links`,
-        { method: 'POST' }
-      ),
+      fetcher<SyncResult>(`${VPS_BASE_URL}/music/playlists/${playlist.id}/sync-links`, {
+        method: 'POST'
+      }),
     onSuccess: (data) => {
       toast({
         title: 'Sync queued',
@@ -220,11 +212,7 @@ export function PlaylistEditor({ playlist }: Props) {
   })
 
   const metadataMutation = useMutation({
-    mutationFn: async (data: {
-      title: string
-      description?: string
-      coverImageUrl?: string
-    }) =>
+    mutationFn: async (data: { title: string; description?: string; coverImageUrl?: string }) =>
       fetcher(`${VPS_BASE_URL}/music/playlists/${playlist.id}`, {
         method: 'PATCH',
         body: JSON.stringify(data)
@@ -347,10 +335,7 @@ export function PlaylistEditor({ playlist }: Props) {
                 disabled={metadataMutation.isPending}>
                 Discard
               </Button>
-              <Button
-                type='submit'
-                size='sm'
-                disabled={metadataMutation.isPending}>
+              <Button type='submit' size='sm' disabled={metadataMutation.isPending}>
                 {metadataMutation.isPending ? (
                   <>
                     <Loader2 className='w-3 h-3 mr-2 animate-spin' />
@@ -369,9 +354,7 @@ export function PlaylistEditor({ playlist }: Props) {
         <div className='flex items-center justify-between gap-2 shrink-0'>
           <h2 className='text-lg font-semibold'>
             Tracks{' '}
-            <span className='text-sm font-normal text-muted-foreground'>
-              ({orderedIds.length})
-            </span>
+            <span className='text-sm font-normal text-muted-foreground'>({orderedIds.length})</span>
           </h2>
           <div className='flex items-center gap-2'>
             <Button
@@ -410,11 +393,7 @@ export function PlaylistEditor({ playlist }: Props) {
             type='submit'
             size='sm'
             disabled={addSpotifyMutation.isPending || !spotifyTrackUrl.trim()}>
-            {addSpotifyMutation.isPending ? (
-              <Loader2 className='w-4 h-4 animate-spin' />
-            ) : (
-              'Add'
-            )}
+            {addSpotifyMutation.isPending ? <Loader2 className='w-4 h-4 animate-spin' /> : 'Add'}
           </Button>
         </form>
 
@@ -432,9 +411,7 @@ export function PlaylistEditor({ playlist }: Props) {
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
             modifiers={[restrictToVerticalAxis]}>
-            <SortableContext
-              items={orderedIds}
-              strategy={verticalListSortingStrategy}>
+            <SortableContext items={orderedIds} strategy={verticalListSortingStrategy}>
               <div className='space-y-1'>
                 {orderedIds.map((id) => {
                   const row = trackMap.get(id)

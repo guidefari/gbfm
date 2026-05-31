@@ -18,8 +18,7 @@ export const toSlug = (text: string) => {
  * @example
  * stripSlugSuffix('four-tet-a1b2c3d4') // => 'four-tet'
  */
-export const stripSlugSuffix = (slug: string) =>
-  slug.slice(0, slug.lastIndexOf('-'))
+export const stripSlugSuffix = (slug: string) => slug.slice(0, slug.lastIndexOf('-'))
 
 /**
  * Returns the trailing random suffix of a slug (everything after the last hyphen).
@@ -27,5 +26,4 @@ export const stripSlugSuffix = (slug: string) =>
  * @example
  * getSlugSuffix('four-tet-a1b2c3d4') // => 'a1b2c3d4'
  */
-export const getSlugSuffix = (slug: string) =>
-  slug.slice(slug.lastIndexOf('-') + 1)
+export const getSlugSuffix = (slug: string) => slug.slice(slug.lastIndexOf('-') + 1)

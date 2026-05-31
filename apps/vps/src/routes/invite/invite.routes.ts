@@ -24,18 +24,9 @@ export const sendInvite = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      sendInviteResponseSchema,
-      'Invite sent successfully'
-    ),
-    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
-      z.object({ error: z.string() }),
-      'Unauthorized'
-    ),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'User not found'
-    ),
+    [HttpStatusCodes.OK]: jsonContent(sendInviteResponseSchema, 'Invite sent successfully'),
+    [HttpStatusCodes.UNAUTHORIZED]: jsonContent(z.object({ error: z.string() }), 'Unauthorized'),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'User not found'),
     [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonContent(
       createErrorSchema(sendInviteBodySchema),
       'Validation error'
@@ -62,10 +53,7 @@ export const confirmInvite = createRoute({
   path: '/confirm',
   method: 'post',
   request: {
-    body: jsonContentRequired(
-      confirmInviteBodySchema,
-      'Confirm invite and set password'
-    )
+    body: jsonContentRequired(confirmInviteBodySchema, 'Confirm invite and set password')
   },
   tags,
   responses: {

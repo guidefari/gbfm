@@ -34,14 +34,14 @@ export function NewsletterPersonalWelcome({
           <Section style={body}>
             <Text style={text}>{greeting}</Text>
             <Text style={text}>
-              I noticed you subscribed a little while back and wanted to reach
-              out personally to say welcome. Genuinely glad you&apos;re here!
-              I&apos;d love to know how you found the site, if you remember.
+              I noticed you subscribed a little while back and wanted to reach out personally to say
+              welcome. Genuinely glad you&apos;re here! I&apos;d love to know how you found the
+              site, if you remember.
             </Text>
 
             <Text style={text}>
-              Hit reply any time. Feedback, feature requests, something
-              you&apos;ve been listening to, anything really.
+              Hit reply any time. Feedback, feature requests, something you&apos;ve been listening
+              to, anything really.
             </Text>
             <Text style={text}>Hope the music finds you well.</Text>
             <Text style={signature}>Guide</Text>

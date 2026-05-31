@@ -15,15 +15,11 @@ export function YoutubeEmbeds() {
       />
       <div className='space-y-6'>
         <div>
-          <p className='text-xs text-muted-foreground mb-2'>
-            Default (100% width, 420px height)
-          </p>
+          <p className='text-xs text-muted-foreground mb-2'>Default (100% width, 420px height)</p>
           <YoutubeEmbed id='dQw4w9WgXcQ' />
         </div>
         <div>
-          <p className='text-xs text-muted-foreground mb-2'>
-            Custom dimensions
-          </p>
+          <p className='text-xs text-muted-foreground mb-2'>Custom dimensions</p>
           <YoutubeEmbed id='dQw4w9WgXcQ' width={480} height={270} />
         </div>
       </div>

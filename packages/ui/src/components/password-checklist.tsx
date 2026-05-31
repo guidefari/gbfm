@@ -10,10 +10,7 @@ const defaultPasswordRules: PasswordRule[] = [
   { label: 'At least 8 characters', test: (p) => p.length >= 8 }
 ]
 
-export function isPasswordValid(
-  password: string,
-  rules = defaultPasswordRules
-) {
+export function isPasswordValid(password: string, rules = defaultPasswordRules) {
   return rules.every((r) => r.test(password))
 }
 

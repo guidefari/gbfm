@@ -9,10 +9,7 @@ const router = createRouter()
   .openapi(routes.getSocialLinks, handlers.getSocialLinks)
   .openapi(routes.replaceSocialLinks, handlers.replaceSocialLinks)
   .openapi(routes.getAdminUserSocialLinks, handlers.getAdminUserSocialLinks)
-  .openapi(
-    routes.replaceAdminUserSocialLinks,
-    handlers.replaceAdminUserSocialLinks
-  )
+  .openapi(routes.replaceAdminUserSocialLinks, handlers.replaceAdminUserSocialLinks)
   .openapi(routes.updateAdminUserBio, handlers.updateAdminUserBio)
   .openapi(routes.getAdminUserBio, handlers.getAdminUserBio)
   .openapi(routes.getEmailPreferences, handlers.getEmailPreferences)

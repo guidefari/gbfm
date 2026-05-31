@@ -15,15 +15,11 @@ export function AudioDropZones() {
       />
       <div className='space-y-6 max-w-xl'>
         <div>
-          <p className='text-xs text-muted-foreground mb-2'>
-            Basic (no S3 option)
-          </p>
+          <p className='text-xs text-muted-foreground mb-2'>Basic (no S3 option)</p>
           <AudioDropZone onFileSelect={() => {}} />
         </div>
         <div>
-          <p className='text-xs text-muted-foreground mb-2'>
-            With S3 bucket picker
-          </p>
+          <p className='text-xs text-muted-foreground mb-2'>With S3 bucket picker</p>
           <AudioDropZone
             onFileSelect={() => {}}
             onPickFromS3={() => {}}

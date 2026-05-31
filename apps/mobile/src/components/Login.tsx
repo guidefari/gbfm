@@ -58,10 +58,7 @@ export default function Login() {
             className={`px-4 py-2 rounded-l-lg ${
               loginMethod === 'password' ? 'bg-blue-500' : 'bg-gray-200'
             }`}>
-            <Text
-              className={`${
-                loginMethod === 'password' ? 'text-white' : 'text-gray-700'
-              }`}>
+            <Text className={`${loginMethod === 'password' ? 'text-white' : 'text-gray-700'}`}>
               Password
             </Text>
           </TouchableOpacity>
@@ -70,10 +67,7 @@ export default function Login() {
             className={`px-4 py-2 rounded-r-lg ${
               loginMethod === 'magicLink' ? 'bg-blue-500' : 'bg-gray-200'
             }`}>
-            <Text
-              className={`${
-                loginMethod === 'magicLink' ? 'text-white' : 'text-gray-700'
-              }`}>
+            <Text className={`${loginMethod === 'magicLink' ? 'text-white' : 'text-gray-700'}`}>
               Magic Link
             </Text>
           </TouchableOpacity>
@@ -103,18 +97,14 @@ export default function Login() {
               <TouchableOpacity
                 onPress={() => setShowPassword(!showPassword)}
                 className='absolute px-2 py-1 right-2 top-2'>
-                <Text className='text-sm text-blue-400'>
-                  {showPassword ? 'Hide' : 'Show'}
-                </Text>
+                <Text className='text-sm text-blue-400'>{showPassword ? 'Hide' : 'Show'}</Text>
               </TouchableOpacity>
             </View>
           )}
         </View>
 
         {/* Login Button */}
-        <TouchableOpacity
-          className='p-3 bg-blue-500 rounded-lg'
-          onPress={handleLogin}>
+        <TouchableOpacity className='p-3 bg-blue-500 rounded-lg' onPress={handleLogin}>
           <Text className='text-lg font-bold text-center text-white'>
             {loginMethod === 'password' ? 'Login' : 'Send Magic Link'}
           </Text>

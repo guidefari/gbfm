@@ -1,18 +1,6 @@
 import { z } from '@hono/zod-openapi'
-import {
-  type InferInsertModel,
-  type InferSelectModel,
-  relations
-} from 'drizzle-orm'
-import {
-  index,
-  pgEnum,
-  pgTable,
-  primaryKey,
-  text,
-  uuid,
-  varchar
-} from 'drizzle-orm/pg-core'
+import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
+import { index, pgEnum, pgTable, primaryKey, text, uuid, varchar } from 'drizzle-orm/pg-core'
 import { user } from './auth.schema'
 import { defaultContentFields } from './util'
 
@@ -37,10 +25,7 @@ export const postsTable = pgTable(
   },
   (table) => [
     index('posts_slug_idx').on(table.slug),
-    index('posts_music_entity_idx').on(
-      table.musicEntityType,
-      table.musicEntityId
-    ),
+    index('posts_music_entity_idx').on(table.musicEntityType, table.musicEntityId),
     index('posts_type_created_idx').on(table.type, table.createdAt),
     index('posts_tags_gin_idx').using('gin', table.tags)
   ]
@@ -72,32 +57,14 @@ export const selectPostSchema = z
   .object({
     id: z.string().openapi({ description: 'Unique identifier for the post' }),
     title: z.string().nullable().openapi({ description: 'Title of the post' }),
-    description: z
-      .string()
-      .nullable()
-      .openapi({ description: 'Description of the post' }),
-    thumbnailUrl: z
-      .string()
-      .nullable()
-      .openapi({ description: 'Thumbnail URL for the post' }),
+    description: z.string().nullable().openapi({ description: 'Description of the post' }),
+    thumbnailUrl: z.string().nullable().openapi({ description: 'Thumbnail URL for the post' }),
     slug: z.string().openapi({ description: 'URL slug for the post' }),
-    content: z
-      .string()
-      .nullable()
-      .openapi({ description: 'Content of the post' }),
+    content: z.string().nullable().openapi({ description: 'Content of the post' }),
     draft: z.boolean().openapi({ description: 'Whether the post is a draft' }),
-    tags: z
-      .array(z.string())
-      .nullable()
-      .openapi({ description: 'Tags associated with the post' }),
-    type: z
-      .enum(['post', 'micro'])
-      .nullable()
-      .openapi({ description: 'Type of the post' }),
-    musicEntityType: z
-      .string()
-      .nullable()
-      .openapi({ description: 'Attached music entity type' }),
+    tags: z.array(z.string()).nullable().openapi({ description: 'Tags associated with the post' }),
+    type: z.enum(['post', 'micro']).nullable().openapi({ description: 'Type of the post' }),
+    musicEntityType: z.string().nullable().openapi({ description: 'Attached music entity type' }),
     musicEntityId: z
       .string()
       .uuid()
@@ -110,19 +77,14 @@ export const selectPostSchema = z
 
 export const selectMdxCompiledPostSchema = selectPostSchema
   .extend({
-    compiledContent: z
-      .string()
-      .openapi({ description: 'Compiled MDX content' }),
+    compiledContent: z.string().openapi({ description: 'Compiled MDX content' }),
     creators: z
       .array(
         z
           .object({
             id: z.string().openapi({ description: 'Creator ID' }),
             name: z.string().openapi({ description: 'Creator name' }),
-            username: z
-              .string()
-              .nullable()
-              .openapi({ description: 'Creator username' })
+            username: z.string().nullable().openapi({ description: 'Creator username' })
           })
           .openapi('Creator')
       )
@@ -152,41 +114,25 @@ export const insertPostSchema = z
       .nullable()
       .optional()
       .openapi({ description: 'Title of the post', example: 'My Blog Post' }),
-    description: z
-      .string()
-      .optional()
-      .openapi({ description: 'Description of the post' }),
-    thumbnailUrl: z
-      .string()
-      .optional()
-      .openapi({ description: 'Thumbnail URL for the post' }),
+    description: z.string().optional().openapi({ description: 'Description of the post' }),
+    thumbnailUrl: z.string().optional().openapi({ description: 'Thumbnail URL for the post' }),
     slug: z.string().min(1).openapi({
       description: 'URL slug for the post',
       example: 'my-blog-post'
     }),
-    content: z
-      .string()
-      .nullable()
-      .optional()
-      .openapi({ description: 'Content of the post' }),
+    content: z.string().nullable().optional().openapi({ description: 'Content of the post' }),
     draft: z
       .boolean()
       .optional()
       .openapi({ description: 'Whether this is a draft', default: false }),
-    tags: z
-      .array(z.string())
-      .optional()
-      .openapi({ description: 'Tags for the post' }),
+    tags: z.array(z.string()).optional().openapi({ description: 'Tags for the post' }),
     type: z
       .enum(['post', 'micro'])
       .nullable()
       .optional()
       .openapi({ description: 'Type of the post' }),
     musicEntityType: z
-      .enum([...POST_MUSIC_ENTITY_TYPES] as [
-        PostMusicEntityType,
-        ...PostMusicEntityType[]
-      ])
+      .enum([...POST_MUSIC_ENTITY_TYPES] as [PostMusicEntityType, ...PostMusicEntityType[]])
       .nullable()
       .optional()
       .openapi({ description: 'Attached music entity type' }),
@@ -209,9 +155,7 @@ export const createPostSchema = insertPostSchema
   })
   .openapi('CreatePostRequest')
 
-export const updatePostSchema = insertPostSchema
-  .partial()
-  .openapi('UpdatePostRequest')
+export const updatePostSchema = insertPostSchema.partial().openapi('UpdatePostRequest')
 
 export const postCreators = pgTable(
   'post_creators',

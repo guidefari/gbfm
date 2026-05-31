@@ -82,10 +82,7 @@ export function ShowsTab() {
 
   const { data: showsData, isPending: showsPending } = useQuery({
     queryKey: ['admin', 'shows'],
-    queryFn: () =>
-      fetcher<PaginatedResponse<ShowItem>>(
-        `${VPS_BASE_URL}/shows?limit=50&offset=0`
-      )
+    queryFn: () => fetcher<PaginatedResponse<ShowItem>>(`${VPS_BASE_URL}/shows?limit=50&offset=0`)
   })
 
   const createShowMutation = useMutation({
@@ -99,12 +96,9 @@ export function ShowsTab() {
           thumbnailUrl: data.thumbnailUrl || undefined,
           bannerImageUrl: data.bannerImageUrl || undefined,
           draft: data.draft,
-          tags: data.tags
-            ? data.tags.split(',').map((t) => t.trim())
-            : undefined,
+          tags: data.tags ? data.tags.split(',').map((t) => t.trim()) : undefined,
           content: data.content || '',
-          hostIds:
-            data.hosts.length > 0 ? data.hosts.map((h) => h.id) : undefined
+          hostIds: data.hosts.length > 0 ? data.hosts.map((h) => h.id) : undefined
         })
       }),
     onSuccess: () => {
@@ -133,9 +127,7 @@ export function ShowsTab() {
           thumbnailUrl: data.thumbnailUrl || undefined,
           bannerImageUrl: data.bannerImageUrl || undefined,
           draft: data.draft,
-          tags: data.tags
-            ? data.tags.split(',').map((t) => t.trim())
-            : undefined,
+          tags: data.tags ? data.tags.split(',').map((t) => t.trim()) : undefined,
           content: data.content,
           hostIds: data.hosts.map((h) => h.id)
         })
@@ -157,8 +149,7 @@ export function ShowsTab() {
   })
 
   const deleteShowMutation = useMutation({
-    mutationFn: (slug: string) =>
-      fetcher(`${VPS_BASE_URL}/shows/${slug}`, { method: 'DELETE' }),
+    mutationFn: (slug: string) => fetcher(`${VPS_BASE_URL}/shows/${slug}`, { method: 'DELETE' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'shows'] })
       setDeleteDialog({ open: false, slug: '', title: '' })
@@ -209,9 +200,7 @@ export function ShowsTab() {
       </div>
 
       {showsPending ? (
-        <div className='py-8 text-center text-muted-foreground'>
-          Loading shows...
-        </div>
+        <div className='py-8 text-center text-muted-foreground'>Loading shows...</div>
       ) : (
         <div className='overflow-x-auto rounded-sm border'>
           <table className='w-full text-sm'>
@@ -229,9 +218,7 @@ export function ShowsTab() {
               {shows.map((show) => (
                 <tr key={show.id} className='border-b hover:bg-muted/50'>
                   <td className='px-4 py-3 font-medium'>{show.title}</td>
-                  <td className='px-4 py-3 text-muted-foreground'>
-                    {show.slug}
-                  </td>
+                  <td className='px-4 py-3 text-muted-foreground'>{show.slug}</td>
                   <td className='px-4 py-3'>
                     {show.draft ? (
                       <Badge variant='secondary'>Draft</Badge>
@@ -248,18 +235,12 @@ export function ShowsTab() {
                   <td className='px-4 py-3'>
                     <div className='flex gap-2'>
                       <Button variant='outline' size='sm' asChild>
-                        <a
-                          href={`/${show.slug}`}
-                          target='_blank'
-                          rel='noopener noreferrer'>
+                        <a href={`/${show.slug}`} target='_blank' rel='noopener noreferrer'>
                           <ExternalLink className='w-4 h-4' />
                           <span className='sr-only'>View Show</span>
                         </a>
                       </Button>
-                      <Button
-                        variant='outline'
-                        size='sm'
-                        onClick={() => handleEditClick(show)}>
+                      <Button variant='outline' size='sm' onClick={() => handleEditClick(show)}>
                         <Edit className='w-4 h-4' />
                         <span className='sr-only'>Edit</span>
                       </Button>
@@ -276,9 +257,7 @@ export function ShowsTab() {
               ))}
               {shows.length === 0 && (
                 <tr>
-                  <td
-                    colSpan={6}
-                    className='px-4 py-8 text-center text-muted-foreground'>
+                  <td colSpan={6} className='px-4 py-8 text-center text-muted-foreground'>
                     No shows found
                   </td>
                 </tr>
@@ -293,9 +272,7 @@ export function ShowsTab() {
         <DialogContent className='max-w-2xl'>
           <DialogHeader>
             <DialogTitle>Create New Show</DialogTitle>
-            <DialogDescription>
-              Add a new show to the schedule.
-            </DialogDescription>
+            <DialogDescription>Add a new show to the schedule.</DialogDescription>
           </DialogHeader>
           <div className='grid gap-4 py-4'>
             <div className='grid grid-cols-2 gap-4'>
@@ -304,9 +281,7 @@ export function ShowsTab() {
                 <Input
                   id='create-title'
                   value={formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   placeholder='Show Title'
                 />
               </div>
@@ -315,9 +290,7 @@ export function ShowsTab() {
                 <Input
                   id='create-slug'
                   value={formData.slug}
-                  onChange={(e) =>
-                    setFormData({ ...formData, slug: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
                   placeholder='show-slug'
                 />
               </div>
@@ -327,9 +300,7 @@ export function ShowsTab() {
               <Textarea
                 id='create-description'
                 value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder='Brief description of the show...'
               />
             </div>
@@ -338,9 +309,7 @@ export function ShowsTab() {
               <Textarea
                 id='create-content'
                 value={formData.content}
-                onChange={(e) =>
-                  setFormData({ ...formData, content: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                 placeholder='# Show Content'
                 className='font-mono min-h-[150px]'
               />
@@ -349,16 +318,12 @@ export function ShowsTab() {
               <ImageUploadField
                 label='Thumbnail (Square)'
                 value={formData.thumbnailUrl}
-                onChange={(url) =>
-                  setFormData({ ...formData, thumbnailUrl: url })
-                }
+                onChange={(url) => setFormData({ ...formData, thumbnailUrl: url })}
               />
               <ImageUploadField
                 label='Banner (Landscape)'
                 value={formData.bannerImageUrl}
-                onChange={(url) =>
-                  setFormData({ ...formData, bannerImageUrl: url })
-                }
+                onChange={(url) => setFormData({ ...formData, bannerImageUrl: url })}
               />
             </div>
             <div className='space-y-2'>
@@ -366,9 +331,7 @@ export function ShowsTab() {
               <Input
                 id='create-tags'
                 value={formData.tags}
-                onChange={(e) =>
-                  setFormData({ ...formData, tags: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
                 placeholder='techno, house, ambient'
               />
             </div>
@@ -381,9 +344,7 @@ export function ShowsTab() {
                 type='checkbox'
                 id='create-draft'
                 checked={formData.draft}
-                onChange={(e) =>
-                  setFormData({ ...formData, draft: e.target.checked })
-                }
+                onChange={(e) => setFormData({ ...formData, draft: e.target.checked })}
                 className='h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary'
               />
               <Label htmlFor='create-draft'>Save as Draft</Label>
@@ -400,11 +361,7 @@ export function ShowsTab() {
             </Button>
             <Button
               onClick={() => createShowMutation.mutate(formData)}
-              disabled={
-                createShowMutation.isPending ||
-                !formData.title ||
-                !formData.slug
-              }>
+              disabled={createShowMutation.isPending || !formData.title || !formData.slug}>
               {createShowMutation.isPending ? 'Creating...' : 'Create Show'}
             </Button>
           </DialogFooter>
@@ -416,9 +373,7 @@ export function ShowsTab() {
         <DialogContent className='max-w-2xl'>
           <DialogHeader>
             <DialogTitle>Edit Show</DialogTitle>
-            <DialogDescription>
-              Update details for "{formData.title}".
-            </DialogDescription>
+            <DialogDescription>Update details for "{formData.title}".</DialogDescription>
           </DialogHeader>
           <div className='grid gap-4 py-4'>
             <div className='grid grid-cols-2 gap-4'>
@@ -427,9 +382,7 @@ export function ShowsTab() {
                 <Input
                   id='edit-title'
                   value={formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 />
               </div>
               <div className='space-y-2'>
@@ -437,9 +390,7 @@ export function ShowsTab() {
                 <Input
                   id='edit-slug'
                   value={formData.slug}
-                  onChange={(e) =>
-                    setFormData({ ...formData, slug: e.target.value })
-                  }
+                  onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
                 />
               </div>
             </div>
@@ -448,9 +399,7 @@ export function ShowsTab() {
               <Textarea
                 id='edit-description'
                 value={formData.description}
-                onChange={(e) =>
-                  setFormData({ ...formData, description: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               />
             </div>
             <div className='space-y-2'>
@@ -458,9 +407,7 @@ export function ShowsTab() {
               <Textarea
                 id='edit-content'
                 value={formData.content}
-                onChange={(e) =>
-                  setFormData({ ...formData, content: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                 className='font-mono min-h-[150px]'
               />
             </div>
@@ -468,16 +415,12 @@ export function ShowsTab() {
               <ImageUploadField
                 label='Thumbnail (Square)'
                 value={formData.thumbnailUrl}
-                onChange={(url) =>
-                  setFormData({ ...formData, thumbnailUrl: url })
-                }
+                onChange={(url) => setFormData({ ...formData, thumbnailUrl: url })}
               />
               <ImageUploadField
                 label='Banner (Landscape)'
                 value={formData.bannerImageUrl}
-                onChange={(url) =>
-                  setFormData({ ...formData, bannerImageUrl: url })
-                }
+                onChange={(url) => setFormData({ ...formData, bannerImageUrl: url })}
               />
             </div>
             <div className='space-y-2'>
@@ -485,9 +428,7 @@ export function ShowsTab() {
               <Input
                 id='edit-tags'
                 value={formData.tags}
-                onChange={(e) =>
-                  setFormData({ ...formData, tags: e.target.value })
-                }
+                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
               />
             </div>
             <UserSearch
@@ -499,9 +440,7 @@ export function ShowsTab() {
                 type='checkbox'
                 id='edit-draft'
                 checked={formData.draft}
-                onChange={(e) =>
-                  setFormData({ ...formData, draft: e.target.checked })
-                }
+                onChange={(e) => setFormData({ ...formData, draft: e.target.checked })}
                 className='h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary'
               />
               <Label htmlFor='edit-draft'>Save as Draft</Label>
@@ -517,9 +456,7 @@ export function ShowsTab() {
               Cancel
             </Button>
             <Button
-              onClick={() =>
-                updateShowMutation.mutate({ slug: editingSlug, data: formData })
-              }
+              onClick={() => updateShowMutation.mutate({ slug: editingSlug, data: formData })}
               disabled={updateShowMutation.isPending || !formData.title}>
               {updateShowMutation.isPending ? 'Saving...' : 'Save Changes'}
             </Button>
@@ -535,16 +472,13 @@ export function ShowsTab() {
           <DialogHeader>
             <DialogTitle>Delete Show</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{deleteDialog.title}"? This
-              action cannot be undone.
+              Are you sure you want to delete "{deleteDialog.title}"? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button
               variant='outline'
-              onClick={() =>
-                setDeleteDialog({ open: false, slug: '', title: '' })
-              }>
+              onClick={() => setDeleteDialog({ open: false, slug: '', title: '' })}>
               Cancel
             </Button>
             <Button

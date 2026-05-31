@@ -8,10 +8,7 @@ import {
   selectReleaseSchema,
   updateReleaseSchema
 } from '@/db/release.schema'
-import {
-  createPaginatedResponseSchema,
-  paginationQuerySchema
-} from '@/lib/pagination'
+import { createPaginatedResponseSchema, paginationQuerySchema } from '@/lib/pagination'
 import { betterAuthMiddleware } from '@/middlewares/better-auth.middleware'
 
 const tags = ['Releases']
@@ -25,10 +22,7 @@ export const createRelease = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.CREATED]: jsonContent(
-      selectReleaseSchema,
-      'The created release'
-    ),
+    [HttpStatusCodes.CREATED]: jsonContent(selectReleaseSchema, 'The created release'),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
       z
         .object({ error: z.string().openapi({ description: 'Error message' }) })
@@ -75,10 +69,7 @@ export const getReleasesByLabel = createRoute({
       createPaginatedResponseSchema(selectReleaseSchema),
       'Paginated list of releases for the label'
     ),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'Label not found'
-    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'Label not found'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to fetch releases'
@@ -96,14 +87,8 @@ export const getReleaseBySlug = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      selectMdxCompiledReleaseSchema,
-      'Single release'
-    ),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'Release not found'
-    ),
+    [HttpStatusCodes.OK]: jsonContent(selectMdxCompiledReleaseSchema, 'Single release'),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'Release not found'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to fetch release'
@@ -123,14 +108,8 @@ export const updateReleaseBySlug = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      selectMdxCompiledReleaseSchema,
-      'Updated release'
-    ),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'Release not found'
-    ),
+    [HttpStatusCodes.OK]: jsonContent(selectMdxCompiledReleaseSchema, 'Updated release'),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'Release not found'),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
       z.object({ error: z.string() }),
       'Not authorized to edit this content'
@@ -157,10 +136,7 @@ export const deleteReleaseBySlug = createRoute({
       z.object({ message: z.string() }),
       'Release deleted successfully'
     ),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'Release not found'
-    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'Release not found'),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
       z.object({ error: z.string() }),
       'Not authorized to delete this content'

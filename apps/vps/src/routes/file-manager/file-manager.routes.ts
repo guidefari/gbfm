@@ -50,10 +50,7 @@ export const listObjects = createRoute({
       }),
       'List of objects in the bucket'
     ),
-    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
-      z.object({ error: z.string() }),
-      'Bad request'
-    ),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(z.object({ error: z.string() }), 'Bad request'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to list objects'
@@ -77,14 +74,8 @@ export const copyObject = createRoute({
     )
   },
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      z.object({ key: z.string() }),
-      'Object copied successfully'
-    ),
-    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
-      z.object({ error: z.string() }),
-      'Bad request'
-    ),
+    [HttpStatusCodes.OK]: jsonContent(z.object({ key: z.string() }), 'Object copied successfully'),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(z.object({ error: z.string() }), 'Bad request'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to copy object'

@@ -151,10 +151,7 @@ function LabelUploadPage() {
       console.error('Upload failed:', error)
       toast({
         title: 'Upload failed',
-        description:
-          error instanceof Error
-            ? error.message
-            : 'An unexpected error occurred.',
+        description: error instanceof Error ? error.message : 'An unexpected error occurred.',
         variant: 'destructive'
       })
       setUploadStep('idle')
@@ -229,9 +226,7 @@ function LabelUploadPage() {
           {isUploading && (
             <div className='w-full p-4 border rounded-sm md:w-64 bg-gb-darker-bg border-gb-pastel-green-2/20'>
               <div className='flex justify-between mb-2 text-sm'>
-                <span className='font-medium text-gb-pastel-green-1'>
-                  Uploading Label...
-                </span>
+                <span className='font-medium text-gb-pastel-green-1'>Uploading Label...</span>
                 <Loader2 className='w-4 h-4 animate-spin text-gb-highlight' />
               </div>
               <div className='w-full h-2 rounded-sm bg-gb-bg'>
@@ -267,14 +262,10 @@ function LabelUploadPage() {
               </div>
 
               <div className='space-y-2'>
-                <Label className='text-gb-pastel-green-1'>
-                  Short Description
-                </Label>
+                <Label className='text-gb-pastel-green-1'>Short Description</Label>
                 <Textarea
                   value={formData.description}
-                  onChange={(e) =>
-                    handleInputChange('description', e.target.value)
-                  }
+                  onChange={(e) => handleInputChange('description', e.target.value)}
                   placeholder='Brief description of the label...'
                   className='bg-gb-bg border-gb-pastel-green-2/30'
                 />
@@ -300,9 +291,7 @@ function LabelUploadPage() {
                   <Label className='text-gb-pastel-green-1'>Website</Label>
                   <Input
                     value={formData.website}
-                    onChange={(e) =>
-                      handleInputChange('website', e.target.value)
-                    }
+                    onChange={(e) => handleInputChange('website', e.target.value)}
                     placeholder='https://...'
                     className='bg-gb-bg border-gb-pastel-green-2/30'
                   />
@@ -312,9 +301,7 @@ function LabelUploadPage() {
                   <Label className='text-gb-pastel-green-1'>Bandcamp</Label>
                   <Input
                     value={formData.bandcamp}
-                    onChange={(e) =>
-                      handleInputChange('bandcamp', e.target.value)
-                    }
+                    onChange={(e) => handleInputChange('bandcamp', e.target.value)}
                     placeholder='https://...'
                     className='bg-gb-bg border-gb-pastel-green-2/30'
                   />
@@ -324,9 +311,7 @@ function LabelUploadPage() {
                   <Label className='text-gb-pastel-green-1'>Discogs</Label>
                   <Input
                     value={formData.discogs}
-                    onChange={(e) =>
-                      handleInputChange('discogs', e.target.value)
-                    }
+                    onChange={(e) => handleInputChange('discogs', e.target.value)}
                     placeholder='https://...'
                     className='bg-gb-bg border-gb-pastel-green-2/30'
                   />
@@ -338,9 +323,7 @@ function LabelUploadPage() {
                 {!artworkFile && !artworkPreview ? (
                   <div className='p-4 text-center transition-colors border-2 border-dashed rounded-sm border-gb-pastel-green-2/30 hover:border-gb-highlight/50'>
                     <ImageIcon className='w-6 h-6 mx-auto mb-2 text-gb-pastel-green-2' />
-                    <p className='mb-2 text-xs text-muted-foreground'>
-                      Upload label artwork
-                    </p>
+                    <p className='mb-2 text-xs text-muted-foreground'>Upload label artwork</p>
                     <input
                       type='file'
                       accept='image/*'
@@ -399,34 +382,22 @@ Tell the story of this record label. What makes it special? What artists do they
         <div className='lg:col-span-4'>
           <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
             <CardHeader>
-              <CardTitle className='text-gb-pastel-green-1'>
-                Label Summary
-              </CardTitle>
+              <CardTitle className='text-gb-pastel-green-1'>Label Summary</CardTitle>
             </CardHeader>
             <CardContent className='space-y-4'>
               <div>
-                <h3 className='font-medium text-gb-pastel-green-1 mb-2'>
-                  Name
-                </h3>
-                <p className='text-sm text-muted-foreground'>
-                  {formData.title || 'Not set'}
-                </p>
+                <h3 className='font-medium text-gb-pastel-green-1 mb-2'>Name</h3>
+                <p className='text-sm text-muted-foreground'>{formData.title || 'Not set'}</p>
               </div>
 
               <div>
-                <h3 className='font-medium text-gb-pastel-green-1 mb-2'>
-                  Description
-                </h3>
-                <p className='text-sm text-muted-foreground'>
-                  {formData.description || 'Not set'}
-                </p>
+                <h3 className='font-medium text-gb-pastel-green-1 mb-2'>Description</h3>
+                <p className='text-sm text-muted-foreground'>{formData.description || 'Not set'}</p>
               </div>
 
               {formData.website && (
                 <div>
-                  <h3 className='font-medium text-gb-pastel-green-1 mb-2'>
-                    Links
-                  </h3>
+                  <h3 className='font-medium text-gb-pastel-green-1 mb-2'>Links</h3>
                   <div className='space-y-1'>
                     {formData.website && (
                       <a
@@ -464,16 +435,9 @@ Tell the story of this record label. What makes it special? What artists do they
                   onClick={handleSubmit}
                   disabled={isUploading || !formData.title.trim()}
                   className='flex-1'>
-                  {isUploading
-                    ? 'Uploading...'
-                    : isEditMode
-                      ? 'Update Label'
-                      : 'Upload Label'}
+                  {isUploading ? 'Uploading...' : isEditMode ? 'Update Label' : 'Upload Label'}
                 </Button>
-                <Button
-                  variant='outline'
-                  onClick={handleDiscard}
-                  disabled={isUploading}>
+                <Button variant='outline' onClick={handleDiscard} disabled={isUploading}>
                   Discard
                 </Button>
               </div>

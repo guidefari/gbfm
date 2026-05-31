@@ -30,8 +30,7 @@ export const clearAuthorizationCallback = (url: URL) => {
   window.history.replaceState({}, '', `${url.origin}${url.pathname}`)
 }
 
-export const getSpotifyRedirectUri = () =>
-  `${window.location.origin}/admin/playlists`
+export const getSpotifyRedirectUri = () => `${window.location.origin}/admin/playlists`
 
 export const spotifyUriFromUrl = (url: string): string | null => {
   const match = url.match(/spotify\.com\/track\/([A-Za-z0-9]+)/)
@@ -44,62 +43,54 @@ export const spotifyIdFromUrl = (url: string): string | null => {
   return match?.[1] ?? null
 }
 
-export const startSpotifyPkceLoginEffect = Effect.fn('startSpotifyPkceLogin')(
-  function* (scopes: readonly SpotifyWebScope[]) {
-    const spotify = yield* SpotifyBrowser
-    return yield* spotify.auth.startPkceLogin({
-      scopes,
-      redirectUri: getSpotifyRedirectUri()
-    })
-  }
-)
+export const startSpotifyPkceLoginEffect = Effect.fn('startSpotifyPkceLogin')(function* (
+  scopes: readonly SpotifyWebScope[]
+) {
+  const spotify = yield* SpotifyBrowser
+  return yield* spotify.auth.startPkceLogin({
+    scopes,
+    redirectUri: getSpotifyRedirectUri()
+  })
+})
 
-export const exchangeSpotifyPkceCodeEffect = Effect.fn(
-  'exchangeSpotifyPkceCode'
-)(function* (code: string) {
+export const exchangeSpotifyPkceCodeEffect = Effect.fn('exchangeSpotifyPkceCode')(function* (
+  code: string
+) {
   const spotify = yield* SpotifyBrowser
   return yield* spotify.auth.exchangeCode(code)
 })
 
-export const getValidSpotifyAuthSessionEffect = Effect.fn(
-  'getValidSpotifyAuthSession'
-)(function* () {
-  const spotify = yield* SpotifyBrowser
-  const session = spotify.auth.getTokens()
-  if (!session) return undefined
-  if (session.accessTokenExpiresAt - Date.now() > 60_000) return session
-  return yield* spotify.auth.refreshToken(session.refreshToken)
-})
-
-export const fetchSpotifyProfileEffect = Effect.fn('fetchSpotifyProfile')(
+export const getValidSpotifyAuthSessionEffect = Effect.fn('getValidSpotifyAuthSession')(
   function* () {
     const spotify = yield* SpotifyBrowser
-    return yield* spotify.users.getCurrentUserProfile()
+    const session = spotify.auth.getTokens()
+    if (!session) return undefined
+    if (session.accessTokenExpiresAt - Date.now() > 60_000) return session
+    return yield* spotify.auth.refreshToken(session.refreshToken)
   }
 )
+
+export const fetchSpotifyProfileEffect = Effect.fn('fetchSpotifyProfile')(function* () {
+  const spotify = yield* SpotifyBrowser
+  return yield* spotify.users.getCurrentUserProfile()
+})
 
 export const logoutSpotifyEffect = Effect.fn('logoutSpotify')(function* () {
   const spotify = yield* SpotifyBrowser
   spotify.auth.logout()
 })
 
-export const playTrackEffect = Effect.fn('playTrack')(function* (
-  spotifyTrackUri: string
-) {
+export const playTrackEffect = Effect.fn('playTrack')(function* (spotifyTrackUri: string) {
   const spotify = yield* SpotifyBrowser
   yield* spotify.player.play({ uris: [spotifyTrackUri] })
 })
 
-export const addToQueueEffect = Effect.fn('addToQueue')(function* (
-  spotifyTrackUri: string
-) {
+export const addToQueueEffect = Effect.fn('addToQueue')(function* (spotifyTrackUri: string) {
   const spotify = yield* SpotifyBrowser
   yield* spotify.player.addToQueue(spotifyTrackUri)
 })
 
-export const saveTrackEffect = Effect.fn('saveTrack')(function* (
-  spotifyTrackId: string
-) {
+export const saveTrackEffect = Effect.fn('saveTrack')(function* (spotifyTrackId: string) {
   const spotify = yield* SpotifyBrowser
   yield* spotify.library.saveTracks([spotifyTrackId])
 })
@@ -132,10 +123,8 @@ export const checkSavedTrackEffect = Effect.fn('checkSavedTrack')(function* (
 })
 
 export const spotifyErrorMessage = (error: SpotifyRequestError): string => {
-  if (error instanceof SpotifyHttpError && error.status === 404)
-    return 'No active Spotify device'
-  if (error instanceof SpotifyRateLimitError)
-    return 'Too many requests, try again shortly'
+  if (error instanceof SpotifyHttpError && error.status === 404) return 'No active Spotify device'
+  if (error instanceof SpotifyRateLimitError) return 'Too many requests, try again shortly'
   return error.message
 }
 

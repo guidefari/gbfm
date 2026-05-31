@@ -1,19 +1,11 @@
-import {
-  Corner,
-  Root,
-  Scrollbar,
-  Thumb,
-  Viewport
-} from '@radix-ui/react-scroll-area'
+import { Corner, Root, Scrollbar, Thumb, Viewport } from '@radix-ui/react-scroll-area'
 import type React from 'react'
 
 type HorizontalScrollCardsProps = {
   children: React.ReactNode
 }
 
-export function HorizontalScrollCards({
-  children
-}: HorizontalScrollCardsProps) {
+export function HorizontalScrollCards({ children }: HorizontalScrollCardsProps) {
   return (
     <Root className='shadow-sm shadooo '>
       <Viewport className='w-full'>

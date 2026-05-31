@@ -113,9 +113,7 @@ export const MinimalCard: React.FC<Props> = ({
         {genres && genres.length > 0 && (
           <div className='flex flex-wrap space-x-2'>
             {genres.map((genre) => (
-              <span
-                key={genre}
-                className='p-1 px-2 text-sm rounded-sm bg-gb-darker-bg'>
+              <span key={genre} className='p-1 px-2 text-sm rounded-sm bg-gb-darker-bg'>
                 {genre}
               </span>
             ))}
@@ -124,11 +122,7 @@ export const MinimalCard: React.FC<Props> = ({
 
         {previewUrl?.length && (
           <div className='flex my-2 space-x-3 align-bottom '>
-            <PlayPauseButton
-              url={previewUrl}
-              thumbnailUrl={imageUrl}
-              title={title}
-            />
+            <PlayPauseButton url={previewUrl} thumbnailUrl={imageUrl} title={title} />
             {download && (
               <a type='button' title='Download' href={constructUrl()}>
                 <MdOutlineDownloading className='py-0.5 default-icon' />
@@ -157,10 +151,7 @@ export const MinimalCard: React.FC<Props> = ({
                 {artistsAndTitle}
               </a>
             ) : (
-              <button
-                onClick={() => copyToClipboard(artistsAndTitle)}
-                tabIndex={0}
-                type='button'>
+              <button onClick={() => copyToClipboard(artistsAndTitle)} tabIndex={0} type='button'>
                 {artistsAndTitle}
               </button>
             )}

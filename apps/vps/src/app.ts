@@ -24,10 +24,7 @@ import user from '@/routes/user/user.index'
 import { db } from './db'
 import { regenerateSitemap } from './routes/redirect/seo/sitemap'
 import { runApp, runAppFork } from './runtime'
-import {
-  processPendingReminders,
-  queryNextDueReminder
-} from './services/reminder-processor'
+import { processPendingReminders, queryNextDueReminder } from './services/reminder-processor'
 import { ReminderSignalService } from './services/reminder-signal.service'
 import { SentryService } from './services/sentry.service'
 
@@ -73,8 +70,7 @@ const setupRoutesEffect = Effect.gen(function* () {
 
   const readinessHealthRoute = async (c: Context) => {
     const cache = readinessCache
-    const cachedStatus =
-      cache && Date.now() - cache.checkedAt < READINESS_CACHE_MS
+    const cachedStatus = cache && Date.now() - cache.checkedAt < READINESS_CACHE_MS
 
     if (cachedStatus) {
       return c.json({ dbConnected: cache.status === 200 }, cache.status)
@@ -82,9 +78,7 @@ const setupRoutesEffect = Effect.gen(function* () {
 
     const program = healthCheckEffect.pipe(
       Effect.map(() => ({ data: { dbConnected: true }, status: 200 as const })),
-      Effect.catch(() =>
-        Effect.succeed({ data: { dbConnected: false }, status: 500 as const })
-      )
+      Effect.catch(() => Effect.succeed({ data: { dbConnected: false }, status: 500 as const }))
     )
 
     const result = await runApp(program)
@@ -107,13 +101,9 @@ const RECOVERY_INTERVAL_MS = 5 * 60 * 1000
 const reminderLoopEffect = Effect.gen(function* () {
   const { await: awaitSignal } = yield* ReminderSignalService
 
-  const nextDate = yield* queryNextDueReminder.pipe(
-    Effect.catch(() => Effect.succeed(null))
-  )
+  const nextDate = yield* queryNextDueReminder.pipe(Effect.catch(() => Effect.succeed(null)))
 
-  const msUntilNext = nextDate
-    ? Math.max(0, nextDate.getTime() - Date.now())
-    : RECOVERY_INTERVAL_MS
+  const msUntilNext = nextDate ? Math.max(0, nextDate.getTime() - Date.now()) : RECOVERY_INTERVAL_MS
   const sleepMs = Math.min(msUntilNext, RECOVERY_INTERVAL_MS)
 
   yield* Effect.race(Effect.sleep(Duration.millis(sleepMs)), awaitSignal)
@@ -171,9 +161,7 @@ const initializeApp = async () => {
   return await runApp(
     mainEffect.pipe(
       Effect.tap(() => Effect.log('App initialized successfully')),
-      Effect.tapError((error) =>
-        Effect.logError(`❌ Failed to initialize app: ${error}`)
-      )
+      Effect.tapError((error) => Effect.logError(`❌ Failed to initialize app: ${error}`))
     )
   )
 }

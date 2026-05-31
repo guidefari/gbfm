@@ -24,8 +24,7 @@ export function PlayerPreferencesCard() {
             Bottom Player
           </div>
           <div className='text-xs font-medium uppercase tracking-wider text-muted-foreground leading-relaxed'>
-            Full-width bar with all controls on desktop. When off, use the menu
-            player.
+            Full-width bar with all controls on desktop. When off, use the menu player.
           </div>
         </div>
         <span

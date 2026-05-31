@@ -36,6 +36,7 @@ CREATE INDEX newsletter_subscribers_email_idx ON newsletter_subscribers(email);
 ```
 
 **Key Fields:**
+
 - `email`: Subscriber's email address (unique, normalized to lowercase)
 - `source`: Where the subscription originated (e.g., "subscribe_page")
 
@@ -46,6 +47,7 @@ CREATE INDEX newsletter_subscribers_email_idx ON newsletter_subscribers(email);
 Subscribe to the newsletter. Idempotent - returns success even if already subscribed.
 
 **Request Body:**
+
 ```json
 {
   "email": "user@example.com",
@@ -54,6 +56,7 @@ Subscribe to the newsletter. Idempotent - returns success even if already subscr
 ```
 
 **Response (201 Created - new subscription):**
+
 ```json
 {
   "subscribed": true,
@@ -62,6 +65,7 @@ Subscribe to the newsletter. Idempotent - returns success even if already subscr
 ```
 
 **Response (200 OK - already subscribed):**
+
 ```json
 {
   "subscribed": false,
@@ -98,6 +102,7 @@ src/
 ## Frontend Implementation
 
 The subscribe page (`/subscribe`) features:
+
 - Email input with validation
 - Loading state during submission
 - Success message differentiating new vs existing subscribers
@@ -110,11 +115,11 @@ import { useNewsletterSubscribe } from '@/lib/http'
 
 function SubscribeForm() {
   const { mutate, isPending, isSuccess, data } = useNewsletterSubscribe()
-  
+
   const handleSubmit = (email: string) => {
     mutate({ email })
   }
-  
+
   // ...
 }
 ```
@@ -124,6 +129,7 @@ function SubscribeForm() {
 Migration file: `drizzle/0022_wonderful_magik.sql`
 
 Run migration:
+
 ```bash
 cd apps/vps
 bun db:migrate

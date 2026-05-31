@@ -22,11 +22,7 @@ interface UserSearchProps {
   label?: string
 }
 
-export function UserSearch({
-  selectedUsers,
-  onSelectionChange,
-  label = 'Hosts'
-}: UserSearchProps) {
+export function UserSearch({ selectedUsers, onSelectionChange, label = 'Hosts' }: UserSearchProps) {
   const inputId = useId()
   const [searchQuery, setSearchQuery] = useState('')
   const [showResults, setShowResults] = useState(false)
@@ -95,9 +91,7 @@ export function UserSearch({
         {showResults && searchQuery.length >= 2 && (
           <div className='absolute z-10 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-48 overflow-auto'>
             {isPending ? (
-              <div className='p-2 text-sm text-muted-foreground'>
-                Searching...
-              </div>
+              <div className='p-2 text-sm text-muted-foreground'>Searching...</div>
             ) : filteredResults && filteredResults.length > 0 ? (
               filteredResults.map((user) => (
                 <button
@@ -107,16 +101,12 @@ export function UserSearch({
                   onClick={() => handleSelect(user)}>
                   <span className='font-medium'>{user.name}</span>
                   {user.username && (
-                    <span className='text-xs text-muted-foreground'>
-                      @{user.username}
-                    </span>
+                    <span className='text-xs text-muted-foreground'>@{user.username}</span>
                   )}
                 </button>
               ))
             ) : (
-              <div className='p-2 text-sm text-muted-foreground'>
-                No users found
-              </div>
+              <div className='p-2 text-sm text-muted-foreground'>No users found</div>
             )}
           </div>
         )}

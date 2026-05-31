@@ -20,10 +20,7 @@ import {
   TabsTrigger,
   toast
 } from '@gbfm/ui'
-import type {
-  SelectMdxCompiledEditorialPost,
-  SelectMdxCompiledMicroPost
-} from '@gbfm/vps/schemas'
+import type { SelectMdxCompiledEditorialPost, SelectMdxCompiledMicroPost } from '@gbfm/vps/schemas'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ArrowUpDown, Check, Plus, X } from 'lucide-react'
@@ -62,10 +59,7 @@ type EditorialPostItem = Omit<
   creators?: Array<{ id: string; name: string }>
 }
 
-type TweetPostItem = Omit<
-  SelectMdxCompiledMicroPost,
-  'createdAt' | 'updatedAt' | 'creators'
-> & {
+type TweetPostItem = Omit<SelectMdxCompiledMicroPost, 'createdAt' | 'updatedAt' | 'creators'> & {
   createdAt: string
   creators?: Array<{ id: string; name: string }>
 }
@@ -121,9 +115,7 @@ function MixesTabContent({
   return (
     <TabsContent value='mixes' className='mt-4'>
       {isPending ? (
-        <div className='py-8 text-center text-muted-foreground'>
-          Loading mixes…
-        </div>
+        <div className='py-8 text-center text-muted-foreground'>Loading mixes…</div>
       ) : (
         <div className='overflow-x-auto rounded-sm border'>
           <table className='w-full text-sm'>
@@ -151,12 +143,8 @@ function MixesTabContent({
               {mixes.map((mix) => (
                 <tr key={mix.id} className='border-b hover:bg-muted/50'>
                   <td className='px-4 py-3'>{mix.title}</td>
-                  <td className='px-4 py-3 text-muted-foreground'>
-                    {mix.slug}
-                  </td>
-                  <td className='px-4 py-3 text-muted-foreground'>
-                    {mix.tags?.join(', ') || '—'}
-                  </td>
+                  <td className='px-4 py-3 text-muted-foreground'>{mix.slug}</td>
+                  <td className='px-4 py-3 text-muted-foreground'>{mix.tags?.join(', ') || '—'}</td>
                   <td className='px-4 py-3 text-muted-foreground'>
                     {mix.playCount.toLocaleString()}
                   </td>
@@ -168,10 +156,7 @@ function MixesTabContent({
                   </td>
                   <td className='px-4 py-3'>
                     <div className='flex gap-2'>
-                      <Button
-                        variant='outline'
-                        size='sm'
-                        onClick={() => onOpenEditDialog(mix)}>
+                      <Button variant='outline' size='sm' onClick={() => onOpenEditDialog(mix)}>
                         Edit
                       </Button>
                       <Button variant='outline' size='sm' asChild>
@@ -185,9 +170,7 @@ function MixesTabContent({
               ))}
               {mixes.length === 0 && (
                 <tr>
-                  <td
-                    colSpan={7}
-                    className='px-4 py-8 text-center text-muted-foreground'>
+                  <td colSpan={7} className='px-4 py-8 text-center text-muted-foreground'>
                     No mixes found
                   </td>
                 </tr>
@@ -238,9 +221,7 @@ function PostsTabContent({
               {items.map((post) => (
                 <tr key={post.id} className='border-b hover:bg-muted/50'>
                   <td className='px-4 py-3'>{post.title || titleFallback}</td>
-                  <td className='px-4 py-3 text-muted-foreground'>
-                    {post.slug}
-                  </td>
+                  <td className='px-4 py-3 text-muted-foreground'>{post.slug}</td>
                   <td className='px-4 py-3 text-muted-foreground'>
                     {post.tags?.join(', ') || '—'}
                   </td>
@@ -261,9 +242,7 @@ function PostsTabContent({
               ))}
               {items.length === 0 && (
                 <tr>
-                  <td
-                    colSpan={6}
-                    className='px-4 py-8 text-center text-muted-foreground'>
+                  <td colSpan={6} className='px-4 py-8 text-center text-muted-foreground'>
                     No {emptyLabel.toLowerCase()} found
                   </td>
                 </tr>
@@ -310,19 +289,11 @@ function TweetPostActions({ post }: { post: PostListItem }) {
   )
 }
 
-function LabelsTabContent({
-  isPending,
-  labels
-}: {
-  isPending: boolean
-  labels: LabelItem[]
-}) {
+function LabelsTabContent({ isPending, labels }: { isPending: boolean; labels: LabelItem[] }) {
   return (
     <TabsContent value='labels' className='mt-4'>
       {isPending ? (
-        <div className='py-8 text-center text-muted-foreground'>
-          Loading labels…
-        </div>
+        <div className='py-8 text-center text-muted-foreground'>Loading labels…</div>
       ) : (
         <div className='overflow-x-auto rounded-sm border'>
           <table className='w-full text-sm'>
@@ -338,18 +309,14 @@ function LabelsTabContent({
               {labels.map((label) => (
                 <tr key={label.id} className='border-b hover:bg-muted/50'>
                   <td className='px-4 py-3'>{label.name}</td>
-                  <td className='px-4 py-3 text-muted-foreground'>
-                    {label.slug}
-                  </td>
+                  <td className='px-4 py-3 text-muted-foreground'>{label.slug}</td>
                   <td className='px-4 py-3 text-muted-foreground'>
                     {new Date(label.createdAt).toLocaleDateString()}
                   </td>
                   <td className='px-4 py-3'>
                     <div className='flex gap-2'>
                       <Button variant='outline' size='sm' asChild>
-                        <Link
-                          to='/labels/$labelSlug'
-                          params={{ labelSlug: label.slug }}>
+                        <Link to='/labels/$labelSlug' params={{ labelSlug: label.slug }}>
                           View
                         </Link>
                       </Button>
@@ -367,9 +334,7 @@ function LabelsTabContent({
               ))}
               {labels.length === 0 && (
                 <tr>
-                  <td
-                    colSpan={4}
-                    className='px-4 py-8 text-center text-muted-foreground'>
+                  <td colSpan={4} className='px-4 py-8 text-center text-muted-foreground'>
                     No labels found
                   </td>
                 </tr>
@@ -411,8 +376,7 @@ function EditTagsDialog({
         <DialogHeader>
           <DialogTitle>Edit Tags</DialogTitle>
           <DialogDescription>
-            Edit tags for "{editDialog.mix?.title}". Select existing tags or add
-            new ones.
+            Edit tags for "{editDialog.mix?.title}". Select existing tags or add new ones.
           </DialogDescription>
         </DialogHeader>
         <div className='py-4 space-y-4'>
@@ -420,9 +384,7 @@ function EditTagsDialog({
             <Label>Selected Tags</Label>
             <div className='flex flex-wrap gap-2 mt-2 min-h-[32px]'>
               {editDialog.selectedTags.length === 0 ? (
-                <span className='text-sm text-muted-foreground'>
-                  No tags selected
-                </span>
+                <span className='text-sm text-muted-foreground'>No tags selected</span>
               ) : (
                 editDialog.selectedTags.map((tag) => (
                   <Badge key={tag} variant='secondary' className='gap-1'>
@@ -462,18 +424,13 @@ function EditTagsDialog({
                 </CommandEmpty>
                 <CommandGroup>
                   {showAddNew && (
-                    <CommandItem
-                      onSelect={() => onAddTag(editDialog.inputValue)}
-                      className='gap-2'>
+                    <CommandItem onSelect={() => onAddTag(editDialog.inputValue)} className='gap-2'>
                       <Plus className='size-4' />
                       Add "{editDialog.inputValue.trim()}"
                     </CommandItem>
                   )}
                   {filteredTags.map((tag) => (
-                    <CommandItem
-                      key={tag}
-                      onSelect={() => onAddTag(tag)}
-                      className='gap-2'>
+                    <CommandItem key={tag} onSelect={() => onAddTag(tag)} className='gap-2'>
                       <Check className='size-4 opacity-0' />
                       {tag}
                     </CommandItem>
@@ -498,9 +455,7 @@ function EditTagsDialog({
 
 export function ContentTab() {
   const queryClient = useQueryClient()
-  const [mixPlaySortOrder, setMixPlaySortOrder] = useState<'asc' | 'desc'>(
-    'desc'
-  )
+  const [mixPlaySortOrder, setMixPlaySortOrder] = useState<'asc' | 'desc'>('desc')
   const [editDialog, setEditDialog] = useState<EditDialogState>({
     open: false,
     mix: null,
@@ -511,17 +466,13 @@ export function ContentTab() {
   const { data: mixesData, isPending: mixesPending } = useQuery({
     queryKey: ['admin', 'mixes'],
     queryFn: () =>
-      fetcher<PaginatedResponse<AudioItem>>(
-        `${VPS_BASE_URL}/content/audio/mix?limit=50&offset=0`
-      )
+      fetcher<PaginatedResponse<AudioItem>>(`${VPS_BASE_URL}/content/audio/mix?limit=50&offset=0`)
   })
 
   const { data: labelsData, isPending: labelsPending } = useQuery({
     queryKey: ['admin', 'labels'],
     queryFn: () =>
-      fetcher<PaginatedResponse<LabelItem>>(
-        `${VPS_BASE_URL}/content/labels?limit=50&offset=0`
-      )
+      fetcher<PaginatedResponse<LabelItem>>(`${VPS_BASE_URL}/content/labels?limit=50&offset=0`)
   })
 
   const { data: editorialData, isPending: editorialPending } = useQuery({
@@ -626,9 +577,7 @@ export function ContentTab() {
   const filteredTags = useMemo(() => {
     const input = editDialog.inputValue.toLowerCase()
     return allExistingTags.filter(
-      (tag) =>
-        tag.toLowerCase().includes(input) &&
-        !editDialog.selectedTags.includes(tag)
+      (tag) => tag.toLowerCase().includes(input) && !editDialog.selectedTags.includes(tag)
     )
   }, [allExistingTags, editDialog.inputValue, editDialog.selectedTags])
 
@@ -646,24 +595,16 @@ export function ContentTab() {
       <Tabs defaultValue='mixes'>
         <TabsList>
           <TabsTrigger value='mixes'>Mixes ({mixes?.length ?? 0})</TabsTrigger>
-          <TabsTrigger value='editorial'>
-            Editorial ({editorialPosts?.length ?? 0})
-          </TabsTrigger>
-          <TabsTrigger value='tweet'>
-            Tweet ({tweetPosts?.length ?? 0})
-          </TabsTrigger>
-          <TabsTrigger value='labels'>
-            Labels ({labels?.length ?? 0})
-          </TabsTrigger>
+          <TabsTrigger value='editorial'>Editorial ({editorialPosts?.length ?? 0})</TabsTrigger>
+          <TabsTrigger value='tweet'>Tweet ({tweetPosts?.length ?? 0})</TabsTrigger>
+          <TabsTrigger value='labels'>Labels ({labels?.length ?? 0})</TabsTrigger>
         </TabsList>
         <MixesTabContent
           isPending={mixesPending}
           mixes={sortedMixes}
           mixPlaySortOrder={mixPlaySortOrder}
           onToggleSort={() =>
-            setMixPlaySortOrder((current) =>
-              current === 'desc' ? 'asc' : 'desc'
-            )
+            setMixPlaySortOrder((current) => (current === 'desc' ? 'asc' : 'desc'))
           }
           onOpenEditDialog={openEditDialog}
         />
@@ -690,9 +631,7 @@ export function ContentTab() {
         showAddNew={showAddNew}
         isPending={updateMixMutation.isPending}
         onOpenChange={(open) => setEditDialog((prev) => ({ ...prev, open }))}
-        onInputValueChange={(value) =>
-          setEditDialog((prev) => ({ ...prev, inputValue: value }))
-        }
+        onInputValueChange={(value) => setEditDialog((prev) => ({ ...prev, inputValue: value }))}
         onAddTag={addTag}
         onRemoveTag={removeTag}
         onCancel={() =>

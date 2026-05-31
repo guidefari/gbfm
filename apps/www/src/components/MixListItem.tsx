@@ -5,10 +5,7 @@ import { Link } from '@tanstack/react-router'
 import { Pause, Play } from 'lucide-react'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { cn } from '@/lib/utils'
-import {
-  useAudioPlayerActions,
-  useAudioPlayerPlaybackState
-} from '@/store/audioPlayer'
+import { useAudioPlayerActions, useAudioPlayerPlaybackState } from '@/store/audioPlayer'
 
 interface MixListItemProps {
   mix: SelectAudio

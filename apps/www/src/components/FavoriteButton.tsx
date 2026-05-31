@@ -32,10 +32,8 @@ export function FavoriteButton({
   const { data: favorites } = useFavorites()
   const { addFavorite, isPending: isAddingFavorite } = useAddFavorite()
   const { removeFavorite, isPending: isRemovingFavorite } = useRemoveFavorite()
-  const { addShowFavorite, isPending: isAddingShowFavorite } =
-    useAddShowFavorite()
-  const { removeShowFavorite, isPending: isRemovingShowFavorite } =
-    useRemoveShowFavorite()
+  const { addShowFavorite, isPending: isAddingShowFavorite } = useAddShowFavorite()
+  const { removeShowFavorite, isPending: isRemovingShowFavorite } = useRemoveShowFavorite()
 
   const isFavorited =
     contentType === 'mix'
@@ -43,10 +41,7 @@ export function FavoriteButton({
       : favorites.some((f) => f.showId === contentId)
 
   const isLoading =
-    isAddingFavorite ||
-    isRemovingFavorite ||
-    isAddingShowFavorite ||
-    isRemovingShowFavorite
+    isAddingFavorite || isRemovingFavorite || isAddingShowFavorite || isRemovingShowFavorite
 
   const performFavoriteAction = async () => {
     try {
@@ -112,9 +107,7 @@ export function FavoriteButton({
       {isLoading ? (
         <Loader2 className='w-4 h-4 animate-spin' />
       ) : (
-        <Heart
-          className={cn('w-4 h-4', isFavorited && 'fill-red-500 text-red-500')}
-        />
+        <Heart className={cn('w-4 h-4', isFavorited && 'fill-red-500 text-red-500')} />
       )}
     </Button>
   )

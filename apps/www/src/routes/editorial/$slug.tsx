@@ -65,13 +65,7 @@ function EditorialPostPage() {
   )
 }
 
-function PostDetails({
-  post,
-  slug
-}: {
-  post: SelectMdxCompiledEditorialPost
-  slug: string
-}) {
+function PostDetails({ post, slug }: { post: SelectMdxCompiledEditorialPost; slug: string }) {
   return (
     <div className='space-y-8'>
       <div className='flex flex-col items-start gap-8 md:flex-row'>

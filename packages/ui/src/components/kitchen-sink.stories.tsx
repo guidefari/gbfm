@@ -1,11 +1,6 @@
 import { Music, Radio, Search, User } from 'lucide-react'
 import { useState } from 'react'
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger
-} from './accordion'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './accordion'
 import { Badge } from './badge'
 import {
   Breadcrumb,
@@ -29,27 +24,12 @@ import { PasswordChecklist } from './password-checklist'
 import { ProfilePreviewCard } from './profile-preview-card'
 import { ReadMoreModal } from './read-more-modal'
 import { Section } from './section'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from './select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select'
 import { Skeleton } from './skeleton'
-import {
-  mediaExamples,
-  StoryPanelHeader,
-  storyPanelClassName
-} from './story-helpers'
+import { mediaExamples, StoryPanelHeader, storyPanelClassName } from './story-helpers'
 import { TagsInput } from './tags-input'
 import { Textarea } from './textarea'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger
-} from './tooltip'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tooltip'
 import { UploadProgress } from './upload-progress'
 
 export default {
@@ -104,11 +84,7 @@ export function KitchenSink() {
       </Section>
 
       <Section title='Quick Nav'>
-        <IconGrid
-          tiles={tiles}
-          onTileSelect={(t) => console.log(t.id)}
-          isAuthenticated={true}
-        />
+        <IconGrid tiles={tiles} onTileSelect={(t) => console.log(t.id)} isAuthenticated={true} />
       </Section>
 
       <Section title='Media Cards'>
@@ -206,10 +182,7 @@ export function KitchenSink() {
       </Section>
 
       <Section title='Upload Progress'>
-        <UploadProgress
-          step='uploading-audio'
-          title='Late Night Transmissions 04'
-        />
+        <UploadProgress step='uploading-audio' title='Late Night Transmissions 04' />
       </Section>
 
       <Section title='Profile'>
@@ -240,8 +213,7 @@ export function KitchenSink() {
               </span>
             }>
             <p>
-              Dubwise pressure, loose percussion, and slow-burning warehouse
-              records recorded live.
+              Dubwise pressure, loose percussion, and slow-burning warehouse records recorded live.
             </p>
           </ReadMoreModal>
         </div>

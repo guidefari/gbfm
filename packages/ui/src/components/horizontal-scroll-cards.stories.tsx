@@ -1,11 +1,7 @@
 import { Button } from './button'
 import HorizontalScrollCards from './horizontal-scroll-cards'
 import { MediaCard } from './media-card'
-import {
-  mediaExamples,
-  StoryPanelHeader,
-  storyPanelClassName
-} from './story-helpers'
+import { mediaExamples, StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
   title: '@gbfm/ui/HorizontalScrollCards'

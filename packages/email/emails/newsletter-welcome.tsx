@@ -22,9 +22,7 @@ export function NewsletterWelcomeEmail({
   return (
     <Html>
       <EmailHead />
-      <Preview>
-        You're on the list. New mixes and goosebumps.fm updates coming your way.
-      </Preview>
+      <Preview>You're on the list. New mixes and goosebumps.fm updates coming your way.</Preview>
       <Body style={main}>
         <Container style={container}>
           <EmailHeader tagline='newsletter' />
@@ -33,8 +31,8 @@ export function NewsletterWelcomeEmail({
             <Text style={label}>SUBSCRIBED</Text>
             <Text style={headline}>You're on the list.</Text>
             <Text style={subtext}>
-              We'll let you know when new mixes drop and share other
-              goosebumps.fm updates. That's it, no noise.
+              We'll let you know when new mixes drop and share other goosebumps.fm updates. That's
+              it, no noise.
             </Text>
             <Button style={ctaButton} href='https://goosebumps.fm'>
               Go to goosebumps.fm

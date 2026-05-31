@@ -9,18 +9,10 @@ interface AudioFileCardProps {
   onRemove: () => void
 }
 
-export function AudioFileCard({
-  fileName,
-  fileSize,
-  existingUrl,
-  onRemove
-}: AudioFileCardProps) {
-  const displayName =
-    fileName || (existingUrl ? existingUrl.split('/').pop() : 'Unknown file')
+export function AudioFileCard({ fileName, fileSize, existingUrl, onRemove }: AudioFileCardProps) {
+  const displayName = fileName || (existingUrl ? existingUrl.split('/').pop() : 'Unknown file')
 
-  const displaySize = fileSize
-    ? `${(fileSize / (1024 * 1024)).toFixed(2)} MB`
-    : '0 MB'
+  const displaySize = fileSize ? `${(fileSize / (1024 * 1024)).toFixed(2)} MB` : '0 MB'
 
   return (
     <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
@@ -35,9 +27,7 @@ export function AudioFileCard({
           <div className='flex items-center min-w-0 space-x-3'>
             <Music className='shrink-0 w-6 h-6 text-gb-highlight' />
             <div className='min-w-0'>
-              <p className='font-medium leading-tight text-gb-pastel-green-1'>
-                {displayName}
-              </p>
+              <p className='font-medium leading-tight text-gb-pastel-green-1'>{displayName}</p>
               <p className='text-xs text-muted-foreground'>{displaySize}</p>
             </div>
           </div>

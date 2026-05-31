@@ -1,10 +1,7 @@
 import { GenericAuthForm, toast } from '@gbfm/ui'
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
-import {
-  AuthPageLayout,
-  AuthStatusNotice
-} from '@/components/Auth/AuthPageLayout'
+import { AuthPageLayout, AuthStatusNotice } from '@/components/Auth/AuthPageLayout'
 import { signIn } from '@/lib/auth-client'
 
 export const Route = createFileRoute('/auth/sign-in')({
@@ -59,11 +56,7 @@ function SignInPage() {
       badge='Sign In'
       title='Welcome back.'
       description='Sign in to pick up where you left off.'
-      status={
-        error ? (
-          <AuthStatusNotice variant='error'>{error}</AuthStatusNotice>
-        ) : null
-      }
+      status={error ? <AuthStatusNotice variant='error'>{error}</AuthStatusNotice> : null}
       footer={
         <div className='space-y-3 border-t border-gb-pastel-green-2/20 pt-4 text-sm text-muted-foreground'>
           <p>

@@ -3,6 +3,7 @@
 ## Goal
 
 Remove Zod entirely from `apps/vps`. Replace with:
+
 - **Effect Schema** for validation
 - **Effect HttpApi** for typed route definitions + OpenAPI spec generation
 - **openapi-fetch** for a typed client derived from that spec, shared across web/mobile/Raycast
@@ -29,8 +30,8 @@ Effect HttpApi definition (pure schemas + endpoint shapes)
 ### How `toWebHandler` mounts into Hono
 
 ```typescript
-import { HttpApiBuilder } from "@effect/platform"
-import { HttpServer } from "@effect/platform"
+import { HttpApiBuilder } from '@effect/platform'
+import { HttpServer } from '@effect/platform'
 
 const { handler, dispose } = HttpApiBuilder.toWebHandler(
   Layer.mergeAll(AppApiLive, HttpServer.layerContext)
@@ -46,13 +47,13 @@ Hono keeps: auth routes (better-auth), RSS, SEO/sitemap, redirects, static servi
 
 ## Current State
 
-| Layer | Current | Pain |
-|---|---|---|
-| API framework | `OpenAPIHono` + `@hono/zod-openapi` | Zod dep, tight coupling of schema+route |
-| Schemas | Zod (in DB schema files, re-exported) | Mixed Drizzle + Zod in same files |
-| Client gen | Scalar UI at `/reference`, manual `fetcher()` in www | No typed client — `http.ts` is 800+ lines of hand-rolled fetch wrappers |
-| OpenAPI spec | Auto from `@hono/zod-openapi` | Path param colon→brace hack needed |
-| Clients | www: manual fetch. Raycast: `api-client.ts`. Mobile: TBD | All untyped, duplicated |
+| Layer         | Current                                                  | Pain                                                                    |
+| ------------- | -------------------------------------------------------- | ----------------------------------------------------------------------- |
+| API framework | `OpenAPIHono` + `@hono/zod-openapi`                      | Zod dep, tight coupling of schema+route                                 |
+| Schemas       | Zod (in DB schema files, re-exported)                    | Mixed Drizzle + Zod in same files                                       |
+| Client gen    | Scalar UI at `/reference`, manual `fetcher()` in www     | No typed client — `http.ts` is 800+ lines of hand-rolled fetch wrappers |
+| OpenAPI spec  | Auto from `@hono/zod-openapi`                            | Path param colon→brace hack needed                                      |
+| Clients       | www: manual fetch. Raycast: `api-client.ts`. Mobile: TBD | All untyped, duplicated                                                 |
 
 ---
 
@@ -103,24 +104,24 @@ bun add -d openapi-typescript
 
 ## Multi-Client Story
 
-| Client | Approach |
-|---|---|
-| www | `openapi-fetch` replaces `http.ts` — same `credentials: 'include'`, same base URL |
-| Raycast | `openapi-fetch` with `Authorization: Bearer` header middleware replaces `api-client.ts` |
-| Mobile (RN) | `openapi-fetch` works — RN has native fetch since 0.72 |
-| Scalar UI | Still served at `/reference`, pointed at `/doc` (now from `OpenApi.fromApi`) |
+| Client      | Approach                                                                                |
+| ----------- | --------------------------------------------------------------------------------------- |
+| www         | `openapi-fetch` replaces `http.ts` — same `credentials: 'include'`, same base URL       |
+| Raycast     | `openapi-fetch` with `Authorization: Bearer` header middleware replaces `api-client.ts` |
+| Mobile (RN) | `openapi-fetch` works — RN has native fetch since 0.72                                  |
+| Scalar UI   | Still served at `/reference`, pointed at `/doc` (now from `OpenApi.fromApi`)            |
 
 ---
 
 ## Risks / Tradeoffs
 
-| Risk | Mitigation |
-|---|---|
+| Risk                                               | Mitigation                                                         |
+| -------------------------------------------------- | ------------------------------------------------------------------ |
 | Effect HttpApi doesn't support all Hono middleware | Keep Hono as outer layer; Effect HttpApi only handles typed routes |
-| `toWebHandler` path matching vs Hono routing | Mount at `/api/*` prefix; strip prefix in handler if needed |
-| better-auth integration | Stays in Hono — don't touch |
-| OpenAPI spec format (Scalar path params) | `OpenApi.fromApi` emits `{param}` natively — no colon→brace hack |
-| Bundle size for mobile | `openapi-fetch` is ~6KB, zero runtime schema overhead |
+| `toWebHandler` path matching vs Hono routing       | Mount at `/api/*` prefix; strip prefix in handler if needed        |
+| better-auth integration                            | Stays in Hono — don't touch                                        |
+| OpenAPI spec format (Scalar path params)           | `OpenApi.fromApi` emits `{param}` natively — no colon→brace hack   |
+| Bundle size for mobile                             | `openapi-fetch` is ~6KB, zero runtime schema overhead              |
 
 ---
 
@@ -129,6 +130,7 @@ bun add -d openapi-typescript
 Integration tests use `@testcontainers/postgresql` + real Postgres — no mocks.
 
 Key files in `apps/vps/`:
+
 - `src/test/global-setup.ts` — starts Postgres container, runs `drizzle-kit push`, seeds lookup tables (`music_entity_types`, `music_platforms`), sets `DB_*` and `SST_RESOURCES_JSON` env vars
 - `src/test/setup.ts` — intentionally empty (no `vi.mock`)
 - `vitest.config.ts` — `pool: 'forks'`, `globalSetup`, `hookTimeout: 120_000`
@@ -136,13 +138,13 @@ Key files in `apps/vps/`:
 
 ### Constraints enforced
 
-| Decision | Reason |
-|---|---|
-| No `vi.mock()` | Use Effect layers or real infrastructure |
-| SST via `SST_RESOURCES_JSON` env var | SST reads this natively on first `Resource` access — no mocking the SST module |
-| Stage-based SSL via lookup object | `test` → `false`, `prod` → `true`, else `{ rejectUnauthorized: false }` |
-| `pool: 'forks'` (no `singleFork`) | `singleFork` removed in vitest 4.x; env vars set in global-setup are inherited by forked workers |
-| No `as any` or type assertions | Full type safety required |
+| Decision                             | Reason                                                                                           |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| No `vi.mock()`                       | Use Effect layers or real infrastructure                                                         |
+| SST via `SST_RESOURCES_JSON` env var | SST reads this natively on first `Resource` access — no mocking the SST module                   |
+| Stage-based SSL via lookup object    | `test` → `false`, `prod` → `true`, else `{ rejectUnauthorized: false }`                          |
+| `pool: 'forks'` (no `singleFork`)    | `singleFork` removed in vitest 4.x; env vars set in global-setup are inherited by forked workers |
+| No `as any` or type assertions       | Full type safety required                                                                        |
 
 ---
 

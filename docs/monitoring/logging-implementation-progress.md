@@ -192,28 +192,28 @@ yield* Effect.logInfo('[Component] Operation completed', {
 
 ```typescript
 // Authentication middleware
-Effect.logWarning("[Auth] Unauthorized access attempt", {
+Effect.logWarning('[Auth] Unauthorized access attempt', {
   path: c.req.path,
-  ip: clientIP,
-});
+  ip: clientIP
+})
 
 // Business operation success
-Effect.logInfo("[Business] Operation completed", {
+Effect.logInfo('[Business] Operation completed', {
   userId: user.id,
-  operation: "create",
-  resourceId: newResource.id,
-});
+  operation: 'create',
+  resourceId: newResource.id
+})
 ```
 
 ### Error Context
 
 ```typescript
-Effect.logError("[Component] Operation failed", {
+Effect.logError('[Component] Operation failed', {
   userId,
-  operation: "action",
+  operation: 'action',
   error: error.message,
-  context: additionalMetadata,
-});
+  context: additionalMetadata
+})
 ```
 
 ## Validation Status
@@ -291,19 +291,21 @@ _Status: Phase 4 fully complete, Phase 3 fully complete, Phase 2 fully complete,
 ## Summary of Recent Improvements
 
 ### Services with Spans
-| Service | Spans Added |
-|---------|------------|
-| AudioService | `audio.getByType`, `audio.getBySlug`, `audio.create`, `audio.update` |
-| UserService | `user.getById`, `user.updateProfile`, `user.getEmailPreferences`, `user.updateEmailPreferences` |
-| ShowService | `show.getAll`, `show.getBySlug`, `show.create`, `show.update`, `show.delete`, `show.getEpisodes`, `show.subscribe`, `show.unsubscribe`, `show.getUserSubscriptions`, `show.getSubscribers` |
-| ProfileService | `profile.getPublic` |
-| ReleaseService | `release.getByLabelSlug`, `release.getBySlug`, `release.create`, `release.update`, `release.delete` |
+
+| Service            | Spans Added                                                                                                                                                                                                                                                            |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| AudioService       | `audio.getByType`, `audio.getBySlug`, `audio.create`, `audio.update`                                                                                                                                                                                                   |
+| UserService        | `user.getById`, `user.updateProfile`, `user.getEmailPreferences`, `user.updateEmailPreferences`                                                                                                                                                                        |
+| ShowService        | `show.getAll`, `show.getBySlug`, `show.create`, `show.update`, `show.delete`, `show.getEpisodes`, `show.subscribe`, `show.unsubscribe`, `show.getUserSubscriptions`, `show.getSubscribers`                                                                             |
+| ProfileService     | `profile.getPublic`                                                                                                                                                                                                                                                    |
+| ReleaseService     | `release.getByLabelSlug`, `release.getBySlug`, `release.create`, `release.update`, `release.delete`                                                                                                                                                                    |
 | PublicationService | `publication.create`, `publication.getById`, `publication.getBySlug`, `publication.getAll`, `publication.update`, `publication.delete`, `publication.addMember`, `publication.removeMember`, `publication.getMembers`, `publication.addPost`, `publication.removePost` |
 
 ### Business Metrics Added
+
 - `favorite_add_count` / `favorite_remove_count`
 - `show_subscribe_count` / `show_unsubscribe_count`
 - `audio_create_count`
 - `email_send_count` / `email_fail_count`
 - `db_query_duration_ms` gauge</content>
-<parameter name="filePath">docs/logging-implementation-progress.md
+  <parameter name="filePath">docs/logging-implementation-progress.md

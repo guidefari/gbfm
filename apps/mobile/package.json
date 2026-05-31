@@ -1,6 +1,7 @@
 {
   "name": "@gbfm/mobile",
   "version": "1.0.0",
+  "private": true,
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
@@ -11,6 +12,7 @@
   },
   "dependencies": {
     "@gbfm/core": "workspace:*",
+    "@gbfm/theme": "workspace:*",
     "@tanstack/react-query": "5.100.6",
     "babel-preset-expo": "55.0.18",
     "expo": "55.0.18",
@@ -31,8 +33,7 @@
     "react-native-web": "0.21.2",
     "react-native-worklets": "0.8.1",
     "tailwindcss": "4.2.4",
-    "zustand": "5.0.12",
-    "@gbfm/theme": "workspace:*"
+    "zustand": "5.0.12"
   },
   "devDependencies": {
     "@babel/core": "7.29.0",
@@ -41,6 +42,5 @@
     "@types/react": "19.2.14",
     "postcss": "8.5.12",
     "typescript": "6.0.3"
-  },
-  "private": true
+  }
 }

@@ -1,10 +1,7 @@
 import { desc, eq, sql } from 'drizzle-orm'
 import { Effect } from 'effect'
 import type { db as DbType } from '@/db'
-import {
-  musicArtistsTable,
-  type SelectMusicArtist
-} from '@/db/music-entity.schema'
+import { musicArtistsTable, type SelectMusicArtist } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { toSlug } from '@/services/to-slug'
 import { deleteLinksForEntityTx, requireInserted, requireOne } from './shared'
@@ -35,11 +32,7 @@ export const createArtistEffect = (db: typeof DbType) =>
 
 export const getArtistsEffect = (db: typeof DbType) => () =>
   Effect.tryPromise({
-    try: () =>
-      db
-        .select()
-        .from(musicArtistsTable)
-        .orderBy(desc(musicArtistsTable.createdAt)),
+    try: () => db.select().from(musicArtistsTable).orderBy(desc(musicArtistsTable.createdAt)),
     catch: (e) =>
       new DatabaseError({
         message: `Failed to list artists: ${getErrorMessage(e)}`,
@@ -51,12 +44,7 @@ export const getArtistsEffect = (db: typeof DbType) => () =>
 export const getArtistByIdEffect = (db: typeof DbType) => (id: string) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select()
-          .from(musicArtistsTable)
-          .where(eq(musicArtistsTable.id, id))
-          .limit(1),
+      try: () => db.select().from(musicArtistsTable).where(eq(musicArtistsTable.id, id)).limit(1),
       catch: (e) =>
         new DatabaseError({
           message: `Failed to get artist: ${getErrorMessage(e)}`,
@@ -150,9 +138,7 @@ export const findOrCreateArtist = (db: typeof DbType) =>
   })
 
 export const findOrCreateArtistsByName = (db: typeof DbType) =>
-  Effect.fn('musicEntity.findOrCreateArtistsByName')(function* (
-    names: string[]
-  ) {
+  Effect.fn('musicEntity.findOrCreateArtistsByName')(function* (names: string[]) {
     const artists: SelectMusicArtist[] = []
     for (const name of names) {
       artists.push(yield* findOrCreateArtist(db)(name))

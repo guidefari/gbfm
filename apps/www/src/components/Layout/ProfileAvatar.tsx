@@ -27,16 +27,9 @@ const ProfileAvatar = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button
-          variant='outline'
-          size='icon'
-          className='overflow-hidden rounded-sm'>
+        <Button variant='outline' size='icon' className='overflow-hidden rounded-sm'>
           {user?.image ? (
-            <img
-              src={user.image}
-              alt={user.name}
-              className='h-full w-full object-cover'
-            />
+            <img src={user.image} alt={user.name} className='h-full w-full object-cover' />
           ) : (
             user?.name?.[0]?.toUpperCase() || '?'
           )}

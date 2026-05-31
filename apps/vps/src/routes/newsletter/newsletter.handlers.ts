@@ -10,16 +10,9 @@ import { db } from '@/db'
 import { newsletterSubscribersTable } from '@/db/newsletter.schema'
 import type { AppRouteHandler } from '@/lib/types'
 import { config } from '@/services/config.service'
-import type {
-  RequestUnsubscribeRoute,
-  SubscribeRoute,
-  UnsubscribeRoute
-} from './newsletter.routes'
+import type { RequestUnsubscribeRoute, SubscribeRoute, UnsubscribeRoute } from './newsletter.routes'
 
-function notifyAdmin(
-  event: 'subscribed' | 'unsubscribed',
-  email: string
-): void {
+function notifyAdmin(event: 'subscribed' | 'unsubscribed', email: string): void {
   if (!config.adminEmail) return
   sendNewsletterAdminNotificationEmail({
     to: config.adminEmail,
@@ -50,32 +43,23 @@ export const subscribe: AppRouteHandler<SubscribeRoute> = async (c) => {
       .returning()
 
     if (result.length === 0) {
-      return c.json(
-        { subscribed: false, email: normalizedEmail },
-        HttpStatusCodes.OK
-      )
+      return c.json({ subscribed: false, email: normalizedEmail }, HttpStatusCodes.OK)
     }
 
     const row = result[0]
     if (row?.unsubscribeToken) {
       const unsubscribeUrl = `${process.env.APP_URL ?? 'https://goosebumps.fm'}/unsubscribe?token=${row.unsubscribeToken}`
-      sendNewsletterWelcomeEmail({ to: normalizedEmail, unsubscribeUrl }).catch(
-        (err) => console.error('Newsletter welcome email failed:', err)
+      sendNewsletterWelcomeEmail({ to: normalizedEmail, unsubscribeUrl }).catch((err) =>
+        console.error('Newsletter welcome email failed:', err)
       )
     }
 
     notifyAdmin('subscribed', normalizedEmail)
 
-    return c.json(
-      { subscribed: true, email: normalizedEmail },
-      HttpStatusCodes.CREATED
-    )
+    return c.json({ subscribed: true, email: normalizedEmail }, HttpStatusCodes.CREATED)
   } catch (error) {
     console.error('Newsletter subscription error:', error)
-    return c.json(
-      { error: 'Failed to subscribe' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
-    )
+    return c.json({ error: 'Failed to subscribe' }, HttpStatusCodes.INTERNAL_SERVER_ERROR)
   }
 }
 
@@ -100,9 +84,7 @@ export const unsubscribe: AppRouteHandler<UnsubscribeRoute> = async (c) => {
   return c.json({ success: true }, HttpStatusCodes.OK)
 }
 
-export const requestUnsubscribe: AppRouteHandler<
-  RequestUnsubscribeRoute
-> = async (c) => {
+export const requestUnsubscribe: AppRouteHandler<RequestUnsubscribeRoute> = async (c) => {
   const { email } = c.req.valid('json')
   const normalizedEmail = email.trim().toLowerCase()
 

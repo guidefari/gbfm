@@ -43,8 +43,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <div className='text-center space-y-4'>
             <h1 className='text-2xl font-bold'>Something went wrong</h1>
             <p className='text-muted-foreground max-w-md'>
-              We encountered an unexpected error. Please try refreshing the
-              page.
+              We encountered an unexpected error. Please try refreshing the page.
             </p>
             {this.state.error && (
               <details className='text-left'>
@@ -57,9 +56,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </details>
             )}
             <div className='flex gap-2 justify-center'>
-              <Button onClick={() => window.location.reload()}>
-                Reload page
-              </Button>
+              <Button onClick={() => window.location.reload()}>Reload page</Button>
               <Button
                 variant='outline'
                 onClick={() => {

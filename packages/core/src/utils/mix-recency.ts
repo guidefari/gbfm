@@ -3,10 +3,7 @@ export const RECENT_MIX_WINDOW_DAYS = 30
 
 export type MixRecencyLabel = 'new' | 'recent' | null
 
-export function getMixRecencyLabel(
-  createdAt: string | Date,
-  now = Date.now()
-): MixRecencyLabel {
+export function getMixRecencyLabel(createdAt: string | Date, now = Date.now()): MixRecencyLabel {
   const timestamp = new Date(createdAt).getTime()
   if (Number.isNaN(timestamp)) return null
 

@@ -20,17 +20,10 @@ export function Tags() {
         <TagsInput
           tags={tags}
           onAddTag={(tag) => setTags((prev) => [...prev, tag])}
-          onRemoveTag={(tag) =>
-            setTags((prev) => prev.filter((t) => t !== tag))
-          }
+          onRemoveTag={(tag) => setTags((prev) => prev.filter((t) => t !== tag))}
           contentTypeLabel='mix'
         />
-        <TagsInput
-          tags={[]}
-          onAddTag={() => {}}
-          onRemoveTag={() => {}}
-          contentTypeLabel='show'
-        />
+        <TagsInput tags={[]} onAddTag={() => {}} onRemoveTag={() => {}} contentTypeLabel='show' />
       </div>
     </div>
   )

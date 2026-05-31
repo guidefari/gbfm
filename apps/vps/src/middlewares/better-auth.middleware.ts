@@ -5,10 +5,7 @@ import { auth } from '@/lib/auth'
 import type { AppBindings } from '@/lib/types'
 import { runAppFork } from '@/runtime'
 
-export const betterAuthMiddleware = async (
-  c: Context<AppBindings>,
-  next: Next
-) => {
+export const betterAuthMiddleware = async (c: Context<AppBindings>, next: Next) => {
   const session = await auth.api.getSession({
     headers: c.req.raw.headers
   })
@@ -17,10 +14,7 @@ export const betterAuthMiddleware = async (
     Effect.logWarning('[Auth] Unauthorized access attempt', {
       path: c.req.path,
       method: c.req.method,
-      ip:
-        c.req.header('x-forwarded-for') ||
-        c.req.header('x-real-ip') ||
-        'unknown'
+      ip: c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown'
     }).pipe(runAppFork)
 
     return c.json({ error: 'Unauthorized' }, 401)
@@ -40,10 +34,7 @@ export const betterAuthMiddleware = async (
   await next()
 }
 
-export const attachSessionContext = async (
-  c: Context<AppBindings>,
-  next: Next
-) => {
+export const attachSessionContext = async (c: Context<AppBindings>, next: Next) => {
   const session = await auth.api.getSession({
     headers: c.req.raw.headers
   })
@@ -64,10 +55,7 @@ export const attachSessionContext = async (
   await next()
 }
 
-export const requireAdminMiddleware = async (
-  c: Context<AppBindings>,
-  next: Next
-) => {
+export const requireAdminMiddleware = async (c: Context<AppBindings>, next: Next) => {
   const authResult = await betterAuthMiddleware(c, async () => {})
   if (authResult) {
     return authResult

@@ -72,6 +72,7 @@ export function createRouter() {
 ```
 
 **Key Features:**
+
 - `AppBindings` type defines context variables (user, logger)
 - `defaultHook` intercepts Zod validation failures
 - Returns structured error responses with validation issues
@@ -114,6 +115,7 @@ export default function createApp() {
 ```
 
 **Middleware Stack:**
+
 1. **CORS** - Cross-origin resource sharing with specific origins
 2. **Request ID** - Unique ID for request tracing
 3. **Emoji Favicon** - Fun touch with a goose emoji
@@ -178,13 +180,17 @@ export const authorsTable = pgTable('authors', {
   name: varchar({ length: 255 }).notNull(),
   username: varchar({ length: 255 }).unique(),
   email: varchar({ length: 255 }).notNull().unique(),
-  password: varchar({ length: 255 }),
+  password: varchar({ length: 255 })
   // ... other fields
 })
 
 // Zod validation schemas
 export const signupSchema = z.object({
-  username: z.string().min(3).max(30).regex(/^[a-zA-Z0-9_-]+$/),
+  username: z
+    .string()
+    .min(3)
+    .max(30)
+    .regex(/^[a-zA-Z0-9_-]+$/),
   email: z.email(),
   password: z.string().min(8)
 })
@@ -212,10 +218,7 @@ export const signin = createRoute({
   },
   tags: ['Auth'],
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      authResponseSchema,
-      'Successful authentication'
-    ),
+    [HttpStatusCodes.OK]: jsonContent(authResponseSchema, 'Successful authentication'),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
       z.object({ error: z.string() }),
       'Invalid credentials'
@@ -229,6 +232,7 @@ export const signin = createRoute({
 ```
 
 **Key Helpers:**
+
 - `jsonContentRequired()` - Marks request body as required
 - `jsonContent()` - Defines response schema
 - `createErrorSchema()` - Generates validation error response schema
@@ -309,6 +313,7 @@ export default function configureOpenAPI(app: AppOpenAPI) {
 ```
 
 **Endpoints:**
+
 - `/doc` - Raw OpenAPI JSON specification
 - `/reference` - Interactive Scalar UI documentation
 
@@ -318,17 +323,15 @@ Each `createRoute()` call automatically generates OpenAPI:
 
 ```typescript
 export const signup = createRoute({
-  path: '/signup',           // → OpenAPI path
-  method: 'post',           // → OpenAPI method
+  path: '/signup', // → OpenAPI path
+  method: 'post', // → OpenAPI method
   request: {
     body: jsonContentRequired(signupSchema, 'User signup data')
-  },                        // → OpenAPI request body
-  tags: ['Auth'],          // → OpenAPI tags
-  responses: {             // → OpenAPI responses
-    [HttpStatusCodes.CREATED]: jsonContent(
-      responseSchema,
-      'User created successfully'
-    )
+  }, // → OpenAPI request body
+  tags: ['Auth'], // → OpenAPI tags
+  responses: {
+    // → OpenAPI responses
+    [HttpStatusCodes.CREATED]: jsonContent(responseSchema, 'User created successfully')
   }
 })
 ```
@@ -415,10 +418,7 @@ export const signin = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      authResponseSchema,
-      'Successful authentication'
-    ),
+    [HttpStatusCodes.OK]: jsonContent(authResponseSchema, 'Successful authentication'),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
       z.object({ error: z.string() }),
       'Invalid credentials'
@@ -434,7 +434,7 @@ export const signin = createRoute({
 export const updateProfile = createRoute({
   path: '/profile',
   method: 'patch',
-  middleware: [authenticate],  // ← Middleware applied here
+  middleware: [authenticate], // ← Middleware applied here
   request: {
     body: {
       content: {
@@ -451,7 +451,9 @@ export const updateProfile = createRoute({
     }
   },
   tags,
-  responses: { /* ... */ }
+  responses: {
+    /* ... */
+  }
 })
 
 // Export types for handlers
@@ -476,22 +478,13 @@ export const signin: AppRouteHandler<SigninRoute> = async (c) => {
   const author = await getAuthorByEmailOrId({ email: validated.email })
 
   if (author.length === 0 || !author[0]?.password) {
-    return c.json(
-      { error: 'Invalid username or password' },
-      HttpStatusCodes.UNAUTHORIZED
-    )
+    return c.json({ error: 'Invalid username or password' }, HttpStatusCodes.UNAUTHORIZED)
   }
 
-  const isPasswordValid = await Bun.password.verify(
-    validated.password,
-    author[0].password
-  )
+  const isPasswordValid = await Bun.password.verify(validated.password, author[0].password)
 
   if (!isPasswordValid) {
-    return c.json(
-      { error: 'Invalid username or password' },
-      HttpStatusCodes.UNAUTHORIZED
-    )
+    return c.json({ error: 'Invalid username or password' }, HttpStatusCodes.UNAUTHORIZED)
   }
 
   // Generate tokens
@@ -576,6 +569,7 @@ export default router
 ```
 
 **Pattern Benefits:**
+
 - Clear separation of concerns
 - Easy to test handlers independently
 - Routes are self-documenting
@@ -603,13 +597,11 @@ export interface AppBindings {
 
 export type AppOpenAPI<S extends Schema = Schema> = OpenAPIHono<AppBindings, S>
 
-export type AppRouteHandler<R extends RouteConfig> = RouteHandler<
-  R,
-  AppBindings
->
+export type AppRouteHandler<R extends RouteConfig> = RouteHandler<R, AppBindings>
 ```
 
 **Context Variables:**
+
 - `logger` - Pino logger instance
 - `user` - Authenticated user (set by auth middleware)
 
@@ -664,7 +656,7 @@ Apply middleware at route definition:
 export const updateProfile = createRoute({
   path: '/profile',
   method: 'patch',
-  middleware: [authenticate],  // ← Applied here
+  middleware: [authenticate] // ← Applied here
   // ... rest of route
 })
 ```
@@ -747,10 +739,7 @@ export const createPost = createRoute({
     body: jsonContentRequired(createPostSchema, 'The post to create')
   },
   responses: {
-    [HttpStatusCodes.CREATED]: jsonContent(
-      postResponseSchema,
-      'The created post'
-    )
+    [HttpStatusCodes.CREATED]: jsonContent(postResponseSchema, 'The created post')
   }
 })
 
@@ -774,10 +763,7 @@ export const createPost: AppRouteHandler<CreatePostRoute> = async (c) => {
 
 ```typescript
 // AppRouteHandler provides full type safety
-export type AppRouteHandler<R extends RouteConfig> = RouteHandler<
-  R,
-  AppBindings
->
+export type AppRouteHandler<R extends RouteConfig> = RouteHandler<R, AppBindings>
 
 // Usage in handlers
 export const handler: AppRouteHandler<MyRoute> = async (c) => {
@@ -802,7 +788,7 @@ export const getById = createRoute({
   method: 'get',
   request: {
     params: idParamsSchema
-  },
+  }
   // ...
 })
 
@@ -827,7 +813,7 @@ export const list = createRoute({
   method: 'get',
   request: {
     query: listQuerySchema
-  },
+  }
   // ...
 })
 
@@ -849,11 +835,17 @@ export const list: AppRouteHandler<ListRoute> = async (c) => {
 
 ```typescript
 // author.schema.ts
-export const authorsTable = pgTable('authors', { /* ... */ })
+export const authorsTable = pgTable('authors', {
+  /* ... */
+})
 
 // Validation schemas in same file
-export const signupSchema = z.object({ /* ... */ })
-export const updateProfileSchema = z.object({ /* ... */ })
+export const signupSchema = z.object({
+  /* ... */
+})
+export const updateProfileSchema = z.object({
+  /* ... */
+})
 ```
 
 **✗ AVOID:** Separate schema files that duplicate definitions
@@ -903,7 +895,7 @@ export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
 
 ```typescript
 export const protectedRoute = createRoute({
-  middleware: [authenticate],  // ← Documented in OpenAPI
+  middleware: [authenticate] // ← Documented in OpenAPI
   // ...
 })
 ```
@@ -916,7 +908,9 @@ export const protectedRoute = createRoute({
 
 ```typescript
 // routes.ts
-export const createPost = createRoute({ /* ... */ })
+export const createPost = createRoute({
+  /* ... */
+})
 export type CreatePostRoute = typeof createPost
 
 // handlers.ts
@@ -933,15 +927,15 @@ export const createPost: AppRouteHandler<CreatePostRoute> = async (c) => {
 ```typescript
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 
-return c.json(data, HttpStatusCodes.CREATED)  // ✓
-return c.json(data, HttpStatusCodes.UNPROCESSABLE_ENTITY)  // ✓
+return c.json(data, HttpStatusCodes.CREATED) // ✓
+return c.json(data, HttpStatusCodes.UNPROCESSABLE_ENTITY) // ✓
 ```
 
 **✗ AVOID:** Magic numbers
 
 ```typescript
-return c.json(data, 201)  // ✗
-return c.json(data, 422)  // ✗
+return c.json(data, 201) // ✗
+return c.json(data, 422) // ✗
 ```
 
 ### 7. Multipart Form Data
@@ -964,10 +958,7 @@ request: {
 **✓ DO:** Return inserted/updated records
 
 ```typescript
-const [newAuthor] = await db
-  .insert(authorsTable)
-  .values(data)
-  .returning()  // ← Get created record
+const [newAuthor] = await db.insert(authorsTable).values(data).returning() // ← Get created record
 
 if (!newAuthor) {
   return c.json({ error: 'Failed to create' }, HttpStatusCodes.INTERNAL_SERVER_ERROR)
@@ -1049,8 +1040,7 @@ export const myHandler: AppRouteHandler<MyRoute> = async (c) => {
 }
 
 // 3. Assemble router
-const router = createRouter()
-  .openapi(routes.myRoute, handlers.myHandler)
+const router = createRouter().openapi(routes.myRoute, handlers.myHandler)
 
 export default router
 
@@ -1059,6 +1049,7 @@ app.route('/my-module', router)
 ```
 
 For more information:
+
 - [Hono Documentation](https://hono.dev)
 - [Zod Documentation](https://zod.dev)
 - [OpenAPI Specification](https://spec.openapis.org/oas/v3.0.0)

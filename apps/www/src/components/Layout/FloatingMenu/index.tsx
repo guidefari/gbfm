@@ -5,10 +5,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useState } from 'react'
 import { useSession } from '@/lib/auth-client'
 import { cn } from '@/lib/utils'
-import {
-  useAudioPlayerPlaybackState,
-  useAudioPlayerVisibilityState
-} from '@/store/audioPlayer'
+import { useAudioPlayerPlaybackState, useAudioPlayerVisibilityState } from '@/store/audioPlayer'
 import { navItemsForSurface } from '../NavLinks'
 import { NowPlayingMini } from './NowPlayingMini'
 
@@ -59,8 +56,7 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
   }, [isOpen])
 
   const navItems = navItemsForSurface('overlay').filter(
-    (item) =>
-      (!item.adminOnly || isAdmin) && (!item.authOnly || isAuthenticated)
+    (item) => (!item.adminOnly || isAdmin) && (!item.authOnly || isAuthenticated)
   )
 
   const accountTile = isAuthenticated
@@ -133,20 +129,13 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
                   )
                 }
                 return (
-                  <Link
-                    key={item.id}
-                    to={item.slug}
-                    onClick={closeMenu}
-                    className={tileClass}>
+                  <Link key={item.id} to={item.slug} onClick={closeMenu} className={tileClass}>
                     {item.icon}
                     <span className='text-xs font-medium'>{item.name}</span>
                   </Link>
                 )
               })}
-              <Link
-                to={accountTile.slug}
-                onClick={closeMenu}
-                className={tileClass}>
+              <Link to={accountTile.slug} onClick={closeMenu} className={tileClass}>
                 {accountTile.icon}
                 <span className='text-xs font-medium'>{accountTile.label}</span>
               </Link>
@@ -167,9 +156,7 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
           style={{ width: 56, height: 56 }}
           aria-expanded={isOpen}
           aria-label={isOpen ? 'Close menu' : 'Open menu'}>
-          <motion.div
-            animate={{ scale: isOpen ? 1.05 : 1 }}
-            transition={{ duration: 0.2 }}>
+          <motion.div animate={{ scale: isOpen ? 1.05 : 1 }} transition={{ duration: 0.2 }}>
             {isOpen ? <X className='h-6 w-6' /> : <Menu className='h-6 w-6' />}
           </motion.div>
         </motion.button>

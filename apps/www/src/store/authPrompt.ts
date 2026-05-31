@@ -24,14 +24,9 @@ export const useAuthPromptStore = create<AuthPromptStore>()(
       onAuthSuccess: null,
 
       open: (contentType, onAuthSuccess) =>
-        set(
-          { isOpen: true, contentType, onAuthSuccess },
-          false,
-          'authPrompt/open'
-        ),
+        set({ isOpen: true, contentType, onAuthSuccess }, false, 'authPrompt/open'),
 
-      close: () =>
-        set({ isOpen: false, onAuthSuccess: null }, false, 'authPrompt/close')
+      close: () => set({ isOpen: false, onAuthSuccess: null }, false, 'authPrompt/close')
     }),
     { name: 'AuthPromptStore' }
   )

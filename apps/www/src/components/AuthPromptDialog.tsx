@@ -106,27 +106,19 @@ export function AuthPromptDialog() {
           {mode === 'choice' && (
             <DialogDescription className='text-center'>
               Create an account or sign in to save your favorite{' '}
-              {contentType === 'show' ? 'shows' : 'mixes'} and get notified
-              about new releases.
+              {contentType === 'show' ? 'shows' : 'mixes'} and get notified about new releases.
             </DialogDescription>
           )}
         </DialogHeader>
 
-        {error && (
-          <div className='p-3 text-sm text-red-700 bg-red-100 rounded-md'>
-            {error}
-          </div>
-        )}
+        {error && <div className='p-3 text-sm text-red-700 bg-red-100 rounded-md'>{error}</div>}
 
         {mode === 'choice' && (
           <div className='flex flex-col gap-2'>
             <Button onClick={() => setMode('sign-in')} className='w-full'>
               Sign in
             </Button>
-            <Button
-              onClick={() => setMode('sign-up')}
-              variant='outline'
-              className='w-full'>
+            <Button onClick={() => setMode('sign-up')} variant='outline' className='w-full'>
               Create account
             </Button>
           </div>
@@ -158,9 +150,7 @@ export function AuthPromptDialog() {
             </div>
             <div className='flex flex-col gap-2'>
               <Button type='submit' disabled={isLoading} className='w-full'>
-                {isLoading ? (
-                  <Loader2 className='w-4 h-4 mr-2 animate-spin' />
-                ) : null}
+                {isLoading ? <Loader2 className='w-4 h-4 mr-2 animate-spin' /> : null}
                 Sign In
               </Button>
               <Button
@@ -237,9 +227,7 @@ export function AuthPromptDialog() {
             </div>
             <div className='flex flex-col gap-2'>
               <Button type='submit' disabled={isLoading} className='w-full'>
-                {isLoading ? (
-                  <Loader2 className='w-4 h-4 mr-2 animate-spin' />
-                ) : null}
+                {isLoading ? <Loader2 className='w-4 h-4 mr-2 animate-spin' /> : null}
                 Create Account
               </Button>
               <Button

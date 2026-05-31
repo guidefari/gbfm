@@ -1,14 +1,6 @@
-import {
-  apiGet,
-  colors,
-  header,
-  parseArgs,
-  printResponse,
-  separator,
-  API_URL,
-} from "./lib/common";
+import { apiGet, colors, header, parseArgs, printResponse, separator, API_URL } from './lib/common'
 
-const { RED, NC } = colors;
+const { RED, NC } = colors
 
 const USAGE = `Usage: bun run scripts/api-test/redirect.ts <type> <slug> [options]
 
@@ -31,20 +23,20 @@ Environment:
 Examples:
   bun run scripts/api-test/redirect.ts mix my-awesome-mix
   bun run scripts/api-test/redirect.ts profile guidefari -v
-  bun run scripts/api-test/redirect.ts catch-all some-slug`;
+  bun run scripts/api-test/redirect.ts catch-all some-slug`
 
-const { verbose, positional, help } = parseArgs(Bun.argv.slice(2));
+const { verbose, positional, help } = parseArgs(Bun.argv.slice(2))
 
 if (help) {
-  console.log(USAGE);
-  process.exit(0);
+  console.log(USAGE)
+  process.exit(0)
 }
 
-const [type, slug] = positional;
+const [type, slug] = positional
 
 if (!type || !slug) {
-  console.log(USAGE);
-  process.exit(1);
+  console.log(USAGE)
+  process.exit(1)
 }
 
 const endpointMap: Record<string, string> = {
@@ -54,21 +46,21 @@ const endpointMap: Record<string, string> = {
   profile: `/s/profile/${slug}`,
   release: `/s/release/${slug}`,
   label: `/s/label/${slug}`,
-  "catch-all": `/s/${slug}`,
-};
-
-const endpoint = endpointMap[type];
-
-if (!endpoint) {
-  console.log(`${RED}Unknown type: ${type}${NC}`);
-  console.log(USAGE);
-  process.exit(1);
+  'catch-all': `/s/${slug}`
 }
 
-header(`Redirect: ${API_URL}${endpoint}`);
+const endpoint = endpointMap[type]
 
-const response = await apiGet(endpoint);
+if (!endpoint) {
+  console.log(`${RED}Unknown type: ${type}${NC}`)
+  console.log(USAGE)
+  process.exit(1)
+}
 
-printResponse(response, verbose);
+header(`Redirect: ${API_URL}${endpoint}`)
 
-separator();
+const response = await apiGet(endpoint)
+
+printResponse(response, verbose)
+
+separator()

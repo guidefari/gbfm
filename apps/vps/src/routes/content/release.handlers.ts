@@ -26,9 +26,7 @@ export const createRelease: AppRouteHandler<CreateReleaseRoute> = async (c) => {
   return runEffect<CreateReleaseRoute>(c, program, HttpStatusCodes.CREATED)
 }
 
-export const getReleasesByLabel: AppRouteHandler<
-  GetReleasesByLabelRoute
-> = async (c) => {
+export const getReleasesByLabel: AppRouteHandler<GetReleasesByLabelRoute> = async (c) => {
   const { labelSlug } = c.req.valid('param')
   const { limit, offset } = c.req.valid('query')
 
@@ -40,9 +38,7 @@ export const getReleasesByLabel: AppRouteHandler<
   return runEffect<GetReleasesByLabelRoute>(c, program)
 }
 
-export const getReleaseBySlug: AppRouteHandler<GetReleaseBySlugRoute> = async (
-  c
-) => {
+export const getReleaseBySlug: AppRouteHandler<GetReleaseBySlugRoute> = async (c) => {
   const { slug } = c.req.valid('param')
 
   const program = Effect.gen(function* () {
@@ -53,9 +49,7 @@ export const getReleaseBySlug: AppRouteHandler<GetReleaseBySlugRoute> = async (
   return runEffect<GetReleaseBySlugRoute>(c, program)
 }
 
-export const updateReleaseBySlug: AppRouteHandler<
-  UpdateReleaseBySlugRoute
-> = async (c) => {
+export const updateReleaseBySlug: AppRouteHandler<UpdateReleaseBySlugRoute> = async (c) => {
   const { slug } = c.req.valid('param')
   const updateData = c.req.valid('json')
 
@@ -63,18 +57,14 @@ export const updateReleaseBySlug: AppRouteHandler<
     const releaseService = yield* ReleaseService
     return yield* releaseService.update(slug, {
       ...updateData,
-      releaseDate: updateData.releaseDate
-        ? new Date(updateData.releaseDate)
-        : undefined
+      releaseDate: updateData.releaseDate ? new Date(updateData.releaseDate) : undefined
     })
   })
 
   return runEffect<UpdateReleaseBySlugRoute>(c, program)
 }
 
-export const deleteReleaseBySlug: AppRouteHandler<
-  DeleteReleaseBySlugRoute
-> = async (c) => {
+export const deleteReleaseBySlug: AppRouteHandler<DeleteReleaseBySlugRoute> = async (c) => {
   const { slug } = c.req.valid('param')
 
   const program = Effect.gen(function* () {

@@ -47,26 +47,26 @@ Templates are located in the `emails/` directory:
 ### Import and Send Emails
 
 ```typescript
-import { sendWelcomeEmail, sendPasswordResetEmail, sendTestEmail } from "@gbfm/email";
+import { sendWelcomeEmail, sendPasswordResetEmail, sendTestEmail } from '@gbfm/email'
 
 // Send welcome email
 await sendWelcomeEmail({
-  to: "user@example.com",
-  username: "John Doe",
-  loginUrl: "https://goosebumps.fm/auth/signin"
-});
+  to: 'user@example.com',
+  username: 'John Doe',
+  loginUrl: 'https://goosebumps.fm/auth/signin'
+})
 
 // Send password reset
 await sendPasswordResetEmail({
-  to: "user@example.com",
-  resetUrl: "https://goosebumps.fm/auth/reset?token=xyz",
-  expiresIn: "1 hour"
-});
+  to: 'user@example.com',
+  resetUrl: 'https://goosebumps.fm/auth/reset?token=xyz',
+  expiresIn: '1 hour'
+})
 
 // Send test email (development)
 await sendTestEmail({
-  to: "dev@example.com"
-});
+  to: 'dev@example.com'
+})
 ```
 
 ### Custom Email Templates

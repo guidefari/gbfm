@@ -2,24 +2,24 @@ pre-commit:
   parallel: true
   commands:
     format:
-      glob: "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc,css}"
-      run: bun biome format --write --no-errors-on-unmatched --files-ignore-unknown=true --colors=off {staged_files}
+      glob: '*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc,css}'
+      run: bun oxfmt --write --no-error-on-unmatched-pattern {staged_files}
       stage_fixed: true
 
     # lint-staged:
     #   glob: "*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc,css}"
-    #   run: bun biome check --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
+    #   run: bun oxlint --fix --no-error-on-unmatched-pattern {staged_files}
     #   stage_fixed: true
 
     theme-css-build:
-      glob: "packages/theme/src/**/*.ts"
+      glob: 'packages/theme/src/**/*.ts'
       run: cd packages/theme && bun run build:css && git add styles/theme.css
-      exclude: "packages/theme/src/build-css.ts"
+      exclude: 'packages/theme/src/build-css.ts'
 # pre-push:
 #   parallel: false
 #   commands:
-#     biome-ci:
-#       run: bun biome ci
+#     oxc-ci:
+#       run: bun run oxc:ci
 
 #     typecheck:
 #       run: bun typecheck

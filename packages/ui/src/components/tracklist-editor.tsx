@@ -49,8 +49,7 @@ export function TracklistEditor({
         <div className='space-y-2'>
           {tracklist.length === 0 ? (
             <div className='py-12 text-center text-muted-foreground'>
-              No tracks marked yet. Play the mix and hit "Mark Track Start" to
-              capture timestamps.
+              No tracks marked yet. Play the mix and hit "Mark Track Start" to capture timestamps.
             </div>
           ) : (
             tracklist.map((track, idx) => (

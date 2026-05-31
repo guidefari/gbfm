@@ -1,18 +1,12 @@
 import { z } from '@hono/zod-openapi'
-import {
-  type InferInsertModel,
-  type InferSelectModel,
-  relations
-} from 'drizzle-orm'
+import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
 import { index, jsonb, pgTable, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { labelsTable } from './label.schema'
 import { defaultContentFields } from './util'
 
 const streamingLinkSchema = z
   .object({
-    platform: z
-      .string()
-      .openapi({ description: 'Streaming platform name', example: 'spotify' }),
+    platform: z.string().openapi({ description: 'Streaming platform name', example: 'spotify' }),
     url: z.string().url().openapi({
       description: 'Streaming URL',
       example: 'https://spotify.com/track/...'
@@ -41,35 +35,14 @@ export type SelectMdxCompiledRelease = SelectRelease & {
 }
 
 const baseReleaseFields = {
-  title: z
-    .string()
-    .min(1)
-    .openapi({ description: 'Title of the release', example: 'My Album' }),
-  description: z
-    .string()
-    .optional()
-    .openapi({ description: 'Description of the release' }),
-  thumbnailUrl: z
-    .string()
-    .optional()
-    .openapi({ description: 'Thumbnail URL for the release' }),
-  slug: z
-    .string()
-    .min(1)
-    .openapi({ description: 'URL slug for the release', example: 'my-album' }),
+  title: z.string().min(1).openapi({ description: 'Title of the release', example: 'My Album' }),
+  description: z.string().optional().openapi({ description: 'Description of the release' }),
+  thumbnailUrl: z.string().optional().openapi({ description: 'Thumbnail URL for the release' }),
+  slug: z.string().min(1).openapi({ description: 'URL slug for the release', example: 'my-album' }),
   content: z.string().openapi({ description: 'Content of the release' }),
-  draft: z
-    .boolean()
-    .optional()
-    .openapi({ description: 'Whether this is a draft', default: false }),
-  tags: z
-    .array(z.string())
-    .optional()
-    .openapi({ description: 'Tags for the release' }),
-  labelId: z
-    .string()
-    .uuid()
-    .openapi({ description: 'ID of the label this release belongs to' }),
+  draft: z.boolean().optional().openapi({ description: 'Whether this is a draft', default: false }),
+  tags: z.array(z.string()).optional().openapi({ description: 'Tags for the release' }),
+  labelId: z.string().uuid().openapi({ description: 'ID of the label this release belongs to' }),
   releaseDate: z.date().optional().openapi({ description: 'Release date' }),
   streamingLinks: z
     .array(streamingLinkSchema)
@@ -89,22 +62,12 @@ export const insertReleaseSchema = z
 
 export const selectReleaseSchema = insertReleaseSchema
   .extend({
-    id: z
-      .string()
-      .openapi({ description: 'Unique identifier for the release' }),
+    id: z.string().openapi({ description: 'Unique identifier for the release' }),
     createdAt: z.date().openapi({ description: 'Creation timestamp' }),
     updatedAt: z.date().openapi({ description: 'Last update timestamp' }),
-    description: z
-      .string()
-      .nullable()
-      .openapi({ description: 'Description of the release' }),
-    thumbnailUrl: z
-      .string()
-      .nullable()
-      .openapi({ description: 'Thumbnail URL for the release' }),
-    draft: z
-      .boolean()
-      .openapi({ description: 'Whether the release is a draft' }),
+    description: z.string().nullable().openapi({ description: 'Description of the release' }),
+    thumbnailUrl: z.string().nullable().openapi({ description: 'Thumbnail URL for the release' }),
+    draft: z.boolean().openapi({ description: 'Whether the release is a draft' }),
     tags: z
       .array(z.string())
       .nullable()
@@ -123,13 +86,9 @@ export const selectMdxCompiledReleaseSchema = selectReleaseSchema
   })
   .openapi('CompiledRelease')
 
-export const updateReleaseSchema = insertReleaseSchema
-  .partial()
-  .openapi('UpdateReleaseRequest')
+export const updateReleaseSchema = insertReleaseSchema.partial().openapi('UpdateReleaseRequest')
 
-export const createReleaseSchema = insertReleaseSchema.openapi(
-  'CreateReleaseRequest'
-)
+export const createReleaseSchema = insertReleaseSchema.openapi('CreateReleaseRequest')
 
 export const releasesRelations = relations(releasesTable, ({ one }) => ({
   label: one(labelsTable, {

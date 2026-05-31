@@ -57,37 +57,29 @@ bun run scripts/api-test/sitemap.ts -v
 Add new scripts by importing from the common library:
 
 ```typescript
-import {
-  apiGet,
-  colors,
-  header,
-  parseArgs,
-  printResponse,
-  separator,
-  API_URL,
-} from "./lib/common";
+import { apiGet, colors, header, parseArgs, printResponse, separator, API_URL } from './lib/common'
 
-const { verbose } = parseArgs(Bun.argv.slice(2));
+const { verbose } = parseArgs(Bun.argv.slice(2))
 
-header(`My Endpoint: ${API_URL}/your/endpoint`);
+header(`My Endpoint: ${API_URL}/your/endpoint`)
 
-const response = await apiGet("/your/endpoint");
+const response = await apiGet('/your/endpoint')
 
-printResponse(response, verbose);
+printResponse(response, verbose)
 
-separator();
+separator()
 ```
 
 ### Available Functions
 
-| Function | Description |
-|----------|--------------|
-| `apiGet(endpoint)` | GET request, returns `ApiResponse` |
-| `apiPost(endpoint, data)` | POST request with JSON body |
-| `apiRequest(method, endpoint, options)` | Generic request |
-| `printResponse(response, verbose)` | Format and print the response |
-| `printJson(json, maxLines)` | Pretty-print JSON |
-| `header(title)` | Print section header |
-| `separator()` | Print separator line |
-| `formatStatus(code)` | Color-coded status code |
-| `parseArgs(args)` | Parse CLI arguments |
+| Function                                | Description                        |
+| --------------------------------------- | ---------------------------------- |
+| `apiGet(endpoint)`                      | GET request, returns `ApiResponse` |
+| `apiPost(endpoint, data)`               | POST request with JSON body        |
+| `apiRequest(method, endpoint, options)` | Generic request                    |
+| `printResponse(response, verbose)`      | Format and print the response      |
+| `printJson(json, maxLines)`             | Pretty-print JSON                  |
+| `header(title)`                         | Print section header               |
+| `separator()`                           | Print separator line               |
+| `formatStatus(code)`                    | Color-coded status code            |
+| `parseArgs(args)`                       | Parse CLI arguments                |

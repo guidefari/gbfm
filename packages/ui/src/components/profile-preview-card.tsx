@@ -10,10 +10,7 @@ function getInitials(name: string) {
   return parts.map((p) => p[0]?.toUpperCase() ?? '').join('') || '?'
 }
 
-export function ProfilePreviewCard({
-  displayName,
-  username
-}: ProfilePreviewCardProps) {
+export function ProfilePreviewCard({ displayName, username }: ProfilePreviewCardProps) {
   const initials = getInitials(displayName)
   const handle = username.trim() ? `@${username.trim()}` : '@yourname'
   const name = displayName.trim() || 'Your Display Name'
@@ -28,15 +25,13 @@ export function ProfilePreviewCard({
           {initials}
         </div>
         <div className='min-w-0 flex-1'>
-          <p className='truncate text-base font-semibold text-foreground'>
-            {name}
-          </p>
+          <p className='truncate text-base font-semibold text-foreground'>{name}</p>
           <p className='truncate text-sm text-muted-foreground'>{handle}</p>
         </div>
       </div>
       <p className='mt-4 text-xs leading-5 text-muted-foreground'>
-        Your display name shows up on comments and your profile. Your username
-        is your unique handle, used in URLs and to find you.
+        Your display name shows up on comments and your profile. Your username is your unique
+        handle, used in URLs and to find you.
       </p>
     </div>
   )

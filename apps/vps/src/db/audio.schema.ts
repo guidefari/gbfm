@@ -1,9 +1,5 @@
 import { z } from '@hono/zod-openapi'
-import {
-  type InferInsertModel,
-  type InferSelectModel,
-  relations
-} from 'drizzle-orm'
+import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
 import {
   index,
   integer,
@@ -59,32 +55,18 @@ export const selectAudioSchema = z
   .object({
     id: z.string().openapi({ description: 'Unique identifier for the audio' }),
     title: z.string().openapi({ description: 'Title of the audio' }),
-    description: z
-      .string()
-      .nullable()
-      .openapi({ description: 'Description of the audio' }),
-    thumbnailUrl: z
-      .string()
-      .nullable()
-      .openapi({ description: 'Thumbnail URL for the audio' }),
+    description: z.string().nullable().openapi({ description: 'Description of the audio' }),
+    thumbnailUrl: z.string().nullable().openapi({ description: 'Thumbnail URL for the audio' }),
     slug: z.string().openapi({ description: 'URL slug for the audio' }),
     content: z.string().openapi({ description: 'Content of the audio' }),
     draft: z.boolean().openapi({ description: 'Whether the audio is a draft' }),
-    tags: z
-      .array(z.string())
-      .nullable()
-      .openapi({ description: 'Tags associated with the audio' }),
-    type: z
-      .enum(['mix', 'track', 'misc'])
-      .openapi({ description: 'Type of audio content' }),
+    tags: z.array(z.string()).nullable().openapi({ description: 'Tags associated with the audio' }),
+    type: z.enum(['mix', 'track', 'misc']).openapi({ description: 'Type of audio content' }),
     url: z.string().openapi({ description: 'Audio URL' }),
     showId: z.string().nullable().openapi({
       description: 'ID of the associated show (optional)'
     }),
-    episodeNumber: z
-      .number()
-      .nullable()
-      .openapi({ description: 'Episode number (optional)' }),
+    episodeNumber: z.number().nullable().openapi({ description: 'Episode number (optional)' }),
     createdAt: z.date().openapi({ description: 'Creation timestamp' }),
     updatedAt: z.date().openapi({ description: 'Last update timestamp' }),
     playCount: z
@@ -96,10 +78,7 @@ export const selectAudioSchema = z
         z.object({
           id: z.string().openapi({ description: 'Creator ID' }),
           name: z.string().openapi({ description: 'Creator name' }),
-          username: z
-            .string()
-            .nullable()
-            .openapi({ description: 'Creator username' })
+          username: z.string().nullable().openapi({ description: 'Creator username' })
         })
       )
       .optional()
@@ -109,19 +88,14 @@ export const selectAudioSchema = z
 
 export const selectMdxCompiledAudioSchema = selectAudioSchema
   .extend({
-    compiledContent: z
-      .string()
-      .openapi({ description: 'Compiled MDX content' }),
+    compiledContent: z.string().openapi({ description: 'Compiled MDX content' }),
     creators: z
       .array(
         z
           .object({
             id: z.string().openapi({ description: 'Creator ID' }),
             name: z.string().openapi({ description: 'Creator name' }),
-            username: z
-              .string()
-              .nullable()
-              .openapi({ description: 'Creator username' })
+            username: z.string().nullable().openapi({ description: 'Creator username' })
           })
           .openapi('Creator')
       )
@@ -132,31 +106,16 @@ export const selectMdxCompiledAudioSchema = selectAudioSchema
 
 export const insertAudioSchema = z
   .object({
-    title: z
-      .string()
-      .min(1)
-      .openapi({ description: 'Title of the audio', example: 'My Mix' }),
-    description: z
-      .string()
-      .optional()
-      .openapi({ description: 'Description of the audio' }),
-    thumbnailUrl: z
-      .string()
-      .optional()
-      .openapi({ description: 'Thumbnail URL for the audio' }),
-    slug: z
-      .string()
-      .min(1)
-      .openapi({ description: 'URL slug for the audio', example: 'my-mix' }),
+    title: z.string().min(1).openapi({ description: 'Title of the audio', example: 'My Mix' }),
+    description: z.string().optional().openapi({ description: 'Description of the audio' }),
+    thumbnailUrl: z.string().optional().openapi({ description: 'Thumbnail URL for the audio' }),
+    slug: z.string().min(1).openapi({ description: 'URL slug for the audio', example: 'my-mix' }),
     content: z.string().openapi({ description: 'Content of the audio' }),
     draft: z
       .boolean()
       .optional()
       .openapi({ description: 'Whether this is a draft', default: false }),
-    tags: z
-      .array(z.string())
-      .optional()
-      .openapi({ description: 'Tags for the audio' }),
+    tags: z.array(z.string()).optional().openapi({ description: 'Tags for the audio' }),
     type: z
       .enum(['mix', 'track', 'misc'])
       .openapi({ description: 'Type of audio content', example: 'mix' }),

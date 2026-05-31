@@ -11,11 +11,8 @@ const LOCAL_FEATURE_FLAGS: FeatureFlags = Object.freeze({
 
 export const getFeatureFlags = (): FeatureFlags => LOCAL_FEATURE_FLAGS
 
-export const isFeatureEnabled = (flag: FeatureFlagKey): boolean =>
-  LOCAL_FEATURE_FLAGS[flag]
+export const isFeatureEnabled = (flag: FeatureFlagKey): boolean => LOCAL_FEATURE_FLAGS[flag]
 
-export const useFeatureFlags = (): FeatureFlags =>
-  useMemo(() => LOCAL_FEATURE_FLAGS, [])
+export const useFeatureFlags = (): FeatureFlags => useMemo(() => LOCAL_FEATURE_FLAGS, [])
 
-export const useFeatureFlag = (flag: FeatureFlagKey): boolean =>
-  useFeatureFlags()[flag]
+export const useFeatureFlag = (flag: FeatureFlagKey): boolean => useFeatureFlags()[flag]

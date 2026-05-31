@@ -1,23 +1,9 @@
 import { REMINDER_STATUS, REMINDER_STATUSES } from '@gbfm/core/status'
-import {
-  type InferInsertModel,
-  type InferSelectModel,
-  relations
-} from 'drizzle-orm'
-import {
-  boolean,
-  index,
-  pgEnum,
-  pgTable,
-  text,
-  timestamp,
-  uuid
-} from 'drizzle-orm/pg-core'
+import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
+import { boolean, index, pgEnum, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { user } from './auth.schema'
 
-export const reminderStatusEnum = pgEnum('reminder_status', [
-  ...REMINDER_STATUSES
-])
+export const reminderStatusEnum = pgEnum('reminder_status', [...REMINDER_STATUSES])
 
 export const musicReminder = pgTable(
   'music_reminder',
@@ -32,9 +18,7 @@ export const musicReminder = pgTable(
     albumCoverUrl: text('album_cover_url'),
     reminderDate: timestamp('reminder_date').notNull(),
     notes: text('notes'),
-    status: reminderStatusEnum('status')
-      .default(REMINDER_STATUS.PENDING)
-      .notNull(),
+    status: reminderStatusEnum('status').default(REMINDER_STATUS.PENDING).notNull(),
     isSent: boolean('is_sent').default(false).notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
     updatedAt: timestamp('updated_at')

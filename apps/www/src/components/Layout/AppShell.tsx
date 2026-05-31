@@ -8,10 +8,7 @@ import { useMediaHotkeys } from '@/hooks/useMediaHotkeys'
 import { useMixPlayTracking } from '@/hooks/useMixPlayTracking'
 import { MAIN_SCROLL_CONTAINER_ID } from '@/lib/constants'
 import { useUIStore } from '@/store'
-import {
-  useAudioPlayerPlaybackState,
-  useAudioPlayerVisibilityState
-} from '@/store/audioPlayer'
+import { useAudioPlayerPlaybackState, useAudioPlayerVisibilityState } from '@/store/audioPlayer'
 
 import { FloatingMenu } from './FloatingMenu'
 

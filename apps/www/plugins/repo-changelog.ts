@@ -13,9 +13,7 @@ export function repoChangelogPlugin(): Plugin {
         return null
       }
 
-      const changelogPath = fileURLToPath(
-        new URL('../../../CHANGELOG.md', import.meta.url)
-      )
+      const changelogPath = fileURLToPath(new URL('../../../CHANGELOG.md', import.meta.url))
 
       this.addWatchFile(changelogPath)
 

@@ -7,15 +7,9 @@ import { postCreators, postsTable } from '../src/db/post.schema'
 
 async function assignAllRelationsToUser() {
   const targetEmail = 'guidefari@icloud.com'
-  console.log(
-    `Starting migration: Assigning all content to user ${targetEmail}...\n`
-  )
+  console.log(`Starting migration: Assigning all content to user ${targetEmail}...\n`)
 
-  const [targetUser] = await db
-    .select()
-    .from(user)
-    .where(eq(user.email, targetEmail))
-    .limit(1)
+  const [targetUser] = await db.select().from(user).where(eq(user.email, targetEmail)).limit(1)
 
   if (!targetUser) {
     throw new Error(`User with email ${targetEmail} not found`)
@@ -31,9 +25,7 @@ async function assignAllRelationsToUser() {
     .select({ audioId: audioCreators.audioId })
     .from(audioCreators)
   const audioIdsWithCreators = new Set(existingAudioCreators.map((r) => r.audioId))
-  const audioWithoutCreators = audioItems.filter(
-    (a) => !audioIdsWithCreators.has(a.id)
-  )
+  const audioWithoutCreators = audioItems.filter((a) => !audioIdsWithCreators.has(a.id))
 
   console.log(`Audio: ${audioItems.length} total, ${audioWithoutCreators.length} without creators`)
   if (audioWithoutCreators.length > 0) {
@@ -53,20 +45,21 @@ async function assignAllRelationsToUser() {
     .where(notInArray(audioCreators.creatorId, [targetUser.id]))
   if (wrongAudioCreators.length > 0) {
     await db.delete(audioCreators).where(notInArray(audioCreators.creatorId, [targetUser.id]))
-    await db.insert(audioCreators).values(
-      wrongAudioCreators.map((r) => ({
-        audioId: r.audioId,
-        creatorId: targetUser.id
-      }))
-    ).onConflictDoNothing()
+    await db
+      .insert(audioCreators)
+      .values(
+        wrongAudioCreators.map((r) => ({
+          audioId: r.audioId,
+          creatorId: targetUser.id
+        }))
+      )
+      .onConflictDoNothing()
     console.log(`  ✅ Reassigned ${wrongAudioCreators.length} audio_creators to target user`)
     totalUpdated += wrongAudioCreators.length
   }
 
   const posts = await db.select({ id: postsTable.id }).from(postsTable)
-  const existingPostCreators = await db
-    .select({ postId: postCreators.postId })
-    .from(postCreators)
+  const existingPostCreators = await db.select({ postId: postCreators.postId }).from(postCreators)
   const postIdsWithCreators = new Set(existingPostCreators.map((r) => r.postId))
   const postsWithoutCreators = posts.filter((p) => !postIdsWithCreators.has(p.id))
 
@@ -88,12 +81,15 @@ async function assignAllRelationsToUser() {
     .where(notInArray(postCreators.creatorId, [targetUser.id]))
   if (wrongPostCreators.length > 0) {
     await db.delete(postCreators).where(notInArray(postCreators.creatorId, [targetUser.id]))
-    await db.insert(postCreators).values(
-      wrongPostCreators.map((r) => ({
-        postId: r.postId,
-        creatorId: targetUser.id
-      }))
-    ).onConflictDoNothing()
+    await db
+      .insert(postCreators)
+      .values(
+        wrongPostCreators.map((r) => ({
+          postId: r.postId,
+          creatorId: targetUser.id
+        }))
+      )
+      .onConflictDoNothing()
     console.log(`  ✅ Reassigned ${wrongPostCreators.length} post_creators to target user`)
     totalUpdated += wrongPostCreators.length
   }
@@ -123,12 +119,15 @@ async function assignAllRelationsToUser() {
     .where(notInArray(labelCreators.creatorId, [targetUser.id]))
   if (wrongLabelCreators.length > 0) {
     await db.delete(labelCreators).where(notInArray(labelCreators.creatorId, [targetUser.id]))
-    await db.insert(labelCreators).values(
-      wrongLabelCreators.map((r) => ({
-        labelId: r.labelId,
-        creatorId: targetUser.id
-      }))
-    ).onConflictDoNothing()
+    await db
+      .insert(labelCreators)
+      .values(
+        wrongLabelCreators.map((r) => ({
+          labelId: r.labelId,
+          creatorId: targetUser.id
+        }))
+      )
+      .onConflictDoNothing()
     console.log(`  ✅ Reassigned ${wrongLabelCreators.length} label_creators to target user`)
     totalUpdated += wrongLabelCreators.length
   }

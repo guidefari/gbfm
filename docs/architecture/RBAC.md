@@ -7,6 +7,7 @@ This document outlines the RBAC implementation for GBFM, providing role-based ac
 ## User Roles
 
 ### Role Hierarchy
+
 ```
 admin > mod > user
 ```
@@ -35,10 +36,11 @@ admin > mod > user
 ### Database Schema
 
 #### Authors Table Update
+
 ```sql
 -- Add role enum to existing authors table
 ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'admin';
-ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'mod'; 
+ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'mod';
 ALTER TYPE user_role ADD VALUE IF NOT EXISTS 'user';
 
 -- Add role column with default 'user'
@@ -46,6 +48,7 @@ ALTER TABLE authors ADD COLUMN role user_role DEFAULT 'user' NOT NULL;
 ```
 
 #### Role Assignment
+
 - New users default to `user` role
 - Role changes require direct database updates initially
 - Future: Admin interface for role management
@@ -53,31 +56,34 @@ ALTER TABLE authors ADD COLUMN role user_role DEFAULT 'user' NOT NULL;
 ### JWT Token Structure
 
 JWT payload will include role information:
+
 ```typescript
 interface JWTPayload {
-  sub: string;        // user ID
-  email: string;
-  role: 'admin' | 'mod' | 'user';
-  type: 'access' | 'refresh';
-  exp: number;
-  iat: number;
+  sub: string // user ID
+  email: string
+  role: 'admin' | 'mod' | 'user'
+  type: 'access' | 'refresh'
+  exp: number
+  iat: number
 }
 ```
 
 ### API Protection (@apps/vps)
 
 #### Middleware Implementation
+
 - **`requireAuth`**: Validates JWT and extracts user info
 - **`requireRole(role)`**: Ensures user has minimum required role
 - **`requireAdmin`**: Shorthand for `requireRole('admin')`
 - **`requireMod`**: Shorthand for `requireRole('mod')`
 
 #### Route Protection Examples
+
 ```typescript
 // Admin-only routes
 app.use('/admin/*', requireAdmin)
 
-// Mod and above routes  
+// Mod and above routes
 app.use('/moderation/*', requireMod)
 
 // Specific endpoint protection
@@ -88,26 +94,29 @@ app.patch('/posts/:id/approve', requireMod, approvePost)
 ### Frontend Protection (@apps/www)
 
 #### Auth Store Updates
+
 ```typescript
 interface User {
-  id: string;
-  name: string;
-  username: string;
-  email: string;
-  role: 'admin' | 'mod' | 'user';
-  verified: boolean;
-  createdAt: string;
-  updatedAt: string;
-  avatarUrl: string | null;
+  id: string
+  name: string
+  username: string
+  email: string
+  role: 'admin' | 'mod' | 'user'
+  verified: boolean
+  createdAt: string
+  updatedAt: string
+  avatarUrl: string | null
 }
 ```
 
 #### Route Protection
+
 - Protected routes check user role before rendering
 - Unauthorized users redirected to appropriate fallback
 - Role-specific navigation items
 
 #### Component Protection
+
 - Conditional rendering based on user role
 - Admin-only buttons, sections, and functionality
 - Role-based command palette items
@@ -115,6 +124,7 @@ interface User {
 ## Protected Features by Role
 
 ### Admin-Only Features
+
 - **Publication Management**
   - Create new publications
   - Edit publication details
@@ -127,6 +137,7 @@ interface User {
   - View user activity/analytics
 
 ### Mod-Only Features
+
 - **Content Moderation**
   - Approve/reject submitted posts
   - Approve/reject submitted mixes
@@ -141,18 +152,21 @@ interface User {
 ## Implementation Checklist
 
 ### Database Changes
+
 - [ ] Add role enum to PostgreSQL
 - [ ] Add role column to authors table
 - [ ] Create migration script
 - [ ] Update existing users to 'user' role
 
 ### Backend (@apps/vps)
+
 - [ ] Update auth handlers to include role in JWT
 - [ ] Create role-based middleware
 - [ ] Protect admin/mod endpoints
 - [ ] Update author schema types
 
 ### Frontend (@apps/www)
+
 - [ ] Update auth store with role field
 - [ ] Create role-based route guards
 - [ ] Create role-based component utilities
@@ -160,6 +174,7 @@ interface User {
 - [ ] Update profile display with role
 
 ### Cross-App Consistency
+
 - [ ] Ensure role verification works identically
 - [ ] Share role types between apps
 - [ ] Consistent role-based redirects

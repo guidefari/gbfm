@@ -63,9 +63,7 @@ test.describe('Media Session API', () => {
     })
   })
 
-  test('sets title and artist metadata when a mix starts playing', async ({
-    page
-  }) => {
+  test('sets title and artist metadata when a mix starts playing', async ({ page }) => {
     await page.goto('/mixes')
     await page.waitForSelector('[data-testid="mix-item"]')
 
@@ -87,8 +85,8 @@ test.describe('Media Session API', () => {
 
     await page.getByRole('button', { name: /^PLAY/i }).first().click()
 
-    const artworkSrcs = await page.evaluate(() =>
-      navigator.mediaSession.metadata?.artwork?.map((a) => a.src) ?? []
+    const artworkSrcs = await page.evaluate(
+      () => navigator.mediaSession.metadata?.artwork?.map((a) => a.src) ?? []
     )
 
     expect(artworkSrcs).toContain('https://example.com/thumb1.jpg')
@@ -101,9 +99,7 @@ test.describe('Media Session API', () => {
     // Click the second mix (Late Night Frequencies — 2 creators)
     await page.getByRole('button', { name: /^PLAY/i }).nth(1).click()
 
-    const artist = await page.evaluate(
-      () => navigator.mediaSession.metadata?.artist
-    )
+    const artist = await page.evaluate(() => navigator.mediaSession.metadata?.artist)
 
     expect(artist).toBe('DJ One, DJ Two')
   })
@@ -114,9 +110,7 @@ test.describe('Media Session API', () => {
 
     await page.getByRole('button', { name: /^PLAY/i }).first().click()
 
-    const state = await page.evaluate(
-      () => navigator.mediaSession.playbackState
-    )
+    const state = await page.evaluate(() => navigator.mediaSession.playbackState)
 
     expect(state).toBe('playing')
   })
@@ -129,16 +123,12 @@ test.describe('Media Session API', () => {
     // Button text changes to PLAYING when active — clicking it pauses
     await page.getByRole('button', { name: /PLAYING/i }).click()
 
-    const state = await page.evaluate(
-      () => navigator.mediaSession.playbackState
-    )
+    const state = await page.evaluate(() => navigator.mediaSession.playbackState)
 
     expect(state).toBe('paused')
   })
 
-  test('updates metadata when switching to a different mix', async ({
-    page
-  }) => {
+  test('updates metadata when switching to a different mix', async ({ page }) => {
     await page.goto('/mixes')
     await page.waitForSelector('[data-testid="mix-item"]')
 

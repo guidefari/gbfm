@@ -63,8 +63,7 @@ function CreatorLinks({ creators, onClick }: Props) {
 
 const FullscreenAudioPlayer = () => {
   const isQueueEnabled = useFeatureFlag('ui.queue')
-  const { audioSrc, isPlaying, thumbnailUrl, nowPlayingContext } =
-    useAudioPlayerPlaybackState()
+  const { audioSrc, isPlaying, thumbnailUrl, nowPlayingContext } = useAudioPlayerPlaybackState()
   const { queue } = useAudioPlayerQueueState()
   const { isFullscreenVisible } = useAudioPlayerVisibilityState()
   const { progress, currentTime, duration } = useAudioPlayerProgressState()
@@ -199,10 +198,7 @@ const FullscreenAudioPlayer = () => {
                     )}
                   </div>
                 </div>
-                <CreatorLinks
-                  creators={currentTrack.creators}
-                  onClick={toggleFullscreen}
-                />
+                <CreatorLinks creators={currentTrack.creators} onClick={toggleFullscreen} />
               </div>
 
               <div className='mb-4 sm:mb-8 shrink-0'>
@@ -232,14 +228,8 @@ const FullscreenAudioPlayer = () => {
                   variant='ghost'
                   size='icon'
                   className='w-16 h-16 rounded-sm backdrop-blur-sm bg-primary/20 hover:bg-primary/30'
-                  onClick={() =>
-                    isPlaying ? pause() : play(nowPlayingContext.title)
-                  }>
-                  {isPlaying ? (
-                    <Pause className='w-8 h-8' />
-                  ) : (
-                    <Play className='w-8 h-8' />
-                  )}
+                  onClick={() => (isPlaying ? pause() : play(nowPlayingContext.title))}>
+                  {isPlaying ? <Pause className='w-8 h-8' /> : <Play className='w-8 h-8' />}
                 </Button>
                 <Button
                   variant='ghost'
@@ -257,11 +247,7 @@ const FullscreenAudioPlayer = () => {
                   size='sm'
                   onClick={toggleMute}
                   className='text-muted-foreground hover:text-foreground hover:bg-muted'
-                  title={
-                    isMuted
-                      ? 'Unmute (or scroll to adjust)'
-                      : 'Mute (or scroll to adjust)'
-                  }>
+                  title={isMuted ? 'Unmute (or scroll to adjust)' : 'Mute (or scroll to adjust)'}>
                   {isMuted || volume === 0 ? (
                     <VolumeX className='w-5 h-5' />
                   ) : (

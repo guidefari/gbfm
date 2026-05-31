@@ -16,9 +16,7 @@ export class FetchError extends Data.TaggedError('FetchError')<{
   readonly cause?: unknown
 }> {}
 
-export type DrizzleTransaction = Parameters<
-  Parameters<typeof DbType.transaction>[0]
->[0]
+export type DrizzleTransaction = Parameters<Parameters<typeof DbType.transaction>[0]>[0]
 
 export type ImportedTrackTarget = {
   trackId: string
@@ -34,17 +32,12 @@ export function requireOne<T>(
 ): Effect.Effect<T, NotFoundError> {
   const row = rows[0]
   if (!row) {
-    return Effect.fail(
-      new NotFoundError({ message: `${resource} not found`, resource, id })
-    )
+    return Effect.fail(new NotFoundError({ message: `${resource} not found`, resource, id }))
   }
   return Effect.succeed(row)
 }
 
-export function requireInserted<T>(
-  rows: T[],
-  table: string
-): Effect.Effect<T, DatabaseError> {
+export function requireInserted<T>(rows: T[], table: string): Effect.Effect<T, DatabaseError> {
   const row = rows[0]
   if (!row) {
     return Effect.fail(

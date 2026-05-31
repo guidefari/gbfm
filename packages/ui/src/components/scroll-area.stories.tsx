@@ -1,10 +1,4 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from './card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './card'
 import { ScrollArea } from './scroll-area'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
@@ -28,15 +22,11 @@ export function ScrollAreas() {
         <CardContent>
           <ScrollArea className='h-28 rounded-sm border p-3'>
             <div className='space-y-2 text-sm text-muted-foreground'>
-              {[
-                'Dub report',
-                'Ambient dispatch',
-                'Label notes',
-                'Club memo',
-                'Release scan'
-              ].map((item) => (
-                <p key={item}>{item}</p>
-              ))}
+              {['Dub report', 'Ambient dispatch', 'Label notes', 'Club memo', 'Release scan'].map(
+                (item) => (
+                  <p key={item}>{item}</p>
+                )
+              )}
             </div>
           </ScrollArea>
         </CardContent>

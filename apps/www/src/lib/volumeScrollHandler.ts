@@ -14,10 +14,7 @@ type VolumeScrollConfig = {
  * Simple function-based approach (alternative to class)
  * returns a function to detach the scroll handler
  */
-export const attachVolumeScroll = (
-  element: HTMLElement,
-  config: VolumeScrollConfig
-) => {
+export const attachVolumeScroll = (element: HTMLElement, config: VolumeScrollConfig) => {
   const handleWheel = (e: WheelEvent) => {
     e.preventDefault()
     e.stopPropagation()

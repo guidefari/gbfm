@@ -1,9 +1,7 @@
 import { test, expect } from '@playwright/test'
 
 test.describe('Lazy Loading - Mixes', () => {
-  test('should show LoadMoreTrigger component and handle intersection', async ({
-    page
-  }) => {
+  test('should show LoadMoreTrigger component and handle intersection', async ({ page }) => {
     // Simple test: just verify the component renders and basic functionality
     // We'll test the actual intersection behavior with a unit test instead
 
@@ -14,18 +12,20 @@ test.describe('Lazy Loading - Mixes', () => {
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify({
-            data: [{
-              id: 'test-mix-1',
-              title: 'Test Mix 1',
-              slug: 'test-mix-1',
-              description: 'Test description',
-              thumbnailUrl: null,
-              url: 'https://example.com/mix-1.mp3',
-              type: 'mix',
-              tags: ['test'],
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString()
-            }],
+            data: [
+              {
+                id: 'test-mix-1',
+                title: 'Test Mix 1',
+                slug: 'test-mix-1',
+                description: 'Test description',
+                thumbnailUrl: null,
+                url: 'https://example.com/mix-1.mp3',
+                type: 'mix',
+                tags: ['test'],
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+              }
+            ],
             pagination: {
               total: 1,
               limit: 20,

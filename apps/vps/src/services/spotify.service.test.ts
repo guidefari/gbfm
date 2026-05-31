@@ -11,8 +11,7 @@ import {
 
 describe('getIdFromSpotifyUrl', () => {
   test('extracts ID from Spotify URL with query params', () => {
-    const url =
-      'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh?si=abc123'
+    const url = 'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh?si=abc123'
     expect(getIdFromSpotifyUrl(url)).toBe('4iV5W9uYEdYUVa79Axb7Rh')
   })
 
@@ -62,9 +61,7 @@ describe('isSpotifyUrl', () => {
 describe('isYouTubeUrl', () => {
   test('returns true for youtube.com URLs', () => {
     expect(isYouTubeUrl('https://youtube.com/watch?v=dQw4w9WgXcQ')).toBe(true)
-    expect(isYouTubeUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toBe(
-      true
-    )
+    expect(isYouTubeUrl('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toBe(true)
   })
 
   test('returns true for youtu.be URLs', () => {
@@ -91,23 +88,21 @@ describe('isAppleMusicUrl', () => {
 
 describe('extractSpotifyId', () => {
   test('extracts track ID from Spotify URL', () => {
-    expect(
-      extractSpotifyId('https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh')
-    ).toBe('4iV5W9uYEdYUVa79Axb7Rh')
+    expect(extractSpotifyId('https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh')).toBe(
+      '4iV5W9uYEdYUVa79Axb7Rh'
+    )
   })
 
   test('extracts album ID from Spotify URL', () => {
-    expect(
-      extractSpotifyId('https://open.spotify.com/album/1DFixLWuPkv3KT3TnV35m3')
-    ).toBe('1DFixLWuPkv3KT3TnV35m3')
+    expect(extractSpotifyId('https://open.spotify.com/album/1DFixLWuPkv3KT3TnV35m3')).toBe(
+      '1DFixLWuPkv3KT3TnV35m3'
+    )
   })
 
   test('extracts playlist ID from Spotify URL', () => {
-    expect(
-      extractSpotifyId(
-        'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M'
-      )
-    ).toBe('37i9dQZF1DXcBWIGoYBM5M')
+    expect(extractSpotifyId('https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M')).toBe(
+      '37i9dQZF1DXcBWIGoYBM5M'
+    )
   })
 
   test('extracts ID from spotify.link URL', () => {
@@ -116,9 +111,7 @@ describe('extractSpotifyId', () => {
 
   test('extracts ID from URL with query params', () => {
     expect(
-      extractSpotifyId(
-        'https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh?si=abc123'
-      )
+      extractSpotifyId('https://open.spotify.com/track/4iV5W9uYEdYUVa79Axb7Rh?si=abc123')
     ).toBe('4iV5W9uYEdYUVa79Axb7Rh')
   })
 
@@ -133,9 +126,7 @@ describe('extractSpotifyId', () => {
 
 describe('extractYouTubeId', () => {
   test('extracts ID from youtube.com/watch URL', () => {
-    expect(
-      extractYouTubeId('https://www.youtube.com/watch?v=dQw4w9WgXcQ')
-    ).toBe('dQw4w9WgXcQ')
+    expect(extractYouTubeId('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ')
   })
 
   test('extracts ID from youtu.be short URL', () => {
@@ -143,15 +134,11 @@ describe('extractYouTubeId', () => {
   })
 
   test('extracts ID from embed URL', () => {
-    expect(extractYouTubeId('https://youtube.com/embed/dQw4w9WgXcQ')).toBe(
-      'dQw4w9WgXcQ'
-    )
+    expect(extractYouTubeId('https://youtube.com/embed/dQw4w9WgXcQ')).toBe('dQw4w9WgXcQ')
   })
 
   test('extracts ID with additional query params', () => {
-    expect(
-      extractYouTubeId('https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=30')
-    ).toBe('dQw4w9WgXcQ')
+    expect(extractYouTubeId('https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=30')).toBe('dQw4w9WgXcQ')
   })
 
   test('handles IDs with hyphens and underscores', () => {

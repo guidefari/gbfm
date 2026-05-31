@@ -30,25 +30,19 @@ export function RemindersCard() {
   const upcomingReminders =
     data?.reminders
       .filter((r) => !r.isSent)
-      .sort(
-        (a, b) =>
-          new Date(b.reminderDate).getTime() -
-          new Date(a.reminderDate).getTime()
+      .toSorted(
+        (a, b) => new Date(b.reminderDate).getTime() - new Date(a.reminderDate).getTime()
       ) ?? []
 
   const historyReminders =
     data?.reminders
       .filter((r) => r.isSent)
-      .sort(
-        (a, b) =>
-          new Date(b.reminderDate).getTime() -
-          new Date(a.reminderDate).getTime()
+      .toSorted(
+        (a, b) => new Date(b.reminderDate).getTime() - new Date(a.reminderDate).getTime()
       ) ?? []
 
   const displayedReminders =
-    activeTab === 'upcoming'
-      ? upcomingReminders.slice(0, 5)
-      : historyReminders.slice(0, 5)
+    activeTab === 'upcoming' ? upcomingReminders.slice(0, 5) : historyReminders.slice(0, 5)
 
   return (
     <div className='flex flex-col h-full bg-card/15 rounded-sm overflow-hidden'>
@@ -96,10 +90,7 @@ export function RemindersCard() {
         {isPending ? (
           <div className='flex flex-col gap-4'>
             {[1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className='h-12 w-full animate-pulse bg-muted rounded-none'
-              />
+              <div key={i} className='h-12 w-full animate-pulse bg-muted rounded-none' />
             ))}
           </div>
         ) : displayedReminders.length === 0 ? (
@@ -197,9 +188,7 @@ function ReminderItem({ reminder }: { reminder: MusicReminder }) {
         <p className='text-sm font-bold uppercase tracking-tight truncate group-hover:text-primary transition-colors'>
           {reminder.musicTitle}
         </p>
-        <p className='text-xs text-muted-foreground truncate font-medium'>
-          {reminder.artistName}
-        </p>
+        <p className='text-xs text-muted-foreground truncate font-medium'>{reminder.artistName}</p>
       </div>
       <span className='text-[9px] font-bold uppercase text-muted-foreground border border-border/50 px-2 py-1 rounded-sm'>
         {new Date(reminder.reminderDate).toLocaleDateString(undefined, {

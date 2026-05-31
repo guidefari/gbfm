@@ -66,9 +66,7 @@ export function VariantOverlay({
               ) : (
                 <Play className='w-5 h-5' />
               )}
-              <span>
-                {showPause ? 'Pause' : isThisMixLoaded ? 'Resume' : 'Play mix'}
-              </span>
+              <span>{showPause ? 'Pause' : isThisMixLoaded ? 'Resume' : 'Play mix'}</span>
             </button>
           </div>
         </div>
@@ -82,11 +80,7 @@ export function VariantOverlay({
         <span>Browse radio shows</span>
       </button>
 
-      {error && (
-        <p className='text-xs font-bold tracking-widest uppercase text-red-500'>
-          {error}
-        </p>
-      )}
+      {error && <p className='text-xs font-bold tracking-widest uppercase text-red-500'>{error}</p>}
     </div>
   )
 }

@@ -1,13 +1,7 @@
-import {
-  EMAIL_DELIVERY_STATUSES,
-  type EmailDeliveryStatus
-} from '@gbfm/core/status'
+import { EMAIL_DELIVERY_STATUSES, type EmailDeliveryStatus } from '@gbfm/core/status'
 import { and, desc, eq, gte, ilike, lt, type SQL, sql } from 'drizzle-orm'
 import { db } from '@/db'
-import {
-  emailDeliveryLogsTable,
-  type InsertEmailDeliveryLog
-} from '@/db/email.schema'
+import { emailDeliveryLogsTable, type InsertEmailDeliveryLog } from '@/db/email.schema'
 import { createPaginationMetadata } from '@/lib/pagination'
 
 export type GetAdminEmailLogsParams = {
@@ -20,20 +14,14 @@ export type GetAdminEmailLogsParams = {
 }
 
 export async function createEmailDeliveryLog(log: InsertEmailDeliveryLog) {
-  const [result] = await db
-    .insert(emailDeliveryLogsTable)
-    .values(log)
-    .returning()
+  const [result] = await db.insert(emailDeliveryLogsTable).values(log).returning()
   if (!result) {
     throw new Error('Failed to create email delivery log')
   }
   return result
 }
 
-export async function updateEmailDeliveryLog(
-  id: string,
-  updates: Partial<InsertEmailDeliveryLog>
-) {
+export async function updateEmailDeliveryLog(id: string, updates: Partial<InsertEmailDeliveryLog>) {
   const [result] = await db
     .update(emailDeliveryLogsTable)
     .set({ ...updates, updatedAt: new Date() })
@@ -51,10 +39,7 @@ export async function getEmailDeliveryLogsByUserId(userId: string, limit = 50) {
     .limit(limit)
 }
 
-export async function getEmailDeliveryLogsByRecipientEmail(
-  email: string,
-  limit = 50
-) {
+export async function getEmailDeliveryLogsByRecipientEmail(email: string, limit = 50) {
   return db
     .select()
     .from(emailDeliveryLogsTable)
@@ -63,10 +48,7 @@ export async function getEmailDeliveryLogsByRecipientEmail(
     .limit(limit)
 }
 
-export async function markEmailDeliveryLogAsSent(
-  id: string,
-  sesMessageId?: string
-) {
+export async function markEmailDeliveryLogAsSent(id: string, sesMessageId?: string) {
   return updateEmailDeliveryLog(id, {
     status: EMAIL_DELIVERY_STATUSES.SENT,
     sentAt: new Date(),
@@ -74,10 +56,7 @@ export async function markEmailDeliveryLogAsSent(
   })
 }
 
-export async function markEmailDeliveryLogAsFailed(
-  id: string,
-  errorMessage: string
-) {
+export async function markEmailDeliveryLogAsFailed(id: string, errorMessage: string) {
   return updateEmailDeliveryLog(id, {
     status: EMAIL_DELIVERY_STATUSES.FAILED,
     errorMessage
@@ -144,18 +123,11 @@ export async function getAdminEmailLogs({
   }
 
   if (recipientEmail) {
-    filters.push(
-      ilike(emailDeliveryLogsTable.recipientEmail, `%${recipientEmail}%`)
-    )
+    filters.push(ilike(emailDeliveryLogsTable.recipientEmail, `%${recipientEmail}%`))
   }
 
   if (dateFrom) {
-    filters.push(
-      gte(
-        emailDeliveryLogsTable.createdAt,
-        new Date(`${dateFrom}T00:00:00.000Z`)
-      )
-    )
+    filters.push(gte(emailDeliveryLogsTable.createdAt, new Date(`${dateFrom}T00:00:00.000Z`)))
   }
 
   if (dateTo) {

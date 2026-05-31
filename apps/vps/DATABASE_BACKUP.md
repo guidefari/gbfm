@@ -5,6 +5,7 @@ This document describes the comprehensive database backup system implemented for
 ## Overview
 
 The backup system provides multiple methods for backing up and restoring the PostgreSQL database:
+
 - **Automated daily backups** to S3 via AWS Lambda cron job
 - **Manual S3 backups** for production and development
 - **Local filesystem backups** for development and testing
@@ -37,12 +38,14 @@ All backups are created using PostgreSQL's `pg_dump` when available, with a pure
 ### Backup Methods
 
 #### Method 1: pg_dump (Recommended)
+
 - Uses PostgreSQL's native `pg_dump` utility
 - Produces high-quality, comprehensive SQL dumps
 - Includes schema, data, constraints, and indexes
 - Automatically selected when `pg_dump` is available
 
 #### Method 2: Pure Node.js (Fallback)
+
 - Uses the `pg` library directly
 - Works in environments without PostgreSQL client tools
 - Automatically selected when `pg_dump` is not found
@@ -51,6 +54,7 @@ All backups are created using PostgreSQL's `pg_dump` when available, with a pure
 ## Files Created/Modified
 
 ### New Files
+
 ```
 apps/vps/scripts/backup-db.ts          # S3 backup script
 apps/vps/scripts/backup-db-local.ts    # Local backup script
@@ -64,6 +68,7 @@ infra/cron.ts                          # Daily backup cron job
 ```
 
 ### Modified Files
+
 ```
 infra/bucket.ts           # Added DatabaseBackups bucket
 infra/vps.ts              # Linked backup bucket to VPS service
@@ -88,6 +93,7 @@ LOCAL_DB_URL=postgres://user:password@localhost:5432/mydb bun db:backup:local
 ```
 
 **Output:**
+
 ```
 🔄 Starting local database backup...
 🔗 Using LOCAL_DB_URL connection string
@@ -144,6 +150,7 @@ SKIP_CONFIRM=1 bun db:restore backup.sql
 ```
 
 **⚠️ Important Warning:**
+
 - Restore operations are **DESTRUCTIVE**
 - All existing tables will be dropped
 - All current data will be deleted
@@ -151,6 +158,7 @@ SKIP_CONFIRM=1 bun db:restore backup.sql
 - You will be prompted for confirmation unless `SKIP_CONFIRM=1` is set
 
 **Output:**
+
 ```
 🔄 Starting database restore...
 📁 Backup file: /path/to/backups/backup-2025-11-14T12-30-00-000Z.sql
@@ -260,12 +268,14 @@ LOCAL_DB_URL=postgres://user:password@host.docker.internal:5432/mydb \
 ### Docker Image Details
 
 The Docker image (`Dockerfile.backup`) includes:
+
 - ✅ Bun runtime
 - ✅ PostgreSQL client tools (`pg_dump`, `psql`)
 - ✅ All backup/restore scripts
 - ✅ Node.js dependencies
 
 **Benefits of Docker approach:**
+
 - No need to install PostgreSQL client tools locally
 - Consistent environment across different machines
 - Works on all platforms (Windows, macOS, Linux)
@@ -308,11 +318,13 @@ LOCAL_DB_URL=postgres://admin:secret123@localhost:5432/myapp
 ```
 
 **When to use:**
+
 - Testing backups/restores against a local database
 - Backing up or restoring a development database
 - Working without SST resources configured
 
 **Default behavior:**
+
 - Uses SST Resource values when `LOCAL_DB_URL` is not set
 - Automatically pulls credentials from SST infrastructure
 
@@ -326,6 +338,7 @@ SKIP_CONFIRM=1 bun db:restore backup.sql
 ```
 
 **When to use:**
+
 - Automated scripts
 - CI/CD pipelines
 - Non-interactive environments
@@ -337,6 +350,7 @@ SKIP_CONFIRM=1 bun db:restore backup.sql
 ### Cron Schedule
 
 The automated backup cron job runs:
+
 - **Frequency:** Daily
 - **Time:** 2:00 AM UTC
 - **Method:** AWS Lambda function
@@ -351,19 +365,20 @@ export const dbBackupCron = new sst.aws.Cron('DatabaseBackupCron', {
   job: {
     handler: 'apps/vps/scripts/backup-db-lambda.handler',
     nodejs: {
-      install: ['pg'],
+      install: ['pg']
     },
     timeout: '15 minutes',
     memory: '1024 MB',
-    link: [dbBackupBucket, ...allSecrets],
+    link: [dbBackupBucket, ...allSecrets]
   },
-  schedule: 'cron(0 2 * * ? *)',
+  schedule: 'cron(0 2 * * ? *)'
 })
 ```
 
 ### Backup Metadata
 
 Each S3 backup includes metadata:
+
 - `timestamp` - ISO timestamp of backup creation
 - `database` - Database name
 - `stage` - SST stage (dev/prod)
@@ -381,6 +396,7 @@ If `pg_dump` is not installed, the system automatically:
 4. Continues with the backup operation
 
 **Example output:**
+
 ```
 ⚠️  pg_dump not found, using pure Node.js backup
    Install PostgreSQL client tools for better backup quality:
@@ -394,16 +410,19 @@ If `pg_dump` is not installed, the system automatically:
 For better backup quality, install PostgreSQL client tools:
 
 **macOS:**
+
 ```bash
 brew install postgresql
 ```
 
 **Ubuntu/Debian:**
+
 ```bash
 sudo apt-get install postgresql-client
 ```
 
 **Windows:**
+
 - Download from [postgresql.org](https://www.postgresql.org/download/windows/)
 
 ## Backup File Format
@@ -419,6 +438,7 @@ Example: `backup-2025-11-14T12-30-00-000Z.sql`
 ### File Contents
 
 SQL dump files include:
+
 - `DROP TABLE` statements (with `IF EXISTS`)
 - `CREATE TABLE` statements
 - `INSERT` statements with all data
@@ -448,12 +468,14 @@ INSERT INTO "users" (id, email, created_at) VALUES (1, 'user@example.com', '2025
 ## Storage Locations
 
 ### S3 Bucket
+
 - **Bucket Name:** `DatabaseBackups` (managed by SST)
 - **Access:** Private (not exposed via router)
 - **Region:** Same as SST deployment region
 - **Retention:** Managed by AWS S3 lifecycle policies (if configured)
 
 ### Local Filesystem
+
 - **Directory:** `apps/vps/backups/`
 - **Ignored:** Yes (in `.gitignore`)
 - **Cleanup:** Manual (backups are not auto-deleted)
@@ -461,18 +483,21 @@ INSERT INTO "users" (id, email, created_at) VALUES (1, 'user@example.com', '2025
 ## Security Considerations
 
 ### S3 Bucket Security
+
 - ✅ Private access only
 - ✅ Not exposed via API routes
 - ✅ IAM permissions required
 - ✅ Encryption at rest (AWS default)
 
 ### Database Credentials
+
 - ✅ Stored in SST secrets
 - ✅ Never logged in plain text
 - ✅ Passed via environment variables
 - ✅ Not included in backup files
 
 ### Local Backups
+
 - ⚠️ Stored in plain text SQL files
 - ⚠️ Contains database data
 - ⚠️ Ensure proper file permissions
@@ -495,6 +520,7 @@ INSERT INTO "users" (id, email, created_at) VALUES (1, 'user@example.com', '2025
 **Cause:** Database host unreachable or SSL misconfiguration.
 
 **Solution:**
+
 - Verify database host and port
 - Check SSL settings in `drizzle.config.ts`
 - Ensure network connectivity
@@ -502,6 +528,7 @@ INSERT INTO "users" (id, email, created_at) VALUES (1, 'user@example.com', '2025
 ### Large backup files
 
 **Recommendation:**
+
 - Use `pg_dump` for better compression
 - Consider implementing compression before S3 upload
 - Configure S3 lifecycle policies to archive old backups
@@ -528,6 +555,7 @@ Potential improvements for the backup system:
 ## Support
 
 For issues or questions about the backup system:
+
 1. Check the troubleshooting section above
 2. Review backup script logs
 3. Verify SST resource configuration

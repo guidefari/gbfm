@@ -29,8 +29,8 @@ export function NewsletterUnsubscribeLink({
 
           <Section style={body}>
             <Text style={text}>
-              You requested an unsubscribe link. Click the button below to be
-              removed from the goosebumps.fm mailing list.
+              You requested an unsubscribe link. Click the button below to be removed from the
+              goosebumps.fm mailing list.
             </Text>
             <Button style={ctaButton} href={unsubscribeUrl}>
               Unsubscribe
@@ -41,9 +41,7 @@ export function NewsletterUnsubscribeLink({
                 {unsubscribeUrl}
               </Link>
             </Text>
-            <Text style={small}>
-              If you did not request this, you can ignore this email.
-            </Text>
+            <Text style={small}>If you did not request this, you can ignore this email.</Text>
           </Section>
         </Container>
       </Body>

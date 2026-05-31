@@ -47,20 +47,14 @@ export const processPendingReminders = Effect.gen(function* () {
     return
   }
 
-  yield* Effect.logInfo(
-    `Processing ${claimedReminders.length} claimed reminders`
-  )
+  yield* Effect.logInfo(`Processing ${claimedReminders.length} claimed reminders`)
 
   // Process reminders in batches with concurrency control
   yield* Effect.forEach(
     Chunk.fromIterable(claimedReminders),
     (reminder) =>
       processSingleReminder(reminder).pipe(
-        Effect.retry(
-          Schedule.exponential(1000).pipe(
-            Schedule.both(Schedule.during('30 seconds'))
-          )
-        ),
+        Effect.retry(Schedule.exponential(1000).pipe(Schedule.both(Schedule.during('30 seconds')))),
         Effect.catch((error) =>
           Effect.logError(
             `Failed to process reminder ${reminder.id} after retries: ${
@@ -182,10 +176,7 @@ export const getReminderStats = Effect.gen(function* () {
               )
             )
           ),
-          processing: db.$count(
-            musicReminder,
-            eq(musicReminder.status, REMINDER_STATUS.PROCESSING)
-          )
+          processing: db.$count(musicReminder, eq(musicReminder.status, REMINDER_STATUS.PROCESSING))
         })
         .from(musicReminder),
     catch: (error) =>

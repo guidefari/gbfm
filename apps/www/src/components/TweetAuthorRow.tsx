@@ -9,11 +9,7 @@ type Props = {
   interactive?: boolean
 }
 
-export function TweetAuthorRow({
-  creators,
-  createdAt,
-  interactive = true
-}: Props) {
+export function TweetAuthorRow({ creators, createdAt, interactive = true }: Props) {
   const primaryCreator = creators[0]
   const username = primaryCreator?.username ?? null
   const { data: profile } = usePublicProfile(username || '')
@@ -52,9 +48,7 @@ export function TweetAuthorRow({
           {avatarImg}
         </Link>
       ) : (
-        <div className='shrink-0 overflow-hidden rounded-sm ring-1 ring-border/60'>
-          {avatarImg}
-        </div>
+        <div className='shrink-0 overflow-hidden rounded-sm ring-1 ring-border/60'>{avatarImg}</div>
       )}
 
       <div className='min-w-0 leading-tight'>
@@ -66,9 +60,7 @@ export function TweetAuthorRow({
             {primaryCreator.name}
           </Link>
         ) : (
-          <span className='block truncate font-bold text-foreground'>
-            {primaryCreator.name}
-          </span>
+          <span className='block truncate font-bold text-foreground'>{primaryCreator.name}</span>
         )}
         <div className='flex items-center gap-1.5 truncate text-sm text-muted-foreground'>
           {username ? (

@@ -14,18 +14,12 @@ export const getTrack = createRoute({
   path: '/track',
   method: 'post',
   request: {
-    body: jsonContentRequired(
-      z.object({ id: z.string() }),
-      'Spotify track ID or URL'
-    )
+    body: jsonContentRequired(z.object({ id: z.string() }), 'Spotify track ID or URL')
   },
   tags,
   responses: {
     [HttpStatusCodes.OK]: jsonContent(TrackSchema, 'Track details'),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'Track not found'
-    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'Track not found'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to fetch track'
@@ -37,18 +31,12 @@ export const getAlbum = createRoute({
   path: '/album',
   method: 'post',
   request: {
-    body: jsonContentRequired(
-      z.object({ id: z.string() }),
-      'Spotify album ID or URL'
-    )
+    body: jsonContentRequired(z.object({ id: z.string() }), 'Spotify album ID or URL')
   },
   tags,
   responses: {
     [HttpStatusCodes.OK]: jsonContent(AlbumSchema, 'Album details'),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'Album not found'
-    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'Album not found'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to fetch album'
@@ -60,18 +48,12 @@ export const getPlaylist = createRoute({
   path: '/playlist',
   method: 'post',
   request: {
-    body: jsonContentRequired(
-      z.object({ id: z.string() }),
-      'Spotify playlist ID or URL'
-    )
+    body: jsonContentRequired(z.object({ id: z.string() }), 'Spotify playlist ID or URL')
   },
   tags,
   responses: {
     [HttpStatusCodes.OK]: jsonContent(PlaylistSchema, 'Playlist details'),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'Playlist not found'
-    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'Playlist not found'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to fetch playlist'
@@ -94,10 +76,7 @@ export const searchAlbums = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      SearchAlbumsResponseSchema,
-      'Search results'
-    ),
+    [HttpStatusCodes.OK]: jsonContent(SearchAlbumsResponseSchema, 'Search results'),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(
       z.object({ error: z.string() }),
       'Invalid search query'
@@ -127,13 +106,7 @@ export const enrichTrackFromUrl = createRoute({
         title: z.string(),
         artist: z.string(),
         url: z.string(),
-        platform: z.enum([
-          'spotify',
-          'youtube',
-          'apple_music',
-          'bandcamp',
-          'other'
-        ]),
+        platform: z.enum(['spotify', 'youtube', 'apple_music', 'bandcamp', 'other']),
         thumbnailUrl: z.string().optional(),
         duration: z.number().optional(),
         album: z.string().optional()
@@ -144,10 +117,7 @@ export const enrichTrackFromUrl = createRoute({
       z.object({ error: z.string() }),
       'Invalid URL or unsupported platform'
     ),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'Track not found'
-    ),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'Track not found'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to enrich track details'

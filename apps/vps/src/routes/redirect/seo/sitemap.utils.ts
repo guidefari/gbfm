@@ -43,11 +43,7 @@ export const buildUrlEntry = (
   </url>`
 }
 
-export const buildSitemapXml = (
-  data: SitemapData,
-  siteUrl: string,
-  vpsUrl?: string
-): string => {
+export const buildSitemapXml = (data: SitemapData, siteUrl: string, vpsUrl?: string): string => {
   const now = new Date()
   const urls: string[] = []
   const dynamicBase = vpsUrl ? `${vpsUrl}/s` : null
@@ -65,17 +61,13 @@ export const buildSitemapXml = (
 
   // Mixes
   for (const mix of data.mixes) {
-    const loc = dynamicBase
-      ? `${dynamicBase}/mix/${mix.slug}`
-      : `${siteUrl}/mixes/${mix.slug}`
+    const loc = dynamicBase ? `${dynamicBase}/mix/${mix.slug}` : `${siteUrl}/mixes/${mix.slug}`
     urls.push(buildUrlEntry(loc, mix.updatedAt, 'weekly'))
   }
 
   // Shows
   for (const show of data.shows) {
-    const loc = dynamicBase
-      ? `${dynamicBase}/show/${show.slug}`
-      : `${siteUrl}/shows/${show.slug}`
+    const loc = dynamicBase ? `${dynamicBase}/show/${show.slug}` : `${siteUrl}/shows/${show.slug}`
     urls.push(buildUrlEntry(loc, show.updatedAt, 'weekly'))
   }
 

@@ -1,9 +1,5 @@
 import { z } from '@hono/zod-openapi'
-import {
-  type InferInsertModel,
-  type InferSelectModel,
-  relations
-} from 'drizzle-orm'
+import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
 import {
   boolean,
   index,
@@ -15,10 +11,7 @@ import {
   uuid
 } from 'drizzle-orm/pg-core'
 import { audioCreators } from './audio.schema'
-import {
-  emailDeliveryLogsTable,
-  userEmailPreferencesTable
-} from './email.schema'
+import { emailDeliveryLogsTable, userEmailPreferencesTable } from './email.schema'
 import { postCreators } from './post.schema'
 import { showCreators, showSubscriptionsTable } from './show.schema'
 
@@ -89,10 +82,7 @@ export const userSocialLinks = pgTable(
   },
   (table) => [
     index('user_social_links_user_id_idx').on(table.userId),
-    uniqueIndex('user_social_links_user_position_uq').on(
-      table.userId,
-      table.position
-    )
+    uniqueIndex('user_social_links_user_position_uq').on(table.userId, table.position)
   ]
 )
 
@@ -175,30 +165,17 @@ export const selectUserSchema = z
   .object({
     id: z.string().openapi({ description: 'Unique identifier for the user' }),
     name: z.string().openapi({ description: 'Display name of the user' }),
-    username: z
-      .string()
-      .nullable()
-      .openapi({ description: 'Username of the user' }),
+    username: z.string().nullable().openapi({ description: 'Username of the user' }),
     email: z.string().openapi({ description: 'Email address of the user' }),
-    emailVerified: z
-      .boolean()
-      .openapi({ description: 'Whether the email is verified' }),
+    emailVerified: z.boolean().openapi({ description: 'Whether the email is verified' }),
     image: z.string().nullable().openapi({ description: 'Profile image URL' }),
     bio: z.string().nullable().openapi({ description: 'User biography' }),
     createdAt: z.date().openapi({ description: 'Account creation timestamp' }),
-    updatedAt: z
-      .date()
-      .openapi({ description: 'Last account update timestamp' }),
+    updatedAt: z.date().openapi({ description: 'Last account update timestamp' }),
     role: z.string().openapi({ description: 'User role', example: 'user' }),
     banned: z.boolean().openapi({ description: 'Whether the user is banned' }),
-    banReason: z
-      .string()
-      .nullable()
-      .openapi({ description: 'Reason for ban if applicable' }),
-    banExpires: z
-      .date()
-      .nullable()
-      .openapi({ description: 'Ban expiration date if applicable' })
+    banReason: z.string().nullable().openapi({ description: 'Reason for ban if applicable' }),
+    banExpires: z.date().nullable().openapi({ description: 'Ban expiration date if applicable' })
   })
   .openapi('User')
 
@@ -217,27 +194,17 @@ export const insertUserSchema = z
       example: 'john@example.com'
     }),
     image: z.string().optional().openapi({ description: 'Profile image URL' }),
-    bio: z
-      .string()
-      .max(500)
-      .optional()
-      .openapi({ description: 'User biography' }),
-    role: z
-      .string()
-      .optional()
-      .openapi({ description: 'User role', default: 'user' })
+    bio: z.string().max(500).optional().openapi({ description: 'User biography' }),
+    role: z.string().optional().openapi({ description: 'User role', default: 'user' })
   })
   .openapi('InsertUser')
 
-export const userSocialLinksRelations = relations(
-  userSocialLinks,
-  ({ one }) => ({
-    user: one(user, {
-      fields: [userSocialLinks.userId],
-      references: [user.id]
-    })
+export const userSocialLinksRelations = relations(userSocialLinks, ({ one }) => ({
+  user: one(user, {
+    fields: [userSocialLinks.userId],
+    references: [user.id]
   })
-)
+}))
 
 export const sessionRelations = relations(session, ({ one }) => ({
   user: one(user, {

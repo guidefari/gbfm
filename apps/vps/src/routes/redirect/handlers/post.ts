@@ -13,8 +13,7 @@ type HtmlResponse = { html: string; status: ContentfulStatusCode }
 
 const fetchPostBySlug = (slug: string) =>
   Effect.tryPromise({
-    try: () =>
-      db.select().from(postsTable).where(eq(postsTable.slug, slug)).limit(1),
+    try: () => db.select().from(postsTable).where(eq(postsTable.slug, slug)).limit(1),
     catch: (error) =>
       new DatabaseError({
         message: String(error),
@@ -68,15 +67,13 @@ export const sharePost = async (c: Context) => {
 
     const creators = yield* fetchCreators(post.id)
 
-    const canonicalPath =
-      post.type === 'micro' ? `/tweet/${slug}` : `/editorial/${slug}`
+    const canonicalPath = post.type === 'micro' ? `/tweet/${slug}` : `/editorial/${slug}`
 
     return {
       html: buildOGHtml({
         type: 'article',
         title: post.title || slug,
-        description:
-          post.description || `Read ${post.title || slug} on goosebumps.fm`,
+        description: post.description || `Read ${post.title || slug} on goosebumps.fm`,
         image: post.thumbnailUrl,
         canonicalPath,
         creators: creators.map((c) => c.name),

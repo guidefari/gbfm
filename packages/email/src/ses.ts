@@ -108,9 +108,7 @@ function buildRawMessage({
     for (const attachment of attachments) {
       const contentType =
         attachment.contentType ||
-        (attachment.filename.endsWith('.csv')
-          ? 'text/csv'
-          : 'application/octet-stream')
+        (attachment.filename.endsWith('.csv') ? 'text/csv' : 'application/octet-stream')
       content = content.concat([
         `--${mixedBoundary}`,
         `Content-Type: ${contentType}; name="${attachment.filename}"`,

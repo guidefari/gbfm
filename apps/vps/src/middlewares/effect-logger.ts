@@ -2,10 +2,7 @@ import { SpanStatusCode, trace } from '@opentelemetry/api'
 import { Effect } from 'effect'
 import type { MiddlewareHandler } from 'hono'
 import { LoggerError } from '@/errors'
-import {
-  checkPerformanceHealth,
-  recordRequest
-} from '@/lib/performance-monitoring'
+import { checkPerformanceHealth, recordRequest } from '@/lib/performance-monitoring'
 
 const SLOW_REQUEST_THRESHOLD = 500
 const VERY_SLOW_REQUEST_THRESHOLD = 2000
@@ -23,9 +20,7 @@ export function effectLogger(): MiddlewareHandler {
             try {
               await next()
             } catch (error) {
-              span.recordException(
-                error instanceof Error ? error : new Error(String(error))
-              )
+              span.recordException(error instanceof Error ? error : new Error(String(error)))
               span.setStatus({
                 code: SpanStatusCode.ERROR,
                 message: error instanceof Error ? error.message : String(error)
@@ -35,8 +30,7 @@ export function effectLogger(): MiddlewareHandler {
               // Use matched route pattern (e.g. /content/posts/:slug) so
               // transaction names aggregate by route rather than per-slug URL
               const routePattern =
-                (c.req as unknown as { routePath?: string }).routePath ??
-                c.req.path
+                (c.req as unknown as { routePath?: string }).routePath ?? c.req.path
               const normalizedName = `${c.req.method} ${routePattern}`
               span.updateName(normalizedName)
               span.setAttribute('http.method', c.req.method)
@@ -88,9 +82,7 @@ export function effectLogger(): MiddlewareHandler {
         checkPerformanceHealth,
 
         // Standard request logging
-        Effect.log(
-          `[INFO] ${c.req.method} ${c.req.path} ${c.res.status} - ${duration}ms`
-        )
+        Effect.log(`[INFO] ${c.req.method} ${c.req.path} ${c.res.status} - ${duration}ms`)
       ]
 
       yield* Effect.all(performanceEffects, { concurrency: 'unbounded' })

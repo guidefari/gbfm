@@ -24,9 +24,7 @@ export function WelcomeEmail({
   return (
     <Html>
       <EmailHead />
-      <Preview>
-        Welcome to goosebumps.fm, {username}. Verify your email to get started.
-      </Preview>
+      <Preview>Welcome to goosebumps.fm, {username}. Verify your email to get started.</Preview>
       <Body style={main}>
         <Container style={container}>
           <EmailHeader tagline='welcome' />
@@ -35,8 +33,8 @@ export function WelcomeEmail({
             <Text style={label}>NEW ACCOUNT</Text>
             <Text style={headline}>Welcome, {username}.</Text>
             <Text style={subtext}>
-              Confirm your email so you can save favourites, follow people, and
-              pick up where you left off.
+              Confirm your email so you can save favourites, follow people, and pick up where you
+              left off.
             </Text>
             <Button style={ctaButton} href={verificationUrl}>
               Verify your email

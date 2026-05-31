@@ -19,9 +19,7 @@ export function AuthForms() {
       />
       <div className='grid gap-10 md:grid-cols-2 max-w-2xl'>
         <div>
-          <p className='text-xs uppercase tracking-widest text-muted-foreground mb-4'>
-            Sign in
-          </p>
+          <p className='text-xs uppercase tracking-widest text-muted-foreground mb-4'>Sign in</p>
           <GenericAuthForm
             formTitle='Sign in'
             submitButtonText='Continue'

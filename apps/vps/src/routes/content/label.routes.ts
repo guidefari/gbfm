@@ -8,10 +8,7 @@ import {
   selectMdxCompiledLabelSchema,
   updateLabelSchema
 } from '@/db/label.schema'
-import {
-  createPaginatedResponseSchema,
-  paginationQuerySchema
-} from '@/lib/pagination'
+import { createPaginatedResponseSchema, paginationQuerySchema } from '@/lib/pagination'
 import { betterAuthMiddleware } from '@/middlewares/better-auth.middleware'
 
 const tags = ['Labels']
@@ -25,10 +22,7 @@ export const createLabel = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.CREATED]: jsonContent(
-      selectLabelSchema,
-      'The created label'
-    ),
+    [HttpStatusCodes.CREATED]: jsonContent(selectLabelSchema, 'The created label'),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
       z
         .object({ error: z.string().openapi({ description: 'Error message' }) })
@@ -83,14 +77,8 @@ export const getLabelBySlug = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      selectMdxCompiledLabelSchema,
-      'Single label'
-    ),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'Label not found'
-    ),
+    [HttpStatusCodes.OK]: jsonContent(selectMdxCompiledLabelSchema, 'Single label'),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'Label not found'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to fetch label'
@@ -110,14 +98,8 @@ export const updateLabelBySlug = createRoute({
   },
   tags,
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      selectMdxCompiledLabelSchema,
-      'Updated label'
-    ),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(
-      z.object({ error: z.string() }),
-      'Label not found'
-    ),
+    [HttpStatusCodes.OK]: jsonContent(selectMdxCompiledLabelSchema, 'Updated label'),
+    [HttpStatusCodes.NOT_FOUND]: jsonContent(z.object({ error: z.string() }), 'Label not found'),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(
       z.object({ error: z.string() }),
       'Not authorized to edit this content'

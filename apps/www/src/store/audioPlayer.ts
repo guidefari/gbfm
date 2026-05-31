@@ -27,8 +27,7 @@ let lastPersistTime = 0
 const PERSIST_INTERVAL = 5000
 let progressFrameId: number | null = null
 
-const pageUrl = () =>
-  typeof window !== 'undefined' ? window.location.pathname : '/'
+const pageUrl = () => (typeof window !== 'undefined' ? window.location.pathname : '/')
 
 interface AudioPlayerActions {
   audioRef: HTMLAudioElement | null
@@ -87,10 +86,8 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
   devtools(
     persist(
       (set, get) => {
-        const send = (
-          action: Parameters<typeof playerReducer>[1],
-          label: string
-        ) => set((state) => playerReducer(state, action), false, label)
+        const send = (action: Parameters<typeof playerReducer>[1], label: string) =>
+          set((state) => playerReducer(state, action), false, label)
 
         const stopProgressTracking = () => {
           if (progressFrameId === null) return
@@ -131,13 +128,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
 
             ref.onended = () => {
               stopProgressTracking()
-              const {
-                queue,
-                currentIndex,
-                currentTrackId,
-                nowPlayingContext,
-                duration
-              } = get()
+              const { queue, currentIndex, currentTrackId, nowPlayingContext, duration } = get()
 
               void RuntimeClient.runPromise(
                 Effect.gen(function* () {
@@ -171,9 +162,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
                 },
                 'audioPlayer/updateDuration'
               )
-              void RuntimeClient.runPromise(
-                setPositionState(ref.duration || 0, ref.currentTime)
-              )
+              void RuntimeClient.runPromise(setPositionState(ref.duration || 0, ref.currentTime))
             }
 
             ref.onplay = () => {
@@ -199,9 +188,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
               if (document.hidden) {
                 const { currentTime, currentTrackId } = get()
                 if (currentTime > 0 && currentTrackId) {
-                  void RuntimeClient.runPromise(
-                    writePosition(currentTrackId, currentTime)
-                  )
+                  void RuntimeClient.runPromise(writePosition(currentTrackId, currentTime))
                   lastPersistTime = Date.now()
                 }
               }
@@ -236,27 +223,17 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
                 track('audio_error', {
                   trackId: get().currentTrackId,
                   title: get().nowPlayingContext.title,
-                  errorMessage:
-                    err instanceof Error ? err.message : 'play() rejected'
+                  errorMessage: err instanceof Error ? err.message : 'play() rejected'
                 })
               )
             })
 
-            send(
-              { type: 'PLAY', title, pageUrl: pageUrl() },
-              'audioPlayer/play'
-            )
+            send({ type: 'PLAY', title, pageUrl: pageUrl() }, 'audioPlayer/play')
             void RuntimeClient.runPromise(setPlaybackState('playing'))
           },
 
           pause: () => {
-            const {
-              audioRef,
-              currentTime,
-              currentTrackId,
-              nowPlayingContext,
-              progress
-            } = get()
+            const { audioRef, currentTime, currentTrackId, nowPlayingContext, progress } = get()
             if (!audioRef) return
 
             audioRef.pause()
@@ -343,10 +320,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
             if (!audioRef) return
             const clamped = Math.max(0, Math.min(100, volume))
             audioRef.volume = clamped / 100
-            send(
-              { type: 'SET_VOLUME', volume: clamped },
-              'audioPlayer/setVolume'
-            )
+            send({ type: 'SET_VOLUME', volume: clamped }, 'audioPlayer/setVolume')
           },
 
           toggleMute: () => {
@@ -357,13 +331,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
           },
 
           loadTrack: (src, thumbnailUrl, title, trackId, creators, slug) => {
-            const {
-              audioRef,
-              isPlaying,
-              audioSrc,
-              currentTime,
-              currentTrackId
-            } = get()
+            const { audioRef, isPlaying, audioSrc, currentTime, currentTrackId } = get()
             if (!audioRef) return
 
             if (!src) {
@@ -386,9 +354,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
             }
 
             if (currentTrackId && currentTime > 0) {
-              void RuntimeClient.runPromise(
-                writePosition(currentTrackId, currentTime)
-              )
+              void RuntimeClient.runPromise(writePosition(currentTrackId, currentTime))
             }
 
             audioRef.src = src
@@ -408,11 +374,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
 
             void RuntimeClient.runPromise(
               Effect.gen(function* () {
-                yield* setMetadata(
-                  title,
-                  creators?.map((c) => c.name) ?? [],
-                  thumbnailUrl
-                )
+                yield* setMetadata(title, creators?.map((c) => c.name) ?? [], thumbnailUrl)
 
                 yield* track('audio_played', {
                   trackId: trackId ?? null,
@@ -467,10 +429,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
                 void RuntimeClient.runPromise(
                   Effect.gen(function* () {
                     yield* writePosition(currentTrackId, audioRef.currentTime)
-                    yield* setPositionState(
-                      audioRef.duration || 0,
-                      audioRef.currentTime
-                    )
+                    yield* setPositionState(audioRef.duration || 0, audioRef.currentTime)
                   })
                 )
               }
@@ -486,10 +445,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
           },
 
           updatePlayingState: (playing) => {
-            send(
-              { type: 'UPDATE_PLAYING_STATE', playing },
-              'audioPlayer/updatePlayingState'
-            )
+            send({ type: 'UPDATE_PLAYING_STATE', playing }, 'audioPlayer/updatePlayingState')
           },
 
           updateNowPlaying: (context) => {
@@ -503,8 +459,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
           },
 
           initialize: () => {
-            const { audioRef, audioSrc, volume, isMuted, currentTrackId } =
-              get()
+            const { audioRef, audioSrc, volume, isMuted, currentTrackId } = get()
             if (!audioRef) return
 
             audioRef.volume = isMuted ? 0 : volume / 100
@@ -554,10 +509,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
           },
 
           removeFromQueue: (queueId) => {
-            send(
-              { type: 'REMOVE_FROM_QUEUE', queueId },
-              'audioPlayer/removeFromQueue'
-            )
+            send({ type: 'REMOVE_FROM_QUEUE', queueId }, 'audioPlayer/removeFromQueue')
             void RuntimeClient.runPromise(
               track('audio_queue_action', {
                 action: 'remove',
@@ -577,10 +529,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
           },
 
           reorderQueue: (fromIndex, toIndex) => {
-            send(
-              { type: 'REORDER_QUEUE', fromIndex, toIndex },
-              'audioPlayer/reorderQueue'
-            )
+            send({ type: 'REORDER_QUEUE', fromIndex, toIndex }, 'audioPlayer/reorderQueue')
             void RuntimeClient.runPromise(
               track('audio_queue_action', {
                 action: 'reorder',
@@ -593,10 +542,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
             const { queue } = get()
             if (index < 0 || index >= queue.length) return
             const item = queue[index]
-            send(
-              { type: 'SET_CURRENT_INDEX', index },
-              'audioPlayer/setCurrentIndex'
-            )
+            send({ type: 'SET_CURRENT_INDEX', index }, 'audioPlayer/setCurrentIndex')
             void RuntimeClient.runPromise(
               track('audio_queue_action', {
                 action: 'play_from',
@@ -625,8 +571,7 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
           playPrevious: () => {
             const { queue, currentIndex } = get()
             if (queue.length === 0) return
-            const prevIndex =
-              currentIndex - 1 < 0 ? queue.length - 1 : currentIndex - 1
+            const prevIndex = currentIndex - 1 < 0 ? queue.length - 1 : currentIndex - 1
             get().playFromQueue(prevIndex)
           },
 

@@ -58,7 +58,7 @@ export const auth = betterAuth({
   trustedOrigins: [
     env.FRONTEND_URL,
     'http://127.0.0.1:5173',
-    /^exp:\/\/.+$/, // Expo dev
+    /^exp:\/\/.+$/ // Expo dev
   ],
   advanced: {
     cookieSameSite: 'lax'
@@ -76,6 +76,7 @@ bunx @better-auth/cli generate
 ```
 
 This creates Better Auth tables in your Drizzle schema:
+
 - `user` - Better Auth user table
 - `session` - Session management
 - `account` - Credential storage (includes password field)
@@ -141,6 +142,7 @@ BETTER_AUTH_URL: z.string().url(),
 ```
 
 **Add to `.env`:**
+
 ```bash
 BETTER_AUTH_SECRET=your-secret-key-min-32-chars
 BETTER_AUTH_URL=http://127.0.0.1:3003
@@ -171,36 +173,36 @@ import { BunRuntime } from '@effect/platform-bun'
 const migrateUsers = Effect.gen(function* (_) {
   yield* _(Console.log('🔄 Starting user migration...'))
 
-  const existingUsers = yield* _(Effect.promise(() =>
-    db.select().from(usersTable)
-  ))
+  const existingUsers = yield* _(Effect.promise(() => db.select().from(usersTable)))
 
   for (const user of existingUsers) {
-    yield* _(Effect.promise(async () => {
-      await db.transaction(async (tx) => {
-        // Create Better Auth user
-        await tx.insert(betterAuthUser).values({
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          emailVerified: user.verified,
-          image: user.avatarUrl,
-          createdAt: user.createdAt,
-          updatedAt: user.updatedAt
-        })
-
-        // Store password in account table
-        if (user.password) {
-          await tx.insert(betterAuthAccount).values({
-            id: `${user.id}-credential`,
-            accountId: user.email,
-            providerId: 'credential',
-            userId: user.id,
-            password: user.password // Existing bcrypt hash
+    yield* _(
+      Effect.promise(async () => {
+        await db.transaction(async (tx) => {
+          // Create Better Auth user
+          await tx.insert(betterAuthUser).values({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            emailVerified: user.verified,
+            image: user.avatarUrl,
+            createdAt: user.createdAt,
+            updatedAt: user.updatedAt
           })
-        }
+
+          // Store password in account table
+          if (user.password) {
+            await tx.insert(betterAuthAccount).values({
+              id: `${user.id}-credential`,
+              accountId: user.email,
+              providerId: 'credential',
+              userId: user.id,
+              password: user.password // Existing bcrypt hash
+            })
+          }
+        })
       })
-    }))
+    )
   }
 
   yield* _(Console.log(`✅ Migrated ${existingUsers.length} users`))
@@ -210,6 +212,7 @@ migrateUsers.pipe(BunRuntime.runMain)
 ```
 
 **Run migration:**
+
 ```bash
 bun run scripts/migrate-users-to-better-auth.ts
 ```
@@ -221,6 +224,7 @@ bun run scripts/migrate-users-to-better-auth.ts
 ### 3.1 WWW Client (apps/www)
 
 **Install:**
+
 ```bash
 cd apps/www
 bun add better-auth
@@ -235,12 +239,7 @@ export const authClient = createAuthClient({
   baseURL: import.meta.env.VITE_VPS_BASE_URL
 })
 
-export const {
-  signIn,
-  signUp,
-  signOut,
-  useSession
-} = authClient
+export const { signIn, signUp, signOut, useSession } = authClient
 ```
 
 **Update: `apps/www/src/store/auth.ts`**
@@ -275,15 +274,17 @@ export const useAuthStore = create<AuthStore>()(
         user: null,
         isAuthenticated: false,
 
-        setUser: (user) => set({
-          user,
-          isAuthenticated: !!user
-        }),
+        setUser: (user) =>
+          set({
+            user,
+            isAuthenticated: !!user
+          }),
 
-        clearAuth: () => set({
-          user: null,
-          isAuthenticated: false
-        }),
+        clearAuth: () =>
+          set({
+            user: null,
+            isAuthenticated: false
+          }),
 
         refreshSession: async () => {
           const session = await authClient.getSession()
@@ -311,10 +312,7 @@ export const useAuthStore = create<AuthStore>()(
 Remove JWT token logic:
 
 ```typescript
-export async function fetcher<T>(
-  input: RequestInfo,
-  init: RequestInit = {}
-) {
+export async function fetcher<T>(input: RequestInfo, init: RequestInit = {}) {
   const res = await fetch(input, {
     ...init,
     credentials: 'include' // Important for cookies
@@ -350,6 +348,7 @@ if (result.data) {
 ### 3.2 Mobile Client (apps/mobile)
 
 **Install:**
+
 ```bash
 cd apps/mobile
 bun add better-auth @better-auth/expo expo-secure-store
@@ -429,10 +428,7 @@ const getConfiguration = async () => {
   return { baseUrl, sessionToken }
 }
 
-export const authenticatedFetch = async (
-  url: string,
-  options: RequestInit = {}
-) => {
+export const authenticatedFetch = async (url: string, options: RequestInit = {}) => {
   const config = await getConfiguration()
   const fullUrl = `${config.baseUrl}${url}`
 
@@ -493,12 +489,14 @@ const handleSubmit = async (values: SignInData) => {
 ### 4.1 Replace Middleware
 
 **Find all files using old middleware:**
+
 ```bash
 cd apps/vps
 grep -r "authenticate" src/routes/
 ```
 
 **Replace imports:**
+
 ```typescript
 // Old
 import { authenticate } from '@/middlewares/auth.middleware'
@@ -508,6 +506,7 @@ import { betterAuthMiddleware } from '@/middlewares/better-auth.middleware'
 ```
 
 **Update route definitions:**
+
 ```typescript
 // Old
 protectedRoutes.use('*', authenticate)
@@ -540,16 +539,19 @@ export type AppBindings = {
 ```typescript
 import { cors } from 'hono/cors'
 
-app.use('/*', cors({
-  origin: [
-    'http://127.0.0.1:5173',
-    'https://goosebumps.fm',
-    /^exp:\/\/.+$/, // Expo
-  ],
-  credentials: true,
-  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowHeaders: ['Content-Type', 'Authorization', 'Cookie']
-}))
+app.use(
+  '/*',
+  cors({
+    origin: [
+      'http://127.0.0.1:5173',
+      'https://goosebumps.fm',
+      /^exp:\/\/.+$/ // Expo
+    ],
+    credentials: true,
+    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    allowHeaders: ['Content-Type', 'Authorization', 'Cookie']
+  })
+)
 ```
 
 ---
@@ -573,6 +575,7 @@ bunx drizzle-kit generate
 ```
 
 Drop these tables:
+
 - `user_sessions`
 - `user_password_reset_tokens`
 
@@ -604,17 +607,20 @@ curl http://127.0.0.1:3003/auth/profile \
 ### Frontend Tests
 
 **WWW**:
+
 1. ✓ Login flow works
 2. ✓ Session persists on refresh
 3. ✓ Protected pages redirect to login when unauthenticated
 4. ✓ Logout clears session
 
 **Mobile**:
+
 1. ✓ Login stores session in SecureStore
 2. ✓ Session persists across app restarts
 3. ✓ API calls include session automatically
 
 **Raycast**:
+
 1. ✓ Sign in extracts session token
 2. ✓ Commands use session token
 3. ✓ Session expiration handled gracefully
@@ -661,6 +667,7 @@ curl http://127.0.0.1:3003/auth/profile \
 ## Critical Files to Modify
 
 **Backend:**
+
 - `apps/vps/src/lib/auth.ts` (new)
 - `apps/vps/src/routes/auth/better-auth.routes.ts` (new)
 - `apps/vps/src/middlewares/better-auth.middleware.ts` (new)
@@ -670,6 +677,7 @@ curl http://127.0.0.1:3003/auth/profile \
 - `apps/vps/src/lib/types.ts` (update AppBindings)
 
 **WWW Client:**
+
 - `apps/www/src/lib/auth-client.ts` (new)
 - `apps/www/src/store/auth.ts` (replace)
 - `apps/www/src/lib/http.ts` (update)
@@ -677,15 +685,18 @@ curl http://127.0.0.1:3003/auth/profile \
 - `apps/www/src/routes/auth/sign-up.tsx` (update)
 
 **Mobile Client:**
+
 - `apps/mobile/src/lib/auth-client.ts` (new)
 - `apps/mobile/src/store/auth.ts` (update)
 - `apps/mobile/src/components/Login.tsx` (update)
 
 **Raycast:**
+
 - `apps/raycast/src/api-client.ts` (update)
 - `apps/raycast/src/sign-in.tsx` (update)
 
 **Database:**
+
 - Run `bunx @better-auth/cli generate` to create schema
 - Run migration script to copy users to Better Auth tables
 
@@ -703,6 +714,7 @@ curl http://127.0.0.1:3003/auth/profile \
 ## Rollback Plan
 
 If critical issues occur:
+
 1. Restore database backup
 2. Revert VPS deployment
 3. Revert client deployments

@@ -3,10 +3,7 @@ import { useMutation } from '@tanstack/react-query'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import { z } from 'zod'
-import {
-  AuthPageLayout,
-  AuthStatusNotice
-} from '@/components/Auth/AuthPageLayout'
+import { AuthPageLayout, AuthStatusNotice } from '@/components/Auth/AuthPageLayout'
 import { useSession } from '@/lib/auth-client'
 import { VPS_BASE_URL } from '@/lib/http'
 
@@ -29,9 +26,7 @@ async function confirmInvite(token: string, password: string) {
   })
   if (!res.ok) {
     const data = await res.json().catch(() => ({}))
-    throw new Error(
-      (data as { error?: string }).error || 'Failed to reset password'
-    )
+    throw new Error((data as { error?: string }).error || 'Failed to reset password')
   }
 }
 
@@ -79,8 +74,7 @@ function ResetPasswordPage() {
         status={
           search.error ? (
             <AuthStatusNotice variant='error'>
-              Invalid or expired reset link. Please request a new password
-              reset.
+              Invalid or expired reset link. Please request a new password reset.
             </AuthStatusNotice>
           ) : null
         }
@@ -97,8 +91,8 @@ function ResetPasswordPage() {
           </div>
         }>
         <div className='border border-gb-pastel-green-2/20 bg-background/50 px-4 py-4 text-sm leading-6 text-muted-foreground'>
-          Reset links expire for safety. If the email is still in your inbox,
-          the newest link is the one to use.
+          Reset links expire for safety. If the email is still in your inbox, the newest link is the
+          one to use.
         </div>
       </AuthPageLayout>
     )
@@ -111,9 +105,7 @@ function ResetPasswordPage() {
       description='Set a fresh password for your account and we will log you straight in.'
       status={
         isSuccess ? (
-          <AuthStatusNotice variant='success'>
-            Password set! Taking you in...
-          </AuthStatusNotice>
+          <AuthStatusNotice variant='success'>Password set! Taking you in...</AuthStatusNotice>
         ) : error ? (
           <AuthStatusNotice variant='error'>{error.message}</AuthStatusNotice>
         ) : null

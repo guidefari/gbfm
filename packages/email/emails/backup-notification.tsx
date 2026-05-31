@@ -1,12 +1,4 @@
-import {
-  Body,
-  Container,
-  Html,
-  Link,
-  Preview,
-  Section,
-  Text
-} from '@react-email/components'
+import { Body, Container, Html, Link, Preview, Section, Text } from '@react-email/components'
 import { EmailHead } from './email-head'
 import { EmailHeader } from './email-header'
 import { emailTheme } from './theme'
@@ -51,15 +43,11 @@ export function BackupNotification({
           {!isSuccess && <Section style={failureBanner} />}
 
           <Section style={hero}>
-            <Text style={label}>
-              {isSuccess ? 'DATABASE BACKUP' : 'DATABASE BACKUP'}
-            </Text>
+            <Text style={label}>{isSuccess ? 'DATABASE BACKUP' : 'DATABASE BACKUP'}</Text>
             <Text style={isSuccess ? headline : headlineError}>
               {isSuccess ? 'Backup complete.' : 'Backup failed.'}
             </Text>
-            <Text style={timestamp_style}>
-              {timestamp ?? new Date().toISOString()}
-            </Text>
+            <Text style={timestamp_style}>{timestamp ?? new Date().toISOString()}</Text>
           </Section>
 
           <Section style={detailsSection}>

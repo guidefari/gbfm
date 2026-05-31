@@ -24,9 +24,7 @@ interface NewMixNotificationProps {
   releaseDate?: string
 }
 
-export const NewMixNotification: React.FC<
-  Readonly<NewMixNotificationProps>
-> = ({
+export const NewMixNotification: React.FC<Readonly<NewMixNotificationProps>> = ({
   username = 'abstractrhythmrecords',
   mixTitle = 'gb#63',
   artistName = 'Guide Fari',
@@ -71,8 +69,8 @@ export const NewMixNotification: React.FC<
           <Section style={content}>
             <Text style={greeting}>Hey {username},</Text>
             <Text style={bodyText}>
-              A new mix just landed on goosebumps.fm. Press play and let the
-              music take you somewhere.
+              A new mix just landed on goosebumps.fm. Press play and let the music take you
+              somewhere.
             </Text>
 
             <Button style={ctaButton} href={mixUrl}>

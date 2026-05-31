@@ -11,9 +11,7 @@ import { S3Service } from '@/services/s3.service'
 
 const currentDir = dirname(fileURLToPath(import.meta.url))
 
-const jbMonoBold = readFileSync(
-  join(currentDir, '../assets/fonts/JetBrainsMono-Bold.ttf')
-)
+const jbMonoBold = readFileSync(join(currentDir, '../assets/fonts/JetBrainsMono-Bold.ttf'))
 const jbMonoExtraBold = readFileSync(
   join(currentDir, '../assets/fonts/JetBrainsMono-ExtraBold.ttf')
 )
@@ -191,8 +189,7 @@ const generateQROnlyPdf = (mix: MixData, qrDataUrl: string) =>
       color: colors.pastelGreen2
     })
 
-    const truncatedTitle =
-      mix.title.length > 28 ? `${mix.title.substring(0, 25)}...` : mix.title
+    const truncatedTitle = mix.title.length > 28 ? `${mix.title.substring(0, 25)}...` : mix.title
     page.drawText(truncatedTitle.toUpperCase(), {
       x: 80,
       y: labelY - 45,
@@ -247,19 +244,13 @@ const generateQROnlyPdf = (mix: MixData, qrDataUrl: string) =>
     })
   })
 
-const generateMixQRPdfEffect = (
-  mix: MixData,
-  s3Service: S3Service,
-  force?: boolean
-) =>
+const generateMixQRPdfEffect = (mix: MixData, s3Service: S3Service, force?: boolean) =>
   Effect.gen(function* () {
     const bucketName = config.buckets.userContent
     const routerUrl = config.urls.router
 
     const cacheKey = getCacheKey(mix.slug)
-    const isCached = force
-      ? false
-      : yield* s3Service.checkExists(cacheKey, bucketName)
+    const isCached = force ? false : yield* s3Service.checkExists(cacheKey, bucketName)
 
     if (isCached) {
       const url = `${routerUrl}/user-content/${cacheKey}`
@@ -271,12 +262,7 @@ const generateMixQRPdfEffect = (
     const pdfBytes = yield* generateQROnlyPdf(mix, qrDataUrl)
 
     yield* s3Service
-      .uploadFile(
-        cacheKey,
-        Buffer.from(pdfBytes),
-        'application/pdf',
-        bucketName
-      )
+      .uploadFile(cacheKey, Buffer.from(pdfBytes), 'application/pdf', bucketName)
       .pipe(
         Effect.mapError(
           (e) =>
@@ -292,19 +278,13 @@ const generateMixQRPdfEffect = (
     return { url, cached: false }
   })
 
-const generateShowQRPdfEffect = (
-  show: ShowData,
-  s3Service: S3Service,
-  force?: boolean
-) =>
+const generateShowQRPdfEffect = (show: ShowData, s3Service: S3Service, force?: boolean) =>
   Effect.gen(function* () {
     const bucketName = config.buckets.userContent
     const routerUrl = config.urls.router
 
     const cacheKey = getCacheKey(`show-${show.slug}`)
-    const isCached = force
-      ? false
-      : yield* s3Service.checkExists(cacheKey, bucketName)
+    const isCached = force ? false : yield* s3Service.checkExists(cacheKey, bucketName)
 
     if (isCached) {
       const url = `${routerUrl}/user-content/${cacheKey}`
@@ -324,12 +304,7 @@ const generateShowQRPdfEffect = (
     const pdfBytes = yield* generateQROnlyPdf(mixLikeData, qrDataUrl)
 
     yield* s3Service
-      .uploadFile(
-        cacheKey,
-        Buffer.from(pdfBytes),
-        'application/pdf',
-        bucketName
-      )
+      .uploadFile(cacheKey, Buffer.from(pdfBytes), 'application/pdf', bucketName)
       .pipe(
         Effect.mapError(
           (e) =>

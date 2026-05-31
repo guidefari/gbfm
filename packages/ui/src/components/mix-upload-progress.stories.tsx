@@ -5,11 +5,7 @@ export default {
   title: '@gbfm/ui/MixUploadProgress'
 }
 
-const steps: MixUploadStep[] = [
-  'uploading-audio',
-  'uploading-image',
-  'creating-record'
-]
+const steps: MixUploadStep[] = ['uploading-audio', 'uploading-image', 'creating-record']
 
 export function MixUploadProgressStates() {
   return (

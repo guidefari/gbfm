@@ -24,10 +24,7 @@ const FRAME_HIT = Symbol('FRAME_HIT')
 const FRAME_MISS = Symbol('FRAME_MISS')
 const FRAME_UNINITIALIZED = Symbol('FRAME_UNINITIALIZED')
 
-type FrameValue =
-  | typeof FRAME_HIT
-  | typeof FRAME_MISS
-  | typeof FRAME_UNINITIALIZED
+type FrameValue = typeof FRAME_HIT | typeof FRAME_MISS | typeof FRAME_UNINITIALIZED
 
 export const FPSMeter: React.FC<FPSMeterProps> = ({
   width = 120,
@@ -40,37 +37,24 @@ export const FPSMeter: React.FC<FPSMeterProps> = ({
   const [currentFrameNumber, setCurrentFrameNumber] = React.useState(0)
   const [averageFps, setAverageFps] = React.useState<number | null>(null)
 
-  const frameBarWidth = React.useMemo(
-    () => getFrameBarWidth(systemFps),
-    [systemFps]
-  )
+  const frameBarWidth = React.useMemo(() => getFrameBarWidth(systemFps), [systemFps])
   const numberOfVisibleFrames = React.useMemo(
     () => Math.floor(width / frameBarWidth),
     [width, frameBarWidth]
   )
 
-  const last500FrameDurations = React.useRef<number[]>(
-    Array.from<number>({ length: 500 }).fill(0)
-  )
+  const last500FrameDurations = React.useRef<number[]>(Array.from<number>({ length: 500 }).fill(0))
 
   const readjustSystemFps = React.useCallback(() => {
-    const nonZero = last500FrameDurations.current.filter((_) => _ > 0).sort()
+    const nonZero = last500FrameDurations.current.filter((_) => _ > 0).toSorted()
     if (nonZero.length < 10) return
 
     const medianIndex = Math.floor(nonZero.length / 2)
-    const tenFramesAroundMedian = nonZero.slice(
-      medianIndex - 5,
-      medianIndex + 5
-    )
-    const sumOfTenFramesAroundMedian = tenFramesAroundMedian.reduce(
-      (acc, _) => acc + _,
-      0
-    )
+    const tenFramesAroundMedian = nonZero.slice(medianIndex - 5, medianIndex + 5)
+    const sumOfTenFramesAroundMedian = tenFramesAroundMedian.reduce((acc, _) => acc + _, 0)
     const newSystemFps = Math.round(10_000 / sumOfTenFramesAroundMedian)
 
-    const closestFps = supportedFps.find(
-      (fps) => Math.abs(newSystemFps - fps) < 10
-    )
+    const closestFps = supportedFps.find((fps) => Math.abs(newSystemFps - fps) < 10)
 
     if (closestFps === undefined) {
       console.warn(`Unsupported system FPS ${newSystemFps}`)
@@ -106,8 +90,7 @@ export const FPSMeter: React.FC<FPSMeterProps> = ({
         loop()
 
         const frameNumber = Math.floor(now / resolutionInMs)
-        const numberOfSkippedFrames =
-          frameNumber - previousFrameNumberRef.current - 1
+        const numberOfSkippedFrames = frameNumber - previousFrameNumberRef.current - 1
 
         setFrames((prevFrames) => {
           const newFrames = [...prevFrames]
@@ -160,9 +143,7 @@ export const FPSMeter: React.FC<FPSMeterProps> = ({
     }
 
     if (numberOfInitializedFrames >= numberOfFramesForAverageFps) {
-      const avgFps = Math.round(
-        (systemFps * frameCount) / numberOfInitializedFrames
-      )
+      const avgFps = Math.round((systemFps * frameCount) / numberOfInitializedFrames)
       setAverageFps(avgFps)
     }
   }, [frames, numberOfFramesForAverageFps, systemFps])
@@ -176,8 +157,7 @@ export const FPSMeter: React.FC<FPSMeterProps> = ({
           if (frameHit === FRAME_UNINITIALIZED) return null
 
           const x = i * frameBarWidth
-          const isEvenChunk =
-            (currentFrameNumber + i) % (chunkWidth * 2) < chunkWidth
+          const isEvenChunk = (currentFrameNumber + i) % (chunkWidth * 2) < chunkWidth
 
           const fillColor =
             frameHit === FRAME_MISS
@@ -188,7 +168,7 @@ export const FPSMeter: React.FC<FPSMeterProps> = ({
 
           return (
             <Rect
-              // biome-ignore lint/suspicious/noArrayIndexKey: frames are positional
+              // oxlint-disable-next-line react/no-array-index-key
               key={`frame-${currentFrameNumber - frames.length + i}`}
               x={x}
               y={0}
@@ -199,12 +179,7 @@ export const FPSMeter: React.FC<FPSMeterProps> = ({
           )
         })}
         {averageFps !== null && (
-          <SvgText
-            x={2}
-            y={height - 3}
-            fill='white'
-            fontSize={10}
-            fontFamily='monospace'>
+          <SvgText x={2} y={height - 3} fill='white' fontSize={10} fontFamily='monospace'>
             {averageFps} FPS
           </SvgText>
         )}

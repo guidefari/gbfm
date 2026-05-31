@@ -7,20 +7,20 @@ services:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_INITDB_ARGS: "--auth-host=md5"
+      POSTGRES_INITDB_ARGS: '--auth-host=md5'
     volumes:
       - ./config/postgresql.conf:/etc/postgresql/postgresql.conf
       - ./config/pg_hba.conf:/etc/postgresql/pg_hba.conf
       - ./backups:/backups
       - ./logs:/var/log/postgresql
     ports:
-      - "5432:5432"
+      - '5432:5432'
     command: >
       postgres 
       -c config_file=/etc/postgresql/postgresql.conf
       -c hba_file=/etc/postgresql/pg_hba.conf
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d postgres"]
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d postgres']
       interval: 30s
       timeout: 10s
       retries: 5
@@ -32,11 +32,11 @@ services:
     container_name: jaeger
     restart: unless-stopped
     environment:
-      COLLECTOR_OTLP_ENABLED: "true"
+      COLLECTOR_OTLP_ENABLED: 'true'
     ports:
-      - "16686:16686"
-      - "4317:4317"
-      - "4318:4318"
+      - '16686:16686'
+      - '4317:4317'
+      - '4318:4318'
     networks:
       - app_network
 

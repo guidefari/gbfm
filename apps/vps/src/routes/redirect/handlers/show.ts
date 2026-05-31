@@ -76,9 +76,7 @@ export const shareShow = async (c: Context) => {
       html: buildOGHtml({
         type: 'website',
         title: show.title || slug,
-        description:
-          show.description ||
-          `Check out ${show.title || slug} on goosebumps.fm`,
+        description: show.description || `Check out ${show.title || slug} on goosebumps.fm`,
         image: show.bannerImageUrl || show.thumbnailUrl,
         canonicalPath: `/shows/${slug}`,
         creators: hosts.map((h) => h.name),

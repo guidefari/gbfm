@@ -76,10 +76,7 @@ export const refreshTokenResponseSchema = z.object({
 
 export type RefreshTokenResponse = z.infer<typeof refreshTokenResponseSchema>
 
-export async function login(
-  baseUrl: string,
-  credentials: LoginRequest
-): Promise<LoginResponse> {
+export async function login(baseUrl: string, credentials: LoginRequest): Promise<LoginResponse> {
   logAuthEvent('info', 'Login attempt', {
     url: `${baseUrl}/auth/signin`,
     email: credentials.email
@@ -103,9 +100,7 @@ export async function login(
         })
         return new NetworkError({
           message:
-            error instanceof Error
-              ? error.message
-              : 'Failed to connect to authentication server',
+            error instanceof Error ? error.message : 'Failed to connect to authentication server',
           status: 0
         })
       }
@@ -133,9 +128,7 @@ export async function login(
 
       logAuthEvent('warn', 'Login error response', { errorData })
 
-      const errorMessage = z
-        .object({ message: z.string() })
-        .safeParse(errorData)
+      const errorMessage = z.object({ message: z.string() }).safeParse(errorData)
 
       return yield* Effect.fail(
         new AuthError({
@@ -202,13 +195,9 @@ export async function login(
         avatarUrl: baUser.image || null,
         verified: baUser.emailVerified,
         createdAt:
-          typeof baUser.createdAt === 'string'
-            ? baUser.createdAt
-            : baUser.createdAt.toISOString(),
+          typeof baUser.createdAt === 'string' ? baUser.createdAt : baUser.createdAt.toISOString(),
         updatedAt:
-          typeof baUser.updatedAt === 'string'
-            ? baUser.updatedAt
-            : baUser.updatedAt.toISOString()
+          typeof baUser.updatedAt === 'string' ? baUser.updatedAt : baUser.updatedAt.toISOString()
       },
       accessToken: token,
       refreshToken: token
@@ -249,9 +238,7 @@ export async function refreshAccessToken(
         })
         return new NetworkError({
           message:
-            error instanceof Error
-              ? error.message
-              : 'Failed to connect to token refresh endpoint',
+            error instanceof Error ? error.message : 'Failed to connect to token refresh endpoint',
           status: 0
         })
       }
@@ -312,10 +299,7 @@ export async function refreshAccessToken(
   }).pipe(Effect.runPromise)
 }
 
-export async function getProfile(
-  baseUrl: string,
-  accessToken: string
-): Promise<User> {
+export async function getProfile(baseUrl: string, accessToken: string): Promise<User> {
   logAuthEvent('info', 'Profile fetch attempt', {
     url: `${baseUrl}/auth/profile`,
     tokenLength: accessToken.length
@@ -337,10 +321,7 @@ export async function getProfile(
           error: error instanceof Error ? error.message : String(error)
         })
         return new NetworkError({
-          message:
-            error instanceof Error
-              ? error.message
-              : 'Failed to connect to profile endpoint',
+          message: error instanceof Error ? error.message : 'Failed to connect to profile endpoint',
           status: 0
         })
       }

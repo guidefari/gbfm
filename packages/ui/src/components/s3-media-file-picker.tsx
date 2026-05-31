@@ -2,13 +2,7 @@ import { Check, ImageIcon, Loader2, Music, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from './button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './dialog'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from './select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select'
 
 export interface S3Object {
   key: string
@@ -39,17 +33,7 @@ export interface S3MediaFilePickerProps {
   onRefresh: () => void
 }
 
-const AUDIO_EXTENSIONS = new Set([
-  'mp3',
-  'wav',
-  'aiff',
-  'aif',
-  'flac',
-  'ogg',
-  'm4a',
-  'opus',
-  'wma'
-])
+const AUDIO_EXTENSIONS = new Set(['mp3', 'wav', 'aiff', 'aif', 'flac', 'ogg', 'm4a', 'opus', 'wma'])
 
 const IMAGE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif'])
 
@@ -103,8 +87,7 @@ export function S3MediaFilePicker({
     mediaType === 'audio' ? isAudioFile(obj.key) : isImageFile(obj.key)
   )
 
-  const title =
-    mediaType === 'audio' ? 'Pick audio file from S3' : 'Pick image from S3'
+  const title = mediaType === 'audio' ? 'Pick audio file from S3' : 'Pick image from S3'
   const emptyMessage = selectedBucket
     ? `No ${mediaType} files found in this bucket`
     : 'Select a bucket to browse files'
@@ -121,11 +104,7 @@ export function S3MediaFilePicker({
 
   const bucketOptions = config
     ? Array.from(
-        new Set([
-          config.buckets.userContent,
-          config.buckets.mixes,
-          ...config.availableBuckets
-        ])
+        new Set([config.buckets.userContent, config.buckets.mixes, ...config.availableBuckets])
       ).filter(Boolean)
     : []
 
@@ -162,11 +141,7 @@ export function S3MediaFilePicker({
                 ))}
               </SelectContent>
             </Select>
-            <Button
-              variant='outline'
-              size='sm'
-              className='h-9'
-              onClick={onRefresh}>
+            <Button variant='outline' size='sm' className='h-9' onClick={onRefresh}>
               <RefreshCw className='h-3.5 w-3.5' />
             </Button>
           </div>
@@ -177,16 +152,12 @@ export function S3MediaFilePicker({
                 <Loader2 className='h-6 w-6 animate-spin text-gb-highlight' />
               </div>
             ) : mediaFiles.length === 0 ? (
-              <div className='py-12 text-center text-sm text-muted-foreground'>
-                {emptyMessage}
-              </div>
+              <div className='py-12 text-center text-sm text-muted-foreground'>{emptyMessage}</div>
             ) : (
               <div className='max-h-80 overflow-y-auto overflow-x-hidden'>
                 {mediaFiles.map((obj) => {
                   const isSelected = selectedKey === obj.key
-                  const publicUrl = config
-                    ? getS3PublicUrl(config, selectedBucket, obj.key)
-                    : null
+                  const publicUrl = config ? getS3PublicUrl(config, selectedBucket, obj.key) : null
                   return (
                     <button
                       key={obj.key}
@@ -241,15 +212,12 @@ export function S3MediaFilePicker({
 
           {selectedKey && config && mediaType === 'audio' && (
             <div className='rounded-sm border border-gb-pastel-green-2/20 p-3'>
-              {/* biome-ignore lint/a11y/useMediaCaption: internal preview player, no captions needed */}
+              {/* oxlint-disable-next-line jsx-a11y/media-has-caption */}
               <audio
                 key={selectedKey}
                 controls
                 className='w-full h-8'
-                src={
-                  getS3PublicUrl(config, selectedBucket, selectedKey) ??
-                  undefined
-                }
+                src={getS3PublicUrl(config, selectedBucket, selectedKey) ?? undefined}
               />
             </div>
           )}
@@ -257,10 +225,7 @@ export function S3MediaFilePicker({
           {selectedKey && config && mediaType === 'image' && (
             <div className='rounded-sm border border-gb-pastel-green-2/20 p-3'>
               <img
-                src={
-                  getS3PublicUrl(config, selectedBucket, selectedKey) ??
-                  undefined
-                }
+                src={getS3PublicUrl(config, selectedBucket, selectedKey) ?? undefined}
                 alt={selectedKey.split('/').pop() ?? selectedKey}
                 className='h-40 w-full rounded-sm object-cover'
               />
@@ -268,10 +233,7 @@ export function S3MediaFilePicker({
           )}
 
           <div className='flex justify-end gap-2'>
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={() => onOpenChange(false)}>
+            <Button variant='outline' size='sm' onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
             <Button

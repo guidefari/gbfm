@@ -22,15 +22,8 @@ export const Route = createFileRoute('/tweet/')({
 
 function TweetListPage() {
   const { tag } = Route.useSearch()
-  const {
-    data,
-    error,
-    isPending,
-    refetch,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage
-  } = useMicroPosts(5)
+  const { data, error, isPending, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useMicroPosts(5)
 
   const allTags = useMemo(() => {
     if (!data) return []
@@ -40,7 +33,7 @@ function TweetListPage() {
         tagSet.add(t)
       })
     })
-    return Array.from(tagSet).sort()
+    return Array.from(tagSet).toSorted()
   }, [data])
 
   const filteredData = useMemo(() => {
@@ -64,7 +57,7 @@ function TweetListPage() {
         <div className='animate-pulse space-y-4'>
           {Array.from({ length: 3 }).map((_, i) => (
             <div
-              // biome-ignore lint/suspicious/noArrayIndexKey: static array.
+              // oxlint-disable-next-line react/no-array-index-key
               key={i}
               className='space-y-3 overflow-hidden rounded-lg border border-border/40 bg-card/30 p-4 sm:p-5'>
               <div className='flex items-center gap-3'>
@@ -124,13 +117,7 @@ function TweetListPage() {
   )
 }
 
-function TagFilterStrip({
-  tags,
-  activeTag
-}: {
-  tags: string[]
-  activeTag: string | undefined
-}) {
+function TagFilterStrip({ tags, activeTag }: { tags: string[]; activeTag: string | undefined }) {
   return (
     <div className='-mx-4 mb-6 overflow-x-auto px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
       <div className='flex w-max items-center gap-x-4 text-sm'>
@@ -143,25 +130,14 @@ function TagFilterStrip({
   )
 }
 
-function TagLink({
-  label,
-  to,
-  active
-}: {
-  label: string
-  to: string | null
-  active: boolean
-}) {
+function TagLink({ label, to, active }: { label: string; to: string | null; active: boolean }) {
   const base = 'shrink-0 font-mono lowercase tracking-tight transition-colors'
   const styles = active
     ? 'text-foreground underline underline-offset-4 decoration-2'
     : 'text-muted-foreground/70 hover:text-foreground'
 
   return (
-    <Link
-      to='/tweet'
-      search={to ? { tag: to } : {}}
-      className={`${base} ${styles}`}>
+    <Link to='/tweet' search={to ? { tag: to } : {}} className={`${base} ${styles}`}>
       #{label}
     </Link>
   )

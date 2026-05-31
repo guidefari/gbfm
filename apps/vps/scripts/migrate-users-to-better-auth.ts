@@ -4,11 +4,11 @@ import { user as betterAuthUser, account as betterAuthAccount } from '../src/db/
 import { Effect, Console, Data } from 'effect'
 import { BunRuntime } from '@effect/platform-bun'
 
-class FetchUsersError extends Data.TaggedError("FetchUsersError")<{
+class FetchUsersError extends Data.TaggedError('FetchUsersError')<{
   readonly cause: unknown
 }> {}
 
-class MigrationError extends Data.TaggedError("MigrationError")<{
+class MigrationError extends Data.TaggedError('MigrationError')<{
   readonly cause: unknown
 }> {}
 
@@ -74,7 +74,10 @@ const migrateUsers = Effect.gen(function* () {
       yield* Console.log(`✓ Successfully migrated ${oldUser.email}`)
     } else {
       const err = (migrationResult as any).error
-      yield* Console.error(`✗ Failed to migrate ${oldUser.email}:`, err instanceof MigrationError ? String(err.cause) : err)
+      yield* Console.error(
+        `✗ Failed to migrate ${oldUser.email}:`,
+        err instanceof MigrationError ? String(err.cause) : err
+      )
     }
   }
 

@@ -67,13 +67,7 @@ const PLATFORM_ICONS: Record<string, { Icon: IconType; color: string }> = {
   musicbrainz: { Icon: SiMusicbrainz, color: '#BA478F' }
 }
 
-const PLATFORM_PRIORITY = [
-  'spotify',
-  'apple_music',
-  'youtube_music',
-  'youtube',
-  'bandcamp'
-]
+const PLATFORM_PRIORITY = ['spotify', 'apple_music', 'youtube_music', 'youtube', 'bandcamp']
 
 function pickPrimary(links: PlaylistTrackLink[]): PlaylistTrackLink | null {
   if (!links.length) return null
@@ -106,11 +100,7 @@ function PlatformLinks({ links }: PlatformLinksProps) {
             title={label}
             aria-label={label}
             className='inline-flex size-5 items-center justify-center text-muted-foreground transition-colors hover:text-foreground'
-            style={
-              entry
-                ? ({ '--brand': entry.color } as React.CSSProperties)
-                : undefined
-            }
+            style={entry ? ({ '--brand': entry.color } as React.CSSProperties) : undefined}
             onMouseEnter={(e) => {
               if (entry) e.currentTarget.style.color = entry.color
             }}
@@ -160,14 +150,9 @@ export function SortableTrackRow({
   onRemove,
   removeDisabled
 }: Props) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging
-  } = useSortable({ id: track.trackId })
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: track.trackId
+  })
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -191,15 +176,9 @@ export function SortableTrackRow({
         aria-label='Drag handle'>
         <GripVertical className='size-4' />
       </button>
-      <span className='text-xs text-muted-foreground w-6 text-right'>
-        {track.position + 1}
-      </span>
+      <span className='text-xs text-muted-foreground w-6 text-right'>{track.position + 1}</span>
       {track.coverImageUrl ? (
-        <img
-          src={track.coverImageUrl}
-          alt=''
-          className='size-10 rounded object-cover'
-        />
+        <img src={track.coverImageUrl} alt='' className='size-10 rounded object-cover' />
       ) : (
         <div className='size-10 rounded bg-muted' />
       )}

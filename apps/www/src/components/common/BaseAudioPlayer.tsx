@@ -2,16 +2,7 @@
 import { useFeatureFlag } from '@gbfm/core/feature-flags'
 import { Button, toast } from '@gbfm/ui'
 import { Link } from '@tanstack/react-router'
-import {
-  Heart,
-  List,
-  Pause,
-  Play,
-  SkipBack,
-  SkipForward,
-  Volume2,
-  VolumeX
-} from 'lucide-react'
+import { Heart, List, Pause, Play, SkipBack, SkipForward, Volume2, VolumeX } from 'lucide-react'
 import { motion } from 'motion/react'
 import type React from 'react'
 import { useEffect, useRef } from 'react'
@@ -77,13 +68,8 @@ export function BaseAudioPlayer({
   const isQueueEnabled = useFeatureFlag('ui.queue')
   const shouldShowQueue = showQueue && isQueueEnabled
 
-  const {
-    audioSrc,
-    isPlaying,
-    thumbnailUrl,
-    nowPlayingContext,
-    currentTrackId
-  } = useAudioPlayerPlaybackState()
+  const { audioSrc, isPlaying, thumbnailUrl, nowPlayingContext, currentTrackId } =
+    useAudioPlayerPlaybackState()
   const { queue } = useAudioPlayerQueueState()
   const { progress, currentTime, duration } = useAudioPlayerProgressState()
   const { volume, isMuted } = useAudioPlayerVolumeState()
@@ -94,9 +80,7 @@ export function BaseAudioPlayer({
   const { data: favorites } = useFavorites()
   const { addFavorite } = useAddFavorite()
   const { removeFavorite } = useRemoveFavorite()
-  const isFavorited = currentTrackId
-    ? favorites.some((f) => f.audioId === currentTrackId)
-    : false
+  const isFavorited = currentTrackId ? favorites.some((f) => f.audioId === currentTrackId) : false
 
   const {
     play,
@@ -200,11 +184,7 @@ export function BaseAudioPlayer({
         </div>
       )
     }
-    return (
-      <div
-        className={`shrink-0 border-t border-transparent min-h-[104px] ${className}`}
-      />
-    )
+    return <div className={`shrink-0 border-t border-transparent min-h-[104px] ${className}`} />
   }
 
   if (variant === 'compact') {
@@ -266,15 +246,9 @@ export function BaseAudioPlayer({
           <Button
             variant='ghost'
             size='icon'
-            onClick={() =>
-              isPlaying ? pause() : play(nowPlayingContext.title)
-            }
+            onClick={() => (isPlaying ? pause() : play(nowPlayingContext.title))}
             className='text-foreground hover:bg-muted'>
-            {isPlaying ? (
-              <Pause className='w-4 h-4' />
-            ) : (
-              <Play className='w-4 h-4' />
-            )}
+            {isPlaying ? <Pause className='w-4 h-4' /> : <Play className='w-4 h-4' />}
           </Button>
           <Button
             variant='ghost'
@@ -336,9 +310,7 @@ export function BaseAudioPlayer({
                   size='icon'
                   onClick={handleToggleFavorite}
                   className={`text-secondary-foreground hover:text-foreground hover:bg-muted ${isFavorited ? 'text-red-500' : ''}`}>
-                  <Heart
-                    className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`}
-                  />
+                  <Heart className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`} />
                 </Button>
               </div>
             )}
@@ -358,14 +330,8 @@ export function BaseAudioPlayer({
                 variant='ghost'
                 size='icon'
                 className='w-8 h-8 rounded-sm backdrop-blur-sm bg-primary/20 hover:bg-primary/30'
-                onClick={() =>
-                  isPlaying ? pause() : play(nowPlayingContext.title)
-                }>
-                {isPlaying ? (
-                  <Pause className='w-4 h-4' />
-                ) : (
-                  <Play className='w-4 h-4' />
-                )}
+                onClick={() => (isPlaying ? pause() : play(nowPlayingContext.title))}>
+                {isPlaying ? <Pause className='w-4 h-4' /> : <Play className='w-4 h-4' />}
               </Button>
               <Button
                 variant='ghost'
@@ -404,11 +370,7 @@ export function BaseAudioPlayer({
                   size='icon'
                   onClick={toggleMute}
                   className='text-secondary-foreground hover:text-foreground hover:bg-muted'
-                  title={
-                    isMuted
-                      ? 'Unmute (or scroll to adjust)'
-                      : 'Mute (or scroll to adjust)'
-                  }>
+                  title={isMuted ? 'Unmute (or scroll to adjust)' : 'Mute (or scroll to adjust)'}>
                   {isMuted || volume === 0 ? (
                     <VolumeX className='w-4 h-4' />
                   ) : (
@@ -522,15 +484,9 @@ export function BaseAudioPlayer({
               <Button
                 variant='ghost'
                 size='icon'
-                onClick={() =>
-                  isPlaying ? pause() : play(nowPlayingContext.title)
-                }
+                onClick={() => (isPlaying ? pause() : play(nowPlayingContext.title))}
                 className='w-10 h-10 rounded-sm backdrop-blur-sm bg-primary/20 hover:bg-primary/30'>
-                {isPlaying ? (
-                  <Pause className='w-5 h-5' />
-                ) : (
-                  <Play className='w-5 h-5' />
-                )}
+                {isPlaying ? <Pause className='w-5 h-5' /> : <Play className='w-5 h-5' />}
               </Button>
               <Button
                 variant='ghost'
@@ -561,9 +517,7 @@ export function BaseAudioPlayer({
                   size='icon'
                   onClick={handleToggleFavorite}
                   className={`text-secondary-foreground hover:text-foreground hover:bg-muted ${isFavorited ? 'text-red-500' : ''}`}>
-                  <Heart
-                    className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`}
-                  />
+                  <Heart className={`w-4 h-4 ${isFavorited ? 'fill-current' : ''}`} />
                 </Button>
               )}
             </div>

@@ -19,10 +19,7 @@ export interface BandcampAlbum {
   description?: string
 }
 
-const bandcampCache = new Map<
-  string,
-  { data: BandcampAlbum; timestamp: number }
->()
+const bandcampCache = new Map<string, { data: BandcampAlbum; timestamp: number }>()
 const CACHE_DURATION = 24 * 60 * 60 * 1000 // 24 hours
 
 const parseBandcampJsonLd = (json: string): BandcampAlbum | undefined => {
@@ -67,9 +64,7 @@ const parseBandcampHtml = (html: string) =>
       }
     }
 
-    const imageMatch = html.match(
-      /<a[^>]*class="popupImage"[^>]*href="([^"]+)"/
-    )
+    const imageMatch = html.match(/<a[^>]*class="popupImage"[^>]*href="([^"]+)"/)
     if (imageMatch?.[1]) {
       metadata.image = imageMatch[1]
     }
@@ -134,9 +129,7 @@ export const getBandcampMetadata = (url: string) =>
 
     let metadata: BandcampAlbum | undefined
 
-    const jsonLdMatch = html.match(
-      /<script type="application\/ld\+json">([\s\S]*?)<\/script>/
-    )
+    const jsonLdMatch = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)
     if (jsonLdMatch?.[1]) {
       metadata = parseBandcampJsonLd(jsonLdMatch[1] || '') || metadata
     }
@@ -168,15 +161,12 @@ export const parseBandcampDuration = (duration: string): number => {
   return 0
 }
 
-export const calculateBandcampTotalDuration = (
-  metadata: BandcampAlbum
-): number | undefined => {
+export const calculateBandcampTotalDuration = (metadata: BandcampAlbum): number | undefined => {
   if (!metadata.track?.itemListElement) return undefined
 
   return metadata.track.itemListElement.reduce(
     (total, track) =>
-      total +
-      (track.item.duration ? parseBandcampDuration(track.item.duration) : 0),
+      total + (track.item.duration ? parseBandcampDuration(track.item.duration) : 0),
     0
   )
 }

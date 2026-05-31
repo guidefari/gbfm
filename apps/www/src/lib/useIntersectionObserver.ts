@@ -1,7 +1,6 @@
 import { type RefObject, useCallback, useEffect, useState } from 'react'
 
-export interface UseIntersectionObserverOptions
-  extends IntersectionObserverInit {}
+export interface UseIntersectionObserverOptions extends IntersectionObserverInit {}
 
 export function useIntersectionObserver<T extends Element = Element>(
   elementRef: RefObject<T | null>,
@@ -10,12 +9,9 @@ export function useIntersectionObserver<T extends Element = Element>(
   const { threshold = 0, root = null, rootMargin = '0%' } = options
   const [entry, setEntry] = useState<IntersectionObserverEntry>()
 
-  const updateEntry = useCallback(
-    ([entry]: IntersectionObserverEntry[]): void => {
-      setEntry(entry)
-    },
-    []
-  )
+  const updateEntry = useCallback(([entry]: IntersectionObserverEntry[]): void => {
+    setEntry(entry)
+  }, [])
 
   useEffect(() => {
     const node = elementRef?.current

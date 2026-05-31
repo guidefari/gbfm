@@ -31,9 +31,7 @@ export function AudioUploader({
         {!audioFile ? (
           <div className='p-6 text-center transition-colors border-2 border-dashed rounded-sm border-gb-pastel-green-2/30 hover:border-gb-highlight/50'>
             <Music className='w-8 h-8 mx-auto mb-3 text-gb-pastel-green-2' />
-            <p className='mb-3 text-sm text-gb-default-text'>
-              Drag and drop your audio file here
-            </p>
+            <p className='mb-3 text-sm text-gb-default-text'>Drag and drop your audio file here</p>
             <input
               type='file'
               accept='audio/*'
@@ -53,9 +51,7 @@ export function AudioUploader({
                 </span>
               </Button>
             </label>
-            <p className='mt-2 text-xs text-gb-default-text/70'>
-              MP3, WAV, FLAC, M4A (Max 500MB)
-            </p>
+            <p className='mt-2 text-xs text-gb-default-text/70'>MP3, WAV, FLAC, M4A (Max 500MB)</p>
           </div>
         ) : (
           <div className='space-y-3'>
@@ -80,7 +76,7 @@ export function AudioUploader({
               </Button>
             </div>
             {audioPreview && (
-              /* biome-ignore lint/a11y/useMediaCaption: Audio preview for upload validation, captions not applicable */
+              /* oxlint-disable-next-line jsx-a11y/media-has-caption */
               <audio controls className='w-full'>
                 <source src={audioPreview} />
                 Your browser does not support the audio element.

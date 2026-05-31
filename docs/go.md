@@ -13,29 +13,31 @@
 ## Routes for Go Backend (~50 endpoints)
 
 ### Excluded (Stay in TypeScript VPS)
+
 - `/auth/*` - better-auth routes (sign-up, sign-in, sign-out, verification)
 
 ### Included in Go
 
-| Route Group | Endpoints | Key Features |
-|-------------|-----------|--------------|
-| **Content** (`/content`) | 12 | Audio CRUD, mixes, posts, labels, releases, QR PDF |
-| **User** (`/user`) | 5 | Profile, email preferences, subscriptions, search |
-| **Profile** (`/profile`) | 1 | Public profile with user content |
-| **Favorites** (`/favorites`) | 3 | Add/list/remove favorites |
-| **Shows** (`/shows`) | 7 | CRUD, episodes, subscriptions |
-| **Music Reminders** (`/music-reminders`) | 4 | Reminder CRUD with rate limiting |
-| **Spotify** (`/spotify`) | 5 | Track/album/playlist metadata, search, enrichment |
-| **Resolve** (`/resolve`) | 1 | Slug resolution |
-| **Newsletter** (`/newsletter`) | 1 | Subscribe |
-| **Email** (`/email`) | 1 | Send mix notifications |
-| **Publication** (`/publication`) | 5 | CRUD |
-| **Upload** (`/upload`) | 1 | File upload (audio/images) |
-| **Share/SEO** (`/s/*`, root) | 9 | Share links, robots.txt, sitemap.xml |
-| **RSS** (`/rss.xml`) | 1 | Feed generation |
-| **Health** (`/health`) | 1 | DB connectivity check |
+| Route Group                              | Endpoints | Key Features                                       |
+| ---------------------------------------- | --------- | -------------------------------------------------- |
+| **Content** (`/content`)                 | 12        | Audio CRUD, mixes, posts, labels, releases, QR PDF |
+| **User** (`/user`)                       | 5         | Profile, email preferences, subscriptions, search  |
+| **Profile** (`/profile`)                 | 1         | Public profile with user content                   |
+| **Favorites** (`/favorites`)             | 3         | Add/list/remove favorites                          |
+| **Shows** (`/shows`)                     | 7         | CRUD, episodes, subscriptions                      |
+| **Music Reminders** (`/music-reminders`) | 4         | Reminder CRUD with rate limiting                   |
+| **Spotify** (`/spotify`)                 | 5         | Track/album/playlist metadata, search, enrichment  |
+| **Resolve** (`/resolve`)                 | 1         | Slug resolution                                    |
+| **Newsletter** (`/newsletter`)           | 1         | Subscribe                                          |
+| **Email** (`/email`)                     | 1         | Send mix notifications                             |
+| **Publication** (`/publication`)         | 5         | CRUD                                               |
+| **Upload** (`/upload`)                   | 1         | File upload (audio/images)                         |
+| **Share/SEO** (`/s/*`, root)             | 9         | Share links, robots.txt, sitemap.xml               |
+| **RSS** (`/rss.xml`)                     | 1         | Feed generation                                    |
+| **Health** (`/health`)                   | 1         | DB connectivity check                              |
 
 ### Background Services (in Go)
+
 1. **Reminder Processor** - 30s interval
 2. **QR Cache Cleanup** - 15min interval
 3. **Sitemap Regeneration** - 1hr interval
@@ -71,6 +73,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 ```
 
 **Session table schema** (from `auth.schema.ts`):
+
 - `id` (text, PK)
 - `token` (text, unique) - used for validation
 - `expires_at` (timestamp) - must be > NOW()
@@ -122,6 +125,7 @@ newsletter_subscriber - id, email, confirmed_at
 ```
 
 ### Common Field Patterns
+
 - UUIDs for primary keys
 - `slug` for URL-friendly identifiers
 - `created_at`, `updated_at` timestamps
@@ -171,17 +175,17 @@ apps/go-api/
 
 ### Recommended Go Libraries
 
-| Purpose | Library | Notes |
-|---------|---------|-------|
-| HTTP Router | `chi` or `echo` | Lightweight, middleware-friendly |
-| Database | `sqlc` + `pgx` | Type-safe queries, native PostgreSQL |
-| Migrations | `goose` | SQL-based migrations |
-| Validation | `go-playground/validator` | Struct tag validation |
-| Config | `envconfig` or `viper` | Environment variable parsing |
-| Logging | `slog` (stdlib) | Structured logging |
-| S3 | `aws-sdk-go-v2` | AWS S3 operations |
-| Spotify | Custom HTTP client | No official Go SDK |
-| OpenTelemetry | `go.opentelemetry.io/otel` | Tracing/metrics |
+| Purpose       | Library                    | Notes                                |
+| ------------- | -------------------------- | ------------------------------------ |
+| HTTP Router   | `chi` or `echo`            | Lightweight, middleware-friendly     |
+| Database      | `sqlc` + `pgx`             | Type-safe queries, native PostgreSQL |
+| Migrations    | `goose`                    | SQL-based migrations                 |
+| Validation    | `go-playground/validator`  | Struct tag validation                |
+| Config        | `envconfig` or `viper`     | Environment variable parsing         |
+| Logging       | `slog` (stdlib)            | Structured logging                   |
+| S3            | `aws-sdk-go-v2`            | AWS S3 operations                    |
+| Spotify       | Custom HTTP client         | No official Go SDK                   |
+| OpenTelemetry | `go.opentelemetry.io/otel` | Tracing/metrics                      |
 
 ---
 
@@ -202,12 +206,12 @@ export const goApi = new sst.aws.Service('gbfm_go_api', {
     command: 'go run ./cmd/api'
   },
   link: [
-    vpsPostgres,    // Same database
+    vpsPostgres, // Same database
     urls,
     fileRouter,
     contentBucket,
     spotifyClientId,
-    spotifyClientSecret,
+    spotifyClientSecret
     // ... other secrets
   ],
   capacity: 'spot'
@@ -215,6 +219,7 @@ export const goApi = new sst.aws.Service('gbfm_go_api', {
 ```
 
 ### Shared Resources
+
 - **Same PostgreSQL database** as VPS
 - **Same S3 buckets** for content
 - **Same secrets** via SST linking
@@ -253,6 +258,7 @@ export const goApi = new sst.aws.Service('gbfm_go_api', {
 ## Implementation Plan
 
 ### Phase 1: Project Setup
+
 1. Create `apps/go-api/` directory
 2. Initialize Go module (`go mod init github.com/guidefari/gbfm/apps/go-api`)
 3. Create Dockerfile (multi-stage build)
@@ -260,6 +266,7 @@ export const goApi = new sst.aws.Service('gbfm_go_api', {
 5. Create `infra/go-api.ts` with ECS service definition
 
 ### Phase 2: Core Infrastructure
+
 1. Database connection with `pgx`
 2. Config loading from SST environment variables
 3. HTTP router setup (`chi` or `echo`)
@@ -270,11 +277,13 @@ export const goApi = new sst.aws.Service('gbfm_go_api', {
 8. Health check endpoint
 
 ### Phase 3: Models & Database Layer
+
 1. Generate Go structs from Drizzle schemas (or write manually)
 2. Set up `sqlc` for type-safe queries
 3. Create repository layer for each domain
 
 ### Phase 4: Route Implementation (by domain)
+
 1. `/content` - Audio, posts, labels, releases
 2. `/user` - Profile, preferences, subscriptions
 3. `/favorites` - CRUD
@@ -287,11 +296,13 @@ export const goApi = new sst.aws.Service('gbfm_go_api', {
 10. `/s/*`, `/rss.xml`, `/robots.txt`, `/sitemap.xml`
 
 ### Phase 5: Background Services
+
 1. Reminder processor (30s ticker)
 2. QR cache cleanup (15m ticker)
 3. Sitemap regeneration (1hr ticker)
 
 ### Phase 6: Testing & Deployment
+
 1. Integration tests against test database
 2. Deploy to ECS cluster
 3. Configure API Gateway routing
@@ -301,15 +312,15 @@ export const goApi = new sst.aws.Service('gbfm_go_api', {
 
 ## Key Files to Reference
 
-| Purpose | Path |
-|---------|------|
-| **Database schemas** | `apps/vps/src/db/*.schema.ts` |
-| **Route definitions** | `apps/vps/src/routes/*/` |
-| **Service logic** | `apps/vps/src/services/` |
-| **Auth middleware** | `apps/vps/src/middlewares/better-auth.middleware.ts` |
-| **Infrastructure** | `infra/vps.ts` |
-| **Secrets** | `infra/secret.ts` |
-| **Dockerfile example** | `apps/vps/Dockerfile` |
+| Purpose                | Path                                                 |
+| ---------------------- | ---------------------------------------------------- |
+| **Database schemas**   | `apps/vps/src/db/*.schema.ts`                        |
+| **Route definitions**  | `apps/vps/src/routes/*/`                             |
+| **Service logic**      | `apps/vps/src/services/`                             |
+| **Auth middleware**    | `apps/vps/src/middlewares/better-auth.middleware.ts` |
+| **Infrastructure**     | `infra/vps.ts`                                       |
+| **Secrets**            | `infra/secret.ts`                                    |
+| **Dockerfile example** | `apps/vps/Dockerfile`                                |
 
 ---
 

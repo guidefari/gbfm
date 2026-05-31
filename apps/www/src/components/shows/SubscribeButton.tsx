@@ -2,11 +2,7 @@ import { Button, toast } from '@gbfm/ui'
 import { useNavigate } from '@tanstack/react-router'
 import { Bell, BellOff, Loader2 } from 'lucide-react'
 import { useSession } from '@/lib/auth-client'
-import {
-  useSubscribeToShow,
-  useUnsubscribeFromShow,
-  useUserSubscriptions
-} from '@/lib/http'
+import { useSubscribeToShow, useUnsubscribeFromShow, useUserSubscriptions } from '@/lib/http'
 
 interface SubscribeButtonProps {
   showId: string

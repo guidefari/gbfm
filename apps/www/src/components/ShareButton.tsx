@@ -42,12 +42,7 @@ export function ShareButton({
   }
 
   return (
-    <Button
-      onClick={handleShare}
-      variant={variant}
-      size={size}
-      className={className}
-      title='Share'>
+    <Button onClick={handleShare} variant={variant} size={size} className={className} title='Share'>
       <Share2 className='w-4 h-4' />
     </Button>
   )

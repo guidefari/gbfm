@@ -94,9 +94,7 @@ export function Editor() {
 
   const { mutate, isPending } = useMutation({
     mutationFn: async (data: FormData) => {
-      const endpoint = id
-        ? `${VPS_BASE_URL}/content/${id}`
-        : `${VPS_BASE_URL}/content`
+      const endpoint = id ? `${VPS_BASE_URL}/content/${id}` : `${VPS_BASE_URL}/content`
       const method = id ? 'PUT' : 'POST'
 
       return await fetcher(endpoint, {
@@ -124,9 +122,7 @@ export function Editor() {
         <Button onClick={() => mutate(form.getValues())} disabled={isPending}>
           {isPending ? 'Saving...' : 'Save'}
         </Button>
-        <select
-          value={type}
-          onChange={(e) => setType(e.target.value as 'micro' | 'post' | 'mix')}>
+        <select value={type} onChange={(e) => setType(e.target.value as 'micro' | 'post' | 'mix')}>
           {contentTypes.map((type) => (
             <option key={type.value} value={type.value}>
               {type.label}

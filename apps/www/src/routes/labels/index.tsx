@@ -11,21 +11,14 @@ export const Route = createFileRoute('/labels/')({
 })
 
 function Component() {
-  const {
-    data,
-    isPending,
-    error,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage
-  } = useAllLabels()
+  const { data, isPending, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useAllLabels()
 
   if (isPending) {
     return (
       <div className='p-4'>
         <div className='grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6'>
           {Array.from({ length: 12 }).map((_, i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: not that deep here.
+            // oxlint-disable-next-line react/no-array-index-key
             <div key={i} className='flex flex-col gap-2'>
               <div className='w-full rounded-sm aspect-square bg-muted/50 animate-pulse' />
               <div className='h-4 rounded bg-muted/50 animate-pulse' />
@@ -38,18 +31,12 @@ function Component() {
 
   if (error) {
     return (
-      <div className='p-4 text-center text-destructive'>
-        Error loading labels: {error.message}
-      </div>
+      <div className='p-4 text-center text-destructive'>Error loading labels: {error.message}</div>
     )
   }
 
   if (!data || data.length === 0) {
-    return (
-      <div className='p-4 text-center text-muted-foreground'>
-        No labels found
-      </div>
-    )
+    return <div className='p-4 text-center text-muted-foreground'>No labels found</div>
   }
 
   return (

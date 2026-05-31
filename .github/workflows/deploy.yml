@@ -7,19 +7,19 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: "Git ref to deploy (leave blank to use latest tag)"
+        description: 'Git ref to deploy (leave blank to use latest tag)'
         required: false
-        default: ""
+        default: ''
         type: string
       refresh:
-        description: "Run sst refresh before deploying (fixes state drift, e.g. Cloudflare ruleset error 20217)"
+        description: 'Run sst refresh before deploying (fixes state drift, e.g. Cloudflare ruleset error 20217)'
         required: false
         default: false
         type: boolean
       cf_ruleset_import:
-        description: "Cloudflare ruleset import ID, e.g. zones/{zone_id}/{ruleset_id}"
+        description: 'Cloudflare ruleset import ID, e.g. zones/{zone_id}/{ruleset_id}'
         required: false
-        default: ""
+        default: ''
         type: string
 
 concurrency:

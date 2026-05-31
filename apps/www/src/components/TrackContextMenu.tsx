@@ -80,10 +80,7 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
   }
 
   const handleShare = async () => {
-    const shareUrl = getShareUrl(
-      track.type === 'track' ? 'track' : 'mix',
-      track.slug
-    )
+    const shareUrl = getShareUrl(track.type === 'track' ? 'track' : 'mix', track.slug)
 
     try {
       await navigator.clipboard.writeText(shareUrl)

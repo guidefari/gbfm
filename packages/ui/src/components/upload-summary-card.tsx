@@ -49,7 +49,7 @@ export function UploadSummaryCard({
 
         <div className='space-y-4'>
           {audioUrl && (
-            /* biome-ignore lint/a11y/useMediaCaption: Audio player for mix summary, captions not applicable */
+            /* oxlint-disable-next-line jsx-a11y/media-has-caption */
             <audio
               ref={audioRef}
               src={audioUrl}
@@ -80,9 +80,7 @@ export function UploadSummaryCard({
                   />
                   Tracklist
                 </span>
-                <span className='font-mono text-xs'>
-                  {tracklist.length} tracks
-                </span>
+                <span className='font-mono text-xs'>{tracklist.length} tracks</span>
               </div>
               <div className='flex items-center justify-between text-sm'>
                 <span className='flex items-center gap-2 text-muted-foreground'>
@@ -91,9 +89,7 @@ export function UploadSummaryCard({
                   />
                   Genre Tags
                 </span>
-                <span className='font-mono text-xs'>
-                  {tags.length} selected
-                </span>
+                <span className='font-mono text-xs'>{tags.length} selected</span>
               </div>
             </div>
           </div>
@@ -131,17 +127,13 @@ export function UploadSummaryCard({
 
       {tracklist.length > 0 && (
         <div className='p-6 border rounded-sm bg-gb-pastel-green-2/10 border-gb-pastel-green-2/20'>
-          <h4 className='mb-4 text-sm font-bold text-gb-pastel-green-1'>
-            Track Preview Links
-          </h4>
+          <h4 className='mb-4 text-sm font-bold text-gb-pastel-green-1'>Track Preview Links</h4>
           <div className='space-y-2'>
             {tracklist.map((t) => (
               <div
                 key={t.id}
                 className='flex items-center justify-between p-2 text-xs rounded-sm bg-gb-bg/50'>
-                <span className='flex-1 font-medium truncate text-gb-default-text'>
-                  {t.title}
-                </span>
+                <span className='flex-1 font-medium truncate text-gb-default-text'>{t.title}</span>
                 <code className='px-2 py-0.5 rounded ml-2 bg-gb-pastel-green-2/20 text-gb-highlight'>
                   #t={t.time}s
                 </code>

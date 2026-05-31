@@ -5,11 +5,7 @@ import { runApp } from '@/runtime'
 import { ConfigService } from '@/services/config.service'
 import { S3Service } from '@/services/s3.service'
 
-import type {
-  CopyObjectRoute,
-  GetConfigRoute,
-  ListObjectsRoute
-} from './file-manager.routes'
+import type { CopyObjectRoute, GetConfigRoute, ListObjectsRoute } from './file-manager.routes'
 
 export const getConfig: AppRouteHandler<GetConfigRoute> = async (c) => {
   const program = Effect.gen(function* () {
@@ -33,14 +29,8 @@ export const getConfig: AppRouteHandler<GetConfigRoute> = async (c) => {
     )
 
     const availableBuckets = Array.from(
-      new Set(
-        [
-          ...configuredBuckets,
-          ...additionalBuckets,
-          ...discoveredBuckets
-        ].filter(Boolean)
-      )
-    ).sort((a, b) => a.localeCompare(b))
+      new Set([...configuredBuckets, ...additionalBuckets, ...discoveredBuckets].filter(Boolean))
+    ).toSorted((a, b) => a.localeCompare(b))
 
     return {
       stage: config.app.stage,

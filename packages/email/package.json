@@ -1,16 +1,24 @@
 {
   "name": "@gbfm/email",
   "type": "module",
+  "sideEffects": false,
   "exports": {
     "./*.tsx": "./src/*.tsx",
     "./*.ts": "./src/*.ts",
     "./*": "./src/*.ts"
   },
-  "sideEffects": false,
   "scripts": {
     "dev": "email dev --dir emails -p 2672",
     "typecheck": "tsgo --noEmit",
     "test:send": "bun src/test-send.ts"
+  },
+  "dependencies": {
+    "@aws-sdk/client-sesv2": "3.1038.0",
+    "@gbfm/theme": "workspace:*",
+    "@react-email/components": "1.0.12",
+    "react": "19.2.5",
+    "react-dom": "19.2.5",
+    "sst": "4.14.3"
   },
   "devDependencies": {
     "@react-email/ui": "6.3.2",
@@ -19,13 +27,5 @@
     "@types/react-dom": "19.2.3",
     "react-email": "6.3.2",
     "typescript": "6.0.3"
-  },
-  "dependencies": {
-    "@aws-sdk/client-sesv2": "3.1038.0",
-    "@react-email/components": "1.0.12",
-    "react": "19.2.5",
-    "react-dom": "19.2.5",
-    "sst": "4.14.3",
-    "@gbfm/theme": "workspace:*"
   }
 }

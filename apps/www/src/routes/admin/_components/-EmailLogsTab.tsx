@@ -10,11 +10,7 @@ import {
   SelectValue
 } from '@gbfm/ui'
 import { useEffect, useMemo, useState } from 'react'
-import {
-  type AdminEmailLog,
-  type EmailLogStatus,
-  useAdminEmailLogs
-} from '@/lib/http'
+import { type AdminEmailLog, type EmailLogStatus, useAdminEmailLogs } from '@/lib/http'
 
 const PAGE_SIZE = 20
 const EMAIL_STATUSES: EmailLogStatus[] = [
@@ -83,10 +79,7 @@ export function EmailLogsTab() {
   const logs = data?.data ?? []
   const pagination = data?.pagination
 
-  const currentPage = useMemo(
-    () => Math.floor(offset / PAGE_SIZE) + 1,
-    [offset]
-  )
+  const currentPage = useMemo(() => Math.floor(offset / PAGE_SIZE) + 1, [offset])
 
   const resetFilters = () => {
     setStatus('ALL')
@@ -165,9 +158,7 @@ export function EmailLogsTab() {
 
       <div className='flex items-center justify-between gap-3'>
         <p className='text-sm text-muted-foreground'>
-          {pagination
-            ? `${pagination.total} total logs`
-            : 'Email delivery logs'}
+          {pagination ? `${pagination.total} total logs` : 'Email delivery logs'}
         </p>
         <Button variant='outline' onClick={resetFilters}>
           Reset Filters
@@ -190,18 +181,14 @@ export function EmailLogsTab() {
               <th className='px-4 py-3 text-left font-medium'>Template</th>
               <th className='px-4 py-3 text-left font-medium'>Subject</th>
               <th className='px-4 py-3 text-left font-medium'>Status</th>
-              <th className='px-4 py-3 text-left font-medium'>
-                SES Message ID
-              </th>
+              <th className='px-4 py-3 text-left font-medium'>SES Message ID</th>
               <th className='px-4 py-3 text-left font-medium'>Error</th>
             </tr>
           </thead>
           <tbody>
             {isPending ? (
               <tr>
-                <td
-                  colSpan={8}
-                  className='px-4 py-8 text-center text-muted-foreground'>
+                <td colSpan={8} className='px-4 py-8 text-center text-muted-foreground'>
                   Loading email logs...
                 </td>
               </tr>
@@ -209,9 +196,7 @@ export function EmailLogsTab() {
 
             {!isPending && logs.length === 0 ? (
               <tr>
-                <td
-                  colSpan={8}
-                  className='px-4 py-8 text-center text-muted-foreground'>
+                <td colSpan={8} className='px-4 py-8 text-center text-muted-foreground'>
                   No email logs match the current filters
                 </td>
               </tr>
@@ -224,17 +209,11 @@ export function EmailLogsTab() {
                       {formatDateTime(log.createdAt)}
                     </td>
                     <td className='px-4 py-3'>{log.recipientEmail}</td>
-                    <td className='px-4 py-3 text-muted-foreground'>
-                      {log.emailType}
-                    </td>
-                    <td className='px-4 py-3 text-muted-foreground'>
-                      {log.templateName}
-                    </td>
+                    <td className='px-4 py-3 text-muted-foreground'>{log.emailType}</td>
+                    <td className='px-4 py-3 text-muted-foreground'>{log.templateName}</td>
                     <td className='px-4 py-3'>{log.subject}</td>
                     <td className='px-4 py-3'>
-                      <Badge variant={statusVariant(log.status)}>
-                        {log.status}
-                      </Badge>
+                      <Badge variant={statusVariant(log.status)}>{log.status}</Badge>
                     </td>
                     <td className='max-w-[220px] truncate px-4 py-3 text-muted-foreground'>
                       {log.sesMessageId || '—'}
@@ -252,16 +231,12 @@ export function EmailLogsTab() {
       <div className='flex items-center justify-between gap-3'>
         <p className='text-sm text-muted-foreground'>
           Page {currentPage}
-          {pagination
-            ? ` of ${Math.max(Math.ceil(pagination.total / PAGE_SIZE), 1)}`
-            : ''}
+          {pagination ? ` of ${Math.max(Math.ceil(pagination.total / PAGE_SIZE), 1)}` : ''}
         </p>
         <div className='flex gap-2'>
           <Button
             variant='outline'
-            onClick={() =>
-              setOffset((previous) => Math.max(previous - PAGE_SIZE, 0))
-            }
+            onClick={() => setOffset((previous) => Math.max(previous - PAGE_SIZE, 0))}
             disabled={!canGoPrevious || isPending}>
             Previous
           </Button>

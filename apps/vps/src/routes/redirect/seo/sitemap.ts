@@ -30,10 +30,7 @@ export const sitemapXml = async (c: Context) => {
 
   const { xml, generatedAt } = result.data
 
-  c.header(
-    'Cache-Control',
-    'public, max-age=3600, stale-while-revalidate=86400'
-  )
+  c.header('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400')
   c.header('Last-Modified', generatedAt.toUTCString())
 
   return c.text(xml)

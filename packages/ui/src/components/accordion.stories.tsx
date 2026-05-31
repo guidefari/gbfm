@@ -1,16 +1,5 @@
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger
-} from './accordion'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from './card'
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './accordion'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './card'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
@@ -35,8 +24,7 @@ export function Accordions() {
             <AccordionItem value='tokens'>
               <AccordionTrigger>Theme tokens</AccordionTrigger>
               <AccordionContent>
-                Semantic colors should carry each theme without component
-                rewrites.
+                Semantic colors should carry each theme without component rewrites.
               </AccordionContent>
             </AccordionItem>
             <AccordionItem value='viewport'>

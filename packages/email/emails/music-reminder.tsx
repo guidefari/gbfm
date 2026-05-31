@@ -24,9 +24,7 @@ interface MusicReminderEmailProps {
   albumCoverUrl?: string
 }
 
-export const MusicReminderEmail: React.FC<
-  Readonly<MusicReminderEmailProps>
-> = ({
+export const MusicReminderEmail: React.FC<Readonly<MusicReminderEmailProps>> = ({
   username = 'Music Lover',
   musicTitle = 'Beautiful Song',
   artistName = 'Amazing Artist',
@@ -75,8 +73,8 @@ export const MusicReminderEmail: React.FC<
           <Section style={content}>
             <Text style={greeting}>Hey {username},</Text>
             <Text style={bodyText}>
-              It's time! You wanted to be reminded about this track today. Press
-              play and rediscover the magic.
+              It's time! You wanted to be reminded about this track today. Press play and rediscover
+              the magic.
             </Text>
 
             {notes && <Text style={notesText}>Your note: "{notes}"</Text>}

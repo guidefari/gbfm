@@ -1,5 +1,5 @@
-@import "tailwindcss";
-@import "@gbfm/theme/styles.css";
+@import 'tailwindcss';
+@import '@gbfm/theme/styles.css';
 
 @source "./**/*.{ts,tsx}";
 
@@ -27,8 +27,8 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --font-jetbrains:
-    JetBrainsMono, ui-monospace, monospace, SFMono-Regular, Menlo, Monaco,
-    Consolas, Liberation Mono, Courier New;
+    JetBrainsMono, ui-monospace, monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    Liberation Mono, Courier New;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -49,7 +49,7 @@
   }
 
   button:not(:disabled),
-  [role="button"]:not(:disabled) {
+  [role='button']:not(:disabled) {
     cursor: pointer;
   }
 }

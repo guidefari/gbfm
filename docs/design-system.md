@@ -12,13 +12,13 @@
 
 ### Brand Colors
 
-| Token | Value | Usage |
-|---|---|---|
-| `highlight` | `#9bfd9e` | Primary brand accent (neon green) |
-| `gb-pastel-green-1` | `#b6fadf` | Light pastel green |
-| `gb-pastel-green-2` | `#4e8c71` | Darker green, used for headings/bold in prose |
-| `--bg` | `hsl(202, 61%, 22%)` | Brand background (deep blue-gray) |
-| `--darker-bg` | `#111827` | Darker background variant |
+| Token               | Value                | Usage                                         |
+| ------------------- | -------------------- | --------------------------------------------- |
+| `highlight`         | `#9bfd9e`            | Primary brand accent (neon green)             |
+| `gb-pastel-green-1` | `#b6fadf`            | Light pastel green                            |
+| `gb-pastel-green-2` | `#4e8c71`            | Darker green, used for headings/bold in prose |
+| `--bg`              | `hsl(202, 61%, 22%)` | Brand background (deep blue-gray)             |
+| `--darker-bg`       | `#111827`            | Darker background variant                     |
 
 ### Theme Tokens (CSS Variables)
 
@@ -42,11 +42,11 @@ Standard shadcn semantic tokens are available: `background`, `foreground`, `prim
 
 **Font**: JetBrains Mono (monospace) — self-hosted WOFF2 files in `/public/fonts/`
 
-| Weight | Variant |
-|---|---|
-| 400 | Regular (SemiBold file) |
-| 600 | Bold |
-| 900 | Black (ExtraBold file) |
+| Weight | Variant                 |
+| ------ | ----------------------- |
+| 400    | Regular (SemiBold file) |
+| 600    | Bold                    |
+| 900    | Black (ExtraBold file)  |
 
 Italics available for 400 and 900 weights.
 
@@ -76,12 +76,12 @@ All heading levels (`h1`–`h6`) use fluid sizing via viewport-based clamping.
 
 Located in `src/components/ui/`:
 
-| Category | Components |
-|---|---|
+| Category     | Components                                                                        |
+| ------------ | --------------------------------------------------------------------------------- |
 | Form & Input | `button`, `input`, `textarea`, `checkbox`, `select`, `input-otp`, `label`, `form` |
-| Navigation | `breadcrumb`, `tabs`, `command`, `dropdown-menu`, `context-menu`, `sheet` |
-| Feedback | `toast`, `toaster`, `dialog`, `tooltip`, `skeleton` |
-| Layout | `card`, `scroll-area`, `accordion`, `badge` |
+| Navigation   | `breadcrumb`, `tabs`, `command`, `dropdown-menu`, `context-menu`, `sheet`         |
+| Feedback     | `toast`, `toaster`, `dialog`, `tooltip`, `skeleton`                               |
+| Layout       | `card`, `scroll-area`, `accordion`, `badge`                                       |
 
 ## Layout Architecture
 
@@ -102,17 +102,17 @@ Located in `src/components/ui/`:
 
 Defined in `src/styles/main.css`:
 
-| Class | Purpose |
-|---|---|
-| `.title` | Large display titles (3xl–7xl responsive) |
-| `.button-glow` | Glowing button effect |
-| `.hover-lift` | Subtle lift on hover |
-| `.hover-glow` | Glow effect on hover |
-| `.button-loading` | Loading state for buttons |
-| `.pulse-highlight` | Pulse animation for active states |
-| `.default-icon` | Standard icon sizing (`w-6 h-6`) with hover highlight |
-| `.curated-posts` | Grid layout for content cards |
-| `.shadooo` | Custom inset shadow effect |
+| Class              | Purpose                                               |
+| ------------------ | ----------------------------------------------------- |
+| `.title`           | Large display titles (3xl–7xl responsive)             |
+| `.button-glow`     | Glowing button effect                                 |
+| `.hover-lift`      | Subtle lift on hover                                  |
+| `.hover-glow`      | Glow effect on hover                                  |
+| `.button-loading`  | Loading state for buttons                             |
+| `.pulse-highlight` | Pulse animation for active states                     |
+| `.default-icon`    | Standard icon sizing (`w-6 h-6`) with hover highlight |
+| `.curated-posts`   | Grid layout for content cards                         |
+| `.shadooo`         | Custom inset shadow effect                            |
 
 ## Animations
 

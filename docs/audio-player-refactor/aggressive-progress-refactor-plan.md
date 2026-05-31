@@ -32,6 +32,7 @@ That channel should not force `BaseAudioPlayer`, `FullscreenAudioPlayer`, queue 
 Use a `requestAnimationFrame` loop while playback is active.
 
 Behavior:
+
 - start the loop on `play`
 - stop the loop on `pause`, `ended`, track switch, and unmount
 - read `audioRef.currentTime` once per frame
@@ -48,6 +49,7 @@ Current persistence already has a 5 second gate for writes, which is good. Keep 
 Stop using broad store reads in player components.
 
 The player UI should subscribe to exactly the state it needs:
+
 - transport controls: `isPlaying`, track info, queue, volume, mute
 - progress bar: only progress fields
 - fullscreen toggle: only fullscreen state

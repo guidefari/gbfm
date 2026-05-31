@@ -61,24 +61,14 @@ export function IconGridAuthenticated() {
       />
       <div className='space-y-6'>
         <div>
-          <p className='text-xs text-muted-foreground mb-2'>
-            Authenticated (all tiles visible)
-          </p>
-          <IconGrid
-            tiles={tiles}
-            onTileSelect={(t) => console.log(t.id)}
-            isAuthenticated={true}
-          />
+          <p className='text-xs text-muted-foreground mb-2'>Authenticated (all tiles visible)</p>
+          <IconGrid tiles={tiles} onTileSelect={(t) => console.log(t.id)} isAuthenticated={true} />
         </div>
         <div>
           <p className='text-xs text-muted-foreground mb-2'>
             Unauthenticated (auth-required tiles hidden)
           </p>
-          <IconGrid
-            tiles={tiles}
-            onTileSelect={(t) => console.log(t.id)}
-            isAuthenticated={false}
-          />
+          <IconGrid tiles={tiles} onTileSelect={(t) => console.log(t.id)} isAuthenticated={false} />
         </div>
       </div>
     </div>

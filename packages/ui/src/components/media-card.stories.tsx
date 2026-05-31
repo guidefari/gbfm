@@ -1,10 +1,6 @@
 import { Button } from './button'
 import { MediaCard as MediaCardComponent } from './media-card'
-import {
-  mediaExamples,
-  StoryPanelHeader,
-  storyPanelClassName
-} from './story-helpers'
+import { mediaExamples, StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
   title: '@gbfm/ui/MediaCard'

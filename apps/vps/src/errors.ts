@@ -36,9 +36,7 @@ export class DatabaseError extends Data.TaggedError('DatabaseError')<{
   readonly table?: string
 }> {}
 
-export class ReminderProcessingError extends Data.TaggedError(
-  'ReminderProcessingError'
-)<{
+export class ReminderProcessingError extends Data.TaggedError('ReminderProcessingError')<{
   readonly message: string
   readonly reminderId: string
   readonly stage: 'query' | 'email' | 'update'
@@ -87,9 +85,7 @@ export class AudioServiceError extends Data.TaggedError('AudioServiceError')<{
   readonly slug?: string
 }> {}
 
-export class FavoriteServiceError extends Data.TaggedError(
-  'FavoriteServiceError'
-)<{
+export class FavoriteServiceError extends Data.TaggedError('FavoriteServiceError')<{
   readonly message: string
   readonly operation: string
   readonly userId?: string
@@ -109,9 +105,7 @@ export class PostServiceError extends Data.TaggedError('PostServiceError')<{
   readonly postId?: string
 }> {}
 
-export class ReleaseServiceError extends Data.TaggedError(
-  'ReleaseServiceError'
-)<{
+export class ReleaseServiceError extends Data.TaggedError('ReleaseServiceError')<{
   readonly message: string
   readonly operation: string
   readonly releaseId?: string
@@ -123,9 +117,7 @@ export class LabelServiceError extends Data.TaggedError('LabelServiceError')<{
   readonly labelId?: string
 }> {}
 
-export class MusicReminderServiceError extends Data.TaggedError(
-  'MusicReminderServiceError'
-)<{
+export class MusicReminderServiceError extends Data.TaggedError('MusicReminderServiceError')<{
   readonly message: string
   readonly operation: string
   readonly reminderId?: string

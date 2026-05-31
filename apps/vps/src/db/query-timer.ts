@@ -13,10 +13,7 @@ const getRuntime = () => {
   return runtimePromise
 }
 
-export async function timeQuery<T>(
-  queryFn: () => Promise<T>,
-  context: string
-): Promise<T> {
+export async function timeQuery<T>(queryFn: () => Promise<T>, context: string): Promise<T> {
   const AppRuntime = await getRuntime()
 
   const program = Effect.gen(function* () {
@@ -46,10 +43,7 @@ export async function timeQuery<T>(
     Effect.tapError((failure) =>
       Effect.logError('[DB] Query failed', {
         context,
-        error:
-          failure.cause instanceof Error
-            ? failure.cause.message
-            : String(failure.cause)
+        error: failure.cause instanceof Error ? failure.cause.message : String(failure.cause)
       })
     ),
     Effect.withSpan('db.query', { attributes: { 'db.context': context } })

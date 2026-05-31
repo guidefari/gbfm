@@ -99,10 +99,7 @@ export const initialPlayerState: PlayerState = {
   isInitialized: false
 }
 
-export function playerReducer(
-  state: PlayerState,
-  action: PlayerAction
-): PlayerState {
+export function playerReducer(state: PlayerState, action: PlayerAction): PlayerState {
   switch (action.type) {
     case 'PLAY':
       return {
@@ -195,12 +192,8 @@ export function playerReducer(
     }
 
     case 'REMOVE_FROM_QUEUE': {
-      const removedIndex = state.queue.findIndex(
-        (item) => item.queueId === action.queueId
-      )
-      const newQueue = state.queue.filter(
-        (item) => item.queueId !== action.queueId
-      )
+      const removedIndex = state.queue.findIndex((item) => item.queueId === action.queueId)
+      const newQueue = state.queue.filter((item) => item.queueId !== action.queueId)
       let newCurrentIndex = state.currentIndex
       if (removedIndex !== -1 && removedIndex <= state.currentIndex) {
         newCurrentIndex = Math.max(-1, state.currentIndex - 1)
@@ -222,15 +215,9 @@ export function playerReducer(
       let newCurrentIndex = state.currentIndex
       if (action.fromIndex === state.currentIndex) {
         newCurrentIndex = action.toIndex
-      } else if (
-        action.fromIndex < state.currentIndex &&
-        action.toIndex >= state.currentIndex
-      ) {
+      } else if (action.fromIndex < state.currentIndex && action.toIndex >= state.currentIndex) {
         newCurrentIndex = state.currentIndex - 1
-      } else if (
-        action.fromIndex > state.currentIndex &&
-        action.toIndex <= state.currentIndex
-      ) {
+      } else if (action.fromIndex > state.currentIndex && action.toIndex <= state.currentIndex) {
         newCurrentIndex = state.currentIndex + 1
       }
       return { ...state, queue: newQueue, currentIndex: newCurrentIndex }

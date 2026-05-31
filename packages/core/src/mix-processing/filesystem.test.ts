@@ -29,12 +29,8 @@ describe('writeFilesToDisk', () => {
     expect(files.artist).toBe(input.artist)
     expect(files.album).toBe(input.album)
 
-    await expect(fs.readFile(files.audioPath)).resolves.toEqual(
-      input.audioBuffer
-    )
-    await expect(fs.readFile(files.imagePath)).resolves.toEqual(
-      input.imageBuffer
-    )
+    await expect(fs.readFile(files.audioPath)).resolves.toEqual(input.audioBuffer)
+    await expect(fs.readFile(files.imagePath)).resolves.toEqual(input.imageBuffer)
 
     await fs.rm(path.dirname(files.audioPath), { recursive: true, force: true })
   })

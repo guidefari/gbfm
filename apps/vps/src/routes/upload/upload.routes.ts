@@ -29,10 +29,7 @@ export const uploadFile = createRoute({
       }),
       'File uploaded successfully'
     ),
-    [HttpStatusCodes.BAD_REQUEST]: jsonContent(
-      z.object({ error: z.string() }),
-      'Upload error'
-    ),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(z.object({ error: z.string() }), 'Upload error'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
       'Failed to upload file'

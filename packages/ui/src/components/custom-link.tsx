@@ -8,13 +8,7 @@ type CustomLinkProps = {
   rel?: string
 }
 
-export default function CustomLink({
-  href,
-  children,
-  className,
-  target,
-  rel
-}: CustomLinkProps) {
+export default function CustomLink({ href, children, className, target, rel }: CustomLinkProps) {
   return (
     <a href={href} className={className} target={target} rel={rel}>
       {children}

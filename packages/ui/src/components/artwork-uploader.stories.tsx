@@ -25,9 +25,7 @@ export function ArtworkUploaders() {
       />
       <div className='max-w-md space-y-6'>
         <div>
-          <p className='text-xs text-muted-foreground mb-2'>
-            Empty state (with fallback image)
-          </p>
+          <p className='text-xs text-muted-foreground mb-2'>Empty state (with fallback image)</p>
           <ArtworkUploader
             artworkFile={null}
             artworkPreview={null}

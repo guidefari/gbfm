@@ -120,8 +120,7 @@ export const deleteArtist: AppRouteHandler<DeleteArtistRoute> = async (c) => {
   )
 
   const result = await AppRuntime.runPromise(program)
-  if ('notFound' in result)
-    return c.json({ error: result.error }, HttpStatusCodes.NOT_FOUND)
+  if ('notFound' in result) return c.json({ error: result.error }, HttpStatusCodes.NOT_FOUND)
   return c.body(null, HttpStatusCodes.NO_CONTENT)
 }
 
@@ -188,8 +187,7 @@ export const deleteAlbum: AppRouteHandler<DeleteAlbumRoute> = async (c) => {
   )
 
   const result = await AppRuntime.runPromise(program)
-  if ('notFound' in result)
-    return c.json({ error: result.error }, HttpStatusCodes.NOT_FOUND)
+  if ('notFound' in result) return c.json({ error: result.error }, HttpStatusCodes.NOT_FOUND)
   return c.body(null, HttpStatusCodes.NO_CONTENT)
 }
 
@@ -256,8 +254,7 @@ export const deleteTrack: AppRouteHandler<DeleteTrackRoute> = async (c) => {
   )
 
   const result = await AppRuntime.runPromise(program)
-  if ('notFound' in result)
-    return c.json({ error: result.error }, HttpStatusCodes.NOT_FOUND)
+  if ('notFound' in result) return c.json({ error: result.error }, HttpStatusCodes.NOT_FOUND)
   return c.body(null, HttpStatusCodes.NO_CONTENT)
 }
 
@@ -274,9 +271,7 @@ export const listPlaylists: AppRouteHandler<ListPlaylistsRoute> = async (c) => {
   return runEffect<ListPlaylistsRoute>(c, program)
 }
 
-export const createPlaylist: AppRouteHandler<CreatePlaylistRoute> = async (
-  c
-) => {
+export const createPlaylist: AppRouteHandler<CreatePlaylistRoute> = async (c) => {
   const body = c.req.valid('json')
   const user = c.get('user')
 
@@ -299,9 +294,7 @@ export const getPlaylist: AppRouteHandler<GetPlaylistRoute> = async (c) => {
   return runEffect<GetPlaylistRoute>(c, program)
 }
 
-export const updatePlaylist: AppRouteHandler<UpdatePlaylistRoute> = async (
-  c
-) => {
+export const updatePlaylist: AppRouteHandler<UpdatePlaylistRoute> = async (c) => {
   const { id } = c.req.valid('param')
   const body = c.req.valid('json')
 
@@ -313,9 +306,7 @@ export const updatePlaylist: AppRouteHandler<UpdatePlaylistRoute> = async (
   return runEffect<UpdatePlaylistRoute>(c, program)
 }
 
-export const deletePlaylist: AppRouteHandler<DeletePlaylistRoute> = async (
-  c
-) => {
+export const deletePlaylist: AppRouteHandler<DeletePlaylistRoute> = async (c) => {
   const { id } = c.req.valid('param')
 
   const program = Effect.gen(function* () {
@@ -330,8 +321,7 @@ export const deletePlaylist: AppRouteHandler<DeletePlaylistRoute> = async (
   )
 
   const result = await AppRuntime.runPromise(program)
-  if ('notFound' in result)
-    return c.json({ error: result.error }, HttpStatusCodes.NOT_FOUND)
+  if ('notFound' in result) return c.json({ error: result.error }, HttpStatusCodes.NOT_FOUND)
   return c.body(null, HttpStatusCodes.NO_CONTENT)
 }
 
@@ -339,24 +329,18 @@ export const deletePlaylist: AppRouteHandler<DeletePlaylistRoute> = async (
 // Playlist tracks
 // ---------------------------------------------------------------------------
 
-export const getPlaylistTracks: AppRouteHandler<
-  GetPlaylistTracksRoute
-> = async (c) => {
+export const getPlaylistTracks: AppRouteHandler<GetPlaylistTracksRoute> = async (c) => {
   const { id } = c.req.valid('param')
 
   const program = Effect.gen(function* () {
     const svc = yield* MusicEntityService
     return yield* svc.getPlaylistTracks(id)
-  }).pipe(
-    Effect.withSpan('api.music.getPlaylistTracks', { attributes: { id } })
-  )
+  }).pipe(Effect.withSpan('api.music.getPlaylistTracks', { attributes: { id } }))
 
   return runEffect<GetPlaylistTracksRoute>(c, program)
 }
 
-export const addTrackToPlaylist: AppRouteHandler<
-  AddTrackToPlaylistRoute
-> = async (c) => {
+export const addTrackToPlaylist: AppRouteHandler<AddTrackToPlaylistRoute> = async (c) => {
   const { id } = c.req.valid('param')
   const body = c.req.valid('json')
 
@@ -368,9 +352,7 @@ export const addTrackToPlaylist: AppRouteHandler<
   return runEffect<AddTrackToPlaylistRoute>(c, program, HttpStatusCodes.CREATED)
 }
 
-export const removeTrackFromPlaylist: AppRouteHandler<
-  RemoveTrackFromPlaylistRoute
-> = async (c) => {
+export const removeTrackFromPlaylist: AppRouteHandler<RemoveTrackFromPlaylistRoute> = async (c) => {
   const { id, trackId } = c.req.valid('param')
 
   await AppRuntime.runPromise(
@@ -383,9 +365,7 @@ export const removeTrackFromPlaylist: AppRouteHandler<
   return c.body(null, HttpStatusCodes.NO_CONTENT)
 }
 
-export const reorderPlaylistTracks: AppRouteHandler<
-  ReorderPlaylistTracksRoute
-> = async (c) => {
+export const reorderPlaylistTracks: AppRouteHandler<ReorderPlaylistTracksRoute> = async (c) => {
   const { id } = c.req.valid('param')
   const { trackIds } = c.req.valid('json')
 
@@ -410,9 +390,9 @@ export const reorderPlaylistTracks: AppRouteHandler<
   return c.body(null, HttpStatusCodes.NO_CONTENT)
 }
 
-export const addSpotifyTrackToPlaylist: AppRouteHandler<
-  AddSpotifyTrackToPlaylistRoute
-> = async (c) => {
+export const addSpotifyTrackToPlaylist: AppRouteHandler<AddSpotifyTrackToPlaylistRoute> = async (
+  c
+) => {
   const { id } = c.req.valid('param')
   const { url } = c.req.valid('json')
 
@@ -425,16 +405,10 @@ export const addSpotifyTrackToPlaylist: AppRouteHandler<
     })
   )
 
-  return runEffect<AddSpotifyTrackToPlaylistRoute>(
-    c,
-    program,
-    HttpStatusCodes.CREATED
-  )
+  return runEffect<AddSpotifyTrackToPlaylistRoute>(c, program, HttpStatusCodes.CREATED)
 }
 
-export const importSpotifyPlaylist: AppRouteHandler<
-  ImportSpotifyPlaylistRoute
-> = async (c) => {
+export const importSpotifyPlaylist: AppRouteHandler<ImportSpotifyPlaylistRoute> = async (c) => {
   const { url } = c.req.valid('json')
   const user = c.get('user')
 
@@ -451,13 +425,10 @@ export const importSpotifyPlaylist: AppRouteHandler<
     yield* svc.importSpotifyPlaylist(url, user.id)
   }).pipe(
     Effect.catch((error) =>
-      Effect.logError(
-        '[MusicEntity] Background Spotify playlist import failed',
-        {
-          playlistId: spotifyPlaylistId,
-          error: getErrorMessage(error)
-        }
-      )
+      Effect.logError('[MusicEntity] Background Spotify playlist import failed', {
+        playlistId: spotifyPlaylistId,
+        error: getErrorMessage(error)
+      })
     ),
     Effect.withSpan('api.music.importSpotifyPlaylist')
   )
@@ -467,17 +438,13 @@ export const importSpotifyPlaylist: AppRouteHandler<
   return c.json({ status: 'Queued' as const }, HttpStatusCodes.ACCEPTED)
 }
 
-export const syncPlaylistLinks: AppRouteHandler<
-  SyncPlaylistLinksRoute
-> = async (c) => {
+export const syncPlaylistLinks: AppRouteHandler<SyncPlaylistLinksRoute> = async (c) => {
   const { id } = c.req.valid('param')
 
   const program = Effect.gen(function* () {
     const svc = yield* MusicEntityService
     return yield* svc.syncPlaylistLinks(id)
-  }).pipe(
-    Effect.withSpan('api.music.syncPlaylistLinks', { attributes: { id } })
-  )
+  }).pipe(Effect.withSpan('api.music.syncPlaylistLinks', { attributes: { id } }))
 
   return runEffect<SyncPlaylistLinksRoute>(c, program)
 }
@@ -509,8 +476,7 @@ const copyCoverImageEffect = (
 
     const response = yield* Effect.tryPromise({
       try: () => fetch(coverImageUrl),
-      catch: (cause) =>
-        new FetchError({ message: `Failed to fetch ${coverImageUrl}`, cause })
+      catch: (cause) => new FetchError({ message: `Failed to fetch ${coverImageUrl}`, cause })
     })
 
     if (!response.ok) return null
@@ -518,23 +484,15 @@ const copyCoverImageEffect = (
     const contentType = response.headers.get('content-type') || 'image/jpeg'
     const arrayBuffer = yield* Effect.tryPromise({
       try: () => response.arrayBuffer(),
-      catch: (cause) =>
-        new FetchError({ message: `Failed to read ${coverImageUrl}`, cause })
+      catch: (cause) => new FetchError({ message: `Failed to read ${coverImageUrl}`, cause })
     })
     const buffer = Buffer.from(arrayBuffer)
     const key = `music/${entityType}/${entityId}/cover`
-    const uploadedKey = yield* s3.uploadFile(
-      key,
-      buffer,
-      contentType,
-      config.buckets.userContent
-    )
+    const uploadedKey = yield* s3.uploadFile(key, buffer, contentType, config.buckets.userContent)
     return `${config.urls.router}/user-content/${uploadedKey}`
   }).pipe(Effect.catch(() => Effect.succeed(null)))
 
-export const resolveMusicEntity: AppRouteHandler<
-  ResolveMusicEntityRoute
-> = async (c) => {
+export const resolveMusicEntity: AppRouteHandler<ResolveMusicEntityRoute> = async (c) => {
   const { url } = c.req.valid('json')
   const entityType = inferEntityTypeFromUrl(url)
 
@@ -542,15 +500,10 @@ export const resolveMusicEntity: AppRouteHandler<
     const svc = yield* MusicEntityService
     const result = yield* svc.scrapeAndCreateEntity(entityType, { url })
     const entity = result.entity
-    const coverImageUrl =
-      'coverImageUrl' in entity ? entity.coverImageUrl : null
+    const coverImageUrl = 'coverImageUrl' in entity ? entity.coverImageUrl : null
 
     if (coverImageUrl) {
-      const publicCoverImageUrl = yield* copyCoverImageEffect(
-        entityType,
-        entity.id,
-        coverImageUrl
-      )
+      const publicCoverImageUrl = yield* copyCoverImageEffect(entityType, entity.id, coverImageUrl)
 
       if (publicCoverImageUrl && publicCoverImageUrl !== coverImageUrl) {
         switch (entityType) {
@@ -580,9 +533,7 @@ export const resolveMusicEntity: AppRouteHandler<
     }
 
     return { entity, entityType, links: result.links, coverImageUrl } as const
-  }).pipe(
-    Effect.withSpan('api.music.resolveMusicEntity', { attributes: { url } })
-  )
+  }).pipe(Effect.withSpan('api.music.resolveMusicEntity', { attributes: { url } }))
 
   return runEffect<ResolveMusicEntityRoute>(c, program)
 }
@@ -591,9 +542,7 @@ export const resolveMusicEntity: AppRouteHandler<
 // Links
 // ---------------------------------------------------------------------------
 
-export const listEntityLinks: AppRouteHandler<ListEntityLinksRoute> = async (
-  c
-) => {
+export const listEntityLinks: AppRouteHandler<ListEntityLinksRoute> = async (c) => {
   const { entityType, entityId } = c.req.valid('param')
   const { status } = c.req.valid('query')
 
@@ -625,9 +574,7 @@ export const addEntityLink: AppRouteHandler<AddEntityLinkRoute> = async (c) => {
   return runEffect<AddEntityLinkRoute>(c, program, HttpStatusCodes.CREATED)
 }
 
-export const updateEntityLinkStatus: AppRouteHandler<
-  UpdateEntityLinkStatusRoute
-> = async (c) => {
+export const updateEntityLinkStatus: AppRouteHandler<UpdateEntityLinkStatusRoute> = async (c) => {
   const { entityType, entityId, linkId } = c.req.valid('param')
   const { status, metadata } = c.req.valid('json')
   const user = c.get('user')
@@ -635,14 +582,7 @@ export const updateEntityLinkStatus: AppRouteHandler<
 
   const program = Effect.gen(function* () {
     const svc = yield* MusicEntityService
-    return yield* svc.updateLinkStatus(
-      entityType,
-      entityId,
-      linkId,
-      status,
-      userId,
-      metadata
-    )
+    return yield* svc.updateLinkStatus(entityType, entityId, linkId, status, userId, metadata)
   }).pipe(
     Effect.withSpan('api.music.updateEntityLinkStatus', {
       attributes: { entityType, entityId, linkId, status, userId }
@@ -652,9 +592,7 @@ export const updateEntityLinkStatus: AppRouteHandler<
   return runEffect<UpdateEntityLinkStatusRoute>(c, program)
 }
 
-export const deleteEntityLink: AppRouteHandler<DeleteEntityLinkRoute> = async (
-  c
-) => {
+export const deleteEntityLink: AppRouteHandler<DeleteEntityLinkRoute> = async (c) => {
   const { entityType, entityId, linkId } = c.req.valid('param')
 
   const program = Effect.gen(function* () {
@@ -671,8 +609,7 @@ export const deleteEntityLink: AppRouteHandler<DeleteEntityLinkRoute> = async (
   )
 
   const result = await AppRuntime.runPromise(program)
-  if ('notFound' in result)
-    return c.json({ error: result.error }, HttpStatusCodes.NOT_FOUND)
+  if ('notFound' in result) return c.json({ error: result.error }, HttpStatusCodes.NOT_FOUND)
   return c.body(null, HttpStatusCodes.NO_CONTENT)
 }
 
@@ -680,9 +617,7 @@ export const deleteEntityLink: AppRouteHandler<DeleteEntityLinkRoute> = async (
 // Scrape
 // ---------------------------------------------------------------------------
 
-export const scrapeEntityLinks: AppRouteHandler<
-  ScrapeEntityLinksRoute
-> = async (c) => {
+export const scrapeEntityLinks: AppRouteHandler<ScrapeEntityLinksRoute> = async (c) => {
   const { entityType } = c.req.valid('param')
   const input = c.req.valid('json')
 
@@ -702,9 +637,7 @@ export const scrapeEntityLinks: AppRouteHandler<
 // Artist ↔ album / track junctions
 // ---------------------------------------------------------------------------
 
-export const addArtistToAlbum: AppRouteHandler<AddArtistToAlbumRoute> = async (
-  c
-) => {
+export const addArtistToAlbum: AppRouteHandler<AddArtistToAlbumRoute> = async (c) => {
   const { albumId, artistId } = c.req.valid('param')
   const body = c.req.valid('json')
 
@@ -727,9 +660,7 @@ export const addArtistToAlbum: AppRouteHandler<AddArtistToAlbumRoute> = async (
   return c.body(null, HttpStatusCodes.NO_CONTENT)
 }
 
-export const removeArtistFromAlbum: AppRouteHandler<
-  RemoveArtistFromAlbumRoute
-> = async (c) => {
+export const removeArtistFromAlbum: AppRouteHandler<RemoveArtistFromAlbumRoute> = async (c) => {
   const { albumId, artistId } = c.req.valid('param')
 
   const program = Effect.gen(function* () {
@@ -745,9 +676,7 @@ export const removeArtistFromAlbum: AppRouteHandler<
   return c.body(null, HttpStatusCodes.NO_CONTENT)
 }
 
-export const addArtistToTrack: AppRouteHandler<AddArtistToTrackRoute> = async (
-  c
-) => {
+export const addArtistToTrack: AppRouteHandler<AddArtistToTrackRoute> = async (c) => {
   const { trackId, artistId } = c.req.valid('param')
   const body = c.req.valid('json')
 
@@ -764,9 +693,7 @@ export const addArtistToTrack: AppRouteHandler<AddArtistToTrackRoute> = async (
   return c.body(null, HttpStatusCodes.NO_CONTENT)
 }
 
-export const removeArtistFromTrack: AppRouteHandler<
-  RemoveArtistFromTrackRoute
-> = async (c) => {
+export const removeArtistFromTrack: AppRouteHandler<RemoveArtistFromTrackRoute> = async (c) => {
   const { trackId, artistId } = c.req.valid('param')
 
   const program = Effect.gen(function* () {
@@ -786,9 +713,7 @@ export const removeArtistFromTrack: AppRouteHandler<
 // Review queue
 // ---------------------------------------------------------------------------
 
-export const listPendingLinks: AppRouteHandler<ListPendingLinksRoute> = async (
-  c
-) => {
+export const listPendingLinks: AppRouteHandler<ListPendingLinksRoute> = async (c) => {
   const { limit, offset } = c.req.valid('query')
 
   const program = Effect.gen(function* () {

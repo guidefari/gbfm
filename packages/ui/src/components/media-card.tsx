@@ -57,15 +57,11 @@ function MediaCard({
       <div className='space-y-4 p-4'>
         <div className='space-y-2'>
           {eyebrow && (
-            <p className='text-xs uppercase tracking-[0.2em] text-muted-foreground'>
-              {eyebrow}
-            </p>
+            <p className='text-xs uppercase tracking-[0.2em] text-muted-foreground'>{eyebrow}</p>
           )}
           <h3 className='text-lg font-semibold leading-tight text-foreground'>
             {href ? (
-              <a
-                href={href}
-                className='underline-offset-4 hover:text-highlight hover:underline'>
+              <a href={href} className='underline-offset-4 hover:text-highlight hover:underline'>
                 {title}
               </a>
             ) : (
@@ -73,9 +69,7 @@ function MediaCard({
             )}
           </h3>
           {description && (
-            <div className='text-sm leading-6 text-muted-foreground'>
-              {description}
-            </div>
+            <div className='text-sm leading-6 text-muted-foreground'>{description}</div>
           )}
         </div>
         {tags && tags.length > 0 && (
@@ -87,14 +81,8 @@ function MediaCard({
             ))}
           </div>
         )}
-        {actions && (
-          <div className='flex flex-wrap items-center gap-2'>{actions}</div>
-        )}
-        {footer && (
-          <div className='border-t pt-4 text-sm text-muted-foreground'>
-            {footer}
-          </div>
-        )}
+        {actions && <div className='flex flex-wrap items-center gap-2'>{actions}</div>}
+        {footer && <div className='border-t pt-4 text-sm text-muted-foreground'>{footer}</div>}
       </div>
     </article>
   )

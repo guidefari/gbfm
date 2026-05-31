@@ -7,9 +7,7 @@ export const Route = createFileRoute('/profile/$username')({
   component: ProfilePage,
   loader: async ({ params }) => {
     try {
-      const profile = await fetcher<PublicProfile>(
-        `${VPS_BASE_URL}/profile/${params.username}`
-      )
+      const profile = await fetcher<PublicProfile>(`${VPS_BASE_URL}/profile/${params.username}`)
       if (!profile?.id) return { profile: null }
       return { profile }
     } catch {
@@ -39,9 +37,7 @@ function ProfileNotFound({ username }: { username: string }) {
     <div className='mx-auto max-w-md px-4 py-16 text-center'>
       <h1 className='text-3xl font-bold text-foreground'>Account not found</h1>
       <p className='mt-3 text-muted-foreground'>
-        The account{' '}
-        <span className='font-medium text-foreground'>@{username}</span> doesn't
-        exist.
+        The account <span className='font-medium text-foreground'>@{username}</span> doesn't exist.
       </p>
       <div className='mt-6 flex justify-center gap-3'>
         <Link

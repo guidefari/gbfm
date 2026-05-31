@@ -9,20 +9,9 @@ import {
   showSubscriptionsTable,
   showsTable
 } from '@/db/show.schema'
-import {
-  ConflictError,
-  DatabaseError,
-  getErrorMessage,
-  NotFoundError
-} from '@/errors'
-import {
-  createPaginationMetadata,
-  type PaginationMetadata
-} from '@/lib/pagination'
-import {
-  recordShowSubscribe,
-  recordShowUnsubscribe
-} from '@/lib/performance-monitoring'
+import { ConflictError, DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
+import { createPaginationMetadata, type PaginationMetadata } from '@/lib/pagination'
+import { recordShowSubscribe, recordShowUnsubscribe } from '@/lib/performance-monitoring'
 
 type SubscriptionWithShow = SelectShowSubscription & {
   show: SelectShow
@@ -46,24 +35,16 @@ export interface ShowSubscriptionService {
   >
   readonly getSubscribers: (
     showId: string
-  ) => Effect.Effect<
-    Array<{ userId: string; email: string; name: string }>,
-    DatabaseError
-  >
+  ) => Effect.Effect<Array<{ userId: string; email: string; name: string }>, DatabaseError>
 }
 
-export const ShowSubscriptionService = Context.Service<ShowSubscriptionService>(
-  'ShowSubscriptionService'
-)
+export const ShowSubscriptionService =
+  Context.Service<ShowSubscriptionService>('ShowSubscriptionService')
 
 const subscribeEffect = (userId: string, showId: string) =>
   Effect.gen(function* () {
     const result = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .insert(showSubscriptionsTable)
-          .values({ userId, showId })
-          .returning(),
+      try: () => db.insert(showSubscriptionsTable).values({ userId, showId }).returning(),
       catch: (error) => {
         const errorMessage = getErrorMessage(error)
         if (errorMessage.includes('unique constraint')) {
@@ -135,21 +116,14 @@ const unsubscribeEffect = (userId: string, showId: string) =>
     yield* recordShowUnsubscribe()
   })
 
-const getUserSubscriptionsEffect = (
-  userId: string,
-  options: { limit: number; offset: number }
-) =>
+const getUserSubscriptionsEffect = (userId: string, options: { limit: number; offset: number }) =>
   Effect.gen(function* () {
     const { limit, offset } = options
 
     const whereCondition = eq(showSubscriptionsTable.userId, userId)
 
     const countResult = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select({ total: count() })
-          .from(showSubscriptionsTable)
-          .where(whereCondition),
+      try: () => db.select({ total: count() }).from(showSubscriptionsTable).where(whereCondition),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to count subscriptions: ${getErrorMessage(error)}`,
@@ -171,10 +145,7 @@ const getUserSubscriptionsEffect = (
             show: showsTable
           })
           .from(showSubscriptionsTable)
-          .innerJoin(
-            showsTable,
-            eq(showSubscriptionsTable.showId, showsTable.id)
-          )
+          .innerJoin(showsTable, eq(showSubscriptionsTable.showId, showsTable.id))
           .where(whereCondition)
           .limit(limit)
           .offset(offset)
@@ -204,10 +175,7 @@ const getSubscribersEffect = (showId: string) =>
             name: usersTable.name
           })
           .from(showSubscriptionsTable)
-          .innerJoin(
-            usersTable,
-            eq(showSubscriptionsTable.userId, usersTable.id)
-          )
+          .innerJoin(usersTable, eq(showSubscriptionsTable.userId, usersTable.id))
           .where(eq(showSubscriptionsTable.showId, showId)),
       catch: (error) =>
         new DatabaseError({
@@ -220,32 +188,29 @@ const getSubscribersEffect = (showId: string) =>
     return subscribers
   })
 
-export const ShowSubscriptionServiceLive = Layer.succeed(
-  ShowSubscriptionService,
-  {
-    subscribe: (userId, showId) =>
-      subscribeEffect(userId, showId).pipe(
-        Effect.withSpan('showSubscription.subscribe', {
-          attributes: { showId }
-        })
-      ),
-    unsubscribe: (userId, showId) =>
-      unsubscribeEffect(userId, showId).pipe(
-        Effect.withSpan('showSubscription.unsubscribe', {
-          attributes: { showId }
-        })
-      ),
-    getUserSubscriptions: (userId, options) =>
-      getUserSubscriptionsEffect(userId, options).pipe(
-        Effect.withSpan('showSubscription.getUserSubscriptions', {
-          attributes: { userId }
-        })
-      ),
-    getSubscribers: (showId) =>
-      getSubscribersEffect(showId).pipe(
-        Effect.withSpan('showSubscription.getSubscribers', {
-          attributes: { showId }
-        })
-      )
-  }
-)
+export const ShowSubscriptionServiceLive = Layer.succeed(ShowSubscriptionService, {
+  subscribe: (userId, showId) =>
+    subscribeEffect(userId, showId).pipe(
+      Effect.withSpan('showSubscription.subscribe', {
+        attributes: { showId }
+      })
+    ),
+  unsubscribe: (userId, showId) =>
+    unsubscribeEffect(userId, showId).pipe(
+      Effect.withSpan('showSubscription.unsubscribe', {
+        attributes: { showId }
+      })
+    ),
+  getUserSubscriptions: (userId, options) =>
+    getUserSubscriptionsEffect(userId, options).pipe(
+      Effect.withSpan('showSubscription.getUserSubscriptions', {
+        attributes: { userId }
+      })
+    ),
+  getSubscribers: (showId) =>
+    getSubscribersEffect(showId).pipe(
+      Effect.withSpan('showSubscription.getSubscribers', {
+        attributes: { showId }
+      })
+    )
+})

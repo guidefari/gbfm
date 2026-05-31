@@ -24,10 +24,7 @@ export function EmailPreferencesCard() {
     }
   }, [emailPreferences])
 
-  const handleEmailPrefChange = async (
-    key: keyof typeof emailPrefs,
-    value: boolean
-  ) => {
+  const handleEmailPrefChange = async (key: keyof typeof emailPrefs, value: boolean) => {
     const newPrefs = { ...emailPrefs, [key]: value }
     setEmailPrefs(newPrefs)
     try {
@@ -57,9 +54,7 @@ export function EmailPreferencesCard() {
             id='mixReleaseEnabled'
             type='checkbox'
             checked={emailPrefs.mixReleaseEnabled}
-            onChange={(e) =>
-              handleEmailPrefChange('mixReleaseEnabled', e.target.checked)
-            }
+            onChange={(e) => handleEmailPrefChange('mixReleaseEnabled', e.target.checked)}
             disabled={emailPrefs.globalUnsubscribe}
             className='h-4 w-4 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary disabled:opacity-50'
           />
@@ -78,9 +73,7 @@ export function EmailPreferencesCard() {
             id='promotionalEnabled'
             type='checkbox'
             checked={emailPrefs.promotionalEnabled}
-            onChange={(e) =>
-              handleEmailPrefChange('promotionalEnabled', e.target.checked)
-            }
+            onChange={(e) => handleEmailPrefChange('promotionalEnabled', e.target.checked)}
             disabled={emailPrefs.globalUnsubscribe}
             className='h-4 w-4 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary disabled:opacity-50'
           />
@@ -99,9 +92,7 @@ export function EmailPreferencesCard() {
             id='systemEnabled'
             type='checkbox'
             checked={emailPrefs.systemEnabled}
-            onChange={(e) =>
-              handleEmailPrefChange('systemEnabled', e.target.checked)
-            }
+            onChange={(e) => handleEmailPrefChange('systemEnabled', e.target.checked)}
             disabled={emailPrefs.globalUnsubscribe}
             className='h-4 w-4 rounded border-gray-300 text-primary focus:ring-2 focus:ring-primary disabled:opacity-50'
           />
@@ -110,9 +101,7 @@ export function EmailPreferencesCard() {
         <div className='border-t pt-4'>
           <div className='flex items-center justify-between'>
             <div className='flex-1'>
-              <Label
-                htmlFor='globalUnsubscribe'
-                className='text-sm font-medium text-destructive'>
+              <Label htmlFor='globalUnsubscribe' className='text-sm font-medium text-destructive'>
                 Unsubscribe from All
               </Label>
               <p className='text-sm text-muted-foreground'>
@@ -123,9 +112,7 @@ export function EmailPreferencesCard() {
               id='globalUnsubscribe'
               type='checkbox'
               checked={emailPrefs.globalUnsubscribe}
-              onChange={(e) =>
-                handleEmailPrefChange('globalUnsubscribe', e.target.checked)
-              }
+              onChange={(e) => handleEmailPrefChange('globalUnsubscribe', e.target.checked)}
               className='h-4 w-4 rounded border-gray-300 text-destructive focus:ring-2 focus:ring-destructive'
             />
           </div>

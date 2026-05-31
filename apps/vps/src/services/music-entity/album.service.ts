@@ -1,10 +1,7 @@
 import { desc, eq, sql } from 'drizzle-orm'
 import { Effect } from 'effect'
 import type { db as DbType } from '@/db'
-import {
-  musicAlbumArtistsTable,
-  musicAlbumsTable
-} from '@/db/music-entity.schema'
+import { musicAlbumArtistsTable, musicAlbumsTable } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { toSlug } from '@/services/to-slug'
 import { deleteLinksForEntityTx, requireOne } from './shared'
@@ -29,10 +26,7 @@ export const createAlbumEffect = (db: typeof DbType) =>
     return yield* Effect.tryPromise({
       try: () =>
         db.transaction(async (tx) => {
-          const rows = await tx
-            .insert(musicAlbumsTable)
-            .values(albumData)
-            .returning()
+          const rows = await tx.insert(musicAlbumsTable).values(albumData).returning()
           const album = rows[0]
           if (!album) throw new Error('Insert returned no rows')
 
@@ -46,10 +40,7 @@ export const createAlbumEffect = (db: typeof DbType) =>
               .insert(musicAlbumArtistsTable)
               .values(linkRows)
               .onConflictDoUpdate({
-                target: [
-                  musicAlbumArtistsTable.albumId,
-                  musicAlbumArtistsTable.artistId
-                ],
+                target: [musicAlbumArtistsTable.albumId, musicAlbumArtistsTable.artistId],
                 set: { displayOrder: sql`excluded."displayOrder"` }
               })
           }
@@ -67,11 +58,7 @@ export const createAlbumEffect = (db: typeof DbType) =>
 
 export const getAlbumsEffect = (db: typeof DbType) => () =>
   Effect.tryPromise({
-    try: () =>
-      db
-        .select()
-        .from(musicAlbumsTable)
-        .orderBy(desc(musicAlbumsTable.createdAt)),
+    try: () => db.select().from(musicAlbumsTable).orderBy(desc(musicAlbumsTable.createdAt)),
     catch: (e) =>
       new DatabaseError({
         message: `Failed to list albums: ${getErrorMessage(e)}`,
@@ -83,12 +70,7 @@ export const getAlbumsEffect = (db: typeof DbType) => () =>
 export const getAlbumByIdEffect = (db: typeof DbType) => (id: string) =>
   Effect.gen(function* () {
     const rows = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select()
-          .from(musicAlbumsTable)
-          .where(eq(musicAlbumsTable.id, id))
-          .limit(1),
+      try: () => db.select().from(musicAlbumsTable).where(eq(musicAlbumsTable.id, id)).limit(1),
       catch: (e) =>
         new DatabaseError({
           message: `Failed to get album: ${getErrorMessage(e)}`,
@@ -129,10 +111,7 @@ export const updateAlbumEffect =
                 .insert(musicAlbumArtistsTable)
                 .values(linkRows)
                 .onConflictDoUpdate({
-                  target: [
-                    musicAlbumArtistsTable.albumId,
-                    musicAlbumArtistsTable.artistId
-                  ],
+                  target: [musicAlbumArtistsTable.albumId, musicAlbumArtistsTable.artistId],
                   set: { displayOrder: sql`excluded."displayOrder"` }
                 })
             }
@@ -171,11 +150,7 @@ export const deleteAlbumEffect = (db: typeof DbType) => (id: string) =>
 
 export const addArtistToAlbumEffect =
   (db: typeof DbType) =>
-  (
-    albumId: string,
-    artistId: string,
-    opts?: { role?: string; displayOrder?: number }
-  ) =>
+  (albumId: string, artistId: string, opts?: { role?: string; displayOrder?: number }) =>
     Effect.tryPromise({
       try: () =>
         db
@@ -187,10 +162,7 @@ export const addArtistToAlbumEffect =
             displayOrder: opts?.displayOrder ?? 0
           })
           .onConflictDoUpdate({
-            target: [
-              musicAlbumArtistsTable.albumId,
-              musicAlbumArtistsTable.artistId
-            ],
+            target: [musicAlbumArtistsTable.albumId, musicAlbumArtistsTable.artistId],
             set: { role: opts?.role, displayOrder: opts?.displayOrder ?? 0 }
           }),
       catch: (e) =>

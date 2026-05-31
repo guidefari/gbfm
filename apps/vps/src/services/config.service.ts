@@ -9,10 +9,7 @@ try {
 }
 
 // Generic helper to get Resource value with strict type safety
-function getResourceValue<T extends string | number>(
-  resourcePath: string,
-  fallback: T
-): T {
+function getResourceValue<T extends string | number>(resourcePath: string, fallback: T): T {
   if (!Resource) return fallback
 
   try {
@@ -43,9 +40,7 @@ function getResourceValue<T extends string | number>(
             : fallback
 
       if (Number.isNaN(numValue)) {
-        throw new Error(
-          `Invalid number value for ${resourcePath}: ${resourceValue}`
-        )
+        throw new Error(`Invalid number value for ${resourcePath}: ${resourceValue}`)
       }
 
       return numValue as T
@@ -64,10 +59,7 @@ function getResourceValue<T extends string | number>(
 
     return fallback
   } catch (error) {
-    if (
-      error instanceof Error &&
-      error.message.includes('Invalid number value')
-    ) {
+    if (error instanceof Error && error.message.includes('Invalid number value')) {
       throw error
     }
     // Resource not available when running outside SST
@@ -142,17 +134,12 @@ export function createConfig(): ConfigService {
   const isProd = appStage === 'prod' || process.env.NODE_ENV === 'production'
 
   // Database configuration
-  const databaseHost =
-    process.env.DB_HOST || getResourceValue('DatabaseHost', 'localhost')
-  const databasePort =
-    Number(process.env.DB_PORT) ||
-    Number(getResourceValue('DatabasePort', 5432))
-  const databaseUser =
-    process.env.DB_USER || getResourceValue('DatabaseUser', 'postgres')
+  const databaseHost = process.env.DB_HOST || getResourceValue('DatabaseHost', 'localhost')
+  const databasePort = Number(process.env.DB_PORT) || Number(getResourceValue('DatabasePort', 5432))
+  const databaseUser = process.env.DB_USER || getResourceValue('DatabaseUser', 'postgres')
   const databasePassword =
     process.env.DB_PASSWORD || getResourceValue('DatabasePassword', 'postgres')
-  const databaseName =
-    process.env.DB_NAME || getResourceValue('DatabaseName', 'postgres')
+  const databaseName = process.env.DB_NAME || getResourceValue('DatabaseName', 'postgres')
 
   // URLs
   const frontendUrl = isProd
@@ -162,32 +149,23 @@ export function createConfig(): ConfigService {
     ? getResourceValue('Urls.vps', 'http://127.0.0.1:3003')
     : process.env.VPS_URL || 'http://127.0.0.1:3003'
   const routerUrl =
-    process.env.ROUTER_URL ||
-    getResourceValue('Router.url', 'http://localhost:3000')
+    process.env.ROUTER_URL || getResourceValue('Router.url', 'http://localhost:3000')
   const bucketRouterUrl =
-    process.env.BUCKET_ROUTER_URL ||
-    getResourceValue('BucketRouter.url', 'http://localhost:3000')
+    process.env.BUCKET_ROUTER_URL || getResourceValue('BucketRouter.url', 'http://localhost:3000')
 
   // Auth
-  const emailSender = isProd
-    ? getResourceValue('Email.sender', '')
-    : process.env.EMAIL_SENDER || ''
+  const emailSender = isProd ? getResourceValue('Email.sender', '') : process.env.EMAIL_SENDER || ''
   const accessTokenSecret = process.env.ACCESS_TOKEN_SECRET || 'secret'
   const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET || 'secret'
   const betterAuthSecret =
     process.env.BETTER_AUTH_SECRET || getResourceValue('BETTER_AUTH_SECRET', '')
-  const betterAuthUrl =
-    process.env.BETTER_AUTH_URL || getResourceValue('BETTER_AUTH_URL', '')
+  const betterAuthUrl = process.env.BETTER_AUTH_URL || getResourceValue('BETTER_AUTH_URL', '')
 
   // Spotify
   const spotifyClientId =
-    getResourceValue('SpotifyClientId', '') ||
-    process.env.SPOTIFY_CLIENT_ID ||
-    ''
+    getResourceValue('SpotifyClientId', '') || process.env.SPOTIFY_CLIENT_ID || ''
   const spotifyClientSecret =
-    getResourceValue('SpotifyClientSecret', '') ||
-    process.env.SPOTIFY_CLIENT_SECRET ||
-    ''
+    getResourceValue('SpotifyClientSecret', '') || process.env.SPOTIFY_CLIENT_SECRET || ''
 
   // Buckets
   const userContentBucketName =
@@ -201,8 +179,7 @@ export function createConfig(): ConfigService {
 
   // Tasks
   const databaseBackupTask =
-    process.env.DATABASE_BACKUP_TASK ||
-    (process.env.DATABASE_BACKUP_TASK ? undefined : undefined)
+    process.env.DATABASE_BACKUP_TASK || (process.env.DATABASE_BACKUP_TASK ? undefined : undefined)
 
   // App
   const nodeEnv = process.env.NODE_ENV || 'development'
@@ -210,18 +187,14 @@ export function createConfig(): ConfigService {
   const logLevel = process.env.LOG_LEVEL
 
   const otelEndpoint =
-    process.env.OTEL_EXPORTER_OTLP_ENDPOINT ||
-    getResourceValue('OTEL_EXPORTER_OTLP_ENDPOINT', '')
+    process.env.OTEL_EXPORTER_OTLP_ENDPOINT || getResourceValue('OTEL_EXPORTER_OTLP_ENDPOINT', '')
   const otelHeaders =
-    process.env.OTEL_EXPORTER_OTLP_HEADERS ||
-    getResourceValue('OTEL_EXPORTER_OTLP_HEADERS', '')
+    process.env.OTEL_EXPORTER_OTLP_HEADERS || getResourceValue('OTEL_EXPORTER_OTLP_HEADERS', '')
 
   const adminEmail =
-    process.env.ADMIN_EMAIL ||
-    getResourceValue('AdminEmail', 'guidefari@icloud.com')
+    process.env.ADMIN_EMAIL || getResourceValue('AdminEmail', 'guidefari@icloud.com')
 
-  const sentryDsn =
-    process.env.SENTRY_BACKEND_DSN || getResourceValue('SENTRY_BACKEND_DSN', '')
+  const sentryDsn = process.env.SENTRY_BACKEND_DSN || getResourceValue('SENTRY_BACKEND_DSN', '')
   const sentryEnvironment =
     process.env.SENTRY_ENVIRONMENT || (isProd ? 'production' : 'development')
 

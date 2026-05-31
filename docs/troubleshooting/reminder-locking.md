@@ -7,12 +7,12 @@ To prevent duplicate reminder emails being sent (even if multiple instances of t
 We added a `reminder_status` enum and a `status` column to the `music_reminder` table.
 
 ```typescript
-export const reminderStatusEnum = pgEnum("reminder_status", [
-  "pending",
-  "processing",
-  "sent",
-  "failed",
-]);
+export const reminderStatusEnum = pgEnum('reminder_status', [
+  'pending',
+  'processing',
+  'sent',
+  'failed'
+])
 ```
 
 ## Atomic Claiming Mechanism
@@ -29,23 +29,20 @@ The processor searches for reminders where:
 ```typescript
 db.update(musicReminder)
   .set({
-    status: "processing",
-    updatedAt: new Date(),
+    status: 'processing',
+    updatedAt: new Date()
   })
   .where(
     and(
       lte(musicReminder.reminderDate, now),
       or(
-        eq(musicReminder.status, "pending"),
-        and(
-          eq(musicReminder.status, "processing"),
-          lte(musicReminder.updatedAt, fiveMinutesAgo)
-        ),
-        eq(musicReminder.status, "failed")
+        eq(musicReminder.status, 'pending'),
+        and(eq(musicReminder.status, 'processing'), lte(musicReminder.updatedAt, fiveMinutesAgo)),
+        eq(musicReminder.status, 'failed')
       )
     )
   )
-  .returning();
+  .returning()
 ```
 
 The database ensures that only one process can successfully update and "return" a specific record, effectively locking it.

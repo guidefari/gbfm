@@ -11,8 +11,7 @@ export const Route = createFileRoute('/subscribe')({
 function Subscribe() {
   const [email, setEmail] = useState('')
   const [name, setName] = useState('')
-  const { mutate, isPending, isSuccess, isError, error, data } =
-    useNewsletterSubscribe()
+  const { mutate, isPending, isSuccess, isError, error, data } = useNewsletterSubscribe()
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -32,9 +31,7 @@ function Subscribe() {
             <p className='mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-primary/80'>
               Newsletter
             </p>
-            <h1 className='mb-3 text-3xl font-bold tracking-tight sm:text-4xl'>
-              Stay in the loop
-            </h1>
+            <h1 className='mb-3 text-3xl font-bold tracking-tight sm:text-4xl'>Stay in the loop</h1>
             <p className='mx-auto max-w-xl text-sm text-muted-foreground sm:text-base'>
               Get notified when new mixes drop and other goosebumps updates.
             </p>
@@ -45,9 +42,7 @@ function Subscribe() {
               <CheckCircle className='h-12 w-12 text-green-500' />
               <div>
                 <p className='text-lg font-medium'>
-                  {data?.subscribed
-                    ? "You're subscribed!"
-                    : "You're already subscribed!"}
+                  {data?.subscribed ? "You're subscribed!" : "You're already subscribed!"}
                 </p>
                 <p className='mt-1 text-sm text-muted-foreground'>
                   {data?.subscribed
@@ -94,8 +89,7 @@ function Subscribe() {
                   </Button>
                 </div>
                 <p className='text-center text-xs text-muted-foreground'>
-                  No spam. Just new mixes, notable drops, and occasional
-                  updates.
+                  No spam. Just new mixes, notable drops, and occasional updates.
                 </p>
               </form>
             </div>

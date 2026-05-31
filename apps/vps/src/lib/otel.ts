@@ -2,11 +2,7 @@ import { NodeSdk } from '@effect/opentelemetry'
 import { propagation } from '@opentelemetry/api'
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
 import { SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
-import {
-  SentryPropagator,
-  SentrySampler,
-  SentrySpanProcessor
-} from '@sentry/opentelemetry'
+import { SentryPropagator, SentrySampler, SentrySpanProcessor } from '@sentry/opentelemetry'
 import { Effect, Layer } from 'effect'
 import { ConfigService } from '@/services/config.service'
 import { SentryClientService } from '@/services/sentry-client.service'
@@ -38,9 +34,7 @@ export const OtlpLive = Effect.gen(function* () {
     ? [
         new SimpleSpanProcessor(
           new OTLPTraceExporter({
-            url: otlpEndpoint.endsWith('/v1/traces')
-              ? otlpEndpoint
-              : `${otlpEndpoint}/v1/traces`,
+            url: otlpEndpoint.endsWith('/v1/traces') ? otlpEndpoint : `${otlpEndpoint}/v1/traces`,
             ...(otelHeaders ? { headers: otelHeaders } : {})
           })
         )
@@ -63,8 +57,6 @@ export const OtlpLive = Effect.gen(function* () {
       }
     },
     spanProcessor: [...sentryProcessors, ...otlpProcessors],
-    ...(sentry.client
-      ? { tracerConfig: { sampler: new SentrySampler(sentry.client) } }
-      : {})
+    ...(sentry.client ? { tracerConfig: { sampler: new SentrySampler(sentry.client) } } : {})
   }))
 }).pipe(Layer.unwrap)

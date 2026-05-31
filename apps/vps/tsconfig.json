@@ -28,9 +28,5 @@
     }
   },
   "include": ["src/**/*", "drizzle/**/*", "sst-env.d.ts", "scripts/**/*"],
-  "exclude": [
-    "src/archive",
-    "node_modules",
-    "../../packages/email/emails/**/*"
-  ]
+  "exclude": ["src/archive", "node_modules", "../../packages/email/emails/**/*"]
 }

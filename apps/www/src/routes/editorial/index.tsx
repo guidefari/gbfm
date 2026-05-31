@@ -1,11 +1,4 @@
-import {
-  Badge,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@gbfm/ui'
+import { Badge, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@gbfm/ui'
 import { createFileRoute } from '@tanstack/react-router'
 import { Tag, X } from 'lucide-react'
 import { z } from 'zod'
@@ -31,15 +24,8 @@ export const Route = createFileRoute('/editorial/')({
 function EditorialListPage() {
   const { tag } = Route.useSearch()
   const navigate = Route.useNavigate()
-  const {
-    data,
-    error,
-    isPending,
-    refetch,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage
-  } = useEditorialPosts(tag)
+  const { data, error, isPending, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useEditorialPosts(tag)
 
   const { data: allTags } = useEditorialTags()
 

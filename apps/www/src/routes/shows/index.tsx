@@ -12,14 +12,7 @@ export const Route = createFileRoute('/shows/')({
 })
 
 function ShowsListPage() {
-  const {
-    data,
-    isPending,
-    error,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage
-  } = useAllShows()
+  const { data, isPending, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useAllShows()
 
   if (isPending) {
     return <ShowsSkeleton />
@@ -27,18 +20,12 @@ function ShowsListPage() {
 
   if (error) {
     return (
-      <div className='p-4 text-center text-destructive'>
-        Error loading shows: {error.message}
-      </div>
+      <div className='p-4 text-center text-destructive'>Error loading shows: {error.message}</div>
     )
   }
 
   if (!data || data.length === 0) {
-    return (
-      <div className='p-4 text-center text-muted-foreground'>
-        No shows found
-      </div>
-    )
+    return <div className='p-4 text-center text-muted-foreground'>No shows found</div>
   }
 
   return (

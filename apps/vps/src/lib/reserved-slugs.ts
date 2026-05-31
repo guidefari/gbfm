@@ -62,10 +62,7 @@ const ADDITIONAL_RESERVED = [
   'www'
 ] as const
 
-export const RESERVED_SLUGS: Set<string> = new Set([
-  ...ROUTE_SLUGS,
-  ...ADDITIONAL_RESERVED
-])
+export const RESERVED_SLUGS: Set<string> = new Set([...ROUTE_SLUGS, ...ADDITIONAL_RESERVED])
 
 export function isReservedSlug(slug: string): boolean {
   return RESERVED_SLUGS.has(slug.toLowerCase())

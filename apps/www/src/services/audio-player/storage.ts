@@ -10,10 +10,9 @@ export interface AudioStorageShape {
   clear: (trackId: string) => Effect.Effect<void>
 }
 
-export class AudioStorage extends Context.Service<
-  AudioStorage,
-  AudioStorageShape
->()('@gbfm/www/AudioStorage') {}
+export class AudioStorage extends Context.Service<AudioStorage, AudioStorageShape>()(
+  '@gbfm/www/AudioStorage'
+) {}
 
 export const AudioStorageLive = Layer.sync(AudioStorage, () => ({
   readPosition: (trackId: string) =>
@@ -61,8 +60,7 @@ export const AudioStorageTest = Layer.succeed(AudioStorage, {
 export const AudioStorageInMemory = Layer.sync(AudioStorage, () => {
   const store = new Map<string, number>()
   return {
-    readPosition: (trackId: string) =>
-      Effect.sync(() => store.get(trackId) ?? null),
+    readPosition: (trackId: string) => Effect.sync(() => store.get(trackId) ?? null),
     writePosition: (trackId: string, time: number) =>
       Effect.sync(() => {
         store.set(trackId, time)

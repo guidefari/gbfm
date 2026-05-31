@@ -24,11 +24,7 @@ function useMediaQuery(query: string) {
   return matches
 }
 
-export function ReadMoreModal({
-  title,
-  children,
-  trigger
-}: ReadMoreModalProps) {
+export function ReadMoreModal({ title, children, trigger }: ReadMoreModalProps) {
   const [open, setOpen] = useState(false)
   const isDesktop = useMediaQuery('(min-width: 1024px)')
 
@@ -42,9 +38,7 @@ export function ReadMoreModal({
           <DialogHeader>
             <DialogTitle>{title}</DialogTitle>
           </DialogHeader>
-          <div className='prose prose-neutral dark:prose-invert prose-sm'>
-            {children}
-          </div>
+          <div className='prose prose-neutral dark:prose-invert prose-sm'>{children}</div>
         </DialogContent>
       </Dialog>
     )
@@ -55,15 +49,11 @@ export function ReadMoreModal({
       <button type='button' onClick={() => setOpen(true)}>
         {trigger}
       </button>
-      <SheetContent
-        side='bottom'
-        className='max-h-[85vh] overflow-y-auto rounded-t-xl'>
+      <SheetContent side='bottom' className='max-h-[85vh] overflow-y-auto rounded-t-xl'>
         <SheetHeader>
           <SheetTitle>{title}</SheetTitle>
         </SheetHeader>
-        <div className='prose prose-neutral dark:prose-invert prose-sm mt-4'>
-          {children}
-        </div>
+        <div className='prose prose-neutral dark:prose-invert prose-sm mt-4'>{children}</div>
       </SheetContent>
     </Sheet>
   )

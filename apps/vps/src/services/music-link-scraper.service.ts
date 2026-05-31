@@ -92,9 +92,7 @@ export interface MusicDataProvider {
    * provider doesn't handle the input (e.g. no URL provided for a URL-only
    * provider). Never throw — signal errors via Effect failure.
    */
-  readonly fetchLinks: (
-    input: MusicScrapeInput
-  ) => Effect.Effect<ProviderResult, MusicScraperError>
+  readonly fetchLinks: (input: MusicScrapeInput) => Effect.Effect<ProviderResult, MusicScraperError>
 }
 
 // ---------------------------------------------------------------------------
@@ -143,9 +141,7 @@ interface OdesliResponse {
 export class OdesliProvider implements MusicDataProvider {
   readonly name = 'odesli'
 
-  fetchLinks(
-    input: MusicScrapeInput
-  ): Effect.Effect<ProviderResult, MusicScraperError> {
+  fetchLinks(input: MusicScrapeInput): Effect.Effect<ProviderResult, MusicScraperError> {
     if (!input.url) return Effect.succeed({ links: [] })
 
     const seedUrl = input.url
@@ -207,8 +203,7 @@ export class OdesliProvider implements MusicDataProvider {
       )
 
       const primaryEntity =
-        data.entitiesByUniqueId[data.entityUniqueId] ??
-        Object.values(data.entitiesByUniqueId)[0]
+        data.entitiesByUniqueId[data.entityUniqueId] ?? Object.values(data.entitiesByUniqueId)[0]
 
       const entityMeta: EntityMeta | undefined = primaryEntity
         ? {
@@ -244,9 +239,7 @@ export class FirecrawlProvider implements MusicDataProvider {
 
   constructor(private readonly apiKey: string) {}
 
-  fetchLinks(
-    input: MusicScrapeInput
-  ): Effect.Effect<ProviderResult, MusicScraperError> {
+  fetchLinks(input: MusicScrapeInput): Effect.Effect<ProviderResult, MusicScraperError> {
     if (!input.url) return Effect.succeed({ links: [] })
 
     const pageUrl = input.url
@@ -272,8 +265,7 @@ export class FirecrawlProvider implements MusicDataProvider {
                 properties: {
                   socialLinks: {
                     type: 'object',
-                    description:
-                      'Streaming and social links keyed by platform name',
+                    description: 'Streaming and social links keyed by platform name',
                     additionalProperties: { type: 'string' }
                   }
                 }
@@ -289,9 +281,7 @@ export class FirecrawlProvider implements MusicDataProvider {
       })
 
       if (!response.ok) {
-        yield* Effect.logWarning(
-          `[firecrawl] ${response.status} for ${pageUrl} — skipping`
-        )
+        yield* Effect.logWarning(`[firecrawl] ${response.status} for ${pageUrl} — skipping`)
         return { links: [] } satisfies ProviderResult
       }
 
@@ -334,9 +324,7 @@ export class FirecrawlProvider implements MusicDataProvider {
 export class MusicBrainzProvider implements MusicDataProvider {
   readonly name = 'musicbrainz'
 
-  fetchLinks(
-    input: MusicScrapeInput
-  ): Effect.Effect<ProviderResult, MusicScraperError> {
+  fetchLinks(input: MusicScrapeInput): Effect.Effect<ProviderResult, MusicScraperError> {
     if (!input.mbid && !input.isrc && !input.artistName) {
       return Effect.succeed({ links: [] })
     }
@@ -383,9 +371,7 @@ export class MusicBrainzProvider implements MusicDataProvider {
         })
 
         if (!response.ok) {
-          yield* Effect.logWarning(
-            `[musicbrainz] ${response.status} — skipping`
-          )
+          yield* Effect.logWarning(`[musicbrainz] ${response.status} — skipping`)
           return { links: [] } satisfies ProviderResult
         }
 
@@ -445,31 +431,22 @@ export interface MusicLinkScraperService {
    * if two providers return a link for the same platform, the later one wins.
    * Never fails — provider errors are logged and swallowed.
    */
-  readonly scrape: (
-    input: MusicScrapeInput
-  ) => Effect.Effect<ScrapeResult, never>
+  readonly scrape: (input: MusicScrapeInput) => Effect.Effect<ScrapeResult, never>
 }
 
-export const MusicLinkScraperService = Context.Service<MusicLinkScraperService>(
-  'MusicLinkScraperService'
-)
+export const MusicLinkScraperService =
+  Context.Service<MusicLinkScraperService>('MusicLinkScraperService')
 
-function makeScraperWithProviders(
-  providers: MusicDataProvider[]
-): MusicLinkScraperService {
+function makeScraperWithProviders(providers: MusicDataProvider[]): MusicLinkScraperService {
   return {
-    scrape: Effect.fn('musicScraper.scrape')(function* (
-      input: MusicScrapeInput
-    ) {
+    scrape: Effect.fn('musicScraper.scrape')(function* (input: MusicScrapeInput) {
       const platformMap = new Map<string, ScrapedLink>()
       let entityMeta: EntityMeta | undefined
 
       for (const provider of providers) {
         const result = yield* Effect.catch(provider.fetchLinks(input), (err) =>
           Effect.andThen(
-            Effect.logWarning(
-              `[${provider.name}] scrape failed: ${err.message}`
-            ),
+            Effect.logWarning(`[${provider.name}] scrape failed: ${err.message}`),
             Effect.succeed({
               links: [],
               entityMeta: undefined
@@ -500,22 +477,16 @@ function makeScraperWithProviders(
 // Live layer — configure which providers are active
 // ---------------------------------------------------------------------------
 
-export const MusicLinkScraperServiceLive = Layer.sync(
-  MusicLinkScraperService,
-  () => {
-    const providers: MusicDataProvider[] = [
-      new OdesliProvider(),
-      new MusicBrainzProvider()
-    ]
+export const MusicLinkScraperServiceLive = Layer.sync(MusicLinkScraperService, () => {
+  const providers: MusicDataProvider[] = [new OdesliProvider(), new MusicBrainzProvider()]
 
-    const firecrawlKey = process.env.FIRECRAWL_API_KEY
-    if (firecrawlKey) {
-      providers.push(new FirecrawlProvider(firecrawlKey))
-    }
-
-    return makeScraperWithProviders(providers)
+  const firecrawlKey = process.env.FIRECRAWL_API_KEY
+  if (firecrawlKey) {
+    providers.push(new FirecrawlProvider(firecrawlKey))
   }
-)
+
+  return makeScraperWithProviders(providers)
+})
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -524,8 +495,7 @@ export const MusicLinkScraperServiceLive = Layer.sync(
 function mapToPlatform(key: string): MusicPlatform {
   const lower = key.toLowerCase()
   if (lower.includes('spotify')) return 'spotify'
-  if (lower.includes('youtube_music') || lower === 'youtubemusic')
-    return 'youtube_music'
+  if (lower.includes('youtube_music') || lower === 'youtubemusic') return 'youtube_music'
   if (lower.includes('youtube')) return 'youtube'
   if (lower.includes('apple')) return 'apple_music'
   if (lower.includes('bandcamp')) return 'bandcamp'

@@ -2,11 +2,7 @@ import { and, asc, eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { audioCreators, audioTable } from '@/db/audio.schema'
-import {
-  type SocialLinkPlatform,
-  userSocialLinks,
-  user as userTable
-} from '@/db/auth.schema'
+import { type SocialLinkPlatform, userSocialLinks, user as userTable } from '@/db/auth.schema'
 import { postCreators, postsTable } from '@/db/post.schema'
 import { showCreators, showsTable } from '@/db/show.schema'
 import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
@@ -129,12 +125,7 @@ export const getPublicProfileEffect = (username: string) =>
           })
           .from(audioTable)
           .innerJoin(audioCreators, eq(audioTable.id, audioCreators.audioId))
-          .where(
-            and(
-              eq(audioCreators.creatorId, foundUser.id),
-              eq(audioTable.draft, false)
-            )
-          )
+          .where(and(eq(audioCreators.creatorId, foundUser.id), eq(audioTable.draft, false)))
           .orderBy(audioTable.createdAt),
       catch: (error) =>
         new DatabaseError({
@@ -155,12 +146,7 @@ export const getPublicProfileEffect = (username: string) =>
           })
           .from(showsTable)
           .innerJoin(showCreators, eq(showsTable.id, showCreators.showId))
-          .where(
-            and(
-              eq(showCreators.creatorId, foundUser.id),
-              eq(showsTable.draft, false)
-            )
-          )
+          .where(and(eq(showCreators.creatorId, foundUser.id), eq(showsTable.draft, false)))
           .orderBy(showsTable.createdAt),
       catch: (error) =>
         new DatabaseError({
@@ -184,12 +170,7 @@ export const getPublicProfileEffect = (username: string) =>
           })
           .from(postsTable)
           .innerJoin(postCreators, eq(postsTable.id, postCreators.postId))
-          .where(
-            and(
-              eq(postCreators.creatorId, foundUser.id),
-              eq(postsTable.draft, false)
-            )
-          )
+          .where(and(eq(postCreators.creatorId, foundUser.id), eq(postsTable.draft, false)))
           .orderBy(postsTable.createdAt),
       catch: (error) =>
         new DatabaseError({
@@ -200,9 +181,7 @@ export const getPublicProfileEffect = (username: string) =>
     })
 
     const editorials = userPosts
-      .filter((p): p is typeof p & { title: string } =>
-        Boolean(p.type === 'post' && p.title)
-      )
+      .filter((p): p is typeof p & { title: string } => Boolean(p.type === 'post' && p.title))
       .map(({ type, ...rest }) => rest)
 
     const tweets = userPosts
@@ -216,8 +195,7 @@ export const getPublicProfileEffect = (username: string) =>
       image: foundUser.image,
       bio: foundUser.bio,
       socialLinks: socialLinks.map((link) => ({
-        platform:
-          link.platform as PublicProfile['socialLinks'][number]['platform'],
+        platform: link.platform as PublicProfile['socialLinks'][number]['platform'],
         url: link.url,
         position: link.position
       })),

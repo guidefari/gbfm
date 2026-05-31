@@ -36,9 +36,7 @@ export const getAllLabels: AppRouteHandler<GetAllLabelsRoute> = async (c) => {
   return runEffect<GetAllLabelsRoute>(c, program)
 }
 
-export const getLabelBySlug: AppRouteHandler<GetLabelBySlugRoute> = async (
-  c
-) => {
+export const getLabelBySlug: AppRouteHandler<GetLabelBySlugRoute> = async (c) => {
   const { slug } = c.req.valid('param')
 
   const program = Effect.gen(function* () {
@@ -49,9 +47,7 @@ export const getLabelBySlug: AppRouteHandler<GetLabelBySlugRoute> = async (
   return runEffect<GetLabelBySlugRoute>(c, program)
 }
 
-export const updateLabelBySlug: AppRouteHandler<
-  UpdateLabelBySlugRoute
-> = async (c) => {
+export const updateLabelBySlug: AppRouteHandler<UpdateLabelBySlugRoute> = async (c) => {
   const { slug } = c.req.valid('param')
   const updateData = c.req.valid('json')
   const user = c.get('user')

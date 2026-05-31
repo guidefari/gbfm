@@ -122,8 +122,7 @@ export const updateLinkStatusEffect =
     )
 
 export const deleteLinkEffect =
-  (db: typeof DbType) =>
-  (entityType: MusicEntityType, entityId: string, linkId: string) =>
+  (db: typeof DbType) => (entityType: MusicEntityType, entityId: string, linkId: string) =>
     Effect.gen(function* () {
       const rows = yield* Effect.tryPromise({
         try: () =>

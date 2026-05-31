@@ -14,9 +14,7 @@ describe('formatTracklist', () => {
 
     const result = formatTracklist(input)
 
-    expect(result).toBe(
-      '01. Artist One - Track A\n02. Artist Two - Track With Tabs'
-    )
+    expect(result).toBe('01. Artist One - Track A\n02. Artist Two - Track With Tabs')
   })
 })
 
@@ -41,9 +39,7 @@ describe('makeInMemoryJobQueue', () => {
     const queue = await Effect.runPromise(makeInMemoryJobQueue)
 
     expect(await Effect.runPromise(queue.getStatus('missing'))).toBeUndefined()
-    await Effect.runPromise(
-      queue.updateStatus('missing', { _tag: 'Failed', error: 'no-op' })
-    )
+    await Effect.runPromise(queue.updateStatus('missing', { _tag: 'Failed', error: 'no-op' }))
     expect(await Effect.runPromise(queue.getStatus('missing'))).toBeUndefined()
   })
 

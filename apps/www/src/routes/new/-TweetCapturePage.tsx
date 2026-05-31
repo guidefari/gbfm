@@ -82,9 +82,7 @@ function TweetComposerCard({
   onTitleChange: (value: string) => void
   onCommentaryChange: (value: string) => void
   onSubmit: () => void
-  onKeyDown: (
-    event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => void
+  onKeyDown: (event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) => void
 }) {
   return (
     <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
@@ -104,9 +102,7 @@ function TweetComposerCard({
             placeholder='Optional title for the tweet'
             maxLength={255}
           />
-          <p className='text-right text-xs text-muted-foreground'>
-            {title.length}/255
-          </p>
+          <p className='text-right text-xs text-muted-foreground'>{title.length}/255</p>
         </div>
 
         <div className='space-y-2'>
@@ -123,20 +119,11 @@ function TweetComposerCard({
         </div>
 
         <div className='flex items-center gap-3'>
-          <Button
-            onClick={onSubmit}
-            disabled={!canSubmit || isPending}
-            className='gap-2'>
-            {isPending ? (
-              <Loader2 className='size-4 animate-spin' />
-            ) : (
-              <Send className='size-4' />
-            )}
+          <Button onClick={onSubmit} disabled={!canSubmit || isPending} className='gap-2'>
+            {isPending ? <Loader2 className='size-4 animate-spin' /> : <Send className='size-4' />}
             {isEditMode ? 'Update tweet' : 'Save tweet'}
           </Button>
-          <span className='text-sm text-muted-foreground'>
-            Cmd+Enter submits
-          </span>
+          <span className='text-sm text-muted-foreground'>Cmd+Enter submits</span>
         </div>
       </CardContent>
     </Card>
@@ -203,22 +190,16 @@ function ResolvedMusicCard({
           <div className='space-y-3'>
             <div>
               <div className='text-sm text-muted-foreground'>Resolved type</div>
-              <div className='font-medium'>
-                {displayedEntityType || 'Waiting for a URL'}
-              </div>
+              <div className='font-medium'>{displayedEntityType || 'Waiting for a URL'}</div>
             </div>
             <div>
               <div className='text-sm text-muted-foreground'>Title</div>
-              <div className='font-medium'>
-                {displayedEntityTitle || 'No entity resolved yet'}
-              </div>
+              <div className='font-medium'>{displayedEntityTitle || 'No entity resolved yet'}</div>
             </div>
             {displayedArtistNames?.length ? (
               <div>
                 <div className='text-sm text-muted-foreground'>Artists</div>
-                <div className='font-medium'>
-                  {displayedArtistNames.join(', ')}
-                </div>
+                <div className='font-medium'>{displayedArtistNames.join(', ')}</div>
               </div>
             ) : null}
           </div>
@@ -242,24 +223,17 @@ export function TweetCapturePage() {
 
   const { data: existingPost, isPending: loadingPost } = useQuery({
     queryKey: ['post', search.edit],
-    queryFn: () =>
-      fetcher<PostItem>(`${VPS_BASE_URL}/content/posts/${search.edit}`),
+    queryFn: () => fetcher<PostItem>(`${VPS_BASE_URL}/content/posts/${search.edit}`),
     enabled: isEditMode && Boolean(search.edit)
   })
 
   const { data: existingMusicEntity } = useQuery<MusicEntityPreview>({
-    queryKey: [
-      'music-entity',
-      existingPost?.musicEntityType,
-      existingPost?.musicEntityId
-    ],
+    queryKey: ['music-entity', existingPost?.musicEntityType, existingPost?.musicEntityId],
     queryFn: () =>
       fetcher(
         `${VPS_BASE_URL}/music/${entityPathByType[existingPost?.musicEntityType ?? 'track']}/${existingPost?.musicEntityId}`
       ),
-    enabled: Boolean(
-      existingPost?.musicEntityType && existingPost.musicEntityId
-    )
+    enabled: Boolean(existingPost?.musicEntityType && existingPost.musicEntityId)
   })
 
   const resolved = useResolveMusicEntity(musicUrl.trim())
@@ -270,29 +244,20 @@ export function TweetCapturePage() {
     setCommentary(existingPost.content ?? '')
   }, [existingPost])
 
-  const canSubmit = useMemo(
-    () => Boolean(title.trim() || commentary.trim()),
-    [title, commentary]
-  )
+  const canSubmit = useMemo(() => Boolean(title.trim() || commentary.trim()), [title, commentary])
   const canAccess = Boolean(
     user &&
-      (user.role === 'admin' ||
-        (isEditMode &&
-          existingPost?.creators?.some((creator) => creator.id === user.id)))
+    (user.role === 'admin' ||
+      (isEditMode && existingPost?.creators?.some((creator) => creator.id === user.id)))
   )
-  const displayedEntityType =
-    resolved.data?.entityType ?? existingPost?.musicEntityType ?? null
-  const displayedEntityTitle =
-    resolved.data?.entity?.title ?? existingMusicEntity?.title ?? null
+  const displayedEntityType = resolved.data?.entityType ?? existingPost?.musicEntityType ?? null
+  const displayedEntityTitle = resolved.data?.entity?.title ?? existingMusicEntity?.title ?? null
   const displayedCoverImageUrl =
     resolved.data?.coverImageUrl ?? existingMusicEntity?.coverImageUrl ?? null
   const displayedArtistNames =
-    resolved.data?.entity?.artistNames ??
-    existingMusicEntity?.artistNames ??
-    null
+    resolved.data?.entity?.artistNames ?? existingMusicEntity?.artistNames ?? null
   const currentEntityType = displayedEntityType
-  const currentEntityId =
-    resolved.data?.entity?.id ?? existingPost?.musicEntityId ?? null
+  const currentEntityId = resolved.data?.entity?.id ?? existingPost?.musicEntityId ?? null
   const entityLinks = useAdminEntityLinks(
     currentEntityType ?? '',
     currentEntityId ?? '',
@@ -374,15 +339,8 @@ export function TweetCapturePage() {
     })
   }
 
-  function handleSubmitShortcut(
-    event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) {
-    if (
-      event.metaKey &&
-      event.key === 'Enter' &&
-      canSubmit &&
-      !submitMutation.isPending
-    ) {
+  function handleSubmitShortcut(event: KeyboardEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    if (event.metaKey && event.key === 'Enter' && canSubmit && !submitMutation.isPending) {
       event.preventDefault()
       submitMutation.mutate()
     }
@@ -399,8 +357,7 @@ export function TweetCapturePage() {
       }
 
       const slugBase = normalizeSlugBase(title.trim() || 'tweet') || 'tweet'
-      const slug =
-        existingPost?.slug ?? `${slugBase}-${Date.now().toString(36)}`
+      const slug = existingPost?.slug ?? `${slugBase}-${Date.now().toString(36)}`
       const creatorIds = isEditMode
         ? existingPost?.creators?.map((creator) => creator.id)
         : [user.id]
@@ -414,10 +371,8 @@ export function TweetCapturePage() {
         tags: existingPost?.tags ?? [],
         draft: existingPost?.draft ?? false,
         type: 'micro' as const,
-        musicEntityType:
-          resolved.data?.entityType ?? existingPost?.musicEntityType ?? null,
-        musicEntityId:
-          resolved.data?.entity?.id ?? existingPost?.musicEntityId ?? null,
+        musicEntityType: resolved.data?.entityType ?? existingPost?.musicEntityType ?? null,
+        musicEntityId: resolved.data?.entity?.id ?? existingPost?.musicEntityId ?? null,
         ...(creatorIds ? { creatorIds } : {})
       }
 
@@ -451,8 +406,7 @@ export function TweetCapturePage() {
       toast({
         variant: 'destructive',
         title: 'Failed to save tweet',
-        description:
-          error instanceof Error ? error.message : 'Something went wrong'
+        description: error instanceof Error ? error.message : 'Something went wrong'
       })
     }
   })

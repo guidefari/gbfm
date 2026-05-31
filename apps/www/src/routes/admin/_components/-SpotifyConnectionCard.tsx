@@ -74,8 +74,7 @@ export function SpotifyConnectionCard() {
           const exchanged = await runAppEffect(
             exchangeSpotifyPkceCodeEffect(callback.code).pipe(
               Effect.mapError(
-                (e: SpotifyRequestError) =>
-                  new SpotifyError({ message: spotifyErrorMessage(e) })
+                (e: SpotifyRequestError) => new SpotifyError({ message: spotifyErrorMessage(e) })
               )
             )
           )
@@ -89,8 +88,7 @@ export function SpotifyConnectionCard() {
         const stored = await runAppEffect(
           getValidSpotifyAuthSessionEffect().pipe(
             Effect.mapError(
-              (e: SpotifyRequestError) =>
-                new SpotifyError({ message: spotifyErrorMessage(e) })
+              (e: SpotifyRequestError) => new SpotifyError({ message: spotifyErrorMessage(e) })
             )
           )
         )
@@ -132,20 +130,14 @@ export function SpotifyConnectionCard() {
       getValidSpotifyAuthSessionEffect().pipe(
         Effect.flatMap((stored) => {
           if (!stored)
-            return Effect.fail(
-              new SpotifyError({ message: 'No Spotify session stored.' })
-            )
+            return Effect.fail(new SpotifyError({ message: 'No Spotify session stored.' }))
           setSession(stored)
           return Effect.promise(() => loadProfile())
         }),
         Effect.map(() => toast({ title: 'Spotify session refreshed' })),
         Effect.catch((e: SpotifyRequestError | Error) =>
           Effect.sync(() =>
-            setError(
-              e instanceof Error
-                ? e.message
-                : spotifyErrorMessage(e as SpotifyRequestError)
-            )
+            setError(e instanceof Error ? e.message : spotifyErrorMessage(e as SpotifyRequestError))
           )
         )
       )
@@ -164,8 +156,7 @@ export function SpotifyConnectionCard() {
       <div className='space-y-1'>
         <div className='text-sm font-semibold'>Spotify connection</div>
         <p className='text-xs text-muted-foreground'>
-          Sign in with PKCE so this browser can control Spotify playback and use
-          the web API.
+          Sign in with PKCE so this browser can control Spotify playback and use the web API.
         </p>
         <p className='text-xs text-muted-foreground'>
           Redirect URI: <code>{getSpotifyRedirectUri()}</code>
@@ -197,11 +188,7 @@ export function SpotifyConnectionCard() {
               disabled={isRefreshing}>
               {isRefreshing ? 'Refreshing…' : 'Refresh session'}
             </Button>
-            <Button
-              type='button'
-              variant='ghost'
-              size='sm'
-              onClick={handleLogout}>
+            <Button type='button' variant='ghost' size='sm' onClick={handleLogout}>
               Logout
             </Button>
           </div>

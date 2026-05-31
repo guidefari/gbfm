@@ -104,40 +104,19 @@ export const checkPerformanceHealth = Effect.gen(function* () {
 })
 
 export const recordFavoriteAdd = () =>
-  Effect.andThen(
-    Metric.update(favoriteAddCount, 1),
-    mirrorCount('favorite_add_count')
-  )
+  Effect.andThen(Metric.update(favoriteAddCount, 1), mirrorCount('favorite_add_count'))
 export const recordFavoriteRemove = () =>
-  Effect.andThen(
-    Metric.update(favoriteRemoveCount, 1),
-    mirrorCount('favorite_remove_count')
-  )
+  Effect.andThen(Metric.update(favoriteRemoveCount, 1), mirrorCount('favorite_remove_count'))
 export const recordShowSubscribe = () =>
-  Effect.andThen(
-    Metric.update(showSubscribeCount, 1),
-    mirrorCount('show_subscribe_count')
-  )
+  Effect.andThen(Metric.update(showSubscribeCount, 1), mirrorCount('show_subscribe_count'))
 export const recordShowUnsubscribe = () =>
-  Effect.andThen(
-    Metric.update(showUnsubscribeCount, 1),
-    mirrorCount('show_unsubscribe_count')
-  )
+  Effect.andThen(Metric.update(showUnsubscribeCount, 1), mirrorCount('show_unsubscribe_count'))
 export const recordAudioCreate = () =>
-  Effect.andThen(
-    Metric.update(audioCreateCount, 1),
-    mirrorCount('audio_create_count')
-  )
+  Effect.andThen(Metric.update(audioCreateCount, 1), mirrorCount('audio_create_count'))
 export const recordEmailSend = () =>
-  Effect.andThen(
-    Metric.update(emailSendCount, 1),
-    mirrorCount('email_send_count')
-  )
+  Effect.andThen(Metric.update(emailSendCount, 1), mirrorCount('email_send_count'))
 export const recordEmailFail = () =>
-  Effect.andThen(
-    Metric.update(emailFailCount, 1),
-    mirrorCount('email_fail_count')
-  )
+  Effect.andThen(Metric.update(emailFailCount, 1), mirrorCount('email_fail_count'))
 export const recordDbQueryDuration = (duration: number) =>
   Effect.andThen(
     Metric.update(dbQueryDuration, duration),

@@ -1,12 +1,8 @@
 {
   "name": "gbfm",
   "version": "2.50.4",
-  "private": true,
-  "workspaces": [
-    "packages/*",
-    "apps/*"
-  ],
   "sideEffects": false,
+  "private": true,
   "scripts": {
     "dev": "sst dev --stage=dev --verbose",
     "refresh": "sst refresh --stage=dev",
@@ -16,15 +12,16 @@
     "release": "semantic-release",
     "typecheck": "tsgo --noEmit && bun --filter='*' typecheck",
     "test": "cd packages/core && bun run test && cd ../theme && bun run test && cd ../../apps/vps && bun run test",
-    "lint": "biome lint .",
-    "lint:fix": "biome lint --write .",
-    "format": "biome format --write .",
-    "check": "biome check --write .",
+    "lint": "oxlint apps/*/src packages infra '*.{js,ts,tsx,jsx}' --no-error-on-unmatched-pattern",
+    "lint:fix": "oxlint apps/*/src packages infra '*.{js,ts,tsx,jsx}' --fix --no-error-on-unmatched-pattern",
+    "format": "oxfmt apps/*/src packages infra '*.{js,ts,tsx,jsx,json,css}' --write --no-error-on-unmatched-pattern",
+    "format:check": "oxfmt apps/*/src packages infra '*.{js,ts,tsx,jsx,json,css}' --check --no-error-on-unmatched-pattern",
+    "check": "bun run format && bun run lint:fix",
     "process-mix": "cd packages/core && bun run process-mix",
     "process-mix-job": "cd packages/core && bun run process-mix-job",
-    "biome:ci": "biome ci",
-    "precommit": "bun run format && bun run check && bun run typecheck",
-    "ci": "bun run biome:ci && bun run typecheck && bun run test && cd apps/www && bun run build",
+    "oxc:ci": "bun run format:check && bun run lint",
+    "precommit": "bun run check && bun run typecheck",
+    "ci": "bun run oxc:ci && bun run typecheck && bun run test && cd apps/www && bun run build",
     "prepare": "effect-language-service patch",
     "init:lefthook": "lefthook install"
   },
@@ -38,7 +35,6 @@
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.16",
     "@effect/language-service": "0.86.2",
     "@semantic-release/changelog": "6.0.3",
     "@semantic-release/git": "10.0.1",
@@ -47,16 +43,21 @@
     "@typescript/native-preview": "7.0.0-dev.20260527.2",
     "lefthook": "2.1.9",
     "madge": "8.0.0",
+    "oxfmt": "0.52.0",
+    "oxlint": "1.67.0",
     "semantic-release": "25.0.3",
     "typescript": "6.0.3"
   },
   "overrides": {
-    "effect": "4.0.0-beta.70",
     "react": "19.2.5",
-    "react-dom": "19.2.5"
+    "react-dom": "19.2.5",
+    "effect": "4.0.0-beta.70"
   },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "trustedDependencies": [
-    "@biomejs/biome",
     "aws-sdk",
     "esbuild",
     "ffmpeg-static",

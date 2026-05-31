@@ -10,9 +10,7 @@ const TooltipProvider = ({
   delayDuration = 69
 }: TooltipPrimitive.TooltipProviderProps) => {
   return (
-    <TooltipPrimitive.Provider delayDuration={delayDuration}>
-      {children}
-    </TooltipPrimitive.Provider>
+    <TooltipPrimitive.Provider delayDuration={delayDuration}>{children}</TooltipPrimitive.Provider>
   )
 }
 

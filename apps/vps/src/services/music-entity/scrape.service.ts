@@ -28,27 +28,23 @@ import { addLinkEffect, getLinksForEntityEffect } from './link.service'
 import { createPlaylistEffect, getPlaylistByIdEffect } from './playlist.service'
 import { createTrackEffect, getTrackByIdEffect } from './track.service'
 
-const findExistingEntityByUrl =
-  (db: typeof DbType) => (url: string, entityType: MusicEntityType) =>
-    Effect.tryPromise({
-      try: () =>
-        db
-          .select()
-          .from(musicEntityLinksTable)
-          .where(
-            and(
-              eq(musicEntityLinksTable.url, url),
-              eq(musicEntityLinksTable.entityType, entityType)
-            )
-          )
-          .limit(1),
-      catch: (e) =>
-        new DatabaseError({
-          message: `Failed to check existing link: ${getErrorMessage(e)}`,
-          operation: 'select',
-          table: 'music_entity_links'
-        })
-    }).pipe(Effect.withSpan('musicEntity.findExistingEntityByUrl'))
+const findExistingEntityByUrl = (db: typeof DbType) => (url: string, entityType: MusicEntityType) =>
+  Effect.tryPromise({
+    try: () =>
+      db
+        .select()
+        .from(musicEntityLinksTable)
+        .where(
+          and(eq(musicEntityLinksTable.url, url), eq(musicEntityLinksTable.entityType, entityType))
+        )
+        .limit(1),
+    catch: (e) =>
+      new DatabaseError({
+        message: `Failed to check existing link: ${getErrorMessage(e)}`,
+        operation: 'select',
+        table: 'music_entity_links'
+      })
+  }).pipe(Effect.withSpan('musicEntity.findExistingEntityByUrl'))
 
 const getEntityById =
   (db: typeof DbType) =>
@@ -56,10 +52,7 @@ const getEntityById =
     entityType: MusicEntityType,
     entityId: string
   ): Effect.Effect<
-    | SelectMusicArtist
-    | SelectMusicAlbum
-    | SelectMusicTrack
-    | SelectMusicPlaylist,
+    SelectMusicArtist | SelectMusicAlbum | SelectMusicTrack | SelectMusicPlaylist,
     DatabaseError | NotFoundError
   > => {
     switch (entityType) {
@@ -79,17 +72,11 @@ export const scrapeAndCreateEntityEffect =
   (entityType: MusicEntityType, input: MusicScrapeInput) =>
     Effect.gen(function* () {
       if (input.url) {
-        const existingLinks = yield* findExistingEntityByUrl(db)(
-          input.url,
-          entityType
-        )
+        const existingLinks = yield* findExistingEntityByUrl(db)(input.url, entityType)
         const match = existingLinks[0]
         if (match) {
           const entity = yield* Effect.catchTag(
-            getEntityById(db)(
-              match.entityType as MusicEntityType,
-              match.entityId
-            ),
+            getEntityById(db)(match.entityType as MusicEntityType, match.entityId),
             'NotFoundError',
             () => Effect.succeed(null)
           )
@@ -112,9 +99,7 @@ export const scrapeAndCreateEntityEffect =
       const rawArtistName = meta?.artistName ?? input.artistName
       const foundArtists =
         rawArtistName && (entityType === 'album' || entityType === 'track')
-          ? yield* findOrCreateArtistsByName(db)(
-              parseArtistNames(rawArtistName)
-            )
+          ? yield* findOrCreateArtistsByName(db)(parseArtistNames(rawArtistName))
           : undefined
       const artistNames = foundArtists?.map((a) => a.name)
       const artistIds = foundArtists?.map((a) => a.id)
@@ -122,8 +107,7 @@ export const scrapeAndCreateEntityEffect =
       const entity = yield* (() => {
         switch (entityType) {
           case 'artist': {
-            const name =
-              meta?.artistName ?? input.artistName ?? 'Unknown Artist'
+            const name = meta?.artistName ?? input.artistName ?? 'Unknown Artist'
             return findOrCreateArtist(db)(name, {
               imageUrl: meta?.thumbnailUrl
             })
@@ -174,9 +158,7 @@ export const scrapeAndCreateEntityEffect =
           }),
           (e) =>
             Effect.andThen(
-              Effect.logWarning(
-                `Failed to persist scraped link ${link.platform}: ${e.message}`
-              ),
+              Effect.logWarning(`Failed to persist scraped link ${link.platform}: ${e.message}`),
               Effect.succeed(null as SelectMusicEntityLink | null)
             )
         )

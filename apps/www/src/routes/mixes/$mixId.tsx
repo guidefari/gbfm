@@ -30,10 +30,7 @@ import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { fetcher, useMixQRPdf, useShowById, VPS_BASE_URL } from '@/lib/http'
 import { getShareUrl } from '@/lib/share'
 import { useContentStore } from '@/store'
-import {
-  useAudioPlayerActions,
-  useAudioPlayerPlaybackState
-} from '@/store/audioPlayer'
+import { useAudioPlayerActions, useAudioPlayerPlaybackState } from '@/store/audioPlayer'
 
 export const Route = createFileRoute('/mixes/$mixId')({
   component: MixPage,
@@ -50,11 +47,8 @@ export const Route = createFileRoute('/mixes/$mixId')({
     const mix = loaderData?.mix
 
     const title = mix?.title || params.mixId
-    const description =
-      mix?.description || `Listen to ${title} on goosebumps.fm`
-    const image =
-      mix?.thumbnailUrl ||
-      'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'
+    const description = mix?.description || `Listen to ${title} on goosebumps.fm`
+    const image = mix?.thumbnailUrl || 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'
 
     return {
       meta: [
@@ -198,9 +192,7 @@ function MixActionBar({ actions }: { actions: MixAction[] }) {
           <DropdownMenuContent align='end'>
             {overflowActions.map((action) =>
               'component' in action ? (
-                <React.Fragment key={action.key}>
-                  {action.component}
-                </React.Fragment>
+                <React.Fragment key={action.key}>{action.component}</React.Fragment>
               ) : (
                 <DropdownMenuItem key={action.key} onClick={action.onClick}>
                   {action.icon}
@@ -287,10 +279,7 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
   }
 
   const [qrEnabled, setQrEnabled] = React.useState(false)
-  const { data: qrPdf, isFetching: isGeneratingPdf } = useMixQRPdf(
-    mix.slug,
-    qrEnabled
-  )
+  const { data: qrPdf, isFetching: isGeneratingPdf } = useMixQRPdf(mix.slug, qrEnabled)
 
   React.useEffect(() => {
     if (qrPdf?.url && qrEnabled) {

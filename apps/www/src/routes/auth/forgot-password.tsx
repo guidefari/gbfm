@@ -2,10 +2,7 @@ import { GenericAuthForm } from '@gbfm/ui'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { MailCheck } from 'lucide-react'
 import { useState } from 'react'
-import {
-  AuthPageLayout,
-  AuthStatusNotice
-} from '@/components/Auth/AuthPageLayout'
+import { AuthPageLayout, AuthStatusNotice } from '@/components/Auth/AuthPageLayout'
 import { authClient } from '@/lib/auth-client'
 import { useCooldown } from '@/lib/useCooldown'
 
@@ -73,9 +70,7 @@ function ForgotPasswordPage() {
           : 'Enter the email tied to your account and we will send you a reset link.'
       }
       status={
-        !isSent && error ? (
-          <AuthStatusNotice variant='error'>{error}</AuthStatusNotice>
-        ) : null
+        !isSent && error ? <AuthStatusNotice variant='error'>{error}</AuthStatusNotice> : null
       }
       footer={
         <div className='space-y-3 border-t border-gb-pastel-green-2/20 pt-4 text-sm text-muted-foreground'>
@@ -102,14 +97,10 @@ function ForgotPasswordPage() {
           <div className='flex flex-col items-center gap-3 border border-gb-pastel-green-2/30 bg-gb-pastel-green-2/10 px-6 py-8 text-center'>
             <MailCheck className='h-10 w-10 text-gb-pastel-green-1' />
             <p className='text-sm text-muted-foreground'>Reset link sent to</p>
-            <p className='text-base font-semibold break-all text-foreground'>
-              {sentEmail}
-            </p>
+            <p className='text-base font-semibold break-all text-foreground'>{sentEmail}</p>
           </div>
 
-          {error ? (
-            <AuthStatusNotice variant='error'>{error}</AuthStatusNotice>
-          ) : null}
+          {error ? <AuthStatusNotice variant='error'>{error}</AuthStatusNotice> : null}
 
           <div className='space-y-2 text-sm'>
             <p className='text-muted-foreground'>Didn&apos;t get the email?</p>

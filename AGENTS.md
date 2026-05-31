@@ -1,1 +1,1 @@
-- run `bun precommit` to validate your changes. this gives you typecheck, and biome
+- run `bun precommit` to validate your changes. this gives you typecheck, oxlint, and oxfmt

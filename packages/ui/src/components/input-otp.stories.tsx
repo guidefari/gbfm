@@ -1,10 +1,4 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle
-} from './card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './card'
 import { InputOTP, InputOTPGroup, InputOTPSlot } from './input-otp'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 

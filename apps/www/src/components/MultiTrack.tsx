@@ -70,9 +70,7 @@ export function MultiTrack({
           {genres && genres[0] !== '' && (
             <div className='flex flex-wrap mt-6'>
               {genres.map((genre) => (
-                <span
-                  key={genre}
-                  className='p-1 px-2 m-1 mr-2 text-sm rounded-sm bg-gb-darker-bg'>
+                <span key={genre} className='p-1 px-2 m-1 mr-2 text-sm rounded-sm bg-gb-darker-bg'>
                   {genre}
                 </span>
               ))}
@@ -85,10 +83,7 @@ export function MultiTrack({
               <ul className='p-0'>
                 {tracks.map((track) => (
                   <li className='' key={track.trackUrl}>
-                    <div
-                      className={clsx(
-                        'flex items-center  mb-2 space-x-1 text-white group Tag'
-                      )}>
+                    <div className={clsx('flex items-center  mb-2 space-x-1 text-white group Tag')}>
                       {track.previewUrl?.length && (
                         <button
                           className={clsx(
@@ -99,9 +94,7 @@ export function MultiTrack({
                           title='Play/Pause'>
                           <PlayPauseButton
                             url={track.previewUrl}
-                            thumbnailUrl={
-                              track.albumImageUrl ?? DEFAULT_IMAGE_URL
-                            }
+                            thumbnailUrl={track.albumImageUrl ?? DEFAULT_IMAGE_URL}
                             title={track.title ?? ''}
                           />
                         </button>
@@ -124,23 +117,17 @@ export function MultiTrack({
                 ))}
               </ul>
             </ScrollArea.Viewport>
-            <ScrollArea.Scrollbar
-              className='ScrollAreaScrollbar'
-              orientation='vertical'>
+            <ScrollArea.Scrollbar className='ScrollAreaScrollbar' orientation='vertical'>
               <ScrollArea.Thumb className='ScrollAreaThumb' />
             </ScrollArea.Scrollbar>
-            <ScrollArea.Scrollbar
-              className='ScrollAreaScrollbar'
-              orientation='horizontal'>
+            <ScrollArea.Scrollbar className='ScrollAreaScrollbar' orientation='horizontal'>
               <ScrollArea.Thumb className='ScrollAreaThumb' />
             </ScrollArea.Scrollbar>
             <ScrollArea.Corner className='ScrollAreaCorner' />
           </ScrollArea.Root>
         </div>
       </div>
-      {(blurb || children) && (
-        <div className='mt-6 text-sm leading-snug '>{blurb || children}</div>
-      )}
+      {(blurb || children) && <div className='mt-6 text-sm leading-snug '>{blurb || children}</div>}
     </section>
   )
 }

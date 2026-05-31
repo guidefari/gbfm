@@ -35,9 +35,7 @@ export type FormField = {
   belowField?: ReactNode
 }
 
-const autoCompleteMatcher = (
-  type: HTMLInputTypeAttribute
-): HTMLInputAutoCompleteAttribute => {
+const autoCompleteMatcher = (type: HTMLInputTypeAttribute): HTMLInputAutoCompleteAttribute => {
   switch (type) {
     case 'email':
       return 'email'
@@ -70,9 +68,7 @@ function FieldInput({ field }: { field: FormField }) {
       autoCorrect={disableAutoCap ? 'off' : undefined}
       spellCheck={disableAutoCap ? false : undefined}
       autoFocus={field.autoFocus}
-      onChange={
-        field.onChange ? (e) => field.onChange?.(e.target.value) : undefined
-      }
+      onChange={field.onChange ? (e) => field.onChange?.(e.target.value) : undefined}
       className={cn(inputClass, (isPassword || field.rightSlot) && 'pr-10')}
     />
   )
@@ -90,11 +86,7 @@ function FieldInput({ field }: { field: FormField }) {
             tabIndex={-1}
             aria-label={show ? 'Hide password' : 'Show password'}
             className='text-muted-foreground hover:text-gb-pastel-green-1'>
-            {show ? (
-              <EyeOff className='h-4 w-4' />
-            ) : (
-              <Eye className='h-4 w-4' />
-            )}
+            {show ? <EyeOff className='h-4 w-4' /> : <Eye className='h-4 w-4' />}
           </button>
         ) : (
           field.rightSlot
@@ -123,9 +115,7 @@ export function GenericAuthForm({
             </Label>
             <FieldInput field={field} />
             {field.helperText ? (
-              <p className='text-xs leading-5 text-muted-foreground'>
-                {field.helperText}
-              </p>
+              <p className='text-xs leading-5 text-muted-foreground'>{field.helperText}</p>
             ) : null}
             {field.belowField}
           </div>
@@ -136,9 +126,7 @@ export function GenericAuthForm({
           className='mt-2 w-full'
           size='lg'
           disabled={isSubmitting || submitDisabled}>
-          {isSubmitting ? (
-            <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-          ) : null}
+          {isSubmitting ? <Loader2 className='mr-2 h-4 w-4 animate-spin' /> : null}
           {submitButtonText || formTitle}
         </Button>
       </div>

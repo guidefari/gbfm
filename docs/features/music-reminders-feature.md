@@ -49,6 +49,7 @@ CREATE TABLE music_reminder (
 ```
 
 **Key Fields:**
+
 - `album_cover_url`: Stores the URL of the album artwork
 - `is_sent`: Tracks whether the reminder email has been sent
 - Proper foreign key relationships and cascading deletes
@@ -60,6 +61,7 @@ CREATE TABLE music_reminder (
 **Location**: `apps/vps/src/routes/music-reminders/`
 
 #### Route Definitions
+
 ```typescript
 // POST /api/music-reminders - Create reminder
 export const createMusicReminder = createRoute({
@@ -102,6 +104,7 @@ export const deleteMusicReminder = createRoute({
 ```
 
 #### Request/Response Schemas
+
 ```typescript
 export const createMusicReminderSchema = z.object({
   musicTitle: z.string().min(1, 'Music title is required'),
@@ -144,7 +147,7 @@ const enrichSpotifyTrack = (trackId: string) =>
 
     return {
       title: data.name,
-      artist: data.artists.map(artist => artist.name).join(', '),
+      artist: data.artists.map((artist) => artist.name).join(', '),
       url: data.external_urls.spotify,
       platform: 'spotify' as const,
       thumbnailUrl: data.album.images[0]?.url,
@@ -356,10 +359,11 @@ export type EnrichedTrack = {
 export function useEnrichTrackFromUrl(url: string) {
   return useQuery<EnrichedTrack>({
     queryKey: ['spotify/enrich', url],
-    queryFn: async () => fetcher(`${VPS_BASE_URL}/spotify/enrich`, {
-      method: 'POST',
-      body: JSON.stringify({ url })
-    }),
+    queryFn: async () =>
+      fetcher(`${VPS_BASE_URL}/spotify/enrich`, {
+        method: 'POST',
+        body: JSON.stringify({ url })
+      }),
     enabled: !!url && url.length > 10,
     staleTime: 15 * 60 * 1000
   })

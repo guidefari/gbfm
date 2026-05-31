@@ -36,7 +36,7 @@ export function PublicProfilePageSkeleton() {
         <div className='mt-4 overflow-hidden rounded-lg'>
           {Array.from({ length: 4 }).map((_, i) => (
             <div
-              // biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton
+              // oxlint-disable-next-line react/no-array-index-key
               key={i}
               className='h-9 animate-pulse border-b border-border bg-card last:border-0'
             />
@@ -46,14 +46,14 @@ export function PublicProfilePageSkeleton() {
       <main className='min-w-0 flex-1 space-y-8 px-4 py-4 lg:px-0 lg:py-0'>
         {Array.from({ length: 3 }).map((_, i) => (
           <div
-            // biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton
+            // oxlint-disable-next-line react/no-array-index-key
             key={i}
             className='space-y-3'>
             <div className='h-5 w-24 animate-pulse rounded bg-muted' />
             <div className='flex gap-4'>
               {Array.from({ length: 3 }).map((_, j) => (
                 <div
-                  // biome-ignore lint/suspicious/noArrayIndexKey: Static skeleton
+                  // oxlint-disable-next-line react/no-array-index-key
                   key={j}
                   className='h-36 w-36 shrink-0 animate-pulse rounded-sm bg-muted'
                 />

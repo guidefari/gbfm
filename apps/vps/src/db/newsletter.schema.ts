@@ -17,12 +17,8 @@ export const newsletterSubscribersTable = pgTable(
   (table) => [index('newsletter_subscribers_email_idx').on(table.email)]
 )
 
-export type SelectNewsletterSubscriber = InferSelectModel<
-  typeof newsletterSubscribersTable
->
-export type InsertNewsletterSubscriber = InferInsertModel<
-  typeof newsletterSubscribersTable
->
+export type SelectNewsletterSubscriber = InferSelectModel<typeof newsletterSubscribersTable>
+export type InsertNewsletterSubscriber = InferInsertModel<typeof newsletterSubscribersTable>
 
 export const insertNewsletterSubscriberSchema = z.object({
   email: z.string().email(),

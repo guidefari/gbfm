@@ -6,6 +6,4 @@ export type GoosebumpsUser = {
   username: string
 }
 
-export type LoginResponse =
-  | (GoosebumpsUser & { token: string })
-  | { error: string }
+export type LoginResponse = (GoosebumpsUser & { token: string }) | { error: string }

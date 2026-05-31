@@ -36,15 +36,8 @@ export const Route = createFileRoute('/mixes/')({
 function MixesListPage() {
   const { tag } = Route.useSearch()
   const navigate = Route.useNavigate()
-  const {
-    data,
-    error,
-    isPending,
-    refetch,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage
-  } = useAudioByType('mix', { tag })
+  const { data, error, isPending, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useAudioByType('mix', { tag })
   const { data: allTags } = useAudioTags('mix')
   const { mixesSorting } = useUIStore()
 
@@ -57,7 +50,7 @@ function MixesListPage() {
   const sortedData = useMemo(() => {
     if (!data) return []
 
-    const sorted = [...data].sort((a, b) => {
+    const sorted = [...data].toSorted((a, b) => {
       if (mixesSorting.sortBy === 'date') {
         const dateA = new Date(a.createdAt).getTime()
         const dateB = new Date(b.createdAt).getTime()
@@ -133,10 +126,7 @@ function MixesListPage() {
       </div>
       {tag && (
         <div className='flex items-center gap-2 mb-3'>
-          <Badge
-            variant='secondary'
-            className='gap-1'
-            data-testid='active-tag-badge'>
+          <Badge variant='secondary' className='gap-1' data-testid='active-tag-badge'>
             <Tag className='w-3 h-3' />
             {tag}
             <button

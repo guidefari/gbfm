@@ -19,23 +19,14 @@ export interface S3Service {
     bucketName: string
   ) => Effect.Effect<string, S3Error>
 
-  readonly deleteFile: (
-    key: string,
-    bucketName: string
-  ) => Effect.Effect<void, S3Error>
+  readonly deleteFile: (key: string, bucketName: string) => Effect.Effect<void, S3Error>
 
-  readonly checkExists: (
-    key: string,
-    bucketName: string
-  ) => Effect.Effect<boolean, never>
+  readonly checkExists: (key: string, bucketName: string) => Effect.Effect<boolean, never>
 
   readonly listObjects: (
     prefix: string,
     bucketName: string
-  ) => Effect.Effect<
-    Array<{ key: string; lastModified: Date; size: number }>,
-    S3Error
-  >
+  ) => Effect.Effect<Array<{ key: string; lastModified: Date; size: number }>, S3Error>
 
   readonly copyFile: (
     key: string,
@@ -91,9 +82,7 @@ const uploadFileEffect = (
     Effect.tap(() =>
       Effect.annotateCurrentSpan('aws.service', 's3').pipe(
         Effect.andThen(Effect.annotateCurrentSpan('s3.bucket', bucketName)),
-        Effect.andThen(
-          Effect.annotateCurrentSpan('s3.key_prefix', getKeyPrefix(key))
-        ),
+        Effect.andThen(Effect.annotateCurrentSpan('s3.key_prefix', getKeyPrefix(key))),
         Effect.andThen(Effect.annotateCurrentSpan('content.type', contentType)),
         Effect.andThen(
           body instanceof Buffer
@@ -191,9 +180,7 @@ const listObjectsEffect = (prefix: string, bucketName: string) =>
             size: obj.Size ?? 0
           }))
         allObjects.push(...page)
-        continuationToken = response.IsTruncated
-          ? response.NextContinuationToken
-          : undefined
+        continuationToken = response.IsTruncated ? response.NextContinuationToken : undefined
       } while (continuationToken)
 
       return allObjects
@@ -220,11 +207,7 @@ const listObjectsEffect = (prefix: string, bucketName: string) =>
     })
   )
 
-const copyFileEffect = (
-  key: string,
-  sourceBucket: string,
-  destinationBucket: string
-) =>
+const copyFileEffect = (key: string, sourceBucket: string, destinationBucket: string) =>
   Effect.tryPromise({
     try: async () => {
       const s3 = new S3Client({})

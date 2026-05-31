@@ -15,11 +15,7 @@ interface SimpleMarkdownEditorProps {
   placeholder?: string
 }
 
-export function SimpleMarkdownEditor({
-  value,
-  onChange,
-  placeholder
-}: SimpleMarkdownEditorProps) {
+export function SimpleMarkdownEditor({ value, onChange, placeholder }: SimpleMarkdownEditorProps) {
   const [selectedTab, setSelectedTab] = useState<'write' | 'preview'>('write')
 
   const save = async function* () {
@@ -127,8 +123,7 @@ export function SimpleMarkdownEditor({
           saveImage: save
         }}
         classes={{
-          textArea:
-            'focus:outline-none bg-transparent label:rounded-sm min-h-[80dvh] h-full',
+          textArea: 'focus:outline-none bg-transparent label:rounded-sm min-h-[80dvh] h-full',
           toolbar: 'bg-transparent border-none',
           reactMde: 'focus:outline-none border-none'
         }}

@@ -12,12 +12,7 @@ interface TagsInputProps {
   contentTypeLabel: string
 }
 
-export function TagsInput({
-  tags,
-  onAddTag,
-  onRemoveTag,
-  contentTypeLabel
-}: TagsInputProps) {
+export function TagsInput({ tags, onAddTag, onRemoveTag, contentTypeLabel }: TagsInputProps) {
   const [newTag, setNewTag] = useState('')
 
   const handleAddTag = () => {

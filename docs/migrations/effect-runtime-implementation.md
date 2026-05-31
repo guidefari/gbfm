@@ -22,6 +22,7 @@ await Effect.runPromise(
 ```
 
 **Issues with this approach:**
+
 - Every cron execution (runs every minute) created new service instances from scratch
 - No resource reuse between executions (60 initializations per hour)
 - No connection pooling for database
@@ -34,6 +35,7 @@ await Effect.runPromise(
 ### Files Created
 
 #### 1. `apps/vps/src/runtime/services.ts`
+
 Consolidates all service layer definitions:
 
 ```typescript
@@ -47,16 +49,18 @@ export const DatabaseServiceLive = Layer.succeed(DatabaseService, { db })
 // Application Layer - combines all services
 export const AppLayer = Layer.mergeAll(
   DatabaseServiceLive,
-  EmailServiceLive  // Already existed
+  EmailServiceLive // Already existed
 )
 ```
 
 **Purpose:**
+
 - Central location for all service definitions
 - Makes it easy to add new services
 - Ensures consistent service availability across the app
 
 #### 2. `apps/vps/src/runtime/index.ts`
+
 Creates the ManagedRuntime and helper functions:
 
 ```typescript
@@ -64,19 +68,17 @@ Creates the ManagedRuntime and helper functions:
 export const AppRuntime = ManagedRuntime.make(AppLayer)
 
 // Helper functions
-export const runApp = <A, E>(effect: Effect.Effect<A, E>) =>
-  AppRuntime.runPromise(effect)
+export const runApp = <A, E>(effect: Effect.Effect<A, E>) => AppRuntime.runPromise(effect)
 
-export const runAppSync = <A, E>(effect: Effect.Effect<A, E>) =>
-  AppRuntime.runSync(effect)
+export const runAppSync = <A, E>(effect: Effect.Effect<A, E>) => AppRuntime.runSync(effect)
 
-export const runAppFork = <A, E>(effect: Effect.Effect<A, E>) =>
-  AppRuntime.runFork(effect)
+export const runAppFork = <A, E>(effect: Effect.Effect<A, E>) => AppRuntime.runFork(effect)
 
 export const disposeRuntime = () => AppRuntime.dispose()
 ```
 
 **Purpose:**
+
 - Single long-lived runtime instance
 - Convenient helpers for running effects
 - Proper cleanup function for shutdown
@@ -84,9 +86,11 @@ export const disposeRuntime = () => AppRuntime.dispose()
 ### Files Modified
 
 #### 3. `apps/vps/src/app.ts`
+
 Updated to use the new runtime:
 
 **Changes:**
+
 - Replaced `Effect.runPromise` with `runApp()`
 - Added graceful shutdown handlers for SIGTERM/SIGINT
 - Ensures proper cleanup of all services on shutdown
@@ -95,9 +99,7 @@ Updated to use the new runtime:
 // Cron job now uses runtime
 await runApp(
   processPendingReminders.pipe(
-    Effect.catchAll((error) =>
-      Effect.logError(`Cron job failed: ${error.message}`)
-    )
+    Effect.catchAll((error) => Effect.logError(`Cron job failed: ${error.message}`))
   )
 )
 
@@ -107,7 +109,9 @@ process.on('SIGINT', () => shutdown('SIGINT'))
 ```
 
 #### 4. `apps/vps/src/examples/runtime-comparison.ts`
+
 Created a performance comparison example demonstrating:
+
 - ~10x speed improvement with ManagedRuntime
 - 1 initialization vs 10 initializations for 10 runs
 - Educational reference for the team
@@ -116,12 +120,12 @@ Created a performance comparison example demonstrating:
 
 ### Performance Improvements
 
-| Metric | Before (Direct runPromise) | After (ManagedRuntime) | Improvement |
-|--------|---------------------------|------------------------|-------------|
-| Service initializations/hour | 60 (every cron run) | 1 (at startup) | **60x fewer** |
-| Database connections | Created & destroyed 60x/hour | Reused via pool | Stable |
-| Memory usage | Constant allocation/GC | Stable, predictable | Lower GC pressure |
-| Execution overhead | ~500ms per run | ~0ms per run | Faster execution |
+| Metric                       | Before (Direct runPromise)   | After (ManagedRuntime) | Improvement       |
+| ---------------------------- | ---------------------------- | ---------------------- | ----------------- |
+| Service initializations/hour | 60 (every cron run)          | 1 (at startup)         | **60x fewer**     |
+| Database connections         | Created & destroyed 60x/hour | Reused via pool        | Stable            |
+| Memory usage                 | Constant allocation/GC       | Stable, predictable    | Lower GC pressure |
+| Execution overhead           | ~500ms per run               | ~0ms per run           | Faster execution  |
 
 ### Architectural Benefits
 
@@ -163,9 +167,7 @@ const myEffect = Effect.gen(function* () {
 
   // Use them
   yield* emailService.sendMusicReminderEmail(reminder)
-  const users = yield* Effect.tryPromise(() =>
-    dbService.db.query.users.findMany()
-  )
+  const users = yield* Effect.tryPromise(() => dbService.db.query.users.findMany())
 
   return users
 })
@@ -177,6 +179,7 @@ await runApp(myEffect)
 ### Adding New Services
 
 1. **Define the service interface:**
+
 ```typescript
 // apps/vps/src/services/cache.service.ts
 export interface CacheService {
@@ -188,6 +191,7 @@ export const CacheService = Context.Tag<CacheService>('@gbfm/CacheService')
 ```
 
 2. **Create the live implementation:**
+
 ```typescript
 export const CacheServiceLive = Layer.effect(
   CacheService,
@@ -212,12 +216,13 @@ export const CacheServiceLive = Layer.effect(
 ```
 
 3. **Add to AppLayer:**
+
 ```typescript
 // apps/vps/src/runtime/services.ts
 export const AppLayer = Layer.mergeAll(
   DatabaseServiceLive,
   EmailServiceLive,
-  CacheServiceLive  // ← Add here
+  CacheServiceLive // ← Add here
 )
 ```
 
@@ -238,7 +243,7 @@ const MockEmailServiceLive = Layer.succeed(EmailService, {
 })
 
 const TestLayer = Layer.mergeAll(
-  DatabaseServiceLive,  // Can use real or mock
+  DatabaseServiceLive, // Can use real or mock
   MockEmailServiceLive
 )
 
@@ -258,6 +263,7 @@ afterAll(async () => {
 ## Current State
 
 ### What's Working
+
 - ✅ Runtime created and integrated into app.ts
 - ✅ Cron job using `runApp()` instead of direct `Effect.runPromise`
 - ✅ Graceful shutdown handlers in place
@@ -266,6 +272,7 @@ afterAll(async () => {
 - ✅ All changes committed and pushed to branch
 
 ### What's Not Yet Done
+
 - ⏳ Not tested in production yet
 - ⏳ Other parts of codebase still using direct database access (not through service)
 - ⏳ No additional services added yet (Cache, S3, etc.)
@@ -275,6 +282,7 @@ afterAll(async () => {
 ## Next Steps
 
 ### Immediate (High Priority)
+
 1. **Test the implementation** - Deploy to dev/staging and verify:
    - Cron jobs run successfully
    - No memory leaks
@@ -287,7 +295,9 @@ afterAll(async () => {
    - Database connection pool stats
 
 ### Short Term (Recommended)
+
 3. **Migrate existing database calls** - Update code to use DatabaseService:
+
    ```typescript
    // Before
    import { db } from '@/db'
@@ -296,9 +306,7 @@ afterAll(async () => {
    // After
    const myEffect = Effect.gen(function* () {
      const dbService = yield* DatabaseService
-     return yield* Effect.tryPromise(() =>
-       dbService.db.query.users.findMany()
-     )
+     return yield* Effect.tryPromise(() => dbService.db.query.users.findMany())
    })
    ```
 
@@ -311,7 +319,9 @@ afterAll(async () => {
 5. **Create test runtime** for easier testing
 
 ### Long Term (Nice to Have)
+
 6. **Add observability layer:**
+
    ```typescript
    import { NodeSdk } from '@effect/opentelemetry'
 
@@ -319,11 +329,7 @@ afterAll(async () => {
      resource: { serviceName: 'gbfm-vps' }
    }))
 
-   export const AppLayer = Layer.mergeAll(
-     TracingLayer,
-     DatabaseServiceLive,
-     EmailServiceLive
-   )
+   export const AppLayer = Layer.mergeAll(TracingLayer, DatabaseServiceLive, EmailServiceLive)
    ```
 
 7. **Add circuit breakers** for external services
@@ -354,6 +360,7 @@ The goal is to gradually migrate existing imperative code to Effect without brea
 ### Migration Phases
 
 #### Phase 1: Foundation (✅ Complete)
+
 - ✅ Create runtime infrastructure
 - ✅ Set up ManagedRuntime
 - ✅ Migrate at least one service (EmailService)
@@ -364,6 +371,7 @@ The goal is to gradually migrate existing imperative code to Effect without brea
 **Goal:** Wrap existing database and external API calls in Effect services.
 
 **Priority Order:**
+
 1. **Database Operations** (High Impact)
 2. **External APIs** (Spotify, S3, etc.)
 3. **Shared Utilities** (validation, parsing, etc.)
@@ -401,11 +409,7 @@ export const UserServiceLive = Layer.effect(
       findById: (id: string) =>
         Effect.tryPromise({
           try: async () => {
-            const users = await db
-              .select()
-              .from(user)
-              .where(eq(user.id, id))
-              .limit(1)
+            const users = await db.select().from(user).where(eq(user.id, id)).limit(1)
             return users[0] || null
           },
           catch: (error) =>
@@ -419,11 +423,7 @@ export const UserServiceLive = Layer.effect(
       findByEmail: (email: string) =>
         Effect.tryPromise({
           try: async () => {
-            const users = await db
-              .select()
-              .from(user)
-              .where(eq(user.email, email))
-              .limit(1)
+            const users = await db.select().from(user).where(eq(user.email, email)).limit(1)
             return users[0] || null
           },
           catch: (error) =>
@@ -462,13 +462,14 @@ export const UserServiceLive = Layer.effect(
 export const AppLayer = Layer.mergeAll(
   DatabaseServiceLive,
   EmailServiceLive,
-  UserServiceLive  // ← Add new service
+  UserServiceLive // ← Add new service
 )
 ```
 
 3. **Gradually Migrate Route Handlers**
 
 **Before (imperative):**
+
 ```typescript
 // apps/vps/src/routes/users/users.handlers.ts
 import { db } from '@/db'
@@ -487,6 +488,7 @@ export const getUserHandler = async (c: Context) => {
 ```
 
 **After (Effect):**
+
 ```typescript
 // apps/vps/src/routes/users/users.handlers.ts
 import { Effect } from 'effect'
@@ -521,6 +523,7 @@ export const getUserHandler = async (c: Context) => {
 ```
 
 **Even better - Create a helper:**
+
 ```typescript
 // apps/vps/src/lib/effect-handler.ts
 import { Effect } from 'effect'
@@ -530,9 +533,7 @@ import { runApp } from '@/runtime'
 /**
  * Helper to wrap Effect-based handlers for Hono routes
  */
-export const effectHandler = <A>(
-  effectFn: (c: Context) => Effect.Effect<A, Error>
-) => {
+export const effectHandler = <A>(effectFn: (c: Context) => Effect.Effect<A, Error>) => {
   return async (c: Context) => {
     const result = await runApp(
       effectFn(c).pipe(
@@ -571,6 +572,7 @@ export const getUserHandler = effectHandler((c) =>
 **Strategy:** Pick one route group at a time. Don't try to migrate everything at once.
 
 **Suggested Order:**
+
 1. **Start with read-only endpoints** (GET requests) - Lower risk
 2. **Then mutation endpoints** (POST/PUT/DELETE) - Higher complexity
 3. **Save complex multi-step workflows for last** - Most complex
@@ -647,6 +649,7 @@ export const createReminderWithConfirmation = Effect.gen(function* () {
 Once comfortable with Effect, add advanced patterns:
 
 1. **Transactions**
+
 ```typescript
 export const transferWithTransaction = Effect.gen(function* () {
   const dbService = yield* DatabaseService
@@ -662,6 +665,7 @@ export const transferWithTransaction = Effect.gen(function* () {
 ```
 
 2. **Circuit Breakers**
+
 ```typescript
 const SpotifyServiceLive = Layer.effect(
   SpotifyService,
@@ -682,6 +686,7 @@ const SpotifyServiceLive = Layer.effect(
 ```
 
 3. **Parallel Operations**
+
 ```typescript
 export const getFullUserProfile = Effect.gen(function* () {
   const userService = yield* UserService
@@ -689,11 +694,14 @@ export const getFullUserProfile = Effect.gen(function* () {
   const spotifyService = yield* SpotifyService
 
   // Fetch all data in parallel
-  const [user, reminders, playlists] = yield* Effect.all([
-    userService.findById(userId),
-    reminderService.findByUserId(userId),
-    spotifyService.getUserPlaylists(userId)
-  ], { concurrency: 'unbounded' })
+  const [user, reminders, playlists] = yield* Effect.all(
+    [
+      userService.findById(userId),
+      reminderService.findByUserId(userId),
+      spotifyService.getUserPlaylists(userId)
+    ],
+    { concurrency: 'unbounded' }
+  )
 
   return { user, reminders, playlists }
 })
@@ -704,6 +712,7 @@ export const getFullUserProfile = Effect.gen(function* () {
 Use this checklist to track progress:
 
 #### Services to Create
+
 - [ ] UserService (authentication, profile)
 - [ ] ReminderService (music reminders - partially done)
 - [ ] ContentService (publication content)
@@ -713,6 +722,7 @@ Use this checklist to track progress:
 - [ ] ConfigService (environment config)
 
 #### Routes to Migrate
+
 - [ ] `/auth/*` routes
 - [ ] `/content/*` routes
 - [ ] `/email/*` routes
@@ -723,6 +733,7 @@ Use this checklist to track progress:
 - [ ] `/share/*` routes
 
 #### Infrastructure
+
 - [ ] Error handling middleware
 - [ ] Request logging with Effect
 - [ ] Metrics collection
@@ -760,6 +771,7 @@ Track these metrics to see if the migration is beneficial:
 ### When is Migration Complete?
 
 You don't need 100% migration! The migration is "complete" when:
+
 - Critical paths use Effect (cron jobs, important APIs)
 - New code uses Effect by default
 - Team is comfortable with Effect patterns
@@ -809,6 +821,7 @@ The GitHub Actions deployment workflow needs simplification but couldn't be push
 **File:** `.github/workflows/deploy.yml`
 
 **Current Issues:**
+
 - Complex ref determination logic (3 conditional steps)
 - Triggers on tag push but not on GitHub Release
 - Conditional checkouts make workflow hard to follow
@@ -849,6 +862,7 @@ jobs:
 ```
 
 **What Changes:**
+
 - ❌ Remove: Complex ref determination logic (3 steps removed)
 - ❌ Remove: `push.tags` trigger
 - ✅ Add: `release.types: [published]` trigger
@@ -856,6 +870,7 @@ jobs:
 - ✅ Improve: Stable concurrency group name
 
 **Benefits:**
+
 1. **Automatic deployment on release** - Create a GitHub Release, deployment starts automatically
 2. **Simpler workflow** - 26 fewer lines, easier to understand
 3. **Still allows manual deployment** - workflow_dispatch still works

@@ -1,8 +1,4 @@
 export type { MixRecencyLabel } from './mix-recency'
-export {
-  getMixRecencyLabel,
-  NEW_MIX_WINDOW_DAYS,
-  RECENT_MIX_WINDOW_DAYS
-} from './mix-recency'
+export { getMixRecencyLabel, NEW_MIX_WINDOW_DAYS, RECENT_MIX_WINDOW_DAYS } from './mix-recency'
 export { MAX_SLUG_BASE_LENGTH, normalizeSlugBase } from './slug'
 export { stripEmptyValues } from './strip-empty-values'

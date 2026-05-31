@@ -5,10 +5,7 @@ const JOB_TTL_MS = 60 * 60 * 1000 // 1 hour
 
 export interface MixJobQueue {
   readonly submit: (jobId: string) => Effect.Effect<void>
-  readonly updateStatus: (
-    jobId: string,
-    status: JobStatus
-  ) => Effect.Effect<void>
+  readonly updateStatus: (jobId: string, status: JobStatus) => Effect.Effect<void>
   readonly getStatus: (jobId: string) => Effect.Effect<JobInfo | undefined>
   readonly getAllJobs: () => Effect.Effect<JobInfo[]>
 }
@@ -21,8 +18,7 @@ export const makeInMemoryJobQueue = Effect.gen(function* () {
   const evictExpiredJobs = Ref.update(store, (map) => {
     const now = Date.now()
     return HashMap.filter(map, (job) => {
-      const isTerminal =
-        job.status._tag === 'Completed' || job.status._tag === 'Failed'
+      const isTerminal = job.status._tag === 'Completed' || job.status._tag === 'Failed'
       return !(isTerminal && now - job.updatedAt > JOB_TTL_MS)
     })
   })
@@ -42,9 +38,7 @@ export const makeInMemoryJobQueue = Effect.gen(function* () {
     )
   )
 
-  yield* Effect.forkDetach(
-    evictExpiredJobs.pipe(Effect.repeat(Schedule.fixed('10 minutes')))
-  )
+  yield* Effect.forkDetach(evictExpiredJobs.pipe(Effect.repeat(Schedule.fixed('10 minutes'))))
 
   return MixJobQueue.of({
     submit: (jobId: string) =>
@@ -76,7 +70,6 @@ export const makeInMemoryJobQueue = Effect.gen(function* () {
         })
       ),
 
-    getAllJobs: () =>
-      Ref.get(store).pipe(Effect.map((map) => Array.from(HashMap.values(map))))
+    getAllJobs: () => Ref.get(store).pipe(Effect.map((map) => Array.from(HashMap.values(map))))
   })
 })
