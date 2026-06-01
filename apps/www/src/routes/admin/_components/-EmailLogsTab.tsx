@@ -22,6 +22,10 @@ const EMAIL_STATUSES: EmailLogStatus[] = [
   'FAILED'
 ]
 
+function isEmailLogStatus(value: string): value is EmailLogStatus {
+  return EMAIL_STATUSES.some((status) => status === value)
+}
+
 function formatDateTime(value: string | Date | null) {
   if (!value) return '—'
 
@@ -101,7 +105,9 @@ export function EmailLogsTab() {
           <Select
             value={status}
             onValueChange={(next) => {
-              setStatus(next as EmailLogStatus | 'ALL')
+              if (next === 'ALL' || isEmailLogStatus(next)) {
+                setStatus(next)
+              }
               setOffset(0)
             }}>
             <SelectTrigger id='email-log-status'>

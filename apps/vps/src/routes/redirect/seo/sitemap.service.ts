@@ -135,7 +135,8 @@ export const fetchSitemapData = Effect.gen(function* () {
     fetchProfiles(),
     fetchPosts()
   ])
-  return { mixes, shows, releases, labels, profiles, posts } as SitemapData
+  const sitemapData: SitemapData = { mixes, shows, releases, labels, profiles, posts }
+  return sitemapData
 })
 
 // Regenerate and cache the sitemap

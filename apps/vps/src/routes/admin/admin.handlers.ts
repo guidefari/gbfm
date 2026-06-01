@@ -1,4 +1,8 @@
-import { EMAIL_DELIVERY_STATUSES, REMINDER_STATUS } from '@gbfm/core/status'
+import {
+  EMAIL_DELIVERY_STATUSES,
+  REMINDER_STATUS,
+  type EmailDeliveryStatus
+} from '@gbfm/core/status'
 import { and, desc, eq, gt, gte, inArray, lte, or, type SQL, sql } from 'drizzle-orm'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
@@ -25,6 +29,13 @@ type ContentTable =
   | typeof postsTable
   | typeof labelsTable
   | typeof releasesTable
+
+function isEmailStatusCountKey(
+  value: string,
+  counts: Record<EmailDeliveryStatus, number>
+): value is keyof typeof counts {
+  return value in counts
+}
 
 type DraftColumn =
   | typeof audioTable.draft
@@ -450,8 +461,9 @@ export const getAdminOverview: AppRouteHandler<GetAdminOverviewRoute> = async (c
     }
 
     for (const row of emailStatusRows) {
-      if (row.status in emailCounts) {
-        emailCounts[row.status as keyof typeof emailCounts] = row.total
+      if (isEmailStatusCountKey(row.status, emailCounts)) {
+        const status = row.status
+        emailCounts[status] = row.total
       }
     }
 

@@ -15,9 +15,11 @@ import { useMutation } from '@tanstack/react-query'
 import { createLazyFileRoute, useRouter } from '@tanstack/react-router'
 import { ImageIcon, Loader2, Upload, X } from 'lucide-react'
 import { useId, useState } from 'react'
+import { z } from 'zod'
 import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
 import { useSession } from '@/lib/auth-client'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
+import { readResponseErrorMessage, readUploadResponse } from '@/lib/response'
 
 export const Route = createLazyFileRoute('/label-upload')({
   component: LabelUploadPage
@@ -34,17 +36,20 @@ interface LabelFormData {
   discogs: string
 }
 
+const labelUploadSearchSchema = z.object({
+  edit: z.string().optional(),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  content: z.string().optional(),
+  thumbnailUrl: z.string().optional(),
+  website: z.string().optional(),
+  bandcamp: z.string().optional(),
+  discogs: z.string().optional()
+})
+
 function LabelUploadPage() {
-  const search = Route.useSearch() as {
-    edit?: string
-    title?: string
-    description?: string
-    content?: string
-    thumbnailUrl?: string
-    website?: string
-    bandcamp?: string
-    discogs?: string
-  }
+  const parsedSearch = labelUploadSearchSchema.safeParse(Route.useSearch())
+  const search = parsedSearch.success ? parsedSearch.data : {}
   const isEditMode = Boolean(search.edit)
 
   const [formData, setFormData] = useState<LabelFormData>(() => ({
@@ -100,10 +105,12 @@ function LabelUploadPage() {
         })
 
         if (!imageUploadResponse.ok) {
-          throw new Error('Failed to upload image file')
+          throw new Error(
+            await readResponseErrorMessage(imageUploadResponse, 'Failed to upload image file')
+          )
         }
 
-        const imageResult = await imageUploadResponse.json()
+        const imageResult = await readUploadResponse(imageUploadResponse)
         imageUrl = imageResult.url
       }
 

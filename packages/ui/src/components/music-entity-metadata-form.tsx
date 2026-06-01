@@ -46,18 +46,65 @@ export interface PlaylistMetadata {
   publishedAt?: Date | string | null
 }
 
-type MetadataByType = {
-  artist: ArtistMetadata
-  album: AlbumMetadata
-  track: TrackMetadata
-  playlist: PlaylistMetadata
-}
+export type MusicEntityMetadataFormProps =
+  | {
+      entityType: 'artist'
+      initialData: ArtistMetadata
+      onSubmit: (data: ArtistMetadata) => void
+      isSaving?: boolean
+    }
+  | {
+      entityType: 'album'
+      initialData: AlbumMetadata
+      onSubmit: (data: AlbumMetadata) => void
+      isSaving?: boolean
+    }
+  | {
+      entityType: 'track'
+      initialData: TrackMetadata
+      onSubmit: (data: TrackMetadata) => void
+      isSaving?: boolean
+    }
+  | {
+      entityType: 'playlist'
+      initialData: PlaylistMetadata
+      onSubmit: (data: PlaylistMetadata) => void
+      isSaving?: boolean
+    }
 
-export interface MusicEntityMetadataFormProps<T extends MusicEntityType> {
-  entityType: T
-  initialData: MetadataByType[T]
-  onSubmit: (data: MetadataByType[T]) => void
+function MetadataForm<T>({
+  initialData,
+  onSubmit,
+  isSaving = false,
+  children
+}: {
+  initialData: T
+  onSubmit: (data: T) => void
   isSaving?: boolean
+  children: (data: T, setData: React.Dispatch<React.SetStateAction<T>>) => React.ReactNode
+}) {
+  const [data, setData] = useState(initialData)
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    onSubmit(data)
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className='text-sm font-medium'>Metadata</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className='space-y-4'>
+          {children(data, setData)}
+          <Button type='submit' disabled={isSaving} size='sm'>
+            {isSaving ? 'Saving…' : 'Save changes'}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  )
 }
 
 function toDateInputValue(d: Date | string | null | undefined): string {
@@ -136,7 +183,7 @@ function ImageField({
           alt=''
           className='h-9 w-9 shrink-0 rounded-sm object-cover'
           onError={(e) => {
-            ;(e.target as HTMLImageElement).style.display = 'none'
+            e.currentTarget.style.display = 'none'
           }}
         />
       )}
@@ -150,48 +197,60 @@ function ImageField({
   )
 }
 
-export function MusicEntityMetadataForm<T extends MusicEntityType>({
+export function MusicEntityMetadataForm({
   entityType,
   initialData,
   onSubmit,
   isSaving = false
-}: MusicEntityMetadataFormProps<T>) {
-  const [data, setData] = useState<MetadataByType[T]>(initialData)
-
-  function set<K extends keyof MetadataByType[T]>(key: K, value: MetadataByType[T][K]) {
-    setData((prev) => ({ ...prev, [key]: value }))
+}: MusicEntityMetadataFormProps) {
+  if (entityType === 'artist') {
+    return (
+      <MetadataForm initialData={initialData} onSubmit={onSubmit} isSaving={isSaving}>
+        {(data, setData) => (
+          <ArtistFields
+            data={data}
+            set={(key, value) => setData((prev) => ({ ...prev, [key]: value }))}
+          />
+        )}
+      </MetadataForm>
+    )
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    onSubmit(data)
+  if (entityType === 'album') {
+    return (
+      <MetadataForm initialData={initialData} onSubmit={onSubmit} isSaving={isSaving}>
+        {(data, setData) => (
+          <AlbumFields
+            data={data}
+            set={(key, value) => setData((prev) => ({ ...prev, [key]: value }))}
+          />
+        )}
+      </MetadataForm>
+    )
+  }
+
+  if (entityType === 'track') {
+    return (
+      <MetadataForm initialData={initialData} onSubmit={onSubmit} isSaving={isSaving}>
+        {(data, setData) => (
+          <TrackFields
+            data={data}
+            set={(key, value) => setData((prev) => ({ ...prev, [key]: value }))}
+          />
+        )}
+      </MetadataForm>
+    )
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className='text-sm font-medium'>Metadata</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className='space-y-4'>
-          {entityType === 'artist' && (
-            <ArtistFields data={data as ArtistMetadata} set={set as SetFn<ArtistMetadata>} />
-          )}
-          {entityType === 'album' && (
-            <AlbumFields data={data as AlbumMetadata} set={set as SetFn<AlbumMetadata>} />
-          )}
-          {entityType === 'track' && (
-            <TrackFields data={data as TrackMetadata} set={set as SetFn<TrackMetadata>} />
-          )}
-          {entityType === 'playlist' && (
-            <PlaylistFields data={data as PlaylistMetadata} set={set as SetFn<PlaylistMetadata>} />
-          )}
-          <Button type='submit' disabled={isSaving} size='sm'>
-            {isSaving ? 'Saving…' : 'Save changes'}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+    <MetadataForm initialData={initialData} onSubmit={onSubmit} isSaving={isSaving}>
+      {(data, setData) => (
+        <PlaylistFields
+          data={data}
+          set={(key, value) => setData((prev) => ({ ...prev, [key]: value }))}
+        />
+      )}
+    </MetadataForm>
   )
 }
 

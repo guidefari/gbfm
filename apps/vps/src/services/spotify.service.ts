@@ -18,6 +18,8 @@ import {
 } from '@/services/url-utils'
 import type { Album, Playlist, SearchAlbumsResponse, Track } from '../routes/spotify/spotify.types'
 
+const SPOTIFY_SEARCH_API_LIMIT = 50
+
 export {
   cleanId,
   extractBandcampId,
@@ -273,12 +275,11 @@ const searchAlbumsEffect = (query: string, limit = 10, offset = 0) =>
       })
     }
 
-    const validatedLimit = Math.min(Math.max(1, limit), 50) as Parameters<
-      typeof spotifyClient.search
-    >[3]
+    const validatedLimit = Math.min(Math.max(1, limit), SPOTIFY_SEARCH_API_LIMIT)
 
     const data = yield* Effect.tryPromise({
-      try: () => spotifyClient.search(query, ['album'], undefined, validatedLimit, offset),
+      try: () =>
+        spotifyClient.search(query, ['album'], undefined, SPOTIFY_SEARCH_API_LIMIT, offset),
       catch: (error) =>
         new SpotifyError({
           message: `Failed to search albums: ${getErrorMessage(error)}`,
@@ -288,7 +289,7 @@ const searchAlbumsEffect = (query: string, limit = 10, offset = 0) =>
     })
 
     const searchResponse: SearchAlbumsResponse = {
-      albums: (data.albums?.items || []).map((album) => ({
+      albums: (data.albums?.items || []).slice(0, validatedLimit).map((album) => ({
         id: album.id,
         title: album.name,
         artists: album.artists.map((artist) => artist.name).join(', '),
@@ -299,7 +300,7 @@ const searchAlbumsEffect = (query: string, limit = 10, offset = 0) =>
         totalTracks: album.total_tracks
       })),
       total: data.albums?.total || 0,
-      limit: data.albums?.limit ?? validatedLimit,
+      limit: validatedLimit,
       offset: data.albums?.offset ?? offset
     }
 

@@ -3,6 +3,7 @@ import { and, eq } from 'drizzle-orm'
 import { Effect } from 'effect'
 import type { db as DbType } from '@/db'
 import {
+  MUSIC_ENTITY_TYPES,
   type MusicEntityType,
   musicEntityLinksTable,
   type SelectMusicAlbum,
@@ -27,6 +28,10 @@ import {
 import { addLinkEffect, getLinksForEntityEffect } from './link.service'
 import { createPlaylistEffect, getPlaylistByIdEffect } from './playlist.service'
 import { createTrackEffect, getTrackByIdEffect } from './track.service'
+
+function isMusicEntityType(value: string): value is MusicEntityType {
+  return MUSIC_ENTITY_TYPES.some((type) => type === value)
+}
 
 const findExistingEntityByUrl = (db: typeof DbType) => (url: string, entityType: MusicEntityType) =>
   Effect.tryPromise({
@@ -74,17 +79,14 @@ export const scrapeAndCreateEntityEffect =
       if (input.url) {
         const existingLinks = yield* findExistingEntityByUrl(db)(input.url, entityType)
         const match = existingLinks[0]
-        if (match) {
+        if (match && isMusicEntityType(match.entityType)) {
           const entity = yield* Effect.catchTag(
-            getEntityById(db)(match.entityType as MusicEntityType, match.entityId),
+            getEntityById(db)(match.entityType, match.entityId),
             'NotFoundError',
             () => Effect.succeed(null)
           )
           if (entity) {
-            const links = yield* getLinksForEntityEffect(db)(
-              match.entityType as MusicEntityType,
-              match.entityId
-            )
+            const links = yield* getLinksForEntityEffect(db)(match.entityType, match.entityId)
             yield* Effect.logInfo(
               `[MusicEntity] URL already scraped, returning existing ${match.entityType}:${match.entityId}`
             )
@@ -159,7 +161,7 @@ export const scrapeAndCreateEntityEffect =
           (e) =>
             Effect.andThen(
               Effect.logWarning(`Failed to persist scraped link ${link.platform}: ${e.message}`),
-              Effect.succeed(null as SelectMusicEntityLink | null)
+              Effect.succeed<SelectMusicEntityLink | null>(null)
             )
         )
         if (row) inserted.push(row)

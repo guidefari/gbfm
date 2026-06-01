@@ -1,3 +1,4 @@
+import { isRecord } from '@gbfm/core/utils'
 import { Context, Effect, Layer, Schema } from 'effect'
 
 // Conditionally import Resource to avoid failures when running outside SST
@@ -8,8 +9,9 @@ try {
   // Resource not available when running outside SST
 }
 
-// Generic helper to get Resource value with strict type safety
-function getResourceValue<T extends string | number>(resourcePath: string, fallback: T): T {
+function getResourceValue(resourcePath: string, fallback: number): number
+function getResourceValue(resourcePath: string, fallback: string): string
+function getResourceValue(resourcePath: string, fallback: string | number): string | number {
   if (!Resource) return fallback
 
   try {
@@ -17,8 +19,8 @@ function getResourceValue<T extends string | number>(resourcePath: string, fallb
     let value: unknown = Resource
 
     for (const key of keys) {
-      if (value && typeof value === 'object' && key in value) {
-        value = (value as Record<string, unknown>)[key]
+      if (isRecord(value) && key in value) {
+        value = value[key]
       } else {
         return fallback
       }
@@ -26,9 +28,7 @@ function getResourceValue<T extends string | number>(resourcePath: string, fallb
 
     // Handle SST resource format with .value property
     const resourceValue =
-      value && typeof value === 'object' && 'value' in value
-        ? (value as { value: unknown }).value
-        : value
+      value && typeof value === 'object' && 'value' in value ? value.value : value
 
     // Type validation and conversion
     if (typeof fallback === 'number') {
@@ -43,7 +43,7 @@ function getResourceValue<T extends string | number>(resourcePath: string, fallb
         throw new Error(`Invalid number value for ${resourcePath}: ${resourceValue}`)
       }
 
-      return numValue as T
+      return numValue
     }
 
     if (typeof fallback === 'string') {
@@ -54,7 +54,7 @@ function getResourceValue<T extends string | number>(resourcePath: string, fallb
             ? String(resourceValue)
             : fallback
 
-      return strValue as T
+      return strValue
     }
 
     return fallback

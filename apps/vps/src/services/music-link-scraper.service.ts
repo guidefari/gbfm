@@ -22,7 +22,7 @@
  *   2. Add it to the providers array in MusicLinkScraperServiceLive
  */
 
-import { Context, Data, Effect, Layer } from 'effect'
+import { Context, Data, Effect, Layer, Schema } from 'effect'
 import { getErrorMessage } from '@/errors'
 import type { MusicPlatform } from '../db/music-entity.schema'
 
@@ -127,7 +127,7 @@ interface OdesliEntity {
   artistName?: string
   thumbnailUrl?: string
   apiProvider: string
-  platforms: string[]
+  platforms: readonly string[]
 }
 
 interface OdesliResponse {
@@ -137,6 +137,34 @@ interface OdesliResponse {
   linksByPlatform: Record<string, OdesliPlatformLink>
   entitiesByUniqueId: Record<string, OdesliEntity>
 }
+
+const OdesliPlatformLinkSchema = Schema.Struct({
+  country: Schema.String,
+  url: Schema.String,
+  nativeAppUriMobile: Schema.optional(Schema.String),
+  nativeAppUriDesktop: Schema.optional(Schema.String),
+  entityUniqueId: Schema.String
+})
+
+const OdesliEntitySchema = Schema.Struct({
+  id: Schema.String,
+  type: Schema.Union([Schema.Literal('song'), Schema.Literal('album')]),
+  title: Schema.optional(Schema.String),
+  artistName: Schema.optional(Schema.String),
+  thumbnailUrl: Schema.optional(Schema.String),
+  apiProvider: Schema.String,
+  platforms: Schema.Array(Schema.String)
+})
+
+const OdesliResponseSchema = Schema.Struct({
+  entityUniqueId: Schema.String,
+  userCountry: Schema.String,
+  pageUrl: Schema.String,
+  linksByPlatform: Schema.Record(Schema.String, OdesliPlatformLinkSchema),
+  entitiesByUniqueId: Schema.Record(Schema.String, OdesliEntitySchema)
+})
+
+const decodeOdesliResponse = Schema.decodeUnknownSync(OdesliResponseSchema)
 
 export class OdesliProvider implements MusicDataProvider {
   readonly name = 'odesli'
@@ -172,7 +200,7 @@ export class OdesliProvider implements MusicDataProvider {
       }
 
       const data: OdesliResponse = yield* Effect.tryPromise({
-        try: () => response.json() as Promise<OdesliResponse>,
+        try: () => decodeResponseJson(response, decodeOdesliResponse),
         catch: (err) =>
           new MusicScraperError({
             message: `Odesli JSON parse failed: ${getErrorMessage(err)}`,
@@ -234,6 +262,31 @@ interface FirecrawlExtractResult {
   socialLinks?: Partial<Record<string, string>>
 }
 
+const FirecrawlExtractResultSchema = Schema.Struct({
+  socialLinks: Schema.optional(Schema.Record(Schema.String, Schema.String))
+})
+
+const decodeFirecrawlExtractResult = Schema.decodeUnknownSync(FirecrawlExtractResultSchema)
+
+const MusicBrainzSearchResponseSchema = Schema.Struct({
+  recordings: Schema.optional(
+    Schema.Array(
+      Schema.Struct({
+        id: Schema.String,
+        title: Schema.String,
+        'artist-credit': Schema.optional(Schema.Array(Schema.Struct({ name: Schema.String })))
+      })
+    )
+  )
+})
+
+const decodeMusicBrainzSearchResponse = Schema.decodeUnknownSync(MusicBrainzSearchResponseSchema)
+
+async function decodeResponseJson<T>(response: Response, decode: (raw: unknown) => T): Promise<T> {
+  const raw: unknown = JSON.parse(await response.text())
+  return decode(raw)
+}
+
 export class FirecrawlProvider implements MusicDataProvider {
   readonly name = 'firecrawl'
 
@@ -286,7 +339,7 @@ export class FirecrawlProvider implements MusicDataProvider {
       }
 
       const data: FirecrawlExtractResult = yield* Effect.tryPromise({
-        try: () => response.json() as Promise<FirecrawlExtractResult>,
+        try: () => decodeResponseJson(response, decodeFirecrawlExtractResult),
         catch: () =>
           new MusicScraperError({
             message: 'Firecrawl JSON parse failed',
@@ -336,7 +389,7 @@ export class MusicBrainzProvider implements MusicDataProvider {
         return {
           links: [
             {
-              platform: 'musicbrainz' as MusicPlatform,
+              platform: 'musicbrainz',
               url: mbUrl,
               scrapedAt: new Date(),
               metadata: { mbid: input.mbid }
@@ -376,14 +429,7 @@ export class MusicBrainzProvider implements MusicDataProvider {
         }
 
         const data = yield* Effect.tryPromise({
-          try: () =>
-            response.json() as Promise<{
-              recordings?: Array<{
-                id: string
-                title: string
-                'artist-credit'?: Array<{ name: string }>
-              }>
-            }>,
+          try: () => decodeResponseJson(response, decodeMusicBrainzSearchResponse),
           catch: () =>
             new MusicScraperError({
               message: 'MusicBrainz JSON parse failed',
@@ -398,7 +444,7 @@ export class MusicBrainzProvider implements MusicDataProvider {
         return {
           links: [
             {
-              platform: 'musicbrainz' as MusicPlatform,
+              platform: 'musicbrainz',
               url: `https://musicbrainz.org/recording/${recording.id}`,
               scrapedAt: new Date(),
               metadata: { mbid: recording.id }

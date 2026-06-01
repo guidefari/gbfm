@@ -27,6 +27,10 @@ const contentTypes: ContentType[] = [
   { value: 'mix', label: 'Mix' }
 ]
 
+function isEditorContentType(value: string): value is 'micro' | 'post' | 'mix' {
+  return value === 'micro' || value === 'post' || value === 'mix'
+}
+
 const contentSchema = z.object({
   content: z.string().min(1, 'Content is required'),
   dateCreated: z.number(),
@@ -122,7 +126,13 @@ export function Editor() {
         <Button onClick={() => mutate(form.getValues())} disabled={isPending}>
           {isPending ? 'Saving...' : 'Save'}
         </Button>
-        <select value={type} onChange={(e) => setType(e.target.value as 'micro' | 'post' | 'mix')}>
+        <select
+          value={type}
+          onChange={(e) => {
+            if (isEditorContentType(e.target.value)) {
+              setType(e.target.value)
+            }
+          }}>
           {contentTypes.map((type) => (
             <option key={type.value} value={type.value}>
               {type.label}

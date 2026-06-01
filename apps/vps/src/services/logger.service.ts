@@ -1,3 +1,4 @@
+import { isRecord } from '@gbfm/core/utils'
 import * as Sentry from '@sentry/bun'
 import { Logger, type LogLevel } from 'effect'
 import pino from 'pino'
@@ -31,9 +32,9 @@ function redactValue(value: unknown, depth = 0): unknown {
   if (depth > 4) return '[Truncated]'
   if (value === null || value === undefined) return value
   if (Array.isArray(value)) return value.map((v) => redactValue(v, depth + 1))
-  if (typeof value === 'object') {
+  if (isRecord(value)) {
     const out: Record<string, unknown> = {}
-    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+    for (const [k, v] of Object.entries(value)) {
       out[k] = PII_KEY_PATTERN.test(k) ? '[Redacted]' : redactValue(v, depth + 1)
     }
     return out
@@ -80,9 +81,9 @@ function formatMessage(message: unknown): string {
 
 export const AppLogger = Logger.make(({ logLevel, message, cause, fiber, date }) => {
   const msg = formatMessage(message)
-  const data = redactValue({ cause, fiberId: fiber.id, date }) as Record<string, unknown>
+  const data = redactValue({ cause, fiberId: fiber.id, date })
   const payload = {
-    ...data,
+    ...(isRecord(data) ? data : {}),
     logLevel
   }
 

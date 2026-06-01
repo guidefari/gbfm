@@ -118,7 +118,7 @@ function reportApiFailure(
   })
 }
 
-export async function fetcher<T>(input: RequestInfo, init: RequestInit = {}) {
+export async function fetcher<T>(input: RequestInfo, init: RequestInit = {}): Promise<T> {
   try {
     const isFormData = init.body instanceof FormData
     const headers = {
@@ -153,8 +153,8 @@ export async function fetcher<T>(input: RequestInfo, init: RequestInit = {}) {
     }
 
     const text = await res.text()
-    if (!text) return undefined as T
-    return JSON.parse(text) as T
+    const parsed: T = text ? JSON.parse(text) : undefined
+    return parsed
   } catch (error) {
     if (error instanceof TypeError) {
       reportApiFailure(error, input, init, { failureType: 'network' })

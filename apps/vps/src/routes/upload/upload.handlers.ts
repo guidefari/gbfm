@@ -1,3 +1,4 @@
+import { getFormFile, getFormString } from '@gbfm/core/utils'
 import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { runEffect } from '@/lib/effect-hono'
@@ -9,13 +10,13 @@ import type { UploadFileRoute } from './upload.routes'
 
 export const uploadFile: AppRouteHandler<UploadFileRoute> = async (c) => {
   const formData = await c.req.formData()
-  const fileType = formData.get('fileType') as string
+  const fileType = getFormString(formData, 'fileType')
 
   let file: File | null = null
   if (fileType === 'audio') {
-    file = formData.get('audioFile') as File
+    file = getFormFile(formData, 'audioFile')
   } else if (fileType === 'image') {
-    file = formData.get('imageFile') as File
+    file = getFormFile(formData, 'imageFile')
   }
 
   if (!file) {
@@ -60,7 +61,7 @@ export const uploadFile: AppRouteHandler<UploadFileRoute> = async (c) => {
         fileName,
         fileType,
         fileSize: file?.size,
-        error: (e as { message?: string }).message ?? String(e)
+        error: e instanceof Error ? e.message : String(e)
       })
     )
   )

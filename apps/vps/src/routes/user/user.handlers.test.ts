@@ -41,7 +41,7 @@ describe('user.handlers social links', () => {
 
   it('returns 401 from getSocialLinks when user is missing', async () => {
     const c = createContext({})
-    const response = await (getSocialLinks as unknown as TestHandler)(c, undefined)
+    const response = await Reflect.apply(getSocialLinks, undefined, [c, undefined])
     expect(response.status).toBe(HttpStatusCodes.UNAUTHORIZED)
   })
 
@@ -57,7 +57,7 @@ describe('user.handlers social links', () => {
     )
 
     const c = createContext({ user: { id: 'user_1' } })
-    const response = await (getSocialLinks as unknown as TestHandler)(c, undefined)
+    const response = await Reflect.apply(getSocialLinks, undefined, [c, undefined])
 
     expect(response.status).toBe(HttpStatusCodes.OK)
     expect(response.body).toEqual([
@@ -71,7 +71,7 @@ describe('user.handlers social links', () => {
 
   it('returns 401 from replaceSocialLinks when user is missing', async () => {
     const c = createContext({})
-    const response = await (replaceSocialLinks as unknown as TestHandler)(c, undefined)
+    const response = await Reflect.apply(replaceSocialLinks, undefined, [c, undefined])
     expect(response.status).toBe(HttpStatusCodes.UNAUTHORIZED)
   })
 
@@ -97,7 +97,7 @@ describe('user.handlers social links', () => {
       ]
     })
 
-    const response = await (replaceSocialLinks as unknown as TestHandler)(c, undefined)
+    const response = await Reflect.apply(replaceSocialLinks, undefined, [c, undefined])
 
     expect(response.status).toBe(HttpStatusCodes.OK)
     expect(response.body).toEqual([

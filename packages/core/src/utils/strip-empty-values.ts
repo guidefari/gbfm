@@ -15,15 +15,16 @@ function stripEmptyValuesSync<T extends Record<string, JsonValue>>(obj: T): Part
   for (const key in obj) {
     if (Object.hasOwn(obj, key)) {
       const value = obj[key]
+      if (value === undefined) continue
 
       if (!isEmptyValue(value)) {
         if (Array.isArray(value)) {
           const filtered = value.filter((item) => !isEmptyValue(item))
           if (filtered.length > 0) {
-            result[key] = filtered as T[Extract<keyof T, string>]
+            Object.assign(result, { [key]: filtered })
           }
         } else {
-          result[key] = value as T[Extract<keyof T, string>]
+          Object.assign(result, { [key]: value })
         }
       }
     }

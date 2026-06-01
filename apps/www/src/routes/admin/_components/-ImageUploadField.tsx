@@ -3,6 +3,7 @@ import { FolderOpen, ImageIcon, Loader2, Trash2, Upload } from 'lucide-react'
 import { useId, useState } from 'react'
 import { S3MediaFilePicker } from '@/components/mix-uploader/S3AudioFilePicker'
 import { VPS_BASE_URL } from '@/lib/http'
+import { readResponseErrorMessage, readUploadResponse } from '@/lib/response'
 
 interface ImageUploadFieldProps {
   label: string
@@ -47,10 +48,10 @@ export function ImageUploadField({
       })
 
       if (!response.ok) {
-        throw new Error('Failed to upload image')
+        throw new Error(await readResponseErrorMessage(response, 'Failed to upload image'))
       }
 
-      const result = await response.json()
+      const result = await readUploadResponse(response)
       onChange(result.url)
       toast({ title: 'Image uploaded successfully' })
     } catch (error) {

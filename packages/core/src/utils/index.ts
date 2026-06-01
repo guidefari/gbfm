@@ -1,4 +1,6 @@
 export type { MixRecencyLabel } from './mix-recency'
+export { getFormFile, getFormString, isFormDataFile } from './form-data'
 export { getMixRecencyLabel, NEW_MIX_WINDOW_DAYS, RECENT_MIX_WINDOW_DAYS } from './mix-recency'
+export { isRecord } from './object'
 export { MAX_SLUG_BASE_LENGTH, normalizeSlugBase } from './slug'
 export { stripEmptyValues } from './strip-empty-values'

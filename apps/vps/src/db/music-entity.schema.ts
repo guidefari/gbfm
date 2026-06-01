@@ -348,15 +348,11 @@ export const musicPlaylistTracksRelations = relations(musicPlaylistTracksTable, 
 // Zod schemas for API validation
 // ---------------------------------------------------------------------------
 
-const musicPlatformEnum = z
-  .enum([...MUSIC_PLATFORMS] as [MusicPlatform, ...MusicPlatform[]])
-  .openapi('MusicPlatform')
+const musicPlatformEnum = z.enum(MUSIC_PLATFORMS).openapi('MusicPlatform')
 
 const linkStatusEnum = z.enum(LINK_STATUSES).openapi('LinkStatus')
 
-const entityTypeEnum = z
-  .enum([...MUSIC_ENTITY_TYPES] as [MusicEntityType, ...MusicEntityType[]])
-  .openapi('MusicEntityType')
+const entityTypeEnum = z.enum(MUSIC_ENTITY_TYPES).openapi('MusicEntityType')
 
 // --- Artist ---
 

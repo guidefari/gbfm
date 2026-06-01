@@ -152,7 +152,7 @@ export const getAudioTags: AppRouteHandler<GetAudioTagsRoute> = async (c) => {
 
   const program = Effect.gen(function* () {
     const audioService = yield* AudioService
-    return yield* audioService.getTags(type as 'mix' | 'track' | 'misc')
+    return yield* audioService.getTags(type)
   }).pipe(Effect.withSpan('getAudioTags'))
 
   c.header('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400')
@@ -175,7 +175,7 @@ export const getAudioByType: AppRouteHandler<GetAudioByTypeRoute> = async (c) =>
 
   const program = Effect.gen(function* () {
     const audioService = yield* AudioService
-    return yield* audioService.getByType(type as 'mix' | 'track' | 'misc', {
+    return yield* audioService.getByType(type, {
       limit,
       offset,
       tag
@@ -191,7 +191,7 @@ export const getAudioBySlug: AppRouteHandler<GetAudioBySlugRoute> = async (c) =>
 
   const program = Effect.gen(function* () {
     const audioService = yield* AudioService
-    return yield* audioService.getBySlug(type as 'mix' | 'track' | 'misc', slug)
+    return yield* audioService.getBySlug(type, slug)
   }).pipe(Effect.withSpan('getAudioBySlug'))
 
   return runEffect<GetAudioBySlugRoute>(c, program)
@@ -204,13 +204,7 @@ export const updateAudioBySlug: AppRouteHandler<UpdateAudioBySlugRoute> = async 
 
   const program = Effect.gen(function* () {
     const audioService = yield* AudioService
-    return yield* audioService.update(
-      type as 'mix' | 'track' | 'misc',
-      slug,
-      user.id,
-      user.role || 'user',
-      updateData
-    )
+    return yield* audioService.update(type, slug, user.id, user.role || 'user', updateData)
   }).pipe(Effect.withSpan('updateAudioBySlug'))
 
   return runEffect<UpdateAudioBySlugRoute>(c, program)

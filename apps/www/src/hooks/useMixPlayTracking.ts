@@ -9,10 +9,21 @@ import { useAudioPlayerStore } from '@/store/audioPlayer'
 const DEDUP_WINDOW_MS = 30 * 60 * 1000
 const STORAGE_KEY = 'gbfm_play_sessions'
 
+function isPlaySessionsRecord(value: unknown): value is Record<string, number> {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    Object.values(value).every((entry) => typeof entry === 'number')
+  )
+}
+
 function getPlaySessions(): Record<string, number> {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? (JSON.parse(raw) as Record<string, number>) : {}
+    if (!raw) return {}
+
+    const parsed: unknown = JSON.parse(raw)
+    return isPlaySessionsRecord(parsed) ? parsed : {}
   } catch {
     return {}
   }

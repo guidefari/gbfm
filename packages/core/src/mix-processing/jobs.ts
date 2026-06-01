@@ -44,7 +44,8 @@ export async function writeMixJob(job: MixJobRecord) {
 
 export async function readMixJob(jobFilePath: string): Promise<MixJobRecord> {
   const raw = await fs.readFile(jobFilePath, 'utf8')
-  return JSON.parse(raw) as MixJobRecord
+  const job: MixJobRecord = JSON.parse(raw)
+  return job
 }
 
 export async function listMixJobs(jobsDir = getDefaultMixJobsDir()) {

@@ -25,10 +25,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createLazyFileRoute, useRouter } from '@tanstack/react-router'
 import { FileText, List, Loader2, Music } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { z } from 'zod'
 import { S3AudioFilePicker } from '@/components/mix-uploader/S3AudioFilePicker'
 import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
 import { authClient, useSession } from '@/lib/auth-client'
 import { fetcher, useAllShows, useAudioBySlug, useAudioTags, VPS_BASE_URL } from '@/lib/http'
+import { readResponseErrorMessage, readUploadResponse } from '@/lib/response'
 
 export const Route = createLazyFileRoute('/mix-upload')({
   component: MixUploadPage
@@ -49,20 +51,23 @@ interface MixFormData {
   episodeNumber?: string
 }
 
+const mixUploadSearchSchema = z.object({
+  edit: z.string().optional(),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  content: z.string().optional(),
+  thumbnailUrl: z.string().optional(),
+  tags: z.array(z.string()).optional(),
+  type: z.literal('mix').optional()
+})
+
 function MixUploadPage() {
   const { data: session } = useSession()
   const user = session?.user
-  const search = Route.useSearch() as {
-    edit?: string
-    title?: string
-    description?: string
-    content?: string
-    thumbnailUrl?: string
-    tags?: string[]
-    type?: string
-  }
+  const parsedSearch = mixUploadSearchSchema.safeParse(Route.useSearch())
+  const search = parsedSearch.success ? parsedSearch.data : {}
   const isEditMode = Boolean(search.edit)
-  const editType = (search.type as 'mix') || 'mix'
+  const editType = search.type || 'mix'
 
   const { data: availableTags } = useAudioTags('mix')
   const { data: allShows } = useAllShows({ limit: 100 })
@@ -175,8 +180,13 @@ function MixUploadPage() {
           body: uploadFormData
         })
 
-        if (!audioUploadResponse.ok) throw new Error('Failed to upload audio')
-        const audioResult = await audioUploadResponse.json()
+        if (!audioUploadResponse.ok) {
+          throw new Error(
+            await readResponseErrorMessage(audioUploadResponse, 'Failed to upload audio')
+          )
+        }
+
+        const audioResult = await readUploadResponse(audioUploadResponse)
         audioUrl = audioResult.url
       }
 
@@ -193,8 +203,13 @@ function MixUploadPage() {
           body: imageFormData
         })
 
-        if (!imageUploadResponse.ok) throw new Error('Failed to upload image')
-        const imageResult = await imageUploadResponse.json()
+        if (!imageUploadResponse.ok) {
+          throw new Error(
+            await readResponseErrorMessage(imageUploadResponse, 'Failed to upload image')
+          )
+        }
+
+        const imageResult = await readUploadResponse(imageUploadResponse)
         imageUrl = imageResult.url
       }
 

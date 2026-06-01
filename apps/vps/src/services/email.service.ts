@@ -172,13 +172,13 @@ const sendReminderEmail = (reminder: MusicReminder) =>
               .where(eq(emailDeliveryLogsTable.id, logEntry.id)),
           catch: (logError) =>
             new DatabaseError({
-              message: `Failed to update email log on failure: ${(logError as Error).message}`,
+              message: `Failed to update email log on failure: ${getErrorMessage(logError)}`,
               operation: 'update',
               table: 'email_delivery_logs'
             })
         }).pipe(
           Effect.andThen(() => recordEmailFail()),
-          Effect.andThen(() => Effect.fail(sendError as EmailError))
+          Effect.andThen(() => Effect.fail(sendError))
         )
       })
     )

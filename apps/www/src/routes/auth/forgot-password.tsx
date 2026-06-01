@@ -1,3 +1,4 @@
+import { getFormString } from '@gbfm/core/utils'
 import { GenericAuthForm } from '@gbfm/ui'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { MailCheck } from 'lucide-react'
@@ -43,7 +44,7 @@ function ForgotPasswordPage() {
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
-    const email = formData.get('email') as string
+    const email = getFormString(formData, 'email')
     await sendReset(email)
   }
 

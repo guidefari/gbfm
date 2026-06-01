@@ -142,6 +142,10 @@ const PLATFORM_CONFIG = {
 
 type Platform = keyof typeof PLATFORM_CONFIG
 
+function isPlatform(value: string): value is Platform {
+  return value in PLATFORM_CONFIG
+}
+
 interface ProfileSocialLinksProps {
   username: PublicProfile['username']
   socialLinks: PublicProfile['socialLinks']
@@ -175,7 +179,7 @@ export function ProfileSocialLinks({ username, socialLinks }: ProfileSocialLinks
   return (
     <div className='overflow-hidden rounded-lg bg-card'>
       {sorted.map((link, i) => {
-        const config = PLATFORM_CONFIG[link.platform as Platform]
+        const config = isPlatform(link.platform) ? PLATFORM_CONFIG[link.platform] : undefined
         const isLast = i === sorted.length - 1 && !shareUrl
         const Icon = config?.Icon
 

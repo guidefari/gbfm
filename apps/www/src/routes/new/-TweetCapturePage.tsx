@@ -16,7 +16,7 @@ import {
 } from '@gbfm/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useRouter, useSearch } from '@tanstack/react-router'
-import { Loader2, Music4, Send } from 'lucide-react'
+import { ArrowLeft, Loader2, Music4, Send } from 'lucide-react'
 import { type KeyboardEvent, useEffect, useMemo, useState } from 'react'
 import { PostPageHeader } from '@/components/PostPageHeader'
 import { useSession } from '@/lib/auth-client'
@@ -449,20 +449,25 @@ export function TweetCapturePage() {
             : 'Paste a music link, let the system resolve it, and capture the post fast.'
         }
         isEditMode={isEditMode}
-        backTo={
-          isEditMode && existingPost
-            ? {
-                to: '/tweet/$slug',
-                label: 'Back to tweet',
-                params: { slug: existingPost.slug }
-              }
-            : undefined
+        backLink={
+          isEditMode && existingPost ? (
+            <Link
+              to='/tweet/$slug'
+              params={{ slug: existingPost.slug }}
+              className='inline-flex items-center gap-2 mb-3 text-sm text-muted-foreground hover:text-foreground'>
+              <ArrowLeft className='w-4 h-4' />
+              Back to tweet
+            </Link>
+          ) : undefined
         }
-        switchTo={{
-          to: '/new/editorial',
-          search: { edit: undefined },
-          label: 'Switch to editorial'
-        }}
+        switchLink={
+          <Link
+            to='/new/editorial'
+            search={{ edit: undefined }}
+            className='mt-2 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground underline underline-offset-4'>
+            Switch to editorial
+          </Link>
+        }
       />
 
       <div className='grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]'>

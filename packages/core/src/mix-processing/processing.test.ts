@@ -52,7 +52,7 @@ describe('createAudioOrVideo', () => {
     )
 
     expect(output).toBe(files.outputPath)
-    const command = spawnMock.mock.calls[0]?.[0] as string[]
+    const command = spawnMock.mock.calls[0]?.[0]
     expect(command).toContain('/usr/bin/ffmpeg')
     expect(command).toContain('libmp3lame')
     expect(command).toContain('-id3v2_version')
@@ -74,7 +74,7 @@ describe('createAudioOrVideo', () => {
       )
     )
 
-    const command = spawnMock.mock.calls[0]?.[0] as string[]
+    const command = spawnMock.mock.calls[0]?.[0]
     expect(command).toContain('/usr/bin/ffmpeg')
     expect(command).toContain('-loop')
     expect(command).toContain('libx264')
@@ -131,15 +131,18 @@ describe('processMix', () => {
   })
 
   test('propagates validation errors for missing input files', async () => {
+    const input = {
+      audioBuffer: Buffer.from('audio'),
+      imageBuffer: Buffer.from('image'),
+      outputFormat: 'mp3' as const,
+      title: 'mix',
+      description: 'desc'
+    }
+    Reflect.set(input, 'audioBuffer', undefined)
+
     await expect(
       Effect.runPromise(
-        processMix({
-          audioBuffer: undefined as unknown as Buffer,
-          imageBuffer: Buffer.from('image'),
-          outputFormat: 'mp3',
-          title: 'mix',
-          description: 'desc'
-        }).pipe(
+        processMix(input).pipe(
           Effect.provideService(MixProcessingConfig, {
             ffmpegPath: '/usr/bin/ffmpeg',
             introAudioPath: '/tmp/intro.mp3'

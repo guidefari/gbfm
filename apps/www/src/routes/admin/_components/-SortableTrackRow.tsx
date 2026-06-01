@@ -4,6 +4,10 @@ import { Button } from '@gbfm/ui'
 import { Link } from '@tanstack/react-router'
 import { ExternalLink, GripVertical, Pencil, Trash2 } from 'lucide-react'
 import type { IconType } from 'react-icons'
+
+type TrackLinkStyle = React.CSSProperties & {
+  '--brand': string
+}
 import {
   SiApplemusic,
   SiBandcamp,
@@ -91,6 +95,12 @@ function PlatformLinks({ links }: PlatformLinksProps) {
         const entry = PLATFORM_ICONS[link.platform]
         const Icon = entry?.Icon ?? ExternalLink
         const label = PLATFORM_LABELS[link.platform] ?? link.platform
+        const style: TrackLinkStyle | undefined = entry
+          ? {
+              '--brand': entry.color
+            }
+          : undefined
+
         return (
           <a
             key={link.id}
@@ -100,7 +110,7 @@ function PlatformLinks({ links }: PlatformLinksProps) {
             title={label}
             aria-label={label}
             className='inline-flex size-5 items-center justify-center text-muted-foreground transition-colors hover:text-foreground'
-            style={entry ? ({ '--brand': entry.color } as React.CSSProperties) : undefined}
+            style={style}
             onMouseEnter={(e) => {
               if (entry) e.currentTarget.style.color = entry.color
             }}

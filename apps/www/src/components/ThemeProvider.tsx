@@ -22,6 +22,14 @@ const initialState: ThemeProviderState = {
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState)
 
+function parseTheme(value: string | null): Theme | null {
+  if (value === 'dark' || value === 'light' || value === 'system') {
+    return value
+  }
+
+  return null
+}
+
 export function ThemeProvider({
   children,
   defaultTheme = 'system',
@@ -29,7 +37,7 @@ export function ThemeProvider({
   ...props
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(
-    () => (localStorage.getItem(storageKey) as Theme) || defaultTheme
+    () => parseTheme(localStorage.getItem(storageKey)) || defaultTheme
   )
 
   const getSystemTheme = (): 'dark' | 'light' =>

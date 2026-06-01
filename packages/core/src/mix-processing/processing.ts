@@ -6,6 +6,12 @@ import { MixProcessingConfig } from './config'
 import { MixFileSystemError, MixProcessingError, MixValidationError } from './errors'
 import type { MixProcessingInput, ProcessedFiles } from './types'
 
+function hasNumberCode(error: unknown): error is { code: number } {
+  return (
+    typeof error === 'object' && error !== null && 'code' in error && typeof error.code === 'number'
+  )
+}
+
 /**
  * @deprecated This formatting logic is part of the deprecated mix-processing pipeline.
  */
@@ -182,12 +188,7 @@ export function createAudioOrVideo(
       catch: (error) =>
         new MixProcessingError({
           message: `FFmpeg processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-          code:
-            error instanceof Error &&
-            'code' in error &&
-            typeof (error as { code?: unknown }).code === 'number'
-              ? (error as { code: number }).code
-              : undefined
+          code: hasNumberCode(error) ? error.code : undefined
         })
     })
 

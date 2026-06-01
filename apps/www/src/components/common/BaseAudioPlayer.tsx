@@ -101,8 +101,8 @@ export function BaseAudioPlayer({
     if (!showVolume) return
 
     const elements = [volumeSliderRef.current, volumeButtonRef.current].filter(
-      Boolean
-    ) as HTMLElement[]
+      (element): element is HTMLInputElement | HTMLButtonElement => element !== null
+    )
     const cleanupFunctions = elements.map((element) =>
       attachVolumeScroll(element, {
         onVolumeChange: setVolume,

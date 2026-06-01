@@ -2,10 +2,19 @@ import { and, asc, eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { audioCreators, audioTable } from '@/db/audio.schema'
-import { type SocialLinkPlatform, userSocialLinks, user as userTable } from '@/db/auth.schema'
+import {
+  SOCIAL_LINK_PLATFORMS,
+  type SocialLinkPlatform,
+  userSocialLinks,
+  user as userTable
+} from '@/db/auth.schema'
 import { postCreators, postsTable } from '@/db/post.schema'
 import { showCreators, showsTable } from '@/db/show.schema'
 import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
+
+function isSocialLinkPlatform(value: string): value is SocialLinkPlatform {
+  return SOCIAL_LINK_PLATFORMS.some((platform) => platform === value)
+}
 
 export type PublicProfile = {
   id: string
@@ -194,11 +203,11 @@ export const getPublicProfileEffect = (username: string) =>
       username: foundUser.username,
       image: foundUser.image,
       bio: foundUser.bio,
-      socialLinks: socialLinks.map((link) => ({
-        platform: link.platform as PublicProfile['socialLinks'][number]['platform'],
-        url: link.url,
-        position: link.position
-      })),
+      socialLinks: socialLinks.flatMap((link) =>
+        isSocialLinkPlatform(link.platform)
+          ? [{ platform: link.platform, url: link.url, position: link.position }]
+          : []
+      ),
       createdAt: foundUser.createdAt,
       content: {
         mixes: userMixes,

@@ -149,27 +149,42 @@ export const reorderPlaylistTracksEffect =
             existingSet.size !== incomingSet.size ||
             [...existingSet].some((id) => !incomingSet.has(id))
           ) {
-            throw new Error('Reorder track set must match current playlist tracks exactly')
+            throw new DatabaseError({
+              message: 'Reorder track set must match current playlist tracks exactly',
+              operation: 'update',
+              table: 'music_playlist_tracks'
+            })
           }
 
           for (let i = 0; i < trackIds.length; i += 1) {
+            const trackId = trackIds[i]
+            if (!trackId) {
+              throw new DatabaseError({
+                message: 'Reorder track payload contained an empty track id',
+                operation: 'update',
+                table: 'music_playlist_tracks'
+              })
+            }
+
             await tx
               .update(musicPlaylistTracksTable)
               .set({ position: i })
               .where(
                 and(
                   eq(musicPlaylistTracksTable.playlistId, playlistId),
-                  eq(musicPlaylistTracksTable.trackId, trackIds[i] as string)
+                  eq(musicPlaylistTracksTable.trackId, trackId)
                 )
               )
           }
         }),
       catch: (e) =>
-        new DatabaseError({
-          message: `Failed to reorder tracks: ${getErrorMessage(e)}`,
-          operation: 'update',
-          table: 'music_playlist_tracks'
-        })
+        e instanceof DatabaseError
+          ? e
+          : new DatabaseError({
+              message: `Failed to reorder tracks: ${getErrorMessage(e)}`,
+              operation: 'update',
+              table: 'music_playlist_tracks'
+            })
     }).pipe(
       Effect.asVoid,
       Effect.withSpan('musicEntity.reorderPlaylistTracks', {

@@ -6,7 +6,7 @@ export function toKebab(s: string): string {
   return s.replace(/([A-Z])/g, (m) => `-${m.toLowerCase()}`)
 }
 
-export function toVars(obj: Record<string, string>, indent = '    '): string {
+export function toVars<T extends Record<string, string>>(obj: T, indent = '    '): string {
   return Object.entries(obj)
     .map(([k, v]) => `${indent}--${toKebab(k)}: ${v};`)
     .join('\n')
@@ -14,7 +14,7 @@ export function toVars(obj: Record<string, string>, indent = '    '): string {
 
 export function semanticToVars(tokens: SemanticTokens, indent = '    '): string {
   const { radius, ...rest } = tokens
-  return `${toVars(rest as Record<string, string>, indent)}\n${indent}--radius: ${radius};`
+  return `${toVars(rest, indent)}\n${indent}--radius: ${radius};`
 }
 
 export function generateCSS(): string {
@@ -24,7 +24,7 @@ export function generateCSS(): string {
   :root,
   .light,
   [data-theme="light"] {
-${toVars(brand as unknown as Record<string, string>)}
+${toVars(brand)}
 ${semanticToVars(light)}
   }
 

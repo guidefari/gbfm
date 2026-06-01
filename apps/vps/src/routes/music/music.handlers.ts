@@ -653,10 +653,7 @@ export const addArtistToAlbum: AppRouteHandler<AddArtistToAlbumRoute> = async (c
 
   const result = await AppRuntime.runPromise(program)
   if ('error' in result)
-    return c.json(
-      { error: (result as { error: string }).error },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
-    )
+    return c.json({ error: result.error }, HttpStatusCodes.INTERNAL_SERVER_ERROR)
   return c.body(null, HttpStatusCodes.NO_CONTENT)
 }
 

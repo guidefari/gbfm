@@ -19,8 +19,8 @@ interface Session {
   userId: string
   createdAt: Date
   expiresAt: Date
-  userAgent: string | null
-  ipAddress: string | null
+  userAgent?: string | null
+  ipAddress?: string | null
 }
 
 interface UserSearchResult {
@@ -94,8 +94,8 @@ export function SessionsTab() {
     }
   })
 
-  const searchResults = (usersData?.data?.users ?? []) as UserSearchResult[]
-  const sessions = (sessionsData?.data?.sessions ?? []) as Session[]
+  const searchResults: UserSearchResult[] = usersData?.data?.users ?? []
+  const sessions: Session[] = sessionsData?.data?.sessions ?? []
 
   return (
     <div className='space-y-6'>

@@ -11,10 +11,14 @@ export const Route = createFileRoute('/admin/music-entity/$entityType/$id')({
 
 const VALID_TYPES: MusicEntityType[] = ['artist', 'album', 'track', 'playlist']
 
+function isMusicEntityType(value: string): value is MusicEntityType {
+  return VALID_TYPES.some((type) => type === value)
+}
+
 function MusicDetailRoute() {
   const { entityType, id } = Route.useParams()
 
-  if (!VALID_TYPES.includes(entityType as MusicEntityType)) {
+  if (!isMusicEntityType(entityType)) {
     return (
       <AdminAccessGuard>
         <p className='p-8 text-muted-foreground'>Unknown entity type: {entityType}</p>
@@ -34,7 +38,7 @@ function MusicDetailRoute() {
           </Button>
         </header>
         <div className='flex-1 p-6 max-w-4xl mx-auto w-full'>
-          <MusicEntityDetailPage entityType={entityType as MusicEntityType} id={id} />
+          <MusicEntityDetailPage entityType={entityType} id={id} />
         </div>
       </div>
     </AdminAccessGuard>

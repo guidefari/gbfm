@@ -36,10 +36,8 @@ describe('writeFilesToDisk', () => {
   })
 
   test('fails with MixValidationError when required buffers are missing', async () => {
-    const input = {
-      ...makeInput(),
-      audioBuffer: undefined
-    } as unknown as MixProcessingInput
+    const input = makeInput()
+    Reflect.set(input, 'audioBuffer', undefined)
 
     await expect(Effect.runPromise(writeFilesToDisk(input))).rejects.toThrow(
       'Missing required files'

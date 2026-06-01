@@ -234,8 +234,8 @@ export function PlaylistEditor({ playlist }: Props) {
     const { active, over } = event
     if (!over || active.id === over.id) return
 
-    const oldIndex = orderedIds.indexOf(active.id as string)
-    const newIndex = orderedIds.indexOf(over.id as string)
+    const oldIndex = orderedIds.indexOf(String(active.id))
+    const newIndex = orderedIds.indexOf(String(over.id))
     if (oldIndex < 0 || newIndex < 0) return
 
     const next = arrayMove(orderedIds, oldIndex, newIndex)

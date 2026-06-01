@@ -64,9 +64,9 @@ interface AdminUser {
   email: string
   emailVerified?: boolean
   image?: string | null
-  role: string | null
+  role?: string | null
   banned: boolean | null
-  banReason: string | null
+  banReason?: string | null
   createdAt: Date
 }
 
@@ -80,6 +80,18 @@ interface DeleteDialogState {
   open: boolean
   userId: string
   userName: string
+}
+
+type NewUserState = {
+  name: string
+  username: string
+  email: string
+  password: string
+  role: UserRole
+}
+
+function isEditDialogTab(value: string): value is 'details' | 'social-links' {
+  return value === 'details' || value === 'social-links'
 }
 
 const SOCIAL_LINK_PLATFORM_OPTIONS: SocialLinkPlatform[] = [
@@ -175,12 +187,12 @@ export function UsersTab() {
     userName: ''
   })
   const [createUserDialog, setCreateUserDialog] = useState(false)
-  const [newUser, setNewUser] = useState({
+  const [newUser, setNewUser] = useState<NewUserState>({
     name: '',
     username: '',
     email: '',
     password: '',
-    role: 'user' as UserRole
+    role: 'user'
   })
   const [debouncedUsername, setDebouncedUsername] = useState('')
   const [editUserDialog, setEditUserDialog] = useState(false)
@@ -317,7 +329,7 @@ export function UsersTab() {
         email,
         password,
         name,
-        role: newUser.role as 'admin' | 'user',
+        role: newUser.role,
         data: newUser.username ? { username: newUser.username } : undefined
       })
     },
@@ -387,7 +399,7 @@ export function UsersTab() {
     mutationFn: async ({ userId, role }: { userId: string; role: UserRole }) => {
       return authClient.admin.setRole({
         userId,
-        role: role as 'admin' | 'user'
+        role
       })
     },
     onSuccess: () => {
@@ -519,7 +531,7 @@ export function UsersTab() {
     )
   }
 
-  const users = (data?.data?.users ?? []) as AdminUser[]
+  const users: AdminUser[] = data?.data?.users ?? []
 
   return (
     <div className='space-y-4'>
@@ -784,7 +796,11 @@ export function UsersTab() {
           </DialogHeader>
           <Tabs
             value={editDialogTab}
-            onValueChange={(value) => setEditDialogTab(value as 'details' | 'social-links')}
+            onValueChange={(value: string) => {
+              if (isEditDialogTab(value)) {
+                setEditDialogTab(value)
+              }
+            }}
             className='py-4 space-y-4'>
             <TabsList>
               <TabsTrigger value='details'>Details</TabsTrigger>

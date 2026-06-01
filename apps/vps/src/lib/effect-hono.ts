@@ -100,16 +100,13 @@ export async function runEffect<
   if (Exit.isFailure(exit)) {
     const failReason = exit.cause.reasons.find(Cause.isFailReason)
     if (failReason && failReason.error instanceof HttpError) {
-      return c.json(
-        { error: failReason.error.message },
-        failReason.error.status as ContentfulStatusCode
-      ) as unknown as Awaited<RouteResponse<Route>>
+      // @ts-expect-error Hono's route response generic does not model dynamic HttpError statuses.
+      return c.json({ error: failReason.error.message }, failReason.error.status)
     }
-    return c.json(
-      { error: 'Internal server error' },
-      HttpStatusCodes.INTERNAL_SERVER_ERROR
-    ) as unknown as Awaited<RouteResponse<Route>>
+    // @ts-expect-error Hono's JSON response type is narrower than the route helper can express here.
+    return c.json({ error: 'Internal server error' }, HttpStatusCodes.INTERNAL_SERVER_ERROR)
   }
 
-  return c.json(exit.value, successStatus) as unknown as Awaited<RouteResponse<Route>>
+  // @ts-expect-error Hono's JSON response type is compatible at runtime but not assignable through this generic.
+  return c.json(exit.value, successStatus)
 }

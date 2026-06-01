@@ -87,8 +87,8 @@ const FullscreenAudioPlayer = () => {
   // Volume scroll handling
   useEffect(() => {
     const elements = [volumeSliderRef.current, volumeButtonRef.current].filter(
-      Boolean
-    ) as HTMLElement[]
+      (element): element is HTMLInputElement | HTMLButtonElement => element !== null
+    )
     const cleanupFunctions = elements.map((element) =>
       attachVolumeScroll(element, {
         onVolumeChange: setVolume,

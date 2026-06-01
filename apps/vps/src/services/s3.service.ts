@@ -172,13 +172,19 @@ const listObjectsEffect = (prefix: string, bucketName: string) =>
             ContinuationToken: continuationToken
           })
         )
-        const page = (response.Contents ?? [])
-          .filter((obj) => Boolean(obj.Key && obj.LastModified))
-          .map((obj) => ({
-            key: obj.Key as string,
-            lastModified: obj.LastModified as Date,
-            size: obj.Size ?? 0
-          }))
+        const page = (response.Contents ?? []).flatMap((obj) => {
+          if (!obj.Key || !obj.LastModified) {
+            return []
+          }
+
+          return [
+            {
+              key: obj.Key,
+              lastModified: obj.LastModified,
+              size: obj.Size ?? 0
+            }
+          ]
+        })
         allObjects.push(...page)
         continuationToken = response.IsTruncated ? response.NextContinuationToken : undefined
       } while (continuationToken)

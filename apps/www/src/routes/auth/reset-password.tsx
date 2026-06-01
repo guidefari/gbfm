@@ -1,3 +1,4 @@
+import { getFormString } from '@gbfm/core/utils'
 import { GenericAuthForm, isPasswordValid, PasswordChecklist } from '@gbfm/ui'
 import { useMutation } from '@tanstack/react-query'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
@@ -6,6 +7,7 @@ import { z } from 'zod'
 import { AuthPageLayout, AuthStatusNotice } from '@/components/Auth/AuthPageLayout'
 import { useSession } from '@/lib/auth-client'
 import { VPS_BASE_URL } from '@/lib/http'
+import { readResponseErrorMessage } from '@/lib/response'
 
 export const searchSchema = z.object({
   token: z.string().optional(),
@@ -25,8 +27,7 @@ async function confirmInvite(token: string, password: string) {
     body: JSON.stringify({ token, password })
   })
   if (!res.ok) {
-    const data = await res.json().catch(() => ({}))
-    throw new Error((data as { error?: string }).error || 'Failed to reset password')
+    throw new Error(await readResponseErrorMessage(res, 'Failed to reset password'))
   }
 }
 
@@ -55,8 +56,8 @@ function ResetPasswordPage() {
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const formData = new FormData(event.currentTarget)
-    const password = formData.get('password') as string
-    const confirmPassword = formData.get('confirmPassword') as string
+    const password = getFormString(formData, 'password')
+    const confirmPassword = getFormString(formData, 'confirmPassword')
 
     if (!isPasswordValid(password)) return
     if (password !== confirmPassword) return

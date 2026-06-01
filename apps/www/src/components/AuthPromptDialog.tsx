@@ -1,3 +1,4 @@
+import { getFormString } from '@gbfm/core/utils'
 import {
   Button,
   Dialog,
@@ -39,8 +40,8 @@ export function AuthPromptDialog() {
     setError('')
 
     const formData = new FormData(event.currentTarget)
-    const identifier = formData.get('identifier') as string
-    const password = formData.get('password') as string
+    const identifier = getFormString(formData, 'identifier')
+    const password = getFormString(formData, 'password')
 
     try {
       const isEmail = identifier.includes('@')
@@ -66,10 +67,10 @@ export function AuthPromptDialog() {
     setError('')
 
     const formData = new FormData(event.currentTarget)
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
-    const name = formData.get('name') as string
-    const username = formData.get('username') as string
+    const email = getFormString(formData, 'email')
+    const password = getFormString(formData, 'password')
+    const name = getFormString(formData, 'name')
+    const username = getFormString(formData, 'username')
 
     try {
       const result = await signUp.email({

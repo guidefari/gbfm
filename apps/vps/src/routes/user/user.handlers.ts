@@ -1,3 +1,4 @@
+import { isFormDataFile } from '@gbfm/core/utils'
 import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { runEffect } from '@/lib/effect-hono'
@@ -41,8 +42,8 @@ export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
   if (contentType.includes('multipart/form-data')) {
     const formData = await c.req.formData()
     for (const [key, value] of formData.entries()) {
-      if (key === 'avatar' && value && typeof value === 'object' && 'arrayBuffer' in value) {
-        avatarFile = value as File
+      if (key === 'avatar' && isFormDataFile(value)) {
+        avatarFile = value
       } else if (typeof value === 'string' && key !== 'avatar') {
         if (key === 'email' || key === 'username' || key === 'bio') {
           updateData[key] = value

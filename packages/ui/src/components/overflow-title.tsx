@@ -2,6 +2,11 @@ import type { CSSProperties } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { cn } from '../lib/cn'
 
+type OverflowTitleStyle = CSSProperties & {
+  '--overflow-distance': string
+  '--overflow-duration': string
+}
+
 type OverflowTitleProps = {
   text: string
   className?: string
@@ -48,10 +53,12 @@ export function OverflowTitle({
   const marqueeStyle = useMemo(() => {
     if (overflowPx <= 0) return undefined
     const durationSeconds = Math.max(9, Math.min(20, 8 + overflowPx / 18))
-    return {
+    const style: OverflowTitleStyle = {
       '--overflow-distance': `${overflowPx}px`,
       '--overflow-duration': `${durationSeconds}s`
-    } as CSSProperties
+    }
+
+    return style
   }, [overflowPx])
 
   return (

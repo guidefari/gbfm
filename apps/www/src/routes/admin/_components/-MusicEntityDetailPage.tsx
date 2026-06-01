@@ -86,9 +86,10 @@ function ArtistDetailPage({ id }: { id: string }) {
           initialData={toArtistMetadata(data)}
           isSaving={update.isPending}
           onSubmit={async (d) => {
+            const metadata = Object.fromEntries(Object.entries(d))
             await update.mutateAsync({
               id,
-              data: d as unknown as Record<string, unknown>
+              data: metadata
             })
             toast({ title: 'Artist saved' })
           }}
@@ -155,9 +156,10 @@ function AlbumDetailPage({ id }: { id: string }) {
           initialData={toAlbumMetadata(data)}
           isSaving={update.isPending}
           onSubmit={async (d) => {
+            const metadata = Object.fromEntries(Object.entries(d))
             await update.mutateAsync({
               id,
-              data: d as unknown as Record<string, unknown>
+              data: metadata
             })
             toast({ title: 'Album saved' })
           }}
@@ -231,9 +233,10 @@ function TrackDetailPage({ id }: { id: string }) {
           initialData={toTrackMetadata(data)}
           isSaving={update.isPending}
           onSubmit={async (d) => {
+            const metadata = Object.fromEntries(Object.entries(d))
             await update.mutateAsync({
               id,
-              data: d as unknown as Record<string, unknown>
+              data: metadata
             })
             toast({ title: 'Track saved' })
           }}

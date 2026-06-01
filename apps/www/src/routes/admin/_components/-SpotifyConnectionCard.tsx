@@ -136,9 +136,7 @@ export function SpotifyConnectionCard() {
         }),
         Effect.map(() => toast({ title: 'Spotify session refreshed' })),
         Effect.catch((e: SpotifyRequestError | Error) =>
-          Effect.sync(() =>
-            setError(e instanceof Error ? e.message : spotifyErrorMessage(e as SpotifyRequestError))
-          )
+          Effect.sync(() => setError(e instanceof Error ? e.message : spotifyErrorMessage(e)))
         )
       )
     ).finally(() => setIsRefreshing(false))

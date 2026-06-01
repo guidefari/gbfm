@@ -2,14 +2,11 @@ export namespace Cookies {
   export const sessionKey = 'gbfm_session'
 
   export function get(key: string): string | undefined {
-    const cookies = document.cookie.split('; ').reduce(
-      (acc, cookie) => {
-        const [k, v] = cookie.split('=')
-        acc[k] = v
-        return acc
-      },
-      {} as Record<string, string>
-    )
+    const cookies = document.cookie.split('; ').reduce((acc: Record<string, string>, cookie) => {
+      const [k, v] = cookie.split('=')
+      acc[k] = v
+      return acc
+    }, {})
     return cookies[key]
   }
 

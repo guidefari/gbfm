@@ -2,13 +2,22 @@ import { and, asc, desc, eq, ilike, or, sql } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { audioCreators, audioTable } from '@/db/audio.schema'
-import { type SocialLinkPlatform, userSocialLinks, user as userTable } from '@/db/auth.schema'
+import {
+  SOCIAL_LINK_PLATFORMS,
+  type SocialLinkPlatform,
+  userSocialLinks,
+  user as userTable
+} from '@/db/auth.schema'
 import type { InsertAuthorEmailPreferences, SelectAuthorEmailPreferences } from '@/db/email.schema'
 import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
 import {
   getOrCreateEmailPreferencesByUserId,
   updateEmailPreferences as updateEmailPreferencesRepo
 } from '@/repositories/email-preferences.repository'
+
+function isSocialLinkPlatform(value: string): value is SocialLinkPlatform {
+  return SOCIAL_LINK_PLATFORMS.some((platform) => platform === value)
+}
 
 // Service interface
 export interface UserService {
@@ -240,11 +249,11 @@ const getUserSocialLinksEffect = (userId: string) =>
         })
     })
 
-    return links.map((link) => ({
-      platform: link.platform as SocialLinkPlatform,
-      url: link.url,
-      position: link.position
-    }))
+    return links.flatMap((link) =>
+      isSocialLinkPlatform(link.platform)
+        ? [{ platform: link.platform, url: link.url, position: link.position }]
+        : []
+    )
   })
 
 const replaceUserSocialLinksEffect = (
@@ -292,11 +301,11 @@ const replaceUserSocialLinksEffect = (
         })
     })
 
-    return updatedLinks.map((link) => ({
-      platform: link.platform as SocialLinkPlatform,
-      url: link.url,
-      position: link.position
-    }))
+    return updatedLinks.flatMap((link) =>
+      isSocialLinkPlatform(link.platform)
+        ? [{ platform: link.platform, url: link.url, position: link.position }]
+        : []
+    )
   })
 
 const listDjsEffect = () =>

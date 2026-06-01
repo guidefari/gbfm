@@ -131,11 +131,9 @@ export const insertPostSchema = z
       .nullable()
       .optional()
       .openapi({ description: 'Type of the post' }),
-    musicEntityType: z
-      .enum([...POST_MUSIC_ENTITY_TYPES] as [PostMusicEntityType, ...PostMusicEntityType[]])
-      .nullable()
-      .optional()
-      .openapi({ description: 'Attached music entity type' }),
+    musicEntityType: z.enum(POST_MUSIC_ENTITY_TYPES).nullable().optional().openapi({
+      description: 'Attached music entity type'
+    }),
     musicEntityId: z
       .string()
       .uuid()

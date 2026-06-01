@@ -1,3 +1,4 @@
+import { getFormString } from '@gbfm/core/utils'
 import { GenericAuthForm, isPasswordValid, PasswordChecklist, ProfilePreviewCard } from '@gbfm/ui'
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { MailCheck } from 'lucide-react'
@@ -41,10 +42,10 @@ function SignUpPage() {
     event.preventDefault()
     setIsSubmitting(true)
     const formData = new FormData(event.currentTarget)
-    const email = formData.get('email') as string
-    const password = formData.get('password') as string
-    const name = formData.get('name') as string
-    const username = formData.get('username') as string
+    const email = getFormString(formData, 'email')
+    const password = getFormString(formData, 'password')
+    const name = getFormString(formData, 'name')
+    const username = getFormString(formData, 'username')
 
     try {
       const result = await signUp.email({

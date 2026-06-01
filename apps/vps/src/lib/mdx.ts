@@ -87,7 +87,7 @@ const shimCache: Cache.Cache<string, string, MDXCompileError> = Effect.runSync(
 export async function compileMDX(mdxContent: string): Promise<MDXCompilationResult | MDXError> {
   return Effect.runPromise(
     Cache.get(shimCache, mdxContent).pipe(
-      Effect.map((compiled) => ({ compiled }) as MDXCompilationResult),
+      Effect.map((compiled): MDXCompilationResult => ({ compiled })),
       Effect.catchTag('MDXCompileError', (e) =>
         Effect.succeed<MDXError>({ error: e.message, details: e.details })
       )

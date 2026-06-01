@@ -14,13 +14,14 @@ import {
   toast
 } from '@gbfm/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useRouter, useSearch } from '@tanstack/react-router'
-import { ImageIcon, Loader2, Save, Upload, X } from 'lucide-react'
+import { Link, useRouter, useSearch } from '@tanstack/react-router'
+import { ArrowLeft, ImageIcon, Loader2, Save, Upload, X } from 'lucide-react'
 import { useEffect, useId, useState } from 'react'
 import { PostPageHeader } from '@/components/PostPageHeader'
 import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
 import { useSession } from '@/lib/auth-client'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
+import { readResponseErrorMessage, readUploadResponse } from '@/lib/response'
 import { UserSearch } from '../admin/_components/-UserSearch'
 
 interface PostItem {
@@ -300,10 +301,12 @@ export function EditorialPage() {
         })
 
         if (!imageUploadResponse.ok) {
-          throw new Error('Failed to upload image file')
+          throw new Error(
+            await readResponseErrorMessage(imageUploadResponse, 'Failed to upload image file')
+          )
         }
 
-        const imageResult = await imageUploadResponse.json()
+        const imageResult = await readUploadResponse(imageUploadResponse)
         imageUrl = imageResult.url
       }
 
@@ -424,16 +427,24 @@ export function EditorialPage() {
         title={isEditMode ? 'Edit Editorial' : 'Create Editorial'}
         description='Write and publish long-form editorial posts.'
         isEditMode={isEditMode}
-        backTo={
-          isEditMode && existingPost
-            ? {
-                to: '/editorial/$slug',
-                label: 'Back to post',
-                params: { slug: existingPost.slug }
-              }
-            : undefined
+        backLink={
+          isEditMode && existingPost ? (
+            <Link
+              to='/editorial/$slug'
+              params={{ slug: existingPost.slug }}
+              className='inline-flex items-center gap-2 mb-3 text-sm text-muted-foreground hover:text-foreground'>
+              <ArrowLeft className='w-4 h-4' />
+              Back to post
+            </Link>
+          ) : undefined
         }
-        switchTo={{ to: '/new/tweet', label: 'Switch to tweet capture' }}
+        switchLink={
+          <Link
+            to='/new/tweet'
+            className='mt-2 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground underline underline-offset-4'>
+            Switch to tweet capture
+          </Link>
+        }
         actions={
           <>
             <Button variant='outline' onClick={handleDiscard} disabled={saveMutation.isPending}>

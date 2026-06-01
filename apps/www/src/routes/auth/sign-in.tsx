@@ -1,3 +1,4 @@
+import { getFormString } from '@gbfm/core/utils'
 import { GenericAuthForm, toast } from '@gbfm/ui'
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
@@ -24,8 +25,8 @@ function SignInPage() {
     event.preventDefault()
     setIsSubmitting(true)
     const formData = new FormData(event.currentTarget)
-    const identifier = formData.get('identifier') as string
-    const password = formData.get('password') as string
+    const identifier = getFormString(formData, 'identifier')
+    const password = getFormString(formData, 'password')
 
     try {
       const isEmail = identifier.includes('@')

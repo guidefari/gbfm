@@ -27,11 +27,23 @@ const toOpenApiPath = (path: string) => `/auth${colonToOpenApiBraces(path)}`
 
 const toOpenApiMethod = (method: string) => method.toLowerCase()
 
+function isAuthEndpoint(value: unknown): value is AuthEndpoint {
+  return typeof value === 'object' && value !== null && 'path' in value && 'options' in value
+}
+
+function getOptionalString(value: unknown): string | undefined {
+  return typeof value === 'string' ? value : undefined
+}
+
 const buildAuthPaths = () => {
   const paths: Record<string, Record<string, unknown>> = {}
 
   for (const [key, value] of Object.entries(auth.api)) {
-    const endpoint = value as AuthEndpoint
+    if (!isAuthEndpoint(value)) {
+      continue
+    }
+
+    const endpoint = value
     if (!endpoint.path || !endpoint.options?.method) {
       continue
     }
@@ -44,17 +56,19 @@ const buildAuthPaths = () => {
     paths[path] ??= {}
 
     for (const method of methods) {
-      const openapi = endpoint.options.metadata?.openapi ?? {}
+      const openapi = endpoint.options.metadata?.openapi
+      const openapiSummary =
+        openapi && 'summary' in openapi ? getOptionalString(openapi.summary) : undefined
+      const openapiDescription =
+        openapi && 'description' in openapi ? getOptionalString(openapi.description) : undefined
+
       paths[path][toOpenApiMethod(method)] = {
         tags: ['Auth'],
         ...openapi,
         security: endpoint.options.requireHeaders
           ? [{ bearerAuth: [] }, { cookieAuth: [] }]
           : undefined,
-        summary:
-          (openapi.summary as string | undefined) ??
-          (openapi.description as string | undefined) ??
-          key
+        summary: openapiSummary ?? openapiDescription ?? key
       }
     }
   }
