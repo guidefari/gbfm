@@ -108,7 +108,7 @@ export const navConfig: NavItem[] = [
   },
   {
     id: 'youtube',
-    name: 'Mixes via Youtube',
+    name: 'Mixes via YouTube',
     icon: <TfiYoutube className={iconSytles} />,
     tier: 'utility',
     surfaces: ['overlay'],

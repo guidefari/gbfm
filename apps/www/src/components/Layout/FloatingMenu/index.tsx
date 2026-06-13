@@ -19,6 +19,8 @@ const tileClass = cn(
   'transition-colors hover:bg-foreground/10 hover:border-foreground active:scale-95'
 )
 
+const tileLabelClass = 'w-full px-1 text-center text-xs font-medium leading-tight'
+
 export function FloatingMenu({ className }: FloatingMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const { audioSrc } = useAudioPlayerPlaybackState()
@@ -116,7 +118,7 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
                       onClick={closeMenu}
                       className={tileClass}>
                       {item.icon}
-                      <span className='text-xs font-medium'>{item.name}</span>
+                      <span className={tileLabelClass}>{item.name}</span>
                     </a>
                   )
                 }
@@ -124,20 +126,20 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
                   return (
                     <div key={item.id} className={tileClass}>
                       {item.CustomComponent}
-                      <span className='text-xs font-medium'>{item.name}</span>
+                      <span className={tileLabelClass}>{item.name}</span>
                     </div>
                   )
                 }
                 return (
                   <Link key={item.id} to={item.slug} onClick={closeMenu} className={tileClass}>
                     {item.icon}
-                    <span className='text-xs font-medium'>{item.name}</span>
+                    <span className={tileLabelClass}>{item.name}</span>
                   </Link>
                 )
               })}
               <Link to={accountTile.slug} onClick={closeMenu} className={tileClass}>
                 {accountTile.icon}
-                <span className='text-xs font-medium'>{accountTile.label}</span>
+                <span className={tileLabelClass}>{accountTile.label}</span>
               </Link>
             </motion.nav>
           </motion.div>
