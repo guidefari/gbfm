@@ -1,3 +1,18 @@
+# [2.52.0](https://github.com/guidefari/gbfm/compare/v2.51.0...v2.52.0) (2026-06-13)
+
+
+### Bug Fixes
+
+* **ci:** add vitest include pattern and fix allowedHosts type ([7f9995a](https://github.com/guidefari/gbfm/commit/7f9995a6ec8f3c85a78ff8be5f3f5b0e3f91779d))
+* **infra:** clear VITE_VPS_BASE_URL for local dev ([2e62545](https://github.com/guidefari/gbfm/commit/2e6254571782283479083fa6edc5b1c182bd4abb))
+* remove reference to missing otel.ts ([65ac2fd](https://github.com/guidefari/gbfm/commit/65ac2fd1bf4552cd54a9fe020335087eed815129))
+* **vps:** handle missing SST resources gracefully ([448edb5](https://github.com/guidefari/gbfm/commit/448edb5e5548b82d0bc7b25838f534ae3e9fc3cc))
+
+
+### Features
+
+* **www:** proxy API requests through Vite dev server ([cdff26f](https://github.com/guidefari/gbfm/commit/cdff26fd8568b1195464653c79fec8a9a917332e))
+
 # [2.51.0](https://github.com/guidefari/gbfm/compare/v2.50.4...v2.51.0) (2026-05-31)
 
 
