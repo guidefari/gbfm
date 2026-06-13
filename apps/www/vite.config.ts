@@ -7,6 +7,13 @@ import mdx from '@mdx-js/rollup'
 import tailwindcss from '@tailwindcss/vite'
 import { repoChangelogPlugin } from './plugins/repo-changelog'
 
+const VPS_PROXY_TARGET = process.env.VITE_VPS_BASE_URL || 'http://127.0.0.1:3003'
+
+const vpsProxy = {
+  target: VPS_PROXY_TARGET,
+  changeOrigin: true
+}
+
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [
@@ -27,12 +34,37 @@ export default defineConfig({
     }
   },
   server: {
+    host: '0.0.0.0',
+    allowedHosts: 'all',
     proxy: {
-      '/rss.xml': {
-        target: process.env.VITE_VPS_BASE_URL || 'http://127.0.0.1:3003',
-        changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/rss\.xml/, '/rss.xml')
-      }
+      '/admin': vpsProxy,
+      '/auth': vpsProxy,
+      '/content': vpsProxy,
+      '/email': vpsProxy,
+      '/favorites': vpsProxy,
+      '/file-manager': vpsProxy,
+      '/health': vpsProxy,
+      '/invite': vpsProxy,
+      '/music': vpsProxy,
+      '/music-reminders': vpsProxy,
+      '/newsletter': vpsProxy,
+      '/profile': vpsProxy,
+      '/resolve': vpsProxy,
+      '/rss.xml': vpsProxy,
+      '/s/editorial': vpsProxy,
+      '/s/label': vpsProxy,
+      '/s/mix': vpsProxy,
+      '/s/post': vpsProxy,
+      '/s/profile': vpsProxy,
+      '/s/release': vpsProxy,
+      '/s/show': vpsProxy,
+      '/s/track': vpsProxy,
+      '/s/tweet': vpsProxy,
+      '/shows': vpsProxy,
+      '/sitemap.xml': vpsProxy,
+      '/spotify': vpsProxy,
+      '/upload': vpsProxy,
+      '/user': vpsProxy
     }
   }
 })

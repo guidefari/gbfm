@@ -31,7 +31,15 @@ type User = {
 
 import type { AlbumApiResponse, PlaylistApiResponse, TrackAPIResponse } from '@/types'
 
-export const VPS_BASE_URL = import.meta.env.VITE_VPS_BASE_URL
+export const VPS_BASE_URL = import.meta.env.VITE_VPS_BASE_URL || ''
+
+export function apiUrl(path: string): string {
+  return `${VPS_BASE_URL}${path}`
+}
+
+export function apiUrlObj(path: string): URL {
+  return VPS_BASE_URL ? new URL(`${VPS_BASE_URL}${path}`) : new URL(path, window.location.origin)
+}
 
 export type SocialLinkPlatform =
   | 'bandcamp'
@@ -173,7 +181,7 @@ export function useAudioByType(
     useInfiniteQuery<PaginatedResponse<SelectAudio>, Error>({
       queryKey: ['audio', type, tag ?? null, limit],
       queryFn: async ({ pageParam = 0 }) => {
-        const url = new URL(`${VPS_BASE_URL}/content/audio/${type}`)
+        const url = apiUrlObj(`/content/audio/${type}`)
         setPaginationParams(url, Number(pageParam), { limit })
         if (tag) url.searchParams.set('tag', tag)
         return fetcher<PaginatedResponse<SelectAudio>>(url.toString())
@@ -233,7 +241,7 @@ export function useEditorialPosts(tag?: string, limit = DEFAULT_PAGE_SIZE) {
     useInfiniteQuery<PaginatedResponse<SelectMdxCompiledEditorialPost>, Error>({
       queryKey: ['posts', 'editorials', tag, limit],
       queryFn: async ({ pageParam = 0 }) => {
-        const url = new URL(`${VPS_BASE_URL}/content/posts/editorials`)
+        const url = apiUrlObj(`/content/posts/editorials`)
         url.searchParams.set('limit', String(limit))
         url.searchParams.set('offset', String(pageParam))
         if (tag) url.searchParams.set('tag', tag)
@@ -262,7 +270,7 @@ export function useMicroPosts(limit = DEFAULT_PAGE_SIZE) {
     useInfiniteQuery<PaginatedResponse<SelectMdxCompiledMicroPost>, Error>({
       queryKey: ['posts', 'micro', limit],
       queryFn: async ({ pageParam = 0 }) => {
-        const url = new URL(`${VPS_BASE_URL}/content/posts/micro`)
+        const url = apiUrlObj(`/content/posts/micro`)
         url.searchParams.set('limit', String(limit))
         url.searchParams.set('offset', String(pageParam))
         return fetcher<PaginatedResponse<SelectMdxCompiledMicroPost>>(url.toString())
@@ -569,7 +577,7 @@ export function useAdminEmailLogs({
   return useQuery<PaginatedResponse<AdminEmailLog>, Error>({
     queryKey: ['admin', 'email-logs', limit, offset, status, recipientEmail, dateFrom, dateTo],
     queryFn: async () => {
-      const url = new URL(`${VPS_BASE_URL}/email/logs`)
+      const url = apiUrlObj(`/email/logs`)
       url.searchParams.set('limit', String(limit))
       url.searchParams.set('offset', String(offset))
       if (status) url.searchParams.set('status', status)
@@ -603,7 +611,7 @@ export function useAllLabels({ limit = DEFAULT_PAGE_SIZE }: PaginationOptions = 
     useInfiniteQuery<PaginatedResponse<SelectLabel>, Error>({
       queryKey: ['labels', limit],
       queryFn: async ({ pageParam = 0 }) => {
-        const url = new URL(`${VPS_BASE_URL}/content/labels`)
+        const url = apiUrlObj(`/content/labels`)
         setPaginationParams(url, Number(pageParam), { limit })
         return fetcher<PaginatedResponse<SelectLabel>>(url.toString())
       },
@@ -646,7 +654,7 @@ export function useReleasesByLabel(
     useInfiniteQuery<PaginatedResponse<SelectRelease>, Error>({
       queryKey: ['releases', 'label', labelSlug, limit],
       queryFn: async ({ pageParam = 0 }) => {
-        const url = new URL(`${VPS_BASE_URL}/content/labels/${labelSlug}/releases`)
+        const url = apiUrlObj(`/content/labels/${labelSlug}/releases`)
         setPaginationParams(url, Number(pageParam), { limit })
         return fetcher<PaginatedResponse<SelectRelease>>(url.toString())
       },
@@ -823,7 +831,7 @@ export function useAllShows({ limit = DEFAULT_PAGE_SIZE }: PaginationOptions = {
     useInfiniteQuery<PaginatedResponse<ShowWithHosts>, Error>({
       queryKey: ['shows', limit],
       queryFn: async ({ pageParam = 0 }) => {
-        const url = new URL(`${VPS_BASE_URL}/shows`)
+        const url = apiUrlObj(`/shows`)
         setPaginationParams(url, Number(pageParam), { limit })
         return fetcher<PaginatedResponse<ShowWithHosts>>(url.toString())
       },
@@ -900,7 +908,7 @@ export function useShowEpisodes(
     useInfiniteQuery<PaginatedResponse<SelectAudio>, Error>({
       queryKey: ['show-episodes', slug, limit],
       queryFn: async ({ pageParam = 0 }) => {
-        const url = new URL(`${VPS_BASE_URL}/shows/${slug}/episodes`)
+        const url = apiUrlObj(`/shows/${slug}/episodes`)
         setPaginationParams(url, Number(pageParam), { limit })
         return fetcher<PaginatedResponse<SelectAudio>>(url.toString())
       },
