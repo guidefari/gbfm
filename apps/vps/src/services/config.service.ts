@@ -7,7 +7,11 @@ try {
 } catch {}
 
 function getResource(name: string): unknown {
-  return Resource?.[name]
+  try {
+    return Resource?.[name]
+  } catch {
+    return undefined
+  }
 }
 
 function stringValue(value: unknown, fallback: string): string {
