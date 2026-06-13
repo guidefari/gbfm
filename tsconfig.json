@@ -19,6 +19,6 @@
     "composite": true,
     "plugins": [{ "name": "@effect/language-service" }]
   },
-  "files": ["infra/otel.ts"],
+  "files": [],
   "exclude": [".sst"]
 }
