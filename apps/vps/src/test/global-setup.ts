@@ -83,6 +83,11 @@ export async function setup() {
   process.env.SST_RESOURCES_JSON = JSON.stringify({
     App: { stage: 'test' },
     Email: { sender: 'test@test.com' },
+    DatabaseHost: { value: host },
+    DatabasePort: { value: port },
+    DatabaseUser: { value: user },
+    DatabasePassword: { value: password },
+    DatabaseName: { value: database },
     BETTER_AUTH_SECRET: { value: 'test-secret' },
     BETTER_AUTH_URL: { value: 'http://localhost:3000' },
     Urls: { site: 'http://127.0.0.1:5173' },

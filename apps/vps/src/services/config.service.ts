@@ -1,73 +1,50 @@
 import { isRecord } from '@gbfm/core/utils'
 import { Context, Effect, Layer, Schema } from 'effect'
 
-// Conditionally import Resource to avoid failures when running outside SST
 let Resource: { [key: string]: unknown } | null = null
 try {
   Resource = require('sst').Resource
-} catch {
-  // Resource not available when running outside SST
+} catch {}
+
+function getResource(name: string): unknown {
+  return Resource?.[name]
 }
 
-function getResourceValue(resourcePath: string, fallback: number): number
-function getResourceValue(resourcePath: string, fallback: string): string
-function getResourceValue(resourcePath: string, fallback: string | number): string | number {
-  if (!Resource) return fallback
+function stringValue(value: unknown, fallback: string): string {
+  if (typeof value === 'string') return value
+  if (typeof value === 'number') return String(value)
+  return fallback
+}
 
-  try {
-    const keys = resourcePath.split('.')
-    let value: unknown = Resource
+function numberValue(value: unknown, fallback: number, name: string): number {
+  const parsedValue =
+    typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : fallback
 
-    for (const key of keys) {
-      if (isRecord(value) && key in value) {
-        value = value[key]
-      } else {
-        return fallback
-      }
-    }
-
-    // Handle SST resource format with .value property
-    const resourceValue =
-      value && typeof value === 'object' && 'value' in value ? value.value : value
-
-    // Type validation and conversion
-    if (typeof fallback === 'number') {
-      const numValue =
-        typeof resourceValue === 'number'
-          ? resourceValue
-          : typeof resourceValue === 'string'
-            ? Number(resourceValue)
-            : fallback
-
-      if (Number.isNaN(numValue)) {
-        throw new Error(`Invalid number value for ${resourcePath}: ${resourceValue}`)
-      }
-
-      return numValue
-    }
-
-    if (typeof fallback === 'string') {
-      const strValue =
-        typeof resourceValue === 'string'
-          ? resourceValue
-          : typeof resourceValue === 'number'
-            ? String(resourceValue)
-            : fallback
-
-      return strValue
-    }
-
-    return fallback
-  } catch (error) {
-    if (error instanceof Error && error.message.includes('Invalid number value')) {
-      throw error
-    }
-    // Resource not available when running outside SST
-    return fallback
+  if (Number.isNaN(parsedValue)) {
+    throw new Error(`Invalid number value for ${name}: ${value}`)
   }
+
+  return parsedValue
 }
 
-// Config schema using Effect Schema
+function secretString(name: string, fallback: string): string {
+  const resource = getResource(name)
+  const value = isRecord(resource) && 'value' in resource ? resource.value : resource
+  return stringValue(value, fallback)
+}
+
+function secretNumber(name: string, fallback: number): number {
+  const resource = getResource(name)
+  const value = isRecord(resource) && 'value' in resource ? resource.value : resource
+  return numberValue(value, fallback, name)
+}
+
+function resourceString(name: string, property: string, fallback: string): string {
+  const resource = getResource(name)
+  if (!isRecord(resource) || !(property in resource)) return fallback
+  return stringValue(resource[property], fallback)
+}
+
 const ConfigSchema = Schema.Struct({
   database: Schema.Struct({
     host: Schema.String,
@@ -127,76 +104,50 @@ export interface ConfigService extends ConfigSchemaType {}
 export const ConfigService = Context.Service<ConfigService>('ConfigService')
 
 export function createConfig(): ConfigService {
-  const appStage = getResourceValue(
-    'App.stage',
-    process.env.NODE_ENV === 'production' ? 'prod' : 'dev'
+  const appStage = resourceString('App', 'stage', 'dev')
+  const isProd = appStage === 'prod'
+
+  const databaseHost = secretString('DatabaseHost', 'localhost')
+  const databasePort = secretNumber('DatabasePort', 5432)
+  const databaseUser = secretString('DatabaseUser', 'postgres')
+  const databasePassword = secretString('DatabasePassword', 'postgres')
+  const databaseName = secretString('DatabaseName', 'postgres')
+
+  const frontendUrl = resourceString('Urls', 'site', 'http://127.0.0.1:5173')
+  const vpsUrl = resourceString('Urls', 'vps', 'http://127.0.0.1:3003')
+  const routerUrl = resourceString('Router', 'url', 'http://localhost:3000')
+  const bucketRouterUrl = routerUrl
+
+  const emailSender = resourceString('Email', 'sender', '')
+  const accessTokenSecret = 'secret'
+  const refreshTokenSecret = 'secret'
+  const betterAuthSecret = secretString('BETTER_AUTH_SECRET', '')
+  const betterAuthUrl = secretString('BETTER_AUTH_URL', '')
+
+  const spotifyClientId = secretString('SpotifyClientId', '')
+  const spotifyClientSecret = secretString('SpotifyClientSecret', '')
+
+  const userContentBucketName = resourceString('User_Content', 'name', 'user-content-dev')
+  const databaseBackupsBucketName = resourceString(
+    'DatabaseBackups',
+    'name',
+    'database-backups-dev'
   )
-  const isProd = appStage === 'prod' || process.env.NODE_ENV === 'production'
+  const mixesBucketName = resourceString('Mixes', 'name', 'mixes-dev')
 
-  // Database configuration
-  const databaseHost = process.env.DB_HOST || getResourceValue('DatabaseHost', 'localhost')
-  const databasePort = Number(process.env.DB_PORT) || Number(getResourceValue('DatabasePort', 5432))
-  const databaseUser = process.env.DB_USER || getResourceValue('DatabaseUser', 'postgres')
-  const databasePassword =
-    process.env.DB_PASSWORD || getResourceValue('DatabasePassword', 'postgres')
-  const databaseName = process.env.DB_NAME || getResourceValue('DatabaseName', 'postgres')
+  const databaseBackupTask = resourceString('DatabaseBackupTask', 'taskDefinition', '') || undefined
 
-  // URLs
-  const frontendUrl = isProd
-    ? getResourceValue('Urls.site', 'http://127.0.0.1:5173')
-    : process.env.FRONTEND_URL || 'http://127.0.0.1:5173'
-  const vpsUrl = isProd
-    ? getResourceValue('Urls.vps', 'http://127.0.0.1:3003')
-    : process.env.VPS_URL || 'http://127.0.0.1:3003'
-  const routerUrl =
-    process.env.ROUTER_URL || getResourceValue('Router.url', 'http://localhost:3000')
-  const bucketRouterUrl =
-    process.env.BUCKET_ROUTER_URL || getResourceValue('BucketRouter.url', 'http://localhost:3000')
+  const nodeEnv = isProd ? 'production' : 'development'
+  const dbStage = isProd ? 'prod' : undefined
+  const logLevel = undefined
 
-  // Auth
-  const emailSender = isProd ? getResourceValue('Email.sender', '') : process.env.EMAIL_SENDER || ''
-  const accessTokenSecret = process.env.ACCESS_TOKEN_SECRET || 'secret'
-  const refreshTokenSecret = process.env.REFRESH_TOKEN_SECRET || 'secret'
-  const betterAuthSecret =
-    process.env.BETTER_AUTH_SECRET || getResourceValue('BETTER_AUTH_SECRET', '')
-  const betterAuthUrl = process.env.BETTER_AUTH_URL || getResourceValue('BETTER_AUTH_URL', '')
+  const otelEndpoint = secretString('OTEL_EXPORTER_OTLP_ENDPOINT', '')
+  const otelHeaders = secretString('OTEL_EXPORTER_OTLP_HEADERS', '')
 
-  // Spotify
-  const spotifyClientId =
-    getResourceValue('SpotifyClientId', '') || process.env.SPOTIFY_CLIENT_ID || ''
-  const spotifyClientSecret =
-    getResourceValue('SpotifyClientSecret', '') || process.env.SPOTIFY_CLIENT_SECRET || ''
+  const adminEmail = secretString('AdminEmail', 'guidefari@icloud.com')
 
-  // Buckets
-  const userContentBucketName =
-    process.env.USER_CONTENT_BUCKET_NAME ||
-    getResourceValue('User_Content.name', 'user-content-dev')
-  const databaseBackupsBucketName =
-    process.env.DATABASE_BACKUPS_BUCKET_NAME ||
-    getResourceValue('DatabaseBackups.name', 'database-backups-dev')
-  const mixesBucketName =
-    process.env.MIXES_BUCKET_NAME || getResourceValue('Mixes.name', 'mixes-dev')
-
-  // Tasks
-  const databaseBackupTask =
-    process.env.DATABASE_BACKUP_TASK || (process.env.DATABASE_BACKUP_TASK ? undefined : undefined)
-
-  // App
-  const nodeEnv = process.env.NODE_ENV || 'development'
-  const dbStage = process.env.DB_STAGE
-  const logLevel = process.env.LOG_LEVEL
-
-  const otelEndpoint =
-    process.env.OTEL_EXPORTER_OTLP_ENDPOINT || getResourceValue('OTEL_EXPORTER_OTLP_ENDPOINT', '')
-  const otelHeaders =
-    process.env.OTEL_EXPORTER_OTLP_HEADERS || getResourceValue('OTEL_EXPORTER_OTLP_HEADERS', '')
-
-  const adminEmail =
-    process.env.ADMIN_EMAIL || getResourceValue('AdminEmail', 'guidefari@icloud.com')
-
-  const sentryDsn = process.env.SENTRY_BACKEND_DSN || getResourceValue('SENTRY_BACKEND_DSN', '')
-  const sentryEnvironment =
-    process.env.SENTRY_ENVIRONMENT || (isProd ? 'production' : 'development')
+  const sentryDsn = secretString('SENTRY_BACKEND_DSN', '')
+  const sentryEnvironment = isProd ? 'production' : 'development'
 
   return {
     database: {
