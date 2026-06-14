@@ -7,6 +7,19 @@ use tempfile::TempDir;
 
 const INTRO_WAV: &[u8] = include_bytes!("../intro.wav");
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+const HELP: &str = "\
+gbpm - GBFM mix processor
+
+Usage: gbpm [OPTIONS] <path-to-job.json>
+
+Options:
+  -j, --job <path>  Path to job JSON file
+  -V, --version     Print version
+  -h, --help        Print help
+";
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct JobFile {
@@ -35,6 +48,17 @@ fn parse_args() -> Result<PathBuf, String> {
     let args: Vec<String> = env::args().collect();
     
     if args.len() == 2 {
+        match args[1].as_str() {
+            "-V" | "--version" => {
+                println!("gbpm {}", VERSION);
+                std::process::exit(0);
+            }
+            "-h" | "--help" => {
+                print!("{}", HELP);
+                std::process::exit(0);
+            }
+            _ => {}
+        }
         if args[1].starts_with("--job=") {
             return Ok(PathBuf::from(&args[1][6..]));
         }
@@ -219,10 +243,6 @@ fn process_mix(job: ResolvedJob) -> Result<PathBuf, String> {
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
         return Err(format!("FFmpeg failed: {}", stderr));
-    }
-    
-    if !output.stderr.is_empty() {
-        eprintln!("{}", String::from_utf8_lossy(&output.stderr));
     }
     
     let temp_output = temp_dir.path().join(format!("output.{}", job.output_format));
