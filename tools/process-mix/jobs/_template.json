@@ -1,0 +1,10 @@
+{
+  "audioPath": "/absolute/path/to/source-mix.mp3",
+  "imagePath": "../assets/covers/gbfm-mark-dark.jpg",
+  "title": "gb#00",
+  "description": "1. Artist - Track\n2. Artist - Track",
+  "outputFormat": "mp3",
+  "outputPath": "../output/gb00.mp3",
+  "artist": "Guide Fari",
+  "album": "GBFM"
+}

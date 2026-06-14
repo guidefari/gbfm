@@ -4,6 +4,15 @@ Rust CLI that takes a job JSON file, reads raw audio + cover image, runs FFmpeg 
 
 The intro audio is embedded in the binary at compile time — no external files needed.
 
+Recommended local layout:
+
+```text
+tools/process-mix/
+  assets/covers/   # shared reusable cover art
+  jobs/            # one json file per mix job
+  output/          # generated media, ignored by git
+```
+
 ## Install
 
 ```bash
@@ -19,6 +28,17 @@ curl -fsSL https://raw.githubusercontent.com/guidefari/gbfm/prod/tools/process-m
 ```
 
 Requires `ffmpeg` in PATH.
+
+## Local Workflow
+
+Create a new job by copying `jobs/_template.json` and adjusting the fields. Point `imagePath` at a shared cover in `assets/covers/` and `outputPath` at `../output/<slug>.mp3` or `../output/<slug>.mp4`.
+
+Example:
+
+```bash
+cp tools/process-mix/jobs/_template.json tools/process-mix/jobs/gb67.json
+cargo run --manifest-path tools/process-mix/Cargo.toml -- tools/process-mix/jobs/gb67.json
+```
 
 ## Build from source
 

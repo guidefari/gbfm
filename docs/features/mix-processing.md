@@ -2,6 +2,15 @@
 
 Local CLI pipeline that takes a job JSON file, reads a raw audio file plus cover image, runs FFmpeg to embed metadata and artwork for MP3 or produce a video with a still image for MP4, then writes the result to disk.
 
+Recommended local layout:
+
+```text
+tools/process-mix/
+  assets/covers/   # shared reusable cover art
+  jobs/            # one json file per mix job
+  output/          # generated media, ignored by git
+```
+
 ## CLI
 
 Requires `ffmpeg` in PATH.
@@ -43,6 +52,13 @@ Example:
   "album": "GBFM"
 }
 ```
+
+Local convention in this repo:
+
+- Keep reusable cover art in `tools/process-mix/assets/covers/`.
+- Keep one flat job file per mix in `tools/process-mix/jobs/`.
+- Write generated results to `tools/process-mix/output/`.
+- Start from `tools/process-mix/jobs/_template.json` when creating a new mix.
 
 Prints the output file path to stdout on success.
 
