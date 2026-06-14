@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils'
 import { useAudioPlayerPlaybackState, useAudioPlayerVisibilityState } from '@/store/audioPlayer'
 import { navItemsForSurface } from '../NavLinks'
 import { NowPlayingMini } from './NowPlayingMini'
+import { useRovingGrid } from './useRovingGrid'
 
 type FloatingMenuProps = {
   className?: string
@@ -73,6 +74,10 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
         icon: <LogIn className='w-6 h-6' />
       }
 
+  const tileCount = navItems.length + 1
+  const { gridRef, registerTile, getTileProps } = useRovingGrid(tileCount, isOpen)
+  const accountTileIndex = navItems.length
+
   return (
     <div className={cn('z-50', className)}>
       <AnimatePresence>
@@ -102,21 +107,25 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
             )}
 
             <motion.nav
+              ref={gridRef}
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: 30 }}
               transition={{ duration: 0.2 }}
+              aria-label='Site navigation'
               className='relative grid grid-cols-3 sm:grid-cols-4 gap-3 px-4 mb-24 mx-auto w-full max-w-2xl'>
-              {navItems.map((item) => {
+              {navItems.map((item, index) => {
                 if (item.external) {
                   return (
                     <a
                       key={item.id}
+                      ref={registerTile(index)}
                       href={item.external}
                       target='_blank'
                       rel='noreferrer'
                       onClick={closeMenu}
-                      className={tileClass}>
+                      className={tileClass}
+                      {...getTileProps(index)}>
                       {item.icon}
                       <span className={tileLabelClass}>{item.name}</span>
                     </a>
@@ -124,20 +133,35 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
                 }
                 if (item.CustomComponent) {
                   return (
-                    <div key={item.id} className={tileClass}>
+                    <div
+                      key={item.id}
+                      ref={registerTile(index)}
+                      className={tileClass}
+                      {...getTileProps(index)}>
                       {item.CustomComponent}
                       <span className={tileLabelClass}>{item.name}</span>
                     </div>
                   )
                 }
                 return (
-                  <Link key={item.id} to={item.slug} onClick={closeMenu} className={tileClass}>
+                  <Link
+                    key={item.id}
+                    ref={registerTile(index)}
+                    to={item.slug}
+                    onClick={closeMenu}
+                    className={tileClass}
+                    {...getTileProps(index)}>
                     {item.icon}
                     <span className={tileLabelClass}>{item.name}</span>
                   </Link>
                 )
               })}
-              <Link to={accountTile.slug} onClick={closeMenu} className={tileClass}>
+              <Link
+                ref={registerTile(accountTileIndex)}
+                to={accountTile.slug}
+                onClick={closeMenu}
+                className={tileClass}
+                {...getTileProps(accountTileIndex)}>
                 {accountTile.icon}
                 <span className={tileLabelClass}>{accountTile.label}</span>
               </Link>
