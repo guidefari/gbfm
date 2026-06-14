@@ -2,13 +2,8 @@ import { Button, Card, CardContent, CardHeader, CardTitle } from '@gbfm/ui'
 import { createFileRoute } from '@tanstack/react-router'
 import { AlertTriangle, CheckCircle2, RadioTower } from 'lucide-react'
 import * as React from 'react'
-<<<<<<< HEAD
-import { fetcher, VPS_BASE_URL } from '@/lib/http'
-import { AdminPage } from './_components/-AdminLayout'
-=======
 import { apiUrl, fetcher } from '@/lib/http'
-import { AdminAccessGuard } from './_components/-AdminAccessGuard'
->>>>>>> c68a4ee7 (refactor(www): migrate VPS_BASE_URL call sites to apiUrl())
+import { AdminPage } from './_components/-AdminLayout'
 
 export const Route = createFileRoute('/admin/frontend-errors')({
   component: FrontendErrorsPage
