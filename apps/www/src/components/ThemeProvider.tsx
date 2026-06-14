@@ -1,6 +1,13 @@
+import { dark, light, studio } from '@gbfm/theme'
 import { createContext, useContext, useEffect, useState } from 'react'
 
 type Theme = 'dark' | 'light' | 'system'
+
+const themeColors: Record<string, string> = {
+  dark: dark.backgroundHex,
+  light: light.backgroundHex,
+  studio: studio.backgroundHex
+}
 
 type ThemeProviderProps = {
   children: React.ReactNode
@@ -55,7 +62,13 @@ export function ThemeProvider({
       const currentTheme = theme === 'system' ? (systemTheme.matches ? 'dark' : 'light') : theme
       root.classList.remove('light', 'dark')
       root.classList.add(currentTheme)
+      root.setAttribute('data-theme', currentTheme)
       setResolvedTheme(currentTheme)
+
+      const metaThemeColor = document.querySelector('meta[name="theme-color"]')
+      if (metaThemeColor) {
+        metaThemeColor.setAttribute('content', themeColors[currentTheme])
+      }
     }
 
     updateTheme()
