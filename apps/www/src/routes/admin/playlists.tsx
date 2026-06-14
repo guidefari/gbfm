@@ -1,7 +1,6 @@
-import { Button } from '@gbfm/ui'
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowLeft } from 'lucide-react'
-import { AdminAccessGuard } from './_components/-AdminAccessGuard'
+import { Card, CardContent } from '@gbfm/ui'
+import { createFileRoute } from '@tanstack/react-router'
+import { AdminPage } from './_components/-AdminLayout'
 import { PlaylistsTab } from './_components/-PlaylistsTab'
 
 export const Route = createFileRoute('/admin/playlists')({
@@ -10,26 +9,15 @@ export const Route = createFileRoute('/admin/playlists')({
 
 function AdminPlaylistsPage() {
   return (
-    <AdminAccessGuard>
-      <div className='flex flex-col h-[calc(100vh-8rem)]'>
-        <header className='flex items-center justify-between gap-4 px-6 py-4 border-b shrink-0'>
-          <div>
-            <h1 className='text-xl font-bold'>Playlist management</h1>
-            <p className='text-xs text-muted-foreground'>
-              Import Spotify playlists, edit metadata, and reorder tracks.
-            </p>
-          </div>
-          <Button asChild variant='outline' size='sm'>
-            <Link to='/admin'>
-              <ArrowLeft className='w-4 h-4 mr-2' />
-              Back to admin
-            </Link>
-          </Button>
-        </header>
-        <div className='flex-1 min-h-0'>
+    <AdminPage
+      title='Playlist Management'
+      description='Import Spotify playlists, edit metadata, and reorder tracks.'
+      backToAdmin>
+      <Card>
+        <CardContent className='p-0'>
           <PlaylistsTab />
-        </div>
-      </div>
-    </AdminAccessGuard>
+        </CardContent>
+      </Card>
+    </AdminPage>
   )
 }

@@ -49,10 +49,17 @@ import { Route as AuthSignUpRouteImport } from './routes/auth/sign-up'
 import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
 import { Route as AuthResetPasswordRouteImport } from './routes/auth/reset-password'
 import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-password'
+import { Route as AdminUsersRouteImport } from './routes/admin/users'
+import { Route as AdminShowsRouteImport } from './routes/admin/shows'
+import { Route as AdminSessionsRouteImport } from './routes/admin/sessions'
 import { Route as AdminPlaylistsRouteImport } from './routes/admin/playlists'
 import { Route as AdminOverviewRouteImport } from './routes/admin/overview'
+import { Route as AdminNewsletterRouteImport } from './routes/admin/newsletter'
 import { Route as AdminMusicRouteImport } from './routes/admin/music'
 import { Route as AdminFrontendErrorsRouteImport } from './routes/admin/frontend-errors'
+import { Route as AdminFilesRouteImport } from './routes/admin/files'
+import { Route as AdminEmailLogsRouteImport } from './routes/admin/email-logs'
+import { Route as AdminContentRouteImport } from './routes/admin/content'
 import { Route as AdminMusicEntityEntityTypeIdRouteImport } from './routes/admin/music-entity.$entityType.$id'
 
 const UnsubscribeRoute = UnsubscribeRouteImport.update({
@@ -255,6 +262,21 @@ const AuthForgotPasswordRoute = AuthForgotPasswordRouteImport.update({
   path: '/auth/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminUsersRoute = AdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminShowsRoute = AdminShowsRouteImport.update({
+  id: '/admin/shows',
+  path: '/admin/shows',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminSessionsRoute = AdminSessionsRouteImport.update({
+  id: '/admin/sessions',
+  path: '/admin/sessions',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminPlaylistsRoute = AdminPlaylistsRouteImport.update({
   id: '/admin/playlists',
   path: '/admin/playlists',
@@ -265,6 +287,11 @@ const AdminOverviewRoute = AdminOverviewRouteImport.update({
   path: '/admin/overview',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminNewsletterRoute = AdminNewsletterRouteImport.update({
+  id: '/admin/newsletter',
+  path: '/admin/newsletter',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminMusicRoute = AdminMusicRouteImport.update({
   id: '/admin/music',
   path: '/admin/music',
@@ -273,6 +300,21 @@ const AdminMusicRoute = AdminMusicRouteImport.update({
 const AdminFrontendErrorsRoute = AdminFrontendErrorsRouteImport.update({
   id: '/admin/frontend-errors',
   path: '/admin/frontend-errors',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminFilesRoute = AdminFilesRouteImport.update({
+  id: '/admin/files',
+  path: '/admin/files',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminEmailLogsRoute = AdminEmailLogsRouteImport.update({
+  id: '/admin/email-logs',
+  path: '/admin/email-logs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminContentRoute = AdminContentRouteImport.update({
+  id: '/admin/content',
+  path: '/admin/content',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminMusicEntityEntityTypeIdRoute =
@@ -300,10 +342,17 @@ export interface FileRoutesByFullPath {
   '/subscribe': typeof SubscribeRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
+  '/admin/content': typeof AdminContentRoute
+  '/admin/email-logs': typeof AdminEmailLogsRoute
+  '/admin/files': typeof AdminFilesRoute
   '/admin/frontend-errors': typeof AdminFrontendErrorsRoute
   '/admin/music': typeof AdminMusicRoute
+  '/admin/newsletter': typeof AdminNewsletterRoute
   '/admin/overview': typeof AdminOverviewRoute
   '/admin/playlists': typeof AdminPlaylistsRoute
+  '/admin/sessions': typeof AdminSessionsRoute
+  '/admin/shows': typeof AdminShowsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/sign-in': typeof AuthSignInRoute
@@ -343,10 +392,17 @@ export interface FileRoutesByTo {
   '/subscribe': typeof SubscribeRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
+  '/admin/content': typeof AdminContentRoute
+  '/admin/email-logs': typeof AdminEmailLogsRoute
+  '/admin/files': typeof AdminFilesRoute
   '/admin/frontend-errors': typeof AdminFrontendErrorsRoute
   '/admin/music': typeof AdminMusicRoute
+  '/admin/newsletter': typeof AdminNewsletterRoute
   '/admin/overview': typeof AdminOverviewRoute
   '/admin/playlists': typeof AdminPlaylistsRoute
+  '/admin/sessions': typeof AdminSessionsRoute
+  '/admin/shows': typeof AdminShowsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/sign-in': typeof AuthSignInRoute
@@ -391,10 +447,17 @@ export interface FileRoutesById {
   '/subscribe': typeof SubscribeRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
+  '/admin/content': typeof AdminContentRoute
+  '/admin/email-logs': typeof AdminEmailLogsRoute
+  '/admin/files': typeof AdminFilesRoute
   '/admin/frontend-errors': typeof AdminFrontendErrorsRoute
   '/admin/music': typeof AdminMusicRoute
+  '/admin/newsletter': typeof AdminNewsletterRoute
   '/admin/overview': typeof AdminOverviewRoute
   '/admin/playlists': typeof AdminPlaylistsRoute
+  '/admin/sessions': typeof AdminSessionsRoute
+  '/admin/shows': typeof AdminShowsRoute
+  '/admin/users': typeof AdminUsersRoute
   '/auth/forgot-password': typeof AuthForgotPasswordRoute
   '/auth/reset-password': typeof AuthResetPasswordRoute
   '/auth/sign-in': typeof AuthSignInRoute
@@ -440,10 +503,17 @@ export interface FileRouteTypes {
     | '/subscribe'
     | '/terms'
     | '/unsubscribe'
+    | '/admin/content'
+    | '/admin/email-logs'
+    | '/admin/files'
     | '/admin/frontend-errors'
     | '/admin/music'
+    | '/admin/newsletter'
     | '/admin/overview'
     | '/admin/playlists'
+    | '/admin/sessions'
+    | '/admin/shows'
+    | '/admin/users'
     | '/auth/forgot-password'
     | '/auth/reset-password'
     | '/auth/sign-in'
@@ -483,10 +553,17 @@ export interface FileRouteTypes {
     | '/subscribe'
     | '/terms'
     | '/unsubscribe'
+    | '/admin/content'
+    | '/admin/email-logs'
+    | '/admin/files'
     | '/admin/frontend-errors'
     | '/admin/music'
+    | '/admin/newsletter'
     | '/admin/overview'
     | '/admin/playlists'
+    | '/admin/sessions'
+    | '/admin/shows'
+    | '/admin/users'
     | '/auth/forgot-password'
     | '/auth/reset-password'
     | '/auth/sign-in'
@@ -530,10 +607,17 @@ export interface FileRouteTypes {
     | '/subscribe'
     | '/terms'
     | '/unsubscribe'
+    | '/admin/content'
+    | '/admin/email-logs'
+    | '/admin/files'
     | '/admin/frontend-errors'
     | '/admin/music'
+    | '/admin/newsletter'
     | '/admin/overview'
     | '/admin/playlists'
+    | '/admin/sessions'
+    | '/admin/shows'
+    | '/admin/users'
     | '/auth/forgot-password'
     | '/auth/reset-password'
     | '/auth/sign-in'
@@ -578,10 +662,17 @@ export interface RootRouteChildren {
   SubscribeRoute: typeof SubscribeRoute
   TermsRoute: typeof TermsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
+  AdminContentRoute: typeof AdminContentRoute
+  AdminEmailLogsRoute: typeof AdminEmailLogsRoute
+  AdminFilesRoute: typeof AdminFilesRoute
   AdminFrontendErrorsRoute: typeof AdminFrontendErrorsRoute
   AdminMusicRoute: typeof AdminMusicRoute
+  AdminNewsletterRoute: typeof AdminNewsletterRoute
   AdminOverviewRoute: typeof AdminOverviewRoute
   AdminPlaylistsRoute: typeof AdminPlaylistsRoute
+  AdminSessionsRoute: typeof AdminSessionsRoute
+  AdminShowsRoute: typeof AdminShowsRoute
+  AdminUsersRoute: typeof AdminUsersRoute
   AuthForgotPasswordRoute: typeof AuthForgotPasswordRoute
   AuthResetPasswordRoute: typeof AuthResetPasswordRoute
   AuthSignInRoute: typeof AuthSignInRoute
@@ -881,6 +972,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/users': {
+      id: '/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AdminUsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/shows': {
+      id: '/admin/shows'
+      path: '/admin/shows'
+      fullPath: '/admin/shows'
+      preLoaderRoute: typeof AdminShowsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/sessions': {
+      id: '/admin/sessions'
+      path: '/admin/sessions'
+      fullPath: '/admin/sessions'
+      preLoaderRoute: typeof AdminSessionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/playlists': {
       id: '/admin/playlists'
       path: '/admin/playlists'
@@ -895,6 +1007,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminOverviewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/newsletter': {
+      id: '/admin/newsletter'
+      path: '/admin/newsletter'
+      fullPath: '/admin/newsletter'
+      preLoaderRoute: typeof AdminNewsletterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/music': {
       id: '/admin/music'
       path: '/admin/music'
@@ -907,6 +1026,27 @@ declare module '@tanstack/react-router' {
       path: '/admin/frontend-errors'
       fullPath: '/admin/frontend-errors'
       preLoaderRoute: typeof AdminFrontendErrorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/files': {
+      id: '/admin/files'
+      path: '/admin/files'
+      fullPath: '/admin/files'
+      preLoaderRoute: typeof AdminFilesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/email-logs': {
+      id: '/admin/email-logs'
+      path: '/admin/email-logs'
+      fullPath: '/admin/email-logs'
+      preLoaderRoute: typeof AdminEmailLogsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/content': {
+      id: '/admin/content'
+      path: '/admin/content'
+      fullPath: '/admin/content'
+      preLoaderRoute: typeof AdminContentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/music-entity/$entityType/$id': {
@@ -1005,10 +1145,17 @@ const rootRouteChildren: RootRouteChildren = {
   SubscribeRoute: SubscribeRoute,
   TermsRoute: TermsRoute,
   UnsubscribeRoute: UnsubscribeRoute,
+  AdminContentRoute: AdminContentRoute,
+  AdminEmailLogsRoute: AdminEmailLogsRoute,
+  AdminFilesRoute: AdminFilesRoute,
   AdminFrontendErrorsRoute: AdminFrontendErrorsRoute,
   AdminMusicRoute: AdminMusicRoute,
+  AdminNewsletterRoute: AdminNewsletterRoute,
   AdminOverviewRoute: AdminOverviewRoute,
   AdminPlaylistsRoute: AdminPlaylistsRoute,
+  AdminSessionsRoute: AdminSessionsRoute,
+  AdminShowsRoute: AdminShowsRoute,
+  AdminUsersRoute: AdminUsersRoute,
   AuthForgotPasswordRoute: AuthForgotPasswordRoute,
   AuthResetPasswordRoute: AuthResetPasswordRoute,
   AuthSignInRoute: AuthSignInRoute,

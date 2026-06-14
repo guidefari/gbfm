@@ -1,9 +1,9 @@
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@gbfm/ui'
-import { createFileRoute, Link } from '@tanstack/react-router'
-import { AlertTriangle, ArrowLeft, CheckCircle2, RadioTower } from 'lucide-react'
+import { createFileRoute } from '@tanstack/react-router'
+import { AlertTriangle, CheckCircle2, RadioTower } from 'lucide-react'
 import * as React from 'react'
 import { fetcher, VPS_BASE_URL } from '@/lib/http'
-import { AdminAccessGuard } from './_components/-AdminAccessGuard'
+import { AdminPage } from './_components/-AdminLayout'
 
 export const Route = createFileRoute('/admin/frontend-errors')({
   component: FrontendErrorsPage
@@ -110,87 +110,75 @@ function FrontendErrorsPage() {
   }
 
   return (
-    <AdminAccessGuard>
-      <div className='container max-w-5xl py-8 mx-auto space-y-6'>
-        <div>
-          <Link
-            to='/admin'
-            className='inline-flex items-center gap-2 mb-3 text-sm text-muted-foreground hover:text-foreground'>
-            <ArrowLeft className='w-4 h-4' />
-            Back to management
-          </Link>
-          <h1 className='text-3xl font-black tracking-tight'>Frontend Errors</h1>
-          <p className='mt-2 max-w-2xl text-muted-foreground'>
-            Simulate frontend-observed API failures and confirm which ones report to Sentry through
-            the shared fetcher.
-          </p>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>API response scenarios</CardTitle>
-          </CardHeader>
-          <CardContent className='grid gap-3 md:grid-cols-2'>
-            {scenarios.map((scenario) => (
-              <div key={scenario.scenario} className='flex flex-col gap-3 rounded-lg border p-4'>
-                <div className='flex items-start justify-between gap-3'>
-                  <div>
-                    <div className='font-semibold'>{scenario.label}</div>
-                    <p className='mt-1 text-sm text-muted-foreground'>{scenario.description}</p>
-                  </div>
-                  <div className='shrink-0 rounded-full border px-2 py-1 text-xs text-muted-foreground'>
-                    {scenario.shouldReport ? 'Sentry' : 'Quiet'}
-                  </div>
+    <AdminPage
+      title='Frontend Errors'
+      description='Simulate frontend-observed API failures and confirm which ones report to Sentry through the shared fetcher.'
+      backToAdmin
+      maxWidth='max-w-5xl'>
+      <Card>
+        <CardHeader>
+          <CardTitle>API response scenarios</CardTitle>
+        </CardHeader>
+        <CardContent className='grid gap-3 md:grid-cols-2'>
+          {scenarios.map((scenario) => (
+            <div key={scenario.scenario} className='flex flex-col gap-3 rounded-lg border p-4'>
+              <div className='flex items-start justify-between gap-3'>
+                <div>
+                  <div className='font-semibold'>{scenario.label}</div>
+                  <p className='mt-1 text-sm text-muted-foreground'>{scenario.description}</p>
                 </div>
-                <Button
-                  variant={scenario.shouldReport ? 'destructive' : 'outline'}
-                  onClick={() => runScenario(scenario)}
-                  disabled={Boolean(pending)}>
-                  {pending === scenario.label ? 'Running...' : 'Run scenario'}
-                </Button>
+                <div className='shrink-0 rounded-full border px-2 py-1 text-xs text-muted-foreground'>
+                  {scenario.shouldReport ? 'Sentry' : 'Quiet'}
+                </div>
               </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Network failure</CardTitle>
-          </CardHeader>
-          <CardContent className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
-            <div>
-              <p className='font-semibold'>Failed fetch / unreachable host</p>
-              <p className='mt-1 text-sm text-muted-foreground'>
-                Calls an unreachable loopback URL to trigger the fetcher network failure reporting
-                path.
-              </p>
+              <Button
+                variant={scenario.shouldReport ? 'destructive' : 'outline'}
+                onClick={() => runScenario(scenario)}
+                disabled={Boolean(pending)}>
+                {pending === scenario.label ? 'Running...' : 'Run scenario'}
+              </Button>
             </div>
-            <Button variant='destructive' onClick={runNetworkFailure} disabled={Boolean(pending)}>
-              {pending === 'Network failure' ? 'Running...' : 'Run network failure'}
-            </Button>
+          ))}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Network failure</CardTitle>
+        </CardHeader>
+        <CardContent className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
+          <div>
+            <p className='font-semibold'>Failed fetch / unreachable host</p>
+            <p className='mt-1 text-sm text-muted-foreground'>
+              Calls an unreachable loopback URL to trigger the fetcher network failure reporting
+              path.
+            </p>
+          </div>
+          <Button variant='destructive' onClick={runNetworkFailure} disabled={Boolean(pending)}>
+            {pending === 'Network failure' ? 'Running...' : 'Run network failure'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {result && (
+        <Card>
+          <CardContent className='flex items-start gap-3 py-5'>
+            {result.ok ? (
+              <CheckCircle2 className='mt-0.5 h-5 w-5 text-green-600' />
+            ) : result.label.includes('500') ||
+              result.label.includes('503') ||
+              result.label === 'Network failure' ? (
+              <RadioTower className='mt-0.5 h-5 w-5 text-destructive' />
+            ) : (
+              <AlertTriangle className='mt-0.5 h-5 w-5 text-muted-foreground' />
+            )}
+            <div>
+              <div className='font-semibold'>{result.label}</div>
+              <p className='mt-1 text-sm text-muted-foreground'>{result.message}</p>
+            </div>
           </CardContent>
         </Card>
-
-        {result && (
-          <Card>
-            <CardContent className='flex items-start gap-3 py-5'>
-              {result.ok ? (
-                <CheckCircle2 className='mt-0.5 h-5 w-5 text-green-600' />
-              ) : result.label.includes('500') ||
-                result.label.includes('503') ||
-                result.label === 'Network failure' ? (
-                <RadioTower className='mt-0.5 h-5 w-5 text-destructive' />
-              ) : (
-                <AlertTriangle className='mt-0.5 h-5 w-5 text-muted-foreground' />
-              )}
-              <div>
-                <div className='font-semibold'>{result.label}</div>
-                <p className='mt-1 text-sm text-muted-foreground'>{result.message}</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
-    </AdminAccessGuard>
+      )}
+    </AdminPage>
   )
 }

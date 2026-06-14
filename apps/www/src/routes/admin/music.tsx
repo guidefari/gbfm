@@ -12,7 +12,6 @@ import {
   TabsTrigger
 } from '@gbfm/ui'
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowLeft } from 'lucide-react'
 import {
   type MusicAlbum,
   type MusicArtist,
@@ -21,7 +20,7 @@ import {
   useAdminArtists,
   useAdminTracks
 } from '@/lib/http'
-import { AdminAccessGuard } from './_components/-AdminAccessGuard'
+import { AdminPage } from './_components/-AdminLayout'
 import { PlaylistsTab } from './_components/-PlaylistsTab'
 
 export const Route = createFileRoute('/admin/music')({
@@ -30,15 +29,15 @@ export const Route = createFileRoute('/admin/music')({
 
 function AdminMusicPage() {
   return (
-    <AdminAccessGuard>
-      <div className='flex flex-col h-[calc(100vh-8rem)] overflow-hidden'>
-        <Tabs defaultValue='artists' className='flex flex-col flex-1 min-h-0'>
-          <header className='flex items-center justify-between gap-4 px-6 py-3 border-b shrink-0'>
-            <div>
-              <h1 className='text-xl font-bold'>Music catalog</h1>
-              <p className='text-xs text-muted-foreground'>
-                Artists, albums, tracks, and playlists.
-              </p>
+    <AdminPage
+      title='Music Catalog'
+      description='Artists, albums, tracks, and playlists.'
+      backToAdmin>
+      <Card className='overflow-hidden'>
+        <Tabs defaultValue='artists' className='flex min-h-0 flex-col'>
+          <div className='flex items-center justify-between gap-4 border-b px-6 py-3'>
+            <div className='text-sm text-muted-foreground'>
+              Switch between music entity types without leaving the catalog route.
             </div>
             <div className='flex items-center gap-3'>
               <TabsList className='h-8 gap-0.5 bg-muted/60'>
@@ -55,29 +54,23 @@ function AdminMusicPage() {
                   Playlists
                 </TabsTrigger>
               </TabsList>
-              <Button asChild variant='outline' size='sm'>
-                <Link to='/admin'>
-                  <ArrowLeft className='w-4 h-4 mr-2' />
-                  Back to admin
-                </Link>
-              </Button>
             </div>
-          </header>
-          <TabsContent value='artists' className='flex-1 overflow-auto p-6 mt-0'>
+          </div>
+          <TabsContent value='artists' className='mt-0 flex-1 overflow-auto p-6'>
             <ArtistsTab />
           </TabsContent>
-          <TabsContent value='albums' className='flex-1 overflow-auto p-6 mt-0'>
+          <TabsContent value='albums' className='mt-0 flex-1 overflow-auto p-6'>
             <AlbumsTab />
           </TabsContent>
-          <TabsContent value='tracks' className='flex-1 overflow-auto p-6 mt-0'>
+          <TabsContent value='tracks' className='mt-0 flex-1 overflow-auto p-6'>
             <TracksTab />
           </TabsContent>
-          <TabsContent value='playlists' className='flex-1 min-h-0 mt-0'>
+          <TabsContent value='playlists' className='mt-0 flex-1 min-h-0'>
             <PlaylistsTab />
           </TabsContent>
         </Tabs>
-      </div>
-    </AdminAccessGuard>
+      </Card>
+    </AdminPage>
   )
 }
 
