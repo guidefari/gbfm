@@ -34,10 +34,21 @@ import type { AlbumApiResponse, PlaylistApiResponse, TrackAPIResponse } from '@/
 const VPS_BASE_URL = import.meta.env.VITE_VPS_BASE_URL || ''
 
 export function apiUrl(path: string): string {
-  return `${VPS_BASE_URL}${path}`
+  return `${VPS_BASE_URL}/api${path}`
 }
 
 export function apiUrlObj(path: string): URL {
+  const withApi = `/api${path}`
+  return VPS_BASE_URL
+    ? new URL(`${VPS_BASE_URL}${withApi}`)
+    : new URL(withApi, window.location.origin)
+}
+
+export function publicUrl(path: string): string {
+  return `${VPS_BASE_URL}${path}`
+}
+
+export function publicUrlObj(path: string): URL {
   return VPS_BASE_URL ? new URL(`${VPS_BASE_URL}${path}`) : new URL(path, window.location.origin)
 }
 

@@ -3,11 +3,11 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@gbfm/
 import { CheckIcon } from '@radix-ui/react-icons'
 import { useState } from 'react'
 import { FaSquareRss } from 'react-icons/fa6'
-import { apiUrlObj } from '@/lib/http'
+import { publicUrlObj } from '@/lib/http'
 
 export const RSS = () => {
   const [isCopied, setIsCopied] = useState(false)
-  const RSSurl = apiUrlObj('/rss.xml').toString()
+  const RSSurl = publicUrlObj('/rss.xml').toString()
 
   const toggleIsCopiedForThreeSeconds = () => {
     setIsCopied(true)

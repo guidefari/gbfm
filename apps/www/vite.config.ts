@@ -39,34 +39,12 @@ export default defineConfig({
     host: '0.0.0.0',
     allowedHosts: true,
     proxy: {
-      '/admin': vpsProxy,
+      '/api': vpsProxy,
       '/auth': vpsProxy,
-      '/content': vpsProxy,
-      '/email': vpsProxy,
-      '/favorites': vpsProxy,
-      '/file-manager': vpsProxy,
       '/health': vpsProxy,
-      '/invite': vpsProxy,
-      '/music': vpsProxy,
-      '/music-reminders': vpsProxy,
-      '/newsletter': vpsProxy,
-      '/profile': vpsProxy,
-      '/resolve': vpsProxy,
       '/rss.xml': vpsProxy,
-      '/s/editorial': vpsProxy,
-      '/s/label': vpsProxy,
-      '/s/mix': vpsProxy,
-      '/s/post': vpsProxy,
-      '/s/profile': vpsProxy,
-      '/s/release': vpsProxy,
-      '/s/show': vpsProxy,
-      '/s/track': vpsProxy,
-      '/s/tweet': vpsProxy,
-      '/shows': vpsProxy,
       '/sitemap.xml': vpsProxy,
-      '/spotify': vpsProxy,
-      '/upload': vpsProxy,
-      '/user': vpsProxy
+      '/s/': vpsProxy
     }
   }
 })
