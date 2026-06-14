@@ -1,4 +1,4 @@
-name: Build process-mix
+name: Build gbpm
 
 on:
   workflow_run:
@@ -21,13 +21,13 @@ jobs:
         include:
           - target: x86_64-unknown-linux-gnu
             os: ubuntu-24.04
-            name: process-mix-linux-x86_64
+            name: gbpm-linux-x86_64
           - target: aarch64-unknown-linux-gnu
             os: ubuntu-24.04
-            name: process-mix-linux-aarch64
+            name: gbpm-linux-aarch64
           - target: aarch64-apple-darwin
             os: macos-latest
-            name: process-mix-darwin-aarch64
+            name: gbpm-darwin-aarch64
 
     runs-on: ${{ matrix.os }}
 
@@ -53,8 +53,7 @@ jobs:
       - name: Package
         run: |
           mkdir -p dist
-          cp tools/process-mix/target/${{ matrix.target }}/release/process-mix dist/process-mix
-          cp tools/process-mix/intro.wav dist/intro.wav
+          cp tools/process-mix/target/${{ matrix.target }}/release/gbpm dist/gbpm
           tar -czf ${{ matrix.name }}.tar.gz -C dist .
 
       - name: Upload artifact

@@ -1,6 +1,8 @@
-# process-mix
+# gbpm
 
 Rust CLI that takes a job JSON file, reads raw audio + cover image, runs FFmpeg to embed metadata/artwork (MP3) or produce a video with a still image (MP4), then writes the result to disk.
+
+The intro audio is embedded in the binary at compile time — no external files needed.
 
 ## Install
 
@@ -22,14 +24,13 @@ Requires `ffmpeg` in PATH.
 
 ```bash
 cargo build --release
-cp intro.wav target/release/intro.wav
 ```
 
 ## Run
 
 ```bash
-./target/release/process-mix --job path/to/job.json
-./target/release/process-mix path/to/job.json
+./target/release/gbpm --job path/to/job.json
+./target/release/gbpm path/to/job.json
 ```
 
 ## Job file
@@ -43,8 +44,7 @@ cp intro.wav target/release/intro.wav
   "outputFormat": "mp3",
   "outputPath": "./output/late-night-transmission.mp3",
   "artist": "GBFM",
-  "album": "GBFM",
-  "introAudioPath": "./input/intro.wav"
+  "album": "GBFM"
 }
 ```
 
@@ -58,8 +58,7 @@ cp intro.wav target/release/intro.wav
 | `outputPath` | path | no |
 | `artist` | string | no |
 | `album` | string | no |
-| `introAudioPath` | path | no |
 
-All paths are resolved relative to the job file. If `outputPath` is omitted, it defaults to `<safe_title>.<format>` next to the job file. If `introAudioPath` is omitted, it uses `intro.wav` from the same directory as the binary.
+All paths are resolved relative to the job file. If `outputPath` is omitted, it defaults to `<safe_title>.<format>` next to the job file.
 
 Requires `ffmpeg` in PATH.

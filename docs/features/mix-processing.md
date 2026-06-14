@@ -10,8 +10,8 @@ Build and run the Rust binary:
 
 ```bash
 cargo build --release --manifest-path tools/process-mix/Cargo.toml
-./tools/process-mix/target/release/process-mix --job <path-to-job.json>
-./tools/process-mix/target/release/process-mix <path-to-job.json>
+./tools/process-mix/target/release/gbpm --job <path-to-job.json>
+./tools/process-mix/target/release/gbpm <path-to-job.json>
 ```
 
 Job file fields:
@@ -26,7 +26,6 @@ Job file fields:
 | `outputPath` | path | no |
 | `artist` | string | no |
 | `album` | string | no |
-| `introAudioPath` | path | no |
 
 All paths inside the job file are resolved relative to the job file itself.
 
@@ -41,8 +40,7 @@ Example:
   "outputFormat": "mp3",
   "outputPath": "./output/late-night-transmission.mp3",
   "artist": "GBFM",
-  "album": "GBFM",
-  "introAudioPath": "./input/intro.wav"
+  "album": "GBFM"
 }
 ```
 
@@ -52,14 +50,14 @@ Prints the output file path to stdout on success.
 
 ```
 job json
-  → process-mix (Rust binary)
+  → gbpm (Rust binary)
     → tools/process-mix/src/main.rs
       → parse_args
       → read_job_file
       → resolve_job_paths
       → process_mix
         → read audio + image files
-        → write to tempdir (audio.mp3, cover.jpg)
+        → write to tempdir (audio.mp3, cover.jpg, intro.wav from embedded bytes)
         → build_ffmpeg_args (MP3 or MP4)
         → Command::new("ffmpeg").args(...)
         → read output buffer
@@ -81,7 +79,3 @@ job json
 ### Output path default
 
 If `outputPath` is omitted, the CLI writes to `<safe_title>.<format>` next to the job file.
-
-### Default intro audio
-
-If `introAudioPath` is omitted, the CLI uses `intro.wav` from the same directory as the binary (e.g., `tools/process-mix/target/release/intro.wav` after building).

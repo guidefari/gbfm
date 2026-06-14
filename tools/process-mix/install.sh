@@ -23,7 +23,7 @@ detect_target() {
     *) echo "error: unsupported architecture: $arch" >&2; exit 1 ;;
   esac
 
-  echo "process-mix-${os}-${arch}"
+  echo "gbpm-${os}-${arch}"
 }
 
 get_latest_url() {
@@ -53,14 +53,12 @@ main() {
   tar -xzf "${TMP_DIR}/release.tar.gz" -C "${TMP_DIR}"
 
   mkdir -p "$INSTALL_DIR"
-  mv "${TMP_DIR}/process-mix" "${INSTALL_DIR}/process-mix"
-  chmod +x "${INSTALL_DIR}/process-mix"
-  mv "${TMP_DIR}/intro.wav" "${INSTALL_DIR}/intro.wav"
+  mv "${TMP_DIR}/gbpm" "${INSTALL_DIR}/gbpm"
+  chmod +x "${INSTALL_DIR}/gbpm"
 
-  echo "installed process-mix to ${INSTALL_DIR}/process-mix"
-  echo "installed intro.wav to ${INSTALL_DIR}/intro.wav"
+  echo "installed gbpm to ${INSTALL_DIR}/gbpm"
 
-  if ! command -v process-mix &>/dev/null; then
+  if ! command -v gbpm &>/dev/null; then
     echo ""
     echo "add ${INSTALL_DIR} to your PATH:"
     echo "  export PATH=\"${INSTALL_DIR}:\$PATH\""

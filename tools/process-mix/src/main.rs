@@ -5,6 +5,8 @@ use std::path::{Path, PathBuf};
 use std::process::{Command, ExitCode};
 use tempfile::TempDir;
 
+const INTRO_WAV: &[u8] = include_bytes!("../intro.wav");
+
 #[derive(Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct JobFile {
@@ -16,13 +18,11 @@ struct JobFile {
     output_path: Option<String>,
     artist: Option<String>,
     album: Option<String>,
-    intro_audio_path: Option<String>,
 }
 
 struct ResolvedJob {
     audio_path: PathBuf,
     image_path: PathBuf,
-    intro_audio_path: PathBuf,
     output_path: PathBuf,
     title: String,
     description: String,
@@ -47,7 +47,7 @@ fn parse_args() -> Result<PathBuf, String> {
         }
     }
     
-    Err("Usage: process-mix [--job|-j] <path-to-job.json>".to_string())
+    Err("Usage: gbpm [--job|-j] <path-to-job.json>".to_string())
 }
 
 fn read_job_file(path: &Path) -> Result<JobFile, String> {
@@ -89,15 +89,6 @@ fn resolve_job_paths(job: JobFile, job_path: &Path) -> Result<ResolvedJob, Strin
     let audio_path = job_dir.join(&job.audio_path);
     let image_path = job_dir.join(&job.image_path);
     
-    let intro_audio_path = if let Some(intro) = job.intro_audio_path {
-        job_dir.join(intro)
-    } else {
-        let exe_path = env::current_exe()
-            .map_err(|e| format!("Failed to get executable path: {}", e))?;
-        let bin_dir = exe_path.parent().unwrap_or(Path::new("."));
-        bin_dir.join("intro.wav")
-    };
-    
     let output_path = if let Some(output) = job.output_path {
         job_dir.join(output)
     } else {
@@ -108,7 +99,6 @@ fn resolve_job_paths(job: JobFile, job_path: &Path) -> Result<ResolvedJob, Strin
     Ok(ResolvedJob {
         audio_path,
         image_path,
-        intro_audio_path,
         output_path,
         title: job.title,
         description: job.description,
@@ -133,6 +123,7 @@ fn build_ffmpeg_args(
     temp_dir: &Path,
     job: &ResolvedJob,
     output_format: &str,
+    intro_audio_path: &Path,
 ) -> Vec<String> {
     let audio_path = temp_dir.join("audio.mp3");
     let image_path = temp_dir.join("cover.jpg");
@@ -143,7 +134,7 @@ fn build_ffmpeg_args(
     if output_format == "mp3" {
         args.extend([
             "-i".to_string(), audio_path.to_string_lossy().to_string(),
-            "-i".to_string(), job.intro_audio_path.to_string_lossy().to_string(),
+            "-i".to_string(), intro_audio_path.to_string_lossy().to_string(),
             "-i".to_string(), image_path.to_string_lossy().to_string(),
             "-filter_complex".to_string(),
             "[0:a][1:a]amix=inputs=2:duration=first:dropout_transition=2[a]".to_string(),
@@ -178,7 +169,7 @@ fn build_ffmpeg_args(
             "-loop".to_string(), "1".to_string(),
             "-i".to_string(), image_path.to_string_lossy().to_string(),
             "-i".to_string(), audio_path.to_string_lossy().to_string(),
-            "-i".to_string(), job.intro_audio_path.to_string_lossy().to_string(),
+            "-i".to_string(), intro_audio_path.to_string_lossy().to_string(),
             "-filter_complex".to_string(),
             "[1:a][2:a]amix=inputs=2:duration=first:dropout_transition=2[a]".to_string(),
             "-c:v".to_string(), "libx264".to_string(),
@@ -209,13 +200,16 @@ fn process_mix(job: ResolvedJob) -> Result<PathBuf, String> {
     
     let temp_audio = temp_dir.path().join("audio.mp3");
     let temp_image = temp_dir.path().join("cover.jpg");
+    let temp_intro = temp_dir.path().join("intro.wav");
     
     fs::write(&temp_audio, &audio_data)
         .map_err(|e| format!("Failed to write temp audio: {}", e))?;
     fs::write(&temp_image, &image_data)
         .map_err(|e| format!("Failed to write temp image: {}", e))?;
+    fs::write(&temp_intro, INTRO_WAV)
+        .map_err(|e| format!("Failed to write temp intro: {}", e))?;
     
-    let ffmpeg_args = build_ffmpeg_args(temp_dir.path(), &job, &job.output_format);
+    let ffmpeg_args = build_ffmpeg_args(temp_dir.path(), &job, &job.output_format, &temp_intro);
     
     let output = Command::new("ffmpeg")
         .args(&ffmpeg_args)
