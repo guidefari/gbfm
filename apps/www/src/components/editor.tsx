@@ -14,7 +14,7 @@ import { useMutation, useQuery } from '@tanstack/react-query'
 import { useSearch } from '@tanstack/react-router'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod/v4'
-import { fetcher, VPS_BASE_URL } from '@/lib/http'
+import { apiUrl, fetcher } from '@/lib/http'
 
 type ContentType = {
   value: string
@@ -91,14 +91,14 @@ export function Editor() {
     queryKey: ['content', id],
     queryFn: async () => {
       if (!id) return null
-      return await fetcher(`${VPS_BASE_URL}/content/${id}`)
+      return await fetcher(apiUrl(`/content/${id}`))
     },
     enabled: Boolean(id)
   })
 
   const { mutate, isPending } = useMutation({
     mutationFn: async (data: FormData) => {
-      const endpoint = id ? `${VPS_BASE_URL}/content/${id}` : `${VPS_BASE_URL}/content`
+      const endpoint = id ? apiUrl(`/content/${id}`) : apiUrl('/content')
       const method = id ? 'PUT' : 'POST'
 
       return await fetcher(endpoint, {

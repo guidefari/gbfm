@@ -2,7 +2,7 @@ import { Button, Label, toast } from '@gbfm/ui'
 import { FolderOpen, ImageIcon, Loader2, Trash2, Upload } from 'lucide-react'
 import { useId, useState } from 'react'
 import { S3MediaFilePicker } from '@/components/mix-uploader/S3AudioFilePicker'
-import { VPS_BASE_URL } from '@/lib/http'
+import { apiUrl } from '@/lib/http'
 import { readResponseErrorMessage, readUploadResponse } from '@/lib/response'
 
 interface ImageUploadFieldProps {
@@ -42,7 +42,7 @@ export function ImageUploadField({
       formData.append('imageFile', file)
       formData.append('fileType', 'image')
 
-      const response = await fetch(`${VPS_BASE_URL}/upload/file`, {
+      const response = await fetch(apiUrl('/upload/file'), {
         method: 'POST',
         body: formData
       })

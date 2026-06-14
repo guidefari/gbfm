@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { Bell, History, type LucideIcon, Plus } from 'lucide-react'
 import { useState } from 'react'
-import { fetcher, VPS_BASE_URL } from '@/lib/http'
+import { apiUrl, fetcher } from '@/lib/http'
 
 interface MusicReminder {
   id: string
@@ -24,7 +24,7 @@ export function RemindersCard() {
 
   const { data, isPending } = useQuery<RemindersResponse>({
     queryKey: ['reminders'],
-    queryFn: () => fetcher(`${VPS_BASE_URL}/music-reminders`)
+    queryFn: () => fetcher(apiUrl('/music-reminders'))
   })
 
   const upcomingReminders =

@@ -21,13 +21,13 @@ import { type KeyboardEvent, useEffect, useMemo, useState } from 'react'
 import { PostPageHeader } from '@/components/PostPageHeader'
 import { useSession } from '@/lib/auth-client'
 import {
+  apiUrl,
   fetcher,
   useAddAdminEntityLink,
   useAdminEntityLinks,
   useDeleteAdminEntityLink,
   useResolveMusicEntity,
-  useUpdateAdminEntityLinkStatus,
-  VPS_BASE_URL
+  useUpdateAdminEntityLinkStatus
 } from '@/lib/http'
 
 type PostType = 'post' | 'micro'
@@ -223,7 +223,7 @@ export function TweetCapturePage() {
 
   const { data: existingPost, isPending: loadingPost } = useQuery({
     queryKey: ['post', search.edit],
-    queryFn: () => fetcher<PostItem>(`${VPS_BASE_URL}/content/posts/${search.edit}`),
+    queryFn: () => fetcher<PostItem>(apiUrl(`/content/posts/${search.edit}`)),
     enabled: isEditMode && Boolean(search.edit)
   })
 
@@ -231,7 +231,9 @@ export function TweetCapturePage() {
     queryKey: ['music-entity', existingPost?.musicEntityType, existingPost?.musicEntityId],
     queryFn: () =>
       fetcher(
-        `${VPS_BASE_URL}/music/${entityPathByType[existingPost?.musicEntityType ?? 'track']}/${existingPost?.musicEntityId}`
+        apiUrl(
+          `/music/${entityPathByType[existingPost?.musicEntityType ?? 'track']}/${existingPost?.musicEntityId}`
+        )
       ),
     enabled: Boolean(existingPost?.musicEntityType && existingPost.musicEntityId)
   })
@@ -377,8 +379,8 @@ export function TweetCapturePage() {
       }
 
       const endpoint = isEditMode
-        ? `${VPS_BASE_URL}/content/posts/${existingPost?.slug}`
-        : `${VPS_BASE_URL}/content/post`
+        ? apiUrl(`/content/posts/${existingPost?.slug}`)
+        : apiUrl('/content/post')
 
       return fetcher<PostItem>(endpoint, {
         method: isEditMode ? 'PATCH' : 'POST',

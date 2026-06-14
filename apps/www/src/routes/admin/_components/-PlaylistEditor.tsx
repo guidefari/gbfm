@@ -18,7 +18,7 @@ import { Button, Input, Label, Textarea, toast } from '@gbfm/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ExternalLink, Loader2, RefreshCw } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { fetcher, VPS_BASE_URL } from '@/lib/http'
+import { apiUrl, fetcher } from '@/lib/http'
 import { checkSavedTracksEffect, spotifyIdFromUrl } from '@/lib/spotify-pkce'
 import { runAppEffect } from '@/runtime'
 import { ImageUploadField } from './-ImageUploadField'
@@ -70,7 +70,7 @@ export function PlaylistEditor({ playlist }: Props) {
   const tracksQuery = useQuery({
     queryKey: ['playlist-tracks', playlist.id],
     queryFn: async () =>
-      fetcher<PlaylistTracksApiRow[]>(`${VPS_BASE_URL}/music/playlists/${playlist.id}/tracks`)
+      fetcher<PlaylistTracksApiRow[]>(apiUrl(`/music/playlists/${playlist.id}/tracks`))
   })
 
   useEffect(() => {
@@ -133,7 +133,7 @@ export function PlaylistEditor({ playlist }: Props) {
 
   const reorderMutation = useMutation({
     mutationFn: async (trackIds: string[]) =>
-      fetcher(`${VPS_BASE_URL}/music/playlists/${playlist.id}/tracks/order`, {
+      fetcher(apiUrl(`/music/playlists/${playlist.id}/tracks/order`), {
         method: 'PUT',
         body: JSON.stringify({ trackIds })
       }),
@@ -149,7 +149,7 @@ export function PlaylistEditor({ playlist }: Props) {
 
   const removeMutation = useMutation({
     mutationFn: async (trackId: string) =>
-      fetcher(`${VPS_BASE_URL}/music/playlists/${playlist.id}/tracks/${trackId}`, {
+      fetcher(apiUrl(`/music/playlists/${playlist.id}/tracks/${trackId}`), {
         method: 'DELETE'
       }),
     onSuccess: () => {
@@ -168,7 +168,7 @@ export function PlaylistEditor({ playlist }: Props) {
 
   const addSpotifyMutation = useMutation({
     mutationFn: async (url: string) =>
-      fetcher(`${VPS_BASE_URL}/music/playlists/${playlist.id}/tracks/spotify`, {
+      fetcher(apiUrl(`/music/playlists/${playlist.id}/tracks/spotify`), {
         method: 'POST',
         body: JSON.stringify({ url })
       }),
@@ -190,7 +190,7 @@ export function PlaylistEditor({ playlist }: Props) {
 
   const syncLinksMutation = useMutation({
     mutationFn: async () =>
-      fetcher<SyncResult>(`${VPS_BASE_URL}/music/playlists/${playlist.id}/sync-links`, {
+      fetcher<SyncResult>(apiUrl(`/music/playlists/${playlist.id}/sync-links`), {
         method: 'POST'
       }),
     onSuccess: (data) => {
@@ -213,7 +213,7 @@ export function PlaylistEditor({ playlist }: Props) {
 
   const metadataMutation = useMutation({
     mutationFn: async (data: { title: string; description?: string; coverImageUrl?: string }) =>
-      fetcher(`${VPS_BASE_URL}/music/playlists/${playlist.id}`, {
+      fetcher(apiUrl(`/music/playlists/${playlist.id}`), {
         method: 'PATCH',
         body: JSON.stringify(data)
       }),

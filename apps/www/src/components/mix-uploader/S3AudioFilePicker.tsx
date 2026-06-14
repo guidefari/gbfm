@@ -5,7 +5,7 @@ import {
 } from '@gbfm/ui'
 import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
-import { fetcher, VPS_BASE_URL } from '@/lib/http'
+import { apiUrl, fetcher } from '@/lib/http'
 
 interface S3AudioFilePickerProps {
   open: boolean
@@ -27,7 +27,7 @@ export function S3MediaFilePicker({
 
   const { data: configData } = useQuery<BucketConfig>({
     queryKey: ['file-manager', 'config'],
-    queryFn: () => fetcher<BucketConfig>(`${VPS_BASE_URL}/file-manager/config`),
+    queryFn: () => fetcher<BucketConfig>(apiUrl('/file-manager/config')),
     staleTime: Infinity,
     enabled: open
   })
@@ -43,7 +43,7 @@ export function S3MediaFilePicker({
     queryKey: ['file-manager', 'list', effectiveBucket],
     queryFn: () =>
       fetcher<{ objects: S3Object[] }>(
-        `${VPS_BASE_URL}/file-manager/list?bucketName=${encodeURIComponent(effectiveBucket)}`
+        apiUrl(`/file-manager/list?bucketName=${encodeURIComponent(effectiveBucket)}`)
       ),
     enabled: Boolean(effectiveBucket) && open,
     staleTime: 30_000

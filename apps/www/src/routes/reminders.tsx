@@ -4,7 +4,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { CalendarClock } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useSession } from '@/lib/auth-client'
-import { fetcher, useEnrichTrackFromUrl, VPS_BASE_URL } from '@/lib/http'
+import { apiUrl, fetcher, useEnrichTrackFromUrl } from '@/lib/http'
 
 interface MusicReminder {
   id: string
@@ -80,7 +80,7 @@ function MusicReminders() {
   // Query existing reminders
   const { data: reminders, isLoading: isLoadingReminders } = useQuery<RemindersResponse>({
     queryKey: ['reminders'],
-    queryFn: () => fetcher(`${VPS_BASE_URL}/music-reminders`)
+    queryFn: () => fetcher(apiUrl('/music-reminders'))
   })
 
   // Create reminder mutation
@@ -93,7 +93,7 @@ function MusicReminders() {
       reminderDate: string
       notes?: string
     }) => {
-      return fetcher(`${VPS_BASE_URL}/music-reminders`, {
+      return fetcher(apiUrl('/music-reminders'), {
         method: 'POST',
         body: JSON.stringify(data)
       })

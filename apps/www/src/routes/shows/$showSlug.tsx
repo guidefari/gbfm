@@ -8,7 +8,7 @@ import { RouteError } from '@/components/RouteError'
 import { ShareButton } from '@/components/ShareButton'
 import { EpisodeGrid } from '@/components/shows/EpisodeGrid'
 import { ShowQRButton } from '@/components/shows/ShowQRButton'
-import { fetcher } from '@/lib/http'
+import { apiUrl, fetcher } from '@/lib/http'
 import { generateSEOMeta, generateShowSEO } from '@/lib/seo'
 import { useContentStore } from '@/store'
 import { ShowMetadataManager } from './_components/-ShowMetadataManager'
@@ -17,9 +17,7 @@ export const Route = createFileRoute('/shows/$showSlug')({
   component: ShowPage,
   errorComponent: ({ error }) => <RouteError error={error} />,
   loader: async ({ params }) => {
-    const show = await fetcher<SelectMdxCompiledShow>(
-      `${import.meta.env.VITE_VPS_BASE_URL}/shows/${params.showSlug}`
-    )
+    const show = await fetcher<SelectMdxCompiledShow>(apiUrl(`/shows/${params.showSlug}`))
     return { show }
   },
   head: ({ loaderData, params }) => {

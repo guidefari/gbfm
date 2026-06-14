@@ -50,7 +50,7 @@ import {
   useAdminUserBio,
   useAdminUserSocialLinks,
   useReplaceAdminUserSocialLinks,
-  VPS_BASE_URL
+  apiUrl
 } from '@/lib/http'
 import { ImageUploadField } from './-ImageUploadField'
 
@@ -303,7 +303,7 @@ export function UsersTab() {
 
   const sendInviteMutation = useMutation({
     mutationFn: async (userId: string) =>
-      fetcher<{ success: boolean; emailId: string }>(`${VPS_BASE_URL}/invite/send`, {
+      fetcher<{ success: boolean; emailId: string }>(apiUrl('/invite/send'), {
         method: 'POST',
         body: JSON.stringify({ userId })
       }),
@@ -373,7 +373,7 @@ export function UsersTab() {
         }
       })
 
-      return fetcher<{ bio: string | null }>(`${VPS_BASE_URL}/user/admin/${editUser.id}/bio`, {
+      return fetcher<{ bio: string | null }>(apiUrl(`/user/admin/${editUser.id}/bio`), {
         method: 'PATCH',
         body: JSON.stringify({ bio: editUser.bio })
       })

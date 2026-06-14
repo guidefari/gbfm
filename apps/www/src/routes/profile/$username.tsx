@@ -1,13 +1,13 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { PublicProfilePage } from '@/components/profile/PublicProfilePage'
-import { fetcher, type PublicProfile, VPS_BASE_URL } from '@/lib/http'
+import { apiUrl, fetcher, type PublicProfile } from '@/lib/http'
 import { generateProfileSEO, generateSEOMeta } from '@/lib/seo'
 
 export const Route = createFileRoute('/profile/$username')({
   component: ProfilePage,
   loader: async ({ params }) => {
     try {
-      const profile = await fetcher<PublicProfile>(`${VPS_BASE_URL}/profile/${params.username}`)
+      const profile = await fetcher<PublicProfile>(apiUrl(`/profile/${params.username}`))
       if (!profile?.id) return { profile: null }
       return { profile }
     } catch {

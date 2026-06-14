@@ -17,7 +17,7 @@ import { useRouter } from '@tanstack/react-router'
 import { Settings2 } from 'lucide-react'
 import { useState } from 'react'
 import { useSession } from '@/lib/auth-client'
-import { fetcher, VPS_BASE_URL } from '@/lib/http'
+import { apiUrl, fetcher } from '@/lib/http'
 import { ImageUploadField } from '@/routes/admin/_components/-ImageUploadField'
 
 interface ShowMetadataFormState {
@@ -61,7 +61,7 @@ export function ShowMetadataManager({ show }: ShowMetadataManagerProps) {
 
   const updateMutation = useMutation({
     mutationFn: (data: ShowMetadataFormState) =>
-      fetcher(`${VPS_BASE_URL}/shows/${show.slug}`, {
+      fetcher(apiUrl(`/shows/${show.slug}`), {
         method: 'PATCH',
         body: JSON.stringify({
           title: data.title,

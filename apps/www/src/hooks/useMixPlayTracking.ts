@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react'
-import { VPS_BASE_URL } from '@/lib/http'
+import { apiUrl } from '@/lib/http'
 import { useAudioPlayerStore } from '@/store/audioPlayer'
 
 /**
@@ -62,7 +62,7 @@ export function useMixPlayTracking() {
     if (isWithinDedupWindow(currentTrackId)) return
     recordPlaySession(currentTrackId)
 
-    fetch(`${VPS_BASE_URL}/content/audio/${currentTrackId}/play`, {
+    fetch(apiUrl(`/content/audio/${currentTrackId}/play`), {
       method: 'POST',
       credentials: 'include'
     }).catch(() => {})

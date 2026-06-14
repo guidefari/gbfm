@@ -2,7 +2,7 @@ import { Button, Card, CardContent, CardHeader, CardTitle } from '@gbfm/ui'
 import { createFileRoute } from '@tanstack/react-router'
 import { AlertTriangle, CheckCircle2, RadioTower } from 'lucide-react'
 import * as React from 'react'
-import { fetcher, VPS_BASE_URL } from '@/lib/http'
+import { apiUrl, fetcher } from '@/lib/http'
 import { AdminPage } from './_components/-AdminLayout'
 
 export const Route = createFileRoute('/admin/frontend-errors')({
@@ -70,7 +70,7 @@ function FrontendErrorsPage() {
     setResult(null)
 
     try {
-      await fetcher<unknown>(`${VPS_BASE_URL}/admin/frontend-errors/${scenario.scenario}`)
+      await fetcher<unknown>(apiUrl(`/admin/frontend-errors/${scenario.scenario}`))
       setResult({
         label: scenario.label,
         ok: true,

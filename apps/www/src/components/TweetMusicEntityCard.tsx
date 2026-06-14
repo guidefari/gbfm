@@ -2,7 +2,7 @@ import { LINK_STATUS } from '@gbfm/core/status'
 import { useQuery } from '@tanstack/react-query'
 import { Music4 } from 'lucide-react'
 import { StreamLinks } from '@/components/StreamLinks'
-import { fetcher, VPS_BASE_URL } from '@/lib/http'
+import { apiUrl, fetcher } from '@/lib/http'
 
 type MusicEntityType = 'album' | 'track' | 'playlist'
 
@@ -53,7 +53,7 @@ export function TweetMusicEntityCard({ entityType, entityId }: Props) {
         return Promise.reject(new Error('Unsupported music entity type'))
       }
 
-      return fetcher(`${VPS_BASE_URL}/music/${entityPathByType[supportedType]}/${entityId}`)
+      return fetcher(apiUrl(`/music/${entityPathByType[supportedType]}/${entityId}`))
     },
     enabled: Boolean(supportedType && entityId)
   })
@@ -61,7 +61,7 @@ export function TweetMusicEntityCard({ entityType, entityId }: Props) {
   // todo: we can probs consolidate this into the music entity query above
   const { data: links } = useQuery<EntityLink[]>({
     queryKey: ['music-entity-links', entityType, entityId],
-    queryFn: () => fetcher(`${VPS_BASE_URL}/music/${entityType}/${entityId}/links?status=verified`),
+    queryFn: () => fetcher(apiUrl(`/music/${entityType}/${entityId}/links?status=verified`)),
     enabled: Boolean(supportedType && entityId)
   })
 

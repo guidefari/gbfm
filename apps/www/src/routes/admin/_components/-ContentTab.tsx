@@ -25,7 +25,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ArrowUpDown, Check, Plus, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
-import { fetcher, type PaginatedResponse, VPS_BASE_URL } from '@/lib/http'
+import { apiUrl, fetcher, type PaginatedResponse } from '@/lib/http'
 
 interface AudioItem {
   id: string
@@ -466,33 +466,31 @@ export function ContentTab() {
   const { data: mixesData, isPending: mixesPending } = useQuery({
     queryKey: ['admin', 'mixes'],
     queryFn: () =>
-      fetcher<PaginatedResponse<AudioItem>>(`${VPS_BASE_URL}/content/audio/mix?limit=50&offset=0`)
+      fetcher<PaginatedResponse<AudioItem>>(apiUrl('/content/audio/mix?limit=50&offset=0'))
   })
 
   const { data: labelsData, isPending: labelsPending } = useQuery({
     queryKey: ['admin', 'labels'],
     queryFn: () =>
-      fetcher<PaginatedResponse<LabelItem>>(`${VPS_BASE_URL}/content/labels?limit=50&offset=0`)
+      fetcher<PaginatedResponse<LabelItem>>(apiUrl('/content/labels?limit=50&offset=0'))
   })
 
   const { data: editorialData, isPending: editorialPending } = useQuery({
     queryKey: ['admin', 'posts', 'post'],
     queryFn: () =>
       fetcher<PaginatedResponse<EditorialPostItem>>(
-        `${VPS_BASE_URL}/content/posts/editorials?limit=50&offset=0`
+        apiUrl('/content/posts/editorials?limit=50&offset=0')
       )
   })
   const { data: tweetData, isPending: tweetPending } = useQuery({
     queryKey: ['admin', 'posts', 'micro'],
     queryFn: () =>
-      fetcher<PaginatedResponse<TweetPostItem>>(
-        `${VPS_BASE_URL}/content/posts/micro?limit=50&offset=0`
-      )
+      fetcher<PaginatedResponse<TweetPostItem>>(apiUrl('/content/posts/micro?limit=50&offset=0'))
   })
 
   const updateMixMutation = useMutation({
     mutationFn: ({ slug, tags }: { slug: string; tags: string[] }) =>
-      fetcher(`${VPS_BASE_URL}/content/audio/mix/${slug}`, {
+      fetcher(apiUrl(`/content/audio/mix/${slug}`), {
         method: 'PATCH',
         body: JSON.stringify({ tags })
       }),

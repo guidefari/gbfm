@@ -8,7 +8,7 @@ import { ReleasesTable } from '@/components/ReleasesTable'
 import { RouteError } from '@/components/RouteError'
 import { ShareButton } from '@/components/ShareButton'
 import { useSession } from '@/lib/auth-client'
-import { fetcher, useReleasesByLabel } from '@/lib/http'
+import { apiUrl, fetcher, useReleasesByLabel } from '@/lib/http'
 import { generateLabelSEO, generateSEOMeta } from '@/lib/seo'
 import { useContentStore } from '@/store'
 
@@ -17,7 +17,7 @@ export const Route = createFileRoute('/labels/$labelSlug')({
   errorComponent: ({ error }) => <RouteError error={error} />,
   loader: async ({ params }) => {
     const label = await fetcher<SelectMdxCompiledLabel>(
-      `${import.meta.env.VITE_VPS_BASE_URL}/content/labels/${params.labelSlug}`
+      apiUrl(`/content/labels/${params.labelSlug}`)
     )
     return { label }
   },

@@ -18,7 +18,7 @@ import { useId, useState } from 'react'
 import { z } from 'zod'
 import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
 import { useSession } from '@/lib/auth-client'
-import { fetcher, VPS_BASE_URL } from '@/lib/http'
+import { apiUrl, fetcher } from '@/lib/http'
 import { readResponseErrorMessage, readUploadResponse } from '@/lib/response'
 
 export const Route = createLazyFileRoute('/label-upload')({
@@ -99,7 +99,7 @@ function LabelUploadPage() {
         imageFormData.append('imageFile', data.artworkFile)
         imageFormData.append('fileType', 'image')
 
-        const imageUploadResponse = await fetch(`${VPS_BASE_URL}/upload/file`, {
+        const imageUploadResponse = await fetch(apiUrl('/upload/file'), {
           method: 'POST',
           body: imageFormData
         })
@@ -128,8 +128,8 @@ function LabelUploadPage() {
       }
 
       const endpoint = isEditMode
-        ? `${VPS_BASE_URL}/content/labels/${search.edit}`
-        : `${VPS_BASE_URL}/content/labels`
+        ? apiUrl(`/content/labels/${search.edit}`)
+        : apiUrl('/content/labels')
 
       const method = isEditMode ? 'PATCH' : 'POST'
 

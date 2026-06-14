@@ -22,8 +22,8 @@ const analyticsLayer = enableSentry
       // temporarily raised to 1.0 for end-to-end trace investigation
       tracesSampleRate: 1.0,
       tracePropagationTargets: env.isDev
-        ? ['https://vps.goosebumps.fm', 'http://127.0.0.1:3003', 'http://localhost:3003']
-        : ['https://vps.goosebumps.fm']
+        ? [/^\//, 'http://127.0.0.1:3003', 'http://localhost:3003']
+        : [/^\//, 'https://goosebumps.fm', 'https://www.goosebumps.fm', 'https://vps.goosebumps.fm']
     })
   : NoopAnalyticsLayer
 

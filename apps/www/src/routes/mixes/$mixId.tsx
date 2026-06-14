@@ -27,7 +27,7 @@ import { MDXRendrr } from '@/components/MDXRendrr'
 import { RouteError } from '@/components/RouteError'
 import { useSession } from '@/lib/auth-client'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
-import { fetcher, useMixQRPdf, useShowById, VPS_BASE_URL } from '@/lib/http'
+import { apiUrl, fetcher, useMixQRPdf, useShowById } from '@/lib/http'
 import { getShareUrl } from '@/lib/share'
 import { useContentStore } from '@/store'
 import { useAudioPlayerActions, useAudioPlayerPlaybackState } from '@/store/audioPlayer'
@@ -36,9 +36,7 @@ export const Route = createFileRoute('/mixes/$mixId')({
   component: MixPage,
   errorComponent: ({ error }) => <RouteError error={error} />,
   loader: async ({ params }) => {
-    const mix = await fetcher<SelectMdxCompiledAudio>(
-      `${VPS_BASE_URL}/content/audio/mix/${params.mixId}`
-    )
+    const mix = await fetcher<SelectMdxCompiledAudio>(apiUrl(`/content/audio/mix/${params.mixId}`))
     return { mix }
   },
   head: ({ loaderData, params }) => {

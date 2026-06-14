@@ -8,7 +8,7 @@ import { ShareButton } from '@/components/ShareButton'
 import { TweetAuthorRow } from '@/components/TweetAuthorRow'
 import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
 import { useSession } from '@/lib/auth-client'
-import { fetcher, VPS_BASE_URL } from '@/lib/http'
+import { apiUrl, fetcher } from '@/lib/http'
 import { generateMicroPostSEO, generateSEOMeta } from '@/lib/seo'
 
 export const Route = createFileRoute('/tweet/$slug')({
@@ -28,7 +28,7 @@ export const Route = createFileRoute('/tweet/$slug')({
   ),
   loader: async ({ params }) => {
     const post = await fetcher<SelectMdxCompiledMicroPost>(
-      `${VPS_BASE_URL}/content/posts/micro/${params.slug}`
+      apiUrl(`/content/posts/micro/${params.slug}`)
     )
     return { post }
   },

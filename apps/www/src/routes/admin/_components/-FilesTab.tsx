@@ -13,7 +13,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeftRight, ArrowRight, Copy, Loader2 } from 'lucide-react'
 import { useCallback, useEffect, useState } from 'react'
-import { fetcher, VPS_BASE_URL } from '@/lib/http'
+import { apiUrl, fetcher } from '@/lib/http'
 
 const STORAGE_KEY_BUCKET_A = 'filemanager:bucketA'
 const STORAGE_KEY_BUCKET_B = 'filemanager:bucketB'
@@ -48,7 +48,7 @@ export function FilesTab() {
 
   const { data: configData } = useQuery<BucketConfig>({
     queryKey: ['file-manager', 'config'],
-    queryFn: () => fetcher<BucketConfig>(`${VPS_BASE_URL}/file-manager/config`),
+    queryFn: () => fetcher<BucketConfig>(apiUrl('/file-manager/config')),
     staleTime: Infinity
   })
 
@@ -128,7 +128,7 @@ export function FilesTab() {
     queryKey: ['file-manager', 'list', bucketA],
     queryFn: () =>
       fetcher<{ objects: S3Object[] }>(
-        `${VPS_BASE_URL}/file-manager/list?bucketName=${encodeURIComponent(bucketA)}`
+        apiUrl(`/file-manager/list?bucketName=${encodeURIComponent(bucketA)}`)
       ),
     enabled: Boolean(bucketA),
     staleTime: 30_000
@@ -138,7 +138,7 @@ export function FilesTab() {
     queryKey: ['file-manager', 'list', bucketB],
     queryFn: () =>
       fetcher<{ objects: S3Object[] }>(
-        `${VPS_BASE_URL}/file-manager/list?bucketName=${encodeURIComponent(bucketB)}`
+        apiUrl(`/file-manager/list?bucketName=${encodeURIComponent(bucketB)}`)
       ),
     enabled: Boolean(bucketB),
     staleTime: 30_000
@@ -153,7 +153,7 @@ export function FilesTab() {
     { key: string; sourceBucket: string; destinationBucket: string }
   >({
     mutationFn: (body) =>
-      fetcher(`${VPS_BASE_URL}/file-manager/copy`, {
+      fetcher(apiUrl('/file-manager/copy'), {
         method: 'POST',
         body: JSON.stringify(body)
       }),
