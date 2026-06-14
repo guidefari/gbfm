@@ -1,13 +1,13 @@
 import { createFileRoute, Link, Navigate } from '@tanstack/react-router'
 import { PublicProfilePage } from '@/components/profile/PublicProfilePage'
-import { fetcher, type ResolveResult, VPS_BASE_URL } from '@/lib/http'
+import { apiUrl, fetcher, type ResolveResult } from '@/lib/http'
 import { generateProfileSEO, generateResolvedShowSEO, generateSEOMeta } from '@/lib/seo'
 
 export const Route = createFileRoute('/$slug')({
   component: SlugPage,
   loader: async ({ params }) => {
     try {
-      const resolved = await fetcher<ResolveResult>(`${VPS_BASE_URL}/resolve/${params.slug}`)
+      const resolved = await fetcher<ResolveResult>(apiUrl(`/resolve/${params.slug}`))
       return { resolved }
     } catch {
       return { resolved: null }

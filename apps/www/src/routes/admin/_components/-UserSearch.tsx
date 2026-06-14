@@ -2,7 +2,7 @@ import { Badge, Button, Input } from '@gbfm/ui'
 import { useQuery } from '@tanstack/react-query'
 import { X } from 'lucide-react'
 import { useId, useState } from 'react'
-import { fetcher, VPS_BASE_URL } from '@/lib/http'
+import { apiUrl, fetcher } from '@/lib/http'
 
 interface UserSearchResult {
   id: string
@@ -30,9 +30,7 @@ export function UserSearch({ selectedUsers, onSelectionChange, label = 'Hosts' }
   const { data: searchResults, isPending } = useQuery({
     queryKey: ['users', 'search', searchQuery],
     queryFn: () =>
-      fetcher<UserSearchResult[]>(
-        `${VPS_BASE_URL}/user/search?q=${encodeURIComponent(searchQuery)}`
-      ),
+      fetcher<UserSearchResult[]>(apiUrl(`/user/search?q=${encodeURIComponent(searchQuery)}`)),
     enabled: searchQuery.length >= 2
   })
 

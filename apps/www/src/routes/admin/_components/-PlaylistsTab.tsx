@@ -3,7 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ArrowLeft, ChevronDown, ChevronRight, Loader2, Pencil, Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { fetcher, VPS_BASE_URL } from '@/lib/http'
+import { apiUrl, fetcher } from '@/lib/http'
 import { PlaylistEditor, type PlaylistSummary } from './-PlaylistEditor'
 import { SpotifyConnectionCard } from './-SpotifyConnectionCard'
 
@@ -19,7 +19,7 @@ export function PlaylistsTab() {
 
   const playlistsQuery = useQuery({
     queryKey: ['playlists'],
-    queryFn: async () => fetcher<PlaylistSummary[]>(`${VPS_BASE_URL}/music/playlists`)
+    queryFn: async () => fetcher<PlaylistSummary[]>(apiUrl('/music/playlists'))
   })
 
   useEffect(() => {
@@ -30,7 +30,7 @@ export function PlaylistsTab() {
 
   const importMutation = useMutation({
     mutationFn: async (playlistUrl: string) =>
-      fetcher<ImportResult>(`${VPS_BASE_URL}/music/playlists/import/spotify`, {
+      fetcher<ImportResult>(apiUrl('/music/playlists/import/spotify'), {
         method: 'POST',
         body: JSON.stringify({ url: playlistUrl })
       }),

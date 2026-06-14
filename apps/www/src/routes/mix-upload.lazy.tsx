@@ -29,7 +29,7 @@ import { z } from 'zod'
 import { S3AudioFilePicker } from '@/components/mix-uploader/S3AudioFilePicker'
 import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
 import { authClient, useSession } from '@/lib/auth-client'
-import { fetcher, useAllShows, useAudioBySlug, useAudioTags, VPS_BASE_URL } from '@/lib/http'
+import { apiUrl, fetcher, useAllShows, useAudioBySlug, useAudioTags } from '@/lib/http'
 import { readResponseErrorMessage, readUploadResponse } from '@/lib/response'
 
 export const Route = createLazyFileRoute('/mix-upload')({
@@ -135,7 +135,7 @@ function MixUploadPage() {
 
   const updateTagsMutation = useMutation({
     mutationFn: (tags: string[]) =>
-      fetcher(`${VPS_BASE_URL}/content/audio/${editType}/${search.edit}`, {
+      fetcher(apiUrl(`/content/audio/${editType}/${search.edit}`), {
         method: 'PATCH',
         body: JSON.stringify({ tags })
       }),
@@ -175,7 +175,7 @@ function MixUploadPage() {
         uploadFormData.append('audioFile', data.audioFile)
         uploadFormData.append('fileType', 'audio')
 
-        const audioUploadResponse = await fetch(`${VPS_BASE_URL}/upload/file`, {
+        const audioUploadResponse = await fetch(apiUrl('/upload/file'), {
           method: 'POST',
           body: uploadFormData
         })
@@ -198,7 +198,7 @@ function MixUploadPage() {
         imageFormData.append('imageFile', data.artworkFile)
         imageFormData.append('fileType', 'image')
 
-        const imageUploadResponse = await fetch(`${VPS_BASE_URL}/upload/file`, {
+        const imageUploadResponse = await fetch(apiUrl('/upload/file'), {
           method: 'POST',
           body: imageFormData
         })
@@ -239,8 +239,8 @@ function MixUploadPage() {
       }
 
       const endpoint = isEditMode
-        ? `${VPS_BASE_URL}/content/audio/${editType}/${search.edit}`
-        : `${VPS_BASE_URL}/content/audio`
+        ? apiUrl(`/content/audio/${editType}/${search.edit}`)
+        : apiUrl('/content/audio')
 
       const result = await fetcher(endpoint, {
         method: isEditMode ? 'PATCH' : 'POST',

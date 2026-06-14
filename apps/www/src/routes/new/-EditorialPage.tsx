@@ -20,7 +20,7 @@ import { useEffect, useId, useState } from 'react'
 import { PostPageHeader } from '@/components/PostPageHeader'
 import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
 import { useSession } from '@/lib/auth-client'
-import { fetcher, VPS_BASE_URL } from '@/lib/http'
+import { apiUrl, fetcher } from '@/lib/http'
 import { readResponseErrorMessage, readUploadResponse } from '@/lib/response'
 import { UserSearch } from '../admin/_components/-UserSearch'
 
@@ -264,7 +264,7 @@ export function EditorialPage() {
 
   const { data: existingPost, isPending: loadingPost } = useQuery({
     queryKey: ['post', search.edit],
-    queryFn: () => fetcher<PostItem>(`${VPS_BASE_URL}/content/posts/${search.edit}`),
+    queryFn: () => fetcher<PostItem>(apiUrl(`/content/posts/${search.edit}`)),
     enabled: isEditMode && Boolean(search.edit)
   })
 
@@ -295,7 +295,7 @@ export function EditorialPage() {
         imageFormData.append('imageFile', artworkFile)
         imageFormData.append('fileType', 'image')
 
-        const imageUploadResponse = await fetch(`${VPS_BASE_URL}/upload/file`, {
+        const imageUploadResponse = await fetch(apiUrl('/upload/file'), {
           method: 'POST',
           body: imageFormData
         })
@@ -327,8 +327,8 @@ export function EditorialPage() {
       }
 
       const endpoint = isEditMode
-        ? `${VPS_BASE_URL}/content/posts/${search.edit}`
-        : `${VPS_BASE_URL}/content/post`
+        ? apiUrl(`/content/posts/${search.edit}`)
+        : apiUrl('/content/post')
 
       return fetcher<PostItem>(endpoint, {
         method: isEditMode ? 'PATCH' : 'POST',

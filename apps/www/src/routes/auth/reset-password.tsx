@@ -6,7 +6,7 @@ import { useState } from 'react'
 import { z } from 'zod'
 import { AuthPageLayout, AuthStatusNotice } from '@/components/Auth/AuthPageLayout'
 import { useSession } from '@/lib/auth-client'
-import { VPS_BASE_URL } from '@/lib/http'
+import { apiUrl } from '@/lib/http'
 import { readResponseErrorMessage } from '@/lib/response'
 
 export const searchSchema = z.object({
@@ -20,7 +20,7 @@ export const Route = createFileRoute('/auth/reset-password')({
 })
 
 async function confirmInvite(token: string, password: string) {
-  const res = await fetch(`${VPS_BASE_URL}/invite/confirm`, {
+  const res = await fetch(apiUrl('/invite/confirm'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',

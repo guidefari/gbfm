@@ -31,7 +31,7 @@ type User = {
 
 import type { AlbumApiResponse, PlaylistApiResponse, TrackAPIResponse } from '@/types'
 
-export const VPS_BASE_URL = import.meta.env.VITE_VPS_BASE_URL || ''
+const VPS_BASE_URL = import.meta.env.VITE_VPS_BASE_URL || ''
 
 export function apiUrl(path: string): string {
   return `${VPS_BASE_URL}${path}`
@@ -207,7 +207,7 @@ export function useAudioByType(
 export function useAudioTags(type: 'mix' | 'track' | 'misc') {
   const { data, error, isPending } = useQuery<string[], Error>({
     queryKey: ['audio-tags', type],
-    queryFn: async () => fetcher<string[]>(`${VPS_BASE_URL}/content/audio/${type}/tags`),
+    queryFn: async () => fetcher<string[]>(apiUrl(`/content/audio/${type}/tags`)),
     staleTime: 1000 * 60 * 60
   })
   return { data: data ?? [], error, isPending }
@@ -216,7 +216,7 @@ export function useAudioTags(type: 'mix' | 'track' | 'misc') {
 export function useEditorialTags() {
   const { data, error, isPending } = useQuery<string[], Error>({
     queryKey: ['editorial-tags'],
-    queryFn: async () => fetcher<string[]>(`${VPS_BASE_URL}/content/posts/editorials/tags`),
+    queryFn: async () => fetcher<string[]>(apiUrl('/content/posts/editorials/tags')),
     staleTime: 1000 * 60 * 60
   })
   return { data: data ?? [], error, isPending }
@@ -225,7 +225,7 @@ export function useEditorialTags() {
 export function useAudioBySlug(type: 'mix' | 'track' | 'misc', slug: string) {
   const { data, error, isPending } = useQuery<SelectMdxCompiledAudio, Error>({
     queryKey: ['audio', type, slug],
-    queryFn: async () => fetcher(`${VPS_BASE_URL}/content/audio/${type}/${slug}`),
+    queryFn: async () => fetcher(apiUrl(`/content/audio/${type}/${slug}`)),
     enabled: Boolean(slug) // Only run query if slug is provided
   })
 
@@ -296,7 +296,7 @@ export function useMicroPosts(limit = DEFAULT_PAGE_SIZE) {
 export function useEditorialPostBySlug(slug: string) {
   const { data, error, isPending } = useQuery<SelectMdxCompiledEditorialPost, Error>({
     queryKey: ['post', 'editorial', slug],
-    queryFn: async () => fetcher(`${VPS_BASE_URL}/content/posts/editorials/${slug}`),
+    queryFn: async () => fetcher(apiUrl(`/content/posts/editorials/${slug}`)),
     enabled: Boolean(slug)
   })
 
@@ -310,7 +310,7 @@ export function useEditorialPostBySlug(slug: string) {
 export function useMicroPostBySlug(slug: string) {
   const { data, error, isPending } = useQuery<SelectMdxCompiledMicroPost, Error>({
     queryKey: ['post', 'micro', slug],
-    queryFn: async () => fetcher(`${VPS_BASE_URL}/content/posts/micro/${slug}`),
+    queryFn: async () => fetcher(apiUrl(`/content/posts/micro/${slug}`)),
     enabled: Boolean(slug)
   })
 
@@ -344,7 +344,7 @@ export function useSpotifyProxy<T extends SpotifyContentType>({
     queryKey: ['spotify/proxy', spotifyContentType, id],
 
     queryFn: async () =>
-      fetcher(`${VPS_BASE_URL}/spotify/${spotifyContentType}`, {
+      fetcher(apiUrl(`/spotify/${spotifyContentType}`), {
         method: 'POST',
         body: JSON.stringify({ id })
       }),
@@ -371,7 +371,7 @@ export function useEnrichTrackFromUrl(url: string) {
   const { data, error, isLoading } = useQuery<EnrichedTrack>({
     queryKey: ['spotify/enrich', url],
     queryFn: async () =>
-      fetcher(`${VPS_BASE_URL}/spotify/enrich`, {
+      fetcher(apiUrl('/spotify/enrich'), {
         method: 'POST',
         body: JSON.stringify({ url })
       }),
@@ -406,7 +406,7 @@ export function useResolveMusicEntity(url: string) {
   const { data, error, isLoading } = useQuery<ResolvedMusicEntity>({
     queryKey: ['music/resolve', url],
     queryFn: async () =>
-      fetcher(`${VPS_BASE_URL}/music/resolve`, {
+      fetcher(apiUrl('/music/resolve'), {
         method: 'POST',
         body: JSON.stringify({ url })
       }),
@@ -424,7 +424,7 @@ export function useResolveMusicEntity(url: string) {
 export function useUserLOL() {
   const { data, error, isPending } = useQuery<User, Error>({
     queryKey: ['user'],
-    queryFn: async () => fetcher(`${VPS_BASE_URL}/user/profile`)
+    queryFn: async () => fetcher(apiUrl('/user/profile'))
   })
 
   return {
@@ -437,7 +437,7 @@ export function useUserLOL() {
 export function useUpdateProfile() {
   const { mutateAsync: updateProfile, isPending } = useMutation<User, Error, FormData | User>({
     mutationFn: async (data) =>
-      fetcher(`${VPS_BASE_URL}/user/profile`, {
+      fetcher(apiUrl('/user/profile'), {
         method: 'PATCH',
         body: data instanceof FormData ? data : JSON.stringify(data)
       })
@@ -452,7 +452,7 @@ export function useUpdateProfile() {
 export function useAdminUserSocialLinks(userId: string) {
   return useQuery<SocialLink[], Error>({
     queryKey: ['admin', 'user-social-links', userId],
-    queryFn: () => fetcher<SocialLink[]>(`${VPS_BASE_URL}/user/admin/${userId}/social-links`),
+    queryFn: () => fetcher<SocialLink[]>(apiUrl(`/user/admin/${userId}/social-links`)),
     enabled: Boolean(userId)
   })
 }
@@ -461,7 +461,7 @@ export function useReplaceAdminUserSocialLinks() {
   const queryClient = useQueryClient()
   return useMutation<SocialLink[], Error, { userId: string; links: SocialLink[] }>({
     mutationFn: ({ userId, links }) =>
-      fetcher<SocialLink[]>(`${VPS_BASE_URL}/user/admin/${userId}/social-links`, {
+      fetcher<SocialLink[]>(apiUrl(`/user/admin/${userId}/social-links`), {
         method: 'PUT',
         body: JSON.stringify(links)
       }),
@@ -476,7 +476,7 @@ export function useReplaceAdminUserSocialLinks() {
 export function useUpdateAdminUserBio() {
   return useMutation<{ bio: string | null }, Error, { userId: string; bio: string }>({
     mutationFn: ({ userId, bio }) =>
-      fetcher<{ bio: string | null }>(`${VPS_BASE_URL}/user/admin/${userId}/bio`, {
+      fetcher<{ bio: string | null }>(apiUrl(`/user/admin/${userId}/bio`), {
         method: 'PATCH',
         body: JSON.stringify({ bio })
       })
@@ -486,7 +486,7 @@ export function useUpdateAdminUserBio() {
 export function useAdminUserBio(userId: string) {
   return useQuery<{ bio: string | null }, Error>({
     queryKey: ['admin', 'user-bio', userId],
-    queryFn: () => fetcher<{ bio: string | null }>(`${VPS_BASE_URL}/user/admin/${userId}/bio`),
+    queryFn: () => fetcher<{ bio: string | null }>(apiUrl(`/user/admin/${userId}/bio`)),
     enabled: Boolean(userId)
   })
 }
@@ -506,7 +506,7 @@ export type EmailPreferences = {
 export function useEmailPreferences() {
   const { data, error, isPending } = useQuery<EmailPreferences, Error>({
     queryKey: ['email-preferences'],
-    queryFn: async () => fetcher(`${VPS_BASE_URL}/user/email-preferences`)
+    queryFn: async () => fetcher(apiUrl('/user/email-preferences'))
   })
 
   return {
@@ -523,7 +523,7 @@ export function useUpdateEmailPreferences() {
     Partial<EmailPreferences>
   >({
     mutationFn: async (preferences) =>
-      fetcher(`${VPS_BASE_URL}/user/email-preferences`, {
+      fetcher(apiUrl('/user/email-preferences'), {
         method: 'PATCH',
         body: JSON.stringify(preferences)
       })
@@ -602,7 +602,7 @@ type NewsletterSubscriber = {
 export function useAdminNewsletterSubscribers() {
   return useQuery<{ subscribers: NewsletterSubscriber[] }, Error>({
     queryKey: ['admin', 'newsletter-subscribers'],
-    queryFn: async () => fetcher(`${VPS_BASE_URL}/admin/newsletter-subscribers`)
+    queryFn: async () => fetcher(apiUrl('/admin/newsletter-subscribers'))
   })
 }
 
@@ -635,7 +635,7 @@ export function useAllLabels({ limit = DEFAULT_PAGE_SIZE }: PaginationOptions = 
 export function useLabelBySlug(slug: string) {
   const { data, error, isPending } = useQuery<SelectMdxCompiledLabel, Error>({
     queryKey: ['label', slug],
-    queryFn: async () => fetcher(`${VPS_BASE_URL}/content/labels/${slug}`),
+    queryFn: async () => fetcher(apiUrl(`/content/labels/${slug}`)),
     enabled: Boolean(slug)
   })
 
@@ -679,7 +679,7 @@ export function useReleasesByLabel(
 export function useReleaseBySlug(slug: string) {
   const { data, error, isPending } = useQuery<SelectMdxCompiledRelease, Error>({
     queryKey: ['release', slug],
-    queryFn: async () => fetcher(`${VPS_BASE_URL}/content/releases/${slug}`),
+    queryFn: async () => fetcher(apiUrl(`/content/releases/${slug}`)),
     enabled: Boolean(slug)
   })
 
@@ -719,7 +719,7 @@ export function useFavorites() {
   const isAuthenticated = Boolean(session?.user)
   const { data, error, isPending, refetch } = useQuery<FavoritesResponse, Error>({
     queryKey: ['favorites'],
-    queryFn: async () => fetcher(`${VPS_BASE_URL}/favorites`),
+    queryFn: async () => fetcher(apiUrl('/favorites')),
     enabled: isAuthenticated
   })
 
@@ -740,7 +740,7 @@ export function useAddFavorite() {
     { audioId: string }
   >({
     mutationFn: async ({ audioId }) =>
-      fetcher(`${VPS_BASE_URL}/favorites`, {
+      fetcher(apiUrl('/favorites'), {
         method: 'POST',
         body: JSON.stringify({ audioId })
       }),
@@ -763,7 +763,7 @@ export function useRemoveFavorite() {
     { audioId: string }
   >({
     mutationFn: async ({ audioId }) =>
-      fetcher(`${VPS_BASE_URL}/favorites/${audioId}`, {
+      fetcher(apiUrl(`/favorites/${audioId}`), {
         method: 'DELETE'
       }),
     onSuccess: () => {
@@ -785,7 +785,7 @@ export function useAddShowFavorite() {
     { showId: string }
   >({
     mutationFn: async ({ showId }) =>
-      fetcher(`${VPS_BASE_URL}/favorites`, {
+      fetcher(apiUrl('/favorites'), {
         method: 'POST',
         body: JSON.stringify({ showId })
       }),
@@ -808,7 +808,7 @@ export function useRemoveShowFavorite() {
     { showId: string }
   >({
     mutationFn: async ({ showId }) =>
-      fetcher(`${VPS_BASE_URL}/favorites/show/${showId}`, {
+      fetcher(apiUrl(`/favorites/show/${showId}`), {
         method: 'DELETE'
       }),
     onSuccess: () => {
@@ -855,7 +855,7 @@ export function useAllShows({ limit = DEFAULT_PAGE_SIZE }: PaginationOptions = {
 export function useShowBySlug(slug: string) {
   const { data, error, isPending } = useQuery<SelectMdxCompiledShow, Error>({
     queryKey: ['show', slug],
-    queryFn: async () => fetcher(`${VPS_BASE_URL}/shows/${slug}`),
+    queryFn: async () => fetcher(apiUrl(`/shows/${slug}`)),
     enabled: Boolean(slug)
   })
 
@@ -877,9 +877,7 @@ export function useShowById(id: string | null | undefined) {
   const { data, error, isPending } = useQuery<ShowBasicInfo, Error>({
     queryKey: ['show-by-id', id],
     queryFn: async () => {
-      const shows = await fetcher<PaginatedResponse<ShowWithHosts>>(
-        `${VPS_BASE_URL}/shows?limit=100`
-      )
+      const shows = await fetcher<PaginatedResponse<ShowWithHosts>>(apiUrl('/shows?limit=100'))
       const show = shows.data.find((s) => s.id === id)
       if (!show) throw new Error('Show not found')
       return {
@@ -940,7 +938,7 @@ export function useUserSubscriptions() {
   const { data, error, isPending } = useQuery<PaginatedResponse<SubscriptionWithShow>, Error>({
     queryKey: ['user-subscriptions'],
     queryFn: async () =>
-      fetcher<PaginatedResponse<SubscriptionWithShow>>(`${VPS_BASE_URL}/user/subscriptions`),
+      fetcher<PaginatedResponse<SubscriptionWithShow>>(apiUrl('/user/subscriptions')),
     enabled: isAuthenticated
   })
 
@@ -959,7 +957,7 @@ export function useSubscribeToShow() {
     { showId: string }
   >({
     mutationFn: async ({ showId }) =>
-      fetcher(`${VPS_BASE_URL}/shows/${showId}/subscribe`, {
+      fetcher(apiUrl(`/shows/${showId}/subscribe`), {
         method: 'POST'
       }),
     onSuccess: () => {
@@ -977,7 +975,7 @@ export function useUnsubscribeFromShow() {
   const queryClient = useQueryClient()
   const { mutateAsync: unsubscribe, isPending } = useMutation<void, Error, { showId: string }>({
     mutationFn: async ({ showId }) =>
-      fetcher(`${VPS_BASE_URL}/shows/${showId}/unsubscribe`, {
+      fetcher(apiUrl(`/shows/${showId}/unsubscribe`), {
         method: 'DELETE'
       }),
     onSuccess: () => {
@@ -1058,7 +1056,7 @@ export function useResolveSlug(slug: string) {
   const { data, error, isPending } = useQuery<ResolveResult, Error>({
     queryKey: ['resolve', slug],
     queryFn: async () => {
-      return fetcher<ResolveResult>(`${VPS_BASE_URL}/resolve/${slug}`)
+      return fetcher<ResolveResult>(apiUrl(`/resolve/${slug}`))
     },
     enabled: Boolean(slug),
     retry: false
@@ -1083,7 +1081,7 @@ export type DjListItem = {
 export function useDjs() {
   return useQuery<DjListItem[], Error>({
     queryKey: ['djs'],
-    queryFn: () => fetcher<DjListItem[]>(`${VPS_BASE_URL}/user/djs`),
+    queryFn: () => fetcher<DjListItem[]>(apiUrl('/user/djs')),
     staleTime: 1000 * 60 * 5
   })
 }
@@ -1092,7 +1090,7 @@ export function usePublicProfile(username: string) {
   const { data, error, isPending } = useQuery<PublicProfile, Error>({
     queryKey: ['profile', username],
     queryFn: async () => {
-      const profile = await fetcher<PublicProfile>(`${VPS_BASE_URL}/profile/${username}`)
+      const profile = await fetcher<PublicProfile>(apiUrl(`/profile/${username}`))
       if (!profile?.id) throw new Error('Profile not found')
       return profile
     },
@@ -1115,7 +1113,7 @@ type NewsletterSubscribeResponse = {
 export function useNewsletterSubscribe() {
   return useMutation<NewsletterSubscribeResponse, Error, { email: string; name?: string }>({
     mutationFn: async ({ email, name }) =>
-      fetcher<NewsletterSubscribeResponse>(`${VPS_BASE_URL}/newsletter/subscribe`, {
+      fetcher<NewsletterSubscribeResponse>(apiUrl('/newsletter/subscribe'), {
         method: 'POST',
         body: JSON.stringify({ email, name, source: 'subscribe_page' })
       })
@@ -1125,7 +1123,7 @@ export function useNewsletterSubscribe() {
 export function useNewsletterUnsubscribe() {
   return useMutation<{ success: boolean }, Error, { token: string }>({
     mutationFn: async ({ token }) =>
-      fetcher<{ success: boolean }>(`${VPS_BASE_URL}/newsletter/unsubscribe`, {
+      fetcher<{ success: boolean }>(apiUrl('/newsletter/unsubscribe'), {
         method: 'POST',
         body: JSON.stringify({ token })
       })
@@ -1135,7 +1133,7 @@ export function useNewsletterUnsubscribe() {
 export function useRequestNewsletterUnsubscribe() {
   return useMutation<{ sent: boolean }, Error, { email: string }>({
     mutationFn: async ({ email }) =>
-      fetcher<{ sent: boolean }>(`${VPS_BASE_URL}/newsletter/request-unsubscribe`, {
+      fetcher<{ sent: boolean }>(apiUrl('/newsletter/request-unsubscribe'), {
         method: 'POST',
         body: JSON.stringify({ email })
       })
@@ -1150,7 +1148,7 @@ type QRPdfResponse = {
 export function useMixQRPdf(slug: string, enabled = false) {
   return useQuery<QRPdfResponse>({
     queryKey: ['mix-qr-pdf', slug],
-    queryFn: () => fetcher<QRPdfResponse>(`${VPS_BASE_URL}/content/audio/mix/${slug}/qr-pdf`),
+    queryFn: () => fetcher<QRPdfResponse>(apiUrl(`/content/audio/mix/${slug}/qr-pdf`)),
     enabled,
     staleTime: 1000 * 60 * 60 * 24
   })
@@ -1159,7 +1157,7 @@ export function useMixQRPdf(slug: string, enabled = false) {
 export function useShowQRPdf(slug: string, enabled = false) {
   return useQuery<QRPdfResponse>({
     queryKey: ['show-qr-pdf', slug],
-    queryFn: () => fetcher<QRPdfResponse>(`${VPS_BASE_URL}/shows/${slug}/qr-pdf`),
+    queryFn: () => fetcher<QRPdfResponse>(apiUrl(`/shows/${slug}/qr-pdf`)),
     enabled,
     staleTime: 1000 * 60 * 60 * 24
   })
@@ -1229,14 +1227,14 @@ export interface AdminMusicEntityLink {
 export function useAdminArtists() {
   return useQuery<MusicArtist[]>({
     queryKey: ['admin', 'artists'],
-    queryFn: () => fetcher(`${VPS_BASE_URL}/music/artists`)
+    queryFn: () => fetcher(apiUrl('/music/artists'))
   })
 }
 
 export function useAdminArtist(id: string) {
   return useQuery<MusicArtist>({
     queryKey: ['admin', 'artists', id],
-    queryFn: () => fetcher(`${VPS_BASE_URL}/music/artists/${id}`),
+    queryFn: () => fetcher(apiUrl(`/music/artists/${id}`)),
     enabled: Boolean(id)
   })
 }
@@ -1245,7 +1243,7 @@ export function useUpdateAdminArtist() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
-      fetcher<MusicArtist>(`${VPS_BASE_URL}/music/artists/${id}`, {
+      fetcher<MusicArtist>(apiUrl(`/music/artists/${id}`), {
         method: 'PATCH',
         body: JSON.stringify(data)
       }),
@@ -1259,8 +1257,7 @@ export function useUpdateAdminArtist() {
 export function useDeleteAdminArtist() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) =>
-      fetcher(`${VPS_BASE_URL}/music/artists/${id}`, { method: 'DELETE' }),
+    mutationFn: (id: string) => fetcher(apiUrl(`/music/artists/${id}`), { method: 'DELETE' }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'artists'] })
   })
 }
@@ -1268,14 +1265,14 @@ export function useDeleteAdminArtist() {
 export function useAdminAlbums() {
   return useQuery<MusicAlbum[]>({
     queryKey: ['admin', 'albums'],
-    queryFn: () => fetcher(`${VPS_BASE_URL}/music/albums`)
+    queryFn: () => fetcher(apiUrl('/music/albums'))
   })
 }
 
 export function useAdminAlbum(id: string) {
   return useQuery<MusicAlbum>({
     queryKey: ['admin', 'albums', id],
-    queryFn: () => fetcher(`${VPS_BASE_URL}/music/albums/${id}`),
+    queryFn: () => fetcher(apiUrl(`/music/albums/${id}`)),
     enabled: Boolean(id)
   })
 }
@@ -1284,7 +1281,7 @@ export function useUpdateAdminAlbum() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
-      fetcher<MusicAlbum>(`${VPS_BASE_URL}/music/albums/${id}`, {
+      fetcher<MusicAlbum>(apiUrl(`/music/albums/${id}`), {
         method: 'PATCH',
         body: JSON.stringify(data)
       }),
@@ -1298,7 +1295,7 @@ export function useUpdateAdminAlbum() {
 export function useDeleteAdminAlbum() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => fetcher(`${VPS_BASE_URL}/music/albums/${id}`, { method: 'DELETE' }),
+    mutationFn: (id: string) => fetcher(apiUrl(`/music/albums/${id}`), { method: 'DELETE' }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'albums'] })
   })
 }
@@ -1306,14 +1303,14 @@ export function useDeleteAdminAlbum() {
 export function useAdminTracks() {
   return useQuery<MusicTrack[]>({
     queryKey: ['admin', 'tracks'],
-    queryFn: () => fetcher(`${VPS_BASE_URL}/music/tracks`)
+    queryFn: () => fetcher(apiUrl('/music/tracks'))
   })
 }
 
 export function useAdminTrack(id: string) {
   return useQuery<MusicTrack>({
     queryKey: ['admin', 'tracks', id],
-    queryFn: () => fetcher(`${VPS_BASE_URL}/music/tracks/${id}`),
+    queryFn: () => fetcher(apiUrl(`/music/tracks/${id}`)),
     enabled: Boolean(id)
   })
 }
@@ -1322,7 +1319,7 @@ export function useUpdateAdminTrack() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
-      fetcher<MusicTrack>(`${VPS_BASE_URL}/music/tracks/${id}`, {
+      fetcher<MusicTrack>(apiUrl(`/music/tracks/${id}`), {
         method: 'PATCH',
         body: JSON.stringify(data)
       }),
@@ -1336,7 +1333,7 @@ export function useUpdateAdminTrack() {
 export function useDeleteAdminTrack() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => fetcher(`${VPS_BASE_URL}/music/tracks/${id}`, { method: 'DELETE' }),
+    mutationFn: (id: string) => fetcher(apiUrl(`/music/tracks/${id}`), { method: 'DELETE' }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'tracks'] })
   })
 }
@@ -1344,7 +1341,7 @@ export function useDeleteAdminTrack() {
 export function useAdminEntityLinks(entityType: string, entityId: string, enabled = true) {
   return useQuery<AdminMusicEntityLink[]>({
     queryKey: ['admin', 'links', entityType, entityId],
-    queryFn: () => fetcher(`${VPS_BASE_URL}/music/${entityType}/${entityId}/links`),
+    queryFn: () => fetcher(apiUrl(`/music/${entityType}/${entityId}/links`)),
     enabled: enabled && Boolean(entityId)
   })
 }
@@ -1364,7 +1361,7 @@ export function useAddAdminEntityLink() {
       url: string
       status?: LinkStatus
     }) =>
-      fetcher<AdminMusicEntityLink>(`${VPS_BASE_URL}/music/${entityType}/${entityId}/links`, {
+      fetcher<AdminMusicEntityLink>(apiUrl(`/music/${entityType}/${entityId}/links`), {
         method: 'POST',
         body: JSON.stringify({ platform, url, status })
       }),
@@ -1389,10 +1386,10 @@ export function useUpdateAdminEntityLinkStatus() {
       linkId: string
       status: LinkStatus
     }) =>
-      fetcher<AdminMusicEntityLink>(
-        `${VPS_BASE_URL}/music/${entityType}/${entityId}/links/${linkId}`,
-        { method: 'PATCH', body: JSON.stringify({ status }) }
-      ),
+      fetcher<AdminMusicEntityLink>(apiUrl(`/music/${entityType}/${entityId}/links/${linkId}`), {
+        method: 'PATCH',
+        body: JSON.stringify({ status })
+      }),
     onSuccess: (_, { entityType, entityId }) =>
       qc.invalidateQueries({
         queryKey: ['admin', 'links', entityType, entityId]
@@ -1412,7 +1409,7 @@ export function useDeleteAdminEntityLink() {
       entityId: string
       linkId: string
     }) =>
-      fetcher(`${VPS_BASE_URL}/music/${entityType}/${entityId}/links/${linkId}`, {
+      fetcher(apiUrl(`/music/${entityType}/${entityId}/links/${linkId}`), {
         method: 'DELETE'
       }),
     onSuccess: (_, { entityType, entityId }) =>
@@ -1434,7 +1431,7 @@ export function useAddArtistToAlbum() {
       artistId: string
       role?: string
     }) =>
-      fetcher(`${VPS_BASE_URL}/music/albums/${albumId}/artists/${artistId}`, {
+      fetcher(apiUrl(`/music/albums/${albumId}/artists/${artistId}`), {
         method: 'PUT',
         body: JSON.stringify({ role })
       }),
@@ -1447,7 +1444,7 @@ export function useRemoveArtistFromAlbum() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ albumId, artistId }: { albumId: string; artistId: string }) =>
-      fetcher(`${VPS_BASE_URL}/music/albums/${albumId}/artists/${artistId}`, {
+      fetcher(apiUrl(`/music/albums/${albumId}/artists/${artistId}`), {
         method: 'DELETE'
       }),
     onSuccess: (_, { albumId }) =>
@@ -1467,7 +1464,7 @@ export function useAddArtistToTrack() {
       artistId: string
       role?: string
     }) =>
-      fetcher(`${VPS_BASE_URL}/music/tracks/${trackId}/artists/${artistId}`, {
+      fetcher(apiUrl(`/music/tracks/${trackId}/artists/${artistId}`), {
         method: 'PUT',
         body: JSON.stringify({ role })
       }),
@@ -1480,7 +1477,7 @@ export function useRemoveArtistFromTrack() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: ({ trackId, artistId }: { trackId: string; artistId: string }) =>
-      fetcher(`${VPS_BASE_URL}/music/tracks/${trackId}/artists/${artistId}`, {
+      fetcher(apiUrl(`/music/tracks/${trackId}/artists/${artistId}`), {
         method: 'DELETE'
       }),
     onSuccess: (_, { trackId }) =>

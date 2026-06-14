@@ -7,7 +7,7 @@ import { MDXRendrr } from '@/components/MDXRendrr'
 import { RouteError } from '@/components/RouteError'
 import { ShareButton } from '@/components/ShareButton'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
-import { fetcher, VPS_BASE_URL } from '@/lib/http'
+import { apiUrl, fetcher } from '@/lib/http'
 import { generatePostSEO, generateSEOMeta } from '@/lib/seo'
 
 export const Route = createFileRoute('/editorial/$slug')({
@@ -27,7 +27,7 @@ export const Route = createFileRoute('/editorial/$slug')({
   ),
   loader: async ({ params }) => {
     const post = await fetcher<SelectMdxCompiledEditorialPost>(
-      `${VPS_BASE_URL}/content/posts/editorials/${params.slug}`
+      apiUrl(`/content/posts/editorials/${params.slug}`)
     )
     return { post }
   },

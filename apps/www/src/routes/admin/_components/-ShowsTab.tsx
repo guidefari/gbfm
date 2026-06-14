@@ -15,7 +15,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Edit, ExternalLink, Plus, Trash } from 'lucide-react'
 import { useState } from 'react'
-import { fetcher, type PaginatedResponse, VPS_BASE_URL } from '@/lib/http'
+import { apiUrl, fetcher, type PaginatedResponse } from '@/lib/http'
 import { ImageUploadField } from './-ImageUploadField'
 import { UserSearch } from './-UserSearch'
 
@@ -82,12 +82,12 @@ export function ShowsTab() {
 
   const { data: showsData, isPending: showsPending } = useQuery({
     queryKey: ['admin', 'shows'],
-    queryFn: () => fetcher<PaginatedResponse<ShowItem>>(`${VPS_BASE_URL}/shows?limit=50&offset=0`)
+    queryFn: () => fetcher<PaginatedResponse<ShowItem>>(apiUrl('/shows?limit=50&offset=0'))
   })
 
   const createShowMutation = useMutation({
     mutationFn: (data: ShowFormState) =>
-      fetcher(`${VPS_BASE_URL}/shows`, {
+      fetcher(apiUrl('/shows'), {
         method: 'POST',
         body: JSON.stringify({
           title: data.title,
@@ -118,7 +118,7 @@ export function ShowsTab() {
 
   const updateShowMutation = useMutation({
     mutationFn: ({ slug, data }: { slug: string; data: ShowFormState }) =>
-      fetcher(`${VPS_BASE_URL}/shows/${slug}`, {
+      fetcher(apiUrl(`/shows/${slug}`), {
         method: 'PATCH',
         body: JSON.stringify({
           title: data.title,
@@ -149,7 +149,7 @@ export function ShowsTab() {
   })
 
   const deleteShowMutation = useMutation({
-    mutationFn: (slug: string) => fetcher(`${VPS_BASE_URL}/shows/${slug}`, { method: 'DELETE' }),
+    mutationFn: (slug: string) => fetcher(apiUrl(`/shows/${slug}`), { method: 'DELETE' }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'shows'] })
       setDeleteDialog({ open: false, slug: '', title: '' })
