@@ -4,9 +4,15 @@ Local CLI pipeline that takes a job JSON file, reads a raw audio file plus cover
 
 ## CLI
 
-`bun run process-mix --job <path-to-job.json>`
+Requires `ffmpeg` in PATH.
 
-`bun run process-mix <path-to-job.json>`
+Build and run the Rust binary:
+
+```bash
+cargo build --release --manifest-path tools/process-mix/Cargo.toml
+./tools/process-mix/target/release/process-mix --job <path-to-job.json>
+./tools/process-mix/target/release/process-mix <path-to-job.json>
+```
 
 Job file fields:
 
@@ -46,20 +52,24 @@ Prints the output file path to stdout on success.
 
 ```
 job json
-  → bun run process-mix
-    → packages/core/src/mix-processing/cli.ts
-      → runMixProcessing
-        → processMix
-          → writeFilesToDisk
-          → createAudioOrVideo
-          → read output buffer
-          → cleanup(files)
-      → write final output to requested path
+  → process-mix (Rust binary)
+    → tools/process-mix/src/main.rs
+      → parse_args
+      → read_job_file
+      → resolve_job_paths
+      → process_mix
+        → read audio + image files
+        → write to tempdir (audio.mp3, cover.jpg)
+        → build_ffmpeg_args (MP3 or MP4)
+        → Command::new("ffmpeg").args(...)
+        → read output buffer
+        → write final output to requested path
+        → tempdir auto-cleanup (TempDir drop)
 ```
 
 ## Temp File Cleanup
 
-`processMix` uses `Effect.ensuring(cleanup(files))` so the tmpdir is always removed, whether FFmpeg succeeds, fails, or the fiber is interrupted. The only unhandled case is an OS-level kill mid-FFmpeg, where `/tmp/mix-*` files persist until the OS clears `/tmp`.
+`process_mix` uses `tempfile::TempDir` which automatically removes the temp directory when dropped, whether FFmpeg succeeds or fails. The only unhandled case is an OS-level kill mid-FFmpeg, where `/tmp/.tmp*` files persist until the OS clears `/tmp`.
 
 ## Known Limitations
 
@@ -74,4 +84,4 @@ If `outputPath` is omitted, the CLI writes to `<safe_title>.<format>` next to th
 
 ### Default intro audio
 
-If `introAudioPath` is omitted, the CLI uses `apps/vps/public/intro.wav` from this repository.
+If `introAudioPath` is omitted, the CLI uses `intro.wav` from the same directory as the binary (e.g., `tools/process-mix/target/release/intro.wav` after building).

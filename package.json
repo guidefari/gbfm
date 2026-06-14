@@ -17,8 +17,6 @@
     "format": "oxfmt apps/*/src packages infra '*.{js,ts,tsx,jsx,json,css}' --write --no-error-on-unmatched-pattern",
     "format:check": "oxfmt apps/*/src packages infra '*.{js,ts,tsx,jsx,json,css}' --check --no-error-on-unmatched-pattern",
     "check": "bun run format && bun run lint:fix",
-    "process-mix": "cd packages/core && bun run process-mix",
-    "process-mix-job": "cd packages/core && bun run process-mix-job",
     "oxc:ci": "bun run format:check && bun run lint",
     "precommit": "bun run check && bun run typecheck",
     "ci": "bun run oxc:ci && bun run typecheck && bun run test && cd apps/www && bun run build",
@@ -60,7 +58,6 @@
   "trustedDependencies": [
     "aws-sdk",
     "esbuild",
-    "ffmpeg-static",
     "sharp"
   ]
 }

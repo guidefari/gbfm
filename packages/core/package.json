@@ -7,19 +7,15 @@
     "./utils/slug": "./src/utils/slug.ts",
     "./api": "./src/api/index.ts",
     "./feature-flags": "./src/feature-flags/index.ts",
-    "./mix-processing": "./src/mix-processing/index.ts",
     "./status": "./src/status/index.ts"
   },
   "scripts": {
-    "process-mix": "bun run ./src/mix-processing/cli.ts",
-    "process-mix-job": "bun run ./src/mix-processing/cli.ts",
     "typecheck": "tsgo --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
-    "effect": "4.0.0-beta.70",
-    "ffmpeg-static": "5.3.0"
+    "effect": "4.0.0-beta.70"
   },
   "devDependencies": {
     "@types/bun": "1.3.13",
