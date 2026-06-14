@@ -12,6 +12,7 @@
     "noEmit": true,
     "declaration": true,
     "declarationMap": true,
+    "allowImportingTsExtensions": true,
     "types": ["@types/bun"]
   },
   "include": ["src/**/*"],

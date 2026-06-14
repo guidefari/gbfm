@@ -2,15 +2,26 @@
 
 Rust CLI that takes a job JSON file, reads raw audio + cover image, runs FFmpeg to embed metadata/artwork (MP3) or produce a video with a still image (MP4), then writes the result to disk.
 
-## Build
+## Install
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/guidefari/gbfm/prod/tools/process-mix/install.sh | bash
+```
+
+This downloads the latest release binary for your platform and installs it to `~/.local/bin/`.
+
+Set `INSTALL_DIR` to override the install location:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/guidefari/gbfm/prod/tools/process-mix/install.sh | INSTALL_DIR=/usr/local/bin bash
+```
+
+Requires `ffmpeg` in PATH.
+
+## Build from source
 
 ```bash
 cargo build --release
-```
-
-Copy `intro.wav` next to the binary:
-
-```bash
 cp intro.wav target/release/intro.wav
 ```
 
