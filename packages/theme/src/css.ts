@@ -13,7 +13,7 @@ export function toVars<T extends Record<string, string>>(obj: T, indent = '    '
 }
 
 export function semanticToVars(tokens: SemanticTokens, indent = '    '): string {
-  const { radius, ...rest } = tokens
+  const { radius, backgroundHex, ...rest } = tokens
   return `${toVars(rest, indent)}\n${indent}--radius: ${radius};`
 }
 

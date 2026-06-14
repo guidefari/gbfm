@@ -2,6 +2,7 @@ export interface SemanticTokens {
   highlight: string
   highlightForeground: string
   background: string
+  backgroundHex: string
   foreground: string
   card: string
   cardForeground: string
@@ -27,6 +28,7 @@ export const light: SemanticTokens = {
   highlight: '#9bfd9e',
   highlightForeground: '#111827',
   background: 'hsl(194, 52%, 67%)',
+  backgroundHex: '#7fc2d7',
   foreground: 'hsl(215 6.1% 0.88)',
   card: 'hsl(0, 0%, 100%)',
   cardForeground: 'hsl(224, 71.4%, 4.1%)',
@@ -52,6 +54,7 @@ export const dark: SemanticTokens = {
   highlight: '#9bfd9e',
   highlightForeground: '#111827',
   background: 'hsl(202, 61%, 22%)',
+  backgroundHex: '#16415a',
   foreground: 'hsl(194, 52%, 67%)',
   card: 'hsl(224, 71.4%, 4.1%)',
   cardForeground: 'hsl(194, 52%, 67%)',
@@ -77,6 +80,7 @@ export const studio: SemanticTokens = {
   highlight: 'hsl(24 100% 63%)',
   highlightForeground: 'hsl(36 45% 92%)',
   background: 'hsl(28 22% 9%)',
+  backgroundHex: '#1f1a16',
   foreground: 'hsl(38 54% 84%)',
   card: 'hsl(30 24% 13%)',
   cardForeground: 'hsl(38 54% 84%)',
