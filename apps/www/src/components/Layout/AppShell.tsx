@@ -30,8 +30,8 @@ export default function AppShell({ children }: Props) {
   const showPlayer = showBottomPlayer && !isFullscreenVisible && hasActiveAudio
 
   return (
-    <div className='grid h-screen w-full grid-cols-1 bg-background'>
-      <div className='relative flex h-screen min-w-0 flex-col overflow-hidden'>
+    <div className='grid h-dvh w-full grid-cols-1 bg-background'>
+      <div className='relative flex h-dvh min-w-0 flex-col overflow-hidden'>
         <div className='relative min-h-0 flex-1'>
           <main
             id={MAIN_SCROLL_CONTAINER_ID}
@@ -40,11 +40,11 @@ export default function AppShell({ children }: Props) {
             {children}
           </main>
 
-          <FloatingMenu className='absolute bottom-4 right-4' />
+          <FloatingMenu className='absolute bottom-[calc(1rem+env(safe-area-inset-bottom))] right-[calc(1rem+env(safe-area-inset-right))]' />
         </div>
 
         {showPlayer && (
-          <div className='z-20 hidden shrink-0 lg:block'>
+          <div className='z-20 hidden shrink-0 lg:block pb-[env(safe-area-inset-bottom)]'>
             <AudioPlayer />
           </div>
         )}

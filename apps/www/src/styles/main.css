@@ -122,8 +122,13 @@
     @apply border-border;
   }
 
+  html {
+    background-color: var(--background);
+  }
+
   body {
     @apply transition-colors duration-700 font-jetbrains bg-background text-foreground;
+    margin: 0;
   }
 
   li::before {
