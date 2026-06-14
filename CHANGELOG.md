@@ -9,6 +9,23 @@
 
 ### Features
 
+* **gbpm:** add --version and --help flags, suppress ffmpeg stderr on success ([d972718](https://github.com/guidefari/gbfm/commit/d97271843db355732abd17e66e02f890daab2ec2))
+* **theme:** add backgroundHex token for theme-color meta tags ([6dfc274](https://github.com/guidefari/gbfm/commit/6dfc27414b463db7d83534f65654fe8745ddef91))
+* **tools:** add Rust process-mix CLI ([7ac955d](https://github.com/guidefari/gbfm/commit/7ac955d892544869a1065529168321d2c890bb04))
+* **www:** add theme-colors Vite plugin for index.html ([8c2b7a2](https://github.com/guidefari/gbfm/commit/8c2b7a21101cf31cfddcacaaa55f8a5743409bba))
+* **www:** sync theme-color meta with ThemeProvider ([20b993f](https://github.com/guidefari/gbfm/commit/20b993f81c8662490dd7ce920cbb3cceb06687a4))
+
+# [2.53.0](https://github.com/guidefari/gbfm/compare/v2.52.0...v2.53.0) (2026-06-14)
+
+
+### Bug Fixes
+
+* **theme:** add explicit .ts extensions for Node ESM resolution ([cc0981e](https://github.com/guidefari/gbfm/commit/cc0981e0215386193a0f5197b63090c7053490f7))
+* **www:** use dvh and safe-area-inset for iOS Safari layout ([cc7e9af](https://github.com/guidefari/gbfm/commit/cc7e9af4285f5caf1da96bc09f8dccc83b312428))
+
+
+### Features
+
 * **theme:** add backgroundHex token for theme-color meta tags ([6dfc274](https://github.com/guidefari/gbfm/commit/6dfc27414b463db7d83534f65654fe8745ddef91))
 * **tools:** add Rust process-mix CLI ([7ac955d](https://github.com/guidefari/gbfm/commit/7ac955d892544869a1065529168321d2c890bb04))
 * **www:** add theme-colors Vite plugin for index.html ([8c2b7a2](https://github.com/guidefari/gbfm/commit/8c2b7a21101cf31cfddcacaaa55f8a5743409bba))
