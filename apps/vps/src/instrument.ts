@@ -1,10 +1,30 @@
+import { isRecord } from '@gbfm/core/utils'
 import * as Sentry from '@sentry/bun'
 import { hasLocalSentryContext, shouldEnableSentry } from '@/lib/sentry'
 
-const dsn = process.env.SENTRY_BACKEND_DSN || ''
+let resource: Record<string, unknown> | undefined
+try {
+  const sst = require('sst')
+  if (isRecord(sst) && isRecord(sst.Resource)) resource = sst.Resource
+} catch {}
+
+function resourceString(name: string, property: string): string | undefined {
+  const entry = resource?.[name]
+  if (!isRecord(entry)) return typeof entry === 'string' ? entry : undefined
+  const value = entry[property]
+  return typeof value === 'string' ? value : undefined
+}
+
+const appStage = resourceString('App', 'stage')
+
+const dsn = resourceString('SENTRY_BACKEND_DSN', 'value') || process.env.SENTRY_BACKEND_DSN || ''
 const environment =
   process.env.SENTRY_ENVIRONMENT ||
-  (process.env.NODE_ENV === 'production' ? 'production' : 'development')
+  (appStage === 'prod'
+    ? 'production'
+    : process.env.NODE_ENV === 'production'
+      ? 'production'
+      : 'development')
 
 const enabled = shouldEnableSentry(dsn, environment)
 
