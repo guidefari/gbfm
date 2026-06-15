@@ -9,6 +9,7 @@ import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { db } from '@/db'
 import { newsletterSubscribersTable } from '@/db/newsletter.schema'
 import type { AppRouteHandler } from '@/lib/types'
+import { globalUnsubscribe } from '@/repositories/email-preferences.repository'
 import { config } from '@/services/config.service'
 import type { RequestUnsubscribeRoute, SubscribeRoute, UnsubscribeRoute } from './newsletter.routes'
 
@@ -72,11 +73,19 @@ export const unsubscribe: AppRouteHandler<UnsubscribeRoute> = async (c) => {
     .where(eq(newsletterSubscribersTable.unsubscribeToken, token))
     .returning({
       id: newsletterSubscribersTable.id,
-      email: newsletterSubscribersTable.email
+      email: newsletterSubscribersTable.email,
+      userId: newsletterSubscribersTable.userId
     })
 
   if (result.length === 0) {
     return c.json({ success: false }, HttpStatusCodes.NOT_FOUND)
+  }
+
+  const linkedUserId = result[0]?.userId
+  if (linkedUserId) {
+    await globalUnsubscribe(linkedUserId).catch((err) =>
+      console.error('Failed to propagate newsletter unsubscribe to user preferences:', err)
+    )
   }
 
   notifyAdmin('unsubscribed', result[0]?.email ?? token)

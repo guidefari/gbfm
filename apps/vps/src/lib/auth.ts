@@ -8,6 +8,11 @@ import { db } from '@/db'
 import * as authSchema from '@/db/auth.schema'
 import { EMAIL_NOTIFICATION_TYPES } from '@/db/email.schema'
 import { createEmailDeliveryLog } from '@/repositories/email-delivery-log.repository'
+import {
+  getOrCreateEmailPreferencesByUserId,
+  updateEmailPreferences
+} from '@/repositories/email-preferences.repository'
+import { linkOrCreateSubscriberForUser } from '@/repositories/newsletter.repository'
 import { config } from '@/services/config.service'
 import { ac, admin as adminRole, creator, editor, userRole } from './auth-permissions'
 
@@ -70,6 +75,41 @@ export const auth = betterAuth({
           status: EMAIL_DELIVERY_STATUSES.FAILED,
           errorMessage
         })
+      }
+    }
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (createdUser) => {
+          try {
+            const { previouslyUnsubscribed } = await linkOrCreateSubscriberForUser({
+              userId: createdUser.id,
+              email: createdUser.email,
+              name: createdUser.name
+            })
+
+            await getOrCreateEmailPreferencesByUserId(createdUser.id)
+
+            if (previouslyUnsubscribed) {
+              await updateEmailPreferences(createdUser.id, {
+                globalUnsubscribe: true,
+                mixReleaseEnabled: false,
+                promotionalEnabled: false,
+                systemEnabled: false
+              })
+            }
+          } catch (err) {
+            const { runAppFork } = await import('@/runtime')
+            runAppFork(
+              Effect.logError('[Auth] Failed to link newsletter subscription on signup', {
+                userId: createdUser.id,
+                email: createdUser.email,
+                error: err instanceof Error ? err.message : String(err)
+              })
+            )
+          }
+        }
       }
     }
   },

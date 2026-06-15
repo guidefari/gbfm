@@ -44,10 +44,10 @@ export function EmailPreferencesCard() {
         <div className='flex items-center justify-between'>
           <div className='flex-1'>
             <Label htmlFor='mixReleaseEnabled' className='text-sm font-medium'>
-              Mix Release Notifications
+              New Mix & Show Updates
             </Label>
             <p className='text-sm text-muted-foreground'>
-              Get notified when new mixes are released
+              The newsletter: get notified when a new mix or show drops
             </p>
           </div>
           <input
@@ -105,7 +105,7 @@ export function EmailPreferencesCard() {
                 Unsubscribe from All
               </Label>
               <p className='text-sm text-muted-foreground'>
-                Opt out of all non-transactional emails
+                Opt out of the newsletter and all non-essential emails
               </p>
             </div>
             <input

@@ -19,7 +19,10 @@ export const emailLogStatusSchema = z.enum([
 ])
 
 export const sendMixNotificationSchema = z.object({
-  recipients: z.array(z.string().email()).min(1, 'At least one recipient is required'),
+  recipients: z
+    .array(z.string().email())
+    .optional()
+    .describe('Explicit recipients. When omitted, sends to all opted-in subscribers and users.'),
   mixSlug: z.string().min(1, 'Mix slug is required'),
   metadata: z
     .object({

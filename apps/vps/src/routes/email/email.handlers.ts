@@ -18,7 +18,10 @@ import {
   markEmailDeliveryLogAsFailed,
   markEmailDeliveryLogAsSent
 } from '@/repositories/email-delivery-log.repository'
-import { canReceiveEmail } from '@/repositories/email-preferences.repository'
+import {
+  canReceiveEmail,
+  getActiveMixRecipients
+} from '@/repositories/email-preferences.repository'
 import { runAppFork } from '@/runtime'
 
 import type { GetEmailLogsRoute, SendMixNotificationRoute } from './email.routes'
@@ -64,7 +67,19 @@ function normalizeEmailLogRecord(log: SelectEmailDeliveryLog): SelectEmailDelive
 }
 
 export const sendMixNotification: AppRouteHandler<SendMixNotificationRoute> = async (c) => {
-  const { recipients, mixSlug, metadata } = c.req.valid('json')
+  const { recipients: explicitRecipients, mixSlug, metadata } = c.req.valid('json')
+
+  const recipients =
+    explicitRecipients && explicitRecipients.length > 0
+      ? explicitRecipients
+      : await getActiveMixRecipients()
+
+  if (recipients.length === 0) {
+    return c.json(
+      { success: true, sentTo: [], emailIds: [], message: 'No opted-in recipients' },
+      HttpStatusCodes.OK
+    )
+  }
 
   const [mix] = await db
     .select()

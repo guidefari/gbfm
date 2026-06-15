@@ -12,6 +12,7 @@ import {
 } from 'drizzle-orm/pg-core'
 import { audioCreators } from './audio.schema'
 import { emailDeliveryLogsTable, userEmailPreferencesTable } from './email.schema'
+import { newsletterSubscribersTable } from './newsletter.schema'
 import { postCreators } from './post.schema'
 import { showCreators, showSubscriptionsTable } from './show.schema'
 
@@ -154,6 +155,7 @@ export const userRelations = relations(user, ({ many, one }) => ({
   audioCreators: many(audioCreators),
   emailDeliveryLogs: many(emailDeliveryLogsTable),
   userEmailPreferences: one(userEmailPreferencesTable),
+  newsletterSubscriber: one(newsletterSubscribersTable),
   showCreators: many(showCreators),
   showSubscriptions: many(showSubscriptionsTable)
 }))
