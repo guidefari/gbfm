@@ -239,6 +239,32 @@ export async function sendInviteEmail({
   })
 }
 
+export async function sendNewUserNotificationEmail({
+  to,
+  name,
+  email,
+  timestamp = new Date().toISOString()
+}: {
+  to: string | string[]
+  name: string
+  email: string
+  timestamp?: string
+}): Promise<void> {
+  const { NewUserNotification } = await import('../emails/new-user-notification')
+
+  await sendEmail({
+    to,
+    template: {
+      subject: `New user signup: ${email}`,
+      component: React.createElement(NewUserNotification, {
+        name,
+        email,
+        timestamp
+      })
+    }
+  })
+}
+
 export async function sendNewsletterUnsubscribeLinkEmail({
   to,
   unsubscribeUrl

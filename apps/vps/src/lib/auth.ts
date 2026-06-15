@@ -1,5 +1,9 @@
 import { EMAIL_DELIVERY_STATUSES } from '@gbfm/core/status'
-import { sendPasswordResetEmail, sendWelcomeEmail } from '@gbfm/email/index'
+import {
+  sendNewUserNotificationEmail,
+  sendPasswordResetEmail,
+  sendWelcomeEmail
+} from '@gbfm/email/index'
 import { betterAuth } from 'better-auth'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { admin, bearer, username } from 'better-auth/plugins'
@@ -103,6 +107,24 @@ export const auth = betterAuth({
             const { runAppFork } = await import('@/runtime')
             runAppFork(
               Effect.logError('[Auth] Failed to link newsletter subscription on signup', {
+                userId: createdUser.id,
+                email: createdUser.email,
+                error: err instanceof Error ? err.message : String(err)
+              })
+            )
+          }
+
+          try {
+            await sendNewUserNotificationEmail({
+              to: config.adminEmail,
+              name: createdUser.name,
+              email: createdUser.email,
+              timestamp: new Date().toISOString()
+            })
+          } catch (err) {
+            const { runAppFork } = await import('@/runtime')
+            runAppFork(
+              Effect.logError('[Auth] Failed to send new user admin notification', {
                 userId: createdUser.id,
                 email: createdUser.email,
                 error: err instanceof Error ? err.message : String(err)

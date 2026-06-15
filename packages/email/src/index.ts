@@ -1,6 +1,7 @@
 export { BackupNotification } from '../emails/backup-notification'
 export { InviteEmail } from '../emails/invite'
 export { NewMixNotification } from '../emails/new-mix-notification'
+export { NewUserNotification } from '../emails/new-user-notification'
 export { PasswordResetEmail } from '../emails/password-reset'
 export { TestEmail } from '../emails/test-email'
 export { emailTheme } from '../emails/theme'
@@ -11,6 +12,7 @@ export {
   sendBackupNotificationEmail,
   sendEmail,
   sendInviteEmail,
+  sendNewUserNotificationEmail,
   sendNewsletterAdminNotificationEmail,
   sendPasswordResetEmail,
   sendTestEmail,
