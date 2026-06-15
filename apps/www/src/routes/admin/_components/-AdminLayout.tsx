@@ -12,6 +12,7 @@ import {
   Menu,
   Music4,
   Radio,
+  Search,
   Shield,
   Users
 } from 'lucide-react'
@@ -31,6 +32,7 @@ export type AdminNavTo =
   | '/admin/files'
   | '/admin/music'
   | '/admin/playlists'
+  | '/admin/search'
   | '/admin/frontend-errors'
 
 export type AdminNavItem = {
@@ -103,6 +105,12 @@ export const adminSecondaryNavItems: AdminNavItem[] = [
     label: 'Playlists',
     description: 'Dedicated playlist import and editing flow.',
     icon: Music4
+  },
+  {
+    to: '/admin/search',
+    label: 'Search',
+    description: 'Test the content search endpoint.',
+    icon: Search
   },
   {
     to: '/admin/frontend-errors',

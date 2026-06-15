@@ -52,6 +52,7 @@ import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-pas
 import { Route as AdminUsersRouteImport } from './routes/admin/users'
 import { Route as AdminShowsRouteImport } from './routes/admin/shows'
 import { Route as AdminSessionsRouteImport } from './routes/admin/sessions'
+import { Route as AdminSearchRouteImport } from './routes/admin/search'
 import { Route as AdminPlaylistsRouteImport } from './routes/admin/playlists'
 import { Route as AdminOverviewRouteImport } from './routes/admin/overview'
 import { Route as AdminNewsletterRouteImport } from './routes/admin/newsletter'
@@ -277,6 +278,11 @@ const AdminSessionsRoute = AdminSessionsRouteImport.update({
   path: '/admin/sessions',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminSearchRoute = AdminSearchRouteImport.update({
+  id: '/admin/search',
+  path: '/admin/search',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminPlaylistsRoute = AdminPlaylistsRouteImport.update({
   id: '/admin/playlists',
   path: '/admin/playlists',
@@ -350,6 +356,7 @@ export interface FileRoutesByFullPath {
   '/admin/newsletter': typeof AdminNewsletterRoute
   '/admin/overview': typeof AdminOverviewRoute
   '/admin/playlists': typeof AdminPlaylistsRoute
+  '/admin/search': typeof AdminSearchRoute
   '/admin/sessions': typeof AdminSessionsRoute
   '/admin/shows': typeof AdminShowsRoute
   '/admin/users': typeof AdminUsersRoute
@@ -400,6 +407,7 @@ export interface FileRoutesByTo {
   '/admin/newsletter': typeof AdminNewsletterRoute
   '/admin/overview': typeof AdminOverviewRoute
   '/admin/playlists': typeof AdminPlaylistsRoute
+  '/admin/search': typeof AdminSearchRoute
   '/admin/sessions': typeof AdminSessionsRoute
   '/admin/shows': typeof AdminShowsRoute
   '/admin/users': typeof AdminUsersRoute
@@ -455,6 +463,7 @@ export interface FileRoutesById {
   '/admin/newsletter': typeof AdminNewsletterRoute
   '/admin/overview': typeof AdminOverviewRoute
   '/admin/playlists': typeof AdminPlaylistsRoute
+  '/admin/search': typeof AdminSearchRoute
   '/admin/sessions': typeof AdminSessionsRoute
   '/admin/shows': typeof AdminShowsRoute
   '/admin/users': typeof AdminUsersRoute
@@ -511,6 +520,7 @@ export interface FileRouteTypes {
     | '/admin/newsletter'
     | '/admin/overview'
     | '/admin/playlists'
+    | '/admin/search'
     | '/admin/sessions'
     | '/admin/shows'
     | '/admin/users'
@@ -561,6 +571,7 @@ export interface FileRouteTypes {
     | '/admin/newsletter'
     | '/admin/overview'
     | '/admin/playlists'
+    | '/admin/search'
     | '/admin/sessions'
     | '/admin/shows'
     | '/admin/users'
@@ -615,6 +626,7 @@ export interface FileRouteTypes {
     | '/admin/newsletter'
     | '/admin/overview'
     | '/admin/playlists'
+    | '/admin/search'
     | '/admin/sessions'
     | '/admin/shows'
     | '/admin/users'
@@ -670,6 +682,7 @@ export interface RootRouteChildren {
   AdminNewsletterRoute: typeof AdminNewsletterRoute
   AdminOverviewRoute: typeof AdminOverviewRoute
   AdminPlaylistsRoute: typeof AdminPlaylistsRoute
+  AdminSearchRoute: typeof AdminSearchRoute
   AdminSessionsRoute: typeof AdminSessionsRoute
   AdminShowsRoute: typeof AdminShowsRoute
   AdminUsersRoute: typeof AdminUsersRoute
@@ -993,6 +1006,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminSessionsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/search': {
+      id: '/admin/search'
+      path: '/admin/search'
+      fullPath: '/admin/search'
+      preLoaderRoute: typeof AdminSearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/playlists': {
       id: '/admin/playlists'
       path: '/admin/playlists'
@@ -1153,6 +1173,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminNewsletterRoute: AdminNewsletterRoute,
   AdminOverviewRoute: AdminOverviewRoute,
   AdminPlaylistsRoute: AdminPlaylistsRoute,
+  AdminSearchRoute: AdminSearchRoute,
   AdminSessionsRoute: AdminSessionsRoute,
   AdminShowsRoute: AdminShowsRoute,
   AdminUsersRoute: AdminUsersRoute,

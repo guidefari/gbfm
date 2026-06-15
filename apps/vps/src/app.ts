@@ -16,6 +16,7 @@ import profile from '@/routes/profile/profile.index'
 import { seoRouter, shareRouter } from '@/routes/redirect/redirect.index'
 import resolve from '@/routes/resolve/resolve.index'
 import rss from '@/routes/rss/rss.index'
+import search from '@/routes/search/search.index'
 import shows from '@/routes/shows/show.index'
 import spotify from '@/routes/spotify/spotify.index'
 import upload from '@/routes/upload/upload.index'
@@ -53,6 +54,7 @@ const setupRoutesEffect = Effect.gen(function* () {
   app.route('/api/resolve', resolve)
   app.route('/api/user', user)
   app.route('/api/content', content)
+  app.route('/api/search', search)
   app.route('/api/email', email)
   app.route('/api/newsletter', newsletter)
   app.route('/api/shows', shows)

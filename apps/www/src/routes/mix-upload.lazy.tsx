@@ -261,11 +261,17 @@ function MixUploadPage() {
         setUploadStep('idle')
 
         if (formData.showId) {
-          router.navigate({ to: '/shows' })
-        } else {
+          const showSlug = allShows.find((s) => s.id === formData.showId)?.slug
+          router.navigate(
+            showSlug ? { to: '/shows/$showSlug', params: { showSlug } } : { to: '/shows' }
+          )
+        } else if (isEditMode) {
           router.navigate({
-            to: isEditMode ? `/mixes/${search.edit}` : '/mixes'
+            to: '/mixes/$mixId',
+            params: { mixId: formData.slug || search.edit || '' }
           })
+        } else {
+          router.navigate({ to: '/mixes' })
         }
       }, 2000)
     },
