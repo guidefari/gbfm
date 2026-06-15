@@ -1,37 +1,44 @@
 import {
   Badge,
   Button,
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
+  Checkbox,
+  Input,
   Label,
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  TagsInput,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
+  Textarea,
   toast
 } from '@gbfm/ui'
 import type { SelectMdxCompiledEditorialPost, SelectMdxCompiledMicroPost } from '@gbfm/vps/schemas'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { ArrowUpDown, Check, Plus, X } from 'lucide-react'
+import { ArrowUpDown, ExternalLink, Plus, Save } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
 import { apiUrl, fetcher, type PaginatedResponse } from '@/lib/http'
+import { ImageUploadField } from './-ImageUploadField'
 
 interface AudioItem {
   id: string
   title: string
+  description: string | null
+  thumbnailUrl: string | null
   slug: string
+  content: string
+  draft: boolean
   type: string
+  url: string
+  showId: string | null
+  episodeNumber: number | null
   createdAt: string
   playCount: number
   tags?: string[] | null
@@ -67,17 +74,98 @@ type TweetPostItem = Omit<SelectMdxCompiledMicroPost, 'createdAt' | 'updatedAt' 
 interface EditDialogState {
   open: boolean
   mix: AudioItem | null
-  selectedTags: string[]
-  inputValue: string
+  values: AudioEditValues
+}
+
+interface PostEditDialogState {
+  open: boolean
+  post: PostListItem | null
+  values: PostEditValues
+  type: 'post' | 'micro'
+}
+
+interface AudioEditValues {
+  title: string
+  description: string
+  slug: string
+  content: string
+  thumbnailUrl: string
+  url: string
+  tags: string[]
+  draft: boolean
+  episodeNumber: string
+}
+
+interface PostEditValues {
+  title: string
+  description: string
+  slug: string
+  content: string
+  thumbnailUrl: string
+  tags: string[]
+  draft: boolean
 }
 
 type PostListItem = {
   id: string
   title: string | null
+  description: string | null
+  thumbnailUrl: string | null
   slug: string
+  content: string | null
+  draft: boolean
+  type: 'post' | 'micro' | null
   tags?: string[] | null
   creators?: Array<{ id: string; name: string }>
   createdAt: string
+}
+
+const emptyAudioEditValues: AudioEditValues = {
+  title: '',
+  description: '',
+  slug: '',
+  content: '',
+  thumbnailUrl: '',
+  url: '',
+  tags: [],
+  draft: false,
+  episodeNumber: ''
+}
+
+const emptyPostEditValues: PostEditValues = {
+  title: '',
+  description: '',
+  slug: '',
+  content: '',
+  thumbnailUrl: '',
+  tags: [],
+  draft: false
+}
+
+function toAudioEditValues(mix: AudioItem): AudioEditValues {
+  return {
+    title: mix.title || '',
+    description: mix.description || '',
+    slug: mix.slug || '',
+    content: mix.content || '',
+    thumbnailUrl: mix.thumbnailUrl || '',
+    url: mix.url || '',
+    tags: mix.tags || [],
+    draft: mix.draft ?? false,
+    episodeNumber: mix.episodeNumber ? String(mix.episodeNumber) : ''
+  }
+}
+
+function toPostEditValues(post: PostListItem): PostEditValues {
+  return {
+    title: post.title || '',
+    description: post.description || '',
+    slug: post.slug || '',
+    content: post.content || '',
+    thumbnailUrl: post.thumbnailUrl || '',
+    tags: post.tags || [],
+    draft: post.draft ?? false
+  }
 }
 
 function NewContentButtons() {
@@ -123,6 +211,8 @@ function MixesTabContent({
               <tr className='border-b bg-muted/50'>
                 <th className='px-4 py-3 text-left font-medium'>Title</th>
                 <th className='px-4 py-3 text-left font-medium'>Slug</th>
+                <th className='px-4 py-3 text-left font-medium'>Status</th>
+                <th className='px-4 py-3 text-left font-medium'>Media</th>
                 <th className='px-4 py-3 text-left font-medium'>Tags</th>
                 <th className='px-4 py-3 text-left font-medium'>
                   <Button
@@ -144,6 +234,18 @@ function MixesTabContent({
                 <tr key={mix.id} className='border-b hover:bg-muted/50'>
                   <td className='px-4 py-3'>{mix.title}</td>
                   <td className='px-4 py-3 text-muted-foreground'>{mix.slug}</td>
+                  <td className='px-4 py-3'>
+                    <Badge variant={mix.draft ? 'secondary' : 'default'}>
+                      {mix.draft ? 'Draft' : 'Live'}
+                    </Badge>
+                  </td>
+                  <td className='px-4 py-3 text-muted-foreground'>
+                    <div className='flex gap-1'>
+                      <Badge variant={mix.url ? 'default' : 'secondary'}>Audio</Badge>
+                      <Badge variant={mix.thumbnailUrl ? 'default' : 'secondary'}>Art</Badge>
+                      <Badge variant={mix.content?.trim() ? 'default' : 'secondary'}>MDX</Badge>
+                    </div>
+                  </td>
                   <td className='px-4 py-3 text-muted-foreground'>{mix.tags?.join(', ') || '—'}</td>
                   <td className='px-4 py-3 text-muted-foreground'>
                     {mix.playCount.toLocaleString()}
@@ -170,7 +272,7 @@ function MixesTabContent({
               ))}
               {mixes.length === 0 && (
                 <tr>
-                  <td colSpan={7} className='px-4 py-8 text-center text-muted-foreground'>
+                  <td colSpan={9} className='px-4 py-8 text-center text-muted-foreground'>
                     No mixes found
                   </td>
                 </tr>
@@ -189,7 +291,8 @@ function PostsTabContent({
   items,
   emptyLabel,
   actionKind,
-  titleFallback
+  titleFallback,
+  onOpenEditDialog
 }: {
   value: 'editorial' | 'tweet'
   isPending: boolean
@@ -197,6 +300,7 @@ function PostsTabContent({
   emptyLabel: string
   actionKind: 'editorial' | 'tweet'
   titleFallback?: string
+  onOpenEditDialog: (post: PostListItem, type: 'post' | 'micro') => void
 }) {
   return (
     <TabsContent value={value} className='mt-4'>
@@ -211,6 +315,8 @@ function PostsTabContent({
               <tr className='border-b bg-muted/50'>
                 <th className='px-4 py-3 text-left font-medium'>Title</th>
                 <th className='px-4 py-3 text-left font-medium'>Slug</th>
+                <th className='px-4 py-3 text-left font-medium'>Status</th>
+                <th className='px-4 py-3 text-left font-medium'>Media</th>
                 <th className='px-4 py-3 text-left font-medium'>Tags</th>
                 <th className='px-4 py-3 text-left font-medium'>Created By</th>
                 <th className='px-4 py-3 text-left font-medium'>Created</th>
@@ -222,6 +328,17 @@ function PostsTabContent({
                 <tr key={post.id} className='border-b hover:bg-muted/50'>
                   <td className='px-4 py-3'>{post.title || titleFallback}</td>
                   <td className='px-4 py-3 text-muted-foreground'>{post.slug}</td>
+                  <td className='px-4 py-3'>
+                    <Badge variant={post.draft ? 'secondary' : 'default'}>
+                      {post.draft ? 'Draft' : 'Live'}
+                    </Badge>
+                  </td>
+                  <td className='px-4 py-3 text-muted-foreground'>
+                    <div className='flex gap-1'>
+                      <Badge variant={post.thumbnailUrl ? 'default' : 'secondary'}>Art</Badge>
+                      <Badge variant={post.content?.trim() ? 'default' : 'secondary'}>MDX</Badge>
+                    </div>
+                  </td>
                   <td className='px-4 py-3 text-muted-foreground'>
                     {post.tags?.join(', ') || '—'}
                   </td>
@@ -233,16 +350,22 @@ function PostsTabContent({
                   </td>
                   <td className='px-4 py-3'>
                     {actionKind === 'editorial' ? (
-                      <EditorialPostActions post={post} />
+                      <EditorialPostActions
+                        post={post}
+                        onEdit={() => onOpenEditDialog(post, 'post')}
+                      />
                     ) : (
-                      <TweetPostActions post={post} />
+                      <TweetPostActions
+                        post={post}
+                        onEdit={() => onOpenEditDialog(post, 'micro')}
+                      />
                     )}
                   </td>
                 </tr>
               ))}
               {items.length === 0 && (
                 <tr>
-                  <td colSpan={6} className='px-4 py-8 text-center text-muted-foreground'>
+                  <td colSpan={8} className='px-4 py-8 text-center text-muted-foreground'>
                     No {emptyLabel.toLowerCase()} found
                   </td>
                 </tr>
@@ -255,9 +378,12 @@ function PostsTabContent({
   )
 }
 
-function EditorialPostActions({ post }: { post: PostListItem }) {
+function EditorialPostActions({ post, onEdit }: { post: PostListItem; onEdit: () => void }) {
   return (
     <div className='flex gap-2'>
+      <Button variant='outline' size='sm' onClick={onEdit}>
+        Edit
+      </Button>
       <Button variant='outline' size='sm' asChild>
         <Link to='/editorial/$slug' params={{ slug: post.slug }}>
           View
@@ -265,16 +391,19 @@ function EditorialPostActions({ post }: { post: PostListItem }) {
       </Button>
       <Button variant='outline' size='sm' asChild>
         <Link to='/new/editorial' search={{ edit: post.slug }}>
-          Edit
+          Full editor
         </Link>
       </Button>
     </div>
   )
 }
 
-function TweetPostActions({ post }: { post: PostListItem }) {
+function TweetPostActions({ post, onEdit }: { post: PostListItem; onEdit: () => void }) {
   return (
     <div className='flex gap-2'>
+      <Button variant='outline' size='sm' onClick={onEdit}>
+        Edit
+      </Button>
       <Button variant='outline' size='sm' asChild>
         <Link to='/tweet/$slug' params={{ slug: post.slug }}>
           View
@@ -282,7 +411,7 @@ function TweetPostActions({ post }: { post: PostListItem }) {
       </Button>
       <Button variant='outline' size='sm' asChild>
         <Link to='/new/tweet' search={{ edit: post.slug }}>
-          Edit
+          Full editor
         </Link>
       </Button>
     </div>
@@ -347,109 +476,274 @@ function LabelsTabContent({ isPending, labels }: { isPending: boolean; labels: L
   )
 }
 
-function EditTagsDialog({
-  editDialog,
-  filteredTags,
-  showAddNew,
+function MetadataDrawer({
+  audioState,
+  postState,
   isPending,
-  onOpenChange,
-  onInputValueChange,
-  onAddTag,
-  onRemoveTag,
-  onCancel,
-  onSave
+  onAudioOpenChange,
+  onPostOpenChange,
+  onAudioChange,
+  onPostChange,
+  onAudioTagAdd,
+  onAudioTagRemove,
+  onPostTagAdd,
+  onPostTagRemove,
+  onSaveAudio,
+  onSavePost
 }: {
-  editDialog: EditDialogState
-  filteredTags: string[]
-  showAddNew: string | false
+  audioState: EditDialogState
+  postState: PostEditDialogState
   isPending: boolean
-  onOpenChange: (open: boolean) => void
-  onInputValueChange: (value: string) => void
+  onAudioOpenChange: (open: boolean) => void
+  onPostOpenChange: (open: boolean) => void
+  onAudioChange: (field: keyof AudioEditValues, value: string | boolean) => void
+  onPostChange: (field: keyof PostEditValues, value: string | boolean) => void
+  onAudioTagAdd: (tag: string) => void
+  onAudioTagRemove: (tag: string) => void
+  onPostTagAdd: (tag: string) => void
+  onPostTagRemove: (tag: string) => void
+  onSaveAudio: () => void
+  onSavePost: () => void
+}) {
+  const open = audioState.open || postState.open
+  const isAudio = audioState.open
+  const title = isAudio ? audioState.values.title : postState.values.title || 'Tweet'
+  const viewLink = isAudio
+    ? audioState.values.slug
+      ? `/mixes/${audioState.values.slug}`
+      : undefined
+    : postState.values.slug
+      ? postState.type === 'post'
+        ? `/editorial/${postState.values.slug}`
+        : `/tweet/${postState.values.slug}`
+      : undefined
+
+  return (
+    <Sheet
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (isAudio) onAudioOpenChange(nextOpen)
+        else onPostOpenChange(nextOpen)
+      }}>
+      <SheetContent side='right' className='flex w-full flex-col overflow-hidden sm:max-w-2xl'>
+        <SheetHeader className='shrink-0 pr-8'>
+          <SheetTitle>{title || 'Edit content'}</SheetTitle>
+          <SheetDescription>
+            Edit metadata, publishing state, media URLs, tags, and MDX content from one panel.
+          </SheetDescription>
+        </SheetHeader>
+
+        <div className='min-h-0 flex-1 space-y-6 overflow-y-auto py-6 pr-2'>
+          {isAudio ? (
+            <AudioMetadataFields
+              values={audioState.values}
+              onChange={onAudioChange}
+              onAddTag={onAudioTagAdd}
+              onRemoveTag={onAudioTagRemove}
+            />
+          ) : (
+            <PostMetadataFields
+              values={postState.values}
+              postType={postState.type}
+              onChange={onPostChange}
+              onAddTag={onPostTagAdd}
+              onRemoveTag={onPostTagRemove}
+            />
+          )}
+        </div>
+
+        <SheetFooter className='shrink-0 gap-2 border-t pt-4 sm:justify-between'>
+          <div className='flex gap-2'>
+            {viewLink && (
+              <Button variant='outline' size='sm' asChild>
+                <a href={viewLink} target='_blank' rel='noreferrer'>
+                  <ExternalLink className='mr-2 size-4' />
+                  View
+                </a>
+              </Button>
+            )}
+          </div>
+          <Button onClick={isAudio ? onSaveAudio : onSavePost} disabled={isPending}>
+            <Save className='mr-2 size-4' />
+            {isPending ? 'Saving…' : 'Save changes'}
+          </Button>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
+  )
+}
+
+function AudioMetadataFields({
+  values,
+  onChange,
+  onAddTag,
+  onRemoveTag
+}: {
+  values: AudioEditValues
+  onChange: (field: keyof AudioEditValues, value: string | boolean) => void
   onAddTag: (tag: string) => void
   onRemoveTag: (tag: string) => void
-  onCancel: () => void
-  onSave: () => void
 }) {
   return (
-    <Dialog open={editDialog.open} onOpenChange={onOpenChange}>
-      <DialogContent className='max-w-md'>
-        <DialogHeader>
-          <DialogTitle>Edit Tags</DialogTitle>
-          <DialogDescription>
-            Edit tags for "{editDialog.mix?.title}". Select existing tags or add new ones.
-          </DialogDescription>
-        </DialogHeader>
-        <div className='py-4 space-y-4'>
-          <div>
-            <Label>Selected Tags</Label>
-            <div className='flex flex-wrap gap-2 mt-2 min-h-[32px]'>
-              {editDialog.selectedTags.length === 0 ? (
-                <span className='text-sm text-muted-foreground'>No tags selected</span>
-              ) : (
-                editDialog.selectedTags.map((tag) => (
-                  <Badge key={tag} variant='secondary' className='gap-1'>
-                    {tag}
-                    <button
-                      type='button'
-                      onClick={() => onRemoveTag(tag)}
-                      className='ml-1 hover:text-foreground'>
-                      <X className='size-3' />
-                    </button>
-                  </Badge>
-                ))
-              )}
-            </div>
-          </div>
-          <div>
-            <Label>Add Tags</Label>
-            <Command className='mt-2 border rounded-sm'>
-              <CommandInput
-                placeholder='Search or type new tag…'
-                value={editDialog.inputValue}
-                onValueChange={onInputValueChange}
-              />
-              <CommandList>
-                <CommandEmpty>
-                  {editDialog.inputValue.trim() ? (
-                    <button
-                      type='button'
-                      className='flex items-center gap-2 px-2 py-1.5 text-sm w-full hover:bg-accent rounded-sm'
-                      onClick={() => onAddTag(editDialog.inputValue)}>
-                      <Plus className='size-4' />
-                      Add "{editDialog.inputValue.trim()}"
-                    </button>
-                  ) : (
-                    'Type to search or add new tags'
-                  )}
-                </CommandEmpty>
-                <CommandGroup>
-                  {showAddNew && (
-                    <CommandItem onSelect={() => onAddTag(editDialog.inputValue)} className='gap-2'>
-                      <Plus className='size-4' />
-                      Add "{editDialog.inputValue.trim()}"
-                    </CommandItem>
-                  )}
-                  {filteredTags.map((tag) => (
-                    <CommandItem key={tag} onSelect={() => onAddTag(tag)} className='gap-2'>
-                      <Check className='size-4 opacity-0' />
-                      {tag}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </div>
-        </div>
-        <DialogFooter>
-          <Button variant='outline' onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button onClick={onSave} disabled={isPending}>
-            {isPending ? 'Saving…' : 'Save'}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <div className='space-y-6'>
+      <ContentStatusField
+        checked={values.draft}
+        onChange={(checked) => onChange('draft', checked)}
+      />
+      <div className='grid gap-4 sm:grid-cols-2'>
+        <TextField
+          label='Title'
+          value={values.title}
+          onChange={(value) => onChange('title', value)}
+        />
+        <TextField label='Slug' value={values.slug} onChange={(value) => onChange('slug', value)} />
+      </div>
+      <TextareaField
+        label='Description'
+        value={values.description}
+        onChange={(value) => onChange('description', value)}
+      />
+      <TextField
+        label='Audio URL'
+        value={values.url}
+        onChange={(value) => onChange('url', value)}
+      />
+      <ImageUploadField
+        label='Thumbnail'
+        value={values.thumbnailUrl}
+        onChange={(value) => onChange('thumbnailUrl', value)}
+      />
+      <TextField
+        label='Episode number'
+        value={values.episodeNumber}
+        onChange={(value) => onChange('episodeNumber', value)}
+      />
+      <TagsInput
+        tags={values.tags}
+        onAddTag={onAddTag}
+        onRemoveTag={onRemoveTag}
+        contentTypeLabel='mix'
+      />
+      <div className='space-y-2'>
+        <Label>Content (MDX)</Label>
+        <SimpleMarkdownEditor
+          value={values.content}
+          onChange={(value) => onChange('content', value)}
+          placeholder='Write mix notes, embeds, and markdown content...'
+        />
+      </div>
+    </div>
+  )
+}
+
+function PostMetadataFields({
+  values,
+  postType,
+  onChange,
+  onAddTag,
+  onRemoveTag
+}: {
+  values: PostEditValues
+  postType: 'post' | 'micro'
+  onChange: (field: keyof PostEditValues, value: string | boolean) => void
+  onAddTag: (tag: string) => void
+  onRemoveTag: (tag: string) => void
+}) {
+  return (
+    <div className='space-y-6'>
+      <ContentStatusField
+        checked={values.draft}
+        onChange={(checked) => onChange('draft', checked)}
+      />
+      <div className='grid gap-4 sm:grid-cols-2'>
+        <TextField
+          label='Title'
+          value={values.title}
+          onChange={(value) => onChange('title', value)}
+        />
+        <TextField label='Slug' value={values.slug} onChange={(value) => onChange('slug', value)} />
+      </div>
+      <TextareaField
+        label='Description'
+        value={values.description}
+        onChange={(value) => onChange('description', value)}
+      />
+      <ImageUploadField
+        label='Thumbnail'
+        value={values.thumbnailUrl}
+        onChange={(value) => onChange('thumbnailUrl', value)}
+      />
+      <TagsInput
+        tags={values.tags}
+        onAddTag={onAddTag}
+        onRemoveTag={onRemoveTag}
+        contentTypeLabel={postType === 'post' ? 'editorial' : 'tweet'}
+      />
+      <div className='space-y-2'>
+        <Label>Content (MDX)</Label>
+        <SimpleMarkdownEditor
+          value={values.content}
+          onChange={(value) => onChange('content', value)}
+          placeholder={
+            postType === 'post' ? 'Write editorial content...' : 'Write tweet content...'
+          }
+        />
+      </div>
+    </div>
+  )
+}
+
+function ContentStatusField({
+  checked,
+  onChange
+}: {
+  checked: boolean
+  onChange: (checked: boolean) => void
+}) {
+  return (
+    <div className='flex items-center justify-between rounded-sm border p-3'>
+      <div>
+        <p className='font-medium'>Draft</p>
+        <p className='text-xs text-muted-foreground'>
+          Keep hidden from public publishing surfaces.
+        </p>
+      </div>
+      <Checkbox checked={checked} onCheckedChange={(value) => onChange(value === true)} />
+    </div>
+  )
+}
+
+function TextField({
+  label,
+  value,
+  onChange
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <div className='space-y-2'>
+      <Label>{label}</Label>
+      <Input value={value} onChange={(event) => onChange(event.target.value)} />
+    </div>
+  )
+}
+
+function TextareaField({
+  label,
+  value,
+  onChange
+}: {
+  label: string
+  value: string
+  onChange: (value: string) => void
+}) {
+  return (
+    <div className='space-y-2'>
+      <Label>{label}</Label>
+      <Textarea value={value} onChange={(event) => onChange(event.target.value)} />
+    </div>
   )
 }
 
@@ -459,8 +753,13 @@ export function ContentTab() {
   const [editDialog, setEditDialog] = useState<EditDialogState>({
     open: false,
     mix: null,
-    selectedTags: [],
-    inputValue: ''
+    values: emptyAudioEditValues
+  })
+  const [postEditDialog, setPostEditDialog] = useState<PostEditDialogState>({
+    open: false,
+    post: null,
+    values: emptyPostEditValues,
+    type: 'post'
   })
 
   const { data: mixesData, isPending: mixesPending } = useQuery({
@@ -489,10 +788,20 @@ export function ContentTab() {
   })
 
   const updateMixMutation = useMutation({
-    mutationFn: ({ slug, tags }: { slug: string; tags: string[] }) =>
+    mutationFn: ({ slug, values }: { slug: string; values: AudioEditValues }) =>
       fetcher(apiUrl(`/content/audio/mix/${slug}`), {
         method: 'PATCH',
-        body: JSON.stringify({ tags })
+        body: JSON.stringify({
+          title: values.title,
+          description: values.description,
+          slug: values.slug,
+          content: values.content,
+          thumbnailUrl: values.thumbnailUrl,
+          url: values.url,
+          tags: values.tags,
+          draft: values.draft,
+          episodeNumber: values.episodeNumber ? Number(values.episodeNumber) : null
+        })
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'mixes'] })
@@ -500,54 +809,62 @@ export function ContentTab() {
       setEditDialog({
         open: false,
         mix: null,
-        selectedTags: [],
-        inputValue: ''
+        values: emptyAudioEditValues
       })
-      toast({ title: 'Tags updated successfully' })
+      toast({ title: 'Mix updated successfully' })
     },
     onError: (err: Error) => {
       toast({
-        title: 'Failed to update tags',
+        title: 'Failed to update mix',
         description: err.message,
         variant: 'destructive'
       })
     }
   })
 
-  const handleEditTags = () => {
-    if (!editDialog.mix) return
-    updateMixMutation.mutate({
-      slug: editDialog.mix.slug,
-      tags: editDialog.selectedTags
-    })
-  }
-
-  const openEditDialog = (mix: AudioItem) => {
-    setEditDialog({
-      open: true,
-      mix,
-      selectedTags: mix.tags || [],
-      inputValue: ''
-    })
-  }
-
-  const addTag = (tag: string) => {
-    const trimmedTag = tag.trim().toLowerCase()
-    if (trimmedTag && !editDialog.selectedTags.includes(trimmedTag)) {
-      setEditDialog((prev) => ({
-        ...prev,
-        selectedTags: [...prev.selectedTags, trimmedTag],
-        inputValue: ''
-      }))
+  const updatePostMutation = useMutation({
+    mutationFn: ({
+      slug,
+      values,
+      type
+    }: {
+      slug: string
+      values: PostEditValues
+      type: 'post' | 'micro'
+    }) =>
+      fetcher(apiUrl(`/content/posts/${slug}`), {
+        method: 'PATCH',
+        body: JSON.stringify({
+          title: values.title.trim() || null,
+          description: values.description,
+          slug: values.slug,
+          content: values.content.trim() ? values.content : null,
+          thumbnailUrl: values.thumbnailUrl || null,
+          tags: values.tags,
+          draft: values.draft,
+          type
+        })
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'posts', 'post'] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'posts', 'micro'] })
+      queryClient.invalidateQueries({ queryKey: ['posts', 'editorials'] })
+      setPostEditDialog({
+        open: false,
+        post: null,
+        values: emptyPostEditValues,
+        type: 'post'
+      })
+      toast({ title: 'Post updated successfully' })
+    },
+    onError: (err: Error) => {
+      toast({
+        title: 'Failed to update post',
+        description: err.message,
+        variant: 'destructive'
+      })
     }
-  }
-
-  const removeTag = (tag: string) => {
-    setEditDialog((prev) => ({
-      ...prev,
-      selectedTags: prev.selectedTags.filter((t) => t !== tag)
-    }))
-  }
+  })
 
   const mixes = mixesData?.data
   const labels = labelsData?.data
@@ -562,30 +879,86 @@ export function ContentTab() {
     )
   }, [mixPlaySortOrder, mixes])
 
-  const allExistingTags = useMemo(() => {
-    const tagSet = new Set<string>()
-    ;(mixes ?? []).forEach((mix) => {
-      mix.tags?.forEach((t) => {
-        tagSet.add(t)
-      })
+  const openEditDialog = (mix: AudioItem) => {
+    setEditDialog({
+      open: true,
+      mix,
+      values: toAudioEditValues(mix)
     })
-    return Array.from(tagSet).toSorted()
-  }, [mixes])
+    setPostEditDialog((prev) => ({ ...prev, open: false }))
+  }
 
-  const filteredTags = useMemo(() => {
-    const input = editDialog.inputValue.toLowerCase()
-    return allExistingTags.filter(
-      (tag) => tag.toLowerCase().includes(input) && !editDialog.selectedTags.includes(tag)
-    )
-  }, [allExistingTags, editDialog.inputValue, editDialog.selectedTags])
+  const openPostEditDialog = (post: PostListItem, type: 'post' | 'micro') => {
+    setPostEditDialog({
+      open: true,
+      post,
+      values: toPostEditValues(post),
+      type
+    })
+    setEditDialog((prev) => ({ ...prev, open: false }))
+  }
 
-  const normalizedInputValue = editDialog.inputValue.trim().toLowerCase()
-  const showAddNew: string | false =
-    normalizedInputValue.length > 0 &&
-    !allExistingTags.includes(normalizedInputValue) &&
-    !editDialog.selectedTags.includes(normalizedInputValue)
-      ? normalizedInputValue
-      : false
+  const updateAudioValue = (field: keyof AudioEditValues, value: string | boolean) => {
+    setEditDialog((prev) => ({
+      ...prev,
+      values: { ...prev.values, [field]: value }
+    }))
+  }
+
+  const updatePostValue = (field: keyof PostEditValues, value: string | boolean) => {
+    setPostEditDialog((prev) => ({
+      ...prev,
+      values: { ...prev.values, [field]: value }
+    }))
+  }
+
+  const addAudioTag = (tag: string) => {
+    const trimmedTag = tag.trim().toLowerCase()
+    if (trimmedTag && !editDialog.values.tags.includes(trimmedTag)) {
+      setEditDialog((prev) => ({
+        ...prev,
+        values: { ...prev.values, tags: [...prev.values.tags, trimmedTag] }
+      }))
+    }
+  }
+
+  const removeAudioTag = (tag: string) => {
+    setEditDialog((prev) => ({
+      ...prev,
+      values: { ...prev.values, tags: prev.values.tags.filter((t) => t !== tag) }
+    }))
+  }
+
+  const addPostTag = (tag: string) => {
+    const trimmedTag = tag.trim().toLowerCase()
+    if (trimmedTag && !postEditDialog.values.tags.includes(trimmedTag)) {
+      setPostEditDialog((prev) => ({
+        ...prev,
+        values: { ...prev.values, tags: [...prev.values.tags, trimmedTag] }
+      }))
+    }
+  }
+
+  const removePostTag = (tag: string) => {
+    setPostEditDialog((prev) => ({
+      ...prev,
+      values: { ...prev.values, tags: prev.values.tags.filter((t) => t !== tag) }
+    }))
+  }
+
+  const handleSaveAudio = () => {
+    if (!editDialog.mix) return
+    updateMixMutation.mutate({ slug: editDialog.mix.slug, values: editDialog.values })
+  }
+
+  const handleSavePost = () => {
+    if (!postEditDialog.post) return
+    updatePostMutation.mutate({
+      slug: postEditDialog.post.slug,
+      values: postEditDialog.values,
+      type: postEditDialog.type
+    })
+  }
 
   return (
     <div className='space-y-4'>
@@ -612,6 +985,7 @@ export function ContentTab() {
           items={editorialPosts ?? []}
           emptyLabel='Editorial posts'
           actionKind='editorial'
+          onOpenEditDialog={openPostEditDialog}
         />
         <PostsTabContent
           value='tweet'
@@ -620,27 +994,24 @@ export function ContentTab() {
           emptyLabel='Tweet posts'
           actionKind='tweet'
           titleFallback='Tweet'
+          onOpenEditDialog={openPostEditDialog}
         />
         <LabelsTabContent isPending={labelsPending} labels={labels ?? []} />
       </Tabs>
-      <EditTagsDialog
-        editDialog={editDialog}
-        filteredTags={filteredTags}
-        showAddNew={showAddNew}
-        isPending={updateMixMutation.isPending}
-        onOpenChange={(open) => setEditDialog((prev) => ({ ...prev, open }))}
-        onInputValueChange={(value) => setEditDialog((prev) => ({ ...prev, inputValue: value }))}
-        onAddTag={addTag}
-        onRemoveTag={removeTag}
-        onCancel={() =>
-          setEditDialog({
-            open: false,
-            mix: null,
-            selectedTags: [],
-            inputValue: ''
-          })
-        }
-        onSave={handleEditTags}
+      <MetadataDrawer
+        audioState={editDialog}
+        postState={postEditDialog}
+        isPending={updateMixMutation.isPending || updatePostMutation.isPending}
+        onAudioOpenChange={(open) => setEditDialog((prev) => ({ ...prev, open }))}
+        onPostOpenChange={(open) => setPostEditDialog((prev) => ({ ...prev, open }))}
+        onAudioChange={updateAudioValue}
+        onPostChange={updatePostValue}
+        onAudioTagAdd={addAudioTag}
+        onAudioTagRemove={removeAudioTag}
+        onPostTagAdd={addPostTag}
+        onPostTagRemove={removePostTag}
+        onSaveAudio={handleSaveAudio}
+        onSavePost={handleSavePost}
       />
     </div>
   )
