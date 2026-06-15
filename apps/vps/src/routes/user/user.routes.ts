@@ -223,7 +223,8 @@ export const updateAdminUserBio = createRoute({
     }),
     body: jsonContentRequired(
       z.object({
-        bio: z.string().max(500).nullable()
+        bio: z.string().max(500).nullable(),
+        image: z.string().nullable().optional()
       }),
       'User bio update payload'
     )

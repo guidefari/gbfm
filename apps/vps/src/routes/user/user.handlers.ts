@@ -32,9 +32,9 @@ export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
 
   const updateData: Partial<{
     email?: string
-    image?: string
+    image?: string | null
     username?: string
-    bio?: string
+    bio?: string | null
   }> = {}
   let avatarFile: File | null = null
   const contentType = c.req.header('content-type') || ''
@@ -53,6 +53,7 @@ export const updateProfile: AppRouteHandler<UpdateProfileRoute> = async (c) => {
   } else {
     const body = c.req.valid('json')
     if (body.email) updateData.email = body.email
+    if ('image' in body && body.image !== undefined) updateData.image = body.image
     if (body.username) updateData.username = body.username
     if (body.bio !== undefined) updateData.bio = body.bio
   }
@@ -182,13 +183,15 @@ export const updateAdminUserBio: AppRouteHandler<UpdateAdminUserBioRoute> = asyn
   }
 
   const { userId } = c.req.valid('param')
-  const { bio } = c.req.valid('json')
+  const body = c.req.valid('json')
+  const updateData: { bio?: string | null; image?: string | null } = {}
+
+  if (body.bio !== null) updateData.bio = body.bio
+  if (body.image !== undefined) updateData.image = body.image
 
   const program = Effect.gen(function* () {
     const userService = yield* UserService
-    const updated = yield* userService.updateUserProfile(userId, {
-      bio: bio ?? undefined
-    })
+    const updated = yield* userService.updateUserProfile(userId, updateData)
     return { bio: updated.bio }
   }).pipe(Effect.withSpan('api.user.updateAdminUserBio'))
 

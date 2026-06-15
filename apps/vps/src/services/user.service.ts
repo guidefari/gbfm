@@ -54,9 +54,9 @@ export interface UserService {
     userId: string,
     data: {
       email?: string
-      image?: string
+      image?: string | null
       username?: string
-      bio?: string
+      bio?: string | null
     }
   ) => Effect.Effect<
     {
@@ -156,9 +156,9 @@ const updateUserProfileEffect = (
   userId: string,
   data: {
     email?: string
-    image?: string
+    image?: string | null
     username?: string
-    bio?: string
+    bio?: string | null
   }
 ) =>
   Effect.gen(function* () {

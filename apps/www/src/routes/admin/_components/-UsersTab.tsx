@@ -378,14 +378,16 @@ export function UsersTab() {
           name: editUser.name,
           email: editUser.email,
           username: editUser.username || undefined,
-          image: editUser.image || undefined,
           emailVerified: editUser.emailVerified
         }
       })
 
       return fetcher<{ bio: string | null }>(apiUrl(`/user/admin/${editUser.id}/bio`), {
         method: 'PATCH',
-        body: JSON.stringify({ bio: editUser.bio })
+        body: JSON.stringify({
+          bio: editUser.bio,
+          image: editUser.image || null
+        })
       })
     },
     onSuccess: () => {
