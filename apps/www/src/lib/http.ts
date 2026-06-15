@@ -1116,6 +1116,36 @@ export function usePublicProfile(username: string) {
   }
 }
 
+type SendMixNotificationResponse = {
+  success: boolean
+  sentTo: string[]
+  emailIds: string[]
+  message: string
+}
+
+type SendMixNotificationInput = {
+  mixSlug: string
+  recipients?: string[]
+  metadata?: {
+    artistName?: string
+    mixTitle?: string
+  }
+}
+
+export function useSendMixNotification() {
+  return useMutation<SendMixNotificationResponse, Error, SendMixNotificationInput>({
+    mutationFn: async ({ mixSlug, recipients, metadata }) =>
+      fetcher<SendMixNotificationResponse>(apiUrl('/email/send-mix-notification'), {
+        method: 'POST',
+        body: JSON.stringify({
+          mixSlug,
+          ...(recipients && { recipients }),
+          ...(metadata && { metadata })
+        })
+      })
+  })
+}
+
 type NewsletterSubscribeResponse = {
   subscribed: boolean
   email: string
