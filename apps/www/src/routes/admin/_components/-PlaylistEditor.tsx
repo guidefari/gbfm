@@ -265,97 +265,112 @@ export function PlaylistEditor({ playlist }: Props) {
     coverImageUrl !== (playlist.coverImageUrl ?? '')
 
   return (
-    <div className='grid gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:h-full lg:min-h-0'>
-      <section className='flex flex-col lg:min-h-0 lg:overflow-hidden'>
-        <form
-          onSubmit={handleSaveMetadata}
-          className='flex flex-col gap-4 lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:pr-2 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]'>
-          <div className='flex items-start gap-4'>
-            <ImageUploadField
-              label='Cover image'
-              value={coverImageUrl}
-              onChange={setCoverImageUrl}
-              variant='compact'
-              size={144}
-              hideLabel
-            />
-            <div className='flex flex-col flex-1 min-w-0 gap-2'>
-              <Label
-                htmlFor={`title-${playlist.id}`}
-                className='text-xs uppercase tracking-wide text-muted-foreground'>
-                Title
-              </Label>
-              <Input
-                id={`title-${playlist.id}`}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                required
-                className='text-lg font-semibold h-auto py-2'
-              />
-              <div className='flex items-center gap-3 text-xs text-muted-foreground'>
-                <span className='truncate'>{playlist.slug}</span>
-                {playlist.spotifyUrl && (
-                  <a
-                    href={playlist.spotifyUrl}
-                    target='_blank'
-                    rel='noopener noreferrer'
-                    className='inline-flex items-center gap-1 underline hover:text-foreground'
-                    title={playlist.spotifyUrl}>
-                    Source
-                    <ExternalLink className='w-3 h-3' />
-                  </a>
-                )}
+    <div className='flex h-full flex-col'>
+      <form onSubmit={handleSaveMetadata} className='border-b p-4 lg:p-6'>
+        <div className='flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6'>
+          <ImageUploadField
+            label='Cover image'
+            value={coverImageUrl}
+            onChange={setCoverImageUrl}
+            variant='compact'
+            size={120}
+            hideLabel
+          />
+
+          <div className='min-w-0 flex-1 space-y-4'>
+            <div className='grid gap-4 lg:grid-cols-2'>
+              <div className='space-y-1'>
+                <Label
+                  htmlFor={`title-${playlist.id}`}
+                  className='text-xs uppercase tracking-wide text-muted-foreground'>
+                  Title
+                </Label>
+                <Input
+                  id={`title-${playlist.id}`}
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  required
+                  className='h-10 text-lg font-semibold'
+                />
+              </div>
+
+              <div className='space-y-1'>
+                <Label
+                  htmlFor={`slug-${playlist.id}`}
+                  className='text-xs uppercase tracking-wide text-muted-foreground'>
+                  Source
+                </Label>
+                <div className='flex h-10 items-center gap-3 text-sm text-muted-foreground'>
+                  <span className='font-mono'>{playlist.slug}</span>
+                  {playlist.spotifyUrl && (
+                    <a
+                      href={playlist.spotifyUrl}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                      className='inline-flex items-center gap-1 underline hover:text-foreground'
+                      title={playlist.spotifyUrl}>
+                      Spotify
+                      <ExternalLink className='h-3 w-3' />
+                    </a>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-          <div className='space-y-1'>
-            <Label
-              htmlFor={`desc-${playlist.id}`}
-              className='text-xs uppercase tracking-wide text-muted-foreground'>
-              Description
-            </Label>
-            <Textarea
-              id={`desc-${playlist.id}`}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className='min-h-32'
-            />
-          </div>
-          {metadataDirty && (
-            <div className='sticky bottom-0 flex items-center justify-end gap-2 py-2 bg-background/90 backdrop-blur'>
-              <Button
-                type='button'
-                variant='ghost'
-                size='sm'
-                onClick={() => {
-                  setTitle(playlist.title)
-                  setDescription(playlist.description ?? '')
-                  setCoverImageUrl(playlist.coverImageUrl ?? '')
-                }}
-                disabled={metadataMutation.isPending}>
-                Discard
-              </Button>
-              <Button type='submit' size='sm' disabled={metadataMutation.isPending}>
-                {metadataMutation.isPending ? (
-                  <>
-                    <Loader2 className='w-3 h-3 mr-2 animate-spin' />
-                    Saving
-                  </>
-                ) : (
-                  'Save changes'
-                )}
-              </Button>
-            </div>
-          )}
-        </form>
-      </section>
 
-      <section className='flex flex-col gap-3 lg:min-h-0 lg:overflow-hidden'>
-        <div className='flex items-center justify-between gap-2 shrink-0'>
-          <h2 className='text-lg font-semibold'>
-            Tracks{' '}
-            <span className='text-sm font-normal text-muted-foreground'>({orderedIds.length})</span>
-          </h2>
+            <div className='space-y-1'>
+              <Label
+                htmlFor={`desc-${playlist.id}`}
+                className='text-xs uppercase tracking-wide text-muted-foreground'>
+                Description
+              </Label>
+              <Textarea
+                id={`desc-${playlist.id}`}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className='min-h-20'
+              />
+            </div>
+
+            {metadataDirty && (
+              <div className='flex items-center justify-end gap-2 pt-1'>
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='sm'
+                  onClick={() => {
+                    setTitle(playlist.title)
+                    setDescription(playlist.description ?? '')
+                    setCoverImageUrl(playlist.coverImageUrl ?? '')
+                  }}
+                  disabled={metadataMutation.isPending}>
+                  Discard
+                </Button>
+                <Button type='submit' size='sm' disabled={metadataMutation.isPending}>
+                  {metadataMutation.isPending ? (
+                    <>
+                      <Loader2 className='mr-2 h-3 w-3 animate-spin' />
+                      Saving
+                    </>
+                  ) : (
+                    'Save changes'
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </form>
+
+      <section className='flex min-h-0 flex-1 flex-col'>
+        <div className='flex items-end justify-between gap-4 border-b px-4 py-3 lg:px-6'>
+          <div>
+            <h2 className='text-base font-semibold'>
+              Tracks{' '}
+              <span className='text-sm font-normal text-muted-foreground'>
+                ({orderedIds.length})
+              </span>
+            </h2>
+          </div>
           <div className='flex items-center gap-2'>
             <Button
               type='button'
@@ -364,55 +379,58 @@ export function PlaylistEditor({ playlist }: Props) {
               onClick={() => syncLinksMutation.mutate()}
               disabled={syncLinksMutation.isPending}>
               {syncLinksMutation.isPending ? (
-                <Loader2 className='w-4 h-4 mr-2 animate-spin' />
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
               ) : (
-                <RefreshCw className='w-4 h-4 mr-2' />
+                <RefreshCw className='mr-2 h-4 w-4' />
               )}
               Sync links
             </Button>
-            {reorderMutation.isPending && (
-              <span className='text-xs text-muted-foreground'>
-                <Loader2 className='inline w-3 h-3 mr-1 animate-spin' />
-                Saving order
-              </span>
-            )}
           </div>
         </div>
 
-        <form onSubmit={handleAddSpotify} className='flex gap-2 shrink-0'>
-          <Input
-            id={`add-spotify-${playlist.id}`}
-            type='url'
-            placeholder='Paste Spotify track URL to add'
-            value={spotifyTrackUrl}
-            onChange={(e) => setSpotifyTrackUrl(e.target.value)}
-            disabled={addSpotifyMutation.isPending}
-            className='h-9'
-          />
-          <Button
-            type='submit'
-            size='sm'
-            disabled={addSpotifyMutation.isPending || !spotifyTrackUrl.trim()}>
-            {addSpotifyMutation.isPending ? <Loader2 className='w-4 h-4 animate-spin' /> : 'Add'}
-          </Button>
-        </form>
+        <div className='border-b px-4 py-3 lg:px-6'>
+          <form onSubmit={handleAddSpotify} className='flex gap-2'>
+            <Input
+              id={`add-spotify-${playlist.id}`}
+              type='url'
+              placeholder='Paste Spotify track URL to add'
+              value={spotifyTrackUrl}
+              onChange={(e) => setSpotifyTrackUrl(e.target.value)}
+              disabled={addSpotifyMutation.isPending}
+              className='h-9'
+            />
+            <Button
+              type='submit'
+              size='sm'
+              disabled={addSpotifyMutation.isPending || !spotifyTrackUrl.trim()}>
+              {addSpotifyMutation.isPending ? <Loader2 className='h-4 w-4 animate-spin' /> : 'Add'}
+            </Button>
+          </form>
 
-        {tracksQuery.isLoading && (
-          <div className='text-sm text-muted-foreground'>Loading tracks…</div>
-        )}
+          {reorderMutation.isPending && (
+            <span className='mt-2 block text-xs text-muted-foreground'>
+              <Loader2 className='mr-1 inline h-3 w-3 animate-spin' />
+              Saving order
+            </span>
+          )}
+        </div>
 
-        {tracksQuery.data && orderedIds.length === 0 && (
-          <div className='text-sm text-muted-foreground'>No tracks yet.</div>
-        )}
+        <div className='min-h-0 flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none]'>
+          {tracksQuery.isLoading && (
+            <div className='px-4 py-3 text-sm text-muted-foreground lg:px-6'>Loading tracks…</div>
+          )}
 
-        <div className='lg:flex-1 lg:min-h-0 lg:overflow-y-auto lg:pr-2 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]'>
+          {tracksQuery.data && orderedIds.length === 0 && (
+            <div className='px-4 py-3 text-sm text-muted-foreground lg:px-6'>No tracks yet.</div>
+          )}
+
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
             modifiers={[restrictToVerticalAxis]}>
             <SortableContext items={orderedIds} strategy={verticalListSortingStrategy}>
-              <div className='space-y-1'>
+              <div className='divide-y'>
                 {orderedIds.map((id) => {
                   const row = trackMap.get(id)
                   if (!row) return null

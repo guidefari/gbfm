@@ -5,9 +5,6 @@ import { Link } from '@tanstack/react-router'
 import { ExternalLink, GripVertical, Pencil, Trash2 } from 'lucide-react'
 import type { IconType } from 'react-icons'
 
-type TrackLinkStyle = React.CSSProperties & {
-  '--brand': string
-}
 import {
   SiApplemusic,
   SiBandcamp,
@@ -84,54 +81,7 @@ function pickPrimary(links: PlaylistTrackLink[]): PlaylistTrackLink | null {
   return links[0] ?? null
 }
 
-interface PlatformLinksProps {
-  links: PlaylistTrackLink[]
-}
-
-function PlatformLinks({ links }: PlatformLinksProps) {
-  if (links.length <= 1) return null
-  return (
-    <div className='mt-1 flex flex-wrap gap-1.5'>
-      {links.map((link) => {
-        const entry = PLATFORM_ICONS[link.platform]
-        const Icon = entry?.Icon ?? ExternalLink
-        const label = PLATFORM_LABELS[link.platform] ?? link.platform
-        const style: TrackLinkStyle | undefined = entry
-          ? {
-              '--brand': entry.color
-            }
-          : undefined
-
-        return (
-          <a
-            key={link.id}
-            href={link.url}
-            target='_blank'
-            rel='noopener noreferrer'
-            title={label}
-            aria-label={label}
-            className='inline-flex size-5 items-center justify-center text-muted-foreground transition-colors hover:text-foreground'
-            style={style}
-            onMouseEnter={(e) => {
-              if (entry) e.currentTarget.style.color = entry.color
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.color = ''
-            }}>
-            <Icon className='w-full h-full' />
-          </a>
-        )
-      })}
-    </div>
-  )
-}
-
-interface TrackTitleProps {
-  title: string
-  links: PlaylistTrackLink[]
-}
-
-function TrackTitle({ title, links }: TrackTitleProps) {
+function TrackTitle({ title, links }: { title: string; links: PlaylistTrackLink[] }) {
   const primary = pickPrimary(links)
   if (!primary) return <>{title}</>
   return (
@@ -178,28 +128,57 @@ export function SortableTrackRow({
     <div
       ref={setNodeRef}
       style={style}
-      className='group flex items-center gap-3 px-2 py-1.5 border border-transparent rounded hover:bg-muted/40 hover:border-border'>
+      className='group flex items-center gap-3 px-4 py-2 transition-colors hover:bg-muted/30'>
       <button
         type='button'
-        className='opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing touch-none text-muted-foreground hover:text-foreground'
+        className='cursor-grab touch-none text-muted-foreground/60 transition-colors hover:text-foreground active:cursor-grabbing'
         {...attributes}
         {...listeners}
         aria-label='Drag handle'>
         <GripVertical className='size-4' />
       </button>
-      <span className='text-xs text-muted-foreground w-6 text-right'>{track.position + 1}</span>
-      <CoverThumb src={track.coverImageUrl} className='size-10 rounded shrink-0' />
-      <div className='flex-1 min-w-0'>
-        <div className='text-sm font-medium truncate'>
+
+      <span className='w-6 text-right text-xs tabular-nums text-muted-foreground'>
+        {track.position + 1}
+      </span>
+
+      <CoverThumb src={track.coverImageUrl} className='size-9 shrink-0 rounded-sm' />
+
+      <div className='min-w-0 flex-1'>
+        <div className='truncate text-sm font-medium'>
           <TrackTitle title={track.title} links={track.links} />
         </div>
-        <div className='text-xs text-muted-foreground truncate'>
-          {track.artistNames?.join(', ') ?? ''}
+        <div className='truncate text-xs text-muted-foreground'>
+          {track.artistNames?.join(', ') ?? '—'}
         </div>
-        <PlatformLinks links={track.links} />
       </div>
+
+      <div className='hidden items-center gap-1.5 md:flex'>
+        {track.links.slice(0, 6).map((link) => {
+          const entry = PLATFORM_ICONS[link.platform]
+          const Icon = entry?.Icon ?? ExternalLink
+          const label = PLATFORM_LABELS[link.platform] ?? link.platform
+          return (
+            <a
+              key={link.id}
+              href={link.url}
+              target='_blank'
+              rel='noopener noreferrer'
+              title={label}
+              aria-label={label}
+              className='inline-flex size-5 items-center justify-center text-muted-foreground transition-colors hover:text-foreground'
+              style={entry ? { color: entry.color } : undefined}>
+              <Icon className='size-4' />
+            </a>
+          )
+        })}
+        {track.links.length > 6 && (
+          <span className='text-xs text-muted-foreground'>+{track.links.length - 6}</span>
+        )}
+      </div>
+
       {spotifyLink && spotifyTrackId && (
-        <div className='opacity-0 group-hover:opacity-100 transition-opacity'>
+        <div className='transition-opacity md:opacity-0 md:group-hover:opacity-100'>
           <TrackPlaybackControls
             spotifyUrl={spotifyLink.url}
             saved={savedSpotifyTrackIds.get(spotifyTrackId) ?? null}
@@ -207,19 +186,21 @@ export function SortableTrackRow({
           />
         </div>
       )}
+
       <Button
         asChild
         type='button'
         variant='ghost'
         size='sm'
         aria-label='Edit track'
-        className='opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground'>
+        className='text-muted-foreground transition-opacity md:opacity-0 md:group-hover:opacity-100'>
         <Link
           to='/admin/music-entity/$entityType/$id'
           params={{ entityType: 'track', id: track.trackId }}>
           <Pencil className='size-4' />
         </Link>
       </Button>
+
       <Button
         type='button'
         variant='ghost'
@@ -227,7 +208,7 @@ export function SortableTrackRow({
         onClick={() => onRemove(track.trackId)}
         disabled={removeDisabled}
         aria-label='Remove track'
-        className='opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive'>
+        className='text-muted-foreground transition-opacity hover:text-destructive md:opacity-0 md:group-hover:opacity-100'>
         <Trash2 className='size-4' />
       </Button>
     </div>

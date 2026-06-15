@@ -68,30 +68,28 @@ export function PlaylistsTab() {
   const showEditor = Boolean(selected)
 
   return (
-    <div className='flex h-full'>
+    <div className='flex h-[calc(100dvh-12rem)] min-h-[32rem] border-y lg:border'>
       <aside
-        className={`flex-col w-full md:w-80 border-r shrink-0 md:flex ${
-          showSidebar ? 'flex' : 'hidden'
-        }`}>
+        className={`flex w-full flex-col border-r md:w-72 lg:w-80 ${showSidebar ? 'flex' : 'hidden md:flex'}`}>
         <SpotifyConnectionCard />
 
-        <div className='mx-3 mt-3 overflow-hidden rounded-md border'>
+        <div className='mx-3 mt-3 overflow-hidden rounded-sm border'>
           <button
             type='button'
             onClick={() => setImportOpen((v) => !v)}
-            className='flex items-center justify-between w-full gap-2 px-4 py-3 text-sm font-semibold hover:bg-muted/50'>
+            className='flex w-full items-center justify-between gap-2 px-4 py-3 text-sm font-medium hover:bg-muted/40'>
             <span className='flex items-center gap-2'>
-              <Plus className='w-4 h-4' />
+              <Plus className='h-4 w-4' />
               Import Spotify playlist
             </span>
             {importOpen ? (
-              <ChevronDown className='w-4 h-4' />
+              <ChevronDown className='h-4 w-4' />
             ) : (
-              <ChevronRight className='w-4 h-4' />
+              <ChevronRight className='h-4 w-4' />
             )}
           </button>
           {importOpen && (
-            <form onSubmit={handleSubmit} className='px-4 pb-4 space-y-2 border-t'>
+            <form onSubmit={handleSubmit} className='space-y-2 border-t px-4 pb-4 pt-3'>
               <p className='text-xs text-muted-foreground'>
                 Tracks dedupe by Spotify URL. Re-import updates order.
               </p>
@@ -116,7 +114,7 @@ export function PlaylistsTab() {
                 disabled={isPending || !url.trim()}>
                 {isPending ? (
                   <>
-                    <Loader2 className='w-4 h-4 mr-2 animate-spin' />
+                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                     Importing
                   </>
                 ) : (
@@ -127,11 +125,13 @@ export function PlaylistsTab() {
           )}
         </div>
 
-        <div className='px-4 py-2 text-xs font-semibold tracking-wide uppercase text-muted-foreground'>
-          Playlists {playlists.length > 0 && `(${playlists.length})`}
+        <div className='px-4 pb-2 pt-4'>
+          <div className='text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground'>
+            Playlists {playlists.length > 0 && `(${playlists.length})`}
+          </div>
         </div>
 
-        <div className='flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none]'>
+        <div className='flex-1 overflow-y-auto px-3 pb-3 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]'>
           {playlistsQuery.isLoading && (
             <div className='px-4 py-2 text-sm text-muted-foreground'>Loading…</div>
           )}
@@ -141,7 +141,7 @@ export function PlaylistsTab() {
           {!playlistsQuery.isLoading && playlists.length === 0 && (
             <div className='px-4 py-2 text-sm text-muted-foreground'>No playlists yet.</div>
           )}
-          <ul className='py-1'>
+          <ul className='overflow-hidden rounded-sm border'>
             {playlists.map((p) => {
               const active = p.id === selectedId
               return (
@@ -149,23 +149,21 @@ export function PlaylistsTab() {
                   <button
                     type='button'
                     onClick={() => setSelectedId(p.id)}
-                    className={`flex items-center w-full gap-3 px-4 py-2 pr-10 text-left border-l-2 transition-colors ${
-                      active
-                        ? 'bg-muted text-foreground border-primary'
-                        : 'border-transparent hover:bg-muted/50 text-muted-foreground hover:text-foreground'
+                    className={`flex w-full items-center gap-3 border-b px-4 py-3 pr-10 text-left transition-colors last:border-b-0 ${
+                      active ? 'bg-muted/60 text-foreground' : 'text-foreground hover:bg-muted/30'
                     }`}>
-                    <CoverThumb src={p.coverImageUrl} className='w-10 h-10 rounded shrink-0' />
+                    <CoverThumb src={p.coverImageUrl} className='h-10 w-10 shrink-0 rounded-sm' />
                     <div className='min-w-0'>
-                      <div className='text-sm font-medium truncate'>{p.title}</div>
-                      <div className='text-xs truncate text-muted-foreground'>{p.slug}</div>
+                      <div className='truncate text-sm font-medium'>{p.title}</div>
+                      <div className='truncate text-xs text-muted-foreground'>{p.slug}</div>
                     </div>
                   </button>
                   <Link
                     to='/admin/music-entity/$entityType/$id'
                     params={{ entityType: 'playlist', id: p.id }}
                     aria-label='Edit playlist metadata'
-                    className='absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground'>
-                    <Pencil className='w-3.5 h-3.5' />
+                    className='absolute right-2 top-1/2 rounded-sm p-1.5 text-muted-foreground opacity-0 transition-opacity -translate-y-1/2 hover:bg-muted hover:text-foreground group-hover:opacity-100'>
+                    <Pencil className='h-3.5 w-3.5' />
                   </Link>
                 </li>
               )
@@ -174,31 +172,29 @@ export function PlaylistsTab() {
         </div>
       </aside>
 
-      <main className={`flex-1 min-w-0 ${showEditor ? 'flex' : 'hidden md:flex'} flex-col`}>
+      <main className={`min-w-0 flex-1 ${showEditor ? 'flex' : 'hidden md:flex'} flex-col`}>
         {selected ? (
           <>
-            <div className='flex items-center gap-2 px-4 py-2 border-b md:hidden shrink-0'>
+            <div className='flex shrink-0 items-center gap-2 border-b px-4 py-2 md:hidden'>
               <Button type='button' variant='ghost' size='sm' onClick={() => setSelectedId(null)}>
-                <ArrowLeft className='w-4 h-4 mr-2' />
+                <ArrowLeft className='mr-2 h-4 w-4' />
                 Playlists
               </Button>
-              <span className='flex-1 text-sm font-medium truncate'>{selected.title}</span>
+              <span className='flex-1 truncate text-sm font-medium'>{selected.title}</span>
               <Button asChild variant='ghost' size='sm' aria-label='Edit playlist'>
                 <Link
                   to='/admin/music-entity/$entityType/$id'
                   params={{ entityType: 'playlist', id: selected.id }}>
-                  <Pencil className='w-4 h-4' />
+                  <Pencil className='h-4 w-4' />
                 </Link>
               </Button>
             </div>
-            <div className='flex-1 min-h-0 overflow-y-auto lg:overflow-hidden [&::-webkit-scrollbar]:hidden [scrollbar-width:none]'>
-              <div className='p-4 md:p-6 lg:h-full'>
-                <PlaylistEditor key={selected.id} playlist={selected} />
-              </div>
+            <div className='flex-1 min-h-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none]'>
+              <PlaylistEditor key={selected.id} playlist={selected} />
             </div>
           </>
         ) : (
-          <div className='items-center justify-center hidden h-full text-sm md:flex text-muted-foreground'>
+          <div className='hidden h-full items-center justify-center text-sm text-muted-foreground md:flex'>
             Select a playlist to edit.
           </div>
         )}
