@@ -20,6 +20,7 @@ import { ReleaseServiceLive } from '@/services/release.service'
 import { ReminderSignalServiceLive } from '@/services/reminder-signal.service'
 import { ResolveServiceLive } from '@/services/resolve.service'
 import { S3ServiceLive } from '@/services/s3.service'
+import { SearchServiceLive } from '@/services/search.service'
 import { SentryServiceLive } from '@/services/sentry.service'
 import { SentryClientServiceLive } from '@/services/sentry-client.service'
 import { ShowServiceLive, ShowSubscriptionServiceLive } from '@/services/show.service'
@@ -46,6 +47,7 @@ const BaseServicesLayer = Layer.mergeAll(
   ResolveServiceLive,
   ReleaseServiceLive,
   S3ServiceLive,
+  SearchServiceLive,
   SentryServiceLive.pipe(Layer.provide(SentryClientLive)),
   ShowServiceLive,
   ShowSubscriptionServiceLive,

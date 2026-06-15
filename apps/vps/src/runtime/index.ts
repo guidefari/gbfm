@@ -14,6 +14,7 @@ import type { ReleaseService } from '@/services/release.service'
 import type { ReminderSignalService } from '@/services/reminder-signal.service'
 import type { ResolveService } from '@/services/resolve.service'
 import type { S3Service } from '@/services/s3.service'
+import type { SearchService } from '@/services/search.service'
 import type { SentryService } from '@/services/sentry.service'
 import type { ShowService, ShowSubscriptionService } from '@/services/show.service'
 import type { SpotifyService } from '@/services/spotify.service'
@@ -39,6 +40,7 @@ export type AppServices =
   | ReleaseService
   | ResolveService
   | S3Service
+  | SearchService
   | SentryService
   | ShowService
   | ShowSubscriptionService
