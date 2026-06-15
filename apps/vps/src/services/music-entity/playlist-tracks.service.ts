@@ -194,7 +194,7 @@ export const reorderPlaylistTracksEffect =
 
 const copyCoverImageToCdnEffect = (
   s3: S3Service,
-  routerUrl: string,
+  cdnUrl: string,
   bucketName: string,
   entityType: string,
   entityId: string,
@@ -217,14 +217,14 @@ const copyCoverImageToCdnEffect = (
     const key = `music/${entityType}/${entityId}/cover`
     const uploadedKey = yield* s3.uploadFile(key, buffer, contentType, bucketName)
 
-    return `${routerUrl}/user-content/${uploadedKey}`
+    return `${cdnUrl}/user-content/${uploadedKey}`
   }).pipe(Effect.catch(() => Effect.succeed(null)))
 
 const enrichTrackLinksEffect = (
   db: typeof DbType,
   scraper: MusicLinkScraperService,
   s3: S3Service,
-  routerUrl: string,
+  cdnUrl: string,
   bucketName: string,
   playlistId: string,
   track: ImportedTrackTarget
@@ -273,7 +273,7 @@ const enrichTrackLinksEffect = (
     if (scraped.entityMeta?.thumbnailUrl) {
       const publicCoverImageUrl = yield* copyCoverImageToCdnEffect(
         s3,
-        routerUrl,
+        cdnUrl,
         bucketName,
         'track',
         track.trackId,
@@ -306,7 +306,7 @@ const enrichImportedPlaylistLinksEffect = (
   db: typeof DbType,
   scraper: MusicLinkScraperService,
   s3: S3Service,
-  routerUrl: string,
+  cdnUrl: string,
   bucketName: string,
   playlistId: string,
   tracks: ImportedTrackTarget[]
@@ -319,7 +319,7 @@ const enrichImportedPlaylistLinksEffect = (
 
     const results = yield* Effect.forEach(
       tracks,
-      (track) => enrichTrackLinksEffect(db, scraper, s3, routerUrl, bucketName, playlistId, track),
+      (track) => enrichTrackLinksEffect(db, scraper, s3, cdnUrl, bucketName, playlistId, track),
       { concurrency: 1 }
     )
 
@@ -397,7 +397,7 @@ const refreshPlaylistCoverImageEffect = (
   db: typeof DbType,
   spotify: SpotifyService,
   s3: S3Service,
-  routerUrl: string,
+  cdnUrl: string,
   bucketName: string,
   playlistId: string
 ) =>
@@ -413,7 +413,7 @@ const refreshPlaylistCoverImageEffect = (
 
     const publicCoverImageUrl = yield* copyCoverImageToCdnEffect(
       s3,
-      routerUrl,
+      cdnUrl,
       bucketName,
       'playlist',
       playlistId,
@@ -556,7 +556,7 @@ export const importSpotifyPlaylistEffect = (
   spotify: SpotifyService,
   scraper: MusicLinkScraperService,
   s3: S3Service,
-  routerUrl: string,
+  cdnUrl: string,
   bucketName: string
 ) =>
   Effect.fn('musicEntity.importSpotifyPlaylist')(function* (
@@ -574,14 +574,7 @@ export const importSpotifyPlaylistEffect = (
 
     const data: SpotifyImportPlaylist = yield* spotify.getPlaylistForImport(id)
     const storedCoverImageUrl = data.coverImageUrl
-      ? yield* copyCoverImageToCdnEffect(
-          s3,
-          routerUrl,
-          bucketName,
-          'playlist',
-          id,
-          data.coverImageUrl
-        )
+      ? yield* copyCoverImageToCdnEffect(s3, cdnUrl, bucketName, 'playlist', id, data.coverImageUrl)
       : null
     const importedTracks: ImportedTrackTarget[] = []
 
@@ -742,7 +735,7 @@ export const importSpotifyPlaylistEffect = (
         db,
         scraper,
         s3,
-        routerUrl,
+        cdnUrl,
         bucketName,
         result.playlist.id,
         importedTracks
@@ -757,11 +750,11 @@ export const syncPlaylistLinksEffect = (
   spotify: SpotifyService,
   scraper: MusicLinkScraperService,
   s3: S3Service,
-  routerUrl: string,
+  cdnUrl: string,
   bucketName: string
 ) =>
   Effect.fn('musicEntity.syncPlaylistLinks')(function* (playlistId: string) {
-    yield* refreshPlaylistCoverImageEffect(db, spotify, s3, routerUrl, bucketName, playlistId)
+    yield* refreshPlaylistCoverImageEffect(db, spotify, s3, cdnUrl, bucketName, playlistId)
 
     const targets = yield* getPlaylistLinkSyncTargetsEffect(db)(playlistId)
 
@@ -776,7 +769,7 @@ export const syncPlaylistLinksEffect = (
       db,
       scraper,
       s3,
-      routerUrl,
+      cdnUrl,
       bucketName,
       playlistId,
       targets

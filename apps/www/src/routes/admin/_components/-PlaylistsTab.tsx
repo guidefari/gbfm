@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ArrowLeft, ChevronDown, ChevronRight, Loader2, Pencil, Plus } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { CoverThumb } from '@/components/CoverThumb'
 import { apiUrl, fetcher } from '@/lib/http'
 import { PlaylistEditor, type PlaylistSummary } from './-PlaylistEditor'
 import { SpotifyConnectionCard } from './-SpotifyConnectionCard'
@@ -153,15 +154,7 @@ export function PlaylistsTab() {
                         ? 'bg-muted text-foreground border-primary'
                         : 'border-transparent hover:bg-muted/50 text-muted-foreground hover:text-foreground'
                     }`}>
-                    {p.coverImageUrl ? (
-                      <img
-                        src={p.coverImageUrl}
-                        alt=''
-                        className='object-cover w-10 h-10 rounded shrink-0'
-                      />
-                    ) : (
-                      <div className='w-10 h-10 rounded bg-muted shrink-0' />
-                    )}
+                    <CoverThumb src={p.coverImageUrl} className='w-10 h-10 rounded shrink-0' />
                     <div className='min-w-0'>
                       <div className='text-sm font-medium truncate'>{p.title}</div>
                       <div className='text-xs truncate text-muted-foreground'>{p.slug}</div>

@@ -1,6 +1,6 @@
 import { Button, Label, toast } from '@gbfm/ui'
 import { FolderOpen, ImageIcon, Loader2, Trash2, Upload } from 'lucide-react'
-import { useId, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { S3MediaFilePicker } from '@/components/mix-uploader/S3AudioFilePicker'
 import { apiUrl } from '@/lib/http'
 import { readResponseErrorMessage, readUploadResponse } from '@/lib/response'
@@ -26,8 +26,14 @@ export function ImageUploadField({
   const [isUploading, setIsUploading] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const [mediaPickerOpen, setMediaPickerOpen] = useState(false)
+  const [imageFailed, setImageFailed] = useState(false)
 
   const displayUrl = previewUrl || value
+  const showImage = Boolean(displayUrl) && !imageFailed
+
+  useEffect(() => {
+    setImageFailed(false)
+  }, [displayUrl])
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -91,8 +97,13 @@ export function ImageUploadField({
         <div
           className='relative overflow-hidden border rounded-md shrink-0 bg-muted group'
           style={{ width: dim, height: dim }}>
-          {displayUrl ? (
-            <img src={displayUrl} alt={label} className='object-cover w-full h-full' />
+          {showImage ? (
+            <img
+              src={displayUrl}
+              alt={label}
+              onError={() => setImageFailed(true)}
+              className='object-cover w-full h-full'
+            />
           ) : (
             <label
               htmlFor={inputId}
@@ -101,7 +112,7 @@ export function ImageUploadField({
               <span className='text-xs text-muted-foreground'>No image</span>
             </label>
           )}
-          {displayUrl && !isUploading && (
+          {showImage && !isUploading && (
             <div className='absolute inset-0 flex items-center justify-center gap-1 transition-opacity opacity-0 bg-black/60 group-hover:opacity-100'>
               <label
                 htmlFor={inputId}
@@ -128,7 +139,7 @@ export function ImageUploadField({
               </button>
             </div>
           )}
-          {!displayUrl && (
+          {!showImage && (
             <button
               type='button'
               onClick={() => setMediaPickerOpen(true)}
@@ -168,8 +179,13 @@ export function ImageUploadField({
       {!hideLabel && <Label>{label}</Label>}
       <div className='flex items-start gap-4'>
         <div className='relative w-32 h-32 overflow-hidden border rounded-md shrink-0 bg-muted'>
-          {displayUrl ? (
-            <img src={displayUrl} alt={label} className='object-cover w-full h-full' />
+          {showImage ? (
+            <img
+              src={displayUrl}
+              alt={label}
+              onError={() => setImageFailed(true)}
+              className='object-cover w-full h-full'
+            />
           ) : (
             <label
               htmlFor={inputId}

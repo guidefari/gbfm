@@ -247,13 +247,13 @@ const generateQROnlyPdf = (mix: MixData, qrDataUrl: string) =>
 const generateMixQRPdfEffect = (mix: MixData, s3Service: S3Service, force?: boolean) =>
   Effect.gen(function* () {
     const bucketName = config.buckets.userContent
-    const routerUrl = config.urls.router
+    const cdnUrl = config.urls.bucketRouter
 
     const cacheKey = getCacheKey(mix.slug)
     const isCached = force ? false : yield* s3Service.checkExists(cacheKey, bucketName)
 
     if (isCached) {
-      const url = `${routerUrl}/user-content/${cacheKey}`
+      const url = `${cdnUrl}/user-content/${cacheKey}`
       return { url, cached: true }
     }
 
@@ -274,20 +274,20 @@ const generateMixQRPdfEffect = (mix: MixData, s3Service: S3Service, force?: bool
         )
       )
 
-    const url = `${routerUrl}/user-content/${cacheKey}`
+    const url = `${cdnUrl}/user-content/${cacheKey}`
     return { url, cached: false }
   })
 
 const generateShowQRPdfEffect = (show: ShowData, s3Service: S3Service, force?: boolean) =>
   Effect.gen(function* () {
     const bucketName = config.buckets.userContent
-    const routerUrl = config.urls.router
+    const cdnUrl = config.urls.bucketRouter
 
     const cacheKey = getCacheKey(`show-${show.slug}`)
     const isCached = force ? false : yield* s3Service.checkExists(cacheKey, bucketName)
 
     if (isCached) {
-      const url = `${routerUrl}/user-content/${cacheKey}`
+      const url = `${cdnUrl}/user-content/${cacheKey}`
       return { url, cached: true }
     }
 
@@ -316,7 +316,7 @@ const generateShowQRPdfEffect = (show: ShowData, s3Service: S3Service, force?: b
         )
       )
 
-    const url = `${routerUrl}/user-content/${cacheKey}`
+    const url = `${cdnUrl}/user-content/${cacheKey}`
     return { url, cached: false }
   })
 

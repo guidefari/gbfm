@@ -12,7 +12,7 @@ export interface S3Object {
 
 export interface BucketConfig {
   stage: string
-  routerUrl: string
+  bucketRouterUrl: string
   buckets: {
     userContent: string
     mixes: string
@@ -61,10 +61,10 @@ export function getS3PublicUrl(
   key: string
 ): string | null {
   if (bucketName === config.buckets.userContent) {
-    return `${config.routerUrl}/user-content/${key}`
+    return `${config.bucketRouterUrl}/user-content/${key}`
   }
   if (bucketName === config.buckets.mixes) {
-    return `${config.routerUrl}/mixes/${key}`
+    return `${config.bucketRouterUrl}/mixes/${key}`
   }
   return null
 }

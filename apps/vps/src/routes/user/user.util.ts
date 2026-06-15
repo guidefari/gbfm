@@ -16,5 +16,5 @@ export async function uploadAvatar(file: File): Promise<CDN_URL> {
     bucketName
   })
 
-  return `${config.urls.router}/user-content/${fileName}`
+  return `${config.urls.bucketRouter}/user-content/${fileName}`
 }

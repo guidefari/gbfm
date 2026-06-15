@@ -279,7 +279,7 @@ export const MusicEntityServiceLive = Layer.effect(
         spotify,
         scraper,
         s3,
-        config.urls.router,
+        config.urls.bucketRouter,
         config.buckets.userContent
       ),
       syncPlaylistLinks: syncPlaylistLinksEffect(
@@ -287,7 +287,7 @@ export const MusicEntityServiceLive = Layer.effect(
         spotify,
         scraper,
         s3,
-        config.urls.router,
+        config.urls.bucketRouter,
         config.buckets.userContent
       ),
 

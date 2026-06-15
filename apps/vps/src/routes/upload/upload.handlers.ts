@@ -53,7 +53,7 @@ export const uploadFile: AppRouteHandler<UploadFileRoute> = async (c) => {
       file?.type,
       config.buckets.userContent
     )
-    return { url: `${config.urls.router}/user-content/${key}`, key }
+    return { url: `${config.urls.bucketRouter}/user-content/${key}`, key }
   }).pipe(
     Effect.withSpan('api.upload.file', { attributes: { fileType, fileName } }),
     Effect.tapError((e) =>

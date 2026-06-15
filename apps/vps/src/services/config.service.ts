@@ -60,7 +60,6 @@ const ConfigSchema = Schema.Struct({
   urls: Schema.Struct({
     frontend: Schema.String,
     vps: Schema.String,
-    router: Schema.String,
     bucketRouter: Schema.String
   }),
   auth: Schema.Struct({
@@ -119,8 +118,7 @@ export function createConfig(): ConfigService {
 
   const frontendUrl = resourceString('Urls', 'site', 'http://127.0.0.1:5173')
   const vpsUrl = resourceString('Urls', 'vps', 'http://127.0.0.1:3003')
-  const routerUrl = resourceString('Router', 'url', 'http://localhost:3000')
-  const bucketRouterUrl = routerUrl
+  const bucketRouterUrl = 'https://cdn.goosebumps.fm'
 
   const emailSender = resourceString('Email', 'sender', '')
   const accessTokenSecret = 'secret'
@@ -164,7 +162,6 @@ export function createConfig(): ConfigService {
     urls: {
       frontend: frontendUrl,
       vps: vpsUrl,
-      router: routerUrl,
       bucketRouter: bucketRouterUrl
     },
     auth: {

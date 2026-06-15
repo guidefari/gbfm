@@ -489,7 +489,7 @@ const copyCoverImageEffect = (
     const buffer = Buffer.from(arrayBuffer)
     const key = `music/${entityType}/${entityId}/cover`
     const uploadedKey = yield* s3.uploadFile(key, buffer, contentType, config.buckets.userContent)
-    return `${config.urls.router}/user-content/${uploadedKey}`
+    return `${config.urls.bucketRouter}/user-content/${uploadedKey}`
   }).pipe(Effect.catch(() => Effect.succeed(null)))
 
 export const resolveMusicEntity: AppRouteHandler<ResolveMusicEntityRoute> = async (c) => {

@@ -21,6 +21,7 @@ import {
   SiYoutube,
   SiYoutubemusic
 } from 'react-icons/si'
+import { CoverThumb } from '@/components/CoverThumb'
 import { spotifyIdFromUrl } from '@/lib/spotify-pkce'
 import { TrackPlaybackControls } from './-TrackPlaybackControls'
 
@@ -187,11 +188,7 @@ export function SortableTrackRow({
         <GripVertical className='size-4' />
       </button>
       <span className='text-xs text-muted-foreground w-6 text-right'>{track.position + 1}</span>
-      {track.coverImageUrl ? (
-        <img src={track.coverImageUrl} alt='' className='size-10 rounded object-cover' />
-      ) : (
-        <div className='size-10 rounded bg-muted' />
-      )}
+      <CoverThumb src={track.coverImageUrl} className='size-10 rounded shrink-0' />
       <div className='flex-1 min-w-0'>
         <div className='text-sm font-medium truncate'>
           <TrackTitle title={track.title} links={track.links} />
