@@ -125,14 +125,14 @@ function SelectedShowPanel({ show }: { show: ShowWithHosts }) {
 
   return (
     <section>
-      <div className='flex flex-col sm:flex-row gap-6 items-start mb-8 pb-8 border-b border-border/40'>
+      <div className='flex flex-col sm:flex-row gap-6 items-start pt-2 mb-8 pb-8 border-b border-border/40'>
         <img
           src={show.thumbnailUrl || DEFAULT_IMAGE_URL}
           alt={show.title}
           className='w-40 h-40 object-cover border rounded-sm border-border bg-background shrink-0'
         />
         <div className='flex-1 min-w-0 space-y-3'>
-          <h2 className='text-3xl font-black tracking-tight'>{show.title}</h2>
+          <h2 className='text-3xl font-black tracking-tight mt-0'>{show.title}</h2>
           {hostNames && <p className='text-sm text-muted-foreground'>Hosted by {hostNames}</p>}
           {show.description && (
             <p className='text-sm text-foreground/70 line-clamp-4'>{show.description}</p>
