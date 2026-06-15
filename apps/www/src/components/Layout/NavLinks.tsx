@@ -14,7 +14,9 @@ import { RSS } from '@/components/RSS'
 
 export type NavSurface = 'overlay'
 
-export type NavTier = 'primary' | 'secondary' | 'utility'
+export type NavTier = 'primary' | 'secondary' | 'utility' | 'create'
+
+export type MinRole = 'editor' | 'admin'
 
 type BaseNavItem = {
   id: string
@@ -22,8 +24,10 @@ type BaseNavItem = {
   icon: React.ReactNode
   tier: NavTier
   surfaces: NavSurface[]
+  description?: string
   adminOnly?: boolean
   authOnly?: boolean
+  minRole?: MinRole
 }
 
 export type NavItem =
@@ -122,8 +126,51 @@ export const navConfig: NavItem[] = [
     tier: 'secondary',
     surfaces: ['overlay'],
     adminOnly: true
+  },
+  {
+    id: 'create-mix',
+    name: 'New mix',
+    slug: '/mix-upload',
+    icon: <Disc3 className={iconSytles} />,
+    tier: 'create',
+    surfaces: ['overlay'],
+    description: 'Upload a DJ mix with artwork and tracklist timestamps.',
+    minRole: 'editor'
+  },
+  {
+    id: 'create-tweet',
+    name: 'New tweet',
+    slug: '/new/tweet',
+    icon: <MessageSquare className={iconSytles} />,
+    tier: 'create',
+    surfaces: ['overlay'],
+    description: 'Capture a tweet into the editorial feed.',
+    minRole: 'editor'
+  },
+  {
+    id: 'create-editorial',
+    name: 'New editorial',
+    slug: '/new/editorial',
+    icon: <Newspaper className={iconSytles} />,
+    tier: 'create',
+    surfaces: ['overlay'],
+    description: 'Write a long-form editorial post.',
+    minRole: 'editor'
+  },
+  {
+    id: 'create-label',
+    name: 'New label',
+    slug: '/label-upload',
+    icon: <Tag className={iconSytles} />,
+    tier: 'create',
+    surfaces: ['overlay'],
+    description: 'Add a record label profile.',
+    minRole: 'editor'
   }
 ]
 
 export const navItemsForSurface = (surface: NavSurface) =>
   navConfig.filter((item) => item.surfaces.includes(surface))
+
+export const navItemsByTier = (tier: NavTier, surface: NavSurface) =>
+  navConfig.filter((item) => item.tier === tier && item.surfaces.includes(surface))

@@ -2,14 +2,23 @@ import { getFormString } from '@gbfm/core/utils'
 import { GenericAuthForm, toast } from '@gbfm/ui'
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
+import { z } from 'zod'
 import { AuthPageLayout, AuthStatusNotice } from '@/components/Auth/AuthPageLayout'
 import { signIn } from '@/lib/auth-client'
 
+const searchSchema = z.object({
+  redirect: z.string().optional()
+})
+
+const safeRedirect = (target: string | undefined) =>
+  target && target.startsWith('/') && !target.startsWith('//') ? target : '/'
+
 export const Route = createFileRoute('/auth/sign-in')({
-  beforeLoad: ({ context }) => {
+  validateSearch: searchSchema,
+  beforeLoad: ({ context, search }) => {
     if (context.auth.isAuthenticated) {
       throw redirect({
-        to: '/'
+        to: safeRedirect(search.redirect)
       })
     }
   },
@@ -20,6 +29,7 @@ function SignInPage() {
   const [error, setError] = useState<string>('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const navigate = Route.useNavigate()
+  const search = Route.useSearch()
 
   const onSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -41,7 +51,7 @@ function SignInPage() {
           variant: 'default'
         })
         setError('')
-        navigate({ to: '/' })
+        navigate({ to: safeRedirect(search.redirect) })
       } else if (result.error) {
         setError(result.error.message || 'Failed to sign in')
       }

@@ -1,17 +1,29 @@
 import { useHotkey } from '@tanstack/react-hotkeys'
-import { Link } from '@tanstack/react-router'
-import { LogIn, Menu, User, X } from 'lucide-react'
+import { Link, useLocation } from '@tanstack/react-router'
+import { LayoutDashboard, LogIn, Menu, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useState } from 'react'
 import { useSession } from '@/lib/auth-client'
+import { canSeeNavItem } from '@/lib/nav-access'
 import { cn } from '@/lib/utils'
 import { useAudioPlayerPlaybackState, useAudioPlayerVisibilityState } from '@/store/audioPlayer'
-import { navItemsForSurface } from '../NavLinks'
+import { type NavItem, navItemsForSurface } from '../NavLinks'
 import { NowPlayingMini } from './NowPlayingMini'
 import { useRovingGrid } from './useRovingGrid'
 
 type FloatingMenuProps = {
   className?: string
+}
+
+type RovingProps = {
+  tabIndex: number
+  onFocus: () => void
+  onKeyDown: (event: React.KeyboardEvent) => void
+}
+
+type TileBinding = {
+  ref: (node: HTMLElement | null) => void
+  props: RovingProps
 }
 
 const tileClass = cn(
@@ -22,13 +34,63 @@ const tileClass = cn(
 
 const tileLabelClass = 'w-full px-1 text-center text-xs font-medium leading-tight'
 
+const sectionHeaderClass = 'text-xs font-bold tracking-widest uppercase text-muted-foreground'
+
+const sectionGridClass = 'grid grid-cols-3 sm:grid-cols-4 gap-3'
+
+function NavTile({
+  item,
+  binding,
+  onClose
+}: {
+  item: NavItem
+  binding: TileBinding
+  onClose: () => void
+}) {
+  if (item.external) {
+    return (
+      <a
+        ref={binding.ref}
+        href={item.external}
+        target='_blank'
+        rel='noreferrer'
+        onClick={onClose}
+        className={tileClass}
+        {...binding.props}>
+        {item.icon}
+        <span className={tileLabelClass}>{item.name}</span>
+      </a>
+    )
+  }
+  if (item.CustomComponent) {
+    return (
+      <div ref={binding.ref} className={tileClass} {...binding.props}>
+        {item.CustomComponent}
+        <span className={tileLabelClass}>{item.name}</span>
+      </div>
+    )
+  }
+  return (
+    <Link
+      ref={binding.ref}
+      to={item.slug}
+      onClick={onClose}
+      className={tileClass}
+      {...binding.props}>
+      {item.icon}
+      <span className={tileLabelClass}>{item.name}</span>
+    </Link>
+  )
+}
+
 export function FloatingMenu({ className }: FloatingMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
   const { audioSrc } = useAudioPlayerPlaybackState()
   const { isFullscreenVisible } = useAudioPlayerVisibilityState()
   const { data: session } = useSession()
+  const location = useLocation()
   const isAuthenticated = Boolean(session?.user)
-  const isAdmin = session?.user?.role === 'admin'
+  const role = session?.user?.role
 
   const hasActiveAudio = Boolean(audioSrc)
 
@@ -58,25 +120,41 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
     }
   }, [isOpen])
 
-  const navItems = navItemsForSurface('overlay').filter(
-    (item) => (!item.adminOnly || isAdmin) && (!item.authOnly || isAuthenticated)
+  const overlayItems = navItemsForSurface('overlay')
+
+  const browseItems = overlayItems.filter(
+    (item) => (item.tier === 'primary' || item.tier === 'secondary') && !item.adminOnly
   )
 
-  const accountTile = isAuthenticated
-    ? {
-        slug: '/dashboard',
-        label: 'Profile',
-        icon: <User className='w-6 h-6' />
-      }
-    : {
-        slug: '/auth/sign-in',
-        label: 'Login',
-        icon: <LogIn className='w-6 h-6' />
-      }
+  const createItems = overlayItems.filter(
+    (item) => item.tier === 'create' && canSeeNavItem(item, { isAuthenticated, role })
+  )
 
-  const tileCount = navItems.length + 1
+  const adminItems = overlayItems.filter(
+    (item) => item.adminOnly && canSeeNavItem(item, { isAuthenticated, role })
+  )
+
+  const utilityItems = overlayItems.filter((item) => item.tier === 'utility')
+
+  const tileCount =
+    browseItems.length + createItems.length + 1 + adminItems.length + utilityItems.length
   const { gridRef, registerTile, getTileProps } = useRovingGrid(tileCount, isOpen)
-  const accountTileIndex = navItems.length
+
+  const bind = (index: number): TileBinding => ({
+    ref: registerTile(index),
+    props: getTileProps(index)
+  })
+
+  let cursor = 0
+  const browseStart = cursor
+  cursor += browseItems.length
+  const createStart = cursor
+  cursor += createItems.length
+  const accountTileIndex = cursor
+  cursor += 1
+  const adminStart = cursor
+  cursor += adminItems.length
+  const utilityStart = cursor
 
   return (
     <div className={cn('z-50', className)}>
@@ -113,58 +191,80 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
               exit={{ opacity: 0, y: 30 }}
               transition={{ duration: 0.2 }}
               aria-label='Site navigation'
-              className='relative grid grid-cols-3 sm:grid-cols-4 gap-3 px-4 mb-24 mx-auto w-full max-w-2xl'>
-              {navItems.map((item, index) => {
-                if (item.external) {
-                  return (
-                    <a
+              className='relative flex flex-col gap-6 px-4 mb-24 mx-auto w-full max-w-2xl'>
+              <section className='flex flex-col gap-3'>
+                <span className={sectionHeaderClass}>Browse</span>
+                <div className={sectionGridClass}>
+                  {browseItems.map((item, i) => (
+                    <NavTile
                       key={item.id}
-                      ref={registerTile(index)}
-                      href={item.external}
-                      target='_blank'
-                      rel='noreferrer'
+                      item={item}
+                      binding={bind(browseStart + i)}
+                      onClose={closeMenu}
+                    />
+                  ))}
+                </div>
+              </section>
+
+              {createItems.length > 0 && (
+                <section className='flex flex-col gap-3'>
+                  <span className={sectionHeaderClass}>Create</span>
+                  <div className={sectionGridClass}>
+                    {createItems.map((item, i) => (
+                      <NavTile
+                        key={item.id}
+                        item={item}
+                        binding={bind(createStart + i)}
+                        onClose={closeMenu}
+                      />
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              <section className='flex flex-col gap-3'>
+                <span className={sectionHeaderClass}>Account</span>
+                <div className={sectionGridClass}>
+                  {isAuthenticated ? (
+                    <Link
+                      ref={registerTile(accountTileIndex)}
+                      to='/dashboard'
                       onClick={closeMenu}
                       className={tileClass}
-                      {...getTileProps(index)}>
-                      {item.icon}
-                      <span className={tileLabelClass}>{item.name}</span>
-                    </a>
-                  )
-                }
-                if (item.CustomComponent) {
-                  return (
-                    <div
-                      key={item.id}
-                      ref={registerTile(index)}
+                      {...getTileProps(accountTileIndex)}>
+                      <LayoutDashboard className='w-6 h-6' />
+                      <span className={tileLabelClass}>Dashboard</span>
+                    </Link>
+                  ) : (
+                    <Link
+                      ref={registerTile(accountTileIndex)}
+                      to='/auth/sign-in'
+                      search={{ redirect: location.pathname }}
+                      onClick={closeMenu}
                       className={tileClass}
-                      {...getTileProps(index)}>
-                      {item.CustomComponent}
-                      <span className={tileLabelClass}>{item.name}</span>
-                    </div>
-                  )
-                }
-                return (
-                  <Link
-                    key={item.id}
-                    ref={registerTile(index)}
-                    to={item.slug}
-                    onClick={closeMenu}
-                    className={tileClass}
-                    {...getTileProps(index)}>
-                    {item.icon}
-                    <span className={tileLabelClass}>{item.name}</span>
-                  </Link>
-                )
-              })}
-              <Link
-                ref={registerTile(accountTileIndex)}
-                to={accountTile.slug}
-                onClick={closeMenu}
-                className={tileClass}
-                {...getTileProps(accountTileIndex)}>
-                {accountTile.icon}
-                <span className={tileLabelClass}>{accountTile.label}</span>
-              </Link>
+                      {...getTileProps(accountTileIndex)}>
+                      <LogIn className='w-6 h-6' />
+                      <span className={tileLabelClass}>Login</span>
+                    </Link>
+                  )}
+                  {adminItems.map((item, i) => (
+                    <NavTile
+                      key={item.id}
+                      item={item}
+                      binding={bind(adminStart + i)}
+                      onClose={closeMenu}
+                    />
+                  ))}
+                  {utilityItems.map((item, i) => (
+                    <NavTile
+                      key={item.id}
+                      item={item}
+                      binding={bind(utilityStart + i)}
+                      onClose={closeMenu}
+                    />
+                  ))}
+                </div>
+              </section>
             </motion.nav>
           </motion.div>
         )}

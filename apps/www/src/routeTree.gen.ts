@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SubscribeRouteImport } from './routes/subscribe'
-import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as RemindersRouteImport } from './routes/reminders'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as MixUploadRouteImport } from './routes/mix-upload'
@@ -76,11 +75,6 @@ const TermsRoute = TermsRouteImport.update({
 const SubscribeRoute = SubscribeRouteImport.update({
   id: '/subscribe',
   path: '/subscribe',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RemindersRoute = RemindersRouteImport.update({
@@ -344,7 +338,6 @@ export interface FileRoutesByFullPath {
   '/mix-upload': typeof MixUploadRoute
   '/privacy': typeof PrivacyRoute
   '/reminders': typeof RemindersRoute
-  '/settings': typeof SettingsRoute
   '/subscribe': typeof SubscribeRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
@@ -395,7 +388,6 @@ export interface FileRoutesByTo {
   '/mix-upload': typeof MixUploadRoute
   '/privacy': typeof PrivacyRoute
   '/reminders': typeof RemindersRoute
-  '/settings': typeof SettingsRoute
   '/subscribe': typeof SubscribeRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
@@ -451,7 +443,6 @@ export interface FileRoutesById {
   '/mix-upload': typeof MixUploadRoute
   '/privacy': typeof PrivacyRoute
   '/reminders': typeof RemindersRoute
-  '/settings': typeof SettingsRoute
   '/subscribe': typeof SubscribeRoute
   '/terms': typeof TermsRoute
   '/unsubscribe': typeof UnsubscribeRoute
@@ -508,7 +499,6 @@ export interface FileRouteTypes {
     | '/mix-upload'
     | '/privacy'
     | '/reminders'
-    | '/settings'
     | '/subscribe'
     | '/terms'
     | '/unsubscribe'
@@ -559,7 +549,6 @@ export interface FileRouteTypes {
     | '/mix-upload'
     | '/privacy'
     | '/reminders'
-    | '/settings'
     | '/subscribe'
     | '/terms'
     | '/unsubscribe'
@@ -614,7 +603,6 @@ export interface FileRouteTypes {
     | '/mix-upload'
     | '/privacy'
     | '/reminders'
-    | '/settings'
     | '/subscribe'
     | '/terms'
     | '/unsubscribe'
@@ -670,7 +658,6 @@ export interface RootRouteChildren {
   MixUploadRoute: typeof MixUploadRoute
   PrivacyRoute: typeof PrivacyRoute
   RemindersRoute: typeof RemindersRoute
-  SettingsRoute: typeof SettingsRoute
   SubscribeRoute: typeof SubscribeRoute
   TermsRoute: typeof TermsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
@@ -724,13 +711,6 @@ declare module '@tanstack/react-router' {
       path: '/subscribe'
       fullPath: '/subscribe'
       preLoaderRoute: typeof SubscribeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reminders': {
@@ -1161,7 +1141,6 @@ const rootRouteChildren: RootRouteChildren = {
   MixUploadRoute: MixUploadRoute,
   PrivacyRoute: PrivacyRoute,
   RemindersRoute: RemindersRoute,
-  SettingsRoute: SettingsRoute,
   SubscribeRoute: SubscribeRoute,
   TermsRoute: TermsRoute,
   UnsubscribeRoute: UnsubscribeRoute,
