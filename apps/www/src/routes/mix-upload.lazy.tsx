@@ -26,7 +26,7 @@ import { createLazyFileRoute, useRouter } from '@tanstack/react-router'
 import { FileText, List, Loader2, Music } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { z } from 'zod'
-import { S3AudioFilePicker } from '@/components/mix-uploader/S3AudioFilePicker'
+import { S3AudioFilePicker, S3MediaFilePicker } from '@/components/mix-uploader/S3AudioFilePicker'
 import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
 import { authClient, useSession } from '@/lib/auth-client'
 import { apiUrl, fetcher, useAllShows, useAudioBySlug, useAudioTags } from '@/lib/http'
@@ -96,6 +96,7 @@ function MixUploadPage() {
   const [artworkPreview, setArtworkPreview] = useState<string | null>(null)
   const [currentTime, setCurrentTime] = useState(0)
   const [s3PickerOpen, setS3PickerOpen] = useState(false)
+  const [s3ArtworkPickerOpen, setS3ArtworkPickerOpen] = useState(false)
 
   const audioRef = useRef<HTMLAudioElement>(null)
   const router = useRouter()
@@ -307,6 +308,8 @@ function MixUploadPage() {
   }
 
   const handleS3FileSelect = (url: string, filename: string) => {
+    if (audioPreview && audioFile) URL.revokeObjectURL(audioPreview)
+    setAudioFile(null)
     setAudioPreview(url)
     setFormData((prev) => {
       const updated = { ...prev, url }
@@ -320,6 +323,13 @@ function MixUploadPage() {
       }
       return updated
     })
+  }
+
+  const handleS3ArtworkSelect = (url: string) => {
+    if (artworkPreview && artworkFile) URL.revokeObjectURL(artworkPreview)
+    setArtworkFile(null)
+    setArtworkPreview(url)
+    setFormData((prev) => ({ ...prev, thumbnailUrl: url }))
   }
 
   const handleArtworkFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -481,6 +491,13 @@ function MixUploadPage() {
         onSelect={handleS3FileSelect}
       />
 
+      <S3MediaFilePicker
+        open={s3ArtworkPickerOpen}
+        onOpenChange={setS3ArtworkPickerOpen}
+        mediaType='image'
+        onSelect={handleS3ArtworkSelect}
+      />
+
       {!audioPreview && !isEditMode ? (
         <AudioDropZone
           onFileSelect={handleAudioFileChange}
@@ -544,6 +561,7 @@ function MixUploadPage() {
                   onAddNewTag={addNewTag}
                   onArtworkChange={handleArtworkFileChange}
                   onRemoveArtwork={removeArtworkFile}
+                  onPickArtworkFromS3={() => setS3ArtworkPickerOpen(true)}
                 />
               </TabsContent>
 
@@ -594,6 +612,7 @@ Add any technical details, equipment used, or special techniques...`}
               fileSize={audioFile?.size}
               existingUrl={formData.url}
               onRemove={removeAudioFile}
+              onPickFromS3={() => setS3PickerOpen(true)}
             />
           </div>
 

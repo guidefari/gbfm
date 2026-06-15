@@ -1,4 +1,4 @@
-import { ImageIcon, Loader2, Tag, Upload, X } from 'lucide-react'
+import { FolderOpen, ImageIcon, Loader2, Tag, Upload, X } from 'lucide-react'
 import { useId } from 'react'
 import { generateSlug } from '../lib/format'
 import { Badge } from './badge'
@@ -47,6 +47,7 @@ interface MixDetailsFormProps {
   onAddNewTag: (e: React.KeyboardEvent<HTMLInputElement>) => void
   onArtworkChange: (e: React.ChangeEvent<HTMLInputElement>) => void
   onRemoveArtwork: () => void
+  onPickArtworkFromS3?: () => void
 }
 
 export function MixDetailsForm({
@@ -76,7 +77,8 @@ export function MixDetailsForm({
   onNewTagChange,
   onAddNewTag,
   onArtworkChange,
-  onRemoveArtwork
+  onRemoveArtwork,
+  onPickArtworkFromS3
 }: MixDetailsFormProps) {
   const artworkUploadId = useId()
 
@@ -238,18 +240,31 @@ export function MixDetailsForm({
                 className='hidden'
                 id={artworkUploadId}
               />
-              <label htmlFor={artworkUploadId}>
-                <Button
-                  variant='outline'
-                  size='sm'
-                  className='bg-transparent cursor-pointer border-gb-pastel-green-2/30 text-gb-pastel-green-1 hover:bg-gb-pastel-green-2/20'
-                  asChild>
-                  <span>
-                    <Upload className='w-4 h-4 mr-2' />
-                    Choose Image
-                  </span>
-                </Button>
-              </label>
+              <div className='flex flex-wrap justify-center gap-2'>
+                <label htmlFor={artworkUploadId}>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    className='bg-transparent cursor-pointer border-gb-pastel-green-2/30 text-gb-pastel-green-1 hover:bg-gb-pastel-green-2/20'
+                    asChild>
+                    <span>
+                      <Upload className='w-4 h-4 mr-2' />
+                      Choose Image
+                    </span>
+                  </Button>
+                </label>
+                {onPickArtworkFromS3 && (
+                  <Button
+                    type='button'
+                    variant='outline'
+                    size='sm'
+                    onClick={onPickArtworkFromS3}
+                    className='bg-transparent border-gb-pastel-green-2/30 text-gb-pastel-green-1 hover:bg-gb-pastel-green-2/20'>
+                    <FolderOpen className='w-4 h-4 mr-2' />
+                    Pick from S3
+                  </Button>
+                )}
+              </div>
             </div>
           ) : (
             <div className='space-y-3'>
@@ -267,6 +282,17 @@ export function MixDetailsForm({
                   <X className='w-4 h-4' />
                 </Button>
               </div>
+              {onPickArtworkFromS3 && (
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  onClick={onPickArtworkFromS3}
+                  className='bg-transparent border-gb-pastel-green-2/30 text-gb-pastel-green-1 hover:bg-gb-pastel-green-2/20'>
+                  <FolderOpen className='w-4 h-4 mr-2' />
+                  Replace from S3
+                </Button>
+              )}
             </div>
           )}
         </div>

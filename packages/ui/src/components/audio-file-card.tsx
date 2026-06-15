@@ -1,4 +1,4 @@
-import { Music, Trash2 } from 'lucide-react'
+import { FolderOpen, Music, Trash2 } from 'lucide-react'
 import { Button } from './button'
 import { Card, CardContent, CardHeader, CardTitle } from './card'
 
@@ -7,9 +7,16 @@ interface AudioFileCardProps {
   fileSize?: number
   existingUrl?: string
   onRemove: () => void
+  onPickFromS3?: () => void
 }
 
-export function AudioFileCard({ fileName, fileSize, existingUrl, onRemove }: AudioFileCardProps) {
+export function AudioFileCard({
+  fileName,
+  fileSize,
+  existingUrl,
+  onRemove,
+  onPickFromS3
+}: AudioFileCardProps) {
   const displayName = fileName || (existingUrl ? existingUrl.split('/').pop() : 'Unknown file')
 
   const displaySize = fileSize ? `${(fileSize / (1024 * 1024)).toFixed(2)} MB` : '0 MB'
@@ -31,13 +38,24 @@ export function AudioFileCard({ fileName, fileSize, existingUrl, onRemove }: Aud
               <p className='text-xs text-muted-foreground'>{displaySize}</p>
             </div>
           </div>
-          <Button
-            variant='ghost'
-            size='sm'
-            onClick={onRemove}
-            className='shrink-0 text-red-400 hover:text-red-300'>
-            <Trash2 className='w-4 h-4' />
-          </Button>
+          <div className='flex items-center gap-1 shrink-0'>
+            {onPickFromS3 && (
+              <Button
+                variant='ghost'
+                size='sm'
+                onClick={onPickFromS3}
+                className='text-gb-pastel-green-1 hover:text-gb-highlight'>
+                <FolderOpen className='w-4 h-4' />
+              </Button>
+            )}
+            <Button
+              variant='ghost'
+              size='sm'
+              onClick={onRemove}
+              className='text-red-400 hover:text-red-300'>
+              <Trash2 className='w-4 h-4' />
+            </Button>
+          </div>
         </div>
       </CardContent>
     </Card>
