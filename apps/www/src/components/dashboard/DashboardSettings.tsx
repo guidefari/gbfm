@@ -18,6 +18,8 @@ const tabs = {
 
 type SettingsTab = keyof typeof tabs
 
+const tabKeys: SettingsTab[] = ['profile', 'appearance', 'player', 'email']
+
 export function DashboardSettings({ user }: { user: SessionUser }) {
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile')
 
@@ -30,7 +32,7 @@ export function DashboardSettings({ user }: { user: SessionUser }) {
       <div className='flex flex-col lg:flex-row gap-8 lg:gap-12'>
         <div className='lg:w-64 shrink-0'>
           <nav className='flex flex-col gap-1'>
-            {(Object.keys(tabs) as SettingsTab[]).map((tab) => (
+            {tabKeys.map((tab) => (
               <SettingNavButton
                 key={tab}
                 active={activeTab === tab}

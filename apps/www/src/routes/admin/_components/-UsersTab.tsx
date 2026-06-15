@@ -25,6 +25,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
   Input,
   Label,
   Select,
@@ -32,6 +37,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  TablePagination,
   Tabs,
   TabsContent,
   TabsList,
@@ -40,7 +46,7 @@ import {
   toast
 } from '@gbfm/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, Edit, ExternalLink, GripVertical, Mail, Plus, X } from 'lucide-react'
+import { Check, GripVertical, MoreHorizontal, Plus, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { authClient } from '@/lib/auth-client'
 import {
@@ -56,6 +62,8 @@ import { ImageUploadField } from './-ImageUploadField'
 
 const ROLES = ['admin', 'editor', 'creator', 'user'] as const
 type UserRole = (typeof ROLES)[number]
+
+const PAGE_SIZE = 25
 
 interface AdminUser {
   id: string
@@ -175,6 +183,7 @@ function SortableSocialLinkRow({
 export function UsersTab() {
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
+  const [offset, setOffset] = useState(0)
   const [banDialog, setBanDialog] = useState<BanDialogState>({
     open: false,
     userId: '',
@@ -267,11 +276,12 @@ export function UsersTab() {
   )
 
   const { data, isPending } = useQuery({
-    queryKey: ['admin', 'users', search],
+    queryKey: ['admin', 'users', search, offset],
     queryFn: async () => {
       const result = await authClient.admin.listUsers({
         query: {
-          limit: 50,
+          limit: PAGE_SIZE,
+          offset,
           ...(search && { searchValue: search, searchField: 'email' })
         }
       })
@@ -532,6 +542,12 @@ export function UsersTab() {
   }
 
   const users: AdminUser[] = data?.data?.users ?? []
+  const total = data?.data?.total ?? users.length
+
+  const handleSearchChange = (value: string) => {
+    setSearch(value)
+    setOffset(0)
+  }
 
   return (
     <div className='space-y-4'>
@@ -539,13 +555,14 @@ export function UsersTab() {
         <Input
           placeholder='Search by email...'
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => handleSearchChange(e.target.value)}
           className='max-w-sm'
         />
         <Button onClick={() => setCreateUserDialog(true)}>
           <Plus className='w-4 h-4 mr-2' />
           Create User
         </Button>
+        <span className='text-sm text-muted-foreground'>{total} users</span>
       </div>
 
       {isPending ? (
@@ -565,7 +582,22 @@ export function UsersTab() {
             <tbody>
               {users.map((user) => (
                 <tr key={user.id} className='border-b hover:bg-muted/50'>
-                  <td className='px-4 py-3'>{user.name}</td>
+                  <td className='px-4 py-3'>
+                    <div className='flex items-center gap-3'>
+                      {user.image ? (
+                        <img
+                          src={user.image}
+                          alt={user.name}
+                          className='h-8 w-8 rounded-sm object-cover shrink-0'
+                        />
+                      ) : (
+                        <div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-muted text-muted-foreground'>
+                          {user.name.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <span>{user.name}</span>
+                    </div>
+                  </td>
                   <td className='px-4 py-3 text-muted-foreground'>{user.email}</td>
                   <td className='px-4 py-3'>
                     <Select
@@ -586,86 +618,88 @@ export function UsersTab() {
                   </td>
                   <td className='px-4 py-3'>
                     {user.banned ? (
-                      <Badge variant='destructive'>Banned</Badge>
+                      <Badge variant='destructive' title={user.banReason ?? undefined}>
+                        Banned
+                      </Badge>
+                    ) : user.emailVerified === false ? (
+                      <Badge variant='outline' className='text-muted-foreground'>
+                        Unverified
+                      </Badge>
                     ) : (
                       <Badge variant='outline'>Active</Badge>
                     )}
                   </td>
                   <td className='px-4 py-3'>
-                    <div className='flex items-center gap-2'>
-                      {user.username && (
-                        <Button variant='outline' size='sm' asChild>
-                          <a href={`/${user.username}`} target='_blank' rel='noopener noreferrer'>
-                            <ExternalLink className='w-4 h-4' />
-                            <span className='sr-only'>View Profile</span>
-                          </a>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant='ghost' size='sm' aria-label='Actions'>
+                          <MoreHorizontal className='w-4 h-4' />
                         </Button>
-                      )}
-                      <Button
-                        variant='outline'
-                        size='sm'
-                        onClick={() => sendInviteMutation.mutate(user.id)}
-                        disabled={sendInviteMutation.isPending}
-                        title='Send invite email'>
-                        <Mail className='w-4 h-4' />
-                        <span className='sr-only'>Send Invite</span>
-                      </Button>
-                      <Button
-                        variant='outline'
-                        size='sm'
-                        onClick={() => {
-                          setEditUser({
-                            id: user.id,
-                            name: user.name,
-                            email: user.email,
-                            username: user.username || '',
-                            image: user.image || '',
-                            bio: '',
-                            emailVerified: user.emailVerified ?? false
-                          })
-                          setOriginalUsername(user.username || '')
-                          setEditDialogTab('details')
-                          setSocialLinksDraft([])
-                          setEditUserDialog(true)
-                        }}>
-                        <Edit className='w-4 h-4' />
-                        <span className='sr-only'>Edit</span>
-                      </Button>
-                      {user.banned ? (
-                        <Button
-                          variant='outline'
-                          size='sm'
-                          onClick={() => unbanMutation.mutate(user.id)}
-                          disabled={unbanMutation.isPending}>
-                          Unban
-                        </Button>
-                      ) : (
-                        <Button
-                          variant='outline'
-                          size='sm'
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align='end'>
+                        {user.username && (
+                          <DropdownMenuItem asChild>
+                            <a href={`/${user.username}`} target='_blank' rel='noopener noreferrer'>
+                              View profile
+                            </a>
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem
+                          onClick={() => sendInviteMutation.mutate(user.id)}
+                          disabled={sendInviteMutation.isPending}>
+                          Send invite
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            setEditUser({
+                              id: user.id,
+                              name: user.name,
+                              email: user.email,
+                              username: user.username || '',
+                              image: user.image || '',
+                              bio: '',
+                              emailVerified: user.emailVerified ?? false
+                            })
+                            setOriginalUsername(user.username || '')
+                            setEditDialogTab('details')
+                            setSocialLinksDraft([])
+                            setEditUserDialog(true)
+                          }}>
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        {user.banned ? (
+                          <DropdownMenuItem
+                            onClick={() => unbanMutation.mutate(user.id)}
+                            disabled={unbanMutation.isPending}>
+                            Unban
+                          </DropdownMenuItem>
+                        ) : (
+                          <DropdownMenuItem
+                            onClick={() =>
+                              setBanDialog({
+                                open: true,
+                                userId: user.id,
+                                userName: user.name
+                              })
+                            }>
+                            Ban
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className='text-destructive focus:text-destructive'
                           onClick={() =>
-                            setBanDialog({
+                            setDeleteDialog({
                               open: true,
                               userId: user.id,
                               userName: user.name
                             })
                           }>
-                          Ban
-                        </Button>
-                      )}
-                      <Button
-                        variant='destructive'
-                        size='sm'
-                        onClick={() =>
-                          setDeleteDialog({
-                            open: true,
-                            userId: user.id,
-                            userName: user.name
-                          })
-                        }>
-                        Delete
-                      </Button>
-                    </div>
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </td>
                 </tr>
               ))}
@@ -680,6 +714,14 @@ export function UsersTab() {
           </table>
         </div>
       )}
+
+      <TablePagination
+        page={Math.floor(offset / PAGE_SIZE) + 1}
+        pageSize={PAGE_SIZE}
+        total={total}
+        isLoading={isPending}
+        onPageChange={(p) => setOffset((p - 1) * PAGE_SIZE)}
+      />
 
       <Dialog open={createUserDialog} onOpenChange={setCreateUserDialog}>
         <DialogContent>

@@ -31,6 +31,7 @@ import { Route as MixesIndexRouteImport } from './routes/mixes/index'
 import { Route as LabelsIndexRouteImport } from './routes/labels/index'
 import { Route as EditorialIndexRouteImport } from './routes/editorial/index'
 import { Route as DjsIndexRouteImport } from './routes/djs/index'
+import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as TweetSlugRouteImport } from './routes/tweet/$slug'
 import { Route as TracksTrackIdRouteImport } from './routes/tracks/$trackId'
@@ -43,6 +44,10 @@ import { Route as MixesMixIdRouteImport } from './routes/mixes/$mixId'
 import { Route as LabelsLabelSlugRouteImport } from './routes/labels/$labelSlug'
 import { Route as InviteCharlie3000RouteImport } from './routes/invite/charlie3000'
 import { Route as EditorialSlugRouteImport } from './routes/editorial/$slug'
+import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile'
+import { Route as DashboardPlayerRouteImport } from './routes/dashboard/player'
+import { Route as DashboardEmailRouteImport } from './routes/dashboard/email'
+import { Route as DashboardAppearanceRouteImport } from './routes/dashboard/appearance'
 import { Route as AuthVerifyEmailRouteImport } from './routes/auth/verify-email'
 import { Route as AuthSignUpRouteImport } from './routes/auth/sign-up'
 import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
@@ -172,6 +177,11 @@ const DjsIndexRoute = DjsIndexRouteImport.update({
   path: '/djs/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardIndexRoute = DashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
@@ -231,6 +241,26 @@ const EditorialSlugRoute = EditorialSlugRouteImport.update({
   id: '/$slug',
   path: '/$slug',
   getParentRoute: () => EditorialRouteRoute,
+} as any)
+const DashboardProfileRoute = DashboardProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardPlayerRoute = DashboardPlayerRouteImport.update({
+  id: '/player',
+  path: '/player',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardEmailRoute = DashboardEmailRouteImport.update({
+  id: '/email',
+  path: '/email',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardAppearanceRoute = DashboardAppearanceRouteImport.update({
+  id: '/appearance',
+  path: '/appearance',
+  getParentRoute: () => DashboardRoute,
 } as any)
 const AuthVerifyEmailRoute = AuthVerifyEmailRouteImport.update({
   id: '/auth/verify-email',
@@ -333,7 +363,7 @@ export interface FileRoutesByFullPath {
   '/tweet': typeof TweetRouteRouteWithChildren
   '/$slug': typeof SlugRoute
   '/changelog': typeof ChangelogRoute
-  '/dashboard': typeof DashboardRoute
+  '/dashboard': typeof DashboardRouteWithChildren
   '/label-upload': typeof LabelUploadRoute
   '/mix-upload': typeof MixUploadRoute
   '/privacy': typeof PrivacyRoute
@@ -358,6 +388,10 @@ export interface FileRoutesByFullPath {
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
+  '/dashboard/appearance': typeof DashboardAppearanceRoute
+  '/dashboard/email': typeof DashboardEmailRoute
+  '/dashboard/player': typeof DashboardPlayerRoute
+  '/dashboard/profile': typeof DashboardProfileRoute
   '/editorial/$slug': typeof EditorialSlugRoute
   '/invite/charlie3000': typeof InviteCharlie3000Route
   '/labels/$labelSlug': typeof LabelsLabelSlugRoute
@@ -370,6 +404,7 @@ export interface FileRoutesByFullPath {
   '/tracks/$trackId': typeof TracksTrackIdRoute
   '/tweet/$slug': typeof TweetSlugRoute
   '/admin/': typeof AdminIndexRoute
+  '/dashboard/': typeof DashboardIndexRoute
   '/djs/': typeof DjsIndexRoute
   '/editorial/': typeof EditorialIndexRoute
   '/labels/': typeof LabelsIndexRoute
@@ -383,7 +418,6 @@ export interface FileRoutesByTo {
   '/tracks': typeof TracksRouteRouteWithChildren
   '/$slug': typeof SlugRoute
   '/changelog': typeof ChangelogRoute
-  '/dashboard': typeof DashboardRoute
   '/label-upload': typeof LabelUploadRoute
   '/mix-upload': typeof MixUploadRoute
   '/privacy': typeof PrivacyRoute
@@ -408,6 +442,10 @@ export interface FileRoutesByTo {
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
+  '/dashboard/appearance': typeof DashboardAppearanceRoute
+  '/dashboard/email': typeof DashboardEmailRoute
+  '/dashboard/player': typeof DashboardPlayerRoute
+  '/dashboard/profile': typeof DashboardProfileRoute
   '/editorial/$slug': typeof EditorialSlugRoute
   '/invite/charlie3000': typeof InviteCharlie3000Route
   '/labels/$labelSlug': typeof LabelsLabelSlugRoute
@@ -420,6 +458,7 @@ export interface FileRoutesByTo {
   '/tracks/$trackId': typeof TracksTrackIdRoute
   '/tweet/$slug': typeof TweetSlugRoute
   '/admin': typeof AdminIndexRoute
+  '/dashboard': typeof DashboardIndexRoute
   '/djs': typeof DjsIndexRoute
   '/editorial': typeof EditorialIndexRoute
   '/labels': typeof LabelsIndexRoute
@@ -438,7 +477,7 @@ export interface FileRoutesById {
   '/tweet': typeof TweetRouteRouteWithChildren
   '/$slug': typeof SlugRoute
   '/changelog': typeof ChangelogRoute
-  '/dashboard': typeof DashboardRoute
+  '/dashboard': typeof DashboardRouteWithChildren
   '/label-upload': typeof LabelUploadRoute
   '/mix-upload': typeof MixUploadRoute
   '/privacy': typeof PrivacyRoute
@@ -463,6 +502,10 @@ export interface FileRoutesById {
   '/auth/sign-in': typeof AuthSignInRoute
   '/auth/sign-up': typeof AuthSignUpRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
+  '/dashboard/appearance': typeof DashboardAppearanceRoute
+  '/dashboard/email': typeof DashboardEmailRoute
+  '/dashboard/player': typeof DashboardPlayerRoute
+  '/dashboard/profile': typeof DashboardProfileRoute
   '/editorial/$slug': typeof EditorialSlugRoute
   '/invite/charlie3000': typeof InviteCharlie3000Route
   '/labels/$labelSlug': typeof LabelsLabelSlugRoute
@@ -475,6 +518,7 @@ export interface FileRoutesById {
   '/tracks/$trackId': typeof TracksTrackIdRoute
   '/tweet/$slug': typeof TweetSlugRoute
   '/admin/': typeof AdminIndexRoute
+  '/dashboard/': typeof DashboardIndexRoute
   '/djs/': typeof DjsIndexRoute
   '/editorial/': typeof EditorialIndexRoute
   '/labels/': typeof LabelsIndexRoute
@@ -519,6 +563,10 @@ export interface FileRouteTypes {
     | '/auth/sign-in'
     | '/auth/sign-up'
     | '/auth/verify-email'
+    | '/dashboard/appearance'
+    | '/dashboard/email'
+    | '/dashboard/player'
+    | '/dashboard/profile'
     | '/editorial/$slug'
     | '/invite/charlie3000'
     | '/labels/$labelSlug'
@@ -531,6 +579,7 @@ export interface FileRouteTypes {
     | '/tracks/$trackId'
     | '/tweet/$slug'
     | '/admin/'
+    | '/dashboard/'
     | '/djs/'
     | '/editorial/'
     | '/labels/'
@@ -544,7 +593,6 @@ export interface FileRouteTypes {
     | '/tracks'
     | '/$slug'
     | '/changelog'
-    | '/dashboard'
     | '/label-upload'
     | '/mix-upload'
     | '/privacy'
@@ -569,6 +617,10 @@ export interface FileRouteTypes {
     | '/auth/sign-in'
     | '/auth/sign-up'
     | '/auth/verify-email'
+    | '/dashboard/appearance'
+    | '/dashboard/email'
+    | '/dashboard/player'
+    | '/dashboard/profile'
     | '/editorial/$slug'
     | '/invite/charlie3000'
     | '/labels/$labelSlug'
@@ -581,6 +633,7 @@ export interface FileRouteTypes {
     | '/tracks/$trackId'
     | '/tweet/$slug'
     | '/admin'
+    | '/dashboard'
     | '/djs'
     | '/editorial'
     | '/labels'
@@ -623,6 +676,10 @@ export interface FileRouteTypes {
     | '/auth/sign-in'
     | '/auth/sign-up'
     | '/auth/verify-email'
+    | '/dashboard/appearance'
+    | '/dashboard/email'
+    | '/dashboard/player'
+    | '/dashboard/profile'
     | '/editorial/$slug'
     | '/invite/charlie3000'
     | '/labels/$labelSlug'
@@ -635,6 +692,7 @@ export interface FileRouteTypes {
     | '/tracks/$trackId'
     | '/tweet/$slug'
     | '/admin/'
+    | '/dashboard/'
     | '/djs/'
     | '/editorial/'
     | '/labels/'
@@ -653,7 +711,7 @@ export interface RootRouteChildren {
   TweetRouteRoute: typeof TweetRouteRouteWithChildren
   SlugRoute: typeof SlugRoute
   ChangelogRoute: typeof ChangelogRoute
-  DashboardRoute: typeof DashboardRoute
+  DashboardRoute: typeof DashboardRouteWithChildren
   LabelUploadRoute: typeof LabelUploadRoute
   MixUploadRoute: typeof MixUploadRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -846,6 +904,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DjsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/': {
+      id: '/dashboard/'
+      path: '/'
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof DashboardIndexRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/admin/': {
       id: '/admin/'
       path: '/admin'
@@ -929,6 +994,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/editorial/$slug'
       preLoaderRoute: typeof EditorialSlugRouteImport
       parentRoute: typeof EditorialRouteRoute
+    }
+    '/dashboard/profile': {
+      id: '/dashboard/profile'
+      path: '/profile'
+      fullPath: '/dashboard/profile'
+      preLoaderRoute: typeof DashboardProfileRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/player': {
+      id: '/dashboard/player'
+      path: '/player'
+      fullPath: '/dashboard/player'
+      preLoaderRoute: typeof DashboardPlayerRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/email': {
+      id: '/dashboard/email'
+      path: '/email'
+      fullPath: '/dashboard/email'
+      preLoaderRoute: typeof DashboardEmailRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/appearance': {
+      id: '/dashboard/appearance'
+      path: '/appearance'
+      fullPath: '/dashboard/appearance'
+      preLoaderRoute: typeof DashboardAppearanceRouteImport
+      parentRoute: typeof DashboardRoute
     }
     '/auth/verify-email': {
       id: '/auth/verify-email'
@@ -1127,6 +1220,26 @@ const TweetRouteRouteWithChildren = TweetRouteRoute._addFileChildren(
   TweetRouteRouteChildren,
 )
 
+interface DashboardRouteChildren {
+  DashboardAppearanceRoute: typeof DashboardAppearanceRoute
+  DashboardEmailRoute: typeof DashboardEmailRoute
+  DashboardPlayerRoute: typeof DashboardPlayerRoute
+  DashboardProfileRoute: typeof DashboardProfileRoute
+  DashboardIndexRoute: typeof DashboardIndexRoute
+}
+
+const DashboardRouteChildren: DashboardRouteChildren = {
+  DashboardAppearanceRoute: DashboardAppearanceRoute,
+  DashboardEmailRoute: DashboardEmailRoute,
+  DashboardPlayerRoute: DashboardPlayerRoute,
+  DashboardProfileRoute: DashboardProfileRoute,
+  DashboardIndexRoute: DashboardIndexRoute,
+}
+
+const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
+  DashboardRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   EditorialRouteRoute: EditorialRouteRouteWithChildren,
@@ -1136,7 +1249,7 @@ const rootRouteChildren: RootRouteChildren = {
   TweetRouteRoute: TweetRouteRouteWithChildren,
   SlugRoute: SlugRoute,
   ChangelogRoute: ChangelogRoute,
-  DashboardRoute: DashboardRoute,
+  DashboardRoute: DashboardRouteWithChildren,
   LabelUploadRoute: LabelUploadRoute,
   MixUploadRoute: MixUploadRoute,
   PrivacyRoute: PrivacyRoute,
