@@ -303,31 +303,6 @@ export async function sendNewsletterAdminNotificationEmail({
   })
 }
 
-export async function sendPersonalWelcomeEmail({
-  to,
-  name,
-  unsubscribeUrl = 'https://goosebumps.fm/unsubscribe'
-}: {
-  to: string
-  name?: string
-  unsubscribeUrl?: string
-}): Promise<void> {
-  const { NewsletterPersonalWelcome } = await import('../emails/newsletter-personal-welcome')
-
-  await sendEmail({
-    to,
-    from: 'guide',
-    replyTo: 'guidefari@icloud.com',
-    template: {
-      subject: 'Welcome to goosebumps.fm',
-      component: React.createElement(NewsletterPersonalWelcome, {
-        name,
-        unsubscribeUrl
-      })
-    }
-  })
-}
-
 export async function sendBackupNotificationEmail({
   to,
   status,

@@ -45,6 +45,15 @@ new sst.x.DevCommand('db_gen', {
   }
 })
 
+new sst.x.DevCommand('db_migrateProd', {
+  link: [...allSecrets, email],
+  dev: {
+    command: 'bun run src/migrate.ts',
+    directory: './apps/vps',
+    autostart: false
+  }
+})
+
 new sst.x.DevCommand('betterAuthGen', {
   link: [...allSecrets, email],
   dev: {
@@ -108,15 +117,6 @@ new sst.x.DevCommand('db_pushProd', {
 //     autostart: false
 //   }
 // })
-
-new sst.x.DevCommand('Send_Personal_Welcome', {
-  link: [email, ...allSecrets],
-  dev: {
-    command: 'bun scripts/send-personal-welcome.ts',
-    directory: './apps/vps',
-    autostart: false
-  }
-})
 
 new sst.x.DevCommand('Email_Preview', {
   link: [email, ...allSecrets],

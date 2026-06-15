@@ -1,4 +1,4 @@
-import { migrate as migratePostgres } from 'drizzle-orm/aws-data-api/pg/migrator'
+import { migrate as migratePostgres } from 'drizzle-orm/node-postgres/migrator'
 import { db } from './db'
 import { seedMusicLookups } from './db/seed-music-lookups'
 
