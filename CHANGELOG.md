@@ -1,3 +1,21 @@
+# [2.54.0](https://github.com/guidefari/gbfm/compare/v2.53.0...v2.54.0) (2026-06-15)
+
+
+### Bug Fixes
+
+* instrumenting ([fe60644](https://github.com/guidefari/gbfm/commit/fe60644085739a18a0d3f9112d7fdfba91d6c392))
+* playlists ui ([9e80211](https://github.com/guidefari/gbfm/commit/9e802119d004550a09499d730242b89064fb6945))
+
+
+### Features
+
+* **auth:** notify admin on signup ([549de15](https://github.com/guidefari/gbfm/commit/549de155aa11d69d94d31f792c0a8461181cafa9))
+* nav ([c595514](https://github.com/guidefari/gbfm/commit/c595514749e4257c6b1b898cd20bdaf12baefe80))
+* opt new users into newsletter ([a269f14](https://github.com/guidefari/gbfm/commit/a269f14070213a365717602a28beb51a83df055c))
+* search ([9e56af2](https://github.com/guidefari/gbfm/commit/9e56af22cd5527175bfa7cac32a6d065bc930dc1))
+* **www:** add dashboard routes ([15ceb13](https://github.com/guidefari/gbfm/commit/15ceb135aa9f1a45eee6dbfaaf01a9a0fd616703))
+* **www:** reshape dashboard navigation ([07481b7](https://github.com/guidefari/gbfm/commit/07481b751709b83da118ebc67201e370c3bcfb15))
+
 # [2.53.0](https://github.com/guidefari/gbfm/compare/v2.52.0...v2.53.0) (2026-06-14)
 
 
