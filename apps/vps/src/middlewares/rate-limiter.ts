@@ -17,7 +17,7 @@ const DEFAULT_CONFIG: RateLimiterConfig = {
   maxRequests: 60
 }
 
-class InMemoryRateLimiter {
+export class InMemoryRateLimiter {
   private store = new Map<string, RateLimitEntry>()
   private cleanupInterval: ReturnType<typeof setInterval>
 
@@ -67,7 +67,7 @@ class InMemoryRateLimiter {
 
 const limiter = new InMemoryRateLimiter()
 
-function getClientKey(c: Context): string {
+export function getClientKey(c: Context): string {
   const forwarded = c.req.header('x-forwarded-for')
   if (forwarded) {
     const firstIp = forwarded.split(',')[0]
