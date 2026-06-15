@@ -4,7 +4,6 @@ import {
   ChartColumn,
   FileAudio,
   FileText,
-  FolderKanban,
   LayoutDashboard,
   Mail,
   Music4,
@@ -32,7 +31,6 @@ export type AdminNavTo = Extract<
   | '/admin/sessions'
   | '/admin/email-logs'
   | '/admin/newsletter'
-  | '/admin/files'
   | '/admin/music'
   | '/admin/playlists'
   | '/admin/search'
@@ -83,12 +81,6 @@ export const adminPrimaryNavItems: AdminNavItem[] = [
     label: 'Sessions',
     description: 'Session visibility and auth state cleanup.',
     icon: Shield
-  },
-  {
-    to: '/admin/files',
-    label: 'Files',
-    description: 'Bucket inspection and cross-bucket copy flows.',
-    icon: FolderKanban
   }
 ]
 

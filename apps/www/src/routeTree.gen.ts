@@ -62,7 +62,6 @@ import { Route as AdminOverviewRouteImport } from './routes/admin/overview'
 import { Route as AdminNewsletterRouteImport } from './routes/admin/newsletter'
 import { Route as AdminMusicRouteImport } from './routes/admin/music'
 import { Route as AdminFrontendErrorsRouteImport } from './routes/admin/frontend-errors'
-import { Route as AdminFilesRouteImport } from './routes/admin/files'
 import { Route as AdminEmailLogsRouteImport } from './routes/admin/email-logs'
 import { Route as AdminContentRouteImport } from './routes/admin/content'
 import { Route as AdminMusicEntityEntityTypeIdRouteImport } from './routes/admin/music-entity.$entityType.$id'
@@ -332,11 +331,6 @@ const AdminFrontendErrorsRoute = AdminFrontendErrorsRouteImport.update({
   path: '/admin/frontend-errors',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AdminFilesRoute = AdminFilesRouteImport.update({
-  id: '/admin/files',
-  path: '/admin/files',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AdminEmailLogsRoute = AdminEmailLogsRouteImport.update({
   id: '/admin/email-logs',
   path: '/admin/email-logs',
@@ -373,7 +367,6 @@ export interface FileRoutesByFullPath {
   '/unsubscribe': typeof UnsubscribeRoute
   '/admin/content': typeof AdminContentRoute
   '/admin/email-logs': typeof AdminEmailLogsRoute
-  '/admin/files': typeof AdminFilesRoute
   '/admin/frontend-errors': typeof AdminFrontendErrorsRoute
   '/admin/music': typeof AdminMusicRoute
   '/admin/newsletter': typeof AdminNewsletterRoute
@@ -427,7 +420,6 @@ export interface FileRoutesByTo {
   '/unsubscribe': typeof UnsubscribeRoute
   '/admin/content': typeof AdminContentRoute
   '/admin/email-logs': typeof AdminEmailLogsRoute
-  '/admin/files': typeof AdminFilesRoute
   '/admin/frontend-errors': typeof AdminFrontendErrorsRoute
   '/admin/music': typeof AdminMusicRoute
   '/admin/newsletter': typeof AdminNewsletterRoute
@@ -487,7 +479,6 @@ export interface FileRoutesById {
   '/unsubscribe': typeof UnsubscribeRoute
   '/admin/content': typeof AdminContentRoute
   '/admin/email-logs': typeof AdminEmailLogsRoute
-  '/admin/files': typeof AdminFilesRoute
   '/admin/frontend-errors': typeof AdminFrontendErrorsRoute
   '/admin/music': typeof AdminMusicRoute
   '/admin/newsletter': typeof AdminNewsletterRoute
@@ -548,7 +539,6 @@ export interface FileRouteTypes {
     | '/unsubscribe'
     | '/admin/content'
     | '/admin/email-logs'
-    | '/admin/files'
     | '/admin/frontend-errors'
     | '/admin/music'
     | '/admin/newsletter'
@@ -602,7 +592,6 @@ export interface FileRouteTypes {
     | '/unsubscribe'
     | '/admin/content'
     | '/admin/email-logs'
-    | '/admin/files'
     | '/admin/frontend-errors'
     | '/admin/music'
     | '/admin/newsletter'
@@ -661,7 +650,6 @@ export interface FileRouteTypes {
     | '/unsubscribe'
     | '/admin/content'
     | '/admin/email-logs'
-    | '/admin/files'
     | '/admin/frontend-errors'
     | '/admin/music'
     | '/admin/newsletter'
@@ -721,7 +709,6 @@ export interface RootRouteChildren {
   UnsubscribeRoute: typeof UnsubscribeRoute
   AdminContentRoute: typeof AdminContentRoute
   AdminEmailLogsRoute: typeof AdminEmailLogsRoute
-  AdminFilesRoute: typeof AdminFilesRoute
   AdminFrontendErrorsRoute: typeof AdminFrontendErrorsRoute
   AdminMusicRoute: typeof AdminMusicRoute
   AdminNewsletterRoute: typeof AdminNewsletterRoute
@@ -1121,13 +1108,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminFrontendErrorsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/admin/files': {
-      id: '/admin/files'
-      path: '/admin/files'
-      fullPath: '/admin/files'
-      preLoaderRoute: typeof AdminFilesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/admin/email-logs': {
       id: '/admin/email-logs'
       path: '/admin/email-logs'
@@ -1259,7 +1239,6 @@ const rootRouteChildren: RootRouteChildren = {
   UnsubscribeRoute: UnsubscribeRoute,
   AdminContentRoute: AdminContentRoute,
   AdminEmailLogsRoute: AdminEmailLogsRoute,
-  AdminFilesRoute: AdminFilesRoute,
   AdminFrontendErrorsRoute: AdminFrontendErrorsRoute,
   AdminMusicRoute: AdminMusicRoute,
   AdminNewsletterRoute: AdminNewsletterRoute,
