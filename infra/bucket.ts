@@ -1,12 +1,12 @@
 import { domain } from './dns'
 
-export const bucket = new sst.aws.Bucket('MDX_Bucket', {
-  access: 'cloudfront'
-})
+const isDevStage = $app.stage === 'dev'
 
-export const contentBucket = new sst.aws.Bucket('User_Content', {
-  access: 'cloudfront'
-})
+export const contentBucket = isDevStage
+  ? sst.aws.Bucket.get('User_Content', 'gbfm-prod-usercontentbucket-cohrefob')
+  : new sst.aws.Bucket('User_Content', {
+      access: 'cloudfront'
+    })
 
 // QR PDFs are temporary — expire them via S3 lifecycle instead of a polling cron job
 new aws.s3.BucketLifecycleConfiguration('QrPdfLifecycle', {
@@ -21,24 +21,28 @@ new aws.s3.BucketLifecycleConfiguration('QrPdfLifecycle', {
   ]
 })
 
-export const mixesBucket = new sst.aws.Bucket('Mixes', {
-  access: 'cloudfront'
-})
+export const mixesBucket = isDevStage
+  ? sst.aws.Bucket.get('Mixes', 'gbfm-prod-mixesbucket-zftkfrfx')
+  : new sst.aws.Bucket('Mixes', {
+      access: 'cloudfront'
+    })
 
-export const dbBackupBucket = new sst.aws.Bucket('DatabaseBackups', {
-  access: 'cloudfront',
-  transform: {
-    bucket: {
-      lifecycleRules: [
-        {
-          id: 'expire-old-backups',
-          enabled: true,
-          expiration: { days: 30 }
+export const dbBackupBucket = isDevStage
+  ? sst.aws.Bucket.get('DatabaseBackups', 'gbfm-prod-databasebackupsbucket-xbxkwmwo')
+  : new sst.aws.Bucket('DatabaseBackups', {
+      access: 'cloudfront',
+      transform: {
+        bucket: {
+          lifecycleRules: [
+            {
+              id: 'expire-old-backups',
+              enabled: true,
+              expiration: { days: 30 }
+            }
+          ]
         }
-      ]
-    }
-  }
-})
+      }
+    })
 
 export const fileRouter = new sst.aws.Router('Router', {
   domain: {
@@ -47,7 +51,6 @@ export const fileRouter = new sst.aws.Router('Router', {
   }
 })
 
-// fileRouter.routeBucket("/mdx", bucket);
 fileRouter.routeBucket('/user-content', contentBucket, {
   rewrite: {
     regex: '^/user-content/(.*)$',

@@ -55,52 +55,6 @@ export const service = new sst.aws.Service('gbfm_vps', {
   capacity: 'spot'
 })
 
-const crossStageBuckets =
-  $app.stage === 'dev'
-    ? {
-        objects: [
-          'arn:aws:s3:::gbfm-prod-usercontentbucket-cohrefob/*',
-          'arn:aws:s3:::gbfm-prod-mixesbucket-zftkfrfx/*'
-        ],
-        buckets: [
-          'arn:aws:s3:::gbfm-prod-usercontentbucket-cohrefob',
-          'arn:aws:s3:::gbfm-prod-mixesbucket-zftkfrfx'
-        ]
-      }
-    : $app.stage === 'prod'
-      ? {
-          objects: [
-            'arn:aws:s3:::gbfm-dev-usercontentbucket-ncxbfvmv/*',
-            'arn:aws:s3:::gbfm-dev-mixesbucket-brxkncwd/*'
-          ],
-          buckets: [
-            'arn:aws:s3:::gbfm-dev-usercontentbucket-ncxbfvmv',
-            'arn:aws:s3:::gbfm-dev-mixesbucket-brxkncwd'
-          ]
-        }
-      : null
-
-if (crossStageBuckets) {
-  new aws.iam.RolePolicy('VpsCrossStageS3Access', {
-    role: service.nodes.taskRole.name,
-    policy: JSON.stringify({
-      Version: '2012-10-17',
-      Statement: [
-        {
-          Effect: 'Allow',
-          Action: ['s3:PutObject', 's3:GetObject', 's3:DeleteObject'],
-          Resource: crossStageBuckets.objects
-        },
-        {
-          Effect: 'Allow',
-          Action: ['s3:ListBucket'],
-          Resource: crossStageBuckets.buckets
-        }
-      ]
-    })
-  })
-}
-
 // disabling cors on gateway and handling via app instead.
 // Sources:
 // - https://sst.dev/docs/component/aws/apigatewayv2/
