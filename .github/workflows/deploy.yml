@@ -79,23 +79,6 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_DEFAULT_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_DEFAULT_ACCOUNT_ID }}
-          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
-          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
-          SQUEAL_DB_URL: ${{ secrets.SQUEAL_DB_URL }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DB_HOST: ${{ secrets.DB_HOST }}
-          DB_USER: ${{ secrets.DB_USER }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-          DB_PORT: ${{ secrets.DB_PORT }}
-          DB_NAME: ${{ secrets.DB_NAME }}
-          POSTHOG_KEY: ${{ secrets.POSTHOG_KEY }}
-          POSTHOG_HOST: ${{ secrets.POSTHOG_HOST }}
-          BETTER_AUTH_URL: ${{ secrets.BETTER_AUTH_URL }}
-          BETTER_AUTH_SECRET: ${{ secrets.BETTER_AUTH_SECRET }}
-          SENTRY_BACKEND_DSN: ${{ secrets.SENTRY_BACKEND_DSN }}
-          VITE_PUBLIC_SENTRY_DSN: ${{ secrets.VITE_PUBLIC_SENTRY_DSN }}
-          OTEL_EXPORTER_OTLP_ENDPOINT: ${{ secrets.OTEL_EXPORTER_OTLP_ENDPOINT }}
-          OTEL_EXPORTER_OTLP_HEADERS: ${{ secrets.OTEL_EXPORTER_OTLP_HEADERS }}
           CF_RULESET_IMPORT: ${{ inputs.cf_ruleset_import }}
           SENTRY_RELEASE: ${{ steps.deployment-ref.outputs.ref }}
 
