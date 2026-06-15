@@ -11,7 +11,7 @@ function AdminNewsletterPage() {
   return (
     <AdminPage
       title='Newsletter'
-      description='Manage subscriber audience visibility and shape campaign ideas around published content.'
+      description='Announce new mixes to subscribers and manage the audience.'
       backToAdmin>
       <Card>
         <CardContent className='pt-6'>

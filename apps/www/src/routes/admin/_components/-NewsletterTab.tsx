@@ -1,35 +1,32 @@
-import { Badge, Button, Card, CardContent, CardHeader, CardTitle, Input, Textarea } from '@gbfm/ui'
-import { Link } from '@tanstack/react-router'
-import { Disc3, FileText, MailPlus, Radio, Rss } from 'lucide-react'
-import { type ComponentType, useMemo, useState } from 'react'
-import { useAdminNewsletterSubscribers } from '@/lib/http'
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Input,
+  Label,
+  toast
+} from '@gbfm/ui'
+import { Disc3, Loader2, MailCheck, Send } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { useSession } from '@/lib/auth-client'
+import { useAdminNewsletterSubscribers, useSendMixNotification } from '@/lib/http'
 import { useAdminOverview } from '../-overview.data'
 
-type CampaignAsset = {
+type SendableMix = {
   id: string
   slug: string
   title: string
-  type: 'mix' | 'show' | 'post' | 'release'
   createdAt: string
 }
-
-function isCampaignAssetType(type: string): type is CampaignAsset['type'] {
-  return ['mix', 'show', 'post', 'release'].includes(type)
-}
-
-const assetLabels: Record<CampaignAsset['type'], string> = {
-  mix: 'Mix',
-  show: 'Show',
-  post: 'Editorial',
-  release: 'Release'
-}
-
-const assetIcons = {
-  mix: Disc3,
-  show: Radio,
-  post: FileText,
-  release: Rss
-} satisfies Record<CampaignAsset['type'], ComponentType<{ className?: string }>>
 
 function formatCount(value: number) {
   return new Intl.NumberFormat('en-US').format(value)
@@ -46,33 +43,33 @@ function formatDate(value: string) {
 export function NewsletterTab() {
   const { data, isPending, isError } = useAdminNewsletterSubscribers()
   const overview = useAdminOverview()
-  const campaignAssets = useMemo<CampaignAsset[]>(() => {
+  const { data: session } = useSession()
+  const adminEmail = session?.user?.email ?? null
+  const sendMix = useSendMixNotification()
+
+  const mixes = useMemo<SendableMix[]>(() => {
     const items = overview.data?.publishing.recentContent ?? []
 
     return items
-      .flatMap((item) => {
-        if (item.draft || !isCampaignAssetType(item.type)) return []
-
-        const asset: CampaignAsset = {
-          id: item.id,
-          slug: item.slug,
-          title: item.title ?? item.slug,
-          type: item.type,
-          createdAt: item.createdAt
-        }
-
-        return [asset]
-      })
-      .slice(0, 6)
+      .flatMap((item) =>
+        item.draft || item.type !== 'mix'
+          ? []
+          : [
+              {
+                id: item.id,
+                slug: item.slug,
+                title: item.title ?? item.slug,
+                createdAt: item.createdAt
+              }
+            ]
+      )
+      .slice(0, 8)
   }, [overview.data])
-  const [selectedAssetId, setSelectedAssetId] = useState<string | null>(null)
-  const selectedAsset =
-    campaignAssets.find((item) => item.id === selectedAssetId) ?? campaignAssets[0] ?? null
-  const [campaignName, setCampaignName] = useState('Weekly subscribers note')
-  const [subject, setSubject] = useState('')
-  const [angle, setAngle] = useState(
-    'Lead with one hero drop, then stack a short editor note and one supporting link.'
-  )
+
+  const [selectedMixId, setSelectedMixId] = useState<string | null>(null)
+  const selectedMix = mixes.find((mix) => mix.id === selectedMixId) ?? mixes[0] ?? null
+  const [artistName, setArtistName] = useState('')
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
   if (isPending) {
     return <p className='text-sm text-muted-foreground'>Loading...</p>
@@ -87,27 +84,43 @@ export function NewsletterTab() {
   const unsubscribedCount = subscribers.length - activeSubscribers.length
   const newLast30Days = overview.data?.community.newsletter.newLast30Days ?? 0
   const recentSubscribers = overview.data?.community.recentSubscribers.slice(0, 5) ?? []
-  const suggestedSubject =
-    selectedAsset &&
-    `${assetLabels[selectedAsset.type]} drop: ${selectedAsset.title.length > 56 ? `${selectedAsset.title.slice(0, 56)}...` : selectedAsset.title}`
-  const previewSubject = subject || suggestedSubject || 'Subject line still to be written'
-  const previewCta =
-    selectedAsset?.type === 'post'
-      ? 'Read the full piece'
-      : selectedAsset?.type === 'show'
-        ? 'Open the show page'
-        : selectedAsset?.type === 'release'
-          ? 'Explore the release'
-          : 'Listen now'
-  const previewHref = selectedAsset
-    ? selectedAsset.type === 'post'
-      ? `/editorial/${selectedAsset.slug}`
-      : selectedAsset.type === 'show'
-        ? `/shows/${selectedAsset.slug}`
-        : selectedAsset.type === 'release'
-          ? `/releases/${selectedAsset.slug}`
-          : `/mixes/${selectedAsset.slug}`
-    : null
+
+  function buildMetadata() {
+    const trimmedArtist = artistName.trim()
+    return trimmedArtist ? { artistName: trimmedArtist } : undefined
+  }
+
+  function handleTestSend() {
+    if (!selectedMix || !adminEmail) return
+
+    sendMix.mutate(
+      { mixSlug: selectedMix.slug, recipients: [adminEmail], metadata: buildMetadata() },
+      {
+        onSuccess: (result) =>
+          toast({ title: 'Test sent', description: `Sent to ${adminEmail}. ${result.message}` }),
+        onError: (error) =>
+          toast({ title: 'Test send failed', description: error.message, variant: 'destructive' })
+      }
+    )
+  }
+
+  function handleBroadcast() {
+    if (!selectedMix) return
+
+    sendMix.mutate(
+      { mixSlug: selectedMix.slug, metadata: buildMetadata() },
+      {
+        onSuccess: (result) =>
+          toast({
+            title: `Sent to ${result.sentTo.length} subscriber${result.sentTo.length === 1 ? '' : 's'}`,
+            description: result.message
+          }),
+        onError: (error) =>
+          toast({ title: 'Send failed', description: error.message, variant: 'destructive' })
+      }
+    )
+    setConfirmOpen(false)
+  }
 
   return (
     <div className='space-y-6'>
@@ -151,126 +164,119 @@ export function NewsletterTab() {
         </Card>
         <Card>
           <CardHeader className='pb-2'>
-            <CardTitle className='text-sm text-muted-foreground'>Send-ready content</CardTitle>
+            <CardTitle className='text-sm text-muted-foreground'>Sendable mixes</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className='text-3xl font-black tracking-tight'>
-              {formatCount(campaignAssets.length)}
-            </div>
+            <div className='text-3xl font-black tracking-tight'>{formatCount(mixes.length)}</div>
             <p className='mt-2 text-sm text-muted-foreground'>
-              Published assets pulled from recent mixes, shows, editorials, and releases.
+              Recently published mixes ready to announce.
             </p>
           </CardContent>
         </Card>
       </div>
 
-      <div className='grid gap-4 xl:grid-cols-[1.35fr_0.95fr]'>
-        <Card>
-          <CardHeader>
-            <CardTitle>Basic CMS Shape</CardTitle>
-          </CardHeader>
-          <CardContent className='space-y-4'>
+      <Card>
+        <CardHeader>
+          <CardTitle className='flex items-center gap-2'>
+            <Send className='h-4 w-4' />
+            Send a new mix notification
+          </CardTitle>
+        </CardHeader>
+        <CardContent className='space-y-5'>
+          <p className='text-sm text-muted-foreground'>
+            Pick a recently published mix and email every opted-in subscriber. Send a test to
+            yourself first to preview the email.
+          </p>
+
+          {mixes.length === 0 ? (
             <p className='text-sm text-muted-foreground'>
-              First pass for a subscriber dashboard: pick a published asset, shape the email angle,
-              and use the current content tools as the source of truth.
+              No published mixes available yet. Upload and publish a mix to announce it here.
             </p>
-
-            <div className='flex flex-wrap gap-2'>
-              <Button asChild size='sm'>
-                <Link to='/new/editorial' search={{ edit: undefined }}>
-                  New editorial
-                </Link>
-              </Button>
-              <Button asChild size='sm' variant='outline'>
-                <Link to='/mix-upload'>Upload mix</Link>
-              </Button>
-              <Button asChild size='sm' variant='outline'>
-                <Link to='/admin/overview'>View content pulse</Link>
-              </Button>
-            </div>
-
+          ) : (
             <div className='grid gap-3 md:grid-cols-2'>
-              {campaignAssets.map((asset) => {
-                const Icon = assetIcons[asset.type]
-                const isSelected = selectedAsset?.id === asset.id
+              {mixes.map((mix) => {
+                const isSelected = selectedMix?.id === mix.id
 
                 return (
                   <button
-                    key={asset.id}
+                    key={mix.id}
                     type='button'
-                    onClick={() => setSelectedAssetId(asset.id)}
+                    onClick={() => setSelectedMixId(mix.id)}
                     className={`rounded-lg border p-4 text-left transition ${
                       isSelected ? 'border-foreground bg-muted/50' : 'hover:bg-muted/40'
                     }`}>
                     <div className='flex items-center gap-2 text-sm text-muted-foreground'>
-                      <Icon className='h-4 w-4' />
-                      <span>{assetLabels[asset.type]}</span>
+                      <Disc3 className='h-4 w-4' />
+                      <span>Mix</span>
                       <span>•</span>
-                      <span>{formatDate(asset.createdAt)}</span>
+                      <span>{formatDate(mix.createdAt)}</span>
                     </div>
-                    <div className='mt-2 font-semibold'>{asset.title}</div>
-                    <div className='mt-1 text-sm text-muted-foreground'>/{asset.slug}</div>
+                    <div className='mt-2 font-semibold'>{mix.title}</div>
+                    <div className='mt-1 text-sm text-muted-foreground'>/mixes/{mix.slug}</div>
                   </button>
                 )
               })}
             </div>
-          </CardContent>
-        </Card>
+          )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Draft Broadcast</CardTitle>
-          </CardHeader>
-          <CardContent className='space-y-4'>
-            <div className='space-y-2'>
-              <label className='text-sm font-medium'>Campaign</label>
-              <Input value={campaignName} onChange={(e) => setCampaignName(e.target.value)} />
-            </div>
-            <div className='space-y-2'>
-              <label className='text-sm font-medium'>Subject line</label>
-              <Input
-                value={subject}
-                onChange={(e) => setSubject(e.target.value)}
-                placeholder={
-                  suggestedSubject ?? 'Choose a content item to generate a starting point'
-                }
-              />
-            </div>
-            <div className='space-y-2'>
-              <label className='text-sm font-medium'>Angle / editor note</label>
-              <Textarea value={angle} onChange={(e) => setAngle(e.target.value)} />
-            </div>
+          <div className='grid gap-2 sm:max-w-sm'>
+            <Label htmlFor='newsletter-artist'>Artist name (optional)</Label>
+            <Input
+              id='newsletter-artist'
+              value={artistName}
+              onChange={(e) => setArtistName(e.target.value)}
+              placeholder='Guide Fari'
+            />
+            <p className='text-xs text-muted-foreground'>
+              Shown in the email body. Defaults to Guide Fari when left blank.
+            </p>
+          </div>
 
-            <div className='rounded-lg border bg-muted/30 p-4'>
-              <div className='flex items-center gap-2 text-sm font-medium'>
-                <MailPlus className='h-4 w-4' />
-                Preview shape
+          {selectedMix && (
+            <div className='rounded-lg border bg-muted/30 p-4 text-sm'>
+              <div className='flex items-center gap-2 font-medium'>
+                <MailCheck className='h-4 w-4' />
+                Email preview
               </div>
-              <div className='mt-3 space-y-2 text-sm'>
+              <div className='mt-3 space-y-1'>
                 <p>
-                  <span className='text-muted-foreground'>Subject:</span> {previewSubject}
+                  <span className='text-muted-foreground'>Subject:</span> New mix:{' '}
+                  {selectedMix.title}
                 </p>
                 <p>
-                  <span className='text-muted-foreground'>Lead:</span> {angle}
+                  <span className='text-muted-foreground'>Artist:</span>{' '}
+                  {artistName.trim() || 'Guide Fari'}
                 </p>
                 <p>
-                  <span className='text-muted-foreground'>Primary CTA:</span> {previewCta}
-                  {previewHref ? ` -> ${previewHref}` : ''}
+                  <span className='text-muted-foreground'>Link:</span> /mixes/{selectedMix.slug}
                 </p>
               </div>
             </div>
+          )}
 
-            <div className='space-y-2 text-sm'>
-              <div className='font-medium'>Scoped next steps</div>
-              <ul className='space-y-2 text-muted-foreground'>
-                <li>1. Persist campaign drafts and content selections in the API.</li>
-                <li>2. Add segmenting by source, recency, and subscription state.</li>
-                <li>3. Wire send/test-send flows into email delivery logs.</li>
-              </ul>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          <div className='flex flex-wrap items-center gap-2'>
+            <Button
+              type='button'
+              onClick={() => setConfirmOpen(true)}
+              disabled={!selectedMix || sendMix.isPending}>
+              {sendMix.isPending ? (
+                <Loader2 className='h-4 w-4 animate-spin' />
+              ) : (
+                <Send className='h-4 w-4' />
+              )}
+              Send to {formatCount(activeSubscribers.length)} subscriber
+              {activeSubscribers.length === 1 ? '' : 's'}
+            </Button>
+            <Button
+              type='button'
+              variant='outline'
+              onClick={handleTestSend}
+              disabled={!selectedMix || !adminEmail || sendMix.isPending}>
+              Test send to me
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className='grid gap-4 xl:grid-cols-[1.1fr_1.4fr]'>
         <Card>
@@ -349,6 +355,28 @@ export function NewsletterTab() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send mix notification?</DialogTitle>
+            <DialogDescription>
+              This emails <span className='font-medium'>{selectedMix?.title}</span> to every
+              opted-in subscriber. Recipients who have turned off mix emails are skipped
+              automatically. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant='outline' onClick={() => setConfirmOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleBroadcast} disabled={sendMix.isPending}>
+              {sendMix.isPending ? <Loader2 className='h-4 w-4 animate-spin' /> : null}
+              Send now
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
