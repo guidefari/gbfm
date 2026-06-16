@@ -1,3 +1,18 @@
+# [2.55.0](https://github.com/guidefari/gbfm/compare/v2.54.0...v2.55.0) (2026-06-16)
+
+
+### Bug Fixes
+
+* **shows:** align selected show hero with sidebar top ([73b8bcb](https://github.com/guidefari/gbfm/commit/73b8bcb9f767e1eaee6324a7f9d50ed2244cd888))
+* **user:** persist admin user image via app-owned profile route ([1581120](https://github.com/guidefari/gbfm/commit/158112064c1c7de79e40a767e016d216bd854194))
+
+
+### Features
+
+* **admin:** edit mix and post metadata from the content tab ([d5d4162](https://github.com/guidefari/gbfm/commit/d5d41629bdcd03b138ec0513fe258dbe8458b230))
+* **mix-upload:** pick audio and artwork from S3 media picker ([a5086c1](https://github.com/guidefari/gbfm/commit/a5086c10d220d1eda482805206a7a41ec864b9d2))
+* **shows:** browse mixes inline with a selectable show list ([f75a021](https://github.com/guidefari/gbfm/commit/f75a021939f74c772c2a7dba900632ebaa200e2a))
+
 # [2.54.0](https://github.com/guidefari/gbfm/compare/v2.53.0...v2.54.0) (2026-06-15)
 
 
