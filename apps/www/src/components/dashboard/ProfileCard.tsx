@@ -1,6 +1,6 @@
 import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '@gbfm/ui'
-import { useId, useState } from 'react'
-import type { useSession } from '@/lib/auth-client'
+import { useEffect, useId, useState } from 'react'
+import { useSession } from '@/lib/auth-client'
 import { useUpdateProfile } from '@/lib/http'
 
 type SessionUser = NonNullable<ReturnType<typeof useSession>['data']>['user']
@@ -11,9 +11,15 @@ interface ProfileCardProps {
 
 export function ProfileCard({ user }: ProfileCardProps) {
   const avatarId = useId()
+  const { refetch: refetchSession } = useSession()
   const { updateProfile, isPending: isUpdatingProfile } = useUpdateProfile()
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [currentImage, setCurrentImage] = useState(user.image ?? null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
+
+  useEffect(() => {
+    setCurrentImage(user.image ?? null)
+  }, [user.image])
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -57,10 +63,12 @@ export function ProfileCard({ user }: ProfileCardProps) {
         formData.append('avatar', selectedFile)
       }
 
-      await updateProfile(formData)
+      const updatedUser = await updateProfile(formData)
 
+      setCurrentImage(updatedUser.image ?? null)
       setSelectedFile(null)
       setImagePreview(null)
+      await refetchSession()
     } catch (error) {
       console.error('Error updating profile:', error)
     }
@@ -76,7 +84,7 @@ export function ProfileCard({ user }: ProfileCardProps) {
           <div className='flex justify-center mb-6'>
             <div className='relative mr-4 w-20 h-20 rounded-sm group'>
               <img
-                src={imagePreview || user?.image || '/placeholder.svg'}
+                src={imagePreview || currentImage || '/placeholder.svg'}
                 alt='User Avatar'
                 className='rounded-sm cursor-pointer'
                 width={80}

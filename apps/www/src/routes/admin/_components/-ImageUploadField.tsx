@@ -35,6 +35,12 @@ export function ImageUploadField({
     setImageFailed(false)
   }, [displayUrl])
 
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl)
+    }
+  }, [previewUrl])
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
@@ -59,6 +65,7 @@ export function ImageUploadField({
 
       const result = await readUploadResponse(response)
       onChange(result.url)
+      setPreviewUrl(null)
       toast({ title: 'Image uploaded successfully' })
     } catch (error) {
       toast({
@@ -73,18 +80,12 @@ export function ImageUploadField({
   }
 
   const handleRemove = () => {
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl)
-      setPreviewUrl(null)
-    }
+    setPreviewUrl(null)
     onChange('')
   }
 
   const handleSelectExistingImage = (url: string) => {
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl)
-      setPreviewUrl(null)
-    }
+    setPreviewUrl(null)
     onChange(url)
     toast({ title: 'Image selected' })
   }
