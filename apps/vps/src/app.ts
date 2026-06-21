@@ -20,6 +20,7 @@ import search from '@/routes/search/search.index'
 import shows from '@/routes/shows/show.index'
 import spotify from '@/routes/spotify/spotify.index'
 import upload from '@/routes/upload/upload.index'
+import uploadMultipart from '@/routes/upload-multipart/upload-multipart.index'
 import betterAuthRoutes from '@/routes/user/better-auth.routes'
 import user from '@/routes/user/user.index'
 import { db } from './db'
@@ -61,6 +62,7 @@ const setupRoutesEffect = Effect.gen(function* () {
   app.route('/api/spotify', spotify)
   app.route('/api/file-manager', fileManager)
   app.route('/api/upload', upload)
+  app.route('/api/upload', uploadMultipart)
   app.route('/api/music', music)
   app.route('/api/music-reminders', musicReminders)
 

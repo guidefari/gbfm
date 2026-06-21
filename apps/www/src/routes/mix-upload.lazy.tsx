@@ -7,49 +7,63 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  formatTime,
   generateSlug,
   MixDetailsForm,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
-  type TrackEntry,
-  TracklistEditor,
   toast,
+  TracklistEditor,
   MixUploadProgress as UploadProgress,
   type MixUploadStep as UploadStep,
+  type TrackEntry,
   UploadSummaryCard
 } from '@gbfm/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createLazyFileRoute, useRouter } from '@tanstack/react-router'
+import * as Cause from 'effect/Cause'
+import * as Effect from 'effect/Effect'
+import * as Exit from 'effect/Exit'
 import { FileText, List, Loader2, Music } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { z } from 'zod'
 import { S3AudioFilePicker, S3MediaFilePicker } from '@/components/mix-uploader/S3AudioFilePicker'
 import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
+import { useMixUploadDraft } from '@/hooks/useMixUploadDraft'
+import { useResumableUpload, type ResumableUploadError } from '@/hooks/useResumableUpload'
+import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { authClient, useSession } from '@/lib/auth-client'
-import { apiUrl, fetcher, useAllShows, useAudioBySlug, useAudioTags } from '@/lib/http'
-import { readResponseErrorMessage, readUploadResponse } from '@/lib/response'
+import { apiUrl, useAllShows, useAudioBySlug, useAudioTags } from '@/lib/http'
+import { runAppEffect } from '@/runtime'
+import {
+  AudioUploadError,
+  type ImageUploadError,
+  MissingAudioError,
+  NotSignedInError,
+  type RecordSaveError
+} from './mix-upload/-errors'
+import { type MixFormData, saveRecord, uploadImage } from './mix-upload/-program'
+import type { ResumableUploadOutcome } from '@/hooks/useResumableUpload'
+
+type EditType = 'mix' | 'set' | 'live'
+
+const isEditType = (value: string): value is EditType =>
+  value === 'mix' || value === 'set' || value === 'live'
+
+type SubmitSuccess = {
+  readonly audioUrl: string
+  readonly imageUrl: string
+  readonly record: unknown
+}
+type SubmitResult = SubmitSuccess | ResumableUploadOutcome
+
+const isSubmitSuccess = (value: SubmitResult): value is SubmitSuccess =>
+  'audioUrl' in value && 'imageUrl' in value && 'record' in value
 
 export const Route = createLazyFileRoute('/mix-upload')({
   component: MixUploadPage
 })
-
-interface MixFormData {
-  title: string
-  description: string
-  slug: string
-  content: string
-  thumbnailUrl: string
-  tags: string[]
-  tracklist: TrackEntry[]
-  draft: boolean
-  creatorId?: string
-  url?: string
-  showId?: string
-  episodeNumber?: string
-}
 
 const mixUploadSearchSchema = z.object({
   edit: z.string().optional(),
@@ -61,6 +75,52 @@ const mixUploadSearchSchema = z.object({
   type: z.literal('mix').optional()
 })
 
+const describeUploadError = (error: ResumableUploadError): string => {
+  if (error._tag === 'NetworkError') {
+    return 'Lost connection. We will keep your progress and resume when you are back online.'
+  }
+  if (error._tag === 'HttpError') {
+    if (error.status === 401) return 'Your session has expired. Please sign in again.'
+    if (error.status === 403) return 'You do not have permission to upload audio.'
+    if (error.status === 413) return 'The audio file is too large. Max size is 200MB.'
+    if (error.status === 415) return 'This audio format is not supported.'
+    if (error.status >= 500) return 'The server is having trouble. Please try again shortly.'
+    return error.message
+  }
+  if (error._tag === 'InvalidResponseError')
+    return 'We received an unexpected response from the server.'
+  if (error._tag === 'FileTooLargeError') return 'The audio file is too large. Max size is 200MB.'
+  return error.message
+}
+
+const describePageError = (
+  error:
+    | AudioUploadError
+    | ImageUploadError
+    | RecordSaveError
+    | NotSignedInError
+    | MissingAudioError
+): string => {
+  if (error._tag === 'NotSignedInError') return error.message
+  if (error._tag === 'MissingAudioError') return error.message
+  if (error._tag === 'AudioUploadError') return error.message
+  if (error.status === 401) return 'Your session has expired. Please sign in again.'
+  if (error.status === 403) return 'You do not have permission to save this content.'
+  if (error.status === 413) return 'The image is too large.'
+  if (error.status === 415) return 'Unsupported file type.'
+  if (error.status && error.status >= 500)
+    return 'The server is having trouble. Please try again shortly.'
+  if (error.status && error.status >= 400) return error.message
+  return error.message
+}
+
+const uploadStepFromPhase = (phase: string): UploadStep => {
+  if (phase === 'preparing' || phase === 'uploading' || phase === 'finalizing')
+    return 'uploading-audio'
+  if (phase === 'paused') return 'paused-audio'
+  return 'idle'
+}
+
 function MixUploadPage() {
   const { data: session } = useSession()
   const user = session?.user
@@ -71,8 +131,9 @@ function MixUploadPage() {
 
   const { data: availableTags } = useAudioTags('mix')
   const { data: allShows } = useAllShows({ limit: 100 })
-
   const { data: existingMix, isPending: mixLoading } = useAudioBySlug(editType, search.edit || '')
+
+  const draftState = useMixUploadDraft()
 
   const [formData, setFormData] = useState<MixFormData>(() => ({
     title: search.title || '',
@@ -88,6 +149,7 @@ function MixUploadPage() {
     showId: undefined,
     episodeNumber: undefined
   }))
+  const [draftApplied, setDraftApplied] = useState(false)
   const [newTag, setNewTag] = useState('')
   const [uploadStep, setUploadStep] = useState<UploadStep>('idle')
   const [audioFile, setAudioFile] = useState<File | null>(null)
@@ -101,6 +163,9 @@ function MixUploadPage() {
   const audioRef = useRef<HTMLAudioElement>(null)
   const router = useRouter()
   const queryClient = useQueryClient()
+  const isOnline = useOnlineStatus()
+
+  const resumableUpload = useResumableUpload()
 
   const isAdmin = user?.role === 'admin'
 
@@ -111,6 +176,79 @@ function MixUploadPage() {
   })
 
   const usersList = usersData?.data?.users || []
+
+  useEffect(() => {
+    setUploadStep((prev) => {
+      const next = uploadStepFromPhase(resumableUpload.state.phase)
+      if (next === 'idle' && prev !== 'uploading-audio' && prev !== 'paused-audio') return prev
+      return next
+    })
+  }, [resumableUpload.state.phase])
+
+  useEffect(() => {
+    if (draftState.isLoaded && draftState.draft && !draftApplied && !isEditMode) {
+      const d = draftState.draft
+      setFormData((prev) => ({
+        ...prev,
+        title: d.title || prev.title,
+        description: d.description || prev.description,
+        slug: d.slug || prev.slug,
+        content: d.content || prev.content,
+        thumbnailUrl: d.thumbnailUrl || prev.thumbnailUrl,
+        tags: d.tags.length > 0 ? [...d.tags] : prev.tags,
+        tracklist: d.tracklist.length > 0 ? [...d.tracklist] : prev.tracklist,
+        showId: d.showId ?? prev.showId,
+        episodeNumber: d.episodeNumber ?? prev.episodeNumber,
+        creatorId: d.creatorId ?? prev.creatorId,
+        url: d.url ?? prev.url
+      }))
+      if (d.thumbnailUrl) setArtworkPreview(d.thumbnailUrl)
+      if (d.url) setAudioPreview(d.url)
+      setDraftApplied(true)
+      toast({
+        title: 'Draft restored',
+        description: 'We restored your in-progress mix from your last session.',
+        duration: 4000
+      })
+    } else if (draftState.isLoaded) {
+      setDraftApplied(true)
+    }
+  }, [draftState.isLoaded, draftState.draft, draftApplied, isEditMode])
+
+  useEffect(() => {
+    if (!draftApplied) return
+    if (isEditMode) return
+    draftState.saveDraft({
+      title: formData.title,
+      description: formData.description,
+      slug: formData.slug,
+      content: formData.content,
+      thumbnailUrl: formData.thumbnailUrl,
+      tags: formData.tags,
+      tracklist: formData.tracklist,
+      showId: formData.showId,
+      episodeNumber: formData.episodeNumber,
+      creatorId: formData.creatorId,
+      url: formData.url,
+      audioFile,
+      artworkFile
+    })
+  }, [draftApplied, isEditMode, formData, audioFile, artworkFile, draftState])
+
+  useEffect(() => {
+    if (!isOnline) return
+    if (resumableUpload.state.phase !== 'paused') return
+    if (!audioFile) return
+    resumableUpload.resume(audioFile).then((outcome) => {
+      if (outcome._tag === 'Error') {
+        toast({
+          title: 'Audio upload failed',
+          description: describeUploadError(outcome.error),
+          variant: 'destructive'
+        })
+      }
+    })
+  }, [isOnline, resumableUpload.state.phase, audioFile, resumableUpload])
 
   useEffect(() => {
     if (existingMix && isEditMode) {
@@ -136,10 +274,19 @@ function MixUploadPage() {
 
   const updateTagsMutation = useMutation({
     mutationFn: (tags: string[]) =>
-      fetcher(apiUrl(`/content/audio/${editType}/${search.edit}`), {
-        method: 'PATCH',
-        body: JSON.stringify({ tags })
-      }),
+      runAppEffect(
+        Effect.tryPromise({
+          try: () =>
+            fetch(apiUrl(`/content/audio/${editType}/${search.edit}`), {
+              method: 'PATCH',
+              body: JSON.stringify({ tags })
+            }).then(async (res) => {
+              if (!res.ok) throw new Error(`Tags update failed: ${res.status}`)
+              return res.json()
+            }),
+          catch: (cause) => new Error(cause instanceof Error ? cause.message : String(cause))
+        }).pipe(Effect.retry({ times: 2, while: () => false }))
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['audio', editType] })
       queryClient.invalidateQueries({
@@ -156,140 +303,168 @@ function MixUploadPage() {
     }
   })
 
-  const uploadMutation = useMutation({
-    mutationFn: async (
-      data: MixFormData & { audioFile: File | null; artworkFile: File | null }
-    ) => {
-      if (!user) {
-        toast({
-          title: 'Please login/signup to upload content',
-          variant: 'destructive'
-        })
+  const runSubmit = useCallback(
+    async (isDraft: boolean, signal: AbortSignal) => {
+      const program = Effect.gen(function* () {
+        if (!user) {
+          return yield* new NotSignedInError({ message: 'Please login/signup to upload content' })
+        }
+        if (!isEditMode && !audioFile && !formData.url) {
+          return yield* new MissingAudioError({
+            message: 'Please select an audio file to upload or pick one from S3.'
+          })
+        }
+
+        let audioUrl = formData.url || ''
+        if (audioFile) {
+          const outcome = yield* Effect.promise(() => resumableUpload.start(audioFile))
+          if (outcome._tag === 'Error') {
+            return yield* new AudioUploadError({
+              message: describeUploadError(outcome.error)
+            })
+          }
+          if (outcome._tag !== 'Success') {
+            return outcome
+          }
+          audioUrl = outcome.result.url
+        }
+
+        let imageUrl = formData.thumbnailUrl
+        if (artworkFile) {
+          const result = yield* uploadImage(artworkFile, signal)
+          imageUrl = result.url
+        }
+
+        const recordInput = {
+          userId: user.id,
+          formData: { ...formData, url: audioUrl, thumbnailUrl: imageUrl, draft: isDraft },
+          imageUrl,
+          audioUrl,
+          isEditMode,
+          editSlug: search.edit || '',
+          editType: isEditType(editType) ? editType : 'mix'
+        }
+        const record = yield* saveRecord(recordInput, signal)
+        return { audioUrl, imageUrl, record }
+      })
+
+      const exit = await runAppEffect(Effect.exit(program))
+      return exit
+    },
+    [user, isEditMode, audioFile, formData, artworkFile, resumableUpload, search.edit, editType]
+  )
+
+  const resetForm = useCallback(() => {
+    setFormData({
+      title: '',
+      description: '',
+      slug: '',
+      content: '',
+      thumbnailUrl: '',
+      tags: [],
+      tracklist: [],
+      draft: true,
+      creatorId: undefined,
+      url: undefined,
+      showId: undefined,
+      episodeNumber: undefined
+    })
+    setAudioFile(null)
+    setArtworkFile(null)
+    if (audioPreview) URL.revokeObjectURL(audioPreview)
+    if (artworkPreview) URL.revokeObjectURL(artworkPreview)
+    setAudioPreview(null)
+    setArtworkPreview(null)
+    setUploadStep('idle')
+    void draftState.clearDraft()
+  }, [audioPreview, artworkPreview, draftState])
+
+  const handleSubmit = useCallback(
+    async (isDraft: boolean) => {
+      const controller = new AbortController()
+      setUploadStep('uploading-image')
+      const exit = await runSubmit(isDraft, controller.signal)
+
+      if (Exit.isSuccess(exit)) {
+        const value = exit.value
+        if (isSubmitSuccess(value)) {
+          setFormData((prev) => ({ ...prev, url: value.audioUrl, thumbnailUrl: value.imageUrl }))
+          if (audioFile) {
+            setAudioFile(null)
+          }
+          await draftState.clearDraft().catch(() => undefined)
+          toast({
+            title: isEditMode ? 'Update successful!' : 'Upload successful!',
+            description: `"${formData.title}" has been ${isEditMode ? 'updated' : 'uploaded'}.`
+          })
+          setUploadStep('success')
+          setTimeout(() => {
+            if (!isEditMode) resetForm()
+            setUploadStep('idle')
+
+            if (formData.showId) {
+              const showSlug = allShows.find((s) => s.id === formData.showId)?.slug
+              router.navigate(
+                showSlug ? { to: '/shows/$showSlug', params: { showSlug } } : { to: '/shows' }
+              )
+            } else if (isEditMode) {
+              router.navigate({
+                to: '/mixes/$mixId',
+                params: { mixId: formData.slug || search.edit || '' }
+              })
+            } else {
+              router.navigate({ to: '/mixes' })
+            }
+          }, 2000)
+          return
+        }
+        if (value._tag === 'Paused') {
+          toast({
+            title: 'Upload paused',
+            description: 'Reconnect or resume to continue uploading.',
+            variant: 'destructive'
+          })
+        } else if (value._tag === 'Aborted') {
+          toast({ title: 'Upload cancelled', variant: 'destructive' })
+        }
+        setUploadStep('idle')
         return
       }
 
-      setUploadStep('uploading-audio')
-
-      let audioUrl = data.url || ''
-      if (data.audioFile) {
-        const uploadFormData = new FormData()
-        uploadFormData.append('audioFile', data.audioFile)
-        uploadFormData.append('fileType', 'audio')
-
-        const audioUploadResponse = await fetch(apiUrl('/upload/file'), {
-          method: 'POST',
-          body: uploadFormData
+      const failure = Cause.findErrorOption(exit.cause)
+      if (failure._tag === 'Some') {
+        const error = failure.value
+        toast({
+          title: 'Upload failed',
+          description: describePageError(error),
+          variant: 'destructive'
         })
-
-        if (!audioUploadResponse.ok) {
-          throw new Error(
-            await readResponseErrorMessage(audioUploadResponse, 'Failed to upload audio')
-          )
-        }
-
-        const audioResult = await readUploadResponse(audioUploadResponse)
-        audioUrl = audioResult.url
-      }
-
-      setUploadStep('uploading-image')
-
-      let imageUrl = data.thumbnailUrl
-      if (data.artworkFile) {
-        const imageFormData = new FormData()
-        imageFormData.append('imageFile', data.artworkFile)
-        imageFormData.append('fileType', 'image')
-
-        const imageUploadResponse = await fetch(apiUrl('/upload/file'), {
-          method: 'POST',
-          body: imageFormData
+      } else {
+        toast({
+          title: 'Upload failed',
+          description: 'An unexpected error occurred.',
+          variant: 'destructive'
         })
-
-        if (!imageUploadResponse.ok) {
-          throw new Error(
-            await readResponseErrorMessage(imageUploadResponse, 'Failed to upload image')
-          )
-        }
-
-        const imageResult = await readUploadResponse(imageUploadResponse)
-        imageUrl = imageResult.url
       }
-
-      setUploadStep('creating-record')
-
-      const tracklistMarkdown =
-        data.tracklist.length > 0
-          ? `\n\n## Tracklist\n${data.tracklist
-              .map((t, i) => `${i + 1}. ${t.title} (${formatTime(t.time)})`)
-              .join('\n')}`
-          : ''
-
-      const audioData = {
-        title: data.title,
-        description: data.description,
-        slug: data.slug || generateSlug(data.title),
-        content: data.content + tracklistMarkdown,
-        thumbnailUrl: imageUrl,
-        url: audioUrl,
-        type: 'mix',
-        tags: data.tags,
-        creatorIds: [data.creatorId === 'current' ? user?.id : data.creatorId || user?.id].filter(
-          Boolean
-        ),
-        showId: data.showId,
-        episodeNumber: data.episodeNumber ? Number(data.episodeNumber) : null
-      }
-
-      const endpoint = isEditMode
-        ? apiUrl(`/content/audio/${editType}/${search.edit}`)
-        : apiUrl('/content/audio')
-
-      const result = await fetcher(endpoint, {
-        method: isEditMode ? 'PATCH' : 'POST',
-        body: JSON.stringify(audioData)
-      })
-
-      setUploadStep('success')
-      return result
-    },
-    onSuccess: () => {
-      toast({
-        title: isEditMode ? 'Update successful!' : 'Upload successful!',
-        description: `"${formData.title}" has been ${isEditMode ? 'updated' : 'uploaded'}.`
-      })
-
-      setTimeout(() => {
-        if (!isEditMode) resetForm()
-        setUploadStep('idle')
-
-        if (formData.showId) {
-          const showSlug = allShows.find((s) => s.id === formData.showId)?.slug
-          router.navigate(
-            showSlug ? { to: '/shows/$showSlug', params: { showSlug } } : { to: '/shows' }
-          )
-        } else if (isEditMode) {
-          router.navigate({
-            to: '/mixes/$mixId',
-            params: { mixId: formData.slug || search.edit || '' }
-          })
-        } else {
-          router.navigate({ to: '/mixes' })
-        }
-      }, 2000)
-    },
-    onError: (error) => {
-      toast({
-        title: 'Upload failed',
-        description: error instanceof Error ? error.message : 'An unexpected error.',
-        variant: 'destructive'
-      })
       setUploadStep('idle')
-    }
-  })
+    },
+    [
+      runSubmit,
+      isEditMode,
+      audioFile,
+      formData,
+      allShows,
+      router,
+      search.edit,
+      draftState,
+      resetForm
+    ]
+  )
 
   const handleInputChange = (field: keyof MixFormData, value: string) => {
     setFormData((prev) => {
       const updated = { ...prev, [field]: value }
-      if (field === 'title' && !prev.slug) updated.slug = generateSlug(value)
+      if (field === 'title' && !prev.slug) updated.slug = generateSlugIfMissing(value, prev.slug)
       return updated
     })
   }
@@ -319,7 +494,7 @@ function MixUploadPage() {
           .replace(/[-_]/g, ' ')
           .replace(/\b\w/g, (l) => l.toUpperCase())
         updated.title = cleanTitle
-        if (!prev.slug) updated.slug = generateSlug(cleanTitle)
+        if (!prev.slug) updated.slug = generateSlugIfMissing(cleanTitle, prev.slug)
       }
       return updated
     })
@@ -397,7 +572,10 @@ function MixUploadPage() {
   const updateTrack = (index: number, title: string) => {
     setFormData((prev) => {
       const newList = [...prev.tracklist]
-      newList[index].title = title
+      const existing = newList[index]
+      if (existing) {
+        newList[index] = { ...existing, title }
+      }
       return { ...prev, tracklist: newList }
     })
   }
@@ -416,48 +594,22 @@ function MixUploadPage() {
     }
   }
 
-  const handleSubmit = (isDraft: boolean) => {
-    if (!isEditMode && !audioFile && !formData.url) {
-      toast({
-        title: 'Audio file required',
-        description: 'Please select an audio file to upload or pick one from S3.',
-        variant: 'destructive'
-      })
-      return
-    }
-    uploadMutation.mutate({
-      ...formData,
-      draft: isDraft,
-      audioFile,
-      artworkFile
-    })
-  }
-
-  const resetForm = () => {
-    setFormData({
-      title: '',
-      description: '',
-      slug: '',
-      content: '',
-      thumbnailUrl: '',
-      tags: [],
-      tracklist: [],
-      draft: true,
-      creatorId: undefined,
-      url: undefined,
-      showId: undefined,
-      episodeNumber: undefined
-    })
-    setAudioFile(null)
-    setArtworkFile(null)
-    if (audioPreview) URL.revokeObjectURL(audioPreview)
-    if (artworkPreview) URL.revokeObjectURL(artworkPreview)
-    setAudioPreview(null)
-    setArtworkPreview(null)
-    setUploadStep('idle')
-  }
-
   const isUploading = uploadStep !== 'idle' && uploadStep !== 'success'
+
+  const progressBadge = useMemo(
+    () => ({
+      bytesUploaded: resumableUpload.state.bytesUploaded,
+      totalBytes: resumableUpload.state.totalBytes,
+      currentPart: resumableUpload.state.currentPart,
+      totalParts: resumableUpload.state.totalParts
+    }),
+    [
+      resumableUpload.state.bytesUploaded,
+      resumableUpload.state.totalBytes,
+      resumableUpload.state.currentPart,
+      resumableUpload.state.totalParts
+    ]
+  )
 
   if (mixLoading && isEditMode) {
     return (
@@ -481,7 +633,7 @@ function MixUploadPage() {
                 : 'Share your mix with tracklist timestamps for easy navigation.'}
             </p>
           </div>
-          {isUploading && <UploadProgress step={uploadStep} />}
+          {isUploading && <UploadProgress step={uploadStep} audioProgress={progressBadge} />}
         </div>
       </header>
 
@@ -534,18 +686,8 @@ function MixUploadPage() {
                   artworkPreview={artworkPreview}
                   availableTags={availableTags}
                   allShows={allShows}
-                  usersList={usersList.map((u) => ({
-                    id: u.id,
-                    name: u.name
-                  }))}
-                  currentUser={
-                    user
-                      ? {
-                          id: user.id,
-                          name: user.name
-                        }
-                      : null
-                  }
+                  usersList={usersList.map((u) => ({ id: u.id, name: u.name }))}
+                  currentUser={user ? { id: user.id, name: user.name } : null}
                   isAdmin={isAdmin}
                   isEditMode={isEditMode}
                   isUpdatingTags={updateTagsMutation.isPending}
@@ -635,4 +777,9 @@ Add any technical details, equipment used, or special techniques...`}
       )}
     </div>
   )
+}
+
+const generateSlugIfMissing = (title: string, currentSlug: string): string => {
+  if (currentSlug) return currentSlug
+  return generateSlug(title)
 }

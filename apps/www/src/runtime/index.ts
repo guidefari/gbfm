@@ -9,6 +9,11 @@ import {
   type MediaSessionService,
   MediaSessionServiceLive
 } from '@/services/audio-player'
+import { type MixUploadDraftStorage, MixUploadDraftStorageLive } from '@/services/mix-upload-draft'
+import {
+  type ResumableUploadStorage,
+  ResumableUploadStorageLive
+} from '@/services/resumable-upload'
 
 const enableSentry = Boolean(env.sentryDsn) && (!env.isDev || env.sentryEnableLocal)
 
@@ -41,10 +46,25 @@ const spotifyLayer = Layer.suspend(() =>
 
 const audioStorageLayer = AudioStorageLive
 const mediaSessionLayer = MediaSessionServiceLive
+const resumableUploadStorageLayer = ResumableUploadStorageLive
+const mixUploadDraftStorageLayer = MixUploadDraftStorageLive
 
-const mainLayer = Layer.mergeAll(analyticsLayer, spotifyLayer, audioStorageLayer, mediaSessionLayer)
+const mainLayer = Layer.mergeAll(
+  analyticsLayer,
+  spotifyLayer,
+  audioStorageLayer,
+  mediaSessionLayer,
+  resumableUploadStorageLayer,
+  mixUploadDraftStorageLayer
+)
 
-type AppServices = Analytics | SpotifyBrowser | AudioStorage | MediaSessionService
+type AppServices =
+  | Analytics
+  | SpotifyBrowser
+  | AudioStorage
+  | MediaSessionService
+  | ResumableUploadStorage
+  | MixUploadDraftStorage
 
 const appScope = Scope.makeUnsafe()
 const appContextPromise = Effect.runPromise(Layer.buildWithScope(mainLayer, appScope))
