@@ -1,3 +1,10 @@
+# [2.57.0](https://github.com/guidefari/gbfm/compare/v2.56.0...v2.57.0) (2026-06-21)
+
+
+### Features
+
+* **upload:** resumable chunked mix audio upload ([#126](https://github.com/guidefari/gbfm/issues/126)) ([cc25ff3](https://github.com/guidefari/gbfm/commit/cc25ff3fecd01458268360b675d15ded929fe43a))
+
 # [2.56.0](https://github.com/guidefari/gbfm/compare/v2.55.0...v2.56.0) (2026-06-21)
 
 
