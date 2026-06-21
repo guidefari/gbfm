@@ -1,3 +1,10 @@
+## [2.57.4](https://github.com/guidefari/gbfm/compare/v2.57.3...v2.57.4) (2026-06-21)
+
+
+### Bug Fixes
+
+* **vps:** lower multipart chunk size under API Gateway 10MiB limit ([#130](https://github.com/guidefari/gbfm/issues/130)) ([fb8a9d6](https://github.com/guidefari/gbfm/commit/fb8a9d6acc1f22abf025320981aa4bbd54cdba6e))
+
 ## [2.57.3](https://github.com/guidefari/gbfm/compare/v2.57.2...v2.57.3) (2026-06-21)
 
 
