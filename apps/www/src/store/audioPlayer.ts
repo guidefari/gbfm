@@ -15,7 +15,13 @@ import {
   type PlayerState,
   playerReducer,
   type QueueItem,
+  createQueueItem,
   readPosition,
+  resolveLoadTrack,
+  resolvePauseEffects,
+  resolvePercentageSeek,
+  resolveProgressUpdate,
+  resolveRelativeSeek,
   setActionHandlers,
   setMetadata,
   setPlaybackState,
@@ -238,21 +244,25 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
 
             audioRef.pause()
             send({ type: 'PAUSE' }, 'audioPlayer/pause')
+            const pauseEffects = resolvePauseEffects({
+              currentTime,
+              currentTrackId,
+              nowPlayingContext,
+              progress
+            })
 
             void RuntimeClient.runPromise(
               Effect.gen(function* () {
-                yield* setPlaybackState('paused')
+                yield* setPlaybackState(pauseEffects.playbackState)
 
-                if (currentTime > 0 && currentTrackId) {
-                  yield* writePosition(currentTrackId, currentTime)
+                if (pauseEffects.persistPosition) {
+                  yield* writePosition(
+                    pauseEffects.persistPosition.trackId,
+                    pauseEffects.persistPosition.time
+                  )
                 }
 
-                yield* track('audio_paused', {
-                  trackId: currentTrackId,
-                  title: nowPlayingContext.title,
-                  progressPercent: progress,
-                  currentTime
-                })
+                yield* track('audio_paused', pauseEffects.pausedEvent)
               })
             )
             lastPersistTime = Date.now()
@@ -267,52 +277,42 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
           jumpForward: (seconds = 30) => {
             const { audioRef } = get()
             if (!audioRef?.src) return
-            const from = audioRef.currentTime
-            audioRef.currentTime += seconds
-            void RuntimeClient.runPromise(
-              track('audio_seek', {
-                trackId: get().currentTrackId,
-                fromTime: from,
-                toTime: audioRef.currentTime,
-                method: 'keyboard'
-              })
-            )
+            const decision = resolveRelativeSeek({
+              fromTime: audioRef.currentTime,
+              deltaSeconds: seconds,
+              trackId: get().currentTrackId,
+              method: 'keyboard'
+            })
+            audioRef.currentTime = decision.toTime
+            void RuntimeClient.runPromise(track('audio_seek', decision.seekEvent))
           },
 
           jumpBackward: (seconds = 15) => {
             const { audioRef } = get()
             if (!audioRef?.src) return
-            const from = audioRef.currentTime
-            audioRef.currentTime -= seconds
-            void RuntimeClient.runPromise(
-              track('audio_seek', {
-                trackId: get().currentTrackId,
-                fromTime: from,
-                toTime: audioRef.currentTime,
-                method: 'keyboard'
-              })
-            )
+            const decision = resolveRelativeSeek({
+              fromTime: audioRef.currentTime,
+              deltaSeconds: -seconds,
+              trackId: get().currentTrackId,
+              method: 'keyboard'
+            })
+            audioRef.currentTime = decision.toTime
+            void RuntimeClient.runPromise(track('audio_seek', decision.seekEvent))
           },
 
           setTimeUsingPercentage: (percentage) => {
             const { audioRef } = get()
             if (!audioRef) return
-            const from = audioRef.currentTime
-            const newTime = (percentage / 100) * audioRef.duration
-            audioRef.currentTime = newTime
-            send(
-              { type: 'SET_TIME', percentage, duration: audioRef.duration },
-              'audioPlayer/setTime'
-            )
+            const decision = resolvePercentageSeek({
+              percentage,
+              duration: audioRef.duration,
+              fromTime: audioRef.currentTime,
+              trackId: get().currentTrackId
+            })
+            audioRef.currentTime = decision.toTime
+            send(decision.action, 'audioPlayer/setTime')
             get().updateProgress()
-            void RuntimeClient.runPromise(
-              track('audio_seek', {
-                trackId: get().currentTrackId,
-                fromTime: from,
-                toTime: newTime,
-                method: 'scrub'
-              })
-            )
+            void RuntimeClient.runPromise(track('audio_seek', decision.seekEvent))
           },
 
           setVolume: (volume) => {
@@ -333,8 +333,26 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
           loadTrack: (src, thumbnailUrl, title, trackId, creators, slug) => {
             const { audioRef, isPlaying, audioSrc, currentTime, currentTrackId } = get()
             if (!audioRef) return
+            const currentPageUrl = pageUrl()
+            const decision = resolveLoadTrack(
+              {
+                audioSrc,
+                isPlaying,
+                currentTime,
+                currentTrackId
+              },
+              {
+                src,
+                thumbnailUrl,
+                title,
+                trackId,
+                creators,
+                slug
+              },
+              currentPageUrl
+            )
 
-            if (!src) {
+            if (decision.type === 'no-preview') {
               toast({
                 title: 'No preview available',
                 description: "There's no preview audio for this track",
@@ -343,45 +361,37 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
               return
             }
 
-            if (src === audioSrc && !isPlaying) {
-              get().play(title)
+            if (decision.type === 'resume-current') {
+              get().play(decision.title)
               return
             }
 
-            if (src === audioSrc && isPlaying) {
+            if (decision.type === 'pause-current') {
               get().pause()
               return
             }
 
-            if (currentTrackId && currentTime > 0) {
-              void RuntimeClient.runPromise(writePosition(currentTrackId, currentTime))
+            if (decision.persistPreviousPosition) {
+              void RuntimeClient.runPromise(
+                writePosition(
+                  decision.persistPreviousPosition.trackId,
+                  decision.persistPreviousPosition.time
+                )
+              )
             }
 
-            audioRef.src = src
-            send(
-              {
-                type: 'LOAD_TRACK',
-                src,
-                thumbnailUrl,
-                title,
-                trackId,
-                creators,
-                slug,
-                pageUrl: pageUrl()
-              },
-              'audioPlayer/loadTrack'
-            )
+            audioRef.src = decision.src
+            send(decision.action, 'audioPlayer/loadTrack')
 
             void RuntimeClient.runPromise(
               Effect.gen(function* () {
-                yield* setMetadata(title, creators?.map((c) => c.name) ?? [], thumbnailUrl)
+                yield* setMetadata(
+                  decision.metadata.title,
+                  decision.metadata.artists,
+                  decision.metadata.artwork
+                )
 
-                yield* track('audio_played', {
-                  trackId: trackId ?? null,
-                  title,
-                  slug: slug ?? null,
-                  pageUrl: pageUrl()
-                })
+                yield* track('audio_played', decision.playedEvent)
               })
             )
 
@@ -412,27 +422,28 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
             const { audioRef } = get()
             if (!audioRef) return
 
-            const now = Date.now()
-            send(
-              {
-                type: 'UPDATE_PROGRESS',
-                currentTime: audioRef.currentTime,
-                duration: audioRef.duration || 0
-              },
-              'audioPlayer/updateProgress'
-            )
+            const decision = resolveProgressUpdate({
+              currentTime: audioRef.currentTime,
+              duration: audioRef.duration || 0,
+              currentTrackId: get().currentTrackId,
+              now: Date.now(),
+              lastPersistTime,
+              persistInterval: PERSIST_INTERVAL
+            })
+            send(decision.action, 'audioPlayer/updateProgress')
 
-            if (now - lastPersistTime >= PERSIST_INTERVAL) {
-              lastPersistTime = now
-              const { currentTrackId } = get()
-              if (currentTrackId) {
-                void RuntimeClient.runPromise(
-                  Effect.gen(function* () {
-                    yield* writePosition(currentTrackId, audioRef.currentTime)
-                    yield* setPositionState(audioRef.duration || 0, audioRef.currentTime)
-                  })
-                )
-              }
+            lastPersistTime = decision.nextLastPersistTime
+
+            const persistPosition = decision.persistPosition
+            const positionState = decision.positionState
+
+            if (persistPosition && positionState) {
+              void RuntimeClient.runPromise(
+                Effect.gen(function* () {
+                  yield* writePosition(persistPosition.trackId, persistPosition.time)
+                  yield* setPositionState(positionState.duration, positionState.position)
+                })
+              )
             }
           },
 
@@ -498,7 +509,13 @@ export const useAudioPlayerStore = create<AudioPlayerStore>()(
 
           addToQueue: (mix) => {
             if (!isFeatureEnabled('ui.queue')) return
-            send({ type: 'ADD_TO_QUEUE', mix }, 'audioPlayer/addToQueue')
+            const item = createQueueItem({
+              mix,
+              queueIdTime: Date.now(),
+              addedAt: Date.now(),
+              idSuffix: Math.random().toString(36).substr(2, 9)
+            })
+            send({ type: 'ADD_TO_QUEUE', item }, 'audioPlayer/addToQueue')
             void RuntimeClient.runPromise(
               track('audio_queue_action', {
                 action: 'add',

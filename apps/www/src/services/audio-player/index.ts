@@ -28,3 +28,13 @@ export {
   writePosition
 } from './storage'
 export type { Creator } from './types'
+export {
+  createQueueItem,
+  resolveLoadTrack,
+  resolvePauseEffects,
+  resolvePercentageSeek,
+  resolveProgressUpdate,
+  resolveRelativeSeek,
+  type LoadTrackDecision,
+  type QueueableAudio
+} from './workflow'

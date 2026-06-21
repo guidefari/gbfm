@@ -16,6 +16,23 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tansta
 import { RuntimeClient } from '@/runtime'
 import { captureException } from '@/services/analytics'
 import { useSession } from './auth-client'
+import { createFetcher, getRequestMethod, getRequestUrl, type ApiFailureInput } from './http-client'
+import {
+  DEFAULT_PAGE_SIZE,
+  getNextOffsetPageParam,
+  setPaginationParams,
+  type PaginatedResponse,
+  type PaginationOptions
+} from './http-pagination'
+import {
+  audioListQueryKey,
+  audioSlugQueryKey,
+  audioTagsQueryKey,
+  favoritesQueryKey,
+  type AudioContentType,
+  userSubscriptionsQueryKey
+} from './http-query-keys'
+import { makeApiUrl, makeApiUrlObj, makePublicUrl, makePublicUrlObj } from './http-url'
 
 type User = {
   id: string
@@ -32,24 +49,22 @@ type User = {
 import type { AlbumApiResponse, PlaylistApiResponse, TrackAPIResponse } from '@/types'
 
 const VPS_BASE_URL = import.meta.env.VITE_VPS_BASE_URL || ''
+const browserOrigin = () => window.location.origin
 
 export function apiUrl(path: string): string {
-  return `${VPS_BASE_URL}/api${path}`
+  return makeApiUrl(path, VPS_BASE_URL)
 }
 
 export function apiUrlObj(path: string): URL {
-  const withApi = `/api${path}`
-  return VPS_BASE_URL
-    ? new URL(`${VPS_BASE_URL}${withApi}`)
-    : new URL(withApi, window.location.origin)
+  return makeApiUrlObj(path, VPS_BASE_URL, browserOrigin())
 }
 
 export function publicUrl(path: string): string {
-  return `${VPS_BASE_URL}${path}`
+  return makePublicUrl(path, VPS_BASE_URL)
 }
 
 export function publicUrlObj(path: string): URL {
-  return VPS_BASE_URL ? new URL(`${VPS_BASE_URL}${path}`) : new URL(path, window.location.origin)
+  return makePublicUrlObj(path, VPS_BASE_URL, browserOrigin())
 }
 
 export type SocialLinkPlatform =
@@ -66,23 +81,6 @@ export type SocialLink = {
   position: number
 }
 
-// Pagination types
-export type PaginationMetadata = {
-  total: number
-  limit: number
-  offset: number
-  hasMore: boolean
-}
-
-export type PaginatedResponse<T> = {
-  data: T[]
-  pagination: PaginationMetadata
-}
-
-export type PaginationOptions = {
-  limit?: number
-}
-
 type UseAudioByTypeOptions = PaginationOptions & {
   tag?: string
 }
@@ -97,100 +95,28 @@ type UseAudioByTypeResult = {
   refetch: () => Promise<unknown>
 }
 
-export const DEFAULT_PAGE_SIZE = 5
+export { DEFAULT_PAGE_SIZE, getNextOffsetPageParam }
+export type { PaginatedResponse, PaginationOptions }
 
-function setPaginationParams(
-  url: URL,
-  pageParam: number,
-  { limit = DEFAULT_PAGE_SIZE }: PaginationOptions = {}
-) {
-  url.searchParams.set('limit', String(limit))
-  url.searchParams.set('offset', String(pageParam))
-}
-
-function getRequestUrl(input: RequestInfo) {
-  if (typeof input === 'string') return input
-  if (input instanceof URL) return input.toString()
-  return input.url
-}
-
-function getRequestMethod(input: RequestInfo, init: RequestInit) {
-  if (init.method) return init.method
-  if (input instanceof Request) return input.method
-  return 'GET'
-}
-
-function reportApiFailure(
-  error: unknown,
-  input: RequestInfo,
-  init: RequestInit,
-  context: Record<string, unknown> = {}
-) {
-  void RuntimeClient.runPromise(
-    captureException(error, {
-      url: getRequestUrl(input),
-      method: getRequestMethod(input, init),
-      ...context
-    })
-  ).catch((reportingError) => {
-    console.error(reportingError)
+const reportApiFailure = ({ error, input, init, context = {} }: ApiFailureInput) =>
+  captureException(error, {
+    url: getRequestUrl(input),
+    method: getRequestMethod(input, init),
+    ...context
   })
-}
 
-export async function fetcher<T>(input: RequestInfo, init: RequestInit = {}): Promise<T> {
-  try {
-    const isFormData = init.body instanceof FormData
-    const headers = {
-      ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
-      ...init.headers
-    }
-
-    const res = await fetch(input, {
-      ...init,
-      headers,
-      credentials: 'include'
-    })
-
-    if (res.status === 401) {
-      window.location.href = '/auth/sign-in'
-      throw new Error('Unauthorized')
-    }
-
-    if (!res.ok) {
-      const errorText = await res.text()
-      const error = new Error(`HTTP ${res.status}: ${errorText || res.statusText}`)
-
-      if (res.status >= 500) {
-        reportApiFailure(error, input, init, {
-          status: res.status,
-          statusText: res.statusText,
-          failureType: 'server_response'
-        })
-      }
-
-      throw error
-    }
-
-    const text = await res.text()
-    const parsed: T = text ? JSON.parse(text) : undefined
-    return parsed
-  } catch (error) {
-    if (error instanceof TypeError) {
-      reportApiFailure(error, input, init, { failureType: 'network' })
-    }
-
-    console.error(error)
-    throw error
-  }
-}
+export const fetcher = createFetcher({
+  reportFailure: reportApiFailure,
+  runEffect: RuntimeClient.runPromise
+})
 
 export function useAudioByType(
-  type: 'mix' | 'track' | 'misc',
+  type: AudioContentType,
   { tag, limit = DEFAULT_PAGE_SIZE }: UseAudioByTypeOptions = {}
 ): UseAudioByTypeResult {
   const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage, isPending, refetch } =
     useInfiniteQuery<PaginatedResponse<SelectAudio>, Error>({
-      queryKey: ['audio', type, tag ?? null, limit],
+      queryKey: audioListQueryKey(type, tag, limit),
       queryFn: async ({ pageParam = 0 }) => {
         const url = apiUrlObj(`/content/audio/${type}`)
         setPaginationParams(url, Number(pageParam), { limit })
@@ -198,10 +124,7 @@ export function useAudioByType(
         return fetcher<PaginatedResponse<SelectAudio>>(url.toString())
       },
       initialPageParam: 0,
-      getNextPageParam: (lastPage) =>
-        lastPage.pagination.hasMore
-          ? lastPage.pagination.offset + lastPage.pagination.limit
-          : undefined
+      getNextPageParam: getNextOffsetPageParam
     })
 
   return {
@@ -215,9 +138,9 @@ export function useAudioByType(
   }
 }
 
-export function useAudioTags(type: 'mix' | 'track' | 'misc') {
+export function useAudioTags(type: AudioContentType) {
   const { data, error, isPending } = useQuery<string[], Error>({
-    queryKey: ['audio-tags', type],
+    queryKey: audioTagsQueryKey(type),
     queryFn: async () => fetcher<string[]>(apiUrl(`/content/audio/${type}/tags`)),
     staleTime: 1000 * 60 * 60
   })
@@ -233,11 +156,11 @@ export function useEditorialTags() {
   return { data: data ?? [], error, isPending }
 }
 
-export function useAudioBySlug(type: 'mix' | 'track' | 'misc', slug: string) {
+export function useAudioBySlug(type: AudioContentType, slug: string) {
   const { data, error, isPending } = useQuery<SelectMdxCompiledAudio, Error>({
-    queryKey: ['audio', type, slug],
+    queryKey: audioSlugQueryKey(type, slug),
     queryFn: async () => fetcher(apiUrl(`/content/audio/${type}/${slug}`)),
-    enabled: Boolean(slug) // Only run query if slug is provided
+    enabled: Boolean(slug)
   })
 
   return {
@@ -259,10 +182,7 @@ export function useEditorialPosts(tag?: string, limit = DEFAULT_PAGE_SIZE) {
         return fetcher<PaginatedResponse<SelectMdxCompiledEditorialPost>>(url.toString())
       },
       initialPageParam: 0,
-      getNextPageParam: (lastPage) =>
-        lastPage.pagination.hasMore
-          ? lastPage.pagination.offset + lastPage.pagination.limit
-          : undefined
+      getNextPageParam: getNextOffsetPageParam
     })
 
   return {
@@ -287,10 +207,7 @@ export function useMicroPosts(limit = DEFAULT_PAGE_SIZE) {
         return fetcher<PaginatedResponse<SelectMdxCompiledMicroPost>>(url.toString())
       },
       initialPageParam: 0,
-      getNextPageParam: (lastPage) =>
-        lastPage.pagination.hasMore
-          ? lastPage.pagination.offset + lastPage.pagination.limit
-          : undefined
+      getNextPageParam: getNextOffsetPageParam
     })
 
   return {
@@ -627,10 +544,7 @@ export function useAllLabels({ limit = DEFAULT_PAGE_SIZE }: PaginationOptions = 
         return fetcher<PaginatedResponse<SelectLabel>>(url.toString())
       },
       initialPageParam: 0,
-      getNextPageParam: (lastPage) =>
-        lastPage.pagination.hasMore
-          ? lastPage.pagination.offset + lastPage.pagination.limit
-          : undefined
+      getNextPageParam: getNextOffsetPageParam
     })
 
   return {
@@ -670,10 +584,7 @@ export function useReleasesByLabel(
         return fetcher<PaginatedResponse<SelectRelease>>(url.toString())
       },
       initialPageParam: 0,
-      getNextPageParam: (lastPage) =>
-        lastPage.pagination.hasMore
-          ? lastPage.pagination.offset + lastPage.pagination.limit
-          : undefined,
+      getNextPageParam: getNextOffsetPageParam,
       enabled: Boolean(labelSlug)
     })
 
@@ -729,7 +640,7 @@ export function useFavorites() {
   const { data: session } = useSession()
   const isAuthenticated = Boolean(session?.user)
   const { data, error, isPending, refetch } = useQuery<FavoritesResponse, Error>({
-    queryKey: ['favorites'],
+    queryKey: favoritesQueryKey(),
     queryFn: async () => fetcher(apiUrl('/favorites')),
     enabled: isAuthenticated
   })
@@ -756,7 +667,7 @@ export function useAddFavorite() {
         body: JSON.stringify({ audioId })
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['favorites'] })
+      queryClient.invalidateQueries({ queryKey: favoritesQueryKey() })
     }
   })
 
@@ -778,7 +689,7 @@ export function useRemoveFavorite() {
         method: 'DELETE'
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['favorites'] })
+      queryClient.invalidateQueries({ queryKey: favoritesQueryKey() })
     }
   })
 
@@ -801,7 +712,7 @@ export function useAddShowFavorite() {
         body: JSON.stringify({ showId })
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['favorites'] })
+      queryClient.invalidateQueries({ queryKey: favoritesQueryKey() })
     }
   })
 
@@ -823,7 +734,7 @@ export function useRemoveShowFavorite() {
         method: 'DELETE'
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['favorites'] })
+      queryClient.invalidateQueries({ queryKey: favoritesQueryKey() })
     }
   })
 
@@ -847,10 +758,7 @@ export function useAllShows({ limit = DEFAULT_PAGE_SIZE }: PaginationOptions = {
         return fetcher<PaginatedResponse<ShowWithHosts>>(url.toString())
       },
       initialPageParam: 0,
-      getNextPageParam: (lastPage) =>
-        lastPage.pagination.hasMore
-          ? lastPage.pagination.offset + lastPage.pagination.limit
-          : undefined
+      getNextPageParam: getNextOffsetPageParam
     })
 
   return {
@@ -922,10 +830,7 @@ export function useShowEpisodes(
         return fetcher<PaginatedResponse<SelectAudio>>(url.toString())
       },
       initialPageParam: 0,
-      getNextPageParam: (lastPage) =>
-        lastPage.pagination.hasMore
-          ? lastPage.pagination.offset + lastPage.pagination.limit
-          : undefined,
+      getNextPageParam: getNextOffsetPageParam,
       enabled: Boolean(slug)
     })
 
@@ -947,7 +852,7 @@ export function useUserSubscriptions() {
   const { data: session } = useSession()
   const isAuthenticated = Boolean(session?.user)
   const { data, error, isPending } = useQuery<PaginatedResponse<SubscriptionWithShow>, Error>({
-    queryKey: ['user-subscriptions'],
+    queryKey: userSubscriptionsQueryKey(),
     queryFn: async () =>
       fetcher<PaginatedResponse<SubscriptionWithShow>>(apiUrl('/user/subscriptions')),
     enabled: isAuthenticated
@@ -972,7 +877,7 @@ export function useSubscribeToShow() {
         method: 'POST'
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-subscriptions'] })
+      queryClient.invalidateQueries({ queryKey: userSubscriptionsQueryKey() })
     }
   })
 
@@ -990,7 +895,7 @@ export function useUnsubscribeFromShow() {
         method: 'DELETE'
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['user-subscriptions'] })
+      queryClient.invalidateQueries({ queryKey: userSubscriptionsQueryKey() })
     }
   })
 

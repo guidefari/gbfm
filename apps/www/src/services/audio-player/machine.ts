@@ -1,4 +1,3 @@
-import type { SelectAudio, SelectMdxCompiledAudio } from '@gbfm/vps/schemas'
 import type { Creator } from './types'
 
 export interface NowPlayingContext {
@@ -65,7 +64,7 @@ export type PlayerAction =
   | { type: 'SET_VOLUME'; volume: number }
   | { type: 'TOGGLE_MUTE' }
   | { type: 'SET_TIME'; percentage: number; duration: number }
-  | { type: 'ADD_TO_QUEUE'; mix: SelectAudio | SelectMdxCompiledAudio }
+  | { type: 'ADD_TO_QUEUE'; item: QueueItem }
   | { type: 'REMOVE_FROM_QUEUE'; queueId: string }
   | { type: 'CLEAR_QUEUE' }
   | { type: 'REORDER_QUEUE'; fromIndex: number; toIndex: number }
@@ -176,20 +175,8 @@ export function playerReducer(state: PlayerState, action: PlayerAction): PlayerS
       return { ...state, progress: action.percentage, currentTime: newTime }
     }
 
-    case 'ADD_TO_QUEUE': {
-      const mix = action.mix
-      const item: QueueItem = {
-        queueId: `queue-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        id: mix.id,
-        title: mix.title,
-        url: mix.url,
-        thumbnailUrl: mix.thumbnailUrl || '',
-        slug: mix.slug,
-        addedAt: Date.now(),
-        creators: 'creators' in mix ? mix.creators : undefined
-      }
-      return { ...state, queue: [...state.queue, item] }
-    }
+    case 'ADD_TO_QUEUE':
+      return { ...state, queue: [...state.queue, action.item] }
 
     case 'REMOVE_FROM_QUEUE': {
       const removedIndex = state.queue.findIndex((item) => item.queueId === action.queueId)
