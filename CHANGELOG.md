@@ -1,3 +1,10 @@
+## [2.57.3](https://github.com/guidefari/gbfm/compare/v2.57.2...v2.57.3) (2026-06-21)
+
+
+### Bug Fixes
+
+* **www:** move Sentry.init to module-level in main.tsx ([#129](https://github.com/guidefari/gbfm/issues/129)) ([b52fbef](https://github.com/guidefari/gbfm/commit/b52fbefd4641282d4c3809f24ee66dc541814b6f))
+
 ## [2.57.2](https://github.com/guidefari/gbfm/compare/v2.57.1...v2.57.2) (2026-06-21)
 
 
