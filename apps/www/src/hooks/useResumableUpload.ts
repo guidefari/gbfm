@@ -1,36 +1,42 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { apiUrl } from '@/lib/http'
+import * as Cause from 'effect/Cause'
+import * as Effect from 'effect/Effect'
+import * as Exit from 'effect/Exit'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
-import { readResponseErrorMessage } from '@/lib/response'
+import { runAppEffect } from '@/runtime'
 import {
-  computeBackoff,
-  computeFileFingerprint,
-  createPersistedUpload,
-  isRetryableStatus,
-  missingPartNumbers,
-  parseAbortResponse,
-  parseCompleteResponse,
-  parseInitResponse,
-  parsePartResponse,
-  parsePersistedUpload,
-  parseStatusResponse,
-  sleep,
-  splitFileIntoChunks,
-  withUpdatedPart,
+  AlreadyInProgressError,
   type PersistedResumableUpload,
-  type ResumablePart,
-  type ResumableUploadPhase,
-  type ResumableUploadResult
-} from '@/lib/upload/resumable-upload'
+  type ResumableUploadError,
+  type ResumableUploadResult,
+  ResumableUploadStorage,
+  UnknownError,
+  cancelProgram,
+  uploadProgram
+} from '@/services/resumable-upload'
+import { computeFileFingerprint } from '@/lib/upload/resumable-upload'
 
-const STORAGE_PREFIX = 'gbfm:resumable-upload:'
-const MAX_PART_ATTEMPTS = 5
+export type {
+  PersistedResumableUpload,
+  ResumableUploadError,
+  ResumableUploadResult
+} from '@/services/resumable-upload'
 
-export interface UseResumableUploadOptions {
-  fileType: 'audio'
-  onComplete?: (result: ResumableUploadResult) => void
-  onError?: (error: Error) => void
-}
+export type ResumableUploadPhase =
+  | 'idle'
+  | 'preparing'
+  | 'uploading'
+  | 'paused'
+  | 'finalizing'
+  | 'completed'
+  | 'aborted'
+  | 'error'
+
+export type ResumableUploadOutcome =
+  | { readonly _tag: 'Success'; readonly result: ResumableUploadResult }
+  | { readonly _tag: 'Paused'; readonly checkpoint: PersistedResumableUpload }
+  | { readonly _tag: 'Aborted' }
+  | { readonly _tag: 'Error'; readonly error: ResumableUploadError }
 
 export interface UseResumableUploadState {
   phase: ResumableUploadPhase
@@ -38,45 +44,20 @@ export interface UseResumableUploadState {
   totalBytes: number
   currentPart: number
   totalParts: number
-  error: Error | null
+  error: ResumableUploadError | null
   result: ResumableUploadResult | null
+  checkpoint: PersistedResumableUpload | null
 }
 
 export interface UseResumableUploadReturn {
   state: UseResumableUploadState
-  start: (file: File) => Promise<ResumableUploadResult>
-  resume: (file: File) => Promise<ResumableUploadResult>
+  start: (file: File) => Promise<ResumableUploadOutcome>
+  resume: (file: File) => Promise<ResumableUploadOutcome>
   cancel: () => Promise<void>
   isInProgress: boolean
   isPaused: boolean
   isCompleted: boolean
   hasInProgress: boolean
-}
-
-const readStorage = (key: string): PersistedResumableUpload | null => {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_PREFIX + key)
-    if (!raw) return null
-    return parsePersistedUpload(JSON.parse(raw))
-  } catch {
-    return null
-  }
-}
-
-const writeStorage = (value: PersistedResumableUpload): void => {
-  try {
-    window.localStorage.setItem(STORAGE_PREFIX + value.fileFingerprint, JSON.stringify(value))
-  } catch {
-    // ignored: storage may be full or disabled; uploads still work, they just can't resume
-  }
-}
-
-const clearStorage = (fingerprint: string): void => {
-  try {
-    window.localStorage.removeItem(STORAGE_PREFIX + fingerprint)
-  } catch {
-    // ignored
-  }
 }
 
 const initialState: UseResumableUploadState = {
@@ -86,82 +67,33 @@ const initialState: UseResumableUploadState = {
   currentPart: 0,
   totalParts: 0,
   error: null,
-  result: null
+  result: null,
+  checkpoint: null
 }
 
-const uploadPartWithRetry = async (
-  uploadId: string,
-  key: string,
-  part: { partNumber: number; blob: Blob },
-  signal: AbortSignal
-): Promise<ResumablePart> => {
-  const formData = new FormData()
-  formData.append('key', key)
-  formData.append('uploadId', uploadId)
-  formData.append('partNumber', String(part.partNumber))
-  formData.append('chunk', part.blob, `part-${part.partNumber}`)
+const inProgressPhase = (phase: ResumableUploadPhase): boolean =>
+  phase === 'preparing' || phase === 'uploading' || phase === 'finalizing'
 
-  let lastError: Error | null = null
-  for (let attempt = 1; attempt <= MAX_PART_ATTEMPTS; attempt += 1) {
-    if (signal.aborted) {
-      throw new DOMException('Aborted', 'AbortError')
-    }
-
-    try {
-      const response = await fetch(apiUrl('/upload/multipart/part'), {
-        method: 'POST',
-        body: formData,
-        signal
-      })
-
-      if (response.ok) {
-        return parsePartResponse(await response.json())
-      }
-
-      if (!isRetryableStatus(response.status) || attempt === MAX_PART_ATTEMPTS) {
-        const message = await readResponseErrorMessage(
-          response,
-          `Part ${part.partNumber} failed (${response.status})`
-        )
-        throw new Error(message)
-      }
-    } catch (error) {
-      if (error instanceof DOMException && error.name === 'AbortError') throw error
-      lastError = error instanceof Error ? error : new Error(String(error))
-      if (attempt === MAX_PART_ATTEMPTS) throw lastError
-    }
-
-    const backoff = computeBackoff(attempt)
-    await sleep(backoff, signal)
+const outcomeFromExit = (
+  exit: Exit.Exit<ResumableUploadResult, ResumableUploadError>
+): ResumableUploadOutcome => {
+  if (Exit.isSuccess(exit)) {
+    return { _tag: 'Success', result: exit.value }
   }
-
-  throw lastError ?? new Error(`Part ${part.partNumber} failed`)
-}
-
-export class ResumableUploadAbortedError extends Error {
-  constructor() {
-    super('Upload aborted')
-    this.name = 'ResumableUploadAbortedError'
+  const errorOpt = Cause.findErrorOption(exit.cause)
+  if (errorOpt._tag === 'None') {
+    return { _tag: 'Error', error: new UnknownError({ message: 'Unexpected upload failure' }) }
   }
+  const error = errorOpt.value
+  if (error._tag === 'UploadAborted') return { _tag: 'Aborted' }
+  if (error._tag === 'UploadPaused') return { _tag: 'Paused', checkpoint: error.checkpoint }
+  return { _tag: 'Error', error }
 }
 
-export class ResumableUploadPausedError extends Error {
-  constructor() {
-    super('Upload paused')
-    this.name = 'ResumableUploadPausedError'
-  }
-}
-
-export function useResumableUpload(
-  options: UseResumableUploadOptions = { fileType: 'audio' }
-): UseResumableUploadReturn {
-  const { fileType, onComplete, onError } = options
+export function useResumableUpload(): UseResumableUploadReturn {
   const isOnline = useOnlineStatus()
-
   const [state, setState] = useState<UseResumableUploadState>(initialState)
-
-  const persistedRef = useRef<PersistedResumableUpload | null>(null)
-  const fingerprintRef = useRef<string | null>(null)
+  const checkpointRef = useRef<PersistedResumableUpload | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
   const pausedRef = useRef<boolean>(false)
 
@@ -170,39 +102,47 @@ export function useResumableUpload(
       patch:
         | Partial<UseResumableUploadState>
         | ((prev: UseResumableUploadState) => Partial<UseResumableUploadState>)
-    ) => {
+    ) =>
       setState((prev) => ({
         ...prev,
         ...(typeof patch === 'function' ? patch(prev) : patch)
-      }))
-    },
+      })),
     []
   )
 
-  const persist = useCallback((next: PersistedResumableUpload) => {
-    persistedRef.current = next
-    writeStorage(next)
-  }, [])
+  const setCheckpoint = useCallback(
+    (checkpoint: PersistedResumableUpload | null) => {
+      checkpointRef.current = checkpoint
+      transitionTo({ checkpoint })
+    },
+    [transitionTo]
+  )
 
-  const clearAll = useCallback(() => {
-    if (fingerprintRef.current) {
-      clearStorage(fingerprintRef.current)
-    }
-    persistedRef.current = null
-    fingerprintRef.current = null
-    pausedRef.current = false
-  }, [])
+  const loadCheckpoint = useCallback(
+    async (file: File): Promise<PersistedResumableUpload | null> => {
+      const fingerprint = computeFileFingerprint(file)
+      return runAppEffect(
+        Effect.andThen(ResumableUploadStorage, (storage) => storage.read(fingerprint))
+      ).catch(() => null)
+    },
+    []
+  )
 
   const runUpload = useCallback(
     async (
       file: File,
       resumeFrom: PersistedResumableUpload | null
-    ): Promise<ResumableUploadResult> => {
-      const fingerprint = computeFileFingerprint(file)
-      fingerprintRef.current = fingerprint
+    ): Promise<ResumableUploadOutcome> => {
+      if (inProgressPhase(state.phase)) {
+        return {
+          _tag: 'Error',
+          error: new AlreadyInProgressError({ message: 'Upload already in progress' })
+        }
+      }
+
       pausedRef.current = false
-      abortControllerRef.current = new AbortController()
-      const signal = abortControllerRef.current.signal
+      const controller = new AbortController()
+      abortControllerRef.current = controller
 
       transitionTo({
         phase: 'preparing',
@@ -210,212 +150,81 @@ export function useResumableUpload(
         result: null,
         totalBytes: file.size,
         bytesUploaded: 0,
-        currentPart: 0
+        currentPart: 0,
+        totalParts: 0,
+        checkpoint: resumeFrom
       })
+      checkpointRef.current = resumeFrom
 
-      try {
-        let persisted: PersistedResumableUpload
-        if (resumeFrom) {
-          const statusResponse = await fetch(
-            apiUrl(
-              `/upload/multipart/status?key=${encodeURIComponent(resumeFrom.key)}&uploadId=${encodeURIComponent(resumeFrom.uploadId)}`
-            ),
-            { signal }
-          )
-          if (!statusResponse.ok) {
-            const message = await readResponseErrorMessage(
-              statusResponse,
-              'Failed to fetch upload status'
-            )
-            throw new Error(message)
-          }
-          const serverStatus = parseStatusResponse(await statusResponse.json())
-          persisted = {
-            ...resumeFrom,
-            completedParts: serverStatus.parts,
-            updatedAt: Date.now()
-          }
-        } else {
-          const initResponse = await fetch(apiUrl('/upload/multipart/init'), {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              fileName: file.name,
-              contentType: file.type,
-              fileSize: file.size,
-              fileType
-            }),
-            signal
-          })
-          if (!initResponse.ok) {
-            const message = await readResponseErrorMessage(initResponse, 'Failed to start upload')
-            throw new Error(message)
-          }
-          persisted = createPersistedUpload({
-            file,
-            fileFingerprint: fingerprint,
-            init: parseInitResponse(await initResponse.json())
-          })
+      const program = uploadProgram(
+        { file, fileType: 'audio' },
+        {
+          signal: controller.signal,
+          isPaused: () => pausedRef.current,
+          onProgress: (progress) => {
+            setState((prev) => ({ ...prev, ...progress }))
+          },
+          checkpoint: resumeFrom ?? undefined
         }
+      )
 
-        persist(persisted)
+      const exit = await runAppEffect(Effect.exit(program))
+      const outcome = outcomeFromExit(exit)
 
-        const chunks = splitFileIntoChunks(file, persisted.chunkSize)
-        const todo = missingPartNumbers(persisted.totalParts, persisted.completedParts)
-          .map((partNumber) => chunks[partNumber - 1])
-          .filter((chunk): chunk is (typeof chunks)[number] => Boolean(chunk))
-
-        const initialBytes = persisted.completedParts.reduce((sum, p) => sum + p.size, 0)
-        transitionTo({
-          phase: 'uploading',
-          bytesUploaded: initialBytes,
-          totalBytes: persisted.totalBytes,
-          totalParts: persisted.totalParts,
-          currentPart: persisted.completedParts.length
-        })
-
-        let working: PersistedResumableUpload = persisted
-        for (const chunk of todo) {
-          if (signal.aborted) throw new ResumableUploadAbortedError()
-          if (pausedRef.current) {
-            persist(working)
-            transitionTo({ phase: 'paused' })
-            throw new ResumableUploadPausedError()
-          }
-
-          const result = await uploadPartWithRetry(
-            working.uploadId,
-            working.key,
-            { partNumber: chunk.partNumber, blob: chunk.blob },
-            signal
-          )
-
-          working = withUpdatedPart(working, result)
-          persist(working)
-          transitionTo((prev) => ({
-            ...prev,
-            bytesUploaded: prev.bytesUploaded + result.size,
-            currentPart: Math.min(prev.currentPart + 1, prev.totalParts)
-          }))
-        }
-
-        if (pausedRef.current) {
-          transitionTo({ phase: 'paused' })
-          throw new ResumableUploadPausedError()
-        }
-        if (signal.aborted) throw new ResumableUploadAbortedError()
-
-        transitionTo({ phase: 'finalizing' })
-
-        const completeResponse = await fetch(apiUrl('/upload/multipart/complete'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            key: working.key,
-            uploadId: working.uploadId,
-            parts: working.completedParts.map((p) => ({
-              partNumber: p.partNumber,
-              etag: p.etag
-            }))
-          }),
-          signal
-        })
-        if (!completeResponse.ok) {
-          const message = await readResponseErrorMessage(
-            completeResponse,
-            'Failed to complete upload'
-          )
-          throw new Error(message)
-        }
-
-        const completed: ResumableUploadResult = parseCompleteResponse(
-          await completeResponse.json()
-        )
-        clearAll()
-
-        setState({
-          phase: 'completed',
-          bytesUploaded: working.totalBytes,
-          totalBytes: working.totalBytes,
-          currentPart: working.totalParts,
-          totalParts: working.totalParts,
-          error: null,
-          result: completed
-        })
-        onComplete?.(completed)
-        return completed
-      } catch (error) {
-        if (error instanceof ResumableUploadAbortedError) {
-          transitionTo({ phase: 'aborted' })
-          throw error
-        }
-        if (error instanceof ResumableUploadPausedError) {
-          transitionTo({ phase: 'paused' })
-          throw error
-        }
-        const err = error instanceof Error ? error : new Error(String(error))
-        transitionTo({ phase: 'error', error: err })
-        onError?.(err)
-        throw err
+      if (outcome._tag === 'Success') {
+        setCheckpoint(null)
+        transitionTo({ result: outcome.result })
+      } else if (outcome._tag === 'Paused') {
+        setCheckpoint(outcome.checkpoint)
+      } else if (outcome._tag === 'Error') {
+        transitionTo({ error: outcome.error })
       }
+
+      return outcome
     },
-    [fileType, onComplete, onError, persist, transitionTo, clearAll]
+    [state.phase, transitionTo, setCheckpoint]
   )
 
   const start = useCallback(
-    (file: File): Promise<ResumableUploadResult> => {
-      if (
-        state.phase === 'preparing' ||
-        state.phase === 'uploading' ||
-        state.phase === 'finalizing'
-      ) {
-        return Promise.reject(new Error('Upload already in progress'))
+    async (file: File): Promise<ResumableUploadOutcome> => {
+      if (inProgressPhase(state.phase)) {
+        return {
+          _tag: 'Error',
+          error: new AlreadyInProgressError({ message: 'Upload already in progress' })
+        }
       }
-      pausedRef.current = false
-      const checkpoint = readResumableUpload(file)
+      const checkpoint = await loadCheckpoint(file)
       return runUpload(file, checkpoint)
     },
-    [runUpload, state.phase]
+    [state.phase, loadCheckpoint, runUpload]
   )
 
   const resume = useCallback(
-    (file: File): Promise<ResumableUploadResult> => {
-      if (
-        state.phase === 'preparing' ||
-        state.phase === 'uploading' ||
-        state.phase === 'finalizing'
-      ) {
-        return Promise.reject(new Error('Upload already in progress'))
+    async (file: File): Promise<ResumableUploadOutcome> => {
+      if (inProgressPhase(state.phase)) {
+        return {
+          _tag: 'Error',
+          error: new AlreadyInProgressError({ message: 'Upload already in progress' })
+        }
       }
-      pausedRef.current = false
-      const checkpoint = persistedRef.current ?? readResumableUpload(file)
+      const checkpoint = checkpointRef.current ?? (await loadCheckpoint(file))
       return runUpload(file, checkpoint)
     },
-    [runUpload, state.phase]
+    [state.phase, loadCheckpoint, runUpload]
   )
 
   const cancel = useCallback(async () => {
-    const persisted = persistedRef.current
-    abortControllerRef.current?.abort()
-
-    if (persisted) {
-      try {
-        const response = await fetch(apiUrl('/upload/multipart/abort'), {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ key: persisted.key, uploadId: persisted.uploadId })
-        })
-        if (response.ok) {
-          parseAbortResponse(await response.json())
-        }
-      } catch {
-        // The S3 lifecycle rule cleans up abandoned uploads regardless.
-      }
+    const controller = abortControllerRef.current
+    const checkpoint = checkpointRef.current
+    controller?.abort()
+    if (checkpoint) {
+      const signal = controller?.signal ?? new AbortController().signal
+      await runAppEffect(cancelProgram(checkpoint, signal)).catch(() => undefined)
     }
-
-    clearAll()
+    checkpointRef.current = null
+    pausedRef.current = false
     setState({ ...initialState, phase: 'aborted' })
-  }, [clearAll])
+  }, [])
 
   useEffect(() => {
     return () => {
@@ -424,15 +233,13 @@ export function useResumableUpload(
   }, [])
 
   useEffect(() => {
-    if (state.phase !== 'uploading' && state.phase !== 'finalizing') return
+    if (!inProgressPhase(state.phase)) return
     if (isOnline) return
     pausedRef.current = true
-    setState((prev) =>
-      prev.phase === 'uploading' || prev.phase === 'finalizing'
-        ? { ...prev, phase: 'paused' }
-        : prev
-    )
+    setState((prev) => (inProgressPhase(prev.phase) ? { ...prev, phase: 'paused' } : prev))
   }, [isOnline, state.phase])
+
+  const hasInProgress = state.checkpoint !== null && state.phase !== 'completed'
 
   return useMemo(
     () => ({
@@ -440,15 +247,11 @@ export function useResumableUpload(
       start,
       resume,
       cancel,
-      isInProgress:
-        state.phase === 'uploading' || state.phase === 'finalizing' || state.phase === 'preparing',
+      isInProgress: inProgressPhase(state.phase),
       isPaused: state.phase === 'paused',
       isCompleted: state.phase === 'completed',
-      hasInProgress: persistedRef.current !== null
+      hasInProgress
     }),
-    [state, start, resume, cancel]
+    [state, start, resume, cancel, hasInProgress]
   )
 }
-
-export const readResumableUpload = (file: File): PersistedResumableUpload | null =>
-  readStorage(computeFileFingerprint(file))
