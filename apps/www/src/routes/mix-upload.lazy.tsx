@@ -29,6 +29,7 @@ import { z } from 'zod'
 import { S3AudioFilePicker, S3MediaFilePicker } from '@/components/mix-uploader/S3AudioFilePicker'
 import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
 import { useResumableUpload } from '@/hooks/useResumableUpload'
+import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { authClient, useSession } from '@/lib/auth-client'
 import { apiUrl, fetcher, useAllShows, useAudioBySlug, useAudioTags } from '@/lib/http'
 import { readResponseErrorMessage, readUploadResponse } from '@/lib/response'
@@ -102,16 +103,10 @@ function MixUploadPage() {
   const audioRef = useRef<HTMLAudioElement>(null)
   const router = useRouter()
   const queryClient = useQueryClient()
+  const isOnline = useOnlineStatus()
 
   const resumableUpload = useResumableUpload({
-    fileType: 'audio',
-    onError: (error) => {
-      toast({
-        title: 'Audio upload failed',
-        description: error.message,
-        variant: 'destructive'
-      })
-    }
+    fileType: 'audio'
   })
 
   const isAdmin = user?.role === 'admin'
@@ -138,6 +133,21 @@ function MixUploadPage() {
       setUploadStep('idle')
     }
   }, [resumableUpload.state.phase])
+
+  useEffect(() => {
+    if (!isOnline) return
+    if (resumableUpload.state.phase !== 'paused') return
+    if (!audioFile) return
+    resumableUpload.resume(audioFile).catch((error: unknown) => {
+      if (error instanceof Error) {
+        toast({
+          title: 'Audio upload failed',
+          description: error.message,
+          variant: 'destructive'
+        })
+      }
+    })
+  }, [isOnline, resumableUpload.state.phase, audioFile, resumableUpload])
 
   useEffect(() => {
     if (existingMix && isEditMode) {

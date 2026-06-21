@@ -7,7 +7,6 @@ import {
   computeFileFingerprint,
   createPersistedUpload,
   isRetryableStatus,
-  mergeCompletedParts,
   missingPartNumbers,
   parseAbortResponse,
   parseCompleteResponse,
@@ -233,7 +232,7 @@ export function useResumableUpload(
           const serverStatus = parseStatusResponse(await statusResponse.json())
           persisted = {
             ...resumeFrom,
-            completedParts: mergeCompletedParts(resumeFrom.completedParts, serverStatus.parts),
+            completedParts: serverStatus.parts,
             updatedAt: Date.now()
           }
         } else {
@@ -277,12 +276,12 @@ export function useResumableUpload(
 
         let working: PersistedResumableUpload = persisted
         for (const chunk of todo) {
+          if (signal.aborted) throw new ResumableUploadAbortedError()
           if (pausedRef.current) {
             persist(working)
             transitionTo({ phase: 'paused' })
             throw new ResumableUploadPausedError()
           }
-          if (signal.aborted) throw new ResumableUploadAbortedError()
 
           const result = await uploadPartWithRetry(
             working.uploadId,
@@ -365,24 +364,38 @@ export function useResumableUpload(
 
   const start = useCallback(
     (file: File): Promise<ResumableUploadResult> => {
-      if (pausedRef.current) pausedRef.current = false
-      return runUpload(file, null)
+      if (
+        state.phase === 'preparing' ||
+        state.phase === 'uploading' ||
+        state.phase === 'finalizing'
+      ) {
+        return Promise.reject(new Error('Upload already in progress'))
+      }
+      pausedRef.current = false
+      const checkpoint = readResumableUpload(file)
+      return runUpload(file, checkpoint)
     },
-    [runUpload]
+    [runUpload, state.phase]
   )
 
   const resume = useCallback(
     (file: File): Promise<ResumableUploadResult> => {
-      const existing = persistedRef.current
-      if (pausedRef.current) pausedRef.current = false
-      return runUpload(file, existing)
+      if (
+        state.phase === 'preparing' ||
+        state.phase === 'uploading' ||
+        state.phase === 'finalizing'
+      ) {
+        return Promise.reject(new Error('Upload already in progress'))
+      }
+      pausedRef.current = false
+      const checkpoint = persistedRef.current ?? readResumableUpload(file)
+      return runUpload(file, checkpoint)
     },
-    [runUpload]
+    [runUpload, state.phase]
   )
 
   const cancel = useCallback(async () => {
     const persisted = persistedRef.current
-    pausedRef.current = true
     abortControllerRef.current?.abort()
 
     if (persisted) {
