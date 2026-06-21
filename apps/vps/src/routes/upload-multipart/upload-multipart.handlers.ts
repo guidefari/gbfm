@@ -1,7 +1,7 @@
 import { getFormFile, getFormString } from '@gbfm/core/utils'
 import { Effect } from 'effect'
 import * as HttpStatusCodes from 'stoker/http-status-codes'
-import { ValidationError } from '@/errors'
+import { S3Error, ValidationError } from '@/errors'
 import type { AppRouteHandler } from '@/lib/types'
 import { runApp } from '@/runtime'
 import { ConfigService } from '@/services/config.service'
@@ -25,6 +25,17 @@ const buildObjectKey = (fileType: string, fileName: string): string => {
   const timestamp = Date.now()
   const sanitizedName = sanitizeKeySegment(fileName)
   return `${fileType}_${timestamp}_${sanitizedName}`
+}
+
+export const assertContiguousParts = (parts: ReadonlyArray<{ partNumber: number }>): void => {
+  const sorted = parts.toSorted((a, b) => a.partNumber - b.partNumber)
+  for (const [index, part] of sorted.entries()) {
+    if (part.partNumber !== index + 1) {
+      throw new ValidationError({
+        message: `Parts must be contiguous starting at 1. Missing part ${index + 1}`
+      })
+    }
+  }
 }
 
 export const initMultipart: AppRouteHandler<InitMultipartRoute> = async (c) => {
@@ -174,15 +185,10 @@ export const completeMultipart: AppRouteHandler<CompleteMultipartRoute> = async 
     const s3Service = yield* S3Service
 
     const sortedParts = body.parts.toSorted((a, b) => a.partNumber - b.partNumber)
-    const expectedPartNumber = (index: number) => index + 1
-    for (const [index, part] of sortedParts.entries()) {
-      if (part.partNumber !== expectedPartNumber(index)) {
-        return yield* Effect.fail(
-          new ValidationError({
-            message: `Parts must be contiguous starting at 1. Missing part ${expectedPartNumber(index)}`
-          })
-        )
-      }
+    try {
+      assertContiguousParts(body.parts)
+    } catch (error) {
+      return yield* Effect.fail(error)
     }
 
     yield* s3Service.completeMultipartUpload(
@@ -202,12 +208,12 @@ export const completeMultipart: AppRouteHandler<CompleteMultipartRoute> = async 
     }),
     Effect.map((result) => ({ ...result, status: HttpStatusCodes.OK }) as const),
     Effect.catchTags({
-      ValidationError: (error) =>
+      ValidationError: (error: ValidationError) =>
         Effect.succeed({
           error: error.message,
           status: HttpStatusCodes.BAD_REQUEST
         } as const),
-      S3Error: (error) =>
+      S3Error: (error: S3Error) =>
         Effect.gen(function* () {
           yield* Effect.logError('[Upload] Multipart complete error', {
             key: body.key,
