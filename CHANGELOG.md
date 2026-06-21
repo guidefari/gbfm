@@ -1,3 +1,10 @@
+# [2.56.0](https://github.com/guidefari/gbfm/compare/v2.55.0...v2.56.0) (2026-06-21)
+
+
+### Features
+
+* images cleanup ([946853a](https://github.com/guidefari/gbfm/commit/946853a64592bbdcf8970fc39a809890eefb6935))
+
 # [2.55.0](https://github.com/guidefari/gbfm/compare/v2.54.0...v2.55.0) (2026-06-16)
 
 
