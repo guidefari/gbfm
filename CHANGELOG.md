@@ -1,3 +1,10 @@
+## [2.57.1](https://github.com/guidefari/gbfm/compare/v2.57.0...v2.57.1) (2026-06-21)
+
+
+### Bug Fixes
+
+* circular dep ([4941572](https://github.com/guidefari/gbfm/commit/4941572222c4220a0e90a94bfe5d89d97dd96930))
+
 # [2.57.0](https://github.com/guidefari/gbfm/compare/v2.56.0...v2.57.0) (2026-06-21)
 
 
