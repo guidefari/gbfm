@@ -2,7 +2,7 @@ import { SpotifyBrowser } from '@spotify-effect/browser'
 import { Effect, Layer, Scope } from 'effect'
 import { env } from '@/env'
 import { getSpotifyRedirectUri } from '@/lib/spotify-pkce'
-import { type Analytics, makeSentryAnalyticsLayer, NoopAnalyticsLayer } from '@/services/analytics'
+import { type Analytics, SentryAnalyticsLayer, NoopAnalyticsLayer } from '@/services/analytics'
 import {
   type AudioStorage,
   AudioStorageLive,
@@ -17,20 +17,7 @@ import {
 
 const enableSentry = Boolean(env.sentryDsn) && (!env.isDev || env.sentryEnableLocal)
 
-const analyticsLayer = enableSentry
-  ? makeSentryAnalyticsLayer({
-      dsn: env.sentryDsn,
-      environment: env.sentryEnvironment ?? (env.isDev ? 'development' : 'production'),
-      release: env.sentryRelease,
-      debug: env.isDev,
-      enableSessionReplay: !env.isDev,
-      // temporarily raised to 1.0 for end-to-end trace investigation
-      tracesSampleRate: 1.0,
-      tracePropagationTargets: env.isDev
-        ? [/^\//, 'http://127.0.0.1:3003', 'http://localhost:3003']
-        : [/^\//, 'https://goosebumps.fm', 'https://www.goosebumps.fm', 'https://vps.goosebumps.fm']
-    })
-  : NoopAnalyticsLayer
+const analyticsLayer = enableSentry ? SentryAnalyticsLayer : NoopAnalyticsLayer
 
 const spotifyLayer = Layer.suspend(() =>
   SpotifyBrowser.layer({
