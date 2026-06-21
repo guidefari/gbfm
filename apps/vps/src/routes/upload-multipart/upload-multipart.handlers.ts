@@ -16,9 +16,13 @@ import type {
 } from './upload-multipart.routes'
 import type { Context } from 'hono'
 
-const CHUNK_SIZE = 10 * 1024 * 1024
+const CHUNK_SIZE = 8 * 1024 * 1024
 const MAX_AUDIO_SIZE = 200 * 1024 * 1024
-const MAX_CHUNK_SIZE = CHUNK_SIZE * 2
+// API Gateway HTTP API v2 caps request bodies at 10 MiB. A multipart/form-data
+// request adds ~1 KiB of overhead on top of the file part, so the per-chunk
+// ceiling must stay well under 10 MiB. 9 MiB leaves room for the form fields
+// (key, uploadId, partNumber) and the boundary markers.
+const MAX_CHUNK_SIZE = 9 * 1024 * 1024
 
 const sanitizeKeySegment = (value: string): string => value.replace(/[^a-zA-Z0-9.-]/g, '_')
 
