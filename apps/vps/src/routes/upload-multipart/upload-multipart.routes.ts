@@ -25,7 +25,11 @@ export const initMultipart = createRoute({
     body: jsonContentRequired(
       z.object({
         fileName: z.string().min(1).max(255),
-        contentType: z.string().min(1).max(127),
+        contentType: z
+          .string()
+          .min(1)
+          .max(127)
+          .regex(/^audio\//, 'contentType must be an audio MIME type'),
         fileSize: z.number().int().positive(),
         fileType: z.literal('audio')
       }),
@@ -147,10 +151,8 @@ export const abortMultipart = createRoute({
     )
   },
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(
-      z.object({ ok: z.literal(true) }),
-      'Multipart upload aborted'
-    ),
+    [HttpStatusCodes.OK]: jsonContent(z.object({ ok: z.literal(true) }), 'Multipart upload aborted'),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(z.object({ error: z.string() }), 'Invalid request'),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(z.object({ error: z.string() }), 'Unauthorized'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
@@ -177,6 +179,7 @@ export const multipartStatus = createRoute({
       }),
       'Multipart upload status'
     ),
+    [HttpStatusCodes.BAD_REQUEST]: jsonContent(z.object({ error: z.string() }), 'Invalid request'),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(z.object({ error: z.string() }), 'Unauthorized'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(
       z.object({ error: z.string() }),
