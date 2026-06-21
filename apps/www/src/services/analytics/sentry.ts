@@ -4,62 +4,6 @@ import * as Layer from 'effect/Layer'
 import type { AnalyticsProperties } from './service'
 import { Analytics } from './service'
 
-const isLocalUrl = (value: unknown) =>
-  typeof value === 'string' && (value.includes('127.0.0.1') || value.includes('localhost'))
-
-const hasLocalUrl = (event: Sentry.Event) =>
-  isLocalUrl(event.request?.url) ||
-  event.spans?.some((span) => isLocalUrl(span.description) || isLocalUrl(span.data?.url))
-
-export interface SentryAnalyticsOptions {
-  readonly dsn: string
-  readonly environment?: string
-  readonly debug?: boolean
-  readonly enableSessionReplay?: boolean
-  readonly tracesSampleRate?: number
-  readonly replaysOnErrorSampleRate?: number
-  readonly tracePropagationTargets?: (string | RegExp)[]
-  readonly release?: string
-}
-
-const makeSentryClientLayer = (options: SentryAnalyticsOptions) =>
-  Layer.effectDiscard(
-    Effect.sync(() => {
-      const enableSessionReplay = options.enableSessionReplay ?? true
-
-      Sentry.init({
-        dsn: options.dsn,
-        environment: options.environment,
-        release: options.release,
-        debug: options.debug ?? false,
-        integrations: [
-          Sentry.browserTracingIntegration(),
-          ...(enableSessionReplay
-            ? [
-                Sentry.replayIntegration({
-                  maskAllText: false,
-                  blockAllMedia: false
-                })
-              ]
-            : [])
-        ],
-        tracesSampleRate: options.tracesSampleRate ?? 0.1,
-        tracePropagationTargets: options.tracePropagationTargets,
-        replaysSessionSampleRate: 0,
-        replaysOnErrorSampleRate: enableSessionReplay
-          ? (options.replaysOnErrorSampleRate ?? 1.0)
-          : 0,
-        sendDefaultPii: false,
-        beforeSend: (event) => {
-          return hasLocalUrl(event) ? null : event
-        },
-        beforeSendTransaction: (event) => {
-          return hasLocalUrl(event) ? null : event
-        }
-      })
-    })
-  )
-
 const SentryAnalyticsImpl = Layer.sync(Analytics, () => {
   const track = Effect.fn('Analytics.track')((event: string, properties?: AnalyticsProperties) =>
     Effect.sync(() => {
@@ -101,8 +45,7 @@ const SentryAnalyticsImpl = Layer.sync(Analytics, () => {
   return { track, identify, page, reset }
 })
 
-export const makeSentryAnalyticsLayer = (options: SentryAnalyticsOptions) =>
-  Layer.provideMerge(SentryAnalyticsImpl, makeSentryClientLayer(options))
+export const SentryAnalyticsLayer = SentryAnalyticsImpl
 
 export const captureException = (error: unknown, context?: AnalyticsProperties) =>
   Effect.sync(() => {

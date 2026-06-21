@@ -1,7 +1,9 @@
+import * as Sentry from '@sentry/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createRouter, RouterProvider } from '@tanstack/react-router'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
+import { env } from '@/env'
 import { RuntimeClient } from '@/runtime'
 import { page } from '@/services/analytics'
 
@@ -37,6 +39,44 @@ const queryClient = new QueryClient({
     }
   }
 })
+
+const isLocalUrl = (value: unknown) =>
+  typeof value === 'string' && (value.includes('127.0.0.1') || value.includes('localhost'))
+
+const hasLocalUrl = (event: Sentry.Event) =>
+  isLocalUrl(event.request?.url) ||
+  event.spans?.some((span) => isLocalUrl(span.description) || isLocalUrl(span.data?.url))
+
+const tracePropagationTargets = env.isDev
+  ? [/^\//, 'http://127.0.0.1:3003', 'http://localhost:3003']
+  : [/^\//, 'https://goosebumps.fm', 'https://www.goosebumps.fm', 'https://vps.goosebumps.fm']
+
+if (env.sentryDsn && (!env.isDev || env.sentryEnableLocal)) {
+  Sentry.init({
+    dsn: env.sentryDsn,
+    environment: env.sentryEnvironment ?? (env.isDev ? 'development' : 'production'),
+    release: env.sentryRelease,
+    debug: env.isDev,
+    integrations: [
+      Sentry.browserTracingIntegration(),
+      ...(env.isDev
+        ? []
+        : [
+            Sentry.replayIntegration({
+              maskAllText: false,
+              blockAllMedia: false
+            })
+          ])
+    ],
+    tracesSampleRate: 1.0,
+    tracePropagationTargets,
+    replaysSessionSampleRate: 0,
+    replaysOnErrorSampleRate: env.isDev ? 0 : 1.0,
+    sendDefaultPii: false,
+    beforeSend: (event) => (hasLocalUrl(event) ? null : event),
+    beforeSendTransaction: (event) => (hasLocalUrl(event) ? null : event)
+  })
+}
 
 function App() {
   const { data: session } = useSession()
