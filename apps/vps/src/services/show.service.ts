@@ -464,7 +464,7 @@ const getEpisodesEffect = (showSlug: string, options: { limit: number; offset: n
           .where(whereCondition)
           .limit(limit)
           .offset(offset)
-          .orderBy(desc(audioTable.episodeNumber)),
+          .orderBy(desc(audioTable.createdAt)),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to fetch episodes: ${getErrorMessage(error)}`,
