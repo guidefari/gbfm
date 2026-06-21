@@ -1,3 +1,10 @@
+## [2.57.2](https://github.com/guidefari/gbfm/compare/v2.57.1...v2.57.2) (2026-06-21)
+
+
+### Bug Fixes
+
+* **www:** send credentials on resumable upload requests ([#128](https://github.com/guidefari/gbfm/issues/128)) ([e452925](https://github.com/guidefari/gbfm/commit/e45292573b96bd89b556494ce79a9bdfe0f04ab4))
+
 ## [2.57.1](https://github.com/guidefari/gbfm/compare/v2.57.0...v2.57.1) (2026-06-21)
 
 
