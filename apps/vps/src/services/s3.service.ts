@@ -1,14 +1,32 @@
 import {
+  AbortMultipartUploadCommand,
+  CompleteMultipartUploadCommand,
   CopyObjectCommand,
+  CreateMultipartUploadCommand,
   DeleteObjectCommand,
   HeadObjectCommand,
+  type CompletedPart,
   ListBucketsCommand,
   ListObjectsV2Command,
+  ListPartsCommand,
   PutObjectCommand,
-  S3Client
+  S3Client,
+  UploadPartCommand
 } from '@aws-sdk/client-s3'
 import { Context, Effect, Layer } from 'effect'
-import { S3Error } from '@/errors'
+import { getErrorMessage, S3Error } from '@/errors'
+
+export interface S3MultipartPart {
+  readonly partNumber: number
+  readonly etag: string
+  readonly size: number
+}
+
+export interface S3MultipartUpload {
+  readonly uploadId: string
+  readonly key: string
+  readonly bucket: string
+}
 
 // Service interface
 export interface S3Service {
@@ -35,6 +53,39 @@ export interface S3Service {
   ) => Effect.Effect<void, S3Error>
 
   readonly listBuckets: () => Effect.Effect<string[], S3Error>
+
+  readonly createMultipartUpload: (
+    key: string,
+    contentType: string,
+    bucketName: string
+  ) => Effect.Effect<S3MultipartUpload, S3Error>
+
+  readonly uploadMultipartPart: (
+    key: string,
+    uploadId: string,
+    partNumber: number,
+    body: Buffer | Uint8Array | Blob,
+    bucketName: string
+  ) => Effect.Effect<{ partNumber: number; etag: string; size: number }, S3Error>
+
+  readonly completeMultipartUpload: (
+    key: string,
+    uploadId: string,
+    parts: ReadonlyArray<{ partNumber: number; etag: string }>,
+    bucketName: string
+  ) => Effect.Effect<{ key: string; bucket: string }, S3Error>
+
+  readonly abortMultipartUpload: (
+    key: string,
+    uploadId: string,
+    bucketName: string
+  ) => Effect.Effect<void, S3Error>
+
+  readonly listMultipartParts: (
+    key: string,
+    uploadId: string,
+    bucketName: string
+  ) => Effect.Effect<S3MultipartPart[], S3Error>
 }
 
 // Service tag for dependency injection
@@ -248,6 +299,201 @@ const copyFileEffect = (key: string, sourceBucket: string, destinationBucket: st
     })
   )
 
+const createMultipartUploadEffect = (key: string, contentType: string, bucketName: string) =>
+  Effect.tryPromise({
+    try: async () => {
+      const s3 = new S3Client({})
+      const response = await s3.send(
+        new CreateMultipartUploadCommand({
+          Bucket: bucketName,
+          Key: key,
+          ContentType: contentType
+        })
+      )
+      if (!response.UploadId) {
+        throw new Error('S3 did not return an UploadId')
+      }
+      return { uploadId: response.UploadId, key, bucket: bucketName } satisfies S3MultipartUpload
+    },
+    catch: (error) =>
+      new S3Error({
+        message: `Failed to create multipart upload: ${getErrorMessage(error)}`,
+        operation: 'createMultipartUpload',
+        key
+      })
+  }).pipe(
+    Effect.withSpan('aws.s3.createMultipartUpload', {
+      attributes: {
+        'aws.service': 's3',
+        's3.bucket': bucketName,
+        's3.key_prefix': getKeyPrefix(key),
+        'content.type': contentType
+      }
+    })
+  )
+
+const uploadMultipartPartEffect = (
+  key: string,
+  uploadId: string,
+  partNumber: number,
+  body: Buffer | Uint8Array | Blob,
+  bucketName: string
+) =>
+  Effect.tryPromise({
+    try: async () => {
+      const s3 = new S3Client({})
+      const response = await s3.send(
+        new UploadPartCommand({
+          Bucket: bucketName,
+          Key: key,
+          UploadId: uploadId,
+          PartNumber: partNumber,
+          Body: body
+        })
+      )
+      if (!response.ETag) {
+        throw new Error('S3 did not return an ETag for the uploaded part')
+      }
+      const size = body instanceof Blob ? body.size : body.byteLength
+      return { partNumber, etag: response.ETag, size }
+    },
+    catch: (error) =>
+      new S3Error({
+        message: `Failed to upload multipart part: ${getErrorMessage(error)}`,
+        operation: 'uploadMultipartPart',
+        key
+      })
+  }).pipe(
+    Effect.withSpan('aws.s3.uploadPart', {
+      attributes: {
+        'aws.service': 's3',
+        's3.bucket': bucketName,
+        's3.key_prefix': getKeyPrefix(key),
+        's3.part_number': partNumber,
+        'payload.size_bytes': body instanceof Blob ? body.size : body.byteLength
+      }
+    })
+  )
+
+const completeMultipartUploadEffect = (
+  key: string,
+  uploadId: string,
+  parts: ReadonlyArray<{ partNumber: number; etag: string }>,
+  bucketName: string
+) =>
+  Effect.tryPromise({
+    try: async () => {
+      const s3 = new S3Client({})
+      const sortedParts: CompletedPart[] = parts
+        .toSorted((a, b) => a.partNumber - b.partNumber)
+        .map((p) => ({ ETag: p.etag, PartNumber: p.partNumber }))
+
+      await s3.send(
+        new CompleteMultipartUploadCommand({
+          Bucket: bucketName,
+          Key: key,
+          UploadId: uploadId,
+          MultipartUpload: { Parts: sortedParts }
+        })
+      )
+      return { key, bucket: bucketName }
+    },
+    catch: (error) =>
+      new S3Error({
+        message: `Failed to complete multipart upload: ${getErrorMessage(error)}`,
+        operation: 'completeMultipartUpload',
+        key
+      })
+  }).pipe(
+    Effect.withSpan('aws.s3.completeMultipartUpload', {
+      attributes: {
+        'aws.service': 's3',
+        's3.bucket': bucketName,
+        's3.key_prefix': getKeyPrefix(key),
+        's3.part_count': parts.length
+      }
+    })
+  )
+
+const abortMultipartUploadEffect = (key: string, uploadId: string, bucketName: string) =>
+  Effect.tryPromise({
+    try: async () => {
+      const s3 = new S3Client({})
+      await s3.send(
+        new AbortMultipartUploadCommand({
+          Bucket: bucketName,
+          Key: key,
+          UploadId: uploadId
+        })
+      )
+    },
+    catch: (error) =>
+      new S3Error({
+        message: `Failed to abort multipart upload: ${getErrorMessage(error)}`,
+        operation: 'abortMultipartUpload',
+        key
+      })
+  }).pipe(
+    Effect.withSpan('aws.s3.abortMultipartUpload', {
+      attributes: {
+        'aws.service': 's3',
+        's3.bucket': bucketName,
+        's3.key_prefix': getKeyPrefix(key)
+      }
+    })
+  )
+
+const listMultipartPartsEffect = (key: string, uploadId: string, bucketName: string) =>
+  Effect.tryPromise({
+    try: async () => {
+      const s3 = new S3Client({})
+      const collected: S3MultipartPart[] = []
+      let partNumberMarker: string | undefined
+
+      do {
+        const response = await s3.send(
+          new ListPartsCommand({
+            Bucket: bucketName,
+            Key: key,
+            UploadId: uploadId,
+            PartNumberMarker: partNumberMarker
+          })
+        )
+
+        for (const part of response.Parts ?? []) {
+          if (part.PartNumber && part.ETag) {
+            collected.push({
+              partNumber: part.PartNumber,
+              etag: part.ETag,
+              size: part.Size ?? 0
+            })
+          }
+        }
+
+        partNumberMarker =
+          response.IsTruncated && response.NextPartNumberMarker
+            ? String(response.NextPartNumberMarker)
+            : undefined
+      } while (partNumberMarker)
+
+      return collected.toSorted((a, b) => a.partNumber - b.partNumber)
+    },
+    catch: (error) =>
+      new S3Error({
+        message: `Failed to list multipart parts: ${getErrorMessage(error)}`,
+        operation: 'listMultipartParts',
+        key
+      })
+  }).pipe(
+    Effect.withSpan('aws.s3.listParts', {
+      attributes: {
+        'aws.service': 's3',
+        's3.bucket': bucketName,
+        's3.key_prefix': getKeyPrefix(key)
+      }
+    })
+  )
+
 const listBucketsEffect = () =>
   Effect.tryPromise({
     try: async () => {
@@ -284,5 +530,10 @@ export const S3ServiceLive = Layer.succeed(S3Service, {
   checkExists: checkExistsEffect,
   listObjects: listObjectsEffect,
   copyFile: copyFileEffect,
-  listBuckets: listBucketsEffect
+  listBuckets: listBucketsEffect,
+  createMultipartUpload: createMultipartUploadEffect,
+  uploadMultipartPart: uploadMultipartPartEffect,
+  completeMultipartUpload: completeMultipartUploadEffect,
+  abortMultipartUpload: abortMultipartUploadEffect,
+  listMultipartParts: listMultipartPartsEffect
 })
