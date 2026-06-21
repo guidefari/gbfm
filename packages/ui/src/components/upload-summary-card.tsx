@@ -1,4 +1,4 @@
-import { CheckCircle2, ExternalLink, Loader2, Music } from 'lucide-react'
+import { CheckCircle2, ExternalLink, Loader2, Music, XCircle } from 'lucide-react'
 import type { RefObject } from 'react'
 import { Button } from './button'
 import type { TrackEntry } from './tracklist-editor'
@@ -12,6 +12,7 @@ interface UploadSummaryCardProps {
   onTimeUpdate: (currentTime: number) => void
   onPublish: () => void
   onSaveDraft: () => void
+  onCancelUpload?: () => void
   onDiscard: () => void
   isUploading: boolean
   uploadStep: string
@@ -26,6 +27,7 @@ export function UploadSummaryCard({
   onTimeUpdate,
   onPublish,
   onSaveDraft,
+  onCancelUpload,
   onDiscard,
   isUploading,
   uploadStep
@@ -115,6 +117,17 @@ export function UploadSummaryCard({
             className='w-full border-gb-pastel-green-2/30 text-gb-pastel-green-1 hover:bg-gb-pastel-green-2/20'>
             Save as Draft
           </Button>
+
+          {isUploading && onCancelUpload && (
+            <Button
+              onClick={onCancelUpload}
+              variant='destructive'
+              className='w-full'
+              aria-label='Stop upload'>
+              <XCircle className='w-4 h-4 mr-2' />
+              Stop upload
+            </Button>
+          )}
 
           <button
             type='button'

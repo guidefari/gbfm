@@ -800,7 +800,7 @@ export function ContentTab() {
           url: values.url,
           tags: values.tags,
           draft: values.draft,
-          episodeNumber: values.episodeNumber ? Number(values.episodeNumber) : null
+          ...(values.episodeNumber ? { episodeNumber: Number(values.episodeNumber) } : {})
         })
       }),
     onSuccess: () => {

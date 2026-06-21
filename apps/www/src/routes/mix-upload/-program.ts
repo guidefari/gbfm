@@ -55,7 +55,7 @@ const buildRecordPayload = (input: SubmitRecordInput) => {
         : input.formData.creatorId || input.userId
     ].filter(Boolean),
     showId: input.formData.showId,
-    episodeNumber: input.formData.episodeNumber ? Number(input.formData.episodeNumber) : null
+    ...(input.formData.episodeNumber ? { episodeNumber: Number(input.formData.episodeNumber) } : {})
   }
 }
 

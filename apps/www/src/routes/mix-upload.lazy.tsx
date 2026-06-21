@@ -185,6 +185,7 @@ function MixUploadPage() {
   const router = useRouter()
   const queryClient = useQueryClient()
   const isOnline = useOnlineStatus()
+  const submitInFlightRef = useRef(false)
 
   const resumableUpload = useResumableUpload()
 
@@ -350,6 +351,15 @@ function MixUploadPage() {
             return outcome
           }
           audioUrl = outcome.result.url
+
+          yield* Effect.sync(() => {
+            setFormData((prev) => ({ ...prev, url: audioUrl }))
+            setAudioFile(null)
+            if (audioPreview?.startsWith('blob:')) {
+              URL.revokeObjectURL(audioPreview)
+            }
+            setAudioPreview(audioUrl)
+          })
         }
 
         let imageUrl = formData.thumbnailUrl
@@ -374,7 +384,17 @@ function MixUploadPage() {
       const exit = await runAppEffect(Effect.exit(program))
       return exit
     },
-    [user, isEditMode, audioFile, formData, artworkFile, resumableUpload, search.edit, editType]
+    [
+      user,
+      isEditMode,
+      audioFile,
+      audioPreview,
+      formData,
+      artworkFile,
+      resumableUpload,
+      search.edit,
+      editType
+    ]
   )
 
   const resetForm = useCallback(() => {
@@ -405,8 +425,17 @@ function MixUploadPage() {
   const handleSubmit = useCallback(
     async (isDraft: boolean) => {
       const controller = new AbortController()
+      submitInFlightRef.current = true
       setUploadStep('uploading-image')
-      const exit = await runSubmit(isDraft, controller.signal)
+      let exit: Exit.Exit<
+        SubmitResult,
+        AudioUploadError | ImageUploadError | RecordSaveError | NotSignedInError | MissingAudioError
+      >
+      try {
+        exit = await runSubmit(isDraft, controller.signal)
+      } finally {
+        submitInFlightRef.current = false
+      }
 
       if (Exit.isSuccess(exit)) {
         const value = exit.value
@@ -483,6 +512,13 @@ function MixUploadPage() {
       resetForm
     ]
   )
+
+  const handleCancel = useCallback(async () => {
+    await resumableUpload.cancel()
+    if (!submitInFlightRef.current) {
+      toast({ title: 'Upload cancelled', variant: 'destructive' })
+    }
+  }, [resumableUpload])
 
   const handleInputChange = (field: keyof MixFormData, value: string) => {
     setFormData((prev) => {
@@ -834,6 +870,7 @@ Add any technical details, equipment used, or special techniques...`}
               onTimeUpdate={setCurrentTime}
               onPublish={() => handleSubmit(false)}
               onSaveDraft={() => handleSubmit(true)}
+              onCancelUpload={handleCancel}
               onDiscard={resetForm}
               isUploading={isUploading}
               uploadStep={uploadStep}
