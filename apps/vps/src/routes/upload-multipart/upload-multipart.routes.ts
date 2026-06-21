@@ -151,7 +151,10 @@ export const abortMultipart = createRoute({
     )
   },
   responses: {
-    [HttpStatusCodes.OK]: jsonContent(z.object({ ok: z.literal(true) }), 'Multipart upload aborted'),
+    [HttpStatusCodes.OK]: jsonContent(
+      z.object({ ok: z.literal(true) }),
+      'Multipart upload aborted'
+    ),
     [HttpStatusCodes.BAD_REQUEST]: jsonContent(z.object({ error: z.string() }), 'Invalid request'),
     [HttpStatusCodes.UNAUTHORIZED]: jsonContent(z.object({ error: z.string() }), 'Unauthorized'),
     [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(

@@ -237,4 +237,5 @@ export const multipartStatus: AppRouteHandler<MultipartStatusRoute> = async (c) 
   return runEffect<MultipartStatusRoute>(c, program)
 }
 
-const getMessage = (error: unknown): string => (error instanceof Error ? error.message : String(error))
+const getMessage = (error: unknown): string =>
+  error instanceof Error ? error.message : String(error)
