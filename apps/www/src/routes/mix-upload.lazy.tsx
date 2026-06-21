@@ -3,6 +3,7 @@
 import {
   AudioDropZone,
   AudioFileCard,
+  Button,
   Card,
   CardContent,
   CardHeader,
@@ -25,12 +26,13 @@ import { createLazyFileRoute, useRouter } from '@tanstack/react-router'
 import * as Cause from 'effect/Cause'
 import * as Effect from 'effect/Effect'
 import * as Exit from 'effect/Exit'
-import { FileText, List, Loader2, Music } from 'lucide-react'
+import { AlertTriangle, FileText, List, Loader2, Music, Upload } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { z } from 'zod'
 import { S3AudioFilePicker, S3MediaFilePicker } from '@/components/mix-uploader/S3AudioFilePicker'
 import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
 import { useMixUploadDraft } from '@/hooks/useMixUploadDraft'
+import { type MixUploadDraft } from '@/services/mix-upload-draft'
 import { useResumableUpload, type ResumableUploadError } from '@/hooks/useResumableUpload'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { authClient, useSession } from '@/lib/auth-client'
@@ -121,6 +123,25 @@ const uploadStepFromPhase = (phase: string): UploadStep => {
   return 'idle'
 }
 
+const hasDraftContent = (d: MixUploadDraft): boolean =>
+  Boolean(
+    d.title ||
+    d.description ||
+    d.slug ||
+    d.content ||
+    d.thumbnailUrl ||
+    d.tags.length > 0 ||
+    d.tracklist.length > 0 ||
+    d.url ||
+    d.audioFingerprint ||
+    d.audioFileName ||
+    d.artworkFingerprint ||
+    d.artworkFileName ||
+    d.showId ||
+    d.episodeNumber ||
+    d.creatorId
+  )
+
 function MixUploadPage() {
   const { data: session } = useSession()
   const user = session?.user
@@ -188,28 +209,30 @@ function MixUploadPage() {
   useEffect(() => {
     if (draftState.isLoaded && draftState.draft && !draftApplied && !isEditMode) {
       const d = draftState.draft
-      setFormData((prev) => ({
-        ...prev,
-        title: d.title || prev.title,
-        description: d.description || prev.description,
-        slug: d.slug || prev.slug,
-        content: d.content || prev.content,
-        thumbnailUrl: d.thumbnailUrl || prev.thumbnailUrl,
-        tags: d.tags.length > 0 ? [...d.tags] : prev.tags,
-        tracklist: d.tracklist.length > 0 ? [...d.tracklist] : prev.tracklist,
-        showId: d.showId ?? prev.showId,
-        episodeNumber: d.episodeNumber ?? prev.episodeNumber,
-        creatorId: d.creatorId ?? prev.creatorId,
-        url: d.url ?? prev.url
-      }))
-      if (d.thumbnailUrl) setArtworkPreview(d.thumbnailUrl)
-      if (d.url) setAudioPreview(d.url)
+      if (hasDraftContent(d)) {
+        setFormData((prev) => ({
+          ...prev,
+          title: d.title || prev.title,
+          description: d.description || prev.description,
+          slug: d.slug || prev.slug,
+          content: d.content || prev.content,
+          thumbnailUrl: d.thumbnailUrl || prev.thumbnailUrl,
+          tags: d.tags.length > 0 ? [...d.tags] : prev.tags,
+          tracklist: d.tracklist.length > 0 ? [...d.tracklist] : prev.tracklist,
+          showId: d.showId ?? prev.showId,
+          episodeNumber: d.episodeNumber ?? prev.episodeNumber,
+          creatorId: d.creatorId ?? prev.creatorId,
+          url: d.url ?? prev.url
+        }))
+        if (d.thumbnailUrl) setArtworkPreview(d.thumbnailUrl)
+        if (d.url) setAudioPreview(d.url)
+        toast({
+          title: 'Draft restored',
+          description: 'We restored your in-progress mix from your last session.',
+          duration: 4000
+        })
+      }
       setDraftApplied(true)
-      toast({
-        title: 'Draft restored',
-        description: 'We restored your in-progress mix from your last session.',
-        duration: 4000
-      })
     } else if (draftState.isLoaded) {
       setDraftApplied(true)
     }
@@ -611,6 +634,10 @@ function MixUploadPage() {
     ]
   )
 
+  const hasRestorableDraft = !draftApplied
+    ? false
+    : draftState.draft !== null && hasDraftContent(draftState.draft)
+
   if (mixLoading && isEditMode) {
     return (
       <div className='flex items-center justify-center min-h-[50vh]'>
@@ -650,7 +677,11 @@ function MixUploadPage() {
         onSelect={handleS3ArtworkSelect}
       />
 
-      {!audioPreview && !isEditMode ? (
+      {!draftState.isLoaded && !isEditMode ? (
+        <div className='flex items-center justify-center min-h-[40vh]'>
+          <Loader2 className='w-8 h-8 animate-spin text-gb-highlight' />
+        </div>
+      ) : !audioPreview && !isEditMode && !hasRestorableDraft ? (
         <AudioDropZone
           onFileSelect={handleAudioFileChange}
           onPickFromS3={() => setS3PickerOpen(true)}
@@ -748,6 +779,41 @@ Add any technical details, equipment used, or special techniques...`}
                 </Card>
               </TabsContent>
             </Tabs>
+
+            {hasRestorableDraft && !audioPreview && (
+              <div
+                role='status'
+                className='flex items-start gap-3 p-4 border rounded-sm bg-amber-500/10 border-amber-500/30 text-amber-200'>
+                <AlertTriangle className='w-5 h-5 mt-0.5 shrink-0' aria-hidden='true' />
+                <div className='flex-1 space-y-2'>
+                  <p className='font-medium'>Your audio file is no longer available.</p>
+                  <p className='text-sm text-amber-200/80'>
+                    We restored your draft details, but the local audio file can't be recovered
+                    after a page reload. Re-select it below to continue.
+                  </p>
+                  <div className='flex flex-wrap gap-2 pt-1'>
+                    <Button
+                      type='button'
+                      size='sm'
+                      variant='outline'
+                      onClick={() => setS3PickerOpen(true)}
+                      className='border-amber-500/40 text-amber-100 hover:bg-amber-500/20 hover:text-amber-50'>
+                      <Upload className='w-3.5 h-3.5 mr-1.5' />
+                      Pick from S3
+                    </Button>
+                    <label className='inline-flex items-center justify-center h-8 px-3 text-xs font-medium border rounded-sm cursor-pointer border-amber-500/40 text-amber-100 hover:bg-amber-500/20 hover:text-amber-50'>
+                      <input
+                        type='file'
+                        accept='audio/mpeg,audio/wav,audio/aiff,audio/x-aiff'
+                        className='sr-only'
+                        onChange={handleAudioFileChange}
+                      />
+                      Choose file
+                    </label>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <AudioFileCard
               fileName={audioFile?.name}
