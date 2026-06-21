@@ -1,3 +1,10 @@
+# [2.58.0](https://github.com/guidefari/gbfm/compare/v2.57.4...v2.58.0) (2026-06-21)
+
+
+### Features
+
+* draft cont ([7aa1111](https://github.com/guidefari/gbfm/commit/7aa11115f39b8c47aaa4d62a96a87c5040545187))
+
 ## [2.57.4](https://github.com/guidefari/gbfm/compare/v2.57.3...v2.57.4) (2026-06-21)
 
 
