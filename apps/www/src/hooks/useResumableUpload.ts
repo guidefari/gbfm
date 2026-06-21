@@ -29,7 +29,7 @@ const MAX_PART_ATTEMPTS = 5
 
 export interface UseResumableUploadOptions {
   fileType: 'audio'
-  onComplete: (result: ResumableUploadResult) => void
+  onComplete?: (result: ResumableUploadResult) => void
   onError?: (error: Error) => void
 }
 
@@ -45,14 +45,13 @@ export interface UseResumableUploadState {
 
 export interface UseResumableUploadReturn {
   state: UseResumableUploadState
-  start: (file: File) => Promise<void>
-  pause: () => void
-  resume: (file: File) => Promise<void>
+  start: (file: File) => Promise<ResumableUploadResult>
+  resume: (file: File) => Promise<ResumableUploadResult>
   cancel: () => Promise<void>
-  retry: (file: File) => Promise<void>
   isInProgress: boolean
   isPaused: boolean
   isCompleted: boolean
+  hasInProgress: boolean
 }
 
 const readStorage = (key: string): PersistedResumableUpload | null => {
@@ -140,7 +139,23 @@ const uploadPartWithRetry = async (
   throw lastError ?? new Error(`Part ${part.partNumber} failed`)
 }
 
-export function useResumableUpload(options: UseResumableUploadOptions): UseResumableUploadReturn {
+export class ResumableUploadAbortedError extends Error {
+  constructor() {
+    super('Upload aborted')
+    this.name = 'ResumableUploadAbortedError'
+  }
+}
+
+export class ResumableUploadPausedError extends Error {
+  constructor() {
+    super('Upload paused')
+    this.name = 'ResumableUploadPausedError'
+  }
+}
+
+export function useResumableUpload(
+  options: UseResumableUploadOptions = { fileType: 'audio' }
+): UseResumableUploadReturn {
   const { fileType, onComplete, onError } = options
   const isOnline = useOnlineStatus()
 
@@ -180,7 +195,10 @@ export function useResumableUpload(options: UseResumableUploadOptions): UseResum
   }, [])
 
   const runUpload = useCallback(
-    async (file: File, resumeFrom: PersistedResumableUpload | null) => {
+    async (
+      file: File,
+      resumeFrom: PersistedResumableUpload | null
+    ): Promise<ResumableUploadResult> => {
       const fingerprint = computeFileFingerprint(file)
       fingerprintRef.current = fingerprint
       pausedRef.current = false
@@ -262,9 +280,9 @@ export function useResumableUpload(options: UseResumableUploadOptions): UseResum
           if (pausedRef.current) {
             persist(working)
             transitionTo({ phase: 'paused' })
-            return
+            throw new ResumableUploadPausedError()
           }
-          if (signal.aborted) return
+          if (signal.aborted) throw new ResumableUploadAbortedError()
 
           const result = await uploadPartWithRetry(
             working.uploadId,
@@ -284,9 +302,9 @@ export function useResumableUpload(options: UseResumableUploadOptions): UseResum
 
         if (pausedRef.current) {
           transitionTo({ phase: 'paused' })
-          return
+          throw new ResumableUploadPausedError()
         }
-        if (signal.aborted) return
+        if (signal.aborted) throw new ResumableUploadAbortedError()
 
         transitionTo({ phase: 'finalizing' })
 
@@ -325,31 +343,42 @@ export function useResumableUpload(options: UseResumableUploadOptions): UseResum
           error: null,
           result: completed
         })
-        onComplete(completed)
+        onComplete?.(completed)
+        return completed
       } catch (error) {
-        if (error instanceof DOMException && error.name === 'AbortError') return
+        if (error instanceof ResumableUploadAbortedError) {
+          transitionTo({ phase: 'aborted' })
+          throw error
+        }
+        if (error instanceof ResumableUploadPausedError) {
+          transitionTo({ phase: 'paused' })
+          throw error
+        }
         const err = error instanceof Error ? error : new Error(String(error))
         transitionTo({ phase: 'error', error: err })
         onError?.(err)
+        throw err
       }
     },
     [fileType, onComplete, onError, persist, transitionTo, clearAll]
   )
 
-  const start = useCallback((file: File) => runUpload(file, null), [runUpload])
-
-  const resume = useCallback(
-    (file: File) => {
-      const existing = persistedRef.current
-      return runUpload(file, existing)
+  const start = useCallback(
+    (file: File): Promise<ResumableUploadResult> => {
+      if (pausedRef.current) pausedRef.current = false
+      return runUpload(file, null)
     },
     [runUpload]
   )
 
-  const pause = useCallback(() => {
-    pausedRef.current = true
-    setState((prev) => (prev.phase === 'uploading' ? { ...prev, phase: 'paused' } : prev))
-  }, [])
+  const resume = useCallback(
+    (file: File): Promise<ResumableUploadResult> => {
+      const existing = persistedRef.current
+      if (pausedRef.current) pausedRef.current = false
+      return runUpload(file, existing)
+    },
+    [runUpload]
+  )
 
   const cancel = useCallback(async () => {
     const persisted = persistedRef.current
@@ -375,14 +404,6 @@ export function useResumableUpload(options: UseResumableUploadOptions): UseResum
     setState({ ...initialState, phase: 'aborted' })
   }, [clearAll])
 
-  const retry = useCallback(
-    (file: File) => {
-      const existing = persistedRef.current
-      return runUpload(file, existing)
-    },
-    [runUpload]
-  )
-
   useEffect(() => {
     return () => {
       abortControllerRef.current?.abort()
@@ -404,16 +425,15 @@ export function useResumableUpload(options: UseResumableUploadOptions): UseResum
     () => ({
       state,
       start,
-      pause,
       resume,
       cancel,
-      retry,
       isInProgress:
         state.phase === 'uploading' || state.phase === 'finalizing' || state.phase === 'preparing',
       isPaused: state.phase === 'paused',
-      isCompleted: state.phase === 'completed'
+      isCompleted: state.phase === 'completed',
+      hasInProgress: persistedRef.current !== null
     }),
-    [state, start, pause, resume, cancel, retry]
+    [state, start, resume, cancel]
   )
 }
 

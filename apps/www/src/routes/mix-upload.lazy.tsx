@@ -28,6 +28,7 @@ import { useEffect, useRef, useState } from 'react'
 import { z } from 'zod'
 import { S3AudioFilePicker, S3MediaFilePicker } from '@/components/mix-uploader/S3AudioFilePicker'
 import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
+import { useResumableUpload } from '@/hooks/useResumableUpload'
 import { authClient, useSession } from '@/lib/auth-client'
 import { apiUrl, fetcher, useAllShows, useAudioBySlug, useAudioTags } from '@/lib/http'
 import { readResponseErrorMessage, readUploadResponse } from '@/lib/response'
@@ -102,6 +103,17 @@ function MixUploadPage() {
   const router = useRouter()
   const queryClient = useQueryClient()
 
+  const resumableUpload = useResumableUpload({
+    fileType: 'audio',
+    onError: (error) => {
+      toast({
+        title: 'Audio upload failed',
+        description: error.message,
+        variant: 'destructive'
+      })
+    }
+  })
+
   const isAdmin = user?.role === 'admin'
 
   const { data: usersData } = useQuery({
@@ -111,6 +123,21 @@ function MixUploadPage() {
   })
 
   const usersList = usersData?.data?.users || []
+
+  useEffect(() => {
+    const phase = resumableUpload.state.phase
+    if (phase === 'preparing' || phase === 'uploading' || phase === 'finalizing') {
+      setUploadStep('uploading-audio')
+    } else if (phase === 'paused') {
+      setUploadStep('paused-audio')
+    } else if (phase === 'idle' || phase === 'completed' || phase === 'aborted') {
+      setUploadStep((prev) =>
+        prev === 'uploading-audio' || prev === 'paused-audio' ? 'idle' : prev
+      )
+    } else if (phase === 'error') {
+      setUploadStep('idle')
+    }
+  }, [resumableUpload.state.phase])
 
   useEffect(() => {
     if (existingMix && isEditMode) {
@@ -168,29 +195,6 @@ function MixUploadPage() {
         return
       }
 
-      setUploadStep('uploading-audio')
-
-      let audioUrl = data.url || ''
-      if (data.audioFile) {
-        const uploadFormData = new FormData()
-        uploadFormData.append('audioFile', data.audioFile)
-        uploadFormData.append('fileType', 'audio')
-
-        const audioUploadResponse = await fetch(apiUrl('/upload/file'), {
-          method: 'POST',
-          body: uploadFormData
-        })
-
-        if (!audioUploadResponse.ok) {
-          throw new Error(
-            await readResponseErrorMessage(audioUploadResponse, 'Failed to upload audio')
-          )
-        }
-
-        const audioResult = await readUploadResponse(audioUploadResponse)
-        audioUrl = audioResult.url
-      }
-
       setUploadStep('uploading-image')
 
       let imageUrl = data.thumbnailUrl
@@ -229,7 +233,7 @@ function MixUploadPage() {
         slug: data.slug || generateSlug(data.title),
         content: data.content + tracklistMarkdown,
         thumbnailUrl: imageUrl,
-        url: audioUrl,
+        url: data.url,
         type: 'mix',
         tags: data.tags,
         creatorIds: [data.creatorId === 'current' ? user?.id : data.creatorId || user?.id].filter(
@@ -416,7 +420,14 @@ function MixUploadPage() {
     }
   }
 
-  const handleSubmit = (isDraft: boolean) => {
+  const handleSubmit = async (isDraft: boolean) => {
+    if (!user) {
+      toast({
+        title: 'Please login/signup to upload content',
+        variant: 'destructive'
+      })
+      return
+    }
     if (!isEditMode && !audioFile && !formData.url) {
       toast({
         title: 'Audio file required',
@@ -425,10 +436,31 @@ function MixUploadPage() {
       })
       return
     }
+
+    let audioUrl = formData.url || ''
+    if (audioFile) {
+      try {
+        const result = await resumableUpload.start(audioFile)
+        audioUrl = result.url
+        setFormData((prev) => ({ ...prev, url: audioUrl }))
+        setAudioFile(null)
+      } catch (error) {
+        if (error instanceof Error) {
+          toast({
+            title: 'Audio upload failed',
+            description: error.message,
+            variant: 'destructive'
+          })
+        }
+        return
+      }
+    }
+
     uploadMutation.mutate({
       ...formData,
+      url: audioUrl,
       draft: isDraft,
-      audioFile,
+      audioFile: null,
       artworkFile
     })
   }
@@ -481,7 +513,17 @@ function MixUploadPage() {
                 : 'Share your mix with tracklist timestamps for easy navigation.'}
             </p>
           </div>
-          {isUploading && <UploadProgress step={uploadStep} />}
+          {isUploading && (
+            <UploadProgress
+              step={uploadStep}
+              audioProgress={{
+                bytesUploaded: resumableUpload.state.bytesUploaded,
+                totalBytes: resumableUpload.state.totalBytes,
+                currentPart: resumableUpload.state.currentPart,
+                totalParts: resumableUpload.state.totalParts
+              }}
+            />
+          )}
         </div>
       </header>
 
