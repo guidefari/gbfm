@@ -1,6 +1,6 @@
 import * as Effect from 'effect/Effect'
 import * as Schedule from 'effect/Schedule'
-import { apiUrl } from '@/lib/http'
+import { apiUrl } from '@/lib/http-url'
 import {
   type PersistedResumableUpload,
   type ResumablePart,

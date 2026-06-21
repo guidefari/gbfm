@@ -32,7 +32,8 @@ import {
   type AudioContentType,
   userSubscriptionsQueryKey
 } from './http-query-keys'
-import { makeApiUrl, makeApiUrlObj, makePublicUrl, makePublicUrlObj } from './http-url'
+import { apiUrl, apiUrlObj, publicUrl, publicUrlObj } from './http-url'
+export { apiUrl, apiUrlObj, publicUrl, publicUrlObj }
 
 type User = {
   id: string
@@ -47,25 +48,6 @@ type User = {
 }
 
 import type { AlbumApiResponse, PlaylistApiResponse, TrackAPIResponse } from '@/types'
-
-const VPS_BASE_URL = import.meta.env.VITE_VPS_BASE_URL || ''
-const browserOrigin = () => window.location.origin
-
-export function apiUrl(path: string): string {
-  return makeApiUrl(path, VPS_BASE_URL)
-}
-
-export function apiUrlObj(path: string): URL {
-  return makeApiUrlObj(path, VPS_BASE_URL, browserOrigin())
-}
-
-export function publicUrl(path: string): string {
-  return makePublicUrl(path, VPS_BASE_URL)
-}
-
-export function publicUrlObj(path: string): URL {
-  return makePublicUrlObj(path, VPS_BASE_URL, browserOrigin())
-}
 
 export type SocialLinkPlatform =
   | 'bandcamp'
