@@ -1,3 +1,10 @@
+# [2.59.0](https://github.com/guidefari/gbfm/compare/v2.58.0...v2.59.0) (2026-06-21)
+
+
+### Features
+
+* onCancelUpload ([9ac2b95](https://github.com/guidefari/gbfm/commit/9ac2b95e4bd438d7d3dd19e34ac1e8e423c776bc))
+
 # [2.58.0](https://github.com/guidefari/gbfm/compare/v2.57.4...v2.58.0) (2026-06-21)
 
 
