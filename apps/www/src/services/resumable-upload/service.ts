@@ -77,7 +77,11 @@ const httpRequest = (
   init: Omit<RequestInit, 'signal'> & { signal: AbortSignal }
 ): Effect.Effect<Response, NetworkError | HttpError | UploadAborted, never> =>
   Effect.tryPromise({
-    try: () => fetch(url, init),
+    try: () =>
+      fetch(url, {
+        ...init,
+        credentials: init.credentials ?? 'include'
+      }),
     catch: (cause) => {
       if (init.signal.aborted) return new UploadAborted()
       if (cause instanceof Error && cause.name === 'AbortError') return new UploadAborted()
