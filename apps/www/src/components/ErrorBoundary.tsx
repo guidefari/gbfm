@@ -2,6 +2,7 @@ import { Button } from '@gbfm/ui'
 import { Component, type ReactNode } from 'react'
 import { RuntimeClient } from '@/runtime'
 import { captureException } from '@/services/analytics'
+import { log } from '@/services/logger'
 
 interface Props {
   children: ReactNode
@@ -24,7 +25,10 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo)
+    log('error', 'ErrorBoundary caught an error', {
+      error,
+      componentStack: errorInfo.componentStack
+    })
     void RuntimeClient.runPromise(
       captureException(error, {
         componentStack: errorInfo.componentStack

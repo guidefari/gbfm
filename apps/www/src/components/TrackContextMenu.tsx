@@ -8,6 +8,7 @@ import {
   toast
 } from '@gbfm/ui'
 import type { SelectAudio } from '@gbfm/vps/schemas'
+import { log } from '@/services/logger'
 import { Heart, HeartOff, Play, Plus, Share2 } from 'lucide-react'
 import type React from 'react'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
@@ -89,7 +90,7 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
         description: 'Share URL copied to clipboard'
       })
     } catch (error) {
-      console.error('Failed to copy link to clipboard:', error)
+      log('error', 'Failed to copy link to clipboard', { track: track.slug, error })
       toast({
         title: 'Failed to copy',
         description: 'Could not copy link to clipboard',

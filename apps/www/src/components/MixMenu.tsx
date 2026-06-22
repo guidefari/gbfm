@@ -13,6 +13,7 @@ import { useAuthGuard } from '@/hooks/useAuthGuard'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { useAddFavorite, useFavorites, useRemoveFavorite } from '@/lib/http'
 import { getShareUrl } from '@/lib/share'
+import { log } from '@/services/logger'
 import { cn } from '@/lib/utils'
 import { useAudioPlayerActions } from '@/store/audioPlayer'
 
@@ -41,7 +42,7 @@ export function MixMenu({ mix }: MixMenuProps) {
         description: 'Share URL copied to clipboard'
       })
     } catch (error) {
-      console.error('Failed to copy link to clipboard:', error)
+      log('error', 'Failed to copy link to clipboard', { mix: mix.slug, error })
       toast({
         title: 'Failed to copy',
         description: 'Could not copy link to clipboard',

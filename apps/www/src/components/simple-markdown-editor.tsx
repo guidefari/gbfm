@@ -8,6 +8,7 @@ import 'react-mde/lib/styles/css/react-mde.css'
 import 'react-mde/lib/styles/css/react-mde-editor.css'
 import './editor.css'
 import { compile } from '@mdx-js/mdx'
+import { log } from '@/services/logger'
 
 interface SimpleMarkdownEditorProps {
   value: string
@@ -144,7 +145,7 @@ async function compileMdx(markdown: string) {
     })
     return compiled.toString()
   } catch (error) {
-    console.error('MDX compilation error:', error)
+    log('error', 'MDX compilation error', { error })
     return markdown // Return original markdown if compilation fails
   }
 }

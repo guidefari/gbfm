@@ -1,6 +1,7 @@
 import * as Context from 'effect/Context'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
+import { log } from '@/services/logger'
 import { parsePersistedUpload, type PersistedResumableUpload } from '@/lib/upload/resumable-upload'
 
 const KEY = (fingerprint: string) => `gbfm:resumable-upload:${fingerprint}`
@@ -32,7 +33,7 @@ export const ResumableUploadStorageLive = Layer.sync(ResumableUploadStorage, () 
       try {
         window.localStorage.setItem(KEY(value.fileFingerprint), JSON.stringify(value))
       } catch (error) {
-        console.warn('ResumableUploadStorage.write failed', error)
+        log('warn', 'ResumableUploadStorage.write failed', { error })
       }
     }),
   clear: (fingerprint: string) =>

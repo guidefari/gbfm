@@ -13,6 +13,7 @@ import { compile } from '@mdx-js/mdx'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { useSearch } from '@tanstack/react-router'
 import { useForm } from 'react-hook-form'
+import { log } from '@/services/logger'
 import { z } from 'zod/v4'
 import { apiUrl, fetcher } from '@/lib/http'
 
@@ -110,7 +111,7 @@ export function Editor() {
 
   // Update form with existing content when available
   useEffect(() => {
-    console.log('existingContent:', existingContent)
+    log('debug', 'existingContent', { existingContent })
     if (existingContent) {
       setValue(existingContent.content)
     }

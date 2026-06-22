@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { computeFileFingerprint } from '@/lib/upload/resumable-upload'
 import { runAppEffect } from '@/runtime'
+import { log } from '@/services/logger'
 import {
   type MixUploadDraft,
   MixUploadDraftStorage,
@@ -95,7 +96,7 @@ export function useMixUploadDraft(): UseMixUploadDraftReturn {
       latestRef.current = next
       setDraft(next)
       runAppEffect(Effect.andThen(MixUploadDraftStorage, (s) => s.write(next))).catch((error) => {
-        console.warn('Failed to save mix upload draft', error)
+        log('warn', 'Failed to save mix upload draft', { error })
       })
     }, DEBOUNCE_MS)
   }, [])

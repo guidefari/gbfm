@@ -2,6 +2,7 @@ import { toast } from '@gbfm/ui'
 import { Share2 } from 'lucide-react'
 import type { PublicProfile } from '@/lib/http'
 import { getShareUrl } from '@/lib/share'
+import { log } from '@/services/logger'
 
 const BandcampIcon = () => (
   <svg
@@ -167,7 +168,7 @@ export function ProfileSocialLinks({ username, socialLinks }: ProfileSocialLinks
         description: 'Share URL copied to clipboard'
       })
     } catch (error) {
-      console.error('Failed to copy link to clipboard:', error)
+      log('error', 'Failed to copy share URL to clipboard', { shareUrl, error })
       toast({
         title: 'Failed to copy',
         description: 'Could not copy link to clipboard',

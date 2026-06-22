@@ -57,6 +57,7 @@ if (env.sentryDsn && (!env.isDev || env.sentryEnableLocal)) {
     environment: env.sentryEnvironment ?? (env.isDev ? 'development' : 'production'),
     release: env.sentryRelease,
     debug: env.isDev,
+    enableLogs: true,
     integrations: [
       Sentry.browserTracingIntegration(),
       ...(env.isDev

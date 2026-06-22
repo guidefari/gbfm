@@ -5,6 +5,7 @@ import { CalendarClock } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useSession } from '@/lib/auth-client'
 import { apiUrl, fetcher, useEnrichTrackFromUrl } from '@/lib/http'
+import { log } from '@/services/logger'
 
 interface MusicReminder {
   id: string
@@ -46,7 +47,7 @@ const formatReminderDateValue = (value: string) => {
 function MusicReminders() {
   const { data: session } = useSession()
   const isAuthenticated = Boolean(session?.user)
-  console.log('isAuthenticated:', isAuthenticated)
+  log('debug', 'isAuthenticated', { isAuthenticated })
   const queryClient = useQueryClient()
   const [musicUrl, setMusicUrl] = useState('')
   const [musicTitle, setMusicTitle] = useState('')
@@ -116,7 +117,7 @@ function MusicReminders() {
       })
     },
     onError: (error) => {
-      console.error('Failed to create reminder:', error)
+      log('error', 'Failed to create reminder', { error })
       toast({
         variant: 'destructive',
         title: 'Failed to create reminder',

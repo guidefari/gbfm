@@ -4,6 +4,7 @@ import { CheckIcon } from '@radix-ui/react-icons'
 import { useState } from 'react'
 import { FaSquareRss } from 'react-icons/fa6'
 import { publicUrlObj } from '@/lib/http'
+import { log } from '@/services/logger'
 
 export const RSS = () => {
   const [isCopied, setIsCopied] = useState(false)
@@ -21,7 +22,7 @@ export const RSS = () => {
       navigator.clipboard.writeText(RSSurl)
       toggleIsCopiedForThreeSeconds()
     } catch (error) {
-      console.error('Failed to copy to clipboard', error)
+      log('error', 'Failed to copy RSS link to clipboard', { error })
     }
   }
 

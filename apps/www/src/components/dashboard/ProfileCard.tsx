@@ -2,6 +2,7 @@ import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '
 import { useEffect, useId, useState } from 'react'
 import { useSession } from '@/lib/auth-client'
 import { useUpdateProfile } from '@/lib/http'
+import { log } from '@/services/logger'
 
 type SessionUser = NonNullable<ReturnType<typeof useSession>['data']>['user']
 
@@ -70,7 +71,7 @@ export function ProfileCard({ user }: ProfileCardProps) {
       setImagePreview(null)
       await refetchSession()
     } catch (error) {
-      console.error('Error updating profile:', error)
+      log('error', 'Error updating profile', { error })
     }
   }
 

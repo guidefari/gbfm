@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle, Label } from '@gbfm/ui'
 import { useEffect, useState } from 'react'
 import { useEmailPreferences, useUpdateEmailPreferences } from '@/lib/http'
+import { log } from '@/services/logger'
 
 export function EmailPreferencesCard() {
   const { data: emailPreferences } = useEmailPreferences()
@@ -30,7 +31,7 @@ export function EmailPreferencesCard() {
     try {
       await updateEmailPreferences(newPrefs)
     } catch (error) {
-      console.error('Error updating email preferences:', error)
+      log('error', 'Error updating email preferences', { key, error })
       setEmailPrefs(emailPrefs)
     }
   }

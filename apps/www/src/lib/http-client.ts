@@ -1,4 +1,5 @@
 import type * as Effect from 'effect/Effect'
+import { log as defaultLog } from '@/services/logger'
 
 export type HttpRequestInput = RequestInfo | URL
 
@@ -14,7 +15,7 @@ type FetcherOptions = {
   onUnauthorized?: () => void
   reportFailure?: (failure: ApiFailureInput) => Effect.Effect<void>
   runEffect?: (effect: Effect.Effect<void>) => Promise<void>
-  logError?: (error: unknown) => void
+  logError?: (error: unknown, context?: Record<string, unknown>) => void
 }
 
 export function getRequestUrl(input: HttpRequestInput) {
@@ -36,7 +37,7 @@ export function createFetcher({
   },
   reportFailure,
   runEffect,
-  logError = console.error
+  logError = (error, context) => defaultLog('error', 'HTTP request failed', { error, ...context })
 }: FetcherOptions = {}) {
   const runFailureReport = (
     error: unknown,
@@ -46,7 +47,9 @@ export function createFetcher({
   ) => {
     if (!reportFailure || !runEffect) return
 
-    void runEffect(reportFailure({ error, input, init, context })).catch(logError)
+    void runEffect(reportFailure({ error, input, init, context })).catch((reportError) =>
+      logError(reportError, { failureType: 'report_failure' })
+    )
   }
 
   return async function fetcher<T>(input: HttpRequestInput, init: RequestInit = {}): Promise<T> {
@@ -91,7 +94,7 @@ export function createFetcher({
         runFailureReport(error, input, init, { failureType: 'network' })
       }
 
-      logError(error)
+      logError(error, { url: getRequestUrl(input), method: getRequestMethod(input, init) })
       throw error
     }
   }

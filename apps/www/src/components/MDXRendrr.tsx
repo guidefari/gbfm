@@ -1,6 +1,7 @@
 import { run } from '@mdx-js/mdx'
 import { useEffect, useState } from 'react'
 import * as runtime from 'react/jsx-runtime'
+import { log } from '@/services/logger'
 import { CustomMDXComponents } from './mdx-components'
 
 type LoadedContentType = Awaited<ReturnType<typeof run>>['default']
@@ -25,7 +26,7 @@ export function MDXRendrr({ mdxString }: { mdxString: string }) {
         })
         setContent(() => loadedContent)
       } catch (err) {
-        console.error('MDX compilation error:', err)
+        log('error', 'MDX compilation error', { error: err })
         setError('Invalid MDX syntax. Please check your content.')
         setContent(null)
       }

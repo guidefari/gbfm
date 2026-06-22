@@ -113,7 +113,10 @@ describe('createFetcher', () => {
     })
 
     await expect(fetcher('/api/boom')).rejects.toThrow('boom')
-    expect(logError).toHaveBeenCalledWith(error)
+    expect(logError).toHaveBeenCalledWith(error, {
+      url: '/api/boom',
+      method: 'GET'
+    })
   })
 })
 

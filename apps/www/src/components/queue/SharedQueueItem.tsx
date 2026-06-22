@@ -6,6 +6,7 @@ import { Heart, MoreHorizontal, Play, Plus, Share2, X } from 'lucide-react'
 import type React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
+import { log } from '@/services/logger'
 import { cn } from '@/lib/utils'
 import { useAudioPlayerActions } from '@/store/audioPlayer'
 
@@ -153,12 +154,12 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
   }
 
   const handleAddToFavorites = () => {
-    console.log('Add to favorites:', track.title)
+    log('debug', 'Add to favorites', { track: track.title })
     closeContextMenu()
   }
 
   const handleShare = () => {
-    console.log('Share:', track.title)
+    log('debug', 'Share', { track: track.title })
     closeContextMenu()
   }
 
