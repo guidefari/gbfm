@@ -1,3 +1,11 @@
+## [2.60.1](https://github.com/guidefari/gbfm/compare/v2.60.0...v2.60.1) (2026-07-01)
+
+
+### Bug Fixes
+
+* **dev:** serve SPA auth pages and trust localhost origin ([#134](https://github.com/guidefari/gbfm/issues/134)) ([e3c32f5](https://github.com/guidefari/gbfm/commit/e3c32f525a20f754c3ed8d828ca96549ba27d129))
+* **www:** resolve auth context before guarding routes and preserve redirect target ([#133](https://github.com/guidefari/gbfm/issues/133)) ([0510949](https://github.com/guidefari/gbfm/commit/0510949e819c1d003a20e70264c1e4717194bcbb))
+
 # [2.60.0](https://github.com/guidefari/gbfm/compare/v2.59.0...v2.60.0) (2026-07-01)
 
 
