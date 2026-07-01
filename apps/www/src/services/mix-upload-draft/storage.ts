@@ -1,6 +1,7 @@
 import * as Context from 'effect/Context'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
+import { log } from '@/services/logger'
 import { type MixUploadDraft, parseMixUploadDraft } from './types'
 
 const STORAGE_KEY = 'gbfm:mix-upload-draft:v1'
@@ -32,7 +33,7 @@ export const MixUploadDraftStorageLive = Layer.sync(MixUploadDraftStorage, () =>
       try {
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(value))
       } catch (error) {
-        console.warn('MixUploadDraftStorage.write failed', error)
+        log('warn', 'MixUploadDraftStorage.write failed', { error })
       }
     }),
   clear: () =>

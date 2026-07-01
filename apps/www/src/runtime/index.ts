@@ -9,6 +9,7 @@ import {
   type MediaSessionService,
   MediaSessionServiceLive
 } from '@/services/audio-player'
+import { log, type Logger, LoggerLive, NoopLogger } from '@/services/logger'
 import { type MixUploadDraftStorage, MixUploadDraftStorageLive } from '@/services/mix-upload-draft'
 import {
   type ResumableUploadStorage,
@@ -35,6 +36,7 @@ const audioStorageLayer = AudioStorageLive
 const mediaSessionLayer = MediaSessionServiceLive
 const resumableUploadStorageLayer = ResumableUploadStorageLive
 const mixUploadDraftStorageLayer = MixUploadDraftStorageLive
+const loggerLayer = enableSentry ? LoggerLive : NoopLogger
 
 const mainLayer = Layer.mergeAll(
   analyticsLayer,
@@ -42,7 +44,8 @@ const mainLayer = Layer.mergeAll(
   audioStorageLayer,
   mediaSessionLayer,
   resumableUploadStorageLayer,
-  mixUploadDraftStorageLayer
+  mixUploadDraftStorageLayer,
+  loggerLayer
 )
 
 type AppServices =
@@ -52,6 +55,7 @@ type AppServices =
   | MediaSessionService
   | ResumableUploadStorage
   | MixUploadDraftStorage
+  | Logger
 
 const appScope = Scope.makeUnsafe()
 const appContextPromise = Effect.runPromise(Layer.buildWithScope(mainLayer, appScope))
@@ -60,7 +64,7 @@ export const runAppEffect = <A, E>(effect: Effect.Effect<A, E, AppServices>) =>
   appContextPromise
     .then((context) => Effect.runPromiseWith(context)(effect))
     .catch((error) => {
-      console.error('App effect failed', error)
+      log('error', 'App effect failed', { error })
       throw error
     })
 

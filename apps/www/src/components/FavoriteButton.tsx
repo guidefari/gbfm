@@ -8,6 +8,7 @@ import {
   useRemoveFavorite,
   useRemoveShowFavorite
 } from '@/lib/http'
+import { log } from '@/services/logger'
 import { cn } from '@/lib/utils'
 
 interface FavoriteButtonProps {
@@ -75,7 +76,7 @@ export function FavoriteButton({
         }
       }
     } catch (error) {
-      console.log('error:', error)
+      log('error', 'Favorite action failed', { contentType, contentId, error })
       const message = error instanceof Error ? error.message.toLowerCase() : ''
       if (message.includes('already favorited') || message.includes('409')) {
         toast({

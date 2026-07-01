@@ -1,10 +1,11 @@
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
+import { log } from '@/services/logger'
 import { Analytics } from './service'
 
 const logLocalOnly = (method: string) =>
   Effect.sync(() => {
-    console.info(`[analytics:no-op] analytics event captured locally only (${method})`)
+    log('debug', `[analytics:no-op] analytics event captured locally only (${method})`)
   })
 
 export const NoopAnalyticsLayer = Layer.succeed(Analytics, {

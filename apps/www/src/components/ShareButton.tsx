@@ -2,6 +2,7 @@ import { useFeatureFlag } from '@gbfm/core/feature-flags'
 import { Button, toast } from '@gbfm/ui'
 import { Share2 } from 'lucide-react'
 import { getShareUrl, type ShareContentType } from '@/lib/share'
+import { log } from '@/services/logger'
 
 interface ShareButtonProps {
   type: ShareContentType
@@ -32,7 +33,7 @@ export function ShareButton({
         description: 'Share URL copied to clipboard'
       })
     } catch (error) {
-      console.error('Failed to copy link to clipboard:', error)
+      log('error', 'Failed to copy link to clipboard', { type, slug, error })
       toast({
         title: 'Failed to copy',
         description: 'Could not copy link to clipboard',

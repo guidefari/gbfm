@@ -20,6 +20,7 @@ import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
 import { useSession } from '@/lib/auth-client'
 import { apiUrl, fetcher } from '@/lib/http'
 import { readResponseErrorMessage, readUploadResponse } from '@/lib/response'
+import { log } from '@/services/logger'
 
 export const Route = createLazyFileRoute('/label-upload')({
   component: LabelUploadPage
@@ -155,7 +156,7 @@ function LabelUploadPage() {
       }, 2000)
     },
     onError: (error) => {
-      console.error('Upload failed:', error)
+      log('error', 'Upload failed', { error })
       toast({
         title: 'Upload failed',
         description: error instanceof Error ? error.message : 'An unexpected error occurred.',

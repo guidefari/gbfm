@@ -5,6 +5,7 @@ import type React from 'react'
 import { MdOutlineDownloading } from 'react-icons/md'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { cn, copyToClipboard } from '@/lib/utils'
+import { log } from '@/services/logger'
 import { PlayPauseButton } from '../PlayPauseButton'
 
 // this component needs to support:
@@ -62,7 +63,7 @@ export const MinimalCard: React.FC<Props> = ({
         description: 'Share URL copied to clipboard'
       })
     } catch (error) {
-      console.error('Failed to copy link to clipboard:', error)
+      log('error', 'Failed to copy link to clipboard', { shareUrl, error })
       toast({
         title: 'Failed to copy',
         description: 'Could not copy link to clipboard',
