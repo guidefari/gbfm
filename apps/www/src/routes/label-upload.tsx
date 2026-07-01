@@ -1,9 +1,10 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
+import { signInRedirect } from '@/lib/route-guards'
 
 export const Route = createFileRoute('/label-upload')({
-  beforeLoad: ({ context }) => {
+  beforeLoad: ({ context, location }) => {
     if (!context.auth.isAuthenticated) {
-      throw redirect({ to: '/auth/sign-in' })
+      throw signInRedirect(location.href)
     }
     if (context.auth.user?.role !== 'admin') {
       throw redirect({ to: '/' })

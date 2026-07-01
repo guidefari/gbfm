@@ -1,6 +1,7 @@
 import * as Sentry from '@sentry/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createRouter, RouterProvider } from '@tanstack/react-router'
+import { Loader2 } from 'lucide-react'
 import React from 'react'
 import { createRoot } from 'react-dom/client'
 import { env } from '@/env'
@@ -80,7 +81,7 @@ if (env.sentryDsn && (!env.isDev || env.sentryEnableLocal)) {
 }
 
 function App() {
-  const { data: session } = useSession()
+  const { data: session, isPending } = useSession()
   const auth = {
     user: session?.user ?? null,
     isAuthenticated: Boolean(session?.user)
@@ -97,7 +98,13 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme='dark' storageKey='vite-ui-theme'>
-        <RouterProvider router={router} context={{ auth }} />
+        {isPending ? (
+          <div className='flex min-h-dvh items-center justify-center'>
+            <Loader2 className='h-6 w-6 animate-spin text-muted-foreground' />
+          </div>
+        ) : (
+          <RouterProvider router={router} context={{ auth }} />
+        )}
       </ThemeProvider>
     </QueryClientProvider>
   )

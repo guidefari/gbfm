@@ -2,6 +2,7 @@
 
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { z } from 'zod'
+import { signInRedirect } from '@/lib/route-guards'
 import { EditorialPage } from './-EditorialPage'
 
 const searchSchema = z.object({
@@ -9,9 +10,9 @@ const searchSchema = z.object({
 })
 
 export const Route = createFileRoute('/new/editorial')({
-  beforeLoad: ({ context }) => {
+  beforeLoad: ({ context, location }) => {
     if (!context.auth.isAuthenticated) {
-      throw redirect({ to: '/auth/sign-in' })
+      throw signInRedirect(location.href)
     }
     if (context.auth.user?.role !== 'admin') {
       throw redirect({ to: '/' })
