@@ -1,3 +1,10 @@
+# [2.60.0](https://github.com/guidefari/gbfm/compare/v2.59.0...v2.60.0) (2026-07-01)
+
+
+### Features
+
+* **www:** shared logger writes to console and Sentry ([#132](https://github.com/guidefari/gbfm/issues/132)) ([908d2bd](https://github.com/guidefari/gbfm/commit/908d2bd1bbd8a87f3f0e9c094d138b3f0a744fb0))
+
 # [2.59.0](https://github.com/guidefari/gbfm/compare/v2.58.0...v2.59.0) (2026-06-21)
 
 
