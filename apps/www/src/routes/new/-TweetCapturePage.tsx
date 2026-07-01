@@ -88,14 +88,21 @@ function TweetComposerCard({
 }) {
   return (
     <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
-      <CardHeader>
-        <CardTitle className='text-gb-pastel-green-1'>Post</CardTitle>
+      <CardHeader className='pb-3'>
+        <CardTitle className='text-base text-gb-pastel-green-1'>Post</CardTitle>
       </CardHeader>
       <CardContent className='space-y-4'>
-        <div className='space-y-2'>
-          <Label htmlFor='title' className='text-gb-pastel-green-1'>
-            Title
-          </Label>
+        <div className='space-y-1.5'>
+          <div className='flex items-baseline justify-between'>
+            <Label
+              htmlFor='title'
+              className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
+              Title
+            </Label>
+            {title.length > 0 ? (
+              <span className='text-xs tabular-nums text-muted-foreground'>{title.length}/255</span>
+            ) : null}
+          </div>
           <Input
             id='title'
             value={title}
@@ -105,13 +112,12 @@ function TweetComposerCard({
             maxLength={255}
             autoFocus
           />
-          {title.length > 0 ? (
-            <p className='text-right text-xs text-muted-foreground'>{title.length}/255</p>
-          ) : null}
         </div>
 
-        <div className='space-y-2'>
-          <Label htmlFor='commentary' className='text-gb-pastel-green-1'>
+        <div className='space-y-1.5'>
+          <Label
+            htmlFor='commentary'
+            className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
             Commentary
           </Label>
           <Textarea
@@ -120,15 +126,16 @@ function TweetComposerCard({
             onChange={(e) => onCommentaryChange(e.target.value)}
             placeholder='Optional commentary in markdown…'
             onKeyDown={onKeyDown}
+            className='min-h-28'
           />
         </div>
 
-        <div className='flex items-center gap-3'>
+        <div className='flex items-center gap-3 pt-1'>
           <Button onClick={onSubmit} disabled={!canSubmit || isPending} className='gap-2'>
             {isPending ? <Loader2 className='size-4 animate-spin' /> : <Send className='size-4' />}
             {isEditMode ? 'Update tweet' : 'Save tweet'}
           </Button>
-          <span className='text-sm text-muted-foreground'>Cmd+Enter submits</span>
+          <span className='text-xs text-muted-foreground'>⌘↵ to submit</span>
         </div>
       </CardContent>
     </Card>
@@ -156,17 +163,23 @@ function ResolvedMusicCard({
   onMusicUrlChange: (value: string) => void
   linksSlot?: ReactNode
 }) {
+  const metaLine = [displayedEntityType, displayedArtistNames?.join(', ')]
+    .filter(Boolean)
+    .join(' · ')
+
   return (
     <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
-      <CardHeader>
-        <CardTitle className='flex items-center gap-2 text-gb-pastel-green-1'>
-          <Music4 className='size-5' />
+      <CardHeader className='pb-3'>
+        <CardTitle className='flex items-center gap-2 text-base text-gb-pastel-green-1'>
+          <Music4 className='size-4' />
           Music
         </CardTitle>
       </CardHeader>
       <CardContent className='space-y-4'>
-        <div className='space-y-2'>
-          <Label htmlFor='musicUrl' className='text-gb-pastel-green-1'>
+        <div className='space-y-1.5'>
+          <Label
+            htmlFor='musicUrl'
+            className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
             Music URL
           </Label>
           <div className='relative'>
@@ -183,57 +196,35 @@ function ResolvedMusicCard({
           </div>
         </div>
 
-        {linksSlot ? (
-          <div className='border-t border-gb-pastel-green-2/10 pt-4'>{linksSlot}</div>
-        ) : null}
-
-        <div className='grid gap-4 border-t border-gb-pastel-green-2/10 pt-4 sm:grid-cols-[96px_1fr] lg:grid-cols-1'>
-          <div className='overflow-hidden border rounded-sm bg-muted aspect-square'>
+        <div className='flex items-center gap-3 rounded-md border border-gb-pastel-green-2/15 bg-black/20 p-2.5'>
+          <div className='size-14 shrink-0 overflow-hidden rounded-sm bg-muted'>
             {displayedCoverImageUrl ? (
               <img
                 src={displayedCoverImageUrl}
                 alt='Cover art'
-                className='object-cover w-full h-full'
+                className='size-full object-cover'
               />
             ) : (
-              <div className='flex items-center justify-center h-full text-muted-foreground'>
+              <div className='flex size-full items-center justify-center text-muted-foreground'>
                 {isResolving ? (
-                  <Loader2 className='size-5 animate-spin' />
+                  <Loader2 className='size-4 animate-spin' />
                 ) : (
-                  <Music4 className='size-5' />
+                  <Music4 className='size-4' />
                 )}
               </div>
             )}
           </div>
-
-          <div className='space-y-3'>
-            <div>
-              <div className='text-xs uppercase tracking-wider text-muted-foreground'>Type</div>
-              <div className='font-medium capitalize'>
-                {displayedEntityType || (isResolving ? 'Resolving…' : 'Paste a link to start')}
-              </div>
+          <div className='min-w-0 flex-1'>
+            <div className='truncate text-sm font-medium'>
+              {displayedEntityTitle || (isResolving ? 'Resolving…' : 'Paste a link to start')}
             </div>
-            <div>
-              <div className='text-xs uppercase tracking-wider text-muted-foreground'>Title</div>
-              <div className='font-medium'>
-                {displayedEntityTitle || (isResolving ? 'Resolving…' : 'No entity resolved yet')}
-              </div>
+            <div className='truncate text-xs capitalize text-muted-foreground'>
+              {metaLine || (hasEntity ? '' : 'No entity resolved yet')}
             </div>
-            {displayedArtistNames?.length ? (
-              <div>
-                <div className='text-xs uppercase tracking-wider text-muted-foreground'>
-                  Artists
-                </div>
-                <div className='font-medium'>{displayedArtistNames.join(', ')}</div>
-              </div>
-            ) : null}
-            {!hasEntity && !isResolving ? (
-              <p className='text-xs text-muted-foreground'>
-                Streaming links appear here once a link resolves.
-              </p>
-            ) : null}
           </div>
         </div>
+
+        {linksSlot ? <div>{linksSlot}</div> : null}
       </CardContent>
     </Card>
   )

@@ -1,8 +1,14 @@
+import { Check, MoreHorizontal, Plus } from 'lucide-react'
 import { useState } from 'react'
-import { Badge } from './badge'
 import { Button } from './button'
 import { Card, CardContent, CardHeader } from './card'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from './dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger
+} from './dropdown-menu'
 import { Input } from './input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select'
 
@@ -58,10 +64,10 @@ const PLATFORMS: MusicPlatform[] = [
   'other'
 ]
 
-const STATUS_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  verified: 'default',
-  pending_review: 'secondary',
-  rejected: 'destructive'
+const STATUS_DOTS: Record<string, string> = {
+  verified: 'bg-gb-pastel-green-1',
+  pending_review: 'bg-amber-400',
+  rejected: 'bg-destructive'
 }
 
 export interface MusicEntityLinksPanelProps {
@@ -135,24 +141,36 @@ export function MusicEntityLinksPanel({
   }
 
   const header = (
-    <div className='flex flex-row items-center justify-between gap-3'>
-      <div className='flex items-center gap-2'>
-        <span className='text-sm font-medium'>Streaming links</span>
+    <div className='flex flex-row flex-wrap items-center justify-between gap-x-3 gap-y-2'>
+      <div className='flex items-baseline gap-2'>
+        <span className='whitespace-nowrap text-xs font-medium uppercase tracking-wide text-muted-foreground'>
+          Streaming links
+        </span>
         {pendingLinks.length > 0 && (
-          <Badge variant='secondary' className='rounded-sm'>
+          <span className='whitespace-nowrap text-xs text-muted-foreground/70'>
             {pendingLinks.length} to verify
-          </Badge>
+          </span>
         )}
       </div>
       <div className='flex items-center gap-1'>
         {!readOnly && pendingLinks.length > 0 && (
-          <Button size='sm' variant='outline' className='rounded-sm' onClick={verifyAllPending}>
+          <Button
+            size='sm'
+            variant='outline'
+            className='h-7 rounded-sm px-2 text-xs'
+            onClick={verifyAllPending}>
+            <Check className='mr-1 size-3' />
             Verify all
           </Button>
         )}
         {!readOnly && (
-          <Button size='sm' variant='ghost' className='rounded-sm' onClick={openAddDialog}>
-            Add link
+          <Button
+            size='sm'
+            variant='ghost'
+            className='h-7 rounded-sm px-2 text-xs'
+            onClick={openAddDialog}>
+            <Plus className='mr-1 size-3' />
+            Add
           </Button>
         )}
       </div>
@@ -162,60 +180,64 @@ export function MusicEntityLinksPanel({
   const list = (
     <>
       {links.length === 0 && (
-        <p className='text-sm text-muted-foreground'>
+        <p className='text-xs text-muted-foreground'>
           {readOnly ? 'No links yet.' : 'No links yet. Paste a URL above to auto-fetch them.'}
         </p>
       )}
-      <div className='space-y-2'>
+      <div className='divide-y divide-border/50 rounded-md border'>
         {links.map((link) => (
-          <div key={link.id} className='rounded-md border px-3 py-2 text-sm'>
-            <div className='flex min-w-0 flex-col gap-2'>
-              <div className='min-w-0 flex-1 space-y-1'>
-                <div className='flex flex-wrap items-center gap-2'>
-                  <span className='font-medium capitalize'>{link.platform.replace(/_/g, ' ')}</span>
-                  <Badge variant={STATUS_VARIANTS[link.status] ?? 'outline'} className='rounded-sm'>
-                    {link.status.replace('_', ' ')}
-                  </Badge>
-                </div>
-                <a
-                  href={link.url}
-                  target='_blank'
-                  rel='noopener noreferrer'
-                  className='block min-w-0 truncate text-xs text-blue-500 hover:underline'>
-                  {link.url}
-                </a>
-              </div>
-              {!readOnly && (
-                <div className='flex flex-wrap gap-1'>
-                  <Button size='sm' variant='ghost' onClick={() => openEditDialog(link)}>
-                    Edit
-                  </Button>
-                  {link.status !== 'verified' && (
-                    <Button
-                      size='sm'
-                      variant='ghost'
-                      onClick={() => onUpdateStatus?.(link.id, 'verified')}>
-                      Verify
-                    </Button>
-                  )}
-                  {link.status !== 'rejected' && (
-                    <Button
-                      size='sm'
-                      variant='ghost'
-                      onClick={() => onUpdateStatus?.(link.id, 'rejected')}>
-                      Reject
-                    </Button>
-                  )}
+          <div
+            key={link.id}
+            className='group flex items-center gap-2.5 px-2.5 py-2 text-sm first:rounded-t-md last:rounded-b-md hover:bg-muted/40'>
+            <span
+              className={`size-2 shrink-0 rounded-full ${STATUS_DOTS[link.status] ?? 'bg-muted-foreground/40'}`}
+              title={link.status.replace('_', ' ')}
+            />
+            <a
+              href={link.url}
+              target='_blank'
+              rel='noopener noreferrer'
+              className='min-w-0 flex-1 truncate font-medium capitalize hover:underline'
+              title={link.url}>
+              {link.platform.replace(/_/g, ' ')}
+            </a>
+            {!readOnly && (
+              <div className='flex shrink-0 items-center gap-1'>
+                {link.status !== 'verified' && (
                   <Button
                     size='sm'
                     variant='ghost'
-                    className='text-destructive'
-                    onClick={() => onDelete?.(link.id)}>
-                    Delete
+                    className='h-7 rounded-sm px-2 text-xs text-gb-pastel-green-1 opacity-0 focus-visible:opacity-100 group-hover:opacity-100'
+                    onClick={() => onUpdateStatus?.(link.id, 'verified')}>
+                    Verify
                   </Button>
-                </div>
-              )}
-            </div>
+                )}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size='icon'
+                      variant='ghost'
+                      className='size-7 rounded-sm text-muted-foreground opacity-0 focus-visible:opacity-100 group-hover:opacity-100 data-[state=open]:opacity-100'>
+                      <MoreHorizontal className='size-4' />
+                      <span className='sr-only'>More actions</span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align='end' className='w-32'>
+                    <DropdownMenuItem onClick={() => openEditDialog(link)}>Edit</DropdownMenuItem>
+                    {link.status !== 'rejected' && (
+                      <DropdownMenuItem onClick={() => onUpdateStatus?.(link.id, 'rejected')}>
+                        Reject
+                      </DropdownMenuItem>
+                    )}
+                    <DropdownMenuItem
+                      className='text-destructive focus:text-destructive'
+                      onClick={() => onDelete?.(link.id)}>
+                      Delete
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
           </div>
         ))}
       </div>
