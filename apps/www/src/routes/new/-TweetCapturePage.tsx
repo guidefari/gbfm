@@ -17,7 +17,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useRouter, useSearch } from '@tanstack/react-router'
 import { ArrowLeft, Loader2, Music4, Send } from 'lucide-react'
-import { type KeyboardEvent, useEffect, useMemo, useState } from 'react'
+import { type KeyboardEvent, type ReactNode, useEffect, useMemo, useState } from 'react'
 import { PostPageHeader } from '@/components/PostPageHeader'
 import { useSession } from '@/lib/auth-client'
 import {
@@ -63,6 +63,8 @@ const entityPathByType: Record<MusicEntityType, string> = {
   playlist: 'playlists'
 }
 
+const POST_CREATE_ROLES = new Set(['creator', 'editor', 'admin'])
+
 function TweetComposerCard({
   title,
   commentary,
@@ -99,10 +101,13 @@ function TweetComposerCard({
             value={title}
             onChange={(e) => onTitleChange(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder='Optional title for the tweet'
+            placeholder='A short quip, e.g. “I dig this”'
             maxLength={255}
+            autoFocus
           />
-          <p className='text-right text-xs text-muted-foreground'>{title.length}/255</p>
+          {title.length > 0 ? (
+            <p className='text-right text-xs text-muted-foreground'>{title.length}/255</p>
+          ) : null}
         </div>
 
         <div className='space-y-2'>
@@ -137,7 +142,9 @@ function ResolvedMusicCard({
   displayedEntityTitle,
   displayedArtistNames,
   isResolving,
-  onMusicUrlChange
+  hasEntity,
+  onMusicUrlChange,
+  linksSlot
 }: {
   musicUrl: string
   displayedCoverImageUrl: string | null
@@ -145,7 +152,9 @@ function ResolvedMusicCard({
   displayedEntityTitle: string | null
   displayedArtistNames: string[] | null
   isResolving: boolean
+  hasEntity: boolean
   onMusicUrlChange: (value: string) => void
+  linksSlot?: ReactNode
 }) {
   return (
     <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
@@ -160,16 +169,26 @@ function ResolvedMusicCard({
           <Label htmlFor='musicUrl' className='text-gb-pastel-green-1'>
             Music URL
           </Label>
-          <Input
-            id='musicUrl'
-            value={musicUrl}
-            onChange={(e) => onMusicUrlChange(e.target.value)}
-            placeholder='https://open.spotify.com/track/...'
-          />
+          <div className='relative'>
+            <Input
+              id='musicUrl'
+              value={musicUrl}
+              onChange={(e) => onMusicUrlChange(e.target.value)}
+              placeholder='https://open.spotify.com/track/...'
+              className='pr-9'
+            />
+            {isResolving && (
+              <Loader2 className='absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground' />
+            )}
+          </div>
         </div>
 
-        <div className='grid gap-4 sm:grid-cols-[120px_1fr] lg:grid-cols-1'>
-          <div className='overflow-hidden border rounded-lg bg-muted aspect-square'>
+        {linksSlot ? (
+          <div className='border-t border-gb-pastel-green-2/10 pt-4'>{linksSlot}</div>
+        ) : null}
+
+        <div className='grid gap-4 border-t border-gb-pastel-green-2/10 pt-4 sm:grid-cols-[96px_1fr] lg:grid-cols-1'>
+          <div className='overflow-hidden border rounded-sm bg-muted aspect-square'>
             {displayedCoverImageUrl ? (
               <img
                 src={displayedCoverImageUrl}
@@ -189,18 +208,29 @@ function ResolvedMusicCard({
 
           <div className='space-y-3'>
             <div>
-              <div className='text-sm text-muted-foreground'>Resolved type</div>
-              <div className='font-medium'>{displayedEntityType || 'Waiting for a URL'}</div>
+              <div className='text-xs uppercase tracking-wider text-muted-foreground'>Type</div>
+              <div className='font-medium capitalize'>
+                {displayedEntityType || (isResolving ? 'Resolving…' : 'Paste a link to start')}
+              </div>
             </div>
             <div>
-              <div className='text-sm text-muted-foreground'>Title</div>
-              <div className='font-medium'>{displayedEntityTitle || 'No entity resolved yet'}</div>
+              <div className='text-xs uppercase tracking-wider text-muted-foreground'>Title</div>
+              <div className='font-medium'>
+                {displayedEntityTitle || (isResolving ? 'Resolving…' : 'No entity resolved yet')}
+              </div>
             </div>
             {displayedArtistNames?.length ? (
               <div>
-                <div className='text-sm text-muted-foreground'>Artists</div>
+                <div className='text-xs uppercase tracking-wider text-muted-foreground'>
+                  Artists
+                </div>
                 <div className='font-medium'>{displayedArtistNames.join(', ')}</div>
               </div>
+            ) : null}
+            {!hasEntity && !isResolving ? (
+              <p className='text-xs text-muted-foreground'>
+                Streaming links appear here once a link resolves.
+              </p>
             ) : null}
           </div>
         </div>
@@ -247,10 +277,10 @@ export function TweetCapturePage() {
   }, [existingPost])
 
   const canSubmit = useMemo(() => Boolean(title.trim() || commentary.trim()), [title, commentary])
+  const canCreatePosts = POST_CREATE_ROLES.has(user?.role ?? '')
+  const isOwnPost = Boolean(existingPost?.creators?.some((creator) => creator.id === user?.id))
   const canAccess = Boolean(
-    user &&
-    (user.role === 'admin' ||
-      (isEditMode && existingPost?.creators?.some((creator) => creator.id === user.id)))
+    user && (isEditMode ? user.role === 'admin' || isOwnPost : canCreatePosts)
   )
   const displayedEntityType = resolved.data?.entityType ?? existingPost?.musicEntityType ?? null
   const displayedEntityTitle = resolved.data?.entity?.title ?? existingMusicEntity?.title ?? null
@@ -473,19 +503,21 @@ export function TweetCapturePage() {
       />
 
       <div className='grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]'>
-        <TweetComposerCard
-          title={title}
-          commentary={commentary}
-          canSubmit={canSubmit}
-          isEditMode={isEditMode}
-          isPending={submitMutation.isPending}
-          onTitleChange={setTitle}
-          onCommentaryChange={setCommentary}
-          onSubmit={() => submitMutation.mutate()}
-          onKeyDown={handleSubmitShortcut}
-        />
+        <div className='order-2 lg:order-1'>
+          <TweetComposerCard
+            title={title}
+            commentary={commentary}
+            canSubmit={canSubmit}
+            isEditMode={isEditMode}
+            isPending={submitMutation.isPending}
+            onTitleChange={setTitle}
+            onCommentaryChange={setCommentary}
+            onSubmit={() => submitMutation.mutate()}
+            onKeyDown={handleSubmitShortcut}
+          />
+        </div>
 
-        <div className='space-y-6'>
+        <div className='order-1 lg:order-2'>
           <ResolvedMusicCard
             musicUrl={musicUrl}
             displayedCoverImageUrl={displayedCoverImageUrl}
@@ -493,19 +525,22 @@ export function TweetCapturePage() {
             displayedEntityTitle={displayedEntityTitle}
             displayedArtistNames={displayedArtistNames}
             isResolving={resolved.isLoading}
+            hasEntity={Boolean(currentEntityType && currentEntityId)}
             onMusicUrlChange={setMusicUrl}
+            linksSlot={
+              currentEntityType && currentEntityId ? (
+                <MusicEntityLinksPanel
+                  embedded
+                  links={entityLinks.data ?? []}
+                  readOnly={!canManageLinks}
+                  onAdd={handleAddLink}
+                  onEdit={handleEditLink}
+                  onUpdateStatus={handleUpdateLinkStatus}
+                  onDelete={handleDeleteLink}
+                />
+              ) : null
+            }
           />
-
-          {currentEntityType && currentEntityId ? (
-            <MusicEntityLinksPanel
-              links={entityLinks.data ?? []}
-              readOnly={!canManageLinks}
-              onAdd={handleAddLink}
-              onEdit={handleEditLink}
-              onUpdateStatus={handleUpdateLinkStatus}
-              onDelete={handleDeleteLink}
-            />
-          ) : null}
         </div>
       </div>
     </div>

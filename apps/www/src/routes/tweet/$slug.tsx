@@ -111,7 +111,7 @@ function TweetPostPage() {
         </div>
 
         {post.title && (
-          <h1 className='text-xl font-black leading-tight tracking-tight'>{post.title}</h1>
+          <h1 className='text-lg font-medium leading-snug tracking-tight'>{post.title}</h1>
         )}
 
         <div className='prose prose-base dark:prose-invert max-w-none prose-headings:font-black prose-headings:tracking-tighter prose-p:leading-relaxed prose-p:my-0 prose-a:text-foreground prose-a:underline'>
