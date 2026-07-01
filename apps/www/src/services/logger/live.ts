@@ -49,11 +49,7 @@ const writeSentry = (severity: LogSeverity, message: string, attributes?: LogAtt
   }
 }
 
-export const dispatchLog = (
-  severity: LogSeverity,
-  message: string,
-  attributes?: LogAttributes
-) => {
+export const dispatchLog = (severity: LogSeverity, message: string, attributes?: LogAttributes) => {
   writeConsole(severity, message, attributes)
   writeSentry(severity, message, normalizeAttributes(attributes))
 }
@@ -62,5 +58,6 @@ export const log = (severity: LogSeverity, message: string, attributes?: LogAttr
   dispatchLog(severity, message, attributes)
 
 export const LoggerLive = Layer.sync(Logger, () => ({
-  log: (severity, message, attributes) => Effect.sync(() => log(severity, message, attributes))
+  log: (severity: LogSeverity, message: string, attributes?: LogAttributes) =>
+    Effect.sync(() => log(severity, message, attributes))
 }))
