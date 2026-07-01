@@ -1,9 +1,10 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
+import { signInRedirect } from '@/lib/route-guards'
 
 export const Route = createFileRoute('/mix-upload')({
-  beforeLoad: ({ context }) => {
+  beforeLoad: ({ context, location }) => {
     if (!context.auth.isAuthenticated) {
-      throw redirect({ to: '/auth/sign-in' })
+      throw signInRedirect(location.href)
     }
   }
 })
