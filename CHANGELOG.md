@@ -1,3 +1,10 @@
+# [2.61.0](https://github.com/guidefari/gbfm/compare/v2.60.1...v2.61.0) (2026-07-03)
+
+
+### Features
+
+* **www:** inline streaming-link verify in tweet composer ([#135](https://github.com/guidefari/gbfm/issues/135)) ([4bc4214](https://github.com/guidefari/gbfm/commit/4bc421483b9a1d4b86f4d4c5ae44da761de7ab9a))
+
 ## [2.60.1](https://github.com/guidefari/gbfm/compare/v2.60.0...v2.60.1) (2026-07-01)
 
 
