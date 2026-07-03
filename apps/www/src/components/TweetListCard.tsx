@@ -29,9 +29,7 @@ export function TweetListCard({ post }: Props) {
           interactive={false}
         />
 
-        {post.title && (
-          <h2 className='text-base font-black leading-tight tracking-tight'>{post.title}</h2>
-        )}
+        {post.title && <h2 className='text-base font-medium leading-snug'>{post.title}</h2>}
 
         <div className='prose prose-sm dark:prose-invert max-w-none prose-p:my-0 prose-p:leading-relaxed prose-headings:text-base prose-headings:my-1 prose-a:text-foreground prose-a:underline prose-a:pointer-events-none [&_iframe]:hidden [&_img]:hidden [&_video]:hidden [&_audio]:hidden line-clamp-4'>
           <MDXRendrr mdxString={post.compiledContent ?? post.content ?? ''} />

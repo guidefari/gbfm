@@ -9,12 +9,14 @@ const searchSchema = z.object({
   edit: z.string().optional()
 })
 
+const POST_CREATE_ROLES = new Set(['creator', 'editor', 'admin'])
+
 export const Route = createFileRoute('/new/tweet')({
   beforeLoad: ({ context, location }) => {
     if (!context.auth.isAuthenticated) {
       throw signInRedirect(location.href)
     }
-    if (context.auth.user?.role !== 'admin') {
+    if (!POST_CREATE_ROLES.has(context.auth.user?.role ?? '')) {
       throw redirect({ to: '/' })
     }
   },

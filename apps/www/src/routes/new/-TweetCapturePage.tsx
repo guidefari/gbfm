@@ -17,7 +17,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useRouter, useSearch } from '@tanstack/react-router'
 import { ArrowLeft, Loader2, Music4, Send } from 'lucide-react'
-import { type KeyboardEvent, useEffect, useMemo, useState } from 'react'
+import { type KeyboardEvent, type ReactNode, useEffect, useMemo, useState } from 'react'
 import { PostPageHeader } from '@/components/PostPageHeader'
 import { useSession } from '@/lib/auth-client'
 import {
@@ -63,6 +63,8 @@ const entityPathByType: Record<MusicEntityType, string> = {
   playlist: 'playlists'
 }
 
+const POST_CREATE_ROLES = new Set(['creator', 'editor', 'admin'])
+
 function TweetComposerCard({
   title,
   commentary,
@@ -86,27 +88,36 @@ function TweetComposerCard({
 }) {
   return (
     <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
-      <CardHeader>
-        <CardTitle className='text-gb-pastel-green-1'>Post</CardTitle>
+      <CardHeader className='pb-3'>
+        <CardTitle className='text-base text-gb-pastel-green-1'>Post</CardTitle>
       </CardHeader>
       <CardContent className='space-y-4'>
-        <div className='space-y-2'>
-          <Label htmlFor='title' className='text-gb-pastel-green-1'>
-            Title
-          </Label>
+        <div className='space-y-1.5'>
+          <div className='flex items-baseline justify-between'>
+            <Label
+              htmlFor='title'
+              className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
+              Title
+            </Label>
+            {title.length > 0 ? (
+              <span className='text-xs tabular-nums text-muted-foreground'>{title.length}/255</span>
+            ) : null}
+          </div>
           <Input
             id='title'
             value={title}
             onChange={(e) => onTitleChange(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder='Optional title for the tweet'
+            placeholder='A short quip, e.g. “I dig this”'
             maxLength={255}
+            autoFocus
           />
-          <p className='text-right text-xs text-muted-foreground'>{title.length}/255</p>
         </div>
 
-        <div className='space-y-2'>
-          <Label htmlFor='commentary' className='text-gb-pastel-green-1'>
+        <div className='space-y-1.5'>
+          <Label
+            htmlFor='commentary'
+            className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
             Commentary
           </Label>
           <Textarea
@@ -115,15 +126,16 @@ function TweetComposerCard({
             onChange={(e) => onCommentaryChange(e.target.value)}
             placeholder='Optional commentary in markdown…'
             onKeyDown={onKeyDown}
+            className='min-h-28'
           />
         </div>
 
-        <div className='flex items-center gap-3'>
+        <div className='flex items-center gap-3 pt-1'>
           <Button onClick={onSubmit} disabled={!canSubmit || isPending} className='gap-2'>
             {isPending ? <Loader2 className='size-4 animate-spin' /> : <Send className='size-4' />}
             {isEditMode ? 'Update tweet' : 'Save tweet'}
           </Button>
-          <span className='text-sm text-muted-foreground'>Cmd+Enter submits</span>
+          <span className='text-xs text-muted-foreground'>⌘↵ to submit</span>
         </div>
       </CardContent>
     </Card>
@@ -137,7 +149,9 @@ function ResolvedMusicCard({
   displayedEntityTitle,
   displayedArtistNames,
   isResolving,
-  onMusicUrlChange
+  hasEntity,
+  onMusicUrlChange,
+  linksSlot
 }: {
   musicUrl: string
   displayedCoverImageUrl: string | null
@@ -145,65 +159,72 @@ function ResolvedMusicCard({
   displayedEntityTitle: string | null
   displayedArtistNames: string[] | null
   isResolving: boolean
+  hasEntity: boolean
   onMusicUrlChange: (value: string) => void
+  linksSlot?: ReactNode
 }) {
+  const metaLine = [displayedEntityType, displayedArtistNames?.join(', ')]
+    .filter(Boolean)
+    .join(' · ')
+
   return (
     <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
-      <CardHeader>
-        <CardTitle className='flex items-center gap-2 text-gb-pastel-green-1'>
-          <Music4 className='size-5' />
+      <CardHeader className='pb-3'>
+        <CardTitle className='flex items-center gap-2 text-base text-gb-pastel-green-1'>
+          <Music4 className='size-4' />
           Music
         </CardTitle>
       </CardHeader>
       <CardContent className='space-y-4'>
-        <div className='space-y-2'>
-          <Label htmlFor='musicUrl' className='text-gb-pastel-green-1'>
+        <div className='space-y-1.5'>
+          <Label
+            htmlFor='musicUrl'
+            className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
             Music URL
           </Label>
-          <Input
-            id='musicUrl'
-            value={musicUrl}
-            onChange={(e) => onMusicUrlChange(e.target.value)}
-            placeholder='https://open.spotify.com/track/...'
-          />
+          <div className='relative'>
+            <Input
+              id='musicUrl'
+              value={musicUrl}
+              onChange={(e) => onMusicUrlChange(e.target.value)}
+              placeholder='https://open.spotify.com/track/...'
+              className='pr-9'
+            />
+            {isResolving && (
+              <Loader2 className='absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground' />
+            )}
+          </div>
         </div>
 
-        <div className='grid gap-4 sm:grid-cols-[120px_1fr] lg:grid-cols-1'>
-          <div className='overflow-hidden border rounded-lg bg-muted aspect-square'>
+        <div className='flex items-center gap-3 rounded-md border border-gb-pastel-green-2/15 bg-black/20 p-2.5'>
+          <div className='size-14 shrink-0 overflow-hidden rounded-sm bg-muted'>
             {displayedCoverImageUrl ? (
               <img
                 src={displayedCoverImageUrl}
                 alt='Cover art'
-                className='object-cover w-full h-full'
+                className='size-full object-cover'
               />
             ) : (
-              <div className='flex items-center justify-center h-full text-muted-foreground'>
+              <div className='flex size-full items-center justify-center text-muted-foreground'>
                 {isResolving ? (
-                  <Loader2 className='size-5 animate-spin' />
+                  <Loader2 className='size-4 animate-spin' />
                 ) : (
-                  <Music4 className='size-5' />
+                  <Music4 className='size-4' />
                 )}
               </div>
             )}
           </div>
-
-          <div className='space-y-3'>
-            <div>
-              <div className='text-sm text-muted-foreground'>Resolved type</div>
-              <div className='font-medium'>{displayedEntityType || 'Waiting for a URL'}</div>
+          <div className='min-w-0 flex-1'>
+            <div className='truncate text-sm font-medium'>
+              {displayedEntityTitle || (isResolving ? 'Resolving…' : 'Paste a link to start')}
             </div>
-            <div>
-              <div className='text-sm text-muted-foreground'>Title</div>
-              <div className='font-medium'>{displayedEntityTitle || 'No entity resolved yet'}</div>
+            <div className='truncate text-xs capitalize text-muted-foreground'>
+              {metaLine || (hasEntity ? '' : 'No entity resolved yet')}
             </div>
-            {displayedArtistNames?.length ? (
-              <div>
-                <div className='text-sm text-muted-foreground'>Artists</div>
-                <div className='font-medium'>{displayedArtistNames.join(', ')}</div>
-              </div>
-            ) : null}
           </div>
         </div>
+
+        {linksSlot ? <div>{linksSlot}</div> : null}
       </CardContent>
     </Card>
   )
@@ -247,10 +268,10 @@ export function TweetCapturePage() {
   }, [existingPost])
 
   const canSubmit = useMemo(() => Boolean(title.trim() || commentary.trim()), [title, commentary])
+  const canCreatePosts = POST_CREATE_ROLES.has(user?.role ?? '')
+  const isOwnPost = Boolean(existingPost?.creators?.some((creator) => creator.id === user?.id))
   const canAccess = Boolean(
-    user &&
-    (user.role === 'admin' ||
-      (isEditMode && existingPost?.creators?.some((creator) => creator.id === user.id)))
+    user && (isEditMode ? user.role === 'admin' || isOwnPost : canCreatePosts)
   )
   const displayedEntityType = resolved.data?.entityType ?? existingPost?.musicEntityType ?? null
   const displayedEntityTitle = resolved.data?.entity?.title ?? existingMusicEntity?.title ?? null
@@ -473,19 +494,21 @@ export function TweetCapturePage() {
       />
 
       <div className='grid gap-6 lg:grid-cols-[minmax(0,1fr)_380px]'>
-        <TweetComposerCard
-          title={title}
-          commentary={commentary}
-          canSubmit={canSubmit}
-          isEditMode={isEditMode}
-          isPending={submitMutation.isPending}
-          onTitleChange={setTitle}
-          onCommentaryChange={setCommentary}
-          onSubmit={() => submitMutation.mutate()}
-          onKeyDown={handleSubmitShortcut}
-        />
+        <div className='order-2 lg:order-1'>
+          <TweetComposerCard
+            title={title}
+            commentary={commentary}
+            canSubmit={canSubmit}
+            isEditMode={isEditMode}
+            isPending={submitMutation.isPending}
+            onTitleChange={setTitle}
+            onCommentaryChange={setCommentary}
+            onSubmit={() => submitMutation.mutate()}
+            onKeyDown={handleSubmitShortcut}
+          />
+        </div>
 
-        <div className='space-y-6'>
+        <div className='order-1 lg:order-2'>
           <ResolvedMusicCard
             musicUrl={musicUrl}
             displayedCoverImageUrl={displayedCoverImageUrl}
@@ -493,19 +516,22 @@ export function TweetCapturePage() {
             displayedEntityTitle={displayedEntityTitle}
             displayedArtistNames={displayedArtistNames}
             isResolving={resolved.isLoading}
+            hasEntity={Boolean(currentEntityType && currentEntityId)}
             onMusicUrlChange={setMusicUrl}
+            linksSlot={
+              currentEntityType && currentEntityId ? (
+                <MusicEntityLinksPanel
+                  embedded
+                  links={entityLinks.data ?? []}
+                  readOnly={!canManageLinks}
+                  onAdd={handleAddLink}
+                  onEdit={handleEditLink}
+                  onUpdateStatus={handleUpdateLinkStatus}
+                  onDelete={handleDeleteLink}
+                />
+              ) : null
+            }
           />
-
-          {currentEntityType && currentEntityId ? (
-            <MusicEntityLinksPanel
-              links={entityLinks.data ?? []}
-              readOnly={!canManageLinks}
-              onAdd={handleAddLink}
-              onEdit={handleEditLink}
-              onUpdateStatus={handleUpdateLinkStatus}
-              onDelete={handleDeleteLink}
-            />
-          ) : null}
         </div>
       </div>
     </div>
