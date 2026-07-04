@@ -130,6 +130,8 @@
   body {
     @apply transition-colors duration-700 font-jetbrains bg-background text-foreground;
     margin: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   li::before {
@@ -325,7 +327,7 @@
     box-shadow:
       0 0 0 2px var(--bg),
       0 0 0 4px var(--highlight),
-      0 4px 12px rgba(155, 253, 158, 0.3);
+      0 4px 12px rgba(var(--highlight-rgb), 0.3);
   }
 
   /* Smooth Transitions for Interactive Elements */
@@ -348,7 +350,7 @@
   }
 
   .hover-glow:hover {
-    filter: drop-shadow(0 0 8px rgba(155, 253, 158, 0.4));
+    filter: drop-shadow(0 0 8px rgba(var(--highlight-rgb), 0.4));
   }
 
   /* Button Loading State */
@@ -380,11 +382,11 @@
   @keyframes pulse-highlight {
     0%,
     100% {
-      box-shadow: 0 0 0 0 rgba(155, 253, 158, 0.4);
+      box-shadow: 0 0 0 0 rgba(var(--highlight-rgb), 0.4);
     }
 
     50% {
-      box-shadow: 0 0 0 8px rgba(155, 253, 158, 0);
+      box-shadow: 0 0 0 8px rgba(var(--highlight-rgb), 0);
     }
   }
 
