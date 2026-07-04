@@ -1,3 +1,15 @@
+# [2.62.0](https://github.com/guidefari/gbfm/compare/v2.61.0...v2.62.0) (2026-07-04)
+
+
+### Bug Fixes
+
+* **www:** use highlight-foreground on highlight surfaces ([0879df5](https://github.com/guidefari/gbfm/commit/0879df5603e27048c835f6fd67811031dc9b5a48))
+
+
+### Features
+
+* **theme:** align light/dark palette with blue brand colors ([7a3cb2e](https://github.com/guidefari/gbfm/commit/7a3cb2e4cc1ff79ebcc05b204b9dbc29045a3254)), closes [#e8eef7](https://github.com/guidefari/gbfm/issues/e8eef7)
+
 # [2.61.0](https://github.com/guidefari/gbfm/compare/v2.60.1...v2.61.0) (2026-07-03)
 
 
