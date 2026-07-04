@@ -28,7 +28,7 @@ export function VariantOverlay({
         <div className='absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent' />
 
         <div className='absolute inset-0 flex flex-col justify-between p-3'>
-          <span className='self-start px-2 py-1 text-[10px] font-bold uppercase tracking-[0.25em] leading-none bg-highlight text-gb-bg'>
+          <span className='self-start px-2 py-1 text-[10px] font-bold uppercase tracking-[0.25em] leading-none bg-highlight text-highlight-foreground'>
             Featured
           </span>
 
@@ -58,7 +58,7 @@ export function VariantOverlay({
               type='button'
               onClick={onPlay}
               disabled={isPending || !featuredMix}
-              className='inline-flex items-center justify-center w-full gap-2 px-5 py-3 text-sm font-bold tracking-widest uppercase transition-colors bg-highlight text-gb-bg hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed'>
+              className='inline-flex items-center justify-center w-full gap-2 px-5 py-3 text-sm font-bold tracking-widest uppercase transition-colors bg-highlight text-highlight-foreground hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50 disabled:cursor-not-allowed'>
               {isPending ? (
                 <Disc3 className='w-5 h-5 animate-spin' />
               ) : showPause ? (

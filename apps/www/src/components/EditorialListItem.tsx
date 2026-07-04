@@ -27,7 +27,7 @@ export function EditorialListItem({ post }: EditorialListItemProps) {
             variant='secondary'
             className={`mb-1 ${
               recencyLabel === 'new'
-                ? 'rounded-none border-none bg-highlight text-background text-[10px] uppercase tracking-widest font-bold gap-1 shadow-sm'
+                ? 'rounded-none border-none bg-highlight text-highlight-foreground text-[10px] uppercase tracking-widest font-bold gap-1 shadow-sm'
                 : 'rounded-none border-none bg-foreground text-black text-[10px] uppercase tracking-widest font-bold gap-1 shadow-sm'
             }`}>
             <Sparkles className='w-3 h-3' />

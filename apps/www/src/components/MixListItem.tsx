@@ -118,7 +118,7 @@ export function MixListItem({ mix, actions }: MixListItemProps) {
               className={cn(
                 'absolute right-2 top-2 border px-2 py-1 text-[10px] font-bold uppercase tracking-widest leading-none',
                 recencyLabel === 'new'
-                  ? 'border-highlight bg-highlight text-background'
+                  ? 'border-highlight bg-highlight text-highlight-foreground'
                   : 'border-border bg-background/90 text-foreground/75 backdrop-blur-sm'
               )}>
               {recencyLabel.toUpperCase()}
@@ -150,7 +150,7 @@ function PlayButton({
       className={cn(
         'flex items-center gap-2 px-5 py-2 text-sm font-bold border-2 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         isActive && isPlaying
-          ? 'bg-highlight text-background border-highlight'
+          ? 'bg-highlight text-highlight-foreground border-highlight'
           : 'border-border text-foreground/80 hover:border-highlight hover:text-highlight'
       )}>
       {isActive && isPlaying ? (

@@ -11,6 +11,7 @@
 @theme {
   --breakpoint-2xl: 1400px;
   --color-highlight: var(--highlight);
+  --color-highlight-foreground: var(--highlight-foreground);
   --color-gb-highlight: var(--highlight);
   --color-gb-bg: var(--bg);
   --color-gb-darker-bg: var(--darker-bg);
