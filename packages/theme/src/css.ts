@@ -1,4 +1,4 @@
-import { brand } from './tokens/brand'
+import { brandDark, brandLight } from './tokens/brand'
 import { dark, light, type SemanticTokens, studio } from './tokens/shadcn'
 
 export function toKebab(s: string): string {
@@ -24,16 +24,18 @@ export function generateCSS(): string {
   :root,
   .light,
   [data-theme="light"] {
-${toVars(brand)}
+${toVars(brandLight)}
 ${semanticToVars(light)}
   }
 
   .dark,
   [data-theme="dark"] {
+${toVars(brandDark)}
 ${semanticToVars(dark)}
   }
 
   [data-theme="studio"] {
+${toVars(brandDark)}
 ${semanticToVars(studio)}
   }
 }
