@@ -1,6 +1,6 @@
 # Migration: Hono + zod-openapi → Effect HttpApi
 
-> All API names in this doc are verified against the installed `effect@4.0.0-beta.70`
+> All API names in this doc are verified against the installed `effect@4.0.0-beta.93`
 > (effect-smol) type definitions. Snippets marked "spike" need runtime validation
 > before being treated as load-bearing.
 
@@ -8,7 +8,7 @@
 
 The VPS server (`apps/vps`) uses Hono + `@hono/zod-openapi` for route definitions. The web client (`apps/www`) has ~1400 lines of hand-written react-query hooks with manually typed fetch calls (~50+ API endpoints). There is zero shared type safety between server and client -- response types are duplicated, paths are stringly-typed, and errors are handled ad-hoc.
 
-Effect's `unstable/httpapi` module (already in the dependency tree at `effect@4.0.0-beta.70`, in both `apps/vps` and `apps/www`) provides:
+Effect's `unstable/httpapi` module (already in the dependency tree at `effect@4.0.0-beta.93`, in both `apps/vps` and `apps/www`) provides:
 
 - **Shared contract**: One `HttpApi` definition at the domain boundary, consumed by both server and client
 - **Auto-generated type-safe client**: `HttpApiClient.make(Api)` produces a fully typed client with correct params, query, payload, response, and error types
@@ -16,7 +16,7 @@ Effect's `unstable/httpapi` module (already in the dependency tree at `effect@4.
 - **Native middleware system**: Auth, rate limiting, logging, and tracing become typed Effect middleware with schema-declared errors and service requirements
 - **No codegen step**: Types flow from schemas at the type level, no build-time code generation
 
-**The bet being made**: `unstable/httpapi` lives in a beta release. It is pinned exactly (`4.0.0-beta.70`) in both apps, which contains the churn, but every version bump until Effect 4 stable is a potential API break in the route layer. This is the single biggest technical risk of the migration, so the first production deploy must validate the serving topology, middleware wiring, OpenAPI output, auth cookies, and health probes before route migration scales out.
+**The bet being made**: `unstable/httpapi` lives in a beta release. It is pinned exactly (`4.0.0-beta.93`) in both apps, which contains the churn, but every version bump until Effect 4 stable is a potential API break in the route layer. This is the single biggest technical risk of the migration, so the first production deploy must validate the serving topology, middleware wiring, OpenAPI output, auth cookies, and health probes before route migration scales out.
 
 ## Current Architecture
 
@@ -729,7 +729,7 @@ The doc-shaped part of the API is JSON CRUD, but the hard 20% is:
 
 ### Schema gap: Zod → Effect Schema
 
-Current route schemas use Zod. Effect `Schema` has the same expressiveness but different API (names verified against 4.0.0-beta.70):
+Current route schemas use Zod. Effect `Schema` has the same expressiveness but different API (names verified against 4.0.0-beta.93):
 
 | Concept | Zod | Effect Schema |
 |---------|-----|---------------|
