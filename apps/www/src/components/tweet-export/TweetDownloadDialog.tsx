@@ -4,12 +4,11 @@ import {
   DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogTitle,
-  DialogTrigger
+  DialogTitle
 } from '@gbfm/ui'
 import type { SelectMdxCompiledMicroPost } from '@gbfm/vps/schemas'
 import { toPng } from 'html-to-image'
-import { ImageDown, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { usePublicProfile } from '@/lib/http'
@@ -29,10 +28,11 @@ type FormatKey = (typeof formats)[number]['key']
 type Props = {
   post: SelectMdxCompiledMicroPost
   slug: string
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
-export function TweetDownloadButton({ post, slug }: Props) {
-  const [open, setOpen] = useState(false)
+export function TweetDownloadDialog({ post, slug, open, onOpenChange }: Props) {
   const [format, setFormat] = useState<FormatKey>('poster')
   const [downloading, setDownloading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -87,16 +87,7 @@ export function TweetDownloadButton({ post, slug }: Props) {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant='ghost'
-          size='icon'
-          aria-label='Download for socials'
-          className='h-8 w-8 rounded-md text-muted-foreground hover:text-foreground'>
-          <ImageDown className='h-4 w-4' />
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='max-h-[90vh] overflow-y-auto sm:max-w-md'>
         <DialogHeader>
           <DialogTitle className='font-black'>download for socials</DialogTitle>

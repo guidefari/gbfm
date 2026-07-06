@@ -1,12 +1,11 @@
-import { Badge, Button } from '@gbfm/ui'
+import { Badge } from '@gbfm/ui'
 import type { SelectMdxCompiledMicroPost } from '@gbfm/vps/schemas'
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { ArrowLeft, Edit3, Tag } from 'lucide-react'
+import { ArrowLeft, Tag } from 'lucide-react'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { RouteError } from '@/components/RouteError'
-import { ShareButton } from '@/components/ShareButton'
+import { TweetActionsMenu } from '@/components/TweetActionsMenu'
 import { TweetAuthorRow } from '@/components/TweetAuthorRow'
-import { TweetDownloadButton } from '@/components/tweet-export/TweetDownloadButton'
 import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
 import { useSession } from '@/lib/auth-client'
 import { apiUrl, fetcher } from '@/lib/http'
@@ -89,27 +88,7 @@ function TweetPostPage() {
               </p>
             )}
           </div>
-          <div className='flex shrink-0 items-center gap-1'>
-            {canEdit && (
-              <Button
-                asChild
-                variant='ghost'
-                size='icon'
-                className='h-8 w-8 rounded-md text-muted-foreground hover:text-foreground'>
-                <Link to='/new/tweet' search={{ edit: slug }} aria-label='Edit tweet'>
-                  <Edit3 className='h-4 w-4' />
-                </Link>
-              </Button>
-            )}
-            <TweetDownloadButton post={post} slug={slug} />
-            <ShareButton
-              type='post'
-              slug={slug}
-              variant='ghost'
-              size='icon'
-              className='h-8 w-8 rounded-md text-muted-foreground hover:text-foreground'
-            />
-          </div>
+          <TweetActionsMenu post={post} slug={slug} canEdit={canEdit} />
         </div>
 
         {post.title && (
