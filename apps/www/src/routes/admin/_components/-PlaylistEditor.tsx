@@ -282,7 +282,7 @@ export function PlaylistEditor({ playlist }: Props) {
               <div className='space-y-1'>
                 <Label
                   htmlFor={`title-${playlist.id}`}
-                  className='text-xs uppercase tracking-wide text-muted-foreground'>
+                  className='text-xs tracking-wide text-muted-foreground'>
                   Title
                 </Label>
                 <Input
@@ -297,7 +297,7 @@ export function PlaylistEditor({ playlist }: Props) {
               <div className='space-y-1'>
                 <Label
                   htmlFor={`slug-${playlist.id}`}
-                  className='text-xs uppercase tracking-wide text-muted-foreground'>
+                  className='text-xs tracking-wide text-muted-foreground'>
                   Source
                 </Label>
                 <div className='flex h-10 items-center gap-3 text-sm text-muted-foreground'>
@@ -320,7 +320,7 @@ export function PlaylistEditor({ playlist }: Props) {
             <div className='space-y-1'>
               <Label
                 htmlFor={`desc-${playlist.id}`}
-                className='text-xs uppercase tracking-wide text-muted-foreground'>
+                className='text-xs tracking-wide text-muted-foreground'>
                 Description
               </Label>
               <Textarea

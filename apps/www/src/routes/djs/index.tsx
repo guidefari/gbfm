@@ -56,7 +56,7 @@ function DjCard({ dj }: { dj: DjListItem }) {
           />
         ) : (
           <div className='w-14 h-14 rounded-sm bg-muted flex items-center justify-center text-lg font-bold text-muted-foreground'>
-            {dj.name.charAt(0).toUpperCase()}
+            {dj.name.charAt(0)}
           </div>
         )}
         <div className='min-w-0 flex-1'>

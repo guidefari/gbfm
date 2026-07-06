@@ -102,7 +102,7 @@ function MixesListPage() {
         {allTags.length > 0 ? (
           <Select value={tag || 'all'} onValueChange={handleTagChange}>
             <SelectTrigger
-              className='w-auto min-w-[120px] h-9 text-xs font-semibold uppercase tracking-wider bg-transparent border-none shadow-none hover:bg-muted/50 transition-colors px-3'
+              className='w-auto min-w-[120px] h-9 text-xs font-semibold tracking-wider bg-transparent border-none shadow-none hover:bg-muted/50 transition-colors px-3'
               data-testid='tag-filter-select'>
               <div className='flex items-center gap-2'>
                 <Tag className='w-3 h-3' />

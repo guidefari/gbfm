@@ -28,9 +28,7 @@ function ResultGroup({ label, items }: { label: string; items: SearchResultItem[
   return (
     <div className='space-y-2'>
       <div className='flex items-center gap-2'>
-        <h3 className='text-sm font-semibold uppercase tracking-[0.18em] text-muted-foreground'>
-          {label}
-        </h3>
+        <h3 className='text-sm font-semibold tracking-[0.18em] text-muted-foreground'>{label}</h3>
         <Badge variant='secondary'>{items.length}</Badge>
       </div>
 

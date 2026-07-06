@@ -126,7 +126,7 @@ export function PlaylistsTab() {
         </div>
 
         <div className='px-4 pb-2 pt-4'>
-          <div className='text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground'>
+          <div className='text-xs font-semibold tracking-[0.18em] text-muted-foreground'>
             Playlists {playlists.length > 0 && `(${playlists.length})`}
           </div>
         </div>

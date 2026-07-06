@@ -242,7 +242,7 @@ function AdminOverviewPage() {
                     className='flex items-start justify-between gap-4'>
                     <div>
                       <div className='font-medium'>{item.title || item.slug}</div>
-                      <div className='text-xs uppercase tracking-wide text-muted-foreground'>
+                      <div className='text-xs tracking-wide text-muted-foreground'>
                         {item.type}
                         {item.draft ? ' · draft' : ' · published'}
                       </div>

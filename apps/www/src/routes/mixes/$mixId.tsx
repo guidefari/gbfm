@@ -372,7 +372,7 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
             <Button
               onClick={handlePlayClick}
               size='lg'
-              className='flex-1 h-12 text-base font-bold tracking-widest uppercase transition-all rounded-none shadow-sm hover:shadow-md active:scale-95'>
+              className='flex-1 h-12 text-base font-bold tracking-widest transition-all rounded-none shadow-sm hover:shadow-md active:scale-95'>
               {isActive && isPlaying ? (
                 <>
                   <GiPauseButton className='mr-2 text-xl' />
@@ -394,7 +394,7 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
                 <Badge
                   key={tag}
                   variant='secondary'
-                  className='text-[10px] uppercase tracking-widest px-2 py-1 rounded-none font-bold bg-muted/50 text-muted-foreground border-none'>
+                  className='text-[10px] tracking-widest px-2 py-1 rounded-none font-bold bg-muted/50 text-muted-foreground border-none'>
                   <Tag className='w-3 h-3 mr-1 opacity-50' />
                   {tag}
                 </Badge>
@@ -407,11 +407,11 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
         <div className='flex-1 pt-2 space-y-6'>
           <div className='space-y-4'>
             <div className='flex flex-col gap-2'>
-              <h1 className='text-4xl font-black leading-none tracking-tighter uppercase md:text-5xl'>
+              <h1 className='text-4xl font-black leading-none tracking-tighter md:text-5xl'>
                 {mix.title}
               </h1>
               {mix.creators && mix.creators.length > 0 && (
-                <div className='flex flex-wrap gap-x-1.5 gap-y-1 text-xs font-bold uppercase tracking-widest text-muted-foreground/80'>
+                <div className='flex flex-wrap gap-x-1.5 gap-y-1 text-xs font-bold tracking-widest text-muted-foreground/80'>
                   <span className='opacity-50'>by</span>
                   {mix.creators.map((creator, index) => (
                     <React.Fragment key={creator.id}>
@@ -429,7 +429,7 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
                 </div>
               )}
               {show && (
-                <div className='flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-muted-foreground/80'>
+                <div className='flex items-center gap-1.5 text-xs font-bold tracking-widest text-muted-foreground/80'>
                   <span className='opacity-50'>from</span>
                   <Link
                     to='/shows/$showSlug'
@@ -459,7 +459,7 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
       </div>
 
       <div className='pt-8 border-t border-border/50'>
-        <div className='prose prose-base dark:prose-invert max-w-none prose-headings:uppercase prose-headings:font-black prose-headings:tracking-tighter prose-p:leading-relaxed prose-a:text-foreground prose-a:underline'>
+        <div className='prose prose-base dark:prose-invert max-w-none prose-headings:font-black prose-headings:tracking-tighter prose-p:leading-relaxed prose-a:text-foreground prose-a:underline'>
           <MDXRendrr mdxString={mix.compiledContent ?? mix.content} />
         </div>
       </div>

@@ -28,7 +28,7 @@ function Subscribe() {
             <div className='mb-6 inline-flex h-16 w-16 items-center justify-center border border-border/70 bg-muted/50'>
               <Mail className='h-8 w-8 text-primary' />
             </div>
-            <p className='mb-3 text-xs font-semibold uppercase tracking-[0.3em] text-primary/80'>
+            <p className='mb-3 text-xs font-semibold tracking-[0.3em] text-primary/80'>
               Newsletter
             </p>
             <h1 className='mb-3 text-3xl font-bold tracking-tight sm:text-4xl'>Stay in the loop</h1>
@@ -77,7 +77,7 @@ function Subscribe() {
                   <Button
                     type='submit'
                     disabled={isPending || !email.trim()}
-                    className='h-11 shrink-0 px-6 font-semibold uppercase tracking-[0.18em] lg:self-stretch'>
+                    className='h-11 shrink-0 px-6 font-semibold tracking-[0.18em] lg:self-stretch'>
                     {isPending ? (
                       <>
                         <Loader2 className='mr-2 h-4 w-4 animate-spin' />

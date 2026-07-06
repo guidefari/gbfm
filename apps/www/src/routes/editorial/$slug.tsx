@@ -87,7 +87,7 @@ function PostDetails({ post, slug }: { post: SelectMdxCompiledEditorialPost; slu
                   {post.title}
                 </h1>
                 {post.creators && post.creators.length > 0 && (
-                  <div className='flex flex-wrap gap-x-1.5 gap-y-1 text-xs font-bold uppercase tracking-widest text-muted-foreground/80'>
+                  <div className='flex flex-wrap gap-x-1.5 gap-y-1 text-xs font-bold tracking-widest text-muted-foreground/80'>
                     <span className='opacity-50'>by</span>
                     {post.creators.map((creator, index) => (
                       <React.Fragment key={creator.id}>
@@ -135,7 +135,7 @@ function PostDetails({ post, slug }: { post: SelectMdxCompiledEditorialPost; slu
             <Badge
               key={tag}
               variant='secondary'
-              className='text-[10px] uppercase tracking-widest px-2 py-1 rounded-none font-bold bg-muted/50 text-muted-foreground border-none'>
+              className='text-[10px] tracking-widest px-2 py-1 rounded-none font-bold bg-muted/50 text-muted-foreground border-none'>
               <Tag className='w-3 h-3 mr-1 opacity-50' />
               {tag}
             </Badge>

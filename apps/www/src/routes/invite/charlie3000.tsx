@@ -126,7 +126,7 @@ function InviteCharliePage() {
 
           <aside className='lg:sticky lg:top-6 lg:self-start space-y-4'>
             <div className='relative'>
-              <div className='absolute -top-3 left-6 z-10 inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold tracking-[0.25em] uppercase border border-gb-pastel-green-2/50 bg-gb-darker-bg text-gb-pastel-green-1 rotate-[-1.5deg]'>
+              <div className='absolute -top-3 left-6 z-10 inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold tracking-[0.25em] border border-gb-pastel-green-2/50 bg-gb-darker-bg text-gb-pastel-green-1 rotate-[-1.5deg]'>
                 <Mic2 className='w-3.5 h-3.5' />
                 An invitation
               </div>
@@ -138,7 +138,7 @@ function InviteCharliePage() {
                 <dl className='grid grid-cols-1 gap-3 mt-6'>
                   {facts.map((fact) => (
                     <div key={fact.label} className='p-3 border border-border/50 bg-background/70'>
-                      <dt className='text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground'>
+                      <dt className='text-[10px] font-semibold tracking-[0.2em] text-muted-foreground'>
                         {fact.label}
                       </dt>
                       <dd className='mt-1 text-sm font-medium'>

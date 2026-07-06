@@ -594,7 +594,7 @@ export function UsersTab() {
                         />
                       ) : (
                         <div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-sm bg-muted text-muted-foreground'>
-                          {user.name.charAt(0).toUpperCase()}
+                          {user.name.charAt(0)}
                         </div>
                       )}
                       <span>{user.name}</span>

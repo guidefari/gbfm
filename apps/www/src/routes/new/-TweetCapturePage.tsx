@@ -96,7 +96,7 @@ function TweetComposerCard({
           <div className='flex items-baseline justify-between'>
             <Label
               htmlFor='title'
-              className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
+              className='text-xs font-medium tracking-wide text-muted-foreground'>
               Title
             </Label>
             {title.length > 0 ? (
@@ -117,7 +117,7 @@ function TweetComposerCard({
         <div className='space-y-1.5'>
           <Label
             htmlFor='commentary'
-            className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
+            className='text-xs font-medium tracking-wide text-muted-foreground'>
             Commentary
           </Label>
           <Textarea
@@ -179,7 +179,7 @@ function ResolvedMusicCard({
         <div className='space-y-1.5'>
           <Label
             htmlFor='musicUrl'
-            className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
+            className='text-xs font-medium tracking-wide text-muted-foreground'>
             Music URL
           </Label>
           <div className='relative'>

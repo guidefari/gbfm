@@ -79,7 +79,7 @@ function TweetPostPage() {
           <div className='space-y-1'>
             <TweetAuthorRow creators={post.creators ?? []} createdAt={post.createdAt} />
             {editedAt && (
-              <p className='pl-[52px] font-mono text-[11px] uppercase tracking-wider text-muted-foreground/60'>
+              <p className='pl-[52px] font-mono text-[11px] tracking-wider text-muted-foreground/60'>
                 Edited{' '}
                 {new Date(editedAt).toLocaleDateString('en-US', {
                   year: 'numeric',
@@ -130,7 +130,7 @@ function TweetPostPage() {
               <Badge
                 key={tag}
                 variant='secondary'
-                className='text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-sm font-bold bg-muted/50 text-muted-foreground border-none'>
+                className='text-[10px] tracking-widest px-2 py-0.5 rounded-sm font-bold bg-muted/50 text-muted-foreground border-none'>
                 <Tag className='w-3 h-3 mr-1 opacity-50' />
                 {tag}
               </Badge>
