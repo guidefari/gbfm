@@ -1,6 +1,4 @@
-import { sql } from 'drizzle-orm'
-import { Data, Duration, Effect, Schedule } from 'effect'
-import type { Context } from 'hono'
+import { Duration, Effect, Schedule } from 'effect'
 import configureOpenAPI from '@/lib/configure-open-api'
 import { createAppEffect } from '@/lib/create-app'
 import admin from '@/routes/admin/admin.index'
@@ -21,28 +19,14 @@ import shows from '@/routes/shows/show.index'
 import spotify from '@/routes/spotify/spotify.index'
 import upload from '@/routes/upload/upload.index'
 import uploadMultipart from '@/routes/upload-multipart/upload-multipart.index'
-import betterAuthRoutes from '@/routes/user/better-auth.routes'
 import user from '@/routes/user/user.index'
-import { db } from './db'
 import { regenerateSitemap } from './routes/redirect/seo/sitemap'
 import { runApp, runAppFork } from './runtime'
 import { processPendingReminders, queryNextDueReminder } from './services/reminder-processor'
 import { ReminderSignalService } from './services/reminder-signal.service'
 import { SentryService } from './services/sentry.service'
 
-class HealthCheckError extends Data.TaggedError('HealthCheckError')<{
-  cause?: unknown
-}> {}
-
-const healthCheckEffect = Effect.tryPromise({
-  try: () => db.execute(sql.raw('SELECT 1')),
-  catch: (cause) => new HealthCheckError({ cause })
-})
-
-const READINESS_CACHE_MS = 5_000
-let readinessCache: { checkedAt: number; status: 200 | 500 } | undefined
-
-const setupRoutesEffect = Effect.gen(function* () {
+export const honoAppEffect = Effect.gen(function* () {
   yield* SentryService
   const app = yield* createAppEffect
 
@@ -66,37 +50,9 @@ const setupRoutesEffect = Effect.gen(function* () {
   app.route('/api/music', music)
   app.route('/api/music-reminders', musicReminders)
 
-  // Kept at root, not under /api: auth has its own basePath/email links, and these are externally-referenced public URLs.
-  app.route('/auth', betterAuthRoutes)
   app.route('/s', shareRouter)
   app.route('', rss)
   app.route('', seoRouter)
-
-  app.get('/health/live', (c) => c.json({ ok: true }, 200))
-
-  const readinessHealthRoute = async (c: Context) => {
-    const cache = readinessCache
-    const cachedStatus = cache && Date.now() - cache.checkedAt < READINESS_CACHE_MS
-
-    if (cachedStatus) {
-      return c.json({ dbConnected: cache.status === 200 }, cache.status)
-    }
-
-    const program = healthCheckEffect.pipe(
-      Effect.map(() => ({ data: { dbConnected: true }, status: 200 as const })),
-      Effect.catch(() => Effect.succeed({ data: { dbConnected: false }, status: 500 as const }))
-    )
-
-    const result = await runApp(program)
-    readinessCache = {
-      checkedAt: Date.now(),
-      status: result.status
-    }
-    return c.json(result.data, result.status)
-  }
-
-  app.get('/health/ready', readinessHealthRoute)
-  app.get('/health', readinessHealthRoute)
 
   return app
 })
@@ -133,13 +89,21 @@ const sitemapRegenerationEffect = regenerateSitemap.pipe(
   Effect.repeat(Schedule.spaced('1 hours'))
 )
 
-const mainEffect = setupRoutesEffect
+let gracefulShutdownConfigured = false
 
-const setupGracefulShutdown = () => {
+export const setupGracefulShutdown = (disposeHttp?: () => Promise<void>) => {
+  if (gracefulShutdownConfigured) return
+
+  gracefulShutdownConfigured = true
+
   const shutdown = async (signal: string) => {
     console.log(`Graceful shutdown initiated via ${signal}`)
 
     try {
+      if (disposeHttp) {
+        await disposeHttp()
+      }
+
       const { disposeRuntime } = await import('./runtime')
       await disposeRuntime()
       console.log('Runtime disposed successfully')
@@ -157,21 +121,19 @@ const setupGracefulShutdown = () => {
   process.on('SIGINT', () => shutdown('SIGINT'))
 }
 
-// Initialize app with Effect
-const initializeApp = async () => {
-  setupGracefulShutdown()
+export const startBackgroundEffects = () => {
+  void runAppFork(reminderLoopEffect)
+  void runAppFork(sitemapRegenerationEffect)
+}
 
-  runAppFork(reminderLoopEffect)
-  runAppFork(sitemapRegenerationEffect)
-
+const initializeHonoApp = async () => {
   return await runApp(
-    mainEffect.pipe(
-      Effect.tap(() => Effect.log('App initialized successfully')),
+    honoAppEffect.pipe(
       Effect.tapError((error) => Effect.logError(`❌ Failed to initialize app: ${error}`))
     )
   )
 }
 
-export type AppType = Awaited<ReturnType<typeof initializeApp>>
+export type AppType = Awaited<ReturnType<typeof initializeHonoApp>>
 
-export default await initializeApp()
+export default await initializeHonoApp()
