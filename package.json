@@ -25,15 +25,15 @@
   },
   "dependencies": {
     "@effect/cli": "0.75.2",
-    "@effect/platform": "0.96.1",
-    "effect": "4.0.0-beta.70",
+    "@effect/platform": "0.96.2",
+    "effect": "4.0.0-beta.93",
     "gray-matter": "4.0.3",
     "sst": "4.15.2",
     "vitest": "4.1.8",
     "zod": "4.4.3"
   },
   "devDependencies": {
-    "@effect/language-service": "0.86.2",
+    "@effect/language-service": "0.86.4",
     "@semantic-release/changelog": "6.0.3",
     "@semantic-release/git": "10.0.1",
     "@semantic-release/github": "12.0.8",
@@ -49,7 +49,7 @@
   "overrides": {
     "react": "19.2.5",
     "react-dom": "19.2.5",
-    "effect": "4.0.0-beta.70"
+    "effect": "4.0.0-beta.93"
   },
   "workspaces": [
     "packages/*",
