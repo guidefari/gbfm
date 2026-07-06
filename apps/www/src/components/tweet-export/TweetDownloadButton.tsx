@@ -13,6 +13,7 @@ import { ImageDown, Loader2 } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { usePublicProfile } from '@/lib/http'
+import { SITE_URL } from '@/lib/seo'
 import { entityLabelByType, useMusicEntity } from './use-music-entity'
 import { PosterFrame, SleeveFrame, type TweetExportData } from './frames'
 
@@ -59,7 +60,8 @@ export function TweetDownloadButton({ post, slug }: Props) {
     entityLabel: entityType ? entityLabelByType[entityType] : null,
     entityTitle: entity?.title ?? null,
     entityArtists: entity?.artistNames?.length ? entity.artistNames.join(', ') : null,
-    coverImageUrl: entity?.coverImageUrl ?? null
+    coverImageUrl: entity?.coverImageUrl ?? null,
+    url: `${SITE_URL}/tweet/${slug}`
   }
 
   const ActiveFrame = formats.find((f) => f.key === format)?.Frame ?? PosterFrame

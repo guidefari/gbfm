@@ -1,4 +1,5 @@
 import { Music4 } from 'lucide-react'
+import QRCode from 'react-qr-code'
 
 export type TweetExportData = {
   commentary: string
@@ -10,6 +11,15 @@ export type TweetExportData = {
   entityTitle: string | null
   entityArtists: string | null
   coverImageUrl: string | null
+  url: string
+}
+
+function PostQR({ url, size }: { url: string; size: number }) {
+  return (
+    <div className='shrink-0 rounded-sm bg-white p-1'>
+      <QRCode value={url} size={size} bgColor='#ffffff' fgColor='#111827' />
+    </div>
+  )
 }
 
 function CoverThumb({
@@ -70,7 +80,7 @@ export function PosterFrame({ data }: { data: TweetExportData }) {
         )}
         <div className='flex items-center justify-between border-t border-border/40 pt-3 font-mono text-[10px] tracking-[0.3em] text-muted-foreground/60'>
           <span>goosebumps.fm</span>
-          <span aria-hidden className='h-2 w-2 bg-highlight' />
+          <PostQR url={data.url} size={48} />
         </div>
       </footer>
     </article>
@@ -110,9 +120,6 @@ export function SleeveFrame({ data }: { data: TweetExportData }) {
       </div>
 
       <div className='space-y-4 px-5 py-5'>
-        <div className='text-[10px] font-bold tracking-[0.35em] text-muted-foreground/60'>
-          liner notes
-        </div>
         <p className='text-lg leading-relaxed text-foreground'>{data.commentary}</p>
 
         <div className='flex items-center justify-between gap-3 border-t border-border/40 pt-4'>
@@ -122,17 +129,20 @@ export function SleeveFrame({ data }: { data: TweetExportData }) {
               alt=''
               className='h-8 w-8 rounded-sm object-cover ring-1 ring-border/60'
             />
-            <div className='min-w-0 truncate font-mono text-[11px] tracking-wider text-muted-foreground'>
-              {data.authorName && (
-                <span className='font-bold text-foreground'>{data.authorName}</span>
-              )}
-              {data.username && <span> · @{data.username}</span>}
-              {data.dateLabel && <span> · {data.dateLabel}</span>}
+            <div className='min-w-0 font-mono text-[11px] tracking-wider text-muted-foreground'>
+              <div className='truncate'>
+                {data.authorName && (
+                  <span className='font-bold text-foreground'>{data.authorName}</span>
+                )}
+                {data.username && <span> · @{data.username}</span>}
+                {data.dateLabel && <span> · {data.dateLabel}</span>}
+              </div>
+              <div className='truncate text-[10px] tracking-[0.3em] text-muted-foreground/60'>
+                goosebumps.fm
+              </div>
             </div>
           </div>
-          <span className='shrink-0 font-mono text-[10px] tracking-[0.3em] text-muted-foreground/60'>
-            goosebumps.fm
-          </span>
+          <PostQR url={data.url} size={44} />
         </div>
       </div>
     </article>
