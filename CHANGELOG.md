@@ -1,3 +1,16 @@
+# [2.63.0](https://github.com/guidefari/gbfm/compare/v2.62.0...v2.63.0) (2026-07-06)
+
+
+### Bug Fixes
+
+* **www:** collapse tweet actions into kebab menu, fixes mobile crowding ([31db000](https://github.com/guidefari/gbfm/commit/31db000bff05a6452a682e3a791e1ecf32d7e439))
+
+
+### Features
+
+* **www:** download tweet as png for socials ([a383799](https://github.com/guidefari/gbfm/commit/a38379967279b00aa981cb4849d25bd77f76dadf))
+* **www:** qr code to post url in social exports, drop liner notes label ([96db4e1](https://github.com/guidefari/gbfm/commit/96db4e1044604ad52992f81e272f602e2f4b44b4))
+
 # [2.62.0](https://github.com/guidefari/gbfm/compare/v2.61.0...v2.62.0) (2026-07-04)
 
 
