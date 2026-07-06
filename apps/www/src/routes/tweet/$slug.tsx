@@ -6,6 +6,7 @@ import { MDXRendrr } from '@/components/MDXRendrr'
 import { RouteError } from '@/components/RouteError'
 import { ShareButton } from '@/components/ShareButton'
 import { TweetAuthorRow } from '@/components/TweetAuthorRow'
+import { TweetDownloadButton } from '@/components/tweet-export/TweetDownloadButton'
 import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
 import { useSession } from '@/lib/auth-client'
 import { apiUrl, fetcher } from '@/lib/http'
@@ -100,6 +101,7 @@ function TweetPostPage() {
                 </Link>
               </Button>
             )}
+            <TweetDownloadButton post={post} slug={slug} />
             <ShareButton
               type='post'
               slug={slug}
