@@ -1,6 +1,7 @@
-import { apiGet, colors, header, parseArgs, printResponse, separator, API_URL } from './lib/common'
+import { makeHealthAssertions, runHealthAssertion } from '@gbfm/api-test/health'
+import { API_URL, colors, header, parseArgs, printResponse, separator } from './lib/common'
 
-const { GREEN, RED } = colors
+const { DIM, GREEN, RED } = colors
 
 const { verbose, help } = parseArgs(Bun.argv.slice(2))
 
@@ -18,18 +19,32 @@ Environment:
   process.exit(0)
 }
 
-header(`Health Check: ${API_URL}/health`)
+let healthy = true
 
-const response = await apiGet('/health')
+for (const assertion of makeHealthAssertions(API_URL)) {
+  header(assertion.name)
+  console.log(`${DIM}${assertion.curl}${colors.NC}`)
+  console.log('')
 
-printResponse(response, verbose)
+  try {
+    const result = await runHealthAssertion(assertion, { baseUrl: API_URL })
+    printResponse(
+      {
+        status: result.status,
+        headers: result.headers,
+        body: result.bodyText
+      },
+      verbose
+    )
+    console.log('')
+    console.log(`${GREEN}✓ Assertion passed${colors.NC}`)
+  } catch (error) {
+    healthy = false
+    console.log(`${RED}✗ Assertion failed${colors.NC}`)
+    console.log(error instanceof Error ? error.message : String(error))
+  }
 
-separator()
-
-if (response.status === 200) {
-  console.log(`${GREEN}✓ API is healthy${colors.NC}`)
-  process.exit(0)
-} else {
-  console.log(`${RED}✗ API health check failed${colors.NC}`)
-  process.exit(1)
+  separator()
 }
+
+process.exit(healthy ? 0 : 1)

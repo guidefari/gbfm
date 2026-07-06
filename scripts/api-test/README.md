@@ -21,6 +21,12 @@ bun run scripts/api-test/health.ts
 bun run scripts/api-test/health.ts -v  # verbose
 ```
 
+Prints and enforces the shared curl-style assertions, for example:
+
+```bash
+curl -fsS "http://127.0.0.1:3003/health" | jq -e '.dbConnected == true'
+```
+
 ### redirect.ts
 
 Test share/redirect endpoints (`/s/*`).
