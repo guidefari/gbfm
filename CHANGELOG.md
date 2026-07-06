@@ -1,3 +1,10 @@
+# [2.64.0](https://github.com/guidefari/gbfm/compare/v2.63.0...v2.64.0) (2026-07-06)
+
+
+### Features
+
+* clickable show hostname ([34649d0](https://github.com/guidefari/gbfm/commit/34649d0a40fea6a60de0fa50ac7855451dfb7ab3))
+
 # [2.63.0](https://github.com/guidefari/gbfm/compare/v2.62.0...v2.63.0) (2026-07-06)
 
 
