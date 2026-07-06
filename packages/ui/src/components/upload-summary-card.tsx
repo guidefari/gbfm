@@ -62,7 +62,7 @@ export function UploadSummaryCard({
           )}
 
           <div className='pt-6 border-t border-gb-pastel-green-2/20'>
-            <h4 className='mb-4 text-xs font-bold tracking-widest uppercase text-muted-foreground'>
+            <h4 className='mb-4 text-xs font-bold tracking-widest text-muted-foreground'>
               Final Checks
             </h4>
             <div className='space-y-3'>
@@ -153,7 +153,7 @@ export function UploadSummaryCard({
               </div>
             ))}
           </div>
-          <p className='mt-4 text-[10px] font-bold text-center uppercase text-gb-pastel-green-2/60'>
+          <p className='mt-4 text-[10px] font-bold text-center text-gb-pastel-green-2/60'>
             These anchors are generated automatically
           </p>
         </div>

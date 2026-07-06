@@ -56,9 +56,7 @@ function MediaCard({
       </div>
       <div className='space-y-4 p-4'>
         <div className='space-y-2'>
-          {eyebrow && (
-            <p className='text-xs uppercase tracking-[0.2em] text-muted-foreground'>{eyebrow}</p>
-          )}
+          {eyebrow && <p className='text-xs tracking-[0.2em] text-muted-foreground'>{eyebrow}</p>}
           <h3 className='text-lg font-semibold leading-tight text-foreground'>
             {href ? (
               <a href={href} className='underline-offset-4 hover:text-highlight hover:underline'>

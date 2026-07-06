@@ -64,7 +64,7 @@ export const mockArtists = [
 export function StoryPanelHeader({ eyebrow, title, description }: PanelHeaderProps) {
   return (
     <header className='max-w-3xl space-y-2'>
-      <p className='text-xs uppercase tracking-[0.2em] text-muted-foreground'>{eyebrow}</p>
+      <p className='text-xs tracking-[0.2em] text-muted-foreground'>{eyebrow}</p>
       <h1 className='text-3xl font-bold tracking-tight'>{title}</h1>
       <p className='leading-7 text-muted-foreground'>{description}</p>
     </header>

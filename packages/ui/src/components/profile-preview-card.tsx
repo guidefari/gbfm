@@ -7,7 +7,7 @@ function getInitials(name: string) {
   const trimmed = name.trim()
   if (!trimmed) return '?'
   const parts = trimmed.split(/\s+/).slice(0, 2)
-  return parts.map((p) => p[0]?.toUpperCase() ?? '').join('') || '?'
+  return parts.map((p) => p[0] ?? '').join('') || '?'
 }
 
 export function ProfilePreviewCard({ displayName, username }: ProfilePreviewCardProps) {
@@ -17,7 +17,7 @@ export function ProfilePreviewCard({ displayName, username }: ProfilePreviewCard
 
   return (
     <div className='border border-gb-pastel-green-2/30 bg-gb-darker-bg/65 p-5 shadow-xl backdrop-blur-sm'>
-      <p className='mb-3 text-xs font-semibold tracking-[0.18em] text-gb-pastel-green-2 uppercase'>
+      <p className='mb-3 text-xs font-semibold tracking-[0.18em] text-gb-pastel-green-2'>
         Profile preview
       </p>
       <div className='flex items-center gap-4'>

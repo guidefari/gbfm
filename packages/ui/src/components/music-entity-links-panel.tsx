@@ -143,7 +143,7 @@ export function MusicEntityLinksPanel({
   const header = (
     <div className='flex flex-row flex-wrap items-center justify-between gap-x-3 gap-y-2'>
       <div className='flex items-baseline gap-2'>
-        <span className='whitespace-nowrap text-xs font-medium uppercase tracking-wide text-muted-foreground'>
+        <span className='whitespace-nowrap text-xs font-medium tracking-wide text-muted-foreground'>
           Streaming links
         </span>
         {pendingLinks.length > 0 && (
