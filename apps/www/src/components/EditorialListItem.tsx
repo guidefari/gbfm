@@ -27,8 +27,8 @@ export function EditorialListItem({ post }: EditorialListItemProps) {
             variant='secondary'
             className={`mb-1 ${
               recencyLabel === 'new'
-                ? 'rounded-none border-none bg-highlight text-highlight-foreground text-[10px] uppercase tracking-widest font-bold gap-1 shadow-sm'
-                : 'rounded-none border-none bg-foreground text-black text-[10px] uppercase tracking-widest font-bold gap-1 shadow-sm'
+                ? 'rounded-none border-none bg-highlight text-highlight-foreground text-[10px] tracking-widest font-bold gap-1 shadow-sm'
+                : 'rounded-none border-none bg-foreground text-black text-[10px] tracking-widest font-bold gap-1 shadow-sm'
             }`}>
             <Sparkles className='w-3 h-3' />
             {recencyLabel}
@@ -42,7 +42,7 @@ export function EditorialListItem({ post }: EditorialListItemProps) {
         </Link>
 
         {hasCreators && (
-          <div className='mt-2 text-xs uppercase tracking-widest text-muted-foreground/90'>
+          <div className='mt-2 text-xs tracking-widest text-muted-foreground/90'>
             <span className='opacity-60'>By </span>
             {post.creators?.map((creator, index) => (
               <span key={creator.id}>
@@ -76,7 +76,7 @@ export function EditorialListItem({ post }: EditorialListItemProps) {
               <Badge
                 key={postTag}
                 variant='secondary'
-                className='rounded-none border-none bg-muted/80 text-foreground/85 text-[10px] uppercase tracking-widest px-2 py-1'>
+                className='rounded-none border-none bg-muted/80 text-foreground/85 text-[10px] tracking-widest px-2 py-1'>
                 {postTag}
               </Badge>
             ))}
@@ -87,7 +87,7 @@ export function EditorialListItem({ post }: EditorialListItemProps) {
           <div className='mt-2'>
             <Badge
               variant='secondary'
-              className='rounded-none border-none bg-muted/90 text-foreground/90 text-[10px] uppercase tracking-widest font-semibold px-2 py-1 gap-1.5'>
+              className='rounded-none border-none bg-muted/90 text-foreground/90 text-[10px] tracking-widest font-semibold px-2 py-1 gap-1.5'>
               <CalendarDays className='w-3.5 h-3.5' />
               {new Date(post.createdAt).toLocaleDateString('en-US', {
                 year: 'numeric',

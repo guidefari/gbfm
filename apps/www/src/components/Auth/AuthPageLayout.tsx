@@ -53,7 +53,7 @@ export function AuthPageLayout({
               <div className='border border-gb-pastel-green-2/30 bg-gb-darker-bg/65 p-6 backdrop-blur-sm sm:p-7 lg:shadow-2xl'>
                 <div className='space-y-5'>
                   <div className='space-y-4'>
-                    <div className='inline-flex items-center gap-2 border border-gb-pastel-green-2/40 bg-background/70 px-3 py-1 text-xs font-semibold tracking-[0.18em] text-gb-pastel-green-1 uppercase'>
+                    <div className='inline-flex items-center gap-2 border border-gb-pastel-green-2/40 bg-background/70 px-3 py-1 text-xs font-semibold tracking-[0.18em] text-gb-pastel-green-1'>
                       <LockIcon className='h-3.5 w-3.5' />
                       {badge}
                     </div>

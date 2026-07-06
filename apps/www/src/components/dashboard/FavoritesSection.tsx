@@ -30,7 +30,7 @@ export function FavoritesSection() {
 
   return (
     <div className='flex flex-col h-full rounded-sm overflow-hidden'>
-      <h3 className='flex items-center gap-2 text-xs font-bold text-foreground uppercase tracking-widest mb-6'>
+      <h3 className='flex items-center gap-2 text-xs font-bold text-foreground tracking-widest mb-6'>
         <Heart className='w-3.5 h-3.5 text-red-500' />
         Favorites
       </h3>
@@ -59,22 +59,22 @@ export function FavoritesSection() {
                 <Link
                   to='/mixes/$mixId'
                   params={{ mixId: favorite.audio.slug }}
-                  className='text-sm font-bold uppercase tracking-tight truncate block no-underline hover:text-primary transition-colors'>
+                  className='text-sm font-bold tracking-tight truncate block no-underline hover:text-primary transition-colors'>
                   {favorite.audio.title}
                 </Link>
               ) : favorite.audio.type === 'track' ? (
                 <Link
                   to='/tracks/$trackId'
                   params={{ trackId: favorite.audio.slug }}
-                  className='text-sm font-bold uppercase tracking-tight truncate block no-underline hover:text-primary transition-colors'>
+                  className='text-sm font-bold tracking-tight truncate block no-underline hover:text-primary transition-colors'>
                   {favorite.audio.title}
                 </Link>
               ) : (
-                <span className='text-sm font-bold uppercase tracking-tight truncate block'>
+                <span className='text-sm font-bold tracking-tight truncate block'>
                   {favorite.audio.title}
                 </span>
               )}
-              <p className='text-[9px] font-bold uppercase tracking-widest text-muted-foreground mt-1'>
+              <p className='text-[9px] font-bold tracking-widest text-muted-foreground mt-1'>
                 {favorite.audio.type}
               </p>
             </div>

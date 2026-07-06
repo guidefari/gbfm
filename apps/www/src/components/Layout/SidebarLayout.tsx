@@ -49,7 +49,7 @@ export function SidebarNavGroup({
 }) {
   return (
     <div className='space-y-1'>
-      <div className='px-3 pb-1 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground'>
+      <div className='px-3 pb-1 text-xs font-semibold tracking-[0.18em] text-muted-foreground'>
         {title}
       </div>
       {items.map((item) => (
@@ -81,9 +81,7 @@ export function SidebarLayout({
   const content = (
     <div className='flex min-h-full'>
       <aside className='sticky top-0 hidden h-dvh w-64 shrink-0 self-start border-r lg:block'>
-        <div className='border-b px-4 py-4 text-sm font-black uppercase tracking-[0.18em]'>
-          {brand}
-        </div>
+        <div className='border-b px-4 py-4 text-sm font-black tracking-[0.18em]'>{brand}</div>
         <ScrollArea className='h-[calc(100dvh-3.5rem)]'>
           <nav aria-label={brand} className='flex flex-col gap-6 p-4'>
             {nav({})}
@@ -103,7 +101,7 @@ export function SidebarLayout({
                   </Button>
                 </SheetTrigger>
                 <SheetContent side='left' className='w-72 p-0'>
-                  <SheetTitle className='border-b px-4 py-4 text-sm font-black uppercase tracking-[0.18em]'>
+                  <SheetTitle className='border-b px-4 py-4 text-sm font-black tracking-[0.18em]'>
                     {brand}
                   </SheetTitle>
                   <ScrollArea className='h-[calc(100vh-3.5rem)]'>

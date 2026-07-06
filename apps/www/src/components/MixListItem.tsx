@@ -43,14 +43,14 @@ export function MixListItem({ mix, actions }: MixListItemProps) {
             <Link
               to='/mixes/$mixId'
               params={{ mixId: mix.slug }}
-              className='block text-2xl font-black leading-tight line-clamp-2 text-foreground uppercase tracking-tight transition-colors'>
+              className='block text-2xl font-black leading-tight line-clamp-2 text-foreground tracking-tight transition-colors'>
               {mix.title}
             </Link>
             <div className='shrink-0 ml-2'>{actions}</div>
           </div>
 
           {hasCreators && (
-            <p className='mt-1 text-xs uppercase tracking-widest text-highlight/80'>
+            <p className='mt-1 text-xs tracking-widest text-highlight/80'>
               <span className='opacity-60'>By </span>
               {mix.creators?.map((creator, index) => (
                 <span key={creator.id}>
@@ -84,7 +84,7 @@ export function MixListItem({ mix, actions }: MixListItemProps) {
                 <Link key={tag} to='/mixes' search={{ tag }}>
                   <Badge
                     variant='secondary'
-                    className='rounded-none border border-border bg-muted/50 text-foreground/70 text-[10px] uppercase tracking-widest px-2 py-0.5 hover:border-highlight hover:text-highlight transition-colors cursor-pointer'>
+                    className='rounded-none border border-border bg-muted/50 text-foreground/70 text-[10px] tracking-widest px-2 py-0.5 hover:border-highlight hover:text-highlight transition-colors cursor-pointer'>
                     {tag}
                   </Badge>
                 </Link>
@@ -100,7 +100,7 @@ export function MixListItem({ mix, actions }: MixListItemProps) {
               onClick={handlePlay}
             />
             {hasCreators && (
-              <span className='text-xs text-muted-foreground uppercase font-bold tracking-widest'>
+              <span className='text-xs text-muted-foreground font-bold tracking-widest'>
                 By {mix.creators?.map((c) => c.name).join(' & ')}
               </span>
             )}
@@ -116,12 +116,12 @@ export function MixListItem({ mix, actions }: MixListItemProps) {
           {recencyLabel && (
             <span
               className={cn(
-                'absolute right-2 top-2 border px-2 py-1 text-[10px] font-bold uppercase tracking-widest leading-none',
+                'absolute right-2 top-2 border px-2 py-1 text-[10px] font-bold tracking-widest leading-none',
                 recencyLabel === 'new'
                   ? 'border-highlight bg-highlight text-highlight-foreground'
                   : 'border-border bg-background/90 text-foreground/75 backdrop-blur-sm'
               )}>
-              {recencyLabel.toUpperCase()}
+              {recencyLabel}
             </span>
           )}
         </div>
@@ -141,7 +141,7 @@ function PlayButton({
   title: string
   onClick: () => void
 }) {
-  const playLabel = title.split(' ')[0].toUpperCase()
+  const playLabel = title.split(' ')[0]
 
   return (
     <button
@@ -158,7 +158,7 @@ function PlayButton({
       ) : (
         <Play size={14} fill='currentColor' />
       )}
-      <span>{isActive && isPlaying ? 'PLAYING' : `PLAY ${playLabel}`}</span>
+      <span>{isActive && isPlaying ? 'playing' : `play ${playLabel}`}</span>
     </button>
   )
 }

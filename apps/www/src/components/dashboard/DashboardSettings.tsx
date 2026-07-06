@@ -25,7 +25,7 @@ export function DashboardSettings({ user }: { user: SessionUser }) {
 
   return (
     <section className='pt-8 sm:pt-12 border-t border-border/30'>
-      <h2 className='flex items-center gap-2 mb-8 text-sm font-bold tracking-widest uppercase text-muted-foreground'>
+      <h2 className='flex items-center gap-2 mb-8 text-sm font-bold tracking-widest text-muted-foreground'>
         Settings
       </h2>
 
@@ -88,7 +88,7 @@ function SettingNavButton({
       type='button'
       onClick={onClick}
       className={`
-        flex items-center gap-3 px-4 py-4 text-sm font-bold uppercase tracking-widest transition-all duration-200 border-l-2
+        flex items-center gap-3 px-4 py-4 text-sm font-bold tracking-widest transition-all duration-200 border-l-2
         ${
           active
             ? 'bg-muted border-primary text-foreground'

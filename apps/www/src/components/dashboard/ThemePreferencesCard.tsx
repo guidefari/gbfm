@@ -31,10 +31,8 @@ export function ThemePreferencesCard() {
   return (
     <div className='space-y-8'>
       <div className='space-y-1'>
-        <h3 className='text-sm font-bold uppercase tracking-widest text-muted-foreground'>
-          Appearance
-        </h3>
-        <p className='text-xs text-muted-foreground font-medium uppercase tracking-wider'>
+        <h3 className='text-sm font-bold tracking-widest text-muted-foreground'>Appearance</h3>
+        <p className='text-xs text-muted-foreground font-medium tracking-wider'>
           Choose how gbfm looks on this device
         </p>
       </div>
@@ -82,8 +80,8 @@ function ThemeOption({
           <Check className='w-4 h-4 text-primary' />
         </div>
       )}
-      <div className='text-sm font-bold uppercase tracking-widest'>{title}</div>
-      <div className='text-xs font-medium uppercase tracking-wider opacity-70 leading-relaxed'>
+      <div className='text-sm font-bold tracking-widest'>{title}</div>
+      <div className='text-xs font-medium tracking-wider opacity-70 leading-relaxed'>
         {description}
       </div>
     </button>

@@ -45,7 +45,7 @@ export function TweetListCard({ post }: Props) {
               <Badge
                 key={t}
                 variant='secondary'
-                className='text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-sm font-bold bg-muted/50 text-muted-foreground border-none'>
+                className='text-[10px] tracking-widest px-2 py-0.5 rounded-sm font-bold bg-muted/50 text-muted-foreground border-none'>
                 <Tag className='w-3 h-3 mr-1 opacity-50' />
                 {t}
               </Badge>

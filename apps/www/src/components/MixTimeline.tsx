@@ -39,7 +39,7 @@ export function MixTimelineItem({ mix, children }: MixTimelineItemProps) {
       </div>
       <span
         className={cn(
-          'inline-flex w-fit items-center gap-2 py-0.5 text-[11px] font-mono tracking-widest uppercase transition-colors duration-300 sm:gap-3 sm:text-xs',
+          'inline-flex w-fit items-center gap-2 py-0.5 text-[11px] font-mono tracking-widest transition-colors duration-300 sm:gap-3 sm:text-xs',
           isActive ? 'text-highlight' : 'text-highlight/75 group-hover:text-highlight/90'
         )}>
         <span
@@ -48,13 +48,11 @@ export function MixTimelineItem({ mix, children }: MixTimelineItemProps) {
             isActive ? 'bg-highlight/60' : 'bg-border group-hover:bg-highlight/30'
           )}
         />
-        {new Date(mix.createdAt)
-          .toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric'
-          })
-          .toUpperCase()}
+        {new Date(mix.createdAt).toLocaleDateString('en-US', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric'
+        })}
       </span>
 
       <div />

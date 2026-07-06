@@ -105,7 +105,7 @@ export function TweetMusicEntityCard({ entityType, entityId }: Props) {
         </div>
 
         <div className='min-w-0 flex-1 self-center space-y-0.5'>
-          <div className='text-[10px] font-bold uppercase tracking-[0.3em] text-muted-foreground/60'>
+          <div className='text-[10px] font-bold tracking-[0.3em] text-muted-foreground/60'>
             {entityLabelByType[supportedType]}
           </div>
           <h2 className='truncate text-[15px] font-bold leading-snug tracking-tight text-foreground'>

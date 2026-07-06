@@ -34,7 +34,7 @@ const tileClass = cn(
 
 const tileLabelClass = 'w-full px-1 text-center text-xs font-medium leading-tight'
 
-const sectionHeaderClass = 'text-xs font-bold tracking-widest uppercase text-muted-foreground'
+const sectionHeaderClass = 'text-xs font-bold tracking-widest text-muted-foreground'
 
 const sectionGridClass = 'grid grid-cols-3 sm:grid-cols-4 gap-3'
 

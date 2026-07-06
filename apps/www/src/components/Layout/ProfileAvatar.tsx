@@ -31,7 +31,7 @@ const ProfileAvatar = () => {
           {user?.image ? (
             <img src={user.image} alt={user.name} className='h-full w-full object-cover' />
           ) : (
-            user?.name?.[0]?.toUpperCase() || '?'
+            user?.name?.[0] || '?'
           )}
         </Button>
       </DropdownMenuTrigger>

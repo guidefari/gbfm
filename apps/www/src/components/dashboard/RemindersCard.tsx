@@ -46,21 +46,21 @@ export function RemindersCard() {
   return (
     <div className='flex flex-col h-full bg-card/15 rounded-sm overflow-hidden'>
       <div className='flex items-center justify-between p-5 bg-muted/10'>
-        <h3 className='flex items-center gap-2 text-xs font-bold text-foreground uppercase tracking-widest'>
+        <h3 className='flex items-center gap-2 text-xs font-bold text-foreground tracking-widest'>
           <Bell className='w-3.5 h-3.5 text-primary' />
           Reminders
         </h3>
         <div className='flex items-center gap-3'>
           <Link
             to='/reminders'
-            className='flex items-center gap-1 text-[10px] font-bold uppercase tracking-widest text-primary no-underline hover:text-primary/80 transition-colors'>
+            className='flex items-center gap-1 text-[10px] font-bold tracking-widest text-primary no-underline hover:text-primary/80 transition-colors'>
             <Plus className='w-3 h-3' />
             New
           </Link>
           <div className='w-px h-3 bg-border/50' />
           <Link
             to='/reminders'
-            className='text-[10px] font-bold uppercase tracking-widest text-muted-foreground no-underline hover:text-primary transition-colors'>
+            className='text-[10px] font-bold tracking-widest text-muted-foreground no-underline hover:text-primary transition-colors'>
             Manage
           </Link>
         </div>
@@ -75,12 +75,12 @@ export function RemindersCard() {
           </div>
         ) : isEmpty ? (
           <div className='flex flex-col items-center justify-center py-12 text-center'>
-            <p className='text-xs font-medium text-muted-foreground mb-4 uppercase tracking-wider'>
+            <p className='text-xs font-medium text-muted-foreground mb-4 tracking-wider'>
               No reminders yet
             </p>
             <Link
               to='/reminders'
-              className='text-[10px] font-bold uppercase tracking-widest px-6 py-2 rounded-sm border border-primary/70 text-primary no-underline hover:bg-primary hover:text-primary-foreground transition-all'>
+              className='text-[10px] font-bold tracking-widest px-6 py-2 rounded-sm border border-primary/70 text-primary no-underline hover:bg-primary hover:text-primary-foreground transition-all'>
               Create
             </Link>
           </div>
@@ -93,7 +93,7 @@ export function RemindersCard() {
               emptyHint={
                 <Link
                   to='/reminders'
-                  className='text-[10px] font-bold uppercase tracking-widest text-primary no-underline hover:text-primary/80 transition-colors'>
+                  className='text-[10px] font-bold tracking-widest text-primary no-underline hover:text-primary/80 transition-colors'>
                   Set one
                 </Link>
               }
@@ -124,9 +124,7 @@ function ReminderSection({
 
   return (
     <div className='space-y-3'>
-      <p className='text-[10px] font-bold uppercase tracking-widest text-muted-foreground'>
-        {label}
-      </p>
+      <p className='text-[10px] font-bold tracking-widest text-muted-foreground'>{label}</p>
       {reminders.length === 0 ? (
         <div className='flex items-center gap-2 text-xs text-muted-foreground'>
           <span className='font-medium'>None</span>
@@ -138,7 +136,7 @@ function ReminderSection({
             <ReminderItem key={reminder.id} reminder={reminder} />
           ))}
           {remaining > 0 && (
-            <p className='text-[10px] font-bold uppercase tracking-widest text-muted-foreground pt-1'>
+            <p className='text-[10px] font-bold tracking-widest text-muted-foreground pt-1'>
               + {remaining} more
             </p>
           )}
@@ -170,12 +168,12 @@ function ReminderItem({ reminder }: { reminder: MusicReminder }) {
         )}
       </div>
       <div className='flex-1 min-w-0'>
-        <p className='text-sm font-bold uppercase tracking-tight truncate group-hover:text-primary transition-colors'>
+        <p className='text-sm font-bold tracking-tight truncate group-hover:text-primary transition-colors'>
           {reminder.musicTitle}
         </p>
         <p className='text-xs text-muted-foreground truncate font-medium'>{reminder.artistName}</p>
       </div>
-      <span className='text-[9px] font-bold uppercase text-muted-foreground border border-border/50 px-2 py-1 rounded-sm'>
+      <span className='text-[9px] font-bold text-muted-foreground border border-border/50 px-2 py-1 rounded-sm'>
         {new Date(reminder.reminderDate).toLocaleDateString(undefined, {
           month: 'short',
           day: 'numeric'
