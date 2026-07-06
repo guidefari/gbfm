@@ -133,7 +133,14 @@ function SelectedShowPanel({ show }: { show: ShowWithHosts }) {
         />
         <div className='flex-1 min-w-0 space-y-3'>
           <h2 className='text-3xl font-black tracking-tight mt-0'>{show.title}</h2>
-          {hostNames && <p className='text-sm text-muted-foreground'>Hosted by {hostNames}</p>}
+          {hostNames && (
+            <Link
+              to='/shows/$showSlug'
+              params={{ showSlug: show.slug }}
+              className='text-sm text-muted-foreground hover:text-foreground transition-colors'>
+              Hosted by {hostNames}
+            </Link>
+          )}
           {show.description && (
             <p className='text-sm text-foreground/70 line-clamp-4'>{show.description}</p>
           )}
