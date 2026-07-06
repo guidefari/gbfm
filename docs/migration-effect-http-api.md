@@ -16,7 +16,7 @@ Effect's `unstable/httpapi` module (already in the dependency tree at `effect@4.
 - **Native middleware system**: Auth, rate limiting, logging, and tracing become typed Effect middleware with schema-declared errors and service requirements
 - **No codegen step**: Types flow from schemas at the type level, no build-time code generation
 
-**The bet being made**: `unstable/httpapi` lives in a beta release. It is pinned exactly (`4.0.0-beta.70`) in both apps, which contains the churn, but every version bump until Effect 4 stable is a potential API break in the route layer. This is the single biggest risk of Option A and the main argument for the staged path in the Decision section.
+**The bet being made**: `unstable/httpapi` lives in a beta release. It is pinned exactly (`4.0.0-beta.70`) in both apps, which contains the churn, but every version bump until Effect 4 stable is a potential API break in the route layer. This is the single biggest technical risk of the migration, so the first production deploy must validate the serving topology, middleware wiring, OpenAPI output, auth cookies, and health probes before route migration scales out.
 
 ## Current Architecture
 
@@ -81,7 +81,7 @@ Base URL: VITE_VPS_BASE_URL (cross-origin in prod), cookies via credentials: 'in
 
 ---
 
-## Option A: Full migration to Effect HttpApi
+## Chosen path: Full migration to Effect HttpApi
 
 ### High-level plan
 
@@ -769,41 +769,43 @@ const result = yield* testClient.music.listArtists({})
 
 ---
 
-## Option B: Quicker alternative -- openapi-typescript + openapi-fetch
+## Adversarial review
 
-The lower-effort path to client type safety with zero server changes:
+The full migration is the right destination, but it is not a harmless route refactor. The risky deploy is Step 2, where the serving stack changes before most routes move. Treat that step as the proof gate for the whole plan.
 
-1. `openapi-typescript` and `openapi-fetch` are already installed -- **but in `apps/vps`'s package.json**; add them to `apps/www` where the generated types and client actually live
-2. Run codegen against the running server's `GET /doc` at build time (or commit a spec snapshot so codegen doesn't require a live server):
-   ```bash
-   bunx openapi-typescript http://localhost:3003/doc -o apps/www/src/lib/api.generated.ts
-   ```
-3. Use the generated types:
-   ```ts
-   import createClient from "openapi-fetch"
-   import type { paths } from "./api.generated"
+Failure modes to actively defend against:
 
-   const client = createClient<paths>({ baseUrl: import.meta.env.VITE_VPS_BASE_URL })
-   const { data, error } = await client.GET("/api/music/artists", { credentials: "include" })
-   ```
+- **Auth cookies silently stop crossing origins.** The client layer must prove `credentials: "include"` survives the generated client stack in a deployed browser session, not just in local type checks.
+- **Middleware moves to the wrong layer.** CORS, rate limiting, logging, request IDs, and Sentry cannot be blindly translated from Hono. Anything that mutates responses belongs in `HttpRouter.middleware`, not `toWebHandler` middleware.
+- **Rate limiting double-counts during fallback.** While the wildcard Hono fallback exists, do not enable the Effect rate limiter globally unless Hono's limiter has been removed for those paths.
+- **Non-API behavior gets lost.** Background forks, graceful shutdown, 1GB body size, health probes, `/auth`, RSS, sitemap, and `/s` share pages are production behavior, not incidental app-shell code.
+- **Declared errors drift from domain errors.** The migration must convert expected failures to schema-tagged errors endpoint by endpoint. Plain `Data.TaggedError` values and anonymous structs will break status encoding or runtime discrimination.
+- **Uploads are underestimated.** Multipart control endpoints may be mechanical, but the raw part upload path is a real spike and should not be scheduled like ordinary JSON CRUD.
+- **OpenAPI parity is assumed instead of checked.** The generated spec must be compared against the current `/doc` output before external consumers or internal clients rely on it.
+- **Effect beta churn is ignored.** Pinning reduces accidental churn, but every Effect upgrade must include API-route typecheck, OpenAPI generation, and one browser auth smoke test.
 
-This adds a codegen step and types are derived from the spec (not the source of truth), but requires zero server changes. It can be adopted this week and does not conflict with migrating to Effect HttpApi later -- hooks converted to `openapi-fetch` are easier to convert again than hand-written fetches.
+Acceptance bar for Step 2 before scaling route migration:
+
+- Health probes pass in production, including readiness behavior and cache semantics.
+- Deployed www can call at least one authenticated endpoint through the Effect client with cookies included.
+- CORS response headers are present on success, declared errors, validation failures, and better-auth responses.
+- Reminder loop and sitemap regeneration still start after deploy.
+- SIGTERM/SIGINT still dispose the HTTP handler and the app runtime.
+- Hono fallback routes still behave exactly once for logging, rate limiting, and Sentry capture.
+- The new `/doc` endpoint renders and exposes the expected OpenAPI shape for the migrated health group.
 
 ---
 
 ## Decision
 
-| Factor | Option A (Effect HttpApi) | Option B (openapi-typescript) |
-|--------|--------------------------|-------------------------------|
-| Type safety | End-to-end, from Schema source | From generated OpenAPI types |
-| Server changes | Full rewrite of route layer | None |
-| Client DX | Fully typed methods with autocomplete | Typed paths/methods |
-| Codegen step | None | Build-time step |
-| Error typing | Schema-typed per endpoint | Union of all error responses |
-| Effect integration | Native (services, errors, runtime) | None (raw fetch) |
-| Stability | `unstable/` module of a beta release | Stable, boring tooling |
-| Effort | 3-6 weeks (18 route groups, auth, uploads, non-JSON routes, cutover) | 1-2 days |
-| Migration risk | Low-medium per group behind the Hono fallback; step 2 (serving topology) is the risky deploy | ~None |
-| Maintenance | Contract lives in one place | Spec = generated artifact |
+Proceed with the full Effect HttpApi migration. Do it incrementally behind the Hono wildcard fallback, but do not introduce a separate generated OpenAPI client path.
 
-**Recommendation: staged.** Do Option B now -- it delivers the actual pain relief (typed client, no hand-written response types) for 1-2 days of work with zero production risk. Treat Option A as the destination, executed group-by-group behind the Hono fallback, starting when there's appetite for step 2's serving-topology change -- or when Effect 4 stabilizes and the `unstable/httpapi` churn risk drops. The `packages/api` contract from Option A supersedes Option B's generated types one group at a time; nothing done for B is thrown away until its group is ported.
+The reason is focus: the long-term source of truth should be `packages/api`, with Effect `Schema` defining params, query, payloads, responses, declared errors, middleware requirements, OpenAPI output, and the typed client from one contract. Adding a temporary client-generation path would reduce short-term pain but create a second migration surface and delay validation of the actual serving stack.
+
+The migration is still staged operationally:
+
+1. Prove the new serving topology with health, better-auth, fallback routing, background forks, shutdown, CORS, and deployed cookie auth.
+2. Port one JSON CRUD group end to end and replace one client hook through `HttpApiClient`.
+3. Port the remaining JSON groups one group per deploy.
+4. Spend explicit spike time on uploads and non-JSON routes.
+5. Move final global middleware, remove the fallback, and delete Hono/Zod scaffolding only after all traffic is on Effect routes.
