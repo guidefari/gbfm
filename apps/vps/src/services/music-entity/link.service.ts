@@ -35,6 +35,10 @@ export const getLinksForEntityEffect =
           table: 'music_entity_links'
         })
     }).pipe(
+      Effect.withSpan('musicEntity.getLinksForEntity.query', {
+        attributes: { entityType, entityId }
+      }),
+      Effect.tap((rows) => Effect.annotateCurrentSpan('resultCount', rows.length)),
       Effect.withSpan('musicEntity.getLinksForEntity', {
         attributes: { entityType, entityId }
       })

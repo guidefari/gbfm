@@ -91,7 +91,7 @@ export const getPublicProfileEffect = (username: string) =>
           operation: 'select',
           table: 'user'
         })
-    })
+    }).pipe(Effect.withSpan('profile.getPublic.user', { attributes: { username } }))
 
     const foundUser = userRecords[0]
     if (!foundUser || foundUser.banned) {
@@ -119,7 +119,9 @@ export const getPublicProfileEffect = (username: string) =>
           operation: 'select',
           table: 'user_social_links'
         })
-    })
+    }).pipe(
+      Effect.withSpan('profile.getPublic.socialLinks', { attributes: { userId: foundUser.id } })
+    )
 
     const userMixes = yield* Effect.tryPromise({
       try: () =>
@@ -142,7 +144,7 @@ export const getPublicProfileEffect = (username: string) =>
           operation: 'select',
           table: 'audio'
         })
-    })
+    }).pipe(Effect.withSpan('profile.getPublic.mixes', { attributes: { userId: foundUser.id } }))
 
     const userShows = yield* Effect.tryPromise({
       try: () =>
@@ -163,7 +165,7 @@ export const getPublicProfileEffect = (username: string) =>
           operation: 'select',
           table: 'shows'
         })
-    })
+    }).pipe(Effect.withSpan('profile.getPublic.shows', { attributes: { userId: foundUser.id } }))
 
     const userPosts = yield* Effect.tryPromise({
       try: () =>
@@ -187,7 +189,7 @@ export const getPublicProfileEffect = (username: string) =>
           operation: 'select',
           table: 'posts'
         })
-    })
+    }).pipe(Effect.withSpan('profile.getPublic.posts', { attributes: { userId: foundUser.id } }))
 
     const editorials = userPosts
       .filter((p): p is typeof p & { title: string } => Boolean(p.type === 'post' && p.title))

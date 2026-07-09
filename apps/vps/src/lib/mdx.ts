@@ -44,7 +44,12 @@ const makeService = (fn: (content: string) => Promise<string>): Effect.Effect<Md
       timeToLive: ttl
     })
     return MdxService.of({
-      compile: (content) => Cache.get(cache, content),
+      compile: (content) =>
+        Cache.get(cache, content).pipe(
+          Effect.withSpan('mdx.compile', {
+            attributes: { 'mdx.contentLength': content.length }
+          })
+        ),
       invalidateAll: () => Cache.invalidateAll(cache)
     })
   })
