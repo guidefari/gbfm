@@ -6,3 +6,6 @@
 
 /*.html
   Cache-Control: public, max-age=60, must-revalidate
+
+/
+  Cache-Control: public, max-age=60, must-revalidate
