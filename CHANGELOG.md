@@ -1,3 +1,11 @@
+## [2.65.4](https://github.com/guidefari/gbfm/compare/v2.65.3...v2.65.4) (2026-07-10)
+
+
+### Bug Fixes
+
+* console warning ([6fa7324](https://github.com/guidefari/gbfm/commit/6fa7324f234dc501d54d24158eb85b0d0b91f432))
+* stylez ([dd4a38f](https://github.com/guidefari/gbfm/commit/dd4a38ff4cfde6136ad7015610c78757be2b2f4f))
+
 ## [2.65.3](https://github.com/guidefari/gbfm/compare/v2.65.2...v2.65.3) (2026-07-10)
 
 
