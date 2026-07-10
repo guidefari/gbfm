@@ -154,7 +154,7 @@ const buildPostWithCreators = (post: SelectPost, mdx: MdxService) =>
           operation: 'select',
           table: 'post_creators'
         })
-    })
+    }).pipe(Effect.withSpan('post.getCreators', { attributes: { postId: post.id } }))
 
     return yield* buildPostWithPreloadedCreators(post, creators, mdx)
   })
@@ -297,7 +297,9 @@ const getAllEffect = (
                 operation: 'select',
                 table: 'post_creators'
               })
-          })
+          }).pipe(
+            Effect.withSpan('post.getAll.creators', { attributes: { postCount: postIds.length } })
+          )
         : []
 
     const creatorsByPostId: Record<
@@ -492,7 +494,7 @@ const getBySlugEffect = (slug: string, mdx: MdxService) =>
           operation: 'select',
           table: 'posts'
         })
-    })
+    }).pipe(Effect.withSpan('post.getBySlug.query', { attributes: { slug } }))
 
     const post = postRecords[0]
     if (!post) {
