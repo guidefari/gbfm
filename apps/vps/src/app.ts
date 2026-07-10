@@ -19,6 +19,7 @@ import shows from '@/routes/shows/show.index'
 import spotify from '@/routes/spotify/spotify.index'
 import upload from '@/routes/upload/upload.index'
 import uploadMultipart from '@/routes/upload-multipart/upload-multipart.index'
+import betterAuthRoutes from '@/routes/user/better-auth.routes'
 import user from '@/routes/user/user.index'
 import { regenerateSitemap } from './routes/redirect/seo/sitemap'
 import { runApp, runAppFork } from './runtime'
@@ -50,6 +51,7 @@ export const honoAppEffect = Effect.gen(function* () {
   app.route('/api/music', music)
   app.route('/api/music-reminders', musicReminders)
 
+  app.route('/auth', betterAuthRoutes)
   app.route('/s', shareRouter)
   app.route('', rss)
   app.route('', seoRouter)

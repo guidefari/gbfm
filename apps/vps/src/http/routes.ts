@@ -9,9 +9,8 @@ import {
 } from 'effect/unstable/http'
 import { HttpApiBuilder, HttpApiScalar } from 'effect/unstable/httpapi'
 import type { AppType } from '@/app'
-import { auth, prepareAuthRequest } from '@/lib/auth'
 import { corsConfig } from '@/lib/create-app'
-import { HealthHandlers } from './health.handlers'
+import { HealthHandlersLive, makeHealthHandlers, type HealthDatabase } from './health.handlers'
 
 const isAllowedOrigin = (origin: string) => corsConfig.origin(origin) === origin
 
@@ -26,17 +25,6 @@ const CorsLive = HttpRouter.middleware(
   { global: true }
 )
 
-const BetterAuthRoutes = HttpRouter.use((router) =>
-  router.add('*', '/auth/*', (request) =>
-    HttpServerRequest.toWeb(request).pipe(
-      Effect.flatMap((webRequest) =>
-        Effect.promise(() => auth.handler(prepareAuthRequest(webRequest)))
-      ),
-      Effect.map(HttpServerResponse.fromWeb)
-    )
-  )
-)
-
 const honoFallbackRoutes = (honoApp: AppType) =>
   HttpRouter.use((router) =>
     router.add('*', '/*', (request) =>
@@ -49,15 +37,30 @@ const honoFallbackRoutes = (honoApp: AppType) =>
     )
   )
 
-export const createWebHandler = (honoApp: AppType) => {
+interface CreateWebHandlerOptions {
+  readonly healthDatabase?: HealthDatabase
+}
+
+interface WebHandler {
+  readonly handler: (request: Request) => Promise<Response>
+  readonly dispose: () => Promise<void>
+}
+
+export const createWebHandler = (
+  honoApp: AppType,
+  options: CreateWebHandlerOptions = {}
+): WebHandler => {
+  const healthHandlers = options.healthDatabase
+    ? makeHealthHandlers(options.healthDatabase)
+    : HealthHandlersLive
+
   const apiRoutes = HttpApiBuilder.layer(Api, { openapiPath: '/openapi.json' }).pipe(
-    Layer.provide(HealthHandlers)
+    Layer.provide(healthHandlers)
   )
 
   const routes = Layer.mergeAll(
     apiRoutes,
     HttpApiScalar.layer(Api, { path: '/effect-reference' }),
-    BetterAuthRoutes,
     honoFallbackRoutes(honoApp)
   ).pipe(Layer.provide(CorsLive), Layer.provide(HttpServer.layerServices))
 
