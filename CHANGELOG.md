@@ -1,3 +1,15 @@
+# [2.65.0](https://github.com/guidefari/gbfm/compare/v2.64.0...v2.65.0) (2026-07-10)
+
+
+### Bug Fixes
+
+* **www:** render artwork in webkit tweet exports ([#137](https://github.com/guidefari/gbfm/issues/137)) ([94ec18b](https://github.com/guidefari/gbfm/commit/94ec18b5c41cbf9ffcacb87dd091d4724f4fde1d))
+
+
+### Features
+
+* **vps:** add granular OTEL spans to slow trace paths ([#138](https://github.com/guidefari/gbfm/issues/138)) ([382f952](https://github.com/guidefari/gbfm/commit/382f952e96b195a55515ad962b9e6bcb975702c9))
+
 # [2.64.0](https://github.com/guidefari/gbfm/compare/v2.63.0...v2.64.0) (2026-07-06)
 
 
