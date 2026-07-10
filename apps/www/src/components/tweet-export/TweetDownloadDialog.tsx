@@ -18,6 +18,11 @@ import { PosterFrame, SleeveFrame, type TweetExportData } from './frames'
 
 const EXPORT_WIDTH = 540
 
+const isWebKit = () =>
+  typeof navigator !== 'undefined' &&
+  /AppleWebKit/.test(navigator.userAgent) &&
+  !/Chrome\//.test(navigator.userAgent)
+
 const formats = [
   { key: 'poster', name: 'poster', Frame: PosterFrame },
   { key: 'sleeve', name: 'sleeve', Frame: SleeveFrame }
@@ -71,10 +76,17 @@ export function TweetDownloadDialog({ post, slug, open, onOpenChange }: Props) {
     setDownloading(true)
     setError(null)
     try {
-      const dataUrl = await toPng(exportRef.current, {
+      const options = {
         pixelRatio: 1080 / EXPORT_WIDTH,
         cacheBust: true
-      })
+      }
+      // WebKit rasterizes the first toPng before embedded images finish
+      // decoding, dropping the artwork; warm-up renders work around it
+      if (isWebKit()) {
+        await toPng(exportRef.current, options)
+        await toPng(exportRef.current, options)
+      }
+      const dataUrl = await toPng(exportRef.current, options)
       const link = document.createElement('a')
       link.href = dataUrl
       link.download = `${slug}-${format}.png`
