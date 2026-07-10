@@ -3,23 +3,11 @@ import { secret } from './secret'
 import { isLocal } from './stage'
 import { vps_gateway } from './vps'
 
-export const www = new sst.aws.StaticSite('gbfm-www', {
+export const www = new sst.cloudflare.StaticSiteV2('gbfm-www', {
   path: './apps/www',
   build: {
     command: 'bun run build',
     output: 'dist'
-  },
-  assets: {
-    fileOptions: [
-      {
-        files: '**',
-        cacheControl: 'max-age=31536000,public,immutable'
-      },
-      {
-        files: '**/*.html',
-        cacheControl: 'public,max-age=60,must-revalidate'
-      }
-    ]
   },
   environment: {
     VITE_VPS_BASE_URL: isLocal ? '' : vps_gateway.url,
@@ -30,7 +18,6 @@ export const www = new sst.aws.StaticSite('gbfm-www', {
   },
   domain: {
     name: `www.${domain}`,
-    dns: sst.cloudflare.dns({ proxy: true }),
     ...($app.stage === 'prod' ? { aliases: [domain] } : {})
   }
 })
