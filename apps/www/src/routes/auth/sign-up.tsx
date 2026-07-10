@@ -233,5 +233,3 @@ function isExistingEmailError(message: string): boolean {
     m.includes('already') || m.includes('exists') || m.includes('in use') || m.includes('taken')
   )
 }
-
-export default SignUpPage
