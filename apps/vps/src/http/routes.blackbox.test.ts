@@ -4,9 +4,9 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { AppType } from '@/app'
 import { createWebHandler } from './routes'
 
-// Step 2a (docs/migration-effect-http-api.md): the Effect toWebHandler + Hono
-// fallback must behave identically to the plain Hono app it wraps. Reuses the
-// same @gbfm/api schemas as the 1b blackbox suite so both point at one contract.
+// Blackbox suite asserting only the wire contract, so these assertions keep
+// working as more groups move from the Hono fallback onto the Effect router
+// (docs/migration-effect-http-api.md).
 let app: AppType
 let webHandler: ReturnType<typeof createWebHandler>
 
@@ -21,22 +21,6 @@ afterAll(async () => {
 })
 
 describe('Effect toWebHandler fallback', () => {
-  it('GET /health/live matches the Hono app', async () => {
-    const res = await webHandler.handler(new Request('http://localhost/health/live'))
-
-    expect(res.status).toBe(200)
-    await expect(decodeResponseBody(HealthLiveResponse, res)).resolves.toEqual({ ok: true })
-  })
-
-  it('GET /health/ready matches the Hono app', async () => {
-    const res = await webHandler.handler(new Request('http://localhost/health/ready'))
-
-    expect(res.status).toBe(200)
-    await expect(decodeResponseBody(HealthReadyResponse, res)).resolves.toEqual({
-      dbConnected: true
-    })
-  })
-
   it('GET /api/music/artists returns the same response as the plain Hono app', async () => {
     const [viaHandler, viaHono] = await Promise.all([
       webHandler.handler(new Request('http://localhost/api/music/artists')),
@@ -73,5 +57,44 @@ describe('better-auth route (Step 2c)', () => {
     // Different bodies would indicate the two 404s come from different sources
     // (Hono's notFound handler vs. better-auth's own routing).
     expect(await withAuth.text()).not.toEqual(await withoutAuth.text())
+  })
+})
+
+describe('health (HttpApiBuilder group, Step 3a)', () => {
+  it('GET /health/live returns 200 without checking the database', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/health/live'))
+
+    expect(res.status).toBe(200)
+    await expect(decodeResponseBody(HealthLiveResponse, res)).resolves.toEqual({ ok: true })
+  })
+
+  it('GET /health/ready and /health return 200 when the database check succeeds', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/health/ready'))
+    const checkRes = await webHandler.handler(new Request('http://localhost/health'))
+
+    expect(res.status).toBe(200)
+    expect(checkRes.status).toBe(200)
+    await expect(decodeResponseBody(HealthReadyResponse, res)).resolves.toEqual({
+      dbConnected: true
+    })
+    await expect(decodeResponseBody(HealthReadyResponse, checkRes)).resolves.toEqual({
+      dbConnected: true
+    })
+  })
+
+  it('repeated readiness calls within the cache window keep returning 200', async () => {
+    const first = await webHandler.handler(new Request('http://localhost/health/ready'))
+    const second = await webHandler.handler(new Request('http://localhost/health/ready'))
+
+    expect(first.status).toBe(200)
+    expect(second.status).toBe(200)
+  })
+
+  it('responds 404 to unsupported methods on health paths', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/health/live', { method: 'POST' })
+    )
+
+    expect(res.status).toBe(404)
   })
 })

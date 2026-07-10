@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "type": "module",
   "exports": {
+    "./api": "./src/api.ts",
     "./health": "./src/health.ts",
     "./errors": "./src/errors.ts",
     "./testing": "./src/testing.ts"
