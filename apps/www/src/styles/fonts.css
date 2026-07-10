@@ -2,6 +2,7 @@
   font-family: 'JetBrainsMono';
   font-style: normal;
   font-weight: 400;
+  font-display: swap;
   src:
     local(''),
     url('/fonts/JetBrainsMono-SemiBold.woff2') format('woff2');
@@ -11,6 +12,7 @@
   font-family: 'JetBrainsMono';
   font-style: normal;
   font-weight: 600;
+  font-display: swap;
   src:
     local(''),
     url('/fonts/JetBrainsMono-Bold.woff2') format('woff2');
@@ -20,6 +22,7 @@
   font-family: 'JetBrainsMono';
   font-style: normal;
   font-weight: 900;
+  font-display: swap;
   src:
     local(''),
     url('/fonts/JetBrainsMono-ExtraBold.woff2') format('woff2');
@@ -29,6 +32,7 @@
   font-family: 'JetBrainsMono';
   font-style: italic;
   font-weight: 400;
+  font-display: swap;
   src:
     local(''),
     url('/fonts/JetBrainsMono-BoldItalic.woff2') format('woff2');
@@ -38,6 +42,7 @@
   font-family: 'JetBrainsMono';
   font-style: italic;
   font-weight: 900;
+  font-display: swap;
   src:
     local(''),
     url('/fonts/JetBrainsMono-ExtraBoldItalic.woff2') format('woff2');
