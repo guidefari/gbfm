@@ -2,15 +2,20 @@ import { Toaster } from '@gbfm/ui'
 import { FPSMeter } from '@overengineering/fps-meter'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createRootRouteWithContext, HeadContent, Outlet } from '@tanstack/react-router'
-import { Suspense } from 'react'
+import { lazy, Suspense } from 'react'
 import { VerifyEmailBanner } from '@/components/Auth/VerifyEmailBanner'
-import { AuthPromptDialog } from '@/components/AuthPromptDialog'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import AppShell from '@/components/Layout/AppShell'
 import { OfflineBanner } from '@/components/OfflineBanner'
-import { WelcomeModal } from '@/components/onboarding/WelcomeModal'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { env } from '@/env'
+
+const AuthPromptDialog = lazy(() =>
+  import('@/components/AuthPromptDialog').then((m) => ({ default: m.AuthPromptDialog }))
+)
+const WelcomeModal = lazy(() =>
+  import('@/components/onboarding/WelcomeModal').then((m) => ({ default: m.WelcomeModal }))
+)
 export interface MyRouterContext {
   auth: {
     user: {
@@ -61,8 +66,10 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
               )}
               <OfflineBanner />
               <VerifyEmailBanner />
-              <WelcomeModal />
-              <AuthPromptDialog />
+              <Suspense fallback={null}>
+                <WelcomeModal />
+                <AuthPromptDialog />
+              </Suspense>
               <Outlet />
             </AppShell>
           </QueryClientProvider>

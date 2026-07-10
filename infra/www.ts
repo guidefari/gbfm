@@ -3,7 +3,7 @@ import { secret } from './secret'
 import { isLocal } from './stage'
 import { vps_gateway } from './vps'
 
-export const www = new sst.aws.StaticSite('gbfm-www', {
+export const www = new sst.cloudflare.StaticSiteV2('gbfm-www', {
   path: './apps/www',
   build: {
     command: 'bun run build',
@@ -18,7 +18,6 @@ export const www = new sst.aws.StaticSite('gbfm-www', {
   },
   domain: {
     name: `www.${domain}`,
-    dns: sst.cloudflare.dns({ proxy: true }),
     ...($app.stage === 'prod' ? { aliases: [domain] } : {})
   }
 })
