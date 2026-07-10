@@ -51,3 +51,25 @@ describe('Effect toWebHandler fallback', () => {
     expect(res.status).toBe(404)
   })
 })
+
+describe('better-auth route (Step 2c)', () => {
+  it('GET /auth/get-session is handled by the auth route, not the Hono fallback', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/auth/get-session'))
+
+    // better-auth's own response for an unauthenticated session check, not a 404 --
+    // proves /auth/* is matched ahead of the wildcard fallback.
+    expect(res.status).toBe(200)
+    expect(await res.json()).toBeNull()
+  })
+
+  it('unknown /auth/* paths are handled by better-auth (404 from better-auth, not the Hono fallback)', async () => {
+    const withoutAuth = await webHandler.handler(new Request('http://localhost/does-not-exist'))
+    const withAuth = await webHandler.handler(new Request('http://localhost/auth/does-not-exist'))
+
+    expect(withoutAuth.status).toBe(404)
+    expect(withAuth.status).toBe(404)
+    // Different bodies would indicate the two 404s come from different sources
+    // (Hono's notFound handler vs. better-auth's own routing).
+    expect(await withAuth.text()).not.toEqual(await withoutAuth.text())
+  })
+})

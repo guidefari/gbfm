@@ -21,7 +21,6 @@ import shows from '@/routes/shows/show.index'
 import spotify from '@/routes/spotify/spotify.index'
 import upload from '@/routes/upload/upload.index'
 import uploadMultipart from '@/routes/upload-multipart/upload-multipart.index'
-import betterAuthRoutes from '@/routes/user/better-auth.routes'
 import user from '@/routes/user/user.index'
 import { db } from './db'
 import { regenerateSitemap } from './routes/redirect/seo/sitemap'
@@ -66,8 +65,9 @@ const setupRoutesEffect = Effect.gen(function* () {
   app.route('/api/music', music)
   app.route('/api/music-reminders', musicReminders)
 
-  // Kept at root, not under /api: auth has its own basePath/email links, and these are externally-referenced public URLs.
-  app.route('/auth', betterAuthRoutes)
+  // Kept at root, not under /api: these are externally-referenced public URLs.
+  // /auth is handled by the Effect router directly (apps/vps/src/http/routes.ts,
+  // step 2c) -- not mounted here.
   app.route('/s', shareRouter)
   app.route('', rss)
   app.route('', seoRouter)
