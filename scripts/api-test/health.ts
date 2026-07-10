@@ -1,7 +1,63 @@
-import { makeHealthAssertions, runHealthAssertion } from '@gbfm/api-test/health'
+import { isDeepStrictEqual } from 'node:util'
+import {
+  HealthLiveResponse as HealthLiveResponseSchema,
+  HealthReadyResponse as HealthReadyResponseSchema,
+  type HealthLiveResponse,
+  type HealthReadyResponse
+} from '@gbfm/api/health'
+import { Effect, Schema } from 'effect'
 import { API_URL, colors, header, parseArgs, printResponse, separator } from './lib/common'
 
 const { DIM, GREEN, RED } = colors
+
+type HealthAssertionPath = '/health/live' | '/health/ready' | '/health'
+type HealthAssertionBody = HealthLiveResponse | HealthReadyResponse
+
+interface HealthAssertion {
+  readonly name: string
+  readonly method: 'GET'
+  readonly path: HealthAssertionPath
+  readonly expectedStatus: 200
+  readonly expectedBody: HealthAssertionBody
+  readonly curl: string
+}
+
+interface HealthAssertionResult {
+  readonly status: number
+  readonly headers: Headers
+  readonly bodyText: string
+  readonly body: HealthAssertionBody
+}
+
+const healthLiveBody: HealthLiveResponse = { ok: true }
+const healthReadyBody: HealthReadyResponse = { dbConnected: true }
+
+const makeHealthAssertions = (baseUrl: string): readonly HealthAssertion[] => [
+  {
+    name: 'GET /health/live returns liveness JSON',
+    method: 'GET',
+    path: '/health/live',
+    expectedStatus: 200,
+    expectedBody: healthLiveBody,
+    curl: `${curlGet(baseUrl, '/health/live')} | jq -e '.ok == true'`
+  },
+  {
+    name: 'GET /health/ready returns readiness JSON',
+    method: 'GET',
+    path: '/health/ready',
+    expectedStatus: 200,
+    expectedBody: healthReadyBody,
+    curl: `${curlGet(baseUrl, '/health/ready')} | jq -e '.dbConnected == true'`
+  },
+  {
+    name: 'GET /health returns readiness JSON',
+    method: 'GET',
+    path: '/health',
+    expectedStatus: 200,
+    expectedBody: healthReadyBody,
+    curl: `${curlGet(baseUrl, '/health')} | jq -e '.dbConnected == true'`
+  }
+]
 
 const { verbose, help } = parseArgs(Bun.argv.slice(2))
 
@@ -27,7 +83,7 @@ for (const assertion of makeHealthAssertions(API_URL)) {
   console.log('')
 
   try {
-    const result = await runHealthAssertion(assertion, { baseUrl: API_URL })
+    const result = await runHealthAssertion(assertion)
     printResponse(
       {
         status: result.status,
@@ -48,3 +104,65 @@ for (const assertion of makeHealthAssertions(API_URL)) {
 }
 
 process.exit(healthy ? 0 : 1)
+
+async function runHealthAssertion(assertion: HealthAssertion): Promise<HealthAssertionResult> {
+  const response = await fetch(
+    new Request(new URL(assertion.path, API_URL).toString(), { method: assertion.method })
+  )
+  const bodyText = await response.text()
+
+  if (response.status !== assertion.expectedStatus) {
+    throw new Error(
+      `${assertion.curl} expected status ${assertion.expectedStatus} but received ${response.status}: ${bodyText}`
+    )
+  }
+
+  const rawBody = parseJsonBody(bodyText, assertion)
+  const body = await Effect.runPromise(decodeHealthBody(assertion.path, rawBody))
+
+  if (!isDeepStrictEqual(body, assertion.expectedBody)) {
+    throw new Error(
+      `${assertion.curl} expected body ${JSON.stringify(assertion.expectedBody)} but received ${JSON.stringify(body)}`
+    )
+  }
+
+  return {
+    status: response.status,
+    headers: response.headers,
+    bodyText,
+    body
+  }
+}
+
+function decodeHealthBody(
+  path: HealthAssertionPath,
+  body: unknown
+): Effect.Effect<HealthAssertionBody, Schema.SchemaError> {
+  switch (path) {
+    case '/health/live':
+      return Schema.decodeUnknownEffect(HealthLiveResponseSchema)(body)
+    case '/health/ready':
+    case '/health':
+      return Schema.decodeUnknownEffect(HealthReadyResponseSchema)(body)
+  }
+}
+
+function parseJsonBody(bodyText: string, assertion: HealthAssertion): unknown {
+  try {
+    return JSON.parse(bodyText)
+  } catch (cause) {
+    throw new Error(`${assertion.curl} returned non-JSON body`, { cause })
+  }
+}
+
+function curlGet(baseUrl: string, path: HealthAssertionPath) {
+  return `curl -fsS ${shellQuote(new URL(path, baseUrl).toString())}`
+}
+
+function shellQuote(value: string) {
+  return `"${value
+    .replaceAll('\\', '\\\\')
+    .replaceAll('"', '\\"')
+    .replaceAll('$', '\\$')
+    .replaceAll('`', '\\`')}"`
+}
