@@ -7,7 +7,6 @@ import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import mdx from '@mdx-js/rollup'
 import tailwindcss from '@tailwindcss/vite'
 import { repoChangelogPlugin } from './plugins/repo-changelog'
-import { repoPerfLogPlugin } from './plugins/repo-perf-log'
 import { themeColorsPlugin } from './plugins/theme-colors'
 
 const VPS_PROXY_TARGET = process.env.VITE_VPS_BASE_URL || 'http://127.0.0.1:3003'
@@ -31,7 +30,6 @@ export default defineConfig({
     tailwindcss(),
     themeColorsPlugin(),
     repoChangelogPlugin(),
-    repoPerfLogPlugin(),
     {
       enforce: 'pre',
       ...mdx({
