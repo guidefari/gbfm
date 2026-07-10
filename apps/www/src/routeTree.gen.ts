@@ -14,6 +14,7 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SubscribeRouteImport } from './routes/subscribe'
 import { Route as RemindersRouteImport } from './routes/reminders'
 import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as PerfRouteImport } from './routes/perf'
 import { Route as MixUploadRouteImport } from './routes/mix-upload'
 import { Route as LabelUploadRouteImport } from './routes/label-upload'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -89,6 +90,11 @@ const RemindersRoute = RemindersRouteImport.update({
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PerfRoute = PerfRouteImport.update({
+  id: '/perf',
+  path: '/perf',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MixUploadRoute = MixUploadRouteImport.update({
@@ -360,6 +366,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRouteWithChildren
   '/label-upload': typeof LabelUploadRoute
   '/mix-upload': typeof MixUploadRoute
+  '/perf': typeof PerfRoute
   '/privacy': typeof PrivacyRoute
   '/reminders': typeof RemindersRoute
   '/subscribe': typeof SubscribeRoute
@@ -413,6 +420,7 @@ export interface FileRoutesByTo {
   '/changelog': typeof ChangelogRoute
   '/label-upload': typeof LabelUploadRoute
   '/mix-upload': typeof MixUploadRoute
+  '/perf': typeof PerfRoute
   '/privacy': typeof PrivacyRoute
   '/reminders': typeof RemindersRoute
   '/subscribe': typeof SubscribeRoute
@@ -472,6 +480,7 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRouteWithChildren
   '/label-upload': typeof LabelUploadRoute
   '/mix-upload': typeof MixUploadRoute
+  '/perf': typeof PerfRoute
   '/privacy': typeof PrivacyRoute
   '/reminders': typeof RemindersRoute
   '/subscribe': typeof SubscribeRoute
@@ -532,6 +541,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/label-upload'
     | '/mix-upload'
+    | '/perf'
     | '/privacy'
     | '/reminders'
     | '/subscribe'
@@ -585,6 +595,7 @@ export interface FileRouteTypes {
     | '/changelog'
     | '/label-upload'
     | '/mix-upload'
+    | '/perf'
     | '/privacy'
     | '/reminders'
     | '/subscribe'
@@ -643,6 +654,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/label-upload'
     | '/mix-upload'
+    | '/perf'
     | '/privacy'
     | '/reminders'
     | '/subscribe'
@@ -702,6 +714,7 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRouteWithChildren
   LabelUploadRoute: typeof LabelUploadRoute
   MixUploadRoute: typeof MixUploadRoute
+  PerfRoute: typeof PerfRoute
   PrivacyRoute: typeof PrivacyRoute
   RemindersRoute: typeof RemindersRoute
   SubscribeRoute: typeof SubscribeRoute
@@ -770,6 +783,13 @@ declare module '@tanstack/react-router' {
       path: '/privacy'
       fullPath: '/privacy'
       preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/perf': {
+      id: '/perf'
+      path: '/perf'
+      fullPath: '/perf'
+      preLoaderRoute: typeof PerfRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/mix-upload': {
@@ -1232,6 +1252,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRouteWithChildren,
   LabelUploadRoute: LabelUploadRoute,
   MixUploadRoute: MixUploadRoute,
+  PerfRoute: PerfRoute,
   PrivacyRoute: PrivacyRoute,
   RemindersRoute: RemindersRoute,
   SubscribeRoute: SubscribeRoute,
