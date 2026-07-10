@@ -9,6 +9,18 @@ export const www = new sst.aws.StaticSite('gbfm-www', {
     command: 'bun run build',
     output: 'dist'
   },
+  assets: {
+    fileOptions: [
+      {
+        files: '**',
+        cacheControl: 'max-age=31536000,public,immutable'
+      },
+      {
+        files: '**/*.html',
+        cacheControl: 'public,max-age=60,must-revalidate'
+      }
+    ]
+  },
   environment: {
     VITE_VPS_BASE_URL: isLocal ? '' : vps_gateway.url,
     VITE_PUBLIC_SENTRY_DSN: secret.VITE_PUBLIC_SENTRY_DSN.value,
