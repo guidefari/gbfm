@@ -1,3 +1,10 @@
+## [2.65.3](https://github.com/guidefari/gbfm/compare/v2.65.2...v2.65.3) (2026-07-10)
+
+
+### Bug Fixes
+
+* **www:** apply 60s cache-control to root path, not just *.html ([437cad4](https://github.com/guidefari/gbfm/commit/437cad401264faafdba892d6051e5769a99b63af))
+
 ## [2.65.2](https://github.com/guidefari/gbfm/compare/v2.65.1...v2.65.2) (2026-07-10)
 
 
