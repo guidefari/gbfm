@@ -1,3 +1,10 @@
+## [2.65.2](https://github.com/guidefari/gbfm/compare/v2.65.1...v2.65.2) (2026-07-10)
+
+
+### Performance Improvements
+
+* **www:** cache index.html at edge, lazy-load auth dialogs ([#141](https://github.com/guidefari/gbfm/issues/141)) ([23987c5](https://github.com/guidefari/gbfm/commit/23987c5eb67bb0f1376c3aee32f40285dcf3cf54)), closes [#139](https://github.com/guidefari/gbfm/issues/139)
+
 ## [2.65.1](https://github.com/guidefari/gbfm/compare/v2.65.0...v2.65.1) (2026-07-10)
 
 
