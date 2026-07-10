@@ -1,8 +1,7 @@
 import { useFeatureFlag } from '@gbfm/core/feature-flags'
 import { toast } from '@gbfm/ui'
-import { Share } from 'lucide-react'
+import { Download, Share } from 'lucide-react'
 import type React from 'react'
-import { MdOutlineDownloading } from 'react-icons/md'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { cn, copyToClipboard } from '@/lib/utils'
 import { log } from '@/services/logger'
@@ -126,7 +125,7 @@ export const MinimalCard: React.FC<Props> = ({
             <PlayPauseButton url={previewUrl} thumbnailUrl={imageUrl} title={title} />
             {download && (
               <a type='button' title='Download' href={constructUrl()}>
-                <MdOutlineDownloading className='py-0.5 default-icon' />
+                <Download className='py-0.5 default-icon' />
               </a>
             )}
             {isShareEnabled && shareUrl && (

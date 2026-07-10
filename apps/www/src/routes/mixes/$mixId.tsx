@@ -16,12 +16,13 @@ import {
   ListPlus,
   Loader2,
   MoreHorizontal,
+  Pause,
+  Play,
   QrCode,
   Share2,
   Tag
 } from 'lucide-react'
 import * as React from 'react'
-import { GiPauseButton, GiPlayButton } from 'react-icons/gi'
 import { FavoriteButton } from '@/components/FavoriteButton'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { RouteError } from '@/components/RouteError'
@@ -375,12 +376,12 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
               className='flex-1 h-12 text-base font-bold tracking-widest transition-all rounded-none shadow-sm hover:shadow-md active:scale-95'>
               {isActive && isPlaying ? (
                 <>
-                  <GiPauseButton className='mr-2 text-xl' />
+                  <Pause className='mr-2 text-xl' />
                   Pause
                 </>
               ) : (
                 <>
-                  <GiPlayButton className='mr-2 text-xl' />
+                  <Play className='mr-2 text-xl' />
                   Play
                 </>
               )}

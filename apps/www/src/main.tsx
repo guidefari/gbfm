@@ -59,17 +59,7 @@ if (env.sentryDsn && (!env.isDev || env.sentryEnableLocal)) {
     release: env.sentryRelease,
     debug: env.isDev,
     enableLogs: true,
-    integrations: [
-      Sentry.browserTracingIntegration(),
-      ...(env.isDev
-        ? []
-        : [
-            Sentry.replayIntegration({
-              maskAllText: false,
-              blockAllMedia: false
-            })
-          ])
-    ],
+    integrations: [Sentry.browserTracingIntegration()],
     tracesSampleRate: 1.0,
     tracePropagationTargets,
     replaysSessionSampleRate: 0,
@@ -78,6 +68,25 @@ if (env.sentryDsn && (!env.isDev || env.sentryEnableLocal)) {
     beforeSend: (event) => (hasLocalUrl(event) ? null : event),
     beforeSendTransaction: (event) => (hasLocalUrl(event) ? null : event)
   })
+
+  // Replay only ever fires on error (replaysSessionSampleRate is 0), so its ~300KB
+  // client is loaded on first error instead of shipping in the initial bundle.
+  if (!env.isDev) {
+    let replayLoading = false
+    const client = Sentry.getClient()
+    client?.on('beforeSendEvent', (event) => {
+      if (replayLoading || event.exception === undefined) return
+      replayLoading = true
+      import('@sentry/react').then(({ replayIntegration }) => {
+        client.addIntegration(
+          replayIntegration({
+            maskAllText: false,
+            blockAllMedia: false
+          })
+        )
+      })
+    })
+  }
 }
 
 function App() {

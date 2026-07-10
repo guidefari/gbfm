@@ -1,8 +1,8 @@
 import { useFeatureFlag } from '@gbfm/core/feature-flags'
+import { lazy, Suspense } from 'react'
 import type React from 'react'
 import AudioPlayer from '@/components/AudioPlayer'
 import FullscreenAudioPlayer from '@/components/FullscreenAudioPlayer'
-import { QueueColumn } from '@/components/queue/QueueColumn'
 import { useAudioPlayerInitializer } from '@/hooks/useAudioPlayer'
 import { useMediaHotkeys } from '@/hooks/useMediaHotkeys'
 import { useMixPlayTracking } from '@/hooks/useMixPlayTracking'
@@ -11,6 +11,10 @@ import { useUIStore } from '@/store'
 import { useAudioPlayerPlaybackState, useAudioPlayerVisibilityState } from '@/store/audioPlayer'
 
 import { FloatingMenu } from './FloatingMenu'
+
+const QueueColumn = lazy(() =>
+  import('@/components/queue/QueueColumn').then((m) => ({ default: m.QueueColumn }))
+)
 
 type Props = {
   children: React.ReactNode
@@ -49,7 +53,11 @@ export default function AppShell({ children }: Props) {
           </div>
         )}
 
-        {isQueueEnabled && <QueueColumn />}
+        {isQueueEnabled && (
+          <Suspense fallback={null}>
+            <QueueColumn />
+          </Suspense>
+        )}
 
         <FullscreenAudioPlayer />
       </div>

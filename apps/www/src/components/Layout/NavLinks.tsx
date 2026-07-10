@@ -9,8 +9,8 @@ import {
   Settings,
   Tag
 } from 'lucide-react'
-import { TfiYoutube } from 'react-icons/tfi'
 import { RSS } from '@/components/RSS'
+import { YoutubeIcon } from '@/components/icons/YoutubeIcon'
 
 export type NavSurface = 'overlay'
 
@@ -113,7 +113,7 @@ export const navConfig: NavItem[] = [
   {
     id: 'youtube',
     name: 'Mixes via YouTube',
-    icon: <TfiYoutube className={iconSytles} />,
+    icon: <YoutubeIcon className={iconSytles} />,
     tier: 'utility',
     surfaces: ['overlay'],
     external: 'https://youtube.com/@goosebumpsfm'

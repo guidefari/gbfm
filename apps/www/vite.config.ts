@@ -36,8 +36,8 @@ export default defineConfig({
         /* jsxImportSource: …, otherOptions… */
       })
     },
-    react({ include: /\.(jsx|js|mdx|md|tsx|ts)$/ }),
-    tanstackRouter()
+    tanstackRouter({ autoCodeSplitting: true }),
+    react({ include: /\.(jsx|js|mdx|md|tsx|ts)$/ })
   ],
   resolve: {
     alias: {
