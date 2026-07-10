@@ -1,3 +1,10 @@
+## [2.65.1](https://github.com/guidefari/gbfm/compare/v2.65.0...v2.65.1) (2026-07-10)
+
+
+### Performance Improvements
+
+* **www:** cut homepage entry bundle 45%, LCP 1.8s -> 1.0s ([#139](https://github.com/guidefari/gbfm/issues/139)) ([d515b76](https://github.com/guidefari/gbfm/commit/d515b76811f65cb1531186bd4ca1f5ac5ef65acb))
+
 # [2.65.0](https://github.com/guidefari/gbfm/compare/v2.64.0...v2.65.0) (2026-07-10)
 
 
