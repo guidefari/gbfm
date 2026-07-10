@@ -1,4 +1,5 @@
 import { Layer } from 'effect'
+import { OtlpLive } from '@/lib/otel'
 import { MdxServiceLive } from '@/lib/mdx'
 import { DatabaseServiceLive } from '@/services/database.service'
 
@@ -31,7 +32,13 @@ const DevToolsLive: Layer.Layer<never> = Layer.empty
 
 const SentryClientLive = SentryClientServiceLive.pipe(Layer.provide(ConfigServiceLive))
 
+const ObservabilityLive = OtlpLive.pipe(
+  Layer.provide(ConfigServiceLive),
+  Layer.provide(SentryClientLive)
+)
+
 const BaseServicesLayer = Layer.mergeAll(
+  ObservabilityLive,
   ConfigServiceLive,
   DatabaseServiceLive,
   EmailServiceLive,
