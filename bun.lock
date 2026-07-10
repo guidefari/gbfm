@@ -114,7 +114,6 @@
       },
       "devDependencies": {
         "@effect/language-service": "0.86.4",
-        "@gbfm/api-test": "workspace:*",
         "@testcontainers/postgresql": "^11.14.0",
         "@types/aws-lambda": "8.10.161",
         "@types/bun": "1.3.13",
@@ -191,19 +190,6 @@
       "name": "@gbfm/api",
       "version": "0.0.1",
       "dependencies": {
-        "effect": "4.0.0-beta.93",
-      },
-      "devDependencies": {
-        "@types/bun": "1.3.13",
-        "typescript": "6.0.3",
-        "vitest": "4.1.8",
-      },
-    },
-    "packages/api-test": {
-      "name": "@gbfm/api-test",
-      "version": "0.0.1",
-      "dependencies": {
-        "@gbfm/api": "workspace:*",
         "effect": "4.0.0-beta.93",
       },
       "devDependencies": {
@@ -764,8 +750,6 @@
     "@floating-ui/utils": ["@floating-ui/utils@0.2.10", "", {}, "sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ=="],
 
     "@gbfm/api": ["@gbfm/api@workspace:packages/api"],
-
-    "@gbfm/api-test": ["@gbfm/api-test@workspace:packages/api-test"],
 
     "@gbfm/core": ["@gbfm/core@workspace:packages/core"],
 
