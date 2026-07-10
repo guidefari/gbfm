@@ -3,22 +3,22 @@ import { CSS } from '@dnd-kit/utilities'
 import { Button } from '@gbfm/ui'
 import { Link } from '@tanstack/react-router'
 import { ExternalLink, GripVertical, Pencil, Trash2 } from 'lucide-react'
-import type { IconType } from 'react-icons'
+import type { ComponentType, SVGProps } from 'react'
 
-import {
-  SiApplemusic,
-  SiBandcamp,
-  SiDiscord,
-  SiInstagram,
-  SiMusicbrainz,
-  SiSoundcloud,
-  SiSpotify,
-  SiTidal,
-  SiX,
-  SiYoutube,
-  SiYoutubemusic
-} from 'react-icons/si'
 import { CoverThumb } from '@/components/CoverThumb'
+import {
+  AppleMusicIcon,
+  BandcampIcon,
+  DiscordIcon,
+  InstagramIcon,
+  MusicbrainzIcon,
+  SoundcloudIcon,
+  SpotifyIcon,
+  TidalIcon,
+  XIcon,
+  YoutubeIcon,
+  YoutubeMusicIcon
+} from '@/components/icons/BrandIcons'
 import { spotifyIdFromUrl } from '@/lib/spotify-pkce'
 import { TrackPlaybackControls } from './-TrackPlaybackControls'
 
@@ -55,18 +55,21 @@ const PLATFORM_LABELS: Record<string, string> = {
   other: 'Other'
 }
 
-const PLATFORM_ICONS: Record<string, { Icon: IconType; color: string }> = {
-  spotify: { Icon: SiSpotify, color: '#1DB954' },
-  youtube: { Icon: SiYoutube, color: '#FF0000' },
-  youtube_music: { Icon: SiYoutubemusic, color: '#FF0000' },
-  apple_music: { Icon: SiApplemusic, color: '#FA243C' },
-  bandcamp: { Icon: SiBandcamp, color: '#629AA9' },
-  soundcloud: { Icon: SiSoundcloud, color: '#FF5500' },
-  tidal: { Icon: SiTidal, color: '#000000' },
-  discord: { Icon: SiDiscord, color: '#5865F2' },
-  instagram: { Icon: SiInstagram, color: '#E4405F' },
-  twitter: { Icon: SiX, color: '#000000' },
-  musicbrainz: { Icon: SiMusicbrainz, color: '#BA478F' }
+const PLATFORM_ICONS: Record<
+  string,
+  { Icon: ComponentType<SVGProps<SVGSVGElement>>; color: string }
+> = {
+  spotify: { Icon: SpotifyIcon, color: '#1DB954' },
+  youtube: { Icon: YoutubeIcon, color: '#FF0000' },
+  youtube_music: { Icon: YoutubeMusicIcon, color: '#FF0000' },
+  apple_music: { Icon: AppleMusicIcon, color: '#FA243C' },
+  bandcamp: { Icon: BandcampIcon, color: '#629AA9' },
+  soundcloud: { Icon: SoundcloudIcon, color: '#FF5500' },
+  tidal: { Icon: TidalIcon, color: '#000000' },
+  discord: { Icon: DiscordIcon, color: '#5865F2' },
+  instagram: { Icon: InstagramIcon, color: '#E4405F' },
+  twitter: { Icon: XIcon, color: '#000000' },
+  musicbrainz: { Icon: MusicbrainzIcon, color: '#BA478F' }
 }
 
 const PLATFORM_PRIORITY = ['spotify', 'apple_music', 'youtube_music', 'youtube', 'bandcamp']
