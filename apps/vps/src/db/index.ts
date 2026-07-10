@@ -18,7 +18,9 @@ const dbConfig = {
   user: config.database.user,
   password: config.database.password,
   database: config.database.name,
-  ssl: sslConfig
+  ssl: sslConfig,
+  min: 1,
+  idleTimeoutMillis: 10 * 60 * 1000
 }
 
 console.log(
