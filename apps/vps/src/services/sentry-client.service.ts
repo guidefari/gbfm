@@ -20,8 +20,8 @@ export const SentryClientServiceLive = Layer.effect(
     const enabled = shouldEnableSentry(sentry.dsn, sentry.environment)
 
     if (!enabled) {
-      yield* Effect.logWarning(
-        `[sentry] disabled (dsn=${sentry.dsn ? 'set' : 'missing'}, env=${sentry.environment}, set SENTRY_ENABLED=true to force)`
+      yield* Effect.logDebug(
+        `[sentry] disabled (dsn=${sentry.dsn ? 'set' : 'missing'}, env=${sentry.environment})`
       )
       return { client: undefined, enabled: false }
     }
