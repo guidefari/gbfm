@@ -1507,31 +1507,52 @@ type NewsletterSubscribeResponse = {
 
 export function useNewsletterSubscribe() {
   return useMutation<NewsletterSubscribeResponse, Error, { email: string; name?: string }>({
-    mutationFn: async ({ email, name }) =>
-      fetcher<NewsletterSubscribeResponse>(apiUrl('/newsletter/subscribe'), {
-        method: 'POST',
-        body: JSON.stringify({ email, name, source: 'subscribe_page' })
-      })
+    mutationFn: async ({ email, name }) => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.newsletter
+          .subscribe({ payload: { email, name, source: 'subscribe_page' } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'newsletter.subscribe' })
+            )
+          )
+      )
+    }
   })
 }
 
 export function useNewsletterUnsubscribe() {
   return useMutation<{ success: boolean }, Error, { token: string }>({
-    mutationFn: async ({ token }) =>
-      fetcher<{ success: boolean }>(apiUrl('/newsletter/unsubscribe'), {
-        method: 'POST',
-        body: JSON.stringify({ token })
-      })
+    mutationFn: async ({ token }) => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.newsletter
+          .unsubscribe({ payload: { token } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'newsletter.unsubscribe' })
+            )
+          )
+      )
+    }
   })
 }
 
 export function useRequestNewsletterUnsubscribe() {
   return useMutation<{ sent: boolean }, Error, { email: string }>({
-    mutationFn: async ({ email }) =>
-      fetcher<{ sent: boolean }>(apiUrl('/newsletter/request-unsubscribe'), {
-        method: 'POST',
-        body: JSON.stringify({ email })
-      })
+    mutationFn: async ({ email }) => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.newsletter
+          .requestUnsubscribe({ payload: { email } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'newsletter.requestUnsubscribe' })
+            )
+          )
+      )
+    }
   })
 }
 
