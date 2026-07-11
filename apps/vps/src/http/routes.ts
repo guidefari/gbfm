@@ -14,6 +14,7 @@ import { LabelHandlersLive } from '@/http/label.handlers'
 import { MusicHandlersLive } from '@/http/music.handlers'
 import { NewsletterHandlersLive } from '@/http/newsletter.handlers'
 import { ProfileHandlersLive } from '@/http/profile.handlers'
+import { ReleaseHandlersLive } from '@/http/release.handlers'
 import { ResolveHandlersLive } from '@/http/resolve.handlers'
 import { SearchHandlersLive } from '@/http/search.handlers'
 import { SearchCacheHeaderLive } from '@/http/search.middleware'
@@ -72,6 +73,7 @@ export const createWebHandler = (
     Layer.provide(AdminHandlersLive),
     Layer.provide(InviteHandlersLive),
     Layer.provide(LabelHandlersLive),
+    Layer.provide(ReleaseHandlersLive),
     Layer.provide(FavoritesHandlersLive),
     Layer.provide(NewsletterHandlersLive),
     Layer.provide(FileManagerHandlersLive),
