@@ -143,7 +143,9 @@ export function createConfig(): ConfigService {
   const dbStage = isProd ? 'prod' : undefined
   const logLevel = undefined
 
-  const otelEndpoint = secretString('OTEL_EXPORTER_OTLP_ENDPOINT', '')
+  const otelEndpoint =
+    secretString('OTEL_EXPORTER_OTLP_ENDPOINT', '') ||
+    (['dev', 'local'].includes(appStage) ? 'http://localhost:4318' : '')
   const otelHeaders = secretString('OTEL_EXPORTER_OTLP_HEADERS', '')
 
   const adminEmail = secretString('AdminEmail', 'guidefari@icloud.com')
