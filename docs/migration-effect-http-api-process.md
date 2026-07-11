@@ -78,14 +78,29 @@ When there is a consumer:
    than leaving the wrong claim ("no UI surface") sitting in a merged PR
    history.
 
-## Adversarial review at every checkpoint
+## Adversarial review after the PR is open
 
-Every group gets one review pass before it's considered done, dispatched
-as a headless agent with an explicit, self-contained prompt (the agent
-has no memory of this conversation -- it needs file paths, the specific
-claims to verify, and the specific commands to run, not "review this
-PR"). The standing framing: **assume the implementation is wrong and try
-to prove it**, not "read the diff and confirm it looks right."
+The review runs **after** the PR is created, not before. This way the
+reviewer (and you) can see the real diff, the PR description, and the
+screenshot evidence while the review is in flight. The sequence is:
+
+1. Commit, push, open the PR with the description + test evidence.
+2. Dispatch the adversarial review agent against the open PR's diff.
+3. While the review runs, review the PR yourself -- the screenshots and
+   curl output are already in the PR body.
+
+The review agent is dispatched as a headless agent with an explicit,
+self-contained prompt (the agent has no memory of this conversation -- it
+needs file paths, the specific claims to verify, and the specific
+commands to run, not "review this PR"). The standing framing: **assume
+the implementation is wrong and try to prove it**, not "read the diff and
+confirm it looks right."
+
+**One review pass** is the default. Dispatch a second pass (with a
+different agent or a different framing) only when the PR touches
+middleware, auth, shared schemas used by multiple groups, or any other
+complexity that warrants a second pair of eyes. Don't auto-dispatch two
+for every PR -- most step-6 mechanical swaps don't need it.
 
 Concretely, every review prompt asks the agent to:
 - Re-derive schema/type claims from the real source (service types,
@@ -100,7 +115,6 @@ Concretely, every review prompt asks the agent to:
   get argued away in the same turn it's raised; either the code changes
   or there's a concrete reason (stated in the PR, not just in chat) why
   it's not a real issue.
-- There's a code review skill, may be worth invoking that too?
 
 **Known failure mode in this environment: worktree isolation for review
 agents has been unreliable** -- three separate dispatches with
