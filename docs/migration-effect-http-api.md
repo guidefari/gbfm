@@ -643,7 +643,7 @@ const buildClient = () =>
     baseUrl: import.meta.env.VITE_VPS_BASE_URL || window.location.origin,
   }).pipe(Effect.provide(FetchLive))
 
-export type ApiClient = Effect.Effect.Success<ReturnType<typeof buildClient>>
+export type ApiClient = Effect.Success<ReturnType<typeof buildClient>>
 
 let _client: ApiClient | null = null
 

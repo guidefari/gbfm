@@ -12,9 +12,11 @@ import type {
   SelectShow,
   SelectShowSubscription
 } from '@gbfm/vps/schemas'
+import { Effect } from 'effect'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { RuntimeClient } from '@/runtime'
 import { captureException } from '@/services/analytics'
+import { getApiClient } from './api-client'
 import { useSession } from './auth-client'
 import { createFetcher, getRequestMethod, getRequestUrl, type ApiFailureInput } from './http-client'
 import {
@@ -1155,7 +1157,17 @@ export interface AdminMusicEntityLink {
 export function useAdminArtists() {
   return useQuery<MusicArtist[]>({
     queryKey: ['admin', 'artists'],
-    queryFn: () => fetcher(apiUrl('/music/artists'))
+    queryFn: async () => {
+      const client = await getApiClient()
+      const artists = await Effect.runPromise(
+        client.music
+          .listArtists({})
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'music.listArtists' }))
+          )
+      )
+      return artists.map((a) => ({ ...a, genres: a.genres ? [...a.genres] : null }))
+    }
   })
 }
 
