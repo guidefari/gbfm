@@ -364,4 +364,15 @@ describe('favorites (HttpApiBuilder group, Step 6)', () => {
 
     expect(res.status).toBe(401)
   })
+
+  it('DELETE /api/favorites/:audioId returns 401 (not 400) for a non-UUID audioId without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/favorites/not-a-uuid', { method: 'DELETE' })
+    )
+
+    // AuthMiddleware runs before param schema validation (same ordering as
+    // admin's frontend-errors :scenario case) -- a malformed audioId still
+    // 401s rather than 400ing, since there's no session cookie either way.
+    expect(res.status).toBe(401)
+  })
 })

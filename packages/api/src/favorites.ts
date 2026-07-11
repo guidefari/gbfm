@@ -2,10 +2,13 @@ import { Schema } from 'effect'
 import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/unstable/httpapi'
 import { AuthMiddleware } from './middleware/auth'
 
+const UuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const Uuid = Schema.String.pipe(Schema.check(Schema.isPattern(UuidPattern)))
+
 // Exactly-one-of audioId/showId is enforced in the handler, not the schema.
 export const AddFavoriteInput = Schema.Struct({
-  audioId: Schema.optional(Schema.String),
-  showId: Schema.optional(Schema.String)
+  audioId: Schema.optional(Uuid),
+  showId: Schema.optional(Uuid)
 })
 export type AddFavoriteInput = typeof AddFavoriteInput.Type
 
@@ -62,14 +65,14 @@ export const FavoritesGroup = HttpApiGroup.make('favorites')
   )
   .add(
     HttpApiEndpoint.delete('removeFavorite', '/api/favorites/:audioId', {
-      params: { audioId: Schema.String },
+      params: { audioId: Uuid },
       success: FavoriteActionResponse,
       error: HttpApiError.NotFound
     }).middleware(AuthMiddleware)
   )
   .add(
     HttpApiEndpoint.delete('removeShowFavorite', '/api/favorites/show/:showId', {
-      params: { showId: Schema.String },
+      params: { showId: Uuid },
       success: FavoriteActionResponse,
       error: HttpApiError.NotFound
     }).middleware(AuthMiddleware)
