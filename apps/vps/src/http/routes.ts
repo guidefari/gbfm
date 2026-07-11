@@ -6,6 +6,8 @@ import { HttpApiBuilder } from 'effect/unstable/httpapi'
 import type { AppType } from '@/app'
 import { AdminHandlersLive } from '@/http/admin.handlers'
 import { checkDatabase, makeHealthHandlers } from '@/http/health.handlers'
+import { confirmInviteRoute } from '@/http/invite-confirm.route'
+import { InviteHandlersLive } from '@/http/invite.handlers'
 import { InternalHandlersLive } from '@/http/internal.handlers'
 import { MusicHandlersLive } from '@/http/music.handlers'
 import { ProfileHandlersLive } from '@/http/profile.handlers'
@@ -62,6 +64,7 @@ export const createWebHandler = (
     Layer.provide(ProfileHandlersLive),
     Layer.provide(ResolveHandlersLive),
     Layer.provide(AdminHandlersLive),
+    Layer.provide(InviteHandlersLive),
     Layer.provide(AuthMiddlewareLive),
     // provideMerge, not provide: services a handler pulls via plain `yield*`
     // only clear toWebHandler's phantom-context requirement once they're
@@ -70,7 +73,13 @@ export const createWebHandler = (
   )
 
   return HttpRouter.toWebHandler(
-    Layer.mergeAll(ApiLive, betterAuthRoute, honoFallback(honoApp), SearchCacheHeaderLive).pipe(
+    Layer.mergeAll(
+      ApiLive,
+      betterAuthRoute,
+      confirmInviteRoute,
+      honoFallback(honoApp),
+      SearchCacheHeaderLive
+    ).pipe(
       Layer.provideMerge(HttpServer.layerServices),
       // Effect.logError inside health handlers must reach the app's real
       // Pino + Sentry logger, not Effect's bare default console logger --

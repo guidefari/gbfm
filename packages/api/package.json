@@ -10,6 +10,7 @@
     "./search": "./src/search.ts",
     "./profile": "./src/profile.ts",
     "./resolve": "./src/resolve.ts",
+    "./invite": "./src/invite.ts",
     "./errors": "./src/errors.ts",
     "./testing": "./src/testing.ts",
     "./middleware/auth": "./src/middleware/auth.ts"
