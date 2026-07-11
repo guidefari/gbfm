@@ -497,3 +497,72 @@ describe('file-manager (HttpApiBuilder group, Step 6)', () => {
     expect(res.status).toBe(401)
   })
 })
+
+describe('spotify (HttpApiBuilder group, Step 6)', () => {
+  it('POST /api/spotify/track 400s on an empty id (no auth required, unlike other groups)', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/spotify/track', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ id: '' })
+      })
+    )
+
+    expect(res.status).toBe(400)
+  })
+
+  it('POST /api/spotify/search/albums 400s on an empty query', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/spotify/search/albums', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ query: '' })
+      })
+    )
+
+    expect(res.status).toBe(400)
+  })
+
+  it('POST /api/spotify/search/albums 400s on limit above the 50 max', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/spotify/search/albums', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ query: 'test', limit: 999 })
+      })
+    )
+
+    expect(res.status).toBe(400)
+  })
+
+  it('POST /api/spotify/enrich 400s on a non-URL string', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/spotify/enrich', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ url: 'not-a-url' })
+      })
+    )
+
+    expect(res.status).toBe(400)
+  })
+
+  it('POST /api/spotify/track with a real-shaped id returns a real status (not 401 -- unauthenticated is fine for this group)', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/spotify/track', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ id: 'not-a-real-spotify-id' })
+      })
+    )
+
+    // No AuthMiddleware on this group (matches the old Hono routes, which
+    // had no betterAuthMiddleware). An invalid-but-nonempty Spotify ID
+    // reaches SpotifyService, which fails with statusCode 400 -- this is
+    // the specific bug fix this PR makes (the old handler's generic error
+    // mapper hard-coded every SpotifyError to 502 regardless of the
+    // service's own statusCode).
+    expect(res.status).not.toBe(401)
+    expect(res.status).not.toBe(502)
+  })
+})

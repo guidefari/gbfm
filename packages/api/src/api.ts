@@ -10,6 +10,7 @@ import { NewsletterGroup } from './newsletter'
 import { ProfileGroup } from './profile'
 import { ResolveGroup } from './resolve'
 import { SearchGroup } from './search'
+import { SpotifyGroup } from './spotify'
 
 export const Api = HttpApi.make('gbfm')
   .add(HealthGroup)
@@ -23,3 +24,4 @@ export const Api = HttpApi.make('gbfm')
   .add(FavoritesGroup)
   .add(NewsletterGroup)
   .add(FileManagerGroup)
+  .add(SpotifyGroup)
