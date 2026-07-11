@@ -1,6 +1,4 @@
-import { sql } from 'drizzle-orm'
-import { Data, Duration, Effect, Schedule } from 'effect'
-import type { Context } from 'hono'
+import { Duration, Effect, Schedule } from 'effect'
 import configureOpenAPI from '@/lib/configure-open-api'
 import { createAppEffect } from '@/lib/create-app'
 import admin from '@/routes/admin/admin.index'
@@ -22,24 +20,11 @@ import spotify from '@/routes/spotify/spotify.index'
 import upload from '@/routes/upload/upload.index'
 import uploadMultipart from '@/routes/upload-multipart/upload-multipart.index'
 import user from '@/routes/user/user.index'
-import { db } from './db'
 import { regenerateSitemap } from './routes/redirect/seo/sitemap'
 import { runApp, runAppFork } from './runtime'
 import { processPendingReminders, queryNextDueReminder } from './services/reminder-processor'
 import { ReminderSignalService } from './services/reminder-signal.service'
 import { SentryService } from './services/sentry.service'
-
-class HealthCheckError extends Data.TaggedError('HealthCheckError')<{
-  cause?: unknown
-}> {}
-
-const healthCheckEffect = Effect.tryPromise({
-  try: () => db.execute(sql.raw('SELECT 1')),
-  catch: (cause) => new HealthCheckError({ cause })
-})
-
-const READINESS_CACHE_MS = 5_000
-let readinessCache: { checkedAt: number; status: 200 | 500 } | undefined
 
 const setupRoutesEffect = Effect.gen(function* () {
   yield* SentryService
@@ -66,37 +51,11 @@ const setupRoutesEffect = Effect.gen(function* () {
   app.route('/api/music-reminders', musicReminders)
 
   // Kept at root, not under /api: these are externally-referenced public URLs.
-  // /auth is handled by the Effect router directly (apps/vps/src/http/routes.ts,
-  // step 2c) -- not mounted here.
+  // /auth and /health are handled by the Effect router directly
+  // (apps/vps/src/http/routes.ts, steps 2c/3a) -- not mounted here.
   app.route('/s', shareRouter)
   app.route('', rss)
   app.route('', seoRouter)
-
-  app.get('/health/live', (c) => c.json({ ok: true }, 200))
-
-  const readinessHealthRoute = async (c: Context) => {
-    const cache = readinessCache
-    const cachedStatus = cache && Date.now() - cache.checkedAt < READINESS_CACHE_MS
-
-    if (cachedStatus) {
-      return c.json({ dbConnected: cache.status === 200 }, cache.status)
-    }
-
-    const program = healthCheckEffect.pipe(
-      Effect.map(() => ({ data: { dbConnected: true }, status: 200 as const })),
-      Effect.catch(() => Effect.succeed({ data: { dbConnected: false }, status: 500 as const }))
-    )
-
-    const result = await runApp(program)
-    readinessCache = {
-      checkedAt: Date.now(),
-      status: result.status
-    }
-    return c.json(result.data, result.status)
-  }
-
-  app.get('/health/ready', readinessHealthRoute)
-  app.get('/health', readinessHealthRoute)
 
   return app
 })
