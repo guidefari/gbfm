@@ -644,6 +644,16 @@ describe('shows (HttpApiBuilder group, Step 6)', () => {
     expect(res.status).toBe(401)
   })
 
+  it('POST /api/shows/:id/subscribe returns 401 (not 400) for a non-UUID id without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/shows/not-a-uuid/subscribe', { method: 'POST' })
+    )
+
+    // AuthMiddleware runs before param schema validation, same ordering as
+    // admin/favorites/file-manager.
+    expect(res.status).toBe(401)
+  })
+
   it('GET /api/shows/:slug/episodes returns something other than 401 without a session cookie', async () => {
     const res = await webHandler.handler(
       new Request('http://localhost/api/shows/does-not-exist-slug/episodes')

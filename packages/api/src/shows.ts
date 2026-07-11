@@ -2,6 +2,9 @@ import { Schema } from 'effect'
 import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/unstable/httpapi'
 import { AuthMiddleware } from './middleware/auth'
 
+const UuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const Uuid = Schema.String.pipe(Schema.check(Schema.isPattern(UuidPattern)))
+
 const ShowHost = Schema.Struct({
   id: Schema.String,
   name: Schema.String
@@ -176,14 +179,14 @@ export const ShowsGroup = HttpApiGroup.make('shows')
   )
   .add(
     HttpApiEndpoint.post('subscribeToShow', '/api/shows/:id/subscribe', {
-      params: { id: Schema.String },
+      params: { id: Uuid },
       success: SubscriptionResponse,
       error: [HttpApiError.Forbidden, HttpApiError.Conflict, HttpApiError.InternalServerError]
     }).middleware(AuthMiddleware)
   )
   .add(
     HttpApiEndpoint.delete('unsubscribeFromShow', '/api/shows/:id/unsubscribe', {
-      params: { id: Schema.String },
+      params: { id: Uuid },
       error: [HttpApiError.Forbidden, HttpApiError.NotFound, HttpApiError.InternalServerError]
     }).middleware(AuthMiddleware)
   )
