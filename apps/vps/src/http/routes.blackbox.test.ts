@@ -37,12 +37,14 @@ describe('Effect toWebHandler fallback', () => {
     })
   })
 
-  it('GET /api/music/artists falls through to the Hono app', async () => {
-    const res = await webHandler.handler(new Request('http://localhost/api/music/artists'))
+  it('GET /api/music/artists returns the same response as the plain Hono app', async () => {
+    const [viaHandler, viaHono] = await Promise.all([
+      webHandler.handler(new Request('http://localhost/api/music/artists')),
+      app.request('/api/music/artists')
+    ])
 
-    expect(res.status).toBe(200)
-    const body: unknown = await res.json()
-    expect(Array.isArray(body)).toBe(true)
+    expect(viaHandler.status).toBe(viaHono.status)
+    await expect(viaHandler.json()).resolves.toEqual(await viaHono.json())
   })
 
   it('unknown routes fall through to the Hono app and 404', async () => {
