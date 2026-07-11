@@ -586,9 +586,27 @@ export function useAllLabels({ limit = DEFAULT_PAGE_SIZE }: PaginationOptions = 
     useInfiniteQuery<PaginatedResponse<SelectLabel>, Error>({
       queryKey: ['labels', limit],
       queryFn: async ({ pageParam = 0 }) => {
-        const url = apiUrlObj(`/content/labels`)
-        setPaginationParams(url, Number(pageParam), { limit })
-        return fetcher<PaginatedResponse<SelectLabel>>(url.toString())
+        const client = await getApiClient()
+        const result = await Effect.runPromise(
+          client.label
+            .getAllLabels({ query: { limit, offset: Number(pageParam) } })
+            .pipe(
+              Effect.tapError((error) =>
+                captureException(error, { endpoint: 'label.getAllLabels' })
+              )
+            )
+        )
+        return {
+          data: result.data.map((label) => ({
+            ...label,
+            bannerImageUrl: null,
+            createdAt: new Date(label.createdAt),
+            updatedAt: new Date(label.updatedAt),
+            tags: label.tags ? [...label.tags] : null,
+            genres: label.genres ? [...label.genres] : null
+          })),
+          pagination: result.pagination
+        }
       },
       initialPageParam: 0,
       getNextPageParam: getNextOffsetPageParam
@@ -607,7 +625,27 @@ export function useAllLabels({ limit = DEFAULT_PAGE_SIZE }: PaginationOptions = 
 export function useLabelBySlug(slug: string) {
   const { data, error, isPending } = useQuery<SelectMdxCompiledLabel, Error>({
     queryKey: ['label', slug],
-    queryFn: async () => fetcher(apiUrl(`/content/labels/${slug}`)),
+    queryFn: async () => {
+      const client = await getApiClient()
+      const label = await Effect.runPromise(
+        client.label
+          .getLabelBySlug({ params: { slug } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'label.getLabelBySlug' })
+            )
+          )
+      )
+      return {
+        ...label,
+        bannerImageUrl: null,
+        createdAt: new Date(label.createdAt),
+        updatedAt: new Date(label.updatedAt),
+        tags: label.tags ? [...label.tags] : null,
+        genres: label.genres ? [...label.genres] : null,
+        creators: label.creators ? [...label.creators] : undefined
+      }
+    },
     enabled: Boolean(slug)
   })
 
@@ -626,9 +664,31 @@ export function useReleasesByLabel(
     useInfiniteQuery<PaginatedResponse<SelectRelease>, Error>({
       queryKey: ['releases', 'label', labelSlug, limit],
       queryFn: async ({ pageParam = 0 }) => {
-        const url = apiUrlObj(`/content/labels/${labelSlug}/releases`)
-        setPaginationParams(url, Number(pageParam), { limit })
-        return fetcher<PaginatedResponse<SelectRelease>>(url.toString())
+        const client = await getApiClient()
+        const result = await Effect.runPromise(
+          client.release
+            .getReleasesByLabel({
+              params: { labelSlug },
+              query: { limit, offset: Number(pageParam) }
+            })
+            .pipe(
+              Effect.tapError((error) =>
+                captureException(error, { endpoint: 'release.getReleasesByLabel' })
+              )
+            )
+        )
+        return {
+          data: result.data.map((release) => ({
+            ...release,
+            bannerImageUrl: null,
+            createdAt: new Date(release.createdAt),
+            updatedAt: new Date(release.updatedAt),
+            releaseDate: release.releaseDate ? new Date(release.releaseDate) : null,
+            tags: release.tags ? [...release.tags] : null,
+            streamingLinks: release.streamingLinks ? [...release.streamingLinks] : null
+          })),
+          pagination: result.pagination
+        }
       },
       initialPageParam: 0,
       getNextPageParam: getNextOffsetPageParam,
@@ -648,7 +708,27 @@ export function useReleasesByLabel(
 export function useReleaseBySlug(slug: string) {
   const { data, error, isPending } = useQuery<SelectMdxCompiledRelease, Error>({
     queryKey: ['release', slug],
-    queryFn: async () => fetcher(apiUrl(`/content/releases/${slug}`)),
+    queryFn: async () => {
+      const client = await getApiClient()
+      const release = await Effect.runPromise(
+        client.release
+          .getReleaseBySlug({ params: { slug } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'release.getReleaseBySlug' })
+            )
+          )
+      )
+      return {
+        ...release,
+        bannerImageUrl: null,
+        createdAt: new Date(release.createdAt),
+        updatedAt: new Date(release.updatedAt),
+        releaseDate: release.releaseDate ? new Date(release.releaseDate) : null,
+        tags: release.tags ? [...release.tags] : null,
+        streamingLinks: release.streamingLinks ? [...release.streamingLinks] : null
+      }
+    },
     enabled: Boolean(slug)
   })
 
