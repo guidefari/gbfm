@@ -361,3 +361,37 @@ that's been silently corrected is easy to repeat:
   it" and "the column doesn't exist" are different claims with different
   follow-up implications, and only one of them is fixable without a
   migration.
+- **`Schema.optional(X)` and `Schema.NullOr(X)` are different constraints,
+  and a request schema that only has one when the real data can be the
+  other will reject valid data at the exact moment a real user hits it.**
+  PR #184 (`music`-artist hooks) fixed a real bug (raw `Date` objects
+  sent through the new typed client, where the old `fetcher()` +
+  `JSON.stringify` silently coerced them to strings) -- but a dedicated
+  follow-up verification pass on that fix, run deliberately rather than
+  assumed clean, found a second, equally-real bug hiding right next to
+  it: `UpdateArtistInput.bio`/`imageUrl`/`genres`/`publishedAt`
+  (`packages/api/src/music.ts`) are `Schema.optional(Schema.String)` --
+  accepts a string or an absent key, but genuinely rejects `null`. The
+  frontend's `toArtistMetadata` legitimately produces `null` for any
+  unset field (matching `ArtistResponse`'s own `Schema.NullOr` on the
+  same fields), and the metadata form always submits its full state, not
+  a diff -- so any artist with an unset bio/image/genres/publishedAt hits
+  this on save. Traced via `git show` on the deleted pre-migration Hono
+  route file: the original `updateMusicArtistSchema` (zod, `.optional()`
+  only, no `.nullable()`) had the exact same gap, confirmed by running
+  the real zod schema against `{ bio: null }` and watching it reject --
+  so this bug predates the entire migration and wasn't introduced or
+  worsened by the Effect port or by PR #184's Date fix. Documented in the
+  PR as a known pre-existing issue, explicitly NOT fixed there (fixing it
+  means changing `UpdateArtistInput`'s schema, which is backend-port
+  scope requiring its own review of whether the service/DB layer treats
+  `null` as "clear the field" as intended -- not something to slip into a
+  frontend client-swap PR's diff). Generalizable lesson: **a dedicated
+  "verify the fix" pass on a bug found by review is worth doing even when
+  the original bug already looks fixed** -- this second bug was sitting
+  in the exact same code path, would have shipped invisibly if the
+  verification step had just confirmed "yes, `Date` conversion resolved
+  the reported issue" instead of independently re-running the real
+  schema encoder against the full range of realistic inputs (including
+  `null`, the actual common case for an unset field, not just the
+  originally-reported `Date` case).
