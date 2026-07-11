@@ -325,3 +325,54 @@ describe('invite (HttpApiBuilder group, Step 6)', () => {
     expect(res.status).toBe(400)
   })
 })
+
+describe('favorites (HttpApiBuilder group, Step 6)', () => {
+  it('GET /api/favorites returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/api/favorites'))
+
+    expect(res.status).toBe(401)
+  })
+
+  it('POST /api/favorites returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/favorites', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ audioId: '00000000-0000-0000-0000-000000000000' })
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('DELETE /api/favorites/:audioId returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/favorites/00000000-0000-0000-0000-000000000000', {
+        method: 'DELETE'
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('DELETE /api/favorites/show/:showId returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/favorites/show/00000000-0000-0000-0000-000000000000', {
+        method: 'DELETE'
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('DELETE /api/favorites/:audioId returns 401 (not 400) for a non-UUID audioId without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/favorites/not-a-uuid', { method: 'DELETE' })
+    )
+
+    // AuthMiddleware runs before param schema validation (same ordering as
+    // admin's frontend-errors :scenario case) -- a malformed audioId still
+    // 401s rather than 400ing, since there's no session cookie either way.
+    expect(res.status).toBe(401)
+  })
+})

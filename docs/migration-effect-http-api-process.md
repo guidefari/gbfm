@@ -240,3 +240,15 @@ that's been silently corrected is easy to repeat:
   click is genuinely needed, confirm the exact recipient with the user
   first (as was done here) and re-verify the UI state immediately
   beforehand, not just once earlier in the session.
+- **Input-side format validation dropped, twice.** `newsletter` (#165)
+  and `favorites` (#166) both replaced `z.string().email()` /
+  `z.string().uuid()` with plain `Schema.String`, silently dropping
+  format validation that used to 400 malformed input before it touched
+  the DB. Caught by adversarial review both times, not proactively. This
+  is now a mandatory check for every remaining group, not an
+  after-the-fact catch: **before opening the PR**, diff every payload and
+  param field against the old zod schema's validators
+  (`.email()`, `.uuid()`, `.min()`, `.max()`, enums, refinements) and add
+  the Effect equivalent (`Schema.String.pipe(Schema.check(Schema.isPattern(regex)))`
+  for format checks) for anything dropped. Don't wait for review to catch
+  this a third time.
