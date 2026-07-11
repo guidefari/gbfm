@@ -2,8 +2,6 @@ import { createRouter } from '@/lib/create-app'
 
 import * as handlers from './content.handlers'
 import * as routes from './content.routes'
-import * as releaseHandlers from './release.handlers'
-import * as releaseRoutes from './release.routes'
 
 const router = createRouter()
   .openapi(routes.getPosts, handlers.getPosts)
@@ -24,10 +22,5 @@ const router = createRouter()
   .openapi(routes.createAudio, handlers.createAudio)
   .openapi(routes.getMixQRPdf, handlers.getMixQRPdf)
   .openapi(routes.trackAudioPlay, handlers.trackAudioPlay)
-  .openapi(releaseRoutes.createRelease, releaseHandlers.createRelease)
-  .openapi(releaseRoutes.getReleasesByLabel, releaseHandlers.getReleasesByLabel)
-  .openapi(releaseRoutes.getReleaseBySlug, releaseHandlers.getReleaseBySlug)
-  .openapi(releaseRoutes.updateReleaseBySlug, releaseHandlers.updateReleaseBySlug)
-  .openapi(releaseRoutes.deleteReleaseBySlug, releaseHandlers.deleteReleaseBySlug)
 
 export default router

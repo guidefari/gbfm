@@ -9,6 +9,7 @@ import { LabelGroup } from './label'
 import { MusicGroup } from './music'
 import { NewsletterGroup } from './newsletter'
 import { ProfileGroup } from './profile'
+import { ReleaseGroup } from './release'
 import { ResolveGroup } from './resolve'
 import { SearchGroup } from './search'
 import { ShowsGroup } from './shows'
@@ -25,6 +26,7 @@ export const Api = HttpApi.make('gbfm')
   .add(AdminGroup)
   .add(InviteGroup)
   .add(LabelGroup)
+  .add(ReleaseGroup)
   .add(FavoritesGroup)
   .add(NewsletterGroup)
   .add(FileManagerGroup)
