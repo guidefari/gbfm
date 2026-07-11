@@ -241,14 +241,22 @@ that's been silently corrected is easy to repeat:
   first (as was done here) and re-verify the UI state immediately
   beforehand, not just once earlier in the session.
 - **Input-side format validation dropped, twice.** `newsletter` (#165)
-  and `favorites` (#166) both replaced `z.string().email()` /
-  `z.string().uuid()` with plain `Schema.String`, silently dropping
-  format validation that used to 400 malformed input before it touched
-  the DB. Caught by adversarial review both times, not proactively. This
-  is now a mandatory check for every remaining group, not an
-  after-the-fact catch: **before opening the PR**, diff every payload and
-  param field against the old zod schema's validators
-  (`.email()`, `.uuid()`, `.min()`, `.max()`, enums, refinements) and add
-  the Effect equivalent (`Schema.String.pipe(Schema.check(Schema.isPattern(regex)))`
-  for format checks) for anything dropped. Don't wait for review to catch
-  this a third time.
+  `favorites` (#166), and `file-manager` (#167) all replaced a validated
+  zod field (`z.string().email()`, `z.string().uuid()`, `z.string().min(1)`)
+  with plain `Schema.String`, silently dropping the constraint. Caught by
+  adversarial review three times in a row, despite this doc saying after
+  the second one "don't wait for review to catch this a third time" --
+  saying so didn't change the actual authoring step, so it happened again.
+  **The fix that actually works: run the diff before writing the new
+  schema, not after.** Concretely, for every remaining group, the first
+  command run when starting the port should be
+  `git show migration/effect-http-api:<old-routes-file-path>` (or
+  `cat` it) and read every `z.string()` chain for `.email()`/`.uuid()`/
+  `.min()`/`.max()`/`.regex()`/enums/refinements *before* opening
+  `packages/api/src/<group>.ts` to write the new schema -- not diff
+  afterward as a review step. `Schema.NonEmptyString` (see `search.ts`)
+  covers `.min(1)`; `Schema.String.pipe(Schema.check(Schema.isPattern(regex)))`
+  covers `.email()`/`.uuid()`/`.regex()`. If a step still ships without
+  this and review catches it again, that's a process reminder that isn't
+  landing -- worth stopping to ask why, not just adding a fourth bullet
+  here.
