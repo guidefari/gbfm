@@ -23,14 +23,14 @@ export const ListObjectsResponse = Schema.Struct({
 })
 
 const ListObjectsQuery = {
-  bucketName: Schema.String,
+  bucketName: Schema.NonEmptyString,
   prefix: Schema.optional(Schema.String)
 }
 
 export const CopyObjectInput = Schema.Struct({
-  key: Schema.String,
-  sourceBucket: Schema.String,
-  destinationBucket: Schema.String
+  key: Schema.NonEmptyString,
+  sourceBucket: Schema.NonEmptyString,
+  destinationBucket: Schema.NonEmptyString
 })
 export type CopyObjectInput = typeof CopyObjectInput.Type
 
