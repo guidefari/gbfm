@@ -7,6 +7,7 @@
     "./health": "./src/health.ts",
     "./music": "./src/music.ts",
     "./search": "./src/search.ts",
+    "./profile": "./src/profile.ts",
     "./errors": "./src/errors.ts",
     "./testing": "./src/testing.ts",
     "./middleware/auth": "./src/middleware/auth.ts"

@@ -9,7 +9,6 @@ import fileManager from '@/routes/file-manager/file-manager.index'
 import invite from '@/routes/invite/invite.index'
 import musicReminders from '@/routes/music-reminders/music-reminders.index'
 import newsletter from '@/routes/newsletter/newsletter.index'
-import profile from '@/routes/profile/profile.index'
 import { seoRouter, shareRouter } from '@/routes/redirect/redirect.index'
 import resolve from '@/routes/resolve/resolve.index'
 import rss from '@/routes/rss/rss.index'
@@ -33,7 +32,6 @@ const setupRoutesEffect = Effect.gen(function* () {
   app.route('/api/admin', admin)
   app.route('/api/favorites', favorites)
   app.route('/api/invite', invite)
-  app.route('/api/profile', profile)
   app.route('/api/resolve', resolve)
   app.route('/api/user', user)
   app.route('/api/content', content)

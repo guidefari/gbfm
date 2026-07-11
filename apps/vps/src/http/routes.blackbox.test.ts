@@ -200,3 +200,21 @@ describe('search (HttpApiBuilder group, Step 6)', () => {
     expect(res.headers.get('cache-control')).toBeNull()
   })
 })
+
+describe('profile (HttpApiBuilder group, Step 6)', () => {
+  it('GET /api/profile/:username returns 404 for an unknown username', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/profile/does-not-exist-user')
+    )
+
+    expect(res.status).toBe(404)
+  })
+
+  it('responds 404 to unsupported methods on the profile path', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/profile/does-not-exist-user', { method: 'POST' })
+    )
+
+    expect(res.status).toBe(404)
+  })
+})
