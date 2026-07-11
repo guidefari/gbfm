@@ -105,8 +105,10 @@ export const NewsletterHandlersLive = HttpApiBuilder.group(Api, 'newsletter', (h
 
         const linkedUserId = result[0]?.userId
         if (linkedUserId) {
-          globalUnsubscribe(linkedUserId).catch((err) =>
-            console.error('Failed to propagate newsletter unsubscribe to user preferences:', err)
+          yield* Effect.promise(() =>
+            globalUnsubscribe(linkedUserId).catch((err) =>
+              console.error('Failed to propagate newsletter unsubscribe to user preferences:', err)
+            )
           )
         }
 

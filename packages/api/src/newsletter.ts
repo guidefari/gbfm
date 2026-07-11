@@ -1,8 +1,14 @@
 import { Schema } from 'effect'
 import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/unstable/httpapi'
 
+const EmailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const Email = Schema.String.pipe(Schema.check(Schema.isPattern(EmailPattern)))
+
+const UuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const Uuid = Schema.String.pipe(Schema.check(Schema.isPattern(UuidPattern)))
+
 export const SubscribeInput = Schema.Struct({
-  email: Schema.String,
+  email: Email,
   name: Schema.optional(Schema.String),
   source: Schema.optional(Schema.String)
 })
@@ -14,7 +20,7 @@ export const SubscribeResponse = Schema.Struct({
 })
 
 export const UnsubscribeInput = Schema.Struct({
-  token: Schema.String
+  token: Uuid
 })
 export type UnsubscribeInput = typeof UnsubscribeInput.Type
 
@@ -23,7 +29,7 @@ export const UnsubscribeResponse = Schema.Struct({
 })
 
 export const RequestUnsubscribeInput = Schema.Struct({
-  email: Schema.String
+  email: Email
 })
 export type RequestUnsubscribeInput = typeof RequestUnsubscribeInput.Type
 

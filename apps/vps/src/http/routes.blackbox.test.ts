@@ -425,4 +425,28 @@ describe('newsletter (HttpApiBuilder group, Step 6)', () => {
 
     expect(res.status).toBe(404)
   })
+
+  it('POST /api/newsletter/subscribe 400s on an invalid email format', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: 'not-an-email' })
+      })
+    )
+
+    expect(res.status).toBe(400)
+  })
+
+  it('POST /api/newsletter/unsubscribe 400s on a non-UUID token', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/newsletter/unsubscribe', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ token: 'not-a-uuid' })
+      })
+    )
+
+    expect(res.status).toBe(400)
+  })
 })
