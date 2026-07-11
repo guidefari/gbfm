@@ -1,7 +1,6 @@
 import { Duration, Effect, Schedule } from 'effect'
 import configureOpenAPI from '@/lib/configure-open-api'
 import { createAppEffect } from '@/lib/create-app'
-import admin from '@/routes/admin/admin.index'
 import content from '@/routes/content/content.index'
 import email from '@/routes/email/email.index'
 import favorites from '@/routes/favorites/favorites.index'
@@ -28,7 +27,6 @@ const setupRoutesEffect = Effect.gen(function* () {
 
   configureOpenAPI(app)
 
-  app.route('/api/admin', admin)
   app.route('/api/favorites', favorites)
   app.route('/api/invite', invite)
   app.route('/api/user', user)

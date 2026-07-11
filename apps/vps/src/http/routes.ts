@@ -4,6 +4,7 @@ import { Effect, Layer } from 'effect'
 import { HttpRouter, HttpServer, HttpServerRequest, HttpServerResponse } from 'effect/unstable/http'
 import { HttpApiBuilder } from 'effect/unstable/httpapi'
 import type { AppType } from '@/app'
+import { AdminHandlersLive } from '@/http/admin.handlers'
 import { checkDatabase, makeHealthHandlers } from '@/http/health.handlers'
 import { InternalHandlersLive } from '@/http/internal.handlers'
 import { MusicHandlersLive } from '@/http/music.handlers'
@@ -60,6 +61,7 @@ export const createWebHandler = (
     Layer.provide(SearchHandlersLive),
     Layer.provide(ProfileHandlersLive),
     Layer.provide(ResolveHandlersLive),
+    Layer.provide(AdminHandlersLive),
     Layer.provide(AuthMiddlewareLive),
     // provideMerge, not provide: services a handler pulls via plain `yield*`
     // only clear toWebHandler's phantom-context requirement once they're

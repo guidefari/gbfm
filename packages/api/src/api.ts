@@ -1,4 +1,5 @@
 import { HttpApi } from 'effect/unstable/httpapi'
+import { AdminGroup } from './admin'
 import { HealthGroup } from './health'
 import { InternalGroup } from './internal'
 import { MusicGroup } from './music'
@@ -13,3 +14,4 @@ export const Api = HttpApi.make('gbfm')
   .add(SearchGroup)
   .add(ProfileGroup)
   .add(ResolveGroup)
+  .add(AdminGroup)

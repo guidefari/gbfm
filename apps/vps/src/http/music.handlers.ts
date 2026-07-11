@@ -4,6 +4,7 @@ import type { ArtistResponse, CreateArtistInput, UpdateArtistInput } from '@gbfm
 import { Effect } from 'effect'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
 import type { SelectMusicArtist } from '@/db/music-entity.schema'
+import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
 import { MusicEntityService } from '@/services/music-entity'
 
 const toArtistResponse = (row: SelectMusicArtist): ArtistResponse => ({
@@ -22,17 +23,7 @@ const toServiceFields = <T extends CreateArtistInput | UpdateArtistInput>(
   publishedAt: input.publishedAt ? new Date(input.publishedAt) : undefined
 })
 
-// Undeclared DatabaseError becomes a logged defect (500), same as the old
-// runEffect's fallback for anything that wasn't a mapped HttpError.
-const dieOnDatabaseError = <A, E, R>(effect: Effect.Effect<A, E | DatabaseErrorTag, R>) =>
-  effect.pipe(
-    Effect.tapErrorTag('DatabaseError', (cause) =>
-      Effect.logError('[music] database operation failed', cause)
-    ),
-    Effect.catchTag('DatabaseError', (cause) => Effect.die(cause))
-  )
-
-type DatabaseErrorTag = { readonly _tag: 'DatabaseError' }
+const dieOnDatabaseError = makeDieOnDatabaseError('music')
 
 const requireAdmin = Effect.gen(function* () {
   const { user } = yield* AuthSession
