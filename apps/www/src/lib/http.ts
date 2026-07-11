@@ -706,7 +706,19 @@ type NewsletterSubscriber = {
 export function useAdminNewsletterSubscribers() {
   return useQuery<{ subscribers: NewsletterSubscriber[] }, Error>({
     queryKey: ['admin', 'newsletter-subscribers'],
-    queryFn: async () => fetcher(apiUrl('/admin/newsletter-subscribers'))
+    queryFn: async () => {
+      const client = await getApiClient()
+      const result = await Effect.runPromise(
+        client.admin
+          .getNewsletterSubscribers({})
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'admin.getNewsletterSubscribers' })
+            )
+          )
+      )
+      return { subscribers: result.subscribers.map((s) => ({ ...s })) }
+    }
   })
 }
 
