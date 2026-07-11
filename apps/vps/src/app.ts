@@ -135,11 +135,21 @@ const sitemapRegenerationEffect = regenerateSitemap.pipe(
 
 const mainEffect = setupRoutesEffect
 
+// Registered by the entry point (src/index.ts) to dispose the Effect
+// HttpRouter handler before the runtime shuts down. No-op until Step 2b wires
+// the entry point to serve through it (docs/migration-effect-http-api.md).
+let disposeWebHandler: (() => Promise<void>) | undefined
+
+export const onShutdown = (dispose: () => Promise<void>) => {
+  disposeWebHandler = dispose
+}
+
 const setupGracefulShutdown = () => {
   const shutdown = async (signal: string) => {
     console.log(`Graceful shutdown initiated via ${signal}`)
 
     try {
+      await disposeWebHandler?.()
       const { disposeRuntime } = await import('./runtime')
       await disposeRuntime()
       console.log('Runtime disposed successfully')
