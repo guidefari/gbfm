@@ -3,136 +3,18 @@ import * as HttpStatusCodes from 'stoker/http-status-codes'
 import { runEffect } from '@/lib/effect-hono'
 import type { AppRouteHandler } from '@/lib/types'
 import { AudioService } from '@/services/audio.service'
-import { PostService } from '@/services/post.service'
 import { QRCodeService } from '@/services/qrcode.service'
 
 import type {
   CreateAudioRoute,
   CreateMixRoute,
-  CreatePostRoute,
   GetAudioBySlugRoute,
   GetAudioByTypeRoute,
   GetAudioTagsRoute,
-  GetEditorialPostBySlugRoute,
-  GetEditorialPostsRoute,
-  GetEditorialTagsRoute,
-  GetMicroPostBySlugRoute,
-  GetMicroPostsRoute,
   GetMixQRPdfRoute,
-  GetPostBySlugRoute,
-  GetPostsByTagRoute,
-  GetPostsRoute,
   TrackAudioPlayRoute,
-  UpdateAudioBySlugRoute,
-  UpdatePostBySlugRoute
+  UpdateAudioBySlugRoute
 } from './content.routes'
-
-export const getPosts: AppRouteHandler<GetPostsRoute> = async (c) => {
-  const { limit, offset, type } = c.req.valid('query')
-
-  const program = Effect.gen(function* () {
-    const postService = yield* PostService
-    return yield* postService.getAll({ limit, offset, type })
-  })
-
-  return runEffect<GetPostsRoute>(c, program)
-}
-
-export const getPostBySlug: AppRouteHandler<GetPostBySlugRoute> = async (c) => {
-  const { slug } = c.req.valid('param')
-
-  const program = Effect.gen(function* () {
-    const postService = yield* PostService
-    return yield* postService.getBySlug(slug)
-  })
-
-  return runEffect<GetPostBySlugRoute>(c, program)
-}
-
-export const getEditorialPosts: AppRouteHandler<GetEditorialPostsRoute> = async (c) => {
-  const { limit, offset, tag } = c.req.valid('query')
-
-  const program = Effect.gen(function* () {
-    const postService = yield* PostService
-    return yield* postService.getEditorials({ limit, offset, tag })
-  })
-
-  c.header('Cache-Control', 'public, max-age=60, stale-while-revalidate=300')
-  return runEffect<GetEditorialPostsRoute>(c, program)
-}
-
-export const getEditorialPostBySlug: AppRouteHandler<GetEditorialPostBySlugRoute> = async (c) => {
-  const { slug } = c.req.valid('param')
-
-  const program = Effect.gen(function* () {
-    const postService = yield* PostService
-    return yield* postService.getEditorialBySlug(slug)
-  })
-
-  return runEffect<GetEditorialPostBySlugRoute>(c, program)
-}
-
-export const getMicroPosts: AppRouteHandler<GetMicroPostsRoute> = async (c) => {
-  const { limit, offset } = c.req.valid('query')
-
-  const program = Effect.gen(function* () {
-    const postService = yield* PostService
-    return yield* postService.getMicroPosts({ limit, offset })
-  })
-
-  return runEffect<GetMicroPostsRoute>(c, program)
-}
-
-export const getMicroPostBySlug: AppRouteHandler<GetMicroPostBySlugRoute> = async (c) => {
-  const { slug } = c.req.valid('param')
-
-  const program = Effect.gen(function* () {
-    const postService = yield* PostService
-    return yield* postService.getMicroPostBySlug(slug)
-  })
-
-  return runEffect<GetMicroPostBySlugRoute>(c, program)
-}
-
-export const createPost: AppRouteHandler<CreatePostRoute> = async (c) => {
-  const { creatorIds, ...postData } = c.req.valid('json')
-  const user = c.get('user')
-  const finalCreatorIds = creatorIds?.length ? creatorIds : [user.id]
-
-  const program = Effect.gen(function* () {
-    const postService = yield* PostService
-    return yield* postService.create(postData, finalCreatorIds)
-  })
-
-  return runEffect<CreatePostRoute>(c, program, HttpStatusCodes.CREATED)
-}
-
-export const updatePostBySlug: AppRouteHandler<UpdatePostBySlugRoute> = async (c) => {
-  const { slug } = c.req.valid('param')
-  const updateData = c.req.valid('json')
-  const user = c.get('user')
-
-  const program = Effect.gen(function* () {
-    const postService = yield* PostService
-    return yield* postService.update(slug, user.id, user.role || 'user', {
-      ...updateData
-    })
-  })
-
-  return runEffect<UpdatePostBySlugRoute>(c, program)
-}
-
-export const getPostsByTag: AppRouteHandler<GetPostsByTagRoute> = async (c) => {
-  const { tag } = c.req.valid('param')
-  const { limit, offset } = c.req.valid('query')
-
-  const program = Effect.gen(function* () {
-    const postService = yield* PostService
-    return yield* postService.getByTag(tag, { limit, offset })
-  })
-
-  return runEffect<GetPostsByTagRoute>(c, program)
-}
 
 export const createMix: AppRouteHandler<CreateMixRoute> = async (c) => {
   const { creatorIds, ...mixData } = c.req.valid('json')
@@ -157,16 +39,6 @@ export const getAudioTags: AppRouteHandler<GetAudioTagsRoute> = async (c) => {
 
   c.header('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400')
   return runEffect<GetAudioTagsRoute>(c, program)
-}
-
-export const getEditorialTags: AppRouteHandler<GetEditorialTagsRoute> = async (c) => {
-  const program = Effect.gen(function* () {
-    const postService = yield* PostService
-    return yield* postService.getEditorialTags()
-  }).pipe(Effect.withSpan('getEditorialTags'))
-
-  c.header('Cache-Control', 'public, max-age=3600, stale-while-revalidate=86400')
-  return runEffect<GetEditorialTagsRoute>(c, program)
 }
 
 export const getAudioByType: AppRouteHandler<GetAudioByTypeRoute> = async (c) => {

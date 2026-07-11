@@ -13,6 +13,7 @@
     "./invite": "./src/invite.ts",
     "./label": "./src/label.ts",
     "./release": "./src/release.ts",
+    "./post": "./src/post.ts",
     "./favorites": "./src/favorites.ts",
     "./newsletter": "./src/newsletter.ts",
     "./file-manager": "./src/file-manager.ts",
