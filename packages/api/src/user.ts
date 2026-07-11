@@ -47,7 +47,12 @@ export const UserProfileResponse = Schema.Struct({
   socialLinks: SocialLinksResponse
 })
 
-const EmailField = Schema.String.pipe(Schema.check(Schema.isPattern(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)))
+// zod's z.email() "practical email" regex (zod/src/v4/core/regexes.ts) --
+// a looser handwritten pattern here previously accepted malformed addresses
+// like `..@x.c` that the old route's z.email() rejected.
+const EmailPattern =
+  /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9-]*\.)+[A-Za-z]{2,}$/
+const EmailField = Schema.String.pipe(Schema.check(Schema.isPattern(EmailPattern)))
 const PasswordField = Schema.String.pipe(Schema.check(Schema.isMinLength(8)))
 const BioField = Schema.String.pipe(Schema.check(Schema.isMaxLength(500)))
 
