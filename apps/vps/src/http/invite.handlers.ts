@@ -195,16 +195,8 @@ export const InviteHandlersLive = HttpApiBuilder.group(Api, 'invite', (handlers)
         }
 
         const setCookieHeader = signInResult.headers.get('set-cookie')
-        // orDie: HttpBodyError here would mean JSON.stringify({ success: true })
-        // itself failed, which cannot happen for a static literal -- not a
-        // real failure mode worth declaring in the endpoint's error union.
         const response = yield* HttpServerResponse.json({ success: true }).pipe(Effect.orDie)
 
-        // Returning a raw HttpServerResponse here (instead of the plain
-        // { success: true } shape) makes HttpApiBuilder.group's
-        // handlerToHttpEffect short-circuit schema encoding and pass this
-        // response straight through, headers included -- see the comment on
-        // InviteGroup's confirmInvite endpoint in packages/api/src/invite.ts.
         return setCookieHeader
           ? HttpServerResponse.setHeader(response, 'set-cookie', setCookieHeader)
           : response

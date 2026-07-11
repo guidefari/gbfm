@@ -22,20 +22,8 @@ export const ConfirmInviteResponse = Schema.Struct({
   success: Schema.Boolean
 })
 
-// confirmInvite's handler must forward better-auth's set-cookie header from
-// auth.api.signInEmail so the browser session is live before
-// apps/www/src/routes/auth/reset-password.tsx's post-success
-// refetchSession() call. HttpApiBuilder.group handlers CAN do this directly
-// -- effect@4.0.0-beta.93's HttpApiBuilder.ts (handlerToHttpEffect) checks
-// `Response.isHttpServerResponse(response)` on the handler's return value
-// and short-circuits schema encoding if so, passing a handler-constructed
-// HttpServerResponse straight through. The handler builds the response with
-// HttpServerResponse.json + HttpServerResponse.setHeader and returns it
-// directly instead of the plain ConfirmInviteResponse shape -- no separate
-// raw HttpRouter route needed. (An earlier version of this endpoint was
-// built as a raw, non-HttpApiEndpoint route based on the mistaken belief
-// that handlers only ever return the encoded success value; corrected
-// after adversarial review caught it.)
+// confirmInvite's handler returns a raw HttpServerResponse to carry
+// better-auth's set-cookie header (see invite.handlers.ts).
 export const InviteGroup = HttpApiGroup.make('invite')
   .add(
     HttpApiEndpoint.post('sendInvite', '/api/invite/send', {
