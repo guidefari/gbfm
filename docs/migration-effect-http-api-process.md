@@ -100,6 +100,7 @@ Concretely, every review prompt asks the agent to:
   get argued away in the same turn it's raised; either the code changes
   or there's a concrete reason (stated in the PR, not just in chat) why
   it's not a real issue.
+- There's a code review skill, may be worth invoking that too?
 
 **Known failure mode in this environment: worktree isolation for review
 agents has been unreliable** -- three separate dispatches with
