@@ -132,7 +132,19 @@ export function useAudioTags(type: AudioContentType) {
 export function useEditorialTags() {
   const { data, error, isPending } = useQuery<string[], Error>({
     queryKey: ['editorial-tags'],
-    queryFn: async () => fetcher<string[]>(apiUrl('/content/posts/editorials/tags')),
+    queryFn: async () => {
+      const client = await getApiClient()
+      const tags = await Effect.runPromise(
+        client.post
+          .getEditorialTags({})
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'post.getEditorialTags' })
+            )
+          )
+      )
+      return [...tags]
+    },
     staleTime: 1000 * 60 * 60
   })
   return { data: data ?? [], error, isPending }
@@ -157,11 +169,27 @@ export function useEditorialPosts(tag?: string, limit = DEFAULT_PAGE_SIZE) {
     useInfiniteQuery<PaginatedResponse<SelectMdxCompiledEditorialPost>, Error>({
       queryKey: ['posts', 'editorials', tag, limit],
       queryFn: async ({ pageParam = 0 }) => {
-        const url = apiUrlObj(`/content/posts/editorials`)
-        url.searchParams.set('limit', String(limit))
-        url.searchParams.set('offset', String(pageParam))
-        if (tag) url.searchParams.set('tag', tag)
-        return fetcher<PaginatedResponse<SelectMdxCompiledEditorialPost>>(url.toString())
+        const client = await getApiClient()
+        const result = await Effect.runPromise(
+          client.post
+            .getEditorialPosts({ query: { limit, offset: Number(pageParam), tag } })
+            .pipe(
+              Effect.tapError((error) =>
+                captureException(error, { endpoint: 'post.getEditorialPosts' })
+              )
+            )
+        )
+        return {
+          data: result.data.map((post) => ({
+            ...post,
+            bannerImageUrl: null,
+            createdAt: new Date(post.createdAt),
+            updatedAt: new Date(post.updatedAt),
+            tags: post.tags ? [...post.tags] : null,
+            creators: post.creators ? [...post.creators] : undefined
+          })),
+          pagination: result.pagination
+        }
       },
       initialPageParam: 0,
       getNextPageParam: getNextOffsetPageParam
@@ -183,10 +211,27 @@ export function useMicroPosts(limit = DEFAULT_PAGE_SIZE) {
     useInfiniteQuery<PaginatedResponse<SelectMdxCompiledMicroPost>, Error>({
       queryKey: ['posts', 'micro', limit],
       queryFn: async ({ pageParam = 0 }) => {
-        const url = apiUrlObj(`/content/posts/micro`)
-        url.searchParams.set('limit', String(limit))
-        url.searchParams.set('offset', String(pageParam))
-        return fetcher<PaginatedResponse<SelectMdxCompiledMicroPost>>(url.toString())
+        const client = await getApiClient()
+        const result = await Effect.runPromise(
+          client.post
+            .getMicroPosts({ query: { limit, offset: Number(pageParam) } })
+            .pipe(
+              Effect.tapError((error) =>
+                captureException(error, { endpoint: 'post.getMicroPosts' })
+              )
+            )
+        )
+        return {
+          data: result.data.map((post) => ({
+            ...post,
+            bannerImageUrl: null,
+            createdAt: new Date(post.createdAt),
+            updatedAt: new Date(post.updatedAt),
+            tags: post.tags ? [...post.tags] : null,
+            creators: post.creators ? [...post.creators] : undefined
+          })),
+          pagination: result.pagination
+        }
       },
       initialPageParam: 0,
       getNextPageParam: getNextOffsetPageParam
@@ -206,7 +251,26 @@ export function useMicroPosts(limit = DEFAULT_PAGE_SIZE) {
 export function useEditorialPostBySlug(slug: string) {
   const { data, error, isPending } = useQuery<SelectMdxCompiledEditorialPost, Error>({
     queryKey: ['post', 'editorial', slug],
-    queryFn: async () => fetcher(apiUrl(`/content/posts/editorials/${slug}`)),
+    queryFn: async () => {
+      const client = await getApiClient()
+      const post = await Effect.runPromise(
+        client.post
+          .getEditorialPostBySlug({ params: { slug } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'post.getEditorialPostBySlug' })
+            )
+          )
+      )
+      return {
+        ...post,
+        bannerImageUrl: null,
+        createdAt: new Date(post.createdAt),
+        updatedAt: new Date(post.updatedAt),
+        tags: post.tags ? [...post.tags] : null,
+        creators: post.creators ? [...post.creators] : undefined
+      }
+    },
     enabled: Boolean(slug)
   })
 
@@ -220,7 +284,26 @@ export function useEditorialPostBySlug(slug: string) {
 export function useMicroPostBySlug(slug: string) {
   const { data, error, isPending } = useQuery<SelectMdxCompiledMicroPost, Error>({
     queryKey: ['post', 'micro', slug],
-    queryFn: async () => fetcher(apiUrl(`/content/posts/micro/${slug}`)),
+    queryFn: async () => {
+      const client = await getApiClient()
+      const post = await Effect.runPromise(
+        client.post
+          .getMicroPostBySlug({ params: { slug } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'post.getMicroPostBySlug' })
+            )
+          )
+      )
+      return {
+        ...post,
+        bannerImageUrl: null,
+        createdAt: new Date(post.createdAt),
+        updatedAt: new Date(post.updatedAt),
+        tags: post.tags ? [...post.tags] : null,
+        creators: post.creators ? [...post.creators] : undefined
+      }
+    },
     enabled: Boolean(slug)
   })
 
