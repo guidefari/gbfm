@@ -8,6 +8,7 @@
     "./music": "./src/music.ts",
     "./search": "./src/search.ts",
     "./profile": "./src/profile.ts",
+    "./resolve": "./src/resolve.ts",
     "./errors": "./src/errors.ts",
     "./testing": "./src/testing.ts",
     "./middleware/auth": "./src/middleware/auth.ts"
