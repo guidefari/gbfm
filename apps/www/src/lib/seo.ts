@@ -224,7 +224,7 @@ export type ResolvedShowData = {
   description: string | null
   thumbnailUrl: string | null
   compiledContent: string | null
-  hosts: Array<{ id: string; name: string }>
+  hosts: ReadonlyArray<{ id: string; name: string }>
 }
 
 export function generateResolvedShowSEO(show: ResolvedShowData, slug: string): SEOHeadData {
