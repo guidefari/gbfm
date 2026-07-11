@@ -1678,7 +1678,17 @@ export function useAdminArtists() {
 export function useAdminArtist(id: string) {
   return useQuery<MusicArtist>({
     queryKey: ['admin', 'artists', id],
-    queryFn: () => fetcher(apiUrl(`/music/artists/${id}`)),
+    queryFn: async () => {
+      const client = await getApiClient()
+      const artist = await Effect.runPromise(
+        client.music
+          .getArtist({ params: { id } })
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'music.getArtist' }))
+          )
+      )
+      return { ...artist, genres: artist.genres ? [...artist.genres] : null }
+    },
     enabled: Boolean(id)
   })
 }
@@ -1686,11 +1696,17 @@ export function useAdminArtist(id: string) {
 export function useUpdateAdminArtist() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
-      fetcher<MusicArtist>(apiUrl(`/music/artists/${id}`), {
-        method: 'PATCH',
-        body: JSON.stringify(data)
-      }),
+    mutationFn: async ({ id, data }: { id: string; data: Record<string, unknown> }) => {
+      const client = await getApiClient()
+      const artist = await Effect.runPromise(
+        client.music
+          .updateArtist({ params: { id }, payload: data })
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'music.updateArtist' }))
+          )
+      )
+      return { ...artist, genres: artist.genres ? [...artist.genres] : null }
+    },
     onSuccess: (_, { id }) => {
       qc.invalidateQueries({ queryKey: ['admin', 'artists', id] })
       qc.invalidateQueries({ queryKey: ['admin', 'artists'] })
@@ -1701,7 +1717,16 @@ export function useUpdateAdminArtist() {
 export function useDeleteAdminArtist() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => fetcher(apiUrl(`/music/artists/${id}`), { method: 'DELETE' }),
+    mutationFn: async (id: string) => {
+      const client = await getApiClient()
+      await Effect.runPromise(
+        client.music
+          .deleteArtist({ params: { id } })
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'music.deleteArtist' }))
+          )
+      )
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'artists'] })
   })
 }
@@ -1866,7 +1891,7 @@ export function useDeleteAdminEntityLink() {
 export function useAddArtistToAlbum() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       albumId,
       artistId,
       role
@@ -1874,11 +1899,18 @@ export function useAddArtistToAlbum() {
       albumId: string
       artistId: string
       role?: string
-    }) =>
-      fetcher(apiUrl(`/music/albums/${albumId}/artists/${artistId}`), {
-        method: 'PUT',
-        body: JSON.stringify({ role })
-      }),
+    }) => {
+      const client = await getApiClient()
+      await Effect.runPromise(
+        client.music
+          .addArtistToAlbum({ params: { albumId, artistId }, payload: { role } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'music.addArtistToAlbum' })
+            )
+          )
+      )
+    },
     onSuccess: (_, { albumId }) =>
       qc.invalidateQueries({ queryKey: ['admin', 'links', 'album', albumId] })
   })
@@ -1887,10 +1919,18 @@ export function useAddArtistToAlbum() {
 export function useRemoveArtistFromAlbum() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ albumId, artistId }: { albumId: string; artistId: string }) =>
-      fetcher(apiUrl(`/music/albums/${albumId}/artists/${artistId}`), {
-        method: 'DELETE'
-      }),
+    mutationFn: async ({ albumId, artistId }: { albumId: string; artistId: string }) => {
+      const client = await getApiClient()
+      await Effect.runPromise(
+        client.music
+          .removeArtistFromAlbum({ params: { albumId, artistId } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'music.removeArtistFromAlbum' })
+            )
+          )
+      )
+    },
     onSuccess: (_, { albumId }) =>
       qc.invalidateQueries({ queryKey: ['admin', 'links', 'album', albumId] })
   })
@@ -1899,7 +1939,7 @@ export function useRemoveArtistFromAlbum() {
 export function useAddArtistToTrack() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       trackId,
       artistId,
       role
@@ -1907,11 +1947,18 @@ export function useAddArtistToTrack() {
       trackId: string
       artistId: string
       role?: string
-    }) =>
-      fetcher(apiUrl(`/music/tracks/${trackId}/artists/${artistId}`), {
-        method: 'PUT',
-        body: JSON.stringify({ role })
-      }),
+    }) => {
+      const client = await getApiClient()
+      await Effect.runPromise(
+        client.music
+          .addArtistToTrack({ params: { trackId, artistId }, payload: { role } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'music.addArtistToTrack' })
+            )
+          )
+      )
+    },
     onSuccess: (_, { trackId }) =>
       qc.invalidateQueries({ queryKey: ['admin', 'links', 'track', trackId] })
   })
@@ -1920,10 +1967,18 @@ export function useAddArtistToTrack() {
 export function useRemoveArtistFromTrack() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ trackId, artistId }: { trackId: string; artistId: string }) =>
-      fetcher(apiUrl(`/music/tracks/${trackId}/artists/${artistId}`), {
-        method: 'DELETE'
-      }),
+    mutationFn: async ({ trackId, artistId }: { trackId: string; artistId: string }) => {
+      const client = await getApiClient()
+      await Effect.runPromise(
+        client.music
+          .removeArtistFromTrack({ params: { trackId, artistId } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'music.removeArtistFromTrack' })
+            )
+          )
+      )
+    },
     onSuccess: (_, { trackId }) =>
       qc.invalidateQueries({ queryKey: ['admin', 'links', 'track', trackId] })
   })
