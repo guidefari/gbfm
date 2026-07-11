@@ -165,3 +165,35 @@ that's been silently corrected is easy to repeat:
   Doable, but slower and riskier than committing group A immediately
   after finishing it, before starting group B -- prefer that ordering
   next time even under a "carry on, don't wait for approval" instruction.
+- **A stacked PR merged into a feature branch that never itself got merged
+  forward.** PR #158 (`resolve`) merged cleanly into
+  `migration/6-profile-group`, exactly per the stacking rule -- but
+  `migration/6-profile-group`'s tip (with #158 on it) was never merged into
+  `migration/effect-http-api` itself; the integration branch moved on to
+  the next steps' docs/client-swap commits instead, so #158 silently never
+  made it in even though GitHub shows it as merged. Not caught until a
+  later unrelated task needed to check what was live on
+  `migration/effect-http-api` and found the old Hono `resolve` files still
+  on disk, still wired in `app.ts`. The fix was a clean cherry-pick (PR
+  #162), but the actual lesson: after merging PR B (stacked on PR A's
+  branch) per the stacking rule, verify PR A's branch tip -- the one B
+  actually merged into -- is *also* an ancestor of `migration/effect-http-api`,
+  with the same `git merge-base --is-ancestor` check already used for
+  branch staleness. Stacking correctly and integrating forward are two
+  different steps; doing the first is not evidence the second happened.
+- **"Nothing else imports this file" is not the same check as "this type
+  is still consumed."** An adversarial review pass on the `admin` PR (#163)
+  flagged the old `apps/vps/src/db/admin-overview.schema.ts` (Zod) as fully
+  dead and safe to delete, based on a grep showing no remaining *runtime*
+  imports from `apps/vps`. It missed that `apps/www/src/routes/admin/-overview.data.ts`
+  still imports `AdminOverview`/`AdminOverviewContentBreakdown` as
+  **types only** from `@gbfm/vps/schemas` -- a cross-package type import
+  that a same-package runtime-usage grep won't surface unless the check
+  explicitly greps the consuming app too. The file was correctly left in
+  place as a type-only shim (to be retired once a 6b PR points
+  `useAdminOverview` at the new `packages/api` schema's inferred type
+  instead), but the review's confidence that it was dead was wrong. When a
+  review claims a file is orphaned, grep the *other* app/package too, not
+  just the one being edited -- and grep for the exported type names, not
+  only the schema/const names, since `import type` sites are real
+  dependencies that a value-only grep pattern can miss.
