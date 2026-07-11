@@ -3,7 +3,6 @@ import configureOpenAPI from '@/lib/configure-open-api'
 import { createAppEffect } from '@/lib/create-app'
 import content from '@/routes/content/content.index'
 import email from '@/routes/email/email.index'
-import fileManager from '@/routes/file-manager/file-manager.index'
 import musicReminders from '@/routes/music-reminders/music-reminders.index'
 import { seoRouter, shareRouter } from '@/routes/redirect/redirect.index'
 import rss from '@/routes/rss/rss.index'
@@ -29,7 +28,6 @@ const setupRoutesEffect = Effect.gen(function* () {
   app.route('/api/email', email)
   app.route('/api/shows', shows)
   app.route('/api/spotify', spotify)
-  app.route('/api/file-manager', fileManager)
   app.route('/api/upload', upload)
   app.route('/api/upload', uploadMultipart)
   app.route('/api/music-reminders', musicReminders)
