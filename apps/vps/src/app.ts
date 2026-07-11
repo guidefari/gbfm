@@ -7,14 +7,12 @@ import email from '@/routes/email/email.index'
 import favorites from '@/routes/favorites/favorites.index'
 import fileManager from '@/routes/file-manager/file-manager.index'
 import invite from '@/routes/invite/invite.index'
-import music from '@/routes/music/music.index'
 import musicReminders from '@/routes/music-reminders/music-reminders.index'
 import newsletter from '@/routes/newsletter/newsletter.index'
 import profile from '@/routes/profile/profile.index'
 import { seoRouter, shareRouter } from '@/routes/redirect/redirect.index'
 import resolve from '@/routes/resolve/resolve.index'
 import rss from '@/routes/rss/rss.index'
-import search from '@/routes/search/search.index'
 import shows from '@/routes/shows/show.index'
 import spotify from '@/routes/spotify/spotify.index'
 import upload from '@/routes/upload/upload.index'
@@ -39,7 +37,6 @@ const setupRoutesEffect = Effect.gen(function* () {
   app.route('/api/resolve', resolve)
   app.route('/api/user', user)
   app.route('/api/content', content)
-  app.route('/api/search', search)
   app.route('/api/email', email)
   app.route('/api/newsletter', newsletter)
   app.route('/api/shows', shows)
@@ -47,7 +44,6 @@ const setupRoutesEffect = Effect.gen(function* () {
   app.route('/api/file-manager', fileManager)
   app.route('/api/upload', upload)
   app.route('/api/upload', uploadMultipart)
-  app.route('/api/music', music)
   app.route('/api/music-reminders', musicReminders)
 
   // Kept at root, not under /api: these are externally-referenced public URLs.

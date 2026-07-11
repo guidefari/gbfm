@@ -24,6 +24,8 @@ function parseOtelHeaders(headers: string | undefined) {
     }, {})
 }
 
+const MOTEL_TRACES_URL = 'http://127.0.0.1:27686/v1/traces'
+
 export const OtlpLive = Effect.gen(function* () {
   const config = yield* ConfigService
   const sentry = yield* SentryClientService
@@ -41,6 +43,15 @@ export const OtlpLive = Effect.gen(function* () {
       ]
     : []
 
+  // Dual export in dev: Jaeger (above) for the trace-waterfall UI, motel
+  // (github.com/kitlangton/motel) for terminal/agent-queryable local
+  // telemetry. Span export failures are caught by OTel's own SDK and never
+  // throw into the request path, so this is safe to leave unconditional
+  // within the dev/local gate even when the motel server isn't running.
+  const motelProcessors = ['dev', 'local'].includes(config.app.stage)
+    ? [new SimpleSpanProcessor(new OTLPTraceExporter({ url: MOTEL_TRACES_URL }))]
+    : []
+
   const sentryProcessors = sentry.enabled ? [new SentrySpanProcessor()] : []
 
   if (sentry.client) {
@@ -56,7 +67,7 @@ export const OtlpLive = Effect.gen(function* () {
         'deployment.environment': config.app.nodeEnv
       }
     },
-    spanProcessor: [...sentryProcessors, ...otlpProcessors],
+    spanProcessor: [...sentryProcessors, ...otlpProcessors, ...motelProcessors],
     ...(sentry.client ? { tracerConfig: { sampler: new SentrySampler(sentry.client) } } : {})
   }))
 }).pipe(Layer.unwrap)
