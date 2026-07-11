@@ -5,7 +5,6 @@ import content from '@/routes/content/content.index'
 import email from '@/routes/email/email.index'
 import fileManager from '@/routes/file-manager/file-manager.index'
 import musicReminders from '@/routes/music-reminders/music-reminders.index'
-import newsletter from '@/routes/newsletter/newsletter.index'
 import { seoRouter, shareRouter } from '@/routes/redirect/redirect.index'
 import rss from '@/routes/rss/rss.index'
 import shows from '@/routes/shows/show.index'
@@ -28,7 +27,6 @@ const setupRoutesEffect = Effect.gen(function* () {
   app.route('/api/user', user)
   app.route('/api/content', content)
   app.route('/api/email', email)
-  app.route('/api/newsletter', newsletter)
   app.route('/api/shows', shows)
   app.route('/api/spotify', spotify)
   app.route('/api/file-manager', fileManager)

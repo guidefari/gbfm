@@ -10,6 +10,7 @@ import { checkDatabase, makeHealthHandlers } from '@/http/health.handlers'
 import { InviteHandlersLive } from '@/http/invite.handlers'
 import { InternalHandlersLive } from '@/http/internal.handlers'
 import { MusicHandlersLive } from '@/http/music.handlers'
+import { NewsletterHandlersLive } from '@/http/newsletter.handlers'
 import { ProfileHandlersLive } from '@/http/profile.handlers'
 import { ResolveHandlersLive } from '@/http/resolve.handlers'
 import { SearchHandlersLive } from '@/http/search.handlers'
@@ -66,6 +67,7 @@ export const createWebHandler = (
     Layer.provide(AdminHandlersLive),
     Layer.provide(InviteHandlersLive),
     Layer.provide(FavoritesHandlersLive),
+    Layer.provide(NewsletterHandlersLive),
     Layer.provide(AuthMiddlewareLive),
     // provideMerge, not provide: services a handler pulls via plain `yield*`
     // only clear toWebHandler's phantom-context requirement once they're
