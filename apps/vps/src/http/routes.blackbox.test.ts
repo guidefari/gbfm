@@ -376,3 +376,77 @@ describe('favorites (HttpApiBuilder group, Step 6)', () => {
     expect(res.status).toBe(401)
   })
 })
+
+describe('newsletter (HttpApiBuilder group, Step 6)', () => {
+  it('POST /api/newsletter/unsubscribe returns 404 for an unknown token', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/newsletter/unsubscribe', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ token: '00000000-0000-0000-0000-000000000000' })
+      })
+    )
+
+    expect(res.status).toBe(404)
+  })
+
+  it('POST /api/newsletter/subscribe 400s on a malformed request body', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ notEmail: 'missing required field' })
+      })
+    )
+
+    expect(res.status).toBe(400)
+  })
+
+  it('POST /api/newsletter/request-unsubscribe returns 200 even for an unknown email (no enumeration signal)', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/newsletter/request-unsubscribe', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: 'definitely-not-a-real-subscriber@example.com' })
+      })
+    )
+
+    // Matches the old handler: always 200 with { sent: true } regardless of
+    // whether the email is on the list, so this endpoint can't be used to
+    // enumerate subscribers.
+    expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toEqual({ sent: true })
+  })
+
+  it('responds 404 to unsupported methods on the newsletter subscribe path', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/newsletter/subscribe', { method: 'GET' })
+    )
+
+    expect(res.status).toBe(404)
+  })
+
+  it('POST /api/newsletter/subscribe 400s on an invalid email format', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/newsletter/subscribe', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ email: 'not-an-email' })
+      })
+    )
+
+    expect(res.status).toBe(400)
+  })
+
+  it('POST /api/newsletter/unsubscribe 400s on a non-UUID token', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/newsletter/unsubscribe', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ token: 'not-a-uuid' })
+      })
+    )
+
+    expect(res.status).toBe(400)
+  })
+})
