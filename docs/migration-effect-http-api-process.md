@@ -278,3 +278,33 @@ that's been silently corrected is easy to repeat:
   silently across every group that copied it, and grep for the pattern
   string across `packages/api/src/*.ts` before trusting "this is the
   established pattern" as a reason not to double-check it.
+- **Step 6b's `Effect.tapError -> captureException` swap unconditionally
+  reports every failure to Sentry, including expected 4xx validation
+  errors -- the old `fetcher()` only escalated to Sentry on `>= 500` or
+  network errors (`apps/www/src/lib/http-client.ts`'s `res.status >= 500`
+  gate), always leaving 4xx as a plain thrown `Error` with no Sentry
+  report.** This isn't something a 6b PR introduced -- it was already
+  present in step 5's three precedent hooks (`useResolveSlug`,
+  `usePublicProfile`, `useAdminArtists`) before this session touched
+  anything, and every 6b PR this session correctly followed that existing
+  precedent rather than inventing a new, inconsistent pattern. Flagged by
+  adversarial review on PR #175 as a real (if minor) observability
+  regression: expected client-side validation failures now generate
+  Sentry noise they never used to. Worth a small shared wrapper (e.g. a
+  `reportClientFailure` helper mirroring `http-client.ts`'s status-based
+  gate) applied once across every 6b hook, rather than fixing hooks one
+  at a time as they're ported -- fixing it per-PR would just mean some
+  hooks match the old gate and others don't, which is its own
+  inconsistency.
+- **A ported hook can have zero real consumers, and the port itself won't
+  surface that.** PR #175's `useUpdateAdminUserBio` was ported faithfully
+  from an old `fetcher()`-based hook, but adversarial review found the
+  real bio-update UI (`apps/www/src/routes/admin/_components/-UsersTab.tsx`)
+  never actually calls this hook -- it makes its own raw `fetcher` PATCH
+  call directly, bypassing the hook entirely. This predates the 6b port
+  (the hook was already unused under the old `fetcher`-based version
+  too), so it's not a regression, but it means "port every hook in the
+  file" and "port every hook something actually calls" are different
+  scopes, and step 6b's per-group hook inventory should note dead hooks
+  the same way step 6's route-level consumer audits already do, instead
+  of assuming a hook's existence implies a real caller.
