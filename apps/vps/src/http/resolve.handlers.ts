@@ -1,19 +1,10 @@
 import { Api } from '@gbfm/api/api'
 import { Effect } from 'effect'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
+import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
 import { ResolveService } from '@/services/resolve.service'
 
-// Undeclared DatabaseError becomes a logged defect (500), same as the old
-// runEffect's fallback for anything that wasn't a mapped HttpError.
-const dieOnDatabaseError = <A, E, R>(effect: Effect.Effect<A, E | DatabaseErrorTag, R>) =>
-  effect.pipe(
-    Effect.tapErrorTag('DatabaseError', (cause) =>
-      Effect.logError('[resolve] database operation failed', cause)
-    ),
-    Effect.catchTag('DatabaseError', (cause) => Effect.die(cause))
-  )
-
-type DatabaseErrorTag = { readonly _tag: 'DatabaseError' }
+const dieOnDatabaseError = makeDieOnDatabaseError('resolve')
 
 export const ResolveHandlersLive = HttpApiBuilder.group(Api, 'resolve', (handlers) =>
   handlers.handle('resolveSlug', ({ params }) =>
