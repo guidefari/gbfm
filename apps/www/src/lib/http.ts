@@ -44,8 +44,6 @@ type User = {
   emailVerified: boolean
   image?: string | null
   username?: string | null
-  createdAt: Date
-  updatedAt: Date
   role?: string | null
 }
 
@@ -336,7 +334,16 @@ export function useResolveMusicEntity(url: string) {
 export function useUserLOL() {
   const { data, error, isPending } = useQuery<User, Error>({
     queryKey: ['user'],
-    queryFn: async () => fetcher(apiUrl('/user/profile'))
+    queryFn: async () => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.user
+          .getProfile({})
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'user.getProfile' }))
+          )
+      )
+    }
   })
 
   return {
@@ -364,7 +371,19 @@ export function useUpdateProfile() {
 export function useAdminUserSocialLinks(userId: string) {
   return useQuery<SocialLink[], Error>({
     queryKey: ['admin', 'user-social-links', userId],
-    queryFn: () => fetcher<SocialLink[]>(apiUrl(`/user/admin/${userId}/social-links`)),
+    queryFn: async () => {
+      const client = await getApiClient()
+      const links = await Effect.runPromise(
+        client.user
+          .getAdminUserSocialLinks({ params: { userId } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'user.getAdminUserSocialLinks' })
+            )
+          )
+      )
+      return links.map((link) => ({ ...link }))
+    },
     enabled: Boolean(userId)
   })
 }
@@ -372,11 +391,19 @@ export function useAdminUserSocialLinks(userId: string) {
 export function useReplaceAdminUserSocialLinks() {
   const queryClient = useQueryClient()
   return useMutation<SocialLink[], Error, { userId: string; links: SocialLink[] }>({
-    mutationFn: ({ userId, links }) =>
-      fetcher<SocialLink[]>(apiUrl(`/user/admin/${userId}/social-links`), {
-        method: 'PUT',
-        body: JSON.stringify(links)
-      }),
+    mutationFn: async ({ userId, links }) => {
+      const client = await getApiClient()
+      const result = await Effect.runPromise(
+        client.user
+          .replaceAdminUserSocialLinks({ params: { userId }, payload: links })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'user.replaceAdminUserSocialLinks' })
+            )
+          )
+      )
+      return result.map((link) => ({ ...link }))
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: ['admin', 'user-social-links', variables.userId]
@@ -387,18 +414,36 @@ export function useReplaceAdminUserSocialLinks() {
 
 export function useUpdateAdminUserBio() {
   return useMutation<{ bio: string | null }, Error, { userId: string; bio: string }>({
-    mutationFn: ({ userId, bio }) =>
-      fetcher<{ bio: string | null }>(apiUrl(`/user/admin/${userId}/bio`), {
-        method: 'PATCH',
-        body: JSON.stringify({ bio })
-      })
+    mutationFn: async ({ userId, bio }) => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.user
+          .updateAdminUserBio({ params: { userId }, payload: { bio, image: undefined } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'user.updateAdminUserBio' })
+            )
+          )
+      )
+    }
   })
 }
 
 export function useAdminUserBio(userId: string) {
   return useQuery<{ bio: string | null }, Error>({
     queryKey: ['admin', 'user-bio', userId],
-    queryFn: () => fetcher<{ bio: string | null }>(apiUrl(`/user/admin/${userId}/bio`)),
+    queryFn: async () => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.user
+          .getAdminUserBio({ params: { userId } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'user.getAdminUserBio' })
+            )
+          )
+      )
+    },
     enabled: Boolean(userId)
   })
 }
@@ -411,14 +456,25 @@ export type EmailPreferences = {
   systemEnabled: boolean
   globalUnsubscribe: boolean
   unsubscribeToken: string | null
-  createdAt: Date
-  updatedAt: Date
+  createdAt: string
+  updatedAt: string
 }
 
 export function useEmailPreferences() {
   const { data, error, isPending } = useQuery<EmailPreferences, Error>({
     queryKey: ['email-preferences'],
-    queryFn: async () => fetcher(apiUrl('/user/email-preferences'))
+    queryFn: async () => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.user
+          .getEmailPreferences({})
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'user.getEmailPreferences' })
+            )
+          )
+      )
+    }
   })
 
   return {
@@ -434,11 +490,18 @@ export function useUpdateEmailPreferences() {
     Error,
     Partial<EmailPreferences>
   >({
-    mutationFn: async (preferences) =>
-      fetcher(apiUrl('/user/email-preferences'), {
-        method: 'PATCH',
-        body: JSON.stringify(preferences)
-      })
+    mutationFn: async (preferences) => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.user
+          .updateEmailPreferences({ payload: preferences })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'user.updateEmailPreferences' })
+            )
+          )
+      )
+    }
   })
 
   return {
@@ -835,10 +898,36 @@ export type SubscriptionWithShow = SelectShowSubscription & {
 export function useUserSubscriptions() {
   const { data: session } = useSession()
   const isAuthenticated = Boolean(session?.user)
-  const { data, error, isPending } = useQuery<PaginatedResponse<SubscriptionWithShow>, Error>({
+  const { data, error, isPending } = useQuery<
+    { data: SubscriptionWithShow[]; pagination: unknown },
+    Error
+  >({
     queryKey: userSubscriptionsQueryKey(),
-    queryFn: async () =>
-      fetcher<PaginatedResponse<SubscriptionWithShow>>(apiUrl('/user/subscriptions')),
+    queryFn: async () => {
+      const client = await getApiClient()
+      const result = await Effect.runPromise(
+        client.user
+          .getUserSubscriptions({ query: {} })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'user.getUserSubscriptions' })
+            )
+          )
+      )
+      return {
+        data: result.data.map((s) => ({
+          ...s,
+          createdAt: new Date(s.createdAt),
+          show: {
+            ...s.show,
+            tags: s.show.tags ? [...s.show.tags] : null,
+            createdAt: new Date(s.show.createdAt),
+            updatedAt: new Date(s.show.updatedAt)
+          }
+        })),
+        pagination: result.pagination
+      }
+    },
     enabled: isAuthenticated
   })
 
@@ -988,7 +1077,15 @@ export type DjListItem = {
 export function useDjs() {
   return useQuery<DjListItem[], Error>({
     queryKey: ['djs'],
-    queryFn: () => fetcher<DjListItem[]>(apiUrl('/user/djs')),
+    queryFn: async () => {
+      const client = await getApiClient()
+      const djs = await Effect.runPromise(
+        client.user
+          .listDjs({})
+          .pipe(Effect.tapError((error) => captureException(error, { endpoint: 'user.listDjs' })))
+      )
+      return djs.map((dj) => ({ ...dj }))
+    },
     staleTime: 1000 * 60 * 5
   })
 }
