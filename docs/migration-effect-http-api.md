@@ -501,15 +501,19 @@ The entry point must carry over **everything** in the app.ts inventory, not just
 | Graceful shutdown | SIGTERM/SIGINT → `toWebHandler`'s `dispose()` then `disposeRuntime()` |
 | 1GB request bodies | unchanged `maxRequestBodySize` on the Bun.serve export |
 
-better-auth mounts as a wildcard route. Its handler is async and returns a web `Response`, so it needs `Effect.promise` and `HttpServerResponse.fromWeb` -- `Effect.succeed(auth.handler(...))` would produce an unawaited `Promise` typed as the response:
+better-auth mounts as a wildcard route. Its handler is async and returns a web `Response`, so it needs `Effect.promise` and `HttpServerResponse.fromWeb` -- `Effect.succeed(auth.handler(...))` would produce an unawaited `Promise` typed as the response.
+
+**Verified against the installed types (corrects an earlier version of this doc)**: `HttpServerRequest.toWeb` is not a plain sync conversion -- it returns `Effect.Effect<Request, RequestError>` and must be `yield*`ed inside an `Effect.gen`, not called bare inside `Effect.promise`:
 
 ```ts
-const BetterAuthRoutes = HttpRouter.use((router) =>
-  router.add("*", "/auth/*", (request) =>
-    Effect.promise(() =>
-      auth.handler(prepareAuthRequest(HttpServerRequest.toWeb(request))),
-    ).pipe(Effect.map(HttpServerResponse.fromWeb)),
-  ),
+const BetterAuthRoutes = HttpRouter.add("*", "/auth/*", (request) =>
+  Effect.gen(function* () {
+    const webRequest = yield* HttpServerRequest.toWeb(request)
+    const webResponse = yield* Effect.promise(() =>
+      Promise.resolve(auth.handler(prepareAuthRequest(webRequest))),
+    )
+    return HttpServerResponse.fromWeb(webResponse)
+  }),
 )
 ```
 
@@ -565,14 +569,16 @@ One server, one port, one deploy at a time. The whole existing Hono app mounts a
 ```ts
 import honoApp from "@/app"
 
-const HonoFallback = HttpRouter.use((router) =>
-  router.add("*", "/*", (request) =>
-    Effect.promise(() => honoApp.fetch(HttpServerRequest.toWeb(request))).pipe(
-      Effect.map(HttpServerResponse.fromWeb),
-    ),
-  ),
+const HonoFallback = HttpRouter.add("*", "/*", (request) =>
+  Effect.gen(function* () {
+    const webRequest = yield* HttpServerRequest.toWeb(request)
+    const webResponse = yield* Effect.promise(() => Promise.resolve(honoApp.fetch(webRequest)))
+    return HttpServerResponse.fromWeb(webResponse)
+  }),
 )
 ```
+
+(Implemented and verified in `apps/vps/src/http/routes.ts`, step 2a. `honoApp.fetch` can return `Response | Promise<Response>` depending on the route; wrap in `Promise.resolve` so `Effect.promise`'s `PromiseLike` constraint is satisfied either way.)
 
 The router (find-my-way) gives static and parametric routes precedence over the wildcard, so each `HttpApi` group added takes over its paths automatically. Per group: port endpoints + handlers, delete the corresponding Hono router from `app.ts`, deploy. When `app.ts` has no routers left, delete `HonoFallback` and the Hono dependency.
 
