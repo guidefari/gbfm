@@ -100,10 +100,27 @@ export function useAudioByType(
     useInfiniteQuery<PaginatedResponse<SelectAudio>, Error>({
       queryKey: audioListQueryKey(type, tag, limit),
       queryFn: async ({ pageParam = 0 }) => {
-        const url = apiUrlObj(`/content/audio/${type}`)
-        setPaginationParams(url, Number(pageParam), { limit })
-        if (tag) url.searchParams.set('tag', tag)
-        return fetcher<PaginatedResponse<SelectAudio>>(url.toString())
+        const client = await getApiClient()
+        const result = await Effect.runPromise(
+          client.audio
+            .getAudioByType({ params: { type }, query: { limit, offset: Number(pageParam), tag } })
+            .pipe(
+              Effect.tapError((error) =>
+                captureException(error, { endpoint: 'audio.getAudioByType' })
+              )
+            )
+        )
+        return {
+          data: result.data.map((audio) => ({
+            ...audio,
+            bannerImageUrl: null,
+            createdAt: new Date(audio.createdAt),
+            updatedAt: new Date(audio.updatedAt),
+            tags: audio.tags ? [...audio.tags] : null,
+            creators: audio.creators ? [...audio.creators] : undefined
+          })),
+          pagination: result.pagination
+        }
       },
       initialPageParam: 0,
       getNextPageParam: getNextOffsetPageParam
@@ -123,7 +140,17 @@ export function useAudioByType(
 export function useAudioTags(type: AudioContentType) {
   const { data, error, isPending } = useQuery<string[], Error>({
     queryKey: audioTagsQueryKey(type),
-    queryFn: async () => fetcher<string[]>(apiUrl(`/content/audio/${type}/tags`)),
+    queryFn: async () => {
+      const client = await getApiClient()
+      const tags = await Effect.runPromise(
+        client.audio
+          .getAudioTags({ params: { type } })
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'audio.getAudioTags' }))
+          )
+      )
+      return [...tags]
+    },
     staleTime: 1000 * 60 * 60
   })
   return { data: data ?? [], error, isPending }
@@ -153,7 +180,26 @@ export function useEditorialTags() {
 export function useAudioBySlug(type: AudioContentType, slug: string) {
   const { data, error, isPending } = useQuery<SelectMdxCompiledAudio, Error>({
     queryKey: audioSlugQueryKey(type, slug),
-    queryFn: async () => fetcher(apiUrl(`/content/audio/${type}/${slug}`)),
+    queryFn: async () => {
+      const client = await getApiClient()
+      const audio = await Effect.runPromise(
+        client.audio
+          .getAudioBySlug({ params: { type, slug } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'audio.getAudioBySlug' })
+            )
+          )
+      )
+      return {
+        ...audio,
+        bannerImageUrl: null,
+        createdAt: new Date(audio.createdAt),
+        updatedAt: new Date(audio.updatedAt),
+        tags: audio.tags ? [...audio.tags] : null,
+        creators: audio.creators ? [...audio.creators] : undefined
+      }
+    },
     enabled: Boolean(slug)
   })
 
@@ -1352,7 +1398,16 @@ type QRPdfResponse = {
 export function useMixQRPdf(slug: string, enabled = false) {
   return useQuery<QRPdfResponse>({
     queryKey: ['mix-qr-pdf', slug],
-    queryFn: () => fetcher<QRPdfResponse>(apiUrl(`/content/audio/mix/${slug}/qr-pdf`)),
+    queryFn: async () => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.audio
+          .getMixQRPdf({ params: { slug }, query: {} })
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'audio.getMixQRPdf' }))
+          )
+      )
+    },
     enabled,
     staleTime: 1000 * 60 * 60 * 24
   })
