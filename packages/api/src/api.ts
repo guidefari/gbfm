@@ -1,5 +1,6 @@
 import { HttpApi } from 'effect/unstable/httpapi'
 import { AdminGroup } from './admin'
+import { FavoritesGroup } from './favorites'
 import { HealthGroup } from './health'
 import { InternalGroup } from './internal'
 import { InviteGroup } from './invite'
@@ -17,3 +18,4 @@ export const Api = HttpApi.make('gbfm')
   .add(ResolveGroup)
   .add(AdminGroup)
   .add(InviteGroup)
+  .add(FavoritesGroup)

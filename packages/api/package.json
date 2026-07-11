@@ -11,6 +11,7 @@
     "./profile": "./src/profile.ts",
     "./resolve": "./src/resolve.ts",
     "./invite": "./src/invite.ts",
+    "./favorites": "./src/favorites.ts",
     "./errors": "./src/errors.ts",
     "./testing": "./src/testing.ts",
     "./middleware/auth": "./src/middleware/auth.ts"

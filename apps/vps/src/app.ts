@@ -3,7 +3,6 @@ import configureOpenAPI from '@/lib/configure-open-api'
 import { createAppEffect } from '@/lib/create-app'
 import content from '@/routes/content/content.index'
 import email from '@/routes/email/email.index'
-import favorites from '@/routes/favorites/favorites.index'
 import fileManager from '@/routes/file-manager/file-manager.index'
 import musicReminders from '@/routes/music-reminders/music-reminders.index'
 import newsletter from '@/routes/newsletter/newsletter.index'
@@ -26,7 +25,6 @@ const setupRoutesEffect = Effect.gen(function* () {
 
   configureOpenAPI(app)
 
-  app.route('/api/favorites', favorites)
   app.route('/api/user', user)
   app.route('/api/content', content)
   app.route('/api/email', email)
