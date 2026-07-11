@@ -197,3 +197,46 @@ that's been silently corrected is easy to repeat:
   just the one being edited -- and grep for the exported type names, not
   only the schema/const names, since `import type` sites are real
   dependencies that a value-only grep pattern can miss.
+- **"HttpApiBuilder.group handlers can't set response headers" is false,
+  and was assumed rather than verified against source.** The first version
+  of the `invite` group (#164) kept `confirmInvite` as a raw
+  `HttpRouter.add` route instead of an `HttpApiEndpoint`, reasoning that
+  only middleware wrapping the endpoint's `Effect<HttpServerResponse>`
+  can touch headers and the *handler* itself has no header access -- so
+  forwarding better-auth's `set-cookie` header needed the raw-router
+  escape hatch. Wrong: `effect@4.0.0-beta.93`'s `HttpApiBuilder.ts`
+  (`handlerToHttpEffect`) checks `Response.isHttpServerResponse(response)`
+  on the handler's own return value and short-circuits schema encoding if
+  true, passing a handler-built `HttpServerResponse` straight through --
+  the handler can call `HttpServerResponse.json(...)` +
+  `HttpServerResponse.setHeader(...)` itself and return that, no
+  middleware or raw route required. Caught by adversarial review, fixed in
+  the same PR. The generalizable lesson: **when this migration's own docs
+  say "X isn't possible with mechanism Y," re-derive that from the pinned
+  `effect` source before designing around it** -- a plausible-sounding
+  constraint (mirrored, ironically, in this doc's own "Middleware: what
+  can touch responses" section, which is about *middleware* wrapping a
+  response and never claimed handlers can't return one directly) can still
+  be wrong, and an unnecessary architectural exception in one PR becomes a
+  false precedent later PRs copy without re-checking.
+- **A live-send verification click can hit the wrong target if you don't
+  re-confirm state at click time.** While manually verifying `invite`'s
+  "Send invite" admin UI action (#164), a stale accessibility-tree ref
+  (captured in one snapshot, clicked in a later command after the page had
+  already re-rendered from an earlier interaction) caused the click to
+  land on a different table row than the one identified. Since this
+  particular action sends a real, non-undoable email (a password-reset
+  invite) through production SES, the result was a real invite email sent
+  to a real, uninvolved user instead of the intended test account --
+  caught only by cross-checking the admin Email Logs page's actual
+  recipient after the fact, not by trusting the success toast or the
+  200 status. **For any endpoint that sends real email, SMS, push, or
+  other outbound notification: re-snapshot and re-verify the exact target
+  row/field immediately before the click that triggers the send, not
+  several commands earlier -- and always cross-check the real delivery
+  log afterward instead of trusting a success response alone.** Prefer
+  server-log/blackbox-test verification over a live UI click-through
+  entirely when the action is non-idempotent and irreversible; if a live
+  click is genuinely needed, confirm the exact recipient with the user
+  first (as was done here) and re-verify the UI state immediately
+  beforehand, not just once earlier in the session.
