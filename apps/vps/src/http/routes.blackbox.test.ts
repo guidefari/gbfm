@@ -278,7 +278,7 @@ describe('admin (HttpApiBuilder group, Step 6)', () => {
   })
 })
 
-describe('invite (HttpApiBuilder group + raw route, Step 6)', () => {
+describe('invite (HttpApiBuilder group, Step 6)', () => {
   it('POST /api/invite/send returns 401 without a session cookie', async () => {
     const res = await webHandler.handler(
       new Request('http://localhost/api/invite/send', {
@@ -291,7 +291,7 @@ describe('invite (HttpApiBuilder group + raw route, Step 6)', () => {
     expect(res.status).toBe(401)
   })
 
-  it('POST /api/invite/confirm is handled by the raw route (not the Hono fallback)', async () => {
+  it('POST /api/invite/confirm is handled by this group (not the Hono fallback)', async () => {
     const res = await webHandler.handler(
       new Request('http://localhost/api/invite/confirm', {
         method: 'POST',
@@ -301,13 +301,13 @@ describe('invite (HttpApiBuilder group + raw route, Step 6)', () => {
     )
 
     // No auth required (matches the old Hono route). Asserting != 404 rather
-    // than a specific status: an unknown token 400s with a JSON error body
-    // from confirmInviteRoute when the DB is reachable, but this suite runs
+    // than a specific status: an unknown token 400s from the handler's own
+    // HttpApiError.BadRequest when the DB is reachable, but this suite runs
     // without a live DB in some environments, in which case the verification
-    // lookup dies and the route's own top-level Effect.catch turns that into
-    // a 500 -- either way, a 404 would mean the Hono fallback or better-auth's
-    // wildcard matched instead of this route, which is the actual regression
-    // this test guards against.
+    // lookup dies and the group's own error handling turns that into a 500
+    // -- either way, a 404 would mean the Hono fallback or better-auth's
+    // wildcard matched instead of this endpoint, which is the actual
+    // regression this test guards against.
     expect(res.status).not.toBe(404)
   })
 

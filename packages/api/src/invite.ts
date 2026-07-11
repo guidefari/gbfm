@@ -12,22 +12,42 @@ export const SendInviteResponse = Schema.Struct({
   emailId: Schema.String
 })
 
-// confirmInvite (POST /api/invite/confirm) is deliberately NOT an
-// HttpApiEndpoint -- it must forward better-auth's set-cookie header from
+export const ConfirmInviteInput = Schema.Struct({
+  token: Schema.String,
+  password: Schema.String
+})
+export type ConfirmInviteInput = typeof ConfirmInviteInput.Type
+
+export const ConfirmInviteResponse = Schema.Struct({
+  success: Schema.Boolean
+})
+
+// confirmInvite's handler must forward better-auth's set-cookie header from
 // auth.api.signInEmail so the browser session is live before
-// apps/www/src/routes/auth/reset-password.tsx's post-success refetchSession()
-// call, and HttpApiBuilder.group handlers can only return the raw decoded
-// success value (no header access); only a wrapping HttpApiMiddleware or
-// global HttpRouter.middleware can touch response headers, and this
-// endpoint's handler is the one that knows the cookie value, not a
-// middleware wrapping it. Kept as a raw HttpRouter.add route in
-// apps/vps/src/http/routes.ts, the same tier as the better-auth wildcard
-// route, instead of forcing it through a mechanism that can't carry the
-// cookie.
-export const InviteGroup = HttpApiGroup.make('invite').add(
-  HttpApiEndpoint.post('sendInvite', '/api/invite/send', {
-    payload: SendInviteInput,
-    success: SendInviteResponse,
-    error: [HttpApiError.Forbidden, HttpApiError.NotFound, HttpApiError.InternalServerError]
-  }).middleware(AuthMiddleware)
-)
+// apps/www/src/routes/auth/reset-password.tsx's post-success
+// refetchSession() call. HttpApiBuilder.group handlers CAN do this directly
+// -- effect@4.0.0-beta.93's HttpApiBuilder.ts (handlerToHttpEffect) checks
+// `Response.isHttpServerResponse(response)` on the handler's return value
+// and short-circuits schema encoding if so, passing a handler-constructed
+// HttpServerResponse straight through. The handler builds the response with
+// HttpServerResponse.json + HttpServerResponse.setHeader and returns it
+// directly instead of the plain ConfirmInviteResponse shape -- no separate
+// raw HttpRouter route needed. (An earlier version of this endpoint was
+// built as a raw, non-HttpApiEndpoint route based on the mistaken belief
+// that handlers only ever return the encoded success value; corrected
+// after adversarial review caught it.)
+export const InviteGroup = HttpApiGroup.make('invite')
+  .add(
+    HttpApiEndpoint.post('sendInvite', '/api/invite/send', {
+      payload: SendInviteInput,
+      success: SendInviteResponse,
+      error: [HttpApiError.Forbidden, HttpApiError.NotFound, HttpApiError.InternalServerError]
+    }).middleware(AuthMiddleware)
+  )
+  .add(
+    HttpApiEndpoint.post('confirmInvite', '/api/invite/confirm', {
+      payload: ConfirmInviteInput,
+      success: ConfirmInviteResponse,
+      error: HttpApiError.BadRequest
+    })
+  )
