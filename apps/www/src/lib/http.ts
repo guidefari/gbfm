@@ -877,6 +877,13 @@ export type FavoriteAudio = {
   url: string
 }
 
+export type FavoriteShow = {
+  id: string
+  title: string
+  slug: string
+  thumbnailUrl: string | null
+}
+
 export type Favorite = {
   id: string
   userId: string
@@ -884,6 +891,12 @@ export type Favorite = {
   showId: string | null
   createdAt: string
   audio: FavoriteAudio | null
+  // Real field on the ported /api/favorites response (GetFavoritesResponse
+  // in packages/api/src/favorites.ts) -- was silently absent from this
+  // type under the old fetcher-based hook. No current consumer reads it
+  // (FavoritesSection.tsx filters to audio-only favorites), so this
+  // doesn't change any UI behavior, just makes the type honest.
+  show: FavoriteShow | null
 }
 
 export type FavoritesResponse = {
@@ -897,7 +910,22 @@ export function useFavorites() {
   const isAuthenticated = Boolean(session?.user)
   const { data, error, isPending, refetch } = useQuery<FavoritesResponse, Error>({
     queryKey: favoritesQueryKey(),
-    queryFn: async () => fetcher(apiUrl('/favorites')),
+    queryFn: async () => {
+      const client = await getApiClient()
+      const result = await Effect.runPromise(
+        client.favorites
+          .getFavorites({ query: {} })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'favorites.getFavorites' })
+            )
+          )
+      )
+      return {
+        ...result,
+        favorites: result.favorites.map((favorite) => ({ ...favorite }))
+      }
+    },
     enabled: isAuthenticated
   })
 
@@ -917,11 +945,18 @@ export function useAddFavorite() {
     Error,
     { audioId: string }
   >({
-    mutationFn: async ({ audioId }) =>
-      fetcher(apiUrl('/favorites'), {
-        method: 'POST',
-        body: JSON.stringify({ audioId })
-      }),
+    mutationFn: async ({ audioId }) => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.favorites
+          .addFavorite({ payload: { audioId } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'favorites.addFavorite' })
+            )
+          )
+      )
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: favoritesQueryKey() })
     }
@@ -940,10 +975,18 @@ export function useRemoveFavorite() {
     Error,
     { audioId: string }
   >({
-    mutationFn: async ({ audioId }) =>
-      fetcher(apiUrl(`/favorites/${audioId}`), {
-        method: 'DELETE'
-      }),
+    mutationFn: async ({ audioId }) => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.favorites
+          .removeFavorite({ params: { audioId } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'favorites.removeFavorite' })
+            )
+          )
+      )
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: favoritesQueryKey() })
     }
@@ -962,11 +1005,18 @@ export function useAddShowFavorite() {
     Error,
     { showId: string }
   >({
-    mutationFn: async ({ showId }) =>
-      fetcher(apiUrl('/favorites'), {
-        method: 'POST',
-        body: JSON.stringify({ showId })
-      }),
+    mutationFn: async ({ showId }) => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.favorites
+          .addFavorite({ payload: { showId } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'favorites.addFavorite' })
+            )
+          )
+      )
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: favoritesQueryKey() })
     }
@@ -985,10 +1035,18 @@ export function useRemoveShowFavorite() {
     Error,
     { showId: string }
   >({
-    mutationFn: async ({ showId }) =>
-      fetcher(apiUrl(`/favorites/show/${showId}`), {
-        method: 'DELETE'
-      }),
+    mutationFn: async ({ showId }) => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.favorites
+          .removeShowFavorite({ params: { showId } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'favorites.removeShowFavorite' })
+            )
+          )
+      )
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: favoritesQueryKey() })
     }
