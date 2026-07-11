@@ -1,5 +1,6 @@
 import { HealthLiveResponse, HealthReadyResponse } from '@gbfm/api/health'
 import { ArtistListResponse } from '@gbfm/api/music'
+import { SearchResults } from '@gbfm/api/search'
 import { decodeResponseBody } from '@gbfm/api/testing'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { AppType } from '@/app'
@@ -159,5 +160,46 @@ describe('music artists (HttpApiBuilder group, Step 4)', () => {
     )
 
     expect(res.status).toBe(401)
+  })
+})
+
+describe('search (HttpApiBuilder group, Step 6)', () => {
+  it('GET /api/search?q=test returns 200 with a decodable grouped result', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/api/search?q=test'))
+
+    expect(res.status).toBe(200)
+    await expect(decodeResponseBody(SearchResults, res)).resolves.toEqual(
+      expect.objectContaining({
+        shows: expect.any(Array),
+        audio: expect.any(Array),
+        posts: expect.any(Array)
+      })
+    )
+  })
+
+  it('GET /api/search?q=test sets a public Cache-Control header', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/api/search?q=test'))
+
+    expect(res.headers.get('cache-control')).toBe('public, max-age=60, stale-while-revalidate=300')
+  })
+
+  it('GET /api/search without q returns 400 (query validation failure)', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/api/search'))
+
+    expect(res.status).toBe(400)
+  })
+
+  it('GET /api/search?q=test&limit=999 returns 400 (limit above the 50 max)', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/search?q=test&limit=999')
+    )
+
+    expect(res.status).toBe(400)
+  })
+
+  it('other paths do not get the search Cache-Control header', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/health/live'))
+
+    expect(res.headers.get('cache-control')).toBeNull()
   })
 })

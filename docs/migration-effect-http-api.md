@@ -438,10 +438,12 @@ export const RateLimiterLive = HttpRouter.middleware(
       return HttpServerResponse.setHeaders(response, headers)
     }),
   { global: true },
-).layer
+)
 ```
 
 The path-prefix config table replaces the per-route `strictRateLimiter`/`relaxedRateLimiter`/`playTrackRateLimiter` factories. Per-endpoint annotations on `HttpApiEndpoint` are possible but add machinery for no behavioral gain -- the config table mirrors what the route files express today. (Spike note: confirm `request.url` shape and the exact `jsonUnsafe` signature when wiring this.)
+
+**Verified against the installed types (corrects an earlier version of this doc)**: `HttpRouter.middleware(fn, { global: true })` returns the `Layer` directly -- `makeMiddleware` only wraps the result in a `MiddlewareImpl` (which exposes `.layer`) for the non-global, endpoint-scoped case. Appending `.layer` to a global middleware call is a type error, not a no-op; every snippet in this section (4b/4c/4d/4e) drops it accordingly. Confirmed in `apps/vps/src/http/search.middleware.ts` (step 6).
 
 #### 4c. Logging and tracing
 
@@ -460,7 +462,7 @@ export const RequestLoggerLive = HttpRouter.middleware(
       return response
     }),
   { global: true },
-).layer
+)
 ```
 
 Before porting `effectLogger()` wholesale, check what comes free: `HttpRouter.toWebHandler` has a built-in request logger (`disableLogger` option), and OpenTelemetry tracing via `Effect.withSpan` continues to work in services unchanged. The current middleware's span-per-request behavior may be mostly redundant.
@@ -485,7 +487,7 @@ export const CorsLive = HttpRouter.middleware(
     credentials: true,
   }),
   { global: true },
-).layer
+)
 ```
 
 Two traps, both verified in the library:
@@ -512,7 +514,7 @@ export const SentryLive = HttpRouter.middleware(
       ),
     ),
   { global: true },
-).layer
+)
 ```
 
 `SentryService` comes from `AppLayer`, which is provided to the whole router (Phase 5).
@@ -748,15 +750,15 @@ boundaries were skipped, not a sign the rows were wrong.
 | -- | ✅ merged (#147) | (unplanned) Strengthen the music-artists fallback parity check from an `Array.isArray` shape check to a real before/after response comparison | -- | A weak test found during 3a review; fixed as its own tiny stacked PR rather than rewriting 2a's already-open history | `apps/vps/src/http/routes.blackbox.test.ts` only |
 | 3a | ✅ merged (#149) | Port health handlers to `HttpApiBuilder.group`, taking over `/health*` from the fallback | Low | First real `HttpApi` group serving real traffic; small blast radius if wrong | `apps/vps/src/http/health.handlers.ts` + removing health from the Hono side. Reuse the existing vitest integration test as the before/after behavior check -- do not add a parallel hand-rolled assertion script. |
 | 3b | 🔵 in review (#150) | Port auth middleware (cookie-based) behind a group with no production traffic yet (e.g. a scratch/internal endpoint) | Medium | Validates session cookie reading in isolation, before any real authed route depends on it | `packages/api/src/middleware/auth.ts`, `apps/vps/src/middleware/auth.impl.ts` |
-| 4 | 🔵 in review (#152) | Port one real CRUD group entirely (e.g., music artists), taking it over from the fallback | Medium | Full vertical slice through contract + handler + auth | One group's contract + handlers only |
-| 5 | ⬜ next | Generate client for that group, replace one react-query hook; verify cookies cross-origin in a deployed browser | Low | Tangible client benefit; proves the client-side cookie risk called out below | `apps/www/src/lib/api-client.ts` + one hook |
-| 6 | ⬜ not started | Port remaining JSON groups incrementally, one group per PR/deploy | Low-Medium | Mechanical work, same shape as step 4 each time | One group per PR |
+| 4 | ✅ merged (#152/#153) | Port one real CRUD group entirely (e.g., music artists), taking it over from the fallback | Medium | Full vertical slice through contract + handler + auth | One group's contract + handlers only |
+| 5 | ✅ merged (#154) | Generate client for that group, replace one react-query hook; verify cookies cross-origin in a deployed browser | Low | Tangible client benefit; proves the client-side cookie risk called out below | `apps/www/src/lib/api-client.ts` + one hook |
+| 6 | 🔵 in progress (search group in review) | Port remaining JSON groups incrementally, one group per PR/deploy | Low-Medium | Mechanical work, same shape as step 4 each time | One group per PR |
 | 7 | ⬜ not started | Port upload groups (multipart -- see below) and non-JSON routes (rss/seo/share) | Medium | The hairy tail; budget real time, do not fold into a "remaining groups" PR | Upload group only, then site routes only -- two separate PRs |
 | 8 | ⬜ not started | Move rate limiter + Sentry capture to Effect middleware, remove `HonoFallback`, delete Hono + Zod | Low | Cleanup | Middleware move and dependency removal as separate PRs |
 
 All PRs above stack into `migration/effect-http-api`, not directly into `prod` -- that integration branch gets its own PR to `prod` once a meaningful chunk of the stack has merged.
 
-**Findings from adversarial review, fixed before merge (not just noted):** a cache race in the 3a readiness check (module-level `let` → `Effect.cachedWithTTL`, memoizing the in-flight fiber so concurrent cold-cache requests share one DB call instead of racing); a swallowed DB-check error with no server-side log (added `Effect.tapError` before sanitizing to the wire-safe tagged error); a beta-API footgun in 3b where `{ provides: typeof AuthSession }` compiles but silently breaks `HttpApiMiddleware`'s type-level service exclusion (fixed to the bare class reference); a silently-swallowed `getSession` throw in 3b (same log-then-sanitize fix); and dropped audit logging for unauthorized attempts (restored via `Effect.logWarning`, matching the old Hono middleware's intent without over-porting a success-path log for a route with no production traffic).
+**Findings from adversarial review, fixed before merge (not just noted):** a cache race in the 3a readiness check (module-level `let` → `Effect.cachedWithTTL`, memoizing the in-flight fiber so concurrent cold-cache requests share one DB call instead of racing); a swallowed DB-check error with no server-side log (added `Effect.tapError` before sanitizing to the wire-safe tagged error); a beta-API footgun in 3b where `{ provides: typeof AuthSession }` compiles but silently breaks `HttpApiMiddleware`'s type-level service exclusion (fixed to the bare class reference); a silently-swallowed `getSession` throw in 3b (same log-then-sanitize fix); dropped audit logging for unauthorized attempts (restored via `Effect.logWarning`, matching the old Hono middleware's intent without over-porting a success-path log for a route with no production traffic); a dropped Sentry report in step 5's client hook (client swap silently lost the old `fetcher`'s failure reporting -- restored via `Effect.tapError`); step 4's PR leaving `routes/music/*` (the old Hono router) undeleted despite being fully superseded and unreachable -- caught and cleaned up in step 6 instead of compounding; and this doc's own Phase 4b/4c/4d snippets appending `.layer` to a global `HttpRouter.middleware(...)` call, which is a type error, not a no-op (`{ global: true }` returns the `Layer` directly -- `.layer` only exists on the non-global `MiddlewareImpl` case) -- caught while building step 6's first global middleware, since no prior step had needed one.
 
 Step 2 is deliberately front-loaded and deliberately split into three small check-ins
 (2a/2b/2c) rather than one: it is where the serving topology changes, and each sub-step
