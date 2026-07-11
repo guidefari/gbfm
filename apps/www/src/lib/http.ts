@@ -943,10 +943,10 @@ export type ResolvedShow = {
     description: string | null
     thumbnailUrl: string | null
     bannerImageUrl: string | null
-    tags: string[] | null
+    tags: ReadonlyArray<string> | null
     createdAt: string
     compiledContent: string | null
-    hosts: Array<{ id: string; name: string; username: string | null }>
+    hosts: ReadonlyArray<{ id: string; name: string; username: string | null }>
   }
 }
 
@@ -956,7 +956,14 @@ export function useResolveSlug(slug: string) {
   const { data, error, isPending } = useQuery<ResolveResult, Error>({
     queryKey: ['resolve', slug],
     queryFn: async () => {
-      return fetcher<ResolveResult>(apiUrl(`/resolve/${slug}`))
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.resolve
+          .resolveSlug({ params: { slug } })
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'resolve.resolveSlug' }))
+          )
+      )
     },
     enabled: Boolean(slug),
     retry: false

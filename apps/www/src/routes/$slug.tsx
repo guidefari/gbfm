@@ -1,13 +1,17 @@
 import { createFileRoute, Link, Navigate } from '@tanstack/react-router'
+import { Effect } from 'effect'
 import { PublicProfilePage } from '@/components/profile/PublicProfilePage'
-import { apiUrl, fetcher, type ResolveResult } from '@/lib/http'
+import { getApiClient } from '@/lib/api-client'
 import { generateProfileSEO, generateResolvedShowSEO, generateSEOMeta } from '@/lib/seo'
 
 export const Route = createFileRoute('/$slug')({
   component: SlugPage,
   loader: async ({ params }) => {
     try {
-      const resolved = await fetcher<ResolveResult>(apiUrl(`/resolve/${params.slug}`))
+      const client = await getApiClient()
+      const resolved = await Effect.runPromise(
+        client.resolve.resolveSlug({ params: { slug: params.slug } })
+      )
       return { resolved }
     } catch {
       return { resolved: null }
