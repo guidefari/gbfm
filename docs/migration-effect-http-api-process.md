@@ -1,0 +1,152 @@
+# Process notes: Effect HttpApi migration
+
+How PR review/verification has actually been run for this migration
+(`docs/migration-effect-http-api.md`). Written down so the discipline
+survives a context reset or a different agent picking up step 6+ -- these
+are the standing rules, not suggestions to re-derive each time.
+
+## PR shape
+
+- One route group (or one discrete migration step) per PR. Never bundle
+  two groups into one PR even if they're the same size -- if group B
+  depends on group A's exported schema (e.g. `resolve` reusing
+  `profile`'s response schema), stack B's branch on top of A's branch and
+  open B's PR against A's branch, not against the shared integration
+  branch. Verify the stack with `git merge-base --is-ancestor <base>
+  <head>` before calling the PR open -- got the base branch wrong twice
+  early in this migration (PRs #150, #152) from skipping this check.
+- All step PRs stack into `migration/effect-http-api`, never directly into
+  `prod`. That integration branch gets its own PR to `prod` periodically
+  once a meaningful chunk has merged.
+- Delete the superseded Hono router (`*.routes.ts`, `*.handlers.ts`,
+  `*.index.ts`) in the same PR that ports the group, not as later cleanup
+  -- dead code left behind gets found by adversarial review anyway, so
+  it's cheaper to just delete it while the group is already in your head.
+  Grep for stray imports before deleting (`grep -rln "routes/<group>"`).
+
+## PR description: why not how
+
+The PR body is `## Why` / `## What to look for` / `## Test evidence`, not
+a changelog of the diff. The diff already shows what changed; the body's
+job is to carry the two things the diff can't: the reasoning a reviewer
+would otherwise have to reconstruct, and where to point suspicion.
+Concretely:
+
+- `## Why` -- one or two sentences: which step this is, what group, why
+  it's the next one to port.
+- `## What to look for` -- the non-obvious decisions: a schema
+  correctness gotcha, a behavior-change callout (status code changed,
+  field added), a library footgun that cost time to find. Written for a
+  reviewer who trusts the mechanical parts (typecheck, tests) and needs
+  to spend their attention on the parts that could be silently wrong.
+  Explicitly reference file paths and line-level reasoning, not vague
+  "cleaned things up."
+- `## Test evidence` -- see below.
+
+## Test evidence: screenshot when there's a real UI consumer
+
+Rule, stated precisely because it was misapplied once: **skip screenshot
+evidence only when there is genuinely no `apps/www` consumer of the
+endpoint** (confirmed by grep, not assumed by category). "Backend-only
+JSON API port" is not automatically screenshot-exempt -- `search` was
+correctly exempt because nothing in `apps/www` called it yet. `profile`
+and `resolve` were incorrectly treated the same way on first pass, even
+though `/profile/$username` and the `$slug` catch-all page both render
+directly from those endpoints. The fix: before writing "no UI surface,"
+grep for the endpoint path or the response type name in `apps/www/src`,
+not just check whether the group is "backend infrastructure-flavored."
+
+When there is a consumer:
+
+1. Hit the real endpoint on a running dev server first (`curl`), confirm
+   the response shape, *then* load the actual frontend page against it
+   with `agent-browser` and screenshot. The curl output and the
+   screenshot corroborate each other -- a screenshot alone can't prove
+   the request that produced it actually succeeded, and a status code
+   alone can't prove the UI rendered it correctly.
+2. Use real seeded data where possible (a real username, a real show
+   slug), not a synthetic fixture -- this project doesn't have seed
+   helpers for most tables, so the fastest path is often querying an
+   existing read endpoint (e.g. `/api/search`) to find a real id/slug to
+   point the screenshot at, rather than writing one-off seed scripts.
+3. Upload via the `pr-screenshot-evidence` skill (S3 + CloudFront, one
+   image per PR-specific path), embed with a one-line caption plus the
+   curl status check as a fenced code block, per the skill's own
+   workflow. Don't invent a different hosting path.
+4. If a screenshot surfaces mid-review that evidence was skipped
+   incorrectly, fix the PR description in place (`gh pr edit`) rather
+   than leaving the wrong claim ("no UI surface") sitting in a merged PR
+   history.
+
+## Adversarial review at every checkpoint
+
+Every group gets one review pass before it's considered done, dispatched
+as a headless agent with an explicit, self-contained prompt (the agent
+has no memory of this conversation -- it needs file paths, the specific
+claims to verify, and the specific commands to run, not "review this
+PR"). The standing framing: **assume the implementation is wrong and try
+to prove it**, not "read the diff and confirm it looks right."
+
+Concretely, every review prompt asks the agent to:
+- Re-derive schema/type claims from the real source (service types,
+  library type definitions) rather than trusting comments or the PR
+  description.
+- Actually run the test suite and typecheck, and report real pass/fail
+  output -- not assume green because the diff looks clean.
+- Check specific named failure modes (date-serialization gaps,
+  dead-code leftovers, auth regressions, status-code changes) rather than
+  "review generally."
+- Report findings that must be fixed, not dismissed -- a finding doesn't
+  get argued away in the same turn it's raised; either the code changes
+  or there's a concrete reason (stated in the PR, not just in chat) why
+  it's not a real issue.
+
+**Known failure mode in this environment: worktree isolation for review
+agents has been unreliable** -- three separate dispatches with
+`isolation: "worktree"` returned a stale or entirely wrong checkout (an
+old release tag, an unrelated branch) instead of the actual branch/commit
+under review, even though the commit existed and was pushed. When a
+review agent reports it can't find the files described in the task, don't
+retry the same isolated dispatch expecting a different result -- that's a
+tooling problem, not a flaky agent. The workaround used here: drop
+`isolation: "worktree"` and run the review agent directly against the
+real repo checkout, with explicit instructions not to `checkout`/
+`switch`/`stash`/`reset` anything (since other work may be in flight in
+the same tree). This is read-only-safe for a review pass (grep, `git
+show`, run tests) as long as the agent is told not to mutate state.
+
+## Things this process has missed (so far)
+
+Documented here instead of only in PR history, since a misapplied rule
+that's been silently corrected is easy to repeat:
+
+- **Screenshot exemption applied by category instead of by grep.**
+  Covered above -- the actual rule is "no consumer found by grep," not
+  "this feels like backend work."
+- **Schema drift from the old Hono/zod layer went unnoticed until a port
+  forced a field-by-field diff.** Two separate groups (`profile`,
+  `resolve`) had response schemas that had quietly stopped matching what
+  the service actually returned, and `apps/www` was relying on the
+  undeclared fields anyway (Hono doesn't enforce its OpenAPI response
+  schema at runtime, so nothing ever caught the drift). This means the
+  *old* system had a live but invisible bug for however long the drift
+  existed. Worth explicitly diffing old-schema vs. real-service-type vs.
+  real-frontend-type on every remaining group, not just trusting the old
+  schema was ever correct.
+- **Branch staleness after a stacked PR merges.** After PR #156 merged
+  into `migration/effect-http-api`, the next step's work-in-progress
+  branch (still based on the pre-merge tip) needed an explicit
+  `git fetch` + branch reset before branching further, or the new branch
+  silently forks from stale history. Check `git merge-base --is-ancestor`
+  against `origin/migration/effect-http-api` (not just the local ref)
+  before branching the next step.
+- **Splitting one working-tree's worth of uncommitted changes into two
+  correctly-scoped commits/PRs is manual and error-prone.** When two
+  groups were built back-to-back in the same working tree before either
+  was committed (profile, then resolve), separating them into two clean
+  commits required manually moving new files aside, trimming shared-file
+  diffs (`routes.ts`, `app.ts`, `api.ts`, `package.json`) down to one
+  group's slice, committing, then restoring the second group's pieces.
+  Doable, but slower and riskier than committing group A immediately
+  after finishing it, before starting group B -- prefer that ordering
+  next time even under a "carry on, don't wait for approval" instruction.
