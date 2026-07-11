@@ -7,6 +7,7 @@ import type { AppType } from '@/app'
 import { checkDatabase, makeHealthHandlers } from '@/http/health.handlers'
 import { InternalHandlersLive } from '@/http/internal.handlers'
 import { MusicHandlersLive } from '@/http/music.handlers'
+import { ProfileHandlersLive } from '@/http/profile.handlers'
 import { SearchHandlersLive } from '@/http/search.handlers'
 import { SearchCacheHeaderLive } from '@/http/search.middleware'
 import { auth } from '@/lib/auth'
@@ -56,6 +57,7 @@ export const createWebHandler = (
     Layer.provide(InternalHandlersLive),
     Layer.provide(MusicHandlersLive),
     Layer.provide(SearchHandlersLive),
+    Layer.provide(ProfileHandlersLive),
     Layer.provide(AuthMiddlewareLive),
     // provideMerge, not provide: services a handler pulls via plain `yield*`
     // only clear toWebHandler's phantom-context requirement once they're
