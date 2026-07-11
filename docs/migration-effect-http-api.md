@@ -278,32 +278,42 @@ Handlers receive `{ params, query, payload, headers, request }` based on the end
 
 The honest port is an ordinary (non-security) `HttpApiMiddleware` that reads the request headers and calls `getSession`, exactly like today. Middleware effects have `HttpServerRequest` available in context.
 
-**Verified against the installed types (corrects an earlier version of this doc, twice over)**:
+**Shipped in step 3b** (`packages/api/src/middleware/auth.ts`, `apps/vps/src/middleware/auth.impl.ts`) -- the snippets below are the real code, kept in sync with what's on `main`... i.e. `migration/effect-http-api`. Two corrections this doc got wrong on the way there, both confirmed against the vendored `effect` type tests (`.repos/effect/packages/effect/typetest/unstable/httpapi/HttpApiMiddleware.tst.ts`):
 
 ```ts
 // packages/api/src/middleware/auth.ts
 import { Context } from "effect"
 import { HttpApiError, HttpApiMiddleware } from "effect/unstable/httpapi"
 
+// role/name are nullable because better-auth's admin() plugin types them
+// loosely; packages/api is a leaf package and can't import the concrete
+// `typeof auth.$Infer.Session` type from apps/vps, so this is the honest
+// common shape instead.
 export class AuthSession extends Context.Service<AuthSession, {
-  readonly user: { id: string; name: string; email: string; role: string }
-  readonly session: { id: string }
+  readonly user: {
+    readonly id: string
+    readonly name: string | null | undefined
+    readonly email: string
+    readonly role?: string | null | undefined
+  }
+  readonly session: { readonly id: string }
 }>()("api/AuthSession") {}
 
-// `provides` is a TYPE parameter on Service<Self, Config>(), not a runtime
-// field of the options object. `HttpApiMiddleware.Service<AuthMiddleware>()(id,
-// { provides: AuthSession, error: ... })` does not typecheck under
-// effect@4.0.0-beta.93 -- "'provides' does not exist in type ...".
+// `provides: AuthSession` -- the bare class (its INSTANCE type) -- not
+// `typeof AuthSession` (its static/constructor type). The latter compiles
+// silently but breaks HttpApiMiddleware.Provides<A>'s type-level lookup,
+// leaking AuthSession into toWebHandler's returned handler signature as a
+// phantom second parameter.
 export class AuthMiddleware extends HttpApiMiddleware.Service<
   AuthMiddleware,
-  { readonly provides: typeof AuthSession }
+  { provides: AuthSession }
 >()("api/AuthMiddleware", {
   error: HttpApiError.Unauthorized,
 }) {}
 ```
 
 Two things that are load-bearing here:
-- `provides` needs a real context key. `AuthSession` uses the same `Context.Service` pattern as the rest of the codebase (`runtime/services.ts`); a plain class will not typecheck.
+- `provides` needs a real context key, and must be the bare class reference, not `typeof AuthSession`. `AuthSession` uses the same `Context.Service` pattern as the rest of the codebase (`runtime/services.ts`).
 - The middleware **must declare its error schema** (`error: HttpApiError.Unauthorized`). Middleware failures are added to the endpoint error surface and must be encodable; failing with an undeclared plain object is a type error.
 
 Server-side implementation:
@@ -324,11 +334,24 @@ export const AuthMiddlewareLive = Layer.succeed(
       // not the module itself -- `yield* HttpServerRequest` fails with
       // "must have a [Symbol.iterator]() method".
       const request = yield* HttpServerRequest.HttpServerRequest
+
+      // getSession's cause is logged, not swallowed -- but note better-auth
+      // itself swallows a downstream DB outage internally and returns null
+      // rather than throwing, so that specific case still looks like "no
+      // session" here. True of the old Hono middleware too; not a regression.
       const session = yield* Effect.tryPromise({
         try: () => auth.api.getSession({ headers: new Headers(request.headers) }),
-        catch: () => new HttpApiError.Unauthorized(),
-      })
+        catch: (cause) => cause,
+      }).pipe(
+        Effect.tapError((cause) =>
+          Effect.logError("[auth] getSession failed", { cause, path: request.url, method: request.method }),
+        ),
+        Effect.mapError(() => new HttpApiError.Unauthorized()),
+      )
       if (!session) {
+        yield* Effect.logWarning("[auth] unauthorized access attempt", {
+          path: request.url, method: request.method,
+        })
         return yield* new HttpApiError.Unauthorized()
       }
       return yield* Effect.provideService(httpEffect, AuthSession, {
@@ -338,8 +361,6 @@ export const AuthMiddlewareLive = Layer.succeed(
     }),
 )
 ```
-
-(Implemented and verified in `apps/vps/src/middleware/auth.impl.ts` + `packages/api/src/middleware/auth.ts`, step 3b. Also note: better-auth's real inferred `user` type -- `typeof auth.$Infer.Session` in `apps/vps/src/lib/auth.ts` -- has `role` and `name` as nullable/optional, looser than the `string` shown above; `packages/api` is a leaf package and can't import that concrete type, so its `AuthSession` declares the honest widened shape instead of the doc's simplified one.)
 
 Attach to a group or API:
 ```ts
@@ -622,7 +643,7 @@ const buildClient = () =>
     baseUrl: import.meta.env.VITE_VPS_BASE_URL || window.location.origin,
   }).pipe(Effect.provide(FetchLive))
 
-export type ApiClient = Effect.Effect.Success<ReturnType<typeof buildClient>>
+export type ApiClient = Effect.Success<ReturnType<typeof buildClient>>
 
 let _client: ApiClient | null = null
 
@@ -717,20 +738,25 @@ prior row is merged (not just opened) -- this is what keeps each PR reviewable a
 deploy diagnosable. A PR that touches files from two different rows is a sign the row
 boundaries were skipped, not a sign the rows were wrong.
 
-| Step | What | Risk | Value | PR should touch |
-|------|------|------|-------|------------------|
-| 1a | Create `packages/api` with contract + schemas for health group only | Low | Proves the pattern typechecks and reads well | `packages/api/*` only. No `apps/vps` changes, no test-framework changes. |
-| 1b | Unit tests for the health contract (schema decode/encode, error tagging) | Low | Confidence in the contract before anything serves it | `packages/api/*/*.test.ts` only |
-| 2a | Add `HttpRouter.toWebHandler` as a *second, unused* export next to the existing `Bun.serve` entry point, with `HonoFallback` routing 100% of traffic to the existing Hono app | Low | Proves the handler boilerplate builds and the fallback passes through untouched -- nothing in prod changes yet | `apps/vps/src/index.ts`, a new `routes.ts`. Entry point still exports the old `Bun.serve`; the new handler is not wired to a port. |
-| 2b | Swap the deploy entry point to the new `toWebHandler`, still 100% Hono fallback; port background forks + graceful shutdown | Medium | The actual serving-stack cutover, but with zero route behavior change -- the only thing being validated is topology | `apps/vps/src/index.ts`. Verify against the Step 2 acceptance bar (health probes, reminders, shutdown) before merging. |
-| 2c | Port the better-auth wildcard route onto the new router | Medium | Isolates the one third-party routing integration so an auth regression is diagnosable to one small diff | `apps/vps/src/http/routes.ts` (auth route only) |
-| 3a | Port health handlers to `HttpApiBuilder.group`, taking over `/health*` from the fallback | Low | First real `HttpApi` group serving real traffic; small blast radius if wrong | `apps/vps/src/http/health.handlers.ts` + removing health from the Hono side. Reuse the existing vitest integration test as the before/after behavior check -- do not add a parallel hand-rolled assertion script. |
-| 3b | Port auth middleware (cookie-based) behind a group with no production traffic yet (e.g. a scratch/internal endpoint) | Medium | Validates session cookie reading in isolation, before any real authed route depends on it | `packages/api/src/middleware/auth.ts`, `apps/vps/src/middleware/auth.impl.ts` |
-| 4 | Port one real CRUD group entirely (e.g., music artists), taking it over from the fallback | Medium | Full vertical slice through contract + handler + auth | One group's contract + handlers only |
-| 5 | Generate client for that group, replace one react-query hook; verify cookies cross-origin in a deployed browser | Low | Tangible client benefit; proves the client-side cookie risk called out below | `apps/www/src/lib/api-client.ts` + one hook |
-| 6 | Port remaining JSON groups incrementally, one group per PR/deploy | Low-Medium | Mechanical work, same shape as step 4 each time | One group per PR |
-| 7 | Port upload groups (multipart -- see below) and non-JSON routes (rss/seo/share) | Medium | The hairy tail; budget real time, do not fold into a "remaining groups" PR | Upload group only, then site routes only -- two separate PRs |
-| 8 | Move rate limiter + Sentry capture to Effect middleware, remove `HonoFallback`, delete Hono + Zod | Low | Cleanup | Middleware move and dependency removal as separate PRs |
+| Step | Status | What | Risk | Value | PR should touch |
+|------|--------|------|------|-------|------------------|
+| 1a | ✅ merged (#142) | Create `packages/api` with contract + schemas for health group only | Low | Proves the pattern typechecks and reads well | `packages/api/*` only. No `apps/vps` changes, no test-framework changes. |
+| 1b | ✅ merged (#143) | Unit tests for the health contract (schema decode/encode, error tagging) | Low | Confidence in the contract before anything serves it | `packages/api/*/*.test.ts` only |
+| 2a | ✅ merged (#144) | Add `HttpRouter.toWebHandler` as a *second, unused* export next to the existing `Bun.serve` entry point, with `HonoFallback` routing 100% of traffic to the existing Hono app | Low | Proves the handler boilerplate builds and the fallback passes through untouched -- nothing in prod changes yet | `apps/vps/src/index.ts`, a new `routes.ts`. Entry point still exports the old `Bun.serve`; the new handler is not wired to a port. |
+| 2b | ✅ merged (#145) | Swap the deploy entry point to the new `toWebHandler`, still 100% Hono fallback; port background forks + graceful shutdown | Medium | The actual serving-stack cutover, but with zero route behavior change -- the only thing being validated is topology | `apps/vps/src/index.ts`. Verify against the Step 2 acceptance bar (health probes, reminders, shutdown) before merging. |
+| 2c | ✅ merged (#146) | Port the better-auth wildcard route onto the new router | Medium | Isolates the one third-party routing integration so an auth regression is diagnosable to one small diff | `apps/vps/src/http/routes.ts` (auth route only) |
+| -- | ✅ merged (#147) | (unplanned) Strengthen the music-artists fallback parity check from an `Array.isArray` shape check to a real before/after response comparison | -- | A weak test found during 3a review; fixed as its own tiny stacked PR rather than rewriting 2a's already-open history | `apps/vps/src/http/routes.blackbox.test.ts` only |
+| 3a | ✅ merged (#149) | Port health handlers to `HttpApiBuilder.group`, taking over `/health*` from the fallback | Low | First real `HttpApi` group serving real traffic; small blast radius if wrong | `apps/vps/src/http/health.handlers.ts` + removing health from the Hono side. Reuse the existing vitest integration test as the before/after behavior check -- do not add a parallel hand-rolled assertion script. |
+| 3b | 🔵 in review (#150) | Port auth middleware (cookie-based) behind a group with no production traffic yet (e.g. a scratch/internal endpoint) | Medium | Validates session cookie reading in isolation, before any real authed route depends on it | `packages/api/src/middleware/auth.ts`, `apps/vps/src/middleware/auth.impl.ts` |
+| 4 | 🔵 in review (#152) | Port one real CRUD group entirely (e.g., music artists), taking it over from the fallback | Medium | Full vertical slice through contract + handler + auth | One group's contract + handlers only |
+| 5 | ⬜ next | Generate client for that group, replace one react-query hook; verify cookies cross-origin in a deployed browser | Low | Tangible client benefit; proves the client-side cookie risk called out below | `apps/www/src/lib/api-client.ts` + one hook |
+| 6 | ⬜ not started | Port remaining JSON groups incrementally, one group per PR/deploy | Low-Medium | Mechanical work, same shape as step 4 each time | One group per PR |
+| 7 | ⬜ not started | Port upload groups (multipart -- see below) and non-JSON routes (rss/seo/share) | Medium | The hairy tail; budget real time, do not fold into a "remaining groups" PR | Upload group only, then site routes only -- two separate PRs |
+| 8 | ⬜ not started | Move rate limiter + Sentry capture to Effect middleware, remove `HonoFallback`, delete Hono + Zod | Low | Cleanup | Middleware move and dependency removal as separate PRs |
+
+All PRs above stack into `migration/effect-http-api`, not directly into `prod` -- that integration branch gets its own PR to `prod` once a meaningful chunk of the stack has merged.
+
+**Findings from adversarial review, fixed before merge (not just noted):** a cache race in the 3a readiness check (module-level `let` → `Effect.cachedWithTTL`, memoizing the in-flight fiber so concurrent cold-cache requests share one DB call instead of racing); a swallowed DB-check error with no server-side log (added `Effect.tapError` before sanitizing to the wire-safe tagged error); a beta-API footgun in 3b where `{ provides: typeof AuthSession }` compiles but silently breaks `HttpApiMiddleware`'s type-level service exclusion (fixed to the bare class reference); a silently-swallowed `getSession` throw in 3b (same log-then-sanitize fix); and dropped audit logging for unauthorized attempts (restored via `Effect.logWarning`, matching the old Hono middleware's intent without over-porting a success-path log for a route with no production traffic).
 
 Step 2 is deliberately front-loaded and deliberately split into three small check-ins
 (2a/2b/2c) rather than one: it is where the serving topology changes, and each sub-step

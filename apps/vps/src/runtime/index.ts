@@ -1,4 +1,4 @@
-import { type Context, Effect, Exit, Layer, Scope } from 'effect'
+import { Effect, ManagedRuntime } from 'effect'
 import type { AudioService } from '@/services/audio.service'
 import type { ConfigService } from '@/services/config.service'
 import type { EmailService } from '@/services/email.service'
@@ -46,32 +46,24 @@ export type AppServices =
   | ShowSubscriptionService
   | UserService
 
-let appContext: Context.Context<AppServices> | undefined
+const managedRuntime = ManagedRuntime.make(AppLayer)
 
-const appScope = Scope.makeUnsafe()
-
-const appContextPromise = Effect.runPromise(Layer.buildWithScope(AppLayer, appScope)).then(
-  (context) => {
-    appContext = context
-    return context
-  }
-)
+// The app's built service instances (DB pool, S3 client, etc.) as an Effect,
+// for other layer chains (e.g. the Effect HttpApi router in http/routes.ts)
+// to reuse via Layer.provideMerge instead of Layer.provide(AppLayer) building
+// a second, independent copy of every singleton service.
+export const appServicesContext = managedRuntime.contextEffect
 
 export const AppRuntime = {
   runPromise: <A, E, R extends AppServices>(effect: Effect.Effect<A, E, R>) =>
-    appContextPromise.then((context) => Effect.runPromiseWith(context)(effect)),
+    managedRuntime.runPromise(effect),
   runPromiseExit: <A, E, R extends AppServices>(effect: Effect.Effect<A, E, R>) =>
-    appContextPromise.then((context) => Effect.runPromiseExitWith(context)(effect)),
-  runSync: <A, E, R extends AppServices>(effect: Effect.Effect<A, E, R>) => {
-    if (!appContext) {
-      throw new Error('App runtime context is not initialized')
-    }
-
-    return Effect.runSyncWith(appContext)(effect)
-  },
+    managedRuntime.runPromiseExit(effect),
+  runSync: <A, E, R extends AppServices>(effect: Effect.Effect<A, E, R>) =>
+    managedRuntime.runSync(effect),
   runFork: <A, E, R extends AppServices>(effect: Effect.Effect<A, E, R>) =>
-    appContextPromise.then((context) => Effect.runForkWith(context)(effect)),
-  dispose: () => Effect.runPromise(Scope.close(appScope, Exit.void))
+    managedRuntime.runFork(effect),
+  dispose: () => managedRuntime.dispose()
 }
 
 export const runApp = <A, E, R extends AppServices>(effect: Effect.Effect<A, E, R>) =>
