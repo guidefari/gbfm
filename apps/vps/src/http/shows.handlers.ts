@@ -20,7 +20,7 @@ const getOptionalAdminFlag = Effect.gen(function* () {
   const request = yield* HttpServerRequest.HttpServerRequest
   const session = yield* Effect.tryPromise({
     try: () => auth.api.getSession({ headers: new Headers(request.headers) }),
-    catch: () => null as null
+    catch: () => null
   }).pipe(Effect.catch(() => Effect.succeed(null)))
 
   return session?.user.role === 'admin'

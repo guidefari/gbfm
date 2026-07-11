@@ -8,7 +8,6 @@ import { seoRouter, shareRouter } from '@/routes/redirect/redirect.index'
 import rss from '@/routes/rss/rss.index'
 import upload from '@/routes/upload/upload.index'
 import uploadMultipart from '@/routes/upload-multipart/upload-multipart.index'
-import user from '@/routes/user/user.index'
 import { regenerateSitemap } from './routes/redirect/seo/sitemap'
 import { runApp, runAppFork } from './runtime'
 import { processPendingReminders, queryNextDueReminder } from './services/reminder-processor'
@@ -21,7 +20,6 @@ const setupRoutesEffect = Effect.gen(function* () {
 
   configureOpenAPI(app)
 
-  app.route('/api/user', user)
   app.route('/api/content', content)
   app.route('/api/email', email)
   app.route('/api/upload', upload)
