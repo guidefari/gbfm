@@ -33,77 +33,6 @@ const tags = ['Music']
 const errorSchema = z.object({ error: z.string() })
 
 // ---------------------------------------------------------------------------
-// Artists
-// ---------------------------------------------------------------------------
-
-export const listArtists = createRoute({
-  path: '/artists',
-  method: 'get',
-  tags,
-  responses: {
-    [HttpStatusCodes.OK]: jsonContent(z.array(selectMusicArtistSchema), 'List of artists')
-  }
-})
-
-export const createArtist = createRoute({
-  path: '/artists',
-  method: 'post',
-  middleware: [requireAdminMiddleware],
-  request: {
-    body: jsonContentRequired(insertMusicArtistSchema, 'Artist data')
-  },
-  tags,
-  responses: {
-    [HttpStatusCodes.CREATED]: jsonContent(selectMusicArtistSchema, 'Created artist'),
-    [HttpStatusCodes.BAD_REQUEST]: jsonContent(errorSchema, 'Validation error'),
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(errorSchema, 'Server error')
-  }
-})
-
-export const getArtist = createRoute({
-  path: '/artists/:id',
-  method: 'get',
-  request: {
-    params: z.object({ id: z.string().uuid() })
-  },
-  tags,
-  responses: {
-    [HttpStatusCodes.OK]: jsonContent(selectMusicArtistSchema, 'Artist'),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(errorSchema, 'Not found')
-  }
-})
-
-export const updateArtist = createRoute({
-  path: '/artists/:id',
-  method: 'patch',
-  middleware: [requireAdminMiddleware],
-  request: {
-    params: z.object({ id: z.string().uuid() }),
-    body: jsonContentRequired(updateMusicArtistSchema, 'Fields to update')
-  },
-  tags,
-  responses: {
-    [HttpStatusCodes.OK]: jsonContent(selectMusicArtistSchema, 'Updated artist'),
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(errorSchema, 'Not found'),
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(errorSchema, 'Server error')
-  }
-})
-
-export const deleteArtist = createRoute({
-  path: '/artists/:id',
-  method: 'delete',
-  middleware: [requireAdminMiddleware],
-  request: {
-    params: z.object({ id: z.string().uuid() })
-  },
-  tags,
-  responses: {
-    [HttpStatusCodes.NO_CONTENT]: { description: 'Deleted' },
-    [HttpStatusCodes.NOT_FOUND]: jsonContent(errorSchema, 'Not found')
-  }
-})
-
-// ---------------------------------------------------------------------------
 // Albums
 // ---------------------------------------------------------------------------
 
@@ -632,87 +561,8 @@ export const listPendingLinks = createRoute({
 })
 
 // ---------------------------------------------------------------------------
-// Artist ↔ album / track junction endpoints
-// ---------------------------------------------------------------------------
-
-const albumArtistParams = z.object({
-  albumId: z.string().uuid(),
-  artistId: z.string().uuid()
-})
-
-const trackArtistParams = z.object({
-  trackId: z.string().uuid(),
-  artistId: z.string().uuid()
-})
-
-const artistJunctionBody = z.object({
-  role: z.string().optional().openapi({ example: 'featured' }),
-  displayOrder: z.number().int().optional()
-})
-
-export const addArtistToAlbum = createRoute({
-  path: '/albums/:albumId/artists/:artistId',
-  method: 'put',
-  middleware: [requireAdminMiddleware],
-  request: {
-    params: albumArtistParams,
-    body: jsonContentRequired(artistJunctionBody, 'Artist role on this album')
-  },
-  tags,
-  responses: {
-    [HttpStatusCodes.NO_CONTENT]: { description: 'Artist added/updated' },
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(errorSchema, 'Server error')
-  }
-})
-
-export const removeArtistFromAlbum = createRoute({
-  path: '/albums/:albumId/artists/:artistId',
-  method: 'delete',
-  middleware: [requireAdminMiddleware],
-  request: { params: albumArtistParams },
-  tags,
-  responses: {
-    [HttpStatusCodes.NO_CONTENT]: { description: 'Artist removed' },
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(errorSchema, 'Server error')
-  }
-})
-
-export const addArtistToTrack = createRoute({
-  path: '/tracks/:trackId/artists/:artistId',
-  method: 'put',
-  middleware: [requireAdminMiddleware],
-  request: {
-    params: trackArtistParams,
-    body: jsonContentRequired(artistJunctionBody, 'Artist role on this track')
-  },
-  tags,
-  responses: {
-    [HttpStatusCodes.NO_CONTENT]: { description: 'Artist added/updated' },
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(errorSchema, 'Server error')
-  }
-})
-
-export const removeArtistFromTrack = createRoute({
-  path: '/tracks/:trackId/artists/:artistId',
-  method: 'delete',
-  middleware: [requireAdminMiddleware],
-  request: { params: trackArtistParams },
-  tags,
-  responses: {
-    [HttpStatusCodes.NO_CONTENT]: { description: 'Artist removed' },
-    [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonContent(errorSchema, 'Server error')
-  }
-})
-
-// ---------------------------------------------------------------------------
 // Route type exports
 // ---------------------------------------------------------------------------
-
-export type ListArtistsRoute = typeof listArtists
-export type CreateArtistRoute = typeof createArtist
-export type GetArtistRoute = typeof getArtist
-export type UpdateArtistRoute = typeof updateArtist
-export type DeleteArtistRoute = typeof deleteArtist
 
 export type ListAlbumsRoute = typeof listAlbums
 export type CreateAlbumRoute = typeof createAlbum
@@ -747,8 +597,3 @@ export type UpdateEntityLinkStatusRoute = typeof updateEntityLinkStatus
 export type DeleteEntityLinkRoute = typeof deleteEntityLink
 export type ScrapeEntityLinksRoute = typeof scrapeEntityLinks
 export type ListPendingLinksRoute = typeof listPendingLinks
-
-export type AddArtistToAlbumRoute = typeof addArtistToAlbum
-export type RemoveArtistFromAlbumRoute = typeof removeArtistFromAlbum
-export type AddArtistToTrackRoute = typeof addArtistToTrack
-export type RemoveArtistFromTrackRoute = typeof removeArtistFromTrack

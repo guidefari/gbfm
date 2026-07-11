@@ -17,112 +17,36 @@ import {
 import { getIdFromSpotifyUrl } from '@/services/url-utils'
 
 import type {
-  AddArtistToAlbumRoute,
-  AddArtistToTrackRoute,
   AddEntityLinkRoute,
   AddSpotifyTrackToPlaylistRoute,
   AddTrackToPlaylistRoute,
   CreateAlbumRoute,
-  CreateArtistRoute,
   CreatePlaylistRoute,
   CreateTrackRoute,
   DeleteAlbumRoute,
-  DeleteArtistRoute,
   DeleteEntityLinkRoute,
   DeletePlaylistRoute,
   DeleteTrackRoute,
   GetAlbumRoute,
-  GetArtistRoute,
   GetPlaylistRoute,
   GetPlaylistTracksRoute,
   GetTrackRoute,
   ImportSpotifyPlaylistRoute,
   ListAlbumsRoute,
-  ListArtistsRoute,
   ListEntityLinksRoute,
   ListPendingLinksRoute,
   ListPlaylistsRoute,
   ListTracksRoute,
-  RemoveArtistFromAlbumRoute,
-  RemoveArtistFromTrackRoute,
   RemoveTrackFromPlaylistRoute,
   ReorderPlaylistTracksRoute,
   ResolveMusicEntityRoute,
   ScrapeEntityLinksRoute,
   SyncPlaylistLinksRoute,
   UpdateAlbumRoute,
-  UpdateArtistRoute,
   UpdateEntityLinkStatusRoute,
   UpdatePlaylistRoute,
   UpdateTrackRoute
 } from './music.routes'
-
-// ---------------------------------------------------------------------------
-// Artists
-// ---------------------------------------------------------------------------
-
-export const listArtists: AppRouteHandler<ListArtistsRoute> = async (c) => {
-  const program = Effect.gen(function* () {
-    const svc = yield* MusicEntityService
-    return yield* svc.getArtists()
-  }).pipe(Effect.withSpan('api.music.listArtists'))
-
-  return runEffect<ListArtistsRoute>(c, program)
-}
-
-export const createArtist: AppRouteHandler<CreateArtistRoute> = async (c) => {
-  const body = c.req.valid('json')
-  const user = c.get('user')
-
-  const program = Effect.gen(function* () {
-    const svc = yield* MusicEntityService
-    return yield* svc.createArtist({ ...body, createdById: user?.id ?? null })
-  }).pipe(Effect.withSpan('api.music.createArtist'))
-
-  return runEffect<CreateArtistRoute>(c, program, HttpStatusCodes.CREATED)
-}
-
-export const getArtist: AppRouteHandler<GetArtistRoute> = async (c) => {
-  const { id } = c.req.valid('param')
-
-  const program = Effect.gen(function* () {
-    const svc = yield* MusicEntityService
-    return yield* svc.getArtistById(id)
-  }).pipe(Effect.withSpan('api.music.getArtist', { attributes: { id } }))
-
-  return runEffect<GetArtistRoute>(c, program)
-}
-
-export const updateArtist: AppRouteHandler<UpdateArtistRoute> = async (c) => {
-  const { id } = c.req.valid('param')
-  const body = c.req.valid('json')
-
-  const program = Effect.gen(function* () {
-    const svc = yield* MusicEntityService
-    return yield* svc.updateArtist(id, body)
-  }).pipe(Effect.withSpan('api.music.updateArtist', { attributes: { id } }))
-
-  return runEffect<UpdateArtistRoute>(c, program)
-}
-
-export const deleteArtist: AppRouteHandler<DeleteArtistRoute> = async (c) => {
-  const { id } = c.req.valid('param')
-
-  const program = Effect.gen(function* () {
-    const svc = yield* MusicEntityService
-    yield* svc.deleteArtist(id)
-    return { ok: true } as const
-  }).pipe(
-    Effect.catchTag('NotFoundError', (e) =>
-      Effect.succeed({ error: e.message, notFound: true } as const)
-    ),
-    Effect.withSpan('api.music.deleteArtist', { attributes: { id } })
-  )
-
-  const result = await AppRuntime.runPromise(program)
-  if ('notFound' in result) return c.json({ error: result.error }, HttpStatusCodes.NOT_FOUND)
-  return c.body(null, HttpStatusCodes.NO_CONTENT)
-}
 
 // ---------------------------------------------------------------------------
 // Albums
@@ -631,79 +555,6 @@ export const scrapeEntityLinks: AppRouteHandler<ScrapeEntityLinksRoute> = async 
   )
 
   return runEffect<ScrapeEntityLinksRoute>(c, program)
-}
-
-// ---------------------------------------------------------------------------
-// Artist ↔ album / track junctions
-// ---------------------------------------------------------------------------
-
-export const addArtistToAlbum: AppRouteHandler<AddArtistToAlbumRoute> = async (c) => {
-  const { albumId, artistId } = c.req.valid('param')
-  const body = c.req.valid('json')
-
-  const program = Effect.gen(function* () {
-    const svc = yield* MusicEntityService
-    yield* svc.addArtistToAlbum(albumId, artistId, body)
-    return { ok: true } as const
-  }).pipe(
-    Effect.withSpan('api.music.addArtistToAlbum', {
-      attributes: { albumId, artistId }
-    })
-  )
-
-  const result = await AppRuntime.runPromise(program)
-  if ('error' in result)
-    return c.json({ error: result.error }, HttpStatusCodes.INTERNAL_SERVER_ERROR)
-  return c.body(null, HttpStatusCodes.NO_CONTENT)
-}
-
-export const removeArtistFromAlbum: AppRouteHandler<RemoveArtistFromAlbumRoute> = async (c) => {
-  const { albumId, artistId } = c.req.valid('param')
-
-  const program = Effect.gen(function* () {
-    const svc = yield* MusicEntityService
-    yield* svc.removeArtistFromAlbum(albumId, artistId)
-  }).pipe(
-    Effect.withSpan('api.music.removeArtistFromAlbum', {
-      attributes: { albumId, artistId }
-    })
-  )
-
-  await AppRuntime.runPromise(program)
-  return c.body(null, HttpStatusCodes.NO_CONTENT)
-}
-
-export const addArtistToTrack: AppRouteHandler<AddArtistToTrackRoute> = async (c) => {
-  const { trackId, artistId } = c.req.valid('param')
-  const body = c.req.valid('json')
-
-  const program = Effect.gen(function* () {
-    const svc = yield* MusicEntityService
-    yield* svc.addArtistToTrack(trackId, artistId, body)
-  }).pipe(
-    Effect.withSpan('api.music.addArtistToTrack', {
-      attributes: { trackId, artistId }
-    })
-  )
-
-  await AppRuntime.runPromise(program)
-  return c.body(null, HttpStatusCodes.NO_CONTENT)
-}
-
-export const removeArtistFromTrack: AppRouteHandler<RemoveArtistFromTrackRoute> = async (c) => {
-  const { trackId, artistId } = c.req.valid('param')
-
-  const program = Effect.gen(function* () {
-    const svc = yield* MusicEntityService
-    yield* svc.removeArtistFromTrack(trackId, artistId)
-  }).pipe(
-    Effect.withSpan('api.music.removeArtistFromTrack', {
-      attributes: { trackId, artistId }
-    })
-  )
-
-  await AppRuntime.runPromise(program)
-  return c.body(null, HttpStatusCodes.NO_CONTENT)
 }
 
 // ---------------------------------------------------------------------------

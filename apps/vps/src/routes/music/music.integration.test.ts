@@ -8,29 +8,6 @@ beforeAll(async () => {
   app = mod.default
 })
 
-describe('Music API — artists', () => {
-  it('GET /music/artists returns 200 with an array', async () => {
-    const res = await app.request('/api/music/artists')
-    expect(res.status).toBe(200)
-    const body = await res.json()
-    expect(Array.isArray(body)).toBe(true)
-  })
-
-  it('GET /music/artists/:id returns 404 for unknown id', async () => {
-    const res = await app.request('/api/music/artists/00000000-0000-0000-0000-000000000000')
-    expect(res.status).toBe(404)
-  })
-
-  it('POST /music/artists returns 401 without auth', async () => {
-    const res = await app.request('/api/music/artists', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: 'Test Artist', slug: 'test-artist' })
-    })
-    expect(res.status).toBe(401)
-  })
-})
-
 describe('Music API — albums', () => {
   it('GET /music/albums returns 200 with an array', async () => {
     const res = await app.request('/api/music/albums')
