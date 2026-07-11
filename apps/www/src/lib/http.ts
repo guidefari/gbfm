@@ -366,40 +366,120 @@ type SpotifyProxyInput<T extends SpotifyContentType> = {
   spotifyContentType: T
 }
 
-type SpotifyProxyResponseType<T> = T extends 'album'
-  ? AlbumApiResponse
-  : T extends 'track'
-    ? TrackAPIResponse
-    : T extends 'playlist'
-      ? PlaylistApiResponse
-      : never
-
-export function useSpotifyProxy<T extends SpotifyContentType>({
-  id,
-  spotifyContentType
-}: SpotifyProxyInput<T>) {
-  const { data, error, isLoading } = useQuery<SpotifyProxyResponseType<typeof spotifyContentType>>({
-    queryKey: ['spotify/proxy', spotifyContentType, id],
-
-    queryFn: async () =>
-      fetcher(apiUrl(`/spotify/${spotifyContentType}`), {
-        method: 'POST',
-        body: JSON.stringify({ id })
-      }),
+const useSpotifyAlbumProxy = (id: string, enabled: boolean) => {
+  const { data, error, isLoading } = useQuery<AlbumApiResponse>({
+    queryKey: ['spotify/proxy', 'album', id],
+    queryFn: async () => {
+      const client = await getApiClient()
+      const album = await Effect.runPromise(
+        client.spotify
+          .getSpotifyAlbum({ payload: { id } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'spotify.getSpotifyAlbum' })
+            )
+          )
+      )
+      return { ...album, tracks: album.tracks.map((track) => ({ ...track })) }
+    },
+    enabled,
     staleTime: 15 * 60 * 1000
   })
-  return {
-    data: data,
-    isLoading,
-    error
-  }
+  return { data, isLoading, error }
+}
+
+const useSpotifyTrackProxy = (id: string, enabled: boolean) => {
+  const { data, error, isLoading } = useQuery<TrackAPIResponse>({
+    queryKey: ['spotify/proxy', 'track', id],
+    queryFn: async () => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.spotify
+          .getSpotifyTrack({ payload: { id } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'spotify.getSpotifyTrack' })
+            )
+          )
+      )
+    },
+    enabled,
+    staleTime: 15 * 60 * 1000
+  })
+  return { data, isLoading, error }
+}
+
+const useSpotifyPlaylistProxy = (id: string, enabled: boolean) => {
+  const { data, error, isLoading } = useQuery<PlaylistApiResponse>({
+    queryKey: ['spotify/proxy', 'playlist', id],
+    queryFn: async () => {
+      const client = await getApiClient()
+      const playlist = await Effect.runPromise(
+        client.spotify
+          .getSpotifyPlaylist({ payload: { id } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'spotify.getSpotifyPlaylist' })
+            )
+          )
+      )
+      return {
+        ...playlist,
+        coverImageUrl: playlist.coverImageUrl ?? '',
+        description: playlist.description ?? '',
+        ownerName: playlist.ownerName ?? '',
+        tracks: playlist.tracks.map((track) => ({ ...track }))
+      }
+    },
+    enabled,
+    staleTime: 15 * 60 * 1000
+  })
+  return { data, isLoading, error }
+}
+
+// No single proxy endpoint server-side -- getSpotifyTrack/Album/Playlist are
+// three separate endpoints with different response shapes. Each content type
+// gets its own concretely-typed hook, and the three overload signatures below
+// let each call site's literal `spotifyContentType` resolve to its own real
+// return type -- no runtime-to-generic type correlation needed, since
+// overload resolution is exactly what handles "the literal argument picks
+// the static return type" natively. React's rules of hooks require calling
+// all three unconditionally; `enabled` keeps the two inactive ones from ever
+// actually querying.
+export function useSpotifyProxy(input: SpotifyProxyInput<'album'>): {
+  data: AlbumApiResponse | undefined
+  isLoading: boolean
+  error: Error | null
+}
+export function useSpotifyProxy(input: SpotifyProxyInput<'track'>): {
+  data: TrackAPIResponse | undefined
+  isLoading: boolean
+  error: Error | null
+}
+export function useSpotifyProxy(input: SpotifyProxyInput<'playlist'>): {
+  data: PlaylistApiResponse | undefined
+  isLoading: boolean
+  error: Error | null
+}
+export function useSpotifyProxy({ id, spotifyContentType }: SpotifyProxyInput<SpotifyContentType>) {
+  const isAlbum = spotifyContentType === 'album'
+  const isTrack = spotifyContentType === 'track'
+  const isPlaylist = spotifyContentType === 'playlist'
+
+  const album = useSpotifyAlbumProxy(id, isAlbum)
+  const track = useSpotifyTrackProxy(id, isTrack)
+  const playlist = useSpotifyPlaylistProxy(id, isPlaylist)
+
+  if (isAlbum) return album
+  if (isTrack) return track
+  return playlist
 }
 
 export type EnrichedTrack = {
   title: string
   artist: string
   url: string
-  platform: 'spotify' | 'youtube' | 'apple_music' | 'other'
+  platform: 'spotify' | 'youtube' | 'apple_music' | 'bandcamp' | 'other'
   thumbnailUrl?: string
   duration?: number
   album?: string
@@ -408,11 +488,18 @@ export type EnrichedTrack = {
 export function useEnrichTrackFromUrl(url: string) {
   const { data, error, isLoading } = useQuery<EnrichedTrack>({
     queryKey: ['spotify/enrich', url],
-    queryFn: async () =>
-      fetcher(apiUrl('/spotify/enrich'), {
-        method: 'POST',
-        body: JSON.stringify({ url })
-      }),
+    queryFn: async () => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.spotify
+          .enrichSpotifyTrackFromUrl({ payload: { url: new URL(url) } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'spotify.enrichSpotifyTrackFromUrl' })
+            )
+          )
+      )
+    },
     enabled: Boolean(url) && url.length > 10, // Only run if URL is reasonably long
     staleTime: 15 * 60 * 1000
   })
