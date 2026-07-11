@@ -18,6 +18,7 @@ import { SearchHandlersLive } from '@/http/search.handlers'
 import { SearchCacheHeaderLive } from '@/http/search.middleware'
 import { ShowsHandlersLive } from '@/http/shows.handlers'
 import { SpotifyHandlersLive } from '@/http/spotify.handlers'
+import { UserHandlersLive } from '@/http/user.handlers'
 import { auth } from '@/lib/auth'
 import { AuthMiddlewareLive } from '@/middleware/auth.impl'
 import { prepareAuthRequest } from '@/routes/user/better-auth.routes'
@@ -74,6 +75,7 @@ export const createWebHandler = (
     Layer.provide(FileManagerHandlersLive),
     Layer.provide(SpotifyHandlersLive),
     Layer.provide(ShowsHandlersLive),
+    Layer.provide(UserHandlersLive),
     Layer.provide(AuthMiddlewareLive),
     // provideMerge, not provide: services a handler pulls via plain `yield*`
     // only clear toWebHandler's phantom-context requirement once they're

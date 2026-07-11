@@ -12,6 +12,7 @@ import { ResolveGroup } from './resolve'
 import { SearchGroup } from './search'
 import { ShowsGroup } from './shows'
 import { SpotifyGroup } from './spotify'
+import { UserGroup } from './user'
 
 export const Api = HttpApi.make('gbfm')
   .add(HealthGroup)
@@ -27,3 +28,4 @@ export const Api = HttpApi.make('gbfm')
   .add(FileManagerGroup)
   .add(SpotifyGroup)
   .add(ShowsGroup)
+  .add(UserGroup)
