@@ -21,6 +21,9 @@ import { postsTable } from '@/db/post.schema'
 import { releasesTable } from '@/db/release.schema'
 import { showSubscriptionsTable, showsTable } from '@/db/show.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
+import { dieOnDatabaseError } from '@/http/handler-utils'
+
+const dieOnAdminDatabaseError = dieOnDatabaseError('admin')
 
 type ContentTable =
   | typeof audioTable
@@ -511,17 +514,16 @@ export const AdminHandlersLive = HttpApiBuilder.group(Api, 'admin', (handlers) =
     .handle('getAdminOverview', () =>
       Effect.gen(function* () {
         yield* requireAdmin
-        return yield* Effect.tryPromise({
-          try: () => loadAdminOverview(),
-          catch: (error) =>
-            new DatabaseError({
-              message: `Failed to fetch admin overview: ${getErrorMessage(error)}`,
-              operation: 'select',
-              table: 'admin-overview'
-            })
-        }).pipe(
-          Effect.tapError((cause) => Effect.logError('[admin] overview query failed', cause)),
-          Effect.catchTag('DatabaseError', (cause) => Effect.die(cause))
+        return yield* dieOnAdminDatabaseError(
+          Effect.tryPromise({
+            try: () => loadAdminOverview(),
+            catch: (error) =>
+              new DatabaseError({
+                message: `Failed to fetch admin overview: ${getErrorMessage(error)}`,
+                operation: 'select',
+                table: 'admin-overview'
+              })
+          })
         )
       })
     )
@@ -551,30 +553,27 @@ export const AdminHandlersLive = HttpApiBuilder.group(Api, 'admin', (handlers) =
     .handle('getNewsletterSubscribers', () =>
       Effect.gen(function* () {
         yield* requireAdmin
-        const rows = yield* Effect.tryPromise({
-          try: () =>
-            db
-              .select({
-                id: newsletterSubscribersTable.id,
-                email: newsletterSubscribersTable.email,
-                name: newsletterSubscribersTable.name,
-                source: newsletterSubscribersTable.source,
-                unsubscribedAt: newsletterSubscribersTable.unsubscribedAt,
-                createdAt: newsletterSubscribersTable.createdAt
+        const rows = yield* dieOnAdminDatabaseError(
+          Effect.tryPromise({
+            try: () =>
+              db
+                .select({
+                  id: newsletterSubscribersTable.id,
+                  email: newsletterSubscribersTable.email,
+                  name: newsletterSubscribersTable.name,
+                  source: newsletterSubscribersTable.source,
+                  unsubscribedAt: newsletterSubscribersTable.unsubscribedAt,
+                  createdAt: newsletterSubscribersTable.createdAt
+                })
+                .from(newsletterSubscribersTable)
+                .orderBy(desc(newsletterSubscribersTable.createdAt)),
+            catch: (error) =>
+              new DatabaseError({
+                message: `Failed to fetch newsletter subscribers: ${getErrorMessage(error)}`,
+                operation: 'select',
+                table: 'newsletter_subscribers'
               })
-              .from(newsletterSubscribersTable)
-              .orderBy(desc(newsletterSubscribersTable.createdAt)),
-          catch: (error) =>
-            new DatabaseError({
-              message: `Failed to fetch newsletter subscribers: ${getErrorMessage(error)}`,
-              operation: 'select',
-              table: 'newsletter_subscribers'
-            })
-        }).pipe(
-          Effect.tapError((cause) =>
-            Effect.logError('[admin] newsletter subscribers query failed', cause)
-          ),
-          Effect.catchTag('DatabaseError', (cause) => Effect.die(cause))
+          })
         )
 
         return {
