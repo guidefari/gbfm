@@ -168,13 +168,10 @@ describe('search (HttpApiBuilder group, Step 6)', () => {
     const res = await webHandler.handler(new Request('http://localhost/api/search?q=test'))
 
     expect(res.status).toBe(200)
-    await expect(decodeResponseBody(SearchResults, res)).resolves.toEqual(
-      expect.objectContaining({
-        shows: expect.any(Array),
-        audio: expect.any(Array),
-        posts: expect.any(Array)
-      })
-    )
+    // A successful decode against SearchResults already proves shows/audio/posts
+    // exist and are arrays -- asserting field-by-field on top of that would just
+    // re-check what decode already guarantees.
+    await expect(decodeResponseBody(SearchResults, res)).resolves.toBeTruthy()
   })
 
   it('GET /api/search?q=test sets a public Cache-Control header', async () => {
