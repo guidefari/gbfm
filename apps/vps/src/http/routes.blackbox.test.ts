@@ -566,3 +566,97 @@ describe('spotify (HttpApiBuilder group, Step 6)', () => {
     expect(res.status).not.toBe(502)
   })
 })
+
+describe('shows (HttpApiBuilder group, Step 6)', () => {
+  it('GET /api/shows works without a session cookie (optional auth, matches old attachSessionContext)', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/api/shows'))
+
+    // Not 401 -- getAllShows never requires auth, it only uses a session
+    // (if present) to decide whether to include drafts. A DB-connectivity
+    // 500 in this environment is still evidence the request wasn't
+    // rejected for lacking a cookie.
+    expect(res.status).not.toBe(401)
+  })
+
+  it('GET /api/shows/:slug returns something other than 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/shows/does-not-exist-slug')
+    )
+
+    expect(res.status).not.toBe(401)
+  })
+
+  it('GET /api/shows?limit=999 400s (limit above the 100 max)', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/api/shows?limit=999'))
+
+    expect(res.status).toBe(400)
+  })
+
+  it('POST /api/shows returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/shows', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ title: 'Test Show', slug: 'test-show', content: 'hello' })
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('PATCH /api/shows/:slug returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/shows/some-slug', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ title: 'Renamed' })
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('DELETE /api/shows/:slug returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/shows/some-slug', { method: 'DELETE' })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('POST /api/shows/:id/subscribe returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/shows/00000000-0000-0000-0000-000000000000/subscribe', {
+        method: 'POST'
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('DELETE /api/shows/:id/unsubscribe returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/shows/00000000-0000-0000-0000-000000000000/unsubscribe', {
+        method: 'DELETE'
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('GET /api/shows/:slug/episodes returns something other than 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/shows/does-not-exist-slug/episodes')
+    )
+
+    expect(res.status).not.toBe(401)
+  })
+
+  it('GET /api/shows/:slug/qr-pdf returns something other than 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/shows/does-not-exist-slug/qr-pdf')
+    )
+
+    expect(res.status).not.toBe(401)
+  })
+})
