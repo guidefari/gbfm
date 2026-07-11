@@ -218,3 +218,27 @@ describe('profile (HttpApiBuilder group, Step 6)', () => {
     expect(res.status).toBe(404)
   })
 })
+
+describe('resolve (HttpApiBuilder group, Step 6)', () => {
+  it('GET /api/resolve/:slug returns 404 for an unknown slug', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/resolve/does-not-exist-slug')
+    )
+
+    expect(res.status).toBe(404)
+  })
+
+  it('GET /api/resolve/:slug returns 404 for a reserved slug', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/api/resolve/api'))
+
+    expect(res.status).toBe(404)
+  })
+
+  it('responds 404 to unsupported methods on the resolve path', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/resolve/does-not-exist-slug', { method: 'POST' })
+    )
+
+    expect(res.status).toBe(404)
+  })
+})
