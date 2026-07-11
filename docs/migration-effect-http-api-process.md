@@ -181,6 +181,26 @@ that's been silently corrected is easy to repeat:
   with the same `git merge-base --is-ancestor` check already used for
   branch staleness. Stacking correctly and integrating forward are two
   different steps; doing the first is not evidence the second happened.
+  **This recurred a second time in step 6b** (PR #182, `newsletter` hooks,
+  stacked on `migration/6b-shows-hooks`): every other PR in the 6b chain
+  had its base retargeted to `migration/effect-http-api` via
+  `gh pr edit --base` immediately before merging -- #182 was the one PR in
+  ~13 where that retarget step was skipped, so `gh pr merge` merged it into
+  `migration/6b-shows-hooks` (its stacked parent, still pointing at a
+  feature branch, not the integration branch) instead. GitHub showed
+  "merged," the PR's own diff looked right, and nothing about the merge
+  operation itself errored -- the only way this surfaced was the routine
+  post-merge `git merge-base --is-ancestor <branch> origin/migration/effect-http-api`
+  sweep catching that the newsletter commit's *content* diff against
+  `migration/effect-http-api`'s tip wasn't empty. Fixed the same way as
+  #158/#162: cherry-pick the orphaned commit onto `migration/effect-http-api`
+  directly. **Concrete process fix, not just a reminder**: retargeting the
+  base is not optional bookkeeping to skip when a PR "looks stacked
+  correctly already" -- run `gh pr edit <n> --base migration/effect-http-api`
+  as a mandatory step immediately before every `gh pr merge` call in this
+  migration, no exceptions, and treat any merge where that step didn't
+  literally run in the same turn as unverified until the post-merge
+  ancestor sweep confirms it.
 - **"Nothing else imports this file" is not the same check as "this type
   is still consumed."** An adversarial review pass on the `admin` PR (#163)
   flagged the old `apps/vps/src/db/admin-overview.schema.ts` (Zod) as fully
