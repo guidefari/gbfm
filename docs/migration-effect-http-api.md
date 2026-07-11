@@ -695,18 +695,39 @@ Once all route groups are migrated:
 
 ## Migration Order (recommended path)
 
-| Step | What | Risk | Value |
-|------|------|------|-------|
-| 1 | Create `packages/api` with contract for health group | Low | Proves the pattern |
-| 2 | Wire `HttpRouter.toWebHandler` + `HonoFallback` + better-auth route + background forks + shutdown; deploy with only health ported | Medium | The whole serving stack changes here -- validate CORS, cookies, health probes, reminders in prod |
-| 3 | Port auth middleware (cookie-based) | Medium | Auth is the hardest piece; verify with an authed group |
-| 4 | Port one CRUD group entirely (e.g., music artists) | Medium | Full vertical slice |
-| 5 | Generate client for that group, replace one react-query hook; verify cookies cross-origin | Low | Tangible client benefit |
-| 6 | Port remaining JSON groups incrementally, one deploy each | Low-Medium | Mechanical work |
-| 7 | Port upload groups (multipart -- see below) and non-JSON routes (rss/seo/share) | Medium | The hairy tail |
-| 8 | Move rate limiter + Sentry capture to Effect middleware, remove `HonoFallback`, delete Hono + Zod | Low | Cleanup |
+Each row below is one PR and one check-in point. Nothing in a later row starts until the
+prior row is merged (not just opened) -- this is what keeps each PR reviewable and each
+deploy diagnosable. A PR that touches files from two different rows is a sign the row
+boundaries were skipped, not a sign the rows were wrong.
 
-Step 2 is deliberately front-loaded: it is where the serving topology changes and where step-3-through-8 assumptions get validated cheaply.
+| Step | What | Risk | Value | PR should touch |
+|------|------|------|-------|------------------|
+| 1a | Create `packages/api` with contract + schemas for health group only | Low | Proves the pattern typechecks and reads well | `packages/api/*` only. No `apps/vps` changes, no test-framework changes. |
+| 1b | Unit tests for the health contract (schema decode/encode, error tagging) | Low | Confidence in the contract before anything serves it | `packages/api/*/*.test.ts` only |
+| 2a | Add `HttpRouter.toWebHandler` as a *second, unused* export next to the existing `Bun.serve` entry point, with `HonoFallback` routing 100% of traffic to the existing Hono app | Low | Proves the handler boilerplate builds and the fallback passes through untouched -- nothing in prod changes yet | `apps/vps/src/index.ts`, a new `routes.ts`. Entry point still exports the old `Bun.serve`; the new handler is not wired to a port. |
+| 2b | Swap the deploy entry point to the new `toWebHandler`, still 100% Hono fallback; port background forks + graceful shutdown | Medium | The actual serving-stack cutover, but with zero route behavior change -- the only thing being validated is topology | `apps/vps/src/index.ts`. Verify against the Step 2 acceptance bar (health probes, reminders, shutdown) before merging. |
+| 2c | Port the better-auth wildcard route onto the new router | Medium | Isolates the one third-party routing integration so an auth regression is diagnosable to one small diff | `apps/vps/src/http/routes.ts` (auth route only) |
+| 3a | Port health handlers to `HttpApiBuilder.group`, taking over `/health*` from the fallback | Low | First real `HttpApi` group serving real traffic; small blast radius if wrong | `apps/vps/src/http/health.handlers.ts` + removing health from the Hono side. Reuse the existing vitest integration test as the before/after behavior check -- do not add a parallel hand-rolled assertion script. |
+| 3b | Port auth middleware (cookie-based) behind a group with no production traffic yet (e.g. a scratch/internal endpoint) | Medium | Validates session cookie reading in isolation, before any real authed route depends on it | `packages/api/src/middleware/auth.ts`, `apps/vps/src/middleware/auth.impl.ts` |
+| 4 | Port one real CRUD group entirely (e.g., music artists), taking it over from the fallback | Medium | Full vertical slice through contract + handler + auth | One group's contract + handlers only |
+| 5 | Generate client for that group, replace one react-query hook; verify cookies cross-origin in a deployed browser | Low | Tangible client benefit; proves the client-side cookie risk called out below | `apps/www/src/lib/api-client.ts` + one hook |
+| 6 | Port remaining JSON groups incrementally, one group per PR/deploy | Low-Medium | Mechanical work, same shape as step 4 each time | One group per PR |
+| 7 | Port upload groups (multipart -- see below) and non-JSON routes (rss/seo/share) | Medium | The hairy tail; budget real time, do not fold into a "remaining groups" PR | Upload group only, then site routes only -- two separate PRs |
+| 8 | Move rate limiter + Sentry capture to Effect middleware, remove `HonoFallback`, delete Hono + Zod | Low | Cleanup | Middleware move and dependency removal as separate PRs |
+
+Step 2 is deliberately front-loaded and deliberately split into three small check-ins
+(2a/2b/2c) rather than one: it is where the serving topology changes, and each sub-step
+should be individually revertable if something breaks in prod. Steps 3a and 3b are also
+split for the same reason -- porting the first real route and porting auth are two
+different failure modes and should not share a rollback.
+
+**Test policy for this migration**: every step gets coverage via the project's normal
+test runner (vitest), asserting against the handler or a running instance the same way
+the existing `health.integration.test.ts` does. Do not write standalone scripts that
+reimplement assertion/comparison logic already provided by the test runner (e.g. a
+hand-rolled curl-and-diff CLI) -- if a manual smoke script is useful for humans during a
+deploy, keep it thin (call the endpoint, print the response) and let vitest own
+pass/fail.
 
 ---
 
