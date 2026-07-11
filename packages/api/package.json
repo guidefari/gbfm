@@ -13,6 +13,7 @@
     "./invite": "./src/invite.ts",
     "./favorites": "./src/favorites.ts",
     "./newsletter": "./src/newsletter.ts",
+    "./file-manager": "./src/file-manager.ts",
     "./errors": "./src/errors.ts",
     "./testing": "./src/testing.ts",
     "./middleware/auth": "./src/middleware/auth.ts"

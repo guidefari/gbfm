@@ -450,3 +450,50 @@ describe('newsletter (HttpApiBuilder group, Step 6)', () => {
     expect(res.status).toBe(400)
   })
 })
+
+describe('file-manager (HttpApiBuilder group, Step 6)', () => {
+  it('GET /api/file-manager/config returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/api/file-manager/config'))
+
+    expect(res.status).toBe(401)
+  })
+
+  it('GET /api/file-manager/list returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/file-manager/list?bucketName=test-bucket')
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('POST /api/file-manager/copy returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/file-manager/copy', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          key: 'some-key',
+          sourceBucket: 'a',
+          destinationBucket: 'b'
+        })
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('POST /api/file-manager/copy returns 401 (not 400) for an empty key without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/file-manager/copy', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ key: '', sourceBucket: 'a', destinationBucket: 'b' })
+      })
+    )
+
+    // AuthMiddleware runs before payload schema validation, so an empty
+    // (Schema.NonEmptyString-violating) key still 401s rather than 400ing
+    // when there's no session cookie -- same ordering as admin/favorites.
+    expect(res.status).toBe(401)
+  })
+})
