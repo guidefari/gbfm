@@ -5,7 +5,9 @@ import { HttpRouter, HttpServer, HttpServerRequest, HttpServerResponse } from 'e
 import { HttpApiBuilder } from 'effect/unstable/httpapi'
 import type { AppType } from '@/app'
 import { checkDatabase, makeHealthHandlers } from '@/http/health.handlers'
+import { InternalHandlersLive } from '@/http/internal.handlers'
 import { auth } from '@/lib/auth'
+import { AuthMiddlewareLive } from '@/middleware/auth.impl'
 import { prepareAuthRequest } from '@/routes/user/better-auth.routes'
 import { AppLoggerLive } from '@/services/logger.service'
 
@@ -31,19 +33,23 @@ const betterAuthRoute = HttpRouter.add('*', '/auth/*', (request) =>
   })
 )
 
-// Step 3a (docs/migration-effect-http-api.md): first real HttpApi group taking
+// Step 3a/3b (docs/migration-effect-http-api.md): real HttpApi groups taking
 // over live traffic from the Hono fallback. Test seams accept an alternate
-// database check so tests can force the failure/cache paths.
+// database check so tests can force the failure/cache paths. `internal` has
+// no production client -- it exists to validate AuthMiddleware in isolation
+// before any real authed route (step 4+) depends on it.
 export const createWebHandler = (
   honoApp: AppType,
   options?: { readonly healthDatabaseCheck?: Effect.Effect<void, ReadinessCheckFailedError> }
 ) => {
-  const HealthLive = HttpApiBuilder.layer(Api).pipe(
-    Layer.provide(makeHealthHandlers(options?.healthDatabaseCheck ?? checkDatabase))
+  const ApiLive = HttpApiBuilder.layer(Api).pipe(
+    Layer.provide(makeHealthHandlers(options?.healthDatabaseCheck ?? checkDatabase)),
+    Layer.provide(InternalHandlersLive),
+    Layer.provide(AuthMiddlewareLive)
   )
 
   return HttpRouter.toWebHandler(
-    Layer.mergeAll(HealthLive, betterAuthRoute, honoFallback(honoApp)).pipe(
+    Layer.mergeAll(ApiLive, betterAuthRoute, honoFallback(honoApp)).pipe(
       Layer.provideMerge(HttpServer.layerServices),
       // Effect.logError inside health handlers must reach the app's real
       // Pino + Sentry logger, not Effect's bare default console logger --

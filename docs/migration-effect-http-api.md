@@ -278,6 +278,8 @@ Handlers receive `{ params, query, payload, headers, request }` based on the end
 
 The honest port is an ordinary (non-security) `HttpApiMiddleware` that reads the request headers and calls `getSession`, exactly like today. Middleware effects have `HttpServerRequest` available in context.
 
+**Verified against the installed types (corrects an earlier version of this doc, twice over)**:
+
 ```ts
 // packages/api/src/middleware/auth.ts
 import { Context } from "effect"
@@ -288,13 +290,16 @@ export class AuthSession extends Context.Service<AuthSession, {
   readonly session: { id: string }
 }>()("api/AuthSession") {}
 
-export class AuthMiddleware extends HttpApiMiddleware.Service<AuthMiddleware>()(
-  "api/AuthMiddleware",
-  {
-    provides: AuthSession,
-    error: HttpApiError.Unauthorized,
-  },
-) {}
+// `provides` is a TYPE parameter on Service<Self, Config>(), not a runtime
+// field of the options object. `HttpApiMiddleware.Service<AuthMiddleware>()(id,
+// { provides: AuthSession, error: ... })` does not typecheck under
+// effect@4.0.0-beta.93 -- "'provides' does not exist in type ...".
+export class AuthMiddleware extends HttpApiMiddleware.Service<
+  AuthMiddleware,
+  { readonly provides: typeof AuthSession }
+>()("api/AuthMiddleware", {
+  error: HttpApiError.Unauthorized,
+}) {}
 ```
 
 Two things that are load-bearing here:
@@ -307,14 +312,18 @@ Server-side implementation:
 import { Effect, Layer } from "effect"
 import { HttpServerRequest } from "effect/unstable/http"
 import { HttpApiError } from "effect/unstable/httpapi"
-import { AuthMiddleware, AuthSession } from "@gbfm/api"
+import { AuthMiddleware, AuthSession } from "@gbfm/api/middleware/auth"
 import { auth } from "@/lib/auth"
 
 export const AuthMiddlewareLive = Layer.succeed(
   AuthMiddleware,
   (httpEffect) =>
     Effect.gen(function* () {
-      const request = yield* HttpServerRequest
+      // HttpServerRequest here is the module namespace (import * as); the
+      // yieldable Context.Service tag is HttpServerRequest.HttpServerRequest,
+      // not the module itself -- `yield* HttpServerRequest` fails with
+      // "must have a [Symbol.iterator]() method".
+      const request = yield* HttpServerRequest.HttpServerRequest
       const session = yield* Effect.tryPromise({
         try: () => auth.api.getSession({ headers: new Headers(request.headers) }),
         catch: () => new HttpApiError.Unauthorized(),
@@ -329,6 +338,8 @@ export const AuthMiddlewareLive = Layer.succeed(
     }),
 )
 ```
+
+(Implemented and verified in `apps/vps/src/middleware/auth.impl.ts` + `packages/api/src/middleware/auth.ts`, step 3b. Also note: better-auth's real inferred `user` type -- `typeof auth.$Infer.Session` in `apps/vps/src/lib/auth.ts` -- has `role` and `name` as nullable/optional, looser than the `string` shown above; `packages/api` is a leaf package and can't import that concrete type, so its `AuthSession` declares the honest widened shape instead of the doc's simplified one.)
 
 Attach to a group or API:
 ```ts
