@@ -6,10 +6,17 @@ import { HttpApiBuilder } from 'effect/unstable/httpapi'
 import type { AppType } from '@/app'
 import { checkDatabase, makeHealthHandlers } from '@/http/health.handlers'
 import { InternalHandlersLive } from '@/http/internal.handlers'
+import { MusicHandlersLive } from '@/http/music.handlers'
 import { auth } from '@/lib/auth'
 import { AuthMiddlewareLive } from '@/middleware/auth.impl'
 import { prepareAuthRequest } from '@/routes/user/better-auth.routes'
+import { appServicesContext } from '@/runtime'
 import { AppLoggerLive } from '@/services/logger.service'
+
+// Reuses the app's already-built service instances (DB pool, S3 client, ...)
+// instead of Layer.provide(AppLayer), which would build a second, independent
+// copy of every singleton service.
+const AppServicesLive = Layer.effectContext(appServicesContext)
 
 // Routes every request to the existing Hono app unchanged. Removed one HttpApi group at a time as routes are ported (docs/migration-effect-http-api.md).
 export const honoFallback = (honoApp: AppType) =>
@@ -45,7 +52,12 @@ export const createWebHandler = (
   const ApiLive = HttpApiBuilder.layer(Api).pipe(
     Layer.provide(makeHealthHandlers(options?.healthDatabaseCheck ?? checkDatabase)),
     Layer.provide(InternalHandlersLive),
-    Layer.provide(AuthMiddlewareLive)
+    Layer.provide(MusicHandlersLive),
+    Layer.provide(AuthMiddlewareLive),
+    // provideMerge, not provide: services a handler pulls via plain `yield*`
+    // only clear toWebHandler's phantom-context requirement once they're
+    // also in this layer's output, which plain `provide` discards.
+    Layer.provideMerge(AppServicesLive)
   )
 
   return HttpRouter.toWebHandler(

@@ -5,6 +5,7 @@
   "exports": {
     "./api": "./src/api.ts",
     "./health": "./src/health.ts",
+    "./music": "./src/music.ts",
     "./errors": "./src/errors.ts",
     "./testing": "./src/testing.ts",
     "./middleware/auth": "./src/middleware/auth.ts"

@@ -1,4 +1,5 @@
 import { HealthLiveResponse, HealthReadyResponse } from '@gbfm/api/health'
+import { ArtistListResponse } from '@gbfm/api/music'
 import { decodeResponseBody } from '@gbfm/api/testing'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { AppType } from '@/app'
@@ -21,10 +22,10 @@ afterAll(async () => {
 })
 
 describe('Effect toWebHandler fallback', () => {
-  it('GET /api/music/artists returns the same response as the plain Hono app', async () => {
+  it('GET /api/music/albums returns the same response as the plain Hono app', async () => {
     const [viaHandler, viaHono] = await Promise.all([
-      webHandler.handler(new Request('http://localhost/api/music/artists')),
-      app.request('/api/music/artists')
+      webHandler.handler(new Request('http://localhost/api/music/albums')),
+      app.request('/api/music/albums')
     ])
 
     expect(viaHandler.status).toBe(viaHono.status)
@@ -96,5 +97,67 @@ describe('health (HttpApiBuilder group, Step 3a)', () => {
     )
 
     expect(res.status).toBe(404)
+  })
+})
+
+describe('music artists (HttpApiBuilder group, Step 4)', () => {
+  it('GET /api/music/artists returns 200 with a decodable list', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/api/music/artists'))
+
+    expect(res.status).toBe(200)
+    await expect(decodeResponseBody(ArtistListResponse, res)).resolves.toBeInstanceOf(Array)
+  })
+
+  it('GET /api/music/artists/:id returns 404 for an unknown id', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/music/artists/00000000-0000-0000-0000-000000000000')
+    )
+
+    expect(res.status).toBe(404)
+  })
+
+  it('POST /api/music/artists returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/music/artists', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ name: 'Test Artist', slug: 'test-artist' })
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('PATCH /api/music/artists/:id returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/music/artists/00000000-0000-0000-0000-000000000000', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ name: 'Renamed' })
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('DELETE /api/music/artists/:id returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/music/artists/00000000-0000-0000-0000-000000000000', {
+        method: 'DELETE'
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('PUT /api/music/albums/:albumId/artists/:artistId returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request(
+        'http://localhost/api/music/albums/00000000-0000-0000-0000-000000000000/artists/00000000-0000-0000-0000-000000000000',
+        { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({}) }
+      )
+    )
+
+    expect(res.status).toBe(401)
   })
 })

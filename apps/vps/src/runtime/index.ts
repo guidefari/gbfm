@@ -57,6 +57,12 @@ const appContextPromise = Effect.runPromise(Layer.buildWithScope(AppLayer, appSc
   }
 )
 
+// Lets other layer chains (e.g. the Effect HttpApi router in http/routes.ts)
+// reuse the app's already-built service instances -- DB pool, S3 client,
+// etc. -- instead of Layer.provide(AppLayer) building a second, independent
+// copy of every singleton service.
+export const appServicesContext = Effect.promise(() => appContextPromise)
+
 export const AppRuntime = {
   runPromise: <A, E, R extends AppServices>(effect: Effect.Effect<A, E, R>) =>
     appContextPromise.then((context) => Effect.runPromiseWith(context)(effect)),
