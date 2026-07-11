@@ -895,10 +895,10 @@ export type PublicProfile = {
   username: string | null
   image: string | null
   bio: string | null
-  socialLinks: SocialLink[]
+  socialLinks: ReadonlyArray<SocialLink>
   createdAt: string
   content: {
-    mixes: Array<{
+    mixes: ReadonlyArray<{
       id: string
       title: string
       slug: string
@@ -906,13 +906,13 @@ export type PublicProfile = {
       type: 'mix' | 'track' | 'misc'
       showId: string | null
     }>
-    shows: Array<{
+    shows: ReadonlyArray<{
       id: string
       title: string
       slug: string
       thumbnailUrl: string | null
     }>
-    editorials: Array<{
+    editorials: ReadonlyArray<{
       id: string
       title: string
       slug: string
@@ -920,7 +920,7 @@ export type PublicProfile = {
       description: string | null
       createdAt: string
     }>
-    tweets: Array<{
+    tweets: ReadonlyArray<{
       id: string
       title: string | null
       slug: string
@@ -990,9 +990,16 @@ export function usePublicProfile(username: string) {
   const { data, error, isPending } = useQuery<PublicProfile, Error>({
     queryKey: ['profile', username],
     queryFn: async () => {
-      const profile = await fetcher<PublicProfile>(apiUrl(`/profile/${username}`))
-      if (!profile?.id) throw new Error('Profile not found')
-      return profile
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.profile
+          .getPublicProfile({ params: { username } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'profile.getPublicProfile' })
+            )
+          )
+      )
     },
     enabled: Boolean(username),
     retry: false
