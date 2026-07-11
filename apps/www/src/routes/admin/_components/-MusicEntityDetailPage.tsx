@@ -62,9 +62,17 @@ function ArtistDetailPage({ id }: { id: string }) {
 
   async function handleDelete() {
     if (!confirm(`Delete artist "${data?.name}"? This cannot be undone.`)) return
-    await del.mutateAsync(id)
-    toast({ title: 'Artist deleted' })
-    navigate({ to: '/admin/music' })
+    try {
+      await del.mutateAsync(id)
+      toast({ title: 'Artist deleted' })
+      navigate({ to: '/admin/music' })
+    } catch (e) {
+      toast({
+        title: 'Failed to delete artist',
+        description: e instanceof Error ? e.message : undefined,
+        variant: 'destructive'
+      })
+    }
   }
 
   return (
@@ -86,12 +94,25 @@ function ArtistDetailPage({ id }: { id: string }) {
           initialData={toArtistMetadata(data)}
           isSaving={update.isPending}
           onSubmit={async (d) => {
-            const metadata = Object.fromEntries(Object.entries(d))
-            await update.mutateAsync({
-              id,
-              data: metadata
-            })
-            toast({ title: 'Artist saved' })
+            const metadata = Object.fromEntries(
+              Object.entries(d).map(([key, value]) => [
+                key,
+                value instanceof Date ? value.toISOString() : value
+              ])
+            )
+            try {
+              await update.mutateAsync({
+                id,
+                data: metadata
+              })
+              toast({ title: 'Artist saved' })
+            } catch (e) {
+              toast({
+                title: 'Failed to save artist',
+                description: e instanceof Error ? e.message : undefined,
+                variant: 'destructive'
+              })
+            }
           }}
         />
       }
