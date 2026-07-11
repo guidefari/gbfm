@@ -43,7 +43,7 @@ export const SpotifyHandlersLive = HttpApiBuilder.group(Api, 'spotify', (handler
       Effect.gen(function* () {
         const svc = yield* SpotifyService
         return yield* svc
-          .enrichTrackFromUrl(payload.url)
+          .enrichTrackFromUrl(payload.url.toString())
           .pipe(Effect.catchTag('SpotifyError', toHttpError))
       })
     )

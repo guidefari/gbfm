@@ -67,9 +67,11 @@ export const SearchAlbumsInput = Schema.Struct({
 })
 export type SearchAlbumsInput = typeof SearchAlbumsInput.Type
 
-const UrlPattern = /^https?:\/\/.+/i
+// Schema.URLFromString decodes through a real WHATWG URL parse (matching
+// the old z.string().url()), not a regex -- a looser regex here was flagged
+// in review as accepting malformed strings the old validator rejected.
 export const EnrichTrackInput = Schema.Struct({
-  url: Schema.String.pipe(Schema.check(Schema.isPattern(UrlPattern)))
+  url: Schema.URLFromString
 })
 export type EnrichTrackInput = typeof EnrichTrackInput.Type
 
