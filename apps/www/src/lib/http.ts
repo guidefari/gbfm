@@ -22,7 +22,6 @@ import { createFetcher, getRequestMethod, getRequestUrl, type ApiFailureInput } 
 import {
   DEFAULT_PAGE_SIZE,
   getNextOffsetPageParam,
-  setPaginationParams,
   type PaginatedResponse,
   type PaginationOptions
 } from './http-pagination'
@@ -1079,9 +1078,24 @@ export function useAllShows({ limit = DEFAULT_PAGE_SIZE }: PaginationOptions = {
     useInfiniteQuery<PaginatedResponse<ShowWithHosts>, Error>({
       queryKey: ['shows', limit],
       queryFn: async ({ pageParam = 0 }) => {
-        const url = apiUrlObj(`/shows`)
-        setPaginationParams(url, Number(pageParam), { limit })
-        return fetcher<PaginatedResponse<ShowWithHosts>>(url.toString())
+        const client = await getApiClient()
+        const result = await Effect.runPromise(
+          client.shows
+            .getAllShows({ query: { limit, offset: Number(pageParam) } })
+            .pipe(
+              Effect.tapError((error) => captureException(error, { endpoint: 'shows.getAllShows' }))
+            )
+        )
+        return {
+          data: result.data.map((show) => ({
+            ...show,
+            createdAt: new Date(show.createdAt),
+            updatedAt: new Date(show.updatedAt),
+            tags: show.tags ? [...show.tags] : null,
+            hosts: [...show.hosts]
+          })),
+          pagination: result.pagination
+        }
       },
       initialPageParam: 0,
       getNextPageParam: getNextOffsetPageParam
@@ -1100,7 +1114,23 @@ export function useAllShows({ limit = DEFAULT_PAGE_SIZE }: PaginationOptions = {
 export function useShowBySlug(slug: string) {
   const { data, error, isPending } = useQuery<SelectMdxCompiledShow, Error>({
     queryKey: ['show', slug],
-    queryFn: async () => fetcher(apiUrl(`/shows/${slug}`)),
+    queryFn: async () => {
+      const client = await getApiClient()
+      const show = await Effect.runPromise(
+        client.shows
+          .getShowBySlug({ params: { slug } })
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'shows.getShowBySlug' }))
+          )
+      )
+      return {
+        ...show,
+        createdAt: new Date(show.createdAt),
+        updatedAt: new Date(show.updatedAt),
+        tags: show.tags ? [...show.tags] : null,
+        hosts: show.hosts ? [...show.hosts] : undefined
+      }
+    },
     enabled: Boolean(slug)
   })
 
@@ -1118,12 +1148,24 @@ export type ShowBasicInfo = {
   thumbnailUrl: string | null
 }
 
+// Fetches up to 100 shows and finds by id client-side -- there is no
+// get-show-by-id endpoint server-side (only getShowBySlug), so this
+// inefficiency predates this port and isn't fixable from the client
+// alone. Flagged in step 6b's process notes as a candidate for a real
+// backend endpoint, not fixed here.
 export function useShowById(id: string | null | undefined) {
   const { data, error, isPending } = useQuery<ShowBasicInfo, Error>({
     queryKey: ['show-by-id', id],
     queryFn: async () => {
-      const shows = await fetcher<PaginatedResponse<ShowWithHosts>>(apiUrl('/shows?limit=100'))
-      const show = shows.data.find((s) => s.id === id)
+      const client = await getApiClient()
+      const result = await Effect.runPromise(
+        client.shows
+          .getAllShows({ query: { limit: 100, offset: 0 } })
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'shows.getAllShows' }))
+          )
+      )
+      const show = result.data.find((s) => s.id === id)
       if (!show) throw new Error('Show not found')
       return {
         id: show.id,
@@ -1151,9 +1193,25 @@ export function useShowEpisodes(
     useInfiniteQuery<PaginatedResponse<SelectAudio>, Error>({
       queryKey: ['show-episodes', slug, limit],
       queryFn: async ({ pageParam = 0 }) => {
-        const url = apiUrlObj(`/shows/${slug}/episodes`)
-        setPaginationParams(url, Number(pageParam), { limit })
-        return fetcher<PaginatedResponse<SelectAudio>>(url.toString())
+        const client = await getApiClient()
+        const result = await Effect.runPromise(
+          client.shows
+            .getShowEpisodes({ params: { slug }, query: { limit, offset: Number(pageParam) } })
+            .pipe(
+              Effect.tapError((error) =>
+                captureException(error, { endpoint: 'shows.getShowEpisodes' })
+              )
+            )
+        )
+        return {
+          data: result.data.map((episode) => ({
+            ...episode,
+            createdAt: new Date(episode.createdAt),
+            updatedAt: new Date(episode.updatedAt),
+            tags: episode.tags ? [...episode.tags] : null
+          })),
+          pagination: result.pagination
+        }
       },
       initialPageParam: 0,
       getNextPageParam: getNextOffsetPageParam,
@@ -1224,10 +1282,19 @@ export function useSubscribeToShow() {
     Error,
     { showId: string }
   >({
-    mutationFn: async ({ showId }) =>
-      fetcher(apiUrl(`/shows/${showId}/subscribe`), {
-        method: 'POST'
-      }),
+    mutationFn: async ({ showId }) => {
+      const client = await getApiClient()
+      const result = await Effect.runPromise(
+        client.shows
+          .subscribeToShow({ params: { id: showId } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'shows.subscribeToShow' })
+            )
+          )
+      )
+      return { ...result, createdAt: new Date(result.createdAt) }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: userSubscriptionsQueryKey() })
     }
@@ -1242,10 +1309,18 @@ export function useSubscribeToShow() {
 export function useUnsubscribeFromShow() {
   const queryClient = useQueryClient()
   const { mutateAsync: unsubscribe, isPending } = useMutation<void, Error, { showId: string }>({
-    mutationFn: async ({ showId }) =>
-      fetcher(apiUrl(`/shows/${showId}/unsubscribe`), {
-        method: 'DELETE'
-      }),
+    mutationFn: async ({ showId }) => {
+      const client = await getApiClient()
+      await Effect.runPromise(
+        client.shows
+          .unsubscribeFromShow({ params: { id: showId } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'shows.unsubscribeFromShow' })
+            )
+          )
+      )
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: userSubscriptionsQueryKey() })
     }
@@ -1486,7 +1561,16 @@ export function useMixQRPdf(slug: string, enabled = false) {
 export function useShowQRPdf(slug: string, enabled = false) {
   return useQuery<QRPdfResponse>({
     queryKey: ['show-qr-pdf', slug],
-    queryFn: () => fetcher<QRPdfResponse>(apiUrl(`/shows/${slug}/qr-pdf`)),
+    queryFn: async () => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.shows
+          .getShowQRPdf({ params: { slug }, query: {} })
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'shows.getShowQRPdf' }))
+          )
+      )
+    },
     enabled,
     staleTime: 1000 * 60 * 60 * 24
   })
