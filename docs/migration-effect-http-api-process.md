@@ -307,4 +307,37 @@ that's been silently corrected is easy to repeat:
   file" and "port every hook something actually calls" are different
   scopes, and step 6b's per-group hook inventory should note dead hooks
   the same way step 6's route-level consumer audits already do, instead
-  of assuming a hook's existence implies a real caller.
+  of assuming a hook's existence implies a real caller. The same pattern
+  recurred in PR #176 (`useLabelBySlug`/`useReleaseBySlug` -- the real
+  pages fetch via their own TanStack Router `loader`, not these hooks)
+  and PR #177 (`useEditorialPostBySlug`/`useMicroPostBySlug`, same
+  loader-bypasses-hook shape). Three occurrences across three PRs makes
+  this a real, recurring class in 6b specifically, not a one-off --
+  worth checking for a direct-loader-fetch bypass as a standing step of
+  every 6b hook port, the same way schema-drift diffing became standing
+  practice in step 6 after it recurred.
+- **A *new* backend response schema (written during this migration, not
+  inherited from the old zod layer) can itself under-declare a real DB
+  column -- "the old schema might be wrong" isn't the only direction this
+  bug travels.** PR #177's `bannerImageUrl` filler was justified in the
+  PR description as "posts never had a `bannerImageUrl` column" -- false.
+  `apps/vps/db/util.ts`'s `defaultContentFields` (spread into `postsTable`)
+  includes it, and migration `0023_parallel_switch.sql` added the column
+  to the real `posts` table in production. What actually happened: the
+  post group's `PostResponse` wire schema (`packages/api/src/post.ts`,
+  written in the step-6 backend PR, #173) never declared the field, so
+  `Schema.encodeEffect` silently strips it from the JSON response before
+  it reaches any client -- a narrower-than-the-DB-row wire contract, not
+  a nonexistent column. Caught by adversarial review on the *frontend*
+  6b PR, not the backend PR that introduced the gap, because nothing in
+  `apps/www` reads the field today so the earlier backend review had no
+  consumer signal to catch it against. The frontend fix (fill with
+  `null`) is still correct given what the backend actually sends, but
+  the PR's own explanation of *why* was wrong until review corrected it.
+  Generalizable lesson: when a 6b hook needs a filler value for a field
+  the local frontend type expects but the new wire schema omits, check
+  the real Drizzle table (not just the new Effect schema) before writing
+  down *why* the field is missing -- "the backend schema doesn't expose
+  it" and "the column doesn't exist" are different claims with different
+  follow-up implications, and only one of them is fixable without a
+  migration.
