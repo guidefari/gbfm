@@ -260,3 +260,21 @@ that's been silently corrected is easy to repeat:
   this and review catches it again, that's a process reminder that isn't
   landing -- worth stopping to ask why, not just adding a fourth bullet
   here.
+- **A weak validation pattern, once written, gets copy-pasted forward as
+  precedent.** `newsletter.ts` (#165) declared its own ad-hoc email regex
+  (`/^[^\s@]+@[^\s@]+\.[^\s@]+$/`) instead of matching zod's real `z.email()`
+  behavior -- looser than zod on malformed addresses (`..@x.c`, `a@b..c`
+  all pass it, zod rejects them). That pattern was never itself flagged
+  (newsletter's review focused elsewhere), and got reused verbatim in
+  `user.ts` (#170) for the same field name, where adversarial review finally
+  caught it. Fixed in `user.ts` by using zod's actual "practical email"
+  regex from `zod/src/v4/core/regexes.ts`, but `newsletter.ts`'s original
+  copy is still live and unfixed as of this note -- worth a follow-up PR.
+  The generalizable lesson: **when a helper schema (`Email`, `Uuid`,
+  `UrlString`, etc.) is copy-pasted into a new group file rather than
+  imported from one shared location, its correctness has to be
+  re-verified every time, not assumed from the fact that an earlier PR
+  used the same regex** -- a bug in a widely-copied pattern compounds
+  silently across every group that copied it, and grep for the pattern
+  string across `packages/api/src/*.ts` before trusting "this is the
+  established pattern" as a reason not to double-check it.
