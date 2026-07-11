@@ -242,3 +242,38 @@ describe('resolve (HttpApiBuilder group, Step 6)', () => {
     expect(res.status).toBe(404)
   })
 })
+
+describe('admin (HttpApiBuilder group, Step 6)', () => {
+  it('GET /api/admin/overview returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/api/admin/overview'))
+
+    expect(res.status).toBe(401)
+  })
+
+  it('GET /api/admin/newsletter-subscribers returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/admin/newsletter-subscribers')
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('GET /api/admin/frontend-errors/:scenario returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/admin/frontend-errors/ok')
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('GET /api/admin/frontend-errors/:scenario returns 401 (not 400) for an undeclared scenario literal without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/admin/frontend-errors/not-a-real-scenario')
+    )
+
+    // AuthMiddleware runs before param schema validation, so an invalid
+    // :scenario value still 401s (not 400) when there's no session cookie --
+    // confirmed empirically, not assumed from the endpoint declaration order.
+    expect(res.status).toBe(401)
+  })
+})
