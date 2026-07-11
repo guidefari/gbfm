@@ -6,7 +6,8 @@
     "./api": "./src/api.ts",
     "./health": "./src/health.ts",
     "./errors": "./src/errors.ts",
-    "./testing": "./src/testing.ts"
+    "./testing": "./src/testing.ts",
+    "./middleware/auth": "./src/middleware/auth.ts"
   },
   "scripts": {
     "typecheck": "tsgo --noEmit",
