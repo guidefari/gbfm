@@ -1,4 +1,4 @@
-import { z } from '@hono/zod-openapi'
+import { z } from 'zod'
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
 import { index, pgEnum, pgTable, primaryKey, text, uuid, varchar } from 'drizzle-orm/pg-core'
 import { user } from './auth.schema'
@@ -53,107 +53,63 @@ export type SelectMdxCompiledMicroPost = SelectMdxCompiledPost & {
   type: 'micro'
 }
 
-export const selectPostSchema = z
-  .object({
-    id: z.string().openapi({ description: 'Unique identifier for the post' }),
-    title: z.string().nullable().openapi({ description: 'Title of the post' }),
-    description: z.string().nullable().openapi({ description: 'Description of the post' }),
-    thumbnailUrl: z.string().nullable().openapi({ description: 'Thumbnail URL for the post' }),
-    slug: z.string().openapi({ description: 'URL slug for the post' }),
-    content: z.string().nullable().openapi({ description: 'Content of the post' }),
-    draft: z.boolean().openapi({ description: 'Whether the post is a draft' }),
-    tags: z.array(z.string()).nullable().openapi({ description: 'Tags associated with the post' }),
-    type: z.enum(['post', 'micro']).nullable().openapi({ description: 'Type of the post' }),
-    musicEntityType: z.string().nullable().openapi({ description: 'Attached music entity type' }),
-    musicEntityId: z
-      .string()
-      .uuid()
-      .nullable()
-      .openapi({ description: 'Attached music entity ID' }),
-    createdAt: z.date().openapi({ description: 'Creation timestamp' }),
-    updatedAt: z.date().openapi({ description: 'Last update timestamp' })
-  })
-  .openapi('Post')
+export const selectPostSchema = z.object({
+  id: z.string(),
+  title: z.string().nullable(),
+  description: z.string().nullable(),
+  thumbnailUrl: z.string().nullable(),
+  slug: z.string(),
+  content: z.string().nullable(),
+  draft: z.boolean(),
+  tags: z.array(z.string()).nullable(),
+  type: z.enum(['post', 'micro']).nullable(),
+  musicEntityType: z.string().nullable(),
+  musicEntityId: z.string().uuid().nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date()
+})
 
-export const selectMdxCompiledPostSchema = selectPostSchema
-  .extend({
-    compiledContent: z.string().openapi({ description: 'Compiled MDX content' }),
-    creators: z
-      .array(
-        z
-          .object({
-            id: z.string().openapi({ description: 'Creator ID' }),
-            name: z.string().openapi({ description: 'Creator name' }),
-            username: z.string().nullable().openapi({ description: 'Creator username' })
-          })
-          .openapi('Creator')
-      )
-      .optional()
-      .openapi({ description: 'List of creators for this post' })
-  })
-  .openapi('CompiledPost')
+export const selectMdxCompiledPostSchema = selectPostSchema.extend({
+  compiledContent: z.string(),
+  creators: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string(),
+        username: z.string().nullable()
+      })
+    )
+    .optional()
+})
 
-export const selectMdxCompiledEditorialPostSchema = selectMdxCompiledPostSchema
-  .extend({
-    title: z.string().openapi({ description: 'Title of the post' }),
-    content: z.string().openapi({ description: 'Content of the post' }),
-    type: z.literal('post')
-  })
-  .openapi('CompiledEditorialPost')
+export const selectMdxCompiledEditorialPostSchema = selectMdxCompiledPostSchema.extend({
+  title: z.string(),
+  content: z.string(),
+  type: z.literal('post')
+})
 
-export const selectMdxCompiledMicroPostSchema = selectMdxCompiledPostSchema
-  .extend({
-    type: z.literal('micro')
-  })
-  .openapi('CompiledMicroPost')
+export const selectMdxCompiledMicroPostSchema = selectMdxCompiledPostSchema.extend({
+  type: z.literal('micro')
+})
 
-export const insertPostSchema = z
-  .object({
-    title: z
-      .string()
-      .nullable()
-      .optional()
-      .openapi({ description: 'Title of the post', example: 'My Blog Post' }),
-    description: z.string().optional().openapi({ description: 'Description of the post' }),
-    thumbnailUrl: z.string().optional().openapi({ description: 'Thumbnail URL for the post' }),
-    slug: z.string().min(1).openapi({
-      description: 'URL slug for the post',
-      example: 'my-blog-post'
-    }),
-    content: z.string().nullable().optional().openapi({ description: 'Content of the post' }),
-    draft: z
-      .boolean()
-      .optional()
-      .openapi({ description: 'Whether this is a draft', default: false }),
-    tags: z.array(z.string()).optional().openapi({ description: 'Tags for the post' }),
-    type: z
-      .enum(['post', 'micro'])
-      .nullable()
-      .optional()
-      .openapi({ description: 'Type of the post' }),
-    musicEntityType: z.enum(POST_MUSIC_ENTITY_TYPES).nullable().optional().openapi({
-      description: 'Attached music entity type'
-    }),
-    musicEntityId: z
-      .string()
-      .uuid()
-      .nullable()
-      .optional()
-      .openapi({ description: 'Attached music entity ID' })
-  })
-  .openapi('InsertPost')
+export const insertPostSchema = z.object({
+  title: z.string().nullable().optional(),
+  description: z.string().optional(),
+  thumbnailUrl: z.string().optional(),
+  slug: z.string().min(1),
+  content: z.string().nullable().optional(),
+  draft: z.boolean().optional(),
+  tags: z.array(z.string()).optional(),
+  type: z.enum(['post', 'micro']).nullable().optional(),
+  musicEntityType: z.enum(POST_MUSIC_ENTITY_TYPES).nullable().optional(),
+  musicEntityId: z.string().uuid().nullable().optional()
+})
 
-export const createPostSchema = insertPostSchema
-  .extend({
-    creatorIds: z
-      .array(z.string())
-      .min(1)
-      .optional()
-      .openapi({ description: 'IDs of post creators' })
-  })
-  .openapi('CreatePostRequest')
+export const createPostSchema = insertPostSchema.extend({
+  creatorIds: z.array(z.string()).min(1).optional()
+})
 
-export const updatePostSchema = insertPostSchema.partial().openapi('UpdatePostRequest')
+export const updatePostSchema = insertPostSchema.partial()
 
 export const postCreators = pgTable(
   'post_creators',

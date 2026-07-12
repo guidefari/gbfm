@@ -2,7 +2,6 @@ import { ReadinessCheckFailedError } from '@gbfm/api/errors'
 import { decodeResponseBody } from '@gbfm/api/testing'
 import { Effect } from 'effect'
 import { describe, expect, it } from 'vitest'
-import type { AppType } from '@/app'
 import { createWebHandler } from './routes'
 
 // Separate file (docs/migration-effect-http-api.md, step 3a): each
@@ -12,11 +11,12 @@ import { createWebHandler } from './routes'
 // as a dedicated home for the failure/concurrency paths.
 describe('health readiness failure + cache', () => {
   it('caches a failing readiness check and does not re-run it within the window', async () => {
-    const mod = await import('@/app')
-    const app: AppType = mod.default
+    // Imported for its side effects (SentryService init, background forks) --
+    // no route serving lives here since step 8 removed the Hono app entirely.
+    await import('@/app')
 
     let checks = 0
-    const scoped = createWebHandler(app, {
+    const scoped = createWebHandler({
       healthDatabaseCheck: Effect.sync(() => {
         checks += 1
       }).pipe(
@@ -43,11 +43,12 @@ describe('health readiness failure + cache', () => {
   })
 
   it('concurrent requests on a cold cache share one in-flight check, not one each', async () => {
-    const mod = await import('@/app')
-    const app: AppType = mod.default
+    // Imported for its side effects (SentryService init, background forks) --
+    // no route serving lives here since step 8 removed the Hono app entirely.
+    await import('@/app')
 
     let checks = 0
-    const scoped = createWebHandler(app, {
+    const scoped = createWebHandler({
       healthDatabaseCheck: Effect.sync(() => {
         checks += 1
       }).pipe(Effect.delay('20 millis'))

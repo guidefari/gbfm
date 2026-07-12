@@ -65,7 +65,7 @@ const limiter = new InMemoryRateLimiter()
 const RATE_LIMIT_EXCLUDED_PATHS = new Set(['/health', '/health/live', '/health/ready'])
 const RATE_LIMIT_CONFIG = { windowMs: 60_000, maxRequests: 60 }
 
-const rateLimitClientKey = (headers: Readonly<Record<string, string | undefined>>) => {
+export const rateLimitClientKey = (headers: Readonly<Record<string, string | undefined>>) => {
   const forwarded = headers['x-forwarded-for']
   if (forwarded) return forwarded.split(',')[0]?.trim() || 'unknown'
   return headers['x-real-ip'] ?? 'unknown'

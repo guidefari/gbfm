@@ -1,4 +1,4 @@
-import { z } from '@hono/zod-openapi'
+import { z } from 'zod'
 
 export const adminOverviewContentBreakdownSchema = z.object({
   published: z.number(),

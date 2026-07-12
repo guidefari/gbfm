@@ -3,19 +3,18 @@ import { ArtistListResponse } from '@gbfm/api/music'
 import { SearchResults } from '@gbfm/api/search'
 import { decodeResponseBody } from '@gbfm/api/testing'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import type { AppType } from '@/app'
 import { createWebHandler } from './routes'
 
 // Blackbox suite asserting only the wire contract, so these assertions keep
 // working as more groups move from the Hono fallback onto the Effect router
 // (docs/migration-effect-http-api.md).
-let app: AppType
 let webHandler: ReturnType<typeof createWebHandler>
 
 beforeAll(async () => {
-  const mod = await import('@/app')
-  app = mod.default
-  webHandler = createWebHandler(app)
+  // Imported for its side effects (SentryService init, background forks) --
+  // no route serving lives here since step 8 removed the Hono app entirely.
+  await import('@/app')
+  webHandler = createWebHandler()
 })
 
 afterAll(async () => {

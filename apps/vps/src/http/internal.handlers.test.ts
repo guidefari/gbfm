@@ -1,5 +1,4 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import type { AppType } from '@/app'
 import { createWebHandler } from './routes'
 
 // Step 3b (docs/migration-effect-http-api.md): validates AuthMiddleware's
@@ -8,13 +7,13 @@ import { createWebHandler } from './routes'
 // covered here -- no existing test in this codebase creates a real
 // better-auth session, and building that harness is bigger than this step's
 // scope (validating rejection, not building session-creation tooling).
-let app: AppType
 let webHandler: ReturnType<typeof createWebHandler>
 
 beforeAll(async () => {
-  const mod = await import('@/app')
-  app = mod.default
-  webHandler = createWebHandler(app)
+  // Imported for its side effects (SentryService init, background forks) --
+  // no route serving lives here since step 8 removed the Hono app entirely.
+  await import('@/app')
+  webHandler = createWebHandler()
 })
 
 afterAll(async () => {

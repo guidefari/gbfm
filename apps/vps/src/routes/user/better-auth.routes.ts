@@ -1,8 +1,3 @@
-import { Hono } from 'hono'
-import { auth } from '@/lib/auth'
-
-const betterAuthApp = new Hono()
-
 export function prepareAuthRequest(request: Request) {
   const hasOrigin = request.headers.has('origin') || request.headers.has('referer')
 
@@ -14,9 +9,3 @@ export function prepareAuthRequest(request: Request) {
 
   return request
 }
-
-betterAuthApp.on(['POST', 'GET'], '*', async (c) => {
-  return auth.handler(prepareAuthRequest(c.req.raw))
-})
-
-export default betterAuthApp

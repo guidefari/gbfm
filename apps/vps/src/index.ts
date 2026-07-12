@@ -1,13 +1,13 @@
 export const localVPSPort = 3003
 
-const { default: app, onShutdown } = await import('./app')
-
-// Step 2 (docs/migration-effect-http-api.md): the process now serves through
-// this handler. It wildcards every request to the same Hono app unchanged --
-// app.ts still owns route setup, background forks, and its SIGTERM/SIGINT
-// wiring. This is where the serving topology changes.
+// Step 2 (docs/migration-effect-http-api.md): the process serves through this
+// handler. app.ts (imported for its side effects -- SentryService init,
+// background forks, SIGTERM/SIGINT wiring) no longer owns any route setup as
+// of step 8; all real route serving lives in http/routes.ts's
+// createWebHandler.
+const { onShutdown } = await import('./app')
 const { createWebHandler } = await import('./http/routes')
-export const effectWebHandler = createWebHandler(app)
+export const effectWebHandler = createWebHandler()
 
 onShutdown(effectWebHandler.dispose)
 
