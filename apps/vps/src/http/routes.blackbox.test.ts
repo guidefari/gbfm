@@ -397,6 +397,64 @@ describe('favorites (HttpApiBuilder group, Step 6)', () => {
   })
 })
 
+describe('music-reminders (HttpApiBuilder group, Step 6)', () => {
+  it('GET /api/music-reminders returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/api/music-reminders'))
+
+    expect(res.status).toBe(401)
+  })
+
+  it('POST /api/music-reminders returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/music-reminders', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          musicTitle: 'Test Song',
+          artistName: 'Test Artist',
+          musicUrl: 'https://example.com/track',
+          reminderDate: '2030-01-01T00:00:00Z'
+        })
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('PUT /api/music-reminders/:id returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/music-reminders/00000000-0000-0000-0000-000000000000', {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ musicTitle: 'Updated' })
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('DELETE /api/music-reminders/:id returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/music-reminders/00000000-0000-0000-0000-000000000000', {
+        method: 'DELETE'
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('DELETE /api/music-reminders/:id returns 401 (not 400) for a non-UUID id without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/music-reminders/not-a-uuid', { method: 'DELETE' })
+    )
+
+    // AuthMiddleware runs before param schema validation (same ordering as
+    // favorites' non-UUID case above) -- a malformed id still 401s rather
+    // than 400ing, since there's no session cookie either way.
+    expect(res.status).toBe(401)
+  })
+})
+
 describe('newsletter (HttpApiBuilder group, Step 6)', () => {
   it('POST /api/newsletter/unsubscribe returns 404 for an unknown token', async () => {
     const res = await webHandler.handler(

@@ -3,6 +3,7 @@ import type {
   SendMixNotificationInput,
   SendMixNotificationResponse
 } from '@gbfm/api/email'
+import type { CreateMusicReminderInput } from '@gbfm/api/music-reminders'
 import type { LinkStatus } from '@gbfm/core/status'
 import type {
   SelectAudio,
@@ -2040,5 +2041,49 @@ export function useRemoveArtistFromTrack() {
     },
     onSuccess: (_, { trackId }) =>
       qc.invalidateQueries({ queryKey: ['admin', 'links', 'track', trackId] })
+  })
+}
+
+const musicRemindersQueryKey = () => ['reminders'] as const
+
+export function useMusicReminders() {
+  const { data: session } = useSession()
+  const isAuthenticated = Boolean(session?.user)
+  return useQuery({
+    queryKey: musicRemindersQueryKey(),
+    queryFn: async () => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client['music-reminders']
+          .getMusicReminders({})
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'music-reminders.getMusicReminders' })
+            )
+          )
+      )
+    },
+    enabled: isAuthenticated
+  })
+}
+
+export function useCreateMusicReminder() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: CreateMusicReminderInput) => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client['music-reminders']
+          .createMusicReminder({ payload })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'music-reminders.createMusicReminder' })
+            )
+          )
+      )
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: musicRemindersQueryKey() })
+    }
   })
 }

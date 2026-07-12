@@ -14,6 +14,7 @@ import { InviteHandlersLive } from '@/http/invite.handlers'
 import { InternalHandlersLive } from '@/http/internal.handlers'
 import { LabelHandlersLive } from '@/http/label.handlers'
 import { MusicHandlersLive } from '@/http/music.handlers'
+import { MusicRemindersHandlersLive } from '@/http/music-reminders.handlers'
 import { NewsletterHandlersLive } from '@/http/newsletter.handlers'
 import { PostHandlersLive } from '@/http/post.handlers'
 import { ProfileHandlersLive } from '@/http/profile.handlers'
@@ -80,7 +81,9 @@ export const createWebHandler = (
     Layer.provide(PostHandlersLive),
     Layer.provide(AudioHandlersLive),
     Layer.provide(EmailHandlersLive),
-    Layer.provide(Layer.mergeAll(FavoritesHandlersLive, NewsletterHandlersLive)),
+    Layer.provide(
+      Layer.mergeAll(FavoritesHandlersLive, MusicRemindersHandlersLive, NewsletterHandlersLive)
+    ),
     Layer.provide(FileManagerHandlersLive),
     Layer.provide(SpotifyHandlersLive),
     Layer.provide(ShowsHandlersLive),
