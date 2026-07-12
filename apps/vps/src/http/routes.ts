@@ -1,3 +1,5 @@
+import * as BunFileSystem from '@effect/platform-bun/BunFileSystem'
+import * as BunPath from '@effect/platform-bun/BunPath'
 import { Api } from '@gbfm/api/api'
 import type { ReadinessCheckFailedError } from '@gbfm/api/errors'
 import { Effect, Layer } from 'effect'
@@ -24,6 +26,7 @@ import { SearchHandlersLive } from '@/http/search.handlers'
 import { SearchCacheHeaderLive } from '@/http/search.middleware'
 import { ShowsHandlersLive } from '@/http/shows.handlers'
 import { SpotifyHandlersLive } from '@/http/spotify.handlers'
+import { UploadHandlersLive } from '@/http/upload.handlers'
 import { UserHandlersLive } from '@/http/user.handlers'
 import { auth } from '@/lib/auth'
 import { AuthMiddlewareLive } from '@/middleware/auth.impl'
@@ -87,7 +90,7 @@ export const createWebHandler = (
     Layer.provide(FileManagerHandlersLive),
     Layer.provide(SpotifyHandlersLive),
     Layer.provide(ShowsHandlersLive),
-    Layer.provide(UserHandlersLive),
+    Layer.provide(Layer.mergeAll(UserHandlersLive, UploadHandlersLive)),
     Layer.provide(AuthMiddlewareLive),
     // provideMerge, not provide: services a handler pulls via plain `yield*`
     // only clear toWebHandler's phantom-context requirement once they're
@@ -97,7 +100,19 @@ export const createWebHandler = (
 
   return HttpRouter.toWebHandler(
     Layer.mergeAll(ApiLive, betterAuthRoute, honoFallback(honoApp), SearchCacheHeaderLive).pipe(
-      Layer.provideMerge(HttpServer.layerServices),
+      // HttpServerRequest.multipart (upload group's uploadFile/uploadMultipartPart
+      // endpoints) needs a real FileSystem.FileSystem + Path.Path to buffer
+      // parts to temp files. HttpServer.layerServices ships its own
+      // FileSystem.layerNoop, so the real Bun implementation is nested inside
+      // the same provideMerge, applied after layerServices, so it overwrites
+      // the noop instead of losing to it. Confirmed by reproducing the "not
+      // implemented" multipart defect from the noop FileSystem and watching
+      // it disappear with this composition.
+      Layer.provideMerge(
+        Layer.mergeAll(BunFileSystem.layer, BunPath.layer).pipe(
+          Layer.provideMerge(HttpServer.layerServices)
+        )
+      ),
       // Effect.logError inside health handlers must reach the app's real
       // Pino + Sentry logger, not Effect's bare default console logger --
       // otherwise a DB outage's cause is logged nowhere on-call looks.
