@@ -22,43 +22,60 @@ afterAll(async () => {
   await webHandler.dispose()
 })
 
-describe('Effect toWebHandler fallback', () => {
-  it('GET /api/music/albums returns the same response as the plain Hono app', async () => {
-    const [viaHandler, viaHono] = await Promise.all([
-      webHandler.handler(new Request('http://localhost/api/music/albums')),
-      app.request('/api/music/albums')
-    ])
+describe('Effect router (Step 8: HonoFallback removed)', () => {
+  it('GET /api/music/artists is served directly by the HttpApi group (no Hono app in the request path)', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/api/music/artists'))
 
-    expect(viaHandler.status).toBe(viaHono.status)
-    await expect(viaHandler.json()).resolves.toEqual(await viaHono.json())
+    expect(res.status).toBe(200)
+    await expect(decodeResponseBody(ArtistListResponse, res)).resolves.toBeTruthy()
   })
 
-  it('unknown routes fall through to the Hono app and 404', async () => {
+  it('unknown routes 404 via Effect HttpRouter.RouteNotFound (empty body -- no Hono notFound JSON, no fallback to serve)', async () => {
     const res = await webHandler.handler(new Request('http://localhost/does-not-exist'))
+
+    expect(res.status).toBe(404)
+    expect(await res.text()).toBe('')
+  })
+
+  // Pre-existing gap (not introduced by removing HonoFallback): the music
+  // group's album/track/playlist/entity-link endpoints were deleted from the
+  // Hono app at commit c7178c15 ("Albums/tracks/playlists/links are
+  // untouched; they stay on Hono until their own steps") but never actually
+  // ported to the Effect router afterward -- so this already 404s on the
+  // live dev server today, independent of this PR. Documented here so the
+  // gap is tracked by a real test instead of silently rediscovered later.
+  it('GET /api/music/albums 404s -- known pre-existing gap, not a HonoFallback regression', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/api/music/albums'))
 
     expect(res.status).toBe(404)
   })
 })
 
 describe('better-auth route (Step 2c)', () => {
-  it('GET /auth/get-session is handled by the auth route, not the Hono fallback', async () => {
+  it('GET /auth/get-session is handled by the auth route', async () => {
     const res = await webHandler.handler(new Request('http://localhost/auth/get-session'))
 
-    // better-auth's own response for an unauthenticated session check, not a 404 --
-    // proves /auth/* is matched ahead of the wildcard fallback.
+    // better-auth's own response for an unauthenticated session check, not a
+    // RouteNotFound 404 -- proves /auth/* is matched ahead of everything else.
     expect(res.status).toBe(200)
     expect(await res.json()).toBeNull()
   })
 
-  it('unknown /auth/* paths are handled by better-auth (404 from better-auth, not the Hono fallback)', async () => {
+  it("unknown /auth/* paths are handled by better-auth, not Effect's own RouteNotFound", async () => {
     const withoutAuth = await webHandler.handler(new Request('http://localhost/does-not-exist'))
     const withAuth = await webHandler.handler(new Request('http://localhost/auth/does-not-exist'))
 
     expect(withoutAuth.status).toBe(404)
     expect(withAuth.status).toBe(404)
-    // Different bodies would indicate the two 404s come from different sources
-    // (Hono's notFound handler vs. better-auth's own routing).
-    expect(await withAuth.text()).not.toEqual(await withoutAuth.text())
+    // Both are empty-bodied 404s (Effect's own RouteNotFound and better-auth's
+    // internal 404 are both content-length: 0), so the body can't
+    // discriminate them. Rate-limit headers can: RateLimiterLive only sees a
+    // request that reached a matched route's httpEffect -- a bare
+    // RouteNotFound failure short-circuits before the route ever resolves,
+    // so it carries no x-ratelimit-* headers, while /auth/*'s wildcard route
+    // did match (better-auth's own handler produced the 404), so it does.
+    expect(withoutAuth.headers.has('x-ratelimit-limit')).toBe(false)
+    expect(withAuth.headers.has('x-ratelimit-limit')).toBe(true)
   })
 })
 
