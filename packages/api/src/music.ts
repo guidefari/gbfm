@@ -240,6 +240,93 @@ const albumIdParam = { id: Schema.String }
 const trackIdParam = { id: Schema.String }
 const playlistIdParam = { id: Schema.String }
 
+// Mirrors apps/vps/src/db/music-entity.schema.ts's MUSIC_ENTITY_TYPES,
+// MUSIC_PLATFORMS, LINK_STATUSES.
+export const EntityType = Schema.Literals(['artist', 'album', 'track', 'playlist'])
+export const MusicPlatform = Schema.Literals([
+  'spotify',
+  'youtube',
+  'youtube_music',
+  'apple_music',
+  'bandcamp',
+  'soundcloud',
+  'tidal',
+  'deezer',
+  'amazon_music',
+  'discord',
+  'website',
+  'instagram',
+  'twitter',
+  'musicbrainz',
+  'other'
+])
+export const LinkStatus = Schema.Literals(['pending_review', 'verified', 'rejected'])
+
+// Mirrors selectMusicEntityLinkSchema -- entityType/platform/status use plain
+// String in the select shape (Drizzle types varchar FK columns as string;
+// enum validation is enforced on inputs only), same convention the old Hono
+// select schema used.
+export const EntityLinkResponse = Schema.Struct({
+  id: Schema.String,
+  entityType: Schema.String,
+  entityId: Schema.String,
+  platform: Schema.String,
+  url: Schema.String,
+  status: Schema.String,
+  scrapedAt: Schema.NullOr(Schema.String),
+  verifiedAt: Schema.NullOr(Schema.String),
+  verifiedBy: Schema.NullOr(Schema.String),
+  metadata: Schema.NullOr(Schema.Record(Schema.String, Schema.Unknown)),
+  createdAt: Schema.String,
+  updatedAt: Schema.String
+})
+export type EntityLinkResponse = typeof EntityLinkResponse.Type
+
+export const EntityLinkListResponse = Schema.Array(EntityLinkResponse)
+
+const entityLinkParams = { entityType: EntityType, entityId: Schema.String }
+
+export const AddEntityLinkInput = Schema.Struct({
+  platform: MusicPlatform,
+  url: UrlString,
+  status: Schema.optional(LinkStatus)
+})
+
+export const UpdateEntityLinkStatusInput = Schema.Struct({
+  status: LinkStatus,
+  metadata: Schema.optional(Schema.Record(Schema.String, Schema.Unknown))
+})
+
+export const ResolveMusicEntityInput = Schema.Struct({
+  url: UrlString
+})
+
+export const ResolvedMusicEntityResponse = Schema.Struct({
+  entityType: EntityType,
+  entity: Schema.Record(Schema.String, Schema.Unknown),
+  links: Schema.Array(EntityLinkResponse),
+  coverImageUrl: Schema.NullOr(Schema.String)
+})
+
+export const ScrapeEntityLinksInput = Schema.Struct({
+  url: Schema.optional(UrlString),
+  artistName: Schema.optional(Schema.String),
+  albumTitle: Schema.optional(Schema.String),
+  trackTitle: Schema.optional(Schema.String),
+  mbid: Schema.optional(Schema.String),
+  isrc: Schema.optional(Schema.String)
+})
+
+export const ScrapeEntityLinksResponse = Schema.Struct({
+  entity: Schema.Record(Schema.String, Schema.Unknown),
+  links: Schema.Array(EntityLinkResponse)
+})
+
+export const PendingLinksQuery = Schema.Struct({
+  limit: Schema.optional(Schema.NumberFromString),
+  offset: Schema.optional(Schema.NumberFromString)
+})
+
 export const MusicGroup = HttpApiGroup.make('music')
   .add(HttpApiEndpoint.get('listArtists', '/api/music/artists', { success: ArtistListResponse }))
   .add(
@@ -461,6 +548,74 @@ export const MusicGroup = HttpApiGroup.make('music')
     HttpApiEndpoint.post('syncPlaylistLinks', '/api/music/playlists/:id/sync-links', {
       params: playlistIdParam,
       success: SyncPlaylistLinksResponse,
+      error: HttpApiError.Forbidden
+    }).middleware(AuthMiddleware)
+  )
+  // ---------------------------------------------------------------------
+  // Resolve a pasted URL into a music entity
+  // ---------------------------------------------------------------------
+  .add(
+    HttpApiEndpoint.post('resolveMusicEntity', '/api/music/resolve', {
+      payload: ResolveMusicEntityInput,
+      success: ResolvedMusicEntityResponse,
+      error: HttpApiError.Forbidden
+    }).middleware(AuthMiddleware)
+  )
+  // ---------------------------------------------------------------------
+  // Links -- per entity
+  // ---------------------------------------------------------------------
+  .add(
+    HttpApiEndpoint.get('listEntityLinks', '/api/music/:entityType/:entityId/links', {
+      params: entityLinkParams,
+      query: Schema.Struct({ status: Schema.optional(LinkStatus) }),
+      success: EntityLinkListResponse
+    })
+  )
+  .add(
+    HttpApiEndpoint.post('addEntityLink', '/api/music/:entityType/:entityId/links', {
+      params: entityLinkParams,
+      payload: AddEntityLinkInput,
+      success: EntityLinkResponse,
+      error: HttpApiError.Forbidden
+    }).middleware(AuthMiddleware)
+  )
+  .add(
+    HttpApiEndpoint.patch(
+      'updateEntityLinkStatus',
+      '/api/music/:entityType/:entityId/links/:linkId',
+      {
+        params: { ...entityLinkParams, linkId: Schema.String },
+        payload: UpdateEntityLinkStatusInput,
+        success: EntityLinkResponse,
+        error: [HttpApiError.NotFound, HttpApiError.Forbidden]
+      }
+    ).middleware(AuthMiddleware)
+  )
+  .add(
+    HttpApiEndpoint.delete('deleteEntityLink', '/api/music/:entityType/:entityId/links/:linkId', {
+      params: { ...entityLinkParams, linkId: Schema.String },
+      success: HttpApiSchema.NoContent,
+      error: [HttpApiError.NotFound, HttpApiError.Forbidden]
+    }).middleware(AuthMiddleware)
+  )
+  // ---------------------------------------------------------------------
+  // Scrape -- trigger link discovery for an entity
+  // ---------------------------------------------------------------------
+  .add(
+    HttpApiEndpoint.post('scrapeEntityLinks', '/api/music/:entityType/scrape', {
+      params: { entityType: EntityType },
+      payload: ScrapeEntityLinksInput,
+      success: ScrapeEntityLinksResponse,
+      error: HttpApiError.Forbidden
+    }).middleware(AuthMiddleware)
+  )
+  // ---------------------------------------------------------------------
+  // Review queue -- all pending links (admin)
+  // ---------------------------------------------------------------------
+  .add(
+    HttpApiEndpoint.get('listPendingLinks', '/api/music/links/pending', {
+      query: PendingLinksQuery,
+      success: EntityLinkListResponse,
       error: HttpApiError.Forbidden
     }).middleware(AuthMiddleware)
   )
