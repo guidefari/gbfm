@@ -22,6 +22,14 @@ describe('email API contract', () => {
     expect(Exit.isFailure(result)).toBe(true)
   })
 
+  it('rejects non-finite pagination and invalid calendar dates', () => {
+    expect(
+      Exit.isFailure(
+        Schema.decodeUnknownExit(EmailLogsQuery)({ limit: 'Infinity', dateFrom: '2026-02-30' })
+      )
+    ).toBe(true)
+  })
+
   it('keeps send payload validation at the shared boundary', () => {
     const result = Schema.decodeUnknownExit(SendMixNotificationInput)({
       recipients: ['listener@example.com'],
@@ -31,6 +39,25 @@ describe('email API contract', () => {
 
     expect(Exit.isSuccess(result)).toBe(true)
     expect(() => Schema.decodeUnknownSync(SendMixNotificationInput)({ mixSlug: '' })).toThrow()
+  })
+
+  it('uses URL parsing semantics for cover images', () => {
+    expect(
+      Exit.isSuccess(
+        Schema.decodeUnknownExit(SendMixNotificationInput)({
+          mixSlug: 'summer-mix',
+          metadata: { coverImageUrl: 'ftp://cdn.example.com/cover.jpg' }
+        })
+      )
+    ).toBe(true)
+    expect(
+      Exit.isSuccess(
+        Schema.decodeUnknownExit(SendMixNotificationInput)({
+          mixSlug: 'summer-mix',
+          metadata: { coverImageUrl: 'http://?x' }
+        })
+      )
+    ).toBe(false)
   })
 
   it('accepts the serialized delivery-log response shape', () => {

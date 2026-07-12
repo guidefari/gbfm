@@ -5,8 +5,33 @@ import { AuthMiddleware } from './middleware/auth'
 const EmailPattern =
   /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9-]*\.)+[A-Za-z]{2,}$/
 const Email = Schema.String.pipe(Schema.check(Schema.isPattern(EmailPattern)))
-const UrlString = Schema.String.pipe(Schema.check(Schema.isPattern(/^https?:\/\/.+/i)))
-const DateOnly = Schema.String.pipe(Schema.check(Schema.isPattern(/^\d{4}-\d{2}-\d{2}$/)))
+const UrlString = Schema.String.pipe(
+  Schema.check(
+    Schema.makeFilter((value) => {
+      try {
+        new URL(value)
+        return undefined
+      } catch {
+        return 'must be a valid URL'
+      }
+    })
+  )
+)
+const DateOnly = Schema.String.pipe(
+  Schema.check(Schema.isPattern(/^\d{4}-\d{2}-\d{2}$/)),
+  Schema.check(
+    Schema.makeFilter((value) => {
+      const [year, month, day] = value.split('-').map(Number)
+      const date = new Date(`${value}T00:00:00.000Z`)
+
+      return date.getUTCFullYear() === year &&
+        date.getUTCMonth() + 1 === month &&
+        date.getUTCDate() === day
+        ? undefined
+        : 'must be a valid calendar date'
+    })
+  )
+)
 
 const EmailLogStatus = Schema.Literals([
   'PENDING',
@@ -60,11 +85,11 @@ export const EmailLogsResponse = Schema.Struct({
 export type EmailLogsResponse = typeof EmailLogsResponse.Type
 
 const PaginationQuery = {
-  limit: Schema.NumberFromString.pipe(
+  limit: Schema.FiniteFromString.pipe(
     Schema.check(Schema.isBetween({ minimum: 1, maximum: 100 })),
     Schema.withDecodingDefaultType(Effect.succeed(20))
   ),
-  offset: Schema.NumberFromString.pipe(
+  offset: Schema.FiniteFromString.pipe(
     Schema.check(Schema.isGreaterThanOrEqualTo(0)),
     Schema.withDecodingDefaultType(Effect.succeed(0))
   )
