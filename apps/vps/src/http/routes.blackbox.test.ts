@@ -833,3 +833,99 @@ describe('shows (HttpApiBuilder group, Step 6)', () => {
     expect(res.status).not.toBe(401)
   })
 })
+
+describe('site routes (plain HttpRouter, Step 7)', () => {
+  it('GET /rss.xml returns 200 HTML with the feed title', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/rss.xml'))
+
+    expect(res.status).toBe(200)
+    expect(res.headers.get('content-type')).toContain('text/html')
+    const body = await res.text()
+    expect(body).toContain('Goosebumps.fm Mixes RSS Feed')
+  })
+
+  it('GET /robots.txt returns 200 plain text pointing at the sitemap', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/robots.txt'))
+
+    expect(res.status).toBe(200)
+    expect(res.headers.get('content-type')).toContain('text/plain')
+    const body = await res.text()
+    expect(body).toContain('Sitemap:')
+    expect(body).toContain('/sitemap.xml')
+  })
+
+  it('GET /sitemap.xml returns 200 XML with a urlset root', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/sitemap.xml'))
+
+    expect(res.status).toBe(200)
+    expect(res.headers.get('content-type')).toContain('application/xml')
+    const body = await res.text()
+    expect(body).toContain('<urlset')
+  })
+
+  it('GET /s/mix/:slug returns 404 HTML for an unknown mix', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/s/mix/does-not-exist'))
+
+    expect(res.status).toBe(404)
+    expect(res.headers.get('content-type')).toContain('text/html')
+  })
+
+  it('GET /s/track/:slug returns 404 HTML for an unknown track', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/s/track/does-not-exist'))
+
+    expect(res.status).toBe(404)
+  })
+
+  it('GET /s/show/:slug returns 404 HTML for an unknown show', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/s/show/does-not-exist'))
+
+    expect(res.status).toBe(404)
+  })
+
+  it('GET /s/profile/:username returns 404 HTML for an unknown username', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/s/profile/does-not-exist'))
+
+    expect(res.status).toBe(404)
+  })
+
+  it('GET /s/release/:slug returns 404 HTML for an unknown release', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/s/release/does-not-exist'))
+
+    expect(res.status).toBe(404)
+  })
+
+  it('GET /s/label/:slug returns 404 HTML for an unknown label', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/s/label/does-not-exist'))
+
+    expect(res.status).toBe(404)
+  })
+
+  it('GET /s/post/:slug, /s/editorial/:slug, and /s/tweet/:slug all reach the same handler and 404 for an unknown post', async () => {
+    const [post, editorial, tweet] = await Promise.all([
+      webHandler.handler(new Request('http://localhost/s/post/does-not-exist')),
+      webHandler.handler(new Request('http://localhost/s/editorial/does-not-exist')),
+      webHandler.handler(new Request('http://localhost/s/tweet/does-not-exist'))
+    ])
+
+    expect(post.status).toBe(404)
+    expect(editorial.status).toBe(404)
+    expect(tweet.status).toBe(404)
+  })
+
+  it('GET /s/:slug (catch-all) returns 404 HTML for an unresolvable slug', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/s/does-not-exist'))
+
+    expect(res.status).toBe(404)
+  })
+
+  it('GET /s/:slug does not shadow the specific /s/mix/:slug route (static routes win over the catch-all)', async () => {
+    // Both 404 (unknown slug either way), but the point is /s/mix/foo must be
+    // routed to shareMix, not fall through to shareSlug's ResolveService path
+    // -- confirmed indirectly: shareMix's 404 message differs from shareSlug's.
+    const res = await webHandler.handler(new Request('http://localhost/s/mix/does-not-exist'))
+    const body = await res.text()
+
+    expect(res.status).toBe(404)
+    expect(body).toContain('Mix not found')
+  })
+})

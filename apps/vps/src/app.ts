@@ -1,9 +1,7 @@
 import { Duration, Effect, Schedule } from 'effect'
 import configureOpenAPI from '@/lib/configure-open-api'
 import { createAppEffect } from '@/lib/create-app'
-import { seoRouter, shareRouter } from '@/routes/redirect/redirect.index'
-import rss from '@/routes/rss/rss.index'
-import { regenerateSitemap } from './routes/redirect/seo/sitemap'
+import { regenerateSitemap } from '@/routes/redirect/seo/sitemap.service'
 import { runApp, runAppFork } from './runtime'
 import { processPendingReminders, queryNextDueReminder } from './services/reminder-processor'
 import { ReminderSignalService } from './services/reminder-signal.service'
@@ -14,13 +12,6 @@ const setupRoutesEffect = Effect.gen(function* () {
   const app = yield* createAppEffect
 
   configureOpenAPI(app)
-
-  // Kept at root, not under /api: these are externally-referenced public URLs.
-  // /auth and /health are handled by the Effect router directly
-  // (apps/vps/src/http/routes.ts, steps 2c/3a) -- not mounted here.
-  app.route('/s', shareRouter)
-  app.route('', rss)
-  app.route('', seoRouter)
 
   return app
 })
