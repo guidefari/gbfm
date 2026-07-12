@@ -486,3 +486,41 @@ that's been silently corrected is easy to repeat:
   a real multipart runtime, since `Multipart.PersistedFile`'s identity check
   isn't constructible from a plain object outside `effect`'s own internals
   -- a real, disclosed test-coverage gap, not a false sense of security).
+- **A commit's own message claiming code is "dead, already superseded" is a
+  claim to verify, not a fact to trust -- it was wrong once in this
+  migration, and stayed wrong for two steps before anyone checked.** Commit
+  `d052ce82` ("port search to HttpApiBuilder.group," step 6) deleted the
+  entire `apps/vps/src/routes/music/*` Hono directory with a commit message
+  saying it was "dead Hono code left over from Step 4 that the new
+  `http/music.handlers.ts` already superseded." That was false: the deleted
+  directory had fully-implemented `listAlbums`/`createAlbum`/`listTracks`/
+  `listPlaylists`/entity-link handlers (confirmed via
+  `git show d052ce82^:apps/vps/src/routes/music/music.handlers.ts`), and the
+  new Effect handler that supposedly superseded them only ever implemented
+  artist CRUD + artist-junction endpoints -- never albums, tracks, or
+  playlists. The result: `GET /api/music/albums` (and tracks, playlists,
+  entity-links) has 404'd in production since that commit, silently
+  breaking real `apps/www` admin UI (`routes/admin/music.tsx`'s
+  `useAdminAlbums`/`useAdminTracks`, `-MusicEntityDetailPage.tsx`'s
+  `useAdminEntityLinks`) for the entire span of steps 6 through 8 of this
+  migration. Compounding the miss: step 6b's own status table already
+  listed these exact hooks as blocked on "a missing backend endpoint" and
+  described the gap as *intentionally deferred* -- which is what made it
+  look like tracked, expected incompleteness rather than an accidental
+  regression, so nobody flagged the severity. It was only caught because a
+  step-8 PR (#189) needed to explain *why* `/api/music/albums` 404s as part
+  of documenting a test, initially mis-attributed the cause to a different,
+  earlier commit (`c7178c15`, which genuinely only touched artist routes,
+  exactly as its own message says) and adversarial review traced the real
+  commit by actually reading the diff instead of trusting either commit
+  message. **Generalizable lesson: when documenting *why* something is
+  broken or missing (in a PR description, a code comment, or a test), trace
+  it to the actual commit via `git log -- <path>` / `git show <sha> --stat`
+  and read the real diff -- don't repeat an earlier commit's own
+  self-description of what it did, since that description can itself be
+  wrong, and a wrong "this is dead code" claim is exactly the kind of thing
+  that lets a real regression hide behind the appearance of a deliberate,
+  already-tracked decision.** Porting the music album/track/playlist/
+  entity-link group is real, currently-broken production work, not
+  "nice to have eventually" -- next in line after step 8's dependency
+  deletion finishes.
