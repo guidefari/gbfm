@@ -674,7 +674,7 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
               params.linkId,
               payload.status,
               userId,
-              payload.metadata
+              payload.metadata ?? undefined
             )
             .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
         )
@@ -698,12 +698,22 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
     .handle('scrapeEntityLinks', ({ params, payload }) =>
       Effect.gen(function* () {
         yield* requireAdmin
+        // Every field is optional, but at least one real lookup key is
+        // required -- an all-empty payload would otherwise reach the
+        // scraper with nothing to search on and insert a placeholder
+        // ("Untitled Album" etc) row. The old Hono route's docstring said
+        // "provide at least one field" but never actually enforced it;
+        // enforcing it here rather than carrying the gap forward.
+        const hasAnyField = Object.values(payload).some((value) => value !== undefined)
+        if (!hasAnyField) {
+          return yield* new HttpApiError.BadRequest()
+        }
         const svc = yield* MusicEntityService
         const result = yield* dieOnDatabaseError(
           svc.scrapeAndCreateEntity(params.entityType, payload)
         )
         return {
-          entity: result.entity,
+          entity: toJsonEntity(result.entity),
           links: result.links.map(toEntityLinkResponse)
         }
       })

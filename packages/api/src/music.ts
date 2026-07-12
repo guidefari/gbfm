@@ -294,7 +294,7 @@ export const AddEntityLinkInput = Schema.Struct({
 
 export const UpdateEntityLinkStatusInput = Schema.Struct({
   status: LinkStatus,
-  metadata: Schema.optional(Schema.Record(Schema.String, Schema.Unknown))
+  metadata: Schema.optional(Schema.NullOr(Schema.Record(Schema.String, Schema.Unknown)))
 })
 
 export const ResolveMusicEntityInput = Schema.Struct({
@@ -323,8 +323,12 @@ export const ScrapeEntityLinksResponse = Schema.Struct({
 })
 
 export const PendingLinksQuery = Schema.Struct({
-  limit: Schema.optional(Schema.NumberFromString),
-  offset: Schema.optional(Schema.NumberFromString)
+  limit: Schema.optional(
+    Schema.NumberFromString.pipe(Schema.check(Schema.isBetween({ minimum: 1, maximum: 100 })))
+  ),
+  offset: Schema.optional(
+    Schema.NumberFromString.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(0)))
+  )
 })
 
 export const MusicGroup = HttpApiGroup.make('music')
@@ -606,7 +610,7 @@ export const MusicGroup = HttpApiGroup.make('music')
       params: { entityType: EntityType },
       payload: ScrapeEntityLinksInput,
       success: ScrapeEntityLinksResponse,
-      error: HttpApiError.Forbidden
+      error: [HttpApiError.BadRequest, HttpApiError.Forbidden]
     }).middleware(AuthMiddleware)
   )
   // ---------------------------------------------------------------------
