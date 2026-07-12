@@ -25,6 +25,7 @@ import { ResolveHandlersLive } from '@/http/resolve.handlers'
 import { SearchHandlersLive } from '@/http/search.handlers'
 import { SearchCacheHeaderLive } from '@/http/search.middleware'
 import { ShowsHandlersLive } from '@/http/shows.handlers'
+import { SiteRoutesLive } from '@/http/site-routes'
 import { SpotifyHandlersLive } from '@/http/spotify.handlers'
 import { UploadHandlersLive } from '@/http/upload.handlers'
 import { UserHandlersLive } from '@/http/user.handlers'
@@ -99,7 +100,13 @@ export const createWebHandler = (
   )
 
   return HttpRouter.toWebHandler(
-    Layer.mergeAll(ApiLive, betterAuthRoute, honoFallback(honoApp), SearchCacheHeaderLive).pipe(
+    Layer.mergeAll(
+      ApiLive,
+      betterAuthRoute,
+      honoFallback(honoApp),
+      SearchCacheHeaderLive,
+      SiteRoutesLive
+    ).pipe(
       // HttpServerRequest.multipart (upload group's uploadFile/uploadMultipartPart
       // endpoints) needs a real FileSystem.FileSystem + Path.Path to buffer
       // parts to temp files. HttpServer.layerServices ships its own

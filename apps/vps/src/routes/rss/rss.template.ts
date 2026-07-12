@@ -1,11 +1,10 @@
-import { eq } from 'drizzle-orm'
-import { Effect } from 'effect'
-import { db } from '@/db'
-import { audioTable } from '@/db/audio.schema'
-import { DatabaseError } from '@/errors'
-import type { AppRouteHandler } from '@/lib/types'
-import { runApp } from '@/runtime'
-import type { GetRSSFeedRoute } from './rss.routes'
+export interface RssMixEntry {
+  readonly slug: string
+  readonly title: string
+  readonly description: string | null
+  readonly url: string | null
+  readonly createdAt: Date | string
+}
 
 function encodeXML(str: string): string {
   return str
@@ -16,41 +15,12 @@ function encodeXML(str: string): string {
     .replace(/'/g, '&apos;')
 }
 
-const fetchMixesEffect = Effect.tryPromise({
-  try: () => db.select().from(audioTable).where(eq(audioTable.type, 'mix')),
-  catch: (error) =>
-    new DatabaseError({
-      message: String(error),
-      operation: 'select',
-      table: 'audio'
-    })
-})
+export const rssFeedHtml = (mixes: ReadonlyArray<RssMixEntry>): string => {
+  const sortedMixes = mixes
+    .slice()
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
 
-export const getRSSFeed: AppRouteHandler<GetRSSFeedRoute> = async (c) => {
-  const program = fetchMixesEffect.pipe(
-    Effect.map((mixes) => ({ data: mixes, status: 200 as const })),
-    Effect.catchTag('DatabaseError', (error) =>
-      Effect.gen(function* () {
-        yield* Effect.logError('[RSS] Error generating RSS feed', {
-          error: error.message
-        })
-        return { error: 'Internal Server Error', status: 500 as const }
-      })
-    )
-  )
-
-  const result = await runApp(program)
-
-  if ('error' in result) {
-    return c.text(result.error, result.status)
-  }
-
-  const mixes = result.data
-  const sortedMixes = mixes.toSorted(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-  )
-
-  const rssHtml = `<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
+  return `<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd" lang="en">
     <head>
         <title>Goosebumps.fm Mixes RSS Feed</title>
@@ -248,8 +218,4 @@ export const getRSSFeed: AppRouteHandler<GetRSSFeedRoute> = async (c) => {
         </div>
     </body>
 </html>`
-
-  return c.html(rssHtml, 200, {
-    'Cache-Control': 'public, max-age=3600'
-  })
 }
