@@ -1,7 +1,6 @@
 import { Duration, Effect, Schedule } from 'effect'
 import configureOpenAPI from '@/lib/configure-open-api'
 import { createAppEffect } from '@/lib/create-app'
-import musicReminders from '@/routes/music-reminders/music-reminders.index'
 import { seoRouter, shareRouter } from '@/routes/redirect/redirect.index'
 import rss from '@/routes/rss/rss.index'
 import upload from '@/routes/upload/upload.index'
@@ -20,7 +19,6 @@ const setupRoutesEffect = Effect.gen(function* () {
 
   app.route('/api/upload', upload)
   app.route('/api/upload', uploadMultipart)
-  app.route('/api/music-reminders', musicReminders)
 
   // Kept at root, not under /api: these are externally-referenced public URLs.
   // /auth and /health are handled by the Effect router directly

@@ -7,6 +7,7 @@
     "./admin": "./src/admin.ts",
     "./health": "./src/health.ts",
     "./music": "./src/music.ts",
+    "./music-reminders": "./src/music-reminders.ts",
     "./search": "./src/search.ts",
     "./profile": "./src/profile.ts",
     "./resolve": "./src/resolve.ts",

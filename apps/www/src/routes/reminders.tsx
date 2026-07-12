@@ -1,10 +1,9 @@
 import { Input, Textarea, useToast } from '@gbfm/ui'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { CalendarClock } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useSession } from '@/lib/auth-client'
-import { apiUrl, fetcher, useEnrichTrackFromUrl } from '@/lib/http'
+import { useCreateMusicReminder, useEnrichTrackFromUrl, useMusicReminders } from '@/lib/http'
 import { log } from '@/services/logger'
 
 interface MusicReminder {
@@ -19,12 +18,6 @@ interface MusicReminder {
   isSent: boolean
   createdAt: string
   updatedAt: string
-}
-
-interface RemindersResponse {
-  success: boolean
-  reminders: MusicReminder[]
-  total: number
 }
 
 export const Route = createFileRoute('/reminders')({
@@ -48,7 +41,6 @@ function MusicReminders() {
   const { data: session } = useSession()
   const isAuthenticated = Boolean(session?.user)
   log('debug', 'isAuthenticated', { isAuthenticated })
-  const queryClient = useQueryClient()
   const [musicUrl, setMusicUrl] = useState('')
   const [musicTitle, setMusicTitle] = useState('')
   const [artistName, setArtistName] = useState('')
@@ -79,52 +71,10 @@ function MusicReminders() {
   }, [enrichedTrack, musicTitle, artistName])
 
   // Query existing reminders
-  const { data: reminders, isLoading: isLoadingReminders } = useQuery<RemindersResponse>({
-    queryKey: ['reminders'],
-    queryFn: () => fetcher(apiUrl('/music-reminders'))
-  })
+  const { data: reminders, isLoading: isLoadingReminders } = useMusicReminders()
 
   // Create reminder mutation
-  const createReminderMutation = useMutation({
-    mutationFn: async (data: {
-      musicTitle: string
-      artistName: string
-      musicUrl: string
-      albumCoverUrl?: string
-      reminderDate: string
-      notes?: string
-    }) => {
-      return fetcher(apiUrl('/music-reminders'), {
-        method: 'POST',
-        body: JSON.stringify(data)
-      })
-    },
-    onSuccess: () => {
-      // Clear form
-      setMusicUrl('')
-      setMusicTitle('')
-      setArtistName('')
-      setAlbumCoverUrl('')
-      setNotes('')
-      setReminderDate('')
-
-      // Invalidate queries to refresh the reminders list
-      queryClient.invalidateQueries({ queryKey: ['reminders'] })
-
-      toast({
-        title: 'Reminder created',
-        description: 'We will send you an email when the time comes!'
-      })
-    },
-    onError: (error) => {
-      log('error', 'Failed to create reminder', { error })
-      toast({
-        variant: 'destructive',
-        title: 'Failed to create reminder',
-        description: 'Please try again later.'
-      })
-    }
-  })
+  const createReminderMutation = useCreateMusicReminder()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -149,7 +99,29 @@ function MusicReminders() {
       notes: notes || undefined
     }
 
-    createReminderMutation.mutate(reminderData)
+    createReminderMutation.mutate(reminderData, {
+      onSuccess: () => {
+        setMusicUrl('')
+        setMusicTitle('')
+        setArtistName('')
+        setAlbumCoverUrl('')
+        setNotes('')
+        setReminderDate('')
+
+        toast({
+          title: 'Reminder created',
+          description: 'We will send you an email when the time comes!'
+        })
+      },
+      onError: (error) => {
+        log('error', 'Failed to create reminder', { error })
+        toast({
+          variant: 'destructive',
+          title: 'Failed to create reminder',
+          description: 'Please try again later.'
+        })
+      }
+    })
   }
 
   if (!isAuthenticated) {
