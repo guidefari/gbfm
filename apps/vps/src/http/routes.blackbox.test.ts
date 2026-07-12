@@ -1,5 +1,10 @@
 import { HealthLiveResponse, HealthReadyResponse } from '@gbfm/api/health'
-import { ArtistListResponse } from '@gbfm/api/music'
+import {
+  AlbumListResponse,
+  ArtistListResponse,
+  PlaylistListResponse,
+  TrackListResponse
+} from '@gbfm/api/music'
 import { SearchResults } from '@gbfm/api/search'
 import { decodeResponseBody } from '@gbfm/api/testing'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -34,31 +39,6 @@ describe('Effect router (Step 8: HonoFallback removed)', () => {
 
     expect(res.status).toBe(404)
     expect(await res.text()).toBe('')
-  })
-
-  // Pre-existing gap (not introduced by removing HonoFallback, and NOT the
-  // "deliberately deferred" gap step 6b's table describes for entity-links/
-  // resolve). Corrected via adversarial review on this PR: commit d052ce82
-  // ("port search to HttpApiBuilder.group, Step 6") deleted the entire
-  // routes/music/* Hono directory -- including fully-implemented album/
-  // track/playlist/entity-link handlers -- with a commit message claiming
-  // they were "dead Hono code... already superseded" by the new
-  // http/music.handlers.ts. That claim was false: the new Effect handler
-  // only ever implemented artist CRUD + artist-junction endpoints, never
-  // albums/tracks/playlists. This is a live, currently-broken regression in
-  // apps/www's admin UI (useAdminAlbums/useAdminTracks in
-  // routes/admin/music.tsx, useAdminEntityLinks in
-  // -MusicEntityDetailPage.tsx), not just an unused 404. Confirmed via
-  // `git show d052ce82^:apps/vps/src/routes/music/music.handlers.ts` still
-  // having real listAlbums/createAlbum/.../listPlaylists/... handlers at
-  // the moment they were deleted. Documented here as a real test instead of
-  // a comment so the gap can't be silently rediscovered as a mystery
-  // regression later; porting this group is real, time-sensitive follow-up
-  // work, not "nice to have eventually."
-  it('GET /api/music/albums 404s -- known, currently-broken regression from step 6 (not from this PR)', async () => {
-    const res = await webHandler.handler(new Request('http://localhost/api/music/albums'))
-
-    expect(res.status).toBe(404)
   })
 })
 
@@ -185,6 +165,169 @@ describe('music artists (HttpApiBuilder group, Step 4)', () => {
         'http://localhost/api/music/albums/00000000-0000-0000-0000-000000000000/artists/00000000-0000-0000-0000-000000000000',
         { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({}) }
       )
+    )
+
+    expect(res.status).toBe(401)
+  })
+})
+
+// Regression test for the gap documented in docs/migration-effect-http-api.md
+// and docs/migration-effect-http-api-process.md: commit d052ce82 ("port
+// search to HttpApiBuilder.group, Step 6") deleted the entire routes/music/*
+// Hono directory -- including fully-implemented album/track/playlist/
+// entity-link handlers -- claiming (incorrectly) they were dead code already
+// superseded by http/music.handlers.ts. That left /api/music/albums and
+// friends 404ing in production. This block proves the port is real.
+describe('music albums/tracks/playlists (HttpApiBuilder group, Step 6c)', () => {
+  it('GET /api/music/albums returns 200 with a decodable list', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/api/music/albums'))
+
+    expect(res.status).toBe(200)
+    await expect(decodeResponseBody(AlbumListResponse, res)).resolves.toBeInstanceOf(Array)
+  })
+
+  it('GET /api/music/albums/:id returns 404 for an unknown id', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/music/albums/00000000-0000-0000-0000-000000000000')
+    )
+
+    expect(res.status).toBe(404)
+  })
+
+  it('POST /api/music/albums returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/music/albums', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ title: 'Test Album', slug: 'test-album' })
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('PATCH /api/music/albums/:id returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/music/albums/00000000-0000-0000-0000-000000000000', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ title: 'Renamed' })
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('DELETE /api/music/albums/:id returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/music/albums/00000000-0000-0000-0000-000000000000', {
+        method: 'DELETE'
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('GET /api/music/tracks returns 200 with a decodable list', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/api/music/tracks'))
+
+    expect(res.status).toBe(200)
+    await expect(decodeResponseBody(TrackListResponse, res)).resolves.toBeInstanceOf(Array)
+  })
+
+  it('GET /api/music/tracks/:id returns 404 for an unknown id', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/music/tracks/00000000-0000-0000-0000-000000000000')
+    )
+
+    expect(res.status).toBe(404)
+  })
+
+  it('POST /api/music/tracks returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/music/tracks', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ title: 'Test Track', slug: 'test-track' })
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('DELETE /api/music/tracks/:id returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/music/tracks/00000000-0000-0000-0000-000000000000', {
+        method: 'DELETE'
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('GET /api/music/playlists returns 200 with a decodable list', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/api/music/playlists'))
+
+    expect(res.status).toBe(200)
+    await expect(decodeResponseBody(PlaylistListResponse, res)).resolves.toBeInstanceOf(Array)
+  })
+
+  it('GET /api/music/playlists/:id returns 404 for an unknown id', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/music/playlists/00000000-0000-0000-0000-000000000000')
+    )
+
+    expect(res.status).toBe(404)
+  })
+
+  it('GET /api/music/playlists/:id/tracks returns 401-free 200 (public read) with an empty list for an unknown playlist', async () => {
+    const res = await webHandler.handler(
+      new Request(
+        'http://localhost/api/music/playlists/00000000-0000-0000-0000-000000000000/tracks'
+      )
+    )
+
+    expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toEqual([])
+  })
+
+  it('POST /api/music/playlists/:id/tracks returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request(
+        'http://localhost/api/music/playlists/00000000-0000-0000-0000-000000000000/tracks',
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ trackId: '00000000-0000-0000-0000-000000000000', position: 0 })
+        }
+      )
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('PUT /api/music/playlists/:id/tracks/order returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request(
+        'http://localhost/api/music/playlists/00000000-0000-0000-0000-000000000000/tracks/order',
+        {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ trackIds: ['00000000-0000-0000-0000-000000000000'] })
+        }
+      )
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('POST /api/music/playlists/import/spotify returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/music/playlists/import/spotify', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ url: 'https://open.spotify.com/playlist/abc' })
+      })
     )
 
     expect(res.status).toBe(401)
