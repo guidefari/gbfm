@@ -23,6 +23,7 @@
     "./spotify": "./src/spotify.ts",
     "./shows": "./src/shows.ts",
     "./user": "./src/user.ts",
+    "./upload": "./src/upload.ts",
     "./errors": "./src/errors.ts",
     "./testing": "./src/testing.ts",
     "./middleware/auth": "./src/middleware/auth.ts"

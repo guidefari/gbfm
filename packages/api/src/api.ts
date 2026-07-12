@@ -18,6 +18,7 @@ import { ResolveGroup } from './resolve'
 import { SearchGroup } from './search'
 import { ShowsGroup } from './shows'
 import { SpotifyGroup } from './spotify'
+import { UploadGroup } from './upload'
 import { UserGroup } from './user'
 
 export const Api = HttpApi.make('gbfm')
@@ -41,3 +42,4 @@ export const Api = HttpApi.make('gbfm')
   .add(SpotifyGroup)
   .add(ShowsGroup)
   .add(UserGroup)
+  .add(UploadGroup)

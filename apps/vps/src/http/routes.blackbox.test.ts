@@ -455,6 +455,91 @@ describe('music-reminders (HttpApiBuilder group, Step 6)', () => {
   })
 })
 
+describe('upload (HttpApiBuilder group, Step 7)', () => {
+  // uploadFile has never required a session -- the old Hono route had no
+  // betterAuthMiddleware, and no real apps/www caller sends
+  // credentials: 'include' to it (see packages/api/src/upload.ts's comment).
+  it('POST /api/upload/file returns 400 (not 401) for a request with no file', async () => {
+    const formData = new FormData()
+    formData.append('fileType', 'image')
+
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/upload/file', { method: 'POST', body: formData })
+    )
+
+    expect(res.status).toBe(400)
+  })
+
+  it('POST /api/upload/multipart/init returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/upload/multipart/init', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          fileName: 'test.mp3',
+          contentType: 'audio/mpeg',
+          fileSize: 1024,
+          fileType: 'audio'
+        })
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('POST /api/upload/multipart/part returns 401 without a session cookie', async () => {
+    const formData = new FormData()
+    formData.append('key', 'user123/audio_1_test.mp3')
+    formData.append('uploadId', 'upload-id')
+    formData.append('partNumber', '1')
+    formData.append('chunk', new Blob(['data']), 'chunk')
+
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/upload/multipart/part', { method: 'POST', body: formData })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('POST /api/upload/multipart/complete returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/upload/multipart/complete', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          key: 'user123/audio_1_test.mp3',
+          uploadId: 'upload-id',
+          parts: [{ partNumber: 1, etag: 'etag1' }]
+        })
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('POST /api/upload/multipart/abort returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/upload/multipart/abort', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ key: 'user123/audio_1_test.mp3', uploadId: 'upload-id' })
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('GET /api/upload/multipart/status returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request(
+        'http://localhost/api/upload/multipart/status?key=user123%2Faudio_1_test.mp3&uploadId=upload-id'
+      )
+    )
+
+    expect(res.status).toBe(401)
+  })
+})
+
 describe('newsletter (HttpApiBuilder group, Step 6)', () => {
   it('POST /api/newsletter/unsubscribe returns 404 for an unknown token', async () => {
     const res = await webHandler.handler(
