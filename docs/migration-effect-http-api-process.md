@@ -403,3 +403,86 @@ that's been silently corrected is easy to repeat:
   schema encoder against the full range of realistic inputs (including
   `null`, the actual common case for an unset field, not just the
   originally-reported `Date` case).
+- **`FileSystem.FileSystem`/`Path.Path` were never provided anywhere in
+  `apps/vps`'s Effect layer graph, and `HttpServerRequest.multipart` needs
+  both -- meaning every real multipart request in this app has been dying
+  with an unimplemented-service defect (500) since the first multipart
+  endpoint shipped.** `Multipart.toPersisted`
+  (`effect/unstable/http/Multipart.ts`) needs `FileSystem.FileSystem |
+  Path.Path | Scope.Scope` to buffer uploaded parts to temp files.
+  `apps/vps/src/http/routes.ts` only ever provided `HttpServer.layerServices`,
+  which ships a stub `FileSystem.layerNoop` (its own doc comment says so).
+  This gap predates step 7 -- `user.ts`'s `updateProfile` avatar-upload
+  endpoint (step 6b, PR #175/#184 era) is `HttpApiSchema.asMultipart()` and
+  has been silently broken in production the whole time, not caught by any
+  prior review because nothing before step 7 (PR #187, the upload group)
+  actually drove a real multipart request through a running server in a
+  test. Fixed by merging `@effect/platform-bun`'s real `BunFileSystem.layer`/
+  `BunPath.layer` into the *same* `provideMerge` call as
+  `HttpServer.layerServices`, applied *after* it in the pipe --
+  verified the ordering is load-bearing, not cosmetic: `Layer.provide`/
+  `provideMerge`'s real semantics mean a separate preceding `Layer.provide`
+  step resolves the requirement using only the Bun layer and then discards
+  it from the output (so `layerServices`'s own noop is never even consulted,
+  but also never overridden if something else already grabbed the noop
+  first in the graph), while a separate *following* `provideMerge` loses to
+  the noop that's already part of the accumulated output by that point.
+  Generalizable lesson: **when the same service tag is provided by two
+  layers in one composition, only the exact relative ordering documented in
+  the code comment is safe -- don't assume `provideMerge` alone protects
+  against a shadowing noop from an earlier step, verify by actually
+  reproducing the failure and watching it disappear with the specific
+  ordering used, the same discipline already applied to the CORS/rate-limit
+  `.layer` footgun found while building step 6's first global middleware.**
+- **`Schema.File` (`instanceOf(globalThis.File)`) is the wrong schema for a
+  real multipart file field -- it always rejects.** A multipart request
+  decodes file parts to `Multipart.PersistedFile` (a disk-backed
+  `{ key, name, contentType, path }` reference written to a temp file), not
+  a real `File` instance, so `instanceof globalThis.File` is always `false`.
+  This looks correct at a glance (it typechecks, `Schema.File` sounds right
+  for "a file field") and was the first thing written for both `user.ts`'s
+  `UpdateProfileMultipartInput.avatar` (step 6b) and the first draft of
+  PR #187's `upload.ts`. Fixed in `upload.ts` with `Multipart.SingleFileSchema`
+  plus reading the persisted file via `FileSystem.readFile(file.path)` (size
+  computed from the read buffer's length, since `PersistedFile` itself has
+  no `.size`). `user.ts`'s copy of this bug is **not** fixed -- flagged in
+  `upload.ts`'s own comment as a known, out-of-scope follow-up rather than
+  silently expanded into PR #187's diff, matching this doc's standing rule
+  about not slipping unrelated fixes into an unrelated PR's scope.
+- **A field carried inside a `.pipe(HttpApiSchema.asMultipart())` payload
+  needs `Schema.NumberFromString`, not `Schema.Number`, if the wire value is
+  actually numeric -- multipart/form-data fields always arrive as strings,
+  confirmed against `Multipart.toPersisted`'s real source (`part.value` is
+  never coerced).** PR #187's first draft used plain `Schema.Number` for
+  `UploadMultipartPartInput.partNumber`, which genuinely rejects every real
+  request (the client sends `String(part.partNumber)`). This is the exact
+  same class of bug as every other multipart/query numeric field in this
+  package (`audio.ts`, `label.ts`, `post.ts`, `release.ts`, `shows.ts`,
+  `user.ts` all correctly use `NumberFromString` for their multipart/query
+  numeric fields) -- `upload.ts` was simply the one place a plain
+  `Schema.Number` slipped through, on a field genuinely inside a JSON-typed
+  `PartNumber` shared constant that was *also*, correctly, reused for
+  JSON-body/response contexts elsewhere in the same file. Caught by
+  adversarial review, not by the test suite: the existing blackbox
+  convention across this whole migration only asserts 401-before-decode
+  (`AuthMiddleware` runs before payload decode, so a malformed payload never
+  reaches the schema layer in those tests), and a first manual "golden path"
+  verification pass trusted the upload UI's terminal "Ready to Publish"
+  state without confirming the individual `part`/`complete` network calls
+  actually returned 200 -- they didn't; a schema decode failure at that
+  point returns a bare `400` with an empty body, and the UI didn't visibly
+  surface it as an error. **Generalizable lesson, stated twice now in this
+  doc (first for date-serialization gaps in step 6): a UI ending in a
+  success-looking terminal state is not the same claim as "the intermediate
+  network requests succeeded" -- when a flow has multiple sequential
+  requests, check each one's actual status/body, not just the final
+  rendered state, especially for anything with client-side retry/resume
+  logic that could mask an underlying failure loop.** Fixed with
+  `Schema.NumberFromString`, re-verified with three explicit chained
+  same-origin requests (init/part/complete) each showing a real 200 and a
+  real response body, and pinned with a new `packages/api/src/upload.test.ts`
+  decoding the extracted `PartNumberFromString` schema directly (the full
+  `UploadMultipartPartInput` struct can't be unit-tested end-to-end without
+  a real multipart runtime, since `Multipart.PersistedFile`'s identity check
+  isn't constructible from a plain object outside `effect`'s own internals
+  -- a real, disclosed test-coverage gap, not a false sense of security).
