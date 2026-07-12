@@ -334,6 +334,107 @@ describe('music albums/tracks/playlists (HttpApiBuilder group, Step 6c)', () => 
   })
 })
 
+describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', () => {
+  it('GET /api/music/artist/:id/links returns 200 with a decodable (empty) list for an unknown entity', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/music/artist/00000000-0000-0000-0000-000000000000/links')
+    )
+
+    expect(res.status).toBe(200)
+    await expect(res.json()).resolves.toEqual([])
+  })
+
+  it('GET /api/music/:entityType/:entityId/links 400s for an invalid entityType (schema-level rejection)', async () => {
+    const res = await webHandler.handler(
+      new Request(
+        'http://localhost/api/music/not-a-real-type/00000000-0000-0000-0000-000000000000/links'
+      )
+    )
+
+    expect(res.status).toBe(400)
+  })
+
+  it('POST /api/music/artist/:id/links returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/music/artist/00000000-0000-0000-0000-000000000000/links', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ platform: 'spotify', url: 'https://open.spotify.com/artist/x' })
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('PATCH /api/music/artist/:id/links/:linkId returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request(
+        'http://localhost/api/music/artist/00000000-0000-0000-0000-000000000000/links/00000000-0000-0000-0000-000000000000',
+        {
+          method: 'PATCH',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ status: 'verified' })
+        }
+      )
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('DELETE /api/music/artist/:id/links/:linkId returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request(
+        'http://localhost/api/music/artist/00000000-0000-0000-0000-000000000000/links/00000000-0000-0000-0000-000000000000',
+        { method: 'DELETE' }
+      )
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('POST /api/music/resolve returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/music/resolve', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ url: 'https://open.spotify.com/track/abc' })
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('POST /api/music/resolve returns 401 (not 400) for a non-URL body without a session -- AuthMiddleware runs before payload schema validation', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/music/resolve', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ url: 'not-a-url' })
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('POST /api/music/artist/scrape returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/music/artist/scrape', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ artistName: 'Test Artist' })
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+
+  it('GET /api/music/links/pending returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/api/music/links/pending'))
+
+    expect(res.status).toBe(401)
+  })
+})
+
 describe('search (HttpApiBuilder group, Step 6)', () => {
   it('GET /api/search?q=test returns 200 with a decodable grouped result', async () => {
     const res = await webHandler.handler(new Request('http://localhost/api/search?q=test'))

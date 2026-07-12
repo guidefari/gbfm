@@ -7,6 +7,7 @@ import type {
   CreateArtistInput,
   CreatePlaylistInput,
   CreateTrackInput,
+  EntityLinkResponse,
   PlaylistResponse,
   TrackResponse,
   UpdateAlbumInput,
@@ -19,18 +20,27 @@ import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
 import type {
   SelectMusicAlbum,
   SelectMusicArtist,
+  SelectMusicEntityLink,
   SelectMusicPlaylist,
   SelectMusicTrack
 } from '@/db/music-entity.schema'
-import { getErrorMessage } from '@/errors'
+import { FetchError, getErrorMessage } from '@/errors'
 import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
 import { runAppFork } from '@/runtime'
+import { ConfigService } from '@/services/config.service'
 import {
   type CreateAlbumInput as AlbumServiceCreateInput,
   type CreatePlaylistInput as PlaylistServiceCreateInput,
   type CreateTrackInput as TrackServiceCreateInput,
   MusicEntityService
 } from '@/services/music-entity'
+import { S3Service } from '@/services/s3.service'
+import {
+  isAppleMusicUrl,
+  isBandcampUrl,
+  isSpotifyUrl,
+  isYouTubeUrl
+} from '@/services/spotify.service'
 import { getIdFromSpotifyUrl } from '@/services/url-utils'
 
 const toArtistResponse = (row: SelectMusicArtist): ArtistResponse => ({
@@ -60,6 +70,14 @@ const toPlaylistResponse = (
 ): PlaylistResponse => ({
   ...row,
   publishedAt: row.publishedAt?.toISOString() ?? null,
+  createdAt: row.createdAt.toISOString(),
+  updatedAt: row.updatedAt.toISOString()
+})
+
+const toEntityLinkResponse = (row: SelectMusicEntityLink): EntityLinkResponse => ({
+  ...row,
+  scrapedAt: row.scrapedAt?.toISOString() ?? null,
+  verifiedAt: row.verifiedAt?.toISOString() ?? null,
   createdAt: row.createdAt.toISOString(),
   updatedAt: row.updatedAt.toISOString()
 })
@@ -151,6 +169,62 @@ const requireAdmin = Effect.gen(function* () {
     return yield* new HttpApiError.Forbidden()
   }
 })
+
+// scrapeAndCreateEntity returns a raw Drizzle row (Date fields, entity-type
+// dependent shape) but the API contract treats the resolved/scraped entity
+// as an opaque JSON record (ResolvedMusicEntityResponse/
+// ScrapeEntityLinksResponse both use Schema.Record) -- same looseness the
+// old Hono handler had via z.record(z.string(), z.unknown()). Dates need
+// converting or they'd serialize inconsistently.
+const toJsonEntity = (entity: Record<string, unknown>): Record<string, unknown> =>
+  Object.fromEntries(
+    Object.entries(entity).map(([key, value]) => [
+      key,
+      value instanceof Date ? value.toISOString() : value
+    ])
+  )
+
+const inferEntityTypeFromUrl = (url: string): 'album' | 'track' | 'playlist' => {
+  if (isSpotifyUrl(url)) {
+    if (url.includes('/album/')) return 'album'
+    if (url.includes('/playlist/')) return 'playlist'
+    return 'track'
+  }
+  if (isBandcampUrl(url)) return 'album'
+  if (isAppleMusicUrl(url)) return 'track'
+  if (isYouTubeUrl(url)) return 'track'
+  return 'track'
+}
+
+// Best-effort: a failed cover-image copy shouldn't fail the whole resolve --
+// the handler falls back to the original (often third-party, possibly
+// short-lived) coverImageUrl in that case. Mirrors the old Hono handler.
+const copyCoverImageEffect = (
+  entityType: 'album' | 'track' | 'playlist',
+  entityId: string,
+  coverImageUrl: string
+) =>
+  Effect.gen(function* () {
+    const config = yield* ConfigService
+    const s3 = yield* S3Service
+
+    const response = yield* Effect.tryPromise({
+      try: () => fetch(coverImageUrl),
+      catch: (cause) => new FetchError({ message: `Failed to fetch ${coverImageUrl}`, cause })
+    })
+
+    if (!response.ok) return null
+
+    const contentType = response.headers.get('content-type') || 'image/jpeg'
+    const arrayBuffer = yield* Effect.tryPromise({
+      try: () => response.arrayBuffer(),
+      catch: (cause) => new FetchError({ message: `Failed to read ${coverImageUrl}`, cause })
+    })
+    const buffer = Buffer.from(arrayBuffer)
+    const key = `music/${entityType}/${entityId}/cover`
+    const uploadedKey = yield* s3.uploadFile(key, buffer, contentType, config.buckets.userContent)
+    return `${config.urls.bucketRouter}/user-content/${uploadedKey}`
+  }).pipe(Effect.catch(() => Effect.succeed(null)))
 
 export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =>
   handlers
@@ -503,6 +577,156 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         yield* requireAdmin
         const svc = yield* MusicEntityService
         return yield* dieOnDatabaseError(dieOnSpotifyError(svc.syncPlaylistLinks(params.id)))
+      })
+    )
+    // -----------------------------------------------------------------
+    // Resolve a pasted URL into a music entity
+    // -----------------------------------------------------------------
+    .handle('resolveMusicEntity', ({ payload }) =>
+      Effect.gen(function* () {
+        yield* requireAdmin
+        const svc = yield* MusicEntityService
+        const entityType = inferEntityTypeFromUrl(payload.url)
+
+        const result = yield* dieOnDatabaseError(
+          svc.scrapeAndCreateEntity(entityType, { url: payload.url })
+        )
+        const entity = result.entity
+        const coverImageUrl = 'coverImageUrl' in entity ? entity.coverImageUrl : null
+
+        if (coverImageUrl) {
+          const publicCoverImageUrl = yield* copyCoverImageEffect(
+            entityType,
+            entity.id,
+            coverImageUrl
+          )
+
+          if (publicCoverImageUrl && publicCoverImageUrl !== coverImageUrl) {
+            if (entityType === 'album') {
+              yield* dieOnDatabaseError(
+                svc.updateAlbum(entity.id, { coverImageUrl: publicCoverImageUrl })
+              ).pipe(Effect.catchTag('NotFoundError', () => Effect.void))
+            } else if (entityType === 'track') {
+              yield* dieOnDatabaseError(
+                svc.updateTrack(entity.id, { coverImageUrl: publicCoverImageUrl })
+              ).pipe(Effect.catchTag('NotFoundError', () => Effect.void))
+            } else {
+              yield* dieOnDatabaseError(
+                svc.updatePlaylist(entity.id, { coverImageUrl: publicCoverImageUrl })
+              ).pipe(Effect.catchTag('NotFoundError', () => Effect.void))
+            }
+            return {
+              entity: toJsonEntity({ ...entity, coverImageUrl: publicCoverImageUrl }),
+              entityType,
+              links: result.links.map(toEntityLinkResponse),
+              coverImageUrl: publicCoverImageUrl
+            }
+          }
+        }
+
+        return {
+          entity: toJsonEntity(entity),
+          entityType,
+          links: result.links.map(toEntityLinkResponse),
+          coverImageUrl
+        }
+      })
+    )
+    // -----------------------------------------------------------------
+    // Links
+    // -----------------------------------------------------------------
+    .handle('listEntityLinks', ({ params, query }) =>
+      Effect.gen(function* () {
+        const svc = yield* MusicEntityService
+        const rows = yield* dieOnDatabaseError(
+          svc.getLinksForEntity(params.entityType, params.entityId, query.status)
+        )
+        return rows.map(toEntityLinkResponse)
+      })
+    )
+    .handle('addEntityLink', ({ params, payload }) =>
+      Effect.gen(function* () {
+        yield* requireAdmin
+        const svc = yield* MusicEntityService
+        const row = yield* dieOnDatabaseError(
+          svc.addLink({
+            entityType: params.entityType,
+            entityId: params.entityId,
+            platform: payload.platform,
+            url: payload.url,
+            status: payload.status
+          })
+        )
+        return toEntityLinkResponse(row)
+      })
+    )
+    .handle('updateEntityLinkStatus', ({ params, payload }) =>
+      Effect.gen(function* () {
+        yield* requireAdmin
+        const { user } = yield* AuthSession
+        const userId = payload.status === 'verified' ? user.id : undefined
+        const svc = yield* MusicEntityService
+        const row = yield* dieOnDatabaseError(
+          svc
+            .updateLinkStatus(
+              params.entityType,
+              params.entityId,
+              params.linkId,
+              payload.status,
+              userId,
+              payload.metadata ?? undefined
+            )
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+        )
+        return toEntityLinkResponse(row)
+      })
+    )
+    .handle('deleteEntityLink', ({ params }) =>
+      Effect.gen(function* () {
+        yield* requireAdmin
+        const svc = yield* MusicEntityService
+        yield* dieOnDatabaseError(
+          svc
+            .deleteLink(params.entityType, params.entityId, params.linkId)
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+        )
+      })
+    )
+    // -----------------------------------------------------------------
+    // Scrape
+    // -----------------------------------------------------------------
+    .handle('scrapeEntityLinks', ({ params, payload }) =>
+      Effect.gen(function* () {
+        yield* requireAdmin
+        // Every field is optional, but at least one real lookup key is
+        // required -- an all-empty payload would otherwise reach the
+        // scraper with nothing to search on and insert a placeholder
+        // ("Untitled Album" etc) row. The old Hono route's docstring said
+        // "provide at least one field" but never actually enforced it;
+        // enforcing it here rather than carrying the gap forward.
+        const hasAnyField = Object.values(payload).some((value) => value !== undefined)
+        if (!hasAnyField) {
+          return yield* new HttpApiError.BadRequest()
+        }
+        const svc = yield* MusicEntityService
+        const result = yield* dieOnDatabaseError(
+          svc.scrapeAndCreateEntity(params.entityType, payload)
+        )
+        return {
+          entity: toJsonEntity(result.entity),
+          links: result.links.map(toEntityLinkResponse)
+        }
+      })
+    )
+    // -----------------------------------------------------------------
+    // Review queue
+    // -----------------------------------------------------------------
+    .handle('listPendingLinks', ({ query }) =>
+      Effect.gen(function* () {
+        yield* requireAdmin
+        const svc = yield* MusicEntityService
+        const rows = yield* dieOnDatabaseError(svc.getPendingLinks(query))
+        return rows.map(toEntityLinkResponse)
       })
     )
 )
