@@ -1,4 +1,4 @@
-import { z } from '@hono/zod-openapi'
+import { z } from 'zod'
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
 import { index, pgTable, primaryKey, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
 import { user } from './auth.schema'
@@ -85,91 +85,58 @@ export const showSubscriptionsRelations = relations(showSubscriptionsTable, ({ o
   })
 }))
 
-export const selectShowSchema = z
-  .object({
-    id: z.string().openapi({ description: 'Unique identifier for the show' }),
-    title: z.string().openapi({ description: 'Title of the show' }),
-    description: z.string().nullable().openapi({ description: 'Description of the show' }),
-    thumbnailUrl: z.string().nullable().openapi({ description: 'Thumbnail URL for the show' }),
-    bannerImageUrl: z
-      .string()
-      .nullable()
-      .openapi({ description: 'Banner/landscape image URL for the show' }),
-    slug: z.string().openapi({ description: 'URL slug for the show' }),
-    content: z.string().openapi({ description: 'Content of the show' }),
-    draft: z.boolean().openapi({ description: 'Whether the show is a draft' }),
-    tags: z.array(z.string()).nullable().openapi({ description: 'Tags associated with the show' }),
-    createdAt: z.date().openapi({ description: 'Creation timestamp' }),
-    updatedAt: z.date().openapi({ description: 'Last update timestamp' })
-  })
-  .openapi('Show')
+export const selectShowSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string().nullable(),
+  thumbnailUrl: z.string().nullable(),
+  bannerImageUrl: z.string().nullable(),
+  slug: z.string(),
+  content: z.string(),
+  draft: z.boolean(),
+  tags: z.array(z.string()).nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date()
+})
 
-export const selectMdxCompiledShowSchema = selectShowSchema
-  .extend({
-    compiledContent: z.string().openapi({ description: 'Compiled MDX content' }),
-    hosts: z
-      .array(
-        z
-          .object({
-            id: z.string().openapi({ description: 'Host ID' }),
-            name: z.string().openapi({ description: 'Host name' })
-          })
-          .openapi('ShowHost')
-      )
-      .optional()
-      .openapi({ description: 'List of hosts for this show' })
-  })
-  .openapi('CompiledShow')
+export const selectMdxCompiledShowSchema = selectShowSchema.extend({
+  compiledContent: z.string(),
+  hosts: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string()
+      })
+    )
+    .optional()
+})
 
-export const insertShowSchema = z
-  .object({
-    title: z.string().min(1).openapi({
-      description: 'Title of the show',
-      example: 'Friday Sessions'
-    }),
-    description: z.string().optional().openapi({ description: 'Description of the show' }),
-    thumbnailUrl: z.string().optional().openapi({ description: 'Thumbnail URL for the show' }),
-    bannerImageUrl: z
-      .string()
-      .optional()
-      .openapi({ description: 'Banner/landscape image URL for the show' }),
-    slug: z.string().min(1).openapi({
-      description: 'URL slug for the show',
-      example: 'friday-sessions'
-    }),
-    content: z.string().openapi({ description: 'Content of the show' }),
-    draft: z
-      .boolean()
-      .optional()
-      .openapi({ description: 'Whether this is a draft', default: false }),
-    tags: z.array(z.string()).optional().openapi({ description: 'Tags for the show' })
-  })
-  .openapi('InsertShow')
+export const insertShowSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().optional(),
+  thumbnailUrl: z.string().optional(),
+  bannerImageUrl: z.string().optional(),
+  slug: z.string().min(1),
+  content: z.string(),
+  draft: z.boolean().optional(),
+  tags: z.array(z.string()).optional()
+})
 
-export const createShowSchema = insertShowSchema
-  .extend({
-    hostIds: z.array(z.string()).min(1).optional().openapi({ description: 'IDs of show hosts' })
-  })
-  .openapi('CreateShowRequest')
+export const createShowSchema = insertShowSchema.extend({
+  hostIds: z.array(z.string()).min(1).optional()
+})
 
-export const updateShowSchema = insertShowSchema
-  .partial()
-  .extend({
-    hostIds: z.array(z.string()).optional().openapi({ description: 'IDs of show hosts' })
-  })
-  .openapi('UpdateShowRequest')
+export const updateShowSchema = insertShowSchema.partial().extend({
+  hostIds: z.array(z.string()).optional()
+})
 
-export const selectSubscriptionSchema = z
-  .object({
-    id: z.string().openapi({ description: 'Unique identifier for the subscription' }),
-    userId: z.string().openapi({ description: 'ID of the subscribed user' }),
-    showId: z.string().openapi({ description: 'ID of the show' }),
-    createdAt: z.date().openapi({ description: 'Subscription timestamp' })
-  })
-  .openapi('ShowSubscription')
+export const selectSubscriptionSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  showId: z.string(),
+  createdAt: z.date()
+})
 
-export const subscriptionWithShowSchema = selectSubscriptionSchema
-  .extend({
-    show: selectShowSchema.openapi({ description: 'The subscribed show' })
-  })
-  .openapi('SubscriptionWithShow')
+export const subscriptionWithShowSchema = selectSubscriptionSchema.extend({
+  show: selectShowSchema
+})

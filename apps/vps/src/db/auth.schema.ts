@@ -1,4 +1,4 @@
-import { z } from '@hono/zod-openapi'
+import { z } from 'zod'
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
 import {
   boolean,
@@ -50,15 +50,9 @@ export type SocialLinkPlatform = (typeof SOCIAL_LINK_PLATFORMS)[number]
 export const socialLinkPlatformSchema = z.enum(SOCIAL_LINK_PLATFORMS)
 
 export const userSocialLinkSchema = z.object({
-  platform: socialLinkPlatformSchema.openapi({
-    description: 'Social link platform'
-  }),
-  url: z.string().url().openapi({ description: 'Social link URL' }),
-  position: z
-    .number()
-    .int()
-    .nonnegative()
-    .openapi({ description: 'Order position for this social link' })
+  platform: socialLinkPlatformSchema,
+  url: z.string().url(),
+  position: z.number().int().nonnegative()
 })
 
 export type UserSocialLink = z.infer<typeof userSocialLinkSchema>
@@ -163,43 +157,30 @@ export const userRelations = relations(user, ({ many, one }) => ({
 export type SelectUser = InferSelectModel<typeof user>
 export type InsertUser = InferInsertModel<typeof user>
 
-export const selectUserSchema = z
-  .object({
-    id: z.string().openapi({ description: 'Unique identifier for the user' }),
-    name: z.string().openapi({ description: 'Display name of the user' }),
-    username: z.string().nullable().openapi({ description: 'Username of the user' }),
-    email: z.string().openapi({ description: 'Email address of the user' }),
-    emailVerified: z.boolean().openapi({ description: 'Whether the email is verified' }),
-    image: z.string().nullable().openapi({ description: 'Profile image URL' }),
-    bio: z.string().nullable().openapi({ description: 'User biography' }),
-    createdAt: z.date().openapi({ description: 'Account creation timestamp' }),
-    updatedAt: z.date().openapi({ description: 'Last account update timestamp' }),
-    role: z.string().openapi({ description: 'User role', example: 'user' }),
-    banned: z.boolean().openapi({ description: 'Whether the user is banned' }),
-    banReason: z.string().nullable().openapi({ description: 'Reason for ban if applicable' }),
-    banExpires: z.date().nullable().openapi({ description: 'Ban expiration date if applicable' })
-  })
-  .openapi('User')
+export const selectUserSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  username: z.string().nullable(),
+  email: z.string(),
+  emailVerified: z.boolean(),
+  image: z.string().nullable(),
+  bio: z.string().nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  role: z.string(),
+  banned: z.boolean(),
+  banReason: z.string().nullable(),
+  banExpires: z.date().nullable()
+})
 
-export const insertUserSchema = z
-  .object({
-    name: z.string().openapi({
-      description: 'Display name of the user',
-      example: 'John Doe'
-    }),
-    username: z.string().optional().openapi({
-      description: 'Username of the user',
-      example: 'johndoe'
-    }),
-    email: z.string().email().openapi({
-      description: 'Email address of the user',
-      example: 'john@example.com'
-    }),
-    image: z.string().optional().openapi({ description: 'Profile image URL' }),
-    bio: z.string().max(500).optional().openapi({ description: 'User biography' }),
-    role: z.string().optional().openapi({ description: 'User role', default: 'user' })
-  })
-  .openapi('InsertUser')
+export const insertUserSchema = z.object({
+  name: z.string(),
+  username: z.string().optional(),
+  email: z.string().email(),
+  image: z.string().optional(),
+  bio: z.string().max(500).optional(),
+  role: z.string().optional()
+})
 
 export const userSocialLinksRelations = relations(userSocialLinks, ({ one }) => ({
   user: one(user, {

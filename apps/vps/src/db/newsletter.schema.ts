@@ -1,4 +1,4 @@
-import { z } from '@hono/zod-openapi'
+import { z } from 'zod'
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
 import { index, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
 import { user } from './auth.schema'

@@ -37,8 +37,6 @@
     "@gbfm/api": "workspace:*",
     "@gbfm/core": "workspace:*",
     "@gbfm/email": "workspace:*",
-    "@hono/zod-openapi": "1.3.0",
-    "@hono/zod-validator": "0.7.6",
     "@mdx-js/mdx": "3.1.1",
     "@opentelemetry/api": "^1.9.1",
     "@opentelemetry/exporter-trace-otlp-http": "0.215.0",
@@ -47,7 +45,6 @@
     "@opentelemetry/sdk-trace-node": "2.7.0",
     "@opentelemetry/sdk-trace-web": "2.7.0",
     "@pdf-lib/fontkit": "1.1.1",
-    "@scalar/hono-api-reference": "0.10.11",
     "@sentry/bun": "^10.52.0",
     "@sentry/opentelemetry": "^10.52.0",
     "@spotify/web-api-ts-sdk": "1.2.0",
@@ -58,7 +55,6 @@
     "drizzle-orm": "0.45.2",
     "effect": "4.0.0-beta.93",
     "gray-matter": "4.0.3",
-    "hono": "4.12.25",
     "openapi-fetch": "^0.17.0",
     "pdf-lib": "1.17.1",
     "pg": "8.20.0",
@@ -68,7 +64,7 @@
     "react": "19.2.0",
     "react-dom": "19.2.0",
     "resend": "6.12.2",
-    "stoker": "2.0.1"
+    "zod": "4.4.3"
   },
   "devDependencies": {
     "@effect/language-service": "0.86.4",

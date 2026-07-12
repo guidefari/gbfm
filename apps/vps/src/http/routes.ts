@@ -5,7 +5,6 @@ import type { ReadinessCheckFailedError } from '@gbfm/api/errors'
 import { Effect, Layer } from 'effect'
 import { HttpRouter, HttpServer, HttpServerRequest, HttpServerResponse } from 'effect/unstable/http'
 import { HttpApiBuilder } from 'effect/unstable/httpapi'
-import type { AppType } from '@/app'
 import { AdminHandlersLive } from '@/http/admin.handlers'
 import { AudioHandlersLive } from '@/http/audio.handlers'
 import { EmailHandlersLive } from '@/http/email.handlers'
@@ -18,6 +17,7 @@ import {
   SentryDefectLive
 } from '@/http/global-middleware'
 import { checkDatabase, makeHealthHandlers } from '@/http/health.handlers'
+import { DocsLive } from '@/http/docs'
 import { InviteHandlersLive } from '@/http/invite.handlers'
 import { InternalHandlersLive } from '@/http/internal.handlers'
 import { LabelHandlersLive } from '@/http/label.handlers'
@@ -64,17 +64,15 @@ const betterAuthRoute = HttpRouter.add('*', '/auth/*', (request) =>
 // no production client -- it exists to validate AuthMiddleware in isolation
 // before any real authed route (step 4+) depends on it.
 //
-// Step 8: the Hono fallback route is gone -- app.ts has had zero remaining
-// `app.route(...)` mounts since step 7 finished, so there was no real
-// traffic left for it to serve. `honoApp` stays as a parameter for now
-// (kept unused rather than touching every call site's signature in this
-// same PR) since apps/vps/src/app.ts's AppType is still the return value
-// consumed by graceful shutdown wiring; deleting the Hono app/dependencies
-// entirely is the next PR in this step.
-export const createWebHandler = (
-  _honoApp: AppType,
-  options?: { readonly healthDatabaseCheck?: Effect.Effect<void, ReadinessCheckFailedError> }
-) => {
+// Step 8: the Hono app is gone entirely -- this function used to take a
+// `honoApp: AppType` parameter to build a wildcard fallback route
+// (docs/migration-effect-http-api.md's incremental-migration strategy); the
+// fallback was removed once app.ts had zero remaining route mounts left to
+// forward to, and the parameter itself is gone now that nothing references
+// AppType anywhere in this file or its callers.
+export const createWebHandler = (options?: {
+  readonly healthDatabaseCheck?: Effect.Effect<void, ReadinessCheckFailedError>
+}) => {
   const ApiLive = HttpApiBuilder.layer(Api).pipe(
     Layer.provide(makeHealthHandlers(options?.healthDatabaseCheck ?? checkDatabase)),
     Layer.provide(InternalHandlersLive),
@@ -122,6 +120,7 @@ export const createWebHandler = (
       betterAuthRoute,
       SearchCacheHeaderLive,
       SiteRoutesLive,
+      DocsLive,
       CorsLive,
       RateLimiterLive,
       RequestLoggerLive,

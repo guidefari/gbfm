@@ -1,5 +1,5 @@
 import { EMAIL_DELIVERY_STATUS_VALUES, EMAIL_DELIVERY_STATUSES } from '@gbfm/core/status'
-import { z } from '@hono/zod-openapi'
+import { z } from 'zod'
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
 import { boolean, index, jsonb, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core'
 import { user } from './auth.schema'
@@ -70,7 +70,7 @@ export type SelectAuthorEmailPreferences = InferSelectModel<typeof userEmailPref
 export type InsertAuthorEmailPreferences = InferInsertModel<typeof userEmailPreferencesTable>
 
 // Zod schemas for API validation
-const emailDeliveryStatusEnum = z.enum(EMAIL_DELIVERY_STATUS_VALUES).openapi('EmailDeliveryStatus')
+const emailDeliveryStatusEnum = z.enum(EMAIL_DELIVERY_STATUS_VALUES)
 
 export const selectEmailDeliveryLogSchema = z.object({
   id: z.string(),

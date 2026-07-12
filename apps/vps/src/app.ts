@@ -1,20 +1,9 @@
 import { Duration, Effect, Schedule } from 'effect'
-import configureOpenAPI from '@/lib/configure-open-api'
-import { createAppEffect } from '@/lib/create-app'
 import { regenerateSitemap } from '@/routes/redirect/seo/sitemap.service'
 import { runApp, runAppFork } from './runtime'
 import { processPendingReminders, queryNextDueReminder } from './services/reminder-processor'
 import { ReminderSignalService } from './services/reminder-signal.service'
 import { SentryService } from './services/sentry.service'
-
-const setupRoutesEffect = Effect.gen(function* () {
-  yield* SentryService
-  const app = yield* createAppEffect
-
-  configureOpenAPI(app)
-
-  return app
-})
 
 // Recovery interval caps the sleep so stalled/failed reminders are always retried
 const RECOVERY_INTERVAL_MS = 5 * 60 * 1000
@@ -48,11 +37,8 @@ const sitemapRegenerationEffect = regenerateSitemap.pipe(
   Effect.repeat(Schedule.spaced('1 hours'))
 )
 
-const mainEffect = setupRoutesEffect
-
 // Registered by the entry point (src/index.ts) to dispose the Effect
-// HttpRouter handler before the runtime shuts down. No-op until Step 2b wires
-// the entry point to serve through it (docs/migration-effect-http-api.md).
+// HttpRouter handler before the runtime shuts down.
 let disposeWebHandler: (() => Promise<void>) | undefined
 
 export const onShutdown = (dispose: () => Promise<void>) => {
@@ -82,21 +68,25 @@ const setupGracefulShutdown = () => {
   process.on('SIGINT', () => shutdown('SIGINT'))
 }
 
-// Initialize app with Effect
+// Step 8: the Hono app is gone -- initializeApp used to build and return it
+// (AppType was Awaited<ReturnType<typeof initializeApp>>, threaded through
+// createWebHandler as a parameter nothing actually called Hono methods on;
+// confirmed by grep before removing it). All real route serving now lives
+// entirely in apps/vps/src/http/routes.ts's createWebHandler.
 const initializeApp = async () => {
   setupGracefulShutdown()
 
   runAppFork(reminderLoopEffect)
   runAppFork(sitemapRegenerationEffect)
 
-  return await runApp(
-    mainEffect.pipe(
+  await runApp(
+    Effect.gen(function* () {
+      yield* SentryService
+    }).pipe(
       Effect.tap(() => Effect.log('App initialized successfully')),
       Effect.tapError((error) => Effect.logError(`❌ Failed to initialize app: ${error}`))
     )
   )
 }
 
-export type AppType = Awaited<ReturnType<typeof initializeApp>>
-
-export default await initializeApp()
+await initializeApp()
