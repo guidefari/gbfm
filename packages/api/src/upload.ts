@@ -32,8 +32,20 @@ export const UploadFileResponse = Schema.Struct({
   key: Schema.String
 })
 
-const PartNumber = Schema.Number.pipe(
-  Schema.check(Schema.isBetween({ minimum: 1, maximum: 10000 }))
+export const PartNumber = Schema.Number.pipe(
+  Schema.check(Schema.isInt(), Schema.isBetween({ minimum: 1, maximum: 10000 }))
+)
+
+// multipart/form-data fields always decode to strings (confirmed against
+// Multipart.toPersisted's real source -- part.value is never coerced), so
+// the one partNumber field carried inside a multipart body (below) needs
+// NumberFromString like every other multipart/query numeric field in this
+// package (audio.ts, label.ts, post.ts, ...); PartNumber above stays plain
+// Schema.Number for the JSON-body/response use sites where the value really
+// is a number on the wire. Exported so upload.test.ts can pin this without
+// needing a real Multipart.PersistedFile to satisfy the rest of the struct.
+export const PartNumberFromString = Schema.NumberFromString.pipe(
+  Schema.check(Schema.isInt(), Schema.isBetween({ minimum: 1, maximum: 10000 }))
 )
 
 export const InitMultipartUploadInput = Schema.Struct({
@@ -43,7 +55,7 @@ export const InitMultipartUploadInput = Schema.Struct({
   contentType: Schema.NonEmptyString.pipe(
     Schema.check(Schema.isMaxLength(127), Schema.isPattern(/^audio\//))
   ),
-  fileSize: Schema.Number.pipe(Schema.check(Schema.isGreaterThan(0))),
+  fileSize: Schema.Number.pipe(Schema.check(Schema.isInt(), Schema.isGreaterThan(0))),
   fileType: Schema.Literal('audio')
 })
 
@@ -59,7 +71,7 @@ export const InitMultipartUploadResponse = Schema.Struct({
 export const UploadMultipartPartInput = Schema.Struct({
   key: Schema.NonEmptyString,
   uploadId: Schema.NonEmptyString,
-  partNumber: PartNumber,
+  partNumber: PartNumberFromString,
   chunk: Multipart.SingleFileSchema
 }).pipe(HttpApiSchema.asMultipart())
 
