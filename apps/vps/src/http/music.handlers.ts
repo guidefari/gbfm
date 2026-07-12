@@ -25,7 +25,12 @@ import type {
 import { getErrorMessage } from '@/errors'
 import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
 import { runAppFork } from '@/runtime'
-import { MusicEntityService } from '@/services/music-entity'
+import {
+  type CreateAlbumInput as AlbumServiceCreateInput,
+  type CreatePlaylistInput as PlaylistServiceCreateInput,
+  type CreateTrackInput as TrackServiceCreateInput,
+  MusicEntityService
+} from '@/services/music-entity'
 import { getIdFromSpotifyUrl } from '@/services/url-utils'
 
 const toArtistResponse = (row: SelectMusicArtist): ArtistResponse => ({
@@ -68,15 +73,9 @@ const toServiceFields = <T extends CreateArtistInput | UpdateArtistInput>(
   publishedAt: input.publishedAt ? new Date(input.publishedAt) : undefined
 })
 
-const toAlbumServiceFields = <T extends CreateAlbumInput | UpdateAlbumInput>(
-  input: T
-): Omit<T, 'artistNames' | 'artistIds' | 'genres' | 'releaseDate' | 'publishedAt'> & {
-  artistNames?: string[]
-  artistIds?: string[]
-  genres?: string[]
-  releaseDate?: Date
-  publishedAt?: Date
-} => ({
+// Create: title/slug are required NonEmptyString on the wire schema, so no
+// null-coercion is needed -- only the array/date fields need reshaping.
+const toAlbumCreateFields = (input: CreateAlbumInput): AlbumServiceCreateInput => ({
   ...input,
   artistNames: input.artistNames ? [...input.artistNames] : undefined,
   artistIds: input.artistIds ? [...input.artistIds] : undefined,
@@ -85,23 +84,48 @@ const toAlbumServiceFields = <T extends CreateAlbumInput | UpdateAlbumInput>(
   publishedAt: input.publishedAt ? new Date(input.publishedAt) : undefined
 })
 
-const toTrackServiceFields = <T extends CreateTrackInput | UpdateTrackInput>(
-  input: T
-): Omit<T, 'artistNames' | 'artistIds' | 'publishedAt'> & {
-  artistNames?: string[]
-  artistIds?: string[]
-  publishedAt?: Date
-} => ({
+// Update: every field (including title/slug) is optional+nullable on the
+// wire schema since the admin form submits full state, not a diff. The DB
+// columns are non-nullable, so a null here means "no change", not "clear
+// this field" -- coerced to undefined before reaching the service.
+const toAlbumUpdateFields = (input: UpdateAlbumInput): Partial<AlbumServiceCreateInput> => ({
+  ...input,
+  title: input.title ?? undefined,
+  slug: input.slug ?? undefined,
+  artistNames: input.artistNames ? [...input.artistNames] : undefined,
+  artistIds: input.artistIds ? [...input.artistIds] : undefined,
+  genres: input.genres ? [...input.genres] : undefined,
+  releaseDate: input.releaseDate ? new Date(input.releaseDate) : undefined,
+  publishedAt: input.publishedAt ? new Date(input.publishedAt) : undefined
+})
+
+const toTrackCreateFields = (input: CreateTrackInput): TrackServiceCreateInput => ({
   ...input,
   artistNames: input.artistNames ? [...input.artistNames] : undefined,
   artistIds: input.artistIds ? [...input.artistIds] : undefined,
   publishedAt: input.publishedAt ? new Date(input.publishedAt) : undefined
 })
 
-const toPlaylistServiceFields = <T extends CreatePlaylistInput | UpdatePlaylistInput>(
-  input: T
-): Omit<T, 'publishedAt'> & { publishedAt?: Date } => ({
+const toTrackUpdateFields = (input: UpdateTrackInput): Partial<TrackServiceCreateInput> => ({
   ...input,
+  title: input.title ?? undefined,
+  slug: input.slug ?? undefined,
+  artistNames: input.artistNames ? [...input.artistNames] : undefined,
+  artistIds: input.artistIds ? [...input.artistIds] : undefined,
+  publishedAt: input.publishedAt ? new Date(input.publishedAt) : undefined
+})
+
+const toPlaylistCreateFields = (input: CreatePlaylistInput): PlaylistServiceCreateInput => ({
+  ...input,
+  publishedAt: input.publishedAt ? new Date(input.publishedAt) : undefined
+})
+
+const toPlaylistUpdateFields = (
+  input: UpdatePlaylistInput
+): Partial<PlaylistServiceCreateInput> => ({
+  ...input,
+  title: input.title ?? undefined,
+  slug: input.slug ?? undefined,
   publishedAt: input.publishedAt ? new Date(input.publishedAt) : undefined
 })
 
@@ -226,7 +250,7 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         const { user } = yield* AuthSession
         const svc = yield* MusicEntityService
         const row = yield* dieOnDatabaseError(
-          svc.createAlbum({ ...toAlbumServiceFields(payload), createdById: user.id })
+          svc.createAlbum({ ...toAlbumCreateFields(payload), createdById: user.id })
         )
         return toAlbumResponse(row)
       })
@@ -248,7 +272,7 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         const svc = yield* MusicEntityService
         const row = yield* dieOnDatabaseError(
           svc
-            .updateAlbum(params.id, toAlbumServiceFields(payload))
+            .updateAlbum(params.id, toAlbumUpdateFields(payload))
             .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
         )
         return toAlbumResponse(row)
@@ -281,7 +305,7 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         const { user } = yield* AuthSession
         const svc = yield* MusicEntityService
         const row = yield* dieOnDatabaseError(
-          svc.createTrack({ ...toTrackServiceFields(payload), createdById: user.id })
+          svc.createTrack({ ...toTrackCreateFields(payload), createdById: user.id })
         )
         return toTrackResponse(row)
       })
@@ -303,7 +327,7 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         const svc = yield* MusicEntityService
         const row = yield* dieOnDatabaseError(
           svc
-            .updateTrack(params.id, toTrackServiceFields(payload))
+            .updateTrack(params.id, toTrackUpdateFields(payload))
             .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
         )
         return toTrackResponse(row)
@@ -336,7 +360,7 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         const { user } = yield* AuthSession
         const svc = yield* MusicEntityService
         const row = yield* dieOnDatabaseError(
-          svc.createPlaylist({ ...toPlaylistServiceFields(payload), createdById: user.id })
+          svc.createPlaylist({ ...toPlaylistCreateFields(payload), createdById: user.id })
         )
         return toPlaylistResponse(row)
       })
@@ -358,7 +382,7 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         const svc = yield* MusicEntityService
         const row = yield* dieOnDatabaseError(
           svc
-            .updatePlaylist(params.id, toPlaylistServiceFields(payload))
+            .updatePlaylist(params.id, toPlaylistUpdateFields(payload))
             .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
         )
         return toPlaylistResponse(row)
@@ -431,9 +455,22 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
       Effect.gen(function* () {
         yield* requireAdmin
         const svc = yield* MusicEntityService
-        return yield* dieOnDatabaseError(
-          dieOnSpotifyError(svc.addSpotifyTrackToPlaylist(params.id, payload.url))
+        // 400 here means the service itself couldn't parse a track ID out of
+        // the URL -- a client-fixable validation error, not an infra
+        // failure, so it's mapped to BadRequest before dieOnSpotifyError
+        // would otherwise die on it.
+        const result = yield* svc.addSpotifyTrackToPlaylist(params.id, payload.url).pipe(
+          Effect.tapErrorTag('SpotifyError', (cause) =>
+            cause.statusCode === 400
+              ? Effect.void
+              : Effect.logError('[music] spotify operation failed', cause)
+          ),
+          Effect.catchTag('SpotifyError', (cause) =>
+            cause.statusCode === 400 ? new HttpApiError.BadRequest() : Effect.die(cause)
+          ),
+          dieOnDatabaseError
         )
+        return result
       })
     )
     .handle('importSpotifyPlaylist', ({ payload }) =>

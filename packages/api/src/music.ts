@@ -73,29 +73,34 @@ export type AlbumResponse = typeof AlbumResponse.Type
 
 export const AlbumListResponse = Schema.Array(AlbumResponse)
 
+const NonEmptyString = Schema.String.pipe(Schema.check(Schema.isMinLength(1)))
+
 export const CreateAlbumInput = Schema.Struct({
-  title: Schema.String,
+  title: NonEmptyString,
   artistNames: Schema.optional(Schema.Array(Schema.String)),
   artistIds: Schema.optional(Schema.Array(Schema.String)),
   releaseDate: Schema.optional(Schema.String),
   coverImageUrl: Schema.optional(Schema.String),
   genres: Schema.optional(Schema.Array(Schema.String)),
   albumType: Schema.optional(Schema.String),
-  slug: Schema.String,
+  slug: NonEmptyString,
   publishedAt: Schema.optional(Schema.String)
 })
 export type CreateAlbumInput = typeof CreateAlbumInput.Type
 
+// Admin UI submits full form state on every save (not a diff), so an unset
+// field arrives as null, not absent -- optional alone (absent-or-value)
+// rejects that. NullOr wrapped in optional accepts absent, value, or null.
 export const UpdateAlbumInput = Schema.Struct({
-  title: Schema.optional(Schema.String),
-  artistNames: Schema.optional(Schema.Array(Schema.String)),
-  artistIds: Schema.optional(Schema.Array(Schema.String)),
-  releaseDate: Schema.optional(Schema.String),
-  coverImageUrl: Schema.optional(Schema.String),
-  genres: Schema.optional(Schema.Array(Schema.String)),
-  albumType: Schema.optional(Schema.String),
-  slug: Schema.optional(Schema.String),
-  publishedAt: Schema.optional(Schema.String)
+  title: Schema.optional(Schema.NullOr(Schema.String)),
+  artistNames: Schema.optional(Schema.NullOr(Schema.Array(Schema.String))),
+  artistIds: Schema.optional(Schema.NullOr(Schema.Array(Schema.String))),
+  releaseDate: Schema.optional(Schema.NullOr(Schema.String)),
+  coverImageUrl: Schema.optional(Schema.NullOr(Schema.String)),
+  genres: Schema.optional(Schema.NullOr(Schema.Array(Schema.String))),
+  albumType: Schema.optional(Schema.NullOr(Schema.String)),
+  slug: Schema.optional(Schema.NullOr(Schema.String)),
+  publishedAt: Schema.optional(Schema.NullOr(Schema.String))
 })
 export type UpdateAlbumInput = typeof UpdateAlbumInput.Type
 
@@ -118,26 +123,27 @@ export type TrackResponse = typeof TrackResponse.Type
 export const TrackListResponse = Schema.Array(TrackResponse)
 
 export const CreateTrackInput = Schema.Struct({
-  title: Schema.String,
+  title: NonEmptyString,
   artistNames: Schema.optional(Schema.Array(Schema.String)),
   artistIds: Schema.optional(Schema.Array(Schema.String)),
   coverImageUrl: Schema.optional(Schema.String),
   albumId: Schema.optional(Schema.String),
   trackNumber: Schema.optional(Schema.Number),
-  slug: Schema.String,
+  slug: NonEmptyString,
   publishedAt: Schema.optional(Schema.String)
 })
 export type CreateTrackInput = typeof CreateTrackInput.Type
 
+// See UpdateAlbumInput for why NullOr wraps every optional field.
 export const UpdateTrackInput = Schema.Struct({
-  title: Schema.optional(Schema.String),
-  artistNames: Schema.optional(Schema.Array(Schema.String)),
-  artistIds: Schema.optional(Schema.Array(Schema.String)),
-  coverImageUrl: Schema.optional(Schema.String),
-  albumId: Schema.optional(Schema.String),
-  trackNumber: Schema.optional(Schema.Number),
-  slug: Schema.optional(Schema.String),
-  publishedAt: Schema.optional(Schema.String)
+  title: Schema.optional(Schema.NullOr(Schema.String)),
+  artistNames: Schema.optional(Schema.NullOr(Schema.Array(Schema.String))),
+  artistIds: Schema.optional(Schema.NullOr(Schema.Array(Schema.String))),
+  coverImageUrl: Schema.optional(Schema.NullOr(Schema.String)),
+  albumId: Schema.optional(Schema.NullOr(Schema.String)),
+  trackNumber: Schema.optional(Schema.NullOr(Schema.Number)),
+  slug: Schema.optional(Schema.NullOr(Schema.String)),
+  publishedAt: Schema.optional(Schema.NullOr(Schema.String))
 })
 export type UpdateTrackInput = typeof UpdateTrackInput.Type
 
@@ -161,22 +167,23 @@ export type PlaylistResponse = typeof PlaylistResponse.Type
 export const PlaylistListResponse = Schema.Array(PlaylistResponse)
 
 export const CreatePlaylistInput = Schema.Struct({
-  title: Schema.String,
+  title: NonEmptyString,
   description: Schema.optional(Schema.String),
   coverImageUrl: Schema.optional(Schema.String),
   curatorId: Schema.optional(Schema.String),
-  slug: Schema.String,
+  slug: NonEmptyString,
   publishedAt: Schema.optional(Schema.String)
 })
 export type CreatePlaylistInput = typeof CreatePlaylistInput.Type
 
+// See UpdateAlbumInput for why NullOr wraps every optional field.
 export const UpdatePlaylistInput = Schema.Struct({
-  title: Schema.optional(Schema.String),
-  description: Schema.optional(Schema.String),
-  coverImageUrl: Schema.optional(Schema.String),
-  curatorId: Schema.optional(Schema.String),
-  slug: Schema.optional(Schema.String),
-  publishedAt: Schema.optional(Schema.String)
+  title: Schema.optional(Schema.NullOr(Schema.String)),
+  description: Schema.optional(Schema.NullOr(Schema.String)),
+  coverImageUrl: Schema.optional(Schema.NullOr(Schema.String)),
+  curatorId: Schema.optional(Schema.NullOr(Schema.String)),
+  slug: Schema.optional(Schema.NullOr(Schema.String)),
+  publishedAt: Schema.optional(Schema.NullOr(Schema.String))
 })
 export type UpdatePlaylistInput = typeof UpdatePlaylistInput.Type
 
@@ -203,8 +210,11 @@ export const ReorderPlaylistTracksInput = Schema.Struct({
   trackIds: Schema.Array(Schema.String)
 })
 
+const UrlPattern = /^https?:\/\/.+/i
+const UrlString = Schema.String.pipe(Schema.check(Schema.isPattern(UrlPattern)))
+
 export const AddSpotifyTrackToPlaylistInput = Schema.Struct({
-  url: Schema.String
+  url: UrlString
 })
 
 export const AddSpotifyTrackResultResponse = Schema.Struct({
@@ -214,7 +224,7 @@ export const AddSpotifyTrackResultResponse = Schema.Struct({
 })
 
 export const ImportSpotifyPlaylistInput = Schema.Struct({
-  url: Schema.String
+  url: UrlString
 })
 
 export const ImportSpotifyPlaylistQueuedResponse = Schema.Struct({
