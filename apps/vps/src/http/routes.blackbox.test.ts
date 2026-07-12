@@ -22,43 +22,72 @@ afterAll(async () => {
   await webHandler.dispose()
 })
 
-describe('Effect toWebHandler fallback', () => {
-  it('GET /api/music/albums returns the same response as the plain Hono app', async () => {
-    const [viaHandler, viaHono] = await Promise.all([
-      webHandler.handler(new Request('http://localhost/api/music/albums')),
-      app.request('/api/music/albums')
-    ])
+describe('Effect router (Step 8: HonoFallback removed)', () => {
+  it('GET /api/music/artists is served directly by the HttpApi group (no Hono app in the request path)', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/api/music/artists'))
 
-    expect(viaHandler.status).toBe(viaHono.status)
-    await expect(viaHandler.json()).resolves.toEqual(await viaHono.json())
+    expect(res.status).toBe(200)
+    await expect(decodeResponseBody(ArtistListResponse, res)).resolves.toBeTruthy()
   })
 
-  it('unknown routes fall through to the Hono app and 404', async () => {
+  it('unknown routes 404 via Effect HttpRouter.RouteNotFound (empty body -- no Hono notFound JSON, no fallback to serve)', async () => {
     const res = await webHandler.handler(new Request('http://localhost/does-not-exist'))
+
+    expect(res.status).toBe(404)
+    expect(await res.text()).toBe('')
+  })
+
+  // Pre-existing gap (not introduced by removing HonoFallback, and NOT the
+  // "deliberately deferred" gap step 6b's table describes for entity-links/
+  // resolve). Corrected via adversarial review on this PR: commit d052ce82
+  // ("port search to HttpApiBuilder.group, Step 6") deleted the entire
+  // routes/music/* Hono directory -- including fully-implemented album/
+  // track/playlist/entity-link handlers -- with a commit message claiming
+  // they were "dead Hono code... already superseded" by the new
+  // http/music.handlers.ts. That claim was false: the new Effect handler
+  // only ever implemented artist CRUD + artist-junction endpoints, never
+  // albums/tracks/playlists. This is a live, currently-broken regression in
+  // apps/www's admin UI (useAdminAlbums/useAdminTracks in
+  // routes/admin/music.tsx, useAdminEntityLinks in
+  // -MusicEntityDetailPage.tsx), not just an unused 404. Confirmed via
+  // `git show d052ce82^:apps/vps/src/routes/music/music.handlers.ts` still
+  // having real listAlbums/createAlbum/.../listPlaylists/... handlers at
+  // the moment they were deleted. Documented here as a real test instead of
+  // a comment so the gap can't be silently rediscovered as a mystery
+  // regression later; porting this group is real, time-sensitive follow-up
+  // work, not "nice to have eventually."
+  it('GET /api/music/albums 404s -- known, currently-broken regression from step 6 (not from this PR)', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/api/music/albums'))
 
     expect(res.status).toBe(404)
   })
 })
 
 describe('better-auth route (Step 2c)', () => {
-  it('GET /auth/get-session is handled by the auth route, not the Hono fallback', async () => {
+  it('GET /auth/get-session is handled by the auth route', async () => {
     const res = await webHandler.handler(new Request('http://localhost/auth/get-session'))
 
-    // better-auth's own response for an unauthenticated session check, not a 404 --
-    // proves /auth/* is matched ahead of the wildcard fallback.
+    // better-auth's own response for an unauthenticated session check, not a
+    // RouteNotFound 404 -- proves /auth/* is matched ahead of everything else.
     expect(res.status).toBe(200)
     expect(await res.json()).toBeNull()
   })
 
-  it('unknown /auth/* paths are handled by better-auth (404 from better-auth, not the Hono fallback)', async () => {
+  it("unknown /auth/* paths are handled by better-auth, not Effect's own RouteNotFound", async () => {
     const withoutAuth = await webHandler.handler(new Request('http://localhost/does-not-exist'))
     const withAuth = await webHandler.handler(new Request('http://localhost/auth/does-not-exist'))
 
     expect(withoutAuth.status).toBe(404)
     expect(withAuth.status).toBe(404)
-    // Different bodies would indicate the two 404s come from different sources
-    // (Hono's notFound handler vs. better-auth's own routing).
-    expect(await withAuth.text()).not.toEqual(await withoutAuth.text())
+    // Both are empty-bodied 404s (Effect's own RouteNotFound and better-auth's
+    // internal 404 are both content-length: 0), so the body can't
+    // discriminate them. Rate-limit headers can: RateLimiterLive only sees a
+    // request that reached a matched route's httpEffect -- a bare
+    // RouteNotFound failure short-circuits before the route ever resolves,
+    // so it carries no x-ratelimit-* headers, while /auth/*'s wildcard route
+    // did match (better-auth's own handler produced the 404), so it does.
+    expect(withoutAuth.headers.has('x-ratelimit-limit')).toBe(false)
+    expect(withAuth.headers.has('x-ratelimit-limit')).toBe(true)
   })
 })
 

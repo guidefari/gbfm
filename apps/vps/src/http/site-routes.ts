@@ -528,6 +528,17 @@ const rssXml = Effect.gen(function* () {
   )
 )
 
+// Replaces stoker/middlewares's serveEmojiFavicon('🪿') -- was global
+// middleware in the old Hono app (checked path === '/favicon.ico' on every
+// request), ported as its own route since a single static path doesn't need
+// per-request middleware overhead.
+const faviconIco = Effect.sync(() =>
+  HttpServerResponse.text(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" x="-0.1em" font-size="90">🪿</text></svg>',
+    { contentType: 'image/svg+xml' }
+  )
+)
+
 const robotsTxt = Effect.sync(() => {
   const siteUrl = config.urls.frontend.replace(/\/$/, '')
   const robots = `# https://www.robotstxt.org/robotstxt.html
@@ -587,5 +598,6 @@ export const SiteRoutesLive = Layer.mergeAll(
   HttpRouter.add('GET', '/s/:slug', shareSlug),
   HttpRouter.add('GET', '/robots.txt', robotsTxt),
   HttpRouter.add('GET', '/sitemap.xml', sitemapXml),
-  HttpRouter.add('GET', '/rss.xml', rssXml)
+  HttpRouter.add('GET', '/rss.xml', rssXml),
+  HttpRouter.add('GET', '/favicon.ico', faviconIco)
 )

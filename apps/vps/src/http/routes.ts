@@ -11,6 +11,12 @@ import { AudioHandlersLive } from '@/http/audio.handlers'
 import { EmailHandlersLive } from '@/http/email.handlers'
 import { FavoritesHandlersLive } from '@/http/favorites.handlers'
 import { FileManagerHandlersLive } from '@/http/file-manager.handlers'
+import {
+  CorsLive,
+  RateLimiterLive,
+  RequestLoggerLive,
+  SentryDefectLive
+} from '@/http/global-middleware'
 import { checkDatabase, makeHealthHandlers } from '@/http/health.handlers'
 import { InviteHandlersLive } from '@/http/invite.handlers'
 import { InternalHandlersLive } from '@/http/internal.handlers'
@@ -40,16 +46,6 @@ import { AppLoggerLive } from '@/services/logger.service'
 // copy of every singleton service.
 const AppServicesLive = Layer.effectContext(appServicesContext)
 
-// Routes every request to the existing Hono app unchanged. Removed one HttpApi group at a time as routes are ported (docs/migration-effect-http-api.md).
-export const honoFallback = (honoApp: AppType) =>
-  HttpRouter.add('*', '/*', (request) =>
-    Effect.gen(function* () {
-      const webRequest = yield* HttpServerRequest.toWeb(request)
-      const webResponse = yield* Effect.promise(() => Promise.resolve(honoApp.fetch(webRequest)))
-      return HttpServerResponse.fromWeb(webResponse)
-    })
-  )
-
 // better-auth owns its own routing; we can't redefine it as HttpApiEndpoints. Kept at
 // its own path (not under /api) since its basePath appears in emailed links.
 const betterAuthRoute = HttpRouter.add('*', '/auth/*', (request) =>
@@ -67,8 +63,16 @@ const betterAuthRoute = HttpRouter.add('*', '/auth/*', (request) =>
 // database check so tests can force the failure/cache paths. `internal` has
 // no production client -- it exists to validate AuthMiddleware in isolation
 // before any real authed route (step 4+) depends on it.
+//
+// Step 8: the Hono fallback route is gone -- app.ts has had zero remaining
+// `app.route(...)` mounts since step 7 finished, so there was no real
+// traffic left for it to serve. `honoApp` stays as a parameter for now
+// (kept unused rather than touching every call site's signature in this
+// same PR) since apps/vps/src/app.ts's AppType is still the return value
+// consumed by graceful shutdown wiring; deleting the Hono app/dependencies
+// entirely is the next PR in this step.
 export const createWebHandler = (
-  honoApp: AppType,
+  _honoApp: AppType,
   options?: { readonly healthDatabaseCheck?: Effect.Effect<void, ReadinessCheckFailedError> }
 ) => {
   const ApiLive = HttpApiBuilder.layer(Api).pipe(
@@ -100,12 +104,28 @@ export const createWebHandler = (
   )
 
   return HttpRouter.toWebHandler(
+    // Global-middleware order here is load-bearing but NOT contractually
+    // guaranteed by Layer.mergeAll -- each HttpRouter.middleware(fn, {global:
+    // true}) registers into a shared Set via Layer.effectDiscard, and
+    // mergeAll builds member layers concurrently with no documented ordering.
+    // It works today (verified: an OPTIONS preflight through this exact
+    // composition returns CORS headers with no x-ratelimit-* header, proving
+    // CorsLive's short-circuit runs before RateLimiterLive's httpEffect ever
+    // executes) only because none of these four middleware bodies suspend
+    // before their first yield, so Effect's scheduler happens to run them in
+    // array order. Adding a real async gap to any of them, or an Effect
+    // version change to mergeAll's build strategy, could silently reorder
+    // this. If CORS ever stops short-circuiting rate-limiting for OPTIONS
+    // requests, check this ordering first.
     Layer.mergeAll(
       ApiLive,
       betterAuthRoute,
-      honoFallback(honoApp),
       SearchCacheHeaderLive,
-      SiteRoutesLive
+      SiteRoutesLive,
+      CorsLive,
+      RateLimiterLive,
+      RequestLoggerLive,
+      SentryDefectLive
     ).pipe(
       // HttpServerRequest.multipart (upload group's uploadFile/uploadMultipartPart
       // endpoints) needs a real FileSystem.FileSystem + Path.Path to buffer
