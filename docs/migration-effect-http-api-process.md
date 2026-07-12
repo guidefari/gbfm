@@ -524,3 +524,65 @@ that's been silently corrected is easy to repeat:
   entity-link group is real, currently-broken production work, not
   "nice to have eventually" -- next in line after step 8's dependency
   deletion finishes.
+
+- **The music album/track/playlist/entity-link regression from `d052ce82`
+  was ported in two stacked PRs (#191 albums/tracks/playlists, #193
+  entity-links/resolve/scrape/pending-queue), and adversarial review found
+  real, non-obvious bugs in both -- all following one recurring pattern
+  worth naming: when a new Effect Schema is written to replace an old Zod
+  schema, every constraint the Zod schema enforced (`.min(1)`, `.url()`,
+  `.min()`/`.max()` on numeric bounds) has to be re-added by hand -- Effect
+  Schema does not infer them from the shape, and a bare `Schema.String` or
+  `Schema.NumberFromString` silently accepts anything. This is the same
+  class of gap the process doc already flagged for newsletter/user/
+  favorites in earlier steps, but it recurred twice in this one PR pair:
+  `CreateAlbumInput`/`CreateTrackInput`/`CreatePlaylistInput`'s `title`/
+  `slug` accepted empty strings (old Zod: `.min(1)`) and
+  `PendingLinksQuery`'s `limit`/`offset` had no bounds at all (old Zod:
+  `.min(1).max(100)`/`.min(0)`) -- confirmed exploitable via direct decoder
+  calls, not just review speculation (`{limit: '999999999'}` decoded
+  successfully and would reach `.limit()` on a real Drizzle query
+  unclamped). **Generalizable lesson: when porting a Zod schema to Effect
+  Schema, read the *entire* old schema's chain of `.min()`/`.max()`/`.url()`/
+  refinements before writing the replacement, not just the base type --
+  treat every unconstrained `Schema.String`/`Schema.Number` in a port as a
+  compile error waiting to happen until you've checked what the old schema
+  actually enforced.** A second, distinct pattern also recurred: the admin
+  edit UI (`-MusicEntityDetailPage.tsx`) submits full form state on every
+  save rather than a diff, so an unset field arrives as `null`, not
+  absent -- `Schema.optional(X)` (absent-or-value) rejects that, and every
+  `Update*Input` schema needs `Schema.optional(Schema.NullOr(X))` instead.
+  This bug class was already known from step 6b (flagged for
+  `UpdateArtistInput` and left as a documented, deliberately-deferred gap)
+  but recurred *undocumented* in #191's first pass on
+  `UpdateAlbumInput`/`UpdateTrackInput`/`UpdatePlaylistInput`, and again in
+  #193's `UpdateEntityLinkStatusInput.metadata` -- both caught by
+  adversarial review rather than being disclosed upfront. **When a schema
+  mirrors a form that submits full state, default every optional field to
+  null-accepting rather than assuming the plain-optional case and
+  discovering the gap in review.**
+
+- **A PR's base branch getting deleted (because the branch it was stacked
+  on merged and `gh pr merge --delete-branch` removed it) auto-closes the
+  PR on GitHub, and a closed PR's base branch cannot be changed --
+  `gh pr edit --base` and `gh pr reopen` both fail once this happens.**
+  Hit this exactly: PR #192 (entity-links, stacked on #191's branch) was
+  still open with review in flight when #191 merged and its branch was
+  deleted per the standard `--delete-branch` merge flow. GitHub closed #192
+  automatically; `gh pr reopen 192` failed with "Could not open the pull
+  request" and `gh pr edit 192 --base migration/effect-http-api` failed
+  with "Cannot change the base branch of a closed pull request." The
+  in-flight adversarial review agent (dispatched against #192's diff) was
+  still valid, since the underlying commits hadn't changed -- only the PR
+  wrapper around them had gone stale. Fix: rebase the feature branch
+  directly onto the (now-updated) integration branch (`git rebase
+  origin/migration/effect-http-api` cleanly dropped the now-redundant
+  commits that had already landed via #191), force-push, and open a fresh
+  PR (#193) referencing the dead one in both directions (a comment on the
+  old PR pointing to the new one, and a "supersedes #192" line in the new
+  PR's description) so the history stays traceable. **Generalizable lesson:
+  when merging a PR with `--delete-branch` while a PR stacked on top of it
+  is still open and under review, expect the stacked PR to auto-close --
+  don't be surprised by "Could not open" / "Cannot change the base branch"
+  errors, and don't discard in-flight review work just because the PR
+  number changed underneath it.**
