@@ -37,14 +37,26 @@ describe('Effect router (Step 8: HonoFallback removed)', () => {
     expect(await res.text()).toBe('')
   })
 
-  // Pre-existing gap (not introduced by removing HonoFallback): the music
-  // group's album/track/playlist/entity-link endpoints were deleted from the
-  // Hono app at commit c7178c15 ("Albums/tracks/playlists/links are
-  // untouched; they stay on Hono until their own steps") but never actually
-  // ported to the Effect router afterward -- so this already 404s on the
-  // live dev server today, independent of this PR. Documented here so the
-  // gap is tracked by a real test instead of silently rediscovered later.
-  it('GET /api/music/albums 404s -- known pre-existing gap, not a HonoFallback regression', async () => {
+  // Pre-existing gap (not introduced by removing HonoFallback, and NOT the
+  // "deliberately deferred" gap step 6b's table describes for entity-links/
+  // resolve). Corrected via adversarial review on this PR: commit d052ce82
+  // ("port search to HttpApiBuilder.group, Step 6") deleted the entire
+  // routes/music/* Hono directory -- including fully-implemented album/
+  // track/playlist/entity-link handlers -- with a commit message claiming
+  // they were "dead Hono code... already superseded" by the new
+  // http/music.handlers.ts. That claim was false: the new Effect handler
+  // only ever implemented artist CRUD + artist-junction endpoints, never
+  // albums/tracks/playlists. This is a live, currently-broken regression in
+  // apps/www's admin UI (useAdminAlbums/useAdminTracks in
+  // routes/admin/music.tsx, useAdminEntityLinks in
+  // -MusicEntityDetailPage.tsx), not just an unused 404. Confirmed via
+  // `git show d052ce82^:apps/vps/src/routes/music/music.handlers.ts` still
+  // having real listAlbums/createAlbum/.../listPlaylists/... handlers at
+  // the moment they were deleted. Documented here as a real test instead of
+  // a comment so the gap can't be silently rediscovered as a mystery
+  // regression later; porting this group is real, time-sensitive follow-up
+  // work, not "nice to have eventually."
+  it('GET /api/music/albums 404s -- known, currently-broken regression from step 6 (not from this PR)', async () => {
     const res = await webHandler.handler(new Request('http://localhost/api/music/albums'))
 
     expect(res.status).toBe(404)

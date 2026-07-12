@@ -104,6 +104,19 @@ export const createWebHandler = (
   )
 
   return HttpRouter.toWebHandler(
+    // Global-middleware order here is load-bearing but NOT contractually
+    // guaranteed by Layer.mergeAll -- each HttpRouter.middleware(fn, {global:
+    // true}) registers into a shared Set via Layer.effectDiscard, and
+    // mergeAll builds member layers concurrently with no documented ordering.
+    // It works today (verified: an OPTIONS preflight through this exact
+    // composition returns CORS headers with no x-ratelimit-* header, proving
+    // CorsLive's short-circuit runs before RateLimiterLive's httpEffect ever
+    // executes) only because none of these four middleware bodies suspend
+    // before their first yield, so Effect's scheduler happens to run them in
+    // array order. Adding a real async gap to any of them, or an Effect
+    // version change to mergeAll's build strategy, could silently reorder
+    // this. If CORS ever stops short-circuiting rate-limiting for OPTIONS
+    // requests, check this ordering first.
     Layer.mergeAll(
       ApiLive,
       betterAuthRoute,
