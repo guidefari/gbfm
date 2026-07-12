@@ -15,6 +15,14 @@ are the standing rules, not suggestions to re-derive each time.
   branch. Verify the stack with `git merge-base --is-ancestor <base>
   <head>` before calling the PR open -- got the base branch wrong twice
   early in this migration (PRs #150, #152) from skipping this check.
+- When a route group has an `apps/www` consumer, carry the whole vertical
+  slice in the same PR: shared `packages/api` contract, Effect server
+  handler, and the typed `HttpApiClient` hook(s). This keeps the browser
+  test on the new path instead of proving the backend and frontend against
+  different revisions. Split the client into a follow-up only when the
+  backend endpoint has no real consumer yet, or when the client path is a
+  materially different risk (for example the dual JSON/multipart profile
+  update).
 - All step PRs stack into `migration/effect-http-api`, never directly into
   `prod`. That integration branch gets its own PR to `prod` periodically
   once a meaningful chunk has merged.
@@ -59,11 +67,11 @@ not just check whether the group is "backend infrastructure-flavored."
 When there is a consumer:
 
 1. Hit the real endpoint on a running dev server first (`curl`), confirm
-   the response shape, *then* load the actual frontend page against it
-   with `agent-browser` and screenshot. The curl output and the
-   screenshot corroborate each other -- a screenshot alone can't prove
-   the request that produced it actually succeeded, and a status code
-   alone can't prove the UI rendered it correctly.
+   the response shape, *then* load the actual frontend page against the
+   same new handler with `agent-browser` and screenshot. The curl output
+   and the screenshot corroborate each other -- a screenshot alone can't
+   prove the request that produced it actually succeeded, and a status
+   code alone can't prove the UI rendered it correctly.
 2. Use real seeded data where possible (a real username, a real show
    slug), not a synthetic fixture -- this project doesn't have seed
    helpers for most tables, so the fastest path is often querying an

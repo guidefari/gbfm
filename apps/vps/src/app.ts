@@ -1,7 +1,6 @@
 import { Duration, Effect, Schedule } from 'effect'
 import configureOpenAPI from '@/lib/configure-open-api'
 import { createAppEffect } from '@/lib/create-app'
-import email from '@/routes/email/email.index'
 import musicReminders from '@/routes/music-reminders/music-reminders.index'
 import { seoRouter, shareRouter } from '@/routes/redirect/redirect.index'
 import rss from '@/routes/rss/rss.index'
@@ -19,7 +18,6 @@ const setupRoutesEffect = Effect.gen(function* () {
 
   configureOpenAPI(app)
 
-  app.route('/api/email', email)
   app.route('/api/upload', upload)
   app.route('/api/upload', uploadMultipart)
   app.route('/api/music-reminders', musicReminders)

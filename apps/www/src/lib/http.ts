@@ -1,4 +1,9 @@
-import type { EmailDeliveryStatus, LinkStatus } from '@gbfm/core/status'
+import type {
+  EmailLogsResponse,
+  SendMixNotificationInput,
+  SendMixNotificationResponse
+} from '@gbfm/api/email'
+import type { LinkStatus } from '@gbfm/core/status'
 import type {
   SelectAudio,
   SelectLabel,
@@ -725,27 +730,8 @@ export function useUpdateEmailPreferences() {
   }
 }
 
-export type EmailLogStatus = EmailDeliveryStatus
-
-export type AdminEmailLog = {
-  id: string
-  userId: string | null
-  recipientEmail: string
-  recipientName: string | null
-  emailType: string
-  templateName: string
-  subject: string
-  status: EmailLogStatus
-  sesMessageId: string | null
-  metadata: Record<string, unknown> | null
-  errorMessage: string | null
-  sentAt: string | Date | null
-  deliveredAt: string | Date | null
-  bouncedAt: string | Date | null
-  complainedAt: string | Date | null
-  createdAt: string | Date
-  updatedAt: string | Date
-}
+export type EmailLogStatus = EmailLogsResponse['data'][number]['status']
+export type AdminEmailLog = EmailLogsResponse['data'][number]
 
 export type AdminEmailLogsFilters = {
   limit?: number
@@ -764,18 +750,17 @@ export function useAdminEmailLogs({
   dateFrom,
   dateTo
 }: AdminEmailLogsFilters) {
-  return useQuery<PaginatedResponse<AdminEmailLog>, Error>({
+  return useQuery<EmailLogsResponse, Error>({
     queryKey: ['admin', 'email-logs', limit, offset, status, recipientEmail, dateFrom, dateTo],
     queryFn: async () => {
-      const url = apiUrlObj(`/email/logs`)
-      url.searchParams.set('limit', String(limit))
-      url.searchParams.set('offset', String(offset))
-      if (status) url.searchParams.set('status', status)
-      if (recipientEmail) url.searchParams.set('recipientEmail', recipientEmail)
-      if (dateFrom) url.searchParams.set('dateFrom', dateFrom)
-      if (dateTo) url.searchParams.set('dateTo', dateTo)
-
-      return fetcher<PaginatedResponse<AdminEmailLog>>(url.toString())
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.email
+          .getEmailLogs({ query: { limit, offset, status, recipientEmail, dateFrom, dateTo } })
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'email.getEmailLogs' }))
+          )
+      )
     }
   })
 }
@@ -1557,33 +1542,20 @@ export function usePublicProfile(username: string) {
   }
 }
 
-type SendMixNotificationResponse = {
-  success: boolean
-  sentTo: string[]
-  emailIds: string[]
-  message: string
-}
-
-type SendMixNotificationInput = {
-  mixSlug: string
-  recipients?: string[]
-  metadata?: {
-    artistName?: string
-    mixTitle?: string
-  }
-}
-
 export function useSendMixNotification() {
   return useMutation<SendMixNotificationResponse, Error, SendMixNotificationInput>({
-    mutationFn: async ({ mixSlug, recipients, metadata }) =>
-      fetcher<SendMixNotificationResponse>(apiUrl('/email/send-mix-notification'), {
-        method: 'POST',
-        body: JSON.stringify({
-          mixSlug,
-          ...(recipients && { recipients }),
-          ...(metadata && { metadata })
-        })
-      })
+    mutationFn: async (payload) => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.email
+          .sendMixNotification({ payload })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'email.sendMixNotification' })
+            )
+          )
+      )
+    }
   })
 }
 
