@@ -278,6 +278,26 @@ describe('admin (HttpApiBuilder group, Step 6)', () => {
   })
 })
 
+describe('email (HttpApiBuilder group, Step 6)', () => {
+  it('GET /api/email/logs returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/api/email/logs'))
+
+    expect(res.status).toBe(401)
+  })
+
+  it('POST /api/email/send-mix-notification returns 401 without a session cookie', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/email/send-mix-notification', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ mixSlug: 'test-mix' })
+      })
+    )
+
+    expect(res.status).toBe(401)
+  })
+})
+
 describe('invite (HttpApiBuilder group, Step 6)', () => {
   it('POST /api/invite/send returns 401 without a session cookie', async () => {
     const res = await webHandler.handler(

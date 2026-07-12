@@ -6,6 +6,7 @@ import { HttpApiBuilder } from 'effect/unstable/httpapi'
 import type { AppType } from '@/app'
 import { AdminHandlersLive } from '@/http/admin.handlers'
 import { AudioHandlersLive } from '@/http/audio.handlers'
+import { EmailHandlersLive } from '@/http/email.handlers'
 import { FavoritesHandlersLive } from '@/http/favorites.handlers'
 import { FileManagerHandlersLive } from '@/http/file-manager.handlers'
 import { checkDatabase, makeHealthHandlers } from '@/http/health.handlers'
@@ -78,8 +79,8 @@ export const createWebHandler = (
     Layer.provide(ReleaseHandlersLive),
     Layer.provide(PostHandlersLive),
     Layer.provide(AudioHandlersLive),
-    Layer.provide(FavoritesHandlersLive),
-    Layer.provide(NewsletterHandlersLive),
+    Layer.provide(EmailHandlersLive),
+    Layer.provide(Layer.mergeAll(FavoritesHandlersLive, NewsletterHandlersLive)),
     Layer.provide(FileManagerHandlersLive),
     Layer.provide(SpotifyHandlersLive),
     Layer.provide(ShowsHandlersLive),

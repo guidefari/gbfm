@@ -15,6 +15,7 @@
     "./release": "./src/release.ts",
     "./post": "./src/post.ts",
     "./audio": "./src/audio.ts",
+    "./email": "./src/email.ts",
     "./favorites": "./src/favorites.ts",
     "./newsletter": "./src/newsletter.ts",
     "./file-manager": "./src/file-manager.ts",

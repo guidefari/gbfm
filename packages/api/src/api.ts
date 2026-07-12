@@ -1,6 +1,7 @@
 import { HttpApi } from 'effect/unstable/httpapi'
 import { AdminGroup } from './admin'
 import { AudioGroup } from './audio'
+import { EmailGroup } from './email'
 import { FavoritesGroup } from './favorites'
 import { FileManagerGroup } from './file-manager'
 import { HealthGroup } from './health'
@@ -31,6 +32,7 @@ export const Api = HttpApi.make('gbfm')
   .add(ReleaseGroup)
   .add(PostGroup)
   .add(AudioGroup)
+  .add(EmailGroup)
   .add(FavoritesGroup)
   .add(NewsletterGroup)
   .add(FileManagerGroup)
