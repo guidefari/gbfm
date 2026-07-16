@@ -54,7 +54,7 @@ export function VerifyEmailBanner() {
           type='button'
           onClick={onResend}
           disabled={cooldown.isActive || isResending}
-          className='font-medium text-gb-pastel-green-1 underline-offset-4 hover:text-gb-highlight disabled:cursor-not-allowed disabled:text-muted-foreground'>
+          className='font-medium text-gb-pastel-green-1 underline underline-offset-4 hover:text-gb-highlight disabled:cursor-not-allowed disabled:text-muted-foreground disabled:no-underline'>
           {isResending
             ? 'Sending...'
             : cooldown.isActive
