@@ -1,6 +1,6 @@
 import { Badge } from '@gbfm/ui'
-import type { SelectMdxCompiledMicroPost } from '@gbfm/vps/schemas'
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { Effect } from 'effect'
 import { ArrowLeft, Tag } from 'lucide-react'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { RouteError } from '@/components/RouteError'
@@ -8,8 +8,9 @@ import { TweetActionsMenu } from '@/components/TweetActionsMenu'
 import { TweetAuthorRow } from '@/components/TweetAuthorRow'
 import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
 import { useSession } from '@/lib/auth-client'
-import { apiUrl, fetcher } from '@/lib/http'
+import { getApiClient } from '@/lib/api-client'
 import { generateMicroPostSEO, generateSEOMeta } from '@/lib/seo'
+import { captureException } from '@/services/analytics'
 
 export const Route = createFileRoute('/tweet/$slug')({
   component: TweetPostPage,
@@ -27,10 +28,26 @@ export const Route = createFileRoute('/tweet/$slug')({
     />
   ),
   loader: async ({ params }) => {
-    const post = await fetcher<SelectMdxCompiledMicroPost>(
-      apiUrl(`/content/posts/micro/${params.slug}`)
+    const client = await getApiClient()
+    const post = await Effect.runPromise(
+      client.post
+        .getMicroPostBySlug({ params: { slug: params.slug } })
+        .pipe(
+          Effect.tapError((error) =>
+            captureException(error, { endpoint: 'post.getMicroPostBySlug' })
+          )
+        )
     )
-    return { post }
+    return {
+      post: {
+        ...post,
+        bannerImageUrl: null,
+        createdAt: new Date(post.createdAt),
+        updatedAt: new Date(post.updatedAt),
+        tags: post.tags ? [...post.tags] : null,
+        creators: post.creators ? [...post.creators] : undefined
+      }
+    }
   },
   head: ({ loaderData, params }) => {
     if (!loaderData?.post) {

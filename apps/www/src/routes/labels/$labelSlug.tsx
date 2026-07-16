@@ -1,25 +1,42 @@
 import { Button } from '@gbfm/ui'
-import type { SelectMdxCompiledLabel } from '@gbfm/vps/schemas'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { Effect } from 'effect'
 import { Edit } from 'lucide-react'
 import * as React from 'react'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { ReleasesTable } from '@/components/ReleasesTable'
 import { RouteError } from '@/components/RouteError'
 import { ShareButton } from '@/components/ShareButton'
+import { getApiClient } from '@/lib/api-client'
 import { useSession } from '@/lib/auth-client'
-import { apiUrl, fetcher, useReleasesByLabel } from '@/lib/http'
+import { useReleasesByLabel } from '@/lib/http'
 import { generateLabelSEO, generateSEOMeta } from '@/lib/seo'
+import { captureException } from '@/services/analytics'
 import { useContentStore } from '@/store'
 
 export const Route = createFileRoute('/labels/$labelSlug')({
   component: LabelPage,
   errorComponent: ({ error }) => <RouteError error={error} />,
   loader: async ({ params }) => {
-    const label = await fetcher<SelectMdxCompiledLabel>(
-      apiUrl(`/content/labels/${params.labelSlug}`)
+    const client = await getApiClient()
+    const label = await Effect.runPromise(
+      client.label
+        .getLabelBySlug({ params: { slug: params.labelSlug } })
+        .pipe(
+          Effect.tapError((error) => captureException(error, { endpoint: 'label.getLabelBySlug' }))
+        )
     )
-    return { label }
+    return {
+      label: {
+        ...label,
+        bannerImageUrl: null,
+        createdAt: new Date(label.createdAt),
+        updatedAt: new Date(label.updatedAt),
+        tags: label.tags ? [...label.tags] : null,
+        genres: label.genres ? [...label.genres] : null,
+        creators: label.creators ? [...label.creators] : undefined
+      }
+    }
   },
   head: ({ loaderData, params }) => {
     if (!loaderData?.label) {

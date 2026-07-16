@@ -10,6 +10,7 @@ import {
 } from '@gbfm/ui'
 import type { SelectMdxCompiledAudio } from '@gbfm/vps/schemas'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { Effect } from 'effect'
 import {
   ArrowLeft,
   Edit,
@@ -27,8 +28,10 @@ import { FavoriteButton } from '@/components/FavoriteButton'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { RouteError } from '@/components/RouteError'
 import { useSession } from '@/lib/auth-client'
+import { getApiClient } from '@/lib/api-client'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
-import { apiUrl, fetcher, useMixQRPdf, useShowById } from '@/lib/http'
+import { useMixQRPdf, useShowById } from '@/lib/http'
+import { captureException } from '@/services/analytics'
 import { getShareUrl } from '@/lib/share'
 import { useContentStore } from '@/store'
 import { useAudioPlayerActions, useAudioPlayerPlaybackState } from '@/store/audioPlayer'
@@ -37,8 +40,24 @@ export const Route = createFileRoute('/mixes/$mixId')({
   component: MixPage,
   errorComponent: ({ error }) => <RouteError error={error} />,
   loader: async ({ params }) => {
-    const mix = await fetcher<SelectMdxCompiledAudio>(apiUrl(`/content/audio/mix/${params.mixId}`))
-    return { mix }
+    const client = await getApiClient()
+    const mix = await Effect.runPromise(
+      client.audio
+        .getAudioBySlug({ params: { type: 'mix', slug: params.mixId } })
+        .pipe(
+          Effect.tapError((error) => captureException(error, { endpoint: 'audio.getAudioBySlug' }))
+        )
+    )
+    return {
+      mix: {
+        ...mix,
+        bannerImageUrl: null,
+        createdAt: new Date(mix.createdAt),
+        updatedAt: new Date(mix.updatedAt),
+        tags: mix.tags ? [...mix.tags] : null,
+        creators: mix.creators ? [...mix.creators] : undefined
+      }
+    }
   },
   head: ({ loaderData, params }) => {
     const siteUrl = 'https://goosebumps.fm'

@@ -1,20 +1,38 @@
-import type { SelectMdxCompiledRelease } from '@gbfm/vps/schemas'
 import { createFileRoute } from '@tanstack/react-router'
+import { Effect } from 'effect'
 import * as React from 'react'
 import { LongPost } from '@/components/Layout/LongPost'
 import { RouteError } from '@/components/RouteError'
-import { apiUrl, fetcher } from '@/lib/http'
+import { getApiClient } from '@/lib/api-client'
 import { generateReleaseSEO, generateSEOMeta } from '@/lib/seo'
+import { captureException } from '@/services/analytics'
 import { useContentStore } from '@/store'
 
 export const Route = createFileRoute('/releases/$slug')({
   component: ReleasePage,
   errorComponent: ({ error }) => <RouteError error={error} />,
   loader: async ({ params }) => {
-    const release = await fetcher<SelectMdxCompiledRelease>(
-      apiUrl(`/content/releases/${params.slug}`)
+    const client = await getApiClient()
+    const release = await Effect.runPromise(
+      client.release
+        .getReleaseBySlug({ params: { slug: params.slug } })
+        .pipe(
+          Effect.tapError((error) =>
+            captureException(error, { endpoint: 'release.getReleaseBySlug' })
+          )
+        )
     )
-    return { release }
+    return {
+      release: {
+        ...release,
+        bannerImageUrl: null,
+        createdAt: new Date(release.createdAt),
+        updatedAt: new Date(release.updatedAt),
+        releaseDate: release.releaseDate ? new Date(release.releaseDate) : null,
+        tags: release.tags ? [...release.tags] : null,
+        streamingLinks: release.streamingLinks ? [...release.streamingLinks] : null
+      }
+    }
   },
   head: ({ loaderData, params }) => {
     if (!loaderData?.release) {
