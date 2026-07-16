@@ -11,10 +11,8 @@ import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
-  useSortable,
   verticalListSortingStrategy
 } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 import {
   Badge,
   Button,
@@ -46,13 +44,13 @@ import {
   toast
 } from '@gbfm/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, GripVertical, MoreHorizontal, Plus, X } from 'lucide-react'
+import { Check, MoreHorizontal, Plus, X } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { SortableSocialLinkRow } from '@/components/profile/social-link-fields'
 import { authClient } from '@/lib/auth-client'
 import {
   fetcher,
   type SocialLink,
-  type SocialLinkPlatform,
   useAdminUserBio,
   useAdminUserSocialLinks,
   useReplaceAdminUserSocialLinks,
@@ -100,84 +98,6 @@ type NewUserState = {
 
 function isEditDialogTab(value: string): value is 'details' | 'social-links' {
   return value === 'details' || value === 'social-links'
-}
-
-const SOCIAL_LINK_PLATFORM_OPTIONS: SocialLinkPlatform[] = [
-  'bandcamp',
-  'substack',
-  'soundcloud',
-  'instagram',
-  'twitter',
-  'tiktok'
-]
-
-const SOCIAL_LINK_PLATFORM_LABELS: Record<SocialLinkPlatform, string> = {
-  bandcamp: 'Bandcamp',
-  substack: 'Substack',
-  soundcloud: 'SoundCloud',
-  instagram: 'IG',
-  twitter: 'Twitter',
-  tiktok: 'TikTok'
-}
-
-function SortableSocialLinkRow({
-  link,
-  onChange,
-  onRemove
-}: {
-  link: SocialLink
-  onChange: (next: SocialLink) => void
-  onRemove: () => void
-}) {
-  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
-    id: `${link.platform}-${link.position}-${link.url}`
-  })
-
-  const style = {
-    transform: CSS.Transform.toString(transform),
-    transition
-  }
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className='grid grid-cols-[auto_180px_1fr_auto] items-start gap-2 rounded-sm border p-3'>
-      <button
-        type='button'
-        className='mt-2 text-muted-foreground hover:text-foreground cursor-grab active:cursor-grabbing'
-        aria-label='Reorder social link'
-        {...attributes}
-        {...listeners}>
-        <GripVertical className='h-4 w-4' />
-      </button>
-
-      <Select
-        value={link.platform}
-        onValueChange={(value: SocialLinkPlatform) => onChange({ ...link, platform: value })}>
-        <SelectTrigger>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {SOCIAL_LINK_PLATFORM_OPTIONS.map((platform) => (
-            <SelectItem key={platform} value={platform}>
-              {SOCIAL_LINK_PLATFORM_LABELS[platform]}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-
-      <Input
-        value={link.url}
-        onChange={(e) => onChange({ ...link, url: e.target.value })}
-        placeholder='https://...'
-      />
-
-      <Button type='button' variant='ghost' size='sm' onClick={onRemove}>
-        <X className='h-4 w-4' />
-      </Button>
-    </div>
-  )
 }
 
 export function UsersTab() {

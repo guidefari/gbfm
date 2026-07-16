@@ -589,6 +589,45 @@ export function useUpdateProfile() {
   }
 }
 
+export function useSocialLinks() {
+  return useQuery<SocialLink[], Error>({
+    queryKey: ['user', 'social-links'],
+    queryFn: async () => {
+      const client = await getApiClient()
+      const links = await Effect.runPromise(
+        client.user
+          .getSocialLinks()
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'user.getSocialLinks' }))
+          )
+      )
+      return links.map((link) => ({ ...link }))
+    }
+  })
+}
+
+export function useReplaceSocialLinks() {
+  const queryClient = useQueryClient()
+  return useMutation<SocialLink[], Error, SocialLink[]>({
+    mutationFn: async (links) => {
+      const client = await getApiClient()
+      const result = await Effect.runPromise(
+        client.user
+          .replaceSocialLinks({ payload: links })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'user.replaceSocialLinks' })
+            )
+          )
+      )
+      return result.map((link) => ({ ...link }))
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user', 'social-links'] })
+    }
+  })
+}
+
 export function useAdminUserSocialLinks(userId: string) {
   return useQuery<SocialLink[], Error>({
     queryKey: ['admin', 'user-social-links', userId],

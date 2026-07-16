@@ -5,6 +5,7 @@ import { ChangePasswordCard } from './ChangePasswordCard'
 import { EmailPreferencesCard } from './EmailPreferencesCard'
 import { PlayerPreferencesCard } from './PlayerPreferencesCard'
 import { ProfileCard } from './ProfileCard'
+import { SocialLinksCard } from './SocialLinksCard'
 import { ThemePreferencesCard } from './ThemePreferencesCard'
 
 type SessionUser = NonNullable<ReturnType<typeof useSession>['data']>['user']
@@ -48,6 +49,7 @@ export function DashboardSettings({ user }: { user: SessionUser }) {
           {activeTab === 'profile' && (
             <div className='animate-in fade-in slide-in-from-left-2 duration-300 space-y-6'>
               <ProfileCard user={user} />
+              <SocialLinksCard />
               <ChangePasswordCard email={user.email} />
             </div>
           )}
