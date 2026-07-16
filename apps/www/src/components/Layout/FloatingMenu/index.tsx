@@ -1,12 +1,13 @@
 import { useHotkey } from '@tanstack/react-hotkeys'
-import { Link, useLocation } from '@tanstack/react-router'
-import { LayoutDashboard, LogIn, Menu, X } from 'lucide-react'
+import { Link, useLocation, useNavigate } from '@tanstack/react-router'
+import { LayoutDashboard, LogIn, LogOut, Menu, X } from 'lucide-react'
 import { AnimatePresence, motion } from 'motion/react'
 import { useCallback, useEffect, useState } from 'react'
-import { useSession } from '@/lib/auth-client'
+import { signOut, useSession } from '@/lib/auth-client'
 import { canSeeNavItem } from '@/lib/nav-access'
 import { cn } from '@/lib/utils'
 import { useAudioPlayerPlaybackState, useAudioPlayerVisibilityState } from '@/store/audioPlayer'
+import { useUIStore } from '@/store/ui'
 import { type NavItem, navItemsForSurface } from '../NavLinks'
 import { NowPlayingMini } from './NowPlayingMini'
 import { useRovingGrid } from './useRovingGrid'
@@ -89,6 +90,8 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
   const { isFullscreenVisible } = useAudioPlayerVisibilityState()
   const { data: session } = useSession()
   const location = useLocation()
+  const navigate = useNavigate()
+  const resetUI = useUIStore((s) => s.resetUI)
   const isAuthenticated = Boolean(session?.user)
   const role = session?.user?.role
 
@@ -96,6 +99,13 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
 
   const toggleMenu = useCallback(() => setIsOpen((prev) => !prev), [])
   const closeMenu = useCallback(() => setIsOpen(false), [])
+
+  const handleSignOut = useCallback(async () => {
+    closeMenu()
+    await signOut()
+    resetUI()
+    navigate({ to: '/' })
+  }, [closeMenu, resetUI, navigate])
 
   useHotkey('Mod+K', () => toggleMenu())
 
@@ -137,7 +147,12 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
   const utilityItems = overlayItems.filter((item) => item.tier === 'utility')
 
   const tileCount =
-    browseItems.length + createItems.length + 1 + adminItems.length + utilityItems.length
+    browseItems.length +
+    createItems.length +
+    1 +
+    (isAuthenticated ? 1 : 0) +
+    adminItems.length +
+    utilityItems.length
   const { gridRef, registerTile, getTileProps } = useRovingGrid(tileCount, isOpen)
 
   const bind = (index: number): TileBinding => ({
@@ -152,6 +167,8 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
   cursor += createItems.length
   const accountTileIndex = cursor
   cursor += 1
+  const signOutTileIndex = cursor
+  cursor += isAuthenticated ? 1 : 0
   const adminStart = cursor
   cursor += adminItems.length
   const utilityStart = cursor
@@ -246,6 +263,17 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
                       <LogIn className='w-6 h-6' />
                       <span className={tileLabelClass}>Login</span>
                     </Link>
+                  )}
+                  {isAuthenticated && (
+                    <button
+                      type='button'
+                      ref={registerTile(signOutTileIndex)}
+                      onClick={handleSignOut}
+                      className={tileClass}
+                      {...getTileProps(signOutTileIndex)}>
+                      <LogOut className='w-6 h-6' />
+                      <span className={tileLabelClass}>Logout</span>
+                    </button>
                   )}
                   {adminItems.map((item, i) => (
                     <NavTile

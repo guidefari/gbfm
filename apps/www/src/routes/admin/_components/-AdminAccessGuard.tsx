@@ -1,8 +1,9 @@
-import { Link } from '@tanstack/react-router'
+import { Link, useLocation } from '@tanstack/react-router'
 import { useSession } from '@/lib/auth-client'
 
 export function AdminAccessGuard({ children }: { children: React.ReactNode }) {
   const { data: session } = useSession()
+  const location = useLocation()
   const isAuthenticated = Boolean(session?.user)
   const user = session?.user
 
@@ -15,11 +16,20 @@ export function AdminAccessGuard({ children }: { children: React.ReactNode }) {
               ? 'Please sign in to access the admin dashboard'
               : 'You need admin privileges to access this page'}
           </p>
-          <Link
-            to={isAuthenticated ? '/' : '/auth/sign-in'}
-            className='inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90'>
-            {isAuthenticated ? 'Go Home' : 'Sign In'}
-          </Link>
+          {isAuthenticated ? (
+            <Link
+              to='/'
+              className='inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90'>
+              Go Home
+            </Link>
+          ) : (
+            <Link
+              to='/auth/sign-in'
+              search={{ redirect: location.pathname }}
+              className='inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90'>
+              Sign In
+            </Link>
+          )}
         </div>
       </div>
     )
