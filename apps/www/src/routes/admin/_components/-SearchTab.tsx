@@ -1,7 +1,8 @@
 import { Badge, Input } from '@gbfm/ui'
 import { useQuery } from '@tanstack/react-query'
+import { Effect } from 'effect'
 import { useId, useState } from 'react'
-import { apiUrl, fetcher } from '@/lib/http'
+import { getApiClient } from '@/lib/api-client'
 
 interface SearchResultItem {
   id: string
@@ -13,9 +14,9 @@ interface SearchResultItem {
 }
 
 interface SearchResults {
-  shows: SearchResultItem[]
-  audio: SearchResultItem[]
-  posts: SearchResultItem[]
+  shows: ReadonlyArray<SearchResultItem>
+  audio: ReadonlyArray<SearchResultItem>
+  posts: ReadonlyArray<SearchResultItem>
 }
 
 const GROUPS: Array<{ key: keyof SearchResults; label: string }> = [
@@ -24,7 +25,7 @@ const GROUPS: Array<{ key: keyof SearchResults; label: string }> = [
   { key: 'posts', label: 'Posts' }
 ]
 
-function ResultGroup({ label, items }: { label: string; items: SearchResultItem[] }) {
+function ResultGroup({ label, items }: { label: string; items: ReadonlyArray<SearchResultItem> }) {
   return (
     <div className='space-y-2'>
       <div className='flex items-center gap-2'>
@@ -62,7 +63,10 @@ export function SearchTab() {
 
   const { data, isPending, isError } = useQuery({
     queryKey: ['admin', 'search', query],
-    queryFn: () => fetcher<SearchResults>(apiUrl(`/search?q=${encodeURIComponent(query)}`)),
+    queryFn: async () => {
+      const client = await getApiClient()
+      return Effect.runPromise(client.search.searchContent({ query: { q: query, limit: 50 } }))
+    },
     enabled: query.length >= 2
   })
 

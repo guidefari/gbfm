@@ -1,13 +1,17 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
+import { Effect } from 'effect'
 import { PublicProfilePage } from '@/components/profile/PublicProfilePage'
-import { apiUrl, fetcher, type PublicProfile } from '@/lib/http'
+import { getApiClient } from '@/lib/api-client'
 import { generateProfileSEO, generateSEOMeta } from '@/lib/seo'
 
 export const Route = createFileRoute('/profile/$username')({
   component: ProfilePage,
   loader: async ({ params }) => {
     try {
-      const profile = await fetcher<PublicProfile>(apiUrl(`/profile/${params.username}`))
+      const client = await getApiClient()
+      const profile = await Effect.runPromise(
+        client.profile.getPublicProfile({ params: { username: params.username } })
+      )
       if (!profile?.id) return { profile: null }
       return { profile }
     } catch {

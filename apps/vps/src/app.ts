@@ -1,105 +1,9 @@
-import { sql } from 'drizzle-orm'
-import { Data, Duration, Effect, Schedule } from 'effect'
-import type { Context } from 'hono'
-import configureOpenAPI from '@/lib/configure-open-api'
-import { createAppEffect } from '@/lib/create-app'
-import admin from '@/routes/admin/admin.index'
-import content from '@/routes/content/content.index'
-import email from '@/routes/email/email.index'
-import favorites from '@/routes/favorites/favorites.index'
-import fileManager from '@/routes/file-manager/file-manager.index'
-import invite from '@/routes/invite/invite.index'
-import music from '@/routes/music/music.index'
-import musicReminders from '@/routes/music-reminders/music-reminders.index'
-import newsletter from '@/routes/newsletter/newsletter.index'
-import profile from '@/routes/profile/profile.index'
-import { seoRouter, shareRouter } from '@/routes/redirect/redirect.index'
-import resolve from '@/routes/resolve/resolve.index'
-import rss from '@/routes/rss/rss.index'
-import search from '@/routes/search/search.index'
-import shows from '@/routes/shows/show.index'
-import spotify from '@/routes/spotify/spotify.index'
-import upload from '@/routes/upload/upload.index'
-import uploadMultipart from '@/routes/upload-multipart/upload-multipart.index'
-import betterAuthRoutes from '@/routes/user/better-auth.routes'
-import user from '@/routes/user/user.index'
-import { db } from './db'
-import { regenerateSitemap } from './routes/redirect/seo/sitemap'
+import { Duration, Effect, Schedule } from 'effect'
+import { regenerateSitemap } from '@/routes/redirect/seo/sitemap.service'
 import { runApp, runAppFork } from './runtime'
 import { processPendingReminders, queryNextDueReminder } from './services/reminder-processor'
 import { ReminderSignalService } from './services/reminder-signal.service'
 import { SentryService } from './services/sentry.service'
-
-class HealthCheckError extends Data.TaggedError('HealthCheckError')<{
-  cause?: unknown
-}> {}
-
-const healthCheckEffect = Effect.tryPromise({
-  try: () => db.execute(sql.raw('SELECT 1')),
-  catch: (cause) => new HealthCheckError({ cause })
-})
-
-const READINESS_CACHE_MS = 5_000
-let readinessCache: { checkedAt: number; status: 200 | 500 } | undefined
-
-const setupRoutesEffect = Effect.gen(function* () {
-  yield* SentryService
-  const app = yield* createAppEffect
-
-  configureOpenAPI(app)
-
-  app.route('/api/admin', admin)
-  app.route('/api/favorites', favorites)
-  app.route('/api/invite', invite)
-  app.route('/api/profile', profile)
-  app.route('/api/resolve', resolve)
-  app.route('/api/user', user)
-  app.route('/api/content', content)
-  app.route('/api/search', search)
-  app.route('/api/email', email)
-  app.route('/api/newsletter', newsletter)
-  app.route('/api/shows', shows)
-  app.route('/api/spotify', spotify)
-  app.route('/api/file-manager', fileManager)
-  app.route('/api/upload', upload)
-  app.route('/api/upload', uploadMultipart)
-  app.route('/api/music', music)
-  app.route('/api/music-reminders', musicReminders)
-
-  // Kept at root, not under /api: auth has its own basePath/email links, and these are externally-referenced public URLs.
-  app.route('/auth', betterAuthRoutes)
-  app.route('/s', shareRouter)
-  app.route('', rss)
-  app.route('', seoRouter)
-
-  app.get('/health/live', (c) => c.json({ ok: true }, 200))
-
-  const readinessHealthRoute = async (c: Context) => {
-    const cache = readinessCache
-    const cachedStatus = cache && Date.now() - cache.checkedAt < READINESS_CACHE_MS
-
-    if (cachedStatus) {
-      return c.json({ dbConnected: cache.status === 200 }, cache.status)
-    }
-
-    const program = healthCheckEffect.pipe(
-      Effect.map(() => ({ data: { dbConnected: true }, status: 200 as const })),
-      Effect.catch(() => Effect.succeed({ data: { dbConnected: false }, status: 500 as const }))
-    )
-
-    const result = await runApp(program)
-    readinessCache = {
-      checkedAt: Date.now(),
-      status: result.status
-    }
-    return c.json(result.data, result.status)
-  }
-
-  app.get('/health/ready', readinessHealthRoute)
-  app.get('/health', readinessHealthRoute)
-
-  return app
-})
 
 // Recovery interval caps the sleep so stalled/failed reminders are always retried
 const RECOVERY_INTERVAL_MS = 5 * 60 * 1000
@@ -133,13 +37,20 @@ const sitemapRegenerationEffect = regenerateSitemap.pipe(
   Effect.repeat(Schedule.spaced('1 hours'))
 )
 
-const mainEffect = setupRoutesEffect
+// Registered by the entry point (src/index.ts) to dispose the Effect
+// HttpRouter handler before the runtime shuts down.
+let disposeWebHandler: (() => Promise<void>) | undefined
+
+export const onShutdown = (dispose: () => Promise<void>) => {
+  disposeWebHandler = dispose
+}
 
 const setupGracefulShutdown = () => {
   const shutdown = async (signal: string) => {
     console.log(`Graceful shutdown initiated via ${signal}`)
 
     try {
+      await disposeWebHandler?.()
       const { disposeRuntime } = await import('./runtime')
       await disposeRuntime()
       console.log('Runtime disposed successfully')
@@ -157,21 +68,25 @@ const setupGracefulShutdown = () => {
   process.on('SIGINT', () => shutdown('SIGINT'))
 }
 
-// Initialize app with Effect
+// Step 8: the Hono app is gone -- initializeApp used to build and return it
+// (AppType was Awaited<ReturnType<typeof initializeApp>>, threaded through
+// createWebHandler as a parameter nothing actually called Hono methods on;
+// confirmed by grep before removing it). All real route serving now lives
+// entirely in apps/vps/src/http/routes.ts's createWebHandler.
 const initializeApp = async () => {
   setupGracefulShutdown()
 
   runAppFork(reminderLoopEffect)
   runAppFork(sitemapRegenerationEffect)
 
-  return await runApp(
-    mainEffect.pipe(
+  await runApp(
+    Effect.gen(function* () {
+      yield* SentryService
+    }).pipe(
       Effect.tap(() => Effect.log('App initialized successfully')),
       Effect.tapError((error) => Effect.logError(`❌ Failed to initialize app: ${error}`))
     )
   )
 }
 
-export type AppType = Awaited<ReturnType<typeof initializeApp>>
-
-export default await initializeApp()
+await initializeApp()

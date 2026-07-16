@@ -1,4 +1,4 @@
-import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '@gbfm/ui'
+import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label, useToast } from '@gbfm/ui'
 import { useEffect, useId, useState } from 'react'
 import { useSession } from '@/lib/auth-client'
 import { useUpdateProfile } from '@/lib/http'
@@ -14,6 +14,7 @@ export function ProfileCard({ user }: ProfileCardProps) {
   const avatarId = useId()
   const { refetch: refetchSession } = useSession()
   const { updateProfile, isPending: isUpdatingProfile } = useUpdateProfile()
+  const { toast } = useToast()
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [currentImage, setCurrentImage] = useState(user.image ?? null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -70,8 +71,14 @@ export function ProfileCard({ user }: ProfileCardProps) {
       setSelectedFile(null)
       setImagePreview(null)
       await refetchSession()
+      toast({ title: 'Profile updated' })
     } catch (error) {
       log('error', 'Error updating profile', { error })
+      toast({
+        variant: 'destructive',
+        title: 'Failed to update profile',
+        description: 'Please try again later.'
+      })
     }
   }
 
@@ -82,33 +89,34 @@ export function ProfileCard({ user }: ProfileCardProps) {
       </CardHeader>
       <CardContent>
         <form onSubmit={onSubmit}>
-          <div className='flex justify-center mb-6'>
-            <div className='relative mr-4 w-20 h-20 rounded-sm group'>
-              <img
-                src={imagePreview || currentImage || '/placeholder.svg'}
-                alt='User Avatar'
-                className='rounded-sm cursor-pointer'
-                width={80}
-                height={80}
-              />
-              <label
-                htmlFor={avatarId}
-                className='hidden absolute right-0 bottom-0 px-2 py-1 text-xs rounded-sm cursor-pointer group-hover:flex bg-gb-darker-bg'>
-                Change
-                <input
-                  id={avatarId}
-                  type='file'
-                  accept='image/*'
-                  className='hidden'
-                  onChange={handleImageChange}
+          <div className='flex flex-col items-center gap-2 mb-6'>
+            <label
+              htmlFor={avatarId}
+              className='relative w-20 h-20 rounded-sm cursor-pointer group'>
+              {imagePreview || currentImage ? (
+                <img
+                  src={imagePreview || currentImage || ''}
+                  alt='User Avatar'
+                  className='object-cover w-20 h-20 rounded-sm'
+                  width={80}
+                  height={80}
                 />
-              </label>
-            </div>
-            {selectedFile && (
-              <div className='self-end mb-2 text-xs text-muted-foreground'>
-                Avatar will be saved with profile
+              ) : (
+                <div className='flex justify-center items-center w-20 h-20 text-2xl rounded-sm bg-gb-darker-bg text-muted-foreground'>
+                  {(user?.username || user?.email || '?').charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div className='flex absolute inset-0 justify-center items-center text-xs opacity-0 transition-opacity rounded-sm group-hover:opacity-100 bg-black/60'>
+                Change
               </div>
-            )}
+              <input
+                id={avatarId}
+                type='file'
+                accept='image/*'
+                className='hidden'
+                onChange={handleImageChange}
+              />
+            </label>
           </div>
 
           <div className='grid gap-4'>

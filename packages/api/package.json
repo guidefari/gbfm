@@ -1,0 +1,44 @@
+{
+  "name": "@gbfm/api",
+  "version": "0.0.1",
+  "type": "module",
+  "exports": {
+    "./api": "./src/api.ts",
+    "./admin": "./src/admin.ts",
+    "./health": "./src/health.ts",
+    "./music": "./src/music.ts",
+    "./music-reminders": "./src/music-reminders.ts",
+    "./search": "./src/search.ts",
+    "./profile": "./src/profile.ts",
+    "./resolve": "./src/resolve.ts",
+    "./invite": "./src/invite.ts",
+    "./label": "./src/label.ts",
+    "./release": "./src/release.ts",
+    "./post": "./src/post.ts",
+    "./audio": "./src/audio.ts",
+    "./email": "./src/email.ts",
+    "./favorites": "./src/favorites.ts",
+    "./newsletter": "./src/newsletter.ts",
+    "./file-manager": "./src/file-manager.ts",
+    "./spotify": "./src/spotify.ts",
+    "./shows": "./src/shows.ts",
+    "./user": "./src/user.ts",
+    "./upload": "./src/upload.ts",
+    "./errors": "./src/errors.ts",
+    "./testing": "./src/testing.ts",
+    "./middleware/auth": "./src/middleware/auth.ts"
+  },
+  "scripts": {
+    "typecheck": "tsgo --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "effect": "4.0.0-beta.93"
+  },
+  "devDependencies": {
+    "@types/bun": "1.3.13",
+    "typescript": "6.0.3",
+    "vitest": "4.1.5"
+  }
+}

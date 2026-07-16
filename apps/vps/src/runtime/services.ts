@@ -1,5 +1,6 @@
 import { Layer } from 'effect'
 import { MdxServiceLive } from '@/lib/mdx'
+import { OtlpLive } from '@/lib/otel'
 import { DatabaseServiceLive } from '@/services/database.service'
 
 export { DatabaseService, DatabaseServiceLive } from '@/services/database.service'
@@ -49,6 +50,7 @@ const BaseServicesLayer = Layer.mergeAll(
   S3ServiceLive,
   SearchServiceLive,
   SentryServiceLive.pipe(Layer.provide(SentryClientLive)),
+  OtlpLive.pipe(Layer.provide(SentryClientLive), Layer.provide(ConfigServiceLive)),
   ShowServiceLive,
   ShowSubscriptionServiceLive,
   UserServiceLive,

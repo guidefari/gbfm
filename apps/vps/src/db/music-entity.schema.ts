@@ -1,5 +1,5 @@
 import { LINK_STATUS, LINK_STATUSES } from '@gbfm/core/status'
-import { z } from '@hono/zod-openapi'
+import { z } from 'zod'
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
 import {
   index,
@@ -348,287 +348,218 @@ export const musicPlaylistTracksRelations = relations(musicPlaylistTracksTable, 
 // Zod schemas for API validation
 // ---------------------------------------------------------------------------
 
-const musicPlatformEnum = z.enum(MUSIC_PLATFORMS).openapi('MusicPlatform')
+const musicPlatformEnum = z.enum(MUSIC_PLATFORMS)
 
-const linkStatusEnum = z.enum(LINK_STATUSES).openapi('LinkStatus')
+const linkStatusEnum = z.enum(LINK_STATUSES)
 
-const entityTypeEnum = z.enum(MUSIC_ENTITY_TYPES).openapi('MusicEntityType')
+const entityTypeEnum = z.enum(MUSIC_ENTITY_TYPES)
 
 // --- Artist ---
 
-export const insertMusicArtistSchema = z
-  .object({
-    name: z.string().min(1).openapi({ example: 'Burial' }),
-    bio: z.string().optional(),
-    imageUrl: z.string().url().optional(),
-    genres: z.array(z.string()).optional(),
-    slug: z.string().min(1).openapi({ example: 'burial' }),
-    publishedAt: z.coerce.date().optional()
-  })
-  .openapi('InsertMusicArtist')
+export const insertMusicArtistSchema = z.object({
+  name: z.string().min(1),
+  bio: z.string().optional(),
+  imageUrl: z.string().url().optional(),
+  genres: z.array(z.string()).optional(),
+  slug: z.string().min(1),
+  publishedAt: z.coerce.date().optional()
+})
 
-export const selectMusicArtistSchema = z
-  .object({
-    id: z.string().uuid(),
-    name: z.string(),
-    bio: z.string().nullable(),
-    imageUrl: z.string().nullable(),
-    genres: z.array(z.string()).nullable(),
-    slug: z.string(),
-    publishedAt: z.date().nullable(),
-    createdById: z.string().nullable(),
-    createdAt: z.date(),
-    updatedAt: z.date()
-  })
-  .openapi('MusicArtist')
+export const selectMusicArtistSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  bio: z.string().nullable(),
+  imageUrl: z.string().nullable(),
+  genres: z.array(z.string()).nullable(),
+  slug: z.string(),
+  publishedAt: z.date().nullable(),
+  createdById: z.string().nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date()
+})
 
-export const updateMusicArtistSchema = insertMusicArtistSchema
-  .partial()
-  .openapi('UpdateMusicArtist')
+export const updateMusicArtistSchema = insertMusicArtistSchema.partial()
 
 // --- Album ---
 
-export const insertMusicAlbumSchema = z
-  .object({
-    title: z.string().min(1).openapi({ example: 'Untrue' }),
-    artistNames: z
-      .array(z.string())
-      .optional()
-      .openapi({
-        description: 'Denormalized artist names for quick display',
-        example: ['Burial']
-      }),
-    artistIds: z.array(z.string().uuid()).optional().openapi({
-      description: 'UUIDs of existing music_artists rows to link via junction table'
-    }),
-    releaseDate: z.coerce.date().optional(),
-    coverImageUrl: z.string().url().optional(),
-    genres: z.array(z.string()).optional(),
-    albumType: z.enum(['LP', 'EP', 'single', 'compilation']).optional().openapi({ example: 'LP' }),
-    slug: z.string().min(1).openapi({ example: 'untrue' }),
-    publishedAt: z.coerce.date().optional()
-  })
-  .openapi('InsertMusicAlbum')
+export const insertMusicAlbumSchema = z.object({
+  title: z.string().min(1),
+  artistNames: z.array(z.string()).optional(),
+  artistIds: z.array(z.string().uuid()).optional(),
+  releaseDate: z.coerce.date().optional(),
+  coverImageUrl: z.string().url().optional(),
+  genres: z.array(z.string()).optional(),
+  albumType: z.enum(['LP', 'EP', 'single', 'compilation']).optional(),
+  slug: z.string().min(1),
+  publishedAt: z.coerce.date().optional()
+})
 
-export const selectMusicAlbumSchema = z
-  .object({
-    id: z.string().uuid(),
-    title: z.string(),
-    artistNames: z.array(z.string()).nullable(),
-    releaseDate: z.date().nullable(),
-    coverImageUrl: z.string().nullable(),
-    genres: z.array(z.string()).nullable(),
-    albumType: z.string().nullable(),
-    slug: z.string(),
-    publishedAt: z.date().nullable(),
-    createdById: z.string().nullable(),
-    createdAt: z.date(),
-    updatedAt: z.date()
-  })
-  .openapi('MusicAlbum')
+export const selectMusicAlbumSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
+  artistNames: z.array(z.string()).nullable(),
+  releaseDate: z.date().nullable(),
+  coverImageUrl: z.string().nullable(),
+  genres: z.array(z.string()).nullable(),
+  albumType: z.string().nullable(),
+  slug: z.string(),
+  publishedAt: z.date().nullable(),
+  createdById: z.string().nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date()
+})
 
-export const updateMusicAlbumSchema = insertMusicAlbumSchema.partial().openapi('UpdateMusicAlbum')
+export const updateMusicAlbumSchema = insertMusicAlbumSchema.partial()
 
 // --- Track ---
 
-export const insertMusicTrackSchema = z
-  .object({
-    title: z.string().min(1).openapi({ example: 'Archangel' }),
-    artistNames: z
-      .array(z.string())
-      .optional()
-      .openapi({
-        description: 'Denormalized artist names for quick display',
-        example: ['Burial']
-      }),
-    artistIds: z.array(z.string().uuid()).optional().openapi({
-      description: 'UUIDs of existing music_artists rows to link via junction table'
-    }),
-    coverImageUrl: z.string().url().optional(),
-    albumId: z.string().uuid().optional(),
-    trackNumber: z.number().int().positive().optional(),
-    slug: z.string().min(1).openapi({ example: 'archangel' }),
-    publishedAt: z.coerce.date().optional()
-  })
-  .openapi('InsertMusicTrack')
+export const insertMusicTrackSchema = z.object({
+  title: z.string().min(1),
+  artistNames: z.array(z.string()).optional(),
+  artistIds: z.array(z.string().uuid()).optional(),
+  coverImageUrl: z.string().url().optional(),
+  albumId: z.string().uuid().optional(),
+  trackNumber: z.number().int().positive().optional(),
+  slug: z.string().min(1),
+  publishedAt: z.coerce.date().optional()
+})
 
-export const selectMusicTrackSchema = z
-  .object({
-    id: z.string().uuid(),
-    title: z.string(),
-    artistNames: z.array(z.string()).nullable(),
-    coverImageUrl: z.string().nullable(),
-    albumId: z.string().nullable(),
-    trackNumber: z.number().nullable(),
-    slug: z.string(),
-    publishedAt: z.date().nullable(),
-    createdById: z.string().nullable(),
-    createdAt: z.date(),
-    updatedAt: z.date()
-  })
-  .openapi('MusicTrack')
+export const selectMusicTrackSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
+  artistNames: z.array(z.string()).nullable(),
+  coverImageUrl: z.string().nullable(),
+  albumId: z.string().nullable(),
+  trackNumber: z.number().nullable(),
+  slug: z.string(),
+  publishedAt: z.date().nullable(),
+  createdById: z.string().nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date()
+})
 
-export const updateMusicTrackSchema = insertMusicTrackSchema.partial().openapi('UpdateMusicTrack')
+export const updateMusicTrackSchema = insertMusicTrackSchema.partial()
 
 // --- Playlist ---
 
-export const insertMusicPlaylistSchema = z
-  .object({
-    title: z.string().min(1).openapi({ example: 'Late Night Selections' }),
-    description: z.string().optional(),
-    coverImageUrl: z.string().url().optional(),
-    curatorId: z.string().optional(),
-    slug: z.string().min(1).openapi({ example: 'late-night-selections' }),
-    publishedAt: z.coerce.date().optional()
-  })
-  .openapi('InsertMusicPlaylist')
+export const insertMusicPlaylistSchema = z.object({
+  title: z.string().min(1),
+  description: z.string().optional(),
+  coverImageUrl: z.string().url().optional(),
+  curatorId: z.string().optional(),
+  slug: z.string().min(1),
+  publishedAt: z.coerce.date().optional()
+})
 
-export const selectMusicPlaylistSchema = z
-  .object({
-    id: z.string().uuid(),
-    title: z.string(),
-    description: z.string().nullable(),
-    coverImageUrl: z.string().nullable(),
-    curatorId: z.string().nullable(),
-    slug: z.string(),
-    publishedAt: z.date().nullable(),
-    createdById: z.string().nullable(),
-    createdAt: z.date(),
-    updatedAt: z.date(),
-    spotifyUrl: z.string().nullable().optional()
-  })
-  .openapi('MusicPlaylist')
+export const selectMusicPlaylistSchema = z.object({
+  id: z.string().uuid(),
+  title: z.string(),
+  description: z.string().nullable(),
+  coverImageUrl: z.string().nullable(),
+  curatorId: z.string().nullable(),
+  slug: z.string(),
+  publishedAt: z.date().nullable(),
+  createdById: z.string().nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date(),
+  spotifyUrl: z.string().nullable().optional()
+})
 
-export const updateMusicPlaylistSchema = insertMusicPlaylistSchema
-  .partial()
-  .openapi('UpdateMusicPlaylist')
+export const updateMusicPlaylistSchema = insertMusicPlaylistSchema.partial()
 
 // --- Entity Link ---
 // entityType/platform use z.string() in the select schema because
 // Drizzle types varchar FK columns as plain string; enum validation is
 // enforced on inputs only.
 
-export const insertMusicEntityLinkSchema = z
-  .object({
-    entityType: entityTypeEnum,
-    entityId: z.string().uuid(),
-    platform: musicPlatformEnum,
-    url: z.string().url(),
-    status: linkStatusEnum.optional().default(LINK_STATUS.PENDING_REVIEW),
-    scrapedAt: z.coerce.date().optional(),
-    metadata: z.record(z.string(), z.unknown()).optional()
-  })
-  .openapi('InsertMusicEntityLink')
+export const insertMusicEntityLinkSchema = z.object({
+  entityType: entityTypeEnum,
+  entityId: z.string().uuid(),
+  platform: musicPlatformEnum,
+  url: z.string().url(),
+  status: linkStatusEnum.optional().default(LINK_STATUS.PENDING_REVIEW),
+  scrapedAt: z.coerce.date().optional(),
+  metadata: z.record(z.string(), z.unknown()).optional()
+})
 
-export const selectMusicEntityLinkSchema = z
-  .object({
-    id: z.string().uuid(),
-    entityType: z.string(),
-    entityId: z.string().uuid(),
-    platform: z.string(),
-    url: z.string(),
-    status: z.string(),
-    scrapedAt: z.date().nullable(),
-    verifiedAt: z.date().nullable(),
-    verifiedBy: z.string().nullable(),
-    metadata: z.record(z.string(), z.unknown()).nullable(),
-    createdAt: z.date(),
-    updatedAt: z.date()
-  })
-  .openapi('MusicEntityLink')
+export const selectMusicEntityLinkSchema = z.object({
+  id: z.string().uuid(),
+  entityType: z.string(),
+  entityId: z.string().uuid(),
+  platform: z.string(),
+  url: z.string(),
+  status: z.string(),
+  scrapedAt: z.date().nullable(),
+  verifiedAt: z.date().nullable(),
+  verifiedBy: z.string().nullable(),
+  metadata: z.record(z.string(), z.unknown()).nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date()
+})
 
-export const updateMusicEntityLinkStatusSchema = z
-  .object({
-    status: linkStatusEnum,
-    metadata: z.record(z.string(), z.unknown()).optional()
-  })
-  .openapi('UpdateMusicEntityLinkStatus')
+export const updateMusicEntityLinkStatusSchema = z.object({
+  status: linkStatusEnum,
+  metadata: z.record(z.string(), z.unknown()).optional()
+})
 
 // --- Artist junction schemas ---
 
-export const musicAlbumArtistSchema = z
-  .object({
-    albumId: z.string().uuid(),
-    artistId: z.string().uuid(),
-    displayOrder: z.number().int().default(0),
-    role: z.string().optional().openapi({
-      example: 'primary',
-      description: 'primary | featured | producer | remixer'
-    })
-  })
-  .openapi('MusicAlbumArtist')
+export const musicAlbumArtistSchema = z.object({
+  albumId: z.string().uuid(),
+  artistId: z.string().uuid(),
+  displayOrder: z.number().int().default(0),
+  role: z.string().optional()
+})
 
-export const musicTrackArtistSchema = z
-  .object({
-    trackId: z.string().uuid(),
-    artistId: z.string().uuid(),
-    displayOrder: z.number().int().default(0),
-    role: z.string().optional()
-  })
-  .openapi('MusicTrackArtist')
+export const musicTrackArtistSchema = z.object({
+  trackId: z.string().uuid(),
+  artistId: z.string().uuid(),
+  displayOrder: z.number().int().default(0),
+  role: z.string().optional()
+})
 
 // --- Playlist track junction schemas ---
 
-export const musicPlaylistTrackSchema = z
-  .object({
-    playlistId: z.string().uuid(),
-    trackId: z.string().uuid(),
-    position: z.number().int().nonnegative(),
-    addedAt: z.date()
-  })
-  .openapi('MusicPlaylistTrack')
+export const musicPlaylistTrackSchema = z.object({
+  playlistId: z.string().uuid(),
+  trackId: z.string().uuid(),
+  position: z.number().int().nonnegative(),
+  addedAt: z.date()
+})
 
-export const insertMusicPlaylistTrackSchema = z
-  .object({
-    trackId: z.string().uuid(),
-    position: z.number().int().nonnegative()
-  })
-  .openapi('InsertMusicPlaylistTrack')
+export const insertMusicPlaylistTrackSchema = z.object({
+  trackId: z.string().uuid(),
+  position: z.number().int().nonnegative()
+})
 
-export const reorderPlaylistTracksSchema = z
-  .object({
-    trackIds: z.array(z.string().uuid()).min(1)
-  })
-  .openapi('ReorderPlaylistTracks')
+export const reorderPlaylistTracksSchema = z.object({
+  trackIds: z.array(z.string().uuid()).min(1)
+})
 
-export const addSpotifyTrackToPlaylistSchema = z
-  .object({
-    url: z.string().url().openapi({
-      example: 'https://open.spotify.com/track/...'
-    })
-  })
-  .openapi('AddSpotifyTrackToPlaylist')
+export const addSpotifyTrackToPlaylistSchema = z.object({
+  url: z.string().url()
+})
 
-export const addSpotifyTrackResultSchema = z
-  .object({
-    trackId: z.string().uuid(),
-    position: z.number().int(),
-    created: z.boolean()
-  })
-  .openapi('AddSpotifyTrackResult')
+export const addSpotifyTrackResultSchema = z.object({
+  trackId: z.string().uuid(),
+  position: z.number().int(),
+  created: z.boolean()
+})
 
-export const importSpotifyPlaylistSchema = z
-  .object({
-    url: z.string().url().openapi({
-      example: 'https://open.spotify.com/playlist/37i9dQZF1DXcBWIGoYBM5M'
-    })
-  })
-  .openapi('ImportSpotifyPlaylist')
+export const importSpotifyPlaylistSchema = z.object({
+  url: z.string().url()
+})
 
-export const importSpotifyPlaylistResultSchema = z
-  .object({
-    playlist: selectMusicPlaylistSchema,
-    trackCount: z.number().int(),
-    createdTrackCount: z.number().int(),
-    reusedTrackCount: z.number().int()
-  })
-  .openapi('ImportSpotifyPlaylistResult')
+export const importSpotifyPlaylistResultSchema = z.object({
+  playlist: selectMusicPlaylistSchema,
+  trackCount: z.number().int(),
+  createdTrackCount: z.number().int(),
+  reusedTrackCount: z.number().int()
+})
 
-export const importSpotifyPlaylistQueuedSchema = z
-  .object({
-    status: z.literal('Queued')
-  })
-  .openapi('ImportSpotifyPlaylistQueued')
+export const importSpotifyPlaylistQueuedSchema = z.object({
+  status: z.literal('Queued')
+})
 
 // Re-export enums for use in routes
 export { entityTypeEnum, linkStatusEnum, musicPlatformEnum }

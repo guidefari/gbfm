@@ -1,7 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { Bell, Plus } from 'lucide-react'
-import { apiUrl, fetcher } from '@/lib/http'
+import { useMusicReminders } from '@/lib/http'
 
 const UPCOMING_LIMIT = 5
 const RECENT_LIMIT = 4
@@ -15,17 +14,8 @@ interface MusicReminder {
   isSent: boolean
 }
 
-interface RemindersResponse {
-  success: boolean
-  reminders: MusicReminder[]
-  total: number
-}
-
 export function RemindersCard() {
-  const { data, isPending } = useQuery<RemindersResponse>({
-    queryKey: ['reminders'],
-    queryFn: () => fetcher(apiUrl('/music-reminders'))
-  })
+  const { data, isPending } = useMusicReminders()
 
   const upcomingReminders =
     data?.reminders

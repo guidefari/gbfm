@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle, Label } from '@gbfm/ui'
+import { Card, CardContent, CardHeader, CardTitle, Label, useToast } from '@gbfm/ui'
 import { useEffect, useState } from 'react'
 import { useEmailPreferences, useUpdateEmailPreferences } from '@/lib/http'
 import { log } from '@/services/logger'
@@ -6,6 +6,7 @@ import { log } from '@/services/logger'
 export function EmailPreferencesCard() {
   const { data: emailPreferences } = useEmailPreferences()
   const { updateEmailPreferences } = useUpdateEmailPreferences()
+  const { toast } = useToast()
 
   const [emailPrefs, setEmailPrefs] = useState({
     mixReleaseEnabled: emailPreferences?.mixReleaseEnabled ?? true,
@@ -33,6 +34,11 @@ export function EmailPreferencesCard() {
     } catch (error) {
       log('error', 'Error updating email preferences', { key, error })
       setEmailPrefs(emailPrefs)
+      toast({
+        variant: 'destructive',
+        title: 'Failed to update email preferences',
+        description: 'Please try again later.'
+      })
     }
   }
 

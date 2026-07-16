@@ -1,4 +1,10 @@
-import type { EmailDeliveryStatus, LinkStatus } from '@gbfm/core/status'
+import type {
+  EmailLogsResponse,
+  SendMixNotificationInput,
+  SendMixNotificationResponse
+} from '@gbfm/api/email'
+import type { CreateMusicReminderInput } from '@gbfm/api/music-reminders'
+import type { LinkStatus } from '@gbfm/core/status'
 import type {
   SelectAudio,
   SelectLabel,
@@ -12,15 +18,16 @@ import type {
   SelectShow,
   SelectShowSubscription
 } from '@gbfm/vps/schemas'
+import { Effect } from 'effect'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { RuntimeClient } from '@/runtime'
 import { captureException } from '@/services/analytics'
+import { getApiClient } from './api-client'
 import { useSession } from './auth-client'
 import { createFetcher, getRequestMethod, getRequestUrl, type ApiFailureInput } from './http-client'
 import {
   DEFAULT_PAGE_SIZE,
   getNextOffsetPageParam,
-  setPaginationParams,
   type PaginatedResponse,
   type PaginationOptions
 } from './http-pagination'
@@ -42,8 +49,6 @@ type User = {
   emailVerified: boolean
   image?: string | null
   username?: string | null
-  createdAt: Date
-  updatedAt: Date
   role?: string | null
 }
 
@@ -100,10 +105,27 @@ export function useAudioByType(
     useInfiniteQuery<PaginatedResponse<SelectAudio>, Error>({
       queryKey: audioListQueryKey(type, tag, limit),
       queryFn: async ({ pageParam = 0 }) => {
-        const url = apiUrlObj(`/content/audio/${type}`)
-        setPaginationParams(url, Number(pageParam), { limit })
-        if (tag) url.searchParams.set('tag', tag)
-        return fetcher<PaginatedResponse<SelectAudio>>(url.toString())
+        const client = await getApiClient()
+        const result = await Effect.runPromise(
+          client.audio
+            .getAudioByType({ params: { type }, query: { limit, offset: Number(pageParam), tag } })
+            .pipe(
+              Effect.tapError((error) =>
+                captureException(error, { endpoint: 'audio.getAudioByType' })
+              )
+            )
+        )
+        return {
+          data: result.data.map((audio) => ({
+            ...audio,
+            bannerImageUrl: null,
+            createdAt: new Date(audio.createdAt),
+            updatedAt: new Date(audio.updatedAt),
+            tags: audio.tags ? [...audio.tags] : null,
+            creators: audio.creators ? [...audio.creators] : undefined
+          })),
+          pagination: result.pagination
+        }
       },
       initialPageParam: 0,
       getNextPageParam: getNextOffsetPageParam
@@ -123,7 +145,17 @@ export function useAudioByType(
 export function useAudioTags(type: AudioContentType) {
   const { data, error, isPending } = useQuery<string[], Error>({
     queryKey: audioTagsQueryKey(type),
-    queryFn: async () => fetcher<string[]>(apiUrl(`/content/audio/${type}/tags`)),
+    queryFn: async () => {
+      const client = await getApiClient()
+      const tags = await Effect.runPromise(
+        client.audio
+          .getAudioTags({ params: { type } })
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'audio.getAudioTags' }))
+          )
+      )
+      return [...tags]
+    },
     staleTime: 1000 * 60 * 60
   })
   return { data: data ?? [], error, isPending }
@@ -132,7 +164,19 @@ export function useAudioTags(type: AudioContentType) {
 export function useEditorialTags() {
   const { data, error, isPending } = useQuery<string[], Error>({
     queryKey: ['editorial-tags'],
-    queryFn: async () => fetcher<string[]>(apiUrl('/content/posts/editorials/tags')),
+    queryFn: async () => {
+      const client = await getApiClient()
+      const tags = await Effect.runPromise(
+        client.post
+          .getEditorialTags({})
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'post.getEditorialTags' })
+            )
+          )
+      )
+      return [...tags]
+    },
     staleTime: 1000 * 60 * 60
   })
   return { data: data ?? [], error, isPending }
@@ -141,7 +185,26 @@ export function useEditorialTags() {
 export function useAudioBySlug(type: AudioContentType, slug: string) {
   const { data, error, isPending } = useQuery<SelectMdxCompiledAudio, Error>({
     queryKey: audioSlugQueryKey(type, slug),
-    queryFn: async () => fetcher(apiUrl(`/content/audio/${type}/${slug}`)),
+    queryFn: async () => {
+      const client = await getApiClient()
+      const audio = await Effect.runPromise(
+        client.audio
+          .getAudioBySlug({ params: { type, slug } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'audio.getAudioBySlug' })
+            )
+          )
+      )
+      return {
+        ...audio,
+        bannerImageUrl: null,
+        createdAt: new Date(audio.createdAt),
+        updatedAt: new Date(audio.updatedAt),
+        tags: audio.tags ? [...audio.tags] : null,
+        creators: audio.creators ? [...audio.creators] : undefined
+      }
+    },
     enabled: Boolean(slug)
   })
 
@@ -157,11 +220,27 @@ export function useEditorialPosts(tag?: string, limit = DEFAULT_PAGE_SIZE) {
     useInfiniteQuery<PaginatedResponse<SelectMdxCompiledEditorialPost>, Error>({
       queryKey: ['posts', 'editorials', tag, limit],
       queryFn: async ({ pageParam = 0 }) => {
-        const url = apiUrlObj(`/content/posts/editorials`)
-        url.searchParams.set('limit', String(limit))
-        url.searchParams.set('offset', String(pageParam))
-        if (tag) url.searchParams.set('tag', tag)
-        return fetcher<PaginatedResponse<SelectMdxCompiledEditorialPost>>(url.toString())
+        const client = await getApiClient()
+        const result = await Effect.runPromise(
+          client.post
+            .getEditorialPosts({ query: { limit, offset: Number(pageParam), tag } })
+            .pipe(
+              Effect.tapError((error) =>
+                captureException(error, { endpoint: 'post.getEditorialPosts' })
+              )
+            )
+        )
+        return {
+          data: result.data.map((post) => ({
+            ...post,
+            bannerImageUrl: null,
+            createdAt: new Date(post.createdAt),
+            updatedAt: new Date(post.updatedAt),
+            tags: post.tags ? [...post.tags] : null,
+            creators: post.creators ? [...post.creators] : undefined
+          })),
+          pagination: result.pagination
+        }
       },
       initialPageParam: 0,
       getNextPageParam: getNextOffsetPageParam
@@ -183,10 +262,27 @@ export function useMicroPosts(limit = DEFAULT_PAGE_SIZE) {
     useInfiniteQuery<PaginatedResponse<SelectMdxCompiledMicroPost>, Error>({
       queryKey: ['posts', 'micro', limit],
       queryFn: async ({ pageParam = 0 }) => {
-        const url = apiUrlObj(`/content/posts/micro`)
-        url.searchParams.set('limit', String(limit))
-        url.searchParams.set('offset', String(pageParam))
-        return fetcher<PaginatedResponse<SelectMdxCompiledMicroPost>>(url.toString())
+        const client = await getApiClient()
+        const result = await Effect.runPromise(
+          client.post
+            .getMicroPosts({ query: { limit, offset: Number(pageParam) } })
+            .pipe(
+              Effect.tapError((error) =>
+                captureException(error, { endpoint: 'post.getMicroPosts' })
+              )
+            )
+        )
+        return {
+          data: result.data.map((post) => ({
+            ...post,
+            bannerImageUrl: null,
+            createdAt: new Date(post.createdAt),
+            updatedAt: new Date(post.updatedAt),
+            tags: post.tags ? [...post.tags] : null,
+            creators: post.creators ? [...post.creators] : undefined
+          })),
+          pagination: result.pagination
+        }
       },
       initialPageParam: 0,
       getNextPageParam: getNextOffsetPageParam
@@ -206,7 +302,26 @@ export function useMicroPosts(limit = DEFAULT_PAGE_SIZE) {
 export function useEditorialPostBySlug(slug: string) {
   const { data, error, isPending } = useQuery<SelectMdxCompiledEditorialPost, Error>({
     queryKey: ['post', 'editorial', slug],
-    queryFn: async () => fetcher(apiUrl(`/content/posts/editorials/${slug}`)),
+    queryFn: async () => {
+      const client = await getApiClient()
+      const post = await Effect.runPromise(
+        client.post
+          .getEditorialPostBySlug({ params: { slug } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'post.getEditorialPostBySlug' })
+            )
+          )
+      )
+      return {
+        ...post,
+        bannerImageUrl: null,
+        createdAt: new Date(post.createdAt),
+        updatedAt: new Date(post.updatedAt),
+        tags: post.tags ? [...post.tags] : null,
+        creators: post.creators ? [...post.creators] : undefined
+      }
+    },
     enabled: Boolean(slug)
   })
 
@@ -220,7 +335,26 @@ export function useEditorialPostBySlug(slug: string) {
 export function useMicroPostBySlug(slug: string) {
   const { data, error, isPending } = useQuery<SelectMdxCompiledMicroPost, Error>({
     queryKey: ['post', 'micro', slug],
-    queryFn: async () => fetcher(apiUrl(`/content/posts/micro/${slug}`)),
+    queryFn: async () => {
+      const client = await getApiClient()
+      const post = await Effect.runPromise(
+        client.post
+          .getMicroPostBySlug({ params: { slug } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'post.getMicroPostBySlug' })
+            )
+          )
+      )
+      return {
+        ...post,
+        bannerImageUrl: null,
+        createdAt: new Date(post.createdAt),
+        updatedAt: new Date(post.updatedAt),
+        tags: post.tags ? [...post.tags] : null,
+        creators: post.creators ? [...post.creators] : undefined
+      }
+    },
     enabled: Boolean(slug)
   })
 
@@ -238,40 +372,120 @@ type SpotifyProxyInput<T extends SpotifyContentType> = {
   spotifyContentType: T
 }
 
-type SpotifyProxyResponseType<T> = T extends 'album'
-  ? AlbumApiResponse
-  : T extends 'track'
-    ? TrackAPIResponse
-    : T extends 'playlist'
-      ? PlaylistApiResponse
-      : never
-
-export function useSpotifyProxy<T extends SpotifyContentType>({
-  id,
-  spotifyContentType
-}: SpotifyProxyInput<T>) {
-  const { data, error, isLoading } = useQuery<SpotifyProxyResponseType<typeof spotifyContentType>>({
-    queryKey: ['spotify/proxy', spotifyContentType, id],
-
-    queryFn: async () =>
-      fetcher(apiUrl(`/spotify/${spotifyContentType}`), {
-        method: 'POST',
-        body: JSON.stringify({ id })
-      }),
+const useSpotifyAlbumProxy = (id: string, enabled: boolean) => {
+  const { data, error, isLoading } = useQuery<AlbumApiResponse>({
+    queryKey: ['spotify/proxy', 'album', id],
+    queryFn: async () => {
+      const client = await getApiClient()
+      const album = await Effect.runPromise(
+        client.spotify
+          .getSpotifyAlbum({ payload: { id } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'spotify.getSpotifyAlbum' })
+            )
+          )
+      )
+      return { ...album, tracks: album.tracks.map((track) => ({ ...track })) }
+    },
+    enabled,
     staleTime: 15 * 60 * 1000
   })
-  return {
-    data: data,
-    isLoading,
-    error
-  }
+  return { data, isLoading, error }
+}
+
+const useSpotifyTrackProxy = (id: string, enabled: boolean) => {
+  const { data, error, isLoading } = useQuery<TrackAPIResponse>({
+    queryKey: ['spotify/proxy', 'track', id],
+    queryFn: async () => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.spotify
+          .getSpotifyTrack({ payload: { id } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'spotify.getSpotifyTrack' })
+            )
+          )
+      )
+    },
+    enabled,
+    staleTime: 15 * 60 * 1000
+  })
+  return { data, isLoading, error }
+}
+
+const useSpotifyPlaylistProxy = (id: string, enabled: boolean) => {
+  const { data, error, isLoading } = useQuery<PlaylistApiResponse>({
+    queryKey: ['spotify/proxy', 'playlist', id],
+    queryFn: async () => {
+      const client = await getApiClient()
+      const playlist = await Effect.runPromise(
+        client.spotify
+          .getSpotifyPlaylist({ payload: { id } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'spotify.getSpotifyPlaylist' })
+            )
+          )
+      )
+      return {
+        ...playlist,
+        coverImageUrl: playlist.coverImageUrl ?? '',
+        description: playlist.description ?? '',
+        ownerName: playlist.ownerName ?? '',
+        tracks: playlist.tracks.map((track) => ({ ...track }))
+      }
+    },
+    enabled,
+    staleTime: 15 * 60 * 1000
+  })
+  return { data, isLoading, error }
+}
+
+// No single proxy endpoint server-side -- getSpotifyTrack/Album/Playlist are
+// three separate endpoints with different response shapes. Each content type
+// gets its own concretely-typed hook, and the three overload signatures below
+// let each call site's literal `spotifyContentType` resolve to its own real
+// return type -- no runtime-to-generic type correlation needed, since
+// overload resolution is exactly what handles "the literal argument picks
+// the static return type" natively. React's rules of hooks require calling
+// all three unconditionally; `enabled` keeps the two inactive ones from ever
+// actually querying.
+export function useSpotifyProxy(input: SpotifyProxyInput<'album'>): {
+  data: AlbumApiResponse | undefined
+  isLoading: boolean
+  error: Error | null
+}
+export function useSpotifyProxy(input: SpotifyProxyInput<'track'>): {
+  data: TrackAPIResponse | undefined
+  isLoading: boolean
+  error: Error | null
+}
+export function useSpotifyProxy(input: SpotifyProxyInput<'playlist'>): {
+  data: PlaylistApiResponse | undefined
+  isLoading: boolean
+  error: Error | null
+}
+export function useSpotifyProxy({ id, spotifyContentType }: SpotifyProxyInput<SpotifyContentType>) {
+  const isAlbum = spotifyContentType === 'album'
+  const isTrack = spotifyContentType === 'track'
+  const isPlaylist = spotifyContentType === 'playlist'
+
+  const album = useSpotifyAlbumProxy(id, isAlbum)
+  const track = useSpotifyTrackProxy(id, isTrack)
+  const playlist = useSpotifyPlaylistProxy(id, isPlaylist)
+
+  if (isAlbum) return album
+  if (isTrack) return track
+  return playlist
 }
 
 export type EnrichedTrack = {
   title: string
   artist: string
   url: string
-  platform: 'spotify' | 'youtube' | 'apple_music' | 'other'
+  platform: 'spotify' | 'youtube' | 'apple_music' | 'bandcamp' | 'other'
   thumbnailUrl?: string
   duration?: number
   album?: string
@@ -280,11 +494,18 @@ export type EnrichedTrack = {
 export function useEnrichTrackFromUrl(url: string) {
   const { data, error, isLoading } = useQuery<EnrichedTrack>({
     queryKey: ['spotify/enrich', url],
-    queryFn: async () =>
-      fetcher(apiUrl('/spotify/enrich'), {
-        method: 'POST',
-        body: JSON.stringify({ url })
-      }),
+    queryFn: async () => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.spotify
+          .enrichSpotifyTrackFromUrl({ payload: { url: new URL(url) } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'spotify.enrichSpotifyTrackFromUrl' })
+            )
+          )
+      )
+    },
     enabled: Boolean(url) && url.length > 10, // Only run if URL is reasonably long
     staleTime: 15 * 60 * 1000
   })
@@ -334,7 +555,16 @@ export function useResolveMusicEntity(url: string) {
 export function useUserLOL() {
   const { data, error, isPending } = useQuery<User, Error>({
     queryKey: ['user'],
-    queryFn: async () => fetcher(apiUrl('/user/profile'))
+    queryFn: async () => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.user
+          .getProfile({})
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'user.getProfile' }))
+          )
+      )
+    }
   })
 
   return {
@@ -362,7 +592,19 @@ export function useUpdateProfile() {
 export function useAdminUserSocialLinks(userId: string) {
   return useQuery<SocialLink[], Error>({
     queryKey: ['admin', 'user-social-links', userId],
-    queryFn: () => fetcher<SocialLink[]>(apiUrl(`/user/admin/${userId}/social-links`)),
+    queryFn: async () => {
+      const client = await getApiClient()
+      const links = await Effect.runPromise(
+        client.user
+          .getAdminUserSocialLinks({ params: { userId } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'user.getAdminUserSocialLinks' })
+            )
+          )
+      )
+      return links.map((link) => ({ ...link }))
+    },
     enabled: Boolean(userId)
   })
 }
@@ -370,11 +612,19 @@ export function useAdminUserSocialLinks(userId: string) {
 export function useReplaceAdminUserSocialLinks() {
   const queryClient = useQueryClient()
   return useMutation<SocialLink[], Error, { userId: string; links: SocialLink[] }>({
-    mutationFn: ({ userId, links }) =>
-      fetcher<SocialLink[]>(apiUrl(`/user/admin/${userId}/social-links`), {
-        method: 'PUT',
-        body: JSON.stringify(links)
-      }),
+    mutationFn: async ({ userId, links }) => {
+      const client = await getApiClient()
+      const result = await Effect.runPromise(
+        client.user
+          .replaceAdminUserSocialLinks({ params: { userId }, payload: links })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'user.replaceAdminUserSocialLinks' })
+            )
+          )
+      )
+      return result.map((link) => ({ ...link }))
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
         queryKey: ['admin', 'user-social-links', variables.userId]
@@ -385,18 +635,36 @@ export function useReplaceAdminUserSocialLinks() {
 
 export function useUpdateAdminUserBio() {
   return useMutation<{ bio: string | null }, Error, { userId: string; bio: string }>({
-    mutationFn: ({ userId, bio }) =>
-      fetcher<{ bio: string | null }>(apiUrl(`/user/admin/${userId}/bio`), {
-        method: 'PATCH',
-        body: JSON.stringify({ bio })
-      })
+    mutationFn: async ({ userId, bio }) => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.user
+          .updateAdminUserBio({ params: { userId }, payload: { bio, image: undefined } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'user.updateAdminUserBio' })
+            )
+          )
+      )
+    }
   })
 }
 
 export function useAdminUserBio(userId: string) {
   return useQuery<{ bio: string | null }, Error>({
     queryKey: ['admin', 'user-bio', userId],
-    queryFn: () => fetcher<{ bio: string | null }>(apiUrl(`/user/admin/${userId}/bio`)),
+    queryFn: async () => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.user
+          .getAdminUserBio({ params: { userId } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'user.getAdminUserBio' })
+            )
+          )
+      )
+    },
     enabled: Boolean(userId)
   })
 }
@@ -409,14 +677,25 @@ export type EmailPreferences = {
   systemEnabled: boolean
   globalUnsubscribe: boolean
   unsubscribeToken: string | null
-  createdAt: Date
-  updatedAt: Date
+  createdAt: string
+  updatedAt: string
 }
 
 export function useEmailPreferences() {
   const { data, error, isPending } = useQuery<EmailPreferences, Error>({
     queryKey: ['email-preferences'],
-    queryFn: async () => fetcher(apiUrl('/user/email-preferences'))
+    queryFn: async () => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.user
+          .getEmailPreferences({})
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'user.getEmailPreferences' })
+            )
+          )
+      )
+    }
   })
 
   return {
@@ -432,11 +711,18 @@ export function useUpdateEmailPreferences() {
     Error,
     Partial<EmailPreferences>
   >({
-    mutationFn: async (preferences) =>
-      fetcher(apiUrl('/user/email-preferences'), {
-        method: 'PATCH',
-        body: JSON.stringify(preferences)
-      })
+    mutationFn: async (preferences) => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.user
+          .updateEmailPreferences({ payload: preferences })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'user.updateEmailPreferences' })
+            )
+          )
+      )
+    }
   })
 
   return {
@@ -445,27 +731,8 @@ export function useUpdateEmailPreferences() {
   }
 }
 
-export type EmailLogStatus = EmailDeliveryStatus
-
-export type AdminEmailLog = {
-  id: string
-  userId: string | null
-  recipientEmail: string
-  recipientName: string | null
-  emailType: string
-  templateName: string
-  subject: string
-  status: EmailLogStatus
-  sesMessageId: string | null
-  metadata: Record<string, unknown> | null
-  errorMessage: string | null
-  sentAt: string | Date | null
-  deliveredAt: string | Date | null
-  bouncedAt: string | Date | null
-  complainedAt: string | Date | null
-  createdAt: string | Date
-  updatedAt: string | Date
-}
+export type EmailLogStatus = EmailLogsResponse['data'][number]['status']
+export type AdminEmailLog = EmailLogsResponse['data'][number]
 
 export type AdminEmailLogsFilters = {
   limit?: number
@@ -484,18 +751,17 @@ export function useAdminEmailLogs({
   dateFrom,
   dateTo
 }: AdminEmailLogsFilters) {
-  return useQuery<PaginatedResponse<AdminEmailLog>, Error>({
+  return useQuery<EmailLogsResponse, Error>({
     queryKey: ['admin', 'email-logs', limit, offset, status, recipientEmail, dateFrom, dateTo],
     queryFn: async () => {
-      const url = apiUrlObj(`/email/logs`)
-      url.searchParams.set('limit', String(limit))
-      url.searchParams.set('offset', String(offset))
-      if (status) url.searchParams.set('status', status)
-      if (recipientEmail) url.searchParams.set('recipientEmail', recipientEmail)
-      if (dateFrom) url.searchParams.set('dateFrom', dateFrom)
-      if (dateTo) url.searchParams.set('dateTo', dateTo)
-
-      return fetcher<PaginatedResponse<AdminEmailLog>>(url.toString())
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.email
+          .getEmailLogs({ query: { limit, offset, status, recipientEmail, dateFrom, dateTo } })
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'email.getEmailLogs' }))
+          )
+      )
     }
   })
 }
@@ -512,7 +778,19 @@ type NewsletterSubscriber = {
 export function useAdminNewsletterSubscribers() {
   return useQuery<{ subscribers: NewsletterSubscriber[] }, Error>({
     queryKey: ['admin', 'newsletter-subscribers'],
-    queryFn: async () => fetcher(apiUrl('/admin/newsletter-subscribers'))
+    queryFn: async () => {
+      const client = await getApiClient()
+      const result = await Effect.runPromise(
+        client.admin
+          .getNewsletterSubscribers({})
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'admin.getNewsletterSubscribers' })
+            )
+          )
+      )
+      return { subscribers: result.subscribers.map((s) => ({ ...s })) }
+    }
   })
 }
 
@@ -521,9 +799,27 @@ export function useAllLabels({ limit = DEFAULT_PAGE_SIZE }: PaginationOptions = 
     useInfiniteQuery<PaginatedResponse<SelectLabel>, Error>({
       queryKey: ['labels', limit],
       queryFn: async ({ pageParam = 0 }) => {
-        const url = apiUrlObj(`/content/labels`)
-        setPaginationParams(url, Number(pageParam), { limit })
-        return fetcher<PaginatedResponse<SelectLabel>>(url.toString())
+        const client = await getApiClient()
+        const result = await Effect.runPromise(
+          client.label
+            .getAllLabels({ query: { limit, offset: Number(pageParam) } })
+            .pipe(
+              Effect.tapError((error) =>
+                captureException(error, { endpoint: 'label.getAllLabels' })
+              )
+            )
+        )
+        return {
+          data: result.data.map((label) => ({
+            ...label,
+            bannerImageUrl: null,
+            createdAt: new Date(label.createdAt),
+            updatedAt: new Date(label.updatedAt),
+            tags: label.tags ? [...label.tags] : null,
+            genres: label.genres ? [...label.genres] : null
+          })),
+          pagination: result.pagination
+        }
       },
       initialPageParam: 0,
       getNextPageParam: getNextOffsetPageParam
@@ -542,7 +838,27 @@ export function useAllLabels({ limit = DEFAULT_PAGE_SIZE }: PaginationOptions = 
 export function useLabelBySlug(slug: string) {
   const { data, error, isPending } = useQuery<SelectMdxCompiledLabel, Error>({
     queryKey: ['label', slug],
-    queryFn: async () => fetcher(apiUrl(`/content/labels/${slug}`)),
+    queryFn: async () => {
+      const client = await getApiClient()
+      const label = await Effect.runPromise(
+        client.label
+          .getLabelBySlug({ params: { slug } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'label.getLabelBySlug' })
+            )
+          )
+      )
+      return {
+        ...label,
+        bannerImageUrl: null,
+        createdAt: new Date(label.createdAt),
+        updatedAt: new Date(label.updatedAt),
+        tags: label.tags ? [...label.tags] : null,
+        genres: label.genres ? [...label.genres] : null,
+        creators: label.creators ? [...label.creators] : undefined
+      }
+    },
     enabled: Boolean(slug)
   })
 
@@ -561,9 +877,31 @@ export function useReleasesByLabel(
     useInfiniteQuery<PaginatedResponse<SelectRelease>, Error>({
       queryKey: ['releases', 'label', labelSlug, limit],
       queryFn: async ({ pageParam = 0 }) => {
-        const url = apiUrlObj(`/content/labels/${labelSlug}/releases`)
-        setPaginationParams(url, Number(pageParam), { limit })
-        return fetcher<PaginatedResponse<SelectRelease>>(url.toString())
+        const client = await getApiClient()
+        const result = await Effect.runPromise(
+          client.release
+            .getReleasesByLabel({
+              params: { labelSlug },
+              query: { limit, offset: Number(pageParam) }
+            })
+            .pipe(
+              Effect.tapError((error) =>
+                captureException(error, { endpoint: 'release.getReleasesByLabel' })
+              )
+            )
+        )
+        return {
+          data: result.data.map((release) => ({
+            ...release,
+            bannerImageUrl: null,
+            createdAt: new Date(release.createdAt),
+            updatedAt: new Date(release.updatedAt),
+            releaseDate: release.releaseDate ? new Date(release.releaseDate) : null,
+            tags: release.tags ? [...release.tags] : null,
+            streamingLinks: release.streamingLinks ? [...release.streamingLinks] : null
+          })),
+          pagination: result.pagination
+        }
       },
       initialPageParam: 0,
       getNextPageParam: getNextOffsetPageParam,
@@ -583,7 +921,27 @@ export function useReleasesByLabel(
 export function useReleaseBySlug(slug: string) {
   const { data, error, isPending } = useQuery<SelectMdxCompiledRelease, Error>({
     queryKey: ['release', slug],
-    queryFn: async () => fetcher(apiUrl(`/content/releases/${slug}`)),
+    queryFn: async () => {
+      const client = await getApiClient()
+      const release = await Effect.runPromise(
+        client.release
+          .getReleaseBySlug({ params: { slug } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'release.getReleaseBySlug' })
+            )
+          )
+      )
+      return {
+        ...release,
+        bannerImageUrl: null,
+        createdAt: new Date(release.createdAt),
+        updatedAt: new Date(release.updatedAt),
+        releaseDate: release.releaseDate ? new Date(release.releaseDate) : null,
+        tags: release.tags ? [...release.tags] : null,
+        streamingLinks: release.streamingLinks ? [...release.streamingLinks] : null
+      }
+    },
     enabled: Boolean(slug)
   })
 
@@ -603,6 +961,13 @@ export type FavoriteAudio = {
   url: string
 }
 
+export type FavoriteShow = {
+  id: string
+  title: string
+  slug: string
+  thumbnailUrl: string | null
+}
+
 export type Favorite = {
   id: string
   userId: string
@@ -610,6 +975,12 @@ export type Favorite = {
   showId: string | null
   createdAt: string
   audio: FavoriteAudio | null
+  // Real field on the ported /api/favorites response (GetFavoritesResponse
+  // in packages/api/src/favorites.ts) -- was silently absent from this
+  // type under the old fetcher-based hook. No current consumer reads it
+  // (FavoritesSection.tsx filters to audio-only favorites), so this
+  // doesn't change any UI behavior, just makes the type honest.
+  show: FavoriteShow | null
 }
 
 export type FavoritesResponse = {
@@ -623,7 +994,22 @@ export function useFavorites() {
   const isAuthenticated = Boolean(session?.user)
   const { data, error, isPending, refetch } = useQuery<FavoritesResponse, Error>({
     queryKey: favoritesQueryKey(),
-    queryFn: async () => fetcher(apiUrl('/favorites')),
+    queryFn: async () => {
+      const client = await getApiClient()
+      const result = await Effect.runPromise(
+        client.favorites
+          .getFavorites({ query: {} })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'favorites.getFavorites' })
+            )
+          )
+      )
+      return {
+        ...result,
+        favorites: result.favorites.map((favorite) => ({ ...favorite }))
+      }
+    },
     enabled: isAuthenticated
   })
 
@@ -643,11 +1029,18 @@ export function useAddFavorite() {
     Error,
     { audioId: string }
   >({
-    mutationFn: async ({ audioId }) =>
-      fetcher(apiUrl('/favorites'), {
-        method: 'POST',
-        body: JSON.stringify({ audioId })
-      }),
+    mutationFn: async ({ audioId }) => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.favorites
+          .addFavorite({ payload: { audioId } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'favorites.addFavorite' })
+            )
+          )
+      )
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: favoritesQueryKey() })
     }
@@ -666,10 +1059,18 @@ export function useRemoveFavorite() {
     Error,
     { audioId: string }
   >({
-    mutationFn: async ({ audioId }) =>
-      fetcher(apiUrl(`/favorites/${audioId}`), {
-        method: 'DELETE'
-      }),
+    mutationFn: async ({ audioId }) => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.favorites
+          .removeFavorite({ params: { audioId } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'favorites.removeFavorite' })
+            )
+          )
+      )
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: favoritesQueryKey() })
     }
@@ -688,11 +1089,18 @@ export function useAddShowFavorite() {
     Error,
     { showId: string }
   >({
-    mutationFn: async ({ showId }) =>
-      fetcher(apiUrl('/favorites'), {
-        method: 'POST',
-        body: JSON.stringify({ showId })
-      }),
+    mutationFn: async ({ showId }) => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.favorites
+          .addFavorite({ payload: { showId } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'favorites.addFavorite' })
+            )
+          )
+      )
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: favoritesQueryKey() })
     }
@@ -711,10 +1119,18 @@ export function useRemoveShowFavorite() {
     Error,
     { showId: string }
   >({
-    mutationFn: async ({ showId }) =>
-      fetcher(apiUrl(`/favorites/show/${showId}`), {
-        method: 'DELETE'
-      }),
+    mutationFn: async ({ showId }) => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.favorites
+          .removeShowFavorite({ params: { showId } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'favorites.removeShowFavorite' })
+            )
+          )
+      )
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: favoritesQueryKey() })
     }
@@ -735,9 +1151,24 @@ export function useAllShows({ limit = DEFAULT_PAGE_SIZE }: PaginationOptions = {
     useInfiniteQuery<PaginatedResponse<ShowWithHosts>, Error>({
       queryKey: ['shows', limit],
       queryFn: async ({ pageParam = 0 }) => {
-        const url = apiUrlObj(`/shows`)
-        setPaginationParams(url, Number(pageParam), { limit })
-        return fetcher<PaginatedResponse<ShowWithHosts>>(url.toString())
+        const client = await getApiClient()
+        const result = await Effect.runPromise(
+          client.shows
+            .getAllShows({ query: { limit, offset: Number(pageParam) } })
+            .pipe(
+              Effect.tapError((error) => captureException(error, { endpoint: 'shows.getAllShows' }))
+            )
+        )
+        return {
+          data: result.data.map((show) => ({
+            ...show,
+            createdAt: new Date(show.createdAt),
+            updatedAt: new Date(show.updatedAt),
+            tags: show.tags ? [...show.tags] : null,
+            hosts: [...show.hosts]
+          })),
+          pagination: result.pagination
+        }
       },
       initialPageParam: 0,
       getNextPageParam: getNextOffsetPageParam
@@ -756,7 +1187,23 @@ export function useAllShows({ limit = DEFAULT_PAGE_SIZE }: PaginationOptions = {
 export function useShowBySlug(slug: string) {
   const { data, error, isPending } = useQuery<SelectMdxCompiledShow, Error>({
     queryKey: ['show', slug],
-    queryFn: async () => fetcher(apiUrl(`/shows/${slug}`)),
+    queryFn: async () => {
+      const client = await getApiClient()
+      const show = await Effect.runPromise(
+        client.shows
+          .getShowBySlug({ params: { slug } })
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'shows.getShowBySlug' }))
+          )
+      )
+      return {
+        ...show,
+        createdAt: new Date(show.createdAt),
+        updatedAt: new Date(show.updatedAt),
+        tags: show.tags ? [...show.tags] : null,
+        hosts: show.hosts ? [...show.hosts] : undefined
+      }
+    },
     enabled: Boolean(slug)
   })
 
@@ -774,12 +1221,24 @@ export type ShowBasicInfo = {
   thumbnailUrl: string | null
 }
 
+// Fetches up to 100 shows and finds by id client-side -- there is no
+// get-show-by-id endpoint server-side (only getShowBySlug), so this
+// inefficiency predates this port and isn't fixable from the client
+// alone. Flagged in step 6b's process notes as a candidate for a real
+// backend endpoint, not fixed here.
 export function useShowById(id: string | null | undefined) {
   const { data, error, isPending } = useQuery<ShowBasicInfo, Error>({
     queryKey: ['show-by-id', id],
     queryFn: async () => {
-      const shows = await fetcher<PaginatedResponse<ShowWithHosts>>(apiUrl('/shows?limit=100'))
-      const show = shows.data.find((s) => s.id === id)
+      const client = await getApiClient()
+      const result = await Effect.runPromise(
+        client.shows
+          .getAllShows({ query: { limit: 100, offset: 0 } })
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'shows.getAllShows' }))
+          )
+      )
+      const show = result.data.find((s) => s.id === id)
       if (!show) throw new Error('Show not found')
       return {
         id: show.id,
@@ -807,9 +1266,25 @@ export function useShowEpisodes(
     useInfiniteQuery<PaginatedResponse<SelectAudio>, Error>({
       queryKey: ['show-episodes', slug, limit],
       queryFn: async ({ pageParam = 0 }) => {
-        const url = apiUrlObj(`/shows/${slug}/episodes`)
-        setPaginationParams(url, Number(pageParam), { limit })
-        return fetcher<PaginatedResponse<SelectAudio>>(url.toString())
+        const client = await getApiClient()
+        const result = await Effect.runPromise(
+          client.shows
+            .getShowEpisodes({ params: { slug }, query: { limit, offset: Number(pageParam) } })
+            .pipe(
+              Effect.tapError((error) =>
+                captureException(error, { endpoint: 'shows.getShowEpisodes' })
+              )
+            )
+        )
+        return {
+          data: result.data.map((episode) => ({
+            ...episode,
+            createdAt: new Date(episode.createdAt),
+            updatedAt: new Date(episode.updatedAt),
+            tags: episode.tags ? [...episode.tags] : null
+          })),
+          pagination: result.pagination
+        }
       },
       initialPageParam: 0,
       getNextPageParam: getNextOffsetPageParam,
@@ -833,10 +1308,36 @@ export type SubscriptionWithShow = SelectShowSubscription & {
 export function useUserSubscriptions() {
   const { data: session } = useSession()
   const isAuthenticated = Boolean(session?.user)
-  const { data, error, isPending } = useQuery<PaginatedResponse<SubscriptionWithShow>, Error>({
+  const { data, error, isPending } = useQuery<
+    { data: SubscriptionWithShow[]; pagination: unknown },
+    Error
+  >({
     queryKey: userSubscriptionsQueryKey(),
-    queryFn: async () =>
-      fetcher<PaginatedResponse<SubscriptionWithShow>>(apiUrl('/user/subscriptions')),
+    queryFn: async () => {
+      const client = await getApiClient()
+      const result = await Effect.runPromise(
+        client.user
+          .getUserSubscriptions({ query: {} })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'user.getUserSubscriptions' })
+            )
+          )
+      )
+      return {
+        data: result.data.map((s) => ({
+          ...s,
+          createdAt: new Date(s.createdAt),
+          show: {
+            ...s.show,
+            tags: s.show.tags ? [...s.show.tags] : null,
+            createdAt: new Date(s.show.createdAt),
+            updatedAt: new Date(s.show.updatedAt)
+          }
+        })),
+        pagination: result.pagination
+      }
+    },
     enabled: isAuthenticated
   })
 
@@ -854,10 +1355,19 @@ export function useSubscribeToShow() {
     Error,
     { showId: string }
   >({
-    mutationFn: async ({ showId }) =>
-      fetcher(apiUrl(`/shows/${showId}/subscribe`), {
-        method: 'POST'
-      }),
+    mutationFn: async ({ showId }) => {
+      const client = await getApiClient()
+      const result = await Effect.runPromise(
+        client.shows
+          .subscribeToShow({ params: { id: showId } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'shows.subscribeToShow' })
+            )
+          )
+      )
+      return { ...result, createdAt: new Date(result.createdAt) }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: userSubscriptionsQueryKey() })
     }
@@ -872,10 +1382,18 @@ export function useSubscribeToShow() {
 export function useUnsubscribeFromShow() {
   const queryClient = useQueryClient()
   const { mutateAsync: unsubscribe, isPending } = useMutation<void, Error, { showId: string }>({
-    mutationFn: async ({ showId }) =>
-      fetcher(apiUrl(`/shows/${showId}/unsubscribe`), {
-        method: 'DELETE'
-      }),
+    mutationFn: async ({ showId }) => {
+      const client = await getApiClient()
+      await Effect.runPromise(
+        client.shows
+          .unsubscribeFromShow({ params: { id: showId } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'shows.unsubscribeFromShow' })
+            )
+          )
+      )
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: userSubscriptionsQueryKey() })
     }
@@ -893,10 +1411,10 @@ export type PublicProfile = {
   username: string | null
   image: string | null
   bio: string | null
-  socialLinks: SocialLink[]
+  socialLinks: ReadonlyArray<SocialLink>
   createdAt: string
   content: {
-    mixes: Array<{
+    mixes: ReadonlyArray<{
       id: string
       title: string
       slug: string
@@ -904,13 +1422,13 @@ export type PublicProfile = {
       type: 'mix' | 'track' | 'misc'
       showId: string | null
     }>
-    shows: Array<{
+    shows: ReadonlyArray<{
       id: string
       title: string
       slug: string
       thumbnailUrl: string | null
     }>
-    editorials: Array<{
+    editorials: ReadonlyArray<{
       id: string
       title: string
       slug: string
@@ -918,7 +1436,7 @@ export type PublicProfile = {
       description: string | null
       createdAt: string
     }>
-    tweets: Array<{
+    tweets: ReadonlyArray<{
       id: string
       title: string | null
       slug: string
@@ -941,10 +1459,10 @@ export type ResolvedShow = {
     description: string | null
     thumbnailUrl: string | null
     bannerImageUrl: string | null
-    tags: string[] | null
+    tags: ReadonlyArray<string> | null
     createdAt: string
     compiledContent: string | null
-    hosts: Array<{ id: string; name: string; username: string | null }>
+    hosts: ReadonlyArray<{ id: string; name: string; username: string | null }>
   }
 }
 
@@ -954,7 +1472,14 @@ export function useResolveSlug(slug: string) {
   const { data, error, isPending } = useQuery<ResolveResult, Error>({
     queryKey: ['resolve', slug],
     queryFn: async () => {
-      return fetcher<ResolveResult>(apiUrl(`/resolve/${slug}`))
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.resolve
+          .resolveSlug({ params: { slug } })
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'resolve.resolveSlug' }))
+          )
+      )
     },
     enabled: Boolean(slug),
     retry: false
@@ -979,7 +1504,15 @@ export type DjListItem = {
 export function useDjs() {
   return useQuery<DjListItem[], Error>({
     queryKey: ['djs'],
-    queryFn: () => fetcher<DjListItem[]>(apiUrl('/user/djs')),
+    queryFn: async () => {
+      const client = await getApiClient()
+      const djs = await Effect.runPromise(
+        client.user
+          .listDjs({})
+          .pipe(Effect.tapError((error) => captureException(error, { endpoint: 'user.listDjs' })))
+      )
+      return djs.map((dj) => ({ ...dj }))
+    },
     staleTime: 1000 * 60 * 5
   })
 }
@@ -988,9 +1521,16 @@ export function usePublicProfile(username: string) {
   const { data, error, isPending } = useQuery<PublicProfile, Error>({
     queryKey: ['profile', username],
     queryFn: async () => {
-      const profile = await fetcher<PublicProfile>(apiUrl(`/profile/${username}`))
-      if (!profile?.id) throw new Error('Profile not found')
-      return profile
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.profile
+          .getPublicProfile({ params: { username } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'profile.getPublicProfile' })
+            )
+          )
+      )
     },
     enabled: Boolean(username),
     retry: false
@@ -1003,33 +1543,20 @@ export function usePublicProfile(username: string) {
   }
 }
 
-type SendMixNotificationResponse = {
-  success: boolean
-  sentTo: string[]
-  emailIds: string[]
-  message: string
-}
-
-type SendMixNotificationInput = {
-  mixSlug: string
-  recipients?: string[]
-  metadata?: {
-    artistName?: string
-    mixTitle?: string
-  }
-}
-
 export function useSendMixNotification() {
   return useMutation<SendMixNotificationResponse, Error, SendMixNotificationInput>({
-    mutationFn: async ({ mixSlug, recipients, metadata }) =>
-      fetcher<SendMixNotificationResponse>(apiUrl('/email/send-mix-notification'), {
-        method: 'POST',
-        body: JSON.stringify({
-          mixSlug,
-          ...(recipients && { recipients }),
-          ...(metadata && { metadata })
-        })
-      })
+    mutationFn: async (payload) => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.email
+          .sendMixNotification({ payload })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'email.sendMixNotification' })
+            )
+          )
+      )
+    }
   })
 }
 
@@ -1040,31 +1567,52 @@ type NewsletterSubscribeResponse = {
 
 export function useNewsletterSubscribe() {
   return useMutation<NewsletterSubscribeResponse, Error, { email: string; name?: string }>({
-    mutationFn: async ({ email, name }) =>
-      fetcher<NewsletterSubscribeResponse>(apiUrl('/newsletter/subscribe'), {
-        method: 'POST',
-        body: JSON.stringify({ email, name, source: 'subscribe_page' })
-      })
+    mutationFn: async ({ email, name }) => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.newsletter
+          .subscribe({ payload: { email, name, source: 'subscribe_page' } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'newsletter.subscribe' })
+            )
+          )
+      )
+    }
   })
 }
 
 export function useNewsletterUnsubscribe() {
   return useMutation<{ success: boolean }, Error, { token: string }>({
-    mutationFn: async ({ token }) =>
-      fetcher<{ success: boolean }>(apiUrl('/newsletter/unsubscribe'), {
-        method: 'POST',
-        body: JSON.stringify({ token })
-      })
+    mutationFn: async ({ token }) => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.newsletter
+          .unsubscribe({ payload: { token } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'newsletter.unsubscribe' })
+            )
+          )
+      )
+    }
   })
 }
 
 export function useRequestNewsletterUnsubscribe() {
   return useMutation<{ sent: boolean }, Error, { email: string }>({
-    mutationFn: async ({ email }) =>
-      fetcher<{ sent: boolean }>(apiUrl('/newsletter/request-unsubscribe'), {
-        method: 'POST',
-        body: JSON.stringify({ email })
-      })
+    mutationFn: async ({ email }) => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.newsletter
+          .requestUnsubscribe({ payload: { email } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'newsletter.requestUnsubscribe' })
+            )
+          )
+      )
+    }
   })
 }
 
@@ -1076,7 +1624,16 @@ type QRPdfResponse = {
 export function useMixQRPdf(slug: string, enabled = false) {
   return useQuery<QRPdfResponse>({
     queryKey: ['mix-qr-pdf', slug],
-    queryFn: () => fetcher<QRPdfResponse>(apiUrl(`/content/audio/mix/${slug}/qr-pdf`)),
+    queryFn: async () => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.audio
+          .getMixQRPdf({ params: { slug }, query: {} })
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'audio.getMixQRPdf' }))
+          )
+      )
+    },
     enabled,
     staleTime: 1000 * 60 * 60 * 24
   })
@@ -1085,7 +1642,16 @@ export function useMixQRPdf(slug: string, enabled = false) {
 export function useShowQRPdf(slug: string, enabled = false) {
   return useQuery<QRPdfResponse>({
     queryKey: ['show-qr-pdf', slug],
-    queryFn: () => fetcher<QRPdfResponse>(apiUrl(`/shows/${slug}/qr-pdf`)),
+    queryFn: async () => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.shows
+          .getShowQRPdf({ params: { slug }, query: {} })
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'shows.getShowQRPdf' }))
+          )
+      )
+    },
     enabled,
     staleTime: 1000 * 60 * 60 * 24
   })
@@ -1155,14 +1721,34 @@ export interface AdminMusicEntityLink {
 export function useAdminArtists() {
   return useQuery<MusicArtist[]>({
     queryKey: ['admin', 'artists'],
-    queryFn: () => fetcher(apiUrl('/music/artists'))
+    queryFn: async () => {
+      const client = await getApiClient()
+      const artists = await Effect.runPromise(
+        client.music
+          .listArtists({})
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'music.listArtists' }))
+          )
+      )
+      return artists.map((a) => ({ ...a, genres: a.genres ? [...a.genres] : null }))
+    }
   })
 }
 
 export function useAdminArtist(id: string) {
   return useQuery<MusicArtist>({
     queryKey: ['admin', 'artists', id],
-    queryFn: () => fetcher(apiUrl(`/music/artists/${id}`)),
+    queryFn: async () => {
+      const client = await getApiClient()
+      const artist = await Effect.runPromise(
+        client.music
+          .getArtist({ params: { id } })
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'music.getArtist' }))
+          )
+      )
+      return { ...artist, genres: artist.genres ? [...artist.genres] : null }
+    },
     enabled: Boolean(id)
   })
 }
@@ -1170,11 +1756,17 @@ export function useAdminArtist(id: string) {
 export function useUpdateAdminArtist() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
-      fetcher<MusicArtist>(apiUrl(`/music/artists/${id}`), {
-        method: 'PATCH',
-        body: JSON.stringify(data)
-      }),
+    mutationFn: async ({ id, data }: { id: string; data: Record<string, unknown> }) => {
+      const client = await getApiClient()
+      const artist = await Effect.runPromise(
+        client.music
+          .updateArtist({ params: { id }, payload: data })
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'music.updateArtist' }))
+          )
+      )
+      return { ...artist, genres: artist.genres ? [...artist.genres] : null }
+    },
     onSuccess: (_, { id }) => {
       qc.invalidateQueries({ queryKey: ['admin', 'artists', id] })
       qc.invalidateQueries({ queryKey: ['admin', 'artists'] })
@@ -1185,7 +1777,16 @@ export function useUpdateAdminArtist() {
 export function useDeleteAdminArtist() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (id: string) => fetcher(apiUrl(`/music/artists/${id}`), { method: 'DELETE' }),
+    mutationFn: async (id: string) => {
+      const client = await getApiClient()
+      await Effect.runPromise(
+        client.music
+          .deleteArtist({ params: { id } })
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'music.deleteArtist' }))
+          )
+      )
+    },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'artists'] })
   })
 }
@@ -1350,7 +1951,7 @@ export function useDeleteAdminEntityLink() {
 export function useAddArtistToAlbum() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       albumId,
       artistId,
       role
@@ -1358,11 +1959,18 @@ export function useAddArtistToAlbum() {
       albumId: string
       artistId: string
       role?: string
-    }) =>
-      fetcher(apiUrl(`/music/albums/${albumId}/artists/${artistId}`), {
-        method: 'PUT',
-        body: JSON.stringify({ role })
-      }),
+    }) => {
+      const client = await getApiClient()
+      await Effect.runPromise(
+        client.music
+          .addArtistToAlbum({ params: { albumId, artistId }, payload: { role } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'music.addArtistToAlbum' })
+            )
+          )
+      )
+    },
     onSuccess: (_, { albumId }) =>
       qc.invalidateQueries({ queryKey: ['admin', 'links', 'album', albumId] })
   })
@@ -1371,10 +1979,18 @@ export function useAddArtistToAlbum() {
 export function useRemoveArtistFromAlbum() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ albumId, artistId }: { albumId: string; artistId: string }) =>
-      fetcher(apiUrl(`/music/albums/${albumId}/artists/${artistId}`), {
-        method: 'DELETE'
-      }),
+    mutationFn: async ({ albumId, artistId }: { albumId: string; artistId: string }) => {
+      const client = await getApiClient()
+      await Effect.runPromise(
+        client.music
+          .removeArtistFromAlbum({ params: { albumId, artistId } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'music.removeArtistFromAlbum' })
+            )
+          )
+      )
+    },
     onSuccess: (_, { albumId }) =>
       qc.invalidateQueries({ queryKey: ['admin', 'links', 'album', albumId] })
   })
@@ -1383,7 +1999,7 @@ export function useRemoveArtistFromAlbum() {
 export function useAddArtistToTrack() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({
+    mutationFn: async ({
       trackId,
       artistId,
       role
@@ -1391,11 +2007,18 @@ export function useAddArtistToTrack() {
       trackId: string
       artistId: string
       role?: string
-    }) =>
-      fetcher(apiUrl(`/music/tracks/${trackId}/artists/${artistId}`), {
-        method: 'PUT',
-        body: JSON.stringify({ role })
-      }),
+    }) => {
+      const client = await getApiClient()
+      await Effect.runPromise(
+        client.music
+          .addArtistToTrack({ params: { trackId, artistId }, payload: { role } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'music.addArtistToTrack' })
+            )
+          )
+      )
+    },
     onSuccess: (_, { trackId }) =>
       qc.invalidateQueries({ queryKey: ['admin', 'links', 'track', trackId] })
   })
@@ -1404,11 +2027,84 @@ export function useAddArtistToTrack() {
 export function useRemoveArtistFromTrack() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ trackId, artistId }: { trackId: string; artistId: string }) =>
-      fetcher(apiUrl(`/music/tracks/${trackId}/artists/${artistId}`), {
-        method: 'DELETE'
-      }),
+    mutationFn: async ({ trackId, artistId }: { trackId: string; artistId: string }) => {
+      const client = await getApiClient()
+      await Effect.runPromise(
+        client.music
+          .removeArtistFromTrack({ params: { trackId, artistId } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'music.removeArtistFromTrack' })
+            )
+          )
+      )
+    },
     onSuccess: (_, { trackId }) =>
       qc.invalidateQueries({ queryKey: ['admin', 'links', 'track', trackId] })
+  })
+}
+
+const musicRemindersQueryKey = () => ['reminders'] as const
+
+export function useMusicReminders() {
+  const { data: session } = useSession()
+  const isAuthenticated = Boolean(session?.user)
+  return useQuery({
+    queryKey: musicRemindersQueryKey(),
+    queryFn: async () => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client['music-reminders']
+          .getMusicReminders({})
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'music-reminders.getMusicReminders' })
+            )
+          )
+      )
+    },
+    enabled: isAuthenticated
+  })
+}
+
+export function useCreateMusicReminder() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (payload: CreateMusicReminderInput) => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client['music-reminders']
+          .createMusicReminder({ payload })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'music-reminders.createMusicReminder' })
+            )
+          )
+      )
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: musicRemindersQueryKey() })
+    }
+  })
+}
+
+export function useDeleteMusicReminder() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client['music-reminders']
+          .deleteMusicReminder({ params: { id } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'music-reminders.deleteMusicReminder' })
+            )
+          )
+      )
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: musicRemindersQueryKey() })
+    }
   })
 }

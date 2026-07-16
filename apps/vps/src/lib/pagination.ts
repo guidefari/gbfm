@@ -1,36 +1,24 @@
-import { z } from '@hono/zod-openapi'
+import { z } from 'zod'
 
 /**
  * Standard pagination query parameters schema
  * Validates limit (1-100, default 20) and offset (min 0, default 0)
  */
-export const paginationQuerySchema = z
-  .object({
-    limit: z.coerce.number().min(1).max(100).optional().default(20).openapi({
-      description: 'Number of items per page',
-      example: 20,
-      default: 20
-    }),
-    offset: z.coerce.number().min(0).optional().default(0).openapi({
-      description: 'Number of items to skip',
-      example: 0,
-      default: 0
-    })
-  })
-  .openapi('PaginationQuery')
+export const paginationQuerySchema = z.object({
+  limit: z.coerce.number().min(1).max(100).optional().default(20),
+  offset: z.coerce.number().min(0).optional().default(0)
+})
 
 /**
  * Pagination metadata schema for responses
  * Includes total count, limit, offset, and hasMore indicator
  */
-export const paginationMetadataSchema = z
-  .object({
-    total: z.number().openapi({ description: 'Total number of items' }),
-    limit: z.number().openapi({ description: 'Items per page' }),
-    offset: z.number().openapi({ description: 'Current offset' }),
-    hasMore: z.boolean().openapi({ description: 'Whether there are more items available' })
-  })
-  .openapi('PaginationMeta')
+export const paginationMetadataSchema = z.object({
+  total: z.number(),
+  limit: z.number(),
+  offset: z.number(),
+  hasMore: z.boolean()
+})
 
 /**
  * Helper function to create a paginated response schema
@@ -43,14 +31,10 @@ export const paginationMetadataSchema = z
  * const postListSchema = createPaginatedResponseSchema(postSchema)
  */
 export function createPaginatedResponseSchema<T extends z.ZodType>(dataSchema: T) {
-  return z
-    .object({
-      data: z.array(dataSchema).openapi({ description: 'Array of data items' }),
-      pagination: paginationMetadataSchema.openapi({
-        description: 'Pagination metadata'
-      })
-    })
-    .openapi('PaginatedResponse')
+  return z.object({
+    data: z.array(dataSchema),
+    pagination: paginationMetadataSchema
+  })
 }
 
 /**

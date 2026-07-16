@@ -1,6 +1,6 @@
 import { ReadMoreModal } from '@gbfm/ui'
-import type { SelectMdxCompiledShow } from '@gbfm/vps/schemas'
 import { createFileRoute } from '@tanstack/react-router'
+import { Effect } from 'effect'
 import { useEffect } from 'react'
 import { FavoriteButton } from '@/components/FavoriteButton'
 import { MDXRendrr } from '@/components/MDXRendrr'
@@ -8,8 +8,9 @@ import { RouteError } from '@/components/RouteError'
 import { ShareButton } from '@/components/ShareButton'
 import { EpisodeGrid } from '@/components/shows/EpisodeGrid'
 import { ShowQRButton } from '@/components/shows/ShowQRButton'
-import { apiUrl, fetcher } from '@/lib/http'
+import { getApiClient } from '@/lib/api-client'
 import { generateSEOMeta, generateShowSEO } from '@/lib/seo'
+import { captureException } from '@/services/analytics'
 import { useContentStore } from '@/store'
 import { ShowMetadataManager } from './_components/-ShowMetadataManager'
 
@@ -17,8 +18,23 @@ export const Route = createFileRoute('/shows/$showSlug')({
   component: ShowPage,
   errorComponent: ({ error }) => <RouteError error={error} />,
   loader: async ({ params }) => {
-    const show = await fetcher<SelectMdxCompiledShow>(apiUrl(`/shows/${params.showSlug}`))
-    return { show }
+    const client = await getApiClient()
+    const show = await Effect.runPromise(
+      client.shows
+        .getShowBySlug({ params: { slug: params.showSlug } })
+        .pipe(
+          Effect.tapError((error) => captureException(error, { endpoint: 'shows.getShowBySlug' }))
+        )
+    )
+    return {
+      show: {
+        ...show,
+        createdAt: new Date(show.createdAt),
+        updatedAt: new Date(show.updatedAt),
+        tags: show.tags ? [...show.tags] : null,
+        hosts: show.hosts ? [...show.hosts] : undefined
+      }
+    }
   },
   head: ({ loaderData, params }) => {
     if (!loaderData?.show) {

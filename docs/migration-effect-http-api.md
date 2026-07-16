@@ -3,6 +3,9 @@
 > All API names in this doc are verified against the installed `effect@4.0.0-beta.93`
 > (effect-smol) type definitions. Snippets marked "spike" need runtime validation
 > before being treated as load-bearing.
+>
+> For how PRs in this migration are scoped, reviewed, and evidenced (not what the
+> code does), see `docs/migration-effect-http-api-process.md`.
 
 ## Why?
 
@@ -278,27 +281,42 @@ Handlers receive `{ params, query, payload, headers, request }` based on the end
 
 The honest port is an ordinary (non-security) `HttpApiMiddleware` that reads the request headers and calls `getSession`, exactly like today. Middleware effects have `HttpServerRequest` available in context.
 
+**Shipped in step 3b** (`packages/api/src/middleware/auth.ts`, `apps/vps/src/middleware/auth.impl.ts`) -- the snippets below are the real code, kept in sync with what's on `main`... i.e. `migration/effect-http-api`. Two corrections this doc got wrong on the way there, both confirmed against the vendored `effect` type tests (`.repos/effect/packages/effect/typetest/unstable/httpapi/HttpApiMiddleware.tst.ts`):
+
 ```ts
 // packages/api/src/middleware/auth.ts
 import { Context } from "effect"
 import { HttpApiError, HttpApiMiddleware } from "effect/unstable/httpapi"
 
+// role/name are nullable because better-auth's admin() plugin types them
+// loosely; packages/api is a leaf package and can't import the concrete
+// `typeof auth.$Infer.Session` type from apps/vps, so this is the honest
+// common shape instead.
 export class AuthSession extends Context.Service<AuthSession, {
-  readonly user: { id: string; name: string; email: string; role: string }
-  readonly session: { id: string }
+  readonly user: {
+    readonly id: string
+    readonly name: string | null | undefined
+    readonly email: string
+    readonly role?: string | null | undefined
+  }
+  readonly session: { readonly id: string }
 }>()("api/AuthSession") {}
 
-export class AuthMiddleware extends HttpApiMiddleware.Service<AuthMiddleware>()(
-  "api/AuthMiddleware",
-  {
-    provides: AuthSession,
-    error: HttpApiError.Unauthorized,
-  },
-) {}
+// `provides: AuthSession` -- the bare class (its INSTANCE type) -- not
+// `typeof AuthSession` (its static/constructor type). The latter compiles
+// silently but breaks HttpApiMiddleware.Provides<A>'s type-level lookup,
+// leaking AuthSession into toWebHandler's returned handler signature as a
+// phantom second parameter.
+export class AuthMiddleware extends HttpApiMiddleware.Service<
+  AuthMiddleware,
+  { provides: AuthSession }
+>()("api/AuthMiddleware", {
+  error: HttpApiError.Unauthorized,
+}) {}
 ```
 
 Two things that are load-bearing here:
-- `provides` needs a real context key. `AuthSession` uses the same `Context.Service` pattern as the rest of the codebase (`runtime/services.ts`); a plain class will not typecheck.
+- `provides` needs a real context key, and must be the bare class reference, not `typeof AuthSession`. `AuthSession` uses the same `Context.Service` pattern as the rest of the codebase (`runtime/services.ts`).
 - The middleware **must declare its error schema** (`error: HttpApiError.Unauthorized`). Middleware failures are added to the endpoint error surface and must be encodable; failing with an undeclared plain object is a type error.
 
 Server-side implementation:
@@ -307,19 +325,36 @@ Server-side implementation:
 import { Effect, Layer } from "effect"
 import { HttpServerRequest } from "effect/unstable/http"
 import { HttpApiError } from "effect/unstable/httpapi"
-import { AuthMiddleware, AuthSession } from "@gbfm/api"
+import { AuthMiddleware, AuthSession } from "@gbfm/api/middleware/auth"
 import { auth } from "@/lib/auth"
 
 export const AuthMiddlewareLive = Layer.succeed(
   AuthMiddleware,
   (httpEffect) =>
     Effect.gen(function* () {
-      const request = yield* HttpServerRequest
+      // HttpServerRequest here is the module namespace (import * as); the
+      // yieldable Context.Service tag is HttpServerRequest.HttpServerRequest,
+      // not the module itself -- `yield* HttpServerRequest` fails with
+      // "must have a [Symbol.iterator]() method".
+      const request = yield* HttpServerRequest.HttpServerRequest
+
+      // getSession's cause is logged, not swallowed -- but note better-auth
+      // itself swallows a downstream DB outage internally and returns null
+      // rather than throwing, so that specific case still looks like "no
+      // session" here. True of the old Hono middleware too; not a regression.
       const session = yield* Effect.tryPromise({
         try: () => auth.api.getSession({ headers: new Headers(request.headers) }),
-        catch: () => new HttpApiError.Unauthorized(),
-      })
+        catch: (cause) => cause,
+      }).pipe(
+        Effect.tapError((cause) =>
+          Effect.logError("[auth] getSession failed", { cause, path: request.url, method: request.method }),
+        ),
+        Effect.mapError(() => new HttpApiError.Unauthorized()),
+      )
       if (!session) {
+        yield* Effect.logWarning("[auth] unauthorized access attempt", {
+          path: request.url, method: request.method,
+        })
         return yield* new HttpApiError.Unauthorized()
       }
       return yield* Effect.provideService(httpEffect, AuthSession, {
@@ -406,10 +441,12 @@ export const RateLimiterLive = HttpRouter.middleware(
       return HttpServerResponse.setHeaders(response, headers)
     }),
   { global: true },
-).layer
+)
 ```
 
 The path-prefix config table replaces the per-route `strictRateLimiter`/`relaxedRateLimiter`/`playTrackRateLimiter` factories. Per-endpoint annotations on `HttpApiEndpoint` are possible but add machinery for no behavioral gain -- the config table mirrors what the route files express today. (Spike note: confirm `request.url` shape and the exact `jsonUnsafe` signature when wiring this.)
+
+**Verified against the installed types (corrects an earlier version of this doc)**: `HttpRouter.middleware(fn, { global: true })` returns the `Layer` directly -- `makeMiddleware` only wraps the result in a `MiddlewareImpl` (which exposes `.layer`) for the non-global, endpoint-scoped case. Appending `.layer` to a global middleware call is a type error, not a no-op; every snippet in this section (4b/4c/4d/4e) drops it accordingly. Confirmed in `apps/vps/src/http/search.middleware.ts` (step 6).
 
 #### 4c. Logging and tracing
 
@@ -428,7 +465,7 @@ export const RequestLoggerLive = HttpRouter.middleware(
       return response
     }),
   { global: true },
-).layer
+)
 ```
 
 Before porting `effectLogger()` wholesale, check what comes free: `HttpRouter.toWebHandler` has a built-in request logger (`disableLogger` option), and OpenTelemetry tracing via `Effect.withSpan` continues to work in services unchanged. The current middleware's span-per-request behavior may be mostly redundant.
@@ -453,7 +490,7 @@ export const CorsLive = HttpRouter.middleware(
     credentials: true,
   }),
   { global: true },
-).layer
+)
 ```
 
 Two traps, both verified in the library:
@@ -480,7 +517,7 @@ export const SentryLive = HttpRouter.middleware(
       ),
     ),
   { global: true },
-).layer
+)
 ```
 
 `SentryService` comes from `AppLayer`, which is provided to the whole router (Phase 5).
@@ -501,15 +538,19 @@ The entry point must carry over **everything** in the app.ts inventory, not just
 | Graceful shutdown | SIGTERM/SIGINT → `toWebHandler`'s `dispose()` then `disposeRuntime()` |
 | 1GB request bodies | unchanged `maxRequestBodySize` on the Bun.serve export |
 
-better-auth mounts as a wildcard route. Its handler is async and returns a web `Response`, so it needs `Effect.promise` and `HttpServerResponse.fromWeb` -- `Effect.succeed(auth.handler(...))` would produce an unawaited `Promise` typed as the response:
+better-auth mounts as a wildcard route. Its handler is async and returns a web `Response`, so it needs `Effect.promise` and `HttpServerResponse.fromWeb` -- `Effect.succeed(auth.handler(...))` would produce an unawaited `Promise` typed as the response.
+
+**Verified against the installed types (corrects an earlier version of this doc)**: `HttpServerRequest.toWeb` is not a plain sync conversion -- it returns `Effect.Effect<Request, RequestError>` and must be `yield*`ed inside an `Effect.gen`, not called bare inside `Effect.promise`:
 
 ```ts
-const BetterAuthRoutes = HttpRouter.use((router) =>
-  router.add("*", "/auth/*", (request) =>
-    Effect.promise(() =>
-      auth.handler(prepareAuthRequest(HttpServerRequest.toWeb(request))),
-    ).pipe(Effect.map(HttpServerResponse.fromWeb)),
-  ),
+const BetterAuthRoutes = HttpRouter.add("*", "/auth/*", (request) =>
+  Effect.gen(function* () {
+    const webRequest = yield* HttpServerRequest.toWeb(request)
+    const webResponse = yield* Effect.promise(() =>
+      Promise.resolve(auth.handler(prepareAuthRequest(webRequest))),
+    )
+    return HttpServerResponse.fromWeb(webResponse)
+  }),
 )
 ```
 
@@ -565,14 +606,16 @@ One server, one port, one deploy at a time. The whole existing Hono app mounts a
 ```ts
 import honoApp from "@/app"
 
-const HonoFallback = HttpRouter.use((router) =>
-  router.add("*", "/*", (request) =>
-    Effect.promise(() => honoApp.fetch(HttpServerRequest.toWeb(request))).pipe(
-      Effect.map(HttpServerResponse.fromWeb),
-    ),
-  ),
+const HonoFallback = HttpRouter.add("*", "/*", (request) =>
+  Effect.gen(function* () {
+    const webRequest = yield* HttpServerRequest.toWeb(request)
+    const webResponse = yield* Effect.promise(() => Promise.resolve(honoApp.fetch(webRequest)))
+    return HttpServerResponse.fromWeb(webResponse)
+  }),
 )
 ```
+
+(Implemented and verified in `apps/vps/src/http/routes.ts`, step 2a. `honoApp.fetch` can return `Response | Promise<Response>` depending on the route; wrap in `Promise.resolve` so `Effect.promise`'s `PromiseLike` constraint is satisfied either way.)
 
 The router (find-my-way) gives static and parametric routes precedence over the wildcard, so each `HttpApi` group added takes over its paths automatically. Per group: port endpoints + handlers, delete the corresponding Hono router from `app.ts`, deploy. When `app.ts` has no routers left, delete `HonoFallback` and the Hono dependency.
 
@@ -605,7 +648,7 @@ const buildClient = () =>
     baseUrl: import.meta.env.VITE_VPS_BASE_URL || window.location.origin,
   }).pipe(Effect.provide(FetchLive))
 
-export type ApiClient = Effect.Effect.Success<ReturnType<typeof buildClient>>
+export type ApiClient = Effect.Success<ReturnType<typeof buildClient>>
 
 let _client: ApiClient | null = null
 
@@ -695,18 +738,47 @@ Once all route groups are migrated:
 
 ## Migration Order (recommended path)
 
-| Step | What | Risk | Value |
-|------|------|------|-------|
-| 1 | Create `packages/api` with contract for health group | Low | Proves the pattern |
-| 2 | Wire `HttpRouter.toWebHandler` + `HonoFallback` + better-auth route + background forks + shutdown; deploy with only health ported | Medium | The whole serving stack changes here -- validate CORS, cookies, health probes, reminders in prod |
-| 3 | Port auth middleware (cookie-based) | Medium | Auth is the hardest piece; verify with an authed group |
-| 4 | Port one CRUD group entirely (e.g., music artists) | Medium | Full vertical slice |
-| 5 | Generate client for that group, replace one react-query hook; verify cookies cross-origin | Low | Tangible client benefit |
-| 6 | Port remaining JSON groups incrementally, one deploy each | Low-Medium | Mechanical work |
-| 7 | Port upload groups (multipart -- see below) and non-JSON routes (rss/seo/share) | Medium | The hairy tail |
-| 8 | Move rate limiter + Sentry capture to Effect middleware, remove `HonoFallback`, delete Hono + Zod | Low | Cleanup |
+Each row below is one PR and one check-in point. Nothing in a later row starts until the
+prior row is merged (not just opened) -- this is what keeps each PR reviewable and each
+deploy diagnosable. A PR that touches files from two different rows is a sign the row
+boundaries were skipped, not a sign the rows were wrong.
 
-Step 2 is deliberately front-loaded: it is where the serving topology changes and where step-3-through-8 assumptions get validated cheaply.
+| Step | Status | What | Risk | Value | PR should touch |
+|------|--------|------|------|-------|------------------|
+| 1a | ✅ merged (#142) | Create `packages/api` with contract + schemas for health group only | Low | Proves the pattern typechecks and reads well | `packages/api/*` only. No `apps/vps` changes, no test-framework changes. |
+| 1b | ✅ merged (#143) | Unit tests for the health contract (schema decode/encode, error tagging) | Low | Confidence in the contract before anything serves it | `packages/api/*/*.test.ts` only |
+| 2a | ✅ merged (#144) | Add `HttpRouter.toWebHandler` as a *second, unused* export next to the existing `Bun.serve` entry point, with `HonoFallback` routing 100% of traffic to the existing Hono app | Low | Proves the handler boilerplate builds and the fallback passes through untouched -- nothing in prod changes yet | `apps/vps/src/index.ts`, a new `routes.ts`. Entry point still exports the old `Bun.serve`; the new handler is not wired to a port. |
+| 2b | ✅ merged (#145) | Swap the deploy entry point to the new `toWebHandler`, still 100% Hono fallback; port background forks + graceful shutdown | Medium | The actual serving-stack cutover, but with zero route behavior change -- the only thing being validated is topology | `apps/vps/src/index.ts`. Verify against the Step 2 acceptance bar (health probes, reminders, shutdown) before merging. |
+| 2c | ✅ merged (#146) | Port the better-auth wildcard route onto the new router | Medium | Isolates the one third-party routing integration so an auth regression is diagnosable to one small diff | `apps/vps/src/http/routes.ts` (auth route only) |
+| -- | ✅ merged (#147) | (unplanned) Strengthen the music-artists fallback parity check from an `Array.isArray` shape check to a real before/after response comparison | -- | A weak test found during 3a review; fixed as its own tiny stacked PR rather than rewriting 2a's already-open history | `apps/vps/src/http/routes.blackbox.test.ts` only |
+| 3a | ✅ merged (#149) | Port health handlers to `HttpApiBuilder.group`, taking over `/health*` from the fallback | Low | First real `HttpApi` group serving real traffic; small blast radius if wrong | `apps/vps/src/http/health.handlers.ts` + removing health from the Hono side. Reuse the existing vitest integration test as the before/after behavior check -- do not add a parallel hand-rolled assertion script. |
+| 3b | ✅ merged (#150) | Port auth middleware (cookie-based) behind a group with no production traffic yet (e.g. a scratch/internal endpoint) | Medium | Validates session cookie reading in isolation, before any real authed route depends on it | `packages/api/src/middleware/auth.ts`, `apps/vps/src/middleware/auth.impl.ts` |
+| 4 | ✅ merged (#152/#153) | Port one real CRUD group entirely (e.g., music artists), taking it over from the fallback | Medium | Full vertical slice through contract + handler + auth | One group's contract + handlers only |
+| 5 | ✅ merged (#154) | Generate client for that group, replace one react-query hook; verify cookies cross-origin in a deployed browser | Low | Tangible client benefit; proves the client-side cookie risk called out below | `apps/www/src/lib/api-client.ts` + one hook |
+| 6 | ✅ complete (search #156, profile #157, resolve #158/#162, admin #163, invite #164, favorites #166, newsletter #165, file-manager #167, spotify #168, shows #169, user #170, label #171, release #172, post #173, audio #174, email #185, music-reminders #186) | Port remaining JSON groups incrementally, one group per PR/deploy | Low-Medium | Mechanical work, same shape as step 4 each time | One group per PR. `music-reminders` (#186) was a group missed entirely by the original sweep -- not upload-shaped or non-JSON-shaped, just overlooked; caught while auditing what's left before starting step 7. |
+| 6b | ✅ complete for every group with a real consumer (#175 user, #176 label+release, #177 post, #178 audio, #179 favorites, #180 admin, #181 shows, #182 newsletter, #183 spotify, #184 music-artist, #185 email, #186 music-reminders) | Replace the manual `fetcher()` calls in `apps/www/src/lib/http.ts` for each step-6 group with the typed `HttpApiClient`, same pattern as step 5's music-artists hook swap | Low | Closes the loop step 5 opened -- step 6 landed server-side ports without touching the client, so `apps/www` was accumulating groups it could already consume through the typed client but didn't | When a group has a real www consumer, port the backend and client in one vertical-slice PR and browser-test the complete path. **Remaining, all genuinely blocked on a missing backend endpoint, not oversights**: `music` group's album/track/entity-links/resolve hooks (`useAdminAlbums`/`Album`/`UpdateAlbum`/`DeleteAlbum`, `useAdminTracks`/`Track`/`UpdateTrack`/`DeleteTrack`, `useAdminEntityLinks`/`AddAdminEntityLink`/`UpdateAdminEntityLinkStatus`/`DeleteAdminEntityLink`, `useResolveMusicEntity` -- `packages/api/src/music.ts` only has artist CRUD + junction endpoints); `useUpdateProfile` (deferred -- first dual JSON/multipart client call in this migration, deserves isolated verification per #175's PR notes). |
+| 7 | ✅ complete (upload #187, site routes #188) | Port upload groups (multipart -- see below) and non-JSON routes (rss/seo/share) | Medium | The hairy tail; budget real time, do not fold into a "remaining groups" PR | Upload group only, then site routes only -- two separate PRs |
+| 8 | ✅ complete (middleware move + HonoFallback removal #189, dependency deletion #190) | Move rate limiter + Sentry capture to Effect middleware, remove `HonoFallback`, delete Hono + Zod | Low | Cleanup | Middleware move and dependency removal as separate PRs |
+
+All PRs above stack into `migration/effect-http-api`, not directly into `prod` -- that integration branch gets its own PR to `prod` once a meaningful chunk of the stack has merged.
+
+**Findings from adversarial review, fixed before merge (not just noted):** a cache race in the 3a readiness check (module-level `let` → `Effect.cachedWithTTL`, memoizing the in-flight fiber so concurrent cold-cache requests share one DB call instead of racing); a swallowed DB-check error with no server-side log (added `Effect.tapError` before sanitizing to the wire-safe tagged error); a beta-API footgun in 3b where `{ provides: typeof AuthSession }` compiles but silently breaks `HttpApiMiddleware`'s type-level service exclusion (fixed to the bare class reference); a silently-swallowed `getSession` throw in 3b (same log-then-sanitize fix); dropped audit logging for unauthorized attempts (restored via `Effect.logWarning`, matching the old Hono middleware's intent without over-porting a success-path log for a route with no production traffic); a dropped Sentry report in step 5's client hook (client swap silently lost the old `fetcher`'s failure reporting -- restored via `Effect.tapError`); step 4's PR leaving `routes/music/*` (the old Hono router) undeleted despite being fully superseded and unreachable -- caught and cleaned up in step 6 instead of compounding; and this doc's own Phase 4b/4c/4d snippets appending `.layer` to a global `HttpRouter.middleware(...)` call, which is a type error, not a no-op (`{ global: true }` returns the `Layer` directly -- `.layer` only exists on the non-global `MiddlewareImpl` case) -- caught while building step 6's first global middleware, since no prior step had needed one.
+
+**A recurring finding worth generalizing, not just noting**: the `profile` and `resolve` groups (step 6) both had old zod-openapi response schemas that had silently drifted out of sync with what the underlying service actually returns -- `profile.routes.ts` was missing `content.editorials`, `content.tweets`, and `content.mixes[].showId` entirely; `resolve.routes.ts`'s show branch was missing `bannerImageUrl`, `tags`, and `hosts[].username`. In both cases `apps/www` was already consuming the missing fields (the real DB-returned JSON has always included them; Hono's OpenAPI response schema is documentation, not a runtime response validator, so nothing ever enforced the schema matched reality). The new Effect schemas were written against the real service return type, not the old zod schema, which fixed both gaps as a side effect of the port. **When porting any remaining group (step 6/6b), diff the old response schema against the service's actual return type and against what `apps/www` actually reads off the response -- do not assume the old schema was accurate just because it shipped.**
+
+Step 2 is deliberately front-loaded and deliberately split into three small check-ins
+(2a/2b/2c) rather than one: it is where the serving topology changes, and each sub-step
+should be individually revertable if something breaks in prod. Steps 3a and 3b are also
+split for the same reason -- porting the first real route and porting auth are two
+different failure modes and should not share a rollback.
+
+**Test policy for this migration**: every step gets coverage via the project's normal
+test runner (vitest), asserting against the handler or a running instance the same way
+the existing `health.integration.test.ts` does. Do not write standalone scripts that
+reimplement assertion/comparison logic already provided by the test runner (e.g. a
+hand-rolled curl-and-diff CLI) -- if a manual smoke script is useful for humans during a
+deploy, keep it thin (call the endpoint, print the response) and let vitest own
+pass/fail.
 
 ---
 
@@ -809,3 +881,11 @@ The migration is still staged operationally:
 3. Port the remaining JSON groups one group per deploy.
 4. Spend explicit spike time on uploads and non-JSON routes.
 5. Move final global middleware, remove the fallback, and delete Hono/Zod scaffolding only after all traffic is on Effect routes.
+
+---
+
+## Status: migration complete
+
+All 8 steps above are done. `apps/vps` runs entirely on Effect's `HttpRouter`/`HttpApiBuilder` -- no Hono, no `@hono/zod-openapi`, no `stoker`, no `@scalar/hono-api-reference` anywhere in the app. See `docs/migration-effect-http-api-process.md` for the full PR-by-PR history and every non-obvious finding along the way (layer-composition footguns, schema-drift bugs, a `.openapi()`-metadata-only removal across ~330 call sites, the `Schema.NumberFromString` vs `Schema.Number` multipart-decode bug, and more).
+
+**Resolved**: the music group's album/track/playlist/entity-link gap (flagged above as a known follow-up) was ported in two stacked PRs after the migration's own completion: #191 (album/track/playlist CRUD + playlist-tracks + Spotify integration) and #193 (entity-link CRUD, `resolveMusicEntity`, `scrapeEntityLinks`, `listPendingLinks` -- #193 supersedes an identically-scoped #192, which auto-closed when its base branch was deleted on #191's merge). `/api/music/albums`, `/api/music/tracks`, `/api/music/playlists`, and all entity-link endpoints are live again; `apps/www`'s admin UI (Albums/Tracks tabs, entity-link management, the paste-a-URL resolve flow) is unblocked. Adversarial review on both PRs found and fixed real bugs -- see the process doc's entries for the full list (schema nullability gaps, missing bounds checks, a swallowed 400-as-500). No further music-group follow-up is tracked.

@@ -1,20 +1,35 @@
-import type { SelectMdxCompiledAudio } from '@gbfm/vps/schemas'
 import { createFileRoute } from '@tanstack/react-router'
+import { Effect } from 'effect'
 import * as React from 'react'
 import { LongPost } from '@/components/Layout/LongPost'
 import { RouteError } from '@/components/RouteError'
-import { apiUrl, fetcher } from '@/lib/http'
+import { getApiClient } from '@/lib/api-client'
 import { generateSEOMeta, generateTrackSEO } from '@/lib/seo'
+import { captureException } from '@/services/analytics'
 import { useContentStore } from '@/store'
 
 export const Route = createFileRoute('/tracks/$trackId')({
   component: TrackPage,
   errorComponent: ({ error }) => <RouteError error={error} />,
   loader: async ({ params }) => {
-    const track = await fetcher<SelectMdxCompiledAudio>(
-      apiUrl(`/content/audio/track/${params.trackId}`)
+    const client = await getApiClient()
+    const track = await Effect.runPromise(
+      client.audio
+        .getAudioBySlug({ params: { type: 'track', slug: params.trackId } })
+        .pipe(
+          Effect.tapError((error) => captureException(error, { endpoint: 'audio.getAudioBySlug' }))
+        )
     )
-    return { track }
+    return {
+      track: {
+        ...track,
+        bannerImageUrl: null,
+        createdAt: new Date(track.createdAt),
+        updatedAt: new Date(track.updatedAt),
+        tags: track.tags ? [...track.tags] : null,
+        creators: track.creators ? [...track.creators] : undefined
+      }
+    }
   },
   head: ({ loaderData, params }) => {
     if (!loaderData?.track) {
