@@ -10,10 +10,7 @@ import { AuthMiddleware } from './middleware/auth'
 // (instanceOf(globalThis.File)) looks correct at a glance and typechecks,
 // but rejects every real multipart request at decode time -- confirmed by
 // reproducing an actual multipart POST against HttpApiBuilder.group's real
-// decoder, not just eyeballing the schema. This is the same mismatch already
-// live in `user.ts`'s `UpdateProfileMultipartInput.avatar` (also
-// Schema.File), which this PR does not touch -- flagged separately, not
-// silently carried forward as "the established pattern" without re-checking.
+// decoder, not just eyeballing the schema.
 //
 // The simple `/upload/file` endpoint has never required a session -- the old
 // Hono route (apps/vps/src/routes/upload/upload.routes.ts) had no

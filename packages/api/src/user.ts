@@ -1,4 +1,5 @@
 import { Schema } from 'effect'
+import { Multipart } from 'effect/unstable/http'
 import { HttpApiEndpoint, HttpApiError, HttpApiGroup, HttpApiSchema } from 'effect/unstable/httpapi'
 import { AuthMiddleware } from './middleware/auth'
 
@@ -68,12 +69,17 @@ export const UpdateProfileJsonInput = Schema.Struct({
 // upload path -- HttpApiEndpoint.payload accepts an array of differently
 // -encoded schemas keyed by content-type (HttpApiEndpoint.ts's getPayload),
 // so this and UpdateProfileJsonInput can both be declared on one endpoint.
+//
+// avatar uses Multipart.SingleFileSchema, not Schema.File -- multipart parts
+// decode to Multipart.PersistedFile (disk-backed), never a real global
+// File, so Schema.File rejects every real request at decode time (see
+// packages/api/src/upload.ts's comment on the same mismatch).
 export const UpdateProfileMultipartInput = Schema.Struct({
   email: Schema.optional(EmailField),
   password: Schema.optional(PasswordField),
   username: Schema.optional(Schema.String),
   bio: Schema.optional(BioField),
-  avatar: Schema.optional(Schema.File)
+  avatar: Schema.optional(Multipart.SingleFileSchema)
 }).pipe(HttpApiSchema.asMultipart())
 
 const BioResponse = Schema.Struct({

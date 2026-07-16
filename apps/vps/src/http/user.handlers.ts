@@ -1,14 +1,45 @@
-import { isFormDataFile } from '@gbfm/core/utils'
 import { Api } from '@gbfm/api/api'
 import { AuthSession } from '@gbfm/api/middleware/auth'
-import { Effect } from 'effect'
+import { Effect, FileSystem } from 'effect'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
-import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
+import {
+  dieOnDatabaseError as makeDieOnDatabaseError,
+  dieOnPlatformError as makeDieOnPlatformError,
+  dieOnS3Error as makeDieOnS3Error
+} from '@/http/handler-utils'
+import { ConfigService } from '@/services/config.service'
+import { S3Service } from '@/services/s3.service'
 import { ShowSubscriptionService } from '@/services/show.service'
 import { UserService } from '@/services/user.service'
-import { uploadAvatar } from '@/routes/user/user.util'
 
 const dieOnDatabaseError = makeDieOnDatabaseError('user')
+const dieOnS3Error = makeDieOnS3Error('user')
+const dieOnPlatformError = makeDieOnPlatformError('user')
+
+const sanitizeFileName = (value: string): string => value.replace(/\s+/g, '_')
+
+// Multipart file fields decode to Multipart.PersistedFile -- a disk-backed
+// reference (key/name/contentType/path), not a real in-memory File. Reading
+// it means going through FileSystem.FileSystem, not .arrayBuffer() (see
+// packages/api/src/upload.ts's comment on this same mismatch).
+const uploadAvatar = (
+  userId: string,
+  avatarFile: { path: string; name: string; contentType: string }
+) =>
+  Effect.gen(function* () {
+    const fs = yield* FileSystem.FileSystem
+    const bytes = yield* dieOnPlatformError(fs.readFile(avatarFile.path))
+    const fileName = `avatar_${userId}_${Date.now()}_${sanitizeFileName(avatarFile.name)}`
+    const contentType = avatarFile.contentType || 'application/octet-stream'
+
+    const config = yield* ConfigService
+    const s3Service = yield* S3Service
+    yield* dieOnS3Error(
+      s3Service.uploadFile(fileName, Buffer.from(bytes), contentType, config.buckets.userContent)
+    )
+
+    return `${config.urls.bucketRouter}/user-content/${fileName}`
+  })
 
 const requireAdmin = Effect.gen(function* () {
   const { user: sessionUser } = yield* AuthSession
@@ -49,9 +80,8 @@ export const UserHandlersLive = HttpApiBuilder.group(Api, 'user', (handlers) =>
         if (payload.bio !== undefined) updateData.bio = payload.bio
         if ('image' in payload && payload.image !== undefined) updateData.image = payload.image
 
-        if ('avatar' in payload && payload.avatar && isFormDataFile(payload.avatar)) {
-          const avatarFile = payload.avatar
-          updateData.image = yield* Effect.promise(() => uploadAvatar(avatarFile))
+        if ('avatar' in payload && payload.avatar) {
+          updateData.image = yield* uploadAvatar(user.id, payload.avatar)
         }
 
         const svc = yield* UserService
