@@ -2087,3 +2087,24 @@ export function useCreateMusicReminder() {
     }
   })
 }
+
+export function useDeleteMusicReminder() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client['music-reminders']
+          .deleteMusicReminder({ params: { id } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'music-reminders.deleteMusicReminder' })
+            )
+          )
+      )
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: musicRemindersQueryKey() })
+    }
+  })
+}

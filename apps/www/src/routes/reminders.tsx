@@ -1,9 +1,14 @@
-import { Input, Textarea, useToast } from '@gbfm/ui'
+import { Button, Input, Textarea, useToast } from '@gbfm/ui'
 import { createFileRoute } from '@tanstack/react-router'
-import { CalendarClock } from 'lucide-react'
+import { CalendarClock, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useSession } from '@/lib/auth-client'
-import { useCreateMusicReminder, useEnrichTrackFromUrl, useMusicReminders } from '@/lib/http'
+import {
+  useCreateMusicReminder,
+  useDeleteMusicReminder,
+  useEnrichTrackFromUrl,
+  useMusicReminders
+} from '@/lib/http'
 import { log } from '@/services/logger'
 
 interface MusicReminder {
@@ -75,6 +80,22 @@ function MusicReminders() {
 
   // Create reminder mutation
   const createReminderMutation = useCreateMusicReminder()
+  const deleteReminderMutation = useDeleteMusicReminder()
+
+  const handleDelete = async (reminder: MusicReminder) => {
+    if (!confirm(`Delete reminder for "${reminder.musicTitle}"? This cannot be undone.`)) return
+    try {
+      await deleteReminderMutation.mutateAsync(reminder.id)
+      toast({ title: 'Reminder deleted' })
+    } catch (error) {
+      log('error', 'Failed to delete reminder', { error })
+      toast({
+        variant: 'destructive',
+        title: 'Failed to delete reminder',
+        description: 'Please try again later.'
+      })
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -315,7 +336,7 @@ function MusicReminders() {
                         </p>
                       </div>
                     </div>
-                    <div className='text-right'>
+                    <div className='flex items-center gap-3'>
                       <span
                         className={`text-xs px-2 py-1 rounded ${
                           reminder.isSent
@@ -324,6 +345,15 @@ function MusicReminders() {
                         }`}>
                         {reminder.isSent ? 'Sent' : 'Pending'}
                       </span>
+                      <Button
+                        type='button'
+                        variant='destructive'
+                        size='sm'
+                        onClick={() => handleDelete(reminder)}
+                        disabled={deleteReminderMutation.isPending}
+                        aria-label={`Delete reminder for ${reminder.musicTitle}`}>
+                        <Trash2 className='w-4 h-4' />
+                      </Button>
                     </div>
                   </div>
                 ))}
