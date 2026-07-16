@@ -36,6 +36,7 @@ function ResetPasswordPage() {
   const navigate = useNavigate()
   const { refetch: refetchSession } = useSession()
   const [password, setPassword] = useState('')
+  const [mismatchError, setMismatchError] = useState(false)
 
   const isValidToken = !search.error && Boolean(search.token)
 
@@ -60,9 +61,13 @@ function ResetPasswordPage() {
     const confirmPassword = getFormString(formData, 'confirmPassword')
 
     if (!isPasswordValid(password)) return
-    if (password !== confirmPassword) return
+    if (password !== confirmPassword) {
+      setMismatchError(true)
+      return
+    }
     if (!search.token) return
 
+    setMismatchError(false)
     mutate({ password })
   }
 
@@ -107,6 +112,8 @@ function ResetPasswordPage() {
       status={
         isSuccess ? (
           <AuthStatusNotice variant='success'>Password set! Taking you in...</AuthStatusNotice>
+        ) : mismatchError ? (
+          <AuthStatusNotice variant='error'>Passwords do not match.</AuthStatusNotice>
         ) : error ? (
           <AuthStatusNotice variant='error'>{error.message}</AuthStatusNotice>
         ) : null
@@ -134,7 +141,10 @@ function ResetPasswordPage() {
             required: true,
             autoComplete: 'new-password',
             autoFocus: true,
-            onChange: setPassword,
+            onChange: (value) => {
+              setPassword(value)
+              setMismatchError(false)
+            },
             belowField: <PasswordChecklist password={password} />
           },
           {
@@ -143,7 +153,8 @@ function ResetPasswordPage() {
             type: 'password',
             placeholder: 'Confirm new password',
             required: true,
-            autoComplete: 'new-password'
+            autoComplete: 'new-password',
+            onChange: () => setMismatchError(false)
           }
         ]}
         onSubmit={onSubmit}
