@@ -13,7 +13,7 @@ type AuthPageLayoutProps = {
 }
 
 type AuthStatusNoticeProps = {
-  variant: 'error' | 'success'
+  variant: 'error' | 'success' | 'warning'
   children: ReactNode
 }
 
@@ -88,7 +88,9 @@ export function AuthStatusNotice({ variant, children }: AuthStatusNoticeProps) {
         'border px-4 py-3 text-sm leading-6 backdrop-blur-sm',
         variant === 'success'
           ? 'border-gb-pastel-green-2/45 bg-gb-pastel-green-2/15 text-gb-pastel-green-1'
-          : 'border-red-500/35 bg-red-500/10 text-red-200'
+          : variant === 'warning'
+            ? 'border-yellow-500/35 bg-yellow-500/10 text-yellow-200'
+            : 'border-red-500/35 bg-red-500/10 text-red-200'
       )}>
       {children}
     </div>

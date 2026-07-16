@@ -34,9 +34,10 @@ async function confirmInvite(token: string, password: string) {
 function ResetPasswordPage() {
   const search = Route.useSearch()
   const navigate = useNavigate()
-  const { refetch: refetchSession } = useSession()
+  const { data: session, refetch: refetchSession } = useSession()
   const [password, setPassword] = useState('')
   const [mismatchError, setMismatchError] = useState(false)
+  const existingSessionEmail = session?.user?.email
 
   const isValidToken = !search.error && Boolean(search.token)
 
@@ -116,6 +117,11 @@ function ResetPasswordPage() {
           <AuthStatusNotice variant='error'>Passwords do not match.</AuthStatusNotice>
         ) : error ? (
           <AuthStatusNotice variant='error'>{error.message}</AuthStatusNotice>
+        ) : existingSessionEmail ? (
+          <AuthStatusNotice variant='warning'>
+            You're currently signed in as {existingSessionEmail}. Setting a new password here will
+            sign you out of that account and into this one.
+          </AuthStatusNotice>
         ) : null
       }
       footer={
