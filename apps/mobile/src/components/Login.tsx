@@ -1,122 +1,212 @@
-import { login } from '@gbfm/core/api'
-import { useMutation } from '@tanstack/react-query'
-import { Stack, useRouter } from 'expo-router'
+import { brand, typography } from '@gbfm/theme'
+import { Effect } from 'effect'
+import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
+  ScrollView,
   Text,
   TextInput,
-  TouchableOpacity,
   View
 } from 'react-native'
-import { env } from '@/env'
-import { useAuthStore } from '@/store/auth'
+import { SafeAreaView } from 'react-native-screens/experimental'
+import { login } from '@/api/auth'
+import { useSetAuth } from '@/store/auth'
+
+const colors = {
+  background: brand.bg,
+  surface: brand.darkerBg,
+  accent: brand['pastel-green-1'],
+  muted: brand['pastel-green-2'],
+  text: brand.defaultText,
+  error: '#FDA4AF'
+}
 
 export default function Login() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [loginMethod, setLoginMethod] = useState('password')
   const [showPassword, setShowPassword] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string>()
   const router = useRouter()
-  const setAuth = useAuthStore((state) => state.setAuth)
-
-  const loginMutation = useMutation({
-    mutationFn: (credentials: { email: string; password: string }) =>
-      login(env.EXPO_PUBLIC_API_URL, credentials),
-    onSuccess: (data) => {
-      setAuth(data)
-      router.push('/profile')
-    },
-    onError: (error) => {
-      console.error('Login failed', error)
-    }
-  })
+  const setAuth = useSetAuth()
+  const canSubmit = email.trim().length > 0 && password.length > 0 && !isSubmitting
 
   const handleLogin = () => {
-    if (loginMethod === 'password') {
-      loginMutation.mutate({ email, password })
-    } else {
-      console.log('Send magic link to', email)
-    }
+    if (!canSubmit) return
+
+    setIsSubmitting(true)
+    setErrorMessage(undefined)
+
+    const runLogin = login({ email: email.trim(), password }).pipe(
+      Effect.tap((data) =>
+        Effect.sync(() => {
+          setAuth(data)
+          router.replace('/profile')
+        })
+      ),
+      Effect.catch((error) =>
+        Effect.sync(() => {
+          setErrorMessage(
+            error._tag === 'LoginFailed' ? error.message : 'Unable to sign in right now.'
+          )
+        })
+      ),
+      Effect.ensuring(Effect.sync(() => setIsSubmitting(false))),
+      Effect.asVoid
+    )
+    void Effect.runPromise(runLogin)
   }
 
   return (
-    <>
-      <Stack.Screen
-        options={{
-          title: 'Login'
-        }}
-      />
+    <SafeAreaView
+      edges={{ top: true, left: true, right: true }}
+      style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className='justify-center flex-1 p-4'>
-        {/* Toggle Login Method */}
-        <View className='flex-row justify-center mb-4'>
-          <TouchableOpacity
-            onPress={() => setLoginMethod('password')}
-            className={`px-4 py-2 rounded-l-lg ${
-              loginMethod === 'password' ? 'bg-blue-500' : 'bg-gray-200'
-            }`}>
-            <Text className={`${loginMethod === 'password' ? 'text-white' : 'text-gray-700'}`}>
-              Password
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => setLoginMethod('magicLink')}
-            className={`px-4 py-2 rounded-r-lg ${
-              loginMethod === 'magicLink' ? 'bg-blue-500' : 'bg-gray-200'
-            }`}>
-            <Text className={`${loginMethod === 'magicLink' ? 'text-white' : 'text-gray-700'}`}>
-              Magic Link
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Email Input */}
-        <View className='flex flex-col gap-4'>
-          <TextInput
-            className='p-2 mb-4 text-white border border-gray-300 rounded-lg'
-            placeholder='Email'
-            value={email}
-            onChangeText={setEmail}
-            keyboardType='email-address'
-            autoCapitalize='none'
-          />
-
-          {/* Password Input (Only show for password method) */}
-          {loginMethod === 'password' && (
-            <View className='relative'>
-              <TextInput
-                className='p-2 pr-16 mb-4 text-white border border-gray-300 rounded-lg'
-                placeholder='Password'
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-              />
-              <TouchableOpacity
-                onPress={() => setShowPassword(!showPassword)}
-                className='absolute px-2 py-1 right-2 top-2'>
-                <Text className='text-sm text-blue-400'>{showPassword ? 'Hide' : 'Show'}</Text>
-              </TouchableOpacity>
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}>
+        <ScrollView
+          keyboardShouldPersistTaps='handled'
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 24 }}>
+          <View style={{ gap: 32 }}>
+            <View style={{ gap: 12 }}>
+              <Text
+                style={{
+                  color: colors.muted,
+                  fontFamily: typography.fontJetbrains,
+                  fontSize: 12,
+                  letterSpacing: 2.4,
+                  textTransform: 'uppercase'
+                }}>
+                Goosebumps FM
+              </Text>
+              <Text
+                style={{
+                  color: colors.accent,
+                  fontFamily: typography.fontSansAlt,
+                  fontSize: 42,
+                  lineHeight: 44
+                }}>
+                Welcome back.
+              </Text>
+              <Text style={{ color: colors.text, fontSize: 16, lineHeight: 24 }}>
+                Sign in to save music, manage reminders, and pick up where you left off.
+              </Text>
             </View>
-          )}
-        </View>
 
-        {/* Login Button */}
-        <TouchableOpacity className='p-3 bg-blue-500 rounded-lg' onPress={handleLogin}>
-          <Text className='text-lg font-bold text-center text-white'>
-            {loginMethod === 'password' ? 'Login' : 'Send Magic Link'}
-          </Text>
-        </TouchableOpacity>
+            <View
+              style={{
+                gap: 20,
+                padding: 20,
+                backgroundColor: colors.surface,
+                borderColor: `${colors.muted}55`,
+                borderWidth: 1,
+                borderRadius: 20
+              }}>
+              <View style={{ gap: 8 }}>
+                <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>Email</Text>
+                <TextInput
+                  accessibilityLabel='Email'
+                  autoCapitalize='none'
+                  autoComplete='email'
+                  autoCorrect={false}
+                  keyboardType='email-address'
+                  onChangeText={setEmail}
+                  placeholder='you@example.com'
+                  placeholderTextColor={`${colors.text}99`}
+                  returnKeyType='next'
+                  textContentType='emailAddress'
+                  value={email}
+                  style={{
+                    minHeight: 52,
+                    paddingHorizontal: 16,
+                    color: '#FFFFFF',
+                    borderColor: `${colors.muted}66`,
+                    borderWidth: 1,
+                    borderRadius: 12,
+                    fontSize: 16
+                  }}
+                />
+              </View>
 
-        {/* Forgot Password Link */}
-        {loginMethod === 'password' && (
-          <TouchableOpacity className='mt-4'>
-            <Text className='text-center text-blue-500'>Forgot Password?</Text>
-          </TouchableOpacity>
-        )}
+              <View style={{ gap: 8 }}>
+                <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>
+                  Password
+                </Text>
+                <View>
+                  <TextInput
+                    accessibilityLabel='Password'
+                    autoCapitalize='none'
+                    autoComplete='current-password'
+                    onChangeText={setPassword}
+                    onSubmitEditing={handleLogin}
+                    placeholder='Your password'
+                    placeholderTextColor={`${colors.text}99`}
+                    returnKeyType='go'
+                    secureTextEntry={!showPassword}
+                    textContentType='password'
+                    value={password}
+                    style={{
+                      minHeight: 52,
+                      paddingLeft: 16,
+                      paddingRight: 72,
+                      color: '#FFFFFF',
+                      borderColor: `${colors.muted}66`,
+                      borderWidth: 1,
+                      borderRadius: 12,
+                      fontSize: 16
+                    }}
+                  />
+                  <Pressable
+                    accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+                    accessibilityRole='button'
+                    hitSlop={12}
+                    onPress={() => setShowPassword((visible) => !visible)}
+                    style={{ position: 'absolute', right: 16, top: 16 }}>
+                    <Text style={{ color: colors.muted, fontWeight: '600' }}>
+                      {showPassword ? 'Hide' : 'Show'}
+                    </Text>
+                  </Pressable>
+                </View>
+              </View>
+
+              {errorMessage ? (
+                <Text accessibilityRole='alert' style={{ color: colors.error, lineHeight: 20 }}>
+                  {errorMessage}
+                </Text>
+              ) : null}
+
+              <Pressable
+                accessibilityRole='button'
+                disabled={!canSubmit}
+                onPress={handleLogin}
+                style={({ pressed }) => ({
+                  minHeight: 52,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderRadius: 12,
+                  backgroundColor: canSubmit ? colors.accent : `${colors.muted}66`,
+                  opacity: pressed ? 0.8 : 1
+                })}>
+                {isSubmitting ? (
+                  <ActivityIndicator color={colors.surface} />
+                ) : (
+                  <Text style={{ color: colors.surface, fontSize: 16, fontWeight: '700' }}>
+                    Sign in
+                  </Text>
+                )}
+              </Pressable>
+            </View>
+
+            <Text style={{ color: `${colors.text}CC`, textAlign: 'center', fontSize: 13 }}>
+              Magic links and password recovery are coming next.
+            </Text>
+          </View>
+        </ScrollView>
       </KeyboardAvoidingView>
-    </>
+    </SafeAreaView>
   )
 }
