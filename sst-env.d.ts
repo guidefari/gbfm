@@ -103,6 +103,7 @@ declare module "sst" {
       "url": string
     }
     "gbfm_network": {
+      "bastion": string
       "type": "sst.aws.Vpc"
     }
     "gbfm_vps": {

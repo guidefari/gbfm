@@ -59,7 +59,7 @@ export default function Login() {
 
   return (
     <SafeAreaView
-      edges={{ top: true, left: true, right: true }}
+      edges={{ top: true, left: true, right: true, bottom: true }}
       style={{ flex: 1, backgroundColor: colors.background }}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}

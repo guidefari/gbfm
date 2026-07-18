@@ -1,11 +1,11 @@
 import '../global.css'
 import { useFonts } from 'expo-font'
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router'
-import { NativeTabs } from 'expo-router/unstable-native-tabs'
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { useEffect } from 'react'
-import { DynamicColorIOS, useColorScheme } from 'react-native'
-import { AudioProvider } from '@/audio/AudioProvider'
+import { brandDark, brandLight } from '@gbfm/theme'
+import { useColorScheme } from 'react-native'
+import { NowPlayingProvider } from '@/audio/NowPlayingProvider'
 import { AuthProvider } from '@/store/auth'
 import { useColorSchemePreference } from '@/store/preferences'
 
@@ -16,7 +16,6 @@ export default function Layout() {
   const preference = useColorSchemePreference()
   const colorScheme = preference === 'system' ? systemColorScheme : preference
   const isDark = colorScheme !== 'light'
-  const contentBackground = isDark ? '#16415A' : '#E8EFF8'
 
   const [fontsLoaded] = useFonts({
     JetBrainsMono: require('../../assets/fonts/JetBrainsMono-Regular.ttf'),
@@ -30,33 +29,24 @@ export default function Layout() {
   if (!fontsLoaded) return null
 
   return (
-    <AudioProvider>
+    <NowPlayingProvider>
       <AuthProvider>
         <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
-          <NativeTabs
-            blurEffect='systemDefault'
-            minimizeBehavior='onScrollDown'
-            tintColor={DynamicColorIOS({ dark: '#FFFFFF', light: '#16415A' })}
-            labelStyle={{ color: DynamicColorIOS({ dark: '#FFFFFF', light: '#16415A' }) }}>
-            <NativeTabs.Trigger name='index' contentStyle={{ backgroundColor: contentBackground }}>
-              <NativeTabs.Trigger.Icon
-                sf={{ default: 'house', selected: 'house.fill' }}
-                md={{ default: 'home', selected: 'home_filled' }}
-              />
-              <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
-            </NativeTabs.Trigger>
-            <NativeTabs.Trigger
-              name='profile'
-              contentStyle={{ backgroundColor: contentBackground }}>
-              <NativeTabs.Trigger.Icon
-                sf={{ default: 'person.crop.circle', selected: 'person.crop.circle.fill' }}
-                md={{ default: 'person', selected: 'person' }}
-              />
-              <NativeTabs.Trigger.Label>Profile</NativeTabs.Trigger.Label>
-            </NativeTabs.Trigger>
-          </NativeTabs>
+          <Stack>
+            <Stack.Screen name='(tabs)' options={{ headerShown: false }} />
+            <Stack.Screen
+              name='now-playing'
+              options={{
+                presentation: 'modal',
+                headerShown: false,
+                animation: 'slide_from_bottom',
+                contentStyle: { backgroundColor: isDark ? brandDark.bg : brandLight.bg }
+              }}
+            />
+            <Stack.Screen name='music-reminders' options={{ title: 'Music Reminders' }} />
+          </Stack>
         </ThemeProvider>
       </AuthProvider>
-    </AudioProvider>
+    </NowPlayingProvider>
   )
 }
