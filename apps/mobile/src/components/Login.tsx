@@ -42,12 +42,8 @@ export default function Login() {
     setErrorMessage(undefined)
 
     const runLogin = login({ email: email.trim(), password }).pipe(
-      Effect.tap((data) =>
-        Effect.sync(() => {
-          setAuth(data)
-          router.replace('/profile')
-        })
-      ),
+      Effect.tap(setAuth),
+      Effect.tap(() => Effect.sync(() => router.replace('/profile'))),
       Effect.catch((error) =>
         Effect.sync(() => {
           setErrorMessage(
@@ -104,7 +100,7 @@ export default function Login() {
                 backgroundColor: colors.surface,
                 borderColor: `${colors.muted}55`,
                 borderWidth: 1,
-                borderRadius: 20
+                borderRadius: 4
               }}>
               <View style={{ gap: 8 }}>
                 <Text style={{ color: colors.accent, fontSize: 14, fontWeight: '600' }}>Email</Text>
@@ -126,7 +122,7 @@ export default function Login() {
                     color: '#FFFFFF',
                     borderColor: `${colors.muted}66`,
                     borderWidth: 1,
-                    borderRadius: 12,
+                    borderRadius: 4,
                     fontSize: 16
                   }}
                 />
@@ -156,7 +152,7 @@ export default function Login() {
                       color: '#FFFFFF',
                       borderColor: `${colors.muted}66`,
                       borderWidth: 1,
-                      borderRadius: 12,
+                      borderRadius: 4,
                       fontSize: 16
                     }}
                   />
@@ -187,7 +183,7 @@ export default function Login() {
                   minHeight: 52,
                   alignItems: 'center',
                   justifyContent: 'center',
-                  borderRadius: 12,
+                  borderRadius: 4,
                   backgroundColor: canSubmit ? colors.accent : `${colors.muted}66`,
                   opacity: pressed ? 0.8 : 1
                 })}>
