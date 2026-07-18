@@ -45,7 +45,9 @@ export const CorsLive = HttpRouter.middleware(
       'Cookie',
       'Refresh-Token',
       'sentry-trace',
-      'baggage'
+      'baggage',
+      'b3',
+      'traceparent'
     ],
     exposedHeaders: ['Set-Cookie'],
     credentials: true
