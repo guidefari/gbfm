@@ -1,36 +1,27 @@
 import { Stack, useRouter } from 'expo-router'
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-screens/experimental'
-import { useAuthStore } from '@/store/auth'
+import Login from '@/components/Login'
+import { AppearanceSection } from '@/components/Profile/AppearanceSection'
+import { useAuthStore, useClearAuth } from '@/store/auth'
 
 export default function Profile() {
   const user = useAuthStore((state) => state.user)
   const router = useRouter()
+  const clearAuth = useClearAuth()
 
   if (!user) {
     return (
       <>
-        <Stack.Screen
-          options={{
-            title: 'Profile'
-          }}
-        />
-        <SafeAreaView
-          edges={{ top: true, left: true, right: true }}
-          className='flex-1 items-center justify-center p-4'>
-          <Text className='text-white text-lg'>No user data available</Text>
-        </SafeAreaView>
+        <Stack.Screen options={{ title: 'Profile' }} />
+        <Login />
       </>
     )
   }
 
   return (
     <>
-      <Stack.Screen
-        options={{
-          title: 'Profile'
-        }}
-      />
+      <Stack.Screen options={{ title: 'Profile' }} />
       <SafeAreaView edges={{ top: true, left: true, right: true }} className='flex-1'>
         <ScrollView className='flex-1 p-4'>
           <View className='mb-6'>
@@ -43,7 +34,7 @@ export default function Profile() {
 
             <TouchableOpacity
               onPress={() => router.push('/music-reminders')}
-              className='bg-gray-800 rounded-lg p-4 mb-4'>
+              className='bg-gray-800 rounded-sm p-4 mb-4'>
               <View className='flex-row items-center justify-between'>
                 <View>
                   <Text className='text-white font-semibold text-lg'>Music Reminders</Text>
@@ -56,7 +47,7 @@ export default function Profile() {
             </TouchableOpacity>
           </View>
 
-          <View className='space-y-4'>
+          <View className='space-y-4 mb-8'>
             <View>
               <Text className='text-sm text-gray-400 mb-1'>Email</Text>
               <Text className='text-white text-lg'>{user.email}</Text>
@@ -79,6 +70,16 @@ export default function Profile() {
               </Text>
             </View>
           </View>
+
+          <View className='mb-8'>
+            <AppearanceSection />
+          </View>
+
+          <TouchableOpacity
+            onPress={() => void clearAuth()}
+            className='border border-red-400/60 rounded-sm p-4 mb-8 items-center'>
+            <Text className='text-red-400 font-semibold text-base'>Sign out</Text>
+          </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
     </>
