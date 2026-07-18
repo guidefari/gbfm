@@ -7,12 +7,14 @@ FROM base AS deps
 COPY bun.lock ./
 COPY package.json ./
 COPY apps/vps/package.json ./apps/vps/
+COPY packages/api/package.json ./packages/api/
 COPY packages/email/package.json ./packages/email/
 COPY packages/core/package.json ./packages/core/
 COPY packages/theme/package.json ./packages/theme/
 
 RUN bun install --omit dev --ignore-scripts
 
+COPY packages/api/src ./packages/api/src
 COPY packages/email/src ./packages/email/src
 COPY packages/email/emails ./packages/email/emails
 COPY packages/core/src ./packages/core/src
@@ -21,6 +23,7 @@ COPY packages/theme/styles ./packages/theme/styles
 COPY apps/vps/src ./apps/vps/src
 COPY apps/vps/scripts ./apps/vps/scripts
 COPY apps/vps/package.json apps/vps/tsconfig.json ./apps/vps/
+COPY packages/api/package.json packages/api/tsconfig.json ./packages/api/
 COPY packages/email/package.json packages/email/tsconfig.json ./packages/email/
 COPY packages/core/package.json packages/core/tsconfig.json ./packages/core/
 COPY packages/theme/package.json packages/theme/tsconfig.json ./packages/theme/
@@ -32,6 +35,7 @@ WORKDIR /usr/src/app
 
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=deps /usr/src/app/package.json ./package.json
+COPY --from=deps /usr/src/app/packages/api ./packages/api
 COPY --from=deps /usr/src/app/packages/email ./packages/email
 COPY --from=deps /usr/src/app/packages/core ./packages/core
 COPY --from=deps /usr/src/app/packages/theme ./packages/theme
@@ -56,6 +60,7 @@ WORKDIR /usr/src/app
 
 COPY --from=deps /usr/src/app/node_modules ./node_modules
 COPY --from=deps /usr/src/app/package.json ./package.json
+COPY --from=deps /usr/src/app/packages/api ./packages/api
 COPY --from=deps /usr/src/app/packages/email ./packages/email
 COPY --from=deps /usr/src/app/packages/core ./packages/core
 COPY --from=deps /usr/src/app/packages/theme ./packages/theme
