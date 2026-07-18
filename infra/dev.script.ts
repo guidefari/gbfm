@@ -3,13 +3,13 @@ import { dbBackupBucket } from './bucket'
 import { email } from './email'
 import { allSecrets, secret } from './secret'
 
-// new sst.x.DevCommand('ios', {
-//   dev: {
-//     command: 'bun ios',
-//     directory: './apps/mobile',
-//     autostart: false
-//   }
-// })
+new sst.x.DevCommand('Mobile_Expo', {
+  dev: {
+    command: 'bun run start -- --lan',
+    directory: './apps/mobile',
+    autostart: false
+  }
+})
 
 new sst.x.DevCommand('UI_Playground', {
   dev: {
