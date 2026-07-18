@@ -70,7 +70,9 @@ export const vps_gateway = new sst.aws.ApiGatewayV2('gbfm_vps_gateway', {
       'Cookie',
       'Refresh-Token',
       'sentry-trace',
-      'baggage'
+      'baggage',
+      'b3',
+      'traceparent'
     ],
     exposeHeaders: ['Set-Cookie'],
     allowCredentials: true
