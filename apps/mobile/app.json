@@ -6,7 +6,7 @@
     "web": {
       "output": "static"
     },
-    "plugins": ["expo-router"],
+    "plugins": ["expo-router", "expo-splash-screen"],
     "name": "mobile",
     "slug": "mobile",
     "newArchEnabled": true,
