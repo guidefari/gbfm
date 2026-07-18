@@ -12,7 +12,7 @@
  * These placeholders get replaced with hex values from packages/theme/src/tokens/shadcn.ts
  */
 import type { Plugin } from 'vite'
-import { dark, light } from '@gbfm/theme'
+import { dark, light } from '../../../packages/theme/src/tokens/shadcn.ts'
 
 export function themeColorsPlugin(): Plugin {
   return {
