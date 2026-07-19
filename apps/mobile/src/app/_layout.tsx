@@ -11,6 +11,17 @@ import { useColorSchemePreference } from '@/store/preferences'
 
 void SplashScreen.preventAutoHideAsync()
 
+// Screens reveal the navigation theme background behind the status bar,
+// so match it to the brand background instead of the default black/white.
+const darkTheme = {
+  ...DarkTheme,
+  colors: { ...DarkTheme.colors, background: brandDark.bg }
+}
+const lightTheme = {
+  ...DefaultTheme,
+  colors: { ...DefaultTheme.colors, background: brandLight.bg }
+}
+
 export default function Layout() {
   const systemColorScheme = useColorScheme()
   const preference = useColorSchemePreference()
@@ -31,7 +42,7 @@ export default function Layout() {
   return (
     <NowPlayingProvider>
       <AuthProvider>
-        <ThemeProvider value={isDark ? DarkTheme : DefaultTheme}>
+        <ThemeProvider value={isDark ? darkTheme : lightTheme}>
           <Stack>
             <Stack.Screen name='(tabs)' options={{ headerShown: false }} />
             <Stack.Screen

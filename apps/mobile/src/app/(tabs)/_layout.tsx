@@ -24,7 +24,7 @@ export default function TabsLayout() {
           <MiniPlayerBar />
         </NativeTabs.BottomAccessory>
       ) : null}
-      <NativeTabs.Trigger name='index' contentStyle={{ backgroundColor: contentBackground }}>
+      <NativeTabs.Trigger name='(home)' contentStyle={{ backgroundColor: contentBackground }}>
         <NativeTabs.Trigger.Icon
           sf={{ default: 'house', selected: 'house.fill' }}
           md={{ default: 'home', selected: 'home_filled' }}

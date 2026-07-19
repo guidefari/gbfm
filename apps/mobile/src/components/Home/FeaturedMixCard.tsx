@@ -11,6 +11,19 @@ const colors = {
   surface: brand.darkerBg
 }
 
+// Fixed geometry, mirrored by FeaturedMixSkeleton, so that
+// loading -> loaded/error never shifts layout.
+export const FEATURED_CARD_INFO_HEIGHT = 78
+export const FEATURED_CARD_BUTTON_HEIGHT = 56
+
+const cardContainerStyle = {
+  borderWidth: 2,
+  borderColor: colors.accent,
+  borderRadius: 4,
+  overflow: 'hidden',
+  backgroundColor: colors.surface
+} as const
+
 export function FeaturedMixCard({
   mix,
   isPlaying = false,
@@ -26,37 +39,54 @@ export function FeaturedMixCard({
 }) {
   if (!mix) {
     return (
-      <View
-        style={{
-          aspectRatio: 1,
-          backgroundColor: colors.surface,
-          borderWidth: 2,
-          borderColor: colors.muted,
-          borderRadius: 4,
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 16
-        }}>
-        <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 14 }}>
-          couldn't load the featured mix
-        </Text>
-        {onRetry ? (
-          <Pressable
-            accessibilityRole='button'
-            onPress={onRetry}
-            style={({ pressed }) => ({
-              borderWidth: 2,
-              borderColor: colors.accent,
-              borderRadius: 4,
-              paddingHorizontal: 20,
-              paddingVertical: 10,
-              opacity: pressed ? 0.7 : 1
-            })}>
-            <Text style={{ color: colors.accent, fontFamily: fonts.monoSemiBold, fontSize: 14 }}>
-              retry
-            </Text>
-          </Pressable>
-        ) : null}
+      <View style={{ ...cardContainerStyle, borderColor: colors.muted }}>
+        <View
+          style={{
+            aspectRatio: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 24
+          }}>
+          <Text
+            style={{
+              color: colors.muted,
+              fontFamily: fonts.mono,
+              fontSize: 14,
+              textAlign: 'center'
+            }}>
+            couldn't load the featured mix
+          </Text>
+        </View>
+        <View
+          style={{
+            height: FEATURED_CARD_INFO_HEIGHT,
+            justifyContent: 'center',
+            paddingHorizontal: 16
+          }}>
+          <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 14 }}>
+            check your connection and try again
+          </Text>
+        </View>
+        <Pressable
+          accessibilityRole='button'
+          onPress={onRetry}
+          style={({ pressed }) => ({
+            height: FEATURED_CARD_BUTTON_HEIGHT,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: colors.accent,
+            opacity: pressed ? 0.85 : 1
+          })}>
+          <Text
+            style={{
+              color: colors.surface,
+              fontFamily: fonts.monoSemiBold,
+              fontSize: 15,
+              letterSpacing: 0.5
+            }}>
+            Retry
+          </Text>
+        </Pressable>
       </View>
     )
   }
@@ -64,14 +94,7 @@ export function FeaturedMixCard({
   const creatorNames = mix.creators?.map((creator) => creator.name).join(', ')
 
   return (
-    <View
-      style={{
-        borderWidth: 2,
-        borderColor: colors.accent,
-        borderRadius: 4,
-        overflow: 'hidden',
-        backgroundColor: colors.surface
-      }}>
+    <View style={cardContainerStyle}>
       <View style={{ aspectRatio: 1 }}>
         {mix.thumbnailUrl ? (
           <Image
@@ -106,23 +129,30 @@ export function FeaturedMixCard({
         </Text>
       </View>
 
-      <View style={{ padding: 16, gap: 4 }}>
+      <View
+        style={{
+          height: FEATURED_CARD_INFO_HEIGHT,
+          justifyContent: 'center',
+          gap: 4,
+          paddingHorizontal: 16
+        }}>
         <Text
           style={{
             color: '#FFFFFF',
             fontFamily: fonts.monoSemiBold,
             fontSize: 20,
+            lineHeight: 24,
             textDecorationLine: 'underline',
             textDecorationColor: colors.accent
           }}
           numberOfLines={1}>
           {mix.title}
         </Text>
-        {creatorNames ? (
-          <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 14 }}>
-            {creatorNames}
-          </Text>
-        ) : null}
+        <Text
+          style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 14, lineHeight: 18 }}
+          numberOfLines={1}>
+          {creatorNames ?? ''}
+        </Text>
       </View>
 
       <Pressable
@@ -130,7 +160,7 @@ export function FeaturedMixCard({
         onPress={onPressPlay}
         disabled={isLoading}
         style={({ pressed }) => ({
-          minHeight: 56,
+          height: FEATURED_CARD_BUTTON_HEIGHT,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',

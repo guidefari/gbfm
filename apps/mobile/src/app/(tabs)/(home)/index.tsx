@@ -2,12 +2,13 @@ import { brand } from '@gbfm/theme'
 import { Effect, Fiber } from 'effect'
 import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useState } from 'react'
-import { Text, View } from 'react-native'
+import { ScrollView, Text } from 'react-native'
 import { SafeAreaView } from 'react-native-screens/experimental'
 import { getFeaturedMix } from '@/api/audio'
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
 import { FeaturedMixCard } from '@/components/Home/FeaturedMixCard'
 import { FeaturedMixSkeleton } from '@/components/Home/FeaturedMixSkeleton'
+import { ShowsSection } from '@/components/Home/ShowsSection'
 import { fonts } from '@/theme/fonts'
 import type { AudioResponse } from '@gbfm/api/audio'
 
@@ -61,9 +62,11 @@ export default function Home() {
 
   return (
     <SafeAreaView
-      edges={{ top: true, left: true, right: true, bottom: true }}
+      edges={{ top: true, left: true, right: true }}
       style={{ flex: 1, backgroundColor: colors.background }}>
-      <View style={{ flex: 1, padding: 20, paddingTop: 8, gap: 16 }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 20, paddingTop: 8, gap: 16 }}>
         <Text
           style={{
             color: colors.accent,
@@ -86,7 +89,9 @@ export default function Home() {
             onRetry={fetchMix}
           />
         )}
-      </View>
+
+        <ShowsSection />
+      </ScrollView>
     </SafeAreaView>
   )
 }
