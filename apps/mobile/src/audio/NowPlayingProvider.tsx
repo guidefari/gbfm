@@ -1,14 +1,15 @@
 import type { AudioResponse } from '@gbfm/api/audio'
 import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio'
+import { Effect } from 'effect'
 import {
   createContext,
   type PropsWithChildren,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useState
 } from 'react'
+import { useAsyncAtom } from '@/store/result'
 
 type Track = typeof AudioResponse.Type
 
@@ -25,20 +26,24 @@ type NowPlayingContextValue = {
 
 const NowPlayingContext = createContext<NowPlayingContextValue | null>(null)
 
-export function NowPlayingProvider({ children }: PropsWithChildren) {
-  const [track, setTrack] = useState<Track | null>(null)
-  const player = useAudioPlayer(null, { updateInterval: 500 })
-  const status = useAudioPlayerStatus(player)
-
-  useEffect(() => {
-    void setAudioModeAsync({
+const configureAudioMode = Effect.tryPromise({
+  try: () =>
+    setAudioModeAsync({
       playsInSilentMode: true,
       interruptionMode: 'doNotMix',
       allowsRecording: false,
       shouldPlayInBackground: true,
       shouldRouteThroughEarpiece: false
-    })
-  }, [])
+    }),
+  catch: (error) => error
+})
+
+export function NowPlayingProvider({ children }: PropsWithChildren) {
+  useAsyncAtom(() => configureAudioMode, [])
+
+  const [track, setTrack] = useState<Track | null>(null)
+  const player = useAudioPlayer(null, { updateInterval: 500 })
+  const status = useAudioPlayerStatus(player)
 
   const loadAndPlay = useCallback(
     (nextTrack: Track) => {

@@ -1,9 +1,10 @@
 import type { FullUser } from '@gbfm/core/api'
 import { Atom, useAtomSet, useAtomValue } from '@gbfm/mobile-state'
-import { Effect, Fiber, Schema } from 'effect'
+import { Effect, Schema } from 'effect'
 import * as SecureStore from 'expo-secure-store'
-import { type PropsWithChildren, useEffect } from 'react'
+import { type PropsWithChildren } from 'react'
 import { getSession, SessionExpired } from '@/api/auth'
+import { useAsyncAtom } from '@/store/result'
 
 export type AuthSession = {
   readonly user: FullUser | null
@@ -77,12 +78,7 @@ export const useAuthStore = <T>(selector: (state: AuthSession) => T) =>
 export const AuthProvider = ({ children }: PropsWithChildren) => {
   const setState = useAtomSet(authState)
 
-  useEffect(() => {
-    const fiber = Effect.runFork(restoreAuth(setState))
-    return () => {
-      Effect.runFork(Fiber.interrupt(fiber))
-    }
-  }, [setState])
+  useAsyncAtom(() => restoreAuth(setState), [])
 
   return children
 }

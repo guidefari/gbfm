@@ -1,7 +1,6 @@
 import { brand } from '@gbfm/theme'
-import { Effect, Fiber } from 'effect'
+import { Effect } from 'effect'
 import { useRouter } from 'expo-router'
-import { useCallback, useEffect, useState } from 'react'
 import { ScrollView, Text } from 'react-native'
 import { SafeAreaView } from 'react-native-screens/experimental'
 import { getFeaturedMix } from '@/api/audio'
@@ -9,8 +8,8 @@ import { useNowPlaying } from '@/audio/NowPlayingProvider'
 import { FeaturedMixCard } from '@/components/Home/FeaturedMixCard'
 import { FeaturedMixSkeleton } from '@/components/Home/FeaturedMixSkeleton'
 import { ShowsSection } from '@/components/Home/ShowsSection'
+import { useAsyncAtom } from '@/store/result'
 import { fonts } from '@/theme/fonts'
-import type { AudioResponse } from '@gbfm/api/audio'
 
 const colors = {
   background: brand.bg,
@@ -21,30 +20,19 @@ const colors = {
 }
 
 export default function Home() {
-  const [mix, setMix] = useState<typeof AudioResponse.Type | null>(null)
-  const [isPending, setIsPending] = useState(true)
+  const {
+    status,
+    value: mix,
+    refresh
+  } = useAsyncAtom(
+    () =>
+      getFeaturedMix.pipe(
+        Effect.tapError((error) => Effect.sync(() => console.error('getFeaturedMix failed', error)))
+      ),
+    []
+  )
   const { loadAndPlay, togglePlayback, track, isPlaying, isBuffering, isLoaded } = useNowPlaying()
   const router = useRouter()
-
-  const fetchMix = useCallback(() => {
-    setIsPending(true)
-    return Effect.runFork(
-      getFeaturedMix.pipe(
-        Effect.tap((result) => Effect.sync(() => setMix(result))),
-        Effect.tapError((error) =>
-          Effect.sync(() => console.error('getFeaturedMix failed', error))
-        ),
-        Effect.ensuring(Effect.sync(() => setIsPending(false)))
-      )
-    )
-  }, [])
-
-  useEffect(() => {
-    const fiber = fetchMix()
-    return () => {
-      Effect.runFork(Fiber.interrupt(fiber))
-    }
-  }, [fetchMix])
 
   const isThisMix = mix !== null && track?.id === mix.id
   const isThisMixPlaying = isThisMix && isPlaying
@@ -78,7 +66,7 @@ export default function Home() {
           goosebumps.fm
         </Text>
 
-        {isPending ? (
+        {status === 'pending' ? (
           <FeaturedMixSkeleton />
         ) : (
           <FeaturedMixCard
@@ -86,7 +74,7 @@ export default function Home() {
             isPlaying={isThisMixPlaying}
             isLoading={isThisMixLoading}
             onPressPlay={handlePlay}
-            onRetry={fetchMix}
+            onRetry={refresh}
           />
         )}
 

@@ -1,9 +1,9 @@
 import { brand } from '@gbfm/theme'
-import { Effect, Fiber } from 'effect'
-import { useCallback, useEffect, useState } from 'react'
+import { Effect } from 'effect'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import { getShows, type Show } from '@/api/shows'
 import { SHOW_CARD_HEIGHT, SHOW_CARD_WIDTH, ShowCard } from '@/components/Home/ShowCard'
+import { useAsyncAtom } from '@/store/result'
 import { fonts } from '@/theme/fonts'
 
 const colors = {
@@ -37,26 +37,17 @@ function ShowCardSkeleton() {
 }
 
 export function ShowsSection() {
-  const [shows, setShows] = useState<ReadonlyArray<Show> | null>(null)
-  const [isPending, setIsPending] = useState(true)
-
-  const fetchShows = useCallback(() => {
-    setIsPending(true)
-    return Effect.runFork(
+  const {
+    status,
+    value: shows,
+    refresh: fetchShows
+  } = useAsyncAtom(
+    () =>
       getShows.pipe(
-        Effect.tap((result) => Effect.sync(() => setShows(result))),
-        Effect.tapError((error) => Effect.sync(() => console.error('getShows failed', error))),
-        Effect.ensuring(Effect.sync(() => setIsPending(false)))
-      )
-    )
-  }, [])
-
-  useEffect(() => {
-    const fiber = fetchShows()
-    return () => {
-      Effect.runFork(Fiber.interrupt(fiber))
-    }
-  }, [fetchShows])
+        Effect.tapError((error) => Effect.sync(() => console.error('getShows failed', error)))
+      ),
+    []
+  )
 
   return (
     <View style={{ gap: 12 }}>
@@ -69,7 +60,7 @@ export function ShowsSection() {
         }}>
         radio shows
       </Text>
-      {isPending ? (
+      {status === 'pending' ? (
         <ScrollView
           horizontal
           scrollEnabled={false}
@@ -80,7 +71,7 @@ export function ShowsSection() {
             <ShowCardSkeleton key={key} />
           ))}
         </ScrollView>
-      ) : shows && shows.length > 0 ? (
+      ) : status === 'success' && shows.length > 0 ? (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -90,7 +81,7 @@ export function ShowsSection() {
             <ShowCard key={show.id} show={show} />
           ))}
         </ScrollView>
-      ) : shows ? (
+      ) : status === 'success' ? (
         <View
           style={{
             height: SHOW_CARD_HEIGHT,

@@ -1,10 +1,10 @@
 import { brand } from '@gbfm/theme'
-import { Effect, Fiber } from 'effect'
+import { Effect } from 'effect'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
-import { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, FlatList, Image, Pressable, Text, View } from 'react-native'
 import { getShowEpisodes, type ShowEpisode } from '@/api/shows'
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
+import { useAsyncAtom } from '@/store/result'
 import { fonts } from '@/theme/fonts'
 
 const colors = {
@@ -70,38 +70,29 @@ function EpisodeRow({ episode }: { episode: ShowEpisode }) {
 
 export default function ShowScreen() {
   const { slug, title } = useLocalSearchParams<{ slug: string; title?: string }>()
-  const [episodes, setEpisodes] = useState<ReadonlyArray<ShowEpisode> | null>(null)
-  const [isPending, setIsPending] = useState(true)
-
-  const fetchEpisodes = useCallback(() => {
-    setIsPending(true)
-    return Effect.runFork(
+  const {
+    status,
+    value: episodes,
+    refresh: fetchEpisodes
+  } = useAsyncAtom(
+    () =>
       getShowEpisodes(slug).pipe(
-        Effect.tap((result) => Effect.sync(() => setEpisodes(result))),
         Effect.tapError((error) =>
           Effect.sync(() => console.error('getShowEpisodes failed', error))
-        ),
-        Effect.ensuring(Effect.sync(() => setIsPending(false)))
-      )
-    )
-  }, [slug])
-
-  useEffect(() => {
-    const fiber = fetchEpisodes()
-    return () => {
-      Effect.runFork(Fiber.interrupt(fiber))
-    }
-  }, [fetchEpisodes])
+        )
+      ),
+    [slug]
+  )
 
   return (
     <>
       <Stack.Screen options={{ title: title ?? '' }} />
       <View style={{ flex: 1, backgroundColor: colors.background }} collapsable={false}>
-        {isPending ? (
+        {status === 'pending' ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
             <ActivityIndicator size='large' color={colors.accent} />
           </View>
-        ) : episodes && episodes.length > 0 ? (
+        ) : status === 'success' && episodes.length > 0 ? (
           <FlatList
             data={episodes}
             keyExtractor={(episode) => episode.id}
@@ -109,7 +100,7 @@ export default function ShowScreen() {
             contentInsetAdjustmentBehavior='automatic'
             contentContainerStyle={{ padding: 20 }}
           />
-        ) : episodes ? (
+        ) : status === 'success' ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
             <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 14 }}>
               no episodes yet

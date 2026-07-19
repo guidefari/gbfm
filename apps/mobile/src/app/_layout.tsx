@@ -2,10 +2,10 @@ import '../global.css'
 import { useFonts } from 'expo-font'
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
-import { useEffect } from 'react'
 import { brandDark, brandLight } from '@gbfm/theme'
 import { useColorScheme } from 'react-native'
 import { NowPlayingProvider } from '@/audio/NowPlayingProvider'
+import { useReadyEffect } from '@/store/result'
 import { AuthProvider } from '@/store/auth'
 import { useColorSchemePreference } from '@/store/preferences'
 
@@ -33,9 +33,9 @@ export default function Layout() {
     'JetBrainsMono-SemiBold': require('../../assets/fonts/JetBrainsMono-SemiBold.ttf')
   })
 
-  useEffect(() => {
-    if (fontsLoaded) void SplashScreen.hideAsync()
-  }, [fontsLoaded])
+  useReadyEffect(() => {
+    void SplashScreen.hideAsync()
+  }, fontsLoaded)
 
   if (!fontsLoaded) return null
 
