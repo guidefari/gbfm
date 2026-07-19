@@ -1,6 +1,6 @@
 import type { AudioResponse } from '@gbfm/api/audio'
-import { setAudioModeAsync, useAudioPlayer, useAudioPlayerStatus } from 'expo-audio'
-import { Effect } from 'effect'
+import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio'
+import { useAtomValue } from '@effect/atom-react'
 import {
   createContext,
   type PropsWithChildren,
@@ -9,7 +9,7 @@ import {
   useMemo,
   useState
 } from 'react'
-import { useAsyncAtom } from '@/store/result'
+import { audioModeAtom } from '@/store/atoms/audio-mode'
 
 type Track = typeof AudioResponse.Type
 
@@ -26,20 +26,8 @@ type NowPlayingContextValue = {
 
 const NowPlayingContext = createContext<NowPlayingContextValue | null>(null)
 
-const configureAudioMode = Effect.tryPromise({
-  try: () =>
-    setAudioModeAsync({
-      playsInSilentMode: true,
-      interruptionMode: 'doNotMix',
-      allowsRecording: false,
-      shouldPlayInBackground: true,
-      shouldRouteThroughEarpiece: false
-    }),
-  catch: (error) => error
-})
-
 export function NowPlayingProvider({ children }: PropsWithChildren) {
-  useAsyncAtom(() => configureAudioMode, [])
+  useAtomValue(audioModeAtom)
 
   const [track, setTrack] = useState<Track | null>(null)
   const player = useAudioPlayer(null, { updateInterval: 500 })

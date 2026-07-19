@@ -1,10 +1,10 @@
 import type { FullUser } from '@gbfm/core/api'
-import { Atom, useAtomSet, useAtomValue } from '@gbfm/mobile-state'
+import * as Atom from 'effect/unstable/reactivity/Atom'
+import { useAtomMount, useAtomSet, useAtomValue } from '@effect/atom-react'
+import { type PropsWithChildren, useMemo } from 'react'
 import { Effect, Schema } from 'effect'
 import * as SecureStore from 'expo-secure-store'
-import { type PropsWithChildren } from 'react'
 import { getSession, SessionExpired } from '@/api/auth'
-import { useAsyncAtom } from '@/store/result'
 
 export type AuthSession = {
   readonly user: FullUser | null
@@ -28,14 +28,14 @@ const PersistedAuthSession = Schema.Struct({
 })
 
 const storageKey = 'gbfm.auth-session'
-export const authState = Atom.make<AuthSession>(emptyAuthState)
+export const authState = Atom.make<AuthSession>(emptyAuthState).pipe(Atom.keepAlive)
 
 const persistAuth = (session: AuthSession) =>
   session.user && session.sessionToken
     ? Effect.tryPromise(() => SecureStore.setItemAsync(storageKey, JSON.stringify(session)))
     : Effect.tryPromise(() => SecureStore.deleteItemAsync(storageKey))
 
-export const restoreAuth = (setState: (session: AuthSession) => void) =>
+const makeRestoreAuth = (setState: (session: AuthSession) => void) =>
   Effect.gen(function* () {
     const stored = yield* Effect.tryPromise(() => SecureStore.getItemAsync(storageKey)).pipe(
       Effect.catch(() => Effect.succeed(null))
@@ -72,14 +72,16 @@ export const restoreAuth = (setState: (session: AuthSession) => void) =>
     )
   })
 
+const makeRestoreAuthAtom = (setState: (session: AuthSession) => void) =>
+  Atom.make(makeRestoreAuth(setState))
+
 export const useAuthStore = <T>(selector: (state: AuthSession) => T) =>
   useAtomValue(authState, selector)
 
 export const AuthProvider = ({ children }: PropsWithChildren) => {
   const setState = useAtomSet(authState)
-
-  useAsyncAtom(() => restoreAuth(setState), [])
-
+  const restoreAtom = useMemo(() => makeRestoreAuthAtom(setState), [setState])
+  useAtomMount(restoreAtom)
   return children
 }
 

@@ -1,14 +1,14 @@
 import { brand } from '@gbfm/theme'
-import { Effect } from 'effect'
+import { useAtomRefresh, useAtomValue } from '@effect/atom-react'
+import { AsyncResult } from 'effect/unstable/reactivity'
 import { useRouter } from 'expo-router'
 import { ScrollView, Text } from 'react-native'
 import { SafeAreaView } from 'react-native-screens/experimental'
-import { getFeaturedMix } from '@/api/audio'
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
 import { FeaturedMixCard } from '@/components/Home/FeaturedMixCard'
 import { FeaturedMixSkeleton } from '@/components/Home/FeaturedMixSkeleton'
 import { ShowsSection } from '@/components/Home/ShowsSection'
-import { useAsyncAtom } from '@/store/result'
+import { featuredMixAtom } from '@/store/atoms/featured-mix'
 import { fonts } from '@/theme/fonts'
 
 const colors = {
@@ -20,20 +20,12 @@ const colors = {
 }
 
 export default function Home() {
-  const {
-    status,
-    value: mix,
-    refresh
-  } = useAsyncAtom(
-    () =>
-      getFeaturedMix.pipe(
-        Effect.tapError((error) => Effect.sync(() => console.error('getFeaturedMix failed', error)))
-      ),
-    []
-  )
+  const result = useAtomValue(featuredMixAtom)
+  const refresh = useAtomRefresh(featuredMixAtom)
   const { loadAndPlay, togglePlayback, track, isPlaying, isBuffering, isLoaded } = useNowPlaying()
   const router = useRouter()
 
+  const mix = AsyncResult.isSuccess(result) ? result.value : null
   const isThisMix = mix !== null && track?.id === mix.id
   const isThisMixPlaying = isThisMix && isPlaying
   const isThisMixLoading = isThisMix && (isBuffering || !isLoaded)
@@ -66,7 +58,7 @@ export default function Home() {
           goosebumps.fm
         </Text>
 
-        {status === 'pending' ? (
+        {AsyncResult.isInitial(result) || AsyncResult.isWaiting(result) ? (
           <FeaturedMixSkeleton />
         ) : (
           <FeaturedMixCard

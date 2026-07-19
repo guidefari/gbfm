@@ -1,9 +1,10 @@
 import { brand } from '@gbfm/theme'
-import { Effect } from 'effect'
+import { useAtomRefresh, useAtomValue } from '@effect/atom-react'
+import { AsyncResult } from 'effect/unstable/reactivity'
 import { Pressable, ScrollView, Text, View } from 'react-native'
-import { getShows, type Show } from '@/api/shows'
+import type { Show } from '@/api/shows'
 import { SHOW_CARD_HEIGHT, SHOW_CARD_WIDTH, ShowCard } from '@/components/Home/ShowCard'
-import { useAsyncAtom } from '@/store/result'
+import { showsAtom } from '@/store/atoms/shows'
 import { fonts } from '@/theme/fonts'
 
 const colors = {
@@ -37,17 +38,8 @@ function ShowCardSkeleton() {
 }
 
 export function ShowsSection() {
-  const {
-    status,
-    value: shows,
-    refresh: fetchShows
-  } = useAsyncAtom(
-    () =>
-      getShows.pipe(
-        Effect.tapError((error) => Effect.sync(() => console.error('getShows failed', error)))
-      ),
-    []
-  )
+  const result = useAtomValue(showsAtom)
+  const refresh = useAtomRefresh(showsAtom)
 
   return (
     <View style={{ gap: 12 }}>
@@ -60,7 +52,7 @@ export function ShowsSection() {
         }}>
         radio shows
       </Text>
-      {status === 'pending' ? (
+      {AsyncResult.isInitial(result) || AsyncResult.isWaiting(result) ? (
         <ScrollView
           horizontal
           scrollEnabled={false}
@@ -71,17 +63,17 @@ export function ShowsSection() {
             <ShowCardSkeleton key={key} />
           ))}
         </ScrollView>
-      ) : status === 'success' && shows.length > 0 ? (
+      ) : AsyncResult.isSuccess(result) && result.value.length > 0 ? (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           style={{ marginHorizontal: -20 }}
           contentContainerStyle={{ paddingHorizontal: 20, gap: 12 }}>
-          {shows.map((show) => (
+          {result.value.map((show: Show) => (
             <ShowCard key={show.id} show={show} />
           ))}
         </ScrollView>
-      ) : status === 'success' ? (
+      ) : AsyncResult.isSuccess(result) ? (
         <View
           style={{
             height: SHOW_CARD_HEIGHT,
@@ -98,7 +90,7 @@ export function ShowsSection() {
       ) : (
         <Pressable
           accessibilityRole='button'
-          onPress={fetchShows}
+          onPress={refresh}
           style={({ pressed }) => ({
             height: SHOW_CARD_HEIGHT,
             borderWidth: 2,

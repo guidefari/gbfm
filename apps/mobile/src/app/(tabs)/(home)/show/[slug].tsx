@@ -1,10 +1,11 @@
 import { brand } from '@gbfm/theme'
-import { Effect } from 'effect'
+import { useAtomRefresh, useAtomValue } from '@effect/atom-react'
+import { AsyncResult } from 'effect/unstable/reactivity'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { ActivityIndicator, FlatList, Image, Pressable, Text, View } from 'react-native'
-import { getShowEpisodes, type ShowEpisode } from '@/api/shows'
+import type { ShowEpisode } from '@/api/shows'
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
-import { useAsyncAtom } from '@/store/result'
+import { episodesFamily } from '@/store/atoms/episodes'
 import { fonts } from '@/theme/fonts'
 
 const colors = {
@@ -70,37 +71,27 @@ function EpisodeRow({ episode }: { episode: ShowEpisode }) {
 
 export default function ShowScreen() {
   const { slug, title } = useLocalSearchParams<{ slug: string; title?: string }>()
-  const {
-    status,
-    value: episodes,
-    refresh: fetchEpisodes
-  } = useAsyncAtom(
-    () =>
-      getShowEpisodes(slug).pipe(
-        Effect.tapError((error) =>
-          Effect.sync(() => console.error('getShowEpisodes failed', error))
-        )
-      ),
-    [slug]
-  )
+  const episodesAtom = episodesFamily(slug)
+  const result = useAtomValue(episodesAtom)
+  const refresh = useAtomRefresh(episodesAtom)
 
   return (
     <>
       <Stack.Screen options={{ title: title ?? '' }} />
       <View style={{ flex: 1, backgroundColor: colors.background }} collapsable={false}>
-        {status === 'pending' ? (
+        {AsyncResult.isInitial(result) || AsyncResult.isWaiting(result) ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
             <ActivityIndicator size='large' color={colors.accent} />
           </View>
-        ) : status === 'success' && episodes.length > 0 ? (
+        ) : AsyncResult.isSuccess(result) && result.value.length > 0 ? (
           <FlatList
-            data={episodes}
+            data={result.value}
             keyExtractor={(episode) => episode.id}
             renderItem={({ item }) => <EpisodeRow episode={item} />}
             contentInsetAdjustmentBehavior='automatic'
             contentContainerStyle={{ padding: 20 }}
           />
-        ) : status === 'success' ? (
+        ) : AsyncResult.isSuccess(result) ? (
           <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
             <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 14 }}>
               no episodes yet
@@ -113,7 +104,7 @@ export default function ShowScreen() {
             </Text>
             <Pressable
               accessibilityRole='button'
-              onPress={fetchEpisodes}
+              onPress={refresh}
               style={({ pressed }) => ({
                 borderWidth: 2,
                 borderColor: colors.accent,
