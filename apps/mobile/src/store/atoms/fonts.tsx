@@ -2,7 +2,7 @@ import * as Atom from 'effect/unstable/reactivity/Atom'
 import { useAtomSet, useAtomValue } from '@effect/atom-react'
 import * as SplashScreen from 'expo-splash-screen'
 import { useFonts } from 'expo-font'
-import { type PropsWithChildren } from 'react'
+import { type PropsWithChildren, useEffect, useRef } from 'react'
 import { Effect } from 'effect'
 
 export const fontsReadyAtom = Atom.make<boolean>(false).pipe(Atom.keepAlive)
@@ -19,7 +19,15 @@ const fontMap: Parameters<typeof useFonts>[0] = {
 export function FontsLoadedBridge({ children }: PropsWithChildren) {
   const [loaded] = useFonts(fontMap)
   const setReady = useAtomSet(fontsReadyAtom)
-  if (loaded) setReady(true)
+  const lastSyncedRef = useRef(false)
+
+  useEffect(() => {
+    if (loaded && !lastSyncedRef.current) {
+      lastSyncedRef.current = true
+      setReady(true)
+    }
+  }, [loaded, setReady])
+
   return <>{children}</>
 }
 
