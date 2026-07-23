@@ -43,6 +43,12 @@ export interface AudioService {
     type: AudioType,
     slug: string
   ) => Effect.Effect<SelectMdxCompiledAudio, DatabaseError | NotFoundError>
+  readonly getBySlugForEdit: (
+    type: AudioType,
+    slug: string,
+    userId: string,
+    userRole: string
+  ) => Effect.Effect<SelectMdxCompiledAudio, DatabaseError | NotFoundError | UnauthorizedError>
   readonly create: (
     data: InsertAudio,
     creatorIds: string[]
@@ -73,8 +79,12 @@ const getByTypeEffect = (
     yield* Effect.annotateCurrentSpan('audio.offset', offset)
     if (tag) yield* Effect.annotateCurrentSpan('audio.tag', tag)
     const whereCondition = tag
-      ? and(eq(audioTable.type, type), arrayContains(audioTable.tags, [tag]))
-      : eq(audioTable.type, type)
+      ? and(
+          eq(audioTable.type, type),
+          eq(audioTable.draft, false),
+          arrayContains(audioTable.tags, [tag])
+        )
+      : and(eq(audioTable.type, type), eq(audioTable.draft, false))
 
     const countResult = yield* Effect.tryPromise({
       try: () =>
@@ -186,7 +196,7 @@ const getTagsEffect = (type: AudioType) =>
             tag: sql<string | null>`unnest(${audioTable.tags})`
           })
           .from(audioTable)
-          .where(eq(audioTable.type, type)),
+          .where(and(eq(audioTable.type, type), eq(audioTable.draft, false))),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to fetch audio tags: ${getErrorMessage(error)}`,
@@ -201,14 +211,22 @@ const getTagsEffect = (type: AudioType) =>
       .toSorted()
   })
 
-const getBySlugEffect = (type: AudioType, slug: string, mdx: MdxService) =>
+const getBySlugEffect = (type: AudioType, slug: string, mdx: MdxService, includeDrafts = false) =>
   Effect.gen(function* () {
     const audioRecords = yield* Effect.tryPromise({
       try: () =>
         db
           .select()
           .from(audioTable)
-          .where(and(eq(audioTable.type, type), eq(audioTable.slug, slug)))
+          .where(
+            includeDrafts
+              ? and(eq(audioTable.type, type), eq(audioTable.slug, slug))
+              : and(
+                  eq(audioTable.type, type),
+                  eq(audioTable.slug, slug),
+                  eq(audioTable.draft, false)
+                )
+          )
           .limit(1),
       catch: (error) =>
         new DatabaseError({
@@ -547,6 +565,12 @@ export const AudioServiceLive = Layer.effect(
         getBySlugEffect(type, slug, mdx).pipe(
           Effect.withSpan('audio.getBySlug', { attributes: { type, slug } })
         ),
+      getBySlugForEdit: (type, slug, userId, userRole) =>
+        Effect.gen(function* () {
+          const audio = yield* getBySlugEffect(type, slug, mdx, true)
+          yield* requireCreatorOrAdmin('audio', audio.id, userId, userRole)
+          return audio
+        }).pipe(Effect.withSpan('audio.getBySlugForEdit', { attributes: { type, slug } })),
       create: (data, creatorIds) =>
         createEffect(data, creatorIds).pipe(Effect.withSpan('audio.create')),
       update: (type, slug, userId, userRole, data) =>

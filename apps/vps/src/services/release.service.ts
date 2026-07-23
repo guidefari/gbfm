@@ -1,4 +1,4 @@
-import { count, desc, eq } from 'drizzle-orm'
+import { and, count, desc, eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { labelsTable } from '@/db/label.schema'
@@ -40,7 +40,12 @@ const getByLabelSlugEffect = (labelSlug: string, options: { limit: number; offse
     const { limit, offset } = options
 
     const labelRecords = yield* Effect.tryPromise({
-      try: () => db.select().from(labelsTable).where(eq(labelsTable.slug, labelSlug)).limit(1),
+      try: () =>
+        db
+          .select()
+          .from(labelsTable)
+          .where(and(eq(labelsTable.slug, labelSlug), eq(labelsTable.draft, false)))
+          .limit(1),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to fetch label: ${getErrorMessage(error)}`,
@@ -58,7 +63,7 @@ const getByLabelSlugEffect = (labelSlug: string, options: { limit: number; offse
       })
     }
 
-    const whereCondition = eq(releasesTable.labelId, label.id)
+    const whereCondition = and(eq(releasesTable.labelId, label.id), eq(releasesTable.draft, false))
 
     const countResult = yield* Effect.tryPromise({
       try: () => db.select({ total: count() }).from(releasesTable).where(whereCondition),
@@ -98,7 +103,12 @@ const getByLabelSlugEffect = (labelSlug: string, options: { limit: number; offse
 const getBySlugEffect = (slug: string) =>
   Effect.gen(function* () {
     const releaseRecords = yield* Effect.tryPromise({
-      try: () => db.select().from(releasesTable).where(eq(releasesTable.slug, slug)).limit(1),
+      try: () =>
+        db
+          .select()
+          .from(releasesTable)
+          .where(and(eq(releasesTable.slug, slug), eq(releasesTable.draft, false)))
+          .limit(1),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to fetch release: ${getErrorMessage(error)}`,

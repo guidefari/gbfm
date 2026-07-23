@@ -148,7 +148,12 @@ const getAllEffect = (options: { limit: number; offset: number; includeDrafts?: 
 const getBySlugEffect = (slug: string) =>
   Effect.gen(function* () {
     const showRecords = yield* Effect.tryPromise({
-      try: () => db.select().from(showsTable).where(eq(showsTable.slug, slug)).limit(1),
+      try: () =>
+        db
+          .select()
+          .from(showsTable)
+          .where(and(eq(showsTable.slug, slug), eq(showsTable.draft, false)))
+          .limit(1),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to fetch show: ${getErrorMessage(error)}`,
@@ -424,7 +429,12 @@ const getEpisodesEffect = (showSlug: string, options: { limit: number; offset: n
     const { limit, offset } = options
 
     const showRecords = yield* Effect.tryPromise({
-      try: () => db.select().from(showsTable).where(eq(showsTable.slug, showSlug)).limit(1),
+      try: () =>
+        db
+          .select()
+          .from(showsTable)
+          .where(and(eq(showsTable.slug, showSlug), eq(showsTable.draft, false)))
+          .limit(1),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to fetch show: ${getErrorMessage(error)}`,
@@ -442,7 +452,7 @@ const getEpisodesEffect = (showSlug: string, options: { limit: number; offset: n
       })
     }
 
-    const whereCondition = and(eq(audioTable.showId, show.id))
+    const whereCondition = and(eq(audioTable.showId, show.id), eq(audioTable.draft, false))
 
     const countResult = yield* Effect.tryPromise({
       try: () => db.select({ total: count() }).from(audioTable).where(whereCondition),

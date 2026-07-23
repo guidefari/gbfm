@@ -215,6 +215,35 @@ export function useAudioBySlug(type: AudioContentType, slug: string) {
   }
 }
 
+export function useAudioBySlugForEdit(type: AudioContentType, slug: string) {
+  const { data, error, isPending } = useQuery<SelectMdxCompiledAudio, Error>({
+    queryKey: [...audioSlugQueryKey(type, slug), 'edit'],
+    queryFn: async () => {
+      const client = await getApiClient()
+      const audio = await Effect.runPromise(
+        client.audio
+          .getAudioBySlugForEdit({ params: { type, slug } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'audio.getAudioBySlugForEdit' })
+            )
+          )
+      )
+      return {
+        ...audio,
+        bannerImageUrl: null,
+        createdAt: new Date(audio.createdAt),
+        updatedAt: new Date(audio.updatedAt),
+        tags: audio.tags ? [...audio.tags] : null,
+        creators: audio.creators ? [...audio.creators] : undefined
+      }
+    },
+    enabled: Boolean(slug)
+  })
+
+  return { data, error, isPending }
+}
+
 export function useEditorialPosts(tag?: string, limit = DEFAULT_PAGE_SIZE) {
   const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage, isPending, refetch } =
     useInfiniteQuery<PaginatedResponse<SelectMdxCompiledEditorialPost>, Error>({

@@ -1,9 +1,10 @@
 import * as Effect from 'effect/Effect'
 import * as Schedule from 'effect/Schedule'
-import { formatTime, generateSlug, type TrackEntry } from '@gbfm/ui'
+import type { TrackEntry } from '@gbfm/ui'
 import { apiUrl, fetcher } from '@/lib/http'
 import { readResponseErrorMessage, readUploadResponse } from '@/lib/response'
 import { ImageUploadError, NotSignedInError, RecordSaveError, isPageRetryable } from './-errors'
+import { buildRecordPayload } from './-payload'
 
 export interface MixFormData {
   title: string
@@ -31,33 +32,6 @@ export interface SubmitRecordInput {
 }
 
 const RETRY_TIMES = 3
-
-const buildRecordPayload = (input: SubmitRecordInput) => {
-  const tracklistMarkdown =
-    input.formData.tracklist.length > 0
-      ? `\n\n## Tracklist\n${input.formData.tracklist
-          .map((t, i) => `${i + 1}. ${t.title} (${formatTime(t.time)})`)
-          .join('\n')}`
-      : ''
-
-  return {
-    title: input.formData.title,
-    description: input.formData.description,
-    slug: input.formData.slug || generateSlug(input.formData.title),
-    content: input.formData.content + tracklistMarkdown,
-    thumbnailUrl: input.imageUrl,
-    url: input.audioUrl,
-    type: 'mix',
-    tags: input.formData.tags,
-    creatorIds: [
-      input.formData.creatorId === 'current'
-        ? input.userId
-        : input.formData.creatorId || input.userId
-    ].filter(Boolean),
-    showId: input.formData.showId,
-    ...(input.formData.episodeNumber ? { episodeNumber: Number(input.formData.episodeNumber) } : {})
-  }
-}
 
 export const uploadImage = (
   file: File,

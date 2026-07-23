@@ -84,6 +84,20 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
         return toDateStrings(audio)
       })
     )
+    .handle('getAudioBySlugForEdit', ({ params }) =>
+      Effect.gen(function* () {
+        const { user } = yield* AuthSession
+        const svc = yield* AudioService
+        const audio = yield* dieOnDatabaseError(
+          svc.getBySlugForEdit(params.type, params.slug, user.id, user.role || 'user').pipe(
+            Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
+            Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized())
+          )
+        )
+
+        return toDateStrings(audio)
+      })
+    )
     .handle('updateAudioBySlug', ({ params, payload }) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession

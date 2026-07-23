@@ -97,7 +97,13 @@ async function sendMixNotification(
   const [mix] = await db
     .select()
     .from(audioTable)
-    .where(and(eq(audioTable.slug, input.mixSlug), eq(audioTable.type, 'mix')))
+    .where(
+      and(
+        eq(audioTable.slug, input.mixSlug),
+        eq(audioTable.type, 'mix'),
+        eq(audioTable.draft, false)
+      )
+    )
     .limit(1)
 
   if (!mix) {

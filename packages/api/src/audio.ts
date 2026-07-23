@@ -155,6 +155,13 @@ export const AudioGroup = HttpApiGroup.make('audio')
     })
   )
   .add(
+    HttpApiEndpoint.get('getAudioBySlugForEdit', '/api/content/audio/:type/:slug/edit', {
+      params: AudioTypeSlugParams,
+      success: CompiledAudioResponse,
+      error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError]
+    }).middleware(AuthMiddleware)
+  )
+  .add(
     HttpApiEndpoint.patch('updateAudioBySlug', '/api/content/audio/:type/:slug', {
       params: AudioTypeSlugParams,
       payload: UpdateAudioInput,

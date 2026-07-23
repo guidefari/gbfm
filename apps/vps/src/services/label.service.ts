@@ -1,4 +1,4 @@
-import { count, desc, eq } from 'drizzle-orm'
+import { and, count, desc, eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { user as usersTable } from '@/db/auth.schema'
@@ -87,7 +87,12 @@ const getBySlugEffect = (slug: string) =>
   Effect.gen(function* () {
     yield* Effect.annotateCurrentSpan('label.slug', slug)
     const labelRecords = yield* Effect.tryPromise({
-      try: () => db.select().from(labelsTable).where(eq(labelsTable.slug, slug)).limit(1),
+      try: () =>
+        db
+          .select()
+          .from(labelsTable)
+          .where(and(eq(labelsTable.slug, slug), eq(labelsTable.draft, false)))
+          .limit(1),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to fetch label: ${getErrorMessage(error)}`,

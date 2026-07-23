@@ -90,7 +90,13 @@ const shareMix = HttpRouter.params.pipe(
           db
             .select()
             .from(audioTable)
-            .where(and(eq(audioTable.type, 'mix'), eq(audioTable.slug, slug)))
+            .where(
+              and(
+                eq(audioTable.type, 'mix'),
+                eq(audioTable.slug, slug),
+                eq(audioTable.draft, false)
+              )
+            )
             .limit(1),
         'audio'
       )
@@ -140,7 +146,13 @@ const shareTrack = HttpRouter.params.pipe(
           db
             .select()
             .from(audioTable)
-            .where(and(eq(audioTable.type, 'track'), eq(audioTable.slug, slug)))
+            .where(
+              and(
+                eq(audioTable.type, 'track'),
+                eq(audioTable.slug, slug),
+                eq(audioTable.draft, false)
+              )
+            )
             .limit(1),
         'audio'
       )
@@ -399,7 +411,12 @@ const sharePost = HttpRouter.params.pipe(
 
     const program = Effect.gen(function* () {
       const [post] = yield* fetchDb(
-        () => db.select().from(postsTable).where(eq(postsTable.slug, slug)).limit(1),
+        () =>
+          db
+            .select()
+            .from(postsTable)
+            .where(and(eq(postsTable.slug, slug), eq(postsTable.draft, false)))
+            .limit(1),
         'posts'
       )
       if (!post)
@@ -512,7 +529,11 @@ const shareSlug = HttpRouter.params.pipe(
 
 const rssXml = Effect.gen(function* () {
   const mixes = yield* fetchDb(
-    () => db.select().from(audioTable).where(eq(audioTable.type, 'mix')),
+    () =>
+      db
+        .select()
+        .from(audioTable)
+        .where(and(eq(audioTable.type, 'mix'), eq(audioTable.draft, false))),
     'audio'
   )
   return HttpServerResponse.text(rssFeedHtml(mixes), {

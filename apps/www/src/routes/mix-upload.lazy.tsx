@@ -36,7 +36,7 @@ import { type MixUploadDraft } from '@/services/mix-upload-draft'
 import { useResumableUpload, type ResumableUploadError } from '@/hooks/useResumableUpload'
 import { useOnlineStatus } from '@/hooks/useOnlineStatus'
 import { authClient, useSession } from '@/lib/auth-client'
-import { apiUrl, useAllShows, useAudioBySlug, useAudioTags } from '@/lib/http'
+import { apiUrl, useAllShows, useAudioBySlugForEdit, useAudioTags } from '@/lib/http'
 import { runAppEffect } from '@/runtime'
 import {
   AudioUploadError,
@@ -152,7 +152,10 @@ function MixUploadPage() {
 
   const { data: availableTags } = useAudioTags('mix')
   const { data: allShows } = useAllShows({ limit: 100 })
-  const { data: existingMix, isPending: mixLoading } = useAudioBySlug(editType, search.edit || '')
+  const { data: existingMix, isPending: mixLoading } = useAudioBySlugForEdit(
+    editType,
+    search.edit || ''
+  )
 
   const draftState = useMixUploadDraft()
 

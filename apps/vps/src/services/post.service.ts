@@ -219,7 +219,7 @@ const getAllEffect = (
 ) =>
   Effect.gen(function* () {
     const { limit, offset, type, tag } = options
-    const whereCondition =
+    const contentCondition =
       type && tag
         ? and(eq(postsTable.type, type), arrayContains(postsTable.tags, [tag]))
         : type
@@ -227,6 +227,9 @@ const getAllEffect = (
           : tag
             ? arrayContains(postsTable.tags, [tag])
             : undefined
+    const whereCondition = contentCondition
+      ? and(eq(postsTable.draft, false), contentCondition)
+      : eq(postsTable.draft, false)
 
     const countResult = yield* Effect.tryPromise({
       try: () =>
@@ -348,7 +351,7 @@ const getEditorialTagsEffect = () =>
             tag: sql<string | null>`unnest(${postsTable.tags})`
           })
           .from(postsTable)
-          .where(eq(postsTable.type, 'post')),
+          .where(and(eq(postsTable.type, 'post'), eq(postsTable.draft, false))),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to fetch editorial tags: ${getErrorMessage(error)}`,
@@ -427,7 +430,7 @@ const getMicroPostsEffect = (options: { limit: number; offset: number }, mdx: Md
 const getByTagEffect = (tag: string, options: { limit: number; offset: number }) =>
   Effect.gen(function* () {
     const { limit, offset } = options
-    const whereCondition = arrayContains(postsTable.tags, [tag])
+    const whereCondition = and(eq(postsTable.draft, false), arrayContains(postsTable.tags, [tag]))
 
     const countResult = yield* Effect.tryPromise({
       try: () =>
@@ -487,7 +490,12 @@ const getByTagEffect = (tag: string, options: { limit: number; offset: number })
 const getBySlugEffect = (slug: string, mdx: MdxService) =>
   Effect.gen(function* () {
     const postRecords = yield* Effect.tryPromise({
-      try: () => db.select().from(postsTable).where(eq(postsTable.slug, slug)).limit(1),
+      try: () =>
+        db
+          .select()
+          .from(postsTable)
+          .where(and(eq(postsTable.slug, slug), eq(postsTable.draft, false)))
+          .limit(1),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to fetch post: ${getErrorMessage(error)}`,

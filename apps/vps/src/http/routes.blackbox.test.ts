@@ -7,7 +7,14 @@ import {
 } from '@gbfm/api/music'
 import { SearchResults } from '@gbfm/api/search'
 import { decodeResponseBody } from '@gbfm/api/testing'
+import { eq } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { db } from '@/db'
+import { audioTable } from '@/db/audio.schema'
+import { labelsTable } from '@/db/label.schema'
+import { postsTable } from '@/db/post.schema'
+import { releasesTable } from '@/db/release.schema'
+import { showsTable } from '@/db/show.schema'
 import { createWebHandler } from './routes'
 
 // Blackbox suite asserting only the wire contract, so these assertions keep
@@ -1107,6 +1114,109 @@ describe('shows (HttpApiBuilder group, Step 6)', () => {
 })
 
 describe('site routes (plain HttpRouter, Step 7)', () => {
+  it('keeps drafts out of canonical API, share, tag, episode, and RSS surfaces', async () => {
+    const suffix = crypto.randomUUID()
+    const slug = `draft-${suffix}`
+    const tag = `draft-tag-${suffix}`
+    const [publishedShow] = await db
+      .insert(showsTable)
+      .values({ title: 'Published parent', slug: `published-${suffix}`, content: '', draft: false })
+      .returning()
+    const [publishedLabel] = await db
+      .insert(labelsTable)
+      .values({ title: 'Published parent', slug: `published-${suffix}`, content: '', draft: false })
+      .returning()
+
+    if (!publishedShow || !publishedLabel) throw new Error('Failed to seed draft visibility test')
+
+    await Promise.all([
+      db.insert(audioTable).values({
+        title: 'Draft audio',
+        slug,
+        content: '',
+        type: 'mix',
+        url: 'https://example.com/draft.mp3',
+        draft: true,
+        tags: [tag]
+      }),
+      db.insert(audioTable).values({
+        title: 'Draft episode',
+        slug: `episode-${suffix}`,
+        content: '',
+        type: 'mix',
+        url: 'https://example.com/episode.mp3',
+        showId: publishedShow.id,
+        draft: true
+      }),
+      db.insert(showsTable).values({ title: 'Draft show', slug, content: '', draft: true }),
+      db.insert(postsTable).values({
+        title: 'Draft post',
+        slug,
+        content: 'draft',
+        type: 'post',
+        draft: true,
+        tags: [tag]
+      }),
+      db.insert(labelsTable).values({ title: 'Draft label', slug, content: '', draft: true }),
+      db.insert(releasesTable).values({
+        title: 'Draft release',
+        slug,
+        content: '',
+        labelId: publishedLabel.id,
+        draft: true
+      })
+    ])
+
+    try {
+      const responses = await Promise.all([
+        webHandler.handler(new Request(`http://localhost/api/content/audio/mix/${slug}`)),
+        webHandler.handler(new Request(`http://localhost/api/shows/${slug}`)),
+        webHandler.handler(new Request(`http://localhost/api/content/posts/${slug}`)),
+        webHandler.handler(new Request(`http://localhost/api/content/labels/${slug}`)),
+        webHandler.handler(new Request(`http://localhost/api/content/releases/${slug}`)),
+        webHandler.handler(new Request(`http://localhost/api/content/audio/mix/${slug}/edit`)),
+        webHandler.handler(new Request(`http://localhost/s/mix/${slug}`)),
+        webHandler.handler(new Request(`http://localhost/s/post/${slug}`))
+      ])
+      expect(responses.map((response) => response.status)).toEqual([
+        404, 404, 404, 404, 404, 401, 404, 404
+      ])
+
+      const [audioList, audioTags, posts, postTags, episodes, releases, rss] = await Promise.all([
+        webHandler.handler(new Request('http://localhost/api/content/audio/mix?limit=100')),
+        webHandler.handler(new Request('http://localhost/api/content/audio/mix/tags')),
+        webHandler.handler(new Request('http://localhost/api/content/posts?limit=100')),
+        webHandler.handler(new Request('http://localhost/api/content/posts/editorials/tags')),
+        webHandler.handler(
+          new Request(`http://localhost/api/shows/${publishedShow.slug}/episodes?limit=100`)
+        ),
+        webHandler.handler(
+          new Request(
+            `http://localhost/api/content/labels/${publishedLabel.slug}/releases?limit=100`
+          )
+        ),
+        webHandler.handler(new Request('http://localhost/rss.xml'))
+      ])
+
+      expect(JSON.stringify(await audioList.json())).not.toContain(slug)
+      expect(await audioTags.json()).not.toContain(tag)
+      expect(JSON.stringify(await posts.json())).not.toContain(slug)
+      expect(await postTags.json()).not.toContain(tag)
+      expect(JSON.stringify(await episodes.json())).not.toContain(`episode-${suffix}`)
+      expect(JSON.stringify(await releases.json())).not.toContain(slug)
+      expect(await rss.text()).not.toContain(slug)
+    } finally {
+      await db.delete(releasesTable).where(eq(releasesTable.slug, slug))
+      await db.delete(audioTable).where(eq(audioTable.slug, `episode-${suffix}`))
+      await db.delete(audioTable).where(eq(audioTable.slug, slug))
+      await db.delete(postsTable).where(eq(postsTable.slug, slug))
+      await db.delete(showsTable).where(eq(showsTable.slug, slug))
+      await db.delete(showsTable).where(eq(showsTable.slug, publishedShow.slug))
+      await db.delete(labelsTable).where(eq(labelsTable.slug, slug))
+      await db.delete(labelsTable).where(eq(labelsTable.slug, publishedLabel.slug))
+    }
+  })
+
   it('GET /rss.xml returns 200 HTML with the feed title', async () => {
     const res = await webHandler.handler(new Request('http://localhost/rss.xml'))
 
