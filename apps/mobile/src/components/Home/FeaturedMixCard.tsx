@@ -1,6 +1,7 @@
 import type { AudioResponse } from '@gbfm/api/audio'
 import { brand } from '@gbfm/theme'
 import { LinearGradient } from 'expo-linear-gradient'
+import { SymbolView } from 'expo-symbols'
 import { ActivityIndicator, Image, Pressable, Text, View } from 'react-native'
 import { fonts } from '@/theme/fonts'
 
@@ -13,8 +14,8 @@ const colors = {
 
 // Fixed geometry, mirrored by FeaturedMixSkeleton, so that
 // loading -> loaded/error never shifts layout.
-export const FEATURED_CARD_INFO_HEIGHT = 78
-export const FEATURED_CARD_BUTTON_HEIGHT = 56
+export const FEATURED_CARD_INFO_HEIGHT = 64
+export const FEATURED_CARD_BUTTON_HEIGHT = 52
 
 const cardContainerStyle = {
   borderWidth: 2,
@@ -27,12 +28,14 @@ const cardContainerStyle = {
 export function FeaturedMixCard({
   mix,
   isPlaying = false,
+  isCurrent = false,
   isLoading = false,
   onPressPlay,
   onRetry
 }: {
   mix: typeof AudioResponse.Type | null
   isPlaying?: boolean
+  isCurrent?: boolean
   isLoading?: boolean
   onPressPlay: () => void
   onRetry?: () => void
@@ -45,11 +48,13 @@ export function FeaturedMixCard({
             aspectRatio: 1,
             alignItems: 'center',
             justifyContent: 'center',
+            gap: 12,
             padding: 24
           }}>
+          <SymbolView name='exclamationmark.triangle' size={32} tintColor={colors.muted} />
           <Text
             style={{
-              color: colors.muted,
+              color: colors.text,
               fontFamily: fonts.mono,
               fontSize: 14,
               textAlign: 'center'
@@ -63,7 +68,7 @@ export function FeaturedMixCard({
             justifyContent: 'center',
             paddingHorizontal: 16
           }}>
-          <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 14 }}>
+          <Text style={{ color: colors.text, fontFamily: fonts.mono, fontSize: 14 }}>
             check your connection and try again
           </Text>
         </View>
@@ -95,7 +100,12 @@ export function FeaturedMixCard({
 
   return (
     <View style={cardContainerStyle}>
-      <View style={{ aspectRatio: 1 }}>
+      <Pressable
+        accessibilityRole='button'
+        accessibilityLabel={isPlaying ? 'Pause featured mix' : 'Play featured mix'}
+        onPress={onPressPlay}
+        disabled={isLoading}
+        style={({ pressed }) => ({ aspectRatio: 1, opacity: pressed ? 0.92 : 1 })}>
         {mix.thumbnailUrl ? (
           <Image
             source={{ uri: mix.thumbnailUrl }}
@@ -127,7 +137,7 @@ export function FeaturedMixCard({
           }}>
           {isPlaying ? 'Now Playing' : 'Featured'}
         </Text>
-      </View>
+      </Pressable>
 
       <View
         style={{
@@ -141,15 +151,13 @@ export function FeaturedMixCard({
             color: '#FFFFFF',
             fontFamily: fonts.monoSemiBold,
             fontSize: 20,
-            lineHeight: 24,
-            textDecorationLine: 'underline',
-            textDecorationColor: colors.accent
+            lineHeight: 24
           }}
           numberOfLines={1}>
           {mix.title}
         </Text>
         <Text
-          style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 14, lineHeight: 18 }}
+          style={{ color: colors.text, fontFamily: fonts.mono, fontSize: 14, lineHeight: 18 }}
           numberOfLines={1}>
           {creatorNames ?? ''}
         </Text>
@@ -183,7 +191,11 @@ export function FeaturedMixCard({
           </>
         ) : (
           <>
-            <Text style={{ color: colors.surface, fontSize: 14 }}>{isPlaying ? '❚❚' : '▷'}</Text>
+            <SymbolView
+              name={isPlaying ? 'pause.fill' : 'play.fill'}
+              size={15}
+              tintColor={colors.surface}
+            />
             <Text
               style={{
                 color: colors.surface,
@@ -191,7 +203,7 @@ export function FeaturedMixCard({
                 fontSize: 15,
                 letterSpacing: 0.5
               }}>
-              {isPlaying ? 'Pause' : 'Resume'}
+              {isPlaying ? 'Pause' : isCurrent ? 'Resume' : 'Play'}
             </Text>
           </>
         )}

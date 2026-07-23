@@ -29,7 +29,7 @@ function ShowCardSkeleton() {
           backgroundColor: placeholderSoft
         }}
       />
-      <View style={{ gap: 6, height: 34, justifyContent: 'center' }}>
+      <View style={{ gap: 6, height: 36, justifyContent: 'center' }}>
         <View style={{ height: 10, width: '70%', borderRadius: 2, backgroundColor: placeholder }} />
         <View style={{ height: 8, width: '45%', borderRadius: 2, backgroundColor: placeholder }} />
       </View>
@@ -83,7 +83,7 @@ export function ShowsSection() {
             alignItems: 'center',
             justifyContent: 'center'
           }}>
-          <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 13 }}>
+          <Text style={{ color: colors.text, fontFamily: fonts.mono, fontSize: 13 }}>
             no shows yet
           </Text>
         </View>
@@ -100,7 +100,7 @@ export function ShowsSection() {
             justifyContent: 'center',
             opacity: pressed ? 0.7 : 1
           })}>
-          <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 13 }}>
+          <Text style={{ color: colors.text, fontFamily: fonts.mono, fontSize: 13 }}>
             couldn't load shows, tap to retry
           </Text>
         </Pressable>

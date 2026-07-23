@@ -6,13 +6,14 @@ import { fonts } from '@/theme/fonts'
 
 const colors = {
   muted: brand['pastel-green-2'],
-  surface: brand.darkerBg
+  surface: brand.darkerBg,
+  text: brand.defaultText
 }
 
 // Fixed geometry, mirrored by the skeleton in ShowsSection, so that
 // loading -> loaded never shifts layout.
 export const SHOW_CARD_WIDTH = 150
-export const SHOW_CARD_HEIGHT = 150 + 8 + 34
+export const SHOW_CARD_HEIGHT = 150 + 8 + 36
 
 export function ShowCard({ show }: { show: Show }) {
   const router = useRouter()
@@ -49,7 +50,7 @@ export function ShowCard({ show }: { show: Show }) {
           }}
         />
       )}
-      <View style={{ gap: 2, height: 34 }}>
+      <View style={{ gap: 2, height: 36 }}>
         <Text
           style={{
             color: '#FFFFFF',
@@ -61,7 +62,7 @@ export function ShowCard({ show }: { show: Show }) {
           {show.title}
         </Text>
         <Text
-          style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 11, lineHeight: 14 }}
+          style={{ color: colors.text, fontFamily: fonts.mono, fontSize: 12, lineHeight: 16 }}
           numberOfLines={1}>
           {hostNames}
         </Text>

@@ -46,14 +46,14 @@ export default function Home() {
       style={{ flex: 1, backgroundColor: colors.background }}>
       <ScrollView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 20, paddingTop: 8, gap: 16 }}>
+        contentContainerStyle={{ padding: 20, paddingTop: 4, gap: 16 }}>
         <Text
           style={{
             color: colors.accent,
             fontFamily: fonts.monoSemiBold,
             fontWeight: 'bold',
-            fontSize: 28,
-            lineHeight: 32
+            fontSize: 22,
+            lineHeight: 26
           }}>
           goosebumps.fm
         </Text>
@@ -64,6 +64,7 @@ export default function Home() {
           <FeaturedMixCard
             mix={mix}
             isPlaying={isThisMixPlaying}
+            isCurrent={isThisMix}
             isLoading={isThisMixLoading}
             onPressPlay={handlePlay}
             onRetry={refresh}
