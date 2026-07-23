@@ -84,6 +84,7 @@ const insertAudioFields = {
 
 export const CreateAudioInput = Schema.Struct({
   ...insertAudioFields,
+  idempotencyKey: Uuid,
   // Old zod schema had .min(1) on creatorIds, but the handler already
   // treats an empty array the same as omitted (falls back to [user.id]),
   // same no-op pattern established for shows/label/post.

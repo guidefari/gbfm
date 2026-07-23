@@ -24,6 +24,18 @@ import { createPaginationMetadata, type PaginationMetadata } from '@/lib/paginat
 import { recordAudioCreate } from '@/lib/performance-monitoring'
 
 type AudioType = 'mix' | 'track' | 'misc'
+type CreateAudioData = InsertAudio
+
+type CreateAudioOptions = {
+  actorId: string
+  idempotencyKey: string
+}
+
+class AudioCreateConflict extends Error {
+  constructor() {
+    super('Audio create conflict')
+  }
+}
 
 type AudioWithCreators = SelectAudio & {
   creators: Array<{
@@ -50,8 +62,9 @@ export interface AudioService {
     userRole: string
   ) => Effect.Effect<SelectMdxCompiledAudio, DatabaseError | NotFoundError | UnauthorizedError>
   readonly create: (
-    data: InsertAudio,
-    creatorIds: string[]
+    data: CreateAudioData,
+    creatorIds: string[],
+    options: CreateAudioOptions
   ) => Effect.Effect<SelectAudio, DatabaseError | ConflictError>
   readonly update: (
     type: AudioType,
@@ -280,7 +293,11 @@ const getBySlugEffect = (type: AudioType, slug: string, mdx: MdxService, include
     }
   })
 
-const createEffect = (data: InsertAudio, creatorIds: string[]) =>
+const createEffect = (
+  data: CreateAudioData,
+  creatorIds: string[],
+  { actorId, idempotencyKey }: CreateAudioOptions
+) =>
   Effect.gen(function* () {
     let audioData = { ...data }
 
@@ -311,26 +328,49 @@ const createEffect = (data: InsertAudio, creatorIds: string[]) =>
         timeQuery(
           () =>
             db.transaction(async (tx) => {
-              const [newAudio] = await tx.insert(audioTable).values(audioData).returning()
+              const [insertedAudio] = await tx
+                .insert(audioTable)
+                .values({
+                  ...audioData,
+                  idempotencyKey,
+                  idempotencyActorId: actorId
+                })
+                .onConflictDoNothing()
+                .returning()
 
-              if (!newAudio) {
-                throw new Error('Failed to create audio')
+              if (!insertedAudio) {
+                const [replayedAudio] = await tx
+                  .select()
+                  .from(audioTable)
+                  .where(
+                    and(
+                      eq(audioTable.idempotencyActorId, actorId),
+                      eq(audioTable.idempotencyKey, idempotencyKey)
+                    )
+                  )
+                  .limit(1)
+
+                if (!replayedAudio) {
+                  throw new AudioCreateConflict()
+                }
+
+                return { audio: replayedAudio, created: false }
               }
 
               await tx.insert(audioCreators).values(
                 creatorIds.map((creatorId) => ({
-                  audioId: newAudio.id,
+                  audioId: insertedAudio.id,
                   creatorId
                 }))
               )
 
-              return newAudio
+              return { audio: insertedAudio, created: true }
             }),
           'create-audio-transaction'
         ),
       catch: (error) => {
         const errorMessage = getErrorMessage(error)
-        if (errorMessage.includes('unique constraint')) {
+        if (error instanceof AudioCreateConflict || errorMessage.includes('unique constraint')) {
           return new ConflictError({
             message: 'Audio with this slug already exists',
             resource: 'audio'
@@ -350,21 +390,24 @@ const createEffect = (data: InsertAudio, creatorIds: string[]) =>
       }
     })
 
-    yield* Effect.annotateCurrentSpan('audioId', result.id)
-    yield* Effect.annotateCurrentSpan('audioType', result.type)
+    yield* Effect.annotateCurrentSpan('audioId', result.audio.id)
+    yield* Effect.annotateCurrentSpan('audioType', result.audio.type)
     yield* Effect.annotateCurrentSpan('creatorCount', creatorIds.length)
+    yield* Effect.annotateCurrentSpan('idempotencyReplay', !result.created)
 
-    yield* recordAudioCreate()
+    if (result.created) {
+      yield* recordAudioCreate()
 
-    yield* Effect.logInfo('[Content] Audio created', {
-      audioId: result.id,
-      type: result.type,
-      title: result.title,
-      slug: result.slug,
-      creatorCount: creatorIds.length
-    })
+      yield* Effect.logInfo('[Content] Audio created', {
+        audioId: result.audio.id,
+        type: result.audio.type,
+        title: result.audio.title,
+        slug: result.audio.slug,
+        creatorCount: creatorIds.length
+      })
+    }
 
-    return result
+    return result.audio
   })
 
 const updateEffect = (
@@ -571,8 +614,8 @@ export const AudioServiceLive = Layer.effect(
           yield* requireCreatorOrAdmin('audio', audio.id, userId, userRole)
           return audio
         }).pipe(Effect.withSpan('audio.getBySlugForEdit', { attributes: { type, slug } })),
-      create: (data, creatorIds) =>
-        createEffect(data, creatorIds).pipe(Effect.withSpan('audio.create')),
+      create: (data, creatorIds, options) =>
+        createEffect(data, creatorIds, options).pipe(Effect.withSpan('audio.create')),
       update: (type, slug, userId, userRole, data) =>
         updateEffect(type, slug, userId, userRole, data, mdx).pipe(
           Effect.withSpan('audio.update', { attributes: { type, slug } })

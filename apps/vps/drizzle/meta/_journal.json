@@ -260,6 +260,13 @@
       "when": 1781555870445,
       "tag": "0039_flaky_lady_mastermind",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1784844699314,
+      "tag": "0040_petite_iron_monger",
+      "breakpoints": true
     }
   ]
 }

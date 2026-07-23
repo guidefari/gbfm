@@ -25,10 +25,14 @@ const MAX_CHUNK_SIZE = 9 * 1024 * 1024
 
 const sanitizeKeySegment = (value: string): string => value.replace(/[^a-zA-Z0-9.-]/g, '_')
 
-const buildObjectKey = (userId: string, fileType: string, fileName: string): string => {
-  const timestamp = Date.now()
+const buildObjectKey = (
+  userId: string,
+  fileType: string,
+  fileName: string,
+  expectedSize: number
+): string => {
   const sanitizedName = sanitizeKeySegment(fileName)
-  return `${sanitizeKeySegment(userId)}/${fileType}_${timestamp}_${sanitizedName}`
+  return `${sanitizeKeySegment(userId)}/multipart/${crypto.randomUUID()}/${expectedSize}/${fileType}_${sanitizedName}`
 }
 
 const assertKeyOwnership = (userId: string, key: string) =>
@@ -42,6 +46,54 @@ export const assertContiguousParts = (parts: ReadonlyArray<{ partNumber: number 
     }
   }
   return null
+}
+
+export const expectedMultipartPartSize = (expectedSize: number, partNumber: number) => {
+  const partCount = Math.ceil(expectedSize / CHUNK_SIZE)
+  if (partNumber < 1 || partNumber > partCount) return null
+  if (partNumber < partCount) return CHUNK_SIZE
+  return expectedSize - CHUNK_SIZE * (partCount - 1)
+}
+
+export const validateMultipartParts = (
+  expectedSize: number,
+  parts: ReadonlyArray<{ partNumber: number; size: number }>
+) => {
+  if (parts.length !== Math.ceil(expectedSize / CHUNK_SIZE)) {
+    return new HttpApiError.BadRequest()
+  }
+  const contiguityError = assertContiguousParts(parts)
+  if (contiguityError) return contiguityError
+
+  for (const part of parts) {
+    if (part.size !== expectedMultipartPartSize(expectedSize, part.partNumber)) {
+      return new HttpApiError.BadRequest()
+    }
+  }
+  return null
+}
+
+export const matchesCompletedObject = (
+  expectedSize: number,
+  object: { readonly size: number; readonly metadata: Readonly<Record<string, string>> } | null
+) => object?.size === expectedSize && object.metadata['expected-size'] === String(expectedSize)
+
+const expectedSizeFromKey = (userId: string, key: string) => {
+  const prefix = `${sanitizeKeySegment(userId)}/multipart/`
+  if (!key.startsWith(prefix)) return null
+  const segments = key.slice(prefix.length).split('/')
+  if (segments.length !== 3 || !/^[0-9a-f-]{36}$/i.test(segments[0] ?? '')) return null
+  const expectedSize = Number(segments[1])
+  return Number.isSafeInteger(expectedSize) && expectedSize > 0 && expectedSize <= MAX_AUDIO_SIZE
+    ? expectedSize
+    : null
+}
+
+const requireExpectedSize = (userId: string, key: string) => {
+  const expectedSize = expectedSizeFromKey(userId, key)
+  return expectedSize === null
+    ? Effect.fail(new HttpApiError.BadRequest())
+    : Effect.succeed(expectedSize)
 }
 
 // Multipart file fields decode to Multipart.PersistedFile -- a disk-backed
@@ -112,12 +164,17 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
           })
         }
 
-        const key = buildObjectKey(user.id, payload.fileType, payload.fileName)
+        const key = buildObjectKey(user.id, payload.fileType, payload.fileName, payload.fileSize)
 
         const config = yield* ConfigService
         const s3Service = yield* S3Service
         const upload = yield* dieOnS3Error(
-          s3Service.createMultipartUpload(key, payload.contentType, config.buckets.userContent)
+          s3Service.createMultipartUpload(
+            key,
+            payload.contentType,
+            payload.fileSize,
+            config.buckets.userContent
+          )
         )
 
         return { uploadId: upload.uploadId, key: upload.key, chunkSize: CHUNK_SIZE }
@@ -141,6 +198,10 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
         }
 
         yield* assertKeyOwnership(user.id, key)
+        const expectedSize = yield* requireExpectedSize(user.id, key)
+        if (file.size !== expectedMultipartPartSize(expectedSize, partNumber)) {
+          return yield* new HttpApiError.BadRequest()
+        }
 
         const config = yield* ConfigService
         const s3Service = yield* S3Service
@@ -167,14 +228,51 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
         const { key, uploadId, parts } = payload
 
         yield* assertKeyOwnership(user.id, key)
-
-        const contiguityError = assertContiguousParts(parts)
-        if (contiguityError) return yield* contiguityError
+        const expectedSize = yield* requireExpectedSize(user.id, key)
 
         const config = yield* ConfigService
         const s3Service = yield* S3Service
+        const existing = yield* dieOnS3Error(
+          s3Service.getObjectMetadata(key, config.buckets.userContent)
+        )
+        if (existing) {
+          if (!matchesCompletedObject(expectedSize, existing)) {
+            return yield* new HttpApiError.BadRequest()
+          }
+          return { url: `${config.urls.bucketRouter}/user-content/${key}`, key }
+        }
+
+        const uploadedParts = yield* dieOnS3Error(
+          s3Service.listMultipartParts(key, uploadId, config.buckets.userContent)
+        )
+        const partsError = validateMultipartParts(expectedSize, uploadedParts)
+        if (partsError) return yield* partsError
+
+        const submittedByPartNumber = new Map(parts.map((part) => [part.partNumber, part.etag]))
+        if (
+          parts.length !== uploadedParts.length ||
+          submittedByPartNumber.size !== uploadedParts.length ||
+          uploadedParts.some((part) => submittedByPartNumber.get(part.partNumber) !== part.etag)
+        ) {
+          return yield* new HttpApiError.BadRequest()
+        }
+
         yield* dieOnS3Error(
-          s3Service.completeMultipartUpload(key, uploadId, parts, config.buckets.userContent)
+          s3Service
+            .completeMultipartUpload(key, uploadId, parts, config.buckets.userContent)
+            .pipe(
+              Effect.catchTag('S3Error', (completionError) =>
+                s3Service
+                  .getObjectMetadata(key, config.buckets.userContent)
+                  .pipe(
+                    Effect.flatMap((object) =>
+                      matchesCompletedObject(expectedSize, object)
+                        ? Effect.void
+                        : Effect.fail(completionError)
+                    )
+                  )
+              )
+            )
         )
 
         return { url: `${config.urls.bucketRouter}/user-content/${key}`, key }
@@ -190,6 +288,7 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
         const { key, uploadId } = payload
 
         yield* assertKeyOwnership(user.id, key)
+        yield* requireExpectedSize(user.id, key)
 
         const config = yield* ConfigService
         const s3Service = yield* S3Service
@@ -206,6 +305,7 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
         const { key, uploadId } = query
 
         yield* assertKeyOwnership(user.id, key)
+        yield* requireExpectedSize(user.id, key)
 
         const config = yield* ConfigService
         const s3Service = yield* S3Service

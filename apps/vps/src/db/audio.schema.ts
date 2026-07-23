@@ -7,6 +7,7 @@ import {
   pgTable,
   primaryKey,
   text,
+  uniqueIndex,
   uuid,
   varchar
 } from 'drizzle-orm/pg-core'
@@ -22,20 +23,28 @@ export const audioTable = pgTable(
     ...defaultContentFields,
     type: audioTypeEnum().notNull(),
     url: varchar({ length: 255 }).notNull(),
+    idempotencyKey: uuid(),
+    idempotencyActorId: text(),
     showId: uuid().references(() => showsTable.id, { onDelete: 'set null' }),
     episodeNumber: integer(),
     playCount: integer().notNull().default(0)
   },
   (table) => [
     index('audio_slug_idx').on(table.slug),
+    uniqueIndex('audio_type_slug_unique').on(table.type, table.slug),
+    uniqueIndex('audio_actor_idempotency_unique').on(
+      table.idempotencyActorId,
+      table.idempotencyKey
+    ),
     index('audio_show_idx').on(table.showId),
     index('audio_type_created_idx').on(table.type, table.createdAt),
     index('audio_tags_gin_idx').using('gin', table.tags)
   ]
 )
 
-type BaseSelectAudio = InferSelectModel<typeof audioTable>
-export type InsertAudio = InferInsertModel<typeof audioTable>
+type AudioPersistenceFields = 'idempotencyKey' | 'idempotencyActorId'
+type BaseSelectAudio = Omit<InferSelectModel<typeof audioTable>, AudioPersistenceFields>
+export type InsertAudio = Omit<InferInsertModel<typeof audioTable>, AudioPersistenceFields>
 
 export type Creator = {
   id: string

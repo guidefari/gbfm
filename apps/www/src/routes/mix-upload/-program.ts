@@ -76,8 +76,10 @@ export const uploadImage = (
 export const saveRecord = (
   input: SubmitRecordInput,
   signal: AbortSignal
-): Effect.Effect<unknown, RecordSaveError | NotSignedInError, never> =>
-  Effect.gen(function* () {
+): Effect.Effect<unknown, RecordSaveError | NotSignedInError, never> => {
+  const idempotencyKey = input.isEditMode ? undefined : crypto.randomUUID()
+
+  return Effect.gen(function* () {
     if (!input.userId) {
       return yield* new NotSignedInError({ message: 'Please login/signup to upload content' })
     }
@@ -86,10 +88,11 @@ export const saveRecord = (
       ? apiUrl(`/content/audio/${input.editType}/${input.editSlug}`)
       : apiUrl('/content/audio')
     const method = input.isEditMode ? 'PATCH' : 'POST'
+    const payload = buildRecordPayload(input)
+    const body = JSON.stringify(idempotencyKey ? { ...payload, idempotencyKey } : payload)
 
     return yield* Effect.tryPromise<unknown, RecordSaveError>({
-      try: () =>
-        fetcher(endpoint, { method, body: JSON.stringify(buildRecordPayload(input)), signal }),
+      try: () => fetcher(endpoint, { method, body, signal }),
       catch: (cause) =>
         new RecordSaveError({
           message: cause instanceof Error ? cause.message : 'Network error'
@@ -102,3 +105,4 @@ export const saveRecord = (
       })
     )
   })
+}

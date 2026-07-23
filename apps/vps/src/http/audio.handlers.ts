@@ -21,7 +21,7 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
     .handle('createMix', ({ payload }) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
-        const { creatorIds, ...mixData } = payload
+        const { creatorIds, idempotencyKey, ...mixData } = payload
         const finalCreatorIds = creatorIds?.length ? [...creatorIds] : [user.id]
 
         const svc = yield* AudioService
@@ -29,7 +29,8 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
           svc
             .create(
               { ...mixData, tags: mixData.tags ? [...mixData.tags] : undefined },
-              finalCreatorIds
+              finalCreatorIds,
+              { actorId: user.id, idempotencyKey }
             )
             .pipe(Effect.catchTag('ConflictError', () => new HttpApiError.Conflict()))
         )
@@ -123,7 +124,7 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
     .handle('createAudio', ({ payload }) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
-        const { creatorIds, ...audioData } = payload
+        const { creatorIds, idempotencyKey, ...audioData } = payload
         const finalCreatorIds = creatorIds?.length ? [...creatorIds] : [user.id]
 
         const svc = yield* AudioService
@@ -131,7 +132,8 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
           svc
             .create(
               { ...audioData, tags: audioData.tags ? [...audioData.tags] : undefined },
-              finalCreatorIds
+              finalCreatorIds,
+              { actorId: user.id, idempotencyKey }
             )
             .pipe(Effect.catchTag('ConflictError', () => new HttpApiError.Conflict()))
         )

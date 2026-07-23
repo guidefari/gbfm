@@ -28,6 +28,11 @@ export interface S3MultipartUpload {
   readonly bucket: string
 }
 
+export interface S3ObjectMetadata {
+  readonly size: number
+  readonly metadata: Readonly<Record<string, string>>
+}
+
 // Service interface
 export interface S3Service {
   readonly uploadFile: (
@@ -57,8 +62,14 @@ export interface S3Service {
   readonly createMultipartUpload: (
     key: string,
     contentType: string,
+    expectedSize: number,
     bucketName: string
   ) => Effect.Effect<S3MultipartUpload, S3Error>
+
+  readonly getObjectMetadata: (
+    key: string,
+    bucketName: string
+  ) => Effect.Effect<S3ObjectMetadata | null, S3Error>
 
   readonly uploadMultipartPart: (
     key: string,
@@ -299,7 +310,12 @@ const copyFileEffect = (key: string, sourceBucket: string, destinationBucket: st
     })
   )
 
-const createMultipartUploadEffect = (key: string, contentType: string, bucketName: string) =>
+const createMultipartUploadEffect = (
+  key: string,
+  contentType: string,
+  expectedSize: number,
+  bucketName: string
+) =>
   Effect.tryPromise({
     try: async () => {
       const s3 = new S3Client({})
@@ -307,7 +323,8 @@ const createMultipartUploadEffect = (key: string, contentType: string, bucketNam
         new CreateMultipartUploadCommand({
           Bucket: bucketName,
           Key: key,
-          ContentType: contentType
+          ContentType: contentType,
+          Metadata: { 'expected-size': String(expectedSize) }
         })
       )
       if (!response.UploadId) {
@@ -328,6 +345,48 @@ const createMultipartUploadEffect = (key: string, contentType: string, bucketNam
         's3.bucket': bucketName,
         's3.key_prefix': getKeyPrefix(key),
         'content.type': contentType
+      }
+    })
+  )
+
+const getObjectMetadataEffect = (key: string, bucketName: string) =>
+  Effect.tryPromise({
+    try: async () => {
+      const s3 = new S3Client({})
+      try {
+        const response = await s3.send(new HeadObjectCommand({ Bucket: bucketName, Key: key }))
+        return {
+          size: response.ContentLength ?? 0,
+          metadata: response.Metadata ?? {}
+        } satisfies S3ObjectMetadata
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          (error.name === 'NotFound' ||
+            error.name === 'NoSuchKey' ||
+            ('$metadata' in error &&
+              typeof error.$metadata === 'object' &&
+              error.$metadata !== null &&
+              'httpStatusCode' in error.$metadata &&
+              error.$metadata.httpStatusCode === 404))
+        ) {
+          return null
+        }
+        throw error
+      }
+    },
+    catch: (error) =>
+      new S3Error({
+        message: `Failed to inspect object: ${getErrorMessage(error)}`,
+        operation: 'headObject',
+        key
+      })
+  }).pipe(
+    Effect.withSpan('aws.s3.headObjectMetadata', {
+      attributes: {
+        'aws.service': 's3',
+        's3.bucket': bucketName,
+        's3.key_prefix': getKeyPrefix(key)
       }
     })
   )
@@ -532,6 +591,7 @@ export const S3ServiceLive = Layer.succeed(S3Service, {
   copyFile: copyFileEffect,
   listBuckets: listBucketsEffect,
   createMultipartUpload: createMultipartUploadEffect,
+  getObjectMetadata: getObjectMetadataEffect,
   uploadMultipartPart: uploadMultipartPartEffect,
   completeMultipartUpload: completeMultipartUploadEffect,
   abortMultipartUpload: abortMultipartUploadEffect,
