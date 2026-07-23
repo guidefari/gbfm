@@ -1,4 +1,5 @@
 import { Stack, useRouter } from 'expo-router'
+import { SymbolView } from 'expo-symbols'
 import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native'
 import { useAuthStore } from '@/store/auth'
 
@@ -28,6 +29,8 @@ export default function MusicReminders() {
           title: 'Music Reminders',
           headerRight: () => (
             <TouchableOpacity
+              accessibilityRole='button'
+              accessibilityLabel='Add music reminder'
               onPress={() => {
                 Alert.alert(
                   'Coming Soon',
@@ -36,7 +39,7 @@ export default function MusicReminders() {
                 )
               }}
               className='mr-4'>
-              <Text className='text-white text-lg'>+</Text>
+              <SymbolView name='plus' size={20} tintColor='#FFFFFF' />
             </TouchableOpacity>
           )
         }}
@@ -81,29 +84,54 @@ export default function MusicReminders() {
 
           <View className='space-y-3'>
             <View className='flex-row items-center'>
-              <Text className='text-green-400 mr-3'>✓</Text>
+              <SymbolView
+                name='checkmark.circle.fill'
+                size={16}
+                tintColor='#4ADE80'
+                style={{ marginRight: 12 }}
+              />
               <Text className='text-gray-300'>
                 Smart URL enrichment from Spotify, YouTube, Apple Music
               </Text>
             </View>
 
             <View className='flex-row items-center'>
-              <Text className='text-green-400 mr-3'>✓</Text>
+              <SymbolView
+                name='checkmark.circle.fill'
+                size={16}
+                tintColor='#4ADE80'
+                style={{ marginRight: 12 }}
+              />
               <Text className='text-gray-300'>Album cover previews and auto-fill</Text>
             </View>
 
             <View className='flex-row items-center'>
-              <Text className='text-green-400 mr-3'>✓</Text>
+              <SymbolView
+                name='checkmark.circle.fill'
+                size={16}
+                tintColor='#4ADE80'
+                style={{ marginRight: 12 }}
+              />
               <Text className='text-gray-300'>Scheduled email reminders</Text>
             </View>
 
             <View className='flex-row items-center'>
-              <Text className='text-green-400 mr-3'>✓</Text>
+              <SymbolView
+                name='checkmark.circle.fill'
+                size={16}
+                tintColor='#4ADE80'
+                style={{ marginRight: 12 }}
+              />
               <Text className='text-gray-300'>Beautiful email templates with track details</Text>
             </View>
 
             <View className='flex-row items-center'>
-              <Text className='text-yellow-400 mr-3'>🚧</Text>
+              <SymbolView
+                name='hammer.fill'
+                size={16}
+                tintColor='#FACC15'
+                style={{ marginRight: 12 }}
+              />
               <Text className='text-gray-300'>Mobile app integration (coming soon)</Text>
             </View>
           </View>

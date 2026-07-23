@@ -1,4 +1,5 @@
 import { useRouter } from 'expo-router'
+import { SymbolView } from 'expo-symbols'
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native'
 import { SafeAreaView } from 'react-native-screens/experimental'
 import Login from '@/components/Login'
@@ -26,6 +27,8 @@ export default function Profile() {
           <Text className='text-xl font-bold text-white mb-4'>Features</Text>
 
           <TouchableOpacity
+            accessibilityRole='button'
+            accessibilityLabel='Open music reminders'
             onPress={() => router.push('/music-reminders')}
             className='bg-gray-800 rounded-sm p-4 mb-4'>
             <View className='flex-row items-center justify-between'>
@@ -35,7 +38,7 @@ export default function Profile() {
                   Never forget to listen to your favorite tracks
                 </Text>
               </View>
-              <Text className='text-gray-400 text-xl'>🎵</Text>
+              <SymbolView name='music.note' size={20} tintColor='#9CA3AF' />
             </View>
           </TouchableOpacity>
         </View>
