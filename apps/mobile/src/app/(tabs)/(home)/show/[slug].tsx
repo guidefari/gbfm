@@ -104,20 +104,13 @@ export default function ShowScreen() {
   const episodesAtom = episodesFamily(slug)
   const result = useAtomValue(episodesAtom)
   const refresh = useAtomRefresh(episodesAtom)
-  const { enqueueAll, loadAndPlay } = useNowPlaying()
+  const { enqueueAll, playAll } = useNowPlaying()
   const router = useRouter()
 
   const handlePlayAll = () => {
     if (AsyncResult.isSuccess(result) && result.value.length > 0) {
-      const episodes = result.value
-      const first = episodes[0]
-      if (first) {
-        loadAndPlay(first)
-        if (episodes.length > 1) {
-          enqueueAll(episodes.slice(1))
-        }
-        router.push('/now-playing')
-      }
+      playAll(result.value)
+      router.push('/now-playing')
     }
   }
 

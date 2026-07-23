@@ -9,11 +9,16 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
-  useState
+  useRef
 } from 'react'
 import { audioModeAtom } from '@/store/atoms/audio-mode'
 import { clearPosition, recordPlayIfFresh, recordPosition } from '@/audio/playTracker'
+import {
+  shouldPersistPosition,
+  transitionSourcePreparation,
+  type SourcePreparation,
+  type SourcePreparationEvent
+} from '@/audio/playbackState'
 import { loadPosition, type QueueTrackType } from '@/audio/queueStorage'
 import type { QueueAction, QueueView } from '@/audio/queueAtom'
 import { useQueue, useQueueDispatch } from '@/audio/queueAtom'
@@ -21,7 +26,7 @@ import { useQueue, useQueueDispatch } from '@/audio/queueAtom'
 type Track = typeof AudioResponse.Type
 
 type NowPlayingContextValue = {
-  readonly track: Track | null
+  readonly track: QueueTrackType | null
   readonly isPlaying: boolean
   readonly isLoaded: boolean
   readonly isBuffering: boolean
@@ -31,6 +36,7 @@ type NowPlayingContextValue = {
   readonly loadAndPlay: (track: Track) => void
   readonly enqueue: (track: Track) => void
   readonly enqueueAll: (tracks: ReadonlyArray<Track>) => void
+  readonly playAll: (tracks: ReadonlyArray<Track>) => void
   readonly removeFromQueue: (index: number) => void
   readonly reorderQueue: (from: number, to: number) => void
   readonly skipTo: (index: number) => void
@@ -68,87 +74,200 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
   useAtomValue(audioModeAtom)
 
   const queue = useQueue()
+  const currentTrack = queue.current
   const dispatch = useQueueDispatch()
   const player = useAudioPlayer(null, { updateInterval: 500, keepAudioSessionActive: true })
   const status = useAudioPlayerStatus(player)
 
-  const [currentTrack, setCurrentTrack] = useState<Track | null>(null)
+  type SourceSession = {
+    readonly generation: number
+    readonly id: string
+    shouldPlay: boolean
+    preparation: SourcePreparation
+    checkpoint: number | null
+    started: boolean
+  }
 
-  // Two effects: (1) subscribe to the player's native status events, (2) when
-  // the queue's current track changes, swap the source + set lock-screen
-  // metadata. The listener below owns position persistence + auto-advance so
-  // those don't need their own effects.
   const skipNextRef = useRef<() => void>(() => {})
-  const seekResumeDoneRef = useRef<string | null>(null)
+  const sourceGenerationRef = useRef(0)
+  const sourceSessionRef = useRef<SourceSession | null>(null)
+  const playOnReadyRef = useRef<string | null>(null)
   const lastPositionPersistRef = useRef<{ id: string; at: number } | null>(null)
+  const finishPreparingRef = useRef<(session: SourceSession) => void>(() => {})
+  const advancePreparationRef = useRef<
+    (session: SourceSession, event: SourcePreparationEvent) => void
+  >(() => {})
 
-  useEffect(() => {
-    const subscription = player.addListener('playbackStatusUpdate', (next) => {
-      const id = seekResumeDoneRef.current
-      if (!id || !next.isLoaded) return
-      if (next.didJustFinish) {
-        skipNextRef.current()
+  const reportEffect = useCallback((label: string, effect: Effect.Effect<void, unknown, never>) => {
+    Effect.runPromise(effect).catch((error: unknown) => console.error(label, error))
+  }, [])
+
+  finishPreparingRef.current = (session) => {
+    if (
+      sourceGenerationRef.current !== session.generation ||
+      sourceSessionRef.current !== session ||
+      !session.preparation.preparing ||
+      session.started
+    ) {
+      return
+    }
+
+    const prepare = async () => {
+      const checkpoint = session.checkpoint
+      if (
+        checkpoint !== null &&
+        checkpoint > 1 &&
+        session.preparation.duration > 0 &&
+        checkpoint < session.preparation.duration - 5
+      ) {
+        await player.seekTo(checkpoint)
+      }
+      if (
+        sourceGenerationRef.current !== session.generation ||
+        sourceSessionRef.current !== session
+      ) {
         return
       }
-      if (!Number.isFinite(next.currentTime) || next.currentTime < 0) return
-      const last = lastPositionPersistRef.current
-      if (last && last.id === id && next.currentTime - last.at < 1) return
-      lastPositionPersistRef.current = { id, at: next.currentTime }
-      void Effect.runFork(recordPosition(id, next.currentTime))
+
+      session.started = true
+      lastPositionPersistRef.current =
+        checkpoint === null ? null : { id: session.id, at: checkpoint }
+      if (session.shouldPlay) {
+        player.play()
+        reportEffect('Unable to deliver audio play', recordPlayIfFresh(session.id))
+      }
+    }
+
+    prepare().catch((error: unknown) => {
+      if (
+        sourceGenerationRef.current === session.generation &&
+        sourceSessionRef.current === session
+      ) {
+        session.started = true
+        if (session.shouldPlay) {
+          player.play()
+          reportEffect('Unable to deliver audio play', recordPlayIfFresh(session.id))
+        }
+      }
+      console.error('Unable to restore audio position', error)
     })
-    return () => subscription.remove()
-  }, [player])
+  }
+
+  advancePreparationRef.current = (session, event) => {
+    const transition = transitionSourcePreparation(session.preparation, event)
+    session.preparation = transition.state
+    if (transition.shouldPrepare) finishPreparingRef.current(session)
+  }
 
   useEffect(() => {
-    const current = queue.current
+    const subscription = player.addListener('playbackStatusUpdate', () => {
+      const session = sourceSessionRef.current
+      if (!session) return
+      const currentStatus = player.currentStatus
+      advancePreparationRef.current(session, {
+        _tag: 'sourceStatus',
+        generation: session.generation,
+        isLoaded: currentStatus.isLoaded,
+        duration: currentStatus.duration
+      })
+      if (!currentStatus.isLoaded) return
+      if (currentStatus.didJustFinish) {
+        if (session.started) skipNextRef.current()
+        return
+      }
+      const last = lastPositionPersistRef.current
+      const previousPosition = last?.id === session.id ? last.at : null
+      if (!shouldPersistPosition(session.started, previousPosition, currentStatus.currentTime))
+        return
+      lastPositionPersistRef.current = { id: session.id, at: currentStatus.currentTime }
+      reportEffect(
+        'Unable to persist audio position',
+        recordPosition(session.id, currentStatus.currentTime)
+      )
+    })
+    return () => subscription.remove()
+  }, [player, reportEffect])
+
+  useEffect(() => {
+    const current = currentTrack
+    const generation = sourceGenerationRef.current + 1
+    sourceGenerationRef.current = generation
+
     if (!current) {
+      sourceSessionRef.current = null
       player.clearLockScreenControls()
       player.pause()
-      setCurrentTrack(null)
-      seekResumeDoneRef.current = null
       lastPositionPersistRef.current = null
       return
     }
-    if (seekResumeDoneRef.current === current.id) return
-    seekResumeDoneRef.current = current.id
+
+    const session: SourceSession = {
+      generation,
+      id: current.id,
+      shouldPlay: playOnReadyRef.current === current.id,
+      preparation: {
+        generation,
+        sourceLoaded: false,
+        checkpointLoaded: false,
+        duration: 0,
+        preparing: false
+      },
+      checkpoint: null,
+      started: false
+    }
+    playOnReadyRef.current = null
+    sourceSessionRef.current = session
     lastPositionPersistRef.current = null
 
+    // Pausing first prevents Expo Audio's replace() from auto-resuming the old
+    // play state before the new source's checkpoint has been restored.
+    player.pause()
     player.replace(current.url)
     player.setActiveForLockScreen(true, buildMetadata(current), {
       showSeekForward: true,
       showSeekBackward: true
     })
 
-    void Effect.runFork(
-      Effect.gen(function* () {
-        if (status.isLoaded) {
-          const saved = yield* loadPosition(current.id)
-          if (
-            saved &&
-            saved.position > 1 &&
-            status.duration > 0 &&
-            saved.position < status.duration - 5
-          ) {
-            yield* Effect.promise(() => player.seekTo(saved.position))
-          }
-          yield* recordPlayIfFresh(current.id)
+    Effect.runPromise(loadPosition(current.id)).then(
+      (saved) => {
+        if (
+          sourceGenerationRef.current !== session.generation ||
+          sourceSessionRef.current !== session
+        ) {
+          return
         }
-      })
+        session.checkpoint = saved?.position ?? null
+        advancePreparationRef.current(session, { _tag: 'checkpointLoaded', generation })
+      },
+      (error: unknown) => {
+        if (
+          sourceGenerationRef.current !== session.generation ||
+          sourceSessionRef.current !== session
+        ) {
+          return
+        }
+        advancePreparationRef.current(session, { _tag: 'checkpointLoaded', generation })
+        console.error('Unable to load audio position', error)
+      }
     )
-  }, [queue, player, status.isLoaded, status.duration])
+  }, [currentTrack, player])
 
   const loadAndPlay = useCallback(
     (nextTrack: Track) => {
-      setCurrentTrack(nextTrack)
+      if (currentTrack?.id === nextTrack.id) {
+        const session = sourceSessionRef.current
+        if (session?.id === nextTrack.id && !session.started) {
+          session.shouldPlay = true
+          return
+        }
+        player.play()
+        reportEffect('Unable to deliver audio play', recordPlayIfFresh(nextTrack.id))
+        return
+      }
+      playOnReadyRef.current = nextTrack.id
       dispatch({ _tag: 'playNow', track: toQueueTrack(nextTrack) })
-      player.replace(nextTrack.url)
-      player.setActiveForLockScreen(true, buildMetadata(nextTrack), {
-        showSeekForward: true,
-        showSeekBackward: true
-      })
-      player.play()
     },
-    [dispatch, player]
+    [currentTrack?.id, dispatch, player, reportEffect]
   )
 
   const enqueue = useCallback(
@@ -166,15 +285,27 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
     [dispatch]
   )
 
+  const playAll = useCallback(
+    (tracks: ReadonlyArray<Track>) => {
+      if (tracks.length === 0) return
+      const queued = tracks.map(toQueueTrack)
+      const first = queued[0]
+      if (!first) return
+      playOnReadyRef.current = first.id
+      dispatch({ _tag: 'playAll', tracks: queued })
+    },
+    [dispatch]
+  )
+
   const removeFromQueue = useCallback(
     (index: number) => {
       const removed = queue.tracks[index]
       dispatch({ _tag: 'remove', index })
-      if (removed && removed.id === seekResumeDoneRef.current) {
-        void Effect.runFork(clearPosition(removed.id))
+      if (removed && removed.id === sourceSessionRef.current?.id) {
+        reportEffect('Unable to clear audio position', clearPosition(removed.id))
       }
     },
-    [dispatch, queue.tracks]
+    [dispatch, queue.tracks, reportEffect]
   )
 
   const reorderQueue = useCallback(
@@ -188,16 +319,20 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
     (index: number) => {
       const target = queue.tracks[index]
       if (!target) return
+      if (currentTrack?.id === target.id) {
+        const session = sourceSessionRef.current
+        if (session?.id === target.id && !session.started) {
+          session.shouldPlay = true
+          return
+        }
+        player.play()
+        reportEffect('Unable to deliver audio play', recordPlayIfFresh(target.id))
+        return
+      }
+      playOnReadyRef.current = target.id
       dispatch({ _tag: 'playIndex', index })
-      setCurrentTrack(null)
-      player.replace(target.url)
-      player.setActiveForLockScreen(true, buildMetadata(target), {
-        showSeekForward: true,
-        showSeekBackward: true
-      })
-      player.play()
     },
-    [dispatch, player, queue.tracks]
+    [currentTrack?.id, dispatch, player, queue.tracks, reportEffect]
   )
 
   const skipNext = useCallback(() => {
@@ -219,14 +354,32 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
 
   const togglePlayback = useCallback(() => {
     if (status.playing) player.pause()
-    else player.play()
-  }, [player, status.playing])
+    else {
+      const session = sourceSessionRef.current
+      if (session && !session.started) {
+        session.shouldPlay = true
+        return
+      }
+      player.play()
+      if (currentTrack) {
+        reportEffect('Unable to deliver audio play', recordPlayIfFresh(currentTrack.id))
+      }
+    }
+  }, [currentTrack, player, reportEffect, status.playing])
 
   const seekTo = useCallback(
     (seconds: number) => {
-      player.seekTo(seconds).catch(() => {})
+      const session = sourceSessionRef.current
+      player.seekTo(seconds).then(
+        () => {
+          if (sourceSessionRef.current !== session || !session?.started) return
+          lastPositionPersistRef.current = { id: session.id, at: seconds }
+          reportEffect('Unable to persist audio position', recordPosition(session.id, seconds))
+        },
+        (error: unknown) => console.error('Unable to seek audio', error)
+      )
     },
-    [player]
+    [player, reportEffect]
   )
 
   const clearQueue = useCallback(() => {
@@ -245,6 +398,7 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
       loadAndPlay,
       enqueue,
       enqueueAll,
+      playAll,
       removeFromQueue,
       reorderQueue,
       skipTo,
@@ -255,16 +409,17 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
       clearQueue
     }),
     [
-      currentTrack,
       status.playing,
       status.isLoaded,
       status.isBuffering,
       status.currentTime,
       status.duration,
+      currentTrack,
       queue,
       loadAndPlay,
       enqueue,
       enqueueAll,
+      playAll,
       removeFromQueue,
       reorderQueue,
       skipTo,

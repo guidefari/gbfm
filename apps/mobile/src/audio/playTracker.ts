@@ -1,5 +1,6 @@
 import { Effect } from 'effect'
 import { getApiClient } from '@/api/client'
+import { createPlayDelivery } from '@/audio/playDelivery'
 import {
   clearPosition as clearStoredPosition,
   isWithinDedupWindow,
@@ -13,12 +14,25 @@ export const trackAudioPlay = (trackId: string) =>
     yield* client.audio.trackAudioPlay({ params: { id: trackId } })
   })
 
+const deliverPlayIfFresh = createPlayDelivery({
+  isWithinDedupWindow,
+  deliver: trackAudioPlay,
+  remember: recordPlay,
+  now: Date.now
+})
+
+let playDeliveryTail: Promise<void> = Promise.resolve()
+
 export const recordPlayIfFresh = (trackId: string) =>
-  Effect.gen(function* () {
-    const within = yield* isWithinDedupWindow(trackId)
-    if (within) return
-    yield* recordPlay(trackId)
-    yield* trackAudioPlay(trackId).pipe(Effect.catch(() => Effect.void))
+  Effect.tryPromise({
+    try: () => {
+      const delivery = playDeliveryTail
+        .catch(() => undefined)
+        .then(() => Effect.runPromise(deliverPlayIfFresh(trackId)))
+      playDeliveryTail = delivery.catch(() => undefined)
+      return delivery
+    },
+    catch: (error) => error
   })
 
 export const recordPosition = (trackId: string, position: number) => savePosition(trackId, position)
