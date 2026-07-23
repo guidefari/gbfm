@@ -15,7 +15,7 @@ const colors = {
   surface: brand.darkerBg
 }
 
-function EpisodeRow({ episode }: { episode: ShowEpisode }) {
+function EpisodeRow({ episode, onEnqueue }: { episode: ShowEpisode; onEnqueue: () => void }) {
   const { loadAndPlay, togglePlayback, track } = useNowPlaying()
   const router = useRouter()
   const isCurrent = track?.id === episode.id
@@ -30,42 +30,72 @@ function EpisodeRow({ episode }: { episode: ShowEpisode }) {
   }
 
   return (
-    <Pressable
-      accessibilityRole='button'
-      onPress={handlePress}
-      style={({ pressed }) => ({
+    <View
+      style={{
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
-        paddingVertical: 10,
-        opacity: pressed ? 0.8 : 1
-      })}>
-      {episode.thumbnailUrl ? (
-        <Image
-          source={{ uri: episode.thumbnailUrl }}
-          style={{ width: 56, height: 56, borderRadius: 4 }}
-          resizeMode='cover'
-        />
-      ) : (
-        <View style={{ width: 56, height: 56, borderRadius: 4, backgroundColor: colors.surface }} />
-      )}
-      <View style={{ flex: 1, gap: 2 }}>
-        <Text
-          style={{
-            color: isCurrent ? colors.accent : '#FFFFFF',
-            fontFamily: fonts.monoSemiBold,
-            fontSize: 14
-          }}
-          numberOfLines={2}>
-          {episode.title}
-        </Text>
-        {episode.episodeNumber !== null ? (
-          <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 11 }}>
-            episode {episode.episodeNumber}
+        gap: 8,
+        paddingVertical: 4
+      }}>
+      <Pressable
+        accessibilityRole='button'
+        onPress={handlePress}
+        style={({ pressed }) => ({
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 12,
+          paddingVertical: 6,
+          opacity: pressed ? 0.8 : 1
+        })}>
+        {episode.thumbnailUrl ? (
+          <Image
+            source={{ uri: episode.thumbnailUrl }}
+            style={{ width: 56, height: 56, borderRadius: 4 }}
+            resizeMode='cover'
+          />
+        ) : (
+          <View
+            style={{ width: 56, height: 56, borderRadius: 4, backgroundColor: colors.surface }}
+          />
+        )}
+        <View style={{ flex: 1, gap: 2 }}>
+          <Text
+            style={{
+              color: isCurrent ? colors.accent : '#FFFFFF',
+              fontFamily: fonts.monoSemiBold,
+              fontSize: 14
+            }}
+            numberOfLines={2}>
+            {episode.title}
           </Text>
-        ) : null}
-      </View>
-    </Pressable>
+          {episode.episodeNumber !== null ? (
+            <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 11 }}>
+              episode {episode.episodeNumber}
+            </Text>
+          ) : null}
+        </View>
+      </Pressable>
+      <Pressable
+        accessibilityRole='button'
+        accessibilityLabel='Add to queue'
+        hitSlop={8}
+        onPress={onEnqueue}
+        style={({ pressed }) => ({
+          width: 36,
+          height: 36,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderRadius: 4,
+          borderWidth: 1,
+          borderColor: `${colors.muted}55`,
+          opacity: pressed ? 0.6 : 1
+        })}>
+        <Text style={{ color: colors.accent, fontFamily: fonts.monoSemiBold, fontSize: 16 }}>
+          +
+        </Text>
+      </Pressable>
+    </View>
   )
 }
 
@@ -74,6 +104,28 @@ export default function ShowScreen() {
   const episodesAtom = episodesFamily(slug)
   const result = useAtomValue(episodesAtom)
   const refresh = useAtomRefresh(episodesAtom)
+  const { enqueueAll, loadAndPlay } = useNowPlaying()
+  const router = useRouter()
+
+  const handlePlayAll = () => {
+    if (AsyncResult.isSuccess(result) && result.value.length > 0) {
+      const episodes = result.value
+      const first = episodes[0]
+      if (first) {
+        loadAndPlay(first)
+        if (episodes.length > 1) {
+          enqueueAll(episodes.slice(1))
+        }
+        router.push('/now-playing')
+      }
+    }
+  }
+
+  const handleEnqueueAll = () => {
+    if (AsyncResult.isSuccess(result) && result.value.length > 0) {
+      enqueueAll(result.value)
+    }
+  }
 
   return (
     <>
@@ -87,7 +139,58 @@ export default function ShowScreen() {
           <FlatList
             data={result.value}
             keyExtractor={(episode) => episode.id}
-            renderItem={({ item }) => <EpisodeRow episode={item} />}
+            renderItem={({ item }) => (
+              <EpisodeRow episode={item} onEnqueue={() => enqueueAll([item])} />
+            )}
+            ListHeaderComponent={
+              <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
+                <Pressable
+                  accessibilityRole='button'
+                  onPress={handlePlayAll}
+                  style={({ pressed }) => ({
+                    flex: 1,
+                    minHeight: 44,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: 4,
+                    backgroundColor: colors.accent,
+                    opacity: pressed ? 0.85 : 1
+                  })}>
+                  <Text
+                    style={{
+                      color: colors.surface,
+                      fontFamily: fonts.monoSemiBold,
+                      fontSize: 14,
+                      letterSpacing: 0.5
+                    }}>
+                    Play all
+                  </Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole='button'
+                  onPress={handleEnqueueAll}
+                  style={({ pressed }) => ({
+                    flex: 1,
+                    minHeight: 44,
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: 4,
+                    borderWidth: 1,
+                    borderColor: colors.accent,
+                    opacity: pressed ? 0.85 : 1
+                  })}>
+                  <Text
+                    style={{
+                      color: colors.accent,
+                      fontFamily: fonts.monoSemiBold,
+                      fontSize: 14,
+                      letterSpacing: 0.5
+                    }}>
+                    Queue all
+                  </Text>
+                </Pressable>
+              </View>
+            }
             contentInsetAdjustmentBehavior='automatic'
             contentContainerStyle={{ padding: 20 }}
           />

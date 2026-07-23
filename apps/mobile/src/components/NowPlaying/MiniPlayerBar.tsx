@@ -23,8 +23,18 @@ function Artwork({ url, size }: { url: string | null | undefined; size: number }
 }
 
 export function MiniPlayerBar() {
-  const { track, isPlaying, currentTime, duration, togglePlayback, isBuffering, isLoaded } =
-    useNowPlaying()
+  const {
+    track,
+    isPlaying,
+    currentTime,
+    duration,
+    togglePlayback,
+    isBuffering,
+    isLoaded,
+    skipNext,
+    skipPrevious,
+    queue
+  } = useNowPlaying()
   const router = useRouter()
   const placement = NativeTabs.BottomAccessory.usePlacement()
 
@@ -32,6 +42,8 @@ export function MiniPlayerBar() {
 
   const symbolName = isPlaying ? 'pause.fill' : 'play.fill'
   const showSpinner = isBuffering || !isLoaded
+  const canSkipPrev = queue.currentIndex > 0
+  const canSkipNext = queue.currentIndex >= 0 && queue.currentIndex + 1 < queue.tracks.length
 
   if (placement === 'inline') {
     return (
@@ -56,7 +68,21 @@ export function MiniPlayerBar() {
         </Pressable>
         <Pressable
           accessibilityRole='button'
-          hitSlop={12}
+          hitSlop={8}
+          onPress={skipPrevious}
+          disabled={!canSkipPrev}
+          style={{
+            width: 28,
+            height: 28,
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: canSkipPrev ? 1 : 0.4
+          }}>
+          <SymbolView name='backward.fill' size={14} tintColor={textColor} />
+        </Pressable>
+        <Pressable
+          accessibilityRole='button'
+          hitSlop={8}
           onPress={togglePlayback}
           style={{ width: 32, height: 32, alignItems: 'center', justifyContent: 'center' }}>
           {showSpinner ? (
@@ -64,6 +90,20 @@ export function MiniPlayerBar() {
           ) : (
             <SymbolView name={symbolName} size={16} tintColor={textColor} />
           )}
+        </Pressable>
+        <Pressable
+          accessibilityRole='button'
+          hitSlop={8}
+          onPress={skipNext}
+          disabled={!canSkipNext}
+          style={{
+            width: 28,
+            height: 28,
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: canSkipNext ? 1 : 0.4
+          }}>
+          <SymbolView name='forward.fill' size={14} tintColor={textColor} />
         </Pressable>
       </View>
     )
@@ -105,6 +145,20 @@ export function MiniPlayerBar() {
         <Pressable
           accessibilityRole='button'
           hitSlop={8}
+          onPress={skipPrevious}
+          disabled={!canSkipPrev}
+          style={{
+            width: 32,
+            height: 32,
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: canSkipPrev ? 1 : 0.4
+          }}>
+          <SymbolView name='backward.fill' size={16} tintColor={textColor} />
+        </Pressable>
+        <Pressable
+          accessibilityRole='button'
+          hitSlop={8}
           onPress={togglePlayback}
           style={{ width: 44, height: 44, alignItems: 'center', justifyContent: 'center' }}>
           {showSpinner ? (
@@ -112,6 +166,20 @@ export function MiniPlayerBar() {
           ) : (
             <SymbolView name={symbolName} size={22} tintColor={textColor} />
           )}
+        </Pressable>
+        <Pressable
+          accessibilityRole='button'
+          hitSlop={8}
+          onPress={skipNext}
+          disabled={!canSkipNext}
+          style={{
+            width: 32,
+            height: 32,
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: canSkipNext ? 1 : 0.4
+          }}>
+          <SymbolView name='forward.fill' size={16} tintColor={textColor} />
         </Pressable>
       </View>
       {progress > 0 ? (

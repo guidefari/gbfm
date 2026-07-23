@@ -1,8 +1,19 @@
 import { brand } from '@gbfm/theme'
 import { useRouter } from 'expo-router'
-import { Image, Pressable, Text, View } from 'react-native'
+import { SymbolView } from 'expo-symbols'
+import { useRef } from 'react'
+import {
+  ActivityIndicator,
+  Image,
+  LayoutChangeEvent,
+  Pressable,
+  ScrollView,
+  Text,
+  View
+} from 'react-native'
 import { SafeAreaView } from 'react-native-screens/experimental'
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
+import { QueueSheet } from '@/components/NowPlaying/QueueSheet'
 import { fonts } from '@/theme/fonts'
 
 const colors = {
@@ -21,8 +32,38 @@ function formatTime(seconds: number) {
 }
 
 export default function NowPlaying() {
-  const { track, isPlaying, isBuffering, currentTime, duration, togglePlayback } = useNowPlaying()
+  const {
+    track,
+    isPlaying,
+    isBuffering,
+    currentTime,
+    duration,
+    togglePlayback,
+    seekTo,
+    skipNext,
+    skipPrevious,
+    queue
+  } = useNowPlaying()
   const router = useRouter()
+
+  const canSkipPrev = queue.currentIndex > 0
+  const canSkipNext = queue.currentIndex >= 0 && queue.currentIndex + 1 < queue.tracks.length
+  const progress = duration > 0 ? Math.min(currentTime / duration, 1) : 0
+  const scrubWidthRef = useRef(0)
+  const displayTrack = track ?? queue.current
+  const displayCreators = displayTrack?.creators ?? []
+
+  const handleScrubLayout = (event: LayoutChangeEvent) => {
+    scrubWidthRef.current = event.nativeEvent.layout.width
+  }
+
+  const handleScrub = (x: number) => {
+    const width = scrubWidthRef.current
+    if (width > 0 && duration > 0) {
+      const ratio = Math.max(0, Math.min(1, x / width))
+      seekTo(ratio * duration)
+    }
+  }
 
   return (
     <SafeAreaView
@@ -48,25 +89,30 @@ export default function NowPlaying() {
         <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 14 }}>Close</Text>
       </Pressable>
 
-      {!track ? (
+      {!displayTrack ? (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 }}>
           <Text style={{ color: colors.text, fontSize: 16, textAlign: 'center' }}>
             Nothing playing yet. Pick a mix from Home to get started.
           </Text>
         </View>
       ) : (
-        <View style={{ flex: 1, padding: 24, gap: 24, justifyContent: 'center' }}>
+        <ScrollView
+          contentContainerStyle={{ padding: 24, gap: 24, paddingBottom: 48 }}
+          showsVerticalScrollIndicator={false}>
           <View
             style={{
               aspectRatio: 1,
               borderWidth: 2,
               borderColor: colors.accent,
               borderRadius: 4,
-              overflow: 'hidden'
+              overflow: 'hidden',
+              alignSelf: 'center',
+              width: '100%',
+              maxWidth: 360
             }}>
-            {track.thumbnailUrl ? (
+            {displayTrack.thumbnailUrl ? (
               <Image
-                source={{ uri: track.thumbnailUrl }}
+                source={{ uri: displayTrack.thumbnailUrl }}
                 style={{ width: '100%', height: '100%' }}
                 resizeMode='cover'
               />
@@ -85,31 +131,42 @@ export default function NowPlaying() {
                 textDecorationColor: colors.accent
               }}
               numberOfLines={2}>
-              {track.title}
+              {displayTrack.title}
             </Text>
-            {track.creators?.length ? (
+            {displayCreators.length ? (
               <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 14 }}>
-                {track.creators.map((creator) => creator.name).join(', ')}
+                {displayCreators.map((creator) => creator.name).join(', ')}
               </Text>
             ) : null}
           </View>
 
           <View style={{ gap: 8 }}>
-            <View
-              style={{
-                height: 4,
-                backgroundColor: `${colors.muted}44`,
-                borderRadius: 2,
-                overflow: 'hidden'
-              }}>
+            <Pressable
+              accessibilityRole='adjustable'
+              accessibilityValue={{ min: 0, max: 1, now: Math.round(progress * 100) }}
+              onPress={(event) => handleScrub(event.nativeEvent.locationX)}
+              onLayout={handleScrubLayout}
+              style={({ pressed }) => ({
+                height: 24,
+                justifyContent: 'center',
+                opacity: pressed ? 0.7 : 1
+              })}>
               <View
                 style={{
-                  height: '100%',
-                  width: `${Math.min(duration > 0 ? currentTime / duration : 0, 1) * 100}%`,
-                  backgroundColor: colors.accent
-                }}
-              />
-            </View>
+                  height: 4,
+                  backgroundColor: `${colors.muted}44`,
+                  borderRadius: 2,
+                  overflow: 'hidden'
+                }}>
+                <View
+                  style={{
+                    height: '100%',
+                    width: `${progress * 100}%`,
+                    backgroundColor: colors.accent
+                  }}
+                />
+              </View>
+            </Pressable>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
               <Text style={{ color: colors.muted, fontFamily: fonts.mono, fontSize: 12 }}>
                 {formatTime(currentTime)}
@@ -120,28 +177,86 @@ export default function NowPlaying() {
             </View>
           </View>
 
-          <Pressable
-            accessibilityRole='button'
-            onPress={togglePlayback}
-            style={({ pressed }) => ({
-              minHeight: 56,
+          <View
+            style={{
+              flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'center',
-              borderRadius: 4,
-              backgroundColor: colors.accent,
-              opacity: pressed ? 0.85 : 1
-            })}>
-            <Text
-              style={{
-                color: colors.surface,
-                fontFamily: fonts.monoSemiBold,
-                fontSize: 15,
-                letterSpacing: 1
-              }}>
-              {isBuffering ? 'Buffering…' : isPlaying ? 'Pause' : 'Play'}
-            </Text>
-          </Pressable>
-        </View>
+              gap: 24
+            }}>
+            <Pressable
+              accessibilityRole='button'
+              accessibilityLabel='Previous track'
+              disabled={!canSkipPrev}
+              hitSlop={12}
+              onPress={skipPrevious}
+              style={({ pressed }) => ({
+                width: 56,
+                height: 56,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 4,
+                borderWidth: 2,
+                borderColor: canSkipPrev ? colors.accent : `${colors.muted}55`,
+                opacity: pressed ? 0.85 : 1
+              })}>
+              <SymbolView
+                name='backward.end.fill'
+                size={22}
+                tintColor={canSkipPrev ? colors.accent : colors.muted}
+              />
+            </Pressable>
+
+            <Pressable
+              accessibilityRole='button'
+              accessibilityLabel={isBuffering ? 'Loading' : isPlaying ? 'Pause' : 'Play'}
+              onPress={togglePlayback}
+              style={({ pressed }) => ({
+                width: 88,
+                height: 88,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 4,
+                backgroundColor: colors.accent,
+                opacity: pressed ? 0.85 : 1
+              })}>
+              {isBuffering ? (
+                <ActivityIndicator size='large' color={colors.surface} />
+              ) : (
+                <SymbolView
+                  name={isPlaying ? 'pause.fill' : 'play.fill'}
+                  size={32}
+                  tintColor={colors.surface}
+                />
+              )}
+            </Pressable>
+
+            <Pressable
+              accessibilityRole='button'
+              accessibilityLabel='Next track'
+              disabled={!canSkipNext}
+              hitSlop={12}
+              onPress={skipNext}
+              style={({ pressed }) => ({
+                width: 56,
+                height: 56,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 4,
+                borderWidth: 2,
+                borderColor: canSkipNext ? colors.accent : `${colors.muted}55`,
+                opacity: pressed ? 0.85 : 1
+              })}>
+              <SymbolView
+                name='forward.end.fill'
+                size={22}
+                tintColor={canSkipNext ? colors.accent : colors.muted}
+              />
+            </Pressable>
+          </View>
+
+          <QueueSheet />
+        </ScrollView>
       )}
     </SafeAreaView>
   )
