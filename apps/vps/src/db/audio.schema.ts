@@ -25,6 +25,7 @@ export const audioTable = pgTable(
     url: varchar({ length: 255 }).notNull(),
     idempotencyKey: uuid(),
     idempotencyActorId: text(),
+    idempotencyFingerprint: text(),
     showId: uuid().references(() => showsTable.id, { onDelete: 'set null' }),
     episodeNumber: integer(),
     playCount: integer().notNull().default(0)
@@ -42,7 +43,7 @@ export const audioTable = pgTable(
   ]
 )
 
-type AudioPersistenceFields = 'idempotencyKey' | 'idempotencyActorId'
+type AudioPersistenceFields = 'idempotencyKey' | 'idempotencyActorId' | 'idempotencyFingerprint'
 type BaseSelectAudio = Omit<InferSelectModel<typeof audioTable>, AudioPersistenceFields>
 export type InsertAudio = Omit<InferInsertModel<typeof audioTable>, AudioPersistenceFields>
 

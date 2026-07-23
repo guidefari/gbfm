@@ -45,10 +45,12 @@ describe('audio API contract', () => {
       createdAt: '2026-07-24T00:00:00.000Z',
       updatedAt: '2026-07-24T00:00:00.000Z',
       idempotencyKey: 'fd501dca-d3f4-4267-a5a8-53d28ac8a7f4',
-      idempotencyActorId: 'actor-1'
+      idempotencyActorId: 'actor-1',
+      idempotencyFingerprint: 'private-fingerprint'
     })
 
     expect(decoded).not.toHaveProperty('idempotencyKey')
     expect(decoded).not.toHaveProperty('idempotencyActorId')
+    expect(decoded).not.toHaveProperty('idempotencyFingerprint')
   })
 })

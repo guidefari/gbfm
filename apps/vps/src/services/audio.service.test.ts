@@ -6,7 +6,7 @@ import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
 import { user } from '@/db/auth.schema'
 import { MdxServiceLive } from '@/lib/mdx'
-import { AudioService, AudioServiceLive } from './audio.service'
+import { AudioService, AudioServiceLive, createAudioFingerprint } from './audio.service'
 
 const actorId = `audio-idempotency-${randomUUID()}`
 
@@ -34,7 +34,18 @@ beforeAll(async () => {
 })
 
 describe('AudioService.create idempotency', () => {
-  test('replays the original row when a retry uses the same actor and key', async () => {
+  test('normalizes creator order without hiding changed content', () => {
+    const audio = makeAudio('fingerprint')
+
+    expect(createAudioFingerprint(audio, ['b', 'a'])).toBe(
+      createAudioFingerprint(audio, ['a', 'b'])
+    )
+    expect(createAudioFingerprint(audio, ['a'])).not.toBe(
+      createAudioFingerprint({ ...audio, title: 'Changed' }, ['a'])
+    )
+  })
+
+  test('replays the original row when a retry uses the same actor, key, and request', async () => {
     const service = await getService()
     const slug = `retry-${randomUUID()}`
     const idempotencyKey = randomUUID()
@@ -43,7 +54,7 @@ describe('AudioService.create idempotency', () => {
       service.create(makeAudio(slug), [actorId], { actorId, idempotencyKey })
     )
     const replay = await Effect.runPromise(
-      service.create({ ...makeAudio(slug), title: 'Changed retry body' }, [actorId], {
+      service.create(makeAudio(slug), [actorId], {
         actorId,
         idempotencyKey
       })
@@ -51,6 +62,23 @@ describe('AudioService.create idempotency', () => {
 
     expect(replay.id).toBe(first.id)
     expect(replay.title).toBe(first.title)
+  })
+
+  test('rejects reuse of an idempotency key for a changed request', async () => {
+    const service = await getService()
+    const slug = `changed-${randomUUID()}`
+    const idempotencyKey = randomUUID()
+
+    await Effect.runPromise(service.create(makeAudio(slug), [actorId], { actorId, idempotencyKey }))
+
+    await expect(
+      Effect.runPromise(
+        service.create({ ...makeAudio(slug), title: 'Changed retry body' }, [actorId], {
+          actorId,
+          idempotencyKey
+        })
+      )
+    ).rejects.toMatchObject({ _tag: 'ConflictError' })
   })
 
   test('atomically replays one row across concurrent create attempts', async () => {

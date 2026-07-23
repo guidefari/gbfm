@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { and, arrayContains, count, desc, eq, exists, inArray, sql } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
@@ -36,6 +37,25 @@ class AudioCreateConflict extends Error {
     super('Audio create conflict')
   }
 }
+
+const canonicalize = (value: unknown): unknown => {
+  if (value instanceof Date) return value.toISOString()
+  if (Array.isArray(value)) return value.map(canonicalize)
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value)
+        .filter(([, entry]) => entry !== undefined)
+        .toSorted(([left], [right]) => left.localeCompare(right))
+        .map(([key, entry]) => [key, canonicalize(entry)])
+    )
+  }
+  return value
+}
+
+export const createAudioFingerprint = (data: CreateAudioData, creatorIds: readonly string[]) =>
+  createHash('sha256')
+    .update(JSON.stringify(canonicalize({ data, creatorIds: [...creatorIds].toSorted() })))
+    .digest('hex')
 
 type AudioWithCreators = SelectAudio & {
   creators: Array<{
@@ -319,6 +339,7 @@ const createEffect = (
   { actorId, idempotencyKey }: CreateAudioOptions
 ) =>
   Effect.gen(function* () {
+    const idempotencyFingerprint = createAudioFingerprint(data, creatorIds)
     let audioData = { ...data }
 
     if (data.showId && !data.thumbnailUrl) {
@@ -353,7 +374,8 @@ const createEffect = (
                 .values({
                   ...audioData,
                   idempotencyKey,
-                  idempotencyActorId: actorId
+                  idempotencyActorId: actorId,
+                  idempotencyFingerprint
                 })
                 .onConflictDoNothing()
                 .returning()
@@ -371,6 +393,9 @@ const createEffect = (
                   .limit(1)
 
                 if (!replayedAudio) {
+                  throw new AudioCreateConflict()
+                }
+                if (replayedAudio.idempotencyFingerprint !== idempotencyFingerprint) {
                   throw new AudioCreateConflict()
                 }
 

@@ -152,6 +152,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "idempotencyFingerprint": {
+          "name": "idempotencyFingerprint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
         "showId": {
           "name": "showId",
           "type": "uuid",
