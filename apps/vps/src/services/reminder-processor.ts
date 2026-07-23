@@ -54,7 +54,7 @@ export const processPendingReminders = Effect.gen(function* () {
     Chunk.fromIterable(claimedReminders),
     (reminder) =>
       processSingleReminder(reminder).pipe(
-        Effect.retry(Schedule.exponential(1000).pipe(Schedule.both(Schedule.during('30 seconds')))),
+        Effect.retry(Schedule.exponential(1000).pipe(Schedule.upTo({ duration: '30 seconds' }))),
         Effect.catch((error) =>
           Effect.logError(
             `Failed to process reminder ${reminder.id} after retries: ${

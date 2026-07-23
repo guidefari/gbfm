@@ -46,7 +46,7 @@ export const spotifyIdFromUrl = (url: string): string | null => {
 export const startSpotifyPkceLoginEffect = Effect.fn('startSpotifyPkceLogin')(function* (
   scopes: readonly SpotifyWebScope[]
 ) {
-  const spotify = yield* SpotifyBrowser
+  const spotify = yield* Effect.service(SpotifyBrowser)
   return yield* spotify.auth.startPkceLogin({
     scopes,
     redirectUri: getSpotifyRedirectUri()
@@ -56,13 +56,13 @@ export const startSpotifyPkceLoginEffect = Effect.fn('startSpotifyPkceLogin')(fu
 export const exchangeSpotifyPkceCodeEffect = Effect.fn('exchangeSpotifyPkceCode')(function* (
   code: string
 ) {
-  const spotify = yield* SpotifyBrowser
+  const spotify = yield* Effect.service(SpotifyBrowser)
   return yield* spotify.auth.exchangeCode(code)
 })
 
 export const getValidSpotifyAuthSessionEffect = Effect.fn('getValidSpotifyAuthSession')(
   function* () {
-    const spotify = yield* SpotifyBrowser
+    const spotify = yield* Effect.service(SpotifyBrowser)
     const session = spotify.auth.getTokens()
     if (!session) return undefined
     if (session.accessTokenExpiresAt - Date.now() > 60_000) return session
@@ -71,34 +71,34 @@ export const getValidSpotifyAuthSessionEffect = Effect.fn('getValidSpotifyAuthSe
 )
 
 export const fetchSpotifyProfileEffect = Effect.fn('fetchSpotifyProfile')(function* () {
-  const spotify = yield* SpotifyBrowser
+  const spotify = yield* Effect.service(SpotifyBrowser)
   return yield* spotify.users.getCurrentUserProfile()
 })
 
 export const logoutSpotifyEffect = Effect.fn('logoutSpotify')(function* () {
-  const spotify = yield* SpotifyBrowser
+  const spotify = yield* Effect.service(SpotifyBrowser)
   spotify.auth.logout()
 })
 
 export const playTrackEffect = Effect.fn('playTrack')(function* (spotifyTrackUri: string) {
-  const spotify = yield* SpotifyBrowser
+  const spotify = yield* Effect.service(SpotifyBrowser)
   yield* spotify.player.play({ uris: [spotifyTrackUri] })
 })
 
 export const addToQueueEffect = Effect.fn('addToQueue')(function* (spotifyTrackUri: string) {
-  const spotify = yield* SpotifyBrowser
+  const spotify = yield* Effect.service(SpotifyBrowser)
   yield* spotify.player.addToQueue(spotifyTrackUri)
 })
 
 export const saveTrackEffect = Effect.fn('saveTrack')(function* (spotifyTrackId: string) {
-  const spotify = yield* SpotifyBrowser
+  const spotify = yield* Effect.service(SpotifyBrowser)
   yield* spotify.library.saveTracks([spotifyTrackId])
 })
 
 export const checkSavedTracksEffect = Effect.fn('checkSavedTracks')(function* (
   spotifyTrackIds: string[]
 ) {
-  const spotify = yield* SpotifyBrowser
+  const spotify = yield* Effect.service(SpotifyBrowser)
   if (spotifyTrackIds.length === 0) return new Map<string, boolean>()
 
   const entries: Array<[string, boolean]> = []
