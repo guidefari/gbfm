@@ -2,16 +2,8 @@ import { brand } from '@gbfm/theme'
 import { useRouter } from 'expo-router'
 import { SymbolView } from 'expo-symbols'
 import { useRef } from 'react'
-import {
-  AccessibilityActionEvent,
-  ActivityIndicator,
-  Image,
-  LayoutChangeEvent,
-  Pressable,
-  ScrollView,
-  Text,
-  View
-} from 'react-native'
+import type { AccessibilityActionEvent, LayoutChangeEvent } from 'react-native'
+import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-screens/experimental'
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
 import { QueueSheet } from '@/components/NowPlaying/QueueSheet'

@@ -30,8 +30,10 @@ const readQueue = (ctx: Atom.AtomContext): State => {
   hydration = { token, pending: [] }
   const hydrate = Effect.match(loadQueue(), {
     onFailure: (error) => {
-      if (hydration?.token === token) hydration = null
       console.error('Unable to hydrate audio queue', error)
+      if (hydration?.token === token) {
+        ctx.set(queueAtom, { _tag: 'hydrate', state: initialQueueState, token })
+      }
     },
     onSuccess: (persisted) => {
       if (hydration?.token === token) {

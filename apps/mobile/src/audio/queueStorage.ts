@@ -34,7 +34,7 @@ const nativeAudioStorageAdapter: AudioStorageAdapter = {
 
 const adapter =
   Platform.OS === 'web'
-    ? createWebAudioStorageAdapter(globalThis.localStorage)
+    ? createWebAudioStorageAdapter(() => globalThis.localStorage)
     : nativeAudioStorageAdapter
 
 export const {

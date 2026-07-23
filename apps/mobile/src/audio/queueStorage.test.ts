@@ -57,4 +57,12 @@ describe('audio storage', () => {
       updatedAt: 456
     })
   })
+
+  test('treats unavailable browser storage as empty during SSR', async () => {
+    const storage = createAudioStorage(createWebAudioStorageAdapter(undefined))
+
+    await Effect.runPromise(storage.saveQueue({ tracks: [], currentIndex: -1 }))
+
+    expect(await Effect.runPromise(storage.loadQueue())).toBeNull()
+  })
 })

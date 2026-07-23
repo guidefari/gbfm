@@ -215,6 +215,7 @@ export function QueueSheet() {
                     }}>
                     <Pressable
                       accessibilityRole='button'
+                      accessibilityLabel={`${isCurrent ? 'Current track' : 'Play'}: ${track.title}`}
                       hitSlop={8}
                       onPress={() => {
                         skipTo(index)
@@ -266,7 +267,7 @@ export function QueueSheet() {
                     </Pressable>
                     <Pressable
                       accessibilityRole='button'
-                      accessibilityLabel='Remove from queue'
+                      accessibilityLabel={`Remove ${track.title} from queue`}
                       hitSlop={8}
                       onPress={() => removeFromQueue(index)}
                       style={({ pressed }) => ({

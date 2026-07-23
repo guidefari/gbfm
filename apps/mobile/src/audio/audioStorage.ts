@@ -19,15 +19,23 @@ export type AudioStorageAdapter = {
 }
 
 type BrowserStorage = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
+type BrowserStorageSource = BrowserStorage | (() => BrowserStorage | undefined) | undefined
 
-export const createWebAudioStorageAdapter = (storage: BrowserStorage): AudioStorageAdapter => ({
-  read: (key) => Promise.resolve(storage.getItem(key)),
+export const createWebAudioStorageAdapter = (
+  source: BrowserStorageSource
+): AudioStorageAdapter => ({
+  read: (key) => {
+    const storage = typeof source === 'function' ? source() : source
+    return Promise.resolve(storage?.getItem(key) ?? null)
+  },
   write: (key, value) => {
-    storage.setItem(key, value)
+    const storage = typeof source === 'function' ? source() : source
+    storage?.setItem(key, value)
     return Promise.resolve()
   },
   remove: (key) => {
-    storage.removeItem(key)
+    const storage = typeof source === 'function' ? source() : source
+    storage?.removeItem(key)
     return Promise.resolve()
   }
 })

@@ -1,7 +1,9 @@
 import { describe, expect, test } from 'vitest'
 import {
   shouldPersistPosition,
+  transitionSourceCompletion,
   transitionSourcePreparation,
+  type SourceCompletion,
   type SourcePreparation
 } from './playbackState'
 
@@ -80,5 +82,73 @@ describe('audio source preparation', () => {
 
     expect(loaded.shouldPrepare).toBe(true)
     expect(loaded.state).toMatchObject({ checkpointLoaded: true, duration: 240 })
+  })
+})
+
+describe('audio source completion', () => {
+  const active: SourceCompletion = {
+    generation: 2,
+    started: true,
+    handled: false,
+    completed: false
+  }
+
+  test('consumes completion exactly once for the active source', () => {
+    const completed = transitionSourceCompletion(active, {
+      generation: 2,
+      didJustFinish: true,
+      playing: false
+    })
+    const duplicate = transitionSourceCompletion(completed.state, {
+      generation: 2,
+      didJustFinish: true,
+      playing: false
+    })
+
+    expect(completed.shouldFinish).toBe(true)
+    expect(duplicate.shouldFinish).toBe(false)
+  })
+
+  test('rejects completion delivered by a stale prior source', () => {
+    expect(
+      transitionSourceCompletion(active, {
+        generation: 1,
+        didJustFinish: true,
+        playing: false
+      }).shouldFinish
+    ).toBe(false)
+  })
+
+  test('ignores completion before the active source has started', () => {
+    expect(
+      transitionSourceCompletion(
+        { generation: 2, started: false, handled: false, completed: false },
+        { generation: 2, didJustFinish: true, playing: false }
+      ).shouldFinish
+    ).toBe(false)
+  })
+
+  test('re-arms completion after the same source actively replays', () => {
+    const replaying = transitionSourceCompletion(
+      { ...active, handled: true, completed: true },
+      { generation: 2, didJustFinish: false, playing: true }
+    )
+    const completedAgain = transitionSourceCompletion(replaying.state, {
+      generation: 2,
+      didJustFinish: true,
+      playing: false
+    })
+
+    expect(replaying.state.handled).toBe(false)
+    expect(completedAgain.shouldFinish).toBe(true)
+  })
+
+  test('does not re-arm a prior source invalidated during replacement', () => {
+    const invalidated = transitionSourceCompletion(
+      { ...active, handled: true, completed: false },
+      { generation: 2, didJustFinish: false, playing: true }
+    )
+
+    expect(invalidated.state.handled).toBe(true)
   })
 })

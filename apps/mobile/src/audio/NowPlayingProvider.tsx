@@ -1,5 +1,6 @@
 import type { AudioResponse } from '@gbfm/api/audio'
-import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio'
+import type { AudioStatus } from 'expo-audio'
+import { useAudioPlayer } from 'expo-audio'
 import { useAtomValue } from '@effect/atom-react'
 import { Effect } from 'effect'
 import {
@@ -9,18 +10,23 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef
+  useRef,
+  useState
 } from 'react'
+import { Platform } from 'react-native'
 import { audioModeAtom } from '@/store/atoms/audio-mode'
+import { subscribeToPlaybackStatus } from '@/audio/audioPlayerAdapter'
 import { clearPosition, recordPlayIfFresh, recordPosition } from '@/audio/playTracker'
 import {
   shouldPersistPosition,
+  transitionSourceCompletion,
   transitionSourcePreparation,
+  type SourceCompletion,
   type SourcePreparation,
   type SourcePreparationEvent
 } from '@/audio/playbackState'
 import { loadPosition, type QueueTrackType } from '@/audio/queueStorage'
-import type { QueueAction, QueueView } from '@/audio/queueAtom'
+import type { QueueView } from '@/audio/queueAtom'
 import { useQueue, useQueueDispatch } from '@/audio/queueAtom'
 
 type Track = typeof AudioResponse.Type
@@ -77,13 +83,14 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
   const currentTrack = queue.current
   const dispatch = useQueueDispatch()
   const player = useAudioPlayer(null, { updateInterval: 500, keepAudioSessionActive: true })
-  const status = useAudioPlayerStatus(player)
+  const [status, setStatus] = useState<AudioStatus>(() => player.currentStatus)
 
   type SourceSession = {
     readonly generation: number
     readonly id: string
     shouldPlay: boolean
     preparation: SourcePreparation
+    completion: SourceCompletion
     checkpoint: number | null
     started: boolean
   }
@@ -130,6 +137,7 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
       }
 
       session.started = true
+      session.completion = { ...session.completion, started: true }
       lastPositionPersistRef.current =
         checkpoint === null ? null : { id: session.id, at: checkpoint }
       if (session.shouldPlay) {
@@ -144,6 +152,7 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
         sourceSessionRef.current === session
       ) {
         session.started = true
+        session.completion = { ...session.completion, started: true }
         if (session.shouldPlay) {
           player.play()
           reportEffect('Unable to deliver audio play', recordPlayIfFresh(session.id))
@@ -160,35 +169,6 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
   }
 
   useEffect(() => {
-    const subscription = player.addListener('playbackStatusUpdate', () => {
-      const session = sourceSessionRef.current
-      if (!session) return
-      const currentStatus = player.currentStatus
-      advancePreparationRef.current(session, {
-        _tag: 'sourceStatus',
-        generation: session.generation,
-        isLoaded: currentStatus.isLoaded,
-        duration: currentStatus.duration
-      })
-      if (!currentStatus.isLoaded) return
-      if (currentStatus.didJustFinish) {
-        if (session.started) skipNextRef.current()
-        return
-      }
-      const last = lastPositionPersistRef.current
-      const previousPosition = last?.id === session.id ? last.at : null
-      if (!shouldPersistPosition(session.started, previousPosition, currentStatus.currentTime))
-        return
-      lastPositionPersistRef.current = { id: session.id, at: currentStatus.currentTime }
-      reportEffect(
-        'Unable to persist audio position',
-        recordPosition(session.id, currentStatus.currentTime)
-      )
-    })
-    return () => subscription.remove()
-  }, [player, reportEffect])
-
-  useEffect(() => {
     const current = currentTrack
     const generation = sourceGenerationRef.current + 1
     sourceGenerationRef.current = generation
@@ -197,6 +177,7 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
       sourceSessionRef.current = null
       player.clearLockScreenControls()
       player.pause()
+      setStatus(player.currentStatus)
       lastPositionPersistRef.current = null
       return
     }
@@ -212,6 +193,7 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
         duration: 0,
         preparing: false
       },
+      completion: { generation, started: false, handled: false, completed: false },
       checkpoint: null,
       started: false
     }
@@ -227,6 +209,46 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
       showSeekForward: true,
       showSeekBackward: true
     })
+
+    const observeStatus = (nextStatus: AudioStatus) => {
+      if (sourceSessionRef.current !== session) return
+      setStatus(nextStatus)
+      advancePreparationRef.current(session, {
+        _tag: 'sourceStatus',
+        generation: session.generation,
+        isLoaded: nextStatus.isLoaded,
+        duration: nextStatus.duration
+      })
+      if (!nextStatus.isLoaded) return
+
+      const completion = transitionSourceCompletion(session.completion, {
+        generation: session.generation,
+        didJustFinish: nextStatus.didJustFinish,
+        playing: nextStatus.playing
+      })
+      session.completion = completion.state
+      if (completion.shouldFinish) {
+        reportEffect('Unable to clear completed audio position', clearPosition(session.id))
+        skipNextRef.current()
+        return
+      }
+
+      const last = lastPositionPersistRef.current
+      const previousPosition = last?.id === session.id ? last.at : null
+      if (!shouldPersistPosition(session.started, previousPosition, nextStatus.currentTime)) return
+      lastPositionPersistRef.current = { id: session.id, at: nextStatus.currentTime }
+      reportEffect(
+        'Unable to persist audio position',
+        recordPosition(session.id, nextStatus.currentTime)
+      )
+    }
+
+    const subscription = subscribeToPlaybackStatus(
+      player,
+      Platform.OS === 'web' ? 'web' : 'native',
+      observeStatus
+    )
+    observeStatus(player.currentStatus)
 
     Effect.runPromise(loadPosition(current.id)).then(
       (saved) => {
@@ -250,7 +272,9 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
         console.error('Unable to load audio position', error)
       }
     )
-  }, [currentTrack, player])
+
+    return () => subscription.remove()
+  }, [currentTrack, player, reportEffect])
 
   const loadAndPlay = useCallback(
     (nextTrack: Track) => {
@@ -265,6 +289,10 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
         return
       }
       playOnReadyRef.current = nextTrack.id
+      const previous = sourceSessionRef.current
+      if (previous) {
+        previous.completion = { ...previous.completion, handled: true, completed: false }
+      }
       dispatch({ _tag: 'playNow', track: toQueueTrack(nextTrack) })
     },
     [currentTrack?.id, dispatch, player, reportEffect]
@@ -292,6 +320,10 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
       const first = queued[0]
       if (!first) return
       playOnReadyRef.current = first.id
+      const previous = sourceSessionRef.current
+      if (previous) {
+        previous.completion = { ...previous.completion, handled: true, completed: false }
+      }
       dispatch({ _tag: 'playAll', tracks: queued })
     },
     [dispatch]
@@ -299,13 +331,19 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
 
   const removeFromQueue = useCallback(
     (index: number) => {
-      const removed = queue.tracks[index]
-      dispatch({ _tag: 'remove', index })
-      if (removed && removed.id === sourceSessionRef.current?.id) {
-        reportEffect('Unable to clear audio position', clearPosition(removed.id))
+      if (index < 0 || index >= queue.tracks.length) return
+      if (index === queue.currentIndex) {
+        const session = sourceSessionRef.current
+        const shouldContinue = status.playing || session?.shouldPlay === true
+        const next = queue.tracks[index + 1] ?? queue.tracks[index - 1]
+        if (shouldContinue && next) playOnReadyRef.current = next.id
+        if (session) {
+          session.completion = { ...session.completion, handled: true, completed: false }
+        }
       }
+      dispatch({ _tag: 'remove', index })
     },
-    [dispatch, queue.tracks, reportEffect]
+    [dispatch, queue.currentIndex, queue.tracks, status.playing]
   )
 
   const reorderQueue = useCallback(
@@ -330,6 +368,10 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
         return
       }
       playOnReadyRef.current = target.id
+      const previous = sourceSessionRef.current
+      if (previous) {
+        previous.completion = { ...previous.completion, handled: true, completed: false }
+      }
       dispatch({ _tag: 'playIndex', index })
     },
     [currentTrack?.id, dispatch, player, queue.tracks, reportEffect]
@@ -357,7 +399,7 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
     else {
       const session = sourceSessionRef.current
       if (session && !session.started) {
-        session.shouldPlay = true
+        session.shouldPlay = !session.shouldPlay
         return
       }
       player.play()
@@ -383,6 +425,10 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
   )
 
   const clearQueue = useCallback(() => {
+    const previous = sourceSessionRef.current
+    if (previous) {
+      previous.completion = { ...previous.completion, handled: true, completed: false }
+    }
     dispatch({ _tag: 'clear' })
   }, [dispatch])
 
