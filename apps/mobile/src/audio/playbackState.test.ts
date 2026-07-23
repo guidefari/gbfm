@@ -1,11 +1,38 @@
 import { describe, expect, test } from 'vitest'
 import {
   shouldPersistPosition,
+  transitionPlaybackIntent,
   transitionSourceCompletion,
   transitionSourcePreparation,
   type SourceCompletion,
   type SourcePreparation
 } from './playbackState'
+
+describe('playback intent', () => {
+  test('rapid commands use synchronous desired state despite delayed status', () => {
+    const playing = transitionPlaybackIntent(
+      { desiredPlaying: false, pendingPlaying: null },
+      { _tag: 'command', playing: true }
+    )
+    const paused = transitionPlaybackIntent(playing, { _tag: 'command', playing: false })
+    const stalePlaying = transitionPlaybackIntent(paused, { _tag: 'status', playing: true })
+
+    expect(stalePlaying).toEqual({ desiredPlaying: false, pendingPlaying: false })
+    expect(transitionPlaybackIntent(stalePlaying, { _tag: 'status', playing: false })).toEqual({
+      desiredPlaying: false,
+      pendingPlaying: null
+    })
+  })
+
+  test('completion clears autoplay intent', () => {
+    expect(
+      transitionPlaybackIntent(
+        { desiredPlaying: true, pendingPlaying: null },
+        { _tag: 'completed' }
+      )
+    ).toEqual({ desiredPlaying: false, pendingPlaying: null })
+  })
+})
 
 const coldSource = (generation = 1): SourcePreparation => ({
   generation,

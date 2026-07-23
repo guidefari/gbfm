@@ -8,6 +8,32 @@ export const shouldPersistPosition = (
   nextPosition >= 0 &&
   (previousPosition === null || Math.abs(nextPosition - previousPosition) >= 1)
 
+export type PlaybackIntent = {
+  readonly desiredPlaying: boolean
+  readonly pendingPlaying: boolean | null
+}
+
+export type PlaybackIntentEvent =
+  | { readonly _tag: 'command'; readonly playing: boolean }
+  | { readonly _tag: 'status'; readonly playing: boolean }
+  | { readonly _tag: 'completed' }
+
+export const transitionPlaybackIntent = (
+  state: PlaybackIntent,
+  event: PlaybackIntentEvent
+): PlaybackIntent => {
+  if (event._tag === 'command') {
+    return { desiredPlaying: event.playing, pendingPlaying: event.playing }
+  }
+  if (event._tag === 'completed') {
+    return { desiredPlaying: false, pendingPlaying: null }
+  }
+  if (state.pendingPlaying === null) {
+    return { desiredPlaying: event.playing, pendingPlaying: null }
+  }
+  return event.playing === state.pendingPlaying ? { ...state, pendingPlaying: null } : state
+}
+
 export type SourceCompletion = {
   readonly generation: number
   readonly started: boolean

@@ -19,8 +19,10 @@ import { subscribeToPlaybackStatus } from '@/audio/audioPlayerAdapter'
 import { clearPosition, recordPlayIfFresh, recordPosition } from '@/audio/playTracker'
 import {
   shouldPersistPosition,
+  transitionPlaybackIntent,
   transitionSourceCompletion,
   transitionSourcePreparation,
+  type PlaybackIntent,
   type SourceCompletion,
   type SourcePreparation,
   type SourcePreparationEvent
@@ -88,7 +90,7 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
   type SourceSession = {
     readonly generation: number
     readonly id: string
-    shouldPlay: boolean
+    intent: PlaybackIntent
     preparation: SourcePreparation
     completion: SourceCompletion
     checkpoint: number | null
@@ -140,7 +142,11 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
       session.completion = { ...session.completion, started: true }
       lastPositionPersistRef.current =
         checkpoint === null ? null : { id: session.id, at: checkpoint }
-      if (session.shouldPlay) {
+      if (session.intent.desiredPlaying) {
+        session.intent = transitionPlaybackIntent(session.intent, {
+          _tag: 'command',
+          playing: true
+        })
         player.play()
         reportEffect('Unable to deliver audio play', recordPlayIfFresh(session.id))
       }
@@ -153,7 +159,11 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
       ) {
         session.started = true
         session.completion = { ...session.completion, started: true }
-        if (session.shouldPlay) {
+        if (session.intent.desiredPlaying) {
+          session.intent = transitionPlaybackIntent(session.intent, {
+            _tag: 'command',
+            playing: true
+          })
           player.play()
           reportEffect('Unable to deliver audio play', recordPlayIfFresh(session.id))
         }
@@ -185,7 +195,10 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
     const session: SourceSession = {
       generation,
       id: current.id,
-      shouldPlay: playOnReadyRef.current === current.id,
+      intent: {
+        desiredPlaying: playOnReadyRef.current === current.id,
+        pendingPlaying: null
+      },
       preparation: {
         generation,
         sourceLoaded: false,
@@ -228,9 +241,17 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
       })
       session.completion = completion.state
       if (completion.shouldFinish) {
+        session.intent = transitionPlaybackIntent(session.intent, { _tag: 'completed' })
         reportEffect('Unable to clear completed audio position', clearPosition(session.id))
         skipNextRef.current()
         return
+      }
+
+      if (session.started) {
+        session.intent = transitionPlaybackIntent(session.intent, {
+          _tag: 'status',
+          playing: nextStatus.playing
+        })
       }
 
       const last = lastPositionPersistRef.current
@@ -276,16 +297,36 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
     return () => subscription.remove()
   }, [currentTrack, player, reportEffect])
 
+  const playCurrent = useCallback(
+    (trackId: string) => {
+      const session = sourceSessionRef.current
+      if (!session || session.id !== trackId) return
+      session.intent = transitionPlaybackIntent(session.intent, {
+        _tag: 'command',
+        playing: true
+      })
+      if (!session.started) return
+
+      const play = () => {
+        if (sourceSessionRef.current !== session || !session.intent.desiredPlaying) return
+        player.play()
+        reportEffect('Unable to deliver audio play', recordPlayIfFresh(trackId))
+      }
+      if (session.completion.completed) {
+        player
+          .seekTo(0)
+          .then(play, (error: unknown) => console.error('Unable to restart completed audio', error))
+      } else {
+        play()
+      }
+    },
+    [player, reportEffect]
+  )
+
   const loadAndPlay = useCallback(
     (nextTrack: Track) => {
       if (currentTrack?.id === nextTrack.id) {
-        const session = sourceSessionRef.current
-        if (session?.id === nextTrack.id && !session.started) {
-          session.shouldPlay = true
-          return
-        }
-        player.play()
-        reportEffect('Unable to deliver audio play', recordPlayIfFresh(nextTrack.id))
+        playCurrent(nextTrack.id)
         return
       }
       playOnReadyRef.current = nextTrack.id
@@ -295,7 +336,7 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
       }
       dispatch({ _tag: 'playNow', track: toQueueTrack(nextTrack) })
     },
-    [currentTrack?.id, dispatch, player, reportEffect]
+    [currentTrack?.id, dispatch, playCurrent]
   )
 
   const enqueue = useCallback(
@@ -334,7 +375,7 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
       if (index < 0 || index >= queue.tracks.length) return
       if (index === queue.currentIndex) {
         const session = sourceSessionRef.current
-        const shouldContinue = status.playing || session?.shouldPlay === true
+        const shouldContinue = session?.intent.desiredPlaying === true
         const next = queue.tracks[index + 1] ?? queue.tracks[index - 1]
         if (shouldContinue && next) playOnReadyRef.current = next.id
         if (session) {
@@ -343,7 +384,7 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
       }
       dispatch({ _tag: 'remove', index })
     },
-    [dispatch, queue.currentIndex, queue.tracks, status.playing]
+    [dispatch, queue.currentIndex, queue.tracks]
   )
 
   const reorderQueue = useCallback(
@@ -358,13 +399,7 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
       const target = queue.tracks[index]
       if (!target) return
       if (currentTrack?.id === target.id) {
-        const session = sourceSessionRef.current
-        if (session?.id === target.id && !session.started) {
-          session.shouldPlay = true
-          return
-        }
-        player.play()
-        reportEffect('Unable to deliver audio play', recordPlayIfFresh(target.id))
+        playCurrent(target.id)
         return
       }
       playOnReadyRef.current = target.id
@@ -374,7 +409,7 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
       }
       dispatch({ _tag: 'playIndex', index })
     },
-    [currentTrack?.id, dispatch, player, queue.tracks, reportEffect]
+    [currentTrack?.id, dispatch, playCurrent, queue.tracks]
   )
 
   const skipNext = useCallback(() => {
@@ -395,19 +430,19 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
   skipNextRef.current = skipNext
 
   const togglePlayback = useCallback(() => {
-    if (status.playing) player.pause()
-    else {
-      const session = sourceSessionRef.current
-      if (session && !session.started) {
-        session.shouldPlay = !session.shouldPlay
-        return
-      }
-      player.play()
-      if (currentTrack) {
-        reportEffect('Unable to deliver audio play', recordPlayIfFresh(currentTrack.id))
-      }
+    const session = sourceSessionRef.current
+    if (!session || !currentTrack) return
+    if (playOnReadyRef.current !== null || session.intent.desiredPlaying) {
+      playOnReadyRef.current = null
+      session.intent = transitionPlaybackIntent(session.intent, {
+        _tag: 'command',
+        playing: false
+      })
+      player.pause()
+      return
     }
-  }, [currentTrack, player, reportEffect, status.playing])
+    playCurrent(currentTrack.id)
+  }, [currentTrack, playCurrent, player])
 
   const seekTo = useCallback(
     (seconds: number) => {
