@@ -264,7 +264,7 @@ export function EditorialPage() {
 
   const { data: existingPost, isPending: loadingPost } = useQuery({
     queryKey: ['post', search.edit],
-    queryFn: () => fetcher<PostItem>(apiUrl(`/content/posts/${search.edit}`)),
+    queryFn: () => fetcher<PostItem>(apiUrl(`/content/posts/${search.edit}/edit`)),
     enabled: isEditMode && Boolean(search.edit)
   })
 

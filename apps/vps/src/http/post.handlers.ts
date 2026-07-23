@@ -34,6 +34,20 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
         }
       })
     )
+    .handle('getPostsForEdit', ({ query }) =>
+      Effect.gen(function* () {
+        const { user } = yield* AuthSession
+        const svc = yield* PostService
+        const result = yield* dieOnDatabaseError(
+          svc.getAllForEdit(
+            { limit: query.limit ?? 20, offset: query.offset ?? 0, type: query.type },
+            user.id,
+            user.role ?? 'user'
+          )
+        )
+        return { data: result.data.map(toDateStrings), pagination: result.pagination }
+      })
+    )
     .handle('getEditorialTags', () =>
       Effect.gen(function* () {
         const svc = yield* PostService
@@ -113,6 +127,19 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
             .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
         )
 
+        return toDateStrings(post)
+      })
+    )
+    .handle('getPostBySlugForEdit', ({ params }) =>
+      Effect.gen(function* () {
+        const { user } = yield* AuthSession
+        const svc = yield* PostService
+        const post = yield* dieOnDatabaseError(
+          svc.getBySlugForEdit(params.slug, user.id, user.role ?? 'user').pipe(
+            Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
+            Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized())
+          )
+        )
         return toDateStrings(post)
       })
     )

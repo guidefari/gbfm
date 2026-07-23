@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, inArray } from 'drizzle-orm'
+import { and, asc, count, desc, eq, exists, inArray } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
@@ -31,11 +31,20 @@ export interface ShowService {
   readonly getAll: (options: {
     limit: number
     offset: number
-    includeDrafts?: boolean
   }) => Effect.Effect<{ data: ShowWithHosts[]; pagination: PaginationMetadata }, DatabaseError>
+  readonly getAllForEdit: (
+    options: { limit: number; offset: number },
+    userId: string,
+    userRole: string
+  ) => Effect.Effect<{ data: ShowWithHosts[]; pagination: PaginationMetadata }, DatabaseError>
   readonly getBySlug: (
     slug: string
   ) => Effect.Effect<SelectMdxCompiledShow, DatabaseError | NotFoundError>
+  readonly getBySlugForEdit: (
+    slug: string,
+    userId: string,
+    userRole: string
+  ) => Effect.Effect<SelectMdxCompiledShow, DatabaseError | NotFoundError | UnauthorizedError>
   readonly create: (
     data: InsertShow,
     hostIds: string[]
@@ -65,11 +74,27 @@ export interface ShowService {
 
 export const ShowService = Context.Service<ShowService>('ShowService')
 
-const getAllEffect = (options: { limit: number; offset: number; includeDrafts?: boolean }) =>
+const getAllEffect = (
+  options: { limit: number; offset: number },
+  actor?: { userId: string; userRole: string }
+) =>
   Effect.gen(function* () {
-    const { limit, offset, includeDrafts } = options
-
-    const whereCondition = includeDrafts ? undefined : eq(showsTable.draft, false)
+    const { limit, offset } = options
+    const whereCondition = actor
+      ? actor.userRole === 'admin'
+        ? undefined
+        : exists(
+            db
+              .select({ id: showCreators.showId })
+              .from(showCreators)
+              .where(
+                and(
+                  eq(showCreators.showId, showsTable.id),
+                  eq(showCreators.creatorId, actor.userId)
+                )
+              )
+          )
+      : eq(showsTable.draft, false)
 
     const countResult = yield* Effect.tryPromise({
       try: () => db.select({ total: count() }).from(showsTable).where(whereCondition),
@@ -145,14 +170,18 @@ const getAllEffect = (options: { limit: number; offset: number; includeDrafts?: 
     }
   })
 
-const getBySlugEffect = (slug: string) =>
+const getBySlugEffect = (slug: string, includeDrafts = false) =>
   Effect.gen(function* () {
     const showRecords = yield* Effect.tryPromise({
       try: () =>
         db
           .select()
           .from(showsTable)
-          .where(and(eq(showsTable.slug, slug), eq(showsTable.draft, false)))
+          .where(
+            includeDrafts
+              ? eq(showsTable.slug, slug)
+              : and(eq(showsTable.slug, slug), eq(showsTable.draft, false))
+          )
           .limit(1),
       catch: (error) =>
         new DatabaseError({
@@ -491,8 +520,16 @@ const getEpisodesEffect = (showSlug: string, options: { limit: number; offset: n
 
 export const ShowServiceLive = Layer.succeed(ShowService, {
   getAll: (options) => getAllEffect(options).pipe(Effect.withSpan('show.getAll')),
+  getAllForEdit: (options, userId, userRole) =>
+    getAllEffect(options, { userId, userRole }).pipe(Effect.withSpan('show.getAllForEdit')),
   getBySlug: (slug) =>
     getBySlugEffect(slug).pipe(Effect.withSpan('show.getBySlug', { attributes: { slug } })),
+  getBySlugForEdit: (slug, userId, userRole) =>
+    Effect.gen(function* () {
+      const show = yield* getBySlugEffect(slug, true)
+      yield* requireCreatorOrAdmin('show', show.id, userId, userRole)
+      return show
+    }).pipe(Effect.withSpan('show.getBySlugForEdit', { attributes: { slug } })),
   create: (data, hostIds) => createEffect(data, hostIds).pipe(Effect.withSpan('show.create')),
   update: (slug, userId, userRole, data) =>
     updateEffect(slug, userId, userRole, data).pipe(

@@ -11,8 +11,9 @@ import { eq } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
-import { labelsTable } from '@/db/label.schema'
-import { postsTable } from '@/db/post.schema'
+import { session, user } from '@/db/auth.schema'
+import { labelCreators, labelsTable } from '@/db/label.schema'
+import { postCreators, postsTable } from '@/db/post.schema'
 import { releasesTable } from '@/db/release.schema'
 import { showsTable } from '@/db/show.schema'
 import { createWebHandler } from './routes'
@@ -1110,6 +1111,206 @@ describe('shows (HttpApiBuilder group, Step 6)', () => {
     )
 
     expect(res.status).not.toBe(401)
+  })
+})
+
+describe('content draft management authorization', () => {
+  it('keeps draft posts publicly hidden while allowing only their creator and admins to manage them', async () => {
+    const suffix = crypto.randomUUID()
+    const ownerId = `post-owner-${suffix}`
+    const unrelatedId = `post-unrelated-${suffix}`
+    const adminId = `post-admin-${suffix}`
+    const ownerToken = `post-owner-token-${suffix}`
+    const unrelatedToken = `post-unrelated-token-${suffix}`
+    const adminToken = `post-admin-token-${suffix}`
+    const slug = `managed-draft-${suffix}`
+
+    await db.insert(user).values([
+      { id: ownerId, name: 'Post owner', email: `${ownerId}@example.com` },
+      { id: unrelatedId, name: 'Unrelated user', email: `${unrelatedId}@example.com` },
+      { id: adminId, name: 'Admin user', email: `${adminId}@example.com`, role: 'admin' }
+    ])
+    await db.insert(session).values([
+      {
+        id: crypto.randomUUID(),
+        token: ownerToken,
+        userId: ownerId,
+        expiresAt: new Date(Date.now() + 60_000)
+      },
+      {
+        id: crypto.randomUUID(),
+        token: unrelatedToken,
+        userId: unrelatedId,
+        expiresAt: new Date(Date.now() + 60_000)
+      },
+      {
+        id: crypto.randomUUID(),
+        token: adminToken,
+        userId: adminId,
+        expiresAt: new Date(Date.now() + 60_000)
+      }
+    ])
+    const [post] = await db
+      .insert(postsTable)
+      .values({ title: 'Managed draft', slug, content: 'draft', type: 'post', draft: true })
+      .returning()
+    if (!post) throw new Error('Failed to seed managed draft post')
+    await db.insert(postCreators).values({ postId: post.id, creatorId: ownerId })
+
+    const authenticatedRequest = (url: string, token: string) =>
+      new Request(url, { headers: { authorization: `Bearer ${token}` } })
+
+    try {
+      const [publicDetail, publicList, ownerDetail, adminDetail, unrelatedDetail, ownerList] =
+        await Promise.all([
+          webHandler.handler(new Request(`http://localhost/api/content/posts/${slug}`)),
+          webHandler.handler(new Request('http://localhost/api/content/posts?limit=100')),
+          webHandler.handler(
+            authenticatedRequest(`http://localhost/api/content/posts/${slug}/edit`, ownerToken)
+          ),
+          webHandler.handler(
+            authenticatedRequest(`http://localhost/api/content/posts/${slug}/edit`, adminToken)
+          ),
+          webHandler.handler(
+            authenticatedRequest(`http://localhost/api/content/posts/${slug}/edit`, unrelatedToken)
+          ),
+          webHandler.handler(
+            authenticatedRequest(
+              'http://localhost/api/content/posts/manage?type=post&limit=100',
+              ownerToken
+            )
+          )
+        ])
+
+      expect(publicDetail.status).toBe(404)
+      expect(JSON.stringify(await publicList.json())).not.toContain(slug)
+      expect(ownerDetail.status).toBe(200)
+      expect(adminDetail.status).toBe(200)
+      expect(unrelatedDetail.status).toBe(401)
+      expect(JSON.stringify(await ownerList.json())).toContain(slug)
+    } finally {
+      await db.delete(postCreators).where(eq(postCreators.postId, post.id))
+      await db.delete(postsTable).where(eq(postsTable.id, post.id))
+      await db.delete(user).where(eq(user.id, ownerId))
+      await db.delete(user).where(eq(user.id, unrelatedId))
+      await db.delete(user).where(eq(user.id, adminId))
+    }
+  })
+
+  it('allows release mutations only to the owning label creator or an admin', async () => {
+    const suffix = crypto.randomUUID()
+    const ownerId = `release-owner-${suffix}`
+    const unrelatedId = `release-unrelated-${suffix}`
+    const adminId = `release-admin-${suffix}`
+    const ownerToken = `release-owner-token-${suffix}`
+    const unrelatedToken = `release-unrelated-token-${suffix}`
+    const adminToken = `release-admin-token-${suffix}`
+    const labelSlug = `release-label-${suffix}`
+
+    await db.insert(user).values([
+      { id: ownerId, name: 'Release owner', email: `${ownerId}@example.com` },
+      { id: unrelatedId, name: 'Unrelated user', email: `${unrelatedId}@example.com` },
+      { id: adminId, name: 'Admin user', email: `${adminId}@example.com`, role: 'admin' }
+    ])
+    await db.insert(session).values([
+      {
+        id: crypto.randomUUID(),
+        token: ownerToken,
+        userId: ownerId,
+        expiresAt: new Date(Date.now() + 60_000)
+      },
+      {
+        id: crypto.randomUUID(),
+        token: unrelatedToken,
+        userId: unrelatedId,
+        expiresAt: new Date(Date.now() + 60_000)
+      },
+      {
+        id: crypto.randomUUID(),
+        token: adminToken,
+        userId: adminId,
+        expiresAt: new Date(Date.now() + 60_000)
+      }
+    ])
+    const [label] = await db
+      .insert(labelsTable)
+      .values({ title: 'Release label', slug: labelSlug, content: '', draft: true })
+      .returning()
+    if (!label) throw new Error('Failed to seed release label')
+    await db.insert(labelCreators).values({ labelId: label.id, creatorId: ownerId })
+
+    const createRequest = (token: string, slug: string) =>
+      new Request('http://localhost/api/content/releases', {
+        method: 'POST',
+        headers: {
+          authorization: `Bearer ${token}`,
+          'content-type': 'application/json'
+        },
+        body: JSON.stringify({
+          title: slug,
+          slug,
+          content: '',
+          draft: true,
+          labelId: label.id,
+          releaseDate: new Date().toISOString()
+        })
+      })
+
+    try {
+      const ownerSlug = `owner-release-${suffix}`
+      const adminSlug = `admin-release-${suffix}`
+      const deniedSlug = `denied-release-${suffix}`
+      const [ownerCreate, adminCreate, unrelatedCreate] = await Promise.all([
+        webHandler.handler(createRequest(ownerToken, ownerSlug)),
+        webHandler.handler(createRequest(adminToken, adminSlug)),
+        webHandler.handler(createRequest(unrelatedToken, deniedSlug))
+      ])
+
+      expect(ownerCreate.status).toBe(200)
+      expect(adminCreate.status).toBe(200)
+      expect(unrelatedCreate.status).toBe(401)
+
+      const updateRequest = (token: string, slug: string, title: string) =>
+        new Request(`http://localhost/api/content/releases/${slug}`, {
+          method: 'PATCH',
+          headers: {
+            authorization: `Bearer ${token}`,
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({ title })
+        })
+      const [ownerUpdate, adminUpdate, unrelatedUpdate] = await Promise.all([
+        webHandler.handler(updateRequest(ownerToken, ownerSlug, 'Owner updated')),
+        webHandler.handler(updateRequest(adminToken, adminSlug, 'Admin updated')),
+        webHandler.handler(updateRequest(unrelatedToken, ownerSlug, 'Denied update'))
+      ])
+
+      expect(ownerUpdate.status).toBe(200)
+      expect(adminUpdate.status).toBe(200)
+      expect(unrelatedUpdate.status).toBe(401)
+
+      const deniedDelete = await webHandler.handler(
+        new Request(`http://localhost/api/content/releases/${ownerSlug}`, {
+          method: 'DELETE',
+          headers: { authorization: `Bearer ${unrelatedToken}` }
+        })
+      )
+      const adminDelete = await webHandler.handler(
+        new Request(`http://localhost/api/content/releases/${adminSlug}`, {
+          method: 'DELETE',
+          headers: { authorization: `Bearer ${adminToken}` }
+        })
+      )
+      expect(deniedDelete.status).toBe(401)
+      expect(adminDelete.status).toBe(200)
+    } finally {
+      await db.delete(releasesTable).where(eq(releasesTable.labelId, label.id))
+      await db.delete(labelCreators).where(eq(labelCreators.labelId, label.id))
+      await db.delete(labelsTable).where(eq(labelsTable.id, label.id))
+      await db.delete(user).where(eq(user.id, ownerId))
+      await db.delete(user).where(eq(user.id, unrelatedId))
+      await db.delete(user).where(eq(user.id, adminId))
+    }
   })
 })
 

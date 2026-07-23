@@ -149,6 +149,14 @@ export const AudioGroup = HttpApiGroup.make('audio')
     })
   )
   .add(
+    HttpApiEndpoint.get('getAudioByTypeForEdit', '/api/content/audio/:type/manage', {
+      params: AudioTypeParam,
+      query: GetAudioByTypeQuery,
+      success: GetAudioByTypeResponse,
+      error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError]
+    }).middleware(AuthMiddleware)
+  )
+  .add(
     HttpApiEndpoint.get('getAudioBySlug', '/api/content/audio/:type/:slug', {
       params: AudioTypeSlugParams,
       success: CompiledAudioResponse,

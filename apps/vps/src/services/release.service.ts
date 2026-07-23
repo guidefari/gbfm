@@ -1,4 +1,4 @@
-import { and, count, desc, eq } from 'drizzle-orm'
+import { and, count, desc, eq, exists } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { labelsTable } from '@/db/label.schema'
@@ -8,7 +8,14 @@ import {
   type SelectMdxCompiledRelease,
   type SelectRelease
 } from '@/db/release.schema'
-import { ConflictError, DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
+import {
+  ConflictError,
+  DatabaseError,
+  getErrorMessage,
+  NotFoundError,
+  type UnauthorizedError
+} from '@/errors'
+import { requireCreatorOrAdmin } from '@/lib/authorization'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
 import { createPaginationMetadata, type PaginationMetadata } from '@/lib/pagination'
 
@@ -20,23 +27,67 @@ export interface ReleaseService {
     { data: SelectRelease[]; pagination: PaginationMetadata },
     DatabaseError | NotFoundError
   >
+  readonly getByLabelSlugForEdit: (
+    labelSlug: string,
+    options: { limit: number; offset: number },
+    userId: string,
+    userRole: string
+  ) => Effect.Effect<
+    { data: SelectRelease[]; pagination: PaginationMetadata },
+    DatabaseError | NotFoundError | UnauthorizedError
+  >
   readonly getBySlug: (
     slug: string
   ) => Effect.Effect<SelectMdxCompiledRelease, DatabaseError | NotFoundError>
+  readonly getBySlugForEdit: (
+    slug: string,
+    userId: string,
+    userRole: string
+  ) => Effect.Effect<SelectMdxCompiledRelease, DatabaseError | NotFoundError | UnauthorizedError>
   readonly create: (
-    data: InsertRelease & { releaseDate: Date }
-  ) => Effect.Effect<SelectRelease, DatabaseError | NotFoundError | ConflictError>
+    data: InsertRelease & { releaseDate: Date },
+    userId: string,
+    userRole: string
+  ) => Effect.Effect<
+    SelectRelease,
+    DatabaseError | NotFoundError | ConflictError | UnauthorizedError
+  >
   readonly update: (
     slug: string,
+    userId: string,
+    userRole: string,
     data: Partial<InsertRelease> & { releaseDate?: Date }
-  ) => Effect.Effect<SelectMdxCompiledRelease, DatabaseError | NotFoundError>
-  readonly delete: (slug: string) => Effect.Effect<void, DatabaseError | NotFoundError>
+  ) => Effect.Effect<SelectMdxCompiledRelease, DatabaseError | NotFoundError | UnauthorizedError>
+  readonly delete: (
+    slug: string,
+    userId: string,
+    userRole: string
+  ) => Effect.Effect<void, DatabaseError | NotFoundError | UnauthorizedError>
 }
 
 export const ReleaseService = Context.Service<ReleaseService>('ReleaseService')
 
-const getByLabelSlugEffect = (labelSlug: string, options: { limit: number; offset: number }) =>
-  Effect.gen(function* () {
+function getByLabelSlugEffect(
+  labelSlug: string,
+  options: { limit: number; offset: number }
+): Effect.Effect<
+  { data: SelectRelease[]; pagination: PaginationMetadata },
+  DatabaseError | NotFoundError
+>
+function getByLabelSlugEffect(
+  labelSlug: string,
+  options: { limit: number; offset: number },
+  actor: { userId: string; userRole: string }
+): Effect.Effect<
+  { data: SelectRelease[]; pagination: PaginationMetadata },
+  DatabaseError | NotFoundError | UnauthorizedError
+>
+function getByLabelSlugEffect(
+  labelSlug: string,
+  options: { limit: number; offset: number },
+  actor?: { userId: string; userRole: string }
+) {
+  return Effect.gen(function* () {
     const { limit, offset } = options
 
     const labelRecords = yield* Effect.tryPromise({
@@ -44,7 +95,11 @@ const getByLabelSlugEffect = (labelSlug: string, options: { limit: number; offse
         db
           .select()
           .from(labelsTable)
-          .where(and(eq(labelsTable.slug, labelSlug), eq(labelsTable.draft, false)))
+          .where(
+            actor
+              ? eq(labelsTable.slug, labelSlug)
+              : and(eq(labelsTable.slug, labelSlug), eq(labelsTable.draft, false))
+          )
           .limit(1),
       catch: (error) =>
         new DatabaseError({
@@ -63,7 +118,13 @@ const getByLabelSlugEffect = (labelSlug: string, options: { limit: number; offse
       })
     }
 
-    const whereCondition = and(eq(releasesTable.labelId, label.id), eq(releasesTable.draft, false))
+    if (actor) {
+      yield* requireCreatorOrAdmin('label', label.id, actor.userId, actor.userRole)
+    }
+
+    const whereCondition = actor
+      ? eq(releasesTable.labelId, label.id)
+      : and(eq(releasesTable.labelId, label.id), eq(releasesTable.draft, false))
 
     const countResult = yield* Effect.tryPromise({
       try: () => db.select({ total: count() }).from(releasesTable).where(whereCondition),
@@ -99,15 +160,31 @@ const getByLabelSlugEffect = (labelSlug: string, options: { limit: number; offse
       pagination: createPaginationMetadata(total, limit, offset)
     }
   })
+}
 
-const getBySlugEffect = (slug: string) =>
+const getBySlugEffect = (slug: string, includeDrafts = false) =>
   Effect.gen(function* () {
     const releaseRecords = yield* Effect.tryPromise({
       try: () =>
         db
           .select()
           .from(releasesTable)
-          .where(and(eq(releasesTable.slug, slug), eq(releasesTable.draft, false)))
+          .where(
+            includeDrafts
+              ? eq(releasesTable.slug, slug)
+              : and(
+                  eq(releasesTable.slug, slug),
+                  eq(releasesTable.draft, false),
+                  exists(
+                    db
+                      .select({ id: labelsTable.id })
+                      .from(labelsTable)
+                      .where(
+                        and(eq(labelsTable.id, releasesTable.labelId), eq(labelsTable.draft, false))
+                      )
+                  )
+                )
+          )
           .limit(1),
       catch: (error) =>
         new DatabaseError({
@@ -153,7 +230,11 @@ const getBySlugEffect = (slug: string) =>
     return processedRelease
   })
 
-const createEffect = (data: InsertRelease & { releaseDate: Date }) =>
+const createEffect = (
+  data: InsertRelease & { releaseDate: Date },
+  userId: string,
+  userRole: string
+) =>
   Effect.gen(function* () {
     const labelRecords = yield* Effect.tryPromise({
       try: () => db.select().from(labelsTable).where(eq(labelsTable.id, data.labelId)).limit(1),
@@ -173,6 +254,8 @@ const createEffect = (data: InsertRelease & { releaseDate: Date }) =>
         id: data.labelId
       })
     }
+
+    yield* requireCreatorOrAdmin('label', label.id, userId, userRole)
 
     const insertedRecords = yield* Effect.tryPromise({
       try: () =>
@@ -211,7 +294,12 @@ const createEffect = (data: InsertRelease & { releaseDate: Date }) =>
     return newRelease
   })
 
-const updateEffect = (slug: string, data: Partial<InsertRelease> & { releaseDate?: Date }) =>
+const updateEffect = (
+  slug: string,
+  userId: string,
+  userRole: string,
+  data: Partial<InsertRelease> & { releaseDate?: Date }
+) =>
   Effect.gen(function* () {
     const existingRecords = yield* Effect.tryPromise({
       try: () => db.select().from(releasesTable).where(eq(releasesTable.slug, slug)).limit(1),
@@ -230,6 +318,31 @@ const updateEffect = (slug: string, data: Partial<InsertRelease> & { releaseDate
         resource: 'release',
         id: slug
       })
+    }
+
+    yield* requireCreatorOrAdmin('label', existingRelease.labelId, userId, userRole)
+
+    if (data.labelId && data.labelId !== existingRelease.labelId) {
+      const destinationLabelId = data.labelId
+      const destinationLabels = yield* Effect.tryPromise({
+        try: () =>
+          db.select().from(labelsTable).where(eq(labelsTable.id, destinationLabelId)).limit(1),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to fetch destination label: ${getErrorMessage(error)}`,
+            operation: 'select',
+            table: 'labels'
+          })
+      })
+      const destinationLabel = destinationLabels[0]
+      if (!destinationLabel) {
+        return yield* new NotFoundError({
+          message: 'Label not found',
+          resource: 'label',
+          id: data.labelId
+        })
+      }
+      yield* requireCreatorOrAdmin('label', destinationLabel.id, userId, userRole)
     }
 
     const updatedRecords = yield* Effect.tryPromise({
@@ -287,7 +400,7 @@ const updateEffect = (slug: string, data: Partial<InsertRelease> & { releaseDate
     return baseProcessedRelease
   })
 
-const deleteEffect = (slug: string) =>
+const deleteEffect = (slug: string, userId: string, userRole: string) =>
   Effect.gen(function* () {
     const existingRecords = yield* Effect.tryPromise({
       try: () => db.select().from(releasesTable).where(eq(releasesTable.slug, slug)).limit(1),
@@ -308,6 +421,8 @@ const deleteEffect = (slug: string) =>
       })
     }
 
+    yield* requireCreatorOrAdmin('label', existingRelease.labelId, userId, userRole)
+
     yield* Effect.tryPromise({
       try: () => db.delete(releasesTable).where(eq(releasesTable.id, existingRelease.id)),
       catch: (error) =>
@@ -324,11 +439,26 @@ export const ReleaseServiceLive = Layer.succeed(ReleaseService, {
     getByLabelSlugEffect(labelSlug, options).pipe(
       Effect.withSpan('release.getByLabelSlug', { attributes: { labelSlug } })
     ),
+  getByLabelSlugForEdit: (labelSlug, options, userId, userRole) =>
+    getByLabelSlugEffect(labelSlug, options, { userId, userRole }).pipe(
+      Effect.withSpan('release.getByLabelSlugForEdit', { attributes: { labelSlug } })
+    ),
   getBySlug: (slug) =>
     getBySlugEffect(slug).pipe(Effect.withSpan('release.getBySlug', { attributes: { slug } })),
-  create: (data) => createEffect(data).pipe(Effect.withSpan('release.create')),
-  update: (slug, data) =>
-    updateEffect(slug, data).pipe(Effect.withSpan('release.update', { attributes: { slug } })),
-  delete: (slug) =>
-    deleteEffect(slug).pipe(Effect.withSpan('release.delete', { attributes: { slug } }))
+  getBySlugForEdit: (slug, userId, userRole) =>
+    Effect.gen(function* () {
+      const release = yield* getBySlugEffect(slug, true)
+      yield* requireCreatorOrAdmin('label', release.labelId, userId, userRole)
+      return release
+    }).pipe(Effect.withSpan('release.getBySlugForEdit', { attributes: { slug } })),
+  create: (data, userId, userRole) =>
+    createEffect(data, userId, userRole).pipe(Effect.withSpan('release.create')),
+  update: (slug, userId, userRole, data) =>
+    updateEffect(slug, userId, userRole, data).pipe(
+      Effect.withSpan('release.update', { attributes: { slug } })
+    ),
+  delete: (slug, userId, userRole) =>
+    deleteEffect(slug, userId, userRole).pipe(
+      Effect.withSpan('release.delete', { attributes: { slug } })
+    )
 })

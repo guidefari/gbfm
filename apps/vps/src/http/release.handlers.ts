@@ -1,4 +1,5 @@
 import { Api } from '@gbfm/api/api'
+import { AuthSession } from '@gbfm/api/middleware/auth'
 import { Effect } from 'effect'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
 import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
@@ -21,20 +22,26 @@ export const ReleaseHandlersLive = HttpApiBuilder.group(Api, 'release', (handler
   handlers
     .handle('createRelease', ({ payload }) =>
       Effect.gen(function* () {
+        const { user } = yield* AuthSession
         const { tags, streamingLinks, ...releaseData } = payload
 
         const svc = yield* ReleaseService
         const release = yield* dieOnDatabaseError(
           svc
-            .create({
-              ...releaseData,
-              tags: tags ? [...tags] : undefined,
-              streamingLinks: streamingLinks ? [...streamingLinks] : undefined,
-              releaseDate: new Date(payload.releaseDate)
-            })
+            .create(
+              {
+                ...releaseData,
+                tags: tags ? [...tags] : undefined,
+                streamingLinks: streamingLinks ? [...streamingLinks] : undefined,
+                releaseDate: new Date(payload.releaseDate)
+              },
+              user.id,
+              user.role ?? 'user'
+            )
             .pipe(
               Effect.catchTag('ConflictError', () => new HttpApiError.Conflict()),
-              Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound())
+              Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
+              Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized())
             )
         )
 
@@ -59,6 +66,26 @@ export const ReleaseHandlersLive = HttpApiBuilder.group(Api, 'release', (handler
         }
       })
     )
+    .handle('getReleasesByLabelForEdit', ({ params, query }) =>
+      Effect.gen(function* () {
+        const { user } = yield* AuthSession
+        const svc = yield* ReleaseService
+        const result = yield* dieOnDatabaseError(
+          svc
+            .getByLabelSlugForEdit(
+              params.labelSlug,
+              { limit: query.limit ?? 20, offset: query.offset ?? 0 },
+              user.id,
+              user.role ?? 'user'
+            )
+            .pipe(
+              Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
+              Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized())
+            )
+        )
+        return { data: result.data.map(toReleaseResponse), pagination: result.pagination }
+      })
+    )
     .handle('getReleaseBySlug', ({ params }) =>
       Effect.gen(function* () {
         const svc = yield* ReleaseService
@@ -71,20 +98,37 @@ export const ReleaseHandlersLive = HttpApiBuilder.group(Api, 'release', (handler
         return toReleaseResponse(release)
       })
     )
+    .handle('getReleaseBySlugForEdit', ({ params }) =>
+      Effect.gen(function* () {
+        const { user } = yield* AuthSession
+        const svc = yield* ReleaseService
+        const release = yield* dieOnDatabaseError(
+          svc.getBySlugForEdit(params.slug, user.id, user.role ?? 'user').pipe(
+            Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
+            Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized())
+          )
+        )
+        return toReleaseResponse(release)
+      })
+    )
     .handle('updateReleaseBySlug', ({ params, payload }) =>
       Effect.gen(function* () {
+        const { user } = yield* AuthSession
         const { tags, streamingLinks, releaseDate, ...updateData } = payload
 
         const svc = yield* ReleaseService
         const release = yield* dieOnDatabaseError(
           svc
-            .update(params.slug, {
+            .update(params.slug, user.id, user.role ?? 'user', {
               ...updateData,
               ...(tags && { tags: [...tags] }),
               ...(streamingLinks && { streamingLinks: [...streamingLinks] }),
               ...(releaseDate && { releaseDate: new Date(releaseDate) })
             })
-            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+            .pipe(
+              Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
+              Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized())
+            )
         )
 
         return toReleaseResponse(release)
@@ -92,11 +136,13 @@ export const ReleaseHandlersLive = HttpApiBuilder.group(Api, 'release', (handler
     )
     .handle('deleteReleaseBySlug', ({ params }) =>
       Effect.gen(function* () {
+        const { user } = yield* AuthSession
         const svc = yield* ReleaseService
         yield* dieOnDatabaseError(
-          svc
-            .delete(params.slug)
-            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+          svc.delete(params.slug, user.id, user.role ?? 'user').pipe(
+            Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
+            Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized())
+          )
         )
 
         return { message: 'Release deleted successfully' }

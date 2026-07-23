@@ -73,6 +73,24 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
         )
       })
     )
+    .handle('getAudioByTypeForEdit', ({ params, query }) =>
+      Effect.gen(function* () {
+        const { user } = yield* AuthSession
+        const svc = yield* AudioService
+        const result = yield* dieOnDatabaseError(
+          svc.getByTypeForEdit(
+            params.type,
+            { limit: query.limit ?? 20, offset: query.offset ?? 0, tag: query.tag },
+            user.id,
+            user.role ?? 'user'
+          )
+        )
+        return {
+          data: result.data.map(toDateStrings),
+          pagination: result.pagination
+        }
+      })
+    )
     .handle('getAudioBySlug', ({ params }) =>
       Effect.gen(function* () {
         const svc = yield* AudioService

@@ -765,26 +765,28 @@ export function ContentTab() {
   const { data: mixesData, isPending: mixesPending } = useQuery({
     queryKey: ['admin', 'mixes'],
     queryFn: () =>
-      fetcher<PaginatedResponse<AudioItem>>(apiUrl('/content/audio/mix?limit=50&offset=0'))
+      fetcher<PaginatedResponse<AudioItem>>(apiUrl('/content/audio/mix/manage?limit=50&offset=0'))
   })
 
   const { data: labelsData, isPending: labelsPending } = useQuery({
     queryKey: ['admin', 'labels'],
     queryFn: () =>
-      fetcher<PaginatedResponse<LabelItem>>(apiUrl('/content/labels?limit=50&offset=0'))
+      fetcher<PaginatedResponse<LabelItem>>(apiUrl('/content/labels/manage?limit=50&offset=0'))
   })
 
   const { data: editorialData, isPending: editorialPending } = useQuery({
     queryKey: ['admin', 'posts', 'post'],
     queryFn: () =>
       fetcher<PaginatedResponse<EditorialPostItem>>(
-        apiUrl('/content/posts/editorials?limit=50&offset=0')
+        apiUrl('/content/posts/manage?type=post&limit=50&offset=0')
       )
   })
   const { data: tweetData, isPending: tweetPending } = useQuery({
     queryKey: ['admin', 'posts', 'micro'],
     queryFn: () =>
-      fetcher<PaginatedResponse<TweetPostItem>>(apiUrl('/content/posts/micro?limit=50&offset=0'))
+      fetcher<PaginatedResponse<TweetPostItem>>(
+        apiUrl('/content/posts/manage?type=micro&limit=50&offset=0')
+      )
   })
 
   const updateMixMutation = useMutation({

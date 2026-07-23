@@ -43,6 +43,27 @@ export const ShowSubscriptionService =
 
 const subscribeEffect = (userId: string, showId: string) =>
   Effect.gen(function* () {
+    const showRecords = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select({ id: showsTable.id })
+          .from(showsTable)
+          .where(and(eq(showsTable.id, showId), eq(showsTable.draft, false)))
+          .limit(1),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to check show existence: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'shows'
+        })
+    })
+    if (!showRecords[0]) {
+      return yield* new ConflictError({
+        message: 'Show not found',
+        resource: 'show_subscription'
+      })
+    }
+
     const result = yield* Effect.tryPromise({
       try: () => db.insert(showSubscriptionsTable).values({ userId, showId }).returning(),
       catch: (error) => {
@@ -120,10 +141,18 @@ const getUserSubscriptionsEffect = (userId: string, options: { limit: number; of
   Effect.gen(function* () {
     const { limit, offset } = options
 
-    const whereCondition = eq(showSubscriptionsTable.userId, userId)
+    const whereCondition = and(
+      eq(showSubscriptionsTable.userId, userId),
+      eq(showsTable.draft, false)
+    )
 
     const countResult = yield* Effect.tryPromise({
-      try: () => db.select({ total: count() }).from(showSubscriptionsTable).where(whereCondition),
+      try: () =>
+        db
+          .select({ total: count() })
+          .from(showSubscriptionsTable)
+          .innerJoin(showsTable, eq(showSubscriptionsTable.showId, showsTable.id))
+          .where(whereCondition),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to count subscriptions: ${getErrorMessage(error)}`,

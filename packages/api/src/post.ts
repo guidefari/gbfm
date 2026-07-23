@@ -156,6 +156,13 @@ export const PostGroup = HttpApiGroup.make('post')
     })
   )
   .add(
+    HttpApiEndpoint.get('getPostsForEdit', '/api/content/posts/manage', {
+      query: GetPostsQuery,
+      success: GetPostsResponse,
+      error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError]
+    }).middleware(AuthMiddleware)
+  )
+  .add(
     HttpApiEndpoint.get('getEditorialTags', '/api/content/posts/editorials/tags', {
       success: GetEditorialTagsResponse,
       error: HttpApiError.InternalServerError
@@ -195,6 +202,13 @@ export const PostGroup = HttpApiGroup.make('post')
       success: CompiledPostResponse,
       error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
     })
+  )
+  .add(
+    HttpApiEndpoint.get('getPostBySlugForEdit', '/api/content/posts/:slug/edit', {
+      params: SlugParam,
+      success: CompiledPostResponse,
+      error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError]
+    }).middleware(AuthMiddleware)
   )
   .add(
     HttpApiEndpoint.post('createPost', '/api/content/post', {

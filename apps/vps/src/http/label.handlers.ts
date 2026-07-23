@@ -51,6 +51,20 @@ export const LabelHandlersLive = HttpApiBuilder.group(Api, 'label', (handlers) =
         }
       })
     )
+    .handle('getLabelsForEdit', ({ query }) =>
+      Effect.gen(function* () {
+        const { user } = yield* AuthSession
+        const svc = yield* LabelService
+        const result = yield* dieOnDatabaseError(
+          svc.getAllForEdit(
+            { limit: query.limit ?? 20, offset: query.offset ?? 0 },
+            user.id,
+            user.role ?? 'user'
+          )
+        )
+        return { data: result.data.map(toDateStrings), pagination: result.pagination }
+      })
+    )
     .handle('getLabelBySlug', ({ params }) =>
       Effect.gen(function* () {
         const svc = yield* LabelService
@@ -63,6 +77,19 @@ export const LabelHandlersLive = HttpApiBuilder.group(Api, 'label', (handlers) =
         return toDateStrings(label)
       })
     )
+    .handle('getLabelBySlugForEdit', ({ params }) =>
+      Effect.gen(function* () {
+        const { user } = yield* AuthSession
+        const svc = yield* LabelService
+        const label = yield* dieOnDatabaseError(
+          svc.getBySlugForEdit(params.slug, user.id, user.role ?? 'user').pipe(
+            Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
+            Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized())
+          )
+        )
+        return toDateStrings(label)
+      })
+    )
     .handle('updateLabelBySlug', ({ params, payload }) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
@@ -71,7 +98,7 @@ export const LabelHandlersLive = HttpApiBuilder.group(Api, 'label', (handlers) =
         const svc = yield* LabelService
         const label = yield* dieOnDatabaseError(
           svc
-            .update(params.slug, user.id, {
+            .update(params.slug, user.id, user.role ?? 'user', {
               ...updateData,
               ...(tags && { tags: [...tags] }),
               ...(genres && { genres: [...genres] })

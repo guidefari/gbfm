@@ -1,4 +1,4 @@
-import { and, arrayContains, count, desc, eq, inArray, sql } from 'drizzle-orm'
+import { and, arrayContains, count, desc, eq, exists, inArray, sql } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import {
@@ -50,6 +50,12 @@ export interface AudioService {
     type: AudioType,
     options: { limit: number; offset: number; tag?: string }
   ) => Effect.Effect<{ data: AudioWithCreators[]; pagination: PaginationMetadata }, DatabaseError>
+  readonly getByTypeForEdit: (
+    type: AudioType,
+    options: { limit: number; offset: number; tag?: string },
+    userId: string,
+    userRole: string
+  ) => Effect.Effect<{ data: AudioWithCreators[]; pagination: PaginationMetadata }, DatabaseError>
   readonly getTags: (type: AudioType) => Effect.Effect<string[], DatabaseError>
   readonly getBySlug: (
     type: AudioType,
@@ -83,7 +89,8 @@ export const AudioService = Context.Service<AudioService>('AudioService')
 
 const getByTypeEffect = (
   type: AudioType,
-  options: { limit: number; offset: number; tag?: string }
+  options: { limit: number; offset: number; tag?: string },
+  actor?: { userId: string; userRole: string }
 ) =>
   Effect.gen(function* () {
     const { limit, offset, tag } = options
@@ -91,13 +98,26 @@ const getByTypeEffect = (
     yield* Effect.annotateCurrentSpan('audio.limit', limit)
     yield* Effect.annotateCurrentSpan('audio.offset', offset)
     if (tag) yield* Effect.annotateCurrentSpan('audio.tag', tag)
-    const whereCondition = tag
-      ? and(
-          eq(audioTable.type, type),
-          eq(audioTable.draft, false),
-          arrayContains(audioTable.tags, [tag])
-        )
-      : and(eq(audioTable.type, type), eq(audioTable.draft, false))
+    const visibilityCondition = actor
+      ? actor.userRole === 'admin'
+        ? undefined
+        : exists(
+            db
+              .select({ id: audioCreators.audioId })
+              .from(audioCreators)
+              .where(
+                and(
+                  eq(audioCreators.audioId, audioTable.id),
+                  eq(audioCreators.creatorId, actor.userId)
+                )
+              )
+          )
+      : eq(audioTable.draft, false)
+    const whereCondition = and(
+      eq(audioTable.type, type),
+      visibilityCondition,
+      tag ? arrayContains(audioTable.tags, [tag]) : undefined
+    )
 
     const countResult = yield* Effect.tryPromise({
       try: () =>
@@ -543,7 +563,7 @@ const trackPlayEffect = (id: string, clientIp?: string) =>
         db
           .select({ id: audioTable.id, playCount: audioTable.playCount })
           .from(audioTable)
-          .where(eq(audioTable.id, id))
+          .where(and(eq(audioTable.id, id), eq(audioTable.draft, false)))
           .limit(1),
       catch: (error) =>
         new DatabaseError({
@@ -601,6 +621,10 @@ export const AudioServiceLive = Layer.effect(
       getByType: (type, options) =>
         getByTypeEffect(type, options).pipe(
           Effect.withSpan('audio.getByType', { attributes: { type } })
+        ),
+      getByTypeForEdit: (type, options, userId, userRole) =>
+        getByTypeEffect(type, options, { userId, userRole }).pipe(
+          Effect.withSpan('audio.getByTypeForEdit', { attributes: { type } })
         ),
       getTags: (type) =>
         getTagsEffect(type).pipe(Effect.withSpan('audio.getTags', { attributes: { type } })),

@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm'
+import { and, desc, eq, isNotNull, or } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
@@ -65,7 +65,12 @@ const addFavoriteEffect = (userId: string, audioId: string) =>
     Effect.gen(function* () {
       // Check if audio exists
       const audioRecords = yield* Effect.tryPromise({
-        try: () => db.select().from(audioTable).where(eq(audioTable.id, audioId)).limit(1),
+        try: () =>
+          db
+            .select()
+            .from(audioTable)
+            .where(and(eq(audioTable.id, audioId), eq(audioTable.draft, false)))
+            .limit(1),
         catch: (error) =>
           new DatabaseError({
             message: `Failed to check audio existence: ${getErrorMessage(error)}`,
@@ -211,7 +216,12 @@ const addShowFavoriteEffect = (userId: string, showId: string) =>
   })(
     Effect.gen(function* () {
       const showRecords = yield* Effect.tryPromise({
-        try: () => db.select().from(showsTable).where(eq(showsTable.id, showId)).limit(1),
+        try: () =>
+          db
+            .select()
+            .from(showsTable)
+            .where(and(eq(showsTable.id, showId), eq(showsTable.draft, false)))
+            .limit(1),
         catch: (error) =>
           new DatabaseError({
             message: `Failed to check show existence: ${getErrorMessage(error)}`,
@@ -433,7 +443,15 @@ const getFavoritesEffect = (
             .from(favoritesTable)
             .leftJoin(audioTable, eq(favoritesTable.audioId, audioTable.id))
             .leftJoin(showsTable, eq(favoritesTable.showId, showsTable.id))
-            .where(eq(favoritesTable.userId, userId))
+            .where(
+              and(
+                eq(favoritesTable.userId, userId),
+                or(
+                  and(isNotNull(favoritesTable.audioId), eq(audioTable.draft, false)),
+                  and(isNotNull(favoritesTable.showId), eq(showsTable.draft, false))
+                )
+              )
+            )
             .orderBy(desc(favoritesTable.createdAt))
             .limit(limit)
             .offset(offset),

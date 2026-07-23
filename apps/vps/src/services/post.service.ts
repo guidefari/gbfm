@@ -1,4 +1,4 @@
-import { and, arrayContains, count, desc, eq, inArray, sql } from 'drizzle-orm'
+import { and, arrayContains, count, desc, eq, exists, inArray, sql } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { user as usersTable } from '@/db/auth.schema'
@@ -35,9 +35,22 @@ export interface PostService {
     { data: SelectMdxCompiledPost[]; pagination: PaginationMetadata },
     DatabaseError
   >
+  readonly getAllForEdit: (
+    options: { limit: number; offset: number; type?: PostType },
+    userId: string,
+    userRole: string
+  ) => Effect.Effect<
+    { data: SelectMdxCompiledPost[]; pagination: PaginationMetadata },
+    DatabaseError
+  >
   readonly getBySlug: (
     slug: string
   ) => Effect.Effect<SelectMdxCompiledPost, DatabaseError | NotFoundError>
+  readonly getBySlugForEdit: (
+    slug: string,
+    userId: string,
+    userRole: string
+  ) => Effect.Effect<SelectMdxCompiledPost, DatabaseError | NotFoundError | UnauthorizedError>
   readonly getEditorials: (options: {
     limit: number
     offset: number
@@ -215,7 +228,8 @@ export const toMicroPost = (
 
 const getAllEffect = (
   options: { limit: number; offset: number; type?: PostType; tag?: string },
-  mdx: MdxService
+  mdx: MdxService,
+  actor?: { userId: string; userRole: string }
 ) =>
   Effect.gen(function* () {
     const { limit, offset, type, tag } = options
@@ -227,9 +241,22 @@ const getAllEffect = (
           : tag
             ? arrayContains(postsTable.tags, [tag])
             : undefined
-    const whereCondition = contentCondition
-      ? and(eq(postsTable.draft, false), contentCondition)
+    const visibilityCondition = actor
+      ? actor.userRole === 'admin'
+        ? undefined
+        : exists(
+            db
+              .select({ id: postCreators.postId })
+              .from(postCreators)
+              .where(
+                and(
+                  eq(postCreators.postId, postsTable.id),
+                  eq(postCreators.creatorId, actor.userId)
+                )
+              )
+          )
       : eq(postsTable.draft, false)
+    const whereCondition = and(visibilityCondition, contentCondition)
 
     const countResult = yield* Effect.tryPromise({
       try: () =>
@@ -487,14 +514,18 @@ const getByTagEffect = (tag: string, options: { limit: number; offset: number })
     }
   })
 
-const getBySlugEffect = (slug: string, mdx: MdxService) =>
+const getBySlugEffect = (slug: string, mdx: MdxService, includeDrafts = false) =>
   Effect.gen(function* () {
     const postRecords = yield* Effect.tryPromise({
       try: () =>
         db
           .select()
           .from(postsTable)
-          .where(and(eq(postsTable.slug, slug), eq(postsTable.draft, false)))
+          .where(
+            includeDrafts
+              ? eq(postsTable.slug, slug)
+              : and(eq(postsTable.slug, slug), eq(postsTable.draft, false))
+          )
           .limit(1),
       catch: (error) =>
         new DatabaseError({
@@ -717,7 +748,14 @@ export const PostServiceLive = Layer.effect(
     const mdx = yield* MdxService
     return {
       getAll: (opts) => getAllEffect(opts, mdx),
+      getAllForEdit: (opts, userId, userRole) => getAllEffect(opts, mdx, { userId, userRole }),
       getBySlug: (slug) => getBySlugEffect(slug, mdx),
+      getBySlugForEdit: (slug, userId, userRole) =>
+        Effect.gen(function* () {
+          const post = yield* getBySlugEffect(slug, mdx, true)
+          yield* requireCreatorOrAdmin('post', post.id, userId, userRole)
+          return post
+        }),
       getEditorials: (opts) => getEditorialsEffect(opts, mdx),
       getEditorialBySlug: (slug) => getEditorialBySlugEffect(slug, mdx),
       getMicroPosts: (opts) => getMicroPostsEffect(opts, mdx),

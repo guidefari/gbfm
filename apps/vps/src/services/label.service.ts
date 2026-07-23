@@ -1,4 +1,4 @@
-import { and, count, desc, eq } from 'drizzle-orm'
+import { and, count, desc, eq, exists } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { user as usersTable } from '@/db/auth.schema'
@@ -16,7 +16,7 @@ import {
   NotFoundError,
   type UnauthorizedError
 } from '@/errors'
-import { requireCreator } from '@/lib/authorization'
+import { requireCreatorOrAdmin } from '@/lib/authorization'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
 import { createPaginationMetadata, type PaginationMetadata } from '@/lib/pagination'
 
@@ -25,9 +25,19 @@ export interface LabelService {
     limit: number
     offset: number
   }) => Effect.Effect<{ data: SelectLabel[]; pagination: PaginationMetadata }, DatabaseError>
+  readonly getAllForEdit: (
+    options: { limit: number; offset: number },
+    userId: string,
+    userRole: string
+  ) => Effect.Effect<{ data: SelectLabel[]; pagination: PaginationMetadata }, DatabaseError>
   readonly getBySlug: (
     slug: string
   ) => Effect.Effect<SelectMdxCompiledLabel, DatabaseError | NotFoundError>
+  readonly getBySlugForEdit: (
+    slug: string,
+    userId: string,
+    userRole: string
+  ) => Effect.Effect<SelectMdxCompiledLabel, DatabaseError | NotFoundError | UnauthorizedError>
   readonly create: (
     data: InsertLabel,
     creatorIds: string[]
@@ -35,18 +45,36 @@ export interface LabelService {
   readonly update: (
     slug: string,
     userId: string,
+    userRole: string,
     data: Partial<InsertLabel>
   ) => Effect.Effect<SelectMdxCompiledLabel, DatabaseError | NotFoundError | UnauthorizedError>
 }
 
 export const LabelService = Context.Service<LabelService>('LabelService')
 
-const getAllEffect = (options: { limit: number; offset: number }) =>
+const getAllEffect = (
+  options: { limit: number; offset: number },
+  actor?: { userId: string; userRole: string }
+) =>
   Effect.gen(function* () {
     const { limit, offset } = options
     yield* Effect.annotateCurrentSpan('pagination.limit', limit)
     yield* Effect.annotateCurrentSpan('pagination.offset', offset)
-    const whereCondition = eq(labelsTable.draft, false)
+    const whereCondition = actor
+      ? actor.userRole === 'admin'
+        ? undefined
+        : exists(
+            db
+              .select({ id: labelCreators.labelId })
+              .from(labelCreators)
+              .where(
+                and(
+                  eq(labelCreators.labelId, labelsTable.id),
+                  eq(labelCreators.creatorId, actor.userId)
+                )
+              )
+          )
+      : eq(labelsTable.draft, false)
 
     const countResult = yield* Effect.tryPromise({
       try: () => db.select({ total: count() }).from(labelsTable).where(whereCondition),
@@ -83,7 +111,7 @@ const getAllEffect = (options: { limit: number; offset: number }) =>
     }
   })
 
-const getBySlugEffect = (slug: string) =>
+const getBySlugEffect = (slug: string, includeDrafts = false) =>
   Effect.gen(function* () {
     yield* Effect.annotateCurrentSpan('label.slug', slug)
     const labelRecords = yield* Effect.tryPromise({
@@ -91,7 +119,11 @@ const getBySlugEffect = (slug: string) =>
         db
           .select()
           .from(labelsTable)
-          .where(and(eq(labelsTable.slug, slug), eq(labelsTable.draft, false)))
+          .where(
+            includeDrafts
+              ? eq(labelsTable.slug, slug)
+              : and(eq(labelsTable.slug, slug), eq(labelsTable.draft, false))
+          )
           .limit(1),
       catch: (error) =>
         new DatabaseError({
@@ -206,7 +238,7 @@ const createEffect = (data: InsertLabel, creatorIds: string[]) =>
     return result
   })
 
-const updateEffect = (slug: string, userId: string, data: Partial<InsertLabel>) =>
+const updateEffect = (slug: string, userId: string, userRole: string, data: Partial<InsertLabel>) =>
   Effect.gen(function* () {
     yield* Effect.annotateCurrentSpan('label.slug', slug)
     yield* Effect.annotateCurrentSpan('fields.updated', Object.keys(data).join(','))
@@ -229,7 +261,7 @@ const updateEffect = (slug: string, userId: string, data: Partial<InsertLabel>) 
       })
     }
 
-    yield* requireCreator('label', existingLabel.id, userId)
+    yield* requireCreatorOrAdmin('label', existingLabel.id, userId, userRole)
 
     const updatedRecords = yield* Effect.tryPromise({
       try: () =>
@@ -314,12 +346,24 @@ const getBySlugWithSpan = (slug: string) =>
 const createWithSpan = (data: InsertLabel, creatorIds: string[]) =>
   createEffect(data, creatorIds).pipe(Effect.withSpan('label.create'))
 
-const updateWithSpan = (slug: string, userId: string, data: Partial<InsertLabel>) =>
-  updateEffect(slug, userId, data).pipe(Effect.withSpan('label.update'))
+const updateWithSpan = (
+  slug: string,
+  userId: string,
+  userRole: string,
+  data: Partial<InsertLabel>
+) => updateEffect(slug, userId, userRole, data).pipe(Effect.withSpan('label.update'))
 
 export const LabelServiceLive = Layer.succeed(LabelService, {
   getAll: getAllWithSpan,
+  getAllForEdit: (options, userId, userRole) =>
+    getAllEffect(options, { userId, userRole }).pipe(Effect.withSpan('label.getAllForEdit')),
   getBySlug: getBySlugWithSpan,
+  getBySlugForEdit: (slug, userId, userRole) =>
+    Effect.gen(function* () {
+      const label = yield* getBySlugEffect(slug, true)
+      yield* requireCreatorOrAdmin('label', label.id, userId, userRole)
+      return label
+    }).pipe(Effect.withSpan('label.getBySlugForEdit')),
   create: createWithSpan,
   update: updateWithSpan
 })

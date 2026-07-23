@@ -100,7 +100,12 @@ export const ReleaseGroup = HttpApiGroup.make('release')
     HttpApiEndpoint.post('createRelease', '/api/content/releases', {
       payload: CreateReleaseInput,
       success: ReleaseResponse,
-      error: [HttpApiError.Conflict, HttpApiError.NotFound, HttpApiError.InternalServerError]
+      error: [
+        HttpApiError.Conflict,
+        HttpApiError.NotFound,
+        HttpApiError.Unauthorized,
+        HttpApiError.InternalServerError
+      ]
     }).middleware(AuthMiddleware)
   )
   .add(
@@ -112,6 +117,18 @@ export const ReleaseGroup = HttpApiGroup.make('release')
     })
   )
   .add(
+    HttpApiEndpoint.get(
+      'getReleasesByLabelForEdit',
+      '/api/content/labels/:labelSlug/releases/manage',
+      {
+        params: { labelSlug: Schema.String },
+        query: PaginationQuery,
+        success: GetReleasesByLabelResponse,
+        error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError]
+      }
+    ).middleware(AuthMiddleware)
+  )
+  .add(
     HttpApiEndpoint.get('getReleaseBySlug', '/api/content/releases/:slug', {
       params: { slug: Schema.String },
       success: CompiledReleaseResponse,
@@ -119,17 +136,24 @@ export const ReleaseGroup = HttpApiGroup.make('release')
     })
   )
   .add(
+    HttpApiEndpoint.get('getReleaseBySlugForEdit', '/api/content/releases/:slug/edit', {
+      params: { slug: Schema.String },
+      success: CompiledReleaseResponse,
+      error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError]
+    }).middleware(AuthMiddleware)
+  )
+  .add(
     HttpApiEndpoint.patch('updateReleaseBySlug', '/api/content/releases/:slug', {
       params: { slug: Schema.String },
       payload: UpdateReleaseInput,
       success: CompiledReleaseResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
+      error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError]
     }).middleware(AuthMiddleware)
   )
   .add(
     HttpApiEndpoint.delete('deleteReleaseBySlug', '/api/content/releases/:slug', {
       params: { slug: Schema.String },
       success: DeleteReleaseResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
+      error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError]
     }).middleware(AuthMiddleware)
   )

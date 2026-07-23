@@ -142,11 +142,25 @@ export const ShowsGroup = HttpApiGroup.make('shows')
     })
   )
   .add(
+    HttpApiEndpoint.get('getShowsForEdit', '/api/shows/manage', {
+      query: PaginationQuery,
+      success: GetAllShowsResponse,
+      error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError]
+    }).middleware(AuthMiddleware)
+  )
+  .add(
     HttpApiEndpoint.get('getShowBySlug', '/api/shows/:slug', {
       params: { slug: Schema.String },
       success: CompiledShowResponse,
       error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
     })
+  )
+  .add(
+    HttpApiEndpoint.get('getShowBySlugForEdit', '/api/shows/:slug/edit', {
+      params: { slug: Schema.String },
+      success: CompiledShowResponse,
+      error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError]
+    }).middleware(AuthMiddleware)
   )
   .add(
     HttpApiEndpoint.post('createShow', '/api/shows', {

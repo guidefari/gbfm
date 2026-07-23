@@ -82,7 +82,7 @@ export function ShowsTab() {
 
   const { data: showsData, isPending: showsPending } = useQuery({
     queryKey: ['admin', 'shows'],
-    queryFn: () => fetcher<PaginatedResponse<ShowItem>>(apiUrl('/shows?limit=50&offset=0'))
+    queryFn: () => fetcher<PaginatedResponse<ShowItem>>(apiUrl('/shows/manage?limit=50&offset=0'))
   })
 
   const createShowMutation = useMutation({

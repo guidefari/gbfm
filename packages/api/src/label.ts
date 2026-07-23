@@ -109,11 +109,25 @@ export const LabelGroup = HttpApiGroup.make('label')
     })
   )
   .add(
+    HttpApiEndpoint.get('getLabelsForEdit', '/api/content/labels/manage', {
+      query: PaginationQuery,
+      success: GetAllLabelsResponse,
+      error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError]
+    }).middleware(AuthMiddleware)
+  )
+  .add(
     HttpApiEndpoint.get('getLabelBySlug', '/api/content/labels/:slug', {
       params: { slug: Schema.String },
       success: CompiledLabelResponse,
       error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
     })
+  )
+  .add(
+    HttpApiEndpoint.get('getLabelBySlugForEdit', '/api/content/labels/:slug/edit', {
+      params: { slug: Schema.String },
+      success: CompiledLabelResponse,
+      error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError]
+    }).middleware(AuthMiddleware)
   )
   .add(
     HttpApiEndpoint.patch('updateLabelBySlug', '/api/content/labels/:slug', {

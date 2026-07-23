@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, exists } from 'drizzle-orm'
 import { Effect } from 'effect'
 import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
@@ -64,7 +64,17 @@ const fetchReleases = () =>
           updatedAt: releasesTable.updatedAt
         })
         .from(releasesTable)
-        .where(eq(releasesTable.draft, false)),
+        .where(
+          and(
+            eq(releasesTable.draft, false),
+            exists(
+              db
+                .select({ id: labelsTable.id })
+                .from(labelsTable)
+                .where(and(eq(labelsTable.id, releasesTable.labelId), eq(labelsTable.draft, false)))
+            )
+          )
+        ),
     catch: (error) =>
       new DatabaseError({
         message: String(error),

@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, exists } from 'drizzle-orm'
 import { Effect, Layer } from 'effect'
 import { HttpRouter, HttpServerResponse } from 'effect/unstable/http'
 import { db } from '@/db'
@@ -308,7 +308,20 @@ const shareRelease = HttpRouter.params.pipe(
               releaseDate: releasesTable.releaseDate
             })
             .from(releasesTable)
-            .where(and(eq(releasesTable.slug, slug), eq(releasesTable.draft, false)))
+            .where(
+              and(
+                eq(releasesTable.slug, slug),
+                eq(releasesTable.draft, false),
+                exists(
+                  db
+                    .select({ id: labelsTable.id })
+                    .from(labelsTable)
+                    .where(
+                      and(eq(labelsTable.id, releasesTable.labelId), eq(labelsTable.draft, false))
+                    )
+                )
+              )
+            )
             .limit(1),
         'releases'
       )
