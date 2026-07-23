@@ -6,6 +6,8 @@ import Login from '@/components/Login'
 import { AppearanceSection } from '@/components/Profile/AppearanceSection'
 import { useAuthStore, useClearAuth } from '@/store/auth'
 
+const musicNoteSymbol = { ios: 'music.note', android: 'music_note', web: 'music_note' } as const
+
 export default function Profile() {
   const user = useAuthStore((state) => state.user)
   const router = useRouter()
@@ -38,7 +40,7 @@ export default function Profile() {
                   Never forget to listen to your favorite tracks
                 </Text>
               </View>
-              <SymbolView name='music.note' size={20} tintColor='#9CA3AF' />
+              <SymbolView name={musicNoteSymbol} size={20} tintColor='#9CA3AF' />
             </View>
           </TouchableOpacity>
         </View>

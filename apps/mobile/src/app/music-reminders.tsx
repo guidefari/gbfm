@@ -3,6 +3,12 @@ import { SymbolView } from 'expo-symbols'
 import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native'
 import { useAuthStore } from '@/store/auth'
 
+const symbols = {
+  add: { ios: 'plus', android: 'add', web: 'add' },
+  complete: { ios: 'checkmark.circle.fill', android: 'check_circle', web: 'check_circle' },
+  construction: { ios: 'hammer.fill', android: 'construction', web: 'construction' }
+} as const
+
 export default function MusicReminders() {
   const user = useAuthStore((state) => state.user)
   const _router = useRouter()
@@ -39,7 +45,7 @@ export default function MusicReminders() {
                 )
               }}
               className='mr-4'>
-              <SymbolView name='plus' size={20} tintColor='#FFFFFF' />
+              <SymbolView name={symbols.add} size={20} tintColor='#FFFFFF' />
             </TouchableOpacity>
           )
         }}
@@ -85,7 +91,7 @@ export default function MusicReminders() {
           <View className='space-y-3'>
             <View className='flex-row items-center'>
               <SymbolView
-                name='checkmark.circle.fill'
+                name={symbols.complete}
                 size={16}
                 tintColor='#4ADE80'
                 style={{ marginRight: 12 }}
@@ -97,7 +103,7 @@ export default function MusicReminders() {
 
             <View className='flex-row items-center'>
               <SymbolView
-                name='checkmark.circle.fill'
+                name={symbols.complete}
                 size={16}
                 tintColor='#4ADE80'
                 style={{ marginRight: 12 }}
@@ -107,7 +113,7 @@ export default function MusicReminders() {
 
             <View className='flex-row items-center'>
               <SymbolView
-                name='checkmark.circle.fill'
+                name={symbols.complete}
                 size={16}
                 tintColor='#4ADE80'
                 style={{ marginRight: 12 }}
@@ -117,7 +123,7 @@ export default function MusicReminders() {
 
             <View className='flex-row items-center'>
               <SymbolView
-                name='checkmark.circle.fill'
+                name={symbols.complete}
                 size={16}
                 tintColor='#4ADE80'
                 style={{ marginRight: 12 }}
@@ -127,7 +133,7 @@ export default function MusicReminders() {
 
             <View className='flex-row items-center'>
               <SymbolView
-                name='hammer.fill'
+                name={symbols.construction}
                 size={16}
                 tintColor='#FACC15'
                 style={{ marginRight: 12 }}

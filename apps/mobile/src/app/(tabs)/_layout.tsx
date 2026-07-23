@@ -1,6 +1,6 @@
 import { brandDark, brandLight } from '@gbfm/theme'
 import { NativeTabs } from 'expo-router/unstable-native-tabs'
-import { DynamicColorIOS, useColorScheme } from 'react-native'
+import { DynamicColorIOS, Platform, useColorScheme } from 'react-native'
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
 import { MiniPlayerBar } from '@/components/NowPlaying/MiniPlayerBar'
 import { useColorSchemePreference } from '@/store/preferences'
@@ -11,14 +11,20 @@ export default function TabsLayout() {
   const colorScheme = preference === 'system' ? systemColorScheme : preference
   const isDark = colorScheme !== 'light'
   const contentBackground = isDark ? brandDark.bg : brandLight.bg
+  const tabColor =
+    Platform.OS === 'ios'
+      ? DynamicColorIOS({ dark: '#FFFFFF', light: brandDark.bg })
+      : isDark
+        ? '#FFFFFF'
+        : brandDark.bg
   const { track } = useNowPlaying()
 
   return (
     <NativeTabs
       blurEffect='systemDefault'
       minimizeBehavior='onScrollDown'
-      tintColor={DynamicColorIOS({ dark: '#FFFFFF', light: brandDark.bg })}
-      labelStyle={{ color: DynamicColorIOS({ dark: '#FFFFFF', light: brandDark.bg }) }}>
+      tintColor={tabColor}
+      labelStyle={{ color: tabColor }}>
       {track ? (
         <NativeTabs.BottomAccessory>
           <MiniPlayerBar />

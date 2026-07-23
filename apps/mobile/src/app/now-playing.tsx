@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router'
 import { SymbolView } from 'expo-symbols'
 import { useRef } from 'react'
 import {
+  AccessibilityActionEvent,
   ActivityIndicator,
   Image,
   LayoutChangeEvent,
@@ -23,6 +24,15 @@ const colors = {
   text: brand.defaultText,
   surface: brand.darkerBg
 }
+
+const symbols = {
+  previous: { ios: 'backward.end.fill', android: 'skip_previous', web: 'skip_previous' },
+  play: { ios: 'play.fill', android: 'play_arrow', web: 'play_arrow' },
+  pause: { ios: 'pause.fill', android: 'pause', web: 'pause' },
+  next: { ios: 'forward.end.fill', android: 'skip_next', web: 'skip_next' }
+} as const
+
+const SEEK_STEP_SECONDS = 15
 
 function formatTime(seconds: number) {
   if (!Number.isFinite(seconds) || seconds < 0) return '0:00'
@@ -62,6 +72,14 @@ export default function NowPlaying() {
     if (width > 0 && duration > 0) {
       const ratio = Math.max(0, Math.min(1, x / width))
       seekTo(ratio * duration)
+    }
+  }
+
+  const handleScrubAccessibilityAction = (event: AccessibilityActionEvent) => {
+    if (event.nativeEvent.actionName === 'increment') {
+      seekTo(Math.min(duration, currentTime + SEEK_STEP_SECONDS))
+    } else if (event.nativeEvent.actionName === 'decrement') {
+      seekTo(Math.max(0, currentTime - SEEK_STEP_SECONDS))
     }
   }
 
@@ -143,11 +161,23 @@ export default function NowPlaying() {
           <View style={{ gap: 8 }}>
             <Pressable
               accessibilityRole='adjustable'
-              accessibilityValue={{ min: 0, max: 1, now: Math.round(progress * 100) }}
+              accessibilityLabel='Playback position'
+              accessibilityHint='Tap to seek, or swipe up and down to seek 15 seconds'
+              accessibilityValue={{
+                min: 0,
+                max: Math.max(0, Math.round(duration)),
+                now: Math.max(0, Math.min(Math.round(duration), Math.round(currentTime))),
+                text: `${formatTime(currentTime)} of ${formatTime(duration)}`
+              }}
+              accessibilityActions={[
+                { name: 'increment', label: 'Seek forward 15 seconds' },
+                { name: 'decrement', label: 'Seek backward 15 seconds' }
+              ]}
+              onAccessibilityAction={handleScrubAccessibilityAction}
               onPress={(event) => handleScrub(event.nativeEvent.locationX)}
               onLayout={handleScrubLayout}
               style={({ pressed }) => ({
-                height: 24,
+                height: 44,
                 justifyContent: 'center',
                 opacity: pressed ? 0.7 : 1
               })}>
@@ -201,7 +231,7 @@ export default function NowPlaying() {
                 opacity: pressed ? 0.85 : 1
               })}>
               <SymbolView
-                name='backward.end.fill'
+                name={symbols.previous}
                 size={22}
                 tintColor={canSkipPrev ? colors.accent : colors.muted}
               />
@@ -224,7 +254,7 @@ export default function NowPlaying() {
                 <ActivityIndicator size='large' color={colors.surface} />
               ) : (
                 <SymbolView
-                  name={isPlaying ? 'pause.fill' : 'play.fill'}
+                  name={isPlaying ? symbols.pause : symbols.play}
                   size={32}
                   tintColor={colors.surface}
                 />
@@ -248,7 +278,7 @@ export default function NowPlaying() {
                 opacity: pressed ? 0.85 : 1
               })}>
               <SymbolView
-                name='forward.end.fill'
+                name={symbols.next}
                 size={22}
                 tintColor={canSkipNext ? colors.accent : colors.muted}
               />

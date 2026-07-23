@@ -1,7 +1,7 @@
 import { brand } from '@gbfm/theme'
 import { SymbolView } from 'expo-symbols'
 import { useState } from 'react'
-import { Image, Modal, Pressable, Text, View } from 'react-native'
+import { FlatList, Image, Modal, Pressable, Text, View } from 'react-native'
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
 import { fonts } from '@/theme/fonts'
 
@@ -12,6 +12,8 @@ const colors = {
   muted: brand['pastel-green-2'],
   text: brand.defaultText
 }
+
+const removeSymbol = { ios: 'xmark', android: 'close', web: 'close' } as const
 
 export function QueueSheet() {
   const { queue, skipTo, removeFromQueue } = useNowPlaying()
@@ -191,8 +193,14 @@ export function QueueSheet() {
               </Text>
             </View>
           ) : (
-            <View style={{ padding: 12, gap: 4 }}>
-              {queue.tracks.map((track, index) => {
+            <FlatList
+              data={queue.tracks}
+              keyExtractor={(track, index) => `${track.id}-${index}`}
+              style={{ flex: 1 }}
+              contentContainerStyle={{ padding: 12, gap: 4 }}
+              initialNumToRender={12}
+              windowSize={7}
+              renderItem={({ item: track, index }) => {
                 const isCurrent = index === queue.currentIndex
                 return (
                   <View
@@ -268,12 +276,12 @@ export function QueueSheet() {
                         justifyContent: 'center',
                         opacity: pressed ? 0.6 : 1
                       })}>
-                      <SymbolView name='xmark' size={16} tintColor={colors.muted} />
+                      <SymbolView name={removeSymbol} size={16} tintColor={colors.muted} />
                     </Pressable>
                   </View>
                 )
-              })}
-            </View>
+              }}
+            />
           )}
         </View>
       </Modal>

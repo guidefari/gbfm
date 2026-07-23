@@ -12,6 +12,16 @@ const colors = {
   surface: brand.darkerBg
 }
 
+const symbols = {
+  warning: {
+    ios: 'exclamationmark.triangle',
+    android: 'warning',
+    web: 'warning'
+  },
+  play: { ios: 'play.fill', android: 'play_arrow', web: 'play_arrow' },
+  pause: { ios: 'pause.fill', android: 'pause', web: 'pause' }
+} as const
+
 // Fixed geometry, mirrored by FeaturedMixSkeleton, so that
 // loading -> loaded/error never shifts layout.
 export const FEATURED_CARD_INFO_HEIGHT = 64
@@ -51,7 +61,7 @@ export function FeaturedMixCard({
             gap: 12,
             padding: 24
           }}>
-          <SymbolView name='exclamationmark.triangle' size={32} tintColor={colors.muted} />
+          <SymbolView name={symbols.warning} size={32} tintColor={colors.muted} />
           <Text
             style={{
               color: colors.text,
@@ -192,7 +202,7 @@ export function FeaturedMixCard({
         ) : (
           <>
             <SymbolView
-              name={isPlaying ? 'pause.fill' : 'play.fill'}
+              name={isPlaying ? symbols.pause : symbols.play}
               size={15}
               tintColor={colors.surface}
             />
