@@ -50,6 +50,7 @@ export interface UploadOptions {
   readonly signal: AbortSignal
   readonly isPaused: () => boolean
   readonly onProgress: (progress: UploadProgress) => void
+  readonly onCheckpoint: (checkpoint: PersistedResumableUpload) => void
   readonly checkpoint?: PersistedResumableUpload
 }
 
@@ -61,6 +62,11 @@ export interface UploadInput {
 
 const emitProgress = (options: UploadOptions, progress: UploadProgress) =>
   Effect.sync(() => options.onProgress(progress))
+
+const persistCheckpoint = (options: UploadOptions, checkpoint: PersistedResumableUpload) =>
+  writeCheckpoint(checkpoint).pipe(
+    Effect.andThen(Effect.sync(() => options.onCheckpoint(checkpoint)))
+  )
 
 const decodeOrFail = <A>(decode: (raw: unknown) => A, raw: unknown, label: string): A => {
   try {
@@ -287,7 +293,7 @@ export const uploadProgram = (
       })
     }
 
-    yield* writeCheckpoint(persisted)
+    yield* persistCheckpoint(options, persisted)
 
     const chunks = splitFileIntoChunks(input.file, persisted.chunkSize)
     const todo = missingPartNumbers(persisted.totalParts, persisted.completedParts)
@@ -306,7 +312,7 @@ export const uploadProgram = (
     for (const chunk of todo) {
       if (options.signal.aborted) return yield* new UploadAborted()
       if (options.isPaused()) {
-        yield* writeCheckpoint(working)
+        yield* persistCheckpoint(options, working)
         yield* emitProgress(options, {
           phase: 'paused',
           bytesUploaded: sumCompleted(working.completedParts),
@@ -324,7 +330,7 @@ export const uploadProgram = (
       )
 
       working = withUpdatedPart(working, result)
-      yield* writeCheckpoint(working)
+      yield* persistCheckpoint(options, working)
 
       yield* emitProgress(options, {
         phase: 'uploading',
@@ -336,7 +342,7 @@ export const uploadProgram = (
     }
 
     if (options.isPaused()) {
-      yield* writeCheckpoint(working)
+      yield* persistCheckpoint(options, working)
       yield* emitProgress(options, {
         phase: 'paused',
         bytesUploaded: sumCompleted(working.completedParts),
@@ -373,4 +379,8 @@ export const uploadProgram = (
 export const cancelProgram = (
   persisted: PersistedResumableUpload,
   signal: AbortSignal
-): Effect.Effect<void, never, never> => abortUpload(persisted, signal).pipe(Effect.ignore)
+): Effect.Effect<void, never, ResumableUploadStorage> =>
+  abortUpload(persisted, signal).pipe(
+    Effect.ignore,
+    Effect.ensuring(clearCheckpoint(persisted.fileFingerprint))
+  )

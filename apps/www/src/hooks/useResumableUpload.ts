@@ -95,6 +95,9 @@ export function useResumableUpload(): UseResumableUploadReturn {
   const [state, setState] = useState<UseResumableUploadState>(initialState)
   const checkpointRef = useRef<PersistedResumableUpload | null>(null)
   const abortControllerRef = useRef<AbortController | null>(null)
+  const activeUploadRef = useRef<Promise<
+    Exit.Exit<ResumableUploadResult, ResumableUploadError>
+  > | null>(null)
   const pausedRef = useRef<boolean>(false)
 
   const transitionTo = useCallback(
@@ -164,11 +167,17 @@ export function useResumableUpload(): UseResumableUploadReturn {
           onProgress: (progress) => {
             setState((prev) => ({ ...prev, ...progress }))
           },
+          onCheckpoint: setCheckpoint,
           checkpoint: resumeFrom ?? undefined
         }
       )
 
-      const exit = await runAppEffect(Effect.exit(program))
+      const activeUpload = runAppEffect(Effect.exit(program))
+      activeUploadRef.current = activeUpload
+      const exit = await activeUpload
+      if (activeUploadRef.current === activeUpload) {
+        activeUploadRef.current = null
+      }
       const outcome = outcomeFromExit(exit)
 
       if (outcome._tag === 'Success') {
@@ -215,13 +224,21 @@ export function useResumableUpload(): UseResumableUploadReturn {
 
   const cancel = useCallback(async () => {
     const controller = abortControllerRef.current
-    const checkpoint = checkpointRef.current
     controller?.abort()
+
+    // Let the canceled run stop first so it cannot persist another checkpoint
+    // after cancellation cleanup has removed the current one.
+    await activeUploadRef.current?.catch(() => undefined)
+
+    const checkpoint = checkpointRef.current
     if (checkpoint) {
-      const signal = controller?.signal ?? new AbortController().signal
-      await runAppEffect(cancelProgram(checkpoint, signal)).catch(() => undefined)
+      const abortController = new AbortController()
+      const timeout = window.setTimeout(() => abortController.abort(), 10_000)
+      await runAppEffect(cancelProgram(checkpoint, abortController.signal)).catch(() => undefined)
+      window.clearTimeout(timeout)
     }
     checkpointRef.current = null
+    abortControllerRef.current = null
     pausedRef.current = false
     setState({ ...initialState, phase: 'aborted' })
   }, [])

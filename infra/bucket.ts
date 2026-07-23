@@ -17,6 +17,12 @@ new aws.s3.BucketLifecycleConfiguration('QrPdfLifecycle', {
       status: 'Enabled',
       filter: { prefix: 'qr-pdfs/' },
       expiration: { days: 1 }
+    },
+    {
+      id: 'abort-incomplete-multipart-uploads',
+      status: 'Enabled',
+      filter: { prefix: '' },
+      abortIncompleteMultipartUpload: { daysAfterInitiation: 1 }
     }
   ]
 })

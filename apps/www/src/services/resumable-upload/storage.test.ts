@@ -1,6 +1,7 @@
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
 import { describe, expect, test } from 'vitest'
+import { cancelProgram } from './service'
 import { ResumableUploadStorage, ResumableUploadStorageInMemory } from './storage'
 import type { PersistedResumableUpload } from '@/lib/upload/resumable-upload'
 
@@ -95,5 +96,24 @@ describe('ResumableUploadStorage in-memory', () => {
       })
     )
     expect(result?.uploadId).toBe('upload-1')
+  })
+
+  test('cancel clears the checkpoint even when remote abort is already canceled', async () => {
+    const layer = buildTestLayer()
+    const persisted = makePersisted()
+    const controller = new AbortController()
+    controller.abort()
+
+    const result = await runWith(
+      layer,
+      Effect.gen(function* () {
+        const storage = yield* ResumableUploadStorage
+        yield* storage.write(persisted)
+        yield* cancelProgram(persisted, controller.signal)
+        return yield* storage.read(persisted.fileFingerprint)
+      })
+    )
+
+    expect(result).toBeNull()
   })
 })
