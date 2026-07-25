@@ -87,12 +87,16 @@ export const transitionSourcePreparation = (
     return { state, shouldPrepare: false }
   }
 
+  // A source counts as loaded only once it reports a usable duration. Safari
+  // can report readyState >= 1 with duration still NaN for a cached source,
+  // and latching that would prepare the source against duration 0, skip the
+  // checkpoint seek, and lock out the durationchange carrying the real value.
   const next =
     event._tag === 'sourceStatus'
       ? {
           ...state,
-          sourceLoaded: state.sourceLoaded || event.isLoaded,
-          duration: event.isLoaded ? event.duration : state.duration
+          sourceLoaded: state.sourceLoaded || (event.isLoaded && event.duration > 0),
+          duration: event.duration > 0 ? event.duration : state.duration
         }
       : { ...state, checkpointLoaded: true }
   const shouldPrepare = next.sourceLoaded && next.checkpointLoaded

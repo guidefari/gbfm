@@ -140,6 +140,43 @@ describe('makePlayerCore', () => {
     expect(reported).toEqual([track.id])
   })
 
+  it('restores the position when a cached source reports loaded before its duration', async () => {
+    const program = Effect.gen(function* () {
+      const { engine, calls, emit, setStatus } = yield* makeRecordingEngine()
+      const storage = makeRecordingStorage({ position: 42, updatedAt: 0 })
+      const reporter = makeRecordingReporter()
+
+      const core = yield* makePlayerCore({
+        onStatus: () => {},
+        onTrackFinished: () => {}
+      }).pipe(
+        Effect.provide(
+          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer)
+        )
+      )
+
+      yield* core.requestPlayOnReady(track.id)
+      // Safari serves a cached source as readyState >= 1 with duration NaN,
+      // which the engine reports as 0 until durationchange lands.
+      yield* setStatus({ isLoaded: true, duration: 0 })
+      yield* core.setSource(track)
+      yield* Effect.yieldNow
+
+      const beforeDuration = [...calls]
+
+      yield* emit({ isLoaded: true, duration: 300 })
+      yield* Effect.yieldNow
+
+      return { beforeDuration, calls }
+    }).pipe(Effect.scoped)
+
+    const { beforeDuration, calls } = await Effect.runPromise(program)
+
+    expect(beforeDuration).not.toContain('play')
+    expect(calls).toContain('seek:42')
+    expect(calls.indexOf('seek:42')).toBeLessThan(calls.indexOf('play'))
+  })
+
   it('does not seek when the stored position is near the end', async () => {
     const program = Effect.gen(function* () {
       const { engine, calls, setStatus } = yield* makeRecordingEngine()

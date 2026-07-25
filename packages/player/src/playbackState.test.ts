@@ -85,6 +85,32 @@ describe('audio source preparation', () => {
     expect(restored.state).toMatchObject({ duration: 180, preparing: true })
   })
 
+  test('waits for a real duration when a cached source loads without one', () => {
+    const metadataless = transitionSourcePreparation(coldSource(), {
+      _tag: 'sourceStatus',
+      generation: 1,
+      isLoaded: true,
+      duration: 0
+    })
+    const restored = transitionSourcePreparation(metadataless.state, {
+      _tag: 'checkpointLoaded',
+      generation: 1
+    })
+
+    expect(metadataless.state.sourceLoaded).toBe(false)
+    expect(restored.shouldPrepare).toBe(false)
+
+    const measured = transitionSourcePreparation(restored.state, {
+      _tag: 'sourceStatus',
+      generation: 1,
+      isLoaded: true,
+      duration: 180
+    })
+
+    expect(measured.shouldPrepare).toBe(true)
+    expect(measured.state).toMatchObject({ duration: 180, preparing: true })
+  })
+
   test('rejects work owned by a stale generation', () => {
     const state = coldSource(2)
     const result = transitionSourcePreparation(state, {
