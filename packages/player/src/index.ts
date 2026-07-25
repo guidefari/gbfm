@@ -30,3 +30,12 @@ export {
 } from './audioStorage'
 
 export { createPlayDelivery } from './playDelivery'
+
+export {
+  makeQueueAtom,
+  selectQueueView,
+  type InternalQueueAction,
+  type QueueAtomHandle,
+  type QueueAtomStorage,
+  type QueueView
+} from './queueAtom'
