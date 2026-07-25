@@ -6,6 +6,8 @@ export type ThemeColors = {
   readonly background: string
   readonly accent: string
   readonly muted: string
+  readonly tabActive: string
+  readonly tabInactive: string
   readonly text: string
   readonly strong: string
   readonly surface: string
@@ -23,6 +25,8 @@ const darkColors: ThemeColors = {
   background: brandDark.bg,
   accent: brandDark['pastel-green-1'],
   muted: brandDark['pastel-green-2'],
+  tabActive: brandDark.bg,
+  tabInactive: brandDark.defaultText,
   text: brandDark.defaultText,
   strong: '#FFFFFF',
   surface: brandDark.darkerBg,
@@ -40,6 +44,8 @@ const lightColors: ThemeColors = {
   background: brandLight.bg,
   accent: brandLight['pastel-green-1'],
   muted: brandLight['pastel-green-2'],
+  tabActive: brandLight['pastel-green-1'],
+  tabInactive: brandLight['pastel-green-2'],
   text: brandLight.defaultText,
   strong: brandLight.defaultText,
   surface: brandLight.darkerBg,

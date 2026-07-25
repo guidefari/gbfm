@@ -3,19 +3,19 @@
 @layer base {
   :root,
   .light,
-  [data-theme="light"] {
+  [data-theme='light'] {
     --highlight-rgb: 43, 130, 238;
     --bg: hsl(213 40% 96%);
     --darker-bg: hsl(0 0% 100%);
     --pastel-green-1: hsl(213 68% 24%);
     --pastel-green-2: hsl(213 42% 34%);
     --default-text: hsl(213 30% 12%);
-    --overlay-text: #FFFFFF;
-    --faint-overlay-text: #FFFFFF2E;
-    --error: #FDA4AF;
-    --success: #15803D;
-    --warning: #A16207;
-    --accent-surface: #7DD3FC;
+    --overlay-text: #ffffff;
+    --faint-overlay-text: #ffffff2e;
+    --error: #fda4af;
+    --success: #15803d;
+    --warning: #a16207;
+    --accent-surface: #7dd3fc;
     --shadow: #000000;
     --highlight: hsl(213 90% 55%);
     --highlight-foreground: #111827;
@@ -42,19 +42,19 @@
   }
 
   .dark,
-  [data-theme="dark"] {
+  [data-theme='dark'] {
     --highlight-rgb: 85, 206, 246;
     --bg: hsl(202 61% 22%);
     --darker-bg: #111827;
     --pastel-green-1: hsl(195 75% 75%);
     --pastel-green-2: hsl(198 45% 52%);
     --default-text: hsl(194 52% 67%);
-    --overlay-text: #FFFFFF;
-    --faint-overlay-text: #FFFFFF2E;
-    --error: #FDA4AF;
-    --success: #4ADE80;
-    --warning: #FACC15;
-    --accent-surface: #7DD3FC;
+    --overlay-text: #ffffff;
+    --faint-overlay-text: #ffffff2e;
+    --error: #fda4af;
+    --success: #4ade80;
+    --warning: #facc15;
+    --accent-surface: #7dd3fc;
     --shadow: #000000;
     --highlight: hsl(195 95% 65%);
     --highlight-foreground: #111827;
@@ -80,19 +80,19 @@
     --radius: 0px;
   }
 
-  [data-theme="studio"] {
+  [data-theme='studio'] {
     --highlight-rgb: 85, 206, 246;
     --bg: hsl(202 61% 22%);
     --darker-bg: #111827;
     --pastel-green-1: hsl(195 75% 75%);
     --pastel-green-2: hsl(198 45% 52%);
     --default-text: hsl(194 52% 67%);
-    --overlay-text: #FFFFFF;
-    --faint-overlay-text: #FFFFFF2E;
-    --error: #FDA4AF;
-    --success: #4ADE80;
-    --warning: #FACC15;
-    --accent-surface: #7DD3FC;
+    --overlay-text: #ffffff;
+    --faint-overlay-text: #ffffff2e;
+    --error: #fda4af;
+    --success: #4ade80;
+    --warning: #facc15;
+    --accent-surface: #7dd3fc;
     --shadow: #000000;
     --highlight: hsl(24 100% 63%);
     --highlight-foreground: hsl(36 45% 92%);
