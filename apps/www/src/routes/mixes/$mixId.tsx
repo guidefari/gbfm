@@ -33,8 +33,9 @@ import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { useMixQRPdf, useShowById } from '@/lib/http'
 import { captureException } from '@/services/analytics'
 import { getShareUrl } from '@/lib/share'
-import { useContentStore } from '@/store'
-import { useAudioPlayerActions, useAudioPlayerPlaybackState } from '@/store/audioPlayer'
+import { useSetCurrentContent } from '@/store'
+import { useNowPlayingTrack, usePlayerActions, useTransport } from '@/services/player'
+import { toQueueTrack } from '@/services/player/toQueueTrack'
 
 export const Route = createFileRoute('/mixes/$mixId')({
   component: MixPage,
@@ -136,7 +137,7 @@ export const Route = createFileRoute('/mixes/$mixId')({
 
 function MixPage() {
   const { mixId } = Route.useParams()
-  const { setCurrentContent } = useContentStore()
+  const setCurrentContent = useSetCurrentContent()
   const { mix } = Route.useLoaderData()
 
   React.useEffect(() => {
@@ -235,29 +236,23 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
   const isAdmin = user?.role === 'admin'
   const isCreator = user?.role === 'creator'
   const canDownloadQr = isAdmin || isCreator
-  const { isPlaying, nowPlayingContext } = useAudioPlayerPlaybackState()
-  const { loadTrack, togglePlayPause, addToQueue } = useAudioPlayerActions()
+  const { isPlaying } = useTransport()
+  const currentTrack = useNowPlayingTrack()
+  const { playTrack, togglePlayPause, enqueue } = usePlayerActions()
   const { data: show } = useShowById(mix.showId)
 
-  const isActive = nowPlayingContext?.title === mix.title
+  const isActive = currentTrack?.id === mix.id
 
   const handlePlayClick = () => {
     if (isActive) {
       togglePlayPause()
     } else {
-      loadTrack(
-        mix.url,
-        mix.thumbnailUrl || DEFAULT_IMAGE_URL,
-        mix.title,
-        mix.id,
-        mix.creators,
-        mix.slug
-      )
+      playTrack(toQueueTrack(mix))
     }
   }
 
   const handleAddToQueue = () => {
-    addToQueue(mix)
+    enqueue(toQueueTrack(mix))
     toast({
       title: 'Added to queue',
       description: mix.title,

@@ -1,11 +1,11 @@
 import { useHotkey } from '@tanstack/react-hotkeys'
 import {
-  useAudioPlayerActions,
-  useAudioPlayerPlaybackState,
-  useAudioPlayerQueueState,
-  useAudioPlayerVisibilityState,
-  useAudioPlayerVolumeState
-} from '@/store/audioPlayer'
+  useNowPlayingTrack,
+  usePlayerActions,
+  useQueue,
+  useVisibility,
+  useVolume
+} from '@/services/player'
 
 export const useMediaHotkeys = () => {
   const {
@@ -19,15 +19,15 @@ export const useMediaHotkeys = () => {
     closeFullscreen,
     playNext,
     playPrevious
-  } = useAudioPlayerActions()
+  } = usePlayerActions()
 
-  const { audioSrc } = useAudioPlayerPlaybackState()
-  const { isFullscreenVisible } = useAudioPlayerVisibilityState()
-  const { queue, currentIndex } = useAudioPlayerQueueState()
-  const { volume } = useAudioPlayerVolumeState()
+  const currentTrack = useNowPlayingTrack()
+  const { isFullscreenVisible } = useVisibility()
+  const { tracks, currentIndex } = useQueue()
+  const { volume } = useVolume()
 
-  const hasAudio = Boolean(audioSrc)
-  const canPlayNext = currentIndex < queue.length - 1
+  const hasAudio = Boolean(currentTrack)
+  const canPlayNext = currentIndex < tracks.length - 1
   const canPlayPrevious = currentIndex > 0
 
   useHotkey('Escape', () => {

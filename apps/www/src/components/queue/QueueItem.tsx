@@ -1,15 +1,9 @@
+import type { QueueTrackType } from '@gbfm/player'
 import type React from 'react'
 import { SharedQueueItem } from './SharedQueueItem'
 
 interface QueueItemProps {
-  track: {
-    queueId: string
-    id: string
-    title: string
-    url: string
-    thumbnailUrl: string
-    addedAt: number
-  }
+  track: QueueTrackType
   index: number
   isCurrentTrack: boolean
   fontSize?: 'sm' | 'base' | 'lg' | 'xl'

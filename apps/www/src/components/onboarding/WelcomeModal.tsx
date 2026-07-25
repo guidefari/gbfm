@@ -10,7 +10,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { Bell, Disc3, Heart } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useSession } from '@/lib/auth-client'
-import { useOnboardingStore } from '@/store/onboarding'
+import { useHasSeenWelcome, useOnboardingActions } from '@/store/onboarding'
 
 export function WelcomeModal() {
   const [open, setOpen] = useState(false)
@@ -18,7 +18,8 @@ export function WelcomeModal() {
   const { data: session } = useSession()
   const isAuthenticated = Boolean(session?.user)
   const user = session?.user
-  const { hasSeenWelcome, markWelcomeSeen } = useOnboardingStore()
+  const hasSeenWelcome = useHasSeenWelcome()
+  const { markWelcomeSeen } = useOnboardingActions()
 
   useEffect(() => {
     if (isAuthenticated && !hasSeenWelcome) {

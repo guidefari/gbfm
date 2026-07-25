@@ -20,6 +20,7 @@
     "@expo/metro-config": "~57.0.6",
     "@gbfm/api": "workspace:*",
     "@gbfm/core": "workspace:*",
+    "@gbfm/player": "workspace:*",
     "@gbfm/spotify": "workspace:*",
     "@gbfm/theme": "workspace:*",
     "@spotify-effect/browser": "0.6.4",

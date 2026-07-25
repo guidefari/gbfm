@@ -19,7 +19,7 @@ import { QueryError } from '@/components/QueryError'
 import { TrackContextMenu } from '@/components/TrackContextMenu'
 import { useAudioByType, useAudioTags } from '@/lib/http'
 import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'
-import { useUIStore } from '@/store'
+import { useUIState } from '@/store'
 
 const searchSchema = z.object({
   tag: z.string().optional()
@@ -39,7 +39,7 @@ function MixesListPage() {
   const { data, error, isPending, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useAudioByType('mix', { tag })
   const { data: allTags } = useAudioTags('mix')
-  const { mixesSorting } = useUIStore()
+  const { mixesSorting } = useUIState()
 
   const handleTagChange = (newTag: string) => {
     navigate({

@@ -1,25 +1,44 @@
 'use client'
 import { Pause, Play } from 'lucide-react'
-import { useAudioPlayerActions, useAudioPlayerPlaybackState } from '@/store/audioPlayer'
-import { DEFAULT_IMAGE_URL } from '../lib/constants'
+import { useNowPlayingTrack, usePlayerActions, useTransport } from '@/services/player'
+import { usePreviewSrc } from '@/services/player/atoms'
+import { toQueueTrack, type PlayableAudio } from '@/services/player/toQueueTrack'
 
-type PlayPauseButtonProps = {
-  url: string
-  thumbnailUrl?: string
-  title: string
-  trackId?: string
-}
+type PlayPauseButtonProps =
+  | { audio: PlayableAudio; previewUrl?: never }
+  | { audio?: never; previewUrl: string }
 
-export const PlayPauseButton = ({ url, thumbnailUrl, title, trackId }: PlayPauseButtonProps) => {
-  const { audioSrc, isPlaying } = useAudioPlayerPlaybackState()
-  const { loadTrack } = useAudioPlayerActions()
+export const PlayPauseButton = ({ audio, previewUrl }: PlayPauseButtonProps) => {
+  const current = useNowPlayingTrack()
+  const previewSrc = usePreviewSrc()
+  const { isPlaying } = useTransport()
+  const { playTrack, playPreview, togglePlayPause, pause, play } = usePlayerActions()
 
-  const handleClick = () => loadTrack(url, thumbnailUrl || DEFAULT_IMAGE_URL, title, trackId)
+  const isCurrent = audio ? current?.id === audio.id : previewSrc === previewUrl
 
-  if (url !== audioSrc) return <Play className='default-icon' onClick={handleClick} />
-  if (!isPlaying && url === audioSrc)
-    return <Play className='default-icon ' onClick={handleClick} />
-  if (isPlaying && url === audioSrc)
-    return <Pause className='py-[2px] text-green-300 default-icon' onClick={handleClick} />
-  return <Play className='default-icon ' onClick={handleClick} />
+  const handleClick = () => {
+    if (!isCurrent) {
+      if (audio) playTrack(toQueueTrack(audio))
+      else playPreview(previewUrl)
+      return
+    }
+
+    if (audio) {
+      togglePlayPause()
+      return
+    }
+
+    // Previews sit outside the queue, so the core has no session to toggle.
+    if (isPlaying) pause()
+    else play()
+  }
+
+  const Icon = isCurrent && isPlaying ? Pause : Play
+
+  return (
+    <Icon
+      className={isCurrent && isPlaying ? 'py-[2px] text-green-300 default-icon' : 'default-icon'}
+      onClick={handleClick}
+    />
+  )
 }

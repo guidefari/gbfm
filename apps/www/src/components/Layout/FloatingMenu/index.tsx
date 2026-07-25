@@ -6,8 +6,8 @@ import { useCallback, useEffect, useState } from 'react'
 import { signOut, useSession } from '@/lib/auth-client'
 import { canSeeNavItem } from '@/lib/nav-access'
 import { cn } from '@/lib/utils'
-import { useAudioPlayerPlaybackState, useAudioPlayerVisibilityState } from '@/store/audioPlayer'
-import { useUIStore } from '@/store/ui'
+import { useNowPlayingTrack, useVisibility } from '@/services/player'
+import { useUIActions } from '@/store/ui'
 import { type NavItem, navItemsForSurface } from '../NavLinks'
 import { NowPlayingMini } from './NowPlayingMini'
 import { useRovingGrid } from './useRovingGrid'
@@ -86,16 +86,16 @@ function NavTile({
 
 export function FloatingMenu({ className }: FloatingMenuProps) {
   const [isOpen, setIsOpen] = useState(false)
-  const { audioSrc } = useAudioPlayerPlaybackState()
-  const { isFullscreenVisible } = useAudioPlayerVisibilityState()
+  const currentTrack = useNowPlayingTrack()
+  const { isFullscreenVisible } = useVisibility()
   const { data: session } = useSession()
   const location = useLocation()
   const navigate = useNavigate()
-  const resetUI = useUIStore((s) => s.resetUI)
+  const { resetUI } = useUIActions()
   const isAuthenticated = Boolean(session?.user)
   const role = session?.user?.role
 
-  const hasActiveAudio = Boolean(audioSrc)
+  const hasActiveAudio = Boolean(currentTrack)
 
   const toggleMenu = useCallback(() => setIsOpen((prev) => !prev), [])
   const closeMenu = useCallback(() => setIsOpen(false), [])

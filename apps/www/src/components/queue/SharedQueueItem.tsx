@@ -2,33 +2,17 @@ import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useFeatureFlag } from '@gbfm/core/feature-flags'
 import { Button } from '@gbfm/ui'
-import { Heart, MoreHorizontal, Play, Plus, Share2, X } from 'lucide-react'
+import { Heart, MoreHorizontal, Play, Share2, X } from 'lucide-react'
 import type React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { log } from '@/services/logger'
 import { cn } from '@/lib/utils'
-import { useAudioPlayerActions } from '@/store/audioPlayer'
-
-interface Creator {
-  id: string
-  name: string
-  username: string | null
-}
-
-interface Track {
-  queueId: string
-  id: string
-  title: string
-  url: string
-  thumbnailUrl: string
-  slug?: string
-  addedAt: number
-  creators?: Creator[]
-}
+import type { QueueTrackType } from '@gbfm/player'
+import { usePlayerActions } from '@/services/player'
 
 interface SharedQueueItemProps {
-  track: Track
+  track: QueueTrackType
   index: number
   isCurrentTrack: boolean
   variant?: 'compact' | 'fullscreen'
@@ -56,11 +40,10 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
   disableInternalDrag = false
 }) => {
   const isShareEnabled = useFeatureFlag('ui.share')
-  const isQueueEnabled = useFeatureFlag('ui.queue')
-  const { playFromQueue, removeFromQueue, addToQueue, loadTrack } = useAudioPlayerActions()
+  const { playFromQueue, removeFromQueue, playTrack } = usePlayerActions()
 
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: track.queueId
+    id: track.id
   })
 
   const [contextMenu, setContextMenu] = useState<ContextMenuState>({
@@ -81,7 +64,7 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
 
   const handleRemove = (e: React.MouseEvent) => {
     e.stopPropagation()
-    removeFromQueue(track.queueId)
+    removeFromQueue(index)
   }
 
   const handleContextMenu = (e: React.MouseEvent) => {
@@ -126,30 +109,7 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
   }, [contextMenu.isOpen, closeContextMenu])
 
   const handlePlayNow = () => {
-    loadTrack(track.url, track.thumbnailUrl, track.title, track.id, track.creators, track.slug)
-    closeContextMenu()
-  }
-
-  const handleAddToQueue = () => {
-    const mixData = {
-      id: track.id,
-      title: track.title,
-      url: track.url,
-      thumbnailUrl: track.thumbnailUrl,
-      bannerImageUrl: null,
-      slug: '',
-      description: null,
-      tags: [],
-      content: '',
-      draft: false,
-      type: 'track' as const,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      showId: null,
-      episodeNumber: null,
-      playCount: 0
-    }
-    addToQueue(mixData)
+    playTrack(track)
     closeContextMenu()
   }
 
@@ -323,16 +283,6 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
             <Play className='w-4 h-4' />
             Play now
           </button>
-
-          {isQueueEnabled && (
-            <button
-              type='button'
-              onClick={handleAddToQueue}
-              className='flex items-center w-full gap-2 px-3 py-2 text-sm text-left transition-colors text-foreground hover:bg-muted'>
-              <Plus className='w-4 h-4' />
-              Add to queue
-            </button>
-          )}
 
           <hr className='my-1 border-border' />
 

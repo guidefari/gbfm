@@ -9,14 +9,14 @@ import {
 } from '@gbfm/ui'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { signOut, useSession } from '@/lib/auth-client'
-import { useUIStore } from '@/store/ui'
+import { useUIActions } from '@/store/ui'
 
 const ProfileAvatar = () => {
   const navigate = useNavigate()
   const { data: session } = useSession()
   const user = session?.user
   const isAuthenticated = Boolean(session?.user)
-  const resetUI = useUIStore((s) => s.resetUI)
+  const { resetUI } = useUIActions()
 
   const handleSignOut = async () => {
     await signOut()

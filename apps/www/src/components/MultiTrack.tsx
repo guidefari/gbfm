@@ -92,11 +92,7 @@ export function MultiTrack({
                           )}
                           type='button'
                           title='Play/Pause'>
-                          <PlayPauseButton
-                            url={track.previewUrl}
-                            thumbnailUrl={track.albumImageUrl ?? DEFAULT_IMAGE_URL}
-                            title={track.title ?? ''}
-                          />
+                          <PlayPauseButton previewUrl={track.previewUrl} />
                         </button>
                       )}
                       {track.trackUrl ? (

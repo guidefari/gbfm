@@ -12,6 +12,7 @@ import { MAIN_SCROLL_CONTAINER_ID } from './lib/constants'
 import { routeTree } from './routeTree.gen'
 import './styles/main.css'
 import { ThemeProvider } from './components/ThemeProvider'
+import { PlayerProvider } from './services/player'
 import { useSession } from './lib/auth-client'
 
 const router = createRouter({
@@ -107,13 +108,15 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider defaultTheme='dark' storageKey='vite-ui-theme'>
-        {isPending ? (
-          <div className='flex min-h-dvh items-center justify-center'>
-            <Loader2 className='h-6 w-6 animate-spin text-muted-foreground' />
-          </div>
-        ) : (
-          <RouterProvider router={router} context={{ auth }} />
-        )}
+        <PlayerProvider>
+          {isPending ? (
+            <div className='flex min-h-dvh items-center justify-center'>
+              <Loader2 className='h-6 w-6 animate-spin text-muted-foreground' />
+            </div>
+          ) : (
+            <RouterProvider router={router} context={{ auth }} />
+          )}
+        </PlayerProvider>
       </ThemeProvider>
     </QueryClientProvider>
   )

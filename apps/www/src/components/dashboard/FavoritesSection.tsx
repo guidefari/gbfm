@@ -46,12 +46,7 @@ export function FavoritesSection() {
                 className='w-12 h-12 rounded-sm object-cover border border-border/50'
               />
               <div className='absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity'>
-                <PlayPauseButton
-                  url={favorite.audio.url}
-                  thumbnailUrl={favorite.audio.thumbnailUrl || ''}
-                  title={favorite.audio.title}
-                  trackId={favorite.audio.id}
-                />
+                <PlayPauseButton audio={favorite.audio} />
               </div>
             </div>
             <div className='flex-1 min-w-0'>

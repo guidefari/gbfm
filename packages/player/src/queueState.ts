@@ -1,4 +1,4 @@
-import type { PersistedQueueType, QueueTrackType } from '@/audio/persistedQueue'
+import type { PersistedQueueType, QueueTrackType } from './persistedQueue'
 
 export type QueueAction =
   | { readonly _tag: 'enqueue'; readonly track: QueueTrackType; readonly at?: number }

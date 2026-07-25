@@ -4,7 +4,7 @@ import {
   createAudioStorage,
   createWebAudioStorageAdapter,
   type AudioStorageAdapter
-} from './audioStorage'
+} from '@gbfm/player'
 
 const createMemoryAdapter = (): AudioStorageAdapter & {
   readonly values: Map<string, string>

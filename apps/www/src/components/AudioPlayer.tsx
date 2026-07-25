@@ -1,9 +1,9 @@
 'use client'
 import { BaseAudioPlayer } from '@/components/common/BaseAudioPlayer'
-import { useAudioPlayerActions } from '@/store/audioPlayer'
+import { usePlayerActions } from '@/services/player'
 
 const AudioPlayer = () => {
-  const { toggleFullscreen } = useAudioPlayerActions()
+  const { toggleFullscreen } = usePlayerActions()
 
   return (
     <BaseAudioPlayer

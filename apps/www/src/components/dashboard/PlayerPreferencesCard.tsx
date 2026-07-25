@@ -1,7 +1,8 @@
-import { useUIStore } from '@/store/ui'
+import { useUIActions, useUIState } from '@/store/ui'
 
 export function PlayerPreferencesCard() {
-  const { showBottomPlayer, setShowBottomPlayer } = useUIStore()
+  const { showBottomPlayer } = useUIState()
+  const { setShowBottomPlayer } = useUIActions()
 
   return (
     <div className='space-y-8'>

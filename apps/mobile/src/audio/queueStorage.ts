@@ -1,20 +1,12 @@
+import {
+  createWebAudioStorageAdapter,
+  layerFromAdapter,
+  type AudioStorageAdapter
+} from '@gbfm/player'
 import { File, Paths } from 'expo-file-system'
 import { Platform } from 'react-native'
-import {
-  createAudioStorage,
-  createWebAudioStorageAdapter,
-  type AudioStorageAdapter
-} from '@/audio/audioStorage'
 
-export * from '@/audio/audioStorage'
-export {
-  AudioStorageError,
-  PersistedQueue,
-  QueueTrack,
-  parsePersistedQueue,
-  type PersistedQueueType,
-  type QueueTrackType
-} from '@/audio/persistedQueue'
+export * from '@gbfm/player'
 
 const nativeAudioStorageAdapter: AudioStorageAdapter = {
   read: async (key) => {
@@ -37,13 +29,4 @@ const adapter =
     ? createWebAudioStorageAdapter(() => globalThis.localStorage)
     : nativeAudioStorageAdapter
 
-export const {
-  clearPosition,
-  isWithinDedupWindow,
-  loadPlay,
-  loadPosition,
-  loadQueue,
-  recordPlay,
-  savePosition,
-  saveQueue
-} = createAudioStorage(adapter)
+export const PlayerStorageLive = layerFromAdapter(adapter)

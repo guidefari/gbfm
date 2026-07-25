@@ -12,7 +12,7 @@ import { useSession } from '@/lib/auth-client'
 import { useReleasesByLabel } from '@/lib/http'
 import { generateLabelSEO, generateSEOMeta } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
-import { useContentStore } from '@/store'
+import { useSetCurrentContent } from '@/store'
 
 export const Route = createFileRoute('/labels/$labelSlug')({
   component: LabelPage,
@@ -63,7 +63,7 @@ export const Route = createFileRoute('/labels/$labelSlug')({
 function LabelPage() {
   const { labelSlug } = Route.useParams()
   const { label: data } = Route.useLoaderData()
-  const { setCurrentContent } = useContentStore()
+  const setCurrentContent = useSetCurrentContent()
   const { data: session } = useSession()
   const navigate = useNavigate()
   const isAdmin = session?.user?.role === 'admin'

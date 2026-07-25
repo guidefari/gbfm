@@ -3,12 +3,10 @@ import { lazy, Suspense } from 'react'
 import type React from 'react'
 import AudioPlayer from '@/components/AudioPlayer'
 import FullscreenAudioPlayer from '@/components/FullscreenAudioPlayer'
-import { useAudioPlayerInitializer } from '@/hooks/useAudioPlayer'
 import { useMediaHotkeys } from '@/hooks/useMediaHotkeys'
-import { useMixPlayTracking } from '@/hooks/useMixPlayTracking'
 import { MAIN_SCROLL_CONTAINER_ID } from '@/lib/constants'
-import { useUIStore } from '@/store'
-import { useAudioPlayerPlaybackState, useAudioPlayerVisibilityState } from '@/store/audioPlayer'
+import { useNowPlayingTrack, useVisibility } from '@/services/player'
+import { useUIState } from '@/store'
 
 import { FloatingMenu } from './FloatingMenu'
 
@@ -22,15 +20,13 @@ type Props = {
 }
 
 export default function AppShell({ children }: Props) {
-  useAudioPlayerInitializer()
-  useMixPlayTracking()
   useMediaHotkeys()
   const isQueueEnabled = useFeatureFlag('ui.queue')
 
-  const { audioSrc } = useAudioPlayerPlaybackState()
-  const { isFullscreenVisible } = useAudioPlayerVisibilityState()
-  const { showBottomPlayer } = useUIStore()
-  const hasActiveAudio = Boolean(audioSrc)
+  const currentTrack = useNowPlayingTrack()
+  const { isFullscreenVisible } = useVisibility()
+  const { showBottomPlayer } = useUIState()
+  const hasActiveAudio = Boolean(currentTrack)
   const showPlayer = showBottomPlayer && !isFullscreenVisible && hasActiveAudio
 
   return (

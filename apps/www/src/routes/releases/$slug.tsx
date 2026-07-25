@@ -6,7 +6,7 @@ import { RouteError } from '@/components/RouteError'
 import { getApiClient } from '@/lib/api-client'
 import { generateReleaseSEO, generateSEOMeta } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
-import { useContentStore } from '@/store'
+import { useSetCurrentContent } from '@/store'
 
 export const Route = createFileRoute('/releases/$slug')({
   component: ReleasePage,
@@ -59,7 +59,7 @@ export const Route = createFileRoute('/releases/$slug')({
 function ReleasePage() {
   const { slug } = Route.useParams()
   const { release: data } = Route.useLoaderData()
-  const { setCurrentContent } = useContentStore()
+  const setCurrentContent = useSetCurrentContent()
 
   React.useEffect(() => {
     if (data) {

@@ -11,7 +11,7 @@ import { ShowQRButton } from '@/components/shows/ShowQRButton'
 import { getApiClient } from '@/lib/api-client'
 import { generateSEOMeta, generateShowSEO } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
-import { useContentStore } from '@/store'
+import { useSetCurrentContent } from '@/store'
 import { ShowMetadataManager } from './_components/-ShowMetadataManager'
 
 export const Route = createFileRoute('/shows/$showSlug')({
@@ -61,7 +61,7 @@ export const Route = createFileRoute('/shows/$showSlug')({
 function ShowPage() {
   const { showSlug } = Route.useParams()
   const { show: data } = Route.useLoaderData()
-  const { setCurrentContent } = useContentStore()
+  const setCurrentContent = useSetCurrentContent()
 
   useEffect(() => {
     if (data?.hosts) {

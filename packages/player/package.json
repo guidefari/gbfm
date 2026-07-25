@@ -1,0 +1,21 @@
+{
+  "name": "@gbfm/player",
+  "version": "0.0.1",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsgo --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "effect": "4.0.0-beta.99"
+  },
+  "devDependencies": {
+    "@types/bun": "1.3.13",
+    "typescript": "6.0.3",
+    "vitest": "4.1.5"
+  }
+}

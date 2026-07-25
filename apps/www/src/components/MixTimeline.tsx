@@ -1,6 +1,6 @@
 import type { SelectAudio } from '@gbfm/vps/schemas'
 import { cn } from '@/lib/utils'
-import { useAudioPlayerPlaybackState } from '@/store/audioPlayer'
+import { useNowPlayingTrack } from '@/services/player'
 
 interface MixTimelineProps {
   children: React.ReactNode
@@ -16,8 +16,8 @@ interface MixTimelineItemProps {
 }
 
 export function MixTimelineItem({ mix, children }: MixTimelineItemProps) {
-  const { nowPlayingContext } = useAudioPlayerPlaybackState()
-  const isActive = nowPlayingContext?.title === mix.title
+  const currentTrack = useNowPlayingTrack()
+  const isActive = currentTrack?.id === mix.id
 
   return (
     <div className='group relative grid grid-cols-[1rem_1fr] gap-x-4 pb-6 last:pb-0 [&:first-child_.timeline-line]:top-3 [&:last-child_.timeline-line]:hidden'>

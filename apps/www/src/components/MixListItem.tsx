@@ -5,7 +5,8 @@ import { Link } from '@tanstack/react-router'
 import { Pause, Play } from 'lucide-react'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { cn } from '@/lib/utils'
-import { useAudioPlayerActions, useAudioPlayerPlaybackState } from '@/store/audioPlayer'
+import { useNowPlayingTrack, usePlayerActions, useTransport } from '@/services/player'
+import { toQueueTrack } from '@/services/player/toQueueTrack'
 
 interface MixListItemProps {
   mix: SelectAudio
@@ -13,22 +14,18 @@ interface MixListItemProps {
 }
 
 export function MixListItem({ mix, actions }: MixListItemProps) {
-  const { isPlaying, nowPlayingContext } = useAudioPlayerPlaybackState()
-  const { loadTrack } = useAudioPlayerActions()
+  const current = useNowPlayingTrack()
+  const { isPlaying } = useTransport()
+  const { playTrack, togglePlayPause } = usePlayerActions()
 
-  const isActive = nowPlayingContext?.title === mix.title
+  const isActive = current?.id === mix.id
   const recencyLabel = getMixRecencyLabel(mix.createdAt)
   const hasCreators = Boolean(mix.creators && mix.creators.length > 0)
 
-  const handlePlay = () =>
-    loadTrack(
-      mix.url,
-      mix.thumbnailUrl || DEFAULT_IMAGE_URL,
-      mix.title,
-      mix.id,
-      mix.creators,
-      mix.slug
-    )
+  const handlePlay = () => {
+    if (isActive) togglePlayPause()
+    else playTrack(toQueueTrack(mix))
+  }
 
   return (
     <article
