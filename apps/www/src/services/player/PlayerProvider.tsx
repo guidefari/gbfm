@@ -1,5 +1,8 @@
 import {
   makePlayerCore,
+  AudioEngine,
+  PlayReporter,
+  PlayerStorage,
   type EngineStatus,
   type PlayerCoreShape,
   type QueueTrackType
@@ -15,11 +18,18 @@ import {
   useRef,
   type PropsWithChildren
 } from 'react'
-import { MediaSessionServiceLive } from '@/services/media-session'
+import { MediaSessionService, MediaSessionServiceLive } from '@/services/media-session'
 import { PlayerStorageLive } from './storage'
 import {
+  noneSource,
+  previewSource,
+  queueSource,
+  resolvePlayTrackBinding,
+  type ActiveSource
+} from './activeSource'
+import {
+  activeSourceAtom,
   persistVolume,
-  previewSrcAtom,
   readStoredVolume,
   transportAtom,
   useQueue,
@@ -35,6 +45,14 @@ import {
   resolveVolume
 } from './decisions'
 import { HtmlAudioEngineLayer } from './htmlAudioEngine'
+import {
+  trackAudioCompleted,
+  trackAudioError,
+  trackAudioPaused,
+  trackAudioPlayed,
+  trackAudioQueueAction,
+  trackAudioSeek
+} from './playerAnalytics'
 import { PlayReporterLive } from './playTracker'
 import { persistFullscreenVisibility } from './visibilityStorage'
 
@@ -66,6 +84,8 @@ type PlayerActions = {
 
 const PlayerActionsContext = createContext<PlayerActions | null>(null)
 
+type PlayerMountServices = AudioEngine | PlayReporter | PlayerStorage | MediaSessionService
+
 export const usePlayerActions = (): PlayerActions => {
   const actions = use(PlayerActionsContext)
   if (!actions) throw new Error('usePlayerActions must be used within PlayerProvider')
@@ -80,30 +100,38 @@ export const PlayerProvider = ({ children }: PropsWithChildren) => {
   const setVolumeState = useAtomSet(volumeAtom)
   const setVisibility = useAtomSet(visibilityAtom)
   const visibility = useAtomValue(visibilityAtom)
-  const setPreviewSrc = useAtomSet(previewSrcAtom)
+  const setActiveSource = useAtomSet(activeSourceAtom)
 
   const coreRef = useRef<PlayerCoreShape | null>(null)
   const audioRef = useRef<HTMLAudioElement | null>(null)
-  const runtimeRef = useRef<ManagedRuntime.ManagedRuntime<never, never> | null>(null)
+  const runtimeRef = useRef<ManagedRuntime.ManagedRuntime<PlayerMountServices, never> | null>(null)
   const queueRef = useRef(queue)
+  const activeSourceRef = useRef<ActiveSource>(noneSource)
   // Seeded from the same stored value as volumeAtom so a restored mute or
   // reduced volume is applied to the element, not just shown in the UI.
   const volumeRef = useRef(readStoredVolume())
   const durationRef = useRef(0)
   const playNextRef = useRef<() => void>(() => {})
+  const actionsRef = useRef<PlayerActions | null>(null)
   const visibilityRef = useRef(visibility)
 
   queueRef.current = queue
   visibilityRef.current = visibility
 
-  /** Runs a core operation on the mount's runtime. No-ops before the core is
-   *  built or after unmount, matching the previous null-ref guards. */
   const runCore = useCallback((operation: (core: PlayerCoreShape) => Effect.Effect<void>) => {
     const core = coreRef.current
     const runtime = runtimeRef.current
     if (!core || !runtime) return
     runtime.runFork(operation(core))
   }, [])
+
+  const commitActiveSource = useCallback(
+    (source: ActiveSource) => {
+      activeSourceRef.current = source
+      setActiveSource(source)
+    },
+    [setActiveSource]
+  )
 
   const onStatus = useCallback(
     (status: EngineStatus) => {
@@ -114,6 +142,14 @@ export const PlayerProvider = ({ children }: PropsWithChildren) => {
         currentTime: status.currentTime,
         duration: status.duration
       }))
+
+      const runtime = runtimeRef.current
+      if (!runtime || status.duration <= 0) return
+      runtime.runFork(
+        Effect.flatMap(MediaSessionService, (media) =>
+          media.setPositionState(status.duration, status.currentTime)
+        )
+      )
     },
     [setTransport]
   )
@@ -125,8 +161,6 @@ export const PlayerProvider = ({ children }: PropsWithChildren) => {
     audio.volume = resolveVolume(volumeRef.current.volume, volumeRef.current.isMuted)
     audioRef.current = audio
 
-    // The engine is owned by this mount, so its layer and the core's status
-    // fiber live in a runtime scoped to the same lifetime.
     const runtime = ManagedRuntime.make(
       Layer.mergeAll(HtmlAudioEngineLayer(audio), PlayReporterLive).pipe(
         Layer.provideMerge(Layer.mergeAll(PlayerStorageLive, MediaSessionServiceLive))
@@ -134,10 +168,8 @@ export const PlayerProvider = ({ children }: PropsWithChildren) => {
     )
     runtimeRef.current = runtime
 
-    // The core only observes the engine while a queue track is loaded, so keep
-    // a direct listener to drive transport during previews too.
     const onPreviewStatus = () => {
-      if (queueRef.current.current) return
+      if (activeSourceRef.current._tag !== 'preview') return
       onStatus({
         sourceGeneration: null,
         isLoaded: audio.readyState >= 1,
@@ -147,6 +179,9 @@ export const PlayerProvider = ({ children }: PropsWithChildren) => {
         duration: Number.isFinite(audio.duration) ? audio.duration : 0,
         isBuffering: audio.readyState < 3 && !audio.paused
       })
+      if (audio.ended) {
+        commitActiveSource(noneSource)
+      }
     }
     audio.addEventListener('timeupdate', onPreviewStatus)
     audio.addEventListener('loadedmetadata', onPreviewStatus)
@@ -158,12 +193,42 @@ export const PlayerProvider = ({ children }: PropsWithChildren) => {
       Effect.gen(function* () {
         const core = yield* makePlayerCore({
           onStatus,
-          onTrackFinished: () => playNextRef.current()
+          onTrackFinished: () => {
+            const active = activeSourceRef.current
+            if (active._tag === 'queue') {
+              trackAudioCompleted({
+                trackId: active.track.id,
+                title: active.track.title,
+                duration: durationRef.current
+              })
+            }
+            playNextRef.current()
+          },
+          onError: (message, error) => {
+            const active = activeSourceRef.current
+            trackAudioError({
+              trackId: active._tag === 'queue' ? active.track.id : null,
+              title: active._tag === 'queue' ? active.track.title : 'unknown',
+              errorMessage:
+                error instanceof Error ? error.message : typeof error === 'string' ? error : message
+            })
+          }
         })
         coreRef.current = core
         setTransport((state) => ({ ...state, isInitialized: true }))
-        // Hold the scope open so the core's status fiber keeps running until
-        // the runtime is disposed on unmount.
+
+        const media = yield* MediaSessionService
+        yield* media.setActionHandlers({
+          onPlay: () => actionsRef.current?.play(),
+          onPause: () => actionsRef.current?.pause(),
+          onSeekBackward: (offset) => actionsRef.current?.jumpBackward(offset),
+          onSeekForward: (offset) => actionsRef.current?.jumpForward(offset),
+          onPreviousTrack: () => actionsRef.current?.playPrevious(),
+          onNextTrack: () => actionsRef.current?.playNext(),
+          onSeekTo: (time) => actionsRef.current?.seekTo(time)
+        })
+        yield* Effect.addFinalizer(() => media.setActionHandlers(null))
+
         yield* Effect.never
       }).pipe(Effect.scoped)
     )
@@ -177,24 +242,36 @@ export const PlayerProvider = ({ children }: PropsWithChildren) => {
       coreRef.current = null
       audioRef.current = null
       runtimeRef.current = null
+      activeSourceRef.current = noneSource
       void runtime.dispose()
       audio.pause()
       setTransport((state) => ({ ...state, isInitialized: false }))
+      setActiveSource(noneSource)
     }
-  }, [onStatus, setTransport])
+  }, [commitActiveSource, onStatus, setActiveSource, setTransport])
 
   useEffect(() => {
-    // Runs for null too, so clearing or removing the last track tears the
-    // source down instead of leaving a detached element playing.
-    if (currentTrack) setPreviewSrc(null)
-    runCore((core) => core.setSource(currentTrack))
-  }, [currentTrack, runCore, setPreviewSrc])
+    if (currentTrack) {
+      commitActiveSource(queueSource(currentTrack))
+      runCore((core) => core.setSource(currentTrack))
+      return
+    }
+
+    if (activeSourceRef.current._tag === 'queue') {
+      commitActiveSource(noneSource)
+    }
+    runCore((core) => core.setSource(null))
+  }, [commitActiveSource, currentTrack, runCore])
 
   const playIndex = useCallback(
     (index: number) => {
       const target = queueRef.current.tracks[index]
       if (!target) return
-      if (queueRef.current.current?.id === target.id) {
+      if (
+        queueRef.current.current?.id === target.id &&
+        activeSourceRef.current._tag === 'queue' &&
+        activeSourceRef.current.track.id === target.id
+      ) {
         runCore((core) => core.play(target.id))
         return
       }
@@ -225,6 +302,19 @@ export const PlayerProvider = ({ children }: PropsWithChildren) => {
 
   const actions = useMemo<PlayerActions>(() => {
     const startQueueAction = (action: QueueAction, firstId: string) => {
+      const first =
+        action._tag === 'playNow'
+          ? action.track
+          : action._tag === 'playAll'
+            ? action.tracks[0]
+            : queueRef.current.tracks.find((track) => track.id === firstId)
+      if (first) {
+        trackAudioPlayed({
+          trackId: first.id,
+          title: first.title,
+          slug: first.slug
+        })
+      }
       runCore((core) =>
         core.requestPlayOnReady(firstId).pipe(Effect.andThen(core.detachCurrentSource))
       )
@@ -237,104 +327,222 @@ export const PlayerProvider = ({ children }: PropsWithChildren) => {
       audio.volume = resolveVolume(volumeRef.current.volume, volumeRef.current.isMuted)
     }
 
-    return {
+    const playElement = () => {
+      void audioRef.current?.play().catch(() => undefined)
+    }
+
+    const pauseElement = () => {
+      audioRef.current?.pause()
+    }
+
+    const next: PlayerActions = {
       play: () => {
-        const current = queueRef.current.current
-        if (current) runCore((core) => core.play(current.id))
-        // A preview has no queue session, so drive the element directly.
-        else void audioRef.current?.play().catch(() => undefined)
+        const active = activeSourceRef.current
+        if (active._tag === 'queue') {
+          trackAudioPlayed({
+            trackId: active.track.id,
+            title: active.track.title,
+            slug: active.track.slug
+          })
+          runCore((core) => core.play(active.track.id))
+          return
+        }
+        if (active._tag === 'preview') {
+          playElement()
+        }
       },
       pause: () => {
-        if (queueRef.current.current) runCore((core) => core.pause)
-        else audioRef.current?.pause()
+        const active = activeSourceRef.current
+        if (active._tag === 'queue') {
+          trackAudioPaused({
+            trackId: active.track.id,
+            title: active.track.title,
+            currentTime: audioRef.current?.currentTime ?? 0,
+            duration: durationRef.current
+          })
+          runCore((core) => core.pause)
+          return
+        }
+        if (active._tag === 'preview') {
+          pauseElement()
+        }
       },
       togglePlayPause: () => {
-        const current = queueRef.current.current
-        if (!current) return
-        runCore((core) =>
-          Effect.flatMap(core.isDesiredPlaying, (desired) =>
-            desired ? core.pause : core.play(current.id)
+        const active = activeSourceRef.current
+        if (active._tag === 'queue') {
+          runCore((core) =>
+            Effect.flatMap(core.isDesiredPlaying, (desired) => {
+              if (desired) {
+                trackAudioPaused({
+                  trackId: active.track.id,
+                  title: active.track.title,
+                  currentTime: audioRef.current?.currentTime ?? 0,
+                  duration: durationRef.current
+                })
+                return core.pause
+              }
+              trackAudioPlayed({
+                trackId: active.track.id,
+                title: active.track.title,
+                slug: active.track.slug
+              })
+              return core.play(active.track.id)
+            })
           )
-        )
+          return
+        }
+        if (active._tag === 'preview') {
+          const audio = audioRef.current
+          if (!audio) return
+          if (!audio.paused && !audio.ended) pauseElement()
+          else playElement()
+        }
       },
-      seekTo: (time) => runCore((core) => core.seekTo(time)),
-      seekByPercentage: (percentage) =>
-        runCore((core) => core.seekTo(resolveSeekTarget(percentage, durationRef.current))),
+      seekTo: (time) => {
+        const active = activeSourceRef.current
+        const fromTime = audioRef.current?.currentTime ?? 0
+        if (active._tag === 'queue') {
+          trackAudioSeek({
+            trackId: active.track.id,
+            fromTime,
+            toTime: time,
+            method: 'scrub'
+          })
+          runCore((core) => core.seekTo(time))
+          return
+        }
+        if (active._tag === 'preview' && audioRef.current) {
+          audioRef.current.currentTime = time
+        }
+      },
+      seekByPercentage: (percentage) => {
+        const target = resolveSeekTarget(percentage, durationRef.current)
+        next.seekTo(target)
+      },
       jumpForward: (seconds = 30) => {
         const audio = audioRef.current
-        if (audio) runCore((core) => core.seekTo(audio.currentTime + seconds))
+        if (!audio) return
+        next.seekTo(audio.currentTime + seconds)
       },
       jumpBackward: (seconds = 15) => {
         const audio = audioRef.current
-        if (audio) runCore((core) => core.seekTo(Math.max(0, audio.currentTime - seconds)))
+        if (!audio) return
+        next.seekTo(Math.max(0, audio.currentTime - seconds))
       },
 
       setVolume: (volume) => {
         const clamped = Math.max(0, Math.min(100, volume))
         setVolumeState((state) => {
-          const next = { ...state, volume: clamped }
-          volumeRef.current = next
-          persistVolume(next)
-          return next
+          const nextVolume = { ...state, volume: clamped }
+          volumeRef.current = nextVolume
+          persistVolume(nextVolume)
+          return nextVolume
         })
         applyVolume()
       },
       toggleMute: () => {
         setVolumeState((state) => {
-          const next = { ...state, isMuted: !state.isMuted }
-          volumeRef.current = next
-          persistVolume(next)
-          return next
+          const nextVolume = { ...state, isMuted: !state.isMuted }
+          volumeRef.current = nextVolume
+          persistVolume(nextVolume)
+          return nextVolume
         })
         applyVolume()
       },
 
       playTrack: (track) => {
-        if (queueRef.current.current?.id === track.id) {
-          runCore((core) => core.play(track.id))
+        const binding = resolvePlayTrackBinding({
+          active: activeSourceRef.current,
+          selectedQueueTrack: queueRef.current.current,
+          track
+        })
+        if (binding._tag === 'playExistingSession') {
+          runCore((core) => core.play(binding.trackId))
           return
         }
-        startQueueAction({ _tag: 'playNow', track }, track.id)
+        if (binding._tag === 'rebindQueueSession') {
+          commitActiveSource(queueSource(binding.track))
+          runCore((core) =>
+            core
+              .requestPlayOnReady(binding.track.id)
+              .pipe(Effect.andThen(core.setSource(binding.track)))
+          )
+          return
+        }
+        startQueueAction({ _tag: 'playNow', track: binding.track }, binding.track.id)
       },
       playAll: (tracks) => {
         const [first] = tracks
         if (!first) return
         startQueueAction({ _tag: 'playAll', tracks }, first.id)
       },
-      /** Plays a source with no gbfm audio record (e.g. a Spotify preview).
-       *  Bypasses the queue, so position and play tracking do not apply. */
       playPreview: (src) => {
         const audio = audioRef.current
         if (!audio) return
         runCore((core) => core.setSource(null))
-        setPreviewSrc(src)
+        commitActiveSource(previewSource(src))
         audio.src = src
         void audio.play().catch(() => undefined)
       },
 
-      enqueue: (track) => dispatchQueue({ _tag: 'enqueue', track }),
-      enqueueAll: (tracks) => dispatchQueue({ _tag: 'enqueueAll', tracks }),
+      enqueue: (track) => {
+        dispatchQueue({ _tag: 'enqueue', track })
+        trackAudioQueueAction({
+          action: 'add',
+          trackId: track.id,
+          queueLength: queueRef.current.tracks.length + 1
+        })
+      },
+      enqueueAll: (tracks) => {
+        dispatchQueue({ _tag: 'enqueueAll', tracks })
+        trackAudioQueueAction({
+          action: 'add',
+          queueLength: queueRef.current.tracks.length + tracks.length
+        })
+      },
       removeFromQueue: (index) => {
         const { tracks, currentIndex } = queueRef.current
         if (index < 0 || index >= tracks.length) return
         if (index === currentIndex) {
-          const next = tracks[index + 1] ?? tracks[index - 1]
+          const nextTrack = tracks[index + 1] ?? tracks[index - 1]
           runCore((core) =>
             Effect.flatMap(core.isDesiredPlaying, (desired) =>
-              (desired && next ? core.requestPlayOnReady(next.id) : Effect.void).pipe(
+              (desired && nextTrack ? core.requestPlayOnReady(nextTrack.id) : Effect.void).pipe(
                 Effect.andThen(core.detachCurrentSource)
               )
             )
           )
         }
         dispatchQueue({ _tag: 'remove', index })
+        trackAudioQueueAction({
+          action: 'remove',
+          trackId: tracks[index]?.id,
+          queueLength: Math.max(0, tracks.length - 1)
+        })
       },
-      reorderQueue: (from, to) => dispatchQueue({ _tag: 'reorder', from, to }),
+      reorderQueue: (from, to) => {
+        dispatchQueue({ _tag: 'reorder', from, to })
+        trackAudioQueueAction({
+          action: 'reorder',
+          queueLength: queueRef.current.tracks.length
+        })
+      },
       clearQueue: () => {
         runCore((core) => core.detachCurrentSource)
         dispatchQueue({ _tag: 'clear' })
+        trackAudioQueueAction({ action: 'clear', queueLength: 0 })
       },
-      playFromQueue: playIndex,
+      playFromQueue: (index) => {
+        const target = queueRef.current.tracks[index]
+        playIndex(index)
+        if (target) {
+          trackAudioQueueAction({
+            action: 'play_from',
+            trackId: target.id,
+            queueLength: queueRef.current.tracks.length
+          })
+        }
+      },
       playNext,
       playPrevious,
 
@@ -352,16 +560,20 @@ export const PlayerProvider = ({ children }: PropsWithChildren) => {
         setVisibility((state) => ({ ...state, isFullscreenVisible: false }))
       }
     }
+
+    return next
   }, [
+    commitActiveSource,
     dispatchQueue,
     playIndex,
     playNext,
     playPrevious,
     runCore,
-    setPreviewSrc,
     setVisibility,
     setVolumeState
   ])
+
+  actionsRef.current = actions
 
   return <PlayerActionsContext value={actions}>{children}</PlayerActionsContext>
 }

@@ -5,9 +5,10 @@ import { Effect, Schema } from 'effect'
 import * as Atom from 'effect/unstable/reactivity/Atom'
 import { queuePersistence } from '@/runtime'
 import { log } from '@/services/logger'
+import { activeQueueTrack, isActivePreview, noneSource, type ActiveSource } from './activeSource'
 import { readStoredFullscreenVisibility } from './visibilityStorage'
 
-export type { QueueAction, QueueTrackType, QueueView }
+export type { QueueAction, QueueTrackType, QueueView, ActiveSource }
 
 const { queueAtom } = makeQueueAtom({
   loadQueue: queuePersistence.loadQueue,
@@ -77,10 +78,14 @@ export const persistVolume = (state: VolumeState) => {
   } catch {}
 }
 
-/** Source currently loaded outside the queue (e.g. a Spotify preview). */
-export const previewSrcAtom = Atom.make<string | null>(null).pipe(Atom.keepAlive)
+/** Which source is audibly driving the shared element: queue, preview, or none. */
+export const activeSourceAtom = Atom.make<ActiveSource>(noneSource).pipe(Atom.keepAlive)
 
-export const usePreviewSrc = () => useAtomValue(previewSrcAtom)
+export const useActiveSource = () => useAtomValue(activeSourceAtom)
+
+/** Preview URL when a non-queue source is active; null otherwise. */
+export const usePreviewSrc = () =>
+  useAtomValue(activeSourceAtom, (source) => (source._tag === 'preview' ? source.src : null))
 
 export type VisibilityState = {
   readonly isQueueVisible: boolean
@@ -99,10 +104,19 @@ export const useSetVolume = () => useAtomSet(volumeAtom)
 export const useVisibility = () => useAtomValue(visibilityAtom)
 export const useSetVisibility = () => useAtomSet(visibilityAtom)
 
-export const useNowPlayingTrack = (): QueueTrackType | null =>
+/** Queue track currently selected in the queue atom (may survive a preview). */
+export const useSelectedQueueTrack = (): QueueTrackType | null =>
   useAtomValue(queueAtom, (state) =>
     state.currentIndex >= 0 ? (state.tracks[state.currentIndex] ?? null) : null
   )
+
+/** Track the UI should treat as now-playing. Null while a preview is active so
+ *  chrome does not claim a silent queue selection is audible. */
+export const useNowPlayingTrack = (): QueueTrackType | null =>
+  useAtomValue(activeSourceAtom, activeQueueTrack)
+
+export const useIsActivePreview = (src: string): boolean =>
+  useAtomValue(activeSourceAtom, (source) => isActivePreview(source, src))
 
 export const useProgress = () =>
   useAtomValue(transportAtom, (state) => ({

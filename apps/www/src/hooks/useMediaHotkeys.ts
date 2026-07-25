@@ -1,6 +1,6 @@
 import { useHotkey } from '@tanstack/react-hotkeys'
 import {
-  useNowPlayingTrack,
+  useActiveSource,
   usePlayerActions,
   useQueue,
   useVisibility,
@@ -21,17 +21,18 @@ export const useMediaHotkeys = () => {
     playPrevious
   } = usePlayerActions()
 
-  const currentTrack = useNowPlayingTrack()
+  const active = useActiveSource()
   const { isFullscreenVisible } = useVisibility()
   const { tracks, currentIndex } = useQueue()
   const { volume } = useVolume()
 
-  const hasAudio = Boolean(currentTrack)
-  const canPlayNext = currentIndex < tracks.length - 1
-  const canPlayPrevious = currentIndex > 0
+  const hasAudio = active._tag !== 'none'
+  const hasQueue = active._tag === 'queue'
+  const canPlayNext = hasQueue && currentIndex < tracks.length - 1
+  const canPlayPrevious = hasQueue && currentIndex > 0
 
   useHotkey('Escape', () => {
-    if (hasAudio && isFullscreenVisible) {
+    if (hasQueue && isFullscreenVisible) {
       closeFullscreen()
     }
   })
@@ -39,11 +40,11 @@ export const useMediaHotkeys = () => {
   useHotkey('Space', () => togglePlayPause(), { enabled: hasAudio })
 
   useHotkey('ArrowLeft', () => playPrevious(), {
-    enabled: hasAudio && canPlayPrevious
+    enabled: canPlayPrevious
   })
 
   useHotkey('ArrowRight', () => playNext(), {
-    enabled: hasAudio && canPlayNext
+    enabled: canPlayNext
   })
 
   useHotkey('Alt+ArrowLeft', () => jumpBackward(10), { enabled: hasAudio })
@@ -60,7 +61,7 @@ export const useMediaHotkeys = () => {
     enabled: hasAudio
   })
 
-  useHotkey('Q', () => toggleQueue(), { enabled: hasAudio })
+  useHotkey('Q', () => toggleQueue(), { enabled: hasQueue })
 
-  useHotkey('F', () => toggleFullscreen(), { enabled: hasAudio })
+  useHotkey('F', () => toggleFullscreen(), { enabled: hasQueue })
 }

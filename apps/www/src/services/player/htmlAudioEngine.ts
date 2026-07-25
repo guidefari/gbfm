@@ -8,8 +8,32 @@ import { Effect, Layer, Queue, Stream } from 'effect'
 import { log } from '@/services/logger'
 import { MediaSessionService } from '@/services/media-session'
 
+/** Narrow browser audio surface the web engine depends on. HTMLAudioElement
+ *  satisfies this; tests supply a recording stand-in through the same seam. */
+export type HtmlAudioPort = {
+  src: string
+  currentTime: number
+  readonly duration: number
+  readonly paused: boolean
+  readonly ended: boolean
+  readonly readyState: number
+  load: () => void
+  play: () => Promise<void>
+  pause: () => void
+  addEventListener: (
+    type: string,
+    listener: EventListenerOrEventListenerObject,
+    options?: boolean | AddEventListenerOptions
+  ) => void
+  removeEventListener: (
+    type: string,
+    listener: EventListenerOrEventListenerObject,
+    options?: boolean | EventListenerOptions
+  ) => void
+}
+
 const readStatus = (
-  audio: HTMLAudioElement,
+  audio: HtmlAudioPort,
   didJustFinish: boolean,
   sourceGeneration: number | null
 ): EngineStatus => ({
@@ -22,7 +46,7 @@ const readStatus = (
   isBuffering: audio.readyState < 3 && !audio.paused
 })
 
-const makeHtmlAudioEngine = (audio: HTMLAudioElement) =>
+const makeHtmlAudioEngine = (audio: HtmlAudioPort) =>
   Effect.gen(function* () {
     const mediaSession = yield* MediaSessionService
     let justFinished = false
@@ -131,5 +155,5 @@ const makeHtmlAudioEngine = (audio: HTMLAudioElement) =>
     }
   })
 
-export const HtmlAudioEngineLayer = (audio: HTMLAudioElement) =>
+export const HtmlAudioEngineLayer = (audio: HtmlAudioPort) =>
   Layer.effect(AudioEngine, makeHtmlAudioEngine(audio))
