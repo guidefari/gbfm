@@ -23,49 +23,62 @@ export default function Profile() {
     <Screen>
       <ScrollView className='flex-1 p-4'>
         <View className='mb-6'>
-          <Text className='text-3xl font-bold text-white mb-2'>{user.name}</Text>
-          <Text className='text-lg text-gray-300'>@{user.username}</Text>
+          <Text style={{ color: colors.strong, fontSize: 30, fontWeight: '700', marginBottom: 8 }}>
+            {user.name}
+          </Text>
+          <Text style={{ color: colors.muted, fontSize: 18 }}>@{user.username}</Text>
         </View>
 
         <View className='mt-8'>
-          <Text className='text-xl font-bold text-white mb-4'>Features</Text>
+          <Text style={{ color: colors.strong, fontSize: 20, fontWeight: '700', marginBottom: 16 }}>
+            Features
+          </Text>
 
           <TouchableOpacity
             accessibilityRole='button'
             accessibilityLabel='Open music reminders'
             onPress={() => router.push('/music-reminders')}
-            className='bg-gray-800 rounded-sm p-4 mb-4'>
+            style={{
+              backgroundColor: colors.surface,
+              borderRadius: 4,
+              padding: 16,
+              marginBottom: 16
+            }}>
             <View className='flex-row items-center justify-between'>
               <View>
-                <Text className='text-white font-semibold text-lg'>Music Reminders</Text>
-                <Text className='text-gray-300 text-sm mt-1'>
+                <Text style={{ color: colors.strong, fontSize: 18, fontWeight: '600' }}>
+                  Music Reminders
+                </Text>
+                <Text style={{ color: colors.text, fontSize: 14, marginTop: 4 }}>
                   Never forget to listen to your favorite tracks
                 </Text>
               </View>
-              <SymbolView name={musicNoteSymbol} size={20} tintColor='#9CA3AF' />
+              <SymbolView name={musicNoteSymbol} size={20} tintColor={colors.muted} />
             </View>
           </TouchableOpacity>
         </View>
 
         <View className='space-y-4 mb-8'>
           <View>
-            <Text className='text-sm text-gray-400 mb-1'>Email</Text>
-            <Text className='text-white text-lg'>{user.email}</Text>
+            <Text style={{ color: colors.muted, fontSize: 14, marginBottom: 4 }}>Email</Text>
+            <Text style={{ color: colors.strong, fontSize: 18 }}>{user.email}</Text>
           </View>
 
           <View>
-            <Text className='text-sm text-gray-400 mb-1'>Verified</Text>
-            <Text className='text-white text-lg'>{user.verified ? 'Yes' : 'No'}</Text>
+            <Text style={{ color: colors.muted, fontSize: 14, marginBottom: 4 }}>Verified</Text>
+            <Text style={{ color: colors.strong, fontSize: 18 }}>
+              {user.verified ? 'Yes' : 'No'}
+            </Text>
           </View>
 
           <View>
-            <Text className='text-sm text-gray-400 mb-1'>User ID</Text>
-            <Text className='text-white text-sm'>{user.id}</Text>
+            <Text style={{ color: colors.muted, fontSize: 14, marginBottom: 4 }}>User ID</Text>
+            <Text style={{ color: colors.strong, fontSize: 14 }}>{user.id}</Text>
           </View>
 
           <View>
-            <Text className='text-sm text-gray-400 mb-1'>Created At</Text>
-            <Text className='text-white text-sm'>
+            <Text style={{ color: colors.muted, fontSize: 14, marginBottom: 4 }}>Created At</Text>
+            <Text style={{ color: colors.strong, fontSize: 14 }}>
               {new Date(user.createdAt).toLocaleDateString()}
             </Text>
           </View>
@@ -77,8 +90,15 @@ export default function Profile() {
 
         <TouchableOpacity
           onPress={() => void clearAuth()}
-          className='border border-red-400/60 rounded-sm p-4 mb-8 items-center'>
-          <Text className='text-red-400 font-semibold text-base'>Sign out</Text>
+          style={{
+            borderColor: colors.error,
+            borderWidth: 1,
+            borderRadius: 4,
+            padding: 16,
+            marginBottom: 32,
+            alignItems: 'center'
+          }}>
+          <Text style={{ color: colors.error, fontSize: 16, fontWeight: '600' }}>Sign out</Text>
         </TouchableOpacity>
       </ScrollView>
     </Screen>

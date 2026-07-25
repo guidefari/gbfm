@@ -2,6 +2,7 @@ import { Stack, useRouter } from 'expo-router'
 import { SymbolView } from 'expo-symbols'
 import { Alert, ScrollView, Text, TouchableOpacity, View } from 'react-native'
 import { useAuthStore } from '@/store/auth'
+import { useThemeColors } from '@/theme/colors'
 
 const symbols = {
   add: { ios: 'plus', android: 'add', web: 'add' },
@@ -12,6 +13,7 @@ const symbols = {
 export default function MusicReminders() {
   const user = useAuthStore((state) => state.user)
   const _router = useRouter()
+  const colors = useThemeColors()
 
   if (!user) {
     return (
@@ -45,7 +47,7 @@ export default function MusicReminders() {
                 )
               }}
               className='mr-4'>
-              <SymbolView name={symbols.add} size={20} tintColor='#FFFFFF' />
+              <SymbolView name={symbols.add} size={20} tintColor={colors.overlayText} />
             </TouchableOpacity>
           )
         }}
@@ -93,7 +95,7 @@ export default function MusicReminders() {
               <SymbolView
                 name={symbols.complete}
                 size={16}
-                tintColor='#4ADE80'
+                tintColor={colors.success}
                 style={{ marginRight: 12 }}
               />
               <Text className='text-gray-300'>
@@ -105,7 +107,7 @@ export default function MusicReminders() {
               <SymbolView
                 name={symbols.complete}
                 size={16}
-                tintColor='#4ADE80'
+                tintColor={colors.success}
                 style={{ marginRight: 12 }}
               />
               <Text className='text-gray-300'>Album cover previews and auto-fill</Text>
@@ -115,7 +117,7 @@ export default function MusicReminders() {
               <SymbolView
                 name={symbols.complete}
                 size={16}
-                tintColor='#4ADE80'
+                tintColor={colors.success}
                 style={{ marginRight: 12 }}
               />
               <Text className='text-gray-300'>Scheduled email reminders</Text>
@@ -125,7 +127,7 @@ export default function MusicReminders() {
               <SymbolView
                 name={symbols.complete}
                 size={16}
-                tintColor='#4ADE80'
+                tintColor={colors.success}
                 style={{ marginRight: 12 }}
               />
               <Text className='text-gray-300'>Beautiful email templates with track details</Text>
@@ -135,7 +137,7 @@ export default function MusicReminders() {
               <SymbolView
                 name={symbols.construction}
                 size={16}
-                tintColor='#FACC15'
+                tintColor={colors.warning}
                 style={{ marginRight: 12 }}
               />
               <Text className='text-gray-300'>Mobile app integration (coming soon)</Text>

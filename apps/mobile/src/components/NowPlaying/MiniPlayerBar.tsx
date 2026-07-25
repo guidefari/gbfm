@@ -16,7 +16,9 @@ import { useThemeColors } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
 
 const textColor =
-  Platform.OS === 'ios' ? DynamicColorIOS({ dark: '#FFFFFF', light: brandDark.bg }) : '#FFFFFF'
+  Platform.OS === 'ios'
+    ? DynamicColorIOS({ dark: brandDark.overlayText, light: brandDark.bg })
+    : brandDark.overlayText
 const symbols = {
   previous: { ios: 'backward.fill', android: 'skip_previous', web: 'skip_previous' },
   play: { ios: 'play.fill', android: 'play_arrow', web: 'play_arrow' },
@@ -24,10 +26,25 @@ const symbols = {
   next: { ios: 'forward.fill', android: 'skip_next', web: 'skip_next' }
 } as const
 
-function Artwork({ url, size }: { url: string | null | undefined; size: number }) {
+function Artwork({
+  url,
+  size,
+  colors
+}: {
+  url: string | null | undefined
+  size: number
+  colors: ReturnType<typeof useThemeColors>
+}) {
   if (!url) {
     return (
-      <View style={{ width: size, height: size, borderRadius: 4, backgroundColor: '#7DD3FC' }} />
+      <View
+        style={{
+          width: size,
+          height: size,
+          borderRadius: 4,
+          backgroundColor: colors.accentSurface
+        }}
+      />
     )
   }
   return (
@@ -79,7 +96,7 @@ export function MiniPlayerBar() {
           accessibilityLabel={`Open now playing: ${track.title}`}
           onPress={() => router.push('/now-playing')}
           style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <Artwork url={track.thumbnailUrl} size={26} />
+          <Artwork url={track.thumbnailUrl} size={26} colors={colors} />
           <Text
             style={{ flex: 1, color: textColor, fontFamily: fonts.monoSemiBold, fontSize: 12 }}
             numberOfLines={1}>
@@ -150,7 +167,7 @@ export function MiniPlayerBar() {
           accessibilityLabel={`Open now playing: ${track.title}`}
           onPress={() => router.push('/now-playing')}
           style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <Artwork url={track.thumbnailUrl} size={40} />
+          <Artwork url={track.thumbnailUrl} size={40} colors={colors} />
           <View style={{ flex: 1 }}>
             <Text
               style={{ color: textColor, fontFamily: fonts.monoSemiBold, fontSize: 14 }}
@@ -221,8 +238,11 @@ export function MiniPlayerBar() {
             overflow: 'hidden',
             backgroundColor:
               Platform.OS === 'ios'
-                ? DynamicColorIOS({ dark: '#FFFFFF2E', light: `${brandDark.bg}2E` })
-                : '#FFFFFF2E'
+                ? DynamicColorIOS({
+                    dark: brandDark.faintOverlayText,
+                    light: colors.faintOverlayText
+                  })
+                : colors.faintOverlayText
           }}>
           <View style={{ height: '100%', width: `${progress * 100}%`, backgroundColor: accent }} />
         </View>

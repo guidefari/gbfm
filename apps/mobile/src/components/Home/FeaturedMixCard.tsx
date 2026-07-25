@@ -152,7 +152,7 @@ export function FeaturedMixCard({
         }}>
         <Text
           style={{
-            color: '#FFFFFF',
+            color: colors.overlayText,
             fontFamily: fonts.monoSemiBold,
             fontSize: 20,
             lineHeight: 24

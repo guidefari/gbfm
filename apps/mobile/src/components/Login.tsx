@@ -1,4 +1,4 @@
-import { brand, typography } from '@gbfm/theme'
+import { typography } from '@gbfm/theme'
 import { Effect } from 'effect'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
@@ -15,15 +15,7 @@ import {
 import { login } from '@/api/auth'
 import { Screen } from '@/components/Screen'
 import { useSetAuth } from '@/store/auth'
-
-const colors = {
-  background: brand.bg,
-  surface: brand.darkerBg,
-  accent: brand['pastel-green-1'],
-  muted: brand['pastel-green-2'],
-  text: brand.defaultText,
-  error: '#FDA4AF'
-}
+import { useThemeColors } from '@/theme/colors'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -33,6 +25,7 @@ export default function Login() {
   const [errorMessage, setErrorMessage] = useState<string>()
   const router = useRouter()
   const setAuth = useSetAuth()
+  const colors = useThemeColors()
   const canSubmit = email.trim().length > 0 && password.length > 0 && !isSubmitting
 
   const handleLogin = () => {
@@ -117,7 +110,7 @@ export default function Login() {
                   style={{
                     minHeight: 52,
                     paddingHorizontal: 16,
-                    color: '#FFFFFF',
+                    color: colors.text,
                     borderColor: `${colors.muted}66`,
                     borderWidth: 1,
                     borderRadius: 4,
@@ -147,7 +140,7 @@ export default function Login() {
                       minHeight: 52,
                       paddingLeft: 16,
                       paddingRight: 72,
-                      color: '#FFFFFF',
+                      color: colors.text,
                       borderColor: `${colors.muted}66`,
                       borderWidth: 1,
                       borderRadius: 4,

@@ -110,7 +110,7 @@ export default function NowPlaying() {
                 borderWidth: 1,
                 borderColor: withAlpha(colors.accent, 0.2),
                 backgroundColor: colors.surface,
-                shadowColor: '#000000',
+                shadowColor: colors.shadow,
                 shadowOffset: { width: 0, height: 8 },
                 shadowOpacity: 0.25,
                 shadowRadius: 16,

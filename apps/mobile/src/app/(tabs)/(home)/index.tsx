@@ -1,4 +1,3 @@
-import { brand } from '@gbfm/theme'
 import { useAtomRefresh, useAtomValue } from '@effect/atom-react'
 import { AsyncResult } from 'effect/unstable/reactivity'
 import { useRouter } from 'expo-router'
@@ -9,21 +8,15 @@ import { FeaturedMixSkeleton } from '@/components/Home/FeaturedMixSkeleton'
 import { ShowsSection } from '@/components/Home/ShowsSection'
 import { Screen } from '@/components/Screen'
 import { featuredMixAtom } from '@/store/atoms/featured-mix'
+import { useThemeColors } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
-
-const colors = {
-  background: brand.bg,
-  accent: brand['pastel-green-1'],
-  muted: brand['pastel-green-2'],
-  text: brand.defaultText,
-  surface: brand.darkerBg
-}
 
 export default function Home() {
   const result = useAtomValue(featuredMixAtom)
   const refresh = useAtomRefresh(featuredMixAtom)
   const { loadAndPlay, togglePlayback, track, isPlaying, isBuffering, isLoaded } = useNowPlaying()
   const router = useRouter()
+  const colors = useThemeColors()
 
   const mix = AsyncResult.isSuccess(result) ? result.value : null
   const isThisMix = mix !== null && track?.id === mix.id

@@ -57,7 +57,7 @@ function EpisodeRow({ episode, onEnqueue }: { episode: ShowEpisode; onEnqueue: (
         <View style={{ flex: 1, gap: 2 }}>
           <Text
             style={{
-              color: isCurrent ? colors.accent : '#FFFFFF',
+              color: isCurrent ? colors.accent : colors.overlayText,
               fontFamily: fonts.monoSemiBold,
               fontSize: 14
             }}

@@ -48,7 +48,7 @@ export function ShowCard({ show }: { show: Show }) {
       <View style={{ gap: 2, height: 36 }}>
         <Text
           style={{
-            color: '#FFFFFF',
+            color: colors.strong,
             fontFamily: fonts.monoSemiBold,
             fontSize: 14,
             lineHeight: 18
