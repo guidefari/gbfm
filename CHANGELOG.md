@@ -1,3 +1,16 @@
+# [2.69.0](https://github.com/guidefari/gbfm/compare/v2.68.0...v2.69.0) (2026-07-25)
+
+
+### Bug Fixes
+
+* **mobile:** restore active tab contrast ([521d6fe](https://github.com/guidefari/gbfm/commit/521d6fed91919a5c312592aa66094e12b9ac5c8f))
+
+
+### Features
+
+* **mobile:** add shared screen primitive ([1c085c2](https://github.com/guidefari/gbfm/commit/1c085c23c0f05c2fd3a73bdc31897e24aa1b90ea))
+* **theme:** add semantic light-mode tokens ([8d44d8c](https://github.com/guidefari/gbfm/commit/8d44d8cc2ca74791437c2d748c884408ed0a1a49))
+
 # [2.68.0](https://github.com/guidefari/gbfm/compare/v2.67.0...v2.68.0) (2026-07-25)
 
 
