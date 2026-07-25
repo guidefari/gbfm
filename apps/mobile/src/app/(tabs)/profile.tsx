@@ -1,10 +1,11 @@
 import { useRouter } from 'expo-router'
 import { SymbolView } from 'expo-symbols'
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native'
-import { SafeAreaView } from 'react-native-screens/experimental'
 import Login from '@/components/Login'
 import { AppearanceSection } from '@/components/Profile/AppearanceSection'
+import { Screen } from '@/components/Screen'
 import { useAuthStore, useClearAuth } from '@/store/auth'
+import { useThemeColors } from '@/theme/colors'
 
 const musicNoteSymbol = { ios: 'music.note', android: 'music_note', web: 'music_note' } as const
 
@@ -12,13 +13,14 @@ export default function Profile() {
   const user = useAuthStore((state) => state.user)
   const router = useRouter()
   const clearAuth = useClearAuth()
+  const colors = useThemeColors()
 
   if (!user) {
     return <Login />
   }
 
   return (
-    <SafeAreaView edges={{ top: true, left: true, right: true, bottom: true }} className='flex-1'>
+    <Screen>
       <ScrollView className='flex-1 p-4'>
         <View className='mb-6'>
           <Text className='text-3xl font-bold text-white mb-2'>{user.name}</Text>
@@ -79,6 +81,6 @@ export default function Profile() {
           <Text className='text-red-400 font-semibold text-base'>Sign out</Text>
         </TouchableOpacity>
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   )
 }

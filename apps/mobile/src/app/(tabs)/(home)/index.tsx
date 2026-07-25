@@ -2,12 +2,12 @@ import { brand } from '@gbfm/theme'
 import { useAtomRefresh, useAtomValue } from '@effect/atom-react'
 import { AsyncResult } from 'effect/unstable/reactivity'
 import { useRouter } from 'expo-router'
-import { ScrollView, Text } from 'react-native'
-import { SafeAreaView } from 'react-native-screens/experimental'
+import { ScrollView, Text, View } from 'react-native'
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
 import { FeaturedMixCard } from '@/components/Home/FeaturedMixCard'
 import { FeaturedMixSkeleton } from '@/components/Home/FeaturedMixSkeleton'
 import { ShowsSection } from '@/components/Home/ShowsSection'
+import { Screen } from '@/components/Screen'
 import { featuredMixAtom } from '@/store/atoms/featured-mix'
 import { fonts } from '@/theme/fonts'
 
@@ -41,9 +41,7 @@ export default function Home() {
   }
 
   return (
-    <SafeAreaView
-      edges={{ top: true, left: true, right: true }}
-      style={{ flex: 1, backgroundColor: colors.background }}>
+    <Screen>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ padding: 20, paddingTop: 4, gap: 16 }}>
@@ -73,6 +71,6 @@ export default function Home() {
 
         <ShowsSection />
       </ScrollView>
-    </SafeAreaView>
+    </Screen>
   )
 }

@@ -1,23 +1,18 @@
-import { brand } from '@gbfm/theme'
 import { useAtomRefresh, useAtomValue } from '@effect/atom-react'
 import { AsyncResult } from 'effect/unstable/reactivity'
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router'
 import { ActivityIndicator, FlatList, Image, Pressable, Text, View } from 'react-native'
 import type { ShowEpisode } from '@/api/shows'
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
+import { Screen } from '@/components/Screen'
 import { episodesFamily } from '@/store/atoms/episodes'
+import { useThemeColors } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
-
-const colors = {
-  background: brand.bg,
-  accent: brand['pastel-green-1'],
-  muted: brand['pastel-green-2'],
-  surface: brand.darkerBg
-}
 
 function EpisodeRow({ episode, onEnqueue }: { episode: ShowEpisode; onEnqueue: () => void }) {
   const { loadAndPlay, togglePlayback, track } = useNowPlaying()
   const router = useRouter()
+  const colors = useThemeColors()
   const isCurrent = track?.id === episode.id
 
   const handlePress = () => {
@@ -106,6 +101,7 @@ export default function ShowScreen() {
   const refresh = useAtomRefresh(episodesAtom)
   const { enqueueAll, playAll } = useNowPlaying()
   const router = useRouter()
+  const colors = useThemeColors()
 
   const handlePlayAll = () => {
     if (AsyncResult.isSuccess(result) && result.value.length > 0) {
@@ -121,7 +117,7 @@ export default function ShowScreen() {
   }
 
   return (
-    <>
+    <Screen>
       <Stack.Screen options={{ title: title ?? '' }} />
       <View style={{ flex: 1, backgroundColor: colors.background }} collapsable={false}>
         {AsyncResult.isInitial(result) || AsyncResult.isWaiting(result) ? (
@@ -216,6 +212,6 @@ export default function ShowScreen() {
           </View>
         )}
       </View>
-    </>
+    </Screen>
   )
 }

@@ -3,9 +3,9 @@ import { SymbolView } from 'expo-symbols'
 import { useRef } from 'react'
 import type { AccessibilityActionEvent, LayoutChangeEvent } from 'react-native'
 import { ActivityIndicator, Image, Pressable, ScrollView, Text, View } from 'react-native'
-import { SafeAreaView } from 'react-native-screens/experimental'
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
 import { QueueSheet } from '@/components/NowPlaying/QueueSheet'
+import { Screen } from '@/components/Screen'
 import { useThemeColors, withAlpha } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
 
@@ -70,9 +70,7 @@ export default function NowPlaying() {
   }
 
   return (
-    <SafeAreaView
-      edges={{ top: true, left: true, right: true, bottom: true }}
-      style={{ flex: 1, backgroundColor: colors.background }}>
+    <Screen>
       <View
         style={{
           alignSelf: 'center',
@@ -283,6 +281,6 @@ export default function NowPlaying() {
           </View>
         </ScrollView>
       )}
-    </SafeAreaView>
+    </Screen>
   )
 }

@@ -12,8 +12,8 @@ import {
   TextInput,
   View
 } from 'react-native'
-import { SafeAreaView } from 'react-native-screens/experimental'
 import { login } from '@/api/auth'
+import { Screen } from '@/components/Screen'
 import { useSetAuth } from '@/store/auth'
 
 const colors = {
@@ -58,9 +58,7 @@ export default function Login() {
   }
 
   return (
-    <SafeAreaView
-      edges={{ top: true, left: true, right: true, bottom: true }}
-      style={{ flex: 1, backgroundColor: colors.background }}>
+    <Screen>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}>
@@ -203,6 +201,6 @@ export default function Login() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </Screen>
   )
 }
