@@ -5,6 +5,7 @@ import { Effect, Schema } from 'effect'
 import * as Atom from 'effect/unstable/reactivity/Atom'
 import { queuePersistence } from '@/runtime'
 import { log } from '@/services/logger'
+import { readStoredFullscreenVisibility } from './visibilityStorage'
 
 export type { QueueAction, QueueTrackType, QueueView }
 
@@ -88,7 +89,7 @@ export type VisibilityState = {
 
 export const visibilityAtom = Atom.make<VisibilityState>({
   isQueueVisible: false,
-  isFullscreenVisible: false
+  isFullscreenVisible: readStoredFullscreenVisibility()
 }).pipe(Atom.keepAlive)
 
 export const useTransport = () => useAtomValue(transportAtom)

@@ -5,7 +5,7 @@ import {
   type QueueTrackType
 } from '@gbfm/player'
 import { Effect, Layer, ManagedRuntime } from 'effect'
-import { useAtomSet } from '@effect/atom-react'
+import { useAtomSet, useAtomValue } from '@effect/atom-react'
 import {
   createContext,
   use,
@@ -36,6 +36,7 @@ import {
 } from './decisions'
 import { HtmlAudioEngineLayer } from './htmlAudioEngine'
 import { PlayReporterLive } from './playTracker'
+import { persistFullscreenVisibility } from './visibilityStorage'
 
 type PlayerActions = {
   readonly play: () => void
@@ -78,6 +79,7 @@ export const PlayerProvider = ({ children }: PropsWithChildren) => {
   const setTransport = useAtomSet(transportAtom)
   const setVolumeState = useAtomSet(volumeAtom)
   const setVisibility = useAtomSet(visibilityAtom)
+  const visibility = useAtomValue(visibilityAtom)
   const setPreviewSrc = useAtomSet(previewSrcAtom)
 
   const coreRef = useRef<PlayerCoreShape | null>(null)
@@ -89,8 +91,10 @@ export const PlayerProvider = ({ children }: PropsWithChildren) => {
   const volumeRef = useRef(readStoredVolume())
   const durationRef = useRef(0)
   const playNextRef = useRef<() => void>(() => {})
+  const visibilityRef = useRef(visibility)
 
   queueRef.current = queue
+  visibilityRef.current = visibility
 
   /** Runs a core operation on the mount's runtime. No-ops before the core is
    *  built or after unmount, matching the previous null-ref guards. */
@@ -335,9 +339,17 @@ export const PlayerProvider = ({ children }: PropsWithChildren) => {
 
       toggleQueue: () =>
         setVisibility((state) => ({ ...state, isQueueVisible: !state.isQueueVisible })),
-      toggleFullscreen: () =>
-        setVisibility((state) => ({ ...state, isFullscreenVisible: !state.isFullscreenVisible })),
-      closeFullscreen: () => setVisibility((state) => ({ ...state, isFullscreenVisible: false }))
+      toggleFullscreen: () => {
+        const isFullscreenVisible = !visibilityRef.current.isFullscreenVisible
+        visibilityRef.current = { ...visibilityRef.current, isFullscreenVisible }
+        persistFullscreenVisibility(isFullscreenVisible)
+        setVisibility((state) => ({ ...state, isFullscreenVisible }))
+      },
+      closeFullscreen: () => {
+        visibilityRef.current = { ...visibilityRef.current, isFullscreenVisible: false }
+        persistFullscreenVisibility(false)
+        setVisibility((state) => ({ ...state, isFullscreenVisible: false }))
+      }
     }
   }, [
     dispatchQueue,
