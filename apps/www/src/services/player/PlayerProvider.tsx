@@ -1,4 +1,9 @@
-import type { QueueTrackType } from '@gbfm/player'
+import {
+  createPlayerCore,
+  type EngineStatus,
+  type PlayerCore,
+  type QueueTrackType
+} from '@gbfm/player'
 import { useAtomSet } from '@effect/atom-react'
 import {
   createContext,
@@ -9,8 +14,10 @@ import {
   useRef,
   type PropsWithChildren
 } from 'react'
+import { playerStorage } from '@/runtime'
 import {
   persistVolume,
+  previewSrcAtom,
   transportAtom,
   useQueue,
   useQueueDispatch,
@@ -18,7 +25,14 @@ import {
   volumeAtom,
   type QueueAction
 } from './atoms'
-import { createPlayerController, type PlayerController } from './controller'
+import {
+  resolveNextIndex,
+  resolvePreviousIndex,
+  resolveSeekTarget,
+  resolveVolume
+} from './decisions'
+import { createHtmlAudioEngine } from './htmlAudioEngine'
+import { recordPlayIfFresh } from './playTracker'
 
 type PlayerActions = {
   readonly play: () => void
@@ -32,6 +46,7 @@ type PlayerActions = {
   readonly toggleMute: () => void
   readonly playTrack: (track: QueueTrackType) => void
   readonly playAll: (tracks: ReadonlyArray<QueueTrackType>) => void
+  readonly playPreview: (src: string) => void
   readonly enqueue: (track: QueueTrackType) => void
   readonly enqueueAll: (tracks: ReadonlyArray<QueueTrackType>) => void
   readonly removeFromQueue: (index: number) => void
@@ -55,22 +70,77 @@ export const usePlayerActions = (): PlayerActions => {
 
 export const PlayerProvider = ({ children }: PropsWithChildren) => {
   const queue = useQueue()
+  const currentTrack = queue.current
   const dispatchQueue = useQueueDispatch()
   const setTransport = useAtomSet(transportAtom)
   const setVolumeState = useAtomSet(volumeAtom)
   const setVisibility = useAtomSet(visibilityAtom)
+  const setPreviewSrc = useAtomSet(previewSrcAtom)
 
-  const controllerRef = useRef<PlayerController | null>(null)
+  const coreRef = useRef<PlayerCore | null>(null)
+  const audioRef = useRef<HTMLAudioElement | null>(null)
   const queueRef = useRef(queue)
   const volumeRef = useRef({ volume: 100, isMuted: false })
-  const autoplayRef = useRef(false)
-  const isPlayingRef = useRef(false)
+  const durationRef = useRef(0)
+  const playNextRef = useRef<() => void>(() => {})
 
   queueRef.current = queue
 
+  const onStatus = useCallback(
+    (status: EngineStatus) => {
+      durationRef.current = status.duration
+      setTransport((state) => ({
+        ...state,
+        isPlaying: status.playing,
+        currentTime: status.currentTime,
+        duration: status.duration
+      }))
+    },
+    [setTransport]
+  )
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const audio = new Audio()
+    audio.volume = resolveVolume(volumeRef.current.volume, volumeRef.current.isMuted)
+    audioRef.current = audio
+
+    const core = createPlayerCore(createHtmlAudioEngine(audio), playerStorage, {
+      onStatus,
+      onTrackFinished: () => playNextRef.current(),
+      recordPlay: recordPlayIfFresh
+    })
+
+    coreRef.current = core
+    setTransport((state) => ({ ...state, isInitialized: true }))
+
+    return () => {
+      core.dispose()
+      audio.pause()
+      coreRef.current = null
+      audioRef.current = null
+      setTransport((state) => ({ ...state, isInitialized: false }))
+    }
+  }, [onStatus, setTransport])
+
+  useEffect(() => {
+    if (!currentTrack) return
+    setPreviewSrc(null)
+    coreRef.current?.setSource(currentTrack)
+  }, [currentTrack, setPreviewSrc])
+
   const playIndex = useCallback(
     (index: number) => {
-      autoplayRef.current = true
+      const core = coreRef.current
+      const target = queueRef.current.tracks[index]
+      if (!core || !target) return
+      if (queueRef.current.current?.id === target.id) {
+        core.play(target.id)
+        return
+      }
+      core.requestPlayOnReady(target.id)
+      core.detachCurrentSource()
       dispatchQueue({ _tag: 'playIndex', index })
     },
     [dispatchQueue]
@@ -78,86 +148,59 @@ export const PlayerProvider = ({ children }: PropsWithChildren) => {
 
   const playNext = useCallback(() => {
     const { tracks, currentIndex } = queueRef.current
-    if (currentIndex < 0 || currentIndex >= tracks.length - 1) return
-    playIndex(currentIndex + 1)
+    const next = resolveNextIndex({ trackCount: tracks.length, currentIndex })
+    if (next === null) return
+    playIndex(next)
   }, [playIndex])
 
   const playPrevious = useCallback(() => {
     const { tracks, currentIndex } = queueRef.current
-    if (tracks.length === 0) return
-    playIndex(currentIndex <= 0 ? tracks.length - 1 : currentIndex - 1)
+    const previous = resolvePreviousIndex({ trackCount: tracks.length, currentIndex })
+    if (previous === null) return
+    playIndex(previous)
   }, [playIndex])
 
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-
-    const audio = new Audio()
-    const controller = createPlayerController(audio, {
-      setTransport: (update) =>
-        setTransport((state) => {
-          const next = update(state)
-          isPlayingRef.current = next.isPlaying
-          return next
-        }),
-      playNext,
-      playPrevious,
-      getVolume: () => volumeRef.current,
-      getCurrentTrack: () => {
-        const { tracks, currentIndex } = queueRef.current
-        return currentIndex >= 0 ? (tracks[currentIndex] ?? null) : null
-      }
-    })
-
-    controllerRef.current = controller
-    setTransport((state) => ({ ...state, isInitialized: true }))
-
-    return () => {
-      controller.dispose()
-      controllerRef.current = null
-      setTransport((state) => ({ ...state, isInitialized: false }))
-    }
-  }, [playNext, playPrevious, setTransport])
-
-  useEffect(() => {
-    const controller = controllerRef.current
-    if (!controller) return
-    if (!queue.current) return
-
-    controller.loadTrack(queue.current, { autoplay: autoplayRef.current })
-    autoplayRef.current = false
-  }, [queue.current?.id, queue.current])
+  playNextRef.current = playNext
 
   const actions = useMemo<PlayerActions>(() => {
-    const withController = (fn: (controller: PlayerController) => void) => () => {
-      const controller = controllerRef.current
-      if (controller) fn(controller)
-    }
-
-    const dispatchAndPlay = (action: QueueAction) => {
-      autoplayRef.current = true
+    const startQueueAction = (action: QueueAction, firstId: string) => {
+      const core = coreRef.current
+      if (!core) return
+      core.requestPlayOnReady(firstId)
+      core.detachCurrentSource()
       dispatchQueue(action)
     }
 
+    const applyVolume = () => {
+      const audio = audioRef.current
+      if (!audio) return
+      audio.volume = resolveVolume(volumeRef.current.volume, volumeRef.current.isMuted)
+    }
+
     return {
-      play: withController((controller) => controller.play()),
-      pause: withController((controller) => controller.pause()),
+      play: () => {
+        const current = queueRef.current.current
+        if (current) coreRef.current?.play(current.id)
+      },
+      pause: () => coreRef.current?.pause(),
       togglePlayPause: () => {
-        const controller = controllerRef.current
-        if (!controller) return
-        if (isPlayingRef.current) controller.pause()
-        else controller.play()
+        const core = coreRef.current
+        const current = queueRef.current.current
+        if (!core || !current) return
+        if (core.isDesiredPlaying()) core.pause()
+        else core.play(current.id)
       },
-      seekTo: (time) => controllerRef.current?.seekTo(time),
-      seekByPercentage: (percentage) => {
-        const controller = controllerRef.current
-        if (!controller) return
-        setTransport((state) => {
-          controller.seekTo((percentage / 100) * state.duration)
-          return state
-        })
+      seekTo: (time) => coreRef.current?.seekTo(time),
+      seekByPercentage: (percentage) =>
+        coreRef.current?.seekTo(resolveSeekTarget(percentage, durationRef.current)),
+      jumpForward: (seconds = 30) => {
+        const audio = audioRef.current
+        if (audio) coreRef.current?.seekTo(audio.currentTime + seconds)
       },
-      jumpForward: (seconds = 30) => controllerRef.current?.seekBy(seconds),
-      jumpBackward: (seconds = 15) => controllerRef.current?.seekBy(-seconds),
+      jumpBackward: (seconds = 15) => {
+        const audio = audioRef.current
+        if (audio) coreRef.current?.seekTo(Math.max(0, audio.currentTime - seconds))
+      },
 
       setVolume: (volume) => {
         const clamped = Math.max(0, Math.min(100, volume))
@@ -167,7 +210,7 @@ export const PlayerProvider = ({ children }: PropsWithChildren) => {
           persistVolume(next)
           return next
         })
-        controllerRef.current?.applyVolume()
+        applyVolume()
       },
       toggleMute: () => {
         setVolumeState((state) => {
@@ -176,16 +219,50 @@ export const PlayerProvider = ({ children }: PropsWithChildren) => {
           persistVolume(next)
           return next
         })
-        controllerRef.current?.applyVolume()
+        applyVolume()
       },
 
-      playTrack: (track) => dispatchAndPlay({ _tag: 'playNow', track }),
-      playAll: (tracks) => dispatchAndPlay({ _tag: 'playAll', tracks }),
+      playTrack: (track) => {
+        if (queueRef.current.current?.id === track.id) {
+          coreRef.current?.play(track.id)
+          return
+        }
+        startQueueAction({ _tag: 'playNow', track }, track.id)
+      },
+      playAll: (tracks) => {
+        const [first] = tracks
+        if (!first) return
+        startQueueAction({ _tag: 'playAll', tracks }, first.id)
+      },
+      /** Plays a source with no gbfm audio record (e.g. a Spotify preview).
+       *  Bypasses the queue, so position and play tracking do not apply. */
+      playPreview: (src) => {
+        const audio = audioRef.current
+        if (!audio) return
+        coreRef.current?.setSource(null)
+        setPreviewSrc(src)
+        audio.src = src
+        void audio.play().catch(() => undefined)
+      },
+
       enqueue: (track) => dispatchQueue({ _tag: 'enqueue', track }),
       enqueueAll: (tracks) => dispatchQueue({ _tag: 'enqueueAll', tracks }),
-      removeFromQueue: (index) => dispatchQueue({ _tag: 'remove', index }),
+      removeFromQueue: (index) => {
+        const core = coreRef.current
+        const { tracks, currentIndex } = queueRef.current
+        if (!core || index < 0 || index >= tracks.length) return
+        if (index === currentIndex) {
+          const next = tracks[index + 1] ?? tracks[index - 1]
+          if (core.isDesiredPlaying() && next) core.requestPlayOnReady(next.id)
+          core.detachCurrentSource()
+        }
+        dispatchQueue({ _tag: 'remove', index })
+      },
       reorderQueue: (from, to) => dispatchQueue({ _tag: 'reorder', from, to }),
-      clearQueue: () => dispatchQueue({ _tag: 'clear' }),
+      clearQueue: () => {
+        coreRef.current?.detachCurrentSource()
+        dispatchQueue({ _tag: 'clear' })
+      },
       playFromQueue: playIndex,
       playNext,
       playPrevious,
@@ -201,7 +278,7 @@ export const PlayerProvider = ({ children }: PropsWithChildren) => {
     playIndex,
     playNext,
     playPrevious,
-    setTransport,
+    setPreviewSrc,
     setVisibility,
     setVolumeState
   ])

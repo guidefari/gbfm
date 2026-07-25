@@ -1,7 +1,7 @@
 import { createPlayDelivery } from '@gbfm/player'
 import { Effect } from 'effect'
 import { getApiClient } from '@/lib/api-client'
-import { isWithinDedupWindow, recordPlay } from './storage'
+import { playerStorage } from '@/runtime'
 
 const trackAudioPlay = (trackId: string) =>
   Effect.gen(function* () {
@@ -10,18 +10,22 @@ const trackAudioPlay = (trackId: string) =>
   })
 
 const deliverPlayIfFresh = createPlayDelivery({
-  isWithinDedupWindow,
+  isWithinDedupWindow: playerStorage.isWithinDedupWindow,
   deliver: trackAudioPlay,
-  remember: recordPlay,
+  remember: playerStorage.recordPlay,
   now: Date.now
 })
 
 let playDeliveryTail: Promise<void> = Promise.resolve()
 
-export const recordPlayIfFresh = (trackId: string) => {
-  const delivery = playDeliveryTail
-    .catch(() => undefined)
-    .then(() => Effect.runPromise(deliverPlayIfFresh(trackId)))
-  playDeliveryTail = delivery.catch(() => undefined)
-  return delivery
-}
+export const recordPlayIfFresh = (trackId: string) =>
+  Effect.tryPromise({
+    try: () => {
+      const delivery = playDeliveryTail
+        .catch(() => undefined)
+        .then(() => Effect.runPromise(deliverPlayIfFresh(trackId)))
+      playDeliveryTail = delivery.catch(() => undefined)
+      return delivery
+    },
+    catch: (error) => error
+  })

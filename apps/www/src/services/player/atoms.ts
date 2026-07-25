@@ -2,14 +2,14 @@ import type { QueueTrackType } from '@gbfm/player'
 import { makeQueueAtom, selectQueueView, type QueueAction, type QueueView } from '@gbfm/player'
 import { useAtomSet, useAtomValue } from '@effect/atom-react'
 import * as Atom from 'effect/unstable/reactivity/Atom'
+import { playerStorage } from '@/runtime'
 import { log } from '@/services/logger'
-import { loadQueue, saveQueue } from './storage'
 
 export type { QueueAction, QueueTrackType, QueueView }
 
 const { queueAtom } = makeQueueAtom({
-  loadQueue,
-  saveQueue,
+  loadQueue: playerStorage.loadQueue,
+  saveQueue: playerStorage.saveQueue,
   onError: (message, error) => log('error', message, { error })
 })
 
@@ -67,6 +67,11 @@ export const persistVolume = (state: VolumeState) => {
     window.localStorage.setItem(VOLUME_KEY, JSON.stringify(state))
   } catch {}
 }
+
+/** Source currently loaded outside the queue (e.g. a Spotify preview). */
+export const previewSrcAtom = Atom.make<string | null>(null).pipe(Atom.keepAlive)
+
+export const usePreviewSrc = () => useAtomValue(previewSrcAtom)
 
 export type VisibilityState = {
   readonly isQueueVisible: boolean

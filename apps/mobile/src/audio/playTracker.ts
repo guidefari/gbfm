@@ -1,12 +1,7 @@
 import { Effect } from 'effect'
 import { getApiClient } from '@/api/client'
 import { createPlayDelivery } from '@gbfm/player'
-import {
-  clearPosition as clearStoredPosition,
-  isWithinDedupWindow,
-  recordPlay,
-  savePosition
-} from '@/audio/queueStorage'
+import { playerStorage } from '@/runtime'
 
 export const trackAudioPlay = (trackId: string) =>
   Effect.gen(function* () {
@@ -15,9 +10,9 @@ export const trackAudioPlay = (trackId: string) =>
   })
 
 const deliverPlayIfFresh = createPlayDelivery({
-  isWithinDedupWindow,
+  isWithinDedupWindow: playerStorage.isWithinDedupWindow,
   deliver: trackAudioPlay,
-  remember: recordPlay,
+  remember: playerStorage.recordPlay,
   now: Date.now
 })
 
@@ -34,7 +29,3 @@ export const recordPlayIfFresh = (trackId: string) =>
     },
     catch: (error) => error
   })
-
-export const recordPosition = (trackId: string, position: number) => savePosition(trackId, position)
-
-export const clearPosition = (trackId: string) => clearStoredPosition(trackId)

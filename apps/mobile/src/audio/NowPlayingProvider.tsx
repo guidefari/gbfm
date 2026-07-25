@@ -1,8 +1,12 @@
 import type { AudioResponse } from '@gbfm/api/audio'
-import type { AudioStatus } from 'expo-audio'
+import {
+  createPlayerCore,
+  type EngineStatus,
+  type PlayerCore,
+  type QueueTrackType
+} from '@gbfm/player'
 import { useAudioPlayer } from 'expo-audio'
 import { useAtomValue } from '@effect/atom-react'
-import { Effect } from 'effect'
 import {
   createContext,
   type PropsWithChildren,
@@ -13,21 +17,10 @@ import {
   useRef,
   useState
 } from 'react'
-import { Platform } from 'react-native'
 import { audioModeAtom } from '@/store/atoms/audio-mode'
-import { subscribeToPlaybackStatus } from '@/audio/audioPlayerAdapter'
-import { clearPosition, recordPlayIfFresh, recordPosition } from '@/audio/playTracker'
-import {
-  shouldPersistPosition,
-  transitionPlaybackIntent,
-  transitionSourceCompletion,
-  transitionSourcePreparation,
-  type PlaybackIntent,
-  type SourceCompletion,
-  type SourcePreparation,
-  type SourcePreparationEvent
-} from '@gbfm/player'
-import { loadPosition, type QueueTrackType } from '@/audio/queueStorage'
+import { createExpoAudioEngine } from '@/audio/expoAudioEngine'
+import { recordPlayIfFresh } from '@/audio/playTracker'
+import { playerStorage } from '@/runtime'
 import type { QueueView } from '@/audio/queueAtom'
 import { useQueue, useQueueDispatch } from '@/audio/queueAtom'
 
@@ -73,15 +66,13 @@ const toQueueTrack = (track: Track): QueueTrackType => ({
   creators: track.creators
 })
 
-type MetadataSource = Pick<Track, 'title' | 'thumbnailUrl' | 'creators'>
-
-const buildMetadata = (track: MetadataSource) => {
-  const artist = track.creators?.map((creator) => creator.name).join(', ') ?? ''
-  return {
-    title: track.title,
-    artist: artist.length > 0 ? artist : undefined,
-    artworkUrl: track.thumbnailUrl ?? undefined
-  }
+const initialStatus: EngineStatus = {
+  isLoaded: false,
+  playing: false,
+  didJustFinish: false,
+  currentTime: 0,
+  duration: 0,
+  isBuffering: false
 }
 
 export function NowPlayingProvider({ children }: PropsWithChildren) {
@@ -91,259 +82,42 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
   const currentTrack = queue.current
   const dispatch = useQueueDispatch()
   const player = useAudioPlayer(null, { updateInterval: 500, keepAudioSessionActive: true })
-  const [status, setStatus] = useState<AudioStatus>(() => player.currentStatus)
+  const [status, setStatus] = useState<EngineStatus>(initialStatus)
   const [queueNotice, setQueueNotice] = useState<QueueNotice | null>(null)
 
-  type SourceSession = {
-    readonly generation: number
-    readonly id: string
-    intent: PlaybackIntent
-    preparation: SourcePreparation
-    completion: SourceCompletion
-    checkpoint: number | null
-    started: boolean
-  }
-
+  const coreRef = useRef<PlayerCore | null>(null)
   const skipNextRef = useRef<() => void>(() => {})
-  const sourceGenerationRef = useRef(0)
-  const sourceSessionRef = useRef<SourceSession | null>(null)
-  const playOnReadyRef = useRef<string | null>(null)
-  const lastPositionPersistRef = useRef<{ id: string; at: number } | null>(null)
-  const finishPreparingRef = useRef<(session: SourceSession) => void>(() => {})
-  const advancePreparationRef = useRef<
-    (session: SourceSession, event: SourcePreparationEvent) => void
-  >(() => {})
-
-  const reportEffect = useCallback((label: string, effect: Effect.Effect<void, unknown, never>) => {
-    Effect.runPromise(effect).catch((error: unknown) => console.error(label, error))
-  }, [])
-
-  finishPreparingRef.current = (session) => {
-    if (
-      sourceGenerationRef.current !== session.generation ||
-      sourceSessionRef.current !== session ||
-      !session.preparation.preparing ||
-      session.started
-    ) {
-      return
-    }
-
-    const prepare = async () => {
-      const checkpoint = session.checkpoint
-      if (
-        checkpoint !== null &&
-        checkpoint > 1 &&
-        session.preparation.duration > 0 &&
-        checkpoint < session.preparation.duration - 5
-      ) {
-        await player.seekTo(checkpoint)
-      }
-      if (
-        sourceGenerationRef.current !== session.generation ||
-        sourceSessionRef.current !== session
-      ) {
-        return
-      }
-
-      session.started = true
-      session.completion = { ...session.completion, started: true }
-      lastPositionPersistRef.current =
-        checkpoint === null ? null : { id: session.id, at: checkpoint }
-      if (session.intent.desiredPlaying) {
-        session.intent = transitionPlaybackIntent(session.intent, {
-          _tag: 'command',
-          playing: true
-        })
-        player.play()
-        reportEffect('Unable to deliver audio play', recordPlayIfFresh(session.id))
-      }
-    }
-
-    prepare().catch((error: unknown) => {
-      if (
-        sourceGenerationRef.current === session.generation &&
-        sourceSessionRef.current === session
-      ) {
-        session.started = true
-        session.completion = { ...session.completion, started: true }
-        if (session.intent.desiredPlaying) {
-          session.intent = transitionPlaybackIntent(session.intent, {
-            _tag: 'command',
-            playing: true
-          })
-          player.play()
-          reportEffect('Unable to deliver audio play', recordPlayIfFresh(session.id))
-        }
-      }
-      console.error('Unable to restore audio position', error)
-    })
-  }
-
-  advancePreparationRef.current = (session, event) => {
-    const transition = transitionSourcePreparation(session.preparation, event)
-    session.preparation = transition.state
-    if (transition.shouldPrepare) finishPreparingRef.current(session)
-  }
 
   useEffect(() => {
-    const current = currentTrack
-    const generation = sourceGenerationRef.current + 1
-    sourceGenerationRef.current = generation
-
-    if (!current) {
-      sourceSessionRef.current = null
-      player.clearLockScreenControls()
-      player.pause()
-      setStatus(player.currentStatus)
-      lastPositionPersistRef.current = null
-      return
-    }
-
-    const session: SourceSession = {
-      generation,
-      id: current.id,
-      intent: {
-        desiredPlaying: playOnReadyRef.current === current.id,
-        pendingPlaying: null
-      },
-      preparation: {
-        generation,
-        sourceLoaded: false,
-        checkpointLoaded: false,
-        duration: 0,
-        preparing: false
-      },
-      completion: { generation, started: false, handled: false, completed: false },
-      checkpoint: null,
-      started: false
-    }
-    playOnReadyRef.current = null
-    sourceSessionRef.current = session
-    lastPositionPersistRef.current = null
-
-    // Pausing first prevents Expo Audio's replace() from auto-resuming the old
-    // play state before the new source's checkpoint has been restored.
-    player.pause()
-    player.replace(current.url)
-    player.setActiveForLockScreen(true, buildMetadata(current), {
-      showSeekForward: true,
-      showSeekBackward: true
+    const core = createPlayerCore(createExpoAudioEngine(player), playerStorage, {
+      onStatus: setStatus,
+      onTrackFinished: () => skipNextRef.current(),
+      recordPlay: recordPlayIfFresh
     })
-
-    const observeStatus = (nextStatus: AudioStatus) => {
-      if (sourceSessionRef.current !== session) return
-      setStatus(nextStatus)
-      advancePreparationRef.current(session, {
-        _tag: 'sourceStatus',
-        generation: session.generation,
-        isLoaded: nextStatus.isLoaded,
-        duration: nextStatus.duration
-      })
-      if (!nextStatus.isLoaded) return
-
-      const completion = transitionSourceCompletion(session.completion, {
-        generation: session.generation,
-        didJustFinish: nextStatus.didJustFinish,
-        playing: nextStatus.playing
-      })
-      session.completion = completion.state
-      if (completion.shouldFinish) {
-        session.intent = transitionPlaybackIntent(session.intent, { _tag: 'completed' })
-        reportEffect('Unable to clear completed audio position', clearPosition(session.id))
-        skipNextRef.current()
-        return
-      }
-
-      if (session.started) {
-        session.intent = transitionPlaybackIntent(session.intent, {
-          _tag: 'status',
-          playing: nextStatus.playing
-        })
-      }
-
-      const last = lastPositionPersistRef.current
-      const previousPosition = last?.id === session.id ? last.at : null
-      if (!shouldPersistPosition(session.started, previousPosition, nextStatus.currentTime)) return
-      lastPositionPersistRef.current = { id: session.id, at: nextStatus.currentTime }
-      reportEffect(
-        'Unable to persist audio position',
-        recordPosition(session.id, nextStatus.currentTime)
-      )
+    coreRef.current = core
+    return () => {
+      core.dispose()
+      coreRef.current = null
     }
+  }, [player])
 
-    const subscription = subscribeToPlaybackStatus(
-      player,
-      Platform.OS === 'web' ? 'web' : 'native',
-      observeStatus
-    )
-    observeStatus(player.currentStatus)
-
-    Effect.runPromise(loadPosition(current.id)).then(
-      (saved) => {
-        if (
-          sourceGenerationRef.current !== session.generation ||
-          sourceSessionRef.current !== session
-        ) {
-          return
-        }
-        session.checkpoint = saved?.position ?? null
-        advancePreparationRef.current(session, { _tag: 'checkpointLoaded', generation })
-      },
-      (error: unknown) => {
-        if (
-          sourceGenerationRef.current !== session.generation ||
-          sourceSessionRef.current !== session
-        ) {
-          return
-        }
-        advancePreparationRef.current(session, { _tag: 'checkpointLoaded', generation })
-        console.error('Unable to load audio position', error)
-      }
-    )
-
-    return () => subscription.remove()
-  }, [currentTrack, player, reportEffect])
-
-  const playCurrent = useCallback(
-    (trackId: string) => {
-      const session = sourceSessionRef.current
-      if (!session || session.id !== trackId) return
-      session.intent = transitionPlaybackIntent(session.intent, {
-        _tag: 'command',
-        playing: true
-      })
-      if (!session.started) return
-
-      const play = () => {
-        if (sourceSessionRef.current !== session || !session.intent.desiredPlaying) return
-        player.play()
-        reportEffect('Unable to deliver audio play', recordPlayIfFresh(trackId))
-      }
-      if (session.completion.completed) {
-        player
-          .seekTo(0)
-          .then(play, (error: unknown) => console.error('Unable to restart completed audio', error))
-      } else {
-        play()
-      }
-    },
-    [player, reportEffect]
-  )
+  useEffect(() => {
+    coreRef.current?.setSource(currentTrack)
+  }, [currentTrack])
 
   const loadAndPlay = useCallback(
     (nextTrack: Track) => {
+      const core = coreRef.current
+      if (!core) return
       if (currentTrack?.id === nextTrack.id) {
-        playCurrent(nextTrack.id)
+        core.play(nextTrack.id)
         return
       }
-      playOnReadyRef.current = nextTrack.id
-      const previous = sourceSessionRef.current
-      if (previous) {
-        previous.completion = { ...previous.completion, handled: true, completed: false }
-      }
+      core.requestPlayOnReady(nextTrack.id)
+      core.detachCurrentSource()
       dispatch({ _tag: 'playNow', track: toQueueTrack(nextTrack) })
     },
-    [currentTrack?.id, dispatch, playCurrent]
+    [currentTrack?.id, dispatch]
   )
 
   const enqueue = useCallback(
@@ -368,15 +142,13 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
 
   const playAll = useCallback(
     (tracks: ReadonlyArray<Track>) => {
-      if (tracks.length === 0) return
+      const core = coreRef.current
+      if (!core || tracks.length === 0) return
       const queued = tracks.map(toQueueTrack)
       const first = queued[0]
       if (!first) return
-      playOnReadyRef.current = first.id
-      const previous = sourceSessionRef.current
-      if (previous) {
-        previous.completion = { ...previous.completion, handled: true, completed: false }
-      }
+      core.requestPlayOnReady(first.id)
+      core.detachCurrentSource()
       dispatch({ _tag: 'playAll', tracks: queued })
     },
     [dispatch]
@@ -384,15 +156,12 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
 
   const removeFromQueue = useCallback(
     (index: number) => {
-      if (index < 0 || index >= queue.tracks.length) return
+      const core = coreRef.current
+      if (!core || index < 0 || index >= queue.tracks.length) return
       if (index === queue.currentIndex) {
-        const session = sourceSessionRef.current
-        const shouldContinue = session?.intent.desiredPlaying === true
         const next = queue.tracks[index + 1] ?? queue.tracks[index - 1]
-        if (shouldContinue && next) playOnReadyRef.current = next.id
-        if (session) {
-          session.completion = { ...session.completion, handled: true, completed: false }
-        }
+        if (core.isDesiredPlaying() && next) core.requestPlayOnReady(next.id)
+        core.detachCurrentSource()
       }
       dispatch({ _tag: 'remove', index })
     },
@@ -408,20 +177,18 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
 
   const skipTo = useCallback(
     (index: number) => {
+      const core = coreRef.current
       const target = queue.tracks[index]
-      if (!target) return
+      if (!core || !target) return
       if (currentTrack?.id === target.id) {
-        playCurrent(target.id)
+        core.play(target.id)
         return
       }
-      playOnReadyRef.current = target.id
-      const previous = sourceSessionRef.current
-      if (previous) {
-        previous.completion = { ...previous.completion, handled: true, completed: false }
-      }
+      core.requestPlayOnReady(target.id)
+      core.detachCurrentSource()
       dispatch({ _tag: 'playIndex', index })
     },
-    [currentTrack?.id, dispatch, playCurrent, queue.tracks]
+    [currentTrack?.id, dispatch, queue.tracks]
   )
 
   const skipNext = useCallback(() => {
@@ -433,49 +200,27 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
   const skipPrevious = useCallback(() => {
     if (queue.currentIndex < 0) return
     if (queue.currentIndex === 0) {
-      player.seekTo(0).catch(() => {})
+      coreRef.current?.seekTo(0)
       return
     }
     skipTo(queue.currentIndex - 1)
-  }, [queue.currentIndex, player, skipTo])
+  }, [queue.currentIndex, skipTo])
 
   skipNextRef.current = skipNext
 
   const togglePlayback = useCallback(() => {
-    const session = sourceSessionRef.current
-    if (!session || !currentTrack) return
-    if (playOnReadyRef.current !== null || session.intent.desiredPlaying) {
-      playOnReadyRef.current = null
-      session.intent = transitionPlaybackIntent(session.intent, {
-        _tag: 'command',
-        playing: false
-      })
-      player.pause()
-      return
-    }
-    playCurrent(currentTrack.id)
-  }, [currentTrack, playCurrent, player])
+    const core = coreRef.current
+    if (!core || !currentTrack) return
+    if (core.isDesiredPlaying()) core.pause()
+    else core.play(currentTrack.id)
+  }, [currentTrack])
 
-  const seekTo = useCallback(
-    (seconds: number) => {
-      const session = sourceSessionRef.current
-      player.seekTo(seconds).then(
-        () => {
-          if (sourceSessionRef.current !== session || !session?.started) return
-          lastPositionPersistRef.current = { id: session.id, at: seconds }
-          reportEffect('Unable to persist audio position', recordPosition(session.id, seconds))
-        },
-        (error: unknown) => console.error('Unable to seek audio', error)
-      )
-    },
-    [player, reportEffect]
-  )
+  const seekTo = useCallback((seconds: number) => {
+    coreRef.current?.seekTo(seconds)
+  }, [])
 
   const clearQueue = useCallback(() => {
-    const previous = sourceSessionRef.current
-    if (previous) {
-      previous.completion = { ...previous.completion, handled: true, completed: false }
-    }
+    coreRef.current?.detachCurrentSource()
     dispatch({ _tag: 'clear' })
   }, [dispatch])
 

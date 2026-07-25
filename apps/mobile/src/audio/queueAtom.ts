@@ -7,11 +7,14 @@ import {
   type QueueView
 } from '@gbfm/player'
 import { useAtomSet, useAtomValue } from '@effect/atom-react'
-import { loadQueue, saveQueue } from '@/audio/queueStorage'
+import { playerStorage } from '@/runtime'
 
 export { initialQueueState, mergeHydratedQueue, reduceQueue, type QueueAction, type QueueView }
 
-const { queueAtom, selectQueueView } = makeQueueAtom({ loadQueue, saveQueue })
+const { queueAtom, selectQueueView } = makeQueueAtom({
+  loadQueue: playerStorage.loadQueue,
+  saveQueue: playerStorage.saveQueue
+})
 
 export { queueAtom }
 
