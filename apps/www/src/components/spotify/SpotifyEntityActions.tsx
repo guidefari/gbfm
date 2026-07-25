@@ -1,6 +1,6 @@
 import { toast } from '@gbfm/ui'
 import * as Effect from 'effect/Effect'
-import { ListPlus, Play } from 'lucide-react'
+import { ListPlus } from 'lucide-react'
 import { SPOTIFY_GREEN, SpotifyIcon } from '@/components/icons/BrandIcons'
 import { useState } from 'react'
 import {
@@ -27,7 +27,7 @@ const entityNoun: Record<SpotifyEntityRef['kind'], string> = {
 }
 
 const actionClass =
-  'inline-flex items-center gap-1 rounded-sm bg-muted/50 px-2 py-0.5 text-[10px] font-bold tracking-widest text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50'
+  'inline-flex items-center gap-0.5 border-r border-border px-1.5 py-0.5 text-[10px] font-bold tracking-widest text-muted-foreground transition-colors last:border-r-0 hover:bg-muted hover:text-foreground disabled:opacity-50'
 
 export function SpotifyEntityActions({ url }: Props) {
   const { isConnected } = useSpotifyConnection()
@@ -83,33 +83,35 @@ export function SpotifyEntityActions({ url }: Props) {
   }
 
   return (
-    <span className='ml-0.5 inline-flex items-center gap-1.5 border-l border-border/40 pl-2'>
-      {/* Spotify requires their mark alongside any playback control or metadata they supply. */}
-      <SpotifyIcon aria-hidden className='h-3 w-3' style={{ color: SPOTIFY_GREEN }} />
-      <button
-        type='button'
-        className={actionClass}
-        aria-label={`Play ${entityNoun[entity.kind].toLowerCase()} on Spotify`}
-        disabled={pending !== null}
-        onClick={(e) => {
-          e.stopPropagation()
-          void run('play')
-        }}>
-        <Play className='h-2.5 w-2.5' />
-        {pending === 'play' ? 'Playing…' : 'Play'}
-      </button>
-      <button
-        type='button'
-        className={actionClass}
-        aria-label={`Add ${entityNoun[entity.kind].toLowerCase()} to Spotify queue`}
-        disabled={pending !== null}
-        onClick={(e) => {
-          e.stopPropagation()
-          void run('queue')
-        }}>
-        <ListPlus className='h-2.5 w-2.5' />
-        {pending === 'queue' ? 'Queueing…' : 'Queue'}
-      </button>
-    </span>
+    <>
+      <span aria-hidden className='mx-0.5 h-4 w-px bg-border' />
+      <div className='inline-flex items-center overflow-hidden rounded-sm border border-border'>
+        <button
+          type='button'
+          className={`${actionClass} bg-[#1db954]/10 text-foreground hover:bg-[#1db954]/15`}
+          aria-label={`Play ${entityNoun[entity.kind].toLowerCase()} on Spotify`}
+          disabled={pending !== null}
+          onClick={(e) => {
+            e.stopPropagation()
+            void run('play')
+          }}>
+          {/* Spotify requires their mark alongside any playback control or metadata they supply. */}
+          <SpotifyIcon className='h-2.5 w-2.5' style={{ color: SPOTIFY_GREEN }} />
+          {pending === 'play' ? 'Playing…' : 'Play'}
+        </button>
+        <button
+          type='button'
+          className={actionClass}
+          aria-label={`Add ${entityNoun[entity.kind].toLowerCase()} to Spotify queue`}
+          disabled={pending !== null}
+          onClick={(e) => {
+            e.stopPropagation()
+            void run('queue')
+          }}>
+          <ListPlus className='h-2.5 w-2.5' />
+          {pending === 'queue' ? 'Queueing…' : 'Queue'}
+        </button>
+      </div>
+    </>
   )
 }

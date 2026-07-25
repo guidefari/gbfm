@@ -43,7 +43,7 @@ export function StreamLinks({ links }: Props) {
             target='_blank'
             rel='noopener noreferrer'
             onClick={(e) => e.stopPropagation()}
-            className='inline-flex items-center gap-1 rounded-sm bg-muted/50 px-2 py-0.5 text-[10px] font-bold tracking-widest text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'>
+            className='inline-flex items-center gap-0.5 rounded-sm bg-muted/50 px-1.5 py-0.5 text-[10px] font-bold tracking-widest text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'>
             {link.platform === 'spotify' ? (
               <SpotifyIcon aria-hidden className='h-2.5 w-2.5' style={{ color: SPOTIFY_GREEN }} />
             ) : null}
