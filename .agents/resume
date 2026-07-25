@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# This repository has no service that must remain running between Amp sessions.
+# Keep resume fast; fresh dependency installation belongs in .agents/setup.
+if [[ ! -d node_modules ]]; then
+  echo "[resume] node_modules is missing; run .agents/setup"
+  exit 1
+fi
+
+echo "[resume] Workspace is ready"
