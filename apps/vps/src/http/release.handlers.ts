@@ -48,44 +48,6 @@ export const ReleaseHandlersLive = HttpApiBuilder.group(Api, 'release', (handler
         return toReleaseResponse(release)
       })
     )
-    .handle('getReleasesByLabel', ({ params, query }) =>
-      Effect.gen(function* () {
-        const svc = yield* ReleaseService
-        const result = yield* dieOnDatabaseError(
-          svc
-            .getByLabelSlug(params.labelSlug, {
-              limit: query.limit ?? 20,
-              offset: query.offset ?? 0
-            })
-            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
-        )
-
-        return {
-          data: result.data.map(toReleaseResponse),
-          pagination: result.pagination
-        }
-      })
-    )
-    .handle('getReleasesByLabelForEdit', ({ params, query }) =>
-      Effect.gen(function* () {
-        const { user } = yield* AuthSession
-        const svc = yield* ReleaseService
-        const result = yield* dieOnDatabaseError(
-          svc
-            .getByLabelSlugForEdit(
-              params.labelSlug,
-              { limit: query.limit ?? 20, offset: query.offset ?? 0 },
-              user.id,
-              user.role ?? 'user'
-            )
-            .pipe(
-              Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
-              Effect.catchTag('UnauthorizedError', () => new HttpApiError.Unauthorized())
-            )
-        )
-        return { data: result.data.map(toReleaseResponse), pagination: result.pagination }
-      })
-    )
     .handle('getReleaseBySlug', ({ params }) =>
       Effect.gen(function* () {
         const svc = yield* ReleaseService

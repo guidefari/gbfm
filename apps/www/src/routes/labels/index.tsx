@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
-import { useAllLabels } from '@/lib/http'
+import { useLabels } from '@/lib/http'
 import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'
 
 export const Route = createFileRoute('/labels/')({
@@ -11,7 +11,7 @@ export const Route = createFileRoute('/labels/')({
 })
 
 function Component() {
-  const { data, isPending, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useAllLabels()
+  const { data, isPending, error } = useLabels()
 
   if (isPending) {
     return (
@@ -51,14 +51,14 @@ function Component() {
             className='flex flex-col gap-2 transition-transform group hover:scale-105'>
             <div className='w-full overflow-hidden border rounded-sm shadow-sm aspect-square border-border bg-background'>
               <img
-                src={label.thumbnailUrl || DEFAULT_IMAGE_URL}
-                alt={label.title}
+                src={label.imageUrl || DEFAULT_IMAGE_URL}
+                alt={label.name}
                 className='object-cover w-full h-full transition-opacity group-hover:opacity-80'
               />
             </div>
             <div className='flex flex-col gap-1'>
               <h2 className='text-sm font-semibold leading-tight transition-colors text-foreground group-hover:text-highlight line-clamp-2'>
-                {label.title}
+                {label.name}
               </h2>
               {label.genres && label.genres.length > 0 && (
                 <p className='text-xs text-muted-foreground line-clamp-1'>
@@ -69,18 +69,6 @@ function Component() {
           </Link>
         ))}
       </div>
-
-      {hasNextPage && (
-        <div className='flex justify-center mt-8'>
-          <button
-            type='button'
-            onClick={() => fetchNextPage()}
-            disabled={isFetchingNextPage}
-            className='px-6 py-3 text-sm font-medium transition-colors rounded-sm bg-muted hover:bg-muted/80 disabled:opacity-50 disabled:cursor-not-allowed'>
-            {isFetchingNextPage ? 'Loading...' : 'Load More Labels'}
-          </button>
-        </div>
-      )}
     </div>
   )
 }

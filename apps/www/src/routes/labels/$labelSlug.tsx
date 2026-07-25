@@ -2,14 +2,12 @@ import { Button } from '@gbfm/ui'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { Effect } from 'effect'
 import { Edit } from 'lucide-react'
-import * as React from 'react'
+import { useEffect } from 'react'
 import { MDXRendrr } from '@/components/MDXRendrr'
-import { ReleasesTable } from '@/components/ReleasesTable'
 import { RouteError } from '@/components/RouteError'
 import { ShareButton } from '@/components/ShareButton'
 import { getApiClient } from '@/lib/api-client'
 import { useSession } from '@/lib/auth-client'
-import { useReleasesByLabel } from '@/lib/http'
 import { generateLabelSEO, generateSEOMeta } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
 import { useSetCurrentContent } from '@/store'
@@ -20,199 +18,123 @@ export const Route = createFileRoute('/labels/$labelSlug')({
   loader: async ({ params }) => {
     const client = await getApiClient()
     const label = await Effect.runPromise(
-      client.label
+      client.music
         .getLabelBySlug({ params: { slug: params.labelSlug } })
         .pipe(
-          Effect.tapError((error) => captureException(error, { endpoint: 'label.getLabelBySlug' }))
+          Effect.tapError((error) => captureException(error, { endpoint: 'music.getLabelBySlug' }))
         )
+    )
+    const links = await Effect.runPromise(
+      client.music.listEntityLinks({
+        params: { entityType: 'label', entityId: label.id },
+        query: { status: 'verified' }
+      })
     )
     return {
       label: {
         ...label,
-        bannerImageUrl: null,
-        createdAt: new Date(label.createdAt),
-        updatedAt: new Date(label.updatedAt),
         tags: label.tags ? [...label.tags] : null,
         genres: label.genres ? [...label.genres] : null,
         creators: label.creators ? [...label.creators] : undefined
-      }
+      },
+      links: links.map((link) => ({ ...link }))
     }
   },
-  head: ({ loaderData, params }) => {
-    if (!loaderData?.label) {
-      return {
-        meta: [
-          {
-            title: 'Label | goosebumps.fm'
-          },
-          {
-            name: 'description',
-            content: 'Explore music labels on goosebumps.fm'
-          }
+  head: ({ loaderData, params }) => ({
+    meta: loaderData?.label
+      ? generateSEOMeta(generateLabelSEO(loaderData.label, params.labelSlug))
+      : [
+          { title: 'Label | goosebumps.fm' },
+          { name: 'description', content: 'Explore music labels on goosebumps.fm' }
         ]
-      }
-    }
-
-    const seoData = generateLabelSEO(loaderData.label, params.labelSlug)
-    return {
-      meta: generateSEOMeta(seoData)
-    }
-  }
+  })
 })
 
 function LabelPage() {
   const { labelSlug } = Route.useParams()
-  const { label: data } = Route.useLoaderData()
+  const { label, links } = Route.useLoaderData()
   const setCurrentContent = useSetCurrentContent()
   const { data: session } = useSession()
   const navigate = useNavigate()
   const isAdmin = session?.user?.role === 'admin'
 
-  const handleEdit = () => {
-    navigate({
-      to: '/label-upload',
-      search: {
-        edit: labelSlug,
-        title: data?.title || '',
-        description: data?.description || '',
-        content: data?.content || '',
-        thumbnailUrl: data?.thumbnailUrl || '',
-        website: data?.website || '',
-        bandcamp: data?.bandcamp || '',
-        discogs: data?.discogs || ''
-      }
+  useEffect(() => {
+    setCurrentContent({
+      id: label.id,
+      archetype: 'label',
+      creatorIds: label.creators?.map((creator) => creator.id) ?? []
     })
-  }
-  const {
-    data: releases,
-    error: releasesError,
-    isPending: releasesPending,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage
-  } = useReleasesByLabel(labelSlug)
-
-  React.useEffect(() => {
-    if (data?.creators) {
-      const contentInfo = {
-        id: labelSlug,
-        archetype: 'label',
-        creatorIds: data.creators.map((creator) => creator.id)
-      }
-      setCurrentContent(contentInfo)
-    }
 
     return () => setCurrentContent(null)
-  }, [data, labelSlug, setCurrentContent])
-
-  if (!data) return <div className='p-4 text-center'>No data</div>
+  }, [label, setCurrentContent])
 
   return (
     <div className='mx-auto max-w-6xl'>
-      <div className='grid grid-cols-1 lg:grid-cols-3 gap-8'>
-        {/* Left sidebar with label metadata */}
-        <div className='lg:col-span-1'>
-          <div className='sticky top-6'>
-            <div className='mb-6'>
-              <img
-                className='w-full rounded-sm'
-                src={data.thumbnailUrl || '/fav.png'}
-                alt={`Thumbnail for ${data.title}`}
-                width={400}
-                height={400}
-                loading='lazy'
-              />
-            </div>
-
+      {label.bannerImageUrl && (
+        <img
+          src={label.bannerImageUrl}
+          alt=''
+          className='mb-8 h-48 w-full rounded-sm object-cover sm:h-64'
+        />
+      )}
+      <div className='grid grid-cols-1 gap-8 lg:grid-cols-3'>
+        <aside className='lg:col-span-1'>
+          <div className='sticky top-6 space-y-6'>
+            <img
+              className='w-full rounded-sm'
+              src={label.imageUrl || '/fav.png'}
+              alt={`Artwork for ${label.name}`}
+              width={400}
+              height={400}
+            />
             <div className='space-y-4'>
-              <div className='flex items-start justify-between'>
-                <h1 className='text-2xl font-bold'>{data.title}</h1>
+              <div className='flex items-start justify-between gap-3'>
+                <h1 className='text-2xl font-bold'>{label.name}</h1>
                 <div className='flex gap-2'>
                   <ShareButton type='label' slug={labelSlug} />
                   {isAdmin && (
                     <Button
-                      onClick={handleEdit}
+                      onClick={() =>
+                        navigate({
+                          to: '/admin/music-entity/$entityType/$id',
+                          params: { entityType: 'label', id: label.id }
+                        })
+                      }
                       variant='outline'
-                      size='sm'
-                      className='flex items-center gap-2'>
-                      <Edit className='w-4 h-4' />
-                      Edit Label
+                      size='sm'>
+                      <Edit className='mr-2 h-4 w-4' />
+                      Edit
                     </Button>
                   )}
                 </div>
               </div>
-
-              {data.description && <p className='text-muted-foreground'>{data.description}</p>}
-
-              {(data.website || data.bandcamp || data.discogs) && (
+              {label.description && <p className='text-muted-foreground'>{label.description}</p>}
+              {label.genres && label.genres.length > 0 && (
+                <p className='text-sm text-muted-foreground'>{label.genres.join(', ')}</p>
+              )}
+              {links.length > 0 && (
                 <div>
-                  <h3 className='mb-3 text-lg font-semibold'>Links</h3>
+                  <h2 className='mb-3 text-lg font-semibold'>Links</h2>
                   <div className='flex flex-col gap-2'>
-                    {data.website && (
+                    {links.map((link) => (
                       <a
-                        href={data.website}
+                        key={link.id}
+                        href={link.url}
                         target='_blank'
                         rel='noopener noreferrer'
-                        className='px-4 py-2 text-sm font-medium rounded-sm transition-colors bg-primary/10 hover:bg-primary/20'>
-                        Website
+                        className='rounded-sm bg-primary/10 px-4 py-2 text-sm font-medium capitalize transition-colors hover:bg-primary/20'>
+                        {link.platform.replaceAll('_', ' ')}
                       </a>
-                    )}
-                    {data.bandcamp && (
-                      <a
-                        href={data.bandcamp}
-                        target='_blank'
-                        rel='noopener noreferrer'
-                        className='px-4 py-2 text-sm font-medium rounded-sm transition-colors bg-primary/10 hover:bg-primary/20'>
-                        Bandcamp
-                      </a>
-                    )}
-                    {data.discogs && (
-                      <a
-                        href={data.discogs}
-                        target='_blank'
-                        rel='noopener noreferrer'
-                        className='px-4 py-2 text-sm font-medium rounded-sm transition-colors bg-primary/10 hover:bg-primary/20'>
-                        Discogs
-                      </a>
-                    )}
+                    ))}
                   </div>
                 </div>
               )}
             </div>
           </div>
-        </div>
-
-        {/* Main content area */}
-        <div className='lg:col-span-2 space-y-8'>
-          {/* Label content */}
-          <div className='prose prose-neutral dark:prose-invert max-w-none'>
-            <MDXRendrr mdxString={data.compiledContent ?? data.content} />
-          </div>
-
-          {/* Releases section */}
-          {releasesPending ? (
-            <div className='text-center text-muted-foreground'>Loading releases...</div>
-          ) : releasesError ? (
-            <div className='text-center text-destructive'>
-              Error loading releases: {releasesError.message}
-            </div>
-          ) : (
-            <>
-              <ReleasesTable releases={releases || []} />
-              {hasNextPage && (
-                <div className='flex justify-center mt-6'>
-                  <Button
-                    variant='outline'
-                    onClick={() => fetchNextPage()}
-                    disabled={isFetchingNextPage}
-                    className='px-6 py-3 text-sm font-medium transition-colors'>
-                    {isFetchingNextPage ? 'Loading...' : 'Load More Releases'}
-                  </Button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
+        </aside>
+        <main className='prose prose-neutral max-w-none dark:prose-invert lg:col-span-2'>
+          <MDXRendrr mdxString={label.compiledContent ?? label.content} />
+        </main>
       </div>
     </div>
   )

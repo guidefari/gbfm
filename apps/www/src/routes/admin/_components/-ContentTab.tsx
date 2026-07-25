@@ -45,19 +45,6 @@ interface AudioItem {
   creators?: Array<{ id: string; name: string }>
 }
 
-interface LabelItem {
-  id: string
-  name: string
-  slug: string
-  description: string | null
-  content: string
-  thumbnailUrl: string | null
-  website: string | null
-  bandcamp: string | null
-  discogs: string | null
-  createdAt: string
-}
-
 type EditorialPostItem = Omit<
   SelectMdxCompiledEditorialPost,
   'createdAt' | 'updatedAt' | 'creators'
@@ -418,64 +405,6 @@ function TweetPostActions({ post, onEdit }: { post: PostListItem; onEdit: () => 
   )
 }
 
-function LabelsTabContent({ isPending, labels }: { isPending: boolean; labels: LabelItem[] }) {
-  return (
-    <TabsContent value='labels' className='mt-4'>
-      {isPending ? (
-        <div className='py-8 text-center text-muted-foreground'>Loading labels…</div>
-      ) : (
-        <div className='overflow-x-auto rounded-sm border'>
-          <table className='w-full text-sm'>
-            <thead>
-              <tr className='border-b bg-muted/50'>
-                <th className='px-4 py-3 text-left font-medium'>Name</th>
-                <th className='px-4 py-3 text-left font-medium'>Slug</th>
-                <th className='px-4 py-3 text-left font-medium'>Created</th>
-                <th className='px-4 py-3 text-left font-medium'>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {labels.map((label) => (
-                <tr key={label.id} className='border-b hover:bg-muted/50'>
-                  <td className='px-4 py-3'>{label.name}</td>
-                  <td className='px-4 py-3 text-muted-foreground'>{label.slug}</td>
-                  <td className='px-4 py-3 text-muted-foreground'>
-                    {new Date(label.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className='px-4 py-3'>
-                    <div className='flex gap-2'>
-                      <Button variant='outline' size='sm' asChild>
-                        <Link to='/labels/$labelSlug' params={{ labelSlug: label.slug }}>
-                          View
-                        </Link>
-                      </Button>
-                      <Button
-                        variant='outline'
-                        size='sm'
-                        onClick={() => {
-                          window.location.href = `/label-upload?edit=${encodeURIComponent(label.slug)}&title=${encodeURIComponent(label.name || '')}&description=${encodeURIComponent(label.description || '')}&content=${encodeURIComponent(label.content || '')}&thumbnailUrl=${encodeURIComponent(label.thumbnailUrl || '')}`
-                        }}>
-                        Edit
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-              {labels.length === 0 && (
-                <tr>
-                  <td colSpan={4} className='px-4 py-8 text-center text-muted-foreground'>
-                    No labels found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </TabsContent>
-  )
-}
-
 function MetadataDrawer({
   audioState,
   postState,
@@ -768,12 +697,6 @@ export function ContentTab() {
       fetcher<PaginatedResponse<AudioItem>>(apiUrl('/content/audio/mix/manage?limit=50&offset=0'))
   })
 
-  const { data: labelsData, isPending: labelsPending } = useQuery({
-    queryKey: ['admin', 'labels'],
-    queryFn: () =>
-      fetcher<PaginatedResponse<LabelItem>>(apiUrl('/content/labels/manage?limit=50&offset=0'))
-  })
-
   const { data: editorialData, isPending: editorialPending } = useQuery({
     queryKey: ['admin', 'posts', 'post'],
     queryFn: () =>
@@ -869,7 +792,6 @@ export function ContentTab() {
   })
 
   const mixes = mixesData?.data
-  const labels = labelsData?.data
   const editorialPosts = editorialData?.data
   const tweetPosts = tweetData?.data
 
@@ -970,7 +892,6 @@ export function ContentTab() {
           <TabsTrigger value='mixes'>Mixes ({mixes?.length ?? 0})</TabsTrigger>
           <TabsTrigger value='editorial'>Editorial ({editorialPosts?.length ?? 0})</TabsTrigger>
           <TabsTrigger value='tweet'>Tweet ({tweetPosts?.length ?? 0})</TabsTrigger>
-          <TabsTrigger value='labels'>Labels ({labels?.length ?? 0})</TabsTrigger>
         </TabsList>
         <MixesTabContent
           isPending={mixesPending}
@@ -998,7 +919,6 @@ export function ContentTab() {
           titleFallback='Tweet'
           onOpenEditDialog={openPostEditDialog}
         />
-        <LabelsTabContent isPending={labelsPending} labels={labels ?? []} />
       </Tabs>
       <MetadataDrawer
         audioState={editDialog}

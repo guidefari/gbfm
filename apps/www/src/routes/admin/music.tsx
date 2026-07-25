@@ -11,15 +11,18 @@ import {
   TabsList,
   TabsTrigger
 } from '@gbfm/ui'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import {
   type MusicAlbum,
   type MusicArtist,
+  type MusicLabel,
   type MusicTrack,
   useAdminAlbums,
   useAdminArtists,
+  useAdminLabels,
   useAdminTracks
 } from '@/lib/http'
+import { useCreateAdminLabel } from '@/lib/http'
 import { AdminPage } from './_components/-AdminLayout'
 import { PlaylistsTab } from './_components/-PlaylistsTab'
 
@@ -31,7 +34,7 @@ function AdminMusicPage() {
   return (
     <AdminPage
       title='Music Catalog'
-      description='Artists, albums, tracks, and playlists.'
+      description='Artists, albums, tracks, playlists, and record labels.'
       backToAdmin>
       <Card className='overflow-hidden'>
         <Tabs defaultValue='artists' className='flex min-h-0 flex-col'>
@@ -53,6 +56,9 @@ function AdminMusicPage() {
                 <TabsTrigger value='playlists' className='h-6 px-3 text-xs'>
                   Playlists
                 </TabsTrigger>
+                <TabsTrigger value='labels' className='h-6 px-3 text-xs'>
+                  Labels
+                </TabsTrigger>
               </TabsList>
             </div>
           </div>
@@ -67,6 +73,9 @@ function AdminMusicPage() {
           </TabsContent>
           <TabsContent value='playlists' className='mt-0 flex-1 min-h-0'>
             <PlaylistsTab />
+          </TabsContent>
+          <TabsContent value='labels' className='mt-0 flex-1 overflow-auto p-6'>
+            <LabelsTab />
           </TabsContent>
         </Tabs>
       </Card>
@@ -104,6 +113,39 @@ function TracksTab() {
         <TrackRow key={t.id} track={t} />
       ))}
     </EntityList>
+  )
+}
+
+function LabelsTab() {
+  const navigate = useNavigate()
+  const { data, isLoading } = useAdminLabels()
+  const createLabel = useCreateAdminLabel()
+
+  const handleCreate = async () => {
+    const label = await createLabel.mutateAsync({
+      name: 'Untitled label',
+      slug: `untitled-label-${Date.now()}`,
+      content: ''
+    })
+    navigate({
+      to: '/admin/music-entity/$entityType/$id',
+      params: { entityType: 'label', id: label.id }
+    })
+  }
+
+  return (
+    <div className='space-y-4'>
+      <div className='flex justify-end'>
+        <Button size='sm' onClick={handleCreate} disabled={createLabel.isPending}>
+          {createLabel.isPending ? 'Creating...' : 'New label'}
+        </Button>
+      </div>
+      <EntityList isLoading={isLoading}>
+        {(data ?? []).map((label) => (
+          <LabelRow key={label.id} label={label} />
+        ))}
+      </EntityList>
+    </div>
   )
 }
 
@@ -234,6 +276,34 @@ function TrackRow({ track }: { track: MusicTrack }) {
           <Link
             to='/admin/music-entity/$entityType/$id'
             params={{ entityType: 'track', id: track.id }}>
+            Edit
+          </Link>
+        </Button>
+      </div>
+    </li>
+  )
+}
+
+function LabelRow({ label }: { label: MusicLabel }) {
+  const isPublished = label.publishedAt !== null && new Date(label.publishedAt) <= new Date()
+
+  return (
+    <li className='flex items-center gap-4 px-6 py-3 transition-colors hover:bg-muted/40'>
+      {label.imageUrl && (
+        <img src={label.imageUrl} alt='' className='h-9 w-9 shrink-0 rounded-sm object-cover' />
+      )}
+      <div className='min-w-0 flex-1'>
+        <p className='truncate font-medium'>{label.name}</p>
+        <p className='truncate font-mono text-xs text-muted-foreground'>{label.slug}</p>
+      </div>
+      <div className='flex shrink-0 items-center gap-2'>
+        <Badge variant={isPublished ? 'default' : 'secondary'} className='text-xs'>
+          {isPublished ? 'Published' : 'Draft'}
+        </Badge>
+        <Button asChild size='sm' variant='outline'>
+          <Link
+            to='/admin/music-entity/$entityType/$id'
+            params={{ entityType: 'label', id: label.id }}>
             Edit
           </Link>
         </Button>

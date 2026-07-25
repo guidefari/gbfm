@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
 import { index, jsonb, pgTable, timestamp, uuid } from 'drizzle-orm/pg-core'
-import { labelsTable } from './label.schema'
+import { musicLabelsTable } from './music-entity.schema'
 import { defaultContentFields } from './util'
 
 const streamingLinkSchema = z.object({
@@ -15,7 +15,7 @@ export const releasesTable = pgTable(
     ...defaultContentFields,
     labelId: uuid()
       .notNull()
-      .references(() => labelsTable.id),
+      .references(() => musicLabelsTable.id),
     releaseDate: timestamp({ withTimezone: true }),
     streamingLinks: jsonb().$type<Array<{ platform: string; url: string }>>()
   },
@@ -67,8 +67,8 @@ export const updateReleaseSchema = insertReleaseSchema.partial()
 export const createReleaseSchema = insertReleaseSchema
 
 export const releasesRelations = relations(releasesTable, ({ one }) => ({
-  label: one(labelsTable, {
+  label: one(musicLabelsTable, {
     fields: [releasesTable.labelId],
-    references: [labelsTable.id]
+    references: [musicLabelsTable.id]
   })
 }))

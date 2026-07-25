@@ -15,22 +15,26 @@ import { useNavigate } from '@tanstack/react-router'
 import {
   type MusicAlbum,
   type MusicArtist,
+  type MusicLabel,
   type MusicTrack,
   useAddAdminEntityLink,
   useAddArtistToAlbum,
   useAddArtistToTrack,
   useAdminAlbum,
   useAdminArtist,
+  useAdminLabel,
   useAdminEntityLinks,
   useAdminTrack,
   useDeleteAdminAlbum,
   useDeleteAdminArtist,
+  useDeleteAdminLabel,
   useDeleteAdminEntityLink,
   useDeleteAdminTrack,
   useRemoveArtistFromAlbum,
   useRemoveArtistFromTrack,
   useUpdateAdminAlbum,
   useUpdateAdminArtist,
+  useUpdateAdminLabel,
   useUpdateAdminEntityLinkStatus,
   useUpdateAdminTrack
 } from '@/lib/http'
@@ -44,6 +48,7 @@ export function MusicEntityDetailPage({ entityType, id }: Props) {
   if (entityType === 'artist') return <ArtistDetailPage id={id} />
   if (entityType === 'album') return <AlbumDetailPage id={id} />
   if (entityType === 'track') return <TrackDetailPage id={id} />
+  if (entityType === 'label') return <LabelDetailPage id={id} />
   return <p className='p-6 text-muted-foreground'>Unsupported entity type.</p>
 }
 
@@ -284,6 +289,89 @@ function TrackDetailPage({ id }: { id: string }) {
   )
 }
 
+function LabelDetailPage({ id }: { id: string }) {
+  const navigate = useNavigate()
+  const { data, isLoading } = useAdminLabel(id)
+  const update = useUpdateAdminLabel()
+  const del = useDeleteAdminLabel()
+  const links = useAdminEntityLinks('label', id)
+  const addLink = useAddAdminEntityLink()
+  const updateLinkStatus = useUpdateAdminEntityLinkStatus()
+  const deleteLink = useDeleteAdminEntityLink()
+
+  if (isLoading) return <MusicEntityDetailSkeleton />
+  if (!data) return <NotFound />
+
+  async function handleDelete() {
+    if (!confirm(`Delete label "${data?.name}"? This cannot be undone.`)) return
+    try {
+      await del.mutateAsync(id)
+      toast({ title: 'Label deleted' })
+      navigate({ to: '/admin/music' })
+    } catch (error) {
+      toast({
+        title: 'Failed to delete label',
+        description:
+          error instanceof Error
+            ? error.message
+            : 'Labels with existing releases cannot be deleted.',
+        variant: 'destructive'
+      })
+    }
+  }
+
+  return (
+    <MusicEntityDetail
+      entityType='label'
+      name={data.name}
+      imageUrl={data.imageUrl}
+      publishedAt={data.publishedAt}
+      createdAt={data.createdAt}
+      updatedAt={data.updatedAt}
+      actionsSlot={
+        <Button size='sm' variant='destructive' onClick={handleDelete} disabled={del.isPending}>
+          Delete
+        </Button>
+      }
+      metadataSlot={
+        <MusicEntityMetadataForm
+          entityType='label'
+          initialData={toLabelMetadata(data)}
+          isSaving={update.isPending}
+          onSubmit={async (metadata) => {
+            const data = Object.fromEntries(
+              Object.entries(metadata).map(([key, value]) => [
+                key,
+                value instanceof Date ? value.toISOString() : value
+              ])
+            )
+            try {
+              await update.mutateAsync({ id, data })
+              toast({ title: 'Label saved' })
+            } catch (error) {
+              toast({
+                title: 'Failed to save label',
+                description: error instanceof Error ? error.message : undefined,
+                variant: 'destructive'
+              })
+            }
+          }}
+        />
+      }
+      linksSlot={
+        <LinksPanel
+          links={links.data ?? []}
+          entityType='label'
+          entityId={id}
+          addLink={addLink}
+          updateLinkStatus={updateLinkStatus}
+          deleteLink={deleteLink}
+        />
+      }
+    />
+  )
+}
+
 interface LinksPanelProps {
   links: MusicEntityLink[]
   entityType: string
@@ -382,5 +470,19 @@ function toTrackMetadata(t: MusicTrack) {
     trackNumber: t.trackNumber,
     slug: t.slug,
     publishedAt: t.publishedAt ? new Date(t.publishedAt) : null
+  }
+}
+
+function toLabelMetadata(label: MusicLabel) {
+  return {
+    name: label.name,
+    description: label.description,
+    imageUrl: label.imageUrl,
+    bannerImageUrl: label.bannerImageUrl,
+    slug: label.slug,
+    content: label.content,
+    tags: label.tags,
+    genres: label.genres,
+    publishedAt: label.publishedAt ? new Date(label.publishedAt) : null
   }
 }

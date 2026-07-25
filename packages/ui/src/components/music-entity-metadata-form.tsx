@@ -7,7 +7,7 @@ import { Label } from './label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select'
 import { Textarea } from './textarea'
 
-export type MusicEntityType = 'artist' | 'album' | 'track' | 'playlist'
+export type MusicEntityType = 'artist' | 'album' | 'track' | 'playlist' | 'label'
 
 export interface ArtistMetadata {
   name: string
@@ -46,6 +46,18 @@ export interface PlaylistMetadata {
   publishedAt?: Date | string | null
 }
 
+export interface LabelMetadata {
+  name: string
+  description?: string | null
+  imageUrl?: string | null
+  bannerImageUrl?: string | null
+  slug: string
+  content: string
+  tags?: string[] | null
+  genres?: string[] | null
+  publishedAt?: Date | string | null
+}
+
 export type MusicEntityMetadataFormProps =
   | {
       entityType: 'artist'
@@ -69,6 +81,12 @@ export type MusicEntityMetadataFormProps =
       entityType: 'playlist'
       initialData: PlaylistMetadata
       onSubmit: (data: PlaylistMetadata) => void
+      isSaving?: boolean
+    }
+  | {
+      entityType: 'label'
+      initialData: LabelMetadata
+      onSubmit: (data: LabelMetadata) => void
       isSaving?: boolean
     }
 
@@ -234,6 +252,19 @@ export function MusicEntityMetadataForm({
       <MetadataForm initialData={initialData} onSubmit={onSubmit} isSaving={isSaving}>
         {(data, setData) => (
           <TrackFields
+            data={data}
+            set={(key, value) => setData((prev) => ({ ...prev, [key]: value }))}
+          />
+        )}
+      </MetadataForm>
+    )
+  }
+
+  if (entityType === 'label') {
+    return (
+      <MetadataForm initialData={initialData} onSubmit={onSubmit} isSaving={isSaving}>
+        {(data, setData) => (
+          <LabelFields
             data={data}
             set={(key, value) => setData((prev) => ({ ...prev, [key]: value }))}
           />
@@ -415,6 +446,63 @@ function PlaylistFields({ data, set }: { data: PlaylistMetadata; set: SetFn<Play
       </Field>
       <Field label='Cover image URL'>
         <ImageField value={data.coverImageUrl} onChange={(v) => set('coverImageUrl', v)} />
+      </Field>
+    </>
+  )
+}
+
+function LabelFields({ data, set }: { data: LabelMetadata; set: SetFn<LabelMetadata> }) {
+  return (
+    <>
+      <Row>
+        <Field label='Name' className='flex-[2]'>
+          <Input value={data.name} onChange={(e) => set('name', e.target.value)} />
+        </Field>
+        <Field label='Slug' className='flex-1'>
+          <Input
+            value={data.slug}
+            onChange={(e) => set('slug', e.target.value)}
+            className='font-mono text-sm'
+          />
+        </Field>
+      </Row>
+      <Field label='Description'>
+        <Textarea
+          value={data.description ?? ''}
+          onChange={(e) => set('description', e.target.value)}
+          className='h-20 resize-none'
+        />
+      </Field>
+      <Row>
+        <Field label='Image URL' className='flex-1'>
+          <ImageField value={data.imageUrl} onChange={(value) => set('imageUrl', value)} />
+        </Field>
+        <Field label='Published at' className='w-44 shrink-0'>
+          <Input
+            type='date'
+            value={toDateInputValue(data.publishedAt)}
+            onChange={(e) => set('publishedAt', e.target.value ? new Date(e.target.value) : null)}
+          />
+        </Field>
+      </Row>
+      <Field label='Banner image URL'>
+        <ImageField
+          value={data.bannerImageUrl}
+          onChange={(value) => set('bannerImageUrl', value)}
+        />
+      </Field>
+      <Field label='Genres'>
+        <GenreTagInput value={data.genres} onChange={(value) => set('genres', value)} />
+      </Field>
+      <Field label='Tags'>
+        <GenreTagInput value={data.tags} onChange={(value) => set('tags', value)} />
+      </Field>
+      <Field label='Content'>
+        <Textarea
+          value={data.content}
+          onChange={(e) => set('content', e.target.value)}
+          className='min-h-64 font-mono text-sm'
+        />
       </Field>
     </>
   )

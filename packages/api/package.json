@@ -12,7 +12,6 @@
     "./profile": "./src/profile.ts",
     "./resolve": "./src/resolve.ts",
     "./invite": "./src/invite.ts",
-    "./label": "./src/label.ts",
     "./release": "./src/release.ts",
     "./post": "./src/post.ts",
     "./audio": "./src/audio.ts",

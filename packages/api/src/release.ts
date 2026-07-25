@@ -34,27 +34,6 @@ export const CompiledReleaseResponse = Schema.Struct({
   compiledContent: Schema.String
 })
 
-const PaginationMeta = Schema.Struct({
-  total: Schema.Number,
-  limit: Schema.Number,
-  offset: Schema.Number,
-  hasMore: Schema.Boolean
-})
-
-const PaginationQuery = {
-  limit: Schema.optional(
-    Schema.NumberFromString.pipe(Schema.check(Schema.isBetween({ minimum: 1, maximum: 100 })))
-  ),
-  offset: Schema.optional(
-    Schema.NumberFromString.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(0)))
-  )
-}
-
-export const GetReleasesByLabelResponse = Schema.Struct({
-  data: Schema.Array(ReleaseResponse),
-  pagination: PaginationMeta
-})
-
 const baseReleaseFields = {
   title: Schema.NonEmptyString,
   description: Schema.optional(Schema.String),
@@ -107,26 +86,6 @@ export const ReleaseGroup = HttpApiGroup.make('release')
         HttpApiError.InternalServerError
       ]
     }).middleware(AuthMiddleware)
-  )
-  .add(
-    HttpApiEndpoint.get('getReleasesByLabel', '/api/content/labels/:labelSlug/releases', {
-      params: { labelSlug: Schema.String },
-      query: PaginationQuery,
-      success: GetReleasesByLabelResponse,
-      error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
-    })
-  )
-  .add(
-    HttpApiEndpoint.get(
-      'getReleasesByLabelForEdit',
-      '/api/content/labels/:labelSlug/releases/manage',
-      {
-        params: { labelSlug: Schema.String },
-        query: PaginationQuery,
-        success: GetReleasesByLabelResponse,
-        error: [HttpApiError.NotFound, HttpApiError.Unauthorized, HttpApiError.InternalServerError]
-      }
-    ).middleware(AuthMiddleware)
   )
   .add(
     HttpApiEndpoint.get('getReleaseBySlug', '/api/content/releases/:slug', {

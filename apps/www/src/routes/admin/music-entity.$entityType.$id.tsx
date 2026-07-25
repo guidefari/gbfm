@@ -9,7 +9,7 @@ export const Route = createFileRoute('/admin/music-entity/$entityType/$id')({
   component: MusicDetailRoute
 })
 
-const VALID_TYPES: MusicEntityType[] = ['artist', 'album', 'track', 'playlist']
+const VALID_TYPES: MusicEntityType[] = ['artist', 'album', 'track', 'playlist', 'label']
 
 function isMusicEntityType(value: string): value is MusicEntityType {
   return VALID_TYPES.some((type) => type === value)

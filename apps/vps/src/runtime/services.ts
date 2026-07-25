@@ -9,7 +9,6 @@ import { AudioServiceLive } from '@/services/audio.service'
 import { ConfigServiceLive } from '@/services/config.service'
 import { EmailServiceLive } from '@/services/email.service'
 import { FavoriteServiceLive } from '@/services/favorite.service'
-import { LabelServiceLive } from '@/services/label.service'
 import { AppLoggerLive } from '@/services/logger.service'
 import { MusicEntityServiceLive } from '@/services/music-entity'
 import { MusicLinkScraperServiceLive } from '@/services/music-link-scraper.service'
@@ -43,7 +42,6 @@ const BaseServicesLayer = Layer.mergeAll(
   MusicLinkScraperServiceLive,
   AudioServiceLive.pipe(Layer.provide(MdxServiceLive)),
   PostServiceLive.pipe(Layer.provide(MdxServiceLive)),
-  LabelServiceLive,
   ProfileServiceLive,
   ResolveServiceLive,
   ReleaseServiceLive,

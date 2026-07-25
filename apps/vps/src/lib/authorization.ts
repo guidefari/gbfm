@@ -2,7 +2,7 @@ import { and, eq } from 'drizzle-orm'
 import { Effect } from 'effect'
 import { db } from '@/db'
 import { audioCreators } from '@/db/audio.schema'
-import { labelCreators } from '@/db/label.schema'
+import { musicLabelCreatorsTable } from '@/db/music-entity.schema'
 import { postCreators } from '@/db/post.schema'
 import { showCreators } from '@/db/show.schema'
 import { DatabaseError, getErrorMessage, UnauthorizedError } from '@/errors'
@@ -21,7 +21,7 @@ export function checkCreatorAuthorship(
         : tableType === 'audio'
           ? audioCreators
           : tableType === 'label'
-            ? labelCreators
+            ? musicLabelCreatorsTable
             : postCreators
 
     const idColumn =
@@ -30,7 +30,7 @@ export function checkCreatorAuthorship(
         : tableType === 'audio'
           ? audioCreators.audioId
           : tableType === 'label'
-            ? labelCreators.labelId
+            ? musicLabelCreatorsTable.labelId
             : postCreators.postId
 
     const creatorColumn =
@@ -39,7 +39,7 @@ export function checkCreatorAuthorship(
         : tableType === 'audio'
           ? audioCreators.creatorId
           : tableType === 'label'
-            ? labelCreators.creatorId
+            ? musicLabelCreatorsTable.creatorId
             : postCreators.creatorId
 
     const authorship = yield* Effect.tryPromise({

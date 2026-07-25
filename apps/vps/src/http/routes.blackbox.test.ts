@@ -2,6 +2,7 @@ import { HealthLiveResponse, HealthReadyResponse } from '@gbfm/api/health'
 import {
   AlbumListResponse,
   ArtistListResponse,
+  LabelListResponse,
   PlaylistListResponse,
   TrackListResponse
 } from '@gbfm/api/music'
@@ -12,7 +13,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
 import { session, user } from '@/db/auth.schema'
-import { labelCreators, labelsTable } from '@/db/label.schema'
+import { musicLabelCreatorsTable, musicLabelsTable } from '@/db/music-entity.schema'
 import { postCreators, postsTable } from '@/db/post.schema'
 import { releasesTable } from '@/db/release.schema'
 import { showsTable } from '@/db/show.schema'
@@ -174,6 +175,29 @@ describe('music artists (HttpApiBuilder group, Step 4)', () => {
         { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({}) }
       )
     )
+
+    expect(res.status).toBe(401)
+  })
+})
+
+describe('music labels', () => {
+  it('returns a decodable public label list', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/api/music/labels'))
+
+    expect(res.status).toBe(200)
+    await expect(decodeResponseBody(LabelListResponse, res)).resolves.toBeInstanceOf(Array)
+  })
+
+  it('returns 404 for an unknown public label slug', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/music/labels/slug/unknown-label')
+    )
+
+    expect(res.status).toBe(404)
+  })
+
+  it('requires authentication for managed labels', async () => {
+    const res = await webHandler.handler(new Request('http://localhost/api/music/labels/manage'))
 
     expect(res.status).toBe(401)
   })
@@ -1233,11 +1257,11 @@ describe('content draft management authorization', () => {
       }
     ])
     const [label] = await db
-      .insert(labelsTable)
-      .values({ title: 'Release label', slug: labelSlug, content: '', draft: true })
+      .insert(musicLabelsTable)
+      .values({ name: 'Release label', slug: labelSlug, content: '' })
       .returning()
     if (!label) throw new Error('Failed to seed release label')
-    await db.insert(labelCreators).values({ labelId: label.id, creatorId: ownerId })
+    await db.insert(musicLabelCreatorsTable).values({ labelId: label.id, creatorId: ownerId })
 
     const createRequest = (token: string, slug: string) =>
       new Request('http://localhost/api/content/releases', {
@@ -1305,8 +1329,8 @@ describe('content draft management authorization', () => {
       expect(adminDelete.status).toBe(200)
     } finally {
       await db.delete(releasesTable).where(eq(releasesTable.labelId, label.id))
-      await db.delete(labelCreators).where(eq(labelCreators.labelId, label.id))
-      await db.delete(labelsTable).where(eq(labelsTable.id, label.id))
+      await db.delete(musicLabelCreatorsTable).where(eq(musicLabelCreatorsTable.labelId, label.id))
+      await db.delete(musicLabelsTable).where(eq(musicLabelsTable.id, label.id))
       await db.delete(user).where(eq(user.id, ownerId))
       await db.delete(user).where(eq(user.id, unrelatedId))
       await db.delete(user).where(eq(user.id, adminId))
@@ -1324,8 +1348,13 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
       .values({ title: 'Published parent', slug: `published-${suffix}`, content: '', draft: false })
       .returning()
     const [publishedLabel] = await db
-      .insert(labelsTable)
-      .values({ title: 'Published parent', slug: `published-${suffix}`, content: '', draft: false })
+      .insert(musicLabelsTable)
+      .values({
+        name: 'Published parent',
+        slug: `published-${suffix}`,
+        content: '',
+        publishedAt: new Date()
+      })
       .returning()
 
     if (!publishedShow || !publishedLabel) throw new Error('Failed to seed draft visibility test')
@@ -1358,7 +1387,7 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
         draft: true,
         tags: [tag]
       }),
-      db.insert(labelsTable).values({ title: 'Draft label', slug, content: '', draft: true }),
+      db.insert(musicLabelsTable).values({ name: 'Draft label', slug, content: '' }),
       db.insert(releasesTable).values({
         title: 'Draft release',
         slug,
@@ -1373,7 +1402,7 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
         webHandler.handler(new Request(`http://localhost/api/content/audio/mix/${slug}`)),
         webHandler.handler(new Request(`http://localhost/api/shows/${slug}`)),
         webHandler.handler(new Request(`http://localhost/api/content/posts/${slug}`)),
-        webHandler.handler(new Request(`http://localhost/api/content/labels/${slug}`)),
+        webHandler.handler(new Request(`http://localhost/api/music/labels/slug/${slug}`)),
         webHandler.handler(new Request(`http://localhost/api/content/releases/${slug}`)),
         webHandler.handler(new Request(`http://localhost/api/content/audio/mix/${slug}/edit`)),
         webHandler.handler(new Request(`http://localhost/s/mix/${slug}`)),
@@ -1383,7 +1412,7 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
         404, 404, 404, 404, 404, 401, 404, 404
       ])
 
-      const [audioList, audioTags, posts, postTags, episodes, releases, rss] = await Promise.all([
+      const [audioList, audioTags, posts, postTags, episodes, labels, rss] = await Promise.all([
         webHandler.handler(new Request('http://localhost/api/content/audio/mix?limit=100')),
         webHandler.handler(new Request('http://localhost/api/content/audio/mix/tags')),
         webHandler.handler(new Request('http://localhost/api/content/posts?limit=100')),
@@ -1391,11 +1420,7 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
         webHandler.handler(
           new Request(`http://localhost/api/shows/${publishedShow.slug}/episodes?limit=100`)
         ),
-        webHandler.handler(
-          new Request(
-            `http://localhost/api/content/labels/${publishedLabel.slug}/releases?limit=100`
-          )
-        ),
+        webHandler.handler(new Request('http://localhost/api/music/labels')),
         webHandler.handler(new Request('http://localhost/rss.xml'))
       ])
 
@@ -1404,7 +1429,7 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
       expect(JSON.stringify(await posts.json())).not.toContain(slug)
       expect(await postTags.json()).not.toContain(tag)
       expect(JSON.stringify(await episodes.json())).not.toContain(`episode-${suffix}`)
-      expect(JSON.stringify(await releases.json())).not.toContain(slug)
+      expect(JSON.stringify(await labels.json())).not.toContain(slug)
       expect(await rss.text()).not.toContain(slug)
     } finally {
       await db.delete(releasesTable).where(eq(releasesTable.slug, slug))
@@ -1413,8 +1438,8 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
       await db.delete(postsTable).where(eq(postsTable.slug, slug))
       await db.delete(showsTable).where(eq(showsTable.slug, slug))
       await db.delete(showsTable).where(eq(showsTable.slug, publishedShow.slug))
-      await db.delete(labelsTable).where(eq(labelsTable.slug, slug))
-      await db.delete(labelsTable).where(eq(labelsTable.slug, publishedLabel.slug))
+      await db.delete(musicLabelsTable).where(eq(musicLabelsTable.slug, slug))
+      await db.delete(musicLabelsTable).where(eq(musicLabelsTable.slug, publishedLabel.slug))
     }
   })
 

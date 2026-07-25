@@ -5,7 +5,8 @@ const entityTypes = [
   { id: 'artist', displayName: 'Artist' },
   { id: 'album', displayName: 'Album' },
   { id: 'track', displayName: 'Track' },
-  { id: 'playlist', displayName: 'Playlist' }
+  { id: 'playlist', displayName: 'Playlist' },
+  { id: 'label', displayName: 'Label' }
 ]
 
 const platforms = [
@@ -51,6 +52,7 @@ const platforms = [
     displayName: 'MusicBrainz',
     websiteUrl: 'https://musicbrainz.org'
   },
+  { id: 'discogs', displayName: 'Discogs', websiteUrl: 'https://discogs.com' },
   { id: 'other', displayName: 'Other' }
 ]
 

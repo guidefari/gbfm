@@ -1,7 +1,7 @@
-import { and, count, desc, eq, exists } from 'drizzle-orm'
+import { and, eq, exists, lte } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
-import { labelsTable } from '@/db/label.schema'
+import { musicLabelsTable } from '@/db/music-entity.schema'
 import {
   type InsertRelease,
   releasesTable,
@@ -17,25 +17,8 @@ import {
 } from '@/errors'
 import { requireCreatorOrAdmin } from '@/lib/authorization'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
-import { createPaginationMetadata, type PaginationMetadata } from '@/lib/pagination'
 
 export interface ReleaseService {
-  readonly getByLabelSlug: (
-    labelSlug: string,
-    options: { limit: number; offset: number }
-  ) => Effect.Effect<
-    { data: SelectRelease[]; pagination: PaginationMetadata },
-    DatabaseError | NotFoundError
-  >
-  readonly getByLabelSlugForEdit: (
-    labelSlug: string,
-    options: { limit: number; offset: number },
-    userId: string,
-    userRole: string
-  ) => Effect.Effect<
-    { data: SelectRelease[]; pagination: PaginationMetadata },
-    DatabaseError | NotFoundError | UnauthorizedError
-  >
   readonly getBySlug: (
     slug: string
   ) => Effect.Effect<SelectMdxCompiledRelease, DatabaseError | NotFoundError>
@@ -67,101 +50,6 @@ export interface ReleaseService {
 
 export const ReleaseService = Context.Service<ReleaseService>('ReleaseService')
 
-function getByLabelSlugEffect(
-  labelSlug: string,
-  options: { limit: number; offset: number }
-): Effect.Effect<
-  { data: SelectRelease[]; pagination: PaginationMetadata },
-  DatabaseError | NotFoundError
->
-function getByLabelSlugEffect(
-  labelSlug: string,
-  options: { limit: number; offset: number },
-  actor: { userId: string; userRole: string }
-): Effect.Effect<
-  { data: SelectRelease[]; pagination: PaginationMetadata },
-  DatabaseError | NotFoundError | UnauthorizedError
->
-function getByLabelSlugEffect(
-  labelSlug: string,
-  options: { limit: number; offset: number },
-  actor?: { userId: string; userRole: string }
-) {
-  return Effect.gen(function* () {
-    const { limit, offset } = options
-
-    const labelRecords = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select()
-          .from(labelsTable)
-          .where(
-            actor
-              ? eq(labelsTable.slug, labelSlug)
-              : and(eq(labelsTable.slug, labelSlug), eq(labelsTable.draft, false))
-          )
-          .limit(1),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to fetch label: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'labels'
-        })
-    })
-
-    const label = labelRecords[0]
-    if (!label) {
-      return yield* new NotFoundError({
-        message: 'Label not found',
-        resource: 'label',
-        id: labelSlug
-      })
-    }
-
-    if (actor) {
-      yield* requireCreatorOrAdmin('label', label.id, actor.userId, actor.userRole)
-    }
-
-    const whereCondition = actor
-      ? eq(releasesTable.labelId, label.id)
-      : and(eq(releasesTable.labelId, label.id), eq(releasesTable.draft, false))
-
-    const countResult = yield* Effect.tryPromise({
-      try: () => db.select({ total: count() }).from(releasesTable).where(whereCondition),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to count releases: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'releases'
-        })
-    })
-
-    const total = countResult[0]?.total ?? 0
-
-    const data = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select()
-          .from(releasesTable)
-          .where(whereCondition)
-          .limit(limit)
-          .offset(offset)
-          .orderBy(desc(releasesTable.createdAt)),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to fetch releases: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'releases'
-        })
-    })
-
-    return {
-      data,
-      pagination: createPaginationMetadata(total, limit, offset)
-    }
-  })
-}
-
 const getBySlugEffect = (slug: string, includeDrafts = false) =>
   Effect.gen(function* () {
     const releaseRecords = yield* Effect.tryPromise({
@@ -177,10 +65,13 @@ const getBySlugEffect = (slug: string, includeDrafts = false) =>
                   eq(releasesTable.draft, false),
                   exists(
                     db
-                      .select({ id: labelsTable.id })
-                      .from(labelsTable)
+                      .select({ id: musicLabelsTable.id })
+                      .from(musicLabelsTable)
                       .where(
-                        and(eq(labelsTable.id, releasesTable.labelId), eq(labelsTable.draft, false))
+                        and(
+                          eq(musicLabelsTable.id, releasesTable.labelId),
+                          lte(musicLabelsTable.publishedAt, new Date())
+                        )
                       )
                   )
                 )
@@ -237,12 +128,13 @@ const createEffect = (
 ) =>
   Effect.gen(function* () {
     const labelRecords = yield* Effect.tryPromise({
-      try: () => db.select().from(labelsTable).where(eq(labelsTable.id, data.labelId)).limit(1),
+      try: () =>
+        db.select().from(musicLabelsTable).where(eq(musicLabelsTable.id, data.labelId)).limit(1),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to fetch label: ${getErrorMessage(error)}`,
           operation: 'select',
-          table: 'labels'
+          table: 'music_labels'
         })
     })
 
@@ -326,12 +218,16 @@ const updateEffect = (
       const destinationLabelId = data.labelId
       const destinationLabels = yield* Effect.tryPromise({
         try: () =>
-          db.select().from(labelsTable).where(eq(labelsTable.id, destinationLabelId)).limit(1),
+          db
+            .select()
+            .from(musicLabelsTable)
+            .where(eq(musicLabelsTable.id, destinationLabelId))
+            .limit(1),
         catch: (error) =>
           new DatabaseError({
             message: `Failed to fetch destination label: ${getErrorMessage(error)}`,
             operation: 'select',
-            table: 'labels'
+            table: 'music_labels'
           })
       })
       const destinationLabel = destinationLabels[0]
@@ -435,14 +331,6 @@ const deleteEffect = (slug: string, userId: string, userRole: string) =>
   })
 
 export const ReleaseServiceLive = Layer.succeed(ReleaseService, {
-  getByLabelSlug: (labelSlug, options) =>
-    getByLabelSlugEffect(labelSlug, options).pipe(
-      Effect.withSpan('release.getByLabelSlug', { attributes: { labelSlug } })
-    ),
-  getByLabelSlugForEdit: (labelSlug, options, userId, userRole) =>
-    getByLabelSlugEffect(labelSlug, options, { userId, userRole }).pipe(
-      Effect.withSpan('release.getByLabelSlugForEdit', { attributes: { labelSlug } })
-    ),
   getBySlug: (slug) =>
     getBySlugEffect(slug).pipe(Effect.withSpan('release.getBySlug', { attributes: { slug } })),
   getBySlugForEdit: (slug, userId, userRole) =>
