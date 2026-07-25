@@ -1,8 +1,12 @@
-import { AudioEngine, type EngineStatus, type NowPlayingMetadata } from '@gbfm/player'
+import {
+  AudioEngine,
+  PlaybackRejected,
+  type EngineStatus,
+  type NowPlayingMetadata
+} from '@gbfm/player'
 import { Effect, Layer, Queue, Stream } from 'effect'
 import type { AudioPlayer, AudioStatus } from 'expo-audio'
-import { Platform } from 'react-native'
-import { subscribeToPlaybackStatus } from '@/audio/audioPlayerAdapter'
+import { subscribeToPlaybackStatus } from './audioPlayerAdapter'
 
 const toEngineStatus = (status: AudioStatus): EngineStatus => ({
   isLoaded: status.isLoaded,
@@ -13,23 +17,34 @@ const toEngineStatus = (status: AudioStatus): EngineStatus => ({
   isBuffering: status.isBuffering
 })
 
-const makeExpoAudioEngine = (player: AudioPlayer) =>
+export type ExpoAudioEnginePlayer = Pick<
+  AudioPlayer,
+  | 'replace'
+  | 'play'
+  | 'pause'
+  | 'seekTo'
+  | 'currentStatus'
+  | 'addListener'
+  | 'clearLockScreenControls'
+  | 'setActiveForLockScreen'
+>
+
+const makeExpoAudioEngine = (player: ExpoAudioEnginePlayer, platform: 'native' | 'web') =>
   Effect.sync(() => ({
     replace: (url: string) => Effect.sync(() => player.replace(url)),
-    play: Effect.sync(() => player.play()),
+    play: Effect.try({
+      try: () => player.play(),
+      catch: (cause: unknown) => new PlaybackRejected({ cause })
+    }),
     pause: Effect.sync(() => player.pause()),
     seekTo: (seconds: number) => Effect.promise(() => player.seekTo(seconds)),
     currentStatus: Effect.sync(() => toEngineStatus(player.currentStatus)),
 
     changes: Stream.callback<EngineStatus>((queue) =>
       Effect.gen(function* () {
-        const subscription = subscribeToPlaybackStatus(
-          player,
-          Platform.OS === 'web' ? 'web' : 'native',
-          (status) => {
-            Queue.offerUnsafe(queue, toEngineStatus(status))
-          }
-        )
+        const subscription = subscribeToPlaybackStatus(player, platform, (status) => {
+          Queue.offerUnsafe(queue, toEngineStatus(status))
+        })
         yield* Effect.addFinalizer(() => Effect.sync(() => subscription.remove()))
       })
     ),
@@ -52,5 +67,5 @@ const makeExpoAudioEngine = (player: AudioPlayer) =>
       })
   }))
 
-export const ExpoAudioEngineLayer = (player: AudioPlayer) =>
-  Layer.effect(AudioEngine, makeExpoAudioEngine(player))
+export const ExpoAudioEngineLayer = (player: ExpoAudioEnginePlayer, platform: 'native' | 'web') =>
+  Layer.effect(AudioEngine, makeExpoAudioEngine(player, platform))

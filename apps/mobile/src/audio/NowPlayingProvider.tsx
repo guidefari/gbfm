@@ -7,6 +7,7 @@ import {
 } from '@gbfm/player'
 import { Effect, Layer, ManagedRuntime } from 'effect'
 import { useAudioPlayer } from 'expo-audio'
+import { Platform } from 'react-native'
 import { useAtomValue } from '@effect/atom-react'
 import {
   createContext,
@@ -103,9 +104,10 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
     // The expo player is owned by this mount, so its layer and the core's
     // status fiber live in a runtime scoped to the same lifetime.
     const runtime = ManagedRuntime.make(
-      Layer.mergeAll(ExpoAudioEngineLayer(player), PlayReporterLive).pipe(
-        Layer.provideMerge(PlayerStorageLive)
-      )
+      Layer.mergeAll(
+        ExpoAudioEngineLayer(player, Platform.OS === 'web' ? 'web' : 'native'),
+        PlayReporterLive
+      ).pipe(Layer.provideMerge(PlayerStorageLive))
     )
     runtimeRef.current = runtime
 
