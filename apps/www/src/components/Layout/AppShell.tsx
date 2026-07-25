@@ -40,6 +40,7 @@ export default function AppShell({ children }: Props) {
           <main
             id={MAIN_SCROLL_CONTAINER_ID}
             tabIndex={-1}
+            style={{ overflowAnchor: 'none' }}
             className='h-full min-w-0 overflow-x-hidden overflow-y-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none] bg-background focus:outline-none'>
             {children}
           </main>

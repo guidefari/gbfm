@@ -1,5 +1,5 @@
 import { Badge } from '@gbfm/ui'
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { Effect } from 'effect'
 import { ArrowLeft, Tag } from 'lucide-react'
 import { MDXRendrr } from '@/components/MDXRendrr'
@@ -64,6 +64,29 @@ export const Route = createFileRoute('/tweet/$slug')({
   }
 })
 
+const backLinkClassName =
+  '-mb-px inline-flex items-center gap-1 border-b-2 border-transparent pb-3 text-lg font-black tracking-tight text-muted-foreground transition-colors hover:border-border hover:text-foreground'
+
+function TweetsBackLink() {
+  const router = useRouter()
+
+  if (router.history.canGoBack()) {
+    return (
+      <button type='button' onClick={() => router.history.back()} className={backLinkClassName}>
+        <ArrowLeft className='w-4 h-4' />
+        Tweets
+      </button>
+    )
+  }
+
+  return (
+    <Link to='/tweet' className={backLinkClassName}>
+      <ArrowLeft className='w-4 h-4' />
+      Tweets
+    </Link>
+  )
+}
+
 function TweetPostPage() {
   const { slug } = Route.useParams()
   const { post } = Route.useLoaderData()
@@ -83,12 +106,7 @@ function TweetPostPage() {
   return (
     <div className='max-w-3xl px-4 py-8 mx-auto'>
       <nav className='mb-6 flex items-end gap-6 border-b border-border/40'>
-        <Link
-          to='/tweet'
-          className='-mb-px inline-flex items-center gap-1 border-b-2 border-transparent pb-3 text-lg font-black tracking-tight text-muted-foreground transition-colors hover:border-border hover:text-foreground'>
-          <ArrowLeft className='w-4 h-4' />
-          Tweets
-        </Link>
+        <TweetsBackLink />
       </nav>
       <article className='space-y-4 rounded-lg border border-border/60 bg-card/60 p-4 shadow-sm sm:p-5'>
         <div className='flex items-start justify-between gap-3'>
