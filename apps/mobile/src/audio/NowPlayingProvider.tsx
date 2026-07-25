@@ -1,10 +1,11 @@
 import type { AudioResponse } from '@gbfm/api/audio'
 import {
-  createPlayerCore,
+  makePlayerCore,
   type EngineStatus,
-  type PlayerCore,
+  type PlayerCoreShape,
   type QueueTrackType
 } from '@gbfm/player'
+import { Effect, Layer, ManagedRuntime } from 'effect'
 import { useAudioPlayer } from 'expo-audio'
 import { useAtomValue } from '@effect/atom-react'
 import {
@@ -18,9 +19,9 @@ import {
   useState
 } from 'react'
 import { audioModeAtom } from '@/store/atoms/audio-mode'
-import { createExpoAudioEngine } from '@/audio/expoAudioEngine'
-import { recordPlayIfFresh } from '@/audio/playTracker'
-import { playerStorage } from '@/runtime'
+import { ExpoAudioEngineLayer } from '@/audio/expoAudioEngine'
+import { PlayReporterLive } from '@/audio/playTracker'
+import { PlayerStorageLive } from '@/audio/queueStorage'
 import type { QueueView } from '@/audio/queueAtom'
 import { useQueue, useQueueDispatch } from '@/audio/queueAtom'
 
@@ -85,39 +86,63 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
   const [status, setStatus] = useState<EngineStatus>(initialStatus)
   const [queueNotice, setQueueNotice] = useState<QueueNotice | null>(null)
 
-  const coreRef = useRef<PlayerCore | null>(null)
+  const coreRef = useRef<PlayerCoreShape | null>(null)
+  const runtimeRef = useRef<ManagedRuntime.ManagedRuntime<never, never> | null>(null)
   const skipNextRef = useRef<() => void>(() => {})
 
+  /** Runs a core operation on the mount's runtime. No-ops before the core is
+   *  built or after unmount. */
+  const runCore = useCallback((operation: (core: PlayerCoreShape) => Effect.Effect<void>) => {
+    const core = coreRef.current
+    const runtime = runtimeRef.current
+    if (!core || !runtime) return
+    runtime.runFork(operation(core))
+  }, [])
+
   useEffect(() => {
-    const core = createPlayerCore(createExpoAudioEngine(player), playerStorage, {
-      onStatus: setStatus,
-      onTrackFinished: () => skipNextRef.current(),
-      recordPlay: recordPlayIfFresh
-    })
-    coreRef.current = core
+    // The expo player is owned by this mount, so its layer and the core's
+    // status fiber live in a runtime scoped to the same lifetime.
+    const runtime = ManagedRuntime.make(
+      Layer.mergeAll(ExpoAudioEngineLayer(player), PlayReporterLive).pipe(
+        Layer.provideMerge(PlayerStorageLive)
+      )
+    )
+    runtimeRef.current = runtime
+
+    runtime.runFork(
+      Effect.gen(function* () {
+        const core = yield* makePlayerCore({
+          onStatus: setStatus,
+          onTrackFinished: () => skipNextRef.current()
+        })
+        coreRef.current = core
+        yield* Effect.never
+      }).pipe(Effect.scoped)
+    )
+
     return () => {
-      core.dispose()
       coreRef.current = null
+      runtimeRef.current = null
+      void runtime.dispose()
     }
   }, [player])
 
   useEffect(() => {
-    coreRef.current?.setSource(currentTrack)
-  }, [currentTrack])
+    runCore((core) => core.setSource(currentTrack))
+  }, [currentTrack, runCore])
 
   const loadAndPlay = useCallback(
     (nextTrack: Track) => {
-      const core = coreRef.current
-      if (!core) return
       if (currentTrack?.id === nextTrack.id) {
-        core.play(nextTrack.id)
+        runCore((core) => core.play(nextTrack.id))
         return
       }
-      core.requestPlayOnReady(nextTrack.id)
-      core.detachCurrentSource()
+      runCore((core) =>
+        core.requestPlayOnReady(nextTrack.id).pipe(Effect.andThen(core.detachCurrentSource))
+      )
       dispatch({ _tag: 'playNow', track: toQueueTrack(nextTrack) })
     },
-    [currentTrack?.id, dispatch]
+    [currentTrack?.id, dispatch, runCore]
   )
 
   const enqueue = useCallback(
@@ -142,30 +167,34 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
 
   const playAll = useCallback(
     (tracks: ReadonlyArray<Track>) => {
-      const core = coreRef.current
-      if (!core || tracks.length === 0) return
+      if (tracks.length === 0) return
       const queued = tracks.map(toQueueTrack)
       const first = queued[0]
       if (!first) return
-      core.requestPlayOnReady(first.id)
-      core.detachCurrentSource()
+      runCore((core) =>
+        core.requestPlayOnReady(first.id).pipe(Effect.andThen(core.detachCurrentSource))
+      )
       dispatch({ _tag: 'playAll', tracks: queued })
     },
-    [dispatch]
+    [dispatch, runCore]
   )
 
   const removeFromQueue = useCallback(
     (index: number) => {
-      const core = coreRef.current
-      if (!core || index < 0 || index >= queue.tracks.length) return
+      if (index < 0 || index >= queue.tracks.length) return
       if (index === queue.currentIndex) {
         const next = queue.tracks[index + 1] ?? queue.tracks[index - 1]
-        if (core.isDesiredPlaying() && next) core.requestPlayOnReady(next.id)
-        core.detachCurrentSource()
+        runCore((core) =>
+          Effect.flatMap(core.isDesiredPlaying, (desired) =>
+            (desired && next ? core.requestPlayOnReady(next.id) : Effect.void).pipe(
+              Effect.andThen(core.detachCurrentSource)
+            )
+          )
+        )
       }
       dispatch({ _tag: 'remove', index })
     },
-    [dispatch, queue.currentIndex, queue.tracks]
+    [dispatch, queue.currentIndex, queue.tracks, runCore]
   )
 
   const reorderQueue = useCallback(
@@ -177,18 +206,18 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
 
   const skipTo = useCallback(
     (index: number) => {
-      const core = coreRef.current
       const target = queue.tracks[index]
-      if (!core || !target) return
+      if (!target) return
       if (currentTrack?.id === target.id) {
-        core.play(target.id)
+        runCore((core) => core.play(target.id))
         return
       }
-      core.requestPlayOnReady(target.id)
-      core.detachCurrentSource()
+      runCore((core) =>
+        core.requestPlayOnReady(target.id).pipe(Effect.andThen(core.detachCurrentSource))
+      )
       dispatch({ _tag: 'playIndex', index })
     },
-    [currentTrack?.id, dispatch, queue.tracks]
+    [currentTrack?.id, dispatch, queue.tracks, runCore]
   )
 
   const skipNext = useCallback(() => {
@@ -200,29 +229,34 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
   const skipPrevious = useCallback(() => {
     if (queue.currentIndex < 0) return
     if (queue.currentIndex === 0) {
-      coreRef.current?.seekTo(0)
+      runCore((core) => core.seekTo(0))
       return
     }
     skipTo(queue.currentIndex - 1)
-  }, [queue.currentIndex, skipTo])
+  }, [queue.currentIndex, runCore, skipTo])
 
   skipNextRef.current = skipNext
 
   const togglePlayback = useCallback(() => {
-    const core = coreRef.current
-    if (!core || !currentTrack) return
-    if (core.isDesiredPlaying()) core.pause()
-    else core.play(currentTrack.id)
-  }, [currentTrack])
+    if (!currentTrack) return
+    runCore((core) =>
+      Effect.flatMap(core.isDesiredPlaying, (desired) =>
+        desired ? core.pause : core.play(currentTrack.id)
+      )
+    )
+  }, [currentTrack, runCore])
 
-  const seekTo = useCallback((seconds: number) => {
-    coreRef.current?.seekTo(seconds)
-  }, [])
+  const seekTo = useCallback(
+    (seconds: number) => {
+      runCore((core) => core.seekTo(seconds))
+    },
+    [runCore]
+  )
 
   const clearQueue = useCallback(() => {
-    coreRef.current?.detachCurrentSource()
+    runCore((core) => core.detachCurrentSource)
     dispatch({ _tag: 'clear' })
-  }, [dispatch])
+  }, [dispatch, runCore])
 
   const value = useMemo<NowPlayingContextValue>(
     () => ({

@@ -1,7 +1,6 @@
-import { createPlayDelivery } from '@gbfm/player'
-import { Effect } from 'effect'
+import { createPlayDelivery, PlayerStorage, PlayReporter } from '@gbfm/player'
+import { Effect, Layer, Semaphore } from 'effect'
 import { getApiClient } from '@/lib/api-client'
-import { playerStorage } from '@/runtime'
 
 const trackAudioPlay = (trackId: string) =>
   Effect.gen(function* () {
@@ -9,23 +8,28 @@ const trackAudioPlay = (trackId: string) =>
     yield* client.audio.trackAudioPlay({ params: { id: trackId } })
   })
 
-const deliverPlayIfFresh = createPlayDelivery({
-  isWithinDedupWindow: playerStorage.isWithinDedupWindow,
-  deliver: trackAudioPlay,
-  remember: playerStorage.recordPlay,
-  now: Date.now
-})
+export const PlayReporterLive = Layer.effect(
+  PlayReporter,
+  Effect.gen(function* () {
+    const storage = yield* PlayerStorage
 
-let playDeliveryTail: Promise<void> = Promise.resolve()
+    const deliverPlayIfFresh = createPlayDelivery({
+      isWithinDedupWindow: storage.isWithinDedupWindow,
+      deliver: trackAudioPlay,
+      remember: storage.recordPlay,
+      now: Date.now
+    })
 
-export const recordPlayIfFresh = (trackId: string) =>
-  Effect.tryPromise({
-    try: () => {
-      const delivery = playDeliveryTail
-        .catch(() => undefined)
-        .then(() => Effect.runPromise(deliverPlayIfFresh(trackId)))
-      playDeliveryTail = delivery.catch(() => undefined)
-      return delivery
-    },
-    catch: (error) => error
+    // Plays are serialised so a burst of skips cannot interleave dedup reads
+    // with the write that closes the window.
+    const lock = yield* Semaphore.make(1)
+
+    return {
+      recordPlay: (trackId: string) =>
+        deliverPlayIfFresh(trackId).pipe(
+          Semaphore.withPermits(lock, 1),
+          Effect.catchCause(() => Effect.void)
+        )
+    }
   })
+)

@@ -31,7 +31,15 @@ export {
 
 export { createPlayDelivery } from './playDelivery'
 
-export type { AudioEngine, EngineStatus, NowPlayingMetadata } from './engine'
+export { PlayReporter, PlayReporterNoop, type PlayReporterShape } from './playReporter'
+
+export {
+  AudioEngine,
+  PlaybackRejected,
+  type AudioEngineShape,
+  type EngineStatus,
+  type NowPlayingMetadata
+} from './engine'
 
 export {
   clearPosition,
@@ -42,7 +50,6 @@ export {
   PlayerStorage,
   PlayerStorageInMemory,
   PlayerStorageTest,
-  providePlayerStorage,
   recordPlay,
   savePosition,
   saveQueue,
@@ -50,12 +57,7 @@ export {
   type PositionRecord
 } from './playerStorage'
 
-export {
-  createPlayerCore,
-  type PlayerCore,
-  type PlayerCoreCallbacks,
-  type PlayerCoreStorage
-} from './playerCore'
+export { makePlayerCore, type PlayerCoreCallbacks, type PlayerCoreShape } from './playerCore'
 
 export {
   makeQueueAtom,

@@ -7,13 +7,13 @@ import {
   type QueueView
 } from '@gbfm/player'
 import { useAtomSet, useAtomValue } from '@effect/atom-react'
-import { playerStorage } from '@/runtime'
+import { queuePersistence } from '@/runtime'
 
 export { initialQueueState, mergeHydratedQueue, reduceQueue, type QueueAction, type QueueView }
 
 const { queueAtom, selectQueueView } = makeQueueAtom({
-  loadQueue: playerStorage.loadQueue,
-  saveQueue: playerStorage.saveQueue
+  loadQueue: queuePersistence.loadQueue,
+  saveQueue: queuePersistence.saveQueue
 })
 
 export { queueAtom }

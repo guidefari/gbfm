@@ -1,7 +1,12 @@
-import type { AudioEngine, EngineStatus, NowPlayingMetadata } from '@gbfm/player'
-import { RuntimeClient } from '@/runtime'
+import {
+  AudioEngine,
+  PlaybackRejected,
+  type EngineStatus,
+  type NowPlayingMetadata
+} from '@gbfm/player'
+import { Effect, Layer, Queue, Stream } from 'effect'
 import { log } from '@/services/logger'
-import { setMetadata, setPlaybackState } from '@/services/media-session'
+import { MediaSessionService } from '@/services/media-session'
 
 const readStatus = (audio: HTMLAudioElement, didJustFinish: boolean): EngineStatus => ({
   isLoaded: audio.readyState >= 1,
@@ -12,88 +17,112 @@ const readStatus = (audio: HTMLAudioElement, didJustFinish: boolean): EngineStat
   isBuffering: audio.readyState < 3 && !audio.paused
 })
 
-export const createHtmlAudioEngine = (audio: HTMLAudioElement): AudioEngine => {
-  let justFinished = false
+const makeHtmlAudioEngine = (audio: HTMLAudioElement) =>
+  Effect.gen(function* () {
+    const mediaSession = yield* MediaSessionService
+    let justFinished = false
 
-  return {
-    replace: (url) => {
-      justFinished = false
-      audio.src = url
-      audio.load()
-    },
-
-    play: () => {
-      void audio.play().catch((error: unknown) => {
-        log('error', 'Unable to start playback', { error })
-      })
-    },
-
-    pause: () => audio.pause(),
-
-    seekTo: (seconds) =>
-      new Promise<void>((resolve) => {
-        const apply = () => {
-          audio.currentTime = seconds
-          resolve()
-        }
-        // Seeking before metadata lands silently no-ops in browsers.
-        if (audio.readyState >= 1) apply()
-        else audio.addEventListener('loadedmetadata', apply, { once: true })
-      }),
-
-    currentStatus: () => readStatus(audio, justFinished),
-
-    subscribe: (listener) => {
-      const emit = () => listener(readStatus(audio, justFinished))
-
-      const onEnded = () => {
-        justFinished = true
-        listener(readStatus(audio, true))
-        justFinished = false
-      }
-
-      const onPlay = () => {
-        justFinished = false
-        void RuntimeClient.runPromise(setPlaybackState('playing')).catch(() => undefined)
-        emit()
-      }
-
-      const onPause = () => {
-        void RuntimeClient.runPromise(setPlaybackState('paused')).catch(() => undefined)
-        emit()
-      }
-
-      audio.addEventListener('timeupdate', emit)
-      audio.addEventListener('loadedmetadata', emit)
-      audio.addEventListener('durationchange', emit)
-      audio.addEventListener('canplay', emit)
-      audio.addEventListener('waiting', emit)
-      audio.addEventListener('play', onPlay)
-      audio.addEventListener('pause', onPause)
-      audio.addEventListener('ended', onEnded)
-
-      return {
-        remove: () => {
-          audio.removeEventListener('timeupdate', emit)
-          audio.removeEventListener('loadedmetadata', emit)
-          audio.removeEventListener('durationchange', emit)
-          audio.removeEventListener('canplay', emit)
-          audio.removeEventListener('waiting', emit)
-          audio.removeEventListener('play', onPlay)
-          audio.removeEventListener('pause', onPause)
-          audio.removeEventListener('ended', onEnded)
-        }
-      }
-    },
-
-    setNowPlaying: (metadata: NowPlayingMetadata | null) => {
-      if (!metadata) {
-        void RuntimeClient.runPromise(setPlaybackState('none')).catch(() => undefined)
-        return
-      }
-      void RuntimeClient.runPromise(
-        setMetadata(metadata.title, metadata.artist ? [metadata.artist] : [], metadata.artworkUrl)
-      ).catch(() => undefined)
+    // DOM listeners are plain callbacks, so mediaSession effects are run
+    // detached rather than yielded.
+    const runDetached = (effect: Effect.Effect<void>) => {
+      Effect.runFork(effect)
     }
-  }
-}
+
+    const changes = Stream.callback<EngineStatus>((queue) =>
+      Effect.gen(function* () {
+        const emit = () => {
+          Queue.offerUnsafe(queue, readStatus(audio, justFinished))
+        }
+
+        const onEnded = () => {
+          justFinished = true
+          Queue.offerUnsafe(queue, readStatus(audio, true))
+          justFinished = false
+        }
+
+        const onPlay = () => {
+          justFinished = false
+          runDetached(mediaSession.setPlaybackState('playing'))
+          emit()
+        }
+
+        const onPause = () => {
+          runDetached(mediaSession.setPlaybackState('paused'))
+          emit()
+        }
+
+        audio.addEventListener('timeupdate', emit)
+        audio.addEventListener('loadedmetadata', emit)
+        audio.addEventListener('durationchange', emit)
+        audio.addEventListener('canplay', emit)
+        audio.addEventListener('waiting', emit)
+        audio.addEventListener('play', onPlay)
+        audio.addEventListener('pause', onPause)
+        audio.addEventListener('ended', onEnded)
+
+        yield* Effect.addFinalizer(() =>
+          Effect.sync(() => {
+            audio.removeEventListener('timeupdate', emit)
+            audio.removeEventListener('loadedmetadata', emit)
+            audio.removeEventListener('durationchange', emit)
+            audio.removeEventListener('canplay', emit)
+            audio.removeEventListener('waiting', emit)
+            audio.removeEventListener('play', onPlay)
+            audio.removeEventListener('pause', onPause)
+            audio.removeEventListener('ended', onEnded)
+          })
+        )
+      })
+    )
+
+    return {
+      replace: (url: string) =>
+        Effect.sync(() => {
+          justFinished = false
+          audio.src = url
+          audio.load()
+        }),
+
+      // Safari rejects play() when it lands outside a user-gesture stack.
+      // The rejection is surfaced so the core can reconcile intent instead of
+      // staying stuck at "desired playing" against a paused element.
+      play: Effect.suspend(() =>
+        Effect.tryPromise({
+          try: () => audio.play(),
+          catch: (error: unknown) => {
+            log('error', 'Unable to start playback', { error })
+            return new PlaybackRejected({ cause: error })
+          }
+        })
+      ),
+
+      pause: Effect.sync(() => audio.pause()),
+
+      seekTo: (seconds: number) =>
+        Effect.callback<void>((resume) => {
+          const apply = () => {
+            audio.currentTime = seconds
+            resume(Effect.void)
+          }
+          // Seeking before metadata lands silently no-ops in browsers.
+          if (audio.readyState >= 1) apply()
+          else audio.addEventListener('loadedmetadata', apply, { once: true })
+        }),
+
+      currentStatus: Effect.sync(() => readStatus(audio, justFinished)),
+
+      changes,
+
+      setNowPlaying: (metadata: NowPlayingMetadata | null) =>
+        metadata === null
+          ? mediaSession.setPlaybackState('none')
+          : mediaSession.setMetadata(
+              metadata.title,
+              metadata.artist ? [metadata.artist] : [],
+              metadata.artworkUrl
+            )
+    }
+  })
+
+export const HtmlAudioEngineLayer = (audio: HTMLAudioElement) =>
+  Layer.effect(AudioEngine, makeHtmlAudioEngine(audio))
