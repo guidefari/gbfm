@@ -1,3 +1,15 @@
+## [2.72.1](https://github.com/guidefari/gbfm/compare/v2.72.0...v2.72.1) (2026-07-25)
+
+
+### Bug Fixes
+
+* **admin:** report label creation failures ([686c601](https://github.com/guidefari/gbfm/commit/686c60119bca66e7ef6f6dcbe7b61257b331a336))
+* **db:** preserve label creator provenance ([fe6ca65](https://github.com/guidefari/gbfm/commit/fe6ca653de1e97782b062cdeacc41749e7f99c0e))
+* **mobile:** type playback rejection ([6d46d92](https://github.com/guidefari/gbfm/commit/6d46d92a33104d5e06d9fa7ac427e5e8916cca13))
+* **player:** reject stale source status ([011b8ad](https://github.com/guidefari/gbfm/commit/011b8addfd57666df3516328ea3a8590c11e3bf5))
+* **www:** restore fullscreen player state ([9c1666f](https://github.com/guidefari/gbfm/commit/9c1666fe2d1068735b6eb37cb058deb3db2d8b31))
+* **www:** restore player source integrations ([d09a0f9](https://github.com/guidefari/gbfm/commit/d09a0f9f88bbcdfb37a78dddfb907762001ddb55))
+
 # [2.72.0](https://github.com/guidefari/gbfm/compare/v2.71.1...v2.72.0) (2026-07-25)
 
 
