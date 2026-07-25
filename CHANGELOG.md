@@ -1,3 +1,31 @@
+# [2.67.0](https://github.com/guidefari/gbfm/compare/v2.66.0...v2.67.0) (2026-07-23)
+
+
+### Bug Fixes
+
+* corss header ([0e4a68a](https://github.com/guidefari/gbfm/commit/0e4a68a7e403ba6e5bfcb35be9c30af7faa87aa9))
+* corss header ([ee18805](https://github.com/guidefari/gbfm/commit/ee1880542c1f3dd5919101086b376313624091c7))
+* **effect:** align Spotify SDK with beta.99 ([3938260](https://github.com/guidefari/gbfm/commit/3938260dbd3d900b523f05844d1a6ab06cd9a7bc))
+* **mobile:** sync fonts ready flag in useEffect, not during render ([2729763](https://github.com/guidefari/gbfm/commit/27297637d7fbad3ed860fa51cc746822657222f1))
+* use stack options ([50ad623](https://github.com/guidefari/gbfm/commit/50ad6233f0d7e20b04e952580d509d194426d646))
+* **www:** import theme tokens via relative path in Vite plugin ([b09d5f7](https://github.com/guidefari/gbfm/commit/b09d5f7c7fc602ef0d440c911d2aebbf97947021))
+
+
+### Features
+
+* **dev:** expose mobile stack over Tailscale ([487ad8a](https://github.com/guidefari/gbfm/commit/487ad8a99caacf912671545d60786f1eded48388))
+* mobile fonts ([e88d0b9](https://github.com/guidefari/gbfm/commit/e88d0b91abb20f8297ef0c4727fda04253bc6a19))
+* mobile home page ([a6f84c9](https://github.com/guidefari/gbfm/commit/a6f84c95d7bfda217f70f483a844cad28094af7c))
+* **mobile:** add expo-audio provider and secure persistent auth via expo-secure-store ([87b4577](https://github.com/guidefari/gbfm/commit/87b4577be1c7556fe219513cb9c708e14cec19a3))
+* **mobile:** add native tabs and appearance settings ([7226210](https://github.com/guidefari/gbfm/commit/72262105498581af662e2b96e3a48bbc1c864c6f))
+* **mobile:** add persistent playback queue ([06795bc](https://github.com/guidefari/gbfm/commit/06795bc1973f8c5872b3229393dafd56d71f6ebf))
+* **mobile:** add tab layout, now-playing screen, and NowPlayingProvider ([5530048](https://github.com/guidefari/gbfm/commit/5530048753eae0c00b28f32d2ce2b05fb7366a27))
+* **mobile:** migrate to @effect/atom-react@4, bump react 19.2.7 and effect 4.0.0-beta.99 ([691e9d8](https://github.com/guidefari/gbfm/commit/691e9d826061f59339151708982c49163fdabc1f))
+* **mobile:** redesign home screen with featured mix and update profile with appearance section ([b16aa52](https://github.com/guidefari/gbfm/commit/b16aa529cc60cb84e2f1281261adc90f8fcb61c2))
+* **mobile:** refine home screen hierarchy ([64f92e0](https://github.com/guidefari/gbfm/commit/64f92e0b02390607b03f84a17b9dbfbe465b7766))
+* **mobile:** use Effect for authentication ([1a199ed](https://github.com/guidefari/gbfm/commit/1a199ed1fc8acaa7305f6dd67256e60a372b0ccd))
+* **theme:** export brandDark and brandLight tokens ([c62a8f2](https://github.com/guidefari/gbfm/commit/c62a8f2177bfa5d04cfb6f6d47d0343b43ad540f))
+
 # [2.66.0](https://github.com/guidefari/gbfm/compare/v2.65.4...v2.66.0) (2026-07-18)
 
 
