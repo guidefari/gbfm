@@ -1,60 +1,55 @@
-import { brand } from '@gbfm/theme'
 import { SymbolView } from 'expo-symbols'
 import { useState } from 'react'
 import { FlatList, Image, Modal, Pressable, Text, View } from 'react-native'
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
+import { useThemeColors, withAlpha } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
 
-const colors = {
-  background: brand.bg,
-  surface: brand.darkerBg,
-  accent: brand['pastel-green-1'],
-  muted: brand['pastel-green-2'],
-  text: brand.defaultText
-}
-
-const removeSymbol = { ios: 'xmark', android: 'close', web: 'close' } as const
+const symbols = {
+  remove: { ios: 'xmark', android: 'close', web: 'close' },
+  open: { ios: 'chevron.up', android: 'expand_less', web: 'expand_less' }
+} as const
 
 export function QueueSheet() {
   const { queue, skipTo, removeFromQueue } = useNowPlaying()
+  const colors = useThemeColors()
   const [isOpen, setIsOpen] = useState(false)
 
   const queueLength = queue.tracks.length
+  const queueLabel = `Queue${queueLength > 0 ? ` · ${queueLength}` : ''}`
 
   return (
-    <View style={{ gap: 8 }}>
-      <View
-        style={{
+    <View style={{ gap: 4 }}>
+      <Pressable
+        accessibilityRole='button'
+        accessibilityLabel='Open queue'
+        hitSlop={8}
+        onPress={() => setIsOpen(true)}
+        style={({ pressed }) => ({
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'space-between',
-          paddingHorizontal: 4
-        }}>
+          paddingVertical: 6,
+          paddingHorizontal: 2,
+          opacity: pressed ? 0.6 : 1
+        })}>
         <Text
           style={{
-            color: colors.text,
+            color: colors.muted,
             fontFamily: fonts.monoSemiBold,
-            fontSize: 13,
+            fontSize: 11,
             textTransform: 'uppercase',
             letterSpacing: 2
           }}>
-          Queue {queueLength > 0 ? `· ${queueLength}` : ''}
+          {queueLabel}
         </Text>
-        <Pressable
-          accessibilityRole='button'
-          hitSlop={8}
-          onPress={() => setIsOpen(true)}
-          style={({ pressed }) => ({ paddingHorizontal: 8, opacity: pressed ? 0.6 : 1 })}>
-          <Text
-            style={{
-              color: colors.accent,
-              fontFamily: fonts.monoSemiBold,
-              fontSize: 13
-            }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+          <Text style={{ color: colors.accent, fontFamily: fonts.monoSemiBold, fontSize: 12 }}>
             Open
           </Text>
-        </Pressable>
-      </View>
+          <SymbolView name={symbols.open} size={12} tintColor={colors.accent} />
+        </View>
+      </Pressable>
 
       {queueLength > 0 ? (
         <View style={{ gap: 4 }}>
@@ -69,31 +64,30 @@ export function QueueSheet() {
                     flexDirection: 'row',
                     alignItems: 'center',
                     gap: 10,
-                    paddingVertical: 6,
-                    paddingHorizontal: 8,
-                    borderRadius: 4,
-                    backgroundColor: isCurrent ? `${colors.accent}1A` : 'transparent'
+                    padding: 8,
+                    borderRadius: 10,
+                    backgroundColor: isCurrent ? withAlpha(colors.accent, 0.12) : 'transparent'
                   }}>
                   {track.thumbnailUrl ? (
                     <Image
                       source={{ uri: track.thumbnailUrl }}
-                      style={{ width: 28, height: 28, borderRadius: 2 }}
+                      style={{ width: 36, height: 36, borderRadius: 6 }}
                       resizeMode='cover'
                     />
                   ) : (
                     <View
                       style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: 2,
-                        backgroundColor: colors.surface
+                        width: 36,
+                        height: 36,
+                        borderRadius: 6,
+                        backgroundColor: withAlpha(colors.muted, 0.2)
                       }}
                     />
                   )}
                   <Text
                     style={{
                       flex: 1,
-                      color: isCurrent ? colors.accent : '#FFFFFF',
+                      color: isCurrent ? colors.accent : colors.strong,
                       fontFamily: fonts.monoSemiBold,
                       fontSize: 12
                     }}
@@ -105,8 +99,8 @@ export function QueueSheet() {
                       style={{
                         color: colors.accent,
                         fontFamily: fonts.mono,
-                        fontSize: 10,
-                        letterSpacing: 1
+                        fontSize: 9,
+                        letterSpacing: 1.5
                       }}>
                       PLAYING
                     </Text>
@@ -118,10 +112,10 @@ export function QueueSheet() {
       ) : (
         <Text
           style={{
-            color: `${colors.muted}99`,
+            color: withAlpha(colors.muted, 0.75),
             fontFamily: fonts.mono,
             fontSize: 12,
-            paddingHorizontal: 4
+            paddingHorizontal: 2
           }}>
           Your queue is empty.
         </Text>
@@ -142,15 +136,15 @@ export function QueueSheet() {
               paddingTop: 18,
               paddingBottom: 12,
               borderBottomWidth: 1,
-              borderBottomColor: `${colors.muted}33`
+              borderBottomColor: withAlpha(colors.muted, 0.25)
             }}>
             <Text
               style={{
-                color: colors.text,
+                color: colors.strong,
                 fontFamily: fonts.monoSemiBold,
-                fontSize: 18
+                fontSize: 16
               }}>
-              Queue {queueLength > 0 ? `· ${queueLength}` : ''}
+              {queueLabel}
             </Text>
             <Pressable accessibilityRole='button' hitSlop={12} onPress={() => setIsOpen(false)}>
               <Text
@@ -184,7 +178,7 @@ export function QueueSheet() {
               </Text>
               <Text
                 style={{
-                  color: `${colors.text}99`,
+                  color: withAlpha(colors.text, 0.6),
                   fontFamily: fonts.mono,
                   fontSize: 12,
                   textAlign: 'center'
@@ -210,8 +204,8 @@ export function QueueSheet() {
                       alignItems: 'center',
                       gap: 12,
                       padding: 10,
-                      borderRadius: 4,
-                      backgroundColor: isCurrent ? `${colors.accent}1F` : colors.surface
+                      borderRadius: 10,
+                      backgroundColor: isCurrent ? withAlpha(colors.accent, 0.14) : colors.surface
                     }}>
                     <Pressable
                       accessibilityRole='button'
@@ -231,23 +225,23 @@ export function QueueSheet() {
                       {track.thumbnailUrl ? (
                         <Image
                           source={{ uri: track.thumbnailUrl }}
-                          style={{ width: 40, height: 40, borderRadius: 2 }}
+                          style={{ width: 44, height: 44, borderRadius: 6 }}
                           resizeMode='cover'
                         />
                       ) : (
                         <View
                           style={{
-                            width: 40,
-                            height: 40,
-                            borderRadius: 2,
-                            backgroundColor: `${colors.muted}33`
+                            width: 44,
+                            height: 44,
+                            borderRadius: 6,
+                            backgroundColor: withAlpha(colors.muted, 0.25)
                           }}
                         />
                       )}
                       <View style={{ flex: 1, gap: 2 }}>
                         <Text
                           style={{
-                            color: isCurrent ? colors.accent : '#FFFFFF',
+                            color: isCurrent ? colors.accent : colors.strong,
                             fontFamily: fonts.monoSemiBold,
                             fontSize: 14
                           }}
@@ -271,13 +265,15 @@ export function QueueSheet() {
                       hitSlop={8}
                       onPress={() => removeFromQueue(index)}
                       style={({ pressed }) => ({
-                        width: 32,
-                        height: 32,
+                        width: 30,
+                        height: 30,
                         alignItems: 'center',
                         justifyContent: 'center',
+                        borderRadius: 15,
+                        backgroundColor: withAlpha(colors.muted, 0.18),
                         opacity: pressed ? 0.6 : 1
                       })}>
-                      <SymbolView name={removeSymbol} size={16} tintColor={colors.muted} />
+                      <SymbolView name={symbols.remove} size={12} tintColor={colors.muted} />
                     </Pressable>
                   </View>
                 )

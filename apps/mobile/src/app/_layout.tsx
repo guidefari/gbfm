@@ -1,6 +1,7 @@
 import '../global.css'
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
+import { StatusBar } from 'expo-status-bar'
 import { RegistryProvider, useAtomMount } from '@effect/atom-react'
 import { brandDark, brandLight } from '@gbfm/theme'
 import { useColorScheme } from 'react-native'
@@ -35,6 +36,7 @@ export default function Layout() {
           <NowPlayingProvider>
             <AuthProvider>
               <ThemeProvider value={isDark ? darkTheme : lightTheme}>
+                <StatusBar style={isDark ? 'light' : 'dark'} />
                 <Stack screenOptions={screenOptions}>
                   <Stack.Screen name='(tabs)' options={{ headerShown: false }} />
                   <Stack.Screen
