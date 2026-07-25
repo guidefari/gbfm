@@ -406,4 +406,66 @@ describe('makePlayerCore', () => {
     const saved = await Effect.runPromise(program)
     expect(saved.some((entry) => entry.id === track.id && entry.position === 30)).toBe(true)
   })
+
+  it('interrupts the status fiber when the enclosing scope closes', async () => {
+    let finalized = false
+    let callbacksAfterDispose = 0
+
+    const program = Effect.gen(function* () {
+      const pubsub = yield* PubSub.unbounded<EngineStatus>()
+      let status = idleStatus
+
+      const engine: AudioEngineShape = {
+        replace: (_url, sourceGeneration) =>
+          Effect.sync(() => {
+            status = { ...status, sourceGeneration }
+          }),
+        play: Effect.void,
+        pause: Effect.void,
+        seekTo: () => Effect.void,
+        currentStatus: Effect.sync(() => status),
+        changes: Stream.fromPubSub(pubsub).pipe(
+          Stream.ensuring(
+            Effect.sync(() => {
+              finalized = true
+            })
+          )
+        ),
+        setNowPlaying: () => Effect.void
+      }
+
+      const storage = makeRecordingStorage()
+      const reporter = makeRecordingReporter()
+
+      yield* makePlayerCore({
+        onStatus: () => {
+          callbacksAfterDispose += 1
+        },
+        onTrackFinished: () => {}
+      }).pipe(
+        Effect.provide(
+          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer)
+        )
+      )
+
+      yield* PubSub.publish(pubsub, {
+        ...idleStatus,
+        sourceGeneration: 1,
+        isLoaded: true,
+        duration: 300
+      })
+      yield* Effect.yieldNow
+
+      return pubsub
+    }).pipe(Effect.scoped)
+
+    const pubsub = await Effect.runPromise(program)
+
+    expect(finalized).toBe(true)
+
+    const before = callbacksAfterDispose
+    await Effect.runPromise(PubSub.publish(pubsub, { ...idleStatus, isLoaded: true, duration: 1 }))
+    await Effect.runPromise(Effect.yieldNow)
+    expect(callbacksAfterDispose).toBe(before)
+  })
 })
