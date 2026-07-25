@@ -31,7 +31,12 @@ export {
 
 export { createPlayDelivery } from './playDelivery'
 
-export { PlayReporter, PlayReporterNoop, type PlayReporterShape } from './playReporter'
+export {
+  PlayReporter,
+  PlayReporterNoop,
+  makePlayReporterLayer,
+  type PlayReporterShape
+} from './playReporter'
 
 export {
   AudioEngine,
