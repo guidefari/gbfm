@@ -69,6 +69,7 @@ const toQueueTrack = (track: Track): QueueTrackType => ({
 })
 
 const initialStatus: EngineStatus = {
+  sourceGeneration: null,
   isLoaded: false,
   playing: false,
   didJustFinish: false,

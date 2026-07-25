@@ -148,6 +148,8 @@ export const makePlayerCore = (
     const observeStatus = (status: EngineStatus) =>
       Effect.gen(function* () {
         const active = session
+        if (active && status.sourceGeneration !== active.generation) return
+
         callbacks.onStatus(status)
         if (!active) return
 
@@ -234,7 +236,7 @@ export const makePlayerCore = (
           // Pausing first stops engines that auto-resume on source replacement
           // from playing the new track before its checkpoint is restored.
           yield* engine.pause
-          yield* engine.replace(track.url)
+          yield* engine.replace(track.url, generation)
           yield* engine.setNowPlaying(buildMetadata(track))
           yield* observeStatus(yield* engine.currentStatus)
 

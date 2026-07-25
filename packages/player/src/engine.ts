@@ -4,6 +4,9 @@ import type * as Effect from 'effect/Effect'
 import type * as Stream from 'effect/Stream'
 
 export type EngineStatus = {
+  /** Identifies the source installed by replace. Statuses already queued for a
+   * previous source retain its generation and can be discarded by the core. */
+  readonly sourceGeneration: number | null
   readonly isLoaded: boolean
   readonly playing: boolean
   readonly didJustFinish: boolean
@@ -25,7 +28,7 @@ export class PlaybackRejected extends Data.TaggedError('PlaybackRejected')<{
 }> {}
 
 export interface AudioEngineShape {
-  readonly replace: (url: string) => Effect.Effect<void>
+  readonly replace: (url: string, sourceGeneration: number) => Effect.Effect<void>
   readonly play: Effect.Effect<void, PlaybackRejected>
   readonly pause: Effect.Effect<void>
   readonly seekTo: (seconds: number) => Effect.Effect<void>

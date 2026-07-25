@@ -8,7 +8,12 @@ import { Effect, Layer, Queue, Stream } from 'effect'
 import { log } from '@/services/logger'
 import { MediaSessionService } from '@/services/media-session'
 
-const readStatus = (audio: HTMLAudioElement, didJustFinish: boolean): EngineStatus => ({
+const readStatus = (
+  audio: HTMLAudioElement,
+  didJustFinish: boolean,
+  sourceGeneration: number | null
+): EngineStatus => ({
+  sourceGeneration,
   isLoaded: audio.readyState >= 1,
   playing: !audio.paused && !audio.ended,
   didJustFinish,
@@ -21,6 +26,7 @@ const makeHtmlAudioEngine = (audio: HTMLAudioElement) =>
   Effect.gen(function* () {
     const mediaSession = yield* MediaSessionService
     let justFinished = false
+    let sourceGeneration: number | null = null
 
     // DOM listeners are plain callbacks, so mediaSession effects are run
     // detached rather than yielded.
@@ -31,12 +37,12 @@ const makeHtmlAudioEngine = (audio: HTMLAudioElement) =>
     const changes = Stream.callback<EngineStatus>((queue) =>
       Effect.gen(function* () {
         const emit = () => {
-          Queue.offerUnsafe(queue, readStatus(audio, justFinished))
+          Queue.offerUnsafe(queue, readStatus(audio, justFinished, sourceGeneration))
         }
 
         const onEnded = () => {
           justFinished = true
-          Queue.offerUnsafe(queue, readStatus(audio, true))
+          Queue.offerUnsafe(queue, readStatus(audio, true, sourceGeneration))
           justFinished = false
         }
 
@@ -76,9 +82,10 @@ const makeHtmlAudioEngine = (audio: HTMLAudioElement) =>
     )
 
     return {
-      replace: (url: string) =>
+      replace: (url: string, generation: number) =>
         Effect.sync(() => {
           justFinished = false
+          sourceGeneration = generation
           audio.src = url
           audio.load()
         }),
@@ -109,7 +116,7 @@ const makeHtmlAudioEngine = (audio: HTMLAudioElement) =>
           else audio.addEventListener('loadedmetadata', apply, { once: true })
         }),
 
-      currentStatus: Effect.sync(() => readStatus(audio, justFinished)),
+      currentStatus: Effect.sync(() => readStatus(audio, justFinished, sourceGeneration)),
 
       changes,
 

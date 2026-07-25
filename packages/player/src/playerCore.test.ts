@@ -17,6 +17,7 @@ const track: QueueTrackType = {
 }
 
 const idleStatus: EngineStatus = {
+  sourceGeneration: null,
   isLoaded: false,
   playing: false,
   didJustFinish: false,
@@ -32,8 +33,9 @@ const makeRecordingEngine = (options: { readonly rejectPlay?: boolean } = {}) =>
     let status = idleStatus
 
     const engine: AudioEngineShape = {
-      replace: (url) =>
+      replace: (url, sourceGeneration) =>
         Effect.sync(() => {
+          status = { ...status, sourceGeneration }
           calls.push(`replace:${url}`)
         }),
       play: options.rejectPlay
@@ -267,6 +269,77 @@ describe('makePlayerCore', () => {
     expect(trackId).toBeNull()
     expect(calls).toContain('nowPlaying:null')
     expect(calls.lastIndexOf('pause')).toBeGreaterThan(calls.indexOf('replace:' + track.url))
+  })
+
+  it('ignores delayed statuses from the previous source', async () => {
+    const nextTrack: QueueTrackType = {
+      ...track,
+      id: 'track-2',
+      url: 'https://cdn.example/next.mp3'
+    }
+
+    const program = Effect.gen(function* () {
+      const { engine, calls, emit, setStatus } = yield* makeRecordingEngine()
+      const storage = makeRecordingStorage()
+      const reporter = makeRecordingReporter()
+      const observed: Array<EngineStatus> = []
+      let finished = 0
+
+      const core = yield* makePlayerCore({
+        onStatus: (status) => observed.push(status),
+        onTrackFinished: () => {
+          finished += 1
+        }
+      }).pipe(
+        Effect.provide(
+          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer)
+        )
+      )
+
+      yield* setStatus({ isLoaded: true, duration: 300 })
+      yield* core.setSource(track)
+      yield* setStatus({ isLoaded: false, duration: 0 })
+      yield* core.requestPlayOnReady(nextTrack.id)
+      yield* core.setSource(nextTrack)
+      const callsBeforeStaleStatus = calls.length
+
+      yield* emit({
+        sourceGeneration: 1,
+        isLoaded: true,
+        duration: 300,
+        playing: false,
+        didJustFinish: true
+      })
+      yield* Effect.yieldNow
+
+      const callsAfterStaleStatus = calls.length
+      yield* emit({
+        sourceGeneration: 2,
+        isLoaded: true,
+        duration: 300,
+        didJustFinish: false
+      })
+      yield* Effect.yieldNow
+
+      return {
+        calls,
+        callsBeforeStaleStatus,
+        callsAfterStaleStatus,
+        finished,
+        observed,
+        trackId: yield* core.currentTrackId
+      }
+    }).pipe(Effect.scoped)
+
+    const result = await Effect.runPromise(program)
+
+    expect(result.callsAfterStaleStatus).toBe(result.callsBeforeStaleStatus)
+    expect(
+      result.observed.some((status) => status.sourceGeneration === 1 && status.didJustFinish)
+    ).toBe(false)
+    expect(result.calls).toContain('play')
+    expect(result.finished).toBe(0)
+    expect(result.trackId).toBe(nextTrack.id)
   })
 
   it('clears the stored position and notifies when a track finishes', async () => {

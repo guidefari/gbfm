@@ -139,6 +139,7 @@ export const PlayerProvider = ({ children }: PropsWithChildren) => {
     const onPreviewStatus = () => {
       if (queueRef.current.current) return
       onStatus({
+        sourceGeneration: null,
         isLoaded: audio.readyState >= 1,
         playing: !audio.paused && !audio.ended,
         didJustFinish: audio.ended,
