@@ -1,3 +1,11 @@
+## [2.70.1](https://github.com/guidefari/gbfm/compare/v2.70.0...v2.70.1) (2026-07-25)
+
+
+### Bug Fixes
+
+* lockfile ([b361ba6](https://github.com/guidefari/gbfm/commit/b361ba6339e8567f2da3365fb63447540d4ae715))
+* **tweet:** restore scroll position on back navigation ([c65a8c6](https://github.com/guidefari/gbfm/commit/c65a8c6dd266dc816cb1649ae7ee06103aecae4f))
+
 # [2.70.0](https://github.com/guidefari/gbfm/compare/v2.69.0...v2.70.0) (2026-07-25)
 
 
