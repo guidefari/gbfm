@@ -59,7 +59,7 @@ export function TweetMusicEntityCard({ entityType, entityId }: Props) {
   })
 
   // todo: we can probs consolidate this into the music entity query above
-  const { data: links } = useQuery<EntityLink[]>({
+  const { data: links, isPending: isLinksPending } = useQuery<EntityLink[]>({
     queryKey: ['music-entity-links', entityType, entityId],
     queryFn: () => fetcher(apiUrl(`/music/${entityType}/${entityId}/links?status=verified`)),
     enabled: Boolean(supportedType && entityId)
@@ -69,7 +69,7 @@ export function TweetMusicEntityCard({ entityType, entityId }: Props) {
     return null
   }
 
-  if (isPending) {
+  if (isPending || isLinksPending) {
     return (
       <div className='not-prose flex items-center gap-4 rounded-md border border-border/50 bg-muted/20 p-3 animate-pulse'>
         <div className='h-24 w-24 shrink-0 rounded-sm bg-muted sm:h-28 sm:w-28' />
