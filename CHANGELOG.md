@@ -1,3 +1,20 @@
+# [2.70.0](https://github.com/guidefari/gbfm/compare/v2.69.0...v2.70.0) (2026-07-25)
+
+
+### Bug Fixes
+
+* **music:** destructure status in useAddAdminEntityLink ([21a07af](https://github.com/guidefari/gbfm/commit/21a07af2cb05389b68984d94ec254b1c32ecdfa3))
+* **spotify:** attribute Spotify branding on links and playback controls ([3de87e8](https://github.com/guidefari/gbfm/commit/3de87e884d79b5e2847debdf31d801091f1af6b0)), closes [#1DB954](https://github.com/guidefari/gbfm/issues/1DB954)
+* **spotify:** compact play/queue buttons, drop redundant badge ([8707ace](https://github.com/guidefari/gbfm/commit/8707acec9f94c3756e2618e8bece682ebbdeed37))
+* **spotify:** group entity actions after the platform link list ([a1ba145](https://github.com/guidefari/gbfm/commit/a1ba1459ade6567e5c539306a4af566564b259c8))
+* **tweet:** gate music entity card skeleton on links query ([0845629](https://github.com/guidefari/gbfm/commit/08456298448ce3960e613691492e448f5b0e7b51))
+
+
+### Features
+
+* **observability:** route Effect spans into the existing Sentry tracer ([e09c3fe](https://github.com/guidefari/gbfm/commit/e09c3fed1463ef855fa13406a606f18e86bc6939))
+* **spotify:** play and queue music entities from verified links ([d2c978f](https://github.com/guidefari/gbfm/commit/d2c978ff8e3f6b1df03223796f86535c592f1641)), closes [#207](https://github.com/guidefari/gbfm/issues/207) [#209](https://github.com/guidefari/gbfm/issues/209) [#210](https://github.com/guidefari/gbfm/issues/210)
+
 # [2.69.0](https://github.com/guidefari/gbfm/compare/v2.68.0...v2.69.0) (2026-07-25)
 
 
