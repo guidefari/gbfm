@@ -1,3 +1,10 @@
+# [2.72.0](https://github.com/guidefari/gbfm/compare/v2.71.1...v2.72.0) (2026-07-25)
+
+
+### Features
+
+* **music:** migrate labels to music entities ([#217](https://github.com/guidefari/gbfm/issues/217)) ([d16e10e](https://github.com/guidefari/gbfm/commit/d16e10e999fc91751cd51c0c1246d3b2e6dc270a))
+
 ## [2.71.1](https://github.com/guidefari/gbfm/compare/v2.71.0...v2.71.1) (2026-07-25)
 
 
