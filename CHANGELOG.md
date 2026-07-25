@@ -1,3 +1,10 @@
+## [2.71.1](https://github.com/guidefari/gbfm/compare/v2.71.0...v2.71.1) (2026-07-25)
+
+
+### Bug Fixes
+
+* **player:** restore position for cached sources ([1053a54](https://github.com/guidefari/gbfm/commit/1053a54a6217a102e3c284aa55ed40d1c7b4ce5b))
+
 # [2.71.0](https://github.com/guidefari/gbfm/compare/v2.70.1...v2.71.0) (2026-07-25)
 
 
