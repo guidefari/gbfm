@@ -7,6 +7,7 @@ import { VerifyEmailBanner } from '@/components/Auth/VerifyEmailBanner'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import AppShell from '@/components/Layout/AppShell'
 import { OfflineBanner } from '@/components/OfflineBanner'
+import { SpotifyConnectionProvider } from '@/components/spotify/SpotifyConnectionProvider'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import { env } from '@/env'
 
@@ -60,18 +61,20 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
       <ErrorBoundary>
         <ThemeProvider>
           <QueryClientProvider client={queryClient}>
-            <AppShell showFooter={location.pathname !== '/'}>
-              {env.isDev && (
-                <FPSMeter className='fixed top-0 right-0 z-50 hidden sm:block' height={40} />
-              )}
-              <OfflineBanner />
-              <VerifyEmailBanner />
-              <Suspense fallback={null}>
-                <WelcomeModal />
-                <AuthPromptDialog />
-              </Suspense>
-              <Outlet />
-            </AppShell>
+            <SpotifyConnectionProvider>
+              <AppShell showFooter={location.pathname !== '/'}>
+                {env.isDev && (
+                  <FPSMeter className='fixed top-0 right-0 z-50 hidden sm:block' height={40} />
+                )}
+                <OfflineBanner />
+                <VerifyEmailBanner />
+                <Suspense fallback={null}>
+                  <WelcomeModal />
+                  <AuthPromptDialog />
+                </Suspense>
+                <Outlet />
+              </AppShell>
+            </SpotifyConnectionProvider>
           </QueryClientProvider>
         </ThemeProvider>
       </ErrorBoundary>

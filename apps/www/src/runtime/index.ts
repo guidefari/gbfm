@@ -10,6 +10,7 @@ import {
   MediaSessionServiceLive
 } from '@/services/audio-player'
 import { log, type Logger, LoggerLive, NoopLogger } from '@/services/logger'
+import { SentryTracerLive } from '@/services/sentry-tracer'
 import { type MixUploadDraftStorage, MixUploadDraftStorageLive } from '@/services/mix-upload-draft'
 import {
   type ResumableUploadStorage,
@@ -37,6 +38,7 @@ const mediaSessionLayer = MediaSessionServiceLive
 const resumableUploadStorageLayer = ResumableUploadStorageLive
 const mixUploadDraftStorageLayer = MixUploadDraftStorageLive
 const loggerLayer = enableSentry ? LoggerLive : NoopLogger
+const tracerLayer = enableSentry ? SentryTracerLive : Layer.empty
 
 const mainLayer = Layer.mergeAll(
   analyticsLayer,
@@ -45,7 +47,8 @@ const mainLayer = Layer.mergeAll(
   mediaSessionLayer,
   resumableUploadStorageLayer,
   mixUploadDraftStorageLayer,
-  loggerLayer
+  loggerLayer,
+  tracerLayer
 )
 
 type AppServices =

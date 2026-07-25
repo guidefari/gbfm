@@ -81,7 +81,7 @@ function TweetPostPage() {
   const editedAt = createdAt && updatedAt && updatedAt > createdAt ? post.updatedAt : null
 
   return (
-    <div className='max-w-2xl px-4 py-8 mx-auto'>
+    <div className='max-w-3xl px-4 py-8 mx-auto'>
       <nav className='mb-6 flex items-end gap-6 border-b border-border/40'>
         <Link
           to='/tweet'

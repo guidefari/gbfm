@@ -30,17 +30,64 @@ export const clearAuthorizationCallback = (url: URL) => {
   window.history.replaceState({}, '', `${url.origin}${url.pathname}`)
 }
 
-export const getSpotifyRedirectUri = () => `${window.location.origin}/admin/playlists`
+const RETURN_PATH_KEY = 'gbfm:spotify-return-path'
+
+export const storeSpotifyReturnPath = (path: string) => {
+  window.sessionStorage.setItem(RETURN_PATH_KEY, path)
+}
+
+/** Only same-origin absolute paths, so a poisoned value cannot become an open redirect. */
+export const takeSpotifyReturnPath = (): string => {
+  const stored = window.sessionStorage.getItem(RETURN_PATH_KEY)
+  window.sessionStorage.removeItem(RETURN_PATH_KEY)
+  if (!stored || !stored.startsWith('/') || stored.startsWith('//')) return '/dashboard/player'
+  return stored
+}
+
+export const notifySpotifySessionChanged = () => {
+  window.dispatchEvent(new Event('spotify-session-changed'))
+}
+
+export const SPOTIFY_CALLBACK_PATH = '/spotify/callback'
+
+export const getSpotifyRedirectUri = () => `${window.location.origin}${SPOTIFY_CALLBACK_PATH}`
+
+export const SPOTIFY_ENTITY_KIND = {
+  TRACK: 'track',
+  ALBUM: 'album',
+  PLAYLIST: 'playlist'
+} as const
+
+export type SpotifyEntityKind = (typeof SPOTIFY_ENTITY_KIND)[keyof typeof SPOTIFY_ENTITY_KIND]
+
+export type SpotifyEntityRef = {
+  kind: SpotifyEntityKind
+  id: string
+  uri: string
+}
+
+const ENTITY_URL_PATTERN = /spotify\.com\/(?:intl-[a-z-]+\/)?(track|album|playlist)\/([A-Za-z0-9]+)/
+const ENTITY_URI_PATTERN = /^spotify:(track|album|playlist):([A-Za-z0-9]+)$/
+
+export const spotifyEntityFromUrl = (url: string): SpotifyEntityRef | null => {
+  const match = url.match(ENTITY_URL_PATTERN) ?? url.match(ENTITY_URI_PATTERN)
+  const kind = match?.[1]
+  const id = match?.[2]
+  if (!kind || !id) return null
+  if (kind !== 'track' && kind !== 'album' && kind !== 'playlist') return null
+  return { kind, id, uri: `spotify:${kind}:${id}` }
+}
 
 export const spotifyUriFromUrl = (url: string): string | null => {
-  const match = url.match(/spotify\.com\/track\/([A-Za-z0-9]+)/)
-  if (!match?.[1]) return null
-  return `spotify:track:${match[1]}`
+  const entity = spotifyEntityFromUrl(url)
+  if (!entity || entity.kind !== SPOTIFY_ENTITY_KIND.TRACK) return null
+  return entity.uri
 }
 
 export const spotifyIdFromUrl = (url: string): string | null => {
-  const match = url.match(/spotify\.com\/track\/([A-Za-z0-9]+)/)
-  return match?.[1] ?? null
+  const entity = spotifyEntityFromUrl(url)
+  if (!entity || entity.kind !== SPOTIFY_ENTITY_KIND.TRACK) return null
+  return entity.id
 }
 
 export const startSpotifyPkceLoginEffect = Effect.fn('startSpotifyPkceLogin')(function* (
@@ -88,6 +135,61 @@ export const playTrackEffect = Effect.fn('playTrack')(function* (spotifyTrackUri
 export const addToQueueEffect = Effect.fn('addToQueue')(function* (spotifyTrackUri: string) {
   const spotify = yield* Effect.service(SpotifyBrowser)
   yield* spotify.player.addToQueue(spotifyTrackUri)
+})
+
+export const hasActiveSpotifyDeviceEffect = Effect.fn('hasActiveSpotifyDevice')(function* () {
+  const spotify = yield* Effect.service(SpotifyBrowser)
+  const devices = yield* spotify.player.getMyDevices()
+  return devices.length > 0
+})
+
+const QUEUE_TRACK_LIMIT = 50
+
+const collectEntityTrackUrisEffect = Effect.fn('collectEntityTrackUris')(function* (
+  entity: SpotifyEntityRef
+) {
+  const spotify = yield* Effect.service(SpotifyBrowser)
+
+  if (entity.kind === SPOTIFY_ENTITY_KIND.TRACK) return [entity.uri]
+
+  if (entity.kind === SPOTIFY_ENTITY_KIND.ALBUM) {
+    const page = yield* spotify.albums.getAlbumTracks(entity.id, { limit: QUEUE_TRACK_LIMIT })
+    return page.items.map((track) => track.uri).filter((uri): uri is string => Boolean(uri))
+  }
+
+  const page = yield* spotify.playlists.getPlaylistItems(entity.id, { limit: QUEUE_TRACK_LIMIT })
+  return page.items.map((item) => item.track?.uri).filter((uri): uri is string => Boolean(uri))
+})
+
+/**
+ * Albums and playlists start as a Spotify playback *context* so the rest of the
+ * record keeps playing after the first track; a bare `uris` array would stop dead
+ * at the end of it.
+ */
+export const playSpotifyEntityEffect = Effect.fn('playSpotifyEntity')(function* (
+  entity: SpotifyEntityRef
+) {
+  const spotify = yield* Effect.service(SpotifyBrowser)
+
+  if (entity.kind === SPOTIFY_ENTITY_KIND.TRACK) {
+    yield* spotify.player.play({ uris: [entity.uri] })
+    return
+  }
+
+  yield* spotify.player.play({ context_uri: entity.uri })
+})
+
+export const queueSpotifyEntityEffect = Effect.fn('queueSpotifyEntity')(function* (
+  entity: SpotifyEntityRef
+) {
+  const spotify = yield* Effect.service(SpotifyBrowser)
+  const uris = yield* collectEntityTrackUrisEffect(entity)
+
+  for (const uri of uris) {
+    yield* spotify.player.addToQueue(uri)
+  }
+
+  return uris.length
 })
 
 export const saveTrackEffect = Effect.fn('saveTrack')(function* (spotifyTrackId: string) {

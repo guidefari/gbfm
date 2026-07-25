@@ -1,4 +1,6 @@
 import { ExternalLink } from 'lucide-react'
+import { SPOTIFY_GREEN, SpotifyIcon } from '@/components/icons/BrandIcons'
+import { SpotifyEntityActions } from '@/components/spotify/SpotifyEntityActions'
 
 const PLATFORM_LABELS: Record<string, string> = {
   spotify: 'Spotify',
@@ -26,6 +28,8 @@ type Props = {
 export function StreamLinks({ links }: Props) {
   if (!links.length) return null
 
+  const spotifyLink = links.find((link) => link.platform === 'spotify')
+
   return (
     <div className='pointer-events-auto flex flex-wrap items-center gap-1.5'>
       <span className='text-[10px] font-bold tracking-widest text-muted-foreground/50'>Stream</span>
@@ -39,12 +43,16 @@ export function StreamLinks({ links }: Props) {
             target='_blank'
             rel='noopener noreferrer'
             onClick={(e) => e.stopPropagation()}
-            className='inline-flex items-center gap-1 rounded-sm bg-muted/50 px-2 py-0.5 text-[10px] font-bold tracking-widest text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'>
+            className='inline-flex items-center gap-0.5 rounded-sm bg-muted/50 px-1.5 py-0.5 text-[10px] font-bold tracking-widest text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'>
+            {link.platform === 'spotify' ? (
+              <SpotifyIcon aria-hidden className='h-2.5 w-2.5' style={{ color: SPOTIFY_GREEN }} />
+            ) : null}
             {label}
             <ExternalLink className='h-2.5 w-2.5 opacity-50' />
           </a>
         )
       })}
+      {spotifyLink ? <SpotifyEntityActions url={spotifyLink.url} /> : null}
     </div>
   )
 }

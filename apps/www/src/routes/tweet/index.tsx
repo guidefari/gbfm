@@ -43,7 +43,7 @@ function TweetListPage() {
 
   if (error) {
     return (
-      <div className='max-w-2xl mx-auto px-4 py-8'>
+      <div className='max-w-3xl mx-auto px-4 py-8'>
         <PostsNav active='tweets' />
         <QueryError error={error} onRetry={() => refetch()} />
       </div>
@@ -52,7 +52,7 @@ function TweetListPage() {
 
   if (isPending) {
     return (
-      <div className='max-w-2xl mx-auto px-4 py-8'>
+      <div className='max-w-3xl mx-auto px-4 py-8'>
         <PostsNav active='tweets' />
         <div className='animate-pulse space-y-4'>
           {Array.from({ length: 3 }).map((_, i) => (
@@ -91,7 +91,7 @@ function TweetListPage() {
   }
 
   return (
-    <div className='max-w-2xl mx-auto px-4 py-8'>
+    <div className='max-w-3xl mx-auto px-4 py-8'>
       <PostsNav active='tweets' />
 
       {allTags.length > 0 && <TagFilterStrip tags={allTags} activeTag={tag} />}

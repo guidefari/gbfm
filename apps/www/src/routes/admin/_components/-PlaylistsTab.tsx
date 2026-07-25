@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react'
 import { CoverThumb } from '@/components/CoverThumb'
 import { apiUrl, fetcher } from '@/lib/http'
 import { PlaylistEditor, type PlaylistSummary } from './-PlaylistEditor'
-import { SpotifyConnectionCard } from './-SpotifyConnectionCard'
+import { SpotifyConnectionCard } from '@/components/spotify/SpotifyConnectionCard'
 
 interface ImportResult {
   status: 'Queued'
