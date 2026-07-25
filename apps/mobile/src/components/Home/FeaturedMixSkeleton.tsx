@@ -1,19 +1,21 @@
-import { brand } from '@gbfm/theme'
 import { View } from 'react-native'
+import { useThemeColors } from '@/theme/colors'
 import { FEATURED_CARD_BUTTON_HEIGHT, FEATURED_CARD_INFO_HEIGHT } from './FeaturedMixCard'
 
 const placeholder = 'hsla(198, 45%, 52%, 0.25)'
 const placeholderSoft = 'hsla(198, 45%, 52%, 0.12)'
 
 export function FeaturedMixSkeleton() {
+  const colors = useThemeColors()
+
   return (
     <View
       style={{
         borderWidth: 2,
-        borderColor: brand['pastel-green-1'],
+        borderColor: colors.accent,
         borderRadius: 4,
         overflow: 'hidden',
-        backgroundColor: brand.darkerBg
+        backgroundColor: colors.surface
       }}>
       <View style={{ aspectRatio: 1, backgroundColor: placeholderSoft }} />
       <View

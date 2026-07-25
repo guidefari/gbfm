@@ -1,14 +1,8 @@
-import { brand } from '@gbfm/theme'
 import { useRouter } from 'expo-router'
 import { Image, Pressable, Text, View } from 'react-native'
+import { useThemeColors } from '@/theme/colors'
 import type { Show } from '@/api/shows'
 import { fonts } from '@/theme/fonts'
-
-const colors = {
-  muted: brand['pastel-green-2'],
-  surface: brand.darkerBg,
-  text: brand.defaultText
-}
 
 // Fixed geometry, mirrored by the skeleton in ShowsSection, so that
 // loading -> loaded never shifts layout.
@@ -17,6 +11,7 @@ export const SHOW_CARD_HEIGHT = 150 + 8 + 36
 
 export function ShowCard({ show }: { show: Show }) {
   const router = useRouter()
+  const colors = useThemeColors()
   const hostNames = show.hosts.map((host) => host.name).join(', ')
 
   return (

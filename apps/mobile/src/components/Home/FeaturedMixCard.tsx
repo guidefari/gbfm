@@ -1,16 +1,9 @@
 import type { AudioResponse } from '@gbfm/api/audio'
-import { brand } from '@gbfm/theme'
 import { LinearGradient } from 'expo-linear-gradient'
 import { SymbolView } from 'expo-symbols'
 import { ActivityIndicator, Image, Pressable, Text, View } from 'react-native'
+import { useThemeColors } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
-
-const colors = {
-  accent: brand['pastel-green-1'],
-  muted: brand['pastel-green-2'],
-  text: brand.defaultText,
-  surface: brand.darkerBg
-}
 
 const symbols = {
   warning: {
@@ -27,14 +20,6 @@ const symbols = {
 export const FEATURED_CARD_INFO_HEIGHT = 64
 export const FEATURED_CARD_BUTTON_HEIGHT = 52
 
-const cardContainerStyle = {
-  borderWidth: 2,
-  borderColor: colors.accent,
-  borderRadius: 4,
-  overflow: 'hidden',
-  backgroundColor: colors.surface
-} as const
-
 export function FeaturedMixCard({
   mix,
   isPlaying = false,
@@ -50,6 +35,15 @@ export function FeaturedMixCard({
   onPressPlay: () => void
   onRetry?: () => void
 }) {
+  const colors = useThemeColors()
+  const cardContainerStyle = {
+    borderWidth: 2,
+    borderColor: colors.accent,
+    borderRadius: 4,
+    overflow: 'hidden',
+    backgroundColor: colors.surface
+  } as const
+
   if (!mix) {
     return (
       <View style={{ ...cardContainerStyle, borderColor: colors.muted }}>

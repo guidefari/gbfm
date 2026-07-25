@@ -1,4 +1,4 @@
-import { brand, brandDark } from '@gbfm/theme'
+import { brandDark } from '@gbfm/theme'
 import { useRouter } from 'expo-router'
 import { NativeTabs } from 'expo-router/unstable-native-tabs'
 import { SymbolView } from 'expo-symbols'
@@ -12,11 +12,11 @@ import {
   View
 } from 'react-native'
 import { useNowPlaying } from '@/audio/NowPlayingProvider'
+import { useThemeColors } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
 
 const textColor =
   Platform.OS === 'ios' ? DynamicColorIOS({ dark: '#FFFFFF', light: brandDark.bg }) : '#FFFFFF'
-const accent = brand['pastel-green-1']
 const symbols = {
   previous: { ios: 'backward.fill', android: 'skip_previous', web: 'skip_previous' },
   play: { ios: 'play.fill', android: 'play_arrow', web: 'play_arrow' },
@@ -26,7 +26,9 @@ const symbols = {
 
 function Artwork({ url, size }: { url: string | null | undefined; size: number }) {
   if (!url) {
-    return <View style={{ width: size, height: size, borderRadius: 4, backgroundColor: accent }} />
+    return (
+      <View style={{ width: size, height: size, borderRadius: 4, backgroundColor: '#7DD3FC' }} />
+    )
   }
   return (
     <Image
@@ -51,7 +53,9 @@ export function MiniPlayerBar() {
     queue
   } = useNowPlaying()
   const router = useRouter()
+  const colors = useThemeColors()
   const placement = NativeTabs.BottomAccessory.usePlacement()
+  const accent = colors.accent
 
   if (!track) return null
 

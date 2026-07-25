@@ -1,22 +1,18 @@
-import { brand } from '@gbfm/theme'
 import { useAtomRefresh, useAtomValue } from '@effect/atom-react'
 import { AsyncResult } from 'effect/unstable/reactivity'
 import { Pressable, ScrollView, Text, View } from 'react-native'
 import type { Show } from '@/api/shows'
 import { SHOW_CARD_HEIGHT, SHOW_CARD_WIDTH, ShowCard } from '@/components/Home/ShowCard'
 import { showsAtom } from '@/store/atoms/shows'
+import { useThemeColors } from '@/theme/colors'
 import { fonts } from '@/theme/fonts'
-
-const colors = {
-  accent: brand['pastel-green-1'],
-  muted: brand['pastel-green-2'],
-  text: brand.defaultText
-}
 
 const placeholder = 'hsla(198, 45%, 52%, 0.25)'
 const placeholderSoft = 'hsla(198, 45%, 52%, 0.12)'
 
 function ShowCardSkeleton() {
+  const colors = useThemeColors()
+
   return (
     <View style={{ width: SHOW_CARD_WIDTH, gap: 8 }}>
       <View
@@ -40,6 +36,7 @@ function ShowCardSkeleton() {
 export function ShowsSection() {
   const result = useAtomValue(showsAtom)
   const refresh = useAtomRefresh(showsAtom)
+  const colors = useThemeColors()
 
   return (
     <View style={{ gap: 12 }}>
