@@ -6,6 +6,7 @@ import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
 import { user } from '@/db/auth.schema'
 import { MdxServiceLive } from '@/lib/mdx'
+import { CryptoLive } from '@/lib/crypto'
 import { AudioService, AudioServiceLive, createAudioFingerprint } from './audio.service'
 
 const actorId = `audio-idempotency-${randomUUID()}`
@@ -34,14 +35,14 @@ beforeAll(async () => {
 })
 
 describe('AudioService.create idempotency', () => {
-  test('normalizes creator order without hiding changed content', () => {
+  test('normalizes creator order without hiding changed content', async () => {
     const audio = makeAudio('fingerprint')
+    const fingerprint = (data: typeof audio, creatorIds: readonly string[]) =>
+      Effect.runPromise(createAudioFingerprint(data, creatorIds).pipe(Effect.provide(CryptoLive)))
 
-    expect(createAudioFingerprint(audio, ['b', 'a'])).toBe(
-      createAudioFingerprint(audio, ['a', 'b'])
-    )
-    expect(createAudioFingerprint(audio, ['a'])).not.toBe(
-      createAudioFingerprint({ ...audio, title: 'Changed' }, ['a'])
+    expect(await fingerprint(audio, ['b', 'a'])).toBe(await fingerprint(audio, ['a', 'b']))
+    expect(await fingerprint(audio, ['a'])).not.toBe(
+      await fingerprint({ ...audio, title: 'Changed' }, ['a'])
     )
   })
 

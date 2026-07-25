@@ -1,6 +1,5 @@
-import { createHash } from 'node:crypto'
 import { and, arrayContains, count, desc, eq, exists, inArray, sql } from 'drizzle-orm'
-import { Context, Effect, Layer } from 'effect'
+import { Context, Crypto, Effect, Encoding, Layer } from 'effect'
 import { db } from '@/db'
 import {
   audioCreators,
@@ -20,6 +19,7 @@ import {
   type UnauthorizedError
 } from '@/errors'
 import { requireCreatorOrAdmin } from '@/lib/authorization'
+import { CryptoLive } from '@/lib/crypto'
 import { MdxService } from '@/lib/mdx'
 import { createPaginationMetadata, type PaginationMetadata } from '@/lib/pagination'
 import { recordAudioCreate } from '@/lib/performance-monitoring'
@@ -53,9 +53,13 @@ const canonicalize = (value: unknown): unknown => {
 }
 
 export const createAudioFingerprint = (data: CreateAudioData, creatorIds: readonly string[]) =>
-  createHash('sha256')
-    .update(JSON.stringify(canonicalize({ data, creatorIds: [...creatorIds].toSorted() })))
-    .digest('hex')
+  Effect.gen(function* () {
+    const crypto = yield* Crypto.Crypto
+    const input = new TextEncoder().encode(
+      JSON.stringify(canonicalize({ data, creatorIds: [...creatorIds].toSorted() }))
+    )
+    return yield* crypto.digest('SHA-256', input).pipe(Effect.orDie, Effect.map(Encoding.encodeHex))
+  })
 
 type AudioWithCreators = SelectAudio & {
   creators: Array<{
@@ -339,7 +343,7 @@ const createEffect = (
   { actorId, idempotencyKey }: CreateAudioOptions
 ) =>
   Effect.gen(function* () {
-    const idempotencyFingerprint = createAudioFingerprint(data, creatorIds)
+    const idempotencyFingerprint = yield* createAudioFingerprint(data, creatorIds)
     let audioData = { ...data }
 
     if (data.showId && !data.thumbnailUrl) {
@@ -642,6 +646,7 @@ export const AudioServiceLive = Layer.effect(
   AudioService,
   Effect.gen(function* () {
     const mdx = yield* MdxService
+    const crypto = yield* Crypto.Crypto
     return {
       getByType: (type, options) =>
         getByTypeEffect(type, options).pipe(
@@ -664,7 +669,10 @@ export const AudioServiceLive = Layer.effect(
           return audio
         }).pipe(Effect.withSpan('audio.getBySlugForEdit', { attributes: { type, slug } })),
       create: (data, creatorIds, options) =>
-        createEffect(data, creatorIds, options).pipe(Effect.withSpan('audio.create')),
+        createEffect(data, creatorIds, options).pipe(
+          Effect.provideService(Crypto.Crypto, crypto),
+          Effect.withSpan('audio.create')
+        ),
       update: (type, slug, userId, userRole, data) =>
         updateEffect(type, slug, userId, userRole, data, mdx).pipe(
           Effect.withSpan('audio.update', { attributes: { type, slug } })
@@ -675,4 +683,4 @@ export const AudioServiceLive = Layer.effect(
         )
     }
   })
-)
+).pipe(Layer.provide(CryptoLive))
