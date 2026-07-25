@@ -1,3 +1,24 @@
+# [2.68.0](https://github.com/guidefari/gbfm/compare/v2.67.0...v2.68.0) (2026-07-25)
+
+
+### Bug Fixes
+
+* **content:** authorize draft management ([2031ddd](https://github.com/guidefari/gbfm/commit/2031dddb8fbaf0b79bd4c02ea8e4cc94ff38c0cd))
+* **content:** keep drafts out of public surfaces ([214b322](https://github.com/guidefari/gbfm/commit/214b322efb1bdaf4fcee84097f11cf98a07bf0b4))
+* **mobile:** advance playback reliably ([9a3f219](https://github.com/guidefari/gbfm/commit/9a3f2199fe34764f57d1923d5a4f46e786c5cc2d))
+* **mobile:** make playback controls accessible ([ae45ab9](https://github.com/guidefari/gbfm/commit/ae45ab917aa53c270230550845672569264d106e))
+* **mobile:** make playback queue deterministic ([4cef1a4](https://github.com/guidefari/gbfm/commit/4cef1a4c21ff7a2bcdeb20ec0303524ed13d4e1e))
+* **mobile:** synchronize playback intent ([a18de4d](https://github.com/guidefari/gbfm/commit/a18de4db2b37db1d5f7818d717968e121a1bd201))
+* **upload:** bind idempotency keys to requests ([f671c48](https://github.com/guidefari/gbfm/commit/f671c48f74cf14af5bd1404a48ba0c16847485ad))
+* **upload:** clean up canceled multipart uploads ([a038405](https://github.com/guidefari/gbfm/commit/a0384050c037ef569a1d56d3f63dccca2645cc5a))
+* **upload:** enforce retry-safe completion ([0b22e00](https://github.com/guidefari/gbfm/commit/0b22e0091a494ed26abcd233cf2aae292f01030b))
+
+
+### Features
+
+* **mobile:** confirm queued tracks with a toast ([3ba3897](https://github.com/guidefari/gbfm/commit/3ba38979c9c00a52e15c6c7e357cb3c0a2175ba1))
+* **mobile:** redesign now-playing with theme-aware colors ([e14bdc3](https://github.com/guidefari/gbfm/commit/e14bdc3f981f5eb07845123608f5d18bbf15d6f9))
+
 # [2.67.0](https://github.com/guidefari/gbfm/compare/v2.66.0...v2.67.0) (2026-07-23)
 
 
