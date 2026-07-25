@@ -35,6 +35,7 @@ import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as TweetSlugRouteImport } from './routes/tweet/$slug'
 import { Route as TracksTrackIdRouteImport } from './routes/tracks/$trackId'
+import { Route as SpotifyCallbackRouteImport } from './routes/spotify/callback'
 import { Route as ShowsShowSlugRouteImport } from './routes/shows/$showSlug'
 import { Route as ReleasesSlugRouteImport } from './routes/releases/$slug'
 import { Route as ProfileUsernameRouteImport } from './routes/profile/$username'
@@ -195,6 +196,11 @@ const TracksTrackIdRoute = TracksTrackIdRouteImport.update({
   id: '/$trackId',
   path: '/$trackId',
   getParentRoute: () => TracksRouteRoute,
+} as any)
+const SpotifyCallbackRoute = SpotifyCallbackRouteImport.update({
+  id: '/spotify/callback',
+  path: '/spotify/callback',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ShowsShowSlugRoute = ShowsShowSlugRouteImport.update({
   id: '/shows/$showSlug',
@@ -394,6 +400,7 @@ export interface FileRoutesByFullPath {
   '/profile/$username': typeof ProfileUsernameRoute
   '/releases/$slug': typeof ReleasesSlugRoute
   '/shows/$showSlug': typeof ShowsShowSlugRoute
+  '/spotify/callback': typeof SpotifyCallbackRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
   '/tweet/$slug': typeof TweetSlugRoute
   '/admin/': typeof AdminIndexRoute
@@ -447,6 +454,7 @@ export interface FileRoutesByTo {
   '/profile/$username': typeof ProfileUsernameRoute
   '/releases/$slug': typeof ReleasesSlugRoute
   '/shows/$showSlug': typeof ShowsShowSlugRoute
+  '/spotify/callback': typeof SpotifyCallbackRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
   '/tweet/$slug': typeof TweetSlugRoute
   '/admin': typeof AdminIndexRoute
@@ -506,6 +514,7 @@ export interface FileRoutesById {
   '/profile/$username': typeof ProfileUsernameRoute
   '/releases/$slug': typeof ReleasesSlugRoute
   '/shows/$showSlug': typeof ShowsShowSlugRoute
+  '/spotify/callback': typeof SpotifyCallbackRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
   '/tweet/$slug': typeof TweetSlugRoute
   '/admin/': typeof AdminIndexRoute
@@ -566,6 +575,7 @@ export interface FileRouteTypes {
     | '/profile/$username'
     | '/releases/$slug'
     | '/shows/$showSlug'
+    | '/spotify/callback'
     | '/tracks/$trackId'
     | '/tweet/$slug'
     | '/admin/'
@@ -619,6 +629,7 @@ export interface FileRouteTypes {
     | '/profile/$username'
     | '/releases/$slug'
     | '/shows/$showSlug'
+    | '/spotify/callback'
     | '/tracks/$trackId'
     | '/tweet/$slug'
     | '/admin'
@@ -677,6 +688,7 @@ export interface FileRouteTypes {
     | '/profile/$username'
     | '/releases/$slug'
     | '/shows/$showSlug'
+    | '/spotify/callback'
     | '/tracks/$trackId'
     | '/tweet/$slug'
     | '/admin/'
@@ -729,6 +741,7 @@ export interface RootRouteChildren {
   ProfileUsernameRoute: typeof ProfileUsernameRoute
   ReleasesSlugRoute: typeof ReleasesSlugRoute
   ShowsShowSlugRoute: typeof ShowsShowSlugRoute
+  SpotifyCallbackRoute: typeof SpotifyCallbackRoute
   AdminIndexRoute: typeof AdminIndexRoute
   DjsIndexRoute: typeof DjsIndexRoute
   ShowsIndexRoute: typeof ShowsIndexRoute
@@ -918,6 +931,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/tracks/$trackId'
       preLoaderRoute: typeof TracksTrackIdRouteImport
       parentRoute: typeof TracksRouteRoute
+    }
+    '/spotify/callback': {
+      id: '/spotify/callback'
+      path: '/spotify/callback'
+      fullPath: '/spotify/callback'
+      preLoaderRoute: typeof SpotifyCallbackRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/shows/$showSlug': {
       id: '/shows/$showSlug'
@@ -1259,6 +1279,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileUsernameRoute: ProfileUsernameRoute,
   ReleasesSlugRoute: ReleasesSlugRoute,
   ShowsShowSlugRoute: ShowsShowSlugRoute,
+  SpotifyCallbackRoute: SpotifyCallbackRoute,
   AdminIndexRoute: AdminIndexRoute,
   DjsIndexRoute: DjsIndexRoute,
   ShowsIndexRoute: ShowsIndexRoute,

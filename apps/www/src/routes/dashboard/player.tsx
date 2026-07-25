@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { PlayerPreferencesCard } from '@/components/dashboard/PlayerPreferencesCard'
+import { SpotifyConnectionCard } from '@/components/spotify/SpotifyConnectionCard'
 
 export const Route = createFileRoute('/dashboard/player')({
   component: DashboardPlayer
@@ -9,7 +10,10 @@ export const Route = createFileRoute('/dashboard/player')({
 function DashboardPlayer() {
   return (
     <DashboardLayout title='Player Settings' description='Tune playback behavior to your taste.'>
-      <PlayerPreferencesCard />
+      <div className='space-y-12'>
+        <PlayerPreferencesCard />
+        <SpotifyConnectionCard />
+      </div>
     </DashboardLayout>
   )
 }
