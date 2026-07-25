@@ -82,18 +82,11 @@ SELECT
   label."tags",
   label."genres",
   CASE WHEN label."draft" THEN NULL ELSE label."createdAt" END,
-  creator."creatorId",
+  NULL,
   label."createdAt",
   label."updatedAt"
 FROM "labels" label
-INNER JOIN label_slug_migration migrated_slug ON migrated_slug.id = label."id"
-LEFT JOIN LATERAL (
-  SELECT "creatorId"
-  FROM "label_creators"
-  WHERE "labelId" = label."id"
-  ORDER BY "creatorId"
-  LIMIT 1
-) creator ON true;
+INNER JOIN label_slug_migration migrated_slug ON migrated_slug.id = label."id";
 --> statement-breakpoint
 DROP TABLE label_slug_migration;
 --> statement-breakpoint
