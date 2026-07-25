@@ -1950,7 +1950,8 @@ export function useAddAdminEntityLink() {
       entityType,
       entityId,
       platform,
-      url
+      url,
+      status
     }: {
       entityType: string
       entityId: string
