@@ -11,7 +11,7 @@ function AdminContentPage() {
   return (
     <AdminPage
       title='Content'
-      description='Operate publishing across mixes, editorials, tweets, and labels from one place.'
+      description='Operate publishing across mixes, editorials, and tweets from one place.'
       backToAdmin>
       <Card>
         <CardContent className='pt-6'>

@@ -159,13 +159,13 @@ export const navConfig: NavItem[] = [
   },
   {
     id: 'create-label',
-    name: 'New label',
-    slug: '/label-upload',
+    name: 'Manage labels',
+    slug: '/admin/music',
     icon: <Tag className={iconSytles} />,
     tier: 'create',
     surfaces: ['overlay'],
     description: 'Add a record label profile.',
-    minRole: 'editor'
+    minRole: 'admin'
   }
 ]
 

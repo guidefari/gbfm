@@ -2,7 +2,7 @@ import { eq, notInArray } from 'drizzle-orm'
 import { db } from '../src/db'
 import { audioCreators, audioTable } from '../src/db/audio.schema'
 import { user } from '../src/db/auth.schema'
-import { labelCreators, labelsTable } from '../src/db/label.schema'
+import { musicLabelCreatorsTable, musicLabelsTable } from '../src/db/music-entity.schema'
 import { postCreators, postsTable } from '../src/db/post.schema'
 
 async function assignAllRelationsToUser() {
@@ -94,16 +94,16 @@ async function assignAllRelationsToUser() {
     totalUpdated += wrongPostCreators.length
   }
 
-  const labels = await db.select({ id: labelsTable.id }).from(labelsTable)
+  const labels = await db.select({ id: musicLabelsTable.id }).from(musicLabelsTable)
   const existingLabelCreators = await db
-    .select({ labelId: labelCreators.labelId })
-    .from(labelCreators)
+    .select({ labelId: musicLabelCreatorsTable.labelId })
+    .from(musicLabelCreatorsTable)
   const labelIdsWithCreators = new Set(existingLabelCreators.map((r) => r.labelId))
   const labelsWithoutCreators = labels.filter((l) => !labelIdsWithCreators.has(l.id))
 
   console.log(`\nLabels: ${labels.length} total, ${labelsWithoutCreators.length} without creators`)
   if (labelsWithoutCreators.length > 0) {
-    await db.insert(labelCreators).values(
+    await db.insert(musicLabelCreatorsTable).values(
       labelsWithoutCreators.map((l) => ({
         labelId: l.id,
         creatorId: targetUser.id
@@ -115,12 +115,14 @@ async function assignAllRelationsToUser() {
 
   const wrongLabelCreators = await db
     .select()
-    .from(labelCreators)
-    .where(notInArray(labelCreators.creatorId, [targetUser.id]))
+    .from(musicLabelCreatorsTable)
+    .where(notInArray(musicLabelCreatorsTable.creatorId, [targetUser.id]))
   if (wrongLabelCreators.length > 0) {
-    await db.delete(labelCreators).where(notInArray(labelCreators.creatorId, [targetUser.id]))
     await db
-      .insert(labelCreators)
+      .delete(musicLabelCreatorsTable)
+      .where(notInArray(musicLabelCreatorsTable.creatorId, [targetUser.id]))
+    await db
+      .insert(musicLabelCreatorsTable)
       .values(
         wrongLabelCreators.map((r) => ({
           labelId: r.labelId,

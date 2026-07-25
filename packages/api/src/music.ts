@@ -187,6 +187,58 @@ export const UpdatePlaylistInput = Schema.Struct({
 })
 export type UpdatePlaylistInput = typeof UpdatePlaylistInput.Type
 
+export const LabelCreatorResponse = Schema.Struct({
+  id: Schema.String,
+  name: Schema.String
+})
+
+export const LabelResponse = Schema.Struct({
+  id: Schema.String,
+  name: Schema.String,
+  description: Schema.NullOr(Schema.String),
+  imageUrl: Schema.NullOr(Schema.String),
+  bannerImageUrl: Schema.NullOr(Schema.String),
+  slug: Schema.String,
+  content: Schema.String,
+  tags: Schema.NullOr(Schema.Array(Schema.String)),
+  genres: Schema.NullOr(Schema.Array(Schema.String)),
+  publishedAt: Schema.NullOr(Schema.String),
+  createdById: Schema.NullOr(Schema.String),
+  createdAt: Schema.String,
+  updatedAt: Schema.String,
+  compiledContent: Schema.optional(Schema.String),
+  creators: Schema.optional(Schema.Array(LabelCreatorResponse))
+})
+export type LabelResponse = typeof LabelResponse.Type
+
+export const LabelListResponse = Schema.Array(LabelResponse)
+
+export const CreateLabelInput = Schema.Struct({
+  name: NonEmptyString,
+  description: Schema.optional(Schema.String),
+  imageUrl: Schema.optional(Schema.String),
+  bannerImageUrl: Schema.optional(Schema.String),
+  slug: NonEmptyString,
+  content: Schema.String,
+  tags: Schema.optional(Schema.Array(Schema.String)),
+  genres: Schema.optional(Schema.Array(Schema.String)),
+  publishedAt: Schema.optional(Schema.String)
+})
+export type CreateLabelInput = typeof CreateLabelInput.Type
+
+export const UpdateLabelInput = Schema.Struct({
+  name: Schema.optional(Schema.NullOr(Schema.String)),
+  description: Schema.optional(Schema.NullOr(Schema.String)),
+  imageUrl: Schema.optional(Schema.NullOr(Schema.String)),
+  bannerImageUrl: Schema.optional(Schema.NullOr(Schema.String)),
+  slug: Schema.optional(Schema.NullOr(Schema.String)),
+  content: Schema.optional(Schema.NullOr(Schema.String)),
+  tags: Schema.optional(Schema.NullOr(Schema.Array(Schema.String))),
+  genres: Schema.optional(Schema.NullOr(Schema.Array(Schema.String))),
+  publishedAt: Schema.optional(Schema.NullOr(Schema.String))
+})
+export type UpdateLabelInput = typeof UpdateLabelInput.Type
+
 export const PlaylistTrackEntry = Schema.Struct({
   track: TrackResponse,
   position: Schema.Number,
@@ -239,10 +291,12 @@ export const SyncPlaylistLinksResponse = Schema.Struct({
 const albumIdParam = { id: Schema.String }
 const trackIdParam = { id: Schema.String }
 const playlistIdParam = { id: Schema.String }
+const labelIdParam = { id: Schema.String }
 
 // Mirrors apps/vps/src/db/music-entity.schema.ts's MUSIC_ENTITY_TYPES,
 // MUSIC_PLATFORMS, LINK_STATUSES.
-export const EntityType = Schema.Literals(['artist', 'album', 'track', 'playlist'])
+export const EntityType = Schema.Literals(['artist', 'album', 'track', 'playlist', 'label'])
+export const ScrapeEntityType = Schema.Literals(['artist', 'album', 'track', 'playlist'])
 export const MusicPlatform = Schema.Literals([
   'spotify',
   'youtube',
@@ -258,6 +312,7 @@ export const MusicPlatform = Schema.Literals([
   'instagram',
   'twitter',
   'musicbrainz',
+  'discogs',
   'other'
 ])
 export const LinkStatus = Schema.Literals(['pending_review', 'verified', 'rejected'])
@@ -501,6 +556,49 @@ export const MusicGroup = HttpApiGroup.make('music')
       error: [HttpApiError.NotFound, HttpApiError.Forbidden]
     }).middleware(AuthMiddleware)
   )
+  .add(HttpApiEndpoint.get('listLabels', '/api/music/labels', { success: LabelListResponse }))
+  .add(
+    HttpApiEndpoint.get('listLabelsForAdmin', '/api/music/labels/manage', {
+      success: LabelListResponse,
+      error: HttpApiError.Forbidden
+    }).middleware(AuthMiddleware)
+  )
+  .add(
+    HttpApiEndpoint.post('createLabel', '/api/music/labels', {
+      payload: CreateLabelInput,
+      success: LabelResponse,
+      error: HttpApiError.Forbidden
+    }).middleware(AuthMiddleware)
+  )
+  .add(
+    HttpApiEndpoint.get('getLabelBySlug', '/api/music/labels/slug/:slug', {
+      params: { slug: Schema.String },
+      success: LabelResponse,
+      error: HttpApiError.NotFound
+    })
+  )
+  .add(
+    HttpApiEndpoint.get('getLabel', '/api/music/labels/:id', {
+      params: labelIdParam,
+      success: LabelResponse,
+      error: [HttpApiError.NotFound, HttpApiError.Forbidden]
+    }).middleware(AuthMiddleware)
+  )
+  .add(
+    HttpApiEndpoint.patch('updateLabel', '/api/music/labels/:id', {
+      params: labelIdParam,
+      payload: UpdateLabelInput,
+      success: LabelResponse,
+      error: [HttpApiError.NotFound, HttpApiError.Forbidden]
+    }).middleware(AuthMiddleware)
+  )
+  .add(
+    HttpApiEndpoint.delete('deleteLabel', '/api/music/labels/:id', {
+      params: labelIdParam,
+      success: HttpApiSchema.NoContent,
+      error: [HttpApiError.NotFound, HttpApiError.Forbidden]
+    }).middleware(AuthMiddleware)
+  )
   // ---------------------------------------------------------------------
   // Playlist tracks
   // ---------------------------------------------------------------------
@@ -607,7 +705,7 @@ export const MusicGroup = HttpApiGroup.make('music')
   // ---------------------------------------------------------------------
   .add(
     HttpApiEndpoint.post('scrapeEntityLinks', '/api/music/:entityType/scrape', {
-      params: { entityType: EntityType },
+      params: { entityType: ScrapeEntityType },
       payload: ScrapeEntityLinksInput,
       success: ScrapeEntityLinksResponse,
       error: [HttpApiError.BadRequest, HttpApiError.Forbidden]

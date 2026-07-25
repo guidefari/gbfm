@@ -3,7 +3,6 @@ import type { AudioService } from '@/services/audio.service'
 import type { ConfigService } from '@/services/config.service'
 import type { EmailService } from '@/services/email.service'
 import type { FavoriteService } from '@/services/favorite.service'
-import type { LabelService } from '@/services/label.service'
 import type { MusicEntityService } from '@/services/music-entity'
 import type { MusicLinkScraperService } from '@/services/music-link-scraper.service'
 import type { MusicReminderService } from '@/services/music-reminder.service'
@@ -34,7 +33,6 @@ export type AppServices =
   | MusicEntityService
   | AudioService
   | PostService
-  | LabelService
   | ProfileService
   | QRCodeService
   | ReleaseService

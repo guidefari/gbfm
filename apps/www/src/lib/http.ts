@@ -4,17 +4,15 @@ import type {
   SendMixNotificationResponse
 } from '@gbfm/api/email'
 import type { CreateMusicReminderInput } from '@gbfm/api/music-reminders'
+import type { LabelResponse } from '@gbfm/api/music'
 import type { LinkStatus } from '@gbfm/core/status'
 import type {
   SelectAudio,
-  SelectLabel,
   SelectMdxCompiledAudio,
   SelectMdxCompiledEditorialPost,
-  SelectMdxCompiledLabel,
   SelectMdxCompiledMicroPost,
   SelectMdxCompiledRelease,
   SelectMdxCompiledShow,
-  SelectRelease,
   SelectShow,
   SelectShowSubscription
 } from '@gbfm/vps/schemas'
@@ -862,130 +860,6 @@ export function useAdminNewsletterSubscribers() {
   })
 }
 
-export function useAllLabels({ limit = DEFAULT_PAGE_SIZE }: PaginationOptions = {}) {
-  const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
-    useInfiniteQuery<PaginatedResponse<SelectLabel>, Error>({
-      queryKey: ['labels', limit],
-      queryFn: async ({ pageParam = 0 }) => {
-        const client = await getApiClient()
-        const result = await Effect.runPromise(
-          client.label
-            .getAllLabels({ query: { limit, offset: Number(pageParam) } })
-            .pipe(
-              Effect.tapError((error) =>
-                captureException(error, { endpoint: 'label.getAllLabels' })
-              )
-            )
-        )
-        return {
-          data: result.data.map((label) => ({
-            ...label,
-            bannerImageUrl: null,
-            createdAt: new Date(label.createdAt),
-            updatedAt: new Date(label.updatedAt),
-            tags: label.tags ? [...label.tags] : null,
-            genres: label.genres ? [...label.genres] : null
-          })),
-          pagination: result.pagination
-        }
-      },
-      initialPageParam: 0,
-      getNextPageParam: getNextOffsetPageParam
-    })
-
-  return {
-    data: data?.pages.flatMap((page) => page.data) ?? [],
-    error,
-    isPending,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage
-  }
-}
-
-export function useLabelBySlug(slug: string) {
-  const { data, error, isPending } = useQuery<SelectMdxCompiledLabel, Error>({
-    queryKey: ['label', slug],
-    queryFn: async () => {
-      const client = await getApiClient()
-      const label = await Effect.runPromise(
-        client.label
-          .getLabelBySlug({ params: { slug } })
-          .pipe(
-            Effect.tapError((error) =>
-              captureException(error, { endpoint: 'label.getLabelBySlug' })
-            )
-          )
-      )
-      return {
-        ...label,
-        bannerImageUrl: null,
-        createdAt: new Date(label.createdAt),
-        updatedAt: new Date(label.updatedAt),
-        tags: label.tags ? [...label.tags] : null,
-        genres: label.genres ? [...label.genres] : null,
-        creators: label.creators ? [...label.creators] : undefined
-      }
-    },
-    enabled: Boolean(slug)
-  })
-
-  return {
-    data,
-    error,
-    isPending
-  }
-}
-
-export function useReleasesByLabel(
-  labelSlug: string,
-  { limit = DEFAULT_PAGE_SIZE }: PaginationOptions = {}
-) {
-  const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage, isPending } =
-    useInfiniteQuery<PaginatedResponse<SelectRelease>, Error>({
-      queryKey: ['releases', 'label', labelSlug, limit],
-      queryFn: async ({ pageParam = 0 }) => {
-        const client = await getApiClient()
-        const result = await Effect.runPromise(
-          client.release
-            .getReleasesByLabel({
-              params: { labelSlug },
-              query: { limit, offset: Number(pageParam) }
-            })
-            .pipe(
-              Effect.tapError((error) =>
-                captureException(error, { endpoint: 'release.getReleasesByLabel' })
-              )
-            )
-        )
-        return {
-          data: result.data.map((release) => ({
-            ...release,
-            bannerImageUrl: null,
-            createdAt: new Date(release.createdAt),
-            updatedAt: new Date(release.updatedAt),
-            releaseDate: release.releaseDate ? new Date(release.releaseDate) : null,
-            tags: release.tags ? [...release.tags] : null,
-            streamingLinks: release.streamingLinks ? [...release.streamingLinks] : null
-          })),
-          pagination: result.pagination
-        }
-      },
-      initialPageParam: 0,
-      getNextPageParam: getNextOffsetPageParam,
-      enabled: Boolean(labelSlug)
-    })
-
-  return {
-    data: data?.pages.flatMap((page) => page.data) ?? [],
-    error,
-    isPending,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage
-  }
-}
-
 export function useReleaseBySlug(slug: string) {
   const { data, error, isPending } = useQuery<SelectMdxCompiledRelease, Error>({
     queryKey: ['release', slug],
@@ -1769,6 +1643,140 @@ export interface MusicTrack {
   createdById: string | null
   createdAt: string
   updatedAt: string
+}
+
+export interface MusicLabel {
+  id: string
+  name: string
+  description: string | null
+  imageUrl: string | null
+  bannerImageUrl: string | null
+  slug: string
+  content: string
+  tags: string[] | null
+  genres: string[] | null
+  publishedAt: string | null
+  createdById: string | null
+  createdAt: string
+  updatedAt: string
+  compiledContent?: string
+  creators?: Array<{ id: string; name: string }>
+}
+
+const mapMusicLabel = (label: LabelResponse): MusicLabel => ({
+  ...label,
+  tags: label.tags ? [...label.tags] : null,
+  genres: label.genres ? [...label.genres] : null,
+  creators: label.creators ? [...label.creators] : undefined
+})
+
+export function useLabels() {
+  return useQuery<MusicLabel[]>({
+    queryKey: ['labels'],
+    queryFn: async () => {
+      const client = await getApiClient()
+      const labels = await Effect.runPromise(
+        client.music
+          .listLabels({})
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'music.listLabels' }))
+          )
+      )
+      return labels.map(mapMusicLabel)
+    }
+  })
+}
+
+export function useLabelBySlug(slug: string) {
+  return useQuery<MusicLabel>({
+    queryKey: ['label', slug],
+    queryFn: async () => {
+      const client = await getApiClient()
+      const label = await Effect.runPromise(
+        client.music
+          .getLabelBySlug({ params: { slug } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'music.getLabelBySlug' })
+            )
+          )
+      )
+      return mapMusicLabel(label)
+    },
+    enabled: Boolean(slug)
+  })
+}
+
+export function useAdminLabels() {
+  return useQuery<MusicLabel[]>({
+    queryKey: ['admin', 'labels'],
+    queryFn: async () => {
+      const client = await getApiClient()
+      const labels = await Effect.runPromise(
+        client.music
+          .listLabelsForAdmin({})
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'music.listLabelsForAdmin' })
+            )
+          )
+      )
+      return labels.map(mapMusicLabel)
+    }
+  })
+}
+
+export function useCreateAdminLabel() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (data: { name: string; slug: string; content: string }) => {
+      const client = await getApiClient()
+      return mapMusicLabel(await Effect.runPromise(client.music.createLabel({ payload: data })))
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'labels'] })
+  })
+}
+
+export function useAdminLabel(id: string) {
+  return useQuery<MusicLabel>({
+    queryKey: ['admin', 'labels', id],
+    queryFn: async () => {
+      const client = await getApiClient()
+      return mapMusicLabel(await Effect.runPromise(client.music.getLabel({ params: { id } })))
+    },
+    enabled: Boolean(id)
+  })
+}
+
+export function useUpdateAdminLabel() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Record<string, unknown> }) => {
+      const client = await getApiClient()
+      return mapMusicLabel(
+        await Effect.runPromise(client.music.updateLabel({ params: { id }, payload: data }))
+      )
+    },
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ['admin', 'labels', id] })
+      qc.invalidateQueries({ queryKey: ['admin', 'labels'] })
+      qc.invalidateQueries({ queryKey: ['labels'] })
+    }
+  })
+}
+
+export function useDeleteAdminLabel() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const client = await getApiClient()
+      await Effect.runPromise(client.music.deleteLabel({ params: { id } }))
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'labels'] })
+      qc.invalidateQueries({ queryKey: ['labels'] })
+    }
+  })
 }
 
 export interface AdminMusicEntityLink {

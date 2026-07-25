@@ -1,12 +1,11 @@
 import type {
   SelectMdxCompiledAudio,
   SelectMdxCompiledEditorialPost,
-  SelectMdxCompiledLabel,
   SelectMdxCompiledMicroPost,
   SelectMdxCompiledRelease,
   SelectMdxCompiledShow
 } from '@gbfm/vps/schemas'
-import type { PublicProfile } from './http'
+import type { MusicLabel, PublicProfile } from './http'
 
 export const SITE_URL = 'https://goosebumps.fm'
 export const DEFAULT_OG_IMAGE = 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'
@@ -154,18 +153,18 @@ export function generateMicroPostSEO(post: SelectMdxCompiledMicroPost, slug: str
   }
 }
 
-export function generateLabelSEO(label: SelectMdxCompiledLabel, labelSlug: string): SEOHeadData {
-  const title = label.title || labelSlug
+export function generateLabelSEO(label: MusicLabel, labelSlug: string): SEOHeadData {
+  const title = label.name || labelSlug
   const description = label.description || `Explore music from ${title} on goosebumps.fm`
   const url = `${SITE_URL}/labels/${labelSlug}`
-  const image = label.thumbnailUrl || DEFAULT_OG_IMAGE
+  const image = label.imageUrl || DEFAULT_OG_IMAGE
 
   return {
     title,
     description,
     url,
     image,
-    type: 'website' // Labels are more like organization pages
+    type: 'website'
   }
 }
 

@@ -55,7 +55,7 @@ export const adminPrimaryNavItems: AdminNavItem[] = [
   {
     to: '/admin/content',
     label: 'Content',
-    description: 'Mixes, editorials, tweets, and labels.',
+    description: 'Mixes, editorials, and tweets.',
     icon: FileText
   },
   {

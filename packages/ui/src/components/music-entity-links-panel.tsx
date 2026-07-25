@@ -29,6 +29,7 @@ export type MusicPlatform =
   | 'instagram'
   | 'twitter'
   | 'musicbrainz'
+  | 'discogs'
   | 'other'
 
 export interface MusicEntityLink {
@@ -61,6 +62,7 @@ const PLATFORMS: MusicPlatform[] = [
   'instagram',
   'twitter',
   'musicbrainz',
+  'discogs',
   'other'
 ]
 

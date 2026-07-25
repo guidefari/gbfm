@@ -1,9 +1,9 @@
-import { and, eq, exists } from 'drizzle-orm'
+import { and, eq, exists, lte } from 'drizzle-orm'
 import { Effect } from 'effect'
 import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
 import { user as usersTable } from '@/db/auth.schema'
-import { labelsTable } from '@/db/label.schema'
+import { musicLabelsTable } from '@/db/music-entity.schema'
 import { postsTable } from '@/db/post.schema'
 import { releasesTable } from '@/db/release.schema'
 import { showsTable } from '@/db/show.schema'
@@ -69,9 +69,14 @@ const fetchReleases = () =>
             eq(releasesTable.draft, false),
             exists(
               db
-                .select({ id: labelsTable.id })
-                .from(labelsTable)
-                .where(and(eq(labelsTable.id, releasesTable.labelId), eq(labelsTable.draft, false)))
+                .select({ id: musicLabelsTable.id })
+                .from(musicLabelsTable)
+                .where(
+                  and(
+                    eq(musicLabelsTable.id, releasesTable.labelId),
+                    lte(musicLabelsTable.publishedAt, new Date())
+                  )
+                )
             )
           )
         ),
@@ -87,14 +92,14 @@ const fetchLabels = () =>
   Effect.tryPromise({
     try: () =>
       db
-        .select({ slug: labelsTable.slug, updatedAt: labelsTable.updatedAt })
-        .from(labelsTable)
-        .where(eq(labelsTable.draft, false)),
+        .select({ slug: musicLabelsTable.slug, updatedAt: musicLabelsTable.updatedAt })
+        .from(musicLabelsTable)
+        .where(lte(musicLabelsTable.publishedAt, new Date())),
     catch: (error) =>
       new DatabaseError({
         message: String(error),
         operation: 'select',
-        table: 'labels'
+        table: 'music_labels'
       })
   })
 

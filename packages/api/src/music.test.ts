@@ -3,11 +3,16 @@ import { describe, expect, it } from 'vitest'
 import {
   AddEntityLinkInput,
   CreateAlbumInput,
+  CreateLabelInput,
   CreatePlaylistInput,
   CreateTrackInput,
   PendingLinksQuery,
+  EntityType,
+  MusicPlatform,
+  ScrapeEntityType,
   UpdateAlbumInput,
   UpdateEntityLinkStatusInput,
+  UpdateLabelInput,
   UpdatePlaylistInput,
   UpdateTrackInput
 } from './music'
@@ -29,6 +34,11 @@ describe('music API contract', () => {
 
     it('CreatePlaylistInput rejects an empty title and slug', () => {
       const result = Schema.decodeUnknownExit(CreatePlaylistInput)({ title: '', slug: '' })
+      expect(Exit.isFailure(result)).toBe(true)
+    })
+
+    it('CreateLabelInput requires non-empty name and slug', () => {
+      const result = Schema.decodeUnknownExit(CreateLabelInput)({ name: '', slug: '', content: '' })
       expect(Exit.isFailure(result)).toBe(true)
     })
   })
@@ -67,6 +77,24 @@ describe('music API contract', () => {
       })
       expect(result.description).toBeNull()
     })
+
+    it('UpdateLabelInput accepts null for optional editorial fields', () => {
+      const result = Schema.decodeUnknownSync(UpdateLabelInput)({
+        description: null,
+        imageUrl: null,
+        bannerImageUrl: null,
+        tags: null,
+        genres: null,
+        publishedAt: null
+      })
+      expect(result.publishedAt).toBeNull()
+    })
+  })
+
+  it('supports labels and Discogs without making labels scrapeable', () => {
+    expect(Schema.decodeUnknownSync(EntityType)('label')).toBe('label')
+    expect(Schema.decodeUnknownSync(MusicPlatform)('discogs')).toBe('discogs')
+    expect(Exit.isFailure(Schema.decodeUnknownExit(ScrapeEntityType)('label'))).toBe(true)
   })
 
   // Adversarial review on the entity-links PR: AddEntityLinkInput.url must

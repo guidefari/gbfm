@@ -6,6 +6,8 @@ import type {
   SelectMusicAlbum,
   SelectMusicArtist,
   SelectMusicEntityLink,
+  SelectMdxCompiledMusicLabel,
+  SelectMusicLabel,
   SelectMusicPlaylist,
   SelectMusicPlaylistTrack,
   SelectMusicTrack
@@ -13,6 +15,15 @@ import type {
 import type { DatabaseError, NotFoundError, SpotifyError } from '@/errors'
 import { ConfigService as ConfigServiceTag } from '@/services/config.service'
 import { DatabaseService } from '@/services/database.service'
+import {
+  type CreateLabelInput,
+  createLabelEffect,
+  deleteLabelEffect,
+  getLabelByIdEffect,
+  getLabelBySlugEffect,
+  getLabelsEffect,
+  updateLabelEffect
+} from './label.service'
 import {
   MusicLinkScraperService as MusicLinkScraperServiceTag,
   type MusicScrapeInput
@@ -74,7 +85,15 @@ import {
   updateTrackEffect
 } from './track.service'
 
-export type { CreateAlbumInput, CreateArtistInput, CreatePlaylistInput, CreateTrackInput }
+export type {
+  CreateAlbumInput,
+  CreateArtistInput,
+  CreateLabelInput,
+  CreatePlaylistInput,
+  CreateTrackInput
+}
+
+type ScrapeableMusicEntityType = Exclude<MusicEntityType, 'label'>
 
 export interface MusicEntityService {
   readonly createArtist: (
@@ -130,6 +149,20 @@ export interface MusicEntityService {
     data: Partial<CreatePlaylistInput>
   ) => Effect.Effect<SelectMusicPlaylist, DatabaseError | NotFoundError>
   readonly deletePlaylist: (id: string) => Effect.Effect<void, DatabaseError | NotFoundError>
+
+  readonly createLabel: (data: CreateLabelInput) => Effect.Effect<SelectMusicLabel, DatabaseError>
+  readonly getLabels: (includeDrafts: boolean) => Effect.Effect<SelectMusicLabel[], DatabaseError>
+  readonly getLabelById: (
+    id: string
+  ) => Effect.Effect<SelectMusicLabel, DatabaseError | NotFoundError>
+  readonly getLabelBySlug: (
+    slug: string
+  ) => Effect.Effect<SelectMdxCompiledMusicLabel, DatabaseError | NotFoundError>
+  readonly updateLabel: (
+    id: string,
+    data: Partial<CreateLabelInput>
+  ) => Effect.Effect<SelectMusicLabel, DatabaseError | NotFoundError>
+  readonly deleteLabel: (id: string) => Effect.Effect<void, DatabaseError | NotFoundError>
 
   readonly getPlaylistTracks: (playlistId: string) => Effect.Effect<
     Array<{
@@ -222,7 +255,7 @@ export interface MusicEntityService {
   }) => Effect.Effect<SelectMusicEntityLink[], DatabaseError>
 
   readonly scrapeAndCreateEntity: (
-    entityType: MusicEntityType,
+    entityType: ScrapeableMusicEntityType,
     input: MusicScrapeInput
   ) => Effect.Effect<
     {
@@ -268,6 +301,13 @@ export const MusicEntityServiceLive = Layer.effect(
       getPlaylistById: getPlaylistByIdEffect(db),
       updatePlaylist: updatePlaylistEffect(db),
       deletePlaylist: deletePlaylistEffect(db),
+
+      createLabel: createLabelEffect(db),
+      getLabels: getLabelsEffect(db),
+      getLabelById: getLabelByIdEffect(db),
+      getLabelBySlug: getLabelBySlugEffect(db),
+      updateLabel: updateLabelEffect(db),
+      deleteLabel: deleteLabelEffect(db),
 
       getPlaylistTracks: getPlaylistTracksEffect(db),
       addTrackToPlaylist: addTrackToPlaylistEffect(db),

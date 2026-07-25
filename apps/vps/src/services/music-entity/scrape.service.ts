@@ -3,7 +3,6 @@ import { and, eq } from 'drizzle-orm'
 import { Effect } from 'effect'
 import type { db as DbType } from '@/db'
 import {
-  MUSIC_ENTITY_TYPES,
   type MusicEntityType,
   musicEntityLinksTable,
   type SelectMusicAlbum,
@@ -29,32 +28,45 @@ import { addLinkEffect, getLinksForEntityEffect } from './link.service'
 import { createPlaylistEffect, getPlaylistByIdEffect } from './playlist.service'
 import { createTrackEffect, getTrackByIdEffect } from './track.service'
 
-function isMusicEntityType(value: string): value is MusicEntityType {
-  return MUSIC_ENTITY_TYPES.some((type) => type === value)
+type ScrapeableMusicEntityType = Exclude<MusicEntityType, 'label'>
+
+const SCRAPEABLE_MUSIC_ENTITY_TYPES: readonly ScrapeableMusicEntityType[] = [
+  'artist',
+  'album',
+  'track',
+  'playlist'
+]
+
+function isScrapeableMusicEntityType(value: string): value is ScrapeableMusicEntityType {
+  return SCRAPEABLE_MUSIC_ENTITY_TYPES.some((type) => type === value)
 }
 
-const findExistingEntityByUrl = (db: typeof DbType) => (url: string, entityType: MusicEntityType) =>
-  Effect.tryPromise({
-    try: () =>
-      db
-        .select()
-        .from(musicEntityLinksTable)
-        .where(
-          and(eq(musicEntityLinksTable.url, url), eq(musicEntityLinksTable.entityType, entityType))
-        )
-        .limit(1),
-    catch: (e) =>
-      new DatabaseError({
-        message: `Failed to check existing link: ${getErrorMessage(e)}`,
-        operation: 'select',
-        table: 'music_entity_links'
-      })
-  }).pipe(Effect.withSpan('musicEntity.findExistingEntityByUrl'))
+const findExistingEntityByUrl =
+  (db: typeof DbType) => (url: string, entityType: ScrapeableMusicEntityType) =>
+    Effect.tryPromise({
+      try: () =>
+        db
+          .select()
+          .from(musicEntityLinksTable)
+          .where(
+            and(
+              eq(musicEntityLinksTable.url, url),
+              eq(musicEntityLinksTable.entityType, entityType)
+            )
+          )
+          .limit(1),
+      catch: (e) =>
+        new DatabaseError({
+          message: `Failed to check existing link: ${getErrorMessage(e)}`,
+          operation: 'select',
+          table: 'music_entity_links'
+        })
+    }).pipe(Effect.withSpan('musicEntity.findExistingEntityByUrl'))
 
 const getEntityById =
   (db: typeof DbType) =>
   (
-    entityType: MusicEntityType,
+    entityType: ScrapeableMusicEntityType,
     entityId: string
   ): Effect.Effect<
     SelectMusicArtist | SelectMusicAlbum | SelectMusicTrack | SelectMusicPlaylist,
@@ -74,12 +86,12 @@ const getEntityById =
 
 export const scrapeAndCreateEntityEffect =
   (db: typeof DbType, scraper: MusicLinkScraperService) =>
-  (entityType: MusicEntityType, input: MusicScrapeInput) =>
+  (entityType: ScrapeableMusicEntityType, input: MusicScrapeInput) =>
     Effect.gen(function* () {
       if (input.url) {
         const existingLinks = yield* findExistingEntityByUrl(db)(input.url, entityType)
         const match = existingLinks[0]
-        if (match && isMusicEntityType(match.entityType)) {
+        if (match && isScrapeableMusicEntityType(match.entityType)) {
           const entity = yield* Effect.catchTag(
             getEntityById(db)(match.entityType, match.entityId),
             'NotFoundError',

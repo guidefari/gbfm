@@ -26,7 +26,8 @@ const TYPE_LABELS: Record<MusicEntityType, string> = {
   artist: 'Artist',
   album: 'Album',
   track: 'Track',
-  playlist: 'Playlist'
+  playlist: 'Playlist',
+  label: 'Label'
 }
 
 export function MusicEntityDetail({
@@ -58,7 +59,9 @@ export function MusicEntityDetail({
                   ? '💿'
                   : entityType === 'track'
                     ? '🎵'
-                    : '📋'}
+                    : entityType === 'label'
+                      ? 'L'
+                      : '📋'}
             </div>
           )}
           <div className='flex min-w-0 flex-1 flex-col justify-center gap-2'>

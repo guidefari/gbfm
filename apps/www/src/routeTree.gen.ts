@@ -15,7 +15,6 @@ import { Route as SubscribeRouteImport } from './routes/subscribe'
 import { Route as RemindersRouteImport } from './routes/reminders'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as MixUploadRouteImport } from './routes/mix-upload'
-import { Route as LabelUploadRouteImport } from './routes/label-upload'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ChangelogRouteImport } from './routes/changelog'
 import { Route as SlugRouteImport } from './routes/$slug'
@@ -97,11 +96,6 @@ const MixUploadRoute = MixUploadRouteImport.update({
   path: '/mix-upload',
   getParentRoute: () => rootRouteImport,
 } as any).lazy(() => import('./routes/mix-upload.lazy').then((d) => d.Route))
-const LabelUploadRoute = LabelUploadRouteImport.update({
-  id: '/label-upload',
-  path: '/label-upload',
-  getParentRoute: () => rootRouteImport,
-} as any).lazy(() => import('./routes/label-upload.lazy').then((d) => d.Route))
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -364,7 +358,6 @@ export interface FileRoutesByFullPath {
   '/$slug': typeof SlugRoute
   '/changelog': typeof ChangelogRoute
   '/dashboard': typeof DashboardRouteWithChildren
-  '/label-upload': typeof LabelUploadRoute
   '/mix-upload': typeof MixUploadRoute
   '/privacy': typeof PrivacyRoute
   '/reminders': typeof RemindersRoute
@@ -418,7 +411,6 @@ export interface FileRoutesByTo {
   '/tracks': typeof TracksRouteRouteWithChildren
   '/$slug': typeof SlugRoute
   '/changelog': typeof ChangelogRoute
-  '/label-upload': typeof LabelUploadRoute
   '/mix-upload': typeof MixUploadRoute
   '/privacy': typeof PrivacyRoute
   '/reminders': typeof RemindersRoute
@@ -478,7 +470,6 @@ export interface FileRoutesById {
   '/$slug': typeof SlugRoute
   '/changelog': typeof ChangelogRoute
   '/dashboard': typeof DashboardRouteWithChildren
-  '/label-upload': typeof LabelUploadRoute
   '/mix-upload': typeof MixUploadRoute
   '/privacy': typeof PrivacyRoute
   '/reminders': typeof RemindersRoute
@@ -539,7 +530,6 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/changelog'
     | '/dashboard'
-    | '/label-upload'
     | '/mix-upload'
     | '/privacy'
     | '/reminders'
@@ -593,7 +583,6 @@ export interface FileRouteTypes {
     | '/tracks'
     | '/$slug'
     | '/changelog'
-    | '/label-upload'
     | '/mix-upload'
     | '/privacy'
     | '/reminders'
@@ -652,7 +641,6 @@ export interface FileRouteTypes {
     | '/$slug'
     | '/changelog'
     | '/dashboard'
-    | '/label-upload'
     | '/mix-upload'
     | '/privacy'
     | '/reminders'
@@ -712,7 +700,6 @@ export interface RootRouteChildren {
   SlugRoute: typeof SlugRoute
   ChangelogRoute: typeof ChangelogRoute
   DashboardRoute: typeof DashboardRouteWithChildren
-  LabelUploadRoute: typeof LabelUploadRoute
   MixUploadRoute: typeof MixUploadRoute
   PrivacyRoute: typeof PrivacyRoute
   RemindersRoute: typeof RemindersRoute
@@ -790,13 +777,6 @@ declare module '@tanstack/react-router' {
       path: '/mix-upload'
       fullPath: '/mix-upload'
       preLoaderRoute: typeof MixUploadRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/label-upload': {
-      id: '/label-upload'
-      path: '/label-upload'
-      fullPath: '/label-upload'
-      preLoaderRoute: typeof LabelUploadRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -1250,7 +1230,6 @@ const rootRouteChildren: RootRouteChildren = {
   SlugRoute: SlugRoute,
   ChangelogRoute: ChangelogRoute,
   DashboardRoute: DashboardRouteWithChildren,
-  LabelUploadRoute: LabelUploadRoute,
   MixUploadRoute: MixUploadRoute,
   PrivacyRoute: PrivacyRoute,
   RemindersRoute: RemindersRoute,

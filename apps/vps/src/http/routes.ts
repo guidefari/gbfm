@@ -20,7 +20,6 @@ import { checkDatabase, makeHealthHandlers } from '@/http/health.handlers'
 import { DocsLive } from '@/http/docs'
 import { InviteHandlersLive } from '@/http/invite.handlers'
 import { InternalHandlersLive } from '@/http/internal.handlers'
-import { LabelHandlersLive } from '@/http/label.handlers'
 import { MusicHandlersLive } from '@/http/music.handlers'
 import { MusicRemindersHandlersLive } from '@/http/music-reminders.handlers'
 import { NewsletterHandlersLive } from '@/http/newsletter.handlers'
@@ -82,7 +81,6 @@ export const createWebHandler = (options?: {
     Layer.provide(ResolveHandlersLive),
     Layer.provide(AdminHandlersLive),
     Layer.provide(InviteHandlersLive),
-    Layer.provide(LabelHandlersLive),
     Layer.provide(ReleaseHandlersLive),
     Layer.provide(PostHandlersLive),
     Layer.provide(AudioHandlersLive),

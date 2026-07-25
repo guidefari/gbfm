@@ -14,7 +14,7 @@ import { audioCreators, audioTable } from '@/db/audio.schema'
 import { session, user } from '@/db/auth.schema'
 import { emailDeliveryLogsTable } from '@/db/email.schema'
 import { favoritesTable } from '@/db/favorites.schema'
-import { labelsTable } from '@/db/label.schema'
+import { musicLabelsTable } from '@/db/music-entity.schema'
 import { musicReminder } from '@/db/music-reminder.schema'
 import { newsletterSubscribersTable } from '@/db/newsletter.schema'
 import { postsTable } from '@/db/post.schema'
@@ -25,25 +25,18 @@ import { dieOnDatabaseError } from '@/http/handler-utils'
 
 const dieOnAdminDatabaseError = dieOnDatabaseError('admin')
 
-type ContentTable =
-  | typeof audioTable
-  | typeof showsTable
-  | typeof postsTable
-  | typeof labelsTable
-  | typeof releasesTable
+type ContentTable = typeof audioTable | typeof showsTable | typeof postsTable | typeof releasesTable
 
 type DraftColumn =
   | typeof audioTable.draft
   | typeof showsTable.draft
   | typeof postsTable.draft
-  | typeof labelsTable.draft
   | typeof releasesTable.draft
 
 type CreatedAtColumn =
   | typeof audioTable.createdAt
   | typeof showsTable.createdAt
   | typeof postsTable.createdAt
-  | typeof labelsTable.createdAt
   | typeof releasesTable.createdAt
 
 type RecentContentItem = {
@@ -97,6 +90,20 @@ async function getContentBreakdown(
     )
   ])
 
+  return { published, drafts, newLast7Days }
+}
+
+async function getMusicLabelBreakdown() {
+  const sevenDaysAgo = daysAgo(7)
+  const now = new Date()
+  const [published, drafts, newLast7Days] = await Promise.all([
+    db.$count(musicLabelsTable, lte(musicLabelsTable.publishedAt, now)),
+    db.$count(
+      musicLabelsTable,
+      or(sql`${musicLabelsTable.publishedAt} is null`, gt(musicLabelsTable.publishedAt, now))
+    ),
+    db.$count(musicLabelsTable, gte(musicLabelsTable.createdAt, sevenDaysAgo))
+  ])
   return { published, drafts, newLast7Days }
 }
 
@@ -192,7 +199,7 @@ async function loadAdminOverview() {
       postsTable.createdAt,
       eq(postsTable.type, 'micro')
     ),
-    getContentBreakdown(labelsTable, labelsTable.draft, labelsTable.createdAt),
+    getMusicLabelBreakdown(),
     getContentBreakdown(releasesTable, releasesTable.draft, releasesTable.createdAt),
     db
       .select({ total: sql<number>`coalesce(sum(${audioTable.playCount}), 0)`.mapWith(Number) })
@@ -238,14 +245,14 @@ async function loadAdminOverview() {
       .limit(6),
     db
       .select({
-        id: labelsTable.id,
-        title: labelsTable.title,
-        slug: labelsTable.slug,
-        createdAt: labelsTable.createdAt,
-        draft: labelsTable.draft
+        id: musicLabelsTable.id,
+        title: musicLabelsTable.name,
+        slug: musicLabelsTable.slug,
+        createdAt: musicLabelsTable.createdAt,
+        draft: sql<boolean>`${musicLabelsTable.publishedAt} is null or ${musicLabelsTable.publishedAt} > now()`
       })
-      .from(labelsTable)
-      .orderBy(desc(labelsTable.createdAt))
+      .from(musicLabelsTable)
+      .orderBy(desc(musicLabelsTable.createdAt))
       .limit(4),
     db
       .select({

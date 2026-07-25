@@ -5,13 +5,16 @@ import type {
   ArtistResponse,
   CreateAlbumInput,
   CreateArtistInput,
+  CreateLabelInput,
   CreatePlaylistInput,
   CreateTrackInput,
   EntityLinkResponse,
+  LabelResponse,
   PlaylistResponse,
   TrackResponse,
   UpdateAlbumInput,
   UpdateArtistInput,
+  UpdateLabelInput,
   UpdatePlaylistInput,
   UpdateTrackInput
 } from '@gbfm/api/music'
@@ -21,6 +24,8 @@ import type {
   SelectMusicAlbum,
   SelectMusicArtist,
   SelectMusicEntityLink,
+  SelectMdxCompiledMusicLabel,
+  SelectMusicLabel,
   SelectMusicPlaylist,
   SelectMusicTrack
 } from '@/db/music-entity.schema'
@@ -30,6 +35,7 @@ import { runAppFork } from '@/runtime'
 import { ConfigService } from '@/services/config.service'
 import {
   type CreateAlbumInput as AlbumServiceCreateInput,
+  type CreateLabelInput as LabelServiceCreateInput,
   type CreatePlaylistInput as PlaylistServiceCreateInput,
   type CreateTrackInput as TrackServiceCreateInput,
   MusicEntityService
@@ -69,6 +75,15 @@ const toPlaylistResponse = (
   row: SelectMusicPlaylist & { spotifyUrl?: string | null }
 ): PlaylistResponse => ({
   ...row,
+  publishedAt: row.publishedAt?.toISOString() ?? null,
+  createdAt: row.createdAt.toISOString(),
+  updatedAt: row.updatedAt.toISOString()
+})
+
+const toLabelResponse = (row: SelectMusicLabel | SelectMdxCompiledMusicLabel): LabelResponse => ({
+  ...row,
+  tags: row.tags ? [...row.tags] : null,
+  genres: row.genres ? [...row.genres] : null,
   publishedAt: row.publishedAt?.toISOString() ?? null,
   createdAt: row.createdAt.toISOString(),
   updatedAt: row.updatedAt.toISOString()
@@ -145,6 +160,24 @@ const toPlaylistUpdateFields = (
   title: input.title ?? undefined,
   slug: input.slug ?? undefined,
   publishedAt: input.publishedAt ? new Date(input.publishedAt) : undefined
+})
+
+const toLabelCreateFields = (input: CreateLabelInput): LabelServiceCreateInput => ({
+  ...input,
+  tags: input.tags ? [...input.tags] : undefined,
+  genres: input.genres ? [...input.genres] : undefined,
+  publishedAt: input.publishedAt ? new Date(input.publishedAt) : undefined
+})
+
+const toLabelUpdateFields = (input: UpdateLabelInput): Partial<LabelServiceCreateInput> => ({
+  ...input,
+  name: input.name ?? undefined,
+  slug: input.slug ?? undefined,
+  content: input.content ?? undefined,
+  tags: input.tags ? [...input.tags] : input.tags,
+  genres: input.genres ? [...input.genres] : input.genres,
+  publishedAt:
+    input.publishedAt === null ? null : input.publishedAt ? new Date(input.publishedAt) : undefined
 })
 
 const dieOnDatabaseError = makeDieOnDatabaseError('music')
@@ -469,6 +502,78 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         yield* dieOnDatabaseError(
           svc
             .deletePlaylist(params.id)
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+        )
+      })
+    )
+    .handle('listLabels', () =>
+      Effect.gen(function* () {
+        const svc = yield* MusicEntityService
+        const rows = yield* dieOnDatabaseError(svc.getLabels(false))
+        return rows.map(toLabelResponse)
+      })
+    )
+    .handle('listLabelsForAdmin', () =>
+      Effect.gen(function* () {
+        yield* requireAdmin
+        const svc = yield* MusicEntityService
+        const rows = yield* dieOnDatabaseError(svc.getLabels(true))
+        return rows.map(toLabelResponse)
+      })
+    )
+    .handle('createLabel', ({ payload }) =>
+      Effect.gen(function* () {
+        yield* requireAdmin
+        const { user } = yield* AuthSession
+        const svc = yield* MusicEntityService
+        const row = yield* dieOnDatabaseError(
+          svc.createLabel({ ...toLabelCreateFields(payload), createdById: user.id })
+        )
+        return toLabelResponse(row)
+      })
+    )
+    .handle('getLabelBySlug', ({ params }) =>
+      Effect.gen(function* () {
+        const svc = yield* MusicEntityService
+        const row = yield* dieOnDatabaseError(
+          svc
+            .getLabelBySlug(params.slug)
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+        )
+        return toLabelResponse(row)
+      })
+    )
+    .handle('getLabel', ({ params }) =>
+      Effect.gen(function* () {
+        yield* requireAdmin
+        const svc = yield* MusicEntityService
+        const row = yield* dieOnDatabaseError(
+          svc
+            .getLabelById(params.id)
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+        )
+        return toLabelResponse(row)
+      })
+    )
+    .handle('updateLabel', ({ params, payload }) =>
+      Effect.gen(function* () {
+        yield* requireAdmin
+        const svc = yield* MusicEntityService
+        const row = yield* dieOnDatabaseError(
+          svc
+            .updateLabel(params.id, toLabelUpdateFields(payload))
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+        )
+        return toLabelResponse(row)
+      })
+    )
+    .handle('deleteLabel', ({ params }) =>
+      Effect.gen(function* () {
+        yield* requireAdmin
+        const svc = yield* MusicEntityService
+        yield* dieOnDatabaseError(
+          svc
+            .deleteLabel(params.id)
             .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
         )
       })

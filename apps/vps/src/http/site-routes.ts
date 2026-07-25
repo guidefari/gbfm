@@ -1,11 +1,11 @@
-import { and, eq, exists } from 'drizzle-orm'
+import { and, eq, exists, lte } from 'drizzle-orm'
 import { Effect, Layer } from 'effect'
 import { HttpRouter, HttpServerResponse } from 'effect/unstable/http'
 import { db } from '@/db'
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { rssFeedHtml } from '@/routes/rss/rss.template'
 import { user as usersTable } from '@/db/auth.schema'
-import { labelCreators, labelsTable } from '@/db/label.schema'
+import { musicLabelCreatorsTable, musicLabelsTable } from '@/db/music-entity.schema'
 import { postCreators, postsTable } from '@/db/post.schema'
 import { releasesTable } from '@/db/release.schema'
 import { showCreators, showsTable } from '@/db/show.schema'
@@ -314,10 +314,13 @@ const shareRelease = HttpRouter.params.pipe(
                 eq(releasesTable.draft, false),
                 exists(
                   db
-                    .select({ id: labelsTable.id })
-                    .from(labelsTable)
+                    .select({ id: musicLabelsTable.id })
+                    .from(musicLabelsTable)
                     .where(
-                      and(eq(labelsTable.id, releasesTable.labelId), eq(labelsTable.draft, false))
+                      and(
+                        eq(musicLabelsTable.id, releasesTable.labelId),
+                        lte(musicLabelsTable.publishedAt, new Date())
+                      )
                     )
                 )
               )
@@ -336,9 +339,9 @@ const shareRelease = HttpRouter.params.pipe(
       const [label] = yield* fetchDb(
         () =>
           db
-            .select({ id: labelsTable.id, title: labelsTable.title })
-            .from(labelsTable)
-            .where(eq(labelsTable.id, release.labelId))
+            .select({ id: musicLabelsTable.id, name: musicLabelsTable.name })
+            .from(musicLabelsTable)
+            .where(eq(musicLabelsTable.id, release.labelId))
             .limit(1),
         'labels'
       )
@@ -350,7 +353,7 @@ const shareRelease = HttpRouter.params.pipe(
           description: release.description || `Check out ${release.title || slug} on goosebumps.fm`,
           image: release.thumbnailUrl,
           canonicalPath: `/releases/${slug}`,
-          creators: label ? [label.title] : undefined,
+          creators: label ? [label.name] : undefined,
           imageAlt: `${release.title || slug} album art`
         }),
         status: 200
@@ -374,8 +377,10 @@ const shareLabel = HttpRouter.params.pipe(
         () =>
           db
             .select()
-            .from(labelsTable)
-            .where(and(eq(labelsTable.slug, slug), eq(labelsTable.draft, false)))
+            .from(musicLabelsTable)
+            .where(
+              and(eq(musicLabelsTable.slug, slug), lte(musicLabelsTable.publishedAt, new Date()))
+            )
             .limit(1),
         'labels'
       )
@@ -386,25 +391,25 @@ const shareLabel = HttpRouter.params.pipe(
         () =>
           db
             .select({ id: usersTable.id, name: usersTable.name })
-            .from(labelCreators)
-            .innerJoin(usersTable, eq(labelCreators.creatorId, usersTable.id))
-            .where(eq(labelCreators.labelId, label.id)),
-        'label_creators'
+            .from(musicLabelCreatorsTable)
+            .innerJoin(usersTable, eq(musicLabelCreatorsTable.creatorId, usersTable.id))
+            .where(eq(musicLabelCreatorsTable.labelId, label.id)),
+        'music_label_creators'
       )
 
-      const description = label.description || `Check out ${label.title || slug} on goosebumps.fm`
+      const description = label.description || `Check out ${label.name || slug} on goosebumps.fm`
       const genresSuffix =
         label.genres && label.genres.length > 0 ? ` | Genres: ${label.genres.join(', ')}` : ''
 
       return {
         html: buildOGHtml({
           type: 'website',
-          title: label.title || slug,
+          title: label.name || slug,
           description: description + genresSuffix,
-          image: label.thumbnailUrl,
+          image: label.imageUrl,
           canonicalPath: `/labels/${slug}`,
           creators: creators.map((c) => c.name),
-          imageAlt: `${label.title || slug} label art`
+          imageAlt: `${label.name || slug} label art`
         }),
         status: 200
       } satisfies HtmlResult

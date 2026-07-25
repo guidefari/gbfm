@@ -32,7 +32,7 @@ import { user } from './auth.schema'
 // constant below so app-level type safety stays in sync.
 // ---------------------------------------------------------------------------
 
-export const MUSIC_ENTITY_TYPES = ['artist', 'album', 'track', 'playlist'] as const
+export const MUSIC_ENTITY_TYPES = ['artist', 'album', 'track', 'playlist', 'label'] as const
 export type MusicEntityType = (typeof MUSIC_ENTITY_TYPES)[number]
 
 export const MUSIC_PLATFORMS = [
@@ -50,6 +50,7 @@ export const MUSIC_PLATFORMS = [
   'instagram',
   'twitter',
   'musicbrainz',
+  'discogs',
   'other'
 ] as const
 export type MusicPlatform = (typeof MUSIC_PLATFORMS)[number]
@@ -63,7 +64,7 @@ export type AlbumType = (typeof ALBUM_TYPES)[number]
 
 /** Seeded — do not insert manually; use scripts/seed-music-lookups.ts */
 export const musicEntityTypesTable = pgTable('music_entity_types', {
-  id: varchar({ length: 50 }).primaryKey(), // 'artist' | 'album' | 'track' | 'playlist'
+  id: varchar({ length: 50 }).primaryKey(), // 'artist' | 'album' | 'track' | 'playlist' | 'label'
   displayName: varchar({ length: 100 }).notNull()
 })
 
@@ -154,6 +155,39 @@ export const musicPlaylistsTable = pgTable(
   (table) => [index('music_playlists_slug_idx').on(table.slug)]
 )
 
+export const musicLabelsTable = pgTable(
+  'music_labels',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    name: varchar({ length: 255 }).notNull(),
+    description: text(),
+    imageUrl: varchar('image_url', { length: 512 }),
+    bannerImageUrl: varchar('banner_image_url', { length: 512 }),
+    slug: varchar({ length: 255 }).notNull().unique(),
+    content: text().notNull().default(''),
+    tags: varchar({ length: 255 }).array(),
+    genres: varchar({ length: 255 }).array(),
+    publishedAt: timestamp('published_at', { withTimezone: true }),
+    createdById: text('created_by_id').references(() => user.id, { onDelete: 'set null' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow()
+  },
+  (table) => [index('music_labels_slug_idx').on(table.slug)]
+)
+
+export const musicLabelCreatorsTable = pgTable(
+  'music_label_creators',
+  {
+    labelId: uuid('label_id')
+      .notNull()
+      .references(() => musicLabelsTable.id, { onDelete: 'cascade' }),
+    creatorId: text('creator_id')
+      .notNull()
+      .references(() => user.id, { onDelete: 'cascade' })
+  },
+  (table) => [primaryKey({ columns: [table.labelId, table.creatorId] })]
+)
+
 // ---------------------------------------------------------------------------
 // Many-to-many: artists ↔ albums and artists ↔ tracks
 // ---------------------------------------------------------------------------
@@ -215,7 +249,7 @@ export const musicPlaylistTracksTable = pgTable(
 // ---------------------------------------------------------------------------
 
 /**
- * Each music entity (artist, album, track, playlist) can have many links,
+ * Each music entity (artist, album, track, playlist, label) can have many links,
  * one per platform. Both `entityType` and `platform` are FK-constrained to
  * their respective seeded lookup tables so invalid values are rejected at the
  * database level.
@@ -274,6 +308,13 @@ export type InsertMusicTrack = InferInsertModel<typeof musicTracksTable>
 export type SelectMusicPlaylist = InferSelectModel<typeof musicPlaylistsTable>
 export type InsertMusicPlaylist = InferInsertModel<typeof musicPlaylistsTable>
 
+export type SelectMusicLabel = InferSelectModel<typeof musicLabelsTable>
+export type InsertMusicLabel = InferInsertModel<typeof musicLabelsTable>
+export type SelectMdxCompiledMusicLabel = SelectMusicLabel & {
+  compiledContent: string
+  creators: Array<{ id: string; name: string }>
+}
+
 export type SelectMusicPlaylistTrack = InferSelectModel<typeof musicPlaylistTracksTable>
 export type InsertMusicPlaylistTrack = InferInsertModel<typeof musicPlaylistTracksTable>
 
@@ -331,6 +372,21 @@ export const musicPlaylistsRelations = relations(musicPlaylistsTable, ({ one, ma
     references: [user.id]
   }),
   playlistTracks: many(musicPlaylistTracksTable)
+}))
+
+export const musicLabelsRelations = relations(musicLabelsTable, ({ many }) => ({
+  creators: many(musicLabelCreatorsTable)
+}))
+
+export const musicLabelCreatorsRelations = relations(musicLabelCreatorsTable, ({ one }) => ({
+  label: one(musicLabelsTable, {
+    fields: [musicLabelCreatorsTable.labelId],
+    references: [musicLabelsTable.id]
+  }),
+  creator: one(user, {
+    fields: [musicLabelCreatorsTable.creatorId],
+    references: [user.id]
+  })
 }))
 
 export const musicPlaylistTracksRelations = relations(musicPlaylistTracksTable, ({ one }) => ({
@@ -466,6 +522,36 @@ export const selectMusicPlaylistSchema = z.object({
 })
 
 export const updateMusicPlaylistSchema = insertMusicPlaylistSchema.partial()
+
+export const insertMusicLabelSchema = z.object({
+  name: z.string().min(1),
+  description: z.string().optional(),
+  imageUrl: z.string().url().optional(),
+  bannerImageUrl: z.string().url().optional(),
+  slug: z.string().min(1),
+  content: z.string(),
+  tags: z.array(z.string()).optional(),
+  genres: z.array(z.string()).optional(),
+  publishedAt: z.coerce.date().optional()
+})
+
+export const selectMusicLabelSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  description: z.string().nullable(),
+  imageUrl: z.string().nullable(),
+  bannerImageUrl: z.string().nullable(),
+  slug: z.string(),
+  content: z.string(),
+  tags: z.array(z.string()).nullable(),
+  genres: z.array(z.string()).nullable(),
+  publishedAt: z.date().nullable(),
+  createdById: z.string().nullable(),
+  createdAt: z.date(),
+  updatedAt: z.date()
+})
+
+export const updateMusicLabelSchema = insertMusicLabelSchema.partial()
 
 // --- Entity Link ---
 // entityType/platform use z.string() in the select schema because

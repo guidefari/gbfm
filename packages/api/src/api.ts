@@ -7,7 +7,6 @@ import { FileManagerGroup } from './file-manager'
 import { HealthGroup } from './health'
 import { InternalGroup } from './internal'
 import { InviteGroup } from './invite'
-import { LabelGroup } from './label'
 import { MusicGroup } from './music'
 import { MusicRemindersGroup } from './music-reminders'
 import { NewsletterGroup } from './newsletter'
@@ -30,7 +29,6 @@ export const Api = HttpApi.make('gbfm')
   .add(ResolveGroup)
   .add(AdminGroup)
   .add(InviteGroup)
-  .add(LabelGroup)
   .add(ReleaseGroup)
   .add(PostGroup)
   .add(AudioGroup)

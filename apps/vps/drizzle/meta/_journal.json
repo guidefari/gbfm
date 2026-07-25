@@ -267,6 +267,20 @@
       "when": 1784844699314,
       "tag": "0040_petite_iron_monger",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1784994030001,
+      "tag": "0041_loving_hobgoblin",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1784994044309,
+      "tag": "0042_sudden_natasha_romanoff",
+      "breakpoints": true
     }
   ]
 }
