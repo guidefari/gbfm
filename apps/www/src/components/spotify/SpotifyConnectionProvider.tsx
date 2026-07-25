@@ -11,6 +11,7 @@ import {
 import { env } from '@/env'
 import {
   fetchSpotifyProfileEffect,
+  getSpotifyRedirectUri,
   getValidSpotifyAuthSessionEffect,
   logoutSpotifyEffect,
   SPOTIFY_WEB_SCOPES,
@@ -100,7 +101,7 @@ export function SpotifyConnectionProvider({ children }: { children: ReactNode })
     storeSpotifyReturnPath(`${window.location.pathname}${window.location.search}`)
 
     await runAppEffect(
-      startSpotifyPkceLoginEffect(SPOTIFY_WEB_SCOPES).pipe(
+      startSpotifyPkceLoginEffect(SPOTIFY_WEB_SCOPES, getSpotifyRedirectUri()).pipe(
         Effect.map((url) => window.location.assign(url)),
         Effect.catch((e: SpotifyRequestError) =>
           Effect.sync(() => setError(spotifyErrorMessage(e)))

@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 const envSchema = z.object({
   EXPO_PUBLIC_API_URL: z.url(),
+  EXPO_PUBLIC_SPOTIFY_CLIENT_ID: z.string().optional(),
   isDev: z.boolean()
 })
 
@@ -9,6 +10,7 @@ function createEnvConfig() {
   try {
     const config = envSchema.parse({
       EXPO_PUBLIC_API_URL: process.env.EXPO_PUBLIC_API_URL,
+      EXPO_PUBLIC_SPOTIFY_CLIENT_ID: process.env.EXPO_PUBLIC_SPOTIFY_CLIENT_ID,
       isDev: process.env.NODE_ENV === 'development' || __DEV__
     })
     return config

@@ -21,6 +21,7 @@
     "@dnd-kit/utilities": "3.2.2",
     "@gbfm/api": "workspace:*",
     "@gbfm/core": "workspace:*",
+    "@gbfm/spotify": "workspace:*",
     "@gbfm/theme": "workspace:*",
     "@gbfm/ui": "workspace:*",
     "@gbfm/vps": "workspace:",

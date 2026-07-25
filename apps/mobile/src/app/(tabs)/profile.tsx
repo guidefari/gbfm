@@ -3,6 +3,7 @@ import { SymbolView } from 'expo-symbols'
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native'
 import Login from '@/components/Login'
 import { AppearanceSection } from '@/components/Profile/AppearanceSection'
+import { SpotifySection } from '@/components/Profile/SpotifySection'
 import { Screen } from '@/components/Screen'
 import { useAuthStore, useClearAuth } from '@/store/auth'
 import { useThemeColors } from '@/theme/colors'
@@ -87,6 +88,8 @@ export default function Profile() {
         <View className='mb-8'>
           <AppearanceSection />
         </View>
+
+        <SpotifySection />
 
         <TouchableOpacity
           onPress={() => void clearAuth()}

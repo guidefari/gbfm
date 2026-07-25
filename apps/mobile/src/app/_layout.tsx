@@ -7,6 +7,7 @@ import { brandDark, brandLight } from '@gbfm/theme'
 import { useColorScheme } from 'react-native'
 import { NowPlayingProvider } from '@/audio/NowPlayingProvider'
 import { QueueToast } from '@/components/NowPlaying/QueueToast'
+import { SpotifyConnectionProvider } from '@/spotify/connection'
 import { FontsLoadedBridge, splashHideAtom, useFontsReady } from '@/store/atoms/fonts'
 import { AuthProvider } from '@/store/auth'
 import { useColorSchemePreference } from '@/store/preferences'
@@ -36,23 +37,25 @@ export default function Layout() {
         <SplashGate>
           <NowPlayingProvider>
             <AuthProvider>
-              <ThemeProvider value={isDark ? darkTheme : lightTheme}>
-                <StatusBar style={isDark ? 'light' : 'dark'} />
-                <Stack screenOptions={screenOptions}>
-                  <Stack.Screen name='(tabs)' options={{ headerShown: false }} />
-                  <Stack.Screen
-                    name='now-playing'
-                    options={{
-                      presentation: 'modal',
-                      headerShown: false,
-                      animation: 'slide_from_bottom',
-                      contentStyle: { backgroundColor: isDark ? brandDark.bg : brandLight.bg }
-                    }}
-                  />
-                  <Stack.Screen name='music-reminders' options={{ title: 'Music Reminders' }} />
-                </Stack>
-                <QueueToast />
-              </ThemeProvider>
+              <SpotifyConnectionProvider>
+                <ThemeProvider value={isDark ? darkTheme : lightTheme}>
+                  <StatusBar style={isDark ? 'light' : 'dark'} />
+                  <Stack screenOptions={screenOptions}>
+                    <Stack.Screen name='(tabs)' options={{ headerShown: false }} />
+                    <Stack.Screen
+                      name='now-playing'
+                      options={{
+                        presentation: 'modal',
+                        headerShown: false,
+                        animation: 'slide_from_bottom',
+                        contentStyle: { backgroundColor: isDark ? brandDark.bg : brandLight.bg }
+                      }}
+                    />
+                    <Stack.Screen name='music-reminders' options={{ title: 'Music Reminders' }} />
+                  </Stack>
+                  <QueueToast />
+                </ThemeProvider>
+              </SpotifyConnectionProvider>
             </AuthProvider>
           </NowPlayingProvider>
         </SplashGate>
