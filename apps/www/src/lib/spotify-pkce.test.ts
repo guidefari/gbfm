@@ -39,7 +39,9 @@ describe('spotifyEntityFromUrl', () => {
   })
 
   it('returns null for unsupported entities and non-spotify urls', () => {
-    expect(spotifyEntityFromUrl('https://open.spotify.com/artist/0OdUWJ0sBjDrqHygGUXeCF')).toBeNull()
+    expect(
+      spotifyEntityFromUrl('https://open.spotify.com/artist/0OdUWJ0sBjDrqHygGUXeCF')
+    ).toBeNull()
     expect(spotifyEntityFromUrl('https://bandcamp.com/track/whatever')).toBeNull()
     expect(spotifyEntityFromUrl('')).toBeNull()
   })

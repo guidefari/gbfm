@@ -82,7 +82,7 @@ export function SpotifyEntityActions({ url }: Props) {
   }
 
   return (
-    <>
+    <span className='ml-0.5 inline-flex items-center gap-1.5 border-l border-border/40 pl-2'>
       <button
         type='button'
         className={actionClass}
@@ -105,6 +105,6 @@ export function SpotifyEntityActions({ url }: Props) {
         <ListPlus className='h-2.5 w-2.5' />
         {pending === 'queue' ? 'Queueing…' : 'Queue'}
       </button>
-    </>
+    </span>
   )
 }
