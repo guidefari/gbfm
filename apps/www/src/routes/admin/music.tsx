@@ -9,7 +9,8 @@ import {
   Tabs,
   TabsContent,
   TabsList,
-  TabsTrigger
+  TabsTrigger,
+  toast
 } from '@gbfm/ui'
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import {
@@ -122,15 +123,23 @@ function LabelsTab() {
   const createLabel = useCreateAdminLabel()
 
   const handleCreate = async () => {
-    const label = await createLabel.mutateAsync({
-      name: 'Untitled label',
-      slug: `untitled-label-${Date.now()}`,
-      content: ''
-    })
-    navigate({
-      to: '/admin/music-entity/$entityType/$id',
-      params: { entityType: 'label', id: label.id }
-    })
+    try {
+      const label = await createLabel.mutateAsync({
+        name: 'Untitled label',
+        slug: `untitled-label-${Date.now()}`,
+        content: ''
+      })
+      navigate({
+        to: '/admin/music-entity/$entityType/$id',
+        params: { entityType: 'label', id: label.id }
+      })
+    } catch {
+      toast({
+        title: 'Unable to create label',
+        description: 'Please try again. If the problem continues, refresh the page.',
+        variant: 'destructive'
+      })
+    }
   }
 
   return (
