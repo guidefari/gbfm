@@ -33,7 +33,7 @@ import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { useMixQRPdf, useShowById } from '@/lib/http'
 import { captureException } from '@/services/analytics'
 import { getShareUrl } from '@/lib/share'
-import { useContentStore } from '@/store'
+import { useSetCurrentContent } from '@/store'
 import { useNowPlayingTrack, usePlayerActions, useTransport } from '@/services/player'
 import { toQueueTrack } from '@/services/player/toQueueTrack'
 
@@ -137,7 +137,7 @@ export const Route = createFileRoute('/mixes/$mixId')({
 
 function MixPage() {
   const { mixId } = Route.useParams()
-  const { setCurrentContent } = useContentStore()
+  const setCurrentContent = useSetCurrentContent()
   const { mix } = Route.useLoaderData()
 
   React.useEffect(() => {

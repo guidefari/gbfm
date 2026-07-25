@@ -12,12 +12,13 @@ import {
 import { Heart, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { signIn, signUp } from '@/lib/auth-client'
-import { useAuthPromptStore } from '@/store/authPrompt'
+import { useAuthPrompt, useAuthPromptActions } from '@/store/authPrompt'
 
 type AuthMode = 'choice' | 'sign-in' | 'sign-up'
 
 export function AuthPromptDialog() {
-  const { isOpen, contentType, onAuthSuccess, close } = useAuthPromptStore()
+  const { isOpen, contentType, onAuthSuccess } = useAuthPrompt()
+  const { close } = useAuthPromptActions()
   const [mode, setMode] = useState<AuthMode>('choice')
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)

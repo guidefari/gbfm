@@ -6,7 +6,7 @@ import FullscreenAudioPlayer from '@/components/FullscreenAudioPlayer'
 import { useMediaHotkeys } from '@/hooks/useMediaHotkeys'
 import { MAIN_SCROLL_CONTAINER_ID } from '@/lib/constants'
 import { useNowPlayingTrack, useVisibility } from '@/services/player'
-import { useUIStore } from '@/store'
+import { useUIState } from '@/store'
 
 import { FloatingMenu } from './FloatingMenu'
 
@@ -25,7 +25,7 @@ export default function AppShell({ children }: Props) {
 
   const currentTrack = useNowPlayingTrack()
   const { isFullscreenVisible } = useVisibility()
-  const { showBottomPlayer } = useUIStore()
+  const { showBottomPlayer } = useUIState()
   const hasActiveAudio = Boolean(currentTrack)
   const showPlayer = showBottomPlayer && !isFullscreenVisible && hasActiveAudio
 

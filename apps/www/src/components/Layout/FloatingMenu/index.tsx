@@ -7,7 +7,7 @@ import { signOut, useSession } from '@/lib/auth-client'
 import { canSeeNavItem } from '@/lib/nav-access'
 import { cn } from '@/lib/utils'
 import { useNowPlayingTrack, useVisibility } from '@/services/player'
-import { useUIStore } from '@/store/ui'
+import { useUIActions } from '@/store/ui'
 import { type NavItem, navItemsForSurface } from '../NavLinks'
 import { NowPlayingMini } from './NowPlayingMini'
 import { useRovingGrid } from './useRovingGrid'
@@ -91,7 +91,7 @@ export function FloatingMenu({ className }: FloatingMenuProps) {
   const { data: session } = useSession()
   const location = useLocation()
   const navigate = useNavigate()
-  const resetUI = useUIStore((s) => s.resetUI)
+  const { resetUI } = useUIActions()
   const isAuthenticated = Boolean(session?.user)
   const role = session?.user?.role
 

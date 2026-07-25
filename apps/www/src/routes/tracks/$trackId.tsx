@@ -6,7 +6,7 @@ import { RouteError } from '@/components/RouteError'
 import { getApiClient } from '@/lib/api-client'
 import { generateSEOMeta, generateTrackSEO } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
-import { useContentStore } from '@/store'
+import { useSetCurrentContent } from '@/store'
 
 export const Route = createFileRoute('/tracks/$trackId')({
   component: TrackPage,
@@ -56,7 +56,7 @@ export const Route = createFileRoute('/tracks/$trackId')({
 function TrackPage() {
   const { trackId } = Route.useParams()
   const { track: data } = Route.useLoaderData()
-  const { setCurrentContent } = useContentStore()
+  const setCurrentContent = useSetCurrentContent()
 
   React.useEffect(() => {
     if (data?.creators) {

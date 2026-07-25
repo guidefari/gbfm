@@ -1,38 +1,33 @@
-import { create } from 'zustand'
-import { devtools, persist } from 'zustand/middleware'
+import { useAtomSet, useAtomValue } from '@effect/atom-react'
+import { Schema } from 'effect'
+import { persistedAtom } from './persistedAtom'
 
-interface OnboardingState {
-  hasSeenWelcome: boolean
+const OnboardingState = Schema.Struct({
+  hasSeenWelcome: Schema.Boolean
+})
+
+export type OnboardingState = (typeof OnboardingState)['Type']
+
+const { atom: onboardingAtom, write } = persistedAtom({
+  key: 'gbfm-onboarding.json',
+  schema: OnboardingState,
+  fallback: { hasSeenWelcome: false }
+})
+
+export { onboardingAtom }
+
+export const useHasSeenWelcome = () => useAtomValue(onboardingAtom, (state) => state.hasSeenWelcome)
+
+export const useOnboardingActions = () => {
+  const set = useAtomSet(onboardingAtom)
+
+  const update = (value: OnboardingState) => {
+    write(value)
+    set(value)
+  }
+
+  return {
+    markWelcomeSeen: () => update({ hasSeenWelcome: true }),
+    reset: () => update({ hasSeenWelcome: false })
+  }
 }
-
-interface OnboardingActions {
-  markWelcomeSeen: () => void
-  reset: () => void
-}
-
-type OnboardingStore = OnboardingState & OnboardingActions
-
-export const useOnboardingStore = create<OnboardingStore>()(
-  devtools(
-    persist(
-      (set) => ({
-        hasSeenWelcome: false,
-
-        markWelcomeSeen: () => set({ hasSeenWelcome: true }, false, 'onboarding/welcomeSeen'),
-
-        reset: () =>
-          set(
-            {
-              hasSeenWelcome: false
-            },
-            false,
-            'onboarding/reset'
-          )
-      }),
-      {
-        name: 'onboarding-store'
-      }
-    ),
-    { name: 'OnboardingStore' }
-  )
-)

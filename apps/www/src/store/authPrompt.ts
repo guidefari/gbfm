@@ -1,33 +1,30 @@
-import { create } from 'zustand'
-import { devtools } from 'zustand/middleware'
+import { useAtomSet, useAtomValue } from '@effect/atom-react'
+import * as Atom from 'effect/unstable/reactivity/Atom'
 
 type ContentType = 'mix' | 'show'
 
-interface AuthPromptState {
-  isOpen: boolean
-  contentType: ContentType
-  onAuthSuccess: (() => void) | null
+type AuthPromptState = {
+  readonly isOpen: boolean
+  readonly contentType: ContentType
+  readonly onAuthSuccess: (() => void) | null
 }
 
-interface AuthPromptActions {
-  open: (contentType: ContentType, onAuthSuccess: () => void) => void
-  close: () => void
+const initialState: AuthPromptState = {
+  isOpen: false,
+  contentType: 'mix',
+  onAuthSuccess: null
 }
 
-type AuthPromptStore = AuthPromptState & AuthPromptActions
+export const authPromptAtom = Atom.make<AuthPromptState>(initialState).pipe(Atom.keepAlive)
 
-export const useAuthPromptStore = create<AuthPromptStore>()(
-  devtools(
-    (set) => ({
-      isOpen: false,
-      contentType: 'mix',
-      onAuthSuccess: null,
+export const useAuthPrompt = () => useAtomValue(authPromptAtom)
 
-      open: (contentType, onAuthSuccess) =>
-        set({ isOpen: true, contentType, onAuthSuccess }, false, 'authPrompt/open'),
+export const useAuthPromptActions = () => {
+  const set = useAtomSet(authPromptAtom)
 
-      close: () => set({ isOpen: false, onAuthSuccess: null }, false, 'authPrompt/close')
-    }),
-    { name: 'AuthPromptStore' }
-  )
-)
+  return {
+    open: (contentType: ContentType, onAuthSuccess: () => void) =>
+      set({ isOpen: true, contentType, onAuthSuccess }),
+    close: () => set((state) => ({ ...state, isOpen: false, onAuthSuccess: null }))
+  }
+}

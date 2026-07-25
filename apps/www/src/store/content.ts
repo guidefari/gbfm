@@ -1,38 +1,19 @@
-import { create } from 'zustand'
-import { devtools } from 'zustand/middleware'
+import { useAtomSet, useAtomValue } from '@effect/atom-react'
+import * as Atom from 'effect/unstable/reactivity/Atom'
 
-interface ContentState {
-  currentContent: {
-    id: string
-    archetype: string
-    creatorIds: string[]
-  } | null
+export type CurrentContent = {
+  readonly id: string
+  readonly archetype: string
+  readonly creatorIds: ReadonlyArray<string>
 }
 
-interface ContentActions {
-  setCurrentContent: (
-    content: { id: string; archetype: string; creatorIds: string[] } | null
-  ) => void
-  canEditCurrent: (userId: string) => boolean
-}
+export const currentContentAtom = Atom.make<CurrentContent | null>(null).pipe(Atom.keepAlive)
 
-type ContentStore = ContentState & ContentActions
+export const useCurrentContent = () => useAtomValue(currentContentAtom)
 
-export const useContentStore = create<ContentStore>()(
-  devtools(
-    (set, get) => ({
-      currentContent: null,
-      setCurrentContent: (content) => {
-        set({ currentContent: content }, false, 'content/setCurrent')
-      },
-      canEditCurrent: (userId: string) => {
-        const { currentContent } = get()
-        if (!currentContent) return false
-        return currentContent.creatorIds.includes(userId)
-      }
-    }),
-    {
-      name: 'content-store'
-    }
+export const useSetCurrentContent = () => useAtomSet(currentContentAtom)
+
+export const useCanEditCurrentContent = (userId: string | undefined) =>
+  useAtomValue(currentContentAtom, (content) =>
+    content && userId ? content.creatorIds.includes(userId) : false
   )
-)
