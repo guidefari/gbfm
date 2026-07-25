@@ -10,6 +10,13 @@ export type ThemeColors = {
   readonly strong: string
   readonly surface: string
   readonly onAccent: string
+  readonly overlayText: string
+  readonly faintOverlayText: string
+  readonly error: string
+  readonly success: string
+  readonly warning: string
+  readonly accentSurface: string
+  readonly shadow: string
 }
 
 const darkColors: ThemeColors = {
@@ -19,7 +26,14 @@ const darkColors: ThemeColors = {
   text: brandDark.defaultText,
   strong: '#FFFFFF',
   surface: brandDark.darkerBg,
-  onAccent: brandDark.darkerBg
+  onAccent: brandDark.darkerBg,
+  overlayText: brandDark.overlayText,
+  faintOverlayText: brandDark.faintOverlayText,
+  error: brandDark.error,
+  success: brandDark.success,
+  warning: brandDark.warning,
+  accentSurface: brandDark.accentSurface,
+  shadow: brandDark.shadow
 }
 
 const lightColors: ThemeColors = {
@@ -29,7 +43,14 @@ const lightColors: ThemeColors = {
   text: brandLight.defaultText,
   strong: brandLight.defaultText,
   surface: brandLight.darkerBg,
-  onAccent: '#FFFFFF'
+  onAccent: '#FFFFFF',
+  overlayText: brandLight.overlayText,
+  faintOverlayText: brandLight.faintOverlayText,
+  error: brandLight.error,
+  success: brandLight.success,
+  warning: brandLight.warning,
+  accentSurface: brandLight.accentSurface,
+  shadow: brandLight.shadow
 }
 
 /**
