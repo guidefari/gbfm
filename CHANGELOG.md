@@ -1,3 +1,10 @@
+# [2.71.0](https://github.com/guidefari/gbfm/compare/v2.70.1...v2.71.0) (2026-07-25)
+
+
+### Features
+
+* **spotify:** extract shared package and add mobile playback ([#215](https://github.com/guidefari/gbfm/issues/215)) ([4fdf4ab](https://github.com/guidefari/gbfm/commit/4fdf4ab7d24a278e523644b59f06cadfaaf042b2)), closes [#208](https://github.com/guidefari/gbfm/issues/208)
+
 ## [2.70.1](https://github.com/guidefari/gbfm/compare/v2.70.0...v2.70.1) (2026-07-25)
 
 
