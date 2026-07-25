@@ -1,4 +1,5 @@
 import { ExternalLink } from 'lucide-react'
+import { SPOTIFY_GREEN, SpotifyIcon } from '@/components/icons/BrandIcons'
 import { SpotifyEntityActions } from '@/components/spotify/SpotifyEntityActions'
 
 const PLATFORM_LABELS: Record<string, string> = {
@@ -43,6 +44,9 @@ export function StreamLinks({ links }: Props) {
             rel='noopener noreferrer'
             onClick={(e) => e.stopPropagation()}
             className='inline-flex items-center gap-1 rounded-sm bg-muted/50 px-2 py-0.5 text-[10px] font-bold tracking-widest text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'>
+            {link.platform === 'spotify' ? (
+              <SpotifyIcon aria-hidden className='h-2.5 w-2.5' style={{ color: SPOTIFY_GREEN }} />
+            ) : null}
             {label}
             <ExternalLink className='h-2.5 w-2.5 opacity-50' />
           </a>

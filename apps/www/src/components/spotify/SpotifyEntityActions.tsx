@@ -1,6 +1,7 @@
 import { toast } from '@gbfm/ui'
 import * as Effect from 'effect/Effect'
 import { ListPlus, Play } from 'lucide-react'
+import { SPOTIFY_GREEN, SpotifyIcon } from '@/components/icons/BrandIcons'
 import { useState } from 'react'
 import {
   hasActiveSpotifyDeviceEffect,
@@ -83,9 +84,12 @@ export function SpotifyEntityActions({ url }: Props) {
 
   return (
     <span className='ml-0.5 inline-flex items-center gap-1.5 border-l border-border/40 pl-2'>
+      {/* Spotify requires their mark alongside any playback control or metadata they supply. */}
+      <SpotifyIcon aria-hidden className='h-3 w-3' style={{ color: SPOTIFY_GREEN }} />
       <button
         type='button'
         className={actionClass}
+        aria-label={`Play ${entityNoun[entity.kind].toLowerCase()} on Spotify`}
         disabled={pending !== null}
         onClick={(e) => {
           e.stopPropagation()
@@ -97,6 +101,7 @@ export function SpotifyEntityActions({ url }: Props) {
       <button
         type='button'
         className={actionClass}
+        aria-label={`Add ${entityNoun[entity.kind].toLowerCase()} to Spotify queue`}
         disabled={pending !== null}
         onClick={(e) => {
           e.stopPropagation()

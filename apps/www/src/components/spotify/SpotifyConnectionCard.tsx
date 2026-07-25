@@ -1,4 +1,5 @@
 import { Button } from '@gbfm/ui'
+import { SPOTIFY_GREEN, SpotifyIcon } from '@/components/icons/BrandIcons'
 import { env } from '@/env'
 import { getSpotifyRedirectUri } from '@/lib/spotify-pkce'
 import { useSpotifyConnection } from './SpotifyConnectionProvider'
@@ -18,7 +19,8 @@ export function SpotifyConnectionCard() {
   return (
     <div className='space-y-8'>
       <div className='space-y-1'>
-        <h3 className='text-sm font-bold tracking-widest text-muted-foreground'>
+        <h3 className='flex items-center gap-2 text-sm font-bold tracking-widest text-muted-foreground'>
+          <SpotifyIcon aria-hidden className='h-4 w-4' style={{ color: SPOTIFY_GREEN }} />
           Spotify Connection
         </h3>
         <p className='text-xs text-muted-foreground font-medium tracking-wider'>
