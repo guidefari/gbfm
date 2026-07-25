@@ -19,4 +19,3 @@ export {
 } from './atoms'
 
 export { PlayerProvider, usePlayerActions } from './PlayerProvider'
-export { recordPlayIfFresh } from './playTracker'

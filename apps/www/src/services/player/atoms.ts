@@ -3,14 +3,14 @@ import { makeQueueAtom, selectQueueView, type QueueAction, type QueueView } from
 import { useAtomSet, useAtomValue } from '@effect/atom-react'
 import { Effect, Schema } from 'effect'
 import * as Atom from 'effect/unstable/reactivity/Atom'
-import { playerStorage } from '@/runtime'
+import { queuePersistence } from '@/runtime'
 import { log } from '@/services/logger'
 
 export type { QueueAction, QueueTrackType, QueueView }
 
 const { queueAtom } = makeQueueAtom({
-  loadQueue: playerStorage.loadQueue,
-  saveQueue: playerStorage.saveQueue,
+  loadQueue: queuePersistence.loadQueue,
+  saveQueue: queuePersistence.saveQueue,
   onError: (message, error) => log('error', message, { error })
 })
 
@@ -50,7 +50,7 @@ const StoredVolume = Schema.Struct({
   isMuted: Schema.Boolean
 })
 
-const readStoredVolume = (): VolumeState => {
+export const readStoredVolume = (): VolumeState => {
   if (typeof window === 'undefined') return defaultVolume
   const raw = window.localStorage.getItem(VOLUME_KEY)
   if (!raw) return defaultVolume

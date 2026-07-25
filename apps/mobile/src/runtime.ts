@@ -1,4 +1,4 @@
-import { PlayerStorage, type PlayerStorageShape } from '@gbfm/player'
+import { PlayerStorage, type PersistedQueueType, type PlayerStorageShape } from '@gbfm/player'
 import { Effect, Layer, Scope } from 'effect'
 import { PlayerStorageLive } from '@/audio/queueStorage'
 
@@ -14,14 +14,9 @@ const use = <A, E>(operation: (storage: PlayerStorageShape) => Effect.Effect<A, 
     catch: (error) => error
   })
 
-/** Storage bound to the app context, for callers that run effects themselves
- *  (the player core) rather than composing them into the runtime. */
-export const playerStorage: PlayerStorageShape = {
+/** Queue persistence bound to the app context, for the queue atom, which runs
+ *  outside React and so cannot use the player's per-mount runtime. */
+export const queuePersistence = {
   loadQueue: () => use((storage) => storage.loadQueue()),
-  saveQueue: (queue) => use((storage) => storage.saveQueue(queue)),
-  loadPosition: (trackId) => use((storage) => storage.loadPosition(trackId)),
-  savePosition: (trackId, position) => use((storage) => storage.savePosition(trackId, position)),
-  clearPosition: (trackId) => use((storage) => storage.clearPosition(trackId)),
-  recordPlay: (trackId) => use((storage) => storage.recordPlay(trackId)),
-  isWithinDedupWindow: (trackId) => use((storage) => storage.isWithinDedupWindow(trackId))
+  saveQueue: (queue: PersistedQueueType) => use((storage) => storage.saveQueue(queue))
 }

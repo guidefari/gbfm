@@ -46,16 +46,6 @@ export const recordPlay = (trackId: string) =>
 export const isWithinDedupWindow = (trackId: string) =>
   Effect.andThen(PlayerStorage, (storage) => storage.isWithinDedupWindow(trackId))
 
-/** Binds the PlayerStorage service to a concrete context so the player core,
- *  which runs effects itself, can call storage without carrying requirements. */
-export const providePlayerStorage = (storage: PlayerStorageShape) => ({
-  loadPosition: (trackId: string) => storage.loadPosition(trackId),
-  savePosition: (trackId: string, position: number) => storage.savePosition(trackId, position),
-  clearPosition: (trackId: string) => storage.clearPosition(trackId),
-  loadQueue: () => storage.loadQueue(),
-  saveQueue: (queue: PersistedQueueType) => storage.saveQueue(queue)
-})
-
 export const PlayerStorageInMemory = Layer.sync(PlayerStorage, () => {
   let queue: PersistedQueueType | null = null
   const positions = new Map<string, PositionRecord>()

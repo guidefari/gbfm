@@ -1,4 +1,5 @@
-import type { AudioEngine, EngineStatus } from '@gbfm/player'
+import { AudioEngine, type EngineStatus, type NowPlayingMetadata } from '@gbfm/player'
+import { Effect, Layer, Queue, Stream } from 'effect'
 import type { AudioPlayer, AudioStatus } from 'expo-audio'
 import { Platform } from 'react-native'
 import { subscribeToPlaybackStatus } from '@/audio/audioPlayerAdapter'
@@ -12,29 +13,44 @@ const toEngineStatus = (status: AudioStatus): EngineStatus => ({
   isBuffering: status.isBuffering
 })
 
-export const createExpoAudioEngine = (player: AudioPlayer): AudioEngine => ({
-  replace: (url) => player.replace(url),
-  play: () => player.play(),
-  pause: () => player.pause(),
-  seekTo: (seconds) => player.seekTo(seconds),
-  currentStatus: () => toEngineStatus(player.currentStatus),
-  subscribe: (listener) =>
-    subscribeToPlaybackStatus(player, Platform.OS === 'web' ? 'web' : 'native', (status) =>
-      listener(toEngineStatus(status))
+const makeExpoAudioEngine = (player: AudioPlayer) =>
+  Effect.sync(() => ({
+    replace: (url: string) => Effect.sync(() => player.replace(url)),
+    play: Effect.sync(() => player.play()),
+    pause: Effect.sync(() => player.pause()),
+    seekTo: (seconds: number) => Effect.promise(() => player.seekTo(seconds)),
+    currentStatus: Effect.sync(() => toEngineStatus(player.currentStatus)),
+
+    changes: Stream.callback<EngineStatus>((queue) =>
+      Effect.gen(function* () {
+        const subscription = subscribeToPlaybackStatus(
+          player,
+          Platform.OS === 'web' ? 'web' : 'native',
+          (status) => {
+            Queue.offerUnsafe(queue, toEngineStatus(status))
+          }
+        )
+        yield* Effect.addFinalizer(() => Effect.sync(() => subscription.remove()))
+      })
     ),
-  setNowPlaying: (metadata) => {
-    if (!metadata) {
-      player.clearLockScreenControls()
-      return
-    }
-    player.setActiveForLockScreen(
-      true,
-      {
-        title: metadata.title,
-        artist: metadata.artist,
-        artworkUrl: metadata.artworkUrl
-      },
-      { showSeekForward: true, showSeekBackward: true }
-    )
-  }
-})
+
+    setNowPlaying: (metadata: NowPlayingMetadata | null) =>
+      Effect.sync(() => {
+        if (!metadata) {
+          player.clearLockScreenControls()
+          return
+        }
+        player.setActiveForLockScreen(
+          true,
+          {
+            title: metadata.title,
+            artist: metadata.artist,
+            artworkUrl: metadata.artworkUrl
+          },
+          { showSeekForward: true, showSeekBackward: true }
+        )
+      })
+  }))
+
+export const ExpoAudioEngineLayer = (player: AudioPlayer) =>
+  Layer.effect(AudioEngine, makeExpoAudioEngine(player))

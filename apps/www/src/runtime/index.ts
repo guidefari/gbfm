@@ -4,7 +4,7 @@ import { env } from '@/env'
 import { getSpotifyRedirectUri } from '@/lib/spotify-pkce'
 import { type Analytics, SentryAnalyticsLayer, NoopAnalyticsLayer } from '@/services/analytics'
 import { type MediaSessionService, MediaSessionServiceLive } from '@/services/media-session'
-import { PlayerStorage, type PlayerStorageShape } from '@gbfm/player'
+import { PlayerStorage, type PersistedQueueType, type PlayerStorageShape } from '@gbfm/player'
 import { PlayerStorageLive } from '@/services/player/storage'
 import { log, type Logger, LoggerLive, NoopLogger } from '@/services/logger'
 import { SentryTracerLive } from '@/services/sentry-tracer'
@@ -78,15 +78,9 @@ const useStorage = <A, E>(operation: (storage: PlayerStorageShape) => Effect.Eff
     catch: (error) => error
   })
 
-/** Storage bound to the app context, for callers that run effects themselves
- *  (the player core) rather than composing them into the runtime. */
-export const playerStorage: PlayerStorageShape = {
+/** Queue persistence bound to the app context, for the queue atom, which runs
+ *  outside React and so cannot use the player's per-mount runtime. */
+export const queuePersistence = {
   loadQueue: () => useStorage((storage) => storage.loadQueue()),
-  saveQueue: (queue) => useStorage((storage) => storage.saveQueue(queue)),
-  loadPosition: (trackId) => useStorage((storage) => storage.loadPosition(trackId)),
-  savePosition: (trackId, position) =>
-    useStorage((storage) => storage.savePosition(trackId, position)),
-  clearPosition: (trackId) => useStorage((storage) => storage.clearPosition(trackId)),
-  recordPlay: (trackId) => useStorage((storage) => storage.recordPlay(trackId)),
-  isWithinDedupWindow: (trackId) => useStorage((storage) => storage.isWithinDedupWindow(trackId))
+  saveQueue: (queue: PersistedQueueType) => useStorage((storage) => storage.saveQueue(queue))
 }
