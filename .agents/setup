@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+echo "[setup] Installing workspace dependencies"
+bun install --frozen-lockfile
+
+echo "[setup] Verifying the Effect language-service patch"
+bun run prepare
+
+echo "[setup] Workspace is ready"
