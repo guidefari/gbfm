@@ -6,6 +6,7 @@ import { RegistryProvider, useAtomMount } from '@effect/atom-react'
 import { brandDark, brandLight } from '@gbfm/theme'
 import { useColorScheme } from 'react-native'
 import { NowPlayingProvider } from '@/audio/NowPlayingProvider'
+import { QueueToast } from '@/components/NowPlaying/QueueToast'
 import { FontsLoadedBridge, splashHideAtom, useFontsReady } from '@/store/atoms/fonts'
 import { AuthProvider } from '@/store/auth'
 import { useColorSchemePreference } from '@/store/preferences'
@@ -50,6 +51,7 @@ export default function Layout() {
                   />
                   <Stack.Screen name='music-reminders' options={{ title: 'Music Reminders' }} />
                 </Stack>
+                <QueueToast />
               </ThemeProvider>
             </AuthProvider>
           </NowPlayingProvider>

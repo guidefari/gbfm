@@ -33,6 +33,11 @@ import { useQueue, useQueueDispatch } from '@/audio/queueAtom'
 
 type Track = typeof AudioResponse.Type
 
+type QueueNotice = {
+  readonly id: number
+  readonly message: string
+}
+
 type NowPlayingContextValue = {
   readonly track: QueueTrackType | null
   readonly isPlaying: boolean
@@ -41,6 +46,7 @@ type NowPlayingContextValue = {
   readonly currentTime: number
   readonly duration: number
   readonly queue: QueueView
+  readonly queueNotice: QueueNotice | null
   readonly loadAndPlay: (track: Track) => void
   readonly enqueue: (track: Track) => void
   readonly enqueueAll: (tracks: ReadonlyArray<Track>) => void
@@ -86,6 +92,7 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
   const dispatch = useQueueDispatch()
   const player = useAudioPlayer(null, { updateInterval: 500, keepAudioSessionActive: true })
   const [status, setStatus] = useState<AudioStatus>(() => player.currentStatus)
+  const [queueNotice, setQueueNotice] = useState<QueueNotice | null>(null)
 
   type SourceSession = {
     readonly generation: number
@@ -342,6 +349,7 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
   const enqueue = useCallback(
     (track: Track) => {
       dispatch({ _tag: 'enqueue', track: toQueueTrack(track) })
+      setQueueNotice({ id: Date.now(), message: `Queued: ${track.title}` })
     },
     [dispatch]
   )
@@ -350,6 +358,10 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
     (tracks: ReadonlyArray<Track>) => {
       if (tracks.length === 0) return
       dispatch({ _tag: 'enqueueAll', tracks: tracks.map(toQueueTrack) })
+      const [first] = tracks
+      const message =
+        tracks.length === 1 && first ? `Queued: ${first.title}` : `Queued ${tracks.length} tracks`
+      setQueueNotice({ id: Date.now(), message })
     },
     [dispatch]
   )
@@ -476,6 +488,7 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
       currentTime: status.currentTime,
       duration: status.duration,
       queue,
+      queueNotice,
       loadAndPlay,
       enqueue,
       enqueueAll,
@@ -497,6 +510,7 @@ export function NowPlayingProvider({ children }: PropsWithChildren) {
       status.duration,
       currentTrack,
       queue,
+      queueNotice,
       loadAndPlay,
       enqueue,
       enqueueAll,
