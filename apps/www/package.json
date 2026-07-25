@@ -39,7 +39,7 @@
     "@tanstack/react-query": "5.100.6",
     "@tanstack/react-router": "1.168.25",
     "@types/mdx": "2.0.13",
-    "better-auth": "1.6.18",
+    "better-auth": "1.6.22",
     "clsx": "2.1.1",
     "date-fns": "4.1.0",
     "effect": "4.0.0-beta.99",
