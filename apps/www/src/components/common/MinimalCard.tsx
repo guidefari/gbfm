@@ -122,7 +122,7 @@ export const MinimalCard: React.FC<Props> = ({
 
         {previewUrl?.length && (
           <div className='flex my-2 space-x-3 align-bottom '>
-            <PlayPauseButton url={previewUrl} thumbnailUrl={imageUrl} title={title} />
+            <PlayPauseButton previewUrl={previewUrl} />
             {download && (
               <a type='button' title='Download' href={constructUrl()}>
                 <Download className='py-0.5 default-icon' />

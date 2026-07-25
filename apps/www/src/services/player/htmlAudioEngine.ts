@@ -1,7 +1,7 @@
 import type { AudioEngine, EngineStatus, NowPlayingMetadata } from '@gbfm/player'
 import { RuntimeClient } from '@/runtime'
 import { log } from '@/services/logger'
-import { setMetadata, setPlaybackState } from '@/services/audio-player'
+import { setMetadata, setPlaybackState } from '@/services/media-session'
 
 const readStatus = (audio: HTMLAudioElement, didJustFinish: boolean): EngineStatus => ({
   isLoaded: audio.readyState >= 1,

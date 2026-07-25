@@ -19,18 +19,21 @@ import { useEffect, useRef } from 'react'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { formatSeconds } from '@/lib/utils'
 import { attachVolumeScroll } from '@/lib/volumeScrollHandler'
+import type { QueueTrackType } from '@gbfm/player'
 import {
-  type Creator,
-  useAudioPlayerActions,
-  useAudioPlayerPlaybackState,
-  useAudioPlayerProgressState,
-  useAudioPlayerQueueState,
-  useAudioPlayerVisibilityState,
-  useAudioPlayerVolumeState
-} from '@/store/audioPlayer'
+  useNowPlayingTrack,
+  usePlayerActions,
+  useProgress,
+  useQueue,
+  useTransport,
+  useVisibility,
+  useVolume
+} from '@/services/player'
+
+type Creator = NonNullable<QueueTrackType['creators']>[number]
 
 type Props = {
-  creators?: Creator[]
+  creators?: ReadonlyArray<Creator>
   onClick?: (e: React.MouseEvent<HTMLAnchorElement, MouseEvent>) => void
 }
 
@@ -63,23 +66,23 @@ function CreatorLinks({ creators, onClick }: Props) {
 
 const FullscreenAudioPlayer = () => {
   const isQueueEnabled = useFeatureFlag('ui.queue')
-  const { audioSrc, isPlaying, thumbnailUrl, nowPlayingContext } = useAudioPlayerPlaybackState()
-  const { queue } = useAudioPlayerQueueState()
-  const { isFullscreenVisible } = useAudioPlayerVisibilityState()
-  const { progress, currentTime, duration } = useAudioPlayerProgressState()
-  const { volume, isMuted } = useAudioPlayerVolumeState()
+  const currentTrack = useNowPlayingTrack()
+  const { isPlaying } = useTransport()
+  const { tracks } = useQueue()
+  const { isFullscreenVisible } = useVisibility()
+  const { progress, currentTime, duration } = useProgress()
+  const { volume, isMuted } = useVolume()
 
   const {
-    play,
-    pause,
+    togglePlayPause,
     playNext,
     playPrevious,
-    setTimeUsingPercentage,
+    seekByPercentage,
     setVolume,
     toggleMute,
     toggleFullscreen,
     toggleQueue
-  } = useAudioPlayerActions()
+  } = usePlayerActions()
 
   const volumeSliderRef = useRef<HTMLInputElement>(null)
   const volumeButtonRef = useRef<HTMLButtonElement>(null)
@@ -106,21 +109,12 @@ const FullscreenAudioPlayer = () => {
   }, [volume, isMuted, setVolume])
 
   const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setTimeUsingPercentage(Number(e.target.value))
+    seekByPercentage(Number(e.target.value))
   }
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setVolume(Number(e.target.value))
   }
-
-  const currentTrack = audioSrc
-    ? {
-        title: nowPlayingContext.title,
-        slug: nowPlayingContext.slug,
-        thumbnailUrl: thumbnailUrl,
-        creators: nowPlayingContext.creators
-      }
-    : null
 
   if (!currentTrack) return null
 
@@ -186,12 +180,12 @@ const FullscreenAudioPlayer = () => {
                         variant='ghost'
                         size='icon'
                         onClick={toggleQueue}
-                        className={`text-muted-foreground hover:text-foreground hover:bg-muted ${queue.length > 0 ? 'relative' : ''}`}
+                        className={`text-muted-foreground hover:text-foreground hover:bg-muted ${tracks.length > 0 ? 'relative' : ''}`}
                         title='Toggle Queue'>
                         <List className='w-5 h-5' />
-                        {queue.length > 0 && (
+                        {tracks.length > 0 && (
                           <span className='absolute flex items-center justify-center w-4 h-4 text-xs rounded-sm -top-1 -right-1 bg-primary text-primary-foreground'>
-                            {queue.length}
+                            {tracks.length}
                           </span>
                         )}
                       </Button>
@@ -228,7 +222,7 @@ const FullscreenAudioPlayer = () => {
                   variant='ghost'
                   size='icon'
                   className='w-16 h-16 rounded-sm backdrop-blur-sm bg-primary/20 hover:bg-primary/30'
-                  onClick={() => (isPlaying ? pause() : play(nowPlayingContext.title))}>
+                  onClick={togglePlayPause}>
                   {isPlaying ? <Pause className='w-8 h-8' /> : <Play className='w-8 h-8' />}
                 </Button>
                 <Button

@@ -2,25 +2,27 @@ import { OverflowTitle } from '@gbfm/ui'
 import { Link } from '@tanstack/react-router'
 import { Pause, Play, SkipBack, SkipForward } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { useAudioPlayerActions, useAudioPlayerPlaybackState } from '@/store/audioPlayer'
+import { useNowPlayingTrack, usePlayerActions, useTransport } from '@/services/player'
 
 type NowPlayingMiniProps = {
   onClose?: () => void
 }
 
 export function NowPlayingMini({ onClose }: NowPlayingMiniProps) {
-  const { thumbnailUrl, nowPlayingContext, isPlaying } = useAudioPlayerPlaybackState()
-  const { togglePlayPause, playNext, playPrevious, toggleFullscreen } = useAudioPlayerActions()
+  const currentTrack = useNowPlayingTrack()
+  const { isPlaying } = useTransport()
+  const { togglePlayPause, playNext, playPrevious, toggleFullscreen } = usePlayerActions()
 
-  const title = nowPlayingContext?.title || 'Unknown Track'
-  const slug = nowPlayingContext?.slug
+  const thumbnailUrl = currentTrack?.thumbnailUrl
+  const title = currentTrack?.title || 'Unknown Track'
+  const slug = currentTrack?.slug
 
   const handleOpenFullscreen = () => {
     onClose?.()
     toggleFullscreen()
   }
 
-  const creators = nowPlayingContext?.creators ?? []
+  const creators = currentTrack?.creators ?? []
 
   return (
     <div

@@ -1,7 +1,7 @@
 'use client'
 import { Pause, Play } from 'lucide-react'
-import { useState } from 'react'
 import { useNowPlayingTrack, usePlayerActions, useTransport } from '@/services/player'
+import { usePreviewSrc } from '@/services/player/atoms'
 import { toQueueTrack, type PlayableAudio } from '@/services/player/toQueueTrack'
 
 type PlayPauseButtonProps =
@@ -10,25 +10,27 @@ type PlayPauseButtonProps =
 
 export const PlayPauseButton = ({ audio, previewUrl }: PlayPauseButtonProps) => {
   const current = useNowPlayingTrack()
+  const previewSrc = usePreviewSrc()
   const { isPlaying } = useTransport()
-  const { playTrack, playPreview, togglePlayPause, currentSrc } = usePlayerActions()
-  const [startedPreview, setStartedPreview] = useState(false)
+  const { playTrack, playPreview, togglePlayPause, pause, play } = usePlayerActions()
 
-  const isCurrent = audio ? current?.id === audio.id : startedPreview && currentSrc() === previewUrl
+  const isCurrent = audio ? current?.id === audio.id : previewSrc === previewUrl
 
   const handleClick = () => {
-    if (isCurrent) {
-      togglePlayPause()
+    if (!isCurrent) {
+      if (audio) playTrack(toQueueTrack(audio))
+      else playPreview(previewUrl)
       return
     }
 
     if (audio) {
-      playTrack(toQueueTrack(audio))
+      togglePlayPause()
       return
     }
 
-    playPreview(previewUrl)
-    setStartedPreview(true)
+    // Previews sit outside the queue, so the core has no session to toggle.
+    if (isPlaying) pause()
+    else play()
   }
 
   const Icon = isCurrent && isPlaying ? Pause : Play

@@ -106,16 +106,22 @@ export const PlayerProvider = ({ children }: PropsWithChildren) => {
     audio.volume = resolveVolume(volumeRef.current.volume, volumeRef.current.isMuted)
     audioRef.current = audio
 
-    const core = createPlayerCore(createHtmlAudioEngine(audio), playerStorage, {
+    const engine = createHtmlAudioEngine(audio)
+    const core = createPlayerCore(engine, playerStorage, {
       onStatus,
       onTrackFinished: () => playNextRef.current(),
       recordPlay: recordPlayIfFresh
     })
 
+    // The core only observes the engine while a queue track is loaded, so keep
+    // an independent subscription to drive transport during previews too.
+    const subscription = engine.subscribe(onStatus)
+
     coreRef.current = core
     setTransport((state) => ({ ...state, isInitialized: true }))
 
     return () => {
+      subscription.remove()
       core.dispose()
       audio.pause()
       coreRef.current = null
@@ -181,8 +187,13 @@ export const PlayerProvider = ({ children }: PropsWithChildren) => {
       play: () => {
         const current = queueRef.current.current
         if (current) coreRef.current?.play(current.id)
+        // A preview has no queue session, so drive the element directly.
+        else void audioRef.current?.play().catch(() => undefined)
       },
-      pause: () => coreRef.current?.pause(),
+      pause: () => {
+        if (queueRef.current.current) coreRef.current?.pause()
+        else audioRef.current?.pause()
+      },
       togglePlayPause: () => {
         const core = coreRef.current
         const current = queueRef.current.current

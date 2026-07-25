@@ -16,19 +16,14 @@ import {
 import { ScrollArea, Sheet, SheetContent, SheetHeader, SheetTitle } from '@gbfm/ui'
 import { Play } from 'lucide-react'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
-import {
-  useAudioPlayerActions,
-  useAudioPlayerPlaybackState,
-  useAudioPlayerQueueState,
-  useAudioPlayerVisibilityState
-} from '@/store/audioPlayer'
+import { useNowPlayingTrack, usePlayerActions, useQueue, useVisibility } from '@/services/player'
 import { QueueItem } from './QueueItem'
 
 export const QueueColumn = () => {
-  const { nowPlayingContext, thumbnailUrl } = useAudioPlayerPlaybackState()
-  const { queue, currentIndex } = useAudioPlayerQueueState()
-  const { isQueueVisible } = useAudioPlayerVisibilityState()
-  const { reorderQueue, toggleQueue } = useAudioPlayerActions()
+  const currentTrack = useNowPlayingTrack()
+  const { tracks, currentIndex } = useQueue()
+  const { isQueueVisible } = useVisibility()
+  const { reorderQueue, toggleQueue } = usePlayerActions()
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -41,8 +36,8 @@ export const QueueColumn = () => {
     const { active, over } = event
 
     if (over && active.id !== over.id) {
-      const oldIndex = queue.findIndex((track) => track.queueId === active.id)
-      const newIndex = queue.findIndex((track) => track.queueId === over.id)
+      const oldIndex = tracks.findIndex((track) => track.id === active.id)
+      const newIndex = tracks.findIndex((track) => track.id === over.id)
 
       reorderQueue(oldIndex, newIndex)
     }
@@ -56,23 +51,23 @@ export const QueueColumn = () => {
         </SheetHeader>
 
         <ScrollArea className='flex-1 px-2'>
-          {nowPlayingContext.title !== 'Nothing playing, yet' && (
+          {currentTrack && (
             <div className='p-3 mb-4 border-b border-border'>
               <h3 className='mb-2 text-xs font-medium text-muted-foreground'>Now Playing</h3>
               <div className='flex items-center gap-3'>
                 <img
-                  src={thumbnailUrl || DEFAULT_IMAGE_URL}
-                  alt={nowPlayingContext.title}
+                  src={currentTrack.thumbnailUrl || DEFAULT_IMAGE_URL}
+                  alt={currentTrack.title}
                   className='shrink-0 object-cover w-12 h-12 rounded'
                 />
                 <h4 className='flex-1 min-w-0 text-sm font-medium truncate'>
-                  {nowPlayingContext.title}
+                  {currentTrack.title}
                 </h4>
               </div>
             </div>
           )}
 
-          {queue.length === 0 ? (
+          {tracks.length === 0 ? (
             <div className='flex flex-col items-center justify-center p-8 text-center'>
               <Play className='w-8 h-8 mb-4 text-muted-foreground' />
               <h3 className='mb-2 font-medium'>Your queue is empty</h3>
@@ -81,7 +76,7 @@ export const QueueColumn = () => {
           ) : (
             <div className='w-full'>
               <h3 className='mb-3 text-sm font-medium text-muted-foreground'>
-                Up Next ({queue.length})
+                Up Next ({tracks.length})
               </h3>
               <DndContext
                 sensors={sensors}
@@ -89,12 +84,12 @@ export const QueueColumn = () => {
                 onDragEnd={handleDragEnd}
                 modifiers={[restrictToVerticalAxis, restrictToParentElement]}>
                 <SortableContext
-                  items={queue.map((track) => track.queueId)}
+                  items={tracks.map((track) => track.id)}
                   strategy={verticalListSortingStrategy}>
                   <div className='space-y-1'>
-                    {queue.map((track, index) => (
+                    {tracks.map((track, index) => (
                       <QueueItem
-                        key={track.queueId}
+                        key={track.id}
                         track={track}
                         index={index}
                         isCurrentTrack={index === currentIndex}

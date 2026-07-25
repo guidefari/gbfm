@@ -1,6 +1,7 @@
 import type { QueueTrackType } from '@gbfm/player'
 import { makeQueueAtom, selectQueueView, type QueueAction, type QueueView } from '@gbfm/player'
 import { useAtomSet, useAtomValue } from '@effect/atom-react'
+import { Effect, Schema } from 'effect'
 import * as Atom from 'effect/unstable/reactivity/Atom'
 import { playerStorage } from '@/runtime'
 import { log } from '@/services/logger'
@@ -42,21 +43,28 @@ export type VolumeState = {
 
 const VOLUME_KEY = 'gbfm-audio-volume.json'
 
+const defaultVolume: VolumeState = { volume: 100, isMuted: false }
+
+const StoredVolume = Schema.Struct({
+  volume: Schema.Number,
+  isMuted: Schema.Boolean
+})
+
 const readStoredVolume = (): VolumeState => {
-  if (typeof window === 'undefined') return { volume: 100, isMuted: false }
-  try {
-    const raw = window.localStorage.getItem(VOLUME_KEY)
-    if (!raw) return { volume: 100, isMuted: false }
-    const parsed: unknown = JSON.parse(raw)
-    if (typeof parsed !== 'object' || parsed === null) return { volume: 100, isMuted: false }
-    const { volume, isMuted } = parsed as Partial<VolumeState>
-    return {
-      volume: typeof volume === 'number' && volume >= 0 && volume <= 100 ? volume : 100,
-      isMuted: typeof isMuted === 'boolean' ? isMuted : false
-    }
-  } catch {
-    return { volume: 100, isMuted: false }
-  }
+  if (typeof window === 'undefined') return defaultVolume
+  const raw = window.localStorage.getItem(VOLUME_KEY)
+  if (!raw) return defaultVolume
+
+  return Effect.runSync(
+    Effect.try({ try: (): unknown => JSON.parse(raw), catch: () => null }).pipe(
+      Effect.flatMap(Schema.decodeUnknownEffect(StoredVolume)),
+      Effect.map((stored) => ({
+        volume: Math.max(0, Math.min(100, stored.volume)),
+        isMuted: stored.isMuted
+      })),
+      Effect.catch(() => Effect.succeed(defaultVolume))
+    )
+  )
 }
 
 export const volumeAtom = Atom.make<VolumeState>(readStoredVolume()).pipe(Atom.keepAlive)

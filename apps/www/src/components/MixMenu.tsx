@@ -10,12 +10,12 @@ import {
 import type { SelectAudio } from '@gbfm/vps/schemas'
 import { Heart, HeartOff, MoreVertical, Play, Plus, Share2 } from 'lucide-react'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
-import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { useAddFavorite, useFavorites, useRemoveFavorite } from '@/lib/http'
 import { getShareUrl } from '@/lib/share'
 import { log } from '@/services/logger'
 import { cn } from '@/lib/utils'
-import { useAudioPlayerActions } from '@/store/audioPlayer'
+import { usePlayerActions } from '@/services/player'
+import { toQueueTrack } from '@/services/player/toQueueTrack'
 
 interface MixMenuProps {
   mix: SelectAudio
@@ -24,7 +24,7 @@ interface MixMenuProps {
 export function MixMenu({ mix }: MixMenuProps) {
   const isShareEnabled = useFeatureFlag('ui.share')
   const isQueueEnabled = useFeatureFlag('ui.queue')
-  const { addToQueue, loadTrack } = useAudioPlayerActions()
+  const { enqueue, playTrack } = usePlayerActions()
   const { requireAuth } = useAuthGuard('mix')
   const { data: favorites } = useFavorites()
   const { addFavorite } = useAddFavorite()
@@ -52,18 +52,11 @@ export function MixMenu({ mix }: MixMenuProps) {
   }
 
   const handlePlayNow = () => {
-    loadTrack(
-      mix.url,
-      mix.thumbnailUrl || DEFAULT_IMAGE_URL,
-      mix.title,
-      mix.id,
-      mix.creators,
-      mix.slug
-    )
+    playTrack(toQueueTrack(mix))
   }
 
   const handleAddToQueue = () => {
-    addToQueue(mix)
+    enqueue(toQueueTrack(mix))
   }
 
   const performFavoriteAction = async () => {

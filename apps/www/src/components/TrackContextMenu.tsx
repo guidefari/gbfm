@@ -14,7 +14,8 @@ import type React from 'react'
 import { useAuthGuard } from '@/hooks/useAuthGuard'
 import { useAddFavorite, useFavorites, useRemoveFavorite } from '@/lib/http'
 import { getShareUrl } from '@/lib/share'
-import { useAudioPlayerActions } from '@/store/audioPlayer'
+import { usePlayerActions } from '@/services/player'
+import { toQueueTrack } from '@/services/player/toQueueTrack'
 
 interface TrackContextMenuProps {
   track: SelectAudio
@@ -29,7 +30,7 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
 }) => {
   const isShareEnabled = useFeatureFlag('ui.share')
   const isQueueEnabled = useFeatureFlag('ui.queue')
-  const { addToQueue, loadTrack } = useAudioPlayerActions()
+  const { enqueue, playTrack } = usePlayerActions()
   const { requireAuth } = useAuthGuard('mix')
   const { data: favorites } = useFavorites()
   const { addFavorite } = useAddFavorite()
@@ -38,18 +39,11 @@ export const TrackContextMenu: React.FC<TrackContextMenuProps> = ({
   const isFavorited = favorites.some((f) => f.audioId === track.id)
 
   const handleAddToQueue = () => {
-    addToQueue(track)
+    enqueue(toQueueTrack(track))
   }
 
   const handlePlayNow = () => {
-    loadTrack(
-      track.url,
-      track.thumbnailUrl || '',
-      track.title,
-      track.id,
-      track.creators,
-      track.slug
-    )
+    playTrack(toQueueTrack(track))
   }
 
   const performFavoriteAction = async () => {

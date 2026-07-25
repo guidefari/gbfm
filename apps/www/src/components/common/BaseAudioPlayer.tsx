@@ -11,16 +11,19 @@ import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { useAddFavorite, useFavorites, useRemoveFavorite } from '@/lib/http'
 import { formatSeconds } from '@/lib/utils'
 import { attachVolumeScroll } from '@/lib/volumeScrollHandler'
+import type { QueueTrackType } from '@gbfm/player'
 import {
-  type Creator,
-  useAudioPlayerActions,
-  useAudioPlayerPlaybackState,
-  useAudioPlayerProgressState,
-  useAudioPlayerQueueState,
-  useAudioPlayerVolumeState
-} from '@/store/audioPlayer'
+  useNowPlayingTrack,
+  usePlayerActions,
+  useProgress,
+  useQueue,
+  useTransport,
+  useVolume
+} from '@/services/player'
 
-function CreatorLinks({ creators }: { creators?: Creator[] }) {
+type Creator = NonNullable<QueueTrackType['creators']>[number]
+
+function CreatorLinks({ creators }: { creators?: ReadonlyArray<Creator> }) {
   if (!creators || creators.length === 0) {
     return <span>Mix</span>
   }
@@ -68,11 +71,12 @@ export function BaseAudioPlayer({
   const isQueueEnabled = useFeatureFlag('ui.queue')
   const shouldShowQueue = showQueue && isQueueEnabled
 
-  const { audioSrc, isPlaying, thumbnailUrl, nowPlayingContext, currentTrackId } =
-    useAudioPlayerPlaybackState()
-  const { queue } = useAudioPlayerQueueState()
-  const { progress, currentTime, duration } = useAudioPlayerProgressState()
-  const { volume, isMuted } = useAudioPlayerVolumeState()
+  const currentTrack = useNowPlayingTrack()
+  const { isPlaying } = useTransport()
+  const { tracks } = useQueue()
+  const { progress, currentTime, duration } = useProgress()
+  const { volume, isMuted } = useVolume()
+  const currentTrackId = currentTrack?.id ?? null
 
   const { requireAuth } = useAuthGuard('mix')
 
@@ -83,15 +87,14 @@ export function BaseAudioPlayer({
   const isFavorited = currentTrackId ? favorites.some((f) => f.audioId === currentTrackId) : false
 
   const {
-    play,
-    pause,
+    togglePlayPause,
     playNext,
     playPrevious,
-    setTimeUsingPercentage,
+    seekByPercentage,
     setVolume,
     toggleMute,
     toggleQueue
-  } = useAudioPlayerActions()
+  } = usePlayerActions()
 
   const volumeSliderRef = useRef<HTMLInputElement>(null)
   const volumeButtonRef = useRef<HTMLButtonElement>(null)
@@ -120,7 +123,7 @@ export function BaseAudioPlayer({
   }, [volume, isMuted, setVolume, showVolume])
 
   const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setTimeUsingPercentage(Number(e.target.value))
+    seekByPercentage(Number(e.target.value))
   }
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -162,16 +165,6 @@ export function BaseAudioPlayer({
   const handleToggleFavorite = () => {
     requireAuth(() => performFavoriteAction())
   }
-
-  // Create a current track object from the existing state
-  const currentTrack = audioSrc
-    ? {
-        title: nowPlayingContext.title,
-        thumbnailUrl: thumbnailUrl,
-        creators: nowPlayingContext.creators,
-        slug: nowPlayingContext.slug
-      }
-    : null
 
   if (!currentTrack) {
     if (variant === 'compact') {
@@ -246,7 +239,7 @@ export function BaseAudioPlayer({
           <Button
             variant='ghost'
             size='icon'
-            onClick={() => (isPlaying ? pause() : play(nowPlayingContext.title))}
+            onClick={togglePlayPause}
             className='text-foreground hover:bg-muted'>
             {isPlaying ? <Pause className='w-4 h-4' /> : <Play className='w-4 h-4' />}
           </Button>
@@ -330,7 +323,7 @@ export function BaseAudioPlayer({
                 variant='ghost'
                 size='icon'
                 className='w-8 h-8 rounded-sm backdrop-blur-sm bg-primary/20 hover:bg-primary/30'
-                onClick={() => (isPlaying ? pause() : play(nowPlayingContext.title))}>
+                onClick={togglePlayPause}>
                 {isPlaying ? <Pause className='w-4 h-4' /> : <Play className='w-4 h-4' />}
               </Button>
               <Button
@@ -395,11 +388,11 @@ export function BaseAudioPlayer({
                 variant='ghost'
                 size='icon'
                 onClick={toggleQueue}
-                className={`${queue.length > 0 ? 'relative' : ''} text-secondary-foreground hover:text-foreground hover:bg-muted`}>
+                className={`${tracks.length > 0 ? 'relative' : ''} text-secondary-foreground hover:text-foreground hover:bg-muted`}>
                 <List className='w-4 h-4' />
-                {queue.length > 0 && (
+                {tracks.length > 0 && (
                   <span className='absolute flex items-center justify-center w-5 h-5 text-xs rounded-sm -top-1 -right-1 bg-primary text-primary-foreground'>
-                    {queue.length}
+                    {tracks.length}
                   </span>
                 )}
               </Button>
@@ -444,11 +437,11 @@ export function BaseAudioPlayer({
                 variant='ghost'
                 size='icon'
                 onClick={toggleQueue}
-                className={`${queue.length > 0 ? 'relative' : ''} text-secondary-foreground hover:text-foreground hover:bg-muted`}>
+                className={`${tracks.length > 0 ? 'relative' : ''} text-secondary-foreground hover:text-foreground hover:bg-muted`}>
                 <List className='w-4 h-4' />
-                {queue.length > 0 && (
+                {tracks.length > 0 && (
                   <span className='absolute flex items-center justify-center w-5 h-5 text-xs rounded-sm -top-1 -right-1 bg-primary text-primary-foreground'>
-                    {queue.length}
+                    {tracks.length}
                   </span>
                 )}
               </Button>
@@ -484,7 +477,7 @@ export function BaseAudioPlayer({
               <Button
                 variant='ghost'
                 size='icon'
-                onClick={() => (isPlaying ? pause() : play(nowPlayingContext.title))}
+                onClick={togglePlayPause}
                 className='w-10 h-10 rounded-sm backdrop-blur-sm bg-primary/20 hover:bg-primary/30'>
                 {isPlaying ? <Pause className='w-5 h-5' /> : <Play className='w-5 h-5' />}
               </Button>
