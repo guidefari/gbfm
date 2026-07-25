@@ -37,6 +37,8 @@ export class AudioStorageError extends Error {
   }
 }
 
+/** Decode and validate persisted queue state. Rejects fractional/out-of-range
+ *  indexes, invalid empty-queue indexes, and duplicate track IDs. */
 export const parsePersistedQueue = (
   value: unknown
 ): Effect.Effect<PersistedQueueType, AudioStorageError, never> =>
