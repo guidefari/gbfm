@@ -26,7 +26,7 @@ import {
   type SourceCompletion,
   type SourcePreparation,
   type SourcePreparationEvent
-} from '@/audio/playbackState'
+} from '@gbfm/player'
 import { loadPosition, type QueueTrackType } from '@/audio/queueStorage'
 import type { QueueView } from '@/audio/queueAtom'
 import { useQueue, useQueueDispatch } from '@/audio/queueAtom'

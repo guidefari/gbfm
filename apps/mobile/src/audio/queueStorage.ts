@@ -4,17 +4,9 @@ import {
   createAudioStorage,
   createWebAudioStorageAdapter,
   type AudioStorageAdapter
-} from '@/audio/audioStorage'
+} from '@gbfm/player'
 
-export * from '@/audio/audioStorage'
-export {
-  AudioStorageError,
-  PersistedQueue,
-  QueueTrack,
-  parsePersistedQueue,
-  type PersistedQueueType,
-  type QueueTrackType
-} from '@/audio/persistedQueue'
+export * from '@gbfm/player'
 
 const nativeAudioStorageAdapter: AudioStorageAdapter = {
   read: async (key) => {

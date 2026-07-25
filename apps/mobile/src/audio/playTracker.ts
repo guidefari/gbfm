@@ -1,6 +1,6 @@
 import { Effect } from 'effect'
 import { getApiClient } from '@/api/client'
-import { createPlayDelivery } from '@/audio/playDelivery'
+import { createPlayDelivery } from '@gbfm/player'
 import {
   clearPosition as clearStoredPosition,
   isWithinDedupWindow,

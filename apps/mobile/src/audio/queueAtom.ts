@@ -7,12 +7,7 @@ import {
   type PersistedQueueType,
   type QueueTrackType
 } from '@/audio/queueStorage'
-import {
-  initialQueueState,
-  mergeHydratedQueue,
-  reduceQueue,
-  type QueueAction
-} from '@/audio/queueState'
+import { initialQueueState, mergeHydratedQueue, reduceQueue, type QueueAction } from '@gbfm/player'
 
 export { initialQueueState, mergeHydratedQueue, reduceQueue, type QueueAction }
 

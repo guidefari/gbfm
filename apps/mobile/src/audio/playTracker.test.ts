@@ -1,6 +1,6 @@
 import { Effect } from 'effect'
 import { describe, expect, test } from 'vitest'
-import { createPlayDelivery } from './playDelivery'
+import { createPlayDelivery } from '@gbfm/player'
 
 describe('audio play delivery', () => {
   test('delivers over the network when the local dedup read fails', async () => {
