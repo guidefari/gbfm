@@ -1,7 +1,7 @@
 import { and, asc, count, desc, eq, exists, inArray } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
-import { audioTable } from '@/db/audio.schema'
+import { audioCreators, audioTable, type SelectAudio } from '@/db/audio.schema'
 import { user as usersTable } from '@/db/auth.schema'
 import {
   type InsertShow,
@@ -65,7 +65,7 @@ export interface ShowService {
     options: { limit: number; offset: number }
   ) => Effect.Effect<
     {
-      data: (typeof audioTable.$inferSelect)[]
+      data: SelectAudio[]
       pagination: PaginationMetadata
     },
     DatabaseError | NotFoundError
@@ -512,8 +512,62 @@ const getEpisodesEffect = (showSlug: string, options: { limit: number; offset: n
         })
     })
 
+    const episodeIds = episodes.map((episode) => episode.id)
+
+    const creatorsData =
+      episodeIds.length > 0
+        ? yield* Effect.tryPromise({
+            try: () =>
+              db
+                .select({
+                  audioId: audioCreators.audioId,
+                  creatorId: usersTable.id,
+                  creatorName: usersTable.name,
+                  creatorUsername: usersTable.username
+                })
+                .from(audioCreators)
+                .innerJoin(usersTable, eq(audioCreators.creatorId, usersTable.id))
+                .where(inArray(audioCreators.audioId, episodeIds)),
+            catch: (error) =>
+              new DatabaseError({
+                message: `Failed to fetch episode creators: ${getErrorMessage(error)}`,
+                operation: 'select',
+                table: 'audio_creators'
+              })
+          })
+        : []
+
+    const creatorsByAudioId: Record<
+      string,
+      Array<{
+        id: string
+        name: string
+        username: string | null
+      }>
+    > = {}
+
+    for (const row of creatorsData) {
+      const existing = creatorsByAudioId[row.audioId]
+      const creatorInfo = {
+        id: row.creatorId,
+        name: row.creatorName,
+        username: row.creatorUsername
+      }
+
+      if (existing) {
+        existing.push(creatorInfo)
+      } else {
+        creatorsByAudioId[row.audioId] = [creatorInfo]
+      }
+    }
+
+    const data = episodes.map((episode) => ({
+      ...episode,
+      creators: creatorsByAudioId[episode.id] || []
+    }))
+
     return {
-      data: episodes,
+      data,
       pagination: createPaginationMetadata(total, limit, offset)
     }
   })
