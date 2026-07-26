@@ -5,8 +5,10 @@ import { beforeAll, describe, expect, test } from 'vitest'
 import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
 import { user } from '@/db/auth.schema'
-import { MdxServiceLive } from '@/lib/mdx'
 import { CryptoLive } from '@/lib/crypto'
+import { MdxServiceLive } from '@/lib/mdx'
+import { ConfigServiceLive } from '@/services/config.service'
+import { UploadAssetServiceLive } from '@/services/upload-asset.service'
 import { AudioService, AudioServiceLive, createAudioFingerprint } from './audio.service'
 
 const actorId = `audio-idempotency-${randomUUID()}`
@@ -23,7 +25,14 @@ const getService = () =>
   Effect.runPromise(
     Effect.gen(function* () {
       return yield* AudioService
-    }).pipe(Effect.provide(AudioServiceLive.pipe(Layer.provide(MdxServiceLive))))
+    }).pipe(
+      Effect.provide(
+        AudioServiceLive.pipe(
+          Layer.provide(MdxServiceLive),
+          Layer.provide(Layer.mergeAll(ConfigServiceLive, UploadAssetServiceLive))
+        )
+      )
+    )
   )
 
 beforeAll(async () => {

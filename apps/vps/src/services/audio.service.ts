@@ -23,6 +23,8 @@ import { CryptoLive } from '@/lib/crypto'
 import { MdxService } from '@/lib/mdx'
 import { createPaginationMetadata, type PaginationMetadata } from '@/lib/pagination'
 import { recordAudioCreate } from '@/lib/performance-monitoring'
+import { ConfigService } from '@/services/config.service'
+import { markAttachedAssets, UploadAssetService } from '@/services/upload-asset.service'
 
 type AudioType = 'mix' | 'track' | 'misc'
 type CreateAudioData = InsertAudio
@@ -454,6 +456,11 @@ const createEffect = (
         slug: result.audio.slug,
         creatorCount: creatorIds.length
       })
+
+      yield* markAttachedAssets('audio', result.audio.id, [
+        result.audio.url,
+        result.audio.thumbnailUrl
+      ])
     }
 
     return result.audio
@@ -647,6 +654,8 @@ export const AudioServiceLive = Layer.effect(
   Effect.gen(function* () {
     const mdx = yield* MdxService
     const crypto = yield* Crypto.Crypto
+    const config = yield* ConfigService
+    const uploadAssetService = yield* UploadAssetService
     return {
       getByType: (type, options) =>
         getByTypeEffect(type, options).pipe(
@@ -671,6 +680,8 @@ export const AudioServiceLive = Layer.effect(
       create: (data, creatorIds, options) =>
         createEffect(data, creatorIds, options).pipe(
           Effect.provideService(Crypto.Crypto, crypto),
+          Effect.provideService(ConfigService, config),
+          Effect.provideService(UploadAssetService, uploadAssetService),
           Effect.withSpan('audio.create')
         ),
       update: (type, slug, userId, userRole, data) =>
