@@ -132,7 +132,7 @@ const searchEffect = (query: string, limit: number) =>
     return yield* Effect.all({ shows, audio, posts }, { concurrency: 'unbounded' })
   })
 
-export const SearchServiceLive = Layer.succeed(SearchService, {
+export const SearchServiceLayer = Layer.succeed(SearchService, {
   search: (query, limit) =>
     searchEffect(query, limit).pipe(Effect.withSpan('search.search', { attributes: { query } }))
 })

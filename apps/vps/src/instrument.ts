@@ -44,6 +44,4 @@ if (enabled) {
       return hasLocalSentryContext(event) ? null : event
     }
   })
-
-  console.warn(`[sentry] preload init env=${environment} traces=1`)
 }

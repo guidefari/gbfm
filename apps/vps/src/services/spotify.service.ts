@@ -517,7 +517,7 @@ const enrichTrackFromUrlWithSpan = Effect.fn('spotify.enrichTrackFromUrl')(funct
   return result
 })
 
-export const SpotifyServiceLive = Layer.succeed(SpotifyService, {
+export const SpotifyServiceLayer = Layer.succeed(SpotifyService, {
   getTrack: getTrackWithSpan,
   getAlbum: getAlbumWithSpan,
   getPlaylist: getPlaylistWithSpan,

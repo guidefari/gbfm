@@ -124,14 +124,17 @@ export const createWebHandler = (options?: {
       RequestLoggerLive,
       SentryDefectLive
     ).pipe(
-      // HttpServerRequest.multipart (upload group's uploadFile/uploadMultipartPart
-      // endpoints) needs a real FileSystem.FileSystem + Path.Path to buffer
-      // parts to temp files. HttpServer.layerServices ships its own
-      // FileSystem.layerNoop, so the real Bun implementation is nested inside
-      // the same provideMerge, applied after layerServices, so it overwrites
-      // the noop instead of losing to it. Confirmed by reproducing the "not
-      // implemented" multipart defect from the noop FileSystem and watching
-      // it disappear with this composition.
+      // HttpServerRequest.multipart (user group's updateProfile avatar
+      // upload, see user.handlers.ts's uploadAvatar) needs a real
+      // FileSystem.FileSystem + Path.Path to buffer parts to temp files.
+      // The upload group's own endpoints are presign-based now (no more
+      // uploadMultipartPart/uploadFile multipart proxies) and don't need
+      // this, but user.handlers.ts still does. HttpServer.layerServices
+      // ships its own FileSystem.layerNoop, so the real Bun implementation
+      // is nested inside the same provideMerge, applied after layerServices,
+      // so it overwrites the noop instead of losing to it. Confirmed by
+      // reproducing the "not implemented" multipart defect from the noop
+      // FileSystem and watching it disappear with this composition.
       Layer.provideMerge(
         Layer.mergeAll(BunFileSystem.layer, BunPath.layer).pipe(
           Layer.provideMerge(HttpServer.layerServices)

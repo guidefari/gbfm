@@ -20,7 +20,7 @@ export interface EmailService {
 export const EmailService = Context.Service<EmailService>('EmailService')
 
 // Implementation
-export const EmailServiceLive = Layer.effect(
+export const EmailServiceLayer = Layer.effect(
   EmailService,
   Effect.gen(function* () {
     return {

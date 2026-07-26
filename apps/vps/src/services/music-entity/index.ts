@@ -311,7 +311,7 @@ export interface MusicEntityService {
 
 export const MusicEntityService = Context.Service<MusicEntityService>('MusicEntityService')
 
-export const MusicEntityServiceLive = Layer.effect(
+export const MusicEntityServiceLayer = Layer.effect(
   MusicEntityService,
   Effect.gen(function* () {
     const scraper = yield* MusicLinkScraperServiceTag

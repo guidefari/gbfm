@@ -406,7 +406,7 @@ The `MusicLinkScraperService` uses a provider-first architecture. Providers are 
      fetchLinks(input: MusicScrapeInput): Effect.Effect<ProviderResult, MusicScraperError> { … }
    }
    ```
-2. Add it to the `providers` array in `MusicLinkScraperServiceLive` in `music-link-scraper.service.ts`.
+2. Add it to the `providers` array in `MusicLinkScraperServiceLayer` in `music-link-scraper.service.ts`.
 
 ---
 

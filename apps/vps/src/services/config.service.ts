@@ -209,7 +209,7 @@ export function createConfig(): ConfigService {
 // Create a singleton config instance for synchronous access
 export const config = createConfig()
 
-export const ConfigServiceLive = Layer.effect(
+export const ConfigServiceLayer = Layer.effect(
   ConfigService,
   Effect.sync(() => Schema.decodeUnknownSync(ConfigSchema)(config))
 )

@@ -17,7 +17,7 @@ import {
   useRef,
   type PropsWithChildren
 } from 'react'
-import { MediaSessionServiceLive } from '@/services/media-session'
+import { MediaSessionServiceLayer } from '@/services/media-session'
 import { PlayerStorageLive } from './storage'
 import { playbackAtom, visibilityAtom } from './atoms'
 import { HtmlAudioEngineLayer } from './htmlAudioEngine'
@@ -92,7 +92,7 @@ export const PlayerProvider = ({ children }: PropsWithChildren) => {
 
     const runtime = ManagedRuntime.make(
       Layer.mergeAll(
-        HtmlAudioEngineLayer(audio).pipe(Layer.provideMerge(MediaSessionServiceLive)),
+        HtmlAudioEngineLayer(audio).pipe(Layer.provideMerge(MediaSessionServiceLayer)),
         PlayReporterLive
       ).pipe(Layer.provideMerge(PlayerStorageLive))
     )

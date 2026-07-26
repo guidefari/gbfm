@@ -23,6 +23,8 @@ import { CryptoLive } from '@/lib/crypto'
 import { MdxService } from '@/lib/mdx'
 import { createPaginationMetadata, type PaginationMetadata } from '@/lib/pagination'
 import { recordAudioCreate } from '@/lib/performance-monitoring'
+import { ConfigService } from '@/services/config.service'
+import { markAttachedAssets, UploadAssetService } from '@/services/upload-asset.service'
 
 type AudioType = 'mix' | 'track' | 'misc'
 type CreateAudioData = InsertAudio
@@ -454,6 +456,11 @@ const createEffect = (
         slug: result.audio.slug,
         creatorCount: creatorIds.length
       })
+
+      yield* markAttachedAssets('audio', result.audio.id, [
+        result.audio.url,
+        result.audio.thumbnailUrl
+      ])
     }
 
     return result.audio
@@ -521,6 +528,14 @@ const updateEffect = (
         })
       }
       updatedAudio = updatedRecords[0]
+
+      // An image/audio file attached via an edit form (not just at create
+      // time) still needs its upload_assets row moved out of 'pending', or
+      // it looks reclaimable to a future cleanup job despite being in use.
+      yield* markAttachedAssets('audio', updatedAudio.id, [
+        updatedAudio.url,
+        updatedAudio.thumbnailUrl
+      ])
     }
 
     if (creatorIds && creatorIds.length > 0) {
@@ -642,11 +657,13 @@ const trackPlayEffect = (id: string, clientIp?: string) =>
     return { playCount: updated[0]?.playCount ?? 0 }
   })
 
-export const AudioServiceLive = Layer.effect(
+export const AudioServiceLayer = Layer.effect(
   AudioService,
   Effect.gen(function* () {
     const mdx = yield* MdxService
     const crypto = yield* Crypto.Crypto
+    const config = yield* ConfigService
+    const uploadAssetService = yield* UploadAssetService
     return {
       getByType: (type, options) =>
         getByTypeEffect(type, options).pipe(
@@ -671,10 +688,14 @@ export const AudioServiceLive = Layer.effect(
       create: (data, creatorIds, options) =>
         createEffect(data, creatorIds, options).pipe(
           Effect.provideService(Crypto.Crypto, crypto),
+          Effect.provideService(ConfigService, config),
+          Effect.provideService(UploadAssetService, uploadAssetService),
           Effect.withSpan('audio.create')
         ),
       update: (type, slug, userId, userRole, data) =>
         updateEffect(type, slug, userId, userRole, data, mdx).pipe(
+          Effect.provideService(ConfigService, config),
+          Effect.provideService(UploadAssetService, uploadAssetService),
           Effect.withSpan('audio.update', { attributes: { type, slug } })
         ),
       trackPlay: (id, clientIp) =>

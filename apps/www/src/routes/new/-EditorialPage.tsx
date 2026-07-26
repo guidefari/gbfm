@@ -21,7 +21,7 @@ import { PostPageHeader } from '@/components/PostPageHeader'
 import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
 import { useSession } from '@/lib/auth-client'
 import { apiUrl, fetcher } from '@/lib/http'
-import { readResponseErrorMessage, readUploadResponse } from '@/lib/response'
+import { uploadImageDirectToS3 } from '@/lib/upload/image-upload'
 import { UserSearch } from '../admin/_components/-UserSearch'
 
 interface PostItem {
@@ -291,22 +291,7 @@ export function EditorialPage() {
 
       let imageUrl = data.thumbnailUrl
       if (artworkFile) {
-        const imageFormData = new FormData()
-        imageFormData.append('imageFile', artworkFile)
-        imageFormData.append('fileType', 'image')
-
-        const imageUploadResponse = await fetch(apiUrl('/upload/file'), {
-          method: 'POST',
-          body: imageFormData
-        })
-
-        if (!imageUploadResponse.ok) {
-          throw new Error(
-            await readResponseErrorMessage(imageUploadResponse, 'Failed to upload image file')
-          )
-        }
-
-        const imageResult = await readUploadResponse(imageUploadResponse)
+        const imageResult = await uploadImageDirectToS3(artworkFile)
         imageUrl = imageResult.url
       }
 
