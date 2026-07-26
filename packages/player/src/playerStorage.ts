@@ -2,7 +2,7 @@ import * as Context from 'effect/Context'
 import * as Effect from 'effect/Effect'
 import * as Layer from 'effect/Layer'
 import type { PersistedQueueType } from './persistedQueue'
-import type { AudioStorageAdapter } from './audioStorage'
+import type { AudioStorageAdapter, VolumeRecordType } from './audioStorage'
 import { createAudioStorage } from './audioStorage'
 
 export type PositionRecord = { readonly position: number; readonly updatedAt: number }
@@ -10,6 +10,8 @@ export type PositionRecord = { readonly position: number; readonly updatedAt: nu
 export interface PlayerStorageShape {
   readonly loadQueue: () => Effect.Effect<PersistedQueueType | null, unknown>
   readonly saveQueue: (queue: PersistedQueueType) => Effect.Effect<void, unknown>
+  readonly loadVolume: () => Effect.Effect<VolumeRecordType | null, unknown>
+  readonly saveVolume: (volume: VolumeRecordType) => Effect.Effect<void, unknown>
   readonly loadPosition: (trackId: string) => Effect.Effect<PositionRecord | null, unknown>
   readonly savePosition: (trackId: string, position: number) => Effect.Effect<void, unknown>
   readonly clearPosition: (trackId: string) => Effect.Effect<void, unknown>
@@ -30,6 +32,11 @@ export const loadQueue = Effect.andThen(PlayerStorage, (storage) => storage.load
 
 export const saveQueue = (queue: PersistedQueueType) =>
   Effect.andThen(PlayerStorage, (storage) => storage.saveQueue(queue))
+
+export const loadVolume = () => Effect.andThen(PlayerStorage, (storage) => storage.loadVolume())
+
+export const saveVolume = (volume: VolumeRecordType) =>
+  Effect.andThen(PlayerStorage, (storage) => storage.saveVolume(volume))
 
 export const loadPosition = (trackId: string) =>
   Effect.andThen(PlayerStorage, (storage) => storage.loadPosition(trackId))
@@ -52,11 +59,18 @@ export const PlayerStorageInMemory = Layer.sync(PlayerStorage, () => {
   const plays = new Map<string, number>()
   const dedupWindowMs = 30 * 60 * 1000
 
+  let volume: VolumeRecordType | null = null
+
   return {
     loadQueue: () => Effect.sync(() => queue),
     saveQueue: (next) =>
       Effect.sync(() => {
         queue = next
+      }),
+    loadVolume: () => Effect.sync(() => volume),
+    saveVolume: (next) =>
+      Effect.sync(() => {
+        volume = next
       }),
     loadPosition: (trackId) => Effect.sync(() => positions.get(trackId) ?? null),
     savePosition: (trackId, position) =>
@@ -82,6 +96,8 @@ export const PlayerStorageInMemory = Layer.sync(PlayerStorage, () => {
 export const PlayerStorageTest = Layer.succeed(PlayerStorage, {
   loadQueue: () => Effect.succeed(null),
   saveQueue: () => Effect.void,
+  loadVolume: () => Effect.succeed(null),
+  saveVolume: () => Effect.void,
   loadPosition: () => Effect.succeed(null),
   savePosition: () => Effect.void,
   clearPosition: () => Effect.void,

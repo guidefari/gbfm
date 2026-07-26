@@ -28,7 +28,6 @@ export default function Track({ url, genres, blurb, children }: Props) {
         title={data?.title || ''}
         artists={data?.artists || ''}
         genres={genres || null}
-        previewUrl={data?.previewUrl}
         trackUrl={data?.trackUrl}>
         {children}
       </MinimalCard>

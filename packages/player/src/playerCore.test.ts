@@ -38,6 +38,10 @@ const makeRecordingEngine = (options: { readonly rejectPlay?: boolean } = {}) =>
           status = { ...status, sourceGeneration }
           calls.push(`replace:${url}`)
         }),
+      clearSource: Effect.sync(() => {
+        status = { ...idleStatus, sourceGeneration: null }
+        calls.push('clearSource')
+      }),
       play: options.rejectPlay
         ? Effect.suspend(() => {
             calls.push('play:rejected')
@@ -49,6 +53,14 @@ const makeRecordingEngine = (options: { readonly rejectPlay?: boolean } = {}) =>
       pause: Effect.sync(() => {
         calls.push('pause')
       }),
+      setVolume: (volume) =>
+        Effect.sync(() => {
+          calls.push(`volume:${volume}`)
+        }),
+      setMuted: (muted) =>
+        Effect.sync(() => {
+          calls.push(`muted:${muted}`)
+        }),
       seekTo: (seconds) =>
         Effect.sync(() => {
           calls.push(`seek:${seconds}`)
@@ -58,7 +70,9 @@ const makeRecordingEngine = (options: { readonly rejectPlay?: boolean } = {}) =>
       setNowPlaying: (metadata) =>
         Effect.sync(() => {
           calls.push(`nowPlaying:${metadata ? metadata.title : 'null'}`)
-        })
+        }),
+      setPositionState: () => Effect.void,
+      setCommandHandlers: () => Effect.void
     }
 
     const emit = (next: Partial<EngineStatus>) =>
@@ -84,6 +98,8 @@ const makeRecordingStorage = (stored: PositionRecord | null = null) => {
   const layer = Layer.succeed(PlayerStorage, {
     loadQueue: () => Effect.succeed(null),
     saveQueue: () => Effect.void,
+    loadVolume: () => Effect.succeed(null),
+    saveVolume: () => Effect.void,
     loadPosition: () => Effect.succeed(stored),
     savePosition: (id: string, position: number) =>
       Effect.sync(() => {
@@ -239,7 +255,7 @@ describe('makePlayerCore', () => {
     expect(errors).toContain('Playback was refused by the platform')
   })
 
-  it('tears down the source and pauses when set to null', async () => {
+  it('tears down the source and clears it when set to null', async () => {
     const program = Effect.gen(function* () {
       const { engine, calls, setStatus } = yield* makeRecordingEngine()
       const storage = makeRecordingStorage()
@@ -268,7 +284,10 @@ describe('makePlayerCore', () => {
 
     expect(trackId).toBeNull()
     expect(calls).toContain('nowPlaying:null')
-    expect(calls.lastIndexOf('pause')).toBeGreaterThan(calls.indexOf('replace:' + track.url))
+    expect(calls).toContain('clearSource')
+    expect(calls.lastIndexOf('pause')).toBeLessThan(calls.indexOf('clearSource'))
+    expect(calls.indexOf('clearSource')).toBeLessThan(calls.indexOf('nowPlaying:null'))
+    expect(calls.lastIndexOf('clearSource')).toBeGreaterThan(calls.indexOf('replace:' + track.url))
   })
 
   it('ignores delayed statuses from the previous source', async () => {
@@ -340,6 +359,60 @@ describe('makePlayerCore', () => {
     expect(result.calls).toContain('play')
     expect(result.finished).toBe(0)
     expect(result.trackId).toBe(nextTrack.id)
+  })
+
+  it('ignores late non-null statuses after the source is cleared', async () => {
+    const program = Effect.gen(function* () {
+      const { engine, emit, setStatus } = yield* makeRecordingEngine()
+      const storage = makeRecordingStorage()
+      const reporter = makeRecordingReporter()
+      const observed: Array<EngineStatus> = []
+      let finished = 0
+
+      const core = yield* makePlayerCore({
+        onStatus: (status) => observed.push(status),
+        onTrackFinished: () => {
+          finished += 1
+        }
+      }).pipe(
+        Effect.provide(
+          Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, reporter.layer)
+        )
+      )
+
+      yield* setStatus({ isLoaded: true, duration: 300 })
+      yield* core.setSource(track)
+      yield* Effect.yieldNow
+      yield* core.setSource(null)
+      yield* Effect.yieldNow
+      const beforeLateStatus = observed.length
+
+      yield* emit({
+        sourceGeneration: 1,
+        isLoaded: true,
+        duration: 300,
+        playing: false,
+        didJustFinish: true
+      })
+      yield* Effect.yieldNow
+
+      return {
+        observed,
+        beforeLateStatus,
+        afterLateStatus: observed.length,
+        finished,
+        trackId: yield* core.currentTrackId
+      }
+    }).pipe(Effect.scoped)
+
+    const result = await Effect.runPromise(program)
+
+    expect(result.trackId).toBeNull()
+    expect(result.afterLateStatus).toBe(result.beforeLateStatus)
+    expect(
+      result.observed.slice(result.beforeLateStatus).some((status) => status.sourceGeneration === 1)
+    ).toBe(false)
+    expect(result.finished).toBe(0)
   })
 
   it('clears the stored position and notifies when a track finishes', async () => {
@@ -420,8 +493,13 @@ describe('makePlayerCore', () => {
           Effect.sync(() => {
             status = { ...status, sourceGeneration }
           }),
+        clearSource: Effect.sync(() => {
+          status = { ...idleStatus, sourceGeneration: null }
+        }),
         play: Effect.void,
         pause: Effect.void,
+        setVolume: () => Effect.void,
+        setMuted: () => Effect.void,
         seekTo: () => Effect.void,
         currentStatus: Effect.sync(() => status),
         changes: Stream.fromPubSub(pubsub).pipe(
@@ -431,7 +509,9 @@ describe('makePlayerCore', () => {
             })
           )
         ),
-        setNowPlaying: () => Effect.void
+        setNowPlaying: () => Effect.void,
+        setPositionState: () => Effect.void,
+        setCommandHandlers: () => Effect.void
       }
 
       const storage = makeRecordingStorage()

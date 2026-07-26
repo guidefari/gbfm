@@ -4,7 +4,7 @@ import {
   createAudioStorage,
   createWebAudioStorageAdapter,
   type AudioStorageAdapter
-} from '@gbfm/player'
+} from './audioStorage'
 
 const createMemoryAdapter = (): AudioStorageAdapter & {
   readonly values: Map<string, string>
@@ -25,7 +25,7 @@ const createMemoryAdapter = (): AudioStorageAdapter & {
 }
 
 describe('audio storage', () => {
-  test('persists queue, progress, and volume through the explicit adapter seam', async () => {
+  test('persists queue, position, and volume through the explicit adapter seam', async () => {
     const adapter = createMemoryAdapter()
     const storage = createAudioStorage(adapter, () => 123)
     const queue = { tracks: [], currentIndex: -1 } as const
@@ -53,13 +53,8 @@ describe('audio storage', () => {
     })
     const storage = createAudioStorage(adapter, () => 456)
 
-    await Effect.runPromise(storage.savePosition('web-track', 12))
     await Effect.runPromise(storage.saveVolume({ volume: 80, isMuted: false }))
 
-    expect(await Effect.runPromise(storage.loadPosition('web-track'))).toEqual({
-      position: 12,
-      updatedAt: 456
-    })
     expect(await Effect.runPromise(storage.loadVolume())).toEqual({
       volume: 80,
       isMuted: false

@@ -1,26 +1,18 @@
 'use client'
 import { Pause, Play } from 'lucide-react'
-import { useActiveSource, usePlayerActions, useTransport } from '@/services/player'
-import { isActivePreview, isActiveQueueTrack } from '@/services/player/activeSource'
+import { useNowPlayingTrack, usePlayerActions, useTransport } from '@/services/player'
 import { toQueueTrack, type PlayableAudio } from '@/services/player/toQueueTrack'
 
-type PlayPauseButtonProps =
-  | { audio: PlayableAudio; previewUrl?: never }
-  | { audio?: never; previewUrl: string }
-
-export const PlayPauseButton = ({ audio, previewUrl }: PlayPauseButtonProps) => {
-  const active = useActiveSource()
+export const PlayPauseButton = ({ audio }: { audio: PlayableAudio }) => {
+  const current = useNowPlayingTrack()
   const { isPlaying } = useTransport()
-  const { playTrack, playPreview, togglePlayPause } = usePlayerActions()
+  const { playTrack, togglePlayPause } = usePlayerActions()
 
-  const isCurrent = audio
-    ? isActiveQueueTrack(active, audio.id)
-    : isActivePreview(active, previewUrl)
+  const isCurrent = current?.id === audio.id
 
   const handleClick = () => {
     if (!isCurrent) {
-      if (audio) playTrack(toQueueTrack(audio))
-      else playPreview(previewUrl)
+      playTrack(toQueueTrack(audio))
       return
     }
     togglePlayPause()

@@ -21,6 +21,16 @@ export type NowPlayingMetadata = {
   readonly artworkUrl?: string
 }
 
+export type PlaybackCommandHandlers = {
+  readonly onPlay: () => void
+  readonly onPause: () => void
+  readonly onSeekBackward: (offset: number) => void
+  readonly onSeekForward: (offset: number) => void
+  readonly onPreviousTrack: () => void
+  readonly onNextTrack: () => void
+  readonly onSeekTo: (time: number) => void
+}
+
 /** Playback was refused by the platform, typically because the call did not
  *  originate from a user gesture (Safari's autoplay policy). */
 export class PlaybackRejected extends Data.TaggedError('PlaybackRejected')<{
@@ -29,12 +39,17 @@ export class PlaybackRejected extends Data.TaggedError('PlaybackRejected')<{
 
 export interface AudioEngineShape {
   readonly replace: (url: string, sourceGeneration: number) => Effect.Effect<void>
+  readonly clearSource: Effect.Effect<void>
   readonly play: Effect.Effect<void, PlaybackRejected>
   readonly pause: Effect.Effect<void>
   readonly seekTo: (seconds: number) => Effect.Effect<void>
+  readonly setVolume: (volume: number) => Effect.Effect<void>
+  readonly setMuted: (muted: boolean) => Effect.Effect<void>
   readonly currentStatus: Effect.Effect<EngineStatus>
   readonly changes: Stream.Stream<EngineStatus>
   readonly setNowPlaying: (metadata: NowPlayingMetadata | null) => Effect.Effect<void>
+  readonly setPositionState: (duration: number, position: number) => Effect.Effect<void>
+  readonly setCommandHandlers: (handlers: PlaybackCommandHandlers | null) => Effect.Effect<void>
 }
 
 /** The operations the shared player core needs from a platform audio engine.

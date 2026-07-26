@@ -26,7 +26,8 @@ export {
   createWebAudioStorageAdapter,
   DEDUP_WINDOW_MS,
   type AudioStorageAdapter,
-  type PositionRecordType
+  type PositionRecordType,
+  type VolumeRecordType
 } from './audioStorage'
 
 export { createPlayDelivery } from './playDelivery'
@@ -43,7 +44,8 @@ export {
   PlaybackRejected,
   type AudioEngineShape,
   type EngineStatus,
-  type NowPlayingMetadata
+  type NowPlayingMetadata,
+  type PlaybackCommandHandlers
 } from './engine'
 
 export {
@@ -52,23 +54,34 @@ export {
   layerFromAdapter,
   loadPosition,
   loadQueue,
+  loadVolume,
   PlayerStorage,
   PlayerStorageInMemory,
   PlayerStorageTest,
   recordPlay,
   savePosition,
   saveQueue,
+  saveVolume,
   type PlayerStorageShape,
   type PositionRecord
 } from './playerStorage'
+
+export {
+  makeAudioPlayback,
+  selectQueueView,
+  type AudioPlaybackCallbacks,
+  type AudioPlaybackReporter,
+  type AudioPlaybackShape,
+  type PlaybackSnapshot,
+  type PlaybackTransportSnapshot,
+  type QueueView
+} from './audioPlayback'
 
 export { makePlayerCore, type PlayerCoreCallbacks, type PlayerCoreShape } from './playerCore'
 
 export {
   makeQueueAtom,
-  selectQueueView,
   type InternalQueueAction,
   type QueueAtomHandle,
-  type QueueAtomStorage,
-  type QueueView
+  type QueueAtomStorage
 } from './queueAtom'

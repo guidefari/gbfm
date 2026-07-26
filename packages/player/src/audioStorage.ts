@@ -4,13 +4,16 @@ import { AudioStorageError, parsePersistedQueue, type PersistedQueueType } from 
 const QUEUE_KEY = 'gbfm-audio-queue.json'
 const POSITION_KEY_PREFIX = 'gbfm-audio-position-'
 const PLAY_KEY_PREFIX = 'gbfm-audio-last-play-'
+const VOLUME_KEY = 'gbfm-audio-volume.json'
 
 export const DEDUP_WINDOW_MS = 30 * 60 * 1000
 
 const PositionRecord = Schema.Struct({ position: Schema.Number, updatedAt: Schema.Number })
 const PlayRecord = Schema.Struct({ at: Schema.Number })
+const VolumeRecord = Schema.Struct({ volume: Schema.Number, isMuted: Schema.Boolean })
 
 export type PositionRecordType = (typeof PositionRecord)['Type']
+export type VolumeRecordType = (typeof VolumeRecord)['Type']
 
 export type AudioStorageAdapter = {
   readonly read: (key: string) => Promise<string | null>
@@ -137,14 +140,36 @@ export const createAudioStorage = (adapter: AudioStorageAdapter, now: () => numb
       return last !== null && now() - last.at < DEDUP_WINDOW_MS
     })
 
+  const loadVolume = (): Effect.Effect<VolumeRecordType | null, AudioStorageError, never> =>
+    Effect.gen(function* () {
+      const raw = yield* read(VOLUME_KEY)
+      if (raw === null) return null
+      const value = yield* parseJson(raw)
+      const record = yield* Schema.decodeUnknownEffect(VolumeRecord)(value).pipe(
+        Effect.mapError((cause) => new AudioStorageError('parse', cause))
+      )
+      if (!Number.isFinite(record.volume) || record.volume < 0 || record.volume > 100) {
+        return yield* Effect.fail(new AudioStorageError('parse'))
+      }
+      return {
+        volume: Math.max(0, Math.min(100, record.volume)),
+        isMuted: record.isMuted
+      }
+    })
+
+  const saveVolume = (volume: VolumeRecordType): Effect.Effect<void, AudioStorageError, never> =>
+    write(VOLUME_KEY, JSON.stringify(volume))
+
   return {
     clearPosition,
     isWithinDedupWindow,
     loadPlay,
     loadPosition,
     loadQueue,
+    loadVolume,
     recordPlay,
     savePosition,
-    saveQueue
+    saveQueue,
+    saveVolume
   }
 }

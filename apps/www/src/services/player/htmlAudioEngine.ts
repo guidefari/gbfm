@@ -2,7 +2,8 @@ import {
   AudioEngine,
   PlaybackRejected,
   type EngineStatus,
-  type NowPlayingMetadata
+  type NowPlayingMetadata,
+  type PlaybackCommandHandlers
 } from '@gbfm/player'
 import { Effect, Layer, Queue, Stream } from 'effect'
 import { log } from '@/services/logger'
@@ -17,6 +18,8 @@ export type HtmlAudioPort = {
   readonly paused: boolean
   readonly ended: boolean
   readonly readyState: number
+  volume: number
+  muted: boolean
   load: () => void
   play: () => Promise<void>
   pause: () => void
@@ -114,6 +117,13 @@ const makeHtmlAudioEngine = (audio: HtmlAudioPort) =>
           audio.load()
         }),
 
+      clearSource: Effect.sync(() => {
+        justFinished = false
+        sourceGeneration = null
+        audio.src = ''
+        audio.load()
+      }),
+
       // Safari rejects play() when it lands outside a user-gesture stack.
       // The rejection is surfaced so the core can reconcile intent instead of
       // staying stuck at "desired playing" against a paused element.
@@ -128,6 +138,16 @@ const makeHtmlAudioEngine = (audio: HtmlAudioPort) =>
       ),
 
       pause: Effect.sync(() => audio.pause()),
+
+      setVolume: (volume: number) =>
+        Effect.sync(() => {
+          audio.volume = Math.max(0, Math.min(1, volume))
+        }),
+
+      setMuted: (muted: boolean) =>
+        Effect.sync(() => {
+          audio.muted = muted
+        }),
 
       seekTo: (seconds: number) =>
         Effect.callback<void>((resume) => {
@@ -146,12 +166,30 @@ const makeHtmlAudioEngine = (audio: HtmlAudioPort) =>
 
       setNowPlaying: (metadata: NowPlayingMetadata | null) =>
         metadata === null
-          ? mediaSession.setPlaybackState('none')
+          ? mediaSession.clearMetadata()
           : mediaSession.setMetadata(
               metadata.title,
               metadata.artist ? [metadata.artist] : [],
               metadata.artworkUrl
-            )
+            ),
+
+      setPositionState: (duration: number, position: number) =>
+        mediaSession.setPositionState(duration, position),
+
+      setCommandHandlers: (handlers: PlaybackCommandHandlers | null) =>
+        mediaSession.setActionHandlers(
+          handlers
+            ? {
+                onPlay: handlers.onPlay,
+                onPause: handlers.onPause,
+                onSeekBackward: handlers.onSeekBackward,
+                onSeekForward: handlers.onSeekForward,
+                onPreviousTrack: handlers.onPreviousTrack,
+                onNextTrack: handlers.onNextTrack,
+                onSeekTo: handlers.onSeekTo
+              }
+            : null
+        )
     }
   })
 

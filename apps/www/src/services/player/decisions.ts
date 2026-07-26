@@ -32,7 +32,7 @@ export const resolvePreviousIndex = ({
   trackCount,
   currentIndex
 }: NextIndexInput): number | null => {
-  if (trackCount === 0) return null
+  if (trackCount === 0 || currentIndex < 0) return null
   return currentIndex <= 0 ? trackCount - 1 : currentIndex - 1
 }
 
