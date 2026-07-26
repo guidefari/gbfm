@@ -1,3 +1,10 @@
+# [2.75.0](https://github.com/guidefari/gbfm/compare/v2.74.0...v2.75.0) (2026-07-26)
+
+
+### Features
+
+* **uploads:** images direct-to-S3 presign + upload-asset lifecycle table ([#225](https://github.com/guidefari/gbfm/issues/225)) ([4af56d6](https://github.com/guidefari/gbfm/commit/4af56d6daad470c0a9facfe12f7938c3ac593958)), closes [#220](https://github.com/guidefari/gbfm/issues/220) [#220](https://github.com/guidefari/gbfm/issues/220)
+
 # [2.74.0](https://github.com/guidefari/gbfm/compare/v2.73.0...v2.74.0) (2026-07-26)
 
 
