@@ -41,12 +41,6 @@ export interface MultipartInitResponse {
   chunkSize: number
 }
 
-export interface MultipartPartResponse {
-  partNumber: number
-  etag: string
-  size: number
-}
-
 export interface PresignPartResponse {
   url: string
   partNumber: number
@@ -65,12 +59,6 @@ const multipartInitResponseSchema = Schema.Struct({
   uploadId: Schema.String,
   key: Schema.String,
   chunkSize: Schema.Number
-})
-
-const multipartPartResponseSchema = Schema.Struct({
-  partNumber: Schema.Number,
-  etag: Schema.String,
-  size: Schema.Number
 })
 
 const presignPartResponseSchema = Schema.Struct({
@@ -120,9 +108,6 @@ const persistedUploadSchema = Schema.Struct({
 
 export const parseInitResponse = (raw: unknown): MultipartInitResponse =>
   Schema.decodeUnknownSync(multipartInitResponseSchema)(raw)
-
-export const parsePartResponse = (raw: unknown): MultipartPartResponse =>
-  Schema.decodeUnknownSync(multipartPartResponseSchema)(raw)
 
 export const parsePresignPartResponse = (raw: unknown): PresignPartResponse =>
   Schema.decodeUnknownSync(presignPartResponseSchema)(raw)

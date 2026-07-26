@@ -9,7 +9,6 @@ import {
   parseAbortResponse,
   parseCompleteResponse,
   parseInitResponse,
-  parsePartResponse,
   parsePersistedUpload,
   parsePresignPartResponse,
   parseStatusResponse,
@@ -254,14 +253,6 @@ describe('response parsers', () => {
 
   test('parseInitResponse throws on missing fields', () => {
     expect(() => parseInitResponse({ uploadId: 'u', key: 'k' })).toThrow()
-  })
-
-  test('parsePartResponse decodes a valid payload', () => {
-    expect(parsePartResponse({ partNumber: 1, etag: 'e', size: 10 })).toEqual({
-      partNumber: 1,
-      etag: 'e',
-      size: 10
-    })
   })
 
   test('parsePresignPartResponse decodes a valid payload', () => {

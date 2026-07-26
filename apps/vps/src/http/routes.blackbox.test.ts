@@ -791,20 +791,6 @@ describe('upload (HttpApiBuilder group, Step 7)', () => {
     expect(res.status).toBe(401)
   })
 
-  it('POST /api/upload/multipart/part returns 401 without a session cookie', async () => {
-    const formData = new FormData()
-    formData.append('key', 'user123/audio_1_test.mp3')
-    formData.append('uploadId', 'upload-id')
-    formData.append('partNumber', '1')
-    formData.append('chunk', new Blob(['data']), 'chunk')
-
-    const res = await webHandler.handler(
-      new Request('http://localhost/api/upload/multipart/part', { method: 'POST', body: formData })
-    )
-
-    expect(res.status).toBe(401)
-  })
-
   it('POST /api/upload/multipart/presign-part returns 401 without a session cookie', async () => {
     const res = await webHandler.handler(
       new Request('http://localhost/api/upload/multipart/presign-part', {

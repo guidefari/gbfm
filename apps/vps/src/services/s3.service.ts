@@ -72,14 +72,6 @@ export interface S3Service {
     bucketName: string
   ) => Effect.Effect<S3ObjectMetadata | null, S3Error>
 
-  readonly uploadMultipartPart: (
-    key: string,
-    uploadId: string,
-    partNumber: number,
-    body: Buffer | Uint8Array | Blob,
-    bucketName: string
-  ) => Effect.Effect<{ partNumber: number; etag: string; size: number }, S3Error>
-
   readonly presignUploadPart: (
     key: string,
     uploadId: string,
@@ -400,49 +392,6 @@ const getObjectMetadataEffect = (key: string, bucketName: string) =>
     })
   )
 
-const uploadMultipartPartEffect = (
-  key: string,
-  uploadId: string,
-  partNumber: number,
-  body: Buffer | Uint8Array | Blob,
-  bucketName: string
-) =>
-  Effect.tryPromise({
-    try: async () => {
-      const s3 = new S3Client({})
-      const response = await s3.send(
-        new UploadPartCommand({
-          Bucket: bucketName,
-          Key: key,
-          UploadId: uploadId,
-          PartNumber: partNumber,
-          Body: body
-        })
-      )
-      if (!response.ETag) {
-        throw new Error('S3 did not return an ETag for the uploaded part')
-      }
-      const size = body instanceof Blob ? body.size : body.byteLength
-      return { partNumber, etag: response.ETag, size }
-    },
-    catch: (error) =>
-      new S3Error({
-        message: `Failed to upload multipart part: ${getErrorMessage(error)}`,
-        operation: 'uploadMultipartPart',
-        key
-      })
-  }).pipe(
-    Effect.withSpan('aws.s3.uploadPart', {
-      attributes: {
-        'aws.service': 's3',
-        's3.bucket': bucketName,
-        's3.key_prefix': getKeyPrefix(key),
-        's3.part_number': partNumber,
-        'payload.size_bytes': body instanceof Blob ? body.size : body.byteLength
-      }
-    })
-  )
-
 const presignUploadPartEffect = (
   key: string,
   uploadId: string,
@@ -636,7 +585,6 @@ export const S3ServiceLive = Layer.succeed(S3Service, {
   listBuckets: listBucketsEffect,
   createMultipartUpload: createMultipartUploadEffect,
   getObjectMetadata: getObjectMetadataEffect,
-  uploadMultipartPart: uploadMultipartPartEffect,
   presignUploadPart: presignUploadPartEffect,
   completeMultipartUpload: completeMultipartUploadEffect,
   abortMultipartUpload: abortMultipartUploadEffect,

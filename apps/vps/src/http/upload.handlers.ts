@@ -17,17 +17,11 @@ const dieOnPlatformError = makeDieOnPlatformError('upload')
 const CHUNK_SIZE = 8 * 1024 * 1024
 const MAX_AUDIO_SIZE = 200 * 1024 * 1024
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024
-// API Gateway HTTP API v2 caps request bodies at 10 MiB. A multipart/form-data
-// request adds ~1 KiB of overhead on top of the file part, so the per-chunk
-// ceiling must stay well under 10 MiB. 9 MiB leaves room for the form fields
-// (key, uploadId, partNumber) and the boundary markers.
-// Retained for the legacy uploadMultipartPart proxy endpoint only -- the new
-// presignMultipartPart path PUTs straight to S3 and isn't bound by this.
-const MAX_CHUNK_SIZE = 9 * 1024 * 1024
 
-// Long enough to cover an 8 MiB PUT over a slow upload connection with retry
-// headroom, short enough to bound how long a leaked URL stays usable.
-const PRESIGNED_PART_URL_EXPIRY_SECONDS = 5 * 60
+// Long enough to cover an 8 MiB part PUT over a genuinely slow upload
+// connection with room for a retry or two before the URL goes stale, short
+// enough to bound how long a leaked URL stays usable.
+const PRESIGNED_PART_URL_EXPIRY_SECONDS = 15 * 60
 
 const sanitizeKeySegment = (value: string): string => value.replace(/[^a-zA-Z0-9.-]/g, '_')
 
@@ -187,44 +181,6 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
       }).pipe(
         Effect.withSpan('api.upload.multipart.init', {
           attributes: { fileType: payload.fileType, fileSize: payload.fileSize }
-        })
-      )
-    )
-    .handle('uploadMultipartPart', ({ payload }) =>
-      Effect.gen(function* () {
-        const { user } = yield* AuthSession
-        const { key, uploadId, partNumber, chunk } = payload
-
-        const file = yield* readPersistedFile(chunk)
-        if (file.size === 0) {
-          return yield* new HttpApiError.BadRequest()
-        }
-        if (file.size > MAX_CHUNK_SIZE) {
-          return yield* new HttpApiError.BadRequest()
-        }
-
-        yield* assertKeyOwnership(user.id, key)
-        const expectedSize = yield* requireExpectedSize(user.id, key)
-        if (file.size !== expectedMultipartPartSize(expectedSize, partNumber)) {
-          return yield* new HttpApiError.BadRequest()
-        }
-
-        const config = yield* ConfigService
-        const s3Service = yield* S3Service
-        const result = yield* dieOnS3Error(
-          s3Service.uploadMultipartPart(
-            key,
-            uploadId,
-            partNumber,
-            file.buffer,
-            config.buckets.userContent
-          )
-        )
-
-        return { partNumber: result.partNumber, etag: result.etag, size: result.size }
-      }).pipe(
-        Effect.withSpan('api.upload.multipart.part', {
-          attributes: { partNumber: payload.partNumber }
         })
       )
     )
