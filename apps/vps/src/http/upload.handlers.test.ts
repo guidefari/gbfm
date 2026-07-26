@@ -1,10 +1,45 @@
+import { Effect } from 'effect'
+import { HttpApiError } from 'effect/unstable/httpapi'
 import { describe, expect, test } from 'vitest'
 import {
   assertContiguousParts,
+  assertKeyOwnership,
   expectedMultipartPartSize,
   matchesCompletedObject,
   validateMultipartParts
 } from './upload.handlers'
+
+describe('assertKeyOwnership', () => {
+  test('accepts a key prefixed with the requesting user id', () => {
+    expect(assertKeyOwnership('user-1', 'user-1/multipart/uuid/1024/audio_test.mp3')).toBe(
+      Effect.void
+    )
+  })
+
+  test('rejects a key prefixed with a different user id', () => {
+    expect(
+      assertKeyOwnership('user-1', 'user-2/multipart/uuid/1024/audio_test.mp3')
+    ).toBeInstanceOf(HttpApiError.BadRequest)
+  })
+
+  test('rejects a key with no matching prefix segment at all', () => {
+    expect(assertKeyOwnership('user-1', 'not-a-scoped-key.mp3')).toBeInstanceOf(
+      HttpApiError.BadRequest
+    )
+  })
+
+  test('sanitizes the user id the same way keys are built, so ownership matches sanitized ids', () => {
+    expect(assertKeyOwnership('user 1!', 'user_1_/multipart/uuid/1024/audio_test.mp3')).toBe(
+      Effect.void
+    )
+  })
+
+  test('rejects a prefix match that stops short of the path separator', () => {
+    expect(
+      assertKeyOwnership('user-1', 'user-12/multipart/uuid/1024/audio_test.mp3')
+    ).toBeInstanceOf(HttpApiError.BadRequest)
+  })
+})
 
 describe('assertContiguousParts', () => {
   test('accepts a complete contiguous sequence', () => {

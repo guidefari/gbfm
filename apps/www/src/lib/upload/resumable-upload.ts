@@ -41,10 +41,10 @@ export interface MultipartInitResponse {
   chunkSize: number
 }
 
-export interface MultipartPartResponse {
+export interface PresignPartResponse {
+  url: string
   partNumber: number
-  etag: string
-  size: number
+  expiresInSeconds: number
 }
 
 export interface MultipartStatusResponse {
@@ -61,10 +61,10 @@ const multipartInitResponseSchema = Schema.Struct({
   chunkSize: Schema.Number
 })
 
-const multipartPartResponseSchema = Schema.Struct({
+const presignPartResponseSchema = Schema.Struct({
+  url: Schema.String,
   partNumber: Schema.Number,
-  etag: Schema.String,
-  size: Schema.Number
+  expiresInSeconds: Schema.Number
 })
 
 const multipartStatusResponseSchema = Schema.Struct({
@@ -109,8 +109,8 @@ const persistedUploadSchema = Schema.Struct({
 export const parseInitResponse = (raw: unknown): MultipartInitResponse =>
   Schema.decodeUnknownSync(multipartInitResponseSchema)(raw)
 
-export const parsePartResponse = (raw: unknown): MultipartPartResponse =>
-  Schema.decodeUnknownSync(multipartPartResponseSchema)(raw)
+export const parsePresignPartResponse = (raw: unknown): PresignPartResponse =>
+  Schema.decodeUnknownSync(presignPartResponseSchema)(raw)
 
 export const parseStatusResponse = (raw: unknown): MultipartStatusResponse => {
   const decoded = Schema.decodeUnknownSync(multipartStatusResponseSchema)(raw)

@@ -9,8 +9,8 @@ import {
   parseAbortResponse,
   parseCompleteResponse,
   parseInitResponse,
-  parsePartResponse,
   parsePersistedUpload,
+  parsePresignPartResponse,
   parseStatusResponse,
   splitFileIntoChunks,
   totalParts,
@@ -255,12 +255,22 @@ describe('response parsers', () => {
     expect(() => parseInitResponse({ uploadId: 'u', key: 'k' })).toThrow()
   })
 
-  test('parsePartResponse decodes a valid payload', () => {
-    expect(parsePartResponse({ partNumber: 1, etag: 'e', size: 10 })).toEqual({
+  test('parsePresignPartResponse decodes a valid payload', () => {
+    expect(
+      parsePresignPartResponse({
+        url: 'https://bucket.s3.amazonaws.com/key?X-Amz-Signature=abc',
+        partNumber: 1,
+        expiresInSeconds: 300
+      })
+    ).toEqual({
+      url: 'https://bucket.s3.amazonaws.com/key?X-Amz-Signature=abc',
       partNumber: 1,
-      etag: 'e',
-      size: 10
+      expiresInSeconds: 300
     })
+  })
+
+  test('parsePresignPartResponse throws on missing fields', () => {
+    expect(() => parsePresignPartResponse({ partNumber: 1 })).toThrow()
   })
 
   test('parseStatusResponse returns a fresh array', () => {

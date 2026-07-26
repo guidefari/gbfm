@@ -12,7 +12,7 @@ import {
   parseAbortResponse,
   parseCompleteResponse,
   parseInitResponse,
-  parsePartResponse,
+  parsePresignPartResponse,
   parseStatusResponse,
   splitFileIntoChunks,
   withUpdatedPart
@@ -172,40 +172,99 @@ const fetchStatus = (
   )
 }
 
+const presignPart = (
+  working: PersistedResumableUpload,
+  partNumber: number,
+  signal: AbortSignal
+): Effect.Effect<{ url: string }, ResumableUploadError, never> =>
+  retryableJsonRequest(
+    apiUrl('/upload/multipart/presign-part'),
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key: working.key, uploadId: working.uploadId, partNumber }),
+      signal
+    },
+    parsePresignPartResponse,
+    'presign-part',
+    INIT_RETRY_TIMES
+  )
+
+// PUTs the raw part body straight to S3 using the presigned URL -- bypasses
+// API Gateway/VPS entirely for the heavy bytes (see apps/vps/src/http/
+// upload.handlers.ts's presignMultipartPart and PR #130's band-aid this
+// replaces). No credentials/cookies on this request: the presigned URL's
+// signature is the only auth, so this intentionally does not go through
+// httpRequest's credentials: 'include' default.
+const putPartToS3 = (
+  url: string,
+  blob: Blob,
+  signal: AbortSignal
+): Effect.Effect<string, NetworkError | HttpError | InvalidResponseError | UploadAborted, never> =>
+  Effect.tryPromise({
+    try: () => fetch(url, { method: 'PUT', body: blob, signal }),
+    catch: (cause): NetworkError | UploadAborted => {
+      if (signal.aborted) return new UploadAborted()
+      if (cause instanceof Error && cause.name === 'AbortError') return new UploadAborted()
+      return new NetworkError({
+        message: cause instanceof Error ? cause.message : String(cause),
+        cause
+      })
+    }
+  }).pipe(
+    Effect.flatMap((response): Effect.Effect<string, HttpError | InvalidResponseError, never> => {
+      if (!response.ok) {
+        return Effect.fail(
+          new HttpError({
+            status: response.status,
+            message: `HTTP ${response.status} ${response.statusText}`.trim()
+          })
+        )
+      }
+      const etag = response.headers.get('ETag')
+      if (!etag) {
+        return Effect.fail(
+          new InvalidResponseError({ message: 'part: S3 response missing ETag header' })
+        )
+      }
+      return Effect.succeed(etag)
+    })
+  )
+
+// A 403 from the S3 PUT can only mean the presigned URL expired (its
+// 15-minute TTL elapsed on a slow or backgrounded-tab upload) -- the URL's
+// signature is the sole auth on that request, nothing else in this codebase
+// grants or denies S3 access per-request. presignPart's own errors never
+// carry status 403 (our AuthMiddleware fails with 401, ownership/validation
+// failures are 400), so this predicate can't be confused with a real auth
+// failure on our own API. isRetryableError intentionally leaves generic 403
+// non-retryable for every other endpoint in this file (a real auth failure
+// there should fail fast) -- this is scoped to uploadPart's own retry so
+// that distinction elsewhere stays intact.
+const isRetryablePartUploadError = (error: ResumableUploadError): boolean =>
+  isRetryableError(error) || (error._tag === 'HttpError' && error.status === 403)
+
 const uploadPart = (
   working: PersistedResumableUpload,
   part: { partNumber: number; blob: Blob },
   signal: AbortSignal
-): Effect.Effect<ResumablePart, ResumableUploadError, never> => {
-  const formData = new FormData()
-  formData.append('key', working.key)
-  formData.append('uploadId', working.uploadId)
-  formData.append('partNumber', String(part.partNumber))
-  formData.append('chunk', part.blob, `part-${part.partNumber}`)
-
-  return Effect.gen(function* () {
+): Effect.Effect<ResumablePart, ResumableUploadError, never> =>
+  Effect.gen(function* () {
     if (signal.aborted) return yield* new UploadAborted()
 
-    const response = yield* httpRequest(apiUrl('/upload/multipart/part'), {
-      method: 'POST',
-      body: formData,
-      signal
-    })
+    // Always re-presigns before PUTting: if the previous attempt failed
+    // because the URL expired, this mints a fresh one before retrying.
+    const { url } = yield* presignPart(working, part.partNumber, signal)
+    const etag = yield* putPartToS3(url, part.blob, signal)
 
-    const raw = yield* Effect.tryPromise({
-      try: () => response.json(),
-      catch: () => new InvalidResponseError({ message: 'part: failed to parse JSON' })
-    })
-
-    return decodeOrFail(parsePartResponse, raw, 'part')
+    return { partNumber: part.partNumber, etag, size: part.blob.size }
   }).pipe(
     Effect.retry({
       schedule: Schedule.exponential(`${PART_RETRY_BASE_MS} millis`),
       times: MAX_PART_ATTEMPTS,
-      while: (error) => isRetryableError(error) && !signal.aborted
+      while: (error) => isRetryablePartUploadError(error) && !signal.aborted
     })
   )
-}
 
 const completeUpload = (
   working: PersistedResumableUpload,

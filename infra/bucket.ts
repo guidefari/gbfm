@@ -2,10 +2,30 @@ import { domain } from './dns'
 
 const isDevStage = $app.stage === 'dev'
 
+// Browser PUTs multipart part bytes directly to this bucket via presigned
+// UploadPartCommand URLs (see apps/vps/src/http/upload.handlers.ts's
+// presignMultipartPart) -- scoped to the real deployed web origins rather
+// than sst.aws.Bucket's own default of allowOrigins: ["*"], since the
+// presigned URL itself is the only auth on that PUT.
+const contentBucketCorsOrigins = [
+  'http://127.0.0.1:5173',
+  'http://localhost:4173',
+  'https://www.goosebumps.fm',
+  'https://goosebumps.fm',
+  `https://${domain}`
+]
+
 export const contentBucket = isDevStage
   ? sst.aws.Bucket.get('User_Content', 'gbfm-prod-usercontentbucket-cohrefob')
   : new sst.aws.Bucket('User_Content', {
-      access: 'cloudfront'
+      access: 'cloudfront',
+      cors: {
+        allowOrigins: contentBucketCorsOrigins,
+        allowMethods: ['PUT'],
+        allowHeaders: ['*'],
+        exposeHeaders: ['ETag'],
+        maxAge: '1 hour'
+      }
     })
 
 // QR PDFs are temporary — expire them via S3 lifecycle instead of a polling cron job
