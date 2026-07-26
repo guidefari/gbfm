@@ -3,6 +3,7 @@ import {
   AlbumListResponse,
   ArtistListResponse,
   LabelListResponse,
+  LabelResponse,
   PlaylistListResponse,
   TrackListResponse
 } from '@gbfm/api/music'
@@ -13,7 +14,14 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
 import { session, user } from '@/db/auth.schema'
-import { musicLabelCreatorsTable, musicLabelsTable } from '@/db/music-entity.schema'
+import {
+  musicAlbumsTable,
+  musicArtistsTable,
+  musicLabelAlbumsTable,
+  musicLabelArtistsTable,
+  musicLabelCreatorsTable,
+  musicLabelsTable
+} from '@/db/music-entity.schema'
 import { postCreators, postsTable } from '@/db/post.schema'
 import { releasesTable } from '@/db/release.schema'
 import { showsTable } from '@/db/show.schema'
@@ -178,6 +186,22 @@ describe('music artists (HttpApiBuilder group, Step 4)', () => {
 
     expect(res.status).toBe(401)
   })
+
+  it('requires authentication to read and change label affiliations', async () => {
+    const id = '00000000-0000-0000-0000-000000000000'
+    const requests = [
+      new Request(`http://localhost/api/music/labels/${id}/artists`),
+      new Request(`http://localhost/api/music/labels/${id}/albums`),
+      new Request(`http://localhost/api/music/artists/${id}/labels`),
+      new Request(`http://localhost/api/music/albums/${id}/labels`),
+      new Request(`http://localhost/api/music/labels/${id}/artists/${id}`, { method: 'PUT' }),
+      new Request(`http://localhost/api/music/labels/${id}/albums/${id}`, { method: 'PUT' })
+    ]
+
+    const responses = await Promise.all(requests.map((request) => webHandler.handler(request)))
+
+    expect(responses.map((response) => response.status)).toEqual([401, 401, 401, 401, 401, 401])
+  })
 })
 
 describe('music labels', () => {
@@ -200,6 +224,137 @@ describe('music labels', () => {
     const res = await webHandler.handler(new Request('http://localhost/api/music/labels/manage'))
 
     expect(res.status).toBe(401)
+  })
+
+  it('manages factual affiliations reciprocally while publishing only visible entities', async () => {
+    const suffix = crypto.randomUUID()
+    const adminId = `affiliation-admin-${suffix}`
+    const adminToken = `affiliation-admin-token-${suffix}`
+    const now = new Date()
+    const future = new Date(now.getTime() + 86_400_000)
+
+    await db.insert(user).values({
+      id: adminId,
+      name: 'Affiliation admin',
+      email: `${adminId}@example.com`,
+      role: 'admin'
+    })
+    await db.insert(session).values({
+      id: crypto.randomUUID(),
+      token: adminToken,
+      userId: adminId,
+      expiresAt: new Date(now.getTime() + 60_000)
+    })
+    const [label] = await db
+      .insert(musicLabelsTable)
+      .values({
+        name: 'Affiliation label',
+        slug: `affiliation-label-${suffix}`,
+        content: '',
+        publishedAt: now
+      })
+      .returning()
+    const [publishedArtist, draftArtist] = await db
+      .insert(musicArtistsTable)
+      .values([
+        { name: 'Alpha Artist', slug: `alpha-artist-${suffix}`, publishedAt: now },
+        { name: 'Draft Artist', slug: `draft-artist-${suffix}` }
+      ])
+      .returning()
+    const [publishedAlbum, futureAlbum] = await db
+      .insert(musicAlbumsTable)
+      .values([
+        {
+          title: 'Published Album',
+          slug: `published-album-${suffix}`,
+          releaseDate: now,
+          publishedAt: now
+        },
+        {
+          title: 'Future Album',
+          slug: `future-album-${suffix}`,
+          releaseDate: future,
+          publishedAt: future
+        }
+      ])
+      .returning()
+    if (!label || !publishedArtist || !draftArtist || !publishedAlbum || !futureAlbum) {
+      throw new Error('Failed to seed label affiliation test')
+    }
+
+    const adminRequest = (path: string, method = 'GET') =>
+      new Request(`http://localhost${path}`, {
+        method,
+        headers: { authorization: `Bearer ${adminToken}` }
+      })
+
+    const publishedArtistPath = `/api/music/labels/${label.id}/artists/${publishedArtist.id}`
+    const draftArtistPath = `/api/music/labels/${label.id}/artists/${draftArtist.id}`
+    const publishedAlbumPath = `/api/music/labels/${label.id}/albums/${publishedAlbum.id}`
+    const futureAlbumPath = `/api/music/labels/${label.id}/albums/${futureAlbum.id}`
+
+    try {
+      const writes = await Promise.all(
+        [
+          publishedArtistPath,
+          draftArtistPath,
+          publishedAlbumPath,
+          futureAlbumPath,
+          publishedArtistPath,
+          publishedAlbumPath
+        ].map((path) => webHandler.handler(adminRequest(path, 'PUT')))
+      )
+      expect(writes.map((response) => response.status)).toEqual([204, 204, 204, 204, 204, 204])
+
+      const [labelArtists, labelAlbums, artistLabels, albumLabels, publicLabel] = await Promise.all(
+        [
+          webHandler.handler(adminRequest(`/api/music/labels/${label.id}/artists`)),
+          webHandler.handler(adminRequest(`/api/music/labels/${label.id}/albums`)),
+          webHandler.handler(adminRequest(`/api/music/artists/${publishedArtist.id}/labels`)),
+          webHandler.handler(adminRequest(`/api/music/albums/${publishedAlbum.id}/labels`)),
+          webHandler.handler(new Request(`http://localhost/api/music/labels/slug/${label.slug}`))
+        ]
+      )
+
+      expect(labelArtists.status).toBe(200)
+      expect(labelAlbums.status).toBe(200)
+      expect(artistLabels.status).toBe(200)
+      expect(albumLabels.status).toBe(200)
+      const labelArtistsBody = await decodeResponseBody(ArtistListResponse, labelArtists)
+      const labelAlbumsBody = await decodeResponseBody(AlbumListResponse, labelAlbums)
+      const artistLabelsBody = await decodeResponseBody(LabelListResponse, artistLabels)
+      const albumLabelsBody = await decodeResponseBody(LabelListResponse, albumLabels)
+      expect(labelArtistsBody.map((artist) => artist.name)).toEqual([
+        'Alpha Artist',
+        'Draft Artist'
+      ])
+      expect(labelAlbumsBody.map((album) => album.title)).toEqual([
+        'Future Album',
+        'Published Album'
+      ])
+      expect(artistLabelsBody.map((row) => row.id)).toEqual([label.id])
+      expect(albumLabelsBody.map((row) => row.id)).toEqual([label.id])
+
+      const publicBody = await decodeResponseBody(LabelResponse, publicLabel)
+      expect(publicBody.affiliatedArtists?.map((artist) => artist.id)).toEqual([publishedArtist.id])
+      expect(publicBody.affiliatedAlbums?.map((album) => album.id)).toEqual([publishedAlbum.id])
+
+      const removed = await webHandler.handler(adminRequest(publishedArtistPath, 'DELETE'))
+      const afterRemove = await webHandler.handler(
+        adminRequest(`/api/music/artists/${publishedArtist.id}/labels`)
+      )
+      expect(removed.status).toBe(204)
+      await expect(decodeResponseBody(LabelListResponse, afterRemove)).resolves.toEqual([])
+    } finally {
+      await db.delete(musicLabelArtistsTable).where(eq(musicLabelArtistsTable.labelId, label.id))
+      await db.delete(musicLabelAlbumsTable).where(eq(musicLabelAlbumsTable.labelId, label.id))
+      await db.delete(musicAlbumsTable).where(eq(musicAlbumsTable.id, publishedAlbum.id))
+      await db.delete(musicAlbumsTable).where(eq(musicAlbumsTable.id, futureAlbum.id))
+      await db.delete(musicArtistsTable).where(eq(musicArtistsTable.id, publishedArtist.id))
+      await db.delete(musicArtistsTable).where(eq(musicArtistsTable.id, draftArtist.id))
+      await db.delete(musicLabelsTable).where(eq(musicLabelsTable.id, label.id))
+      await db.delete(user).where(eq(user.id, adminId))
+    }
   })
 })
 

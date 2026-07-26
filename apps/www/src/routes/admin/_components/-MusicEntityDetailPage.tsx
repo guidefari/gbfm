@@ -21,23 +21,35 @@ import {
   useAddArtistToAlbum,
   useAddArtistToTrack,
   useAdminAlbum,
+  useAdminAlbums,
   useAdminArtist,
+  useAdminArtists,
   useAdminLabel,
+  useAdminLabels,
   useAdminEntityLinks,
   useAdminTrack,
+  useAffiliateAlbumWithLabel,
+  useAffiliateArtistWithLabel,
+  useAlbumLabels,
+  useArtistLabels,
   useDeleteAdminAlbum,
   useDeleteAdminArtist,
   useDeleteAdminLabel,
   useDeleteAdminEntityLink,
   useDeleteAdminTrack,
+  useLabelAlbums,
+  useLabelArtists,
   useRemoveArtistFromAlbum,
   useRemoveArtistFromTrack,
+  useUnaffiliateAlbumFromLabel,
+  useUnaffiliateArtistFromLabel,
   useUpdateAdminAlbum,
   useUpdateAdminArtist,
   useUpdateAdminLabel,
   useUpdateAdminEntityLinkStatus,
   useUpdateAdminTrack
 } from '@/lib/http'
+import { AffiliationPanel, type AffiliationOption } from './-AffiliationPanel'
 
 interface Props {
   entityType: MusicEntityType
@@ -131,6 +143,7 @@ function ArtistDetailPage({ id }: { id: string }) {
           deleteLink={deleteLink}
         />
       }
+      relationshipsSlot={<ArtistLabelAffiliations artistId={id} />}
     />
   )
 }
@@ -202,11 +215,14 @@ function AlbumDetailPage({ id }: { id: string }) {
         />
       }
       relationshipsSlot={
-        <MusicEntityArtistsPanel
-          artists={artistJunctions}
-          onAdd={(artistId, role) => addArtist.mutate({ albumId: id, artistId, role })}
-          onRemove={(artistId) => removeArtist.mutate({ albumId: id, artistId })}
-        />
+        <div className='space-y-6'>
+          <MusicEntityArtistsPanel
+            artists={artistJunctions}
+            onAdd={(artistId, role) => addArtist.mutate({ albumId: id, artistId, role })}
+            onRemove={(artistId) => removeArtist.mutate({ albumId: id, artistId })}
+          />
+          <AlbumLabelAffiliations albumId={id} />
+        </div>
       }
     />
   )
@@ -368,6 +384,132 @@ function LabelDetailPage({ id }: { id: string }) {
           deleteLink={deleteLink}
         />
       }
+      relationshipsSlot={<LabelAffiliations labelId={id} />}
+    />
+  )
+}
+
+const toArtistAffiliationOption = (artist: MusicArtist): AffiliationOption => ({
+  id: artist.id,
+  name: artist.name,
+  publishedAt: artist.publishedAt,
+  detail: artist.genres?.join(', ') || artist.slug
+})
+
+const toAlbumAffiliationOption = (album: MusicAlbum): AffiliationOption => ({
+  id: album.id,
+  name: album.title,
+  publishedAt: album.publishedAt,
+  detail: album.artistNames?.join(', ') || album.albumType || album.slug
+})
+
+const toLabelAffiliationOption = (label: MusicLabel): AffiliationOption => ({
+  id: label.id,
+  name: label.name,
+  publishedAt: label.publishedAt,
+  detail: label.slug
+})
+
+function LabelAffiliations({ labelId }: { labelId: string }) {
+  const artists = useLabelArtists(labelId)
+  const albums = useLabelAlbums(labelId)
+  const artistCandidates = useAdminArtists()
+  const albumCandidates = useAdminAlbums()
+  const affiliateArtist = useAffiliateArtistWithLabel()
+  const unaffiliateArtist = useUnaffiliateArtistFromLabel()
+  const affiliateAlbum = useAffiliateAlbumWithLabel()
+  const unaffiliateAlbum = useUnaffiliateAlbumFromLabel()
+
+  return (
+    <div className='space-y-6'>
+      <AffiliationPanel
+        title='Roster artists'
+        description='Artists factually affiliated with this label.'
+        items={(artists.data ?? []).map(toArtistAffiliationOption)}
+        candidates={(artistCandidates.data ?? []).map(toArtistAffiliationOption)}
+        isLoading={artists.isLoading || artistCandidates.isLoading}
+        error={artists.error ?? artistCandidates.error}
+        isMutating={affiliateArtist.isPending || unaffiliateArtist.isPending}
+        onAdd={async (artistId) => {
+          await affiliateArtist.mutateAsync({ labelId, artistId })
+          toast({ title: 'Artist affiliated with label' })
+        }}
+        onRemove={async (artistId) => {
+          await unaffiliateArtist.mutateAsync({ labelId, artistId })
+          toast({ title: 'Artist affiliation removed' })
+        }}
+      />
+      <AffiliationPanel
+        title='Catalog albums'
+        description='Albums factually issued by this label.'
+        items={(albums.data ?? []).map(toAlbumAffiliationOption)}
+        candidates={(albumCandidates.data ?? []).map(toAlbumAffiliationOption)}
+        isLoading={albums.isLoading || albumCandidates.isLoading}
+        error={albums.error ?? albumCandidates.error}
+        isMutating={affiliateAlbum.isPending || unaffiliateAlbum.isPending}
+        onAdd={async (albumId) => {
+          await affiliateAlbum.mutateAsync({ labelId, albumId })
+          toast({ title: 'Album affiliated with label' })
+        }}
+        onRemove={async (albumId) => {
+          await unaffiliateAlbum.mutateAsync({ labelId, albumId })
+          toast({ title: 'Album affiliation removed' })
+        }}
+      />
+    </div>
+  )
+}
+
+function ArtistLabelAffiliations({ artistId }: { artistId: string }) {
+  const labels = useArtistLabels(artistId)
+  const candidates = useAdminLabels()
+  const affiliate = useAffiliateArtistWithLabel()
+  const unaffiliate = useUnaffiliateArtistFromLabel()
+
+  return (
+    <AffiliationPanel
+      title='Labels'
+      description='Labels whose roster includes this artist.'
+      items={(labels.data ?? []).map(toLabelAffiliationOption)}
+      candidates={(candidates.data ?? []).map(toLabelAffiliationOption)}
+      isLoading={labels.isLoading || candidates.isLoading}
+      error={labels.error ?? candidates.error}
+      isMutating={affiliate.isPending || unaffiliate.isPending}
+      onAdd={async (labelId) => {
+        await affiliate.mutateAsync({ labelId, artistId })
+        toast({ title: 'Label affiliation added' })
+      }}
+      onRemove={async (labelId) => {
+        await unaffiliate.mutateAsync({ labelId, artistId })
+        toast({ title: 'Label affiliation removed' })
+      }}
+    />
+  )
+}
+
+function AlbumLabelAffiliations({ albumId }: { albumId: string }) {
+  const labels = useAlbumLabels(albumId)
+  const candidates = useAdminLabels()
+  const affiliate = useAffiliateAlbumWithLabel()
+  const unaffiliate = useUnaffiliateAlbumFromLabel()
+
+  return (
+    <AffiliationPanel
+      title='Labels'
+      description='Labels that issued this album.'
+      items={(labels.data ?? []).map(toLabelAffiliationOption)}
+      candidates={(candidates.data ?? []).map(toLabelAffiliationOption)}
+      isLoading={labels.isLoading || candidates.isLoading}
+      error={labels.error ?? candidates.error}
+      isMutating={affiliate.isPending || unaffiliate.isPending}
+      onAdd={async (labelId) => {
+        await affiliate.mutateAsync({ labelId, albumId })
+        toast({ title: 'Label affiliation added' })
+      }}
+      onRemove={async (labelId) => {
+        await unaffiliate.mutateAsync({ labelId, albumId })
+        toast({ title: 'Label affiliation removed' })
+      }}
     />
   )
 }

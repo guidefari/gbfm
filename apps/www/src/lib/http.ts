@@ -1661,13 +1661,39 @@ export interface MusicLabel {
   updatedAt: string
   compiledContent?: string
   creators?: Array<{ id: string; name: string }>
+  affiliatedArtists?: MusicArtist[]
+  affiliatedAlbums?: MusicAlbum[]
 }
+
+type MusicArtistInput = Omit<MusicArtist, 'genres'> & {
+  readonly genres: ReadonlyArray<string> | null
+}
+
+type MusicAlbumInput = Omit<MusicAlbum, 'artistNames' | 'genres'> & {
+  readonly artistNames: ReadonlyArray<string> | null
+  readonly genres: ReadonlyArray<string> | null
+}
+
+const mapMusicArtist = (artist: MusicArtistInput): MusicArtist => ({
+  ...artist,
+  genres: artist.genres ? [...artist.genres] : null
+})
+
+const mapMusicAlbum = (album: MusicAlbumInput): MusicAlbum => ({
+  ...album,
+  artistNames: album.artistNames ? [...album.artistNames] : null,
+  genres: album.genres ? [...album.genres] : null
+})
 
 const mapMusicLabel = (label: LabelResponse): MusicLabel => ({
   ...label,
   tags: label.tags ? [...label.tags] : null,
   genres: label.genres ? [...label.genres] : null,
-  creators: label.creators ? [...label.creators] : undefined
+  creators: label.creators ? [...label.creators] : undefined,
+  affiliatedArtists: label.affiliatedArtists
+    ? label.affiliatedArtists.map(mapMusicArtist)
+    : undefined,
+  affiliatedAlbums: label.affiliatedAlbums ? label.affiliatedAlbums.map(mapMusicAlbum) : undefined
 })
 
 export function useLabels() {
@@ -1774,6 +1800,7 @@ export function useDeleteAdminLabel() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['admin', 'labels'] })
+      qc.invalidateQueries({ queryKey: ['admin', 'affiliations'] })
       qc.invalidateQueries({ queryKey: ['labels'] })
     }
   })
@@ -1806,7 +1833,7 @@ export function useAdminArtists() {
             Effect.tapError((error) => captureException(error, { endpoint: 'music.listArtists' }))
           )
       )
-      return artists.map((a) => ({ ...a, genres: a.genres ? [...a.genres] : null }))
+      return artists.map(mapMusicArtist)
     }
   })
 }
@@ -1823,7 +1850,7 @@ export function useAdminArtist(id: string) {
             Effect.tapError((error) => captureException(error, { endpoint: 'music.getArtist' }))
           )
       )
-      return { ...artist, genres: artist.genres ? [...artist.genres] : null }
+      return mapMusicArtist(artist)
     },
     enabled: Boolean(id)
   })
@@ -1841,7 +1868,7 @@ export function useUpdateAdminArtist() {
             Effect.tapError((error) => captureException(error, { endpoint: 'music.updateArtist' }))
           )
       )
-      return { ...artist, genres: artist.genres ? [...artist.genres] : null }
+      return mapMusicArtist(artist)
     },
     onSuccess: (_, { id }) => {
       qc.invalidateQueries({ queryKey: ['admin', 'artists', id] })
@@ -1863,7 +1890,10 @@ export function useDeleteAdminArtist() {
           )
       )
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'artists'] })
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'artists'] })
+      qc.invalidateQueries({ queryKey: ['admin', 'affiliations'] })
+    }
   })
 }
 
@@ -1901,7 +1931,118 @@ export function useDeleteAdminAlbum() {
   const qc = useQueryClient()
   return useMutation({
     mutationFn: (id: string) => fetcher(apiUrl(`/music/albums/${id}`), { method: 'DELETE' }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'albums'] })
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'albums'] })
+      qc.invalidateQueries({ queryKey: ['admin', 'affiliations'] })
+    }
+  })
+}
+
+const affiliationQueryKey = (
+  entityType: 'label' | 'artist' | 'album',
+  id: string,
+  target: string
+) => ['admin', 'affiliations', entityType, id, target] as const
+
+export function useLabelArtists(labelId: string) {
+  return useQuery<MusicArtist[]>({
+    queryKey: affiliationQueryKey('label', labelId, 'artists'),
+    queryFn: async () =>
+      (await fetcher<MusicArtist[]>(apiUrl(`/music/labels/${labelId}/artists`))).map(
+        mapMusicArtist
+      ),
+    enabled: Boolean(labelId)
+  })
+}
+
+export function useLabelAlbums(labelId: string) {
+  return useQuery<MusicAlbum[]>({
+    queryKey: affiliationQueryKey('label', labelId, 'albums'),
+    queryFn: async () =>
+      (await fetcher<MusicAlbum[]>(apiUrl(`/music/labels/${labelId}/albums`))).map(mapMusicAlbum),
+    enabled: Boolean(labelId)
+  })
+}
+
+export function useArtistLabels(artistId: string) {
+  return useQuery<MusicLabel[]>({
+    queryKey: affiliationQueryKey('artist', artistId, 'labels'),
+    queryFn: async () =>
+      (await fetcher<LabelResponse[]>(apiUrl(`/music/artists/${artistId}/labels`))).map(
+        mapMusicLabel
+      ),
+    enabled: Boolean(artistId)
+  })
+}
+
+export function useAlbumLabels(albumId: string) {
+  return useQuery<MusicLabel[]>({
+    queryKey: affiliationQueryKey('album', albumId, 'labels'),
+    queryFn: async () =>
+      (await fetcher<LabelResponse[]>(apiUrl(`/music/albums/${albumId}/labels`))).map(
+        mapMusicLabel
+      ),
+    enabled: Boolean(albumId)
+  })
+}
+
+const invalidateArtistAffiliations = (
+  queryClient: ReturnType<typeof useQueryClient>,
+  labelId: string,
+  artistId: string
+) => {
+  queryClient.invalidateQueries({ queryKey: affiliationQueryKey('label', labelId, 'artists') })
+  queryClient.invalidateQueries({ queryKey: affiliationQueryKey('artist', artistId, 'labels') })
+  queryClient.invalidateQueries({ queryKey: ['label'] })
+}
+
+const invalidateAlbumAffiliations = (
+  queryClient: ReturnType<typeof useQueryClient>,
+  labelId: string,
+  albumId: string
+) => {
+  queryClient.invalidateQueries({ queryKey: affiliationQueryKey('label', labelId, 'albums') })
+  queryClient.invalidateQueries({ queryKey: affiliationQueryKey('album', albumId, 'labels') })
+  queryClient.invalidateQueries({ queryKey: ['label'] })
+}
+
+export function useAffiliateArtistWithLabel() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ labelId, artistId }: { labelId: string; artistId: string }) =>
+      fetcher(apiUrl(`/music/labels/${labelId}/artists/${artistId}`), { method: 'PUT' }),
+    onSuccess: (_, { labelId, artistId }) =>
+      invalidateArtistAffiliations(queryClient, labelId, artistId)
+  })
+}
+
+export function useUnaffiliateArtistFromLabel() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ labelId, artistId }: { labelId: string; artistId: string }) =>
+      fetcher(apiUrl(`/music/labels/${labelId}/artists/${artistId}`), { method: 'DELETE' }),
+    onSuccess: (_, { labelId, artistId }) =>
+      invalidateArtistAffiliations(queryClient, labelId, artistId)
+  })
+}
+
+export function useAffiliateAlbumWithLabel() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ labelId, albumId }: { labelId: string; albumId: string }) =>
+      fetcher(apiUrl(`/music/labels/${labelId}/albums/${albumId}`), { method: 'PUT' }),
+    onSuccess: (_, { labelId, albumId }) =>
+      invalidateAlbumAffiliations(queryClient, labelId, albumId)
+  })
+}
+
+export function useUnaffiliateAlbumFromLabel() {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: ({ labelId, albumId }: { labelId: string; albumId: string }) =>
+      fetcher(apiUrl(`/music/labels/${labelId}/albums/${albumId}`), { method: 'DELETE' }),
+    onSuccess: (_, { labelId, albumId }) =>
+      invalidateAlbumAffiliations(queryClient, labelId, albumId)
   })
 }
 

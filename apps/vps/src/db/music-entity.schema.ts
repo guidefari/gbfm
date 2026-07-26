@@ -188,6 +188,38 @@ export const musicLabelCreatorsTable = pgTable(
   (table) => [primaryKey({ columns: [table.labelId, table.creatorId] })]
 )
 
+export const musicLabelArtistsTable = pgTable(
+  'music_label_artists',
+  {
+    labelId: uuid('label_id')
+      .notNull()
+      .references(() => musicLabelsTable.id, { onDelete: 'cascade' }),
+    artistId: uuid('artist_id')
+      .notNull()
+      .references(() => musicArtistsTable.id, { onDelete: 'cascade' })
+  },
+  (table) => [
+    primaryKey({ columns: [table.labelId, table.artistId] }),
+    index('music_label_artists_artist_id_idx').on(table.artistId)
+  ]
+)
+
+export const musicLabelAlbumsTable = pgTable(
+  'music_label_albums',
+  {
+    labelId: uuid('label_id')
+      .notNull()
+      .references(() => musicLabelsTable.id, { onDelete: 'cascade' }),
+    albumId: uuid('album_id')
+      .notNull()
+      .references(() => musicAlbumsTable.id, { onDelete: 'cascade' })
+  },
+  (table) => [
+    primaryKey({ columns: [table.labelId, table.albumId] }),
+    index('music_label_albums_album_id_idx').on(table.albumId)
+  ]
+)
+
 // ---------------------------------------------------------------------------
 // Many-to-many: artists ↔ albums and artists ↔ tracks
 // ---------------------------------------------------------------------------
@@ -327,12 +359,14 @@ export type InsertMusicEntityLink = InferInsertModel<typeof musicEntityLinksTabl
 
 export const musicArtistsRelations = relations(musicArtistsTable, ({ many }) => ({
   albumArtists: many(musicAlbumArtistsTable),
-  trackArtists: many(musicTrackArtistsTable)
+  trackArtists: many(musicTrackArtistsTable),
+  labelArtists: many(musicLabelArtistsTable)
 }))
 
 export const musicAlbumsRelations = relations(musicAlbumsTable, ({ many }) => ({
   albumArtists: many(musicAlbumArtistsTable),
-  tracks: many(musicTracksTable)
+  tracks: many(musicTracksTable),
+  labelAlbums: many(musicLabelAlbumsTable)
 }))
 
 export const musicTracksRelations = relations(musicTracksTable, ({ one, many }) => ({
@@ -375,7 +409,9 @@ export const musicPlaylistsRelations = relations(musicPlaylistsTable, ({ one, ma
 }))
 
 export const musicLabelsRelations = relations(musicLabelsTable, ({ many }) => ({
-  creators: many(musicLabelCreatorsTable)
+  creators: many(musicLabelCreatorsTable),
+  artists: many(musicLabelArtistsTable),
+  albums: many(musicLabelAlbumsTable)
 }))
 
 export const musicLabelCreatorsRelations = relations(musicLabelCreatorsTable, ({ one }) => ({
@@ -386,6 +422,28 @@ export const musicLabelCreatorsRelations = relations(musicLabelCreatorsTable, ({
   creator: one(user, {
     fields: [musicLabelCreatorsTable.creatorId],
     references: [user.id]
+  })
+}))
+
+export const musicLabelArtistsRelations = relations(musicLabelArtistsTable, ({ one }) => ({
+  label: one(musicLabelsTable, {
+    fields: [musicLabelArtistsTable.labelId],
+    references: [musicLabelsTable.id]
+  }),
+  artist: one(musicArtistsTable, {
+    fields: [musicLabelArtistsTable.artistId],
+    references: [musicArtistsTable.id]
+  })
+}))
+
+export const musicLabelAlbumsRelations = relations(musicLabelAlbumsTable, ({ one }) => ({
+  label: one(musicLabelsTable, {
+    fields: [musicLabelAlbumsTable.labelId],
+    references: [musicLabelsTable.id]
+  }),
+  album: one(musicAlbumsTable, {
+    fields: [musicLabelAlbumsTable.albumId],
+    references: [musicAlbumsTable.id]
   })
 }))
 

@@ -313,6 +313,14 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         )
       })
     )
+    .handle('listArtistLabels', ({ params }) =>
+      Effect.gen(function* () {
+        yield* requireAdmin
+        const svc = yield* MusicEntityService
+        const rows = yield* dieOnDatabaseError(svc.getLabelsForArtist(params.artistId))
+        return rows.map(toLabelResponse)
+      })
+    )
     .handle('addArtistToAlbum', ({ params, payload }) =>
       Effect.gen(function* () {
         yield* requireAdmin
@@ -394,6 +402,14 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
             .deleteAlbum(params.id)
             .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
         )
+      })
+    )
+    .handle('listAlbumLabels', ({ params }) =>
+      Effect.gen(function* () {
+        yield* requireAdmin
+        const svc = yield* MusicEntityService
+        const rows = yield* dieOnDatabaseError(svc.getLabelsForAlbum(params.albumId))
+        return rows.map(toLabelResponse)
       })
     )
     // -----------------------------------------------------------------
@@ -540,7 +556,17 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
             .getLabelBySlug(params.slug)
             .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
         )
-        return toLabelResponse(row)
+        const [artists, albums] = yield* dieOnDatabaseError(
+          Effect.all([
+            svc.getPublishedArtistsForLabel(row.id),
+            svc.getPublishedAlbumsForLabel(row.id)
+          ])
+        )
+        return {
+          ...toLabelResponse(row),
+          affiliatedArtists: artists.map(toArtistResponse),
+          affiliatedAlbums: albums.map(toAlbumResponse)
+        }
       })
     )
     .handle('getLabel', ({ params }) =>
@@ -576,6 +602,58 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
             .deleteLabel(params.id)
             .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
         )
+      })
+    )
+    .handle('listLabelArtists', ({ params }) =>
+      Effect.gen(function* () {
+        yield* requireAdmin
+        const svc = yield* MusicEntityService
+        const rows = yield* dieOnDatabaseError(svc.getArtistsForLabel(params.labelId))
+        return rows.map(toArtistResponse)
+      })
+    )
+    .handle('listLabelAlbums', ({ params }) =>
+      Effect.gen(function* () {
+        yield* requireAdmin
+        const svc = yield* MusicEntityService
+        const rows = yield* dieOnDatabaseError(svc.getAlbumsForLabel(params.labelId))
+        return rows.map(toAlbumResponse)
+      })
+    )
+    .handle('affiliateArtistWithLabel', ({ params }) =>
+      Effect.gen(function* () {
+        yield* requireAdmin
+        const svc = yield* MusicEntityService
+        yield* dieOnDatabaseError(
+          svc
+            .affiliateArtistWithLabel(params.labelId, params.artistId)
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+        )
+      })
+    )
+    .handle('unaffiliateArtistFromLabel', ({ params }) =>
+      Effect.gen(function* () {
+        yield* requireAdmin
+        const svc = yield* MusicEntityService
+        yield* dieOnDatabaseError(svc.unaffiliateArtistFromLabel(params.labelId, params.artistId))
+      })
+    )
+    .handle('affiliateAlbumWithLabel', ({ params }) =>
+      Effect.gen(function* () {
+        yield* requireAdmin
+        const svc = yield* MusicEntityService
+        yield* dieOnDatabaseError(
+          svc
+            .affiliateAlbumWithLabel(params.labelId, params.albumId)
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+        )
+      })
+    )
+    .handle('unaffiliateAlbumFromLabel', ({ params }) =>
+      Effect.gen(function* () {
+        yield* requireAdmin
+        const svc = yield* MusicEntityService
+        yield* dieOnDatabaseError(svc.unaffiliateAlbumFromLabel(params.labelId, params.albumId))
       })
     )
     // -----------------------------------------------------------------
