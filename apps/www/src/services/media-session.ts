@@ -27,7 +27,7 @@ export class MediaSessionService extends Context.Service<
   MediaSessionServiceShape
 >()('@gbfm/www/MediaSessionService') {}
 
-export const MediaSessionServiceLive = Layer.sync(MediaSessionService, () => ({
+export const MediaSessionServiceLayer = Layer.sync(MediaSessionService, () => ({
   setMetadata: (title: string, artists: string[], artwork?: string) =>
     Effect.sync(() => {
       if (!hasMediaSession()) return

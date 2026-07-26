@@ -21,7 +21,7 @@ import { requireCreatorOrAdmin } from '@/lib/authorization'
 import { compileMDX, isMDXCompilationResult } from '@/lib/mdx'
 import { createPaginationMetadata, type PaginationMetadata } from '@/lib/pagination'
 
-export { ShowSubscriptionService, ShowSubscriptionServiceLive } from './show-subscription.service'
+export { ShowSubscriptionService, ShowSubscriptionServiceLayer } from './show-subscription.service'
 
 type ShowWithHosts = SelectShow & {
   hosts: Array<{ id: string; name: string }>
@@ -518,7 +518,7 @@ const getEpisodesEffect = (showSlug: string, options: { limit: number; offset: n
     }
   })
 
-export const ShowServiceLive = Layer.succeed(ShowService, {
+export const ShowServiceLayer = Layer.succeed(ShowService, {
   getAll: (options) => getAllEffect(options).pipe(Effect.withSpan('show.getAll')),
   getAllForEdit: (options, userId, userRole) =>
     getAllEffect(options, { userId, userRole }).pipe(Effect.withSpan('show.getAllForEdit')),

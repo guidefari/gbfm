@@ -1,27 +1,38 @@
 import { Api } from '@gbfm/api/api'
 import { FileTooLargeError } from '@gbfm/api/errors'
 import { AuthSession } from '@gbfm/api/middleware/auth'
-import { Effect, FileSystem } from 'effect'
-import type { Multipart } from 'effect/unstable/http'
+import { Effect } from 'effect'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
-import {
-  dieOnPlatformError as makeDieOnPlatformError,
-  dieOnS3Error as makeDieOnS3Error
-} from '@/http/handler-utils'
+import { dieOnS3Error as makeDieOnS3Error } from '@/http/handler-utils'
 import { ConfigService } from '@/services/config.service'
 import { S3Service } from '@/services/s3.service'
+import { UploadAssetService } from '@/services/upload-asset.service'
 
 const dieOnS3Error = makeDieOnS3Error('upload')
-const dieOnPlatformError = makeDieOnPlatformError('upload')
 
 const CHUNK_SIZE = 8 * 1024 * 1024
 const MAX_AUDIO_SIZE = 200 * 1024 * 1024
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024
-// API Gateway HTTP API v2 caps request bodies at 10 MiB. A multipart/form-data
-// request adds ~1 KiB of overhead on top of the file part, so the per-chunk
-// ceiling must stay well under 10 MiB. 9 MiB leaves room for the form fields
-// (key, uploadId, partNumber) and the boundary markers.
-const MAX_CHUNK_SIZE = 9 * 1024 * 1024
+
+// Long enough to cover an 8 MiB part PUT over a genuinely slow upload
+// connection with room for a retry or two before the URL goes stale, short
+// enough to bound how long a leaked URL stays usable.
+const PRESIGNED_PART_URL_EXPIRY_SECONDS = 15 * 60
+
+// Matches PR #220's PRESIGNED_PART_URL_EXPIRY_SECONDS reasoning: long enough
+// to cover a slow-connection PUT with retry headroom, short enough to bound
+// how long a leaked URL stays usable. Images are a single PUT of at most
+// MAX_IMAGE_SIZE (10 MiB), so the same 5-minute window is generous rather
+// than tight here.
+const PRESIGNED_IMAGE_URL_EXPIRY_SECONDS = 5 * 60
+
+// How long a `pending` upload_assets row is allowed to sit unconfirmed before
+// a future cleanup job (out of scope here, see docs/migrations -- this table
+// only needs to carry enough for that job to find candidates) is entitled to
+// reclaim the S3 object. Deliberately generous relative to the presigned URL
+// expiry above: the URL expiring doesn't mean the user gave up, they may
+// retry and get a fresh presign against the same pending row's key.
+const PENDING_ASSET_EXPIRY_SECONDS = 30 * 24 * 60 * 60
 
 const sanitizeKeySegment = (value: string): string => value.replace(/[^a-zA-Z0-9.-]/g, '_')
 
@@ -35,7 +46,25 @@ const buildObjectKey = (
   return `${sanitizeKeySegment(userId)}/multipart/${crypto.randomUUID()}/${expectedSize}/${fileType}_${sanitizedName}`
 }
 
-const assertKeyOwnership = (userId: string, key: string) =>
+const buildImageObjectKey = (userId: string, fileName: string): string => {
+  const sanitizedName = sanitizeKeySegment(fileName)
+  return `${sanitizeKeySegment(userId)}/image/${crypto.randomUUID()}/${sanitizedName}`
+}
+
+// Best-effort: a failure recording lifecycle state must never fail the
+// upload/save request it's attached to (see upload-asset.service.ts's
+// top-of-file comment) -- logged and swallowed rather than dying or
+// propagating, since this table is a future cleanup job's bookkeeping, not
+// part of the upload's own correctness.
+const recordAssetLifecycle = <A>(effect: Effect.Effect<A, { readonly _tag: 'DatabaseError' }>) =>
+  effect.pipe(
+    Effect.asVoid,
+    Effect.catchTag('DatabaseError', (cause) =>
+      Effect.logError('[upload] failed to record upload_assets lifecycle state', cause)
+    )
+  )
+
+export const assertKeyOwnership = (userId: string, key: string) =>
   key.startsWith(`${sanitizeKeySegment(userId)}/`) ? Effect.void : new HttpApiError.BadRequest()
 
 export const assertContiguousParts = (parts: ReadonlyArray<{ partNumber: number }>) => {
@@ -96,62 +125,75 @@ const requireExpectedSize = (userId: string, key: string) => {
     : Effect.succeed(expectedSize)
 }
 
-// Multipart file fields decode to Multipart.PersistedFile -- a disk-backed
-// reference (key/name/contentType/path), not a real in-memory File. Reading
-// it means going through FileSystem.FileSystem, not .arrayBuffer(); size
-// comes from the read buffer's length since PersistedFile itself has no
-// .size (see packages/api/src/upload.ts's comment on this same mismatch).
-const readPersistedFile = (file: Multipart.PersistedFile) =>
-  dieOnPlatformError(
-    Effect.gen(function* () {
-      const fs = yield* FileSystem.FileSystem
-      const bytes = yield* fs.readFile(file.path)
-      return {
-        buffer: Buffer.from(bytes),
-        size: bytes.length,
-        contentType: file.contentType,
-        name: file.name
-      }
-    })
-  )
-
 export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers) =>
   handlers
-    // The simple upload endpoint predates AuthMiddleware entirely -- the old
-    // Hono route had no betterAuthMiddleware, and no apps/www caller sends
-    // credentials: 'include' to it. Preserved as-is (not a regression to fix
-    // here; a product/security decision, not a migration-scope one).
-    .handle('uploadFile', ({ payload }) =>
+    // Images are a single PUT (no chunking, no multipart session) -- the
+    // browser asks for a presigned URL scoped to a key it doesn't control,
+    // then PUTs bytes straight to S3. Unlike the old uploadFile proxy, this
+    // requires a session: the presigned URL is generated server-side under
+    // the caller's own userId-prefixed key, so an unauthenticated caller has
+    // no key to even ask for.
+    //
+    // No separate "confirm" endpoint: an image PUT is one request with no
+    // resumability to reconcile (contrast the multipart-audio path, where
+    // completeMultipartUpload has real work to do -- verifying parts/etags
+    // against S3's own bookkeeping). The upload_assets row this creates
+    // starts at `pending` and is never flipped to `uploaded` by this handler;
+    // it moves straight to `attached` when the caller's own follow-up write
+    // (saving an audio/post/etc. record with this key as its url or
+    // thumbnailUrl) succeeds -- see audio.service.ts's createEffect. A
+    // `pending` row that never gets attached (PUT failed, or the content save
+    // never happened) is exactly what the future cleanup job is for; this
+    // task doesn't distinguish "PUT never happened" from "PUT happened but
+    // nothing referenced it yet" since neither S3 event notifications nor a
+    // client-reported confirm step are in scope here (see PR body).
+    .handle('presignImage', ({ payload }) =>
       Effect.gen(function* () {
-        const { fileType } = payload
-        const persistedFile = fileType === 'audio' ? payload.audioFile : payload.imageFile
+        const { user } = yield* AuthSession
 
-        if (!persistedFile) {
-          return yield* new HttpApiError.BadRequest()
+        if (payload.fileSize > MAX_IMAGE_SIZE) {
+          return yield* new FileTooLargeError({
+            message: `File too large. Maximum size is ${MAX_IMAGE_SIZE / (1024 * 1024)}MB`,
+            maxBytes: MAX_IMAGE_SIZE
+          })
         }
 
-        const file = yield* readPersistedFile(persistedFile)
-
-        const maxSize = fileType === 'audio' ? MAX_AUDIO_SIZE : MAX_IMAGE_SIZE
-        if (file.size > maxSize) {
-          return yield* new HttpApiError.BadRequest()
-        }
-        if (!file.contentType.startsWith(`${fileType}/`)) {
-          return yield* new HttpApiError.BadRequest()
-        }
-
-        const timestamp = Date.now()
-        const sanitizedName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_')
-        const fileName = `${fileType}_${timestamp}_${sanitizedName}`
+        const key = buildImageObjectKey(user.id, payload.fileName)
 
         const config = yield* ConfigService
         const s3Service = yield* S3Service
-        const key = yield* dieOnS3Error(
-          s3Service.uploadFile(fileName, file.buffer, file.contentType, config.buckets.userContent)
+        const uploadUrl = yield* dieOnS3Error(
+          s3Service.presignPutObject(
+            key,
+            payload.contentType,
+            config.buckets.userContent,
+            PRESIGNED_IMAGE_URL_EXPIRY_SECONDS
+          )
         )
 
-        return { url: `${config.urls.bucketRouter}/user-content/${key}`, key }
-      }).pipe(Effect.withSpan('api.upload.file', { attributes: { fileType: payload.fileType } }))
+        const uploadAssetService = yield* UploadAssetService
+        yield* recordAssetLifecycle(
+          uploadAssetService.createPending({
+            userId: user.id,
+            key,
+            bucket: config.buckets.userContent,
+            assetType: 'image',
+            expectedSize: payload.fileSize,
+            expiresInSeconds: PENDING_ASSET_EXPIRY_SECONDS
+          })
+        )
+
+        return {
+          uploadUrl,
+          publicUrl: `${config.urls.bucketRouter}/user-content/${key}`,
+          key,
+          expiresInSeconds: PRESIGNED_IMAGE_URL_EXPIRY_SECONDS
+        }
+      }).pipe(
+        Effect.withSpan('api.upload.image.presign', {
+          attributes: { fileSize: payload.fileSize }
+        })
+      )
     )
     .handle('initMultipartUpload', ({ payload }) =>
       Effect.gen(function* () {
@@ -177,6 +219,19 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
           )
         )
 
+        const uploadAssetService = yield* UploadAssetService
+        yield* recordAssetLifecycle(
+          uploadAssetService.createPending({
+            userId: user.id,
+            key: upload.key,
+            bucket: config.buckets.userContent,
+            assetType: 'audio',
+            uploadId: upload.uploadId,
+            expectedSize: payload.fileSize,
+            expiresInSeconds: PENDING_ASSET_EXPIRY_SECONDS
+          })
+        )
+
         return { uploadId: upload.uploadId, key: upload.key, chunkSize: CHUNK_SIZE }
       }).pipe(
         Effect.withSpan('api.upload.multipart.init', {
@@ -184,40 +239,46 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
         })
       )
     )
-    .handle('uploadMultipartPart', ({ payload }) =>
+    .handle('presignMultipartPart', ({ payload }) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
-        const { key, uploadId, partNumber, chunk } = payload
-
-        const file = yield* readPersistedFile(chunk)
-        if (file.size === 0) {
-          return yield* new HttpApiError.BadRequest()
-        }
-        if (file.size > MAX_CHUNK_SIZE) {
-          return yield* new HttpApiError.BadRequest()
-        }
+        const { key, uploadId, partNumber } = payload
 
         yield* assertKeyOwnership(user.id, key)
         const expectedSize = yield* requireExpectedSize(user.id, key)
-        if (file.size !== expectedMultipartPartSize(expectedSize, partNumber)) {
+        // Only partNumber is checked here -- actual byte size can't be
+        // validated at presign time since the client hasn't PUT the bytes
+        // to S3 yet (this just mints the URL). A client can still push an
+        // oversized part straight to S3 after presigning; that garbage
+        // isn't reachable (the object never becomes readable pre-completion)
+        // and completeMultipartUpload below re-validates every part's real
+        // S3-reported size via listMultipartParts + validateMultipartParts,
+        // rejecting the whole upload on any mismatch. Worst case is
+        // billable-but-unreadable storage until the bucket's abort-
+        // incomplete-multipart-upload lifecycle rule reaps it.
+        if (expectedMultipartPartSize(expectedSize, partNumber) === null) {
           return yield* new HttpApiError.BadRequest()
         }
 
         const config = yield* ConfigService
         const s3Service = yield* S3Service
-        const result = yield* dieOnS3Error(
-          s3Service.uploadMultipartPart(
+        const url = yield* dieOnS3Error(
+          s3Service.presignUploadPart(
             key,
             uploadId,
             partNumber,
-            file.buffer,
-            config.buckets.userContent
+            config.buckets.userContent,
+            PRESIGNED_PART_URL_EXPIRY_SECONDS
           )
         )
 
-        return { partNumber: result.partNumber, etag: result.etag, size: result.size }
+        return {
+          url,
+          partNumber,
+          expiresInSeconds: PRESIGNED_PART_URL_EXPIRY_SECONDS
+        }
       }).pipe(
-        Effect.withSpan('api.upload.multipart.part', {
+        Effect.withSpan('api.upload.multipart.presignPart', {
           attributes: { partNumber: payload.partNumber }
         })
       )
@@ -232,6 +293,8 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
 
         const config = yield* ConfigService
         const s3Service = yield* S3Service
+        const uploadAssetService = yield* UploadAssetService
+
         const existing = yield* dieOnS3Error(
           s3Service.getObjectMetadata(key, config.buckets.userContent)
         )
@@ -239,6 +302,7 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
           if (!matchesCompletedObject(expectedSize, existing)) {
             return yield* new HttpApiError.BadRequest()
           }
+          yield* recordAssetLifecycle(uploadAssetService.markUploaded(key))
           return { url: `${config.urls.bucketRouter}/user-content/${key}`, key }
         }
 
@@ -274,6 +338,7 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
               )
             )
         )
+        yield* recordAssetLifecycle(uploadAssetService.markUploaded(key))
 
         return { url: `${config.urls.bucketRouter}/user-content/${key}`, key }
       }).pipe(

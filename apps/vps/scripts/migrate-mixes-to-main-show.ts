@@ -39,7 +39,7 @@ interface MigrationServiceShape {
 const DatabaseService = Context.Service<DatabaseServiceShape>('DatabaseService')
 const MigrationService = Context.Service<MigrationServiceShape>('MigrationService')
 
-const DatabaseServiceLive = Layer.effect(
+const DatabaseServiceLayer = Layer.effect(
   DatabaseService,
   Effect.gen(function* () {
     if (!process.env.PROD_DB_URL) {
@@ -99,7 +99,7 @@ const DatabaseServiceLive = Layer.effect(
   })
 )
 
-const MigrationServiceLive = Layer.effect(
+const MigrationServiceLayer = Layer.effect(
   MigrationService,
   Effect.gen(function* () {
     return {
@@ -177,7 +177,7 @@ const program = Effect.gen(function* () {
   return yield* migration.migrateMixesToMainShow()
 })
 
-const MainLayer = Layer.mergeAll(DatabaseServiceLive, MigrationServiceLive)
+const MainLayer = Layer.mergeAll(DatabaseServiceLayer, MigrationServiceLayer)
 
 Effect.runPromise(
   program.pipe(

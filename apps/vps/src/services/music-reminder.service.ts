@@ -199,7 +199,7 @@ const deleteEffect = (id: string, userId: string) =>
     })
   })
 
-export const MusicReminderServiceLive = Layer.succeed(MusicReminderService, {
+export const MusicReminderServiceLayer = Layer.succeed(MusicReminderService, {
   create: createEffect,
   getByUserId: getByUserIdEffect,
   update: updateEffect,

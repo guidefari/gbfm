@@ -19,7 +19,7 @@
  *
  * Adding a new provider:
  *   1. Implement MusicDataProvider
- *   2. Add it to the providers array in MusicLinkScraperServiceLive
+ *   2. Add it to the providers array in MusicLinkScraperServiceLayer
  */
 
 import { Context, Data, Effect, Layer, Schema } from 'effect'
@@ -523,7 +523,7 @@ function makeScraperWithProviders(providers: MusicDataProvider[]): MusicLinkScra
 // Live layer — configure which providers are active
 // ---------------------------------------------------------------------------
 
-export const MusicLinkScraperServiceLive = Layer.sync(MusicLinkScraperService, () => {
+export const MusicLinkScraperServiceLayer = Layer.sync(MusicLinkScraperService, () => {
   const providers: MusicDataProvider[] = [new OdesliProvider(), new MusicBrainzProvider()]
 
   const firecrawlKey = process.env.FIRECRAWL_API_KEY

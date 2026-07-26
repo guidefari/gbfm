@@ -1,38 +1,8 @@
 import { Exit, Schema } from 'effect'
 import { describe, expect, it } from 'vitest'
-import {
-  CompleteMultipartUploadInput,
-  InitMultipartUploadInput,
-  PartNumberFromString
-} from './upload'
+import { CompleteMultipartUploadInput, InitMultipartUploadInput } from './upload'
 
 describe('upload API contract', () => {
-  it('decodes partNumber from a string, matching multipart/form-data field decoding', () => {
-    // multipart/form-data fields always arrive as strings -- the resumable
-    // upload client (apps/www/src/services/resumable-upload/service.ts) sends
-    // String(part.partNumber). A plain Schema.Number for
-    // UploadMultipartPartInput.partNumber would reject every real request;
-    // this pins the NumberFromString requirement directly (rather than
-    // through the full multipart struct, which needs a real
-    // Multipart.PersistedFile instance to satisfy `chunk` and can't be
-    // faked with a plain object) so it can't silently regress.
-    expect(Schema.decodeUnknownSync(PartNumberFromString)('1')).toBe(1)
-  })
-
-  it('rejects a partNumber outside 1-10000', () => {
-    const tooLow = Schema.decodeUnknownExit(PartNumberFromString)('0')
-    const tooHigh = Schema.decodeUnknownExit(PartNumberFromString)('10001')
-
-    expect(Exit.isFailure(tooLow)).toBe(true)
-    expect(Exit.isFailure(tooHigh)).toBe(true)
-  })
-
-  it('rejects a non-integer partNumber', () => {
-    const result = Schema.decodeUnknownExit(PartNumberFromString)('1.5')
-
-    expect(Exit.isFailure(result)).toBe(true)
-  })
-
   it('rejects a non-audio content type on multipart init', () => {
     const result = Schema.decodeUnknownExit(InitMultipartUploadInput)({
       fileName: 'test.mp3',

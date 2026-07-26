@@ -454,7 +454,8 @@ that's been silently corrected is easy to repeat:
   actually numeric -- multipart/form-data fields always arrive as strings,
   confirmed against `Multipart.toPersisted`'s real source (`part.value` is
   never coerced).** PR #187's first draft used plain `Schema.Number` for
-  `UploadMultipartPartInput.partNumber`, which genuinely rejects every real
+  the multipart-part-upload endpoint's `partNumber` field (at the time named
+  `UploadMultipartPartInput.partNumber`), which genuinely rejects every real
   request (the client sends `String(part.partNumber)`). This is the exact
   same class of bug as every other multipart/query numeric field in this
   package (`audio.ts`, `label.ts`, `post.ts`, `release.ts`, `shows.ts`,
@@ -481,11 +482,25 @@ that's been silently corrected is easy to repeat:
   `Schema.NumberFromString`, re-verified with three explicit chained
   same-origin requests (init/part/complete) each showing a real 200 and a
   real response body, and pinned with a new `packages/api/src/upload.test.ts`
-  decoding the extracted `PartNumberFromString` schema directly (the full
-  `UploadMultipartPartInput` struct can't be unit-tested end-to-end without
-  a real multipart runtime, since `Multipart.PersistedFile`'s identity check
-  isn't constructible from a plain object outside `effect`'s own internals
-  -- a real, disclosed test-coverage gap, not a false sense of security).
+  decoding the extracted part-number schema (at the time named
+  `PartNumberFromString`) directly (the full multipart-part-upload payload
+  struct couldn't be unit-tested end-to-end without a real multipart
+  runtime, since `Multipart.PersistedFile`'s identity check isn't
+  constructible from a plain object outside `effect`'s own internals -- a
+  real, disclosed test-coverage gap, not a false sense of security).
+  **Update (PR #220, `feat/131-presigned-multipart-part-upload`):** the
+  multipart/form-data proxy endpoint this whole entry describes
+  (`uploadMultipartPart`, `UploadMultipartPartInput`, `PartNumberFromString`)
+  no longer exists. Part bytes now go straight from the browser to S3 via a
+  presigned URL (`presignMultipartPart` in `packages/api/src/upload.ts`,
+  JSON body, `PartNumber` on `Schema.Number` -- no `NumberFromString`
+  involved since there's no multipart/form-data on this path anymore). The
+  lesson above about multipart/form-data fields always arriving as strings
+  still applies to every remaining `.pipe(HttpApiSchema.asMultipart())`
+  payload in this package; it just no longer applies to part uploads
+  specifically. `packages/api/src/upload.test.ts` was updated accordingly to
+  cover the current `InitMultipartUploadInput`/`CompleteMultipartUploadInput`
+  schemas instead of the removed one.
 - **A commit's own message claiming code is "dead, already superseded" is a
   claim to verify, not a fact to trust -- it was wrong once in this
   migration, and stayed wrong for two steps before anyone checked.** Commit

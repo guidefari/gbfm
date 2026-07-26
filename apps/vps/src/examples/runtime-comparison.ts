@@ -16,7 +16,7 @@ const ExpensiveService = Context.Service<ExpensiveService>('ExpensiveService')
 let initCount = 0
 let disposeCount = 0
 
-const ExpensiveServiceLive = Layer.effect(
+const ExpensiveServiceLayer = Layer.effect(
   ExpensiveService,
   Effect.gen(function* () {
     // Simulate expensive initialization (database connections, etc.)
@@ -43,7 +43,7 @@ async function _approachWithoutRuntime() {
 
   // Run 10 times (like your cron job running 10 times)
   for (let i = 0; i < 10; i++) {
-    await Effect.runPromise(myEffect.pipe(Effect.provide(ExpensiveServiceLive)))
+    await Effect.runPromise(myEffect.pipe(Effect.provide(ExpensiveServiceLayer)))
     // Service is created and destroyed EVERY TIME!
   }
 
@@ -64,7 +64,7 @@ async function _approachWithRuntime() {
 
   // Build services ONCE
   const scope = Scope.makeUnsafe()
-  const services = await Effect.runPromise(Layer.buildWithScope(ExpensiveServiceLive, scope))
+  const services = await Effect.runPromise(Layer.buildWithScope(ExpensiveServiceLayer, scope))
 
   // Run 10 times (like your cron job running 10 times)
   for (let i = 0; i < 10; i++) {

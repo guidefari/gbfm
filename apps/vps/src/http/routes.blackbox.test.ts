@@ -915,18 +915,24 @@ describe('music-reminders (HttpApiBuilder group, Step 6)', () => {
 })
 
 describe('upload (HttpApiBuilder group, Step 7)', () => {
-  // uploadFile has never required a session -- the old Hono route had no
-  // betterAuthMiddleware, and no real apps/www caller sends
-  // credentials: 'include' to it (see packages/api/src/upload.ts's comment).
-  it('POST /api/upload/file returns 400 (not 401) for a request with no file', async () => {
-    const formData = new FormData()
-    formData.append('fileType', 'image')
-
+  // The old unauthenticated /api/upload/file proxy is gone (#131 part 1) --
+  // presignImage replaces it and requires a session like every other upload
+  // endpoint below, since the presigned URL is scoped to the caller's own
+  // userId-prefixed key.
+  it('POST /api/upload/image/presign returns 401 without a session cookie', async () => {
     const res = await webHandler.handler(
-      new Request('http://localhost/api/upload/file', { method: 'POST', body: formData })
+      new Request('http://localhost/api/upload/image/presign', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          fileName: 'artwork.png',
+          contentType: 'image/png',
+          fileSize: 1024
+        })
+      })
     )
 
-    expect(res.status).toBe(400)
+    expect(res.status).toBe(401)
   })
 
   it('POST /api/upload/multipart/init returns 401 without a session cookie', async () => {
@@ -946,18 +952,59 @@ describe('upload (HttpApiBuilder group, Step 7)', () => {
     expect(res.status).toBe(401)
   })
 
-  it('POST /api/upload/multipart/part returns 401 without a session cookie', async () => {
-    const formData = new FormData()
-    formData.append('key', 'user123/audio_1_test.mp3')
-    formData.append('uploadId', 'upload-id')
-    formData.append('partNumber', '1')
-    formData.append('chunk', new Blob(['data']), 'chunk')
-
+  it('POST /api/upload/multipart/presign-part returns 401 without a session cookie', async () => {
     const res = await webHandler.handler(
-      new Request('http://localhost/api/upload/multipart/part', { method: 'POST', body: formData })
+      new Request('http://localhost/api/upload/multipart/presign-part', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          key: 'user123/audio_1_test.mp3',
+          uploadId: 'upload-id',
+          partNumber: 1
+        })
+      })
     )
 
     expect(res.status).toBe(401)
+  })
+
+  it("POST /api/upload/multipart/presign-part returns 400 for a key outside the caller's own prefix", async () => {
+    const suffix = crypto.randomUUID()
+    const userId = `upload-owner-${suffix}`
+    const token = `upload-owner-token-${suffix}`
+
+    await db
+      .insert(user)
+      .values({ id: userId, name: 'Upload owner', email: `${userId}@example.com` })
+    await db.insert(session).values({
+      id: crypto.randomUUID(),
+      token,
+      userId,
+      expiresAt: new Date(Date.now() + 60_000)
+    })
+
+    try {
+      const res = await webHandler.handler(
+        new Request('http://localhost/api/upload/multipart/presign-part', {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${token}`,
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({
+            // assertKeyOwnership requires the key to start with `${userId}/`
+            // -- this key belongs to a different user prefix entirely.
+            key: 'someone-elses-user-id/multipart/uuid/1024/audio_test.mp3',
+            uploadId: 'upload-id',
+            partNumber: 1
+          })
+        })
+      )
+
+      expect(res.status).toBe(400)
+    } finally {
+      await db.delete(user).where(eq(user.id, userId))
+    }
   })
 
   it('POST /api/upload/multipart/complete returns 401 without a session cookie', async () => {

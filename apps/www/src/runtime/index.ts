@@ -3,7 +3,7 @@ import { Effect, Layer, Scope } from 'effect'
 import { env } from '@/env'
 import { getSpotifyRedirectUri } from '@/lib/spotify-pkce'
 import { type Analytics, SentryAnalyticsLayer, NoopAnalyticsLayer } from '@/services/analytics'
-import { type MediaSessionService, MediaSessionServiceLive } from '@/services/media-session'
+import { type MediaSessionService, MediaSessionServiceLayer } from '@/services/media-session'
 import { PlayerStorage, type PersistedQueueType, type PlayerStorageShape } from '@gbfm/player'
 import { PlayerStorageLive } from '@/services/player/storage'
 import { log, type Logger, LoggerLive, NoopLogger } from '@/services/logger'
@@ -31,7 +31,7 @@ const spotifyLayer = Layer.suspend(() =>
 )
 
 const playerStorageLayer = PlayerStorageLive
-const mediaSessionLayer = MediaSessionServiceLive
+const mediaSessionLayer = MediaSessionServiceLayer
 const resumableUploadStorageLayer = ResumableUploadStorageLive
 const mixUploadDraftStorageLayer = MixUploadDraftStorageLive
 const loggerLayer = enableSentry ? LoggerLive : NoopLogger

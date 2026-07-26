@@ -320,7 +320,7 @@ const generateShowQRPdfEffect = (show: ShowData, s3Service: S3Service, force?: b
     return { url, cached: false }
   })
 
-export const QRCodeServiceLive = Layer.effect(
+export const QRCodeServiceLayer = Layer.effect(
   QRCodeService,
   Effect.gen(function* () {
     const s3Service = yield* S3Service

@@ -13,6 +13,7 @@ import {
   S3Client,
   UploadPartCommand
 } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { Context, Effect, Layer } from 'effect'
 import { getErrorMessage, S3Error } from '@/errors'
 
@@ -40,6 +41,13 @@ export interface S3Service {
     body: Buffer | Uint8Array | Blob | string,
     contentType: string,
     bucketName: string
+  ) => Effect.Effect<string, S3Error>
+
+  readonly presignPutObject: (
+    key: string,
+    contentType: string,
+    bucketName: string,
+    expiresInSeconds: number
   ) => Effect.Effect<string, S3Error>
 
   readonly deleteFile: (key: string, bucketName: string) => Effect.Effect<void, S3Error>
@@ -71,13 +79,13 @@ export interface S3Service {
     bucketName: string
   ) => Effect.Effect<S3ObjectMetadata | null, S3Error>
 
-  readonly uploadMultipartPart: (
+  readonly presignUploadPart: (
     key: string,
     uploadId: string,
     partNumber: number,
-    body: Buffer | Uint8Array | Blob,
-    bucketName: string
-  ) => Effect.Effect<{ partNumber: number; etag: string; size: number }, S3Error>
+    bucketName: string,
+    expiresInSeconds: number
+  ) => Effect.Effect<string, S3Error>
 
   readonly completeMultipartUpload: (
     key: string,
@@ -156,6 +164,39 @@ const uploadFileEffect = (
       )
     ),
     Effect.withSpan('aws.s3.putObject')
+  )
+
+const presignPutObjectEffect = (
+  key: string,
+  contentType: string,
+  bucketName: string,
+  expiresInSeconds: number
+) =>
+  Effect.tryPromise({
+    try: async () => {
+      const s3 = new S3Client({})
+      const command = new PutObjectCommand({
+        Bucket: bucketName,
+        Key: key,
+        ContentType: contentType
+      })
+      return await getSignedUrl(s3, command, { expiresIn: expiresInSeconds })
+    },
+    catch: (error) =>
+      new S3Error({
+        message: `Failed to presign put object: ${getErrorMessage(error)}`,
+        operation: 'presignPutObject',
+        key
+      })
+  }).pipe(
+    Effect.withSpan('aws.s3.presignPutObject', {
+      attributes: {
+        'aws.service': 's3',
+        's3.bucket': bucketName,
+        's3.key_prefix': getKeyPrefix(key),
+        'content.type': contentType
+      }
+    })
   )
 
 const deleteFileEffect = (key: string, bucketName: string) =>
@@ -391,45 +432,37 @@ const getObjectMetadataEffect = (key: string, bucketName: string) =>
     })
   )
 
-const uploadMultipartPartEffect = (
+const presignUploadPartEffect = (
   key: string,
   uploadId: string,
   partNumber: number,
-  body: Buffer | Uint8Array | Blob,
-  bucketName: string
+  bucketName: string,
+  expiresInSeconds: number
 ) =>
   Effect.tryPromise({
     try: async () => {
       const s3 = new S3Client({})
-      const response = await s3.send(
-        new UploadPartCommand({
-          Bucket: bucketName,
-          Key: key,
-          UploadId: uploadId,
-          PartNumber: partNumber,
-          Body: body
-        })
-      )
-      if (!response.ETag) {
-        throw new Error('S3 did not return an ETag for the uploaded part')
-      }
-      const size = body instanceof Blob ? body.size : body.byteLength
-      return { partNumber, etag: response.ETag, size }
+      const command = new UploadPartCommand({
+        Bucket: bucketName,
+        Key: key,
+        UploadId: uploadId,
+        PartNumber: partNumber
+      })
+      return await getSignedUrl(s3, command, { expiresIn: expiresInSeconds })
     },
     catch: (error) =>
       new S3Error({
-        message: `Failed to upload multipart part: ${getErrorMessage(error)}`,
-        operation: 'uploadMultipartPart',
+        message: `Failed to presign upload part: ${getErrorMessage(error)}`,
+        operation: 'presignUploadPart',
         key
       })
   }).pipe(
-    Effect.withSpan('aws.s3.uploadPart', {
+    Effect.withSpan('aws.s3.presignUploadPart', {
       attributes: {
         'aws.service': 's3',
         's3.bucket': bucketName,
         's3.key_prefix': getKeyPrefix(key),
-        's3.part_number': partNumber,
-        'payload.size_bytes': body instanceof Blob ? body.size : body.byteLength
+        's3.part_number': partNumber
       }
     })
   )
@@ -583,8 +616,9 @@ const listBucketsEffect = () =>
   )
 
 // Implementation - simple layer (effects are pure functions)
-export const S3ServiceLive = Layer.succeed(S3Service, {
+export const S3ServiceLayer = Layer.succeed(S3Service, {
   uploadFile: uploadFileEffect,
+  presignPutObject: presignPutObjectEffect,
   deleteFile: deleteFileEffect,
   checkExists: checkExistsEffect,
   listObjects: listObjectsEffect,
@@ -592,7 +626,7 @@ export const S3ServiceLive = Layer.succeed(S3Service, {
   listBuckets: listBucketsEffect,
   createMultipartUpload: createMultipartUploadEffect,
   getObjectMetadata: getObjectMetadataEffect,
-  uploadMultipartPart: uploadMultipartPartEffect,
+  presignUploadPart: presignUploadPartEffect,
   completeMultipartUpload: completeMultipartUploadEffect,
   abortMultipartUpload: abortMultipartUploadEffect,
   listMultipartParts: listMultipartPartsEffect

@@ -7,4 +7,4 @@ export interface DatabaseService {
 
 export const DatabaseService = Context.Service<DatabaseService>('DatabaseService')
 
-export const DatabaseServiceLive = Layer.succeed(DatabaseService, { db })
+export const DatabaseServiceLayer = Layer.succeed(DatabaseService, { db })
