@@ -915,18 +915,24 @@ describe('music-reminders (HttpApiBuilder group, Step 6)', () => {
 })
 
 describe('upload (HttpApiBuilder group, Step 7)', () => {
-  // uploadFile has never required a session -- the old Hono route had no
-  // betterAuthMiddleware, and no real apps/www caller sends
-  // credentials: 'include' to it (see packages/api/src/upload.ts's comment).
-  it('POST /api/upload/file returns 400 (not 401) for a request with no file', async () => {
-    const formData = new FormData()
-    formData.append('fileType', 'image')
-
+  // The old unauthenticated /api/upload/file proxy is gone (#131 part 1) --
+  // presignImage replaces it and requires a session like every other upload
+  // endpoint below, since the presigned URL is scoped to the caller's own
+  // userId-prefixed key.
+  it('POST /api/upload/image/presign returns 401 without a session cookie', async () => {
     const res = await webHandler.handler(
-      new Request('http://localhost/api/upload/file', { method: 'POST', body: formData })
+      new Request('http://localhost/api/upload/image/presign', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          fileName: 'artwork.png',
+          contentType: 'image/png',
+          fileSize: 1024
+        })
+      })
     )
 
-    expect(res.status).toBe(400)
+    expect(res.status).toBe(401)
   })
 
   it('POST /api/upload/multipart/init returns 401 without a session cookie', async () => {

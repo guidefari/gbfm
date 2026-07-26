@@ -13,6 +13,7 @@ import {
   S3Client,
   UploadPartCommand
 } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { Context, Effect, Layer } from 'effect'
 import { getErrorMessage, S3Error } from '@/errors'
 
@@ -40,6 +41,13 @@ export interface S3Service {
     body: Buffer | Uint8Array | Blob | string,
     contentType: string,
     bucketName: string
+  ) => Effect.Effect<string, S3Error>
+
+  readonly presignPutObject: (
+    key: string,
+    contentType: string,
+    bucketName: string,
+    expiresInSeconds: number
   ) => Effect.Effect<string, S3Error>
 
   readonly deleteFile: (key: string, bucketName: string) => Effect.Effect<void, S3Error>
@@ -156,6 +164,39 @@ const uploadFileEffect = (
       )
     ),
     Effect.withSpan('aws.s3.putObject')
+  )
+
+const presignPutObjectEffect = (
+  key: string,
+  contentType: string,
+  bucketName: string,
+  expiresInSeconds: number
+) =>
+  Effect.tryPromise({
+    try: async () => {
+      const s3 = new S3Client({})
+      const command = new PutObjectCommand({
+        Bucket: bucketName,
+        Key: key,
+        ContentType: contentType
+      })
+      return await getSignedUrl(s3, command, { expiresIn: expiresInSeconds })
+    },
+    catch: (error) =>
+      new S3Error({
+        message: `Failed to presign put object: ${getErrorMessage(error)}`,
+        operation: 'presignPutObject',
+        key
+      })
+  }).pipe(
+    Effect.withSpan('aws.s3.presignPutObject', {
+      attributes: {
+        'aws.service': 's3',
+        's3.bucket': bucketName,
+        's3.key_prefix': getKeyPrefix(key),
+        'content.type': contentType
+      }
+    })
   )
 
 const deleteFileEffect = (key: string, bucketName: string) =>
@@ -585,6 +626,7 @@ const listBucketsEffect = () =>
 // Implementation - simple layer (effects are pure functions)
 export const S3ServiceLive = Layer.succeed(S3Service, {
   uploadFile: uploadFileEffect,
+  presignPutObject: presignPutObjectEffect,
   deleteFile: deleteFileEffect,
   checkExists: checkExistsEffect,
   listObjects: listObjectsEffect,

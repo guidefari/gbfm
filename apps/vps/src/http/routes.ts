@@ -124,8 +124,8 @@ export const createWebHandler = (options?: {
       RequestLoggerLive,
       SentryDefectLive
     ).pipe(
-      // HttpServerRequest.multipart (upload group's uploadFile/uploadMultipartPart
-      // endpoints) needs a real FileSystem.FileSystem + Path.Path to buffer
+      // HttpServerRequest.multipart (upload group's uploadMultipartPart
+      // endpoint) needs a real FileSystem.FileSystem + Path.Path to buffer
       // parts to temp files. HttpServer.layerServices ships its own
       // FileSystem.layerNoop, so the real Bun implementation is nested inside
       // the same provideMerge, applied after layerServices, so it overwrites
