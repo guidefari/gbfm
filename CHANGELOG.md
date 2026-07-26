@@ -1,3 +1,10 @@
+# [2.73.0](https://github.com/guidefari/gbfm/compare/v2.72.1...v2.73.0) (2026-07-26)
+
+
+### Features
+
+* **music:** add factual label affiliations ([#219](https://github.com/guidefari/gbfm/issues/219)) ([f1e7a31](https://github.com/guidefari/gbfm/commit/f1e7a31aefb480d3e0b5199d0008868c4a7d8e28))
+
 ## [2.72.1](https://github.com/guidefari/gbfm/compare/v2.72.0...v2.72.1) (2026-07-25)
 
 
