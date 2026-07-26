@@ -583,7 +583,7 @@ const listBucketsEffect = () =>
   )
 
 // Implementation - simple layer (effects are pure functions)
-export const S3ServiceLive = Layer.succeed(S3Service, {
+export const S3ServiceLayer = Layer.succeed(S3Service, {
   uploadFile: uploadFileEffect,
   deleteFile: deleteFileEffect,
   checkExists: checkExistsEffect,

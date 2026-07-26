@@ -217,7 +217,7 @@ const getSubscribersEffect = (showId: string) =>
     return subscribers
   })
 
-export const ShowSubscriptionServiceLive = Layer.succeed(ShowSubscriptionService, {
+export const ShowSubscriptionServiceLayer = Layer.succeed(ShowSubscriptionService, {
   subscribe: (userId, showId) =>
     subscribeEffect(userId, showId).pipe(
       Effect.withSpan('showSubscription.subscribe', {

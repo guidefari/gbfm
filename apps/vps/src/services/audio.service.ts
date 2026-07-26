@@ -642,7 +642,7 @@ const trackPlayEffect = (id: string, clientIp?: string) =>
     return { playCount: updated[0]?.playCount ?? 0 }
   })
 
-export const AudioServiceLive = Layer.effect(
+export const AudioServiceLayer = Layer.effect(
   AudioService,
   Effect.gen(function* () {
     const mdx = yield* MdxService
