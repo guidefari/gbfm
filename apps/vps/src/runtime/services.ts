@@ -25,11 +25,14 @@ import { SentryServiceLive } from '@/services/sentry.service'
 import { SentryClientServiceLive } from '@/services/sentry-client.service'
 import { ShowServiceLive, ShowSubscriptionServiceLive } from '@/services/show.service'
 import { SpotifyServiceLive } from '@/services/spotify.service'
+import { UploadAssetServiceLive } from '@/services/upload-asset.service'
 import { UserServiceLive } from '@/services/user.service'
 
 const DevToolsLive: Layer.Layer<never> = Layer.empty
 
 const SentryClientLive = SentryClientServiceLive.pipe(Layer.provide(ConfigServiceLive))
+
+const UploadAssetDepsLive = Layer.mergeAll(ConfigServiceLive, UploadAssetServiceLive)
 
 const BaseServicesLayer = Layer.mergeAll(
   ConfigServiceLive,
@@ -40,8 +43,8 @@ const BaseServicesLayer = Layer.mergeAll(
   MusicReminderServiceLive,
   ReminderSignalServiceLive,
   MusicLinkScraperServiceLive,
-  AudioServiceLive.pipe(Layer.provide(MdxServiceLive)),
-  PostServiceLive.pipe(Layer.provide(MdxServiceLive)),
+  AudioServiceLive.pipe(Layer.provide(MdxServiceLive), Layer.provide(UploadAssetDepsLive)),
+  PostServiceLive.pipe(Layer.provide(MdxServiceLive), Layer.provide(UploadAssetDepsLive)),
   ProfileServiceLive,
   ResolveServiceLive,
   ReleaseServiceLive,
@@ -51,6 +54,7 @@ const BaseServicesLayer = Layer.mergeAll(
   OtlpLive.pipe(Layer.provide(SentryClientLive), Layer.provide(ConfigServiceLive)),
   ShowServiceLive,
   ShowSubscriptionServiceLive,
+  UploadAssetServiceLive,
   UserServiceLive,
   DevToolsLive
 )
