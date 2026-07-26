@@ -1,3 +1,11 @@
+## [2.75.1](https://github.com/guidefari/gbfm/compare/v2.75.0...v2.75.1) (2026-07-26)
+
+
+### Bug Fixes
+
+* **player:** arm completion after playback starts ([147dde4](https://github.com/guidefari/gbfm/commit/147dde4ca1777925ed78d35b3f6d94195fc597ff))
+* **www:** finish media session layer rename ([4d54bb5](https://github.com/guidefari/gbfm/commit/4d54bb57328e078a2bfb8fe60c8b2fae8e803841))
+
 # [2.75.0](https://github.com/guidefari/gbfm/compare/v2.74.0...v2.75.0) (2026-07-26)
 
 
