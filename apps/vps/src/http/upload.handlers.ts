@@ -35,7 +35,7 @@ const buildObjectKey = (
   return `${sanitizeKeySegment(userId)}/multipart/${crypto.randomUUID()}/${expectedSize}/${fileType}_${sanitizedName}`
 }
 
-const assertKeyOwnership = (userId: string, key: string) =>
+export const assertKeyOwnership = (userId: string, key: string) =>
   key.startsWith(`${sanitizeKeySegment(userId)}/`) ? Effect.void : new HttpApiError.BadRequest()
 
 export const assertContiguousParts = (parts: ReadonlyArray<{ partNumber: number }>) => {
@@ -191,6 +191,16 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
 
         yield* assertKeyOwnership(user.id, key)
         const expectedSize = yield* requireExpectedSize(user.id, key)
+        // Only partNumber is checked here -- actual byte size can't be
+        // validated at presign time since the client hasn't PUT the bytes
+        // to S3 yet (this just mints the URL). A client can still push an
+        // oversized part straight to S3 after presigning; that garbage
+        // isn't reachable (the object never becomes readable pre-completion)
+        // and completeMultipartUpload below re-validates every part's real
+        // S3-reported size via listMultipartParts + validateMultipartParts,
+        // rejecting the whole upload on any mismatch. Worst case is
+        // billable-but-unreadable storage until the bucket's abort-
+        // incomplete-multipart-upload lifecycle rule reaps it.
         if (expectedMultipartPartSize(expectedSize, partNumber) === null) {
           return yield* new HttpApiError.BadRequest()
         }

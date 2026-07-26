@@ -231,6 +231,19 @@ const putPartToS3 = (
     })
   )
 
+// A 403 from the S3 PUT can only mean the presigned URL expired (its
+// 15-minute TTL elapsed on a slow or backgrounded-tab upload) -- the URL's
+// signature is the sole auth on that request, nothing else in this codebase
+// grants or denies S3 access per-request. presignPart's own errors never
+// carry status 403 (our AuthMiddleware fails with 401, ownership/validation
+// failures are 400), so this predicate can't be confused with a real auth
+// failure on our own API. isRetryableError intentionally leaves generic 403
+// non-retryable for every other endpoint in this file (a real auth failure
+// there should fail fast) -- this is scoped to uploadPart's own retry so
+// that distinction elsewhere stays intact.
+const isRetryablePartUploadError = (error: ResumableUploadError): boolean =>
+  isRetryableError(error) || (error._tag === 'HttpError' && error.status === 403)
+
 const uploadPart = (
   working: PersistedResumableUpload,
   part: { partNumber: number; blob: Blob },
@@ -239,6 +252,8 @@ const uploadPart = (
   Effect.gen(function* () {
     if (signal.aborted) return yield* new UploadAborted()
 
+    // Always re-presigns before PUTting: if the previous attempt failed
+    // because the URL expired, this mints a fresh one before retrying.
     const { url } = yield* presignPart(working, part.partNumber, signal)
     const etag = yield* putPartToS3(url, part.blob, signal)
 
@@ -247,7 +262,7 @@ const uploadPart = (
     Effect.retry({
       schedule: Schedule.exponential(`${PART_RETRY_BASE_MS} millis`),
       times: MAX_PART_ATTEMPTS,
-      while: (error) => isRetryableError(error) && !signal.aborted
+      while: (error) => isRetryablePartUploadError(error) && !signal.aborted
     })
   )
 
