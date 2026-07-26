@@ -75,6 +75,14 @@ CREATE TABLE "releases" (
 
 CREATE INDEX "releases_slug_idx" ON "releases" USING btree ("slug");
 
+CREATE TABLE "music_artists" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL
+);
+
+CREATE TABLE "music_albums" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL
+);
+
 CREATE TABLE "music_entity_types" (
   "id" varchar(50) PRIMARY KEY NOT NULL,
   "displayName" varchar(100) NOT NULL
@@ -499,7 +507,7 @@ describe('label music-entity migrations 0041-0042', () => {
     ])
   }, 120_000)
 
-  it('applies 0041-0042 through the drizzle migrator seam', async () => {
+  it('applies the label cutover and later affiliations through the drizzle migrator seam', async () => {
     await resetToPre0041()
     await seedRepresentativeLabels(pool)
 
@@ -523,14 +531,18 @@ describe('label music-entity migrations 0041-0042', () => {
         (SELECT count(*)::int FROM music_label_creators) AS creators,
         (SELECT count(*)::int FROM music_entity_links WHERE "entityType" = 'label') AS links,
         (SELECT count(*)::int FROM music_labels WHERE created_by_id IS NOT NULL) AS with_creator,
-        to_regclass('public.labels') AS legacy_labels
+        to_regclass('public.labels') AS legacy_labels,
+        to_regclass('public.music_label_artists') AS label_artists,
+        to_regclass('public.music_label_albums') AS label_albums
     `)
     expect(result.rows[0]).toEqual({
       labels: 9,
       creators: 6,
       links: 7,
       with_creator: 0,
-      legacy_labels: null
+      legacy_labels: null,
+      label_artists: 'music_label_artists',
+      label_albums: 'music_label_albums'
     })
   }, 120_000)
 })

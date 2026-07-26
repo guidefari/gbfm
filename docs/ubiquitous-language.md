@@ -122,6 +122,12 @@ A curated list of tracks.
 - **Meaning:** A row in `music_playlists`. Can be imported from Spotify and enriched with links to other platforms.
 - **Used in:** `music_playlists`, `music_playlist_tracks`.
 
+### Label Affiliation
+A factual, many-to-many relationship between labels and their rosters or catalogs: an artist may be affiliated with multiple labels, and an album may be issued by multiple labels. It is not an editorial recommendation; tracks inherit affiliation through their album, standalone labeled singles are represented as single-type albums, and playlists have no label affiliation.
+
+- **Used in:** label roster and catalog relationships.
+- **Avoid:** "Related entity", "featured entity", or using affiliation for editorial curation.
+
 ### Platform Link / Entity Link
 A URL that links a music entity to a specific streaming or social platform.
 

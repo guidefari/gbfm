@@ -16,6 +16,18 @@ import type { DatabaseError, NotFoundError, SpotifyError } from '@/errors'
 import { ConfigService as ConfigServiceTag } from '@/services/config.service'
 import { DatabaseService } from '@/services/database.service'
 import {
+  affiliateAlbumWithLabelEffect,
+  affiliateArtistWithLabelEffect,
+  getAlbumsForLabelEffect,
+  getArtistsForLabelEffect,
+  getLabelsForAlbumEffect,
+  getLabelsForArtistEffect,
+  getPublishedAlbumsForLabelEffect,
+  getPublishedArtistsForLabelEffect,
+  unaffiliateAlbumFromLabelEffect,
+  unaffiliateArtistFromLabelEffect
+} from './label-affiliation.service'
+import {
   type CreateLabelInput,
   createLabelEffect,
   deleteLabelEffect,
@@ -164,6 +176,37 @@ export interface MusicEntityService {
   ) => Effect.Effect<SelectMusicLabel, DatabaseError | NotFoundError>
   readonly deleteLabel: (id: string) => Effect.Effect<void, DatabaseError | NotFoundError>
 
+  readonly getArtistsForLabel: (
+    labelId: string
+  ) => Effect.Effect<SelectMusicArtist[], DatabaseError>
+  readonly getPublishedArtistsForLabel: (
+    labelId: string
+  ) => Effect.Effect<SelectMusicArtist[], DatabaseError>
+  readonly getAlbumsForLabel: (labelId: string) => Effect.Effect<SelectMusicAlbum[], DatabaseError>
+  readonly getPublishedAlbumsForLabel: (
+    labelId: string
+  ) => Effect.Effect<SelectMusicAlbum[], DatabaseError>
+  readonly getLabelsForArtist: (
+    artistId: string
+  ) => Effect.Effect<SelectMusicLabel[], DatabaseError>
+  readonly getLabelsForAlbum: (albumId: string) => Effect.Effect<SelectMusicLabel[], DatabaseError>
+  readonly affiliateArtistWithLabel: (
+    labelId: string,
+    artistId: string
+  ) => Effect.Effect<void, DatabaseError | NotFoundError>
+  readonly unaffiliateArtistFromLabel: (
+    labelId: string,
+    artistId: string
+  ) => Effect.Effect<void, DatabaseError>
+  readonly affiliateAlbumWithLabel: (
+    labelId: string,
+    albumId: string
+  ) => Effect.Effect<void, DatabaseError | NotFoundError>
+  readonly unaffiliateAlbumFromLabel: (
+    labelId: string,
+    albumId: string
+  ) => Effect.Effect<void, DatabaseError>
+
   readonly getPlaylistTracks: (playlistId: string) => Effect.Effect<
     Array<{
       track: SelectMusicTrack
@@ -308,6 +351,17 @@ export const MusicEntityServiceLive = Layer.effect(
       getLabelBySlug: getLabelBySlugEffect(db),
       updateLabel: updateLabelEffect(db),
       deleteLabel: deleteLabelEffect(db),
+
+      getArtistsForLabel: getArtistsForLabelEffect(db),
+      getPublishedArtistsForLabel: getPublishedArtistsForLabelEffect(db),
+      getAlbumsForLabel: getAlbumsForLabelEffect(db),
+      getPublishedAlbumsForLabel: getPublishedAlbumsForLabelEffect(db),
+      getLabelsForArtist: getLabelsForArtistEffect(db),
+      getLabelsForAlbum: getLabelsForAlbumEffect(db),
+      affiliateArtistWithLabel: affiliateArtistWithLabelEffect(db),
+      unaffiliateArtistFromLabel: unaffiliateArtistFromLabelEffect(db),
+      affiliateAlbumWithLabel: affiliateAlbumWithLabelEffect(db),
+      unaffiliateAlbumFromLabel: unaffiliateAlbumFromLabelEffect(db),
 
       getPlaylistTracks: getPlaylistTracksEffect(db),
       addTrackToPlaylist: addTrackToPlaylistEffect(db),

@@ -35,7 +35,20 @@ export const Route = createFileRoute('/labels/$labelSlug')({
         ...label,
         tags: label.tags ? [...label.tags] : null,
         genres: label.genres ? [...label.genres] : null,
-        creators: label.creators ? [...label.creators] : undefined
+        creators: label.creators ? [...label.creators] : undefined,
+        affiliatedArtists: label.affiliatedArtists
+          ? label.affiliatedArtists.map((artist) => ({
+              ...artist,
+              genres: artist.genres ? [...artist.genres] : null
+            }))
+          : [],
+        affiliatedAlbums: label.affiliatedAlbums
+          ? label.affiliatedAlbums.map((album) => ({
+              ...album,
+              artistNames: album.artistNames ? [...album.artistNames] : null,
+              genres: album.genres ? [...album.genres] : null
+            }))
+          : []
       },
       links: links.map((link) => ({ ...link }))
     }
@@ -132,10 +145,97 @@ function LabelPage() {
             </div>
           </div>
         </aside>
-        <main className='prose prose-neutral max-w-none dark:prose-invert lg:col-span-2'>
-          <MDXRendrr mdxString={label.compiledContent ?? label.content} />
+        <main className='space-y-10 lg:col-span-2'>
+          <div className='prose prose-neutral max-w-none dark:prose-invert'>
+            <MDXRendrr mdxString={label.compiledContent ?? label.content} />
+          </div>
+          <PublicLabelAffiliations
+            artists={label.affiliatedArtists}
+            albums={label.affiliatedAlbums}
+          />
         </main>
       </div>
+    </div>
+  )
+}
+
+interface PublicLabelAffiliationsProps {
+  readonly artists: ReadonlyArray<{
+    readonly id: string
+    readonly name: string
+    readonly imageUrl: string | null
+    readonly genres: ReadonlyArray<string> | null
+  }>
+  readonly albums: ReadonlyArray<{
+    readonly id: string
+    readonly title: string
+    readonly coverImageUrl: string | null
+    readonly artistNames: ReadonlyArray<string> | null
+    readonly releaseDate: string | null
+  }>
+}
+
+function PublicLabelAffiliations({ artists, albums }: PublicLabelAffiliationsProps) {
+  if (artists.length === 0 && albums.length === 0) return null
+
+  return (
+    <div className='space-y-10'>
+      {artists.length > 0 && (
+        <section aria-labelledby='label-roster-heading'>
+          <h2 id='label-roster-heading' className='mb-4 text-xl font-semibold'>
+            Roster
+          </h2>
+          <ul className='grid gap-3 sm:grid-cols-2'>
+            {artists.map((artist) => (
+              <li key={artist.id} className='flex items-center gap-3 rounded-md border p-3'>
+                <img
+                  src={artist.imageUrl || '/fav.png'}
+                  alt=''
+                  className='h-14 w-14 rounded-sm object-cover'
+                />
+                <div className='min-w-0'>
+                  <p className='truncate font-medium'>{artist.name}</p>
+                  {artist.genres && artist.genres.length > 0 && (
+                    <p className='truncate text-sm text-muted-foreground'>
+                      {artist.genres.join(', ')}
+                    </p>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {albums.length > 0 && (
+        <section aria-labelledby='label-catalog-heading'>
+          <h2 id='label-catalog-heading' className='mb-4 text-xl font-semibold'>
+            Catalog
+          </h2>
+          <ul className='grid gap-4 sm:grid-cols-2'>
+            {albums.map((album) => (
+              <li key={album.id} className='overflow-hidden rounded-md border'>
+                <img
+                  src={album.coverImageUrl || '/fav.png'}
+                  alt=''
+                  className='aspect-square w-full object-cover'
+                />
+                <div className='space-y-1 p-3'>
+                  <p className='font-medium'>{album.title}</p>
+                  {album.artistNames && album.artistNames.length > 0 && (
+                    <p className='text-sm text-muted-foreground'>{album.artistNames.join(', ')}</p>
+                  )}
+                  {album.releaseDate && (
+                    <p className='text-xs text-muted-foreground'>
+                      {new Date(album.releaseDate).getFullYear()}
+                    </p>
+                  )}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
     </div>
   )
 }

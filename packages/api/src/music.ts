@@ -207,7 +207,9 @@ export const LabelResponse = Schema.Struct({
   createdAt: Schema.String,
   updatedAt: Schema.String,
   compiledContent: Schema.optional(Schema.String),
-  creators: Schema.optional(Schema.Array(LabelCreatorResponse))
+  creators: Schema.optional(Schema.Array(LabelCreatorResponse)),
+  affiliatedArtists: Schema.optional(Schema.Array(ArtistResponse)),
+  affiliatedAlbums: Schema.optional(Schema.Array(AlbumResponse))
 })
 export type LabelResponse = typeof LabelResponse.Type
 
@@ -418,6 +420,13 @@ export const MusicGroup = HttpApiGroup.make('music')
     }).middleware(AuthMiddleware)
   )
   .add(
+    HttpApiEndpoint.get('listArtistLabels', '/api/music/artists/:artistId/labels', {
+      params: { artistId: Schema.String },
+      success: LabelListResponse,
+      error: HttpApiError.Forbidden
+    }).middleware(AuthMiddleware)
+  )
+  .add(
     HttpApiEndpoint.put('addArtistToAlbum', '/api/music/albums/:albumId/artists/:artistId', {
       params: { albumId: Schema.String, artistId: Schema.String },
       payload: ArtistJunctionInput,
@@ -486,6 +495,13 @@ export const MusicGroup = HttpApiGroup.make('music')
       params: albumIdParam,
       success: HttpApiSchema.NoContent,
       error: [HttpApiError.NotFound, HttpApiError.Forbidden]
+    }).middleware(AuthMiddleware)
+  )
+  .add(
+    HttpApiEndpoint.get('listAlbumLabels', '/api/music/albums/:albumId/labels', {
+      params: { albumId: Schema.String },
+      success: LabelListResponse,
+      error: HttpApiError.Forbidden
     }).middleware(AuthMiddleware)
   )
   // ---------------------------------------------------------------------
@@ -598,6 +614,60 @@ export const MusicGroup = HttpApiGroup.make('music')
       success: HttpApiSchema.NoContent,
       error: [HttpApiError.NotFound, HttpApiError.Forbidden]
     }).middleware(AuthMiddleware)
+  )
+  .add(
+    HttpApiEndpoint.get('listLabelArtists', '/api/music/labels/:labelId/artists', {
+      params: { labelId: Schema.String },
+      success: ArtistListResponse,
+      error: HttpApiError.Forbidden
+    }).middleware(AuthMiddleware)
+  )
+  .add(
+    HttpApiEndpoint.get('listLabelAlbums', '/api/music/labels/:labelId/albums', {
+      params: { labelId: Schema.String },
+      success: AlbumListResponse,
+      error: HttpApiError.Forbidden
+    }).middleware(AuthMiddleware)
+  )
+  .add(
+    HttpApiEndpoint.put(
+      'affiliateArtistWithLabel',
+      '/api/music/labels/:labelId/artists/:artistId',
+      {
+        params: { labelId: Schema.String, artistId: Schema.String },
+        success: HttpApiSchema.NoContent,
+        error: [HttpApiError.NotFound, HttpApiError.Forbidden]
+      }
+    ).middleware(AuthMiddleware)
+  )
+  .add(
+    HttpApiEndpoint.delete(
+      'unaffiliateArtistFromLabel',
+      '/api/music/labels/:labelId/artists/:artistId',
+      {
+        params: { labelId: Schema.String, artistId: Schema.String },
+        success: HttpApiSchema.NoContent,
+        error: HttpApiError.Forbidden
+      }
+    ).middleware(AuthMiddleware)
+  )
+  .add(
+    HttpApiEndpoint.put('affiliateAlbumWithLabel', '/api/music/labels/:labelId/albums/:albumId', {
+      params: { labelId: Schema.String, albumId: Schema.String },
+      success: HttpApiSchema.NoContent,
+      error: [HttpApiError.NotFound, HttpApiError.Forbidden]
+    }).middleware(AuthMiddleware)
+  )
+  .add(
+    HttpApiEndpoint.delete(
+      'unaffiliateAlbumFromLabel',
+      '/api/music/labels/:labelId/albums/:albumId',
+      {
+        params: { labelId: Schema.String, albumId: Schema.String },
+        success: HttpApiSchema.NoContent,
+        error: HttpApiError.Forbidden
+      }
+    ).middleware(AuthMiddleware)
   )
   // ---------------------------------------------------------------------
   // Playlist tracks
