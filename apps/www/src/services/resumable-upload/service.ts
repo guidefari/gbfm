@@ -203,7 +203,7 @@ const putPartToS3 = (
 ): Effect.Effect<string, NetworkError | HttpError | InvalidResponseError | UploadAborted, never> =>
   Effect.tryPromise({
     try: () => fetch(url, { method: 'PUT', body: blob, signal }),
-    catch: (cause) => {
+    catch: (cause): NetworkError | UploadAborted => {
       if (signal.aborted) return new UploadAborted()
       if (cause instanceof Error && cause.name === 'AbortError') return new UploadAborted()
       return new NetworkError({
@@ -212,7 +212,7 @@ const putPartToS3 = (
       })
     }
   }).pipe(
-    Effect.flatMap((response) => {
+    Effect.flatMap((response): Effect.Effect<string, HttpError | InvalidResponseError, never> => {
       if (!response.ok) {
         return Effect.fail(
           new HttpError({
