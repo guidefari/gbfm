@@ -28,9 +28,6 @@ export const SentryClientServiceLive = Layer.effect(
 
     const existingClient = Sentry.getClient()
     if (existingClient) {
-      yield* Effect.sync(() => {
-        console.warn(`[sentry] client already initialized env=${sentry.environment}`)
-      })
       return { client: existingClient, enabled: true }
     }
 
@@ -59,10 +56,6 @@ export const SentryClientServiceLive = Layer.effect(
           await Sentry.close(2000)
         })
     )
-
-    yield* Effect.sync(() => {
-      console.warn(`[sentry] init env=${sentry.environment} traces=1`)
-    })
 
     if (debugSentry) {
       yield* Effect.sync(() => {
