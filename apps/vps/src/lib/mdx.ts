@@ -56,7 +56,7 @@ const makeService = (fn: (content: string) => Promise<string>): Effect.Effect<Md
 
 // ── Live layer ────────────────────────────────────────────────────────────────
 
-export const MdxServiceLive: Layer.Layer<MdxService> = Layer.effect(
+export const MdxServiceLayer: Layer.Layer<MdxService> = Layer.effect(
   MdxService,
   makeService(defaultFn)
 )

@@ -13,7 +13,7 @@ export interface SentryClientService {
 
 export const SentryClientService = Context.Service<SentryClientService>('SentryClientService')
 
-export const SentryClientServiceLive = Layer.effect(
+export const SentryClientServiceLayer = Layer.effect(
   SentryClientService,
   Effect.gen(function* () {
     const { sentry } = yield* ConfigService

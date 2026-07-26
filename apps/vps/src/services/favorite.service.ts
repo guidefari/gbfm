@@ -479,7 +479,7 @@ const getFavoritesEffect = (
   )
 
 // Implementation - simple layer that provides access to the Effects
-export const FavoriteServiceLive = Layer.succeed(FavoriteService, {
+export const FavoriteServiceLayer = Layer.succeed(FavoriteService, {
   addFavorite: addFavoriteEffect,
   addShowFavorite: addShowFavoriteEffect,
   removeFavorite: removeFavoriteEffect,

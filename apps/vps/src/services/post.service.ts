@@ -742,7 +742,7 @@ const updateEffect = (
     return yield* buildPostWithCreators(updatedPost, mdx)
   })
 
-export const PostServiceLive = Layer.effect(
+export const PostServiceLayer = Layer.effect(
   PostService,
   Effect.gen(function* () {
     const mdx = yield* MdxService
