@@ -2,7 +2,7 @@ import * as Effect from 'effect/Effect'
 import * as Schedule from 'effect/Schedule'
 import type { TrackEntry } from '@gbfm/ui'
 import { apiUrl, fetcher } from '@/lib/http'
-import { uploadImageDirectToS3 } from '@/lib/upload/image-upload'
+import { HttpStatusError, uploadImageDirectToS3 } from '@/lib/upload/image-upload'
 import { ImageUploadError, NotSignedInError, RecordSaveError, isPageRetryable } from './-errors'
 import { buildRecordPayload } from './-payload'
 
@@ -41,7 +41,8 @@ export const uploadImage = (
     try: () => uploadImageDirectToS3(file, signal),
     catch: (cause) =>
       new ImageUploadError({
-        message: cause instanceof Error ? cause.message : String(cause)
+        message: cause instanceof Error ? cause.message : String(cause),
+        status: cause instanceof HttpStatusError ? cause.status : undefined
       })
   }).pipe(
     Effect.retry({
