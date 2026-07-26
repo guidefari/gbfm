@@ -5,7 +5,6 @@ import type React from 'react'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { cn, copyToClipboard } from '@/lib/utils'
 import { log } from '@/services/logger'
-import { PlayPauseButton } from '../PlayPauseButton'
 
 // this component needs to support:
 // stream link to spotify
@@ -19,7 +18,7 @@ interface Props {
   imageUrl: string
   genres?: string[] | null
   loading?: boolean
-  previewUrl?: string
+  downloadUrl?: string
   trackUrl?: string
   children?: React.ReactNode
   download?: boolean
@@ -34,7 +33,7 @@ export const MinimalCard: React.FC<Props> = ({
   imageUrl,
   genres,
   loading,
-  previewUrl,
+  downloadUrl,
   trackUrl,
   children,
   artists,
@@ -46,9 +45,9 @@ export const MinimalCard: React.FC<Props> = ({
   const isShareEnabled = useFeatureFlag('ui.share')
 
   const constructUrl = () => {
-    if (!previewUrl) return
+    if (!downloadUrl) return
     const safeTitle = encodeURIComponent(title)
-    const safeDlUrl = encodeURIComponent(previewUrl)
+    const safeDlUrl = encodeURIComponent(downloadUrl)
     return `/api/dl?fileUrl=${safeDlUrl}&title=${safeTitle}`
   }
 
@@ -120,10 +119,9 @@ export const MinimalCard: React.FC<Props> = ({
           </div>
         )}
 
-        {previewUrl?.length && (
+        {((download && downloadUrl) || (isShareEnabled && shareUrl)) && (
           <div className='flex my-2 space-x-3 align-bottom '>
-            <PlayPauseButton previewUrl={previewUrl} />
-            {download && (
+            {download && downloadUrl && (
               <a type='button' title='Download' href={constructUrl()}>
                 <Download className='py-0.5 default-icon' />
               </a>

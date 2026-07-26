@@ -35,7 +35,7 @@ export const LongPost = ({
         {mp3Url ? (
           <MinimalCard
             title={title}
-            previewUrl={mp3Url}
+            downloadUrl={mp3Url}
             imageUrl={thumbnailUrl ?? DEFAULT_IMAGE_URL}
             download
             hideTitle

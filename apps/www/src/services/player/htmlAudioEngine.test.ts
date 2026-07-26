@@ -13,6 +13,7 @@ type MediaSessionRecord = {
   readonly playbackStates: Array<'playing' | 'paused' | 'none'>
   readonly positions: Array<{ duration: number; position: number }>
   readonly handlers: Array<MediaSessionHandlers | null>
+  clearedMetadata: number
 }
 
 const makeRecordingMediaSession = () => {
@@ -20,13 +21,19 @@ const makeRecordingMediaSession = () => {
     metadata: [],
     playbackStates: [],
     positions: [],
-    handlers: []
+    handlers: [],
+    clearedMetadata: 0
   }
 
   const shape: MediaSessionServiceShape = {
     setMetadata: (title, artists, artwork) =>
       Effect.sync(() => {
         record.metadata.push({ title, artists, artwork })
+      }),
+    clearMetadata: () =>
+      Effect.sync(() => {
+        record.clearedMetadata += 1
+        record.playbackStates.push('none')
       }),
     setPlaybackState: (state) =>
       Effect.sync(() => {
@@ -52,6 +59,8 @@ class FakeAudio extends EventTarget implements HtmlAudioPort {
   paused = true
   ended = false
   readyState = 0
+  volume = 1
+  muted = false
   private shouldRejectPlay = false
 
   load() {
@@ -118,6 +127,36 @@ describe('HtmlAudioEngineLayer', () => {
     expect(status.duration).toBe(90)
   })
 
+  it('clears the source generation when the source is reset', async () => {
+    const audio = new FakeAudio()
+    const media = makeRecordingMediaSession()
+
+    const status = await Effect.gen(function* () {
+      const engine = yield* AudioEngine
+      yield* engine.replace('https://cdn.example/a.mp3', 7)
+      yield* engine.clearSource
+      return yield* engine.currentStatus
+    }).pipe(Effect.provide(provideEngine(audio, media)), Effect.scoped, Effect.runPromise)
+
+    expect(status.sourceGeneration).toBeNull()
+    expect(status.isLoaded).toBe(false)
+    expect(status.playing).toBe(false)
+  })
+
+  it('applies volume and mute changes to the audio element', async () => {
+    const audio = new FakeAudio()
+    const media = makeRecordingMediaSession()
+
+    await Effect.gen(function* () {
+      const engine = yield* AudioEngine
+      yield* engine.setVolume(0.25)
+      yield* engine.setMuted(true)
+    }).pipe(Effect.provide(provideEngine(audio, media)), Effect.scoped, Effect.runPromise)
+
+    expect(audio.volume).toBe(0.25)
+    expect(audio.muted).toBe(true)
+  })
+
   it('updates Media Session on play and removes listeners when the scope closes', async () => {
     const audio = new FakeAudio()
     const media = makeRecordingMediaSession()
@@ -166,6 +205,7 @@ describe('HtmlAudioEngineLayer', () => {
     }).pipe(Effect.provide(provideEngine(audio, media)), Effect.scoped, Effect.runPromise)
 
     expect(media.record.metadata).toEqual([{ title: 'Mix', artists: ['DJ'], artwork: undefined }])
+    expect(media.record.clearedMetadata).toBe(1)
     expect(media.record.playbackStates).toContain('none')
   })
 })

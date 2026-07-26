@@ -17,6 +17,7 @@ import {
 
 export type PlayerCoreCallbacks = {
   readonly onStatus: (status: EngineStatus) => void
+  readonly onTrackStarted?: (track: QueueTrackType) => void
   readonly onTrackFinished: () => void
   readonly onError?: (message: string, error: unknown) => void
 }
@@ -24,6 +25,7 @@ export type PlayerCoreCallbacks = {
 type SourceSession = {
   readonly generation: number
   readonly id: string
+  readonly track: QueueTrackType
   intent: PlaybackIntent
   preparation: SourcePreparation
   completion: SourceCompletion
@@ -84,9 +86,14 @@ export const makePlayerCore = (
      *  rejected play does not leave the core believing it is playing. */
     const attemptPlay = (active: SourceSession) =>
       engine.play.pipe(
-        Effect.flatMap(() =>
-          runDetached('Unable to deliver audio play', playReporter.recordPlay(active.id))
-        ),
+        Effect.tap(() => {
+          active.intent = transitionPlaybackIntent(active.intent, {
+            _tag: 'command',
+            playing: true
+          })
+          callbacks.onTrackStarted?.(active.track)
+          return runDetached('Unable to deliver audio play', playReporter.recordPlay(active.id))
+        }),
         Effect.catchTag('PlaybackRejected', (error) =>
           Effect.sync(() => {
             if (session === active) {
@@ -149,6 +156,7 @@ export const makePlayerCore = (
       Effect.gen(function* () {
         const active = session
         if (active && status.sourceGeneration !== active.generation) return
+        if (!active && status.sourceGeneration !== null) return
 
         callbacks.onStatus(status)
         if (!active) return
@@ -206,10 +214,11 @@ export const makePlayerCore = (
           const generation = ++generationCounter
 
           if (!track) {
+            yield* engine.pause
             session = null
             lastPositionPersist = null
+            yield* engine.clearSource
             yield* engine.setNowPlaying(null)
-            yield* engine.pause
             callbacks.onStatus(yield* engine.currentStatus)
             return
           }
@@ -217,6 +226,7 @@ export const makePlayerCore = (
           const active: SourceSession = {
             generation,
             id: track.id,
+            track,
             intent: { desiredPlaying: playOnReady === track.id, pendingPlaying: null },
             preparation: {
               generation,

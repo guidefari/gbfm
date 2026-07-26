@@ -2,7 +2,8 @@ import {
   AudioEngine,
   PlaybackRejected,
   type EngineStatus,
-  type NowPlayingMetadata
+  type NowPlayingMetadata,
+  type PlaybackCommandHandlers
 } from '@gbfm/player'
 import { Effect, Layer, Queue, Stream } from 'effect'
 import type { AudioPlayer, AudioStatus } from 'expo-audio'
@@ -25,6 +26,8 @@ export type ExpoAudioEnginePlayer = Pick<
   | 'pause'
   | 'seekTo'
   | 'currentStatus'
+  | 'volume'
+  | 'muted'
   | 'addListener'
   | 'clearLockScreenControls'
   | 'setActiveForLockScreen'
@@ -40,11 +43,23 @@ const makeExpoAudioEngine = (player: ExpoAudioEnginePlayer, platform: 'native' |
           sourceGeneration = generation
           player.replace(url)
         }),
+      clearSource: Effect.sync(() => {
+        sourceGeneration = null
+        player.replace(null)
+      }),
       play: Effect.try({
         try: () => player.play(),
         catch: (cause: unknown) => new PlaybackRejected({ cause })
       }),
       pause: Effect.sync(() => player.pause()),
+      setVolume: (volume: number) =>
+        Effect.sync(() => {
+          player.volume = Math.max(0, Math.min(1, volume))
+        }),
+      setMuted: (muted: boolean) =>
+        Effect.sync(() => {
+          player.muted = muted
+        }),
       seekTo: (seconds: number) => Effect.promise(() => player.seekTo(seconds)),
       currentStatus: Effect.sync(() => toEngineStatus(player.currentStatus, sourceGeneration)),
 
@@ -72,7 +87,13 @@ const makeExpoAudioEngine = (player: ExpoAudioEnginePlayer, platform: 'native' |
             },
             { showSeekForward: true, showSeekBackward: true }
           )
-        })
+        }),
+
+      setPositionState: () => Effect.void,
+
+      // expo-audio exposes lock-screen activation/metadata but no JS remote
+      // next/previous callback surface, so we keep this seam a no-op here.
+      setCommandHandlers: (_handlers: PlaybackCommandHandlers | null) => Effect.void
     }
   })
 

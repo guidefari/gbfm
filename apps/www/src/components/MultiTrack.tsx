@@ -5,7 +5,6 @@ import clsx from 'clsx'
 import { cn } from '@/lib/utils'
 import type { Track } from '@/types'
 import { DEFAULT_IMAGE_URL } from '../lib/constants'
-import { PlayPauseButton } from './PlayPauseButton'
 
 type Props = {
   loading: boolean
@@ -84,17 +83,6 @@ export function MultiTrack({
                 {tracks.map((track) => (
                   <li className='' key={track.trackUrl}>
                     <div className={clsx('flex items-center  mb-2 space-x-1 text-white group Tag')}>
-                      {track.previewUrl?.length && (
-                        <button
-                          className={clsx(
-                            'opacity-50 text-sky-300 hover:text-gb-tomato hover:opacity-95 hover:cursor-pointer',
-                            'mr-2'
-                          )}
-                          type='button'
-                          title='Play/Pause'>
-                          <PlayPauseButton previewUrl={track.previewUrl} />
-                        </button>
-                      )}
                       {track.trackUrl ? (
                         <a
                           href={track.trackUrl}

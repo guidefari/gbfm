@@ -53,6 +53,36 @@ describe('MediaSessionService', () => {
     }
   })
 
+  it('clears metadata and playback state through the service seam', async () => {
+    const original = globalThis.navigator
+    const mediaSession = {
+      metadata: { title: 'Mix' },
+      playbackState: 'playing',
+      setActionHandler: () => undefined,
+      setPositionState: () => undefined
+    }
+
+    Object.defineProperty(globalThis, 'navigator', {
+      configurable: true,
+      value: { mediaSession }
+    })
+
+    try {
+      await Effect.gen(function* () {
+        const media = yield* MediaSessionService
+        yield* media.clearMetadata()
+      }).pipe(Effect.provide(MediaSessionServiceLive), Effect.runPromise)
+
+      expect(mediaSession.metadata).toBeNull()
+      expect(mediaSession.playbackState).toBe('none')
+    } finally {
+      Object.defineProperty(globalThis, 'navigator', {
+        configurable: true,
+        value: original
+      })
+    }
+  })
+
   it('no-ops without a Media Session implementation', async () => {
     const original = globalThis.navigator
     Object.defineProperty(globalThis, 'navigator', {
@@ -65,6 +95,7 @@ describe('MediaSessionService', () => {
       await Effect.gen(function* () {
         const media = yield* MediaSessionService
         yield* media.setMetadata('Title', ['Artist'])
+        yield* media.clearMetadata()
         yield* media.setPlaybackState('playing')
         yield* media.setPositionState(1, 0)
         yield* media.setActionHandlers(null)

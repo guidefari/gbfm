@@ -24,7 +24,6 @@ export type TrackAPIResponse = {
   title?: string
   artists?: string
   trackUrl?: string
-  previewUrl?: string
 }
 
 export type Track = Omit<TrackAPIResponse, 'albumType'>
@@ -49,7 +48,6 @@ export type AlbumApiResponse = {
   albumImageUrl?: string
   title?: string
   artists?: string
-  previewUrl?: string
   tracks: AlbumSingleTrackApiResponse[]
   albumUrl: string
 }

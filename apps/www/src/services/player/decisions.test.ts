@@ -90,7 +90,8 @@ describe('queue navigation', () => {
     expect(resolvePreviousIndex({ trackCount: 3, currentIndex: 0 })).toBe(2)
   })
 
-  test('has nothing to step back to on an empty queue', () => {
+  test('has nothing to step back to when nothing is selected', () => {
+    expect(resolvePreviousIndex({ trackCount: 3, currentIndex: -1 })).toBeNull()
     expect(resolvePreviousIndex({ trackCount: 0, currentIndex: -1 })).toBeNull()
   })
 })

@@ -1,0 +1,515 @@
+import { Effect, Layer, ManagedRuntime, PubSub, Stream } from 'effect'
+import { describe, expect, it } from 'vitest'
+import {
+  makeAudioPlayback,
+  type AudioPlaybackReporter,
+  type PlaybackSnapshot
+} from './audioPlayback'
+import {
+  AudioEngine,
+  PlaybackRejected,
+  type AudioEngineShape,
+  type EngineStatus,
+  type PlaybackCommandHandlers
+} from './engine'
+import { PlayReporter } from './playReporter'
+import { PlayerStorage, type PlayerStorageShape, type PositionRecord } from './playerStorage'
+import type { VolumeRecordType } from './audioStorage'
+import type { QueueTrackType, PersistedQueueType } from './persistedQueue'
+
+const track = (id: string): QueueTrackType => ({
+  id,
+  title: id,
+  slug: id,
+  url: `https://cdn.example/${id}.mp3`,
+  thumbnailUrl: null,
+  type: 'mix'
+})
+
+const idleStatus: EngineStatus = {
+  sourceGeneration: null,
+  isLoaded: false,
+  playing: false,
+  didJustFinish: false,
+  currentTime: 0,
+  duration: 0,
+  isBuffering: false
+}
+
+const makeRecordingEngine = (options: { readonly rejectPlay?: boolean } = {}) =>
+  Effect.gen(function* () {
+    const pubsub = yield* PubSub.unbounded<EngineStatus>()
+    const calls: string[] = []
+    const positionStates: Array<{ readonly duration: number; readonly position: number }> = []
+    const volumeStates: Array<
+      | { readonly kind: 'volume'; readonly value: number }
+      | { readonly kind: 'muted'; readonly value: boolean }
+    > = []
+    let status = idleStatus
+    let handlers: PlaybackCommandHandlers | null = null
+
+    const engine: AudioEngineShape = {
+      replace: (url, sourceGeneration) =>
+        Effect.sync(() => {
+          status = { ...status, sourceGeneration }
+          calls.push(`replace:${url}`)
+        }),
+      clearSource: Effect.sync(() => {
+        status = { ...idleStatus, sourceGeneration: null }
+        calls.push('clearSource')
+      }),
+      play: options.rejectPlay
+        ? Effect.suspend(() =>
+            Effect.fail(new PlaybackRejected({ cause: new Error('play rejected in test engine') }))
+          )
+        : Effect.sync(() => {
+            calls.push('play')
+          }),
+      pause: Effect.sync(() => {
+        calls.push('pause')
+      }),
+      setVolume: (volume) =>
+        Effect.sync(() => {
+          volumeStates.push({ kind: 'volume', value: volume })
+          calls.push(`volume:${volume}`)
+        }),
+      setMuted: (muted) =>
+        Effect.sync(() => {
+          volumeStates.push({ kind: 'muted', value: muted })
+          calls.push(`muted:${muted}`)
+        }),
+      seekTo: (seconds) =>
+        Effect.sync(() => {
+          calls.push(`seek:${seconds}`)
+        }),
+      currentStatus: Effect.sync(() => status),
+      changes: Stream.fromPubSub(pubsub),
+      setNowPlaying: (metadata) =>
+        Effect.sync(() => {
+          calls.push(`nowPlaying:${metadata ? metadata.title : 'null'}`)
+        }),
+      setPositionState: (duration, position) =>
+        Effect.sync(() => {
+          positionStates.push({ duration, position })
+        }),
+      setCommandHandlers: (next) =>
+        Effect.sync(() => {
+          handlers = next
+          calls.push(next ? 'handlers:set' : 'handlers:clear')
+        })
+    }
+
+    const emit = (next: Partial<EngineStatus>) =>
+      Effect.suspend(() => {
+        status = { ...status, ...next }
+        return PubSub.publish(pubsub, status)
+      })
+
+    const setStatus = (next: Partial<EngineStatus>) =>
+      Effect.sync(() => {
+        status = { ...status, ...next }
+      })
+
+    return {
+      engine,
+      calls,
+      positionStates,
+      volumeStates,
+      emit,
+      setStatus,
+      getHandlers: () => handlers
+    }
+  })
+
+const makeRecordingStorage = (
+  options: {
+    readonly loadQueue?: Effect.Effect<PersistedQueueType | null, unknown, never>
+    readonly loadVolume?: Effect.Effect<VolumeRecordType | null, unknown, never>
+    readonly saveQueue?: (queue: PersistedQueueType) => Effect.Effect<void, unknown, never>
+    readonly saveVolume?: (volume: VolumeRecordType) => Effect.Effect<void, unknown, never>
+    readonly positions?: ReadonlyMap<string, PositionRecord>
+  } = {}
+) => {
+  const savedQueues: Array<PersistedQueueType> = []
+  const savedVolumes: Array<VolumeRecordType> = []
+  const savedPositions: Array<{ readonly id: string; readonly position: number }> = []
+  const clearedPositions: Array<string> = []
+  const loadQueue = options.loadQueue ?? Effect.succeed(null)
+  const loadVolume = options.loadVolume ?? Effect.succeed(null)
+  const positions = options.positions ?? new Map<string, PositionRecord>()
+
+  const layer = Layer.succeed(PlayerStorage, {
+    loadQueue: () => loadQueue,
+    saveQueue: (queue) =>
+      Effect.gen(function* () {
+        savedQueues.push(queue)
+        if (options.saveQueue) {
+          yield* options.saveQueue(queue)
+        }
+      }),
+    loadVolume: () => loadVolume,
+    saveVolume: (volume) =>
+      Effect.gen(function* () {
+        savedVolumes.push(volume)
+        if (options.saveVolume) {
+          yield* options.saveVolume(volume)
+        }
+      }),
+    loadPosition: (trackId) => Effect.sync(() => positions.get(trackId) ?? null),
+    savePosition: (trackId, position) =>
+      Effect.sync(() => {
+        savedPositions.push({ id: trackId, position })
+      }),
+    clearPosition: (trackId) =>
+      Effect.sync(() => {
+        clearedPositions.push(trackId)
+      }),
+    recordPlay: () => Effect.void,
+    isWithinDedupWindow: () => Effect.succeed(false)
+  })
+
+  return { layer, savedQueues, savedVolumes, savedPositions, clearedPositions }
+}
+
+const makeRecordingPlayReporter = () => {
+  const reported: string[] = []
+  const layer = Layer.succeed(PlayReporter, {
+    recordPlay: (trackId: string) =>
+      Effect.sync(() => {
+        reported.push(trackId)
+      })
+  })
+
+  return { layer, reported }
+}
+
+const makeRuntime = (
+  engine: AudioEngineShape,
+  storage: ReturnType<typeof makeRecordingStorage>,
+  playReporter: ReturnType<typeof makeRecordingPlayReporter>
+) =>
+  ManagedRuntime.make(
+    Layer.mergeAll(Layer.succeed(AudioEngine, engine), storage.layer, playReporter.layer)
+  )
+
+const makeReporter = () => {
+  const played: string[] = []
+  const paused: Array<{
+    readonly trackId: string | null
+    readonly currentTime: number
+    readonly duration: number
+  }> = []
+  const completed: Array<{ readonly trackId: string | null; readonly duration: number }> = []
+  const seeks: Array<{
+    readonly trackId: string | null
+    readonly fromTime: number
+    readonly toTime: number
+    readonly method: 'scrub' | 'keyboard' | 'mediasession'
+  }> = []
+  const queueActions: Array<{
+    readonly action: 'add' | 'remove' | 'reorder' | 'clear' | 'play_from'
+    readonly trackId?: string
+    readonly queueLength: number
+  }> = []
+  const errors: Array<{ readonly message: string; readonly error: unknown }> = []
+
+  const reporter: AudioPlaybackReporter = {
+    onTrackPlayed: (next) =>
+      Effect.sync(() => {
+        played.push(next.id)
+      }),
+    onTrackPaused: (input) =>
+      Effect.sync(() => {
+        paused.push(input)
+      }),
+    onTrackCompleted: (input) =>
+      Effect.sync(() => {
+        completed.push(input)
+      }),
+    onTrackSeek: (input) =>
+      Effect.sync(() => {
+        seeks.push(input)
+      }),
+    onQueueAction: (input) =>
+      Effect.sync(() => {
+        queueActions.push(input)
+      }),
+    onError: (message, error) =>
+      Effect.sync(() => {
+        errors.push({ message, error })
+      })
+  }
+
+  return { reporter, played, paused, completed, seeks, queueActions, errors }
+}
+
+describe('makeAudioPlayback', () => {
+  it('replays early queue changes after hydration without losing them', async () => {
+    let resolveQueue!: (queue: PersistedQueueType | null) => void
+    const queuePromise = new Promise<PersistedQueueType | null>((resolve) => {
+      resolveQueue = resolve
+    })
+
+    const storage = makeRecordingStorage({ loadQueue: Effect.promise(() => queuePromise) })
+    const { reporter } = makeReporter()
+    const { engine } = await Effect.runPromise(makeRecordingEngine())
+    const playReporter = makeRecordingPlayReporter()
+    const runtime = makeRuntime(engine, storage, playReporter)
+
+    try {
+      const result = await runtime.runPromise(
+        Effect.gen(function* () {
+          const playback = yield* makeAudioPlayback(runtime, reporter)
+          const snapshots: PlaybackSnapshot[] = []
+          const unsubscribe = playback.subscribeSnapshot((snapshot) => snapshots.push(snapshot))
+          yield* playback.enqueue(track('early'))
+          yield* Effect.yieldNow
+          resolveQueue({ tracks: [track('stored')], currentIndex: 0 })
+          yield* Effect.promise(() => Promise.resolve())
+          yield* Effect.promise(() => Promise.resolve())
+          unsubscribe()
+          return { snapshots, current: playback.getSnapshot() }
+        }).pipe(Effect.scoped)
+      )
+
+      expect(result.snapshots.at(-1)?.queue.tracks.map(({ id }) => id)).toEqual(['stored', 'early'])
+      expect(result.current.queue.tracks.map(({ id }) => id)).toEqual(['stored', 'early'])
+      expect(storage.savedQueues.at(-1)?.tracks.map(({ id }) => id)).toEqual(['stored', 'early'])
+    } finally {
+      await runtime.dispose()
+    }
+  })
+
+  it('restores a stored position before starting playback', async () => {
+    const storage = makeRecordingStorage({
+      positions: new Map([[track('mix-1').id, { position: 42, updatedAt: 0 }]])
+    })
+    const { reporter, played } = makeReporter()
+    const { engine, calls, positionStates, setStatus } =
+      await Effect.runPromise(makeRecordingEngine())
+    const playReporter = makeRecordingPlayReporter()
+    const runtime = makeRuntime(engine, storage, playReporter)
+
+    try {
+      const result = await runtime.runPromise(
+        Effect.gen(function* () {
+          const playback = yield* makeAudioPlayback(runtime, reporter)
+          const snapshots: PlaybackSnapshot[] = []
+          const unsubscribe = playback.subscribeSnapshot((snapshot) => snapshots.push(snapshot))
+          yield* setStatus({ isLoaded: true, duration: 300 })
+          yield* playback.playTrack(track('mix-1'))
+          yield* Effect.yieldNow
+          yield* Effect.yieldNow
+          unsubscribe()
+          return { playback, snapshots }
+        }).pipe(Effect.scoped)
+      )
+
+      expect(calls).toContain('seek:42')
+      expect(calls.indexOf('seek:42')).toBeLessThan(calls.indexOf('play'))
+      expect(played).toEqual(['mix-1'])
+      expect(playReporter.reported).toEqual(['mix-1'])
+      expect(positionStates.length).toBeGreaterThan(0)
+      expect(result.playback.getSnapshot().queue.current?.id).toBe('mix-1')
+      expect(result.snapshots.at(-1)?.queue.current?.id).toBe('mix-1')
+    } finally {
+      await runtime.dispose()
+    }
+  })
+
+  it('applies volume and mute to the engine', async () => {
+    const storage = makeRecordingStorage()
+    const { reporter } = makeReporter()
+    const { engine, calls, volumeStates } = await Effect.runPromise(makeRecordingEngine())
+    const playReporter = makeRecordingPlayReporter()
+    const runtime = makeRuntime(engine, storage, playReporter)
+
+    try {
+      await runtime.runPromise(
+        Effect.gen(function* () {
+          const playback = yield* makeAudioPlayback(runtime, reporter)
+          yield* Effect.yieldNow
+          yield* Effect.yieldNow
+          yield* playback.setVolume(40)
+          yield* playback.toggleMute
+        }).pipe(Effect.scoped)
+      )
+
+      expect(calls).toContain('volume:0.4')
+      expect(calls).toContain('muted:true')
+      expect(volumeStates.some((entry) => entry.kind === 'volume' && entry.value === 0.4)).toBe(
+        true
+      )
+      expect(volumeStates.at(-1)).toEqual({ kind: 'muted', value: true })
+    } finally {
+      await runtime.dispose()
+    }
+  })
+
+  it('keeps played analytics successful-only when playback is rejected', async () => {
+    const storage = makeRecordingStorage()
+    const { reporter, played, errors } = makeReporter()
+    const { engine, setStatus } = await Effect.runPromise(makeRecordingEngine({ rejectPlay: true }))
+    const playReporter = makeRecordingPlayReporter()
+    const runtime = makeRuntime(engine, storage, playReporter)
+
+    try {
+      await runtime.runPromise(
+        Effect.gen(function* () {
+          const playback = yield* makeAudioPlayback(runtime, reporter)
+          yield* Effect.yieldNow
+          yield* setStatus({ isLoaded: true, duration: 300 })
+          yield* playback.playTrack(track('one'))
+          yield* Effect.yieldNow
+          yield* Effect.yieldNow
+        }).pipe(Effect.scoped)
+      )
+
+      expect(played).toEqual([])
+      expect(playReporter.reported).toEqual([])
+      expect(errors.some((entry) => entry.message === 'Playback was refused by the platform')).toBe(
+        true
+      )
+    } finally {
+      await runtime.dispose()
+    }
+  })
+
+  it('no-ops playPrevious when no queue item is selected', async () => {
+    const storage = makeRecordingStorage({
+      loadQueue: Effect.succeed({ tracks: [track('one'), track('two')], currentIndex: -1 })
+    })
+    const { reporter } = makeReporter()
+    const { engine, calls } = await Effect.runPromise(makeRecordingEngine())
+    const playReporter = makeRecordingPlayReporter()
+    const runtime = makeRuntime(engine, storage, playReporter)
+
+    try {
+      const result = await runtime.runPromise(
+        Effect.gen(function* () {
+          const playback = yield* makeAudioPlayback(runtime, reporter)
+          yield* Effect.yieldNow
+          yield* Effect.yieldNow
+          const before = calls.length
+          yield* playback.playPrevious
+          yield* Effect.yieldNow
+          return { before, after: calls.length }
+        }).pipe(Effect.scoped)
+      )
+
+      expect(result.after).toBe(result.before)
+    } finally {
+      await runtime.dispose()
+    }
+  })
+
+  it('flushes queued queue and volume saves before teardown finishes', async () => {
+    let resolveQueue!: () => void
+    let resolveVolume!: () => void
+    const queueTail = new Promise<void>((resolve) => {
+      resolveQueue = resolve
+    })
+    const volumeTail = new Promise<void>((resolve) => {
+      resolveVolume = resolve
+    })
+
+    const storage = makeRecordingStorage({
+      saveQueue: () => Effect.promise(() => queueTail),
+      saveVolume: () => Effect.promise(() => volumeTail)
+    })
+    const { reporter } = makeReporter()
+    const { engine } = await Effect.runPromise(makeRecordingEngine())
+    const playReporter = makeRecordingPlayReporter()
+    const runtime = makeRuntime(engine, storage, playReporter)
+
+    try {
+      let settled = false
+      const program = runtime
+        .runPromise(
+          Effect.gen(function* () {
+            const playback = yield* makeAudioPlayback(runtime, reporter)
+            yield* Effect.yieldNow
+            yield* Effect.yieldNow
+            yield* playback.enqueue(track('one'))
+            yield* playback.setVolume(55)
+          }).pipe(Effect.scoped)
+        )
+        .then(() => {
+          settled = true
+        })
+
+      await Promise.resolve()
+      await Promise.resolve()
+      expect(settled).toBe(false)
+
+      resolveQueue()
+      resolveVolume()
+      await program
+
+      expect(storage.savedQueues.at(-1)?.tracks.map(({ id }) => id)).toEqual(['one'])
+      expect(storage.savedVolumes.at(-1)).toEqual({ volume: 55, isMuted: false })
+    } finally {
+      await runtime.dispose()
+    }
+  })
+
+  it('reports pause and seek intents through the shared reporter', async () => {
+    const storage = makeRecordingStorage()
+    const { reporter } = makeReporter()
+    const { engine, calls, setStatus } = await Effect.runPromise(makeRecordingEngine())
+    const playReporter = makeRecordingPlayReporter()
+    const runtime = makeRuntime(engine, storage, playReporter)
+
+    try {
+      await runtime.runPromise(
+        Effect.gen(function* () {
+          const playback = yield* makeAudioPlayback(runtime, reporter)
+          yield* setStatus({ isLoaded: true, duration: 300 })
+          yield* playback.playTrack(track('one'))
+          for (let i = 0; i < 5 && playReporter.reported.length === 0; i += 1) {
+            yield* Effect.promise(() => Promise.resolve())
+          }
+          yield* playback.seekTo(12)
+          yield* Effect.yieldNow
+          yield* playback.pause
+          yield* Effect.yieldNow
+        }).pipe(Effect.scoped)
+      )
+
+      expect(calls).toContain('seek:12')
+      expect(calls).toContain('pause')
+      expect(playReporter.reported).toEqual(['one'])
+    } finally {
+      await runtime.dispose()
+    }
+  })
+
+  it('routes media session next-track commands through the same queue path as UI actions', async () => {
+    const storage = makeRecordingStorage()
+    const { reporter } = makeReporter()
+    const { engine, setStatus, getHandlers } = await Effect.runPromise(makeRecordingEngine())
+    const playReporter = makeRecordingPlayReporter()
+    const runtime = makeRuntime(engine, storage, playReporter)
+
+    try {
+      const result = await runtime.runPromise(
+        Effect.gen(function* () {
+          const playback = yield* makeAudioPlayback(runtime, reporter)
+          yield* setStatus({ isLoaded: true, duration: 300 })
+          yield* playback.playAll([track('one'), track('two')])
+          yield* Effect.yieldNow
+          const handlers = getHandlers()
+          expect(handlers).not.toBeNull()
+          handlers?.onNextTrack()
+          yield* Effect.yieldNow
+          return playback.getSnapshot()
+        }).pipe(Effect.scoped)
+      )
+
+      expect(result.queue.current?.id).toBe('two')
+      expect(playReporter.reported).toEqual(['one', 'two'])
+    } finally {
+      await runtime.dispose()
+    }
+  })
+})
