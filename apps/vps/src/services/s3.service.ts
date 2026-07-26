@@ -13,6 +13,7 @@ import {
   S3Client,
   UploadPartCommand
 } from '@aws-sdk/client-s3'
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { Context, Effect, Layer } from 'effect'
 import { getErrorMessage, S3Error } from '@/errors'
 
@@ -78,6 +79,14 @@ export interface S3Service {
     body: Buffer | Uint8Array | Blob,
     bucketName: string
   ) => Effect.Effect<{ partNumber: number; etag: string; size: number }, S3Error>
+
+  readonly presignUploadPart: (
+    key: string,
+    uploadId: string,
+    partNumber: number,
+    bucketName: string,
+    expiresInSeconds: number
+  ) => Effect.Effect<string, S3Error>
 
   readonly completeMultipartUpload: (
     key: string,
@@ -434,6 +443,41 @@ const uploadMultipartPartEffect = (
     })
   )
 
+const presignUploadPartEffect = (
+  key: string,
+  uploadId: string,
+  partNumber: number,
+  bucketName: string,
+  expiresInSeconds: number
+) =>
+  Effect.tryPromise({
+    try: async () => {
+      const s3 = new S3Client({})
+      const command = new UploadPartCommand({
+        Bucket: bucketName,
+        Key: key,
+        UploadId: uploadId,
+        PartNumber: partNumber
+      })
+      return await getSignedUrl(s3, command, { expiresIn: expiresInSeconds })
+    },
+    catch: (error) =>
+      new S3Error({
+        message: `Failed to presign upload part: ${getErrorMessage(error)}`,
+        operation: 'presignUploadPart',
+        key
+      })
+  }).pipe(
+    Effect.withSpan('aws.s3.presignUploadPart', {
+      attributes: {
+        'aws.service': 's3',
+        's3.bucket': bucketName,
+        's3.key_prefix': getKeyPrefix(key),
+        's3.part_number': partNumber
+      }
+    })
+  )
+
 const completeMultipartUploadEffect = (
   key: string,
   uploadId: string,
@@ -593,6 +637,7 @@ export const S3ServiceLive = Layer.succeed(S3Service, {
   createMultipartUpload: createMultipartUploadEffect,
   getObjectMetadata: getObjectMetadataEffect,
   uploadMultipartPart: uploadMultipartPartEffect,
+  presignUploadPart: presignUploadPartEffect,
   completeMultipartUpload: completeMultipartUploadEffect,
   abortMultipartUpload: abortMultipartUploadEffect,
   listMultipartParts: listMultipartPartsEffect

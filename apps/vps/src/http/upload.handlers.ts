@@ -21,7 +21,13 @@ const MAX_IMAGE_SIZE = 10 * 1024 * 1024
 // request adds ~1 KiB of overhead on top of the file part, so the per-chunk
 // ceiling must stay well under 10 MiB. 9 MiB leaves room for the form fields
 // (key, uploadId, partNumber) and the boundary markers.
+// Retained for the legacy uploadMultipartPart proxy endpoint only -- the new
+// presignMultipartPart path PUTs straight to S3 and isn't bound by this.
 const MAX_CHUNK_SIZE = 9 * 1024 * 1024
+
+// Long enough to cover an 8 MiB PUT over a slow upload connection with retry
+// headroom, short enough to bound how long a leaked URL stays usable.
+const PRESIGNED_PART_URL_EXPIRY_SECONDS = 5 * 60
 
 const sanitizeKeySegment = (value: string): string => value.replace(/[^a-zA-Z0-9.-]/g, '_')
 
@@ -218,6 +224,40 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
         return { partNumber: result.partNumber, etag: result.etag, size: result.size }
       }).pipe(
         Effect.withSpan('api.upload.multipart.part', {
+          attributes: { partNumber: payload.partNumber }
+        })
+      )
+    )
+    .handle('presignMultipartPart', ({ payload }) =>
+      Effect.gen(function* () {
+        const { user } = yield* AuthSession
+        const { key, uploadId, partNumber } = payload
+
+        yield* assertKeyOwnership(user.id, key)
+        const expectedSize = yield* requireExpectedSize(user.id, key)
+        if (expectedMultipartPartSize(expectedSize, partNumber) === null) {
+          return yield* new HttpApiError.BadRequest()
+        }
+
+        const config = yield* ConfigService
+        const s3Service = yield* S3Service
+        const url = yield* dieOnS3Error(
+          s3Service.presignUploadPart(
+            key,
+            uploadId,
+            partNumber,
+            config.buckets.userContent,
+            PRESIGNED_PART_URL_EXPIRY_SECONDS
+          )
+        )
+
+        return {
+          url,
+          partNumber,
+          expiresInSeconds: PRESIGNED_PART_URL_EXPIRY_SECONDS
+        }
+      }).pipe(
+        Effect.withSpan('api.upload.multipart.presignPart', {
           attributes: { partNumber: payload.partNumber }
         })
       )

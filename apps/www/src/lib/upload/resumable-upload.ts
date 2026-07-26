@@ -47,6 +47,12 @@ export interface MultipartPartResponse {
   size: number
 }
 
+export interface PresignPartResponse {
+  url: string
+  partNumber: number
+  expiresInSeconds: number
+}
+
 export interface MultipartStatusResponse {
   parts: ResumablePart[]
 }
@@ -65,6 +71,12 @@ const multipartPartResponseSchema = Schema.Struct({
   partNumber: Schema.Number,
   etag: Schema.String,
   size: Schema.Number
+})
+
+const presignPartResponseSchema = Schema.Struct({
+  url: Schema.String,
+  partNumber: Schema.Number,
+  expiresInSeconds: Schema.Number
 })
 
 const multipartStatusResponseSchema = Schema.Struct({
@@ -111,6 +123,9 @@ export const parseInitResponse = (raw: unknown): MultipartInitResponse =>
 
 export const parsePartResponse = (raw: unknown): MultipartPartResponse =>
   Schema.decodeUnknownSync(multipartPartResponseSchema)(raw)
+
+export const parsePresignPartResponse = (raw: unknown): PresignPartResponse =>
+  Schema.decodeUnknownSync(presignPartResponseSchema)(raw)
 
 export const parseStatusResponse = (raw: unknown): MultipartStatusResponse => {
   const decoded = Schema.decodeUnknownSync(multipartStatusResponseSchema)(raw)

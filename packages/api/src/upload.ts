@@ -78,6 +78,18 @@ export const UploadMultipartPartResponse = Schema.Struct({
   size: Schema.Number.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(0)))
 })
 
+export const PresignMultipartPartInput = Schema.Struct({
+  key: Schema.NonEmptyString,
+  uploadId: Schema.NonEmptyString,
+  partNumber: PartNumber
+})
+
+export const PresignMultipartPartResponse = Schema.Struct({
+  url: Schema.NonEmptyString,
+  partNumber: PartNumber,
+  expiresInSeconds: Schema.Number
+})
+
 const CompletedPart = Schema.Struct({
   partNumber: PartNumber,
   etag: Schema.NonEmptyString
@@ -134,6 +146,19 @@ export const UploadGroup = HttpApiGroup.make('upload')
     HttpApiEndpoint.post('uploadMultipartPart', '/api/upload/multipart/part', {
       payload: UploadMultipartPartInput,
       success: UploadMultipartPartResponse,
+      error: HttpApiError.BadRequest
+    }).middleware(AuthMiddleware)
+  )
+  .add(
+    // Browser PUTs the raw part body directly to S3 with this URL --
+    // bypasses API Gateway/VPS entirely for the heavy bytes, removing the
+    // 10 MiB API Gateway ceiling that forced CHUNK_SIZE down to 8 MiB (see
+    // PR #130). uploadMultipartPart above is kept as-is (not removed) so
+    // any in-flight/paused upload whose localStorage checkpoint predates
+    // this deploy can still complete via the old proxy path.
+    HttpApiEndpoint.post('presignMultipartPart', '/api/upload/multipart/presign-part', {
+      payload: PresignMultipartPartInput,
+      success: PresignMultipartPartResponse,
       error: HttpApiError.BadRequest
     }).middleware(AuthMiddleware)
   )
