@@ -1,6 +1,6 @@
 {
-  "id": "2446c294-af40-4e7b-ba41-49e80d04c718",
-  "prevId": "6b430fbf-ed18-42ef-9aca-2ef40867c978",
+  "id": "9c0bbe9f-5e84-46a3-afba-6e481227cf4d",
+  "prevId": "2446c294-af40-4e7b-ba41-49e80d04c718",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1711,7 +1711,23 @@
           "notNull": true
         }
       },
-      "indexes": {},
+      "indexes": {
+        "music_label_albums_album_id_idx": {
+          "name": "music_label_albums_album_id_idx",
+          "columns": [
+            {
+              "expression": "album_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "music_label_albums_label_id_music_labels_id_fk": {
           "name": "music_label_albums_label_id_music_labels_id_fk",
@@ -1760,7 +1776,23 @@
           "notNull": true
         }
       },
-      "indexes": {},
+      "indexes": {
+        "music_label_artists_artist_id_idx": {
+          "name": "music_label_artists_artist_id_idx",
+          "columns": [
+            {
+              "expression": "artist_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "music_label_artists_label_id_music_labels_id_fk": {
           "name": "music_label_artists_label_id_music_labels_id_fk",

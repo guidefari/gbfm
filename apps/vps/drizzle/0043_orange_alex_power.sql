@@ -13,6 +13,4 @@ CREATE TABLE "music_label_artists" (
 ALTER TABLE "music_label_albums" ADD CONSTRAINT "music_label_albums_label_id_music_labels_id_fk" FOREIGN KEY ("label_id") REFERENCES "public"."music_labels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "music_label_albums" ADD CONSTRAINT "music_label_albums_album_id_music_albums_id_fk" FOREIGN KEY ("album_id") REFERENCES "public"."music_albums"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "music_label_artists" ADD CONSTRAINT "music_label_artists_label_id_music_labels_id_fk" FOREIGN KEY ("label_id") REFERENCES "public"."music_labels"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "music_label_artists" ADD CONSTRAINT "music_label_artists_artist_id_music_artists_id_fk" FOREIGN KEY ("artist_id") REFERENCES "public"."music_artists"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-CREATE INDEX "music_label_albums_album_id_idx" ON "music_label_albums" USING btree ("album_id");--> statement-breakpoint
-CREATE INDEX "music_label_artists_artist_id_idx" ON "music_label_artists" USING btree ("artist_id");
+ALTER TABLE "music_label_artists" ADD CONSTRAINT "music_label_artists_artist_id_music_artists_id_fk" FOREIGN KEY ("artist_id") REFERENCES "public"."music_artists"("id") ON DELETE cascade ON UPDATE no action;

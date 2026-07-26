@@ -11,6 +11,25 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const drizzleRoot = path.resolve(__dirname, '../../drizzle')
 
+const APPLIED_0043_SQL = `
+CREATE TABLE "music_label_albums" (
+  "label_id" uuid NOT NULL,
+  "album_id" uuid NOT NULL,
+  CONSTRAINT "music_label_albums_label_id_album_id_pk" PRIMARY KEY("label_id","album_id")
+);
+CREATE TABLE "music_label_artists" (
+  "label_id" uuid NOT NULL,
+  "artist_id" uuid NOT NULL,
+  CONSTRAINT "music_label_artists_label_id_artist_id_pk" PRIMARY KEY("label_id","artist_id")
+);
+ALTER TABLE "music_label_albums" ADD CONSTRAINT "music_label_albums_label_id_music_labels_id_fk" FOREIGN KEY ("label_id") REFERENCES "public"."music_labels"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "music_label_albums" ADD CONSTRAINT "music_label_albums_album_id_music_albums_id_fk" FOREIGN KEY ("album_id") REFERENCES "public"."music_albums"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "music_label_artists" ADD CONSTRAINT "music_label_artists_label_id_music_labels_id_fk" FOREIGN KEY ("label_id") REFERENCES "public"."music_labels"("id") ON DELETE cascade ON UPDATE no action;
+ALTER TABLE "music_label_artists" ADD CONSTRAINT "music_label_artists_artist_id_music_artists_id_fk" FOREIGN KEY ("artist_id") REFERENCES "public"."music_artists"("id") ON DELETE cascade ON UPDATE no action;
+`
+
+const APPLIED_0043_AT = 1785026779857
+
 const PRE_0041_SCHEMA = `
 CREATE TABLE "user" (
   "id" text PRIMARY KEY,
@@ -144,8 +163,7 @@ function splitStatements(sql: string): string[] {
     .filter((part) => part.length > 0)
 }
 
-async function applyMigrationFile(pool: Pool, tag: string) {
-  const sql = migrationSql(tag)
+async function applyMigrationSql(pool: Pool, sql: string, createdAt = Date.now()) {
   const hash = createHash('sha256').update(sql).digest('hex')
   const client = await pool.connect()
   try {
@@ -155,7 +173,7 @@ async function applyMigrationFile(pool: Pool, tag: string) {
     }
     await client.query(
       `INSERT INTO drizzle.__drizzle_migrations ("hash", "created_at") VALUES ($1, $2)`,
-      [hash, Date.now()]
+      [hash, createdAt]
     )
     await client.query('COMMIT')
   } catch (error) {
@@ -164,6 +182,10 @@ async function applyMigrationFile(pool: Pool, tag: string) {
   } finally {
     client.release()
   }
+}
+
+async function applyMigrationFile(pool: Pool, tag: string) {
+  await applyMigrationSql(pool, migrationSql(tag))
 }
 
 async function ensureMigrationTable(pool: Pool) {
@@ -504,6 +526,37 @@ describe('label music-entity migrations 0041-0042', () => {
     `)
     expect(releaseFk.rows).toEqual([
       { conname: 'releases_labelId_labels_id_fk', referenced_table: 'labels' }
+    ])
+  }, 120_000)
+
+  it('continues after the originally deployed 0043 affiliation migration', async () => {
+    await resetToPre0041()
+    await seedRepresentativeLabels(pool)
+    await applyMigrationSql(pool, migrationSql('0041_loving_hobgoblin'), 1784994030001)
+    await applyMigrationSql(pool, migrationSql('0042_sudden_natasha_romanoff'), 1784994044309)
+    await applyMigrationSql(pool, APPLIED_0043_SQL, APPLIED_0043_AT)
+
+    const db = drizzle(pool)
+    await expect(
+      migratePostgres(db, {
+        migrationsFolder: drizzleRoot,
+        migrationsTable: '__drizzle_migrations',
+        migrationsSchema: 'drizzle'
+      })
+    ).resolves.toBeUndefined()
+
+    const indexes = await pool.query(`
+      SELECT indexname
+      FROM pg_indexes
+      WHERE indexname IN (
+        'music_label_artists_artist_id_idx',
+        'music_label_albums_album_id_idx'
+      )
+      ORDER BY indexname
+    `)
+    expect(indexes.rows).toEqual([
+      { indexname: 'music_label_albums_album_id_idx' },
+      { indexname: 'music_label_artists_artist_id_idx' }
     ])
   }, 120_000)
 
