@@ -512,4 +512,88 @@ describe('makeAudioPlayback', () => {
       await runtime.dispose()
     }
   })
+
+  it('advances playback when the currently playing queue item is removed', async () => {
+    const storage = makeRecordingStorage()
+    const { reporter } = makeReporter()
+    const { engine, setStatus } = await Effect.runPromise(makeRecordingEngine())
+    const playReporter = makeRecordingPlayReporter()
+    const runtime = makeRuntime(engine, storage, playReporter)
+
+    try {
+      const result = await runtime.runPromise(
+        Effect.gen(function* () {
+          const playback = yield* makeAudioPlayback(runtime, reporter)
+          yield* setStatus({ isLoaded: true, duration: 300 })
+          yield* playback.playAll([track('one'), track('two')])
+          yield* Effect.yieldNow
+          yield* playback.removeFromQueue(0)
+          yield* Effect.yieldNow
+          return playback.getSnapshot()
+        }).pipe(Effect.scoped)
+      )
+
+      expect(result.queue.current?.id).toBe('two')
+      expect(result.queue.tracks.map(({ id }) => id)).toEqual(['two'])
+      expect(playReporter.reported).toEqual(['one', 'two'])
+    } finally {
+      await runtime.dispose()
+    }
+  })
+
+  it('does not restart the active source when queue hydration catches up', async () => {
+    let resolveQueue!: (queue: PersistedQueueType | null) => void
+    const queuePromise = new Promise<PersistedQueueType | null>((resolve) => {
+      resolveQueue = resolve
+    })
+    const storage = makeRecordingStorage({ loadQueue: Effect.promise(() => queuePromise) })
+    const { reporter } = makeReporter()
+    const { engine, calls, setStatus } = await Effect.runPromise(makeRecordingEngine())
+    const playReporter = makeRecordingPlayReporter()
+    const runtime = makeRuntime(engine, storage, playReporter)
+
+    try {
+      await runtime.runPromise(
+        Effect.gen(function* () {
+          const playback = yield* makeAudioPlayback(runtime, reporter)
+          yield* setStatus({ isLoaded: true, duration: 300 })
+          yield* playback.playTrack(track('early'))
+          yield* Effect.yieldNow
+          resolveQueue({ tracks: [track('stored')], currentIndex: 0 })
+          yield* Effect.promise(() => Promise.resolve())
+          yield* Effect.promise(() => Promise.resolve())
+        }).pipe(Effect.scoped)
+      )
+
+      expect(calls.filter((call) => call === 'replace:https://cdn.example/early.mp3')).toHaveLength(
+        1
+      )
+    } finally {
+      await runtime.dispose()
+    }
+  })
+
+  it('keeps queue boundaries and invalid-duration percentage seeks as no-ops', async () => {
+    const storage = makeRecordingStorage()
+    const { reporter } = makeReporter()
+    const { engine, calls } = await Effect.runPromise(makeRecordingEngine())
+    const playReporter = makeRecordingPlayReporter()
+    const runtime = makeRuntime(engine, storage, playReporter)
+
+    try {
+      await runtime.runPromise(
+        Effect.gen(function* () {
+          const playback = yield* makeAudioPlayback(runtime, reporter)
+          yield* playback.playAll([track('one')])
+          yield* Effect.yieldNow
+          const before = calls.length
+          yield* playback.playNext
+          yield* playback.seekByPercentage(50)
+          expect(calls).toHaveLength(before)
+        }).pipe(Effect.scoped)
+      )
+    } finally {
+      await runtime.dispose()
+    }
+  })
 })
