@@ -2,8 +2,7 @@ import { Button, Label, toast } from '@gbfm/ui'
 import { FolderOpen, ImageIcon, Loader2, Trash2, Upload } from 'lucide-react'
 import { useEffect, useId, useState } from 'react'
 import { S3MediaFilePicker } from '@/components/mix-uploader/S3AudioFilePicker'
-import { apiUrl } from '@/lib/http'
-import { readResponseErrorMessage, readUploadResponse } from '@/lib/response'
+import { uploadImageDirectToS3 } from '@/lib/upload/image-upload'
 
 interface ImageUploadFieldProps {
   label: string
@@ -50,20 +49,7 @@ export function ImageUploadField({
     setIsUploading(true)
 
     try {
-      const formData = new FormData()
-      formData.append('imageFile', file)
-      formData.append('fileType', 'image')
-
-      const response = await fetch(apiUrl('/upload/file'), {
-        method: 'POST',
-        body: formData
-      })
-
-      if (!response.ok) {
-        throw new Error(await readResponseErrorMessage(response, 'Failed to upload image'))
-      }
-
-      const result = await readUploadResponse(response)
+      const result = await uploadImageDirectToS3(file)
       onChange(result.url)
       setPreviewUrl(null)
       toast({ title: 'Image uploaded successfully' })

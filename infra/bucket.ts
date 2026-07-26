@@ -2,11 +2,11 @@ import { domain } from './dns'
 
 const isDevStage = $app.stage === 'dev'
 
-// Browser PUTs multipart part bytes directly to this bucket via presigned
-// UploadPartCommand URLs (see apps/vps/src/http/upload.handlers.ts's
-// presignMultipartPart) -- scoped to the real deployed web origins rather
-// than sst.aws.Bucket's own default of allowOrigins: ["*"], since the
-// presigned URL itself is the only auth on that PUT.
+// Browser PUTs image bytes (apps/vps/src/http/upload.handlers.ts's
+// presignImage) and audio multipart part bytes directly to this bucket via
+// presigned URLs -- scoped to the real deployed web origins rather than
+// sst.aws.Bucket's own default of allowOrigins: ["*"], since the presigned
+// URL itself is the only auth on that PUT.
 const contentBucketCorsOrigins = [
   'http://127.0.0.1:5173',
   'http://localhost:4173',

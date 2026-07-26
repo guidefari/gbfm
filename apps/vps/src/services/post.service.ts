@@ -24,7 +24,9 @@ import {
 import { requireCreatorOrAdmin } from '@/lib/authorization'
 import { MdxService } from '@/lib/mdx'
 import { createPaginationMetadata, type PaginationMetadata } from '@/lib/pagination'
+import { ConfigService } from '@/services/config.service'
 import { SentryService } from '@/services/sentry.service'
+import { markAttachedAssets, UploadAssetService } from '@/services/upload-asset.service'
 
 export interface PostService {
   readonly getAll: (options: {
@@ -653,6 +655,8 @@ const createEffect = (data: InsertPost, creatorIds: string[]) =>
       tags: result.tags
     })
 
+    yield* markAttachedAssets('posts', result.id, [result.thumbnailUrl, result.bannerImageUrl])
+
     return result
   })
 
@@ -717,6 +721,14 @@ const updateEffect = (
         })
       }
       updatedPost = updatedRecords[0]
+
+      // An image attached via an edit form (not just at create time) still
+      // needs its upload_assets row moved out of 'pending', or it looks
+      // reclaimable to a future cleanup job despite being in use.
+      yield* markAttachedAssets('posts', updatedPost.id, [
+        updatedPost.thumbnailUrl,
+        updatedPost.bannerImageUrl
+      ])
     }
 
     if (creatorIds && creatorIds.length > 0) {
@@ -746,6 +758,8 @@ export const PostServiceLayer = Layer.effect(
   PostService,
   Effect.gen(function* () {
     const mdx = yield* MdxService
+    const config = yield* ConfigService
+    const uploadAssetService = yield* UploadAssetService
     return {
       getAll: (opts) => getAllEffect(opts, mdx),
       getAllForEdit: (opts, userId, userRole) => getAllEffect(opts, mdx, { userId, userRole }),
@@ -762,8 +776,16 @@ export const PostServiceLayer = Layer.effect(
       getMicroPostBySlug: (slug) => getMicroPostBySlugEffect(slug, mdx),
       getEditorialTags: getEditorialTagsEffect,
       getByTag: getByTagEffect,
-      create: createEffect,
-      update: (slug, userId, userRole, data) => updateEffect(slug, userId, userRole, data, mdx)
+      create: (data, creatorIds) =>
+        createEffect(data, creatorIds).pipe(
+          Effect.provideService(ConfigService, config),
+          Effect.provideService(UploadAssetService, uploadAssetService)
+        ),
+      update: (slug, userId, userRole, data) =>
+        updateEffect(slug, userId, userRole, data, mdx).pipe(
+          Effect.provideService(ConfigService, config),
+          Effect.provideService(UploadAssetService, uploadAssetService)
+        )
     }
   })
 )
