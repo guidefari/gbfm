@@ -71,7 +71,7 @@ describe('MediaSessionService', () => {
       await Effect.gen(function* () {
         const media = yield* MediaSessionService
         yield* media.clearMetadata()
-      }).pipe(Effect.provide(MediaSessionServiceLive), Effect.runPromise)
+      }).pipe(Effect.provide(MediaSessionServiceLayer), Effect.runPromise)
 
       expect(mediaSession.metadata).toBeNull()
       expect(mediaSession.playbackState).toBe('none')
