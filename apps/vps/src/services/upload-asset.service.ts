@@ -94,13 +94,20 @@ const markUploadedEffect = (key: string) =>
       })
   }).pipe(Effect.asVoid, Effect.withSpan('uploadAsset.markUploaded', { attributes: { key } }))
 
+// Guards the transition the same way markUploadedEffect does: WHERE
+// status='uploaded' only. This makes a repeat markAttached call on an
+// already-attached key a silent no-op (the row is no longer 'uploaded', so
+// the WHERE matches zero rows) instead of overwriting attachedToTable/
+// attachedToId, and it keeps a hypothetical future 'expired' row (S3 object
+// possibly already reclaimed by a cleanup job) from ever being flipped to
+// 'attached'.
 const markAttachedEffect = (key: string, attachedToTable: string, attachedToId: string) =>
   Effect.tryPromise({
     try: () =>
       db
         .update(uploadAssetsTable)
         .set({ status: 'attached', attachedToTable, attachedToId })
-        .where(eq(uploadAssetsTable.key, key)),
+        .where(and(eq(uploadAssetsTable.key, key), eq(uploadAssetsTable.status, 'uploaded'))),
     catch: (error) =>
       new DatabaseError({
         message: `Failed to mark upload asset attached: ${getErrorMessage(error)}`,
