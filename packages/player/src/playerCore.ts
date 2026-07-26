@@ -189,6 +189,7 @@ export const makePlayerCore = (
             _tag: 'command',
             playing: true
           })
+          active.completion = { ...active.completion, started: true }
           callbacks.onTrackStarted?.(active.track)
           return runDetached('Unable to deliver audio play', playReporter.recordPlay(active.id))
         }),
@@ -208,7 +209,6 @@ export const makePlayerCore = (
     const startSource = (active: SourceSession) =>
       Effect.gen(function* () {
         active.started = true
-        active.completion = { ...active.completion, started: true }
         lastPositionPersist =
           active.checkpoint === null ? null : { id: active.id, at: active.checkpoint }
         if (!active.intent.desiredPlaying) return

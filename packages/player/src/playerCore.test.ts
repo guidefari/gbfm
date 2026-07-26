@@ -219,6 +219,7 @@ describe('makePlayerCore', () => {
       expect(storage.saved).toEqual([])
 
       yield* emit({ isLoaded: true, duration: 300 })
+      yield* emit({ isLoaded: true, duration: 300 })
       yield* Effect.yieldNow
 
       return { beforeLoad, calls }
@@ -227,7 +228,7 @@ describe('makePlayerCore', () => {
     const { beforeLoad, calls } = await Effect.runPromise(program)
 
     expect(beforeLoad).not.toContain('play')
-    expect(calls).toContain('play')
+    expect(calls.filter((call) => call === 'play')).toHaveLength(1)
   })
 
   it('keeps rapid pause commands ahead of delayed play status', async () => {
@@ -459,16 +460,19 @@ describe('makePlayerCore', () => {
     expect(calls).toContain('play')
   })
 
-  it('clears intent and skips play reporting when the platform refuses playback', async () => {
+  it('does not arm completion or report a play when the platform refuses playback', async () => {
     const program = Effect.gen(function* () {
-      const { engine, setStatus } = yield* makeRecordingEngine({ rejectPlay: true })
+      const { engine, emit, setStatus } = yield* makeRecordingEngine({ rejectPlay: true })
       const storage = makeRecordingStorage()
       const reporter = makeRecordingReporter()
       const errors: Array<string> = []
+      let finished = 0
 
       const core = yield* makePlayerCore({
         onStatus: () => {},
-        onTrackFinished: () => {},
+        onTrackFinished: () => {
+          finished += 1
+        },
         onError: (message) => errors.push(message)
       }).pipe(
         Effect.provide(
@@ -480,14 +484,22 @@ describe('makePlayerCore', () => {
       yield* setStatus({ isLoaded: true, duration: 300 })
       yield* core.setSource(track)
       yield* Effect.yieldNow
+      yield* emit({ didJustFinish: true, playing: false })
+      yield* Effect.yieldNow
 
-      return { reported: reporter.reported, desired: yield* core.isDesiredPlaying, errors }
+      return {
+        reported: reporter.reported,
+        desired: yield* core.isDesiredPlaying,
+        errors,
+        finished
+      }
     }).pipe(Effect.scoped)
 
-    const { reported, desired, errors } = await Effect.runPromise(program)
+    const { reported, desired, errors, finished } = await Effect.runPromise(program)
 
     expect(reported).toEqual([])
     expect(desired).toBe(false)
+    expect(finished).toBe(0)
     expect(errors).toContain('Playback was refused by the platform')
   })
 
