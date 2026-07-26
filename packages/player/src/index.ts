@@ -10,18 +10,6 @@ export {
 export { initialQueueState, mergeHydratedQueue, reduceQueue, type QueueAction } from './queueState'
 
 export {
-  shouldPersistPosition,
-  transitionPlaybackIntent,
-  transitionSourceCompletion,
-  transitionSourcePreparation,
-  type PlaybackIntent,
-  type PlaybackIntentEvent,
-  type SourceCompletion,
-  type SourcePreparation,
-  type SourcePreparationEvent
-} from './playbackState'
-
-export {
   createAudioStorage,
   createWebAudioStorageAdapter,
   DEDUP_WINDOW_MS,
