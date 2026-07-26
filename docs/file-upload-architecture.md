@@ -16,7 +16,7 @@ The current proxied multipart path now enforces a declared-size contract:
 - New audio create requests carry one actor-scoped idempotency key across retries. A database uniqueness constraint and transaction replay the existing audio record rather than creating a duplicate; audio and creator links are inserted atomically.
 - The mix upload UI now propagates the Save Draft choice into the create/update payload.
 
-These checks improve the current proxy path; they are not direct-upload signing and there is no persisted `upload_asset` model yet. The unauthenticated legacy `POST /api/upload/file` endpoint also remains available for simple audio/image uploads.
+These checks improve the current proxy path; they are not direct-upload signing. The legacy `POST /api/upload/file` endpoint has been removed. Images now upload via `POST /api/upload/image/presign` (authenticated presign) followed by a direct browser `PUT` to S3, and a persisted `upload_asset` table now tracks `pending -> uploaded -> attached` lifecycle for both the image presign path and the audio multipart path.
 
 ### Canonical Draft Policy
 
@@ -88,7 +88,7 @@ Secure signed CloudFront draft delivery is a prerequisite for the Far End pilot,
 
 ## Scope Decisions
 
-- Cover all user-uploaded audio and images; retire `/api/upload/file` after callers migrate.
+- Cover all user-uploaded audio and images; `/api/upload/file` has been retired now that callers use the presigned image and multipart audio flows.
 - Keep `draft` as visibility state. Model future scheduling separately with nullable `publishAt`.
 - Default draft viewers are assigned creators and admins. Named show/item preview grants are additive follow-up policy work, but the pilot's intended viewers must be supported before it runs.
 - Persist server-side upload lifecycle while retaining browser checkpoints.

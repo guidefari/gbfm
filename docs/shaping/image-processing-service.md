@@ -622,19 +622,36 @@ describe('ImageProcessingService', () => {
 
 ```typescript
 // apps/vps/src/routes/__tests__/upload.integration.test.ts
+//
+// The legacy `POST /upload/file` endpoint has been removed. Images now
+// upload via presign-then-PUT: the client requests a signed URL from
+// `POST /upload/image/presign`, then PUTs the bytes directly to S3, so
+// there is no server-side request body to intercept processing from.
+// A future image-processing hookup would trigger off the same signal
+// upload-asset.service.ts's markUploaded/markAttached already use to
+// track the upload_assets row leaving `pending`, not off this route.
 describe('Upload Integration', () => {
   it('should process uploaded images', async () => {
-    const testImage = Buffer.from('fake-image-data')
-
-    const response = await app.request('/upload/file', {
+    const presignResponse = await app.request('/upload/image/presign', {
       method: 'POST',
-      body: new FormData()
-        .append('imageFile', new Blob([testImage]), 'test.jpg')
-        .append('fileType', 'image')
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fileName: 'test.jpg',
+        contentType: 'image/jpeg',
+        fileSize: 4
+      })
     })
 
-    expect(response.status).toBe(200)
-    const { key } = await response.json()
+    expect(presignResponse.status).toBe(200)
+    const { uploadUrl, key } = await presignResponse.json()
+
+    const testImage = Buffer.from('fake-image-data')
+    const putResponse = await fetch(uploadUrl, {
+      method: 'PUT',
+      body: testImage,
+      headers: { 'Content-Type': 'image/jpeg' }
+    })
+    expect(putResponse.ok).toBe(true)
 
     // Check if processing job was created
     const job = await db.query.imageProcessingJobs.findFirst({
