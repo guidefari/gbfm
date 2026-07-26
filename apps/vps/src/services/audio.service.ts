@@ -528,6 +528,14 @@ const updateEffect = (
         })
       }
       updatedAudio = updatedRecords[0]
+
+      // An image/audio file attached via an edit form (not just at create
+      // time) still needs its upload_assets row moved out of 'pending', or
+      // it looks reclaimable to a future cleanup job despite being in use.
+      yield* markAttachedAssets('audio', updatedAudio.id, [
+        updatedAudio.url,
+        updatedAudio.thumbnailUrl
+      ])
     }
 
     if (creatorIds && creatorIds.length > 0) {
@@ -686,6 +694,8 @@ export const AudioServiceLive = Layer.effect(
         ),
       update: (type, slug, userId, userRole, data) =>
         updateEffect(type, slug, userId, userRole, data, mdx).pipe(
+          Effect.provideService(ConfigService, config),
+          Effect.provideService(UploadAssetService, uploadAssetService),
           Effect.withSpan('audio.update', { attributes: { type, slug } })
         ),
       trackPlay: (id, clientIp) =>

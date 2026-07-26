@@ -721,6 +721,14 @@ const updateEffect = (
         })
       }
       updatedPost = updatedRecords[0]
+
+      // An image attached via an edit form (not just at create time) still
+      // needs its upload_assets row moved out of 'pending', or it looks
+      // reclaimable to a future cleanup job despite being in use.
+      yield* markAttachedAssets('posts', updatedPost.id, [
+        updatedPost.thumbnailUrl,
+        updatedPost.bannerImageUrl
+      ])
     }
 
     if (creatorIds && creatorIds.length > 0) {
@@ -773,7 +781,11 @@ export const PostServiceLive = Layer.effect(
           Effect.provideService(ConfigService, config),
           Effect.provideService(UploadAssetService, uploadAssetService)
         ),
-      update: (slug, userId, userRole, data) => updateEffect(slug, userId, userRole, data, mdx)
+      update: (slug, userId, userRole, data) =>
+        updateEffect(slug, userId, userRole, data, mdx).pipe(
+          Effect.provideService(ConfigService, config),
+          Effect.provideService(UploadAssetService, uploadAssetService)
+        )
     }
   })
 )
