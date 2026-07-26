@@ -6,10 +6,10 @@ import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
 import { user } from '@/db/auth.schema'
 import { CryptoLive } from '@/lib/crypto'
-import { MdxServiceLive } from '@/lib/mdx'
-import { ConfigServiceLive } from '@/services/config.service'
-import { UploadAssetServiceLive } from '@/services/upload-asset.service'
-import { AudioService, AudioServiceLive, createAudioFingerprint } from './audio.service'
+import { MdxServiceLayer } from '@/lib/mdx'
+import { ConfigServiceLayer } from '@/services/config.service'
+import { UploadAssetServiceLayer } from '@/services/upload-asset.service'
+import { AudioService, AudioServiceLayer, createAudioFingerprint } from './audio.service'
 
 const actorId = `audio-idempotency-${randomUUID()}`
 
@@ -27,9 +27,9 @@ const getService = () =>
       return yield* AudioService
     }).pipe(
       Effect.provide(
-        AudioServiceLive.pipe(
-          Layer.provide(MdxServiceLive),
-          Layer.provide(Layer.mergeAll(ConfigServiceLive, UploadAssetServiceLive))
+        AudioServiceLayer.pipe(
+          Layer.provide(MdxServiceLayer),
+          Layer.provide(Layer.mergeAll(ConfigServiceLayer, UploadAssetServiceLayer))
         )
       )
     )

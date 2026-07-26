@@ -1,28 +1,23 @@
 import { Api } from '@gbfm/api/api'
 import { FileTooLargeError } from '@gbfm/api/errors'
 import { AuthSession } from '@gbfm/api/middleware/auth'
-import { Effect, FileSystem } from 'effect'
-import type { Multipart } from 'effect/unstable/http'
+import { Effect } from 'effect'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
-import {
-  dieOnPlatformError as makeDieOnPlatformError,
-  dieOnS3Error as makeDieOnS3Error
-} from '@/http/handler-utils'
+import { dieOnS3Error as makeDieOnS3Error } from '@/http/handler-utils'
 import { ConfigService } from '@/services/config.service'
 import { S3Service } from '@/services/s3.service'
 import { UploadAssetService } from '@/services/upload-asset.service'
 
 const dieOnS3Error = makeDieOnS3Error('upload')
-const dieOnPlatformError = makeDieOnPlatformError('upload')
 
 const CHUNK_SIZE = 8 * 1024 * 1024
 const MAX_AUDIO_SIZE = 200 * 1024 * 1024
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024
-// API Gateway HTTP API v2 caps request bodies at 10 MiB. A multipart/form-data
-// request adds ~1 KiB of overhead on top of the file part, so the per-chunk
-// ceiling must stay well under 10 MiB. 9 MiB leaves room for the form fields
-// (key, uploadId, partNumber) and the boundary markers.
-const MAX_CHUNK_SIZE = 9 * 1024 * 1024
+
+// Long enough to cover an 8 MiB part PUT over a genuinely slow upload
+// connection with room for a retry or two before the URL goes stale, short
+// enough to bound how long a leaked URL stays usable.
+const PRESIGNED_PART_URL_EXPIRY_SECONDS = 15 * 60
 
 // Matches PR #220's PRESIGNED_PART_URL_EXPIRY_SECONDS reasoning: long enough
 // to cover a slow-connection PUT with retry headroom, short enough to bound
@@ -69,7 +64,7 @@ const recordAssetLifecycle = <A>(effect: Effect.Effect<A, { readonly _tag: 'Data
     )
   )
 
-const assertKeyOwnership = (userId: string, key: string) =>
+export const assertKeyOwnership = (userId: string, key: string) =>
   key.startsWith(`${sanitizeKeySegment(userId)}/`) ? Effect.void : new HttpApiError.BadRequest()
 
 export const assertContiguousParts = (parts: ReadonlyArray<{ partNumber: number }>) => {
@@ -129,25 +124,6 @@ const requireExpectedSize = (userId: string, key: string) => {
     ? Effect.fail(new HttpApiError.BadRequest())
     : Effect.succeed(expectedSize)
 }
-
-// Multipart file fields decode to Multipart.PersistedFile -- a disk-backed
-// reference (key/name/contentType/path), not a real in-memory File. Reading
-// it means going through FileSystem.FileSystem, not .arrayBuffer(); size
-// comes from the read buffer's length since PersistedFile itself has no
-// .size (see packages/api/src/upload.ts's comment on this same mismatch).
-const readPersistedFile = (file: Multipart.PersistedFile) =>
-  dieOnPlatformError(
-    Effect.gen(function* () {
-      const fs = yield* FileSystem.FileSystem
-      const bytes = yield* fs.readFile(file.path)
-      return {
-        buffer: Buffer.from(bytes),
-        size: bytes.length,
-        contentType: file.contentType,
-        name: file.name
-      }
-    })
-  )
 
 export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers) =>
   handlers
@@ -263,40 +239,46 @@ export const UploadHandlersLive = HttpApiBuilder.group(Api, 'upload', (handlers)
         })
       )
     )
-    .handle('uploadMultipartPart', ({ payload }) =>
+    .handle('presignMultipartPart', ({ payload }) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
-        const { key, uploadId, partNumber, chunk } = payload
-
-        const file = yield* readPersistedFile(chunk)
-        if (file.size === 0) {
-          return yield* new HttpApiError.BadRequest()
-        }
-        if (file.size > MAX_CHUNK_SIZE) {
-          return yield* new HttpApiError.BadRequest()
-        }
+        const { key, uploadId, partNumber } = payload
 
         yield* assertKeyOwnership(user.id, key)
         const expectedSize = yield* requireExpectedSize(user.id, key)
-        if (file.size !== expectedMultipartPartSize(expectedSize, partNumber)) {
+        // Only partNumber is checked here -- actual byte size can't be
+        // validated at presign time since the client hasn't PUT the bytes
+        // to S3 yet (this just mints the URL). A client can still push an
+        // oversized part straight to S3 after presigning; that garbage
+        // isn't reachable (the object never becomes readable pre-completion)
+        // and completeMultipartUpload below re-validates every part's real
+        // S3-reported size via listMultipartParts + validateMultipartParts,
+        // rejecting the whole upload on any mismatch. Worst case is
+        // billable-but-unreadable storage until the bucket's abort-
+        // incomplete-multipart-upload lifecycle rule reaps it.
+        if (expectedMultipartPartSize(expectedSize, partNumber) === null) {
           return yield* new HttpApiError.BadRequest()
         }
 
         const config = yield* ConfigService
         const s3Service = yield* S3Service
-        const result = yield* dieOnS3Error(
-          s3Service.uploadMultipartPart(
+        const url = yield* dieOnS3Error(
+          s3Service.presignUploadPart(
             key,
             uploadId,
             partNumber,
-            file.buffer,
-            config.buckets.userContent
+            config.buckets.userContent,
+            PRESIGNED_PART_URL_EXPIRY_SECONDS
           )
         )
 
-        return { partNumber: result.partNumber, etag: result.etag, size: result.size }
+        return {
+          url,
+          partNumber,
+          expiresInSeconds: PRESIGNED_PART_URL_EXPIRY_SECONDS
+        }
       }).pipe(
-        Effect.withSpan('api.upload.multipart.part', {
+        Effect.withSpan('api.upload.multipart.presignPart', {
           attributes: { partNumber: payload.partNumber }
         })
       )

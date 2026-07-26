@@ -1,30 +1,9 @@
 import { Schema } from 'effect'
-import { Multipart } from 'effect/unstable/http'
-import { HttpApiEndpoint, HttpApiError, HttpApiGroup, HttpApiSchema } from 'effect/unstable/httpapi'
+import { HttpApiEndpoint, HttpApiError, HttpApiGroup } from 'effect/unstable/httpapi'
 import { FileTooLargeError } from './errors'
 import { AuthMiddleware } from './middleware/auth'
 
-// Multipart file fields decode to Multipart.PersistedFile (buffered mode:
-// { key, name, contentType, path } -- the part is written to a temp file on
-// disk, not held in memory), never a real global `File`. Schema.File
-// (instanceOf(globalThis.File)) looks correct at a glance and typechecks,
-// but rejects every real multipart request at decode time -- confirmed by
-// reproducing an actual multipart POST against HttpApiBuilder.group's real
-// decoder, not just eyeballing the schema.
-
 export const PartNumber = Schema.Number.pipe(
-  Schema.check(Schema.isInt(), Schema.isBetween({ minimum: 1, maximum: 10000 }))
-)
-
-// multipart/form-data fields always decode to strings (confirmed against
-// Multipart.toPersisted's real source -- part.value is never coerced), so
-// the one partNumber field carried inside a multipart body (below) needs
-// NumberFromString like every other multipart/query numeric field in this
-// package (audio.ts, label.ts, post.ts, ...); PartNumber above stays plain
-// Schema.Number for the JSON-body/response use sites where the value really
-// is a number on the wire. Exported so upload.test.ts can pin this without
-// needing a real Multipart.PersistedFile to satisfy the rest of the struct.
-export const PartNumberFromString = Schema.NumberFromString.pipe(
   Schema.check(Schema.isInt(), Schema.isBetween({ minimum: 1, maximum: 10000 }))
 )
 
@@ -75,20 +54,16 @@ export const InitMultipartUploadResponse = Schema.Struct({
   chunkSize: Schema.Number
 })
 
-// Raw binary chunk + control fields as multipart/form-data, matching the old
-// Hono route's shape (apps/www's resumable-upload service sends a FormData
-// body with key/uploadId/partNumber/chunk, unchanged by this port).
-export const UploadMultipartPartInput = Schema.Struct({
+export const PresignMultipartPartInput = Schema.Struct({
   key: Schema.NonEmptyString,
   uploadId: Schema.NonEmptyString,
-  partNumber: PartNumberFromString,
-  chunk: Multipart.SingleFileSchema
-}).pipe(HttpApiSchema.asMultipart())
+  partNumber: PartNumber
+})
 
-export const UploadMultipartPartResponse = Schema.Struct({
+export const PresignMultipartPartResponse = Schema.Struct({
+  url: Schema.NonEmptyString,
   partNumber: PartNumber,
-  etag: Schema.NonEmptyString,
-  size: Schema.Number.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(0)))
+  expiresInSeconds: Schema.Number
 })
 
 const CompletedPart = Schema.Struct({
@@ -144,9 +119,15 @@ export const UploadGroup = HttpApiGroup.make('upload')
     }).middleware(AuthMiddleware)
   )
   .add(
-    HttpApiEndpoint.post('uploadMultipartPart', '/api/upload/multipart/part', {
-      payload: UploadMultipartPartInput,
-      success: UploadMultipartPartResponse,
+    // Browser PUTs the raw part body directly to S3 with this URL --
+    // bypasses API Gateway/VPS entirely for the heavy bytes, removing the
+    // 10 MiB API Gateway ceiling that forced CHUNK_SIZE down to 8 MiB (see
+    // PR #130). The old multipart/form-data proxy endpoint that used to
+    // live at this spot (uploadMultipartPart, /api/upload/multipart/part)
+    // has been removed -- this is now the only way part bytes reach S3.
+    HttpApiEndpoint.post('presignMultipartPart', '/api/upload/multipart/presign-part', {
+      payload: PresignMultipartPartInput,
+      success: PresignMultipartPartResponse,
       error: HttpApiError.BadRequest
     }).middleware(AuthMiddleware)
   )

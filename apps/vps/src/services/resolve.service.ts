@@ -149,7 +149,7 @@ const resolveEffect = (slug: string) =>
     })
   })
 
-export const ResolveServiceLive = Layer.succeed(ResolveService, {
+export const ResolveServiceLayer = Layer.succeed(ResolveService, {
   resolve: (slug) =>
     resolveEffect(slug).pipe(Effect.withSpan('resolve.slug', { attributes: { slug } }))
 })

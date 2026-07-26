@@ -330,7 +330,7 @@ const deleteEffect = (slug: string, userId: string, userRole: string) =>
     })
   })
 
-export const ReleaseServiceLive = Layer.succeed(ReleaseService, {
+export const ReleaseServiceLayer = Layer.succeed(ReleaseService, {
   getBySlug: (slug) =>
     getBySlugEffect(slug).pipe(Effect.withSpan('release.getBySlug', { attributes: { slug } })),
   getBySlugForEdit: (slug, userId, userRole) =>

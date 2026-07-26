@@ -119,7 +119,7 @@ const markAttachedEffect = (key: string, attachedToTable: string, attachedToId: 
     Effect.withSpan('uploadAsset.markAttached', { attributes: { key, attachedToTable } })
   )
 
-export const UploadAssetServiceLive = Layer.succeed(UploadAssetService, {
+export const UploadAssetServiceLayer = Layer.succeed(UploadAssetService, {
   createPending: createPendingEffect,
   markUploaded: markUploadedEffect,
   markAttached: markAttachedEffect

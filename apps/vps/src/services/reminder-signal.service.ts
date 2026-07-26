@@ -9,7 +9,7 @@ export interface ReminderSignalService {
 
 export const ReminderSignalService = Context.Service<ReminderSignalService>('ReminderSignalService')
 
-export const ReminderSignalServiceLive = Layer.effect(
+export const ReminderSignalServiceLayer = Layer.effect(
   ReminderSignalService,
   Effect.gen(function* () {
     // dropping(1): if the loop is already awake, extra signals are discarded

@@ -5,7 +5,11 @@ import { beforeAll, describe, expect, test } from 'vitest'
 import { db } from '@/db'
 import { user } from '@/db/auth.schema'
 import { uploadAssetsTable } from '@/db/upload-asset.schema'
-import { keyFromAssetUrl, UploadAssetService, UploadAssetServiceLive } from './upload-asset.service'
+import {
+  keyFromAssetUrl,
+  UploadAssetService,
+  UploadAssetServiceLayer
+} from './upload-asset.service'
 
 const actorId = `upload-asset-${randomUUID()}`
 
@@ -21,7 +25,7 @@ const getService = () =>
   Effect.runPromise(
     Effect.gen(function* () {
       return yield* UploadAssetService
-    }).pipe(Effect.provide(UploadAssetServiceLive))
+    }).pipe(Effect.provide(UploadAssetServiceLayer))
   )
 
 const makePendingInput = (key: string) => ({

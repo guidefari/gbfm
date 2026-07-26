@@ -2,7 +2,7 @@ import { Effect } from 'effect'
 import { describe, expect, it } from 'vitest'
 import {
   MediaSessionService,
-  MediaSessionServiceLive,
+  MediaSessionServiceLayer,
   type MediaSessionHandlers
 } from './media-session'
 
@@ -41,7 +41,7 @@ describe('MediaSessionService', () => {
         yield* media.setActionHandlers(handlers)
         yield* media.setPositionState(120, 12)
         yield* media.setActionHandlers(null)
-      }).pipe(Effect.provide(MediaSessionServiceLive), Effect.runPromise)
+      }).pipe(Effect.provide(MediaSessionServiceLayer), Effect.runPromise)
 
       expect(installed.filter((entry) => entry !== null).length).toBeGreaterThanOrEqual(5)
       expect(installed.filter((entry) => entry === null).length).toBeGreaterThanOrEqual(5)
@@ -69,7 +69,7 @@ describe('MediaSessionService', () => {
         yield* media.setPositionState(1, 0)
         yield* media.setActionHandlers(null)
         completed = true
-      }).pipe(Effect.provide(MediaSessionServiceLive), Effect.runPromise)
+      }).pipe(Effect.provide(MediaSessionServiceLayer), Effect.runPromise)
       expect(completed).toBe(true)
     } finally {
       Object.defineProperty(globalThis, 'navigator', {

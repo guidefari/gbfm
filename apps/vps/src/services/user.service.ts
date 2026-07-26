@@ -367,7 +367,7 @@ const updateUserEmailPreferencesEffect = (
   })
 
 // Implementation - simple layer that provides access to the Effects
-export const UserServiceLive = Layer.succeed(UserService, {
+export const UserServiceLayer = Layer.succeed(UserService, {
   getUserById: (userId) =>
     getUserByIdEffect(userId).pipe(Effect.withSpan('user.getById', { attributes: { userId } })),
   searchUsers: (query) =>
