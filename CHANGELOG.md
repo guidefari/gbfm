@@ -1,3 +1,10 @@
+# [2.74.0](https://github.com/guidefari/gbfm/compare/v2.73.0...v2.74.0) (2026-07-26)
+
+
+### Features
+
+* **uploads:** switch multipart part upload to direct-to-S3 presigned URLs ([#220](https://github.com/guidefari/gbfm/issues/220)) ([10d43a3](https://github.com/guidefari/gbfm/commit/10d43a33e612d65cc6ae19e5ad196b404802941d))
+
 # [2.73.0](https://github.com/guidefari/gbfm/compare/v2.72.1...v2.73.0) (2026-07-26)
 
 
