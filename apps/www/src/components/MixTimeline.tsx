@@ -20,10 +20,10 @@ export function MixTimelineItem({ mix, children }: MixTimelineItemProps) {
   const isActive = currentTrack?.id === mix.id
 
   return (
-    <div className='group relative grid grid-cols-[1rem_1fr] gap-x-4 pb-6 last:pb-0 [&:first-child_.timeline-line]:top-3 [&:last-child_.timeline-line]:hidden'>
+    <div className='group relative grid min-w-0 grid-cols-[0.75rem_minmax(0,1fr)] gap-x-2.5 pb-4 last:pb-0 sm:grid-cols-[1rem_minmax(0,1fr)] sm:gap-x-4 sm:pb-6 [&:first-child_.timeline-line]:top-3 [&:last-child_.timeline-line]:hidden'>
       <div
         className={cn(
-          'timeline-line absolute left-2 top-0 bottom-0 w-px -translate-x-1/2 transition-opacity duration-300',
+          'timeline-line absolute left-1.5 top-0 bottom-0 w-px -translate-x-1/2 transition-opacity duration-300 sm:left-2',
           isActive ? 'bg-highlight/40 opacity-100' : 'bg-border opacity-75 group-hover:opacity-95'
         )}
       />
@@ -56,7 +56,7 @@ export function MixTimelineItem({ mix, children }: MixTimelineItemProps) {
       </span>
 
       <div />
-      <div className='pt-2 pb-1'>{children}</div>
+      <div className='min-w-0 pt-2 pb-1'>{children}</div>
     </div>
   )
 }

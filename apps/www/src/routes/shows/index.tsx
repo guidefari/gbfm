@@ -57,7 +57,7 @@ function ShowsListPage() {
   }
 
   return (
-    <div className='p-4 mx-auto max-w-7xl'>
+    <div className='px-4 py-4 mx-auto max-w-7xl sm:py-6'>
       <div className='grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr] lg:gap-8'>
         <aside className='hidden lg:block'>
           <nav className='sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto space-y-2 pr-2 no-scrollbar'>
@@ -82,10 +82,15 @@ function ShowsListPage() {
           </nav>
         </aside>
 
-        <div className='lg:hidden'>
-          <nav className='flex gap-3 overflow-x-auto pb-3 no-scrollbar'>
+        <div className='min-w-0 lg:hidden'>
+          <p className='mb-2 text-[11px] font-mono font-bold tracking-widest text-highlight/80'>
+            SELECT A SHOW
+          </p>
+          <nav
+            aria-label='Select a show'
+            className='flex gap-2 -mx-4 px-4 pb-3 overflow-x-auto overscroll-x-contain snap-x snap-mandatory scroll-px-4 no-scrollbar'>
             {data.map((show) => (
-              <div key={show.id} className='min-w-[220px] max-w-[220px]'>
+              <div key={show.id} className='w-[172px] shrink-0 snap-start sm:w-[188px]'>
                 <ShowListItem
                   show={show}
                   isSelected={selectedShow?.id === show.id}
@@ -125,33 +130,41 @@ function SelectedShowPanel({ show }: { show: ShowWithHosts }) {
 
   return (
     <section>
-      <div className='flex flex-col sm:flex-row gap-6 items-start pt-2 mb-8 pb-8 border-b border-border/40'>
+      <div className='grid grid-cols-[7rem_minmax(0,1fr)] gap-x-4 gap-y-3 items-start mb-5 pb-5 border-b border-border/40 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-x-6 sm:pt-2 sm:mb-8 sm:pb-8'>
         <img
           src={show.thumbnailUrl || DEFAULT_IMAGE_URL}
-          alt={show.title}
-          className='w-40 h-40 object-cover border rounded-sm border-border bg-background shrink-0'
+          alt={`Artwork for ${show.title}`}
+          width={160}
+          height={160}
+          fetchPriority='high'
+          sizes='(max-width: 639px) 112px, 160px'
+          className='w-28 aspect-square object-cover border rounded-sm border-border bg-background shrink-0 sm:w-40'
         />
-        <div className='flex-1 min-w-0 space-y-3'>
-          <h2 className='text-3xl font-black tracking-tight mt-0'>{show.title}</h2>
+        <div className='min-w-0 space-y-2 sm:space-y-3'>
+          <h1 className='mt-0 text-xl font-black leading-tight tracking-tight wrap-break-word sm:text-3xl'>
+            {show.title}
+          </h1>
           {hostNames && (
             <Link
               to='/shows/$showSlug'
               params={{ showSlug: show.slug }}
-              className='text-sm text-muted-foreground hover:text-foreground transition-colors'>
+              className='inline-flex min-h-11 items-center text-xs text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-sm'>
               Hosted by {hostNames}
             </Link>
           )}
+        </div>
+        <div className='col-span-2 min-w-0 sm:col-span-1 sm:col-start-2'>
           {show.description && (
-            <p className='text-sm text-foreground/70 line-clamp-4'>{show.description}</p>
+            <p className='mb-3 text-sm leading-relaxed text-foreground/70 line-clamp-3 sm:line-clamp-4'>
+              {show.description}
+            </p>
           )}
-          <div className='flex flex-wrap items-center gap-3 pt-1'>
-            <div className='w-full sm:w-auto'>
-              <SubscribeButton showId={show.id} showTitle={show.title} />
-            </div>
+          <div className='flex flex-wrap items-center gap-2 sm:gap-3'>
+            <SubscribeButton showId={show.id} showTitle={show.title} />
             <Link
               to='/$slug'
               params={{ slug: show.slug }}
-              className='text-sm font-medium text-primary hover:opacity-80'>
+              className='inline-flex min-h-11 items-center px-2 text-sm font-medium text-primary hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
               View show page
             </Link>
           </div>

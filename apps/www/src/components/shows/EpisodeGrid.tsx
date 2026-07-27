@@ -49,8 +49,8 @@ export function EpisodeGrid({ showSlug }: EpisodeGridProps) {
   }
 
   return (
-    <div className='space-y-4'>
-      <h2 className='text-xl font-bold'>Episodes</h2>
+    <div className='min-w-0 space-y-3 sm:space-y-4'>
+      <h2 className='text-lg font-bold sm:text-xl'>Episodes</h2>
       <MixTimeline>
         {episodes.map((episode) => (
           <MixTimelineItem key={episode.id} mix={episode}>

@@ -37,7 +37,7 @@ export default function AppShell({ children }: Props) {
             id={MAIN_SCROLL_CONTAINER_ID}
             tabIndex={-1}
             style={{ overflowAnchor: 'none' }}
-            className='h-full min-w-0 overflow-x-hidden overflow-y-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none] bg-background focus:outline-none'>
+            className='h-full min-w-0 overflow-x-hidden overflow-y-auto pb-[calc(5.5rem+env(safe-area-inset-bottom))] [&::-webkit-scrollbar]:hidden [scrollbar-width:none] bg-background focus:outline-none'>
             {children}
           </main>
 

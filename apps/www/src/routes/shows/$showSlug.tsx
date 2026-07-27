@@ -81,26 +81,43 @@ function ShowPage() {
   const hostNames = data.hosts?.map((h) => h.name).join(', ')
 
   return (
-    <div className='max-w-7xl px-4 py-6 mx-auto overflow-hidden'>
-      <div className='grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,2.5fr)]'>
-        <div className='lg:col-span-1'>
-          <div className='sticky top-6'>
-            <div className='mb-4'>
+    <div className='max-w-7xl min-w-0 px-4 py-4 mx-auto sm:py-6'>
+      <div className='grid min-w-0 grid-cols-1 gap-5 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,2.5fr)]'>
+        <div className='min-w-0 lg:col-span-1'>
+          <div className='grid grid-cols-[7rem_minmax(0,1fr)] gap-x-4 gap-y-3 border-b border-border/40 pb-5 lg:sticky lg:top-6 lg:block lg:border-0 lg:pb-0'>
+            <div className='lg:mb-4'>
               <img
-                className='w-full rounded-sm'
+                className='w-28 aspect-square object-cover border border-border rounded-sm lg:w-full'
                 src={data.thumbnailUrl || '/fav.png'}
-                alt={`Thumbnail for ${data.title}`}
+                alt={`Artwork for ${data.title}`}
                 width={400}
                 height={400}
-                loading='lazy'
+                fetchPriority='high'
+                sizes='(max-width: 1023px) 112px, 30vw'
               />
             </div>
 
-            <div className='space-y-3 min-w-0'>
-              <h1 className='text-2xl font-bold wrap-break-word'>{data.title}</h1>
+            <div className='min-w-0 space-y-2 lg:space-y-3'>
+              <h1 className='text-xl font-black leading-tight tracking-tight wrap-break-word sm:text-2xl'>
+                {data.title}
+              </h1>
 
               {hostNames && <p className='text-sm text-muted-foreground'>Hosted by {hostNames}</p>}
 
+              <div className='flex gap-2 flex-wrap lg:hidden'>
+                <FavoriteButton
+                  contentType='show'
+                  contentId={data.id}
+                  contentTitle={data.title}
+                  className='min-h-11 min-w-11'
+                />
+                <ShareButton type='show' slug={showSlug} className='min-h-11 min-w-11' />
+                <ShowQRButton slug={showSlug} className='min-h-11 min-w-11' />
+                <ShowMetadataManager show={data} />
+              </div>
+            </div>
+
+            <div className='col-span-2 min-w-0 lg:mt-3'>
               {(data.description || data.compiledContent) && (
                 <ShowDescription
                   title={data.title}
@@ -109,10 +126,15 @@ function ShowPage() {
                 />
               )}
 
-              <div className='flex gap-2 flex-wrap'>
-                <FavoriteButton contentType='show' contentId={data.id} contentTitle={data.title} />
-                <ShareButton type='show' slug={showSlug} />
-                <ShowQRButton slug={showSlug} />
+              <div className='hidden gap-2 flex-wrap lg:flex'>
+                <FavoriteButton
+                  contentType='show'
+                  contentId={data.id}
+                  contentTitle={data.title}
+                  className='min-h-11 min-w-11'
+                />
+                <ShareButton type='show' slug={showSlug} className='min-h-11 min-w-11' />
+                <ShowQRButton slug={showSlug} className='min-h-11 min-w-11' />
                 <ShowMetadataManager show={data} />
               </div>
             </div>

@@ -31,23 +31,23 @@ export function MixListItem({ mix, actions }: MixListItemProps) {
     <article
       data-testid='mix-item'
       className={cn(
-        'group relative border border-border bg-card p-5 sm:p-6 transition-all duration-200 hover:border-foreground/50',
+        'group relative min-w-0 border border-border bg-card p-3 transition-colors hover:border-foreground/50 sm:p-4 lg:p-6',
         isActive && 'ring-1 ring-highlight bg-secondary'
       )}>
-      <div className='flex flex-col lg:flex-row gap-6'>
-        <div className='flex-1 min-w-0'>
-          <div className='flex justify-between items-start'>
+      <div className='grid min-w-0 grid-cols-[5.5rem_minmax(0,1fr)] gap-3 sm:grid-cols-[7rem_minmax(0,1fr)] sm:gap-4 lg:flex lg:flex-row lg:gap-6'>
+        <div className='min-w-0 lg:flex-1'>
+          <div className='flex min-w-0 justify-between items-start'>
             <Link
               to='/mixes/$mixId'
               params={{ mixId: mix.slug }}
-              className='block text-2xl font-black leading-tight line-clamp-2 text-foreground tracking-tight transition-colors'>
+              className='block min-w-0 text-base font-black leading-tight line-clamp-2 wrap-break-word text-foreground tracking-tight focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:text-lg lg:text-2xl'>
               {mix.title}
             </Link>
             <div className='shrink-0 ml-2'>{actions}</div>
           </div>
 
           {hasCreators && (
-            <p className='mt-1 text-xs tracking-widest text-highlight/80'>
+            <p className='mt-1 text-[10px] tracking-widest text-highlight/80 line-clamp-1 sm:text-xs'>
               <span className='opacity-60'>By </span>
               {mix.creators?.map((creator, index) => (
                 <span key={creator.id}>
@@ -70,13 +70,13 @@ export function MixListItem({ mix, actions }: MixListItemProps) {
           )}
 
           {mix.description && (
-            <p className='mt-4 text-sm leading-relaxed text-foreground/50 border-l-2 border-highlight/20 pl-4 py-1 italic line-clamp-2'>
+            <p className='hidden mt-4 text-sm leading-relaxed text-foreground/50 border-l-2 border-highlight/20 pl-4 py-1 italic line-clamp-2 lg:block'>
               {mix.description}
             </p>
           )}
 
           {mix.tags && mix.tags.length > 0 && (
-            <div className='flex flex-wrap items-center gap-1.5 mt-4'>
+            <div className='hidden flex-wrap items-center gap-1.5 mt-4 lg:flex'>
               {mix.tags.map((tag) => (
                 <Link key={tag} to='/mixes' search={{ tag }}>
                   <Badge
@@ -89,7 +89,7 @@ export function MixListItem({ mix, actions }: MixListItemProps) {
             </div>
           )}
 
-          <div className='mt-5 pt-4 border-t border-border/50 flex items-center gap-5'>
+          <div className='mt-3 pt-3 border-t border-border/50 flex min-w-0 items-center gap-3 lg:mt-5 lg:pt-4 lg:gap-5'>
             <PlayButton
               isActive={isActive}
               isPlaying={isPlaying}
@@ -97,7 +97,7 @@ export function MixListItem({ mix, actions }: MixListItemProps) {
               onClick={handlePlay}
             />
             {hasCreators && (
-              <span className='text-xs text-muted-foreground font-bold tracking-widest'>
+              <span className='hidden min-w-0 text-xs text-muted-foreground font-bold tracking-widest line-clamp-1 lg:block'>
                 By {mix.creators?.map((c) => c.name).join(' & ')}
               </span>
             )}
@@ -107,8 +107,12 @@ export function MixListItem({ mix, actions }: MixListItemProps) {
         <div className='relative shrink-0 order-first lg:order-last'>
           <img
             src={mix.thumbnailUrl || DEFAULT_IMAGE_URL}
-            alt={mix.title}
-            className='object-cover border w-full lg:w-48 h-48 border-border bg-background'
+            alt={`Artwork for ${mix.title}`}
+            width={192}
+            height={192}
+            loading='lazy'
+            sizes='(max-width: 639px) 88px, (max-width: 1023px) 112px, 192px'
+            className='object-cover border w-[5.5rem] aspect-square sm:w-28 lg:w-48 border-border bg-background'
           />
           {recencyLabel && (
             <span
@@ -145,7 +149,7 @@ function PlayButton({
       type='button'
       onClick={onClick}
       className={cn(
-        'flex items-center gap-2 px-5 py-2 text-sm font-bold border-2 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+        'flex min-h-11 min-w-11 items-center justify-center gap-2 px-3 py-2 text-sm font-bold border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-5',
         isActive && isPlaying
           ? 'bg-highlight text-highlight-foreground border-highlight'
           : 'border-border text-foreground/80 hover:border-highlight hover:text-highlight'
@@ -155,7 +159,10 @@ function PlayButton({
       ) : (
         <Play size={14} fill='currentColor' />
       )}
-      <span>{isActive && isPlaying ? 'playing' : `play ${playLabel}`}</span>
+      <span className='hidden sm:inline'>
+        {isActive && isPlaying ? 'playing' : `play ${playLabel}`}
+      </span>
+      <span className='sm:hidden'>{isActive && isPlaying ? 'pause' : 'play'}</span>
     </button>
   )
 }

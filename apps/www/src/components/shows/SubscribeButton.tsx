@@ -58,7 +58,7 @@ export function SubscribeButton({ showId, showTitle }: SubscribeButtonProps) {
       onClick={handleClick}
       disabled={isLoading}
       variant={isSubscribed ? 'outline' : 'default'}
-      className='w-full gap-2'>
+      className='min-h-11 gap-2 px-5'>
       {isLoading ? (
         <Loader2 className='w-4 h-4 animate-spin' />
       ) : isSubscribed ? (
