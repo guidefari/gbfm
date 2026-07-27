@@ -1,3 +1,11 @@
+## [2.75.2](https://github.com/guidefari/gbfm/compare/v2.75.1...v2.75.2) (2026-07-27)
+
+
+### Bug Fixes
+
+* **vps:** include creators when fetching show episodes ([a19830b](https://github.com/guidefari/gbfm/commit/a19830bb42468b7344f4cef0fda17ab8b19cae1b))
+* **vps:** use Drizzle relational queries for creators/hosts ([c8e6dda](https://github.com/guidefari/gbfm/commit/c8e6dda0381dceeecbac3299d6dcdd4a2831cd2d))
+
 ## [2.75.1](https://github.com/guidefari/gbfm/compare/v2.75.0...v2.75.1) (2026-07-26)
 
 
