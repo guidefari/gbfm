@@ -71,4 +71,63 @@ describe('ShowService creators', () => {
     expect(episodes).toHaveLength(1)
     expect(episodes[0]?.creators).toEqual([expect.objectContaining({ id: hostId })])
   })
+
+  test('getEpisodes falls back to the show current thumbnailUrl when an episode has none', async () => {
+    const service = await getService()
+    const slug = `show-thumb-${randomUUID()}`
+
+    const show = await Effect.runPromise(
+      service.create(
+        {
+          title: `Show ${slug}`,
+          slug,
+          content: '',
+          thumbnailUrl: 'https://example.com/show-art.png'
+        },
+        [hostId]
+      )
+    )
+
+    const episodeSlug = `episode-${randomUUID()}`
+    const [episode] = await db
+      .insert(audioTable)
+      .values({
+        title: `Episode ${episodeSlug}`,
+        slug: episodeSlug,
+        content: '',
+        type: 'mix',
+        url: 'https://example.com/audio.mp3',
+        showId: show.id
+      })
+      .returning()
+
+    if (!episode) {
+      throw new Error('Failed to insert episode fixture')
+    }
+
+    await db.insert(audioCreators).values({
+      audioId: episode.id,
+      creatorId: hostId
+    })
+
+    const { data: episodesBefore } = await Effect.runPromise(
+      service.getEpisodes(slug, { limit: 100, offset: 0 })
+    )
+    expect(episodesBefore.find((e) => e.id === episode.id)?.thumbnailUrl).toBe(
+      'https://example.com/show-art.png'
+    )
+
+    await Effect.runPromise(
+      service.update(slug, hostId, 'admin', {
+        thumbnailUrl: 'https://example.com/new-show-art.png'
+      })
+    )
+
+    const { data: episodesAfter } = await Effect.runPromise(
+      service.getEpisodes(slug, { limit: 100, offset: 0 })
+    )
+    expect(episodesAfter.find((e) => e.id === episode.id)?.thumbnailUrl).toBe(
+      'https://example.com/new-show-art.png'
+    )
+  })
 })

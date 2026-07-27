@@ -85,19 +85,20 @@ const shareMix = HttpRouter.params.pipe(
     if (!slug) return missingParamResponse('mix slug')
 
     const program = Effect.gen(function* () {
-      const [audio] = yield* fetchDb(
+      const audio = yield* fetchDb(
         () =>
-          db
-            .select()
-            .from(audioTable)
-            .where(
-              and(
-                eq(audioTable.type, 'mix'),
-                eq(audioTable.slug, slug),
-                eq(audioTable.draft, false)
-              )
-            )
-            .limit(1),
+          db.query.audioTable.findFirst({
+            where: and(
+              eq(audioTable.type, 'mix'),
+              eq(audioTable.slug, slug),
+              eq(audioTable.draft, false)
+            ),
+            with: {
+              show: {
+                columns: { thumbnailUrl: true }
+              }
+            }
+          }),
         'audio'
       )
       if (!audio)
@@ -118,7 +119,7 @@ const shareMix = HttpRouter.params.pipe(
           type: 'music.song',
           title: audio.title || slug,
           description: audio.description || `Listen to ${audio.title || slug} on goosebumps.fm`,
-          image: audio.thumbnailUrl,
+          image: audio.thumbnailUrl ?? audio.show?.thumbnailUrl ?? null,
           canonicalPath: `/mixes/${slug}`,
           audio: audio.url,
           creators: creators.map((c) => c.name),
@@ -141,19 +142,20 @@ const shareTrack = HttpRouter.params.pipe(
     if (!slug) return missingParamResponse('track slug')
 
     const program = Effect.gen(function* () {
-      const [audio] = yield* fetchDb(
+      const audio = yield* fetchDb(
         () =>
-          db
-            .select()
-            .from(audioTable)
-            .where(
-              and(
-                eq(audioTable.type, 'track'),
-                eq(audioTable.slug, slug),
-                eq(audioTable.draft, false)
-              )
-            )
-            .limit(1),
+          db.query.audioTable.findFirst({
+            where: and(
+              eq(audioTable.type, 'track'),
+              eq(audioTable.slug, slug),
+              eq(audioTable.draft, false)
+            ),
+            with: {
+              show: {
+                columns: { thumbnailUrl: true }
+              }
+            }
+          }),
         'audio'
       )
       if (!audio)
@@ -174,7 +176,7 @@ const shareTrack = HttpRouter.params.pipe(
           type: 'music.song',
           title: audio.title || slug,
           description: audio.description || `Listen to ${audio.title || slug} on goosebumps.fm`,
-          image: audio.thumbnailUrl,
+          image: audio.thumbnailUrl ?? audio.show?.thumbnailUrl ?? null,
           canonicalPath: `/tracks/${slug}`,
           audio: audio.url,
           creators: creators.map((c) => c.name),

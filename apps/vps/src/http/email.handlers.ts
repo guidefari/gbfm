@@ -94,24 +94,26 @@ async function sendMixNotification(
     return { success: true, sentTo: [], emailIds: [], message: 'No opted-in recipients' }
   }
 
-  const [mix] = await db
-    .select()
-    .from(audioTable)
-    .where(
-      and(
-        eq(audioTable.slug, input.mixSlug),
-        eq(audioTable.type, 'mix'),
-        eq(audioTable.draft, false)
-      )
-    )
-    .limit(1)
+  const mix = await db.query.audioTable.findFirst({
+    where: and(
+      eq(audioTable.slug, input.mixSlug),
+      eq(audioTable.type, 'mix'),
+      eq(audioTable.draft, false)
+    ),
+    with: {
+      show: {
+        columns: { thumbnailUrl: true }
+      }
+    }
+  })
 
   if (!mix) {
     throw new MixNotFoundError(`Mix not found: ${input.mixSlug}`)
   }
 
+  const mixThumbnailUrl = mix.thumbnailUrl ?? mix.show?.thumbnailUrl ?? null
   const mixUrl = `https://goosebumps.fm/mixes/${mix.slug}`
-  const coverImageUrl = input.metadata?.coverImageUrl || mix.thumbnailUrl || undefined
+  const coverImageUrl = input.metadata?.coverImageUrl || mixThumbnailUrl || undefined
   const releaseDate =
     input.metadata?.releaseDate ||
     (mix.createdAt

@@ -1,4 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm'
+import { and, asc, eq, exists } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { audioCreators, audioTable } from '@/db/audio.schema'
@@ -125,26 +125,51 @@ export const getPublicProfileEffect = (username: string) =>
 
     const userMixes = yield* Effect.tryPromise({
       try: () =>
-        db
-          .select({
-            id: audioTable.id,
-            title: audioTable.title,
-            slug: audioTable.slug,
-            thumbnailUrl: audioTable.thumbnailUrl,
-            type: audioTable.type,
-            showId: audioTable.showId
-          })
-          .from(audioTable)
-          .innerJoin(audioCreators, eq(audioTable.id, audioCreators.audioId))
-          .where(and(eq(audioCreators.creatorId, foundUser.id), eq(audioTable.draft, false)))
-          .orderBy(audioTable.createdAt),
+        db.query.audioTable.findMany({
+          columns: {
+            id: true,
+            title: true,
+            slug: true,
+            thumbnailUrl: true,
+            type: true,
+            showId: true
+          },
+          with: {
+            show: {
+              columns: { thumbnailUrl: true }
+            }
+          },
+          where: and(
+            exists(
+              db
+                .select({ id: audioCreators.audioId })
+                .from(audioCreators)
+                .where(
+                  and(
+                    eq(audioCreators.audioId, audioTable.id),
+                    eq(audioCreators.creatorId, foundUser.id)
+                  )
+                )
+            ),
+            eq(audioTable.draft, false)
+          ),
+          orderBy: asc(audioTable.createdAt)
+        }),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to get user mixes: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'audio'
         })
-    }).pipe(Effect.withSpan('profile.getPublic.mixes', { attributes: { userId: foundUser.id } }))
+    }).pipe(
+      Effect.map((rows) =>
+        rows.map(({ show, ...row }) => ({
+          ...row,
+          thumbnailUrl: row.thumbnailUrl ?? show?.thumbnailUrl ?? null
+        }))
+      ),
+      Effect.withSpan('profile.getPublic.mixes', { attributes: { userId: foundUser.id } })
+    )
 
     const userShows = yield* Effect.tryPromise({
       try: () =>

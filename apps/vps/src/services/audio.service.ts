@@ -178,6 +178,9 @@ const getByTypeEffect = (
               with: {
                 audioCreators: {
                   with: { creator: true }
+                },
+                show: {
+                  columns: { thumbnailUrl: true }
                 }
               }
             }),
@@ -191,8 +194,9 @@ const getByTypeEffect = (
         })
     })
 
-    const data = audioItems.map(({ audioCreators: creators, ...audio }) => ({
+    const data = audioItems.map(({ audioCreators: creators, show, ...audio }) => ({
       ...audio,
+      thumbnailUrl: audio.thumbnailUrl ?? show?.thumbnailUrl ?? null,
       creators: creators.map(({ creator }) => ({
         id: creator.id,
         name: creator.name,
@@ -245,6 +249,9 @@ const getBySlugEffect = (type: AudioType, slug: string, mdx: MdxService, include
           with: {
             audioCreators: {
               with: { creator: true }
+            },
+            show: {
+              columns: { thumbnailUrl: true }
             }
           }
         }),
@@ -269,10 +276,11 @@ const getBySlugEffect = (type: AudioType, slug: string, mdx: MdxService, include
       compiledContent = yield* mdx.compile(audio.content).pipe(Effect.orElseSucceed(() => ''))
     }
 
-    const { audioCreators: creators, ...audioFields } = audio
+    const { audioCreators: creators, show, ...audioFields } = audio
 
     return {
       ...audioFields,
+      thumbnailUrl: audioFields.thumbnailUrl ?? show?.thumbnailUrl ?? null,
       compiledContent,
       creators: creators.map(({ creator }) => ({
         id: creator.id,
@@ -289,29 +297,10 @@ const createEffect = (
 ) =>
   Effect.gen(function* () {
     const idempotencyFingerprint = yield* createAudioFingerprint(data, creatorIds)
-    let audioData = { ...data }
-
-    if (data.showId && !data.thumbnailUrl) {
-      const showId = data.showId
-      const showResult = yield* Effect.tryPromise({
-        try: () =>
-          db
-            .select({ thumbnailUrl: showsTable.thumbnailUrl })
-            .from(showsTable)
-            .where(eq(showsTable.id, showId))
-            .limit(1),
-        catch: (error) =>
-          new DatabaseError({
-            message: `Failed to fetch show: ${getErrorMessage(error)}`,
-            operation: 'select',
-            table: 'shows'
-          })
-      })
-
-      if (showResult[0]?.thumbnailUrl) {
-        audioData = { ...audioData, thumbnailUrl: showResult[0].thumbnailUrl }
-      }
-    }
+    // thumbnailUrl is intentionally left as-is (NULL when not provided): the
+    // show's artwork is resolved at read time instead of copied here, so
+    // episodes stay in sync when a show's art changes later.
+    const audioData = { ...data }
 
     const result = yield* Effect.tryPromise({
       try: () =>
@@ -524,8 +513,28 @@ const updateEffect = (
         .pipe(Effect.orElseSucceed(() => ''))
     }
 
+    let showThumbnailUrl: string | null = null
+    const showId = updatedAudio.showId
+    if (!updatedAudio.thumbnailUrl && showId) {
+      const show = yield* Effect.tryPromise({
+        try: () =>
+          db.query.showsTable.findFirst({
+            where: eq(showsTable.id, showId),
+            columns: { thumbnailUrl: true }
+          }),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to fetch show: ${getErrorMessage(error)}`,
+            operation: 'select',
+            table: 'shows'
+          })
+      })
+      showThumbnailUrl = show?.thumbnailUrl ?? null
+    }
+
     return {
       ...updatedAudio,
+      thumbnailUrl: updatedAudio.thumbnailUrl ?? showThumbnailUrl,
       compiledContent,
       creators: creatorRows.map(({ creator }) => ({
         id: creator.id,
