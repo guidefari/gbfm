@@ -3,19 +3,19 @@ import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import type { ShowWithHosts } from '@/lib/http'
 import { SubscribeButton } from './SubscribeButton'
 
-interface ShowHeroPanelProps {
+interface SelectedShowBarProps {
   show: ShowWithHosts
 }
 
-export function ShowHeroPanel({ show }: ShowHeroPanelProps) {
+export function SelectedShowBar({ show }: SelectedShowBarProps) {
   const hostNames = show.hosts?.map((h) => h.name).join(', ')
 
   return (
-    <div className='flex flex-col sm:flex-row gap-4 sm:gap-6 items-start pt-2 mb-6 pb-6 border-b border-border/40'>
+    <div className='flex flex-col lg:flex-row gap-4 lg:gap-6 items-start pt-2 mb-6 pb-6 border-b border-border/40'>
       <img
         src={show.thumbnailUrl || DEFAULT_IMAGE_URL}
         alt={show.title}
-        className='w-20 h-20 sm:w-40 sm:h-40 object-cover border rounded-sm border-border bg-background shrink-0'
+        className='hidden lg:block w-40 h-40 object-cover border rounded-sm border-border bg-background shrink-0'
       />
       <div className='flex-1 min-w-0 space-y-2 sm:space-y-3'>
         <h2 className='text-xl sm:text-3xl font-black tracking-tight mt-0'>{show.title}</h2>
@@ -37,8 +37,8 @@ export function ShowHeroPanel({ show }: ShowHeroPanelProps) {
             <SubscribeButton showId={show.id} showTitle={show.title} />
           </div>
           <Link
-            to='/$slug'
-            params={{ slug: show.slug }}
+            to='/shows/$showSlug'
+            params={{ showSlug: show.slug }}
             className='text-sm font-medium text-primary hover:opacity-80'>
             View show page
           </Link>
