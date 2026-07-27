@@ -1,12 +1,12 @@
-import { ReadMoreModal } from '@gbfm/ui'
 import { createFileRoute } from '@tanstack/react-router'
 import { Effect } from 'effect'
 import { useEffect } from 'react'
 import { FavoriteButton } from '@/components/FavoriteButton'
-import { MDXRendrr } from '@/components/MDXRendrr'
 import { RouteError } from '@/components/RouteError'
 import { ShareButton } from '@/components/ShareButton'
 import { EpisodeGrid } from '@/components/shows/EpisodeGrid'
+import { ShowDescription } from '@/components/shows/ShowDescription'
+import { ShowDetailHeroImage } from '@/components/shows/ShowDetailHeroImage'
 import { ShowQRButton } from '@/components/shows/ShowQRButton'
 import { getApiClient } from '@/lib/api-client'
 import { generateSEOMeta, generateShowSEO } from '@/lib/seo'
@@ -82,25 +82,22 @@ function ShowPage() {
 
   return (
     <div className='max-w-7xl px-4 py-6 mx-auto overflow-hidden'>
-      <div className='grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,2.5fr)]'>
+      <div className='grid grid-cols-1 gap-6 lg:gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,2.5fr)]'>
         <div className='lg:col-span-1'>
           <div className='sticky top-6'>
-            <div className='mb-4'>
-              <img
-                className='w-full rounded-sm'
-                src={data.thumbnailUrl || '/fav.png'}
-                alt={`Thumbnail for ${data.title}`}
-                width={400}
-                height={400}
-                loading='lazy'
-              />
+            <div className='flex gap-4 sm:flex-col'>
+              <div className='w-24 sm:w-full shrink-0'>
+                <ShowDetailHeroImage thumbnailUrl={data.thumbnailUrl} title={data.title} />
+              </div>
+              <div className='min-w-0 sm:mt-4'>
+                <h1 className='text-xl sm:text-2xl font-bold wrap-break-word'>{data.title}</h1>
+                {hostNames && (
+                  <p className='mt-1 text-sm text-muted-foreground'>Hosted by {hostNames}</p>
+                )}
+              </div>
             </div>
 
-            <div className='space-y-3 min-w-0'>
-              <h1 className='text-2xl font-bold wrap-break-word'>{data.title}</h1>
-
-              {hostNames && <p className='text-sm text-muted-foreground'>Hosted by {hostNames}</p>}
-
+            <div className='mt-4 space-y-3 min-w-0'>
               {(data.description || data.compiledContent) && (
                 <ShowDescription
                   title={data.title}
@@ -123,37 +120,6 @@ function ShowPage() {
           <EpisodeGrid showSlug={showSlug} />
         </div>
       </div>
-    </div>
-  )
-}
-
-function ShowDescription({
-  title,
-  description,
-  compiledContent
-}: {
-  title: string
-  description: string
-  compiledContent?: string
-}) {
-  const hasExpandableContent = description.length > 120 || compiledContent
-
-  return (
-    <div>
-      <div className='text-sm text-muted-foreground line-clamp-4 prose prose-sm prose-neutral dark:prose-invert max-w-none wrap-break-word overflow-hidden [&_p]:text-muted-foreground [&_p]:text-sm'>
-        {compiledContent ? <MDXRendrr mdxString={compiledContent} /> : <p>{description}</p>}
-      </div>
-      {hasExpandableContent && (
-        <ReadMoreModal
-          title={title}
-          trigger={
-            <span className='text-sm font-medium text-primary underline underline-offset-4 cursor-pointer hover:opacity-80'>
-              read more
-            </span>
-          }>
-          {compiledContent ? <MDXRendrr mdxString={compiledContent} /> : <p>{description}</p>}
-        </ReadMoreModal>
-      )}
     </div>
   )
 }

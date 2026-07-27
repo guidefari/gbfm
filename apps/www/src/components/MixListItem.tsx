@@ -21,6 +21,11 @@ export function MixListItem({ mix, actions }: MixListItemProps) {
   const isActive = current?.id === mix.id
   const recencyLabel = getMixRecencyLabel(mix.createdAt)
   const hasCreators = Boolean(mix.creators && mix.creators.length > 0)
+  const dateLabel = new Date(mix.createdAt).toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  })
 
   const handlePlay = () => {
     if (isActive) togglePlayPause()
@@ -46,28 +51,33 @@ export function MixListItem({ mix, actions }: MixListItemProps) {
             <div className='shrink-0 ml-2'>{actions}</div>
           </div>
 
-          {hasCreators && (
-            <p className='mt-1 text-xs tracking-widest text-highlight/80'>
-              <span className='opacity-60'>By </span>
-              {mix.creators?.map((creator, index) => (
-                <span key={creator.id}>
-                  {creator.username ? (
-                    <Link
-                      to='/profile/$username'
-                      params={{ username: creator.username }}
-                      className='hover:underline decoration-highlight/50 underline-offset-4'>
-                      {creator.name}
-                    </Link>
-                  ) : (
-                    <span>{creator.name}</span>
-                  )}
-                  {index < (mix.creators?.length || 0) - 1 && (
-                    <span className='mx-1 opacity-50'>&</span>
-                  )}
-                </span>
-              ))}
-            </p>
-          )}
+          <div className='mt-1 flex flex-wrap items-center gap-x-2 gap-y-1'>
+            <span className='text-[11px] font-mono tracking-widest text-muted-foreground'>
+              {dateLabel}
+            </span>
+            {hasCreators && (
+              <p className='text-xs tracking-widest text-highlight/80'>
+                <span className='opacity-60'>By </span>
+                {mix.creators?.map((creator, index) => (
+                  <span key={creator.id}>
+                    {creator.username ? (
+                      <Link
+                        to='/profile/$username'
+                        params={{ username: creator.username }}
+                        className='hover:underline decoration-highlight/50 underline-offset-4'>
+                        {creator.name}
+                      </Link>
+                    ) : (
+                      <span>{creator.name}</span>
+                    )}
+                    {index < (mix.creators?.length || 0) - 1 && (
+                      <span className='mx-1 opacity-50'>&</span>
+                    )}
+                  </span>
+                ))}
+              </p>
+            )}
+          </div>
 
           {mix.description && (
             <p className='mt-4 text-sm leading-relaxed text-foreground/50 border-l-2 border-highlight/20 pl-4 py-1 italic line-clamp-2'>

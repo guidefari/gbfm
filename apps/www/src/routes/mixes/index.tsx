@@ -14,7 +14,6 @@ import { z } from 'zod'
 import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
 import { MixListItem } from '@/components/MixListItem'
 import { MixMenu } from '@/components/MixMenu'
-import { MixTimeline, MixTimelineItem } from '@/components/MixTimeline'
 import { QueryError } from '@/components/QueryError'
 import { TrackContextMenu } from '@/components/TrackContextMenu'
 import { useAudioByType, useAudioTags } from '@/lib/http'
@@ -143,20 +142,18 @@ function MixesListPage() {
       {isPending && !data?.length ? (
         <MixesListSkeleton />
       ) : (
-        <MixTimeline>
+        <div className='space-y-3'>
           {sortedData?.map((mix) => (
-            <MixTimelineItem key={mix.id} mix={mix}>
-              <TrackContextMenu track={mix}>
-                <MixListItem mix={mix} actions={<MixMenu mix={mix} />} />
-              </TrackContextMenu>
-            </MixTimelineItem>
+            <TrackContextMenu key={mix.id} track={mix}>
+              <MixListItem mix={mix} actions={<MixMenu mix={mix} />} />
+            </TrackContextMenu>
           ))}
           <LoadMoreTrigger
             onLoadMore={fetchNextPage}
             hasNextPage={hasNextPage}
             isFetchingNextPage={isFetchingNextPage}
           />
-        </MixTimeline>
+        </div>
       )}
     </div>
   )
