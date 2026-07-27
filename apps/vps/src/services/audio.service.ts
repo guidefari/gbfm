@@ -1,4 +1,4 @@
-import { and, arrayContains, count, desc, eq, exists, inArray, sql } from 'drizzle-orm'
+import { and, arrayContains, count, desc, eq, exists, sql } from 'drizzle-orm'
 import { Context, Crypto, Effect, Encoding, Layer } from 'effect'
 import { db } from '@/db'
 import {
@@ -8,7 +8,6 @@ import {
   type SelectAudio,
   type SelectMdxCompiledAudio
 } from '@/db/audio.schema'
-import { user as usersTable } from '@/db/auth.schema'
 import { timeQuery } from '@/db/query-timer'
 import { showsTable } from '@/db/show.schema'
 import {
@@ -171,13 +170,17 @@ const getByTypeEffect = (
       try: () =>
         timeQuery(
           () =>
-            db
-              .select()
-              .from(audioTable)
-              .where(whereCondition)
-              .limit(limit)
-              .offset(offset)
-              .orderBy(desc(audioTable.createdAt)),
+            db.query.audioTable.findMany({
+              where: whereCondition,
+              limit,
+              offset,
+              orderBy: desc(audioTable.createdAt),
+              with: {
+                audioCreators: {
+                  with: { creator: true }
+                }
+              }
+            }),
           'get-audio-by-type-data'
         ),
       catch: (error) =>
@@ -188,56 +191,13 @@ const getByTypeEffect = (
         })
     })
 
-    const audioIds = audioItems.map((a) => a.id)
-
-    const creatorsData =
-      audioIds.length > 0
-        ? yield* Effect.tryPromise({
-            try: () =>
-              db
-                .select({
-                  audioId: audioCreators.audioId,
-                  creatorId: usersTable.id,
-                  creatorName: usersTable.name,
-                  creatorUsername: usersTable.username
-                })
-                .from(audioCreators)
-                .innerJoin(usersTable, eq(audioCreators.creatorId, usersTable.id))
-                .where(inArray(audioCreators.audioId, audioIds)),
-            catch: (error) =>
-              new DatabaseError({
-                message: `Failed to fetch creators: ${getErrorMessage(error)}`,
-                operation: 'select',
-                table: 'audio_creators'
-              })
-          })
-        : []
-
-    const creatorsByAudioId: Record<
-      string,
-      Array<{
-        id: string
-        name: string
-        username: string | null
-      }>
-    > = {}
-    for (const row of creatorsData) {
-      const existing = creatorsByAudioId[row.audioId]
-      const creatorInfo = {
-        id: row.creatorId,
-        name: row.creatorName,
-        username: row.creatorUsername
-      }
-      if (existing) {
-        existing.push(creatorInfo)
-      } else {
-        creatorsByAudioId[row.audioId] = [creatorInfo]
-      }
-    }
-
-    const data = audioItems.map((audio) => ({
+    const data = audioItems.map(({ audioCreators: creators, ...audio }) => ({
       ...audio,
-      creators: creatorsByAudioId[audio.id] || []
+      creators: creators.map(({ creator }) => ({
+        id: creator.id,
+        name: creator.name,
+        username: creator.username
+      }))
     }))
 
     return {
@@ -272,21 +232,22 @@ const getTagsEffect = (type: AudioType) =>
 
 const getBySlugEffect = (type: AudioType, slug: string, mdx: MdxService, includeDrafts = false) =>
   Effect.gen(function* () {
-    const audioRecords = yield* Effect.tryPromise({
+    const audio = yield* Effect.tryPromise({
       try: () =>
-        db
-          .select()
-          .from(audioTable)
-          .where(
-            includeDrafts
-              ? and(eq(audioTable.type, type), eq(audioTable.slug, slug))
-              : and(
-                  eq(audioTable.type, type),
-                  eq(audioTable.slug, slug),
-                  eq(audioTable.draft, false)
-                )
-          )
-          .limit(1),
+        db.query.audioTable.findFirst({
+          where: includeDrafts
+            ? and(eq(audioTable.type, type), eq(audioTable.slug, slug))
+            : and(
+                eq(audioTable.type, type),
+                eq(audioTable.slug, slug),
+                eq(audioTable.draft, false)
+              ),
+          with: {
+            audioCreators: {
+              with: { creator: true }
+            }
+          }
+        }),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to fetch audio: ${getErrorMessage(error)}`,
@@ -295,7 +256,6 @@ const getBySlugEffect = (type: AudioType, slug: string, mdx: MdxService, include
         })
     })
 
-    const audio = audioRecords[0]
     if (!audio) {
       return yield* new NotFoundError({
         message: 'Audio not found',
@@ -304,34 +264,17 @@ const getBySlugEffect = (type: AudioType, slug: string, mdx: MdxService, include
       })
     }
 
-    const creators = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select({
-            id: usersTable.id,
-            name: usersTable.name,
-            username: usersTable.username
-          })
-          .from(audioCreators)
-          .innerJoin(usersTable, eq(audioCreators.creatorId, usersTable.id))
-          .where(eq(audioCreators.audioId, audio.id)),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to fetch creators: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'audio_creators'
-        })
-    })
-
     let compiledContent = ''
     if (audio.content) {
       compiledContent = yield* mdx.compile(audio.content).pipe(Effect.orElseSucceed(() => ''))
     }
 
+    const { audioCreators: creators, ...audioFields } = audio
+
     return {
-      ...audio,
+      ...audioFields,
       compiledContent,
-      creators: creators.map((creator) => ({
+      creators: creators.map(({ creator }) => ({
         id: creator.id,
         name: creator.name,
         username: creator.username
@@ -560,17 +503,12 @@ const updateEffect = (
       })
     }
 
-    const creators = yield* Effect.tryPromise({
+    const creatorRows = yield* Effect.tryPromise({
       try: () =>
-        db
-          .select({
-            id: usersTable.id,
-            name: usersTable.name,
-            username: usersTable.username
-          })
-          .from(audioCreators)
-          .innerJoin(usersTable, eq(audioCreators.creatorId, usersTable.id))
-          .where(eq(audioCreators.audioId, updatedAudio.id)),
+        db.query.audioCreators.findMany({
+          where: eq(audioCreators.audioId, updatedAudio.id),
+          with: { creator: true }
+        }),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to fetch creators: ${getErrorMessage(error)}`,
@@ -589,7 +527,7 @@ const updateEffect = (
     return {
       ...updatedAudio,
       compiledContent,
-      creators: creators.map((creator) => ({
+      creators: creatorRows.map(({ creator }) => ({
         id: creator.id,
         name: creator.name,
         username: creator.username

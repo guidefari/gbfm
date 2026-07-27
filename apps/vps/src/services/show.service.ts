@@ -1,8 +1,7 @@
-import { and, asc, count, desc, eq, exists, inArray } from 'drizzle-orm'
+import { and, asc, count, desc, eq, exists } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
-import { audioCreators, audioTable, type SelectAudio } from '@/db/audio.schema'
-import { user as usersTable } from '@/db/auth.schema'
+import { audioTable, type SelectAudio } from '@/db/audio.schema'
 import {
   type InsertShow,
   type SelectMdxCompiledShow,
@@ -110,13 +109,17 @@ const getAllEffect = (
 
     const shows = yield* Effect.tryPromise({
       try: () =>
-        db
-          .select()
-          .from(showsTable)
-          .where(whereCondition)
-          .limit(limit)
-          .offset(offset)
-          .orderBy(desc(showsTable.createdAt), asc(showsTable.title)),
+        db.query.showsTable.findMany({
+          where: whereCondition,
+          limit,
+          offset,
+          orderBy: [desc(showsTable.createdAt), asc(showsTable.title)],
+          with: {
+            showCreators: {
+              with: { creator: true }
+            }
+          }
+        }),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to fetch shows: ${getErrorMessage(error)}`,
@@ -125,43 +128,9 @@ const getAllEffect = (
         })
     })
 
-    const showIds = shows.map((s) => s.id)
-
-    const hostsData =
-      showIds.length > 0
-        ? yield* Effect.tryPromise({
-            try: () =>
-              db
-                .select({
-                  showId: showCreators.showId,
-                  hostId: usersTable.id,
-                  hostName: usersTable.name
-                })
-                .from(showCreators)
-                .innerJoin(usersTable, eq(showCreators.creatorId, usersTable.id))
-                .where(inArray(showCreators.showId, showIds)),
-            catch: (error) =>
-              new DatabaseError({
-                message: `Failed to fetch hosts: ${getErrorMessage(error)}`,
-                operation: 'select',
-                table: 'show_creators'
-              })
-          })
-        : []
-
-    const hostsByShowId: Record<string, Array<{ id: string; name: string }>> = {}
-    for (const row of hostsData) {
-      const existing = hostsByShowId[row.showId]
-      if (existing) {
-        existing.push({ id: row.hostId, name: row.hostName })
-      } else {
-        hostsByShowId[row.showId] = [{ id: row.hostId, name: row.hostName }]
-      }
-    }
-
-    const data = shows.map((show) => ({
+    const data = shows.map(({ showCreators: hosts, ...show }) => ({
       ...show,
-      hosts: hostsByShowId[show.id] || []
+      hosts: hosts.map(({ creator }) => ({ id: creator.id, name: creator.name }))
     }))
 
     return {
@@ -172,17 +141,18 @@ const getAllEffect = (
 
 const getBySlugEffect = (slug: string, includeDrafts = false) =>
   Effect.gen(function* () {
-    const showRecords = yield* Effect.tryPromise({
+    const show = yield* Effect.tryPromise({
       try: () =>
-        db
-          .select()
-          .from(showsTable)
-          .where(
-            includeDrafts
-              ? eq(showsTable.slug, slug)
-              : and(eq(showsTable.slug, slug), eq(showsTable.draft, false))
-          )
-          .limit(1),
+        db.query.showsTable.findFirst({
+          where: includeDrafts
+            ? eq(showsTable.slug, slug)
+            : and(eq(showsTable.slug, slug), eq(showsTable.draft, false)),
+          with: {
+            showCreators: {
+              with: { creator: true }
+            }
+          }
+        }),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to fetch show: ${getErrorMessage(error)}`,
@@ -191,7 +161,6 @@ const getBySlugEffect = (slug: string, includeDrafts = false) =>
         })
     })
 
-    const show = showRecords[0]
     if (!show) {
       return yield* new NotFoundError({
         message: 'Show not found',
@@ -200,30 +169,14 @@ const getBySlugEffect = (slug: string, includeDrafts = false) =>
       })
     }
 
-    const hosts = yield* Effect.tryPromise({
-      try: () =>
-        db
-          .select({
-            id: usersTable.id,
-            name: usersTable.name
-          })
-          .from(showCreators)
-          .innerJoin(usersTable, eq(showCreators.creatorId, usersTable.id))
-          .where(eq(showCreators.showId, show.id)),
-      catch: (error) =>
-        new DatabaseError({
-          message: `Failed to fetch hosts: ${getErrorMessage(error)}`,
-          operation: 'select',
-          table: 'show_creators'
-        })
-    })
+    const { showCreators: hosts, ...showFields } = show
 
     let processedShow: SelectMdxCompiledShow = {
-      ...show,
+      ...showFields,
       compiledContent: '',
-      hosts: hosts.map((host) => ({
-        id: host.id,
-        name: host.name
+      hosts: hosts.map(({ creator }) => ({
+        id: creator.id,
+        name: creator.name
       }))
     }
 
@@ -370,16 +323,12 @@ const updateEffect = (
       })
     }
 
-    const hosts = yield* Effect.tryPromise({
+    const hostRows = yield* Effect.tryPromise({
       try: () =>
-        db
-          .select({
-            id: usersTable.id,
-            name: usersTable.name
-          })
-          .from(showCreators)
-          .innerJoin(usersTable, eq(showCreators.creatorId, usersTable.id))
-          .where(eq(showCreators.showId, updatedShow.id)),
+        db.query.showCreators.findMany({
+          where: eq(showCreators.showId, updatedShow.id),
+          with: { creator: true }
+        }),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to fetch hosts: ${getErrorMessage(error)}`,
@@ -391,9 +340,9 @@ const updateEffect = (
     const baseProcessedShow: SelectMdxCompiledShow = {
       ...updatedShow,
       compiledContent: '',
-      hosts: hosts.map((host) => ({
-        id: host.id,
-        name: host.name
+      hosts: hostRows.map(({ creator }) => ({
+        id: creator.id,
+        name: creator.name
       }))
     }
 
@@ -497,13 +446,17 @@ const getEpisodesEffect = (showSlug: string, options: { limit: number; offset: n
 
     const episodes = yield* Effect.tryPromise({
       try: () =>
-        db
-          .select()
-          .from(audioTable)
-          .where(whereCondition)
-          .limit(limit)
-          .offset(offset)
-          .orderBy(desc(audioTable.createdAt)),
+        db.query.audioTable.findMany({
+          where: whereCondition,
+          limit,
+          offset,
+          orderBy: desc(audioTable.createdAt),
+          with: {
+            audioCreators: {
+              with: { creator: true }
+            }
+          }
+        }),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to fetch episodes: ${getErrorMessage(error)}`,
@@ -512,58 +465,13 @@ const getEpisodesEffect = (showSlug: string, options: { limit: number; offset: n
         })
     })
 
-    const episodeIds = episodes.map((episode) => episode.id)
-
-    const creatorsData =
-      episodeIds.length > 0
-        ? yield* Effect.tryPromise({
-            try: () =>
-              db
-                .select({
-                  audioId: audioCreators.audioId,
-                  creatorId: usersTable.id,
-                  creatorName: usersTable.name,
-                  creatorUsername: usersTable.username
-                })
-                .from(audioCreators)
-                .innerJoin(usersTable, eq(audioCreators.creatorId, usersTable.id))
-                .where(inArray(audioCreators.audioId, episodeIds)),
-            catch: (error) =>
-              new DatabaseError({
-                message: `Failed to fetch episode creators: ${getErrorMessage(error)}`,
-                operation: 'select',
-                table: 'audio_creators'
-              })
-          })
-        : []
-
-    const creatorsByAudioId: Record<
-      string,
-      Array<{
-        id: string
-        name: string
-        username: string | null
-      }>
-    > = {}
-
-    for (const row of creatorsData) {
-      const existing = creatorsByAudioId[row.audioId]
-      const creatorInfo = {
-        id: row.creatorId,
-        name: row.creatorName,
-        username: row.creatorUsername
-      }
-
-      if (existing) {
-        existing.push(creatorInfo)
-      } else {
-        creatorsByAudioId[row.audioId] = [creatorInfo]
-      }
-    }
-
-    const data = episodes.map((episode) => ({
+    const data = episodes.map(({ audioCreators: creators, ...episode }) => ({
       ...episode,
-      creators: creatorsByAudioId[episode.id] || []
+      creators: creators.map(({ creator }) => ({
+        id: creator.id,
+        name: creator.name,
+        username: creator.username
+      }))
     }))
 
     return {

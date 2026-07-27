@@ -131,3 +131,30 @@ describe('AudioService.create idempotency', () => {
     ).rejects.toMatchObject({ _tag: 'ConflictError' })
   })
 })
+
+describe('AudioService creators', () => {
+  test('getByType and getBySlug attach the creator for each audio row', async () => {
+    const service = await getService()
+    const slug = `creators-${randomUUID()}`
+
+    const created = await Effect.runPromise(
+      service.create(makeAudio(slug), [actorId], {
+        actorId,
+        idempotencyKey: randomUUID()
+      })
+    )
+
+    const bySlug = await Effect.runPromise(service.getBySlug('mix', slug))
+    expect(bySlug.creators).toEqual([
+      expect.objectContaining({ id: actorId, name: 'Audio idempotency actor' })
+    ])
+
+    const { data: byType } = await Effect.runPromise(
+      service.getByType('mix', { limit: 100, offset: 0 })
+    )
+    const match = byType.find((audio) => audio.id === created.id)
+    expect(match?.creators).toEqual([
+      expect.objectContaining({ id: actorId, name: 'Audio idempotency actor' })
+    ])
+  })
+})

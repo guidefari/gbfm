@@ -2,6 +2,7 @@ import { config } from '@/services/config.service'
 import 'dotenv/config'
 import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
+import * as schema from './exports'
 
 const stage = config.app.stage
 
@@ -30,4 +31,4 @@ console.log(
 const pool = new Pool(dbConfig)
 
 export { pool }
-export const db = drizzle(pool)
+export const db = drizzle(pool, { schema })
