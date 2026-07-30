@@ -1,3 +1,10 @@
+## [2.76.4](https://github.com/guidefari/gbfm/compare/v2.76.3...v2.76.4) (2026-07-30)
+
+
+### Bug Fixes
+
+* **vps:** register database tracing provider ([998321d](https://github.com/guidefari/gbfm/commit/998321d4df94f689d1a2735f0a36bc3cca85d344))
+
 ## [2.76.3](https://github.com/guidefari/gbfm/compare/v2.76.2...v2.76.3) (2026-07-30)
 
 
