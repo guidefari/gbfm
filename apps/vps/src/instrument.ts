@@ -35,6 +35,7 @@ if (enabled) {
     dsn,
     environment,
     release: process.env.SENTRY_RELEASE,
+    skipOpenTelemetrySetup: true,
     tracesSampler: ({ inheritOrSampleWith, name, normalizedRequest }) =>
       inheritOrSampleWith(traceSampleRate({ name, url: normalizedRequest?.url })),
     sendDefaultPii: false,
