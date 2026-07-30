@@ -29,7 +29,7 @@ console.log(
   `[DB] Connecting stage=${config.app.dbStage || 'prod'} host=${dbConfig.host} db=${dbConfig.database}`
 )
 
-const pool = new Pool(dbConfig)
+const pool = instrumentDatabaseClient(new Pool(dbConfig))
 pool.on('connect', (client) => instrumentDatabaseClient(client))
 
 export { pool }

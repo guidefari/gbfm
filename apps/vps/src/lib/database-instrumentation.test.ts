@@ -82,7 +82,7 @@ describe('instrumentDatabaseClient', () => {
     expect(query).toHaveBeenCalledOnce()
   })
 
-  test('emits a child span through the active OpenTelemetry context', async () => {
+  test('emits one child span when a pool delegates asynchronously to a client', async () => {
     const exporter = new InMemorySpanExporter()
     const provider = new NodeTracerProvider({
       spanProcessors: [new SimpleSpanProcessor(exporter)]
@@ -90,12 +90,17 @@ describe('instrumentDatabaseClient', () => {
     provider.register()
 
     try {
-      const query = vi.fn(async (_queryConfig: unknown) => 'ok')
-      const client = instrumentDatabaseClient({ query })
+      const clientQuery = vi.fn(async (_queryConfig: unknown) => 'ok')
+      const client = instrumentDatabaseClient({ query: clientQuery })
+      const poolQuery = vi.fn(async (queryConfig: unknown) => {
+        await Promise.resolve()
+        return client.query(queryConfig)
+      })
+      const pool = instrumentDatabaseClient({ query: poolQuery })
       const tracer = provider.getTracer('database-instrumentation-test')
 
       await tracer.startActiveSpan('request', async (requestSpan) => {
-        await client.query('select "id" from "audio"')
+        await pool.query('select "id" from "audio"')
         requestSpan.end()
       })
       await provider.forceFlush()
@@ -112,6 +117,9 @@ describe('instrumentDatabaseClient', () => {
         'db.collection.name': 'audio',
         'db.query.summary': 'SELECT audio'
       })
+      expect(spans.filter((span) => span.name === 'SELECT audio')).toHaveLength(1)
+      expect(poolQuery).toHaveBeenCalledOnce()
+      expect(clientQuery).toHaveBeenCalledOnce()
     } finally {
       await provider.shutdown()
       trace.disable()
