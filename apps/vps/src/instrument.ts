@@ -37,7 +37,6 @@ if (enabled) {
     release: process.env.SENTRY_RELEASE,
     tracesSampler: ({ inheritOrSampleWith, name, normalizedRequest }) =>
       inheritOrSampleWith(traceSampleRate({ name, url: normalizedRequest?.url })),
-    integrations: [Sentry.postgresIntegration({ ignoreConnectSpans: true })],
     sendDefaultPii: false,
     enableLogs: true,
     debug: process.env.SENTRY_DEBUG === 'true',

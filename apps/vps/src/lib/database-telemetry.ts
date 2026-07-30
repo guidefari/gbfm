@@ -108,7 +108,7 @@ function findTopLevelOperation(
   return undefined
 }
 
-function extractQueryText(value: unknown): string | undefined {
+export function extractDatabaseQueryText(value: unknown): string | undefined {
   if (typeof value === 'string') return value
   if (typeof value !== 'object' || value === null || !('text' in value)) return undefined
   return typeof value.text === 'string' ? value.text : undefined
@@ -141,7 +141,7 @@ export function sanitizeDatabaseSpan<T extends DatabaseSpan>(span: T): T {
   if (typeof dbSystem !== 'string') return span
 
   const rawQuery = DATABASE_QUERY_ATTRIBUTE_KEYS.flatMap((key) => {
-    const query = extractQueryText(span.data[key])
+    const query = extractDatabaseQueryText(span.data[key])
     return query ? [query] : []
   })[0]
   const summary = summarizeDatabaseQuery(rawQuery ?? span.description ?? '')
