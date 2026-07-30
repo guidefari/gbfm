@@ -19,6 +19,8 @@ const reminderLoopEffect = Effect.gen(function* () {
 
   yield* Effect.race(Effect.sleep(Duration.millis(sleepMs)), awaitSignal)
 
+  // The recovery timer wins at least once every five minutes, including when there
+  // are no reminders due, so this is a loop heartbeat rather than a work-only check-in.
   const checkInId = yield* sentry.startCheckIn('reminder-processing', {
     schedule: { type: 'interval', value: 5, unit: 'minute' },
     checkinMargin: 2,

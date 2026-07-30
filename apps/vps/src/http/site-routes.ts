@@ -80,8 +80,7 @@ const fetchDb = <A>(query: () => Promise<A>, table: string) =>
       new DatabaseError({
         message: getErrorMessage(cause),
         operation: 'select',
-        table,
-        cause
+        table
       })
   })
 

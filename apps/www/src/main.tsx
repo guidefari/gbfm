@@ -61,13 +61,7 @@ if (env.sentryDsn && (!env.isDev || env.sentryEnableLocal)) {
     release: env.sentryRelease,
     debug: env.isDev,
     enableLogs: true,
-    integrations: [
-      Sentry.browserTracingIntegration(),
-      Sentry.replayIntegration({
-        maskAllText: true,
-        blockAllMedia: true
-      })
-    ],
+    integrations: [Sentry.browserTracingIntegration()],
     tracesSampler: ({ inheritOrSampleWith, location, name }) =>
       inheritOrSampleWith(
         traceSampleRate({
@@ -82,6 +76,23 @@ if (env.sentryDsn && (!env.isDev || env.sentryEnableLocal)) {
     beforeSend: (event) => (hasLocalUrl(event) ? null : event),
     beforeSendTransaction: (event) => (hasLocalUrl(event) ? null : event)
   })
+
+  if (!env.isDev) {
+    const client = Sentry.getClient()
+    Sentry.lazyLoadIntegration('replayIntegration').then(
+      (replayIntegration) => {
+        client?.addIntegration(
+          replayIntegration({
+            maskAllText: true,
+            blockAllMedia: true
+          })
+        )
+      },
+      () => {
+        Sentry.captureMessage('Failed to load browser replay integration', 'warning')
+      }
+    )
+  }
 }
 
 function App() {

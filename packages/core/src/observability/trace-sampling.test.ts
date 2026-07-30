@@ -19,4 +19,8 @@ describe('traceSampleRate', () => {
   test('samples other traffic at the baseline rate', () => {
     expect(traceSampleRate({ name: 'pageload', url: '/about' })).toBe(0.2)
   })
+
+  test('uses the URL as the source of truth when a transaction name is misleading', () => {
+    expect(traceSampleRate({ name: 'GET /health', url: '/api/music/track/123' })).toBe(0.5)
+  })
 })

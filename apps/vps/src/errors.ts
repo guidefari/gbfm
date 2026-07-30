@@ -51,7 +51,6 @@ export class DatabaseError extends Data.TaggedError('DatabaseError')<{
   readonly message: string
   readonly operation: string
   readonly table?: string
-  readonly cause?: unknown
 }> {}
 
 export class ReminderProcessingError extends Data.TaggedError('ReminderProcessingError')<{

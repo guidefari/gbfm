@@ -13,7 +13,7 @@ export type TraceSamplingInput = {
  * traces while sharply reducing synthetic liveness and crawler noise.
  */
 export function traceSampleRate({ name, url }: TraceSamplingInput): number {
-  const target = `${name} ${url ?? ''}`
+  const target = url ?? name
   if (NOISE_PATH_PATTERN.test(target)) return 0.01
   if (BUSINESS_PATH_PATTERN.test(target)) return 0.5
   return 0.2
