@@ -1,4 +1,4 @@
-import * as Sentry from '@sentry/bun'
+import { SpanStatusCode, trace } from '@opentelemetry/api'
 import { extractDatabaseQueryText, summarizeDatabaseQuery } from './database-telemetry'
 
 const INSTRUMENTED_DATABASE_CLIENT = Symbol('instrumented-database-client')
@@ -11,7 +11,7 @@ type DatabaseSpanOptions = {
 
 type DatabaseInstrumentation = {
   readonly hasActiveSpan: () => boolean
-  readonly runSpan: <A>(options: DatabaseSpanOptions, evaluate: () => A) => A
+  readonly runSpan: (options: DatabaseSpanOptions, evaluate: () => unknown) => unknown
 }
 
 type QueryableClient = {
@@ -19,21 +19,68 @@ type QueryableClient = {
   readonly [INSTRUMENTED_DATABASE_CLIENT]?: true
 }
 
-const sentryDatabaseInstrumentation: DatabaseInstrumentation = {
-  hasActiveSpan: () => Sentry.getActiveSpan() !== undefined,
-  runSpan: (options, evaluate) => Sentry.startSpan(options, evaluate)
+const databaseTracer = trace.getTracer('gbfm.database')
+
+function runOpenTelemetrySpan(options: DatabaseSpanOptions, evaluate: () => unknown): unknown {
+  return databaseTracer.startActiveSpan(
+    options.name,
+    {
+      attributes: {
+        ...options.attributes,
+        'sentry.op': options.op
+      }
+    },
+    (span) => {
+      let result: unknown
+      try {
+        result = evaluate()
+      } catch (error) {
+        span.setStatus({ code: SpanStatusCode.ERROR })
+        span.end()
+        throw error
+      }
+
+      if (
+        typeof result === 'object' &&
+        result !== null &&
+        'then' in result &&
+        typeof result.then === 'function'
+      ) {
+        return Promise.resolve(result).then(
+          (value) => {
+            span.end()
+            return value
+          },
+          (error) => {
+            span.setStatus({ code: SpanStatusCode.ERROR })
+            span.end()
+            throw error
+          }
+        )
+      }
+
+      span.end()
+      return result
+    }
+  )
+}
+
+const openTelemetryDatabaseInstrumentation: DatabaseInstrumentation = {
+  hasActiveSpan: () => trace.getActiveSpan()?.isRecording() === true,
+  runSpan: runOpenTelemetrySpan
 }
 
 /**
  * Instruments the concrete pg query boundary without relying on runtime module hooks.
  *
  * Bun does not currently activate Sentry's OpenTelemetry pg patch, so PoolClient
- * instances are wrapped explicitly. Queries without an active trace take the direct
- * path without parsing SQL or creating a span.
+ * instances are wrapped explicitly. The Effect runtime owns the active OpenTelemetry
+ * context, so spans are created through that API and exported by SentrySpanProcessor.
+ * Queries without a recording trace take the direct path without parsing SQL.
  */
 export function instrumentDatabaseClient<T extends QueryableClient>(
   client: T,
-  instrumentation: DatabaseInstrumentation = sentryDatabaseInstrumentation
+  instrumentation: DatabaseInstrumentation = openTelemetryDatabaseInstrumentation
 ): T {
   if (client[INSTRUMENTED_DATABASE_CLIENT] || typeof client.query !== 'function') return client
 
