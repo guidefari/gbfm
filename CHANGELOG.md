@@ -1,3 +1,10 @@
+## [2.76.5](https://github.com/guidefari/gbfm/compare/v2.76.4...v2.76.5) (2026-07-30)
+
+
+### Bug Fixes
+
+* **vps:** unify OpenTelemetry provider ([078c4b2](https://github.com/guidefari/gbfm/commit/078c4b23d56841b939fd963acee096ea13e26ca5))
+
 ## [2.76.4](https://github.com/guidefari/gbfm/compare/v2.76.3...v2.76.4) (2026-07-30)
 
 
