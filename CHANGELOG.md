@@ -1,3 +1,11 @@
+## [2.75.4](https://github.com/guidefari/gbfm/compare/v2.75.3...v2.75.4) (2026-07-30)
+
+
+### Bug Fixes
+
+* **vps:** centralize creator membership and cover relational query paths ([bdfcf5b](https://github.com/guidefari/gbfm/commit/bdfcf5b99f4dd3165c3a1c5357a8ebe950f174a2))
+* **vps:** correlate creator filters via inArray in relational queries ([7f59103](https://github.com/guidefari/gbfm/commit/7f59103f123ce7b55d44beb261dec2c0e897a69a))
+
 ## [2.75.3](https://github.com/guidefari/gbfm/compare/v2.75.2...v2.75.3) (2026-07-30)
 
 
