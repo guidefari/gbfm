@@ -1,3 +1,10 @@
+## [2.76.2](https://github.com/guidefari/gbfm/compare/v2.76.1...v2.76.2) (2026-07-30)
+
+
+### Bug Fixes
+
+* **vps:** join database spans to Effect context ([4dfc332](https://github.com/guidefari/gbfm/commit/4dfc33218af5d063f2aa91abbaf4485e600d3fda))
+
 ## [2.76.1](https://github.com/guidefari/gbfm/compare/v2.76.0...v2.76.1) (2026-07-30)
 
 
