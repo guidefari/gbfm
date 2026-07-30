@@ -1,7 +1,17 @@
 import type * as Sentry from '@sentry/bun'
 
+const DATABASE_AUTO_INTEGRATIONS = new Set(['Postgres', 'PostgresJs'])
+
 const isLocalUrl = (value: unknown) =>
   typeof value === 'string' && (value.includes('127.0.0.1') || value.includes('localhost'))
+
+/**
+ * Database queries use the explicit client wrapper so raw SQL never enters telemetry.
+ * Sentry's automatic integrations would create a second span containing the statement.
+ */
+export const withoutDatabaseAutoInstrumentation = <T extends { readonly name: string }>(
+  integrations: T[]
+) => integrations.filter((integration) => !DATABASE_AUTO_INTEGRATIONS.has(integration.name))
 
 /**
  * Local/dev Sentry is opt-in only. Production sends when a DSN is configured;

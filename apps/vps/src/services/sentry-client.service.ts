@@ -5,7 +5,11 @@ type Client = Sentry.NodeClient
 
 import { Context, Effect, Layer } from 'effect'
 import { sanitizeDatabaseSpan } from '@/lib/database-telemetry'
-import { hasLocalSentryContext, shouldEnableSentry } from '@/lib/sentry'
+import {
+  hasLocalSentryContext,
+  shouldEnableSentry,
+  withoutDatabaseAutoInstrumentation
+} from '@/lib/sentry'
 import { ConfigService } from './config.service'
 
 export interface SentryClientService {
@@ -41,6 +45,7 @@ export const SentryClientServiceLayer = Layer.effect(
           environment: sentry.environment,
           release: process.env.SENTRY_RELEASE,
           skipOpenTelemetrySetup: true,
+          integrations: withoutDatabaseAutoInstrumentation,
           tracesSampler: ({ inheritOrSampleWith, name, normalizedRequest }) =>
             inheritOrSampleWith(traceSampleRate({ name, url: normalizedRequest?.url })),
           sendDefaultPii: false,

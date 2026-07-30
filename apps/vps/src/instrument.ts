@@ -2,7 +2,11 @@ import { isRecord } from '@gbfm/core/utils'
 import { traceSampleRate } from '@gbfm/core/observability/trace-sampling'
 import * as Sentry from '@sentry/bun'
 import { sanitizeDatabaseSpan } from '@/lib/database-telemetry'
-import { hasLocalSentryContext, shouldEnableSentry } from '@/lib/sentry'
+import {
+  hasLocalSentryContext,
+  shouldEnableSentry,
+  withoutDatabaseAutoInstrumentation
+} from '@/lib/sentry'
 
 let resource: Record<string, unknown> | undefined
 try {
@@ -36,6 +40,7 @@ if (enabled) {
     environment,
     release: process.env.SENTRY_RELEASE,
     skipOpenTelemetrySetup: true,
+    integrations: withoutDatabaseAutoInstrumentation,
     tracesSampler: ({ inheritOrSampleWith, name, normalizedRequest }) =>
       inheritOrSampleWith(traceSampleRate({ name, url: normalizedRequest?.url })),
     sendDefaultPii: false,
