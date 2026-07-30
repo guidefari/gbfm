@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, exists } from 'drizzle-orm'
+import { and, asc, count, desc, eq, inArray } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { audioTable, type SelectAudio } from '@/db/audio.schema'
@@ -82,16 +82,12 @@ const getAllEffect = (
     const whereCondition = actor
       ? actor.userRole === 'admin'
         ? undefined
-        : exists(
+        : inArray(
+            showsTable.id,
             db
               .select({ id: showCreators.showId })
               .from(showCreators)
-              .where(
-                and(
-                  eq(showCreators.showId, showsTable.id),
-                  eq(showCreators.creatorId, actor.userId)
-                )
-              )
+              .where(eq(showCreators.creatorId, actor.userId))
           )
       : eq(showsTable.draft, false)
 

@@ -1,4 +1,4 @@
-import { and, arrayContains, count, desc, eq, exists, sql } from 'drizzle-orm'
+import { and, arrayContains, count, desc, eq, inArray, sql } from 'drizzle-orm'
 import { Context, Crypto, Effect, Encoding, Layer } from 'effect'
 import { db } from '@/db'
 import {
@@ -126,16 +126,12 @@ const getByTypeEffect = (
     const visibilityCondition = actor
       ? actor.userRole === 'admin'
         ? undefined
-        : exists(
+        : inArray(
+            audioTable.id,
             db
               .select({ id: audioCreators.audioId })
               .from(audioCreators)
-              .where(
-                and(
-                  eq(audioCreators.audioId, audioTable.id),
-                  eq(audioCreators.creatorId, actor.userId)
-                )
-              )
+              .where(eq(audioCreators.creatorId, actor.userId))
           )
       : eq(audioTable.draft, false)
     const whereCondition = and(

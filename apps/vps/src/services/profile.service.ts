@@ -1,4 +1,4 @@
-import { and, asc, eq, exists } from 'drizzle-orm'
+import { and, asc, eq, inArray } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { audioCreators, audioTable } from '@/db/audio.schema'
@@ -140,16 +140,12 @@ export const getPublicProfileEffect = (username: string) =>
             }
           },
           where: and(
-            exists(
+            inArray(
+              audioTable.id,
               db
                 .select({ id: audioCreators.audioId })
                 .from(audioCreators)
-                .where(
-                  and(
-                    eq(audioCreators.audioId, audioTable.id),
-                    eq(audioCreators.creatorId, foundUser.id)
-                  )
-                )
+                .where(eq(audioCreators.creatorId, foundUser.id))
             ),
             eq(audioTable.draft, false)
           ),

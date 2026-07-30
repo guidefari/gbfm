@@ -72,6 +72,21 @@ describe('ShowService creators', () => {
     expect(episodes[0]?.creators).toEqual([expect.objectContaining({ id: hostId })])
   })
 
+  test('getAll scopes to the actor own shows for a non-admin actor', async () => {
+    const service = await getService()
+    const slug = `show-scoped-${randomUUID()}`
+
+    const show = await Effect.runPromise(
+      service.create({ title: `Show ${slug}`, slug, content: '' }, [hostId])
+    )
+
+    const { data: shows } = await Effect.runPromise(
+      service.getAllForEdit({ limit: 100, offset: 0 }, hostId, 'user')
+    )
+
+    expect(shows.map((s) => s.id)).toContain(show.id)
+  })
+
   test('getEpisodes falls back to the show current thumbnailUrl when an episode has none', async () => {
     const service = await getService()
     const slug = `show-thumb-${randomUUID()}`
