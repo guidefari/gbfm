@@ -1,3 +1,10 @@
+## [2.75.3](https://github.com/guidefari/gbfm/compare/v2.75.2...v2.75.3) (2026-07-30)
+
+
+### Bug Fixes
+
+* **vps:** resolve audio thumbnailUrl from show at read time instead of copying at write time ([993dbc8](https://github.com/guidefari/gbfm/commit/993dbc8d1ec05085a9184bb1238a4b8654ba75e6))
+
 ## [2.75.2](https://github.com/guidefari/gbfm/compare/v2.75.1...v2.75.2) (2026-07-27)
 
 
