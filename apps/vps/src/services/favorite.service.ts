@@ -1,4 +1,5 @@
 import { and, desc, eq, isNotNull, or } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/pg-core'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
@@ -6,6 +7,8 @@ import { favoritesTable, type SelectFavorite } from '@/db/favorites.schema'
 import { showSubscriptionsTable, showsTable } from '@/db/show.schema'
 import { ConflictError, DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
 import { recordFavoriteAdd, recordFavoriteRemove } from '@/lib/performance-monitoring'
+
+const audioShowsTable = alias(showsTable, 'audio_shows')
 
 type FavoriteWithContent = {
   id: string
@@ -433,6 +436,7 @@ const getFavoritesEffect = (
                 type: audioTable.type,
                 url: audioTable.url
               },
+              audioShowThumbnailUrl: audioShowsTable.thumbnailUrl,
               show: {
                 id: showsTable.id,
                 title: showsTable.title,
@@ -443,6 +447,7 @@ const getFavoritesEffect = (
             .from(favoritesTable)
             .leftJoin(audioTable, eq(favoritesTable.audioId, audioTable.id))
             .leftJoin(showsTable, eq(favoritesTable.showId, showsTable.id))
+            .leftJoin(audioShowsTable, eq(audioTable.showId, audioShowsTable.id))
             .where(
               and(
                 eq(favoritesTable.userId, userId),
@@ -470,9 +475,14 @@ const getFavoritesEffect = (
         offset
       })
 
-      return favorites.map((favorite) => ({
+      return favorites.map(({ audioShowThumbnailUrl, ...favorite }) => ({
         ...favorite,
-        audio: favorite.audio?.id ? favorite.audio : null,
+        audio: favorite.audio?.id
+          ? {
+              ...favorite.audio,
+              thumbnailUrl: favorite.audio.thumbnailUrl ?? audioShowThumbnailUrl ?? null
+            }
+          : null,
         show: favorite.show?.id ? favorite.show : null
       }))
     })

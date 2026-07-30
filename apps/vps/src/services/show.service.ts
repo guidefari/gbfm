@@ -454,6 +454,9 @@ const getEpisodesEffect = (showSlug: string, options: { limit: number; offset: n
           with: {
             audioCreators: {
               with: { creator: true }
+            },
+            show: {
+              columns: { thumbnailUrl: true }
             }
           }
         }),
@@ -465,8 +468,9 @@ const getEpisodesEffect = (showSlug: string, options: { limit: number; offset: n
         })
     })
 
-    const data = episodes.map(({ audioCreators: creators, ...episode }) => ({
+    const data = episodes.map(({ audioCreators: creators, show: episodeShow, ...episode }) => ({
       ...episode,
+      thumbnailUrl: episode.thumbnailUrl ?? episodeShow?.thumbnailUrl ?? null,
       creators: creators.map(({ creator }) => ({
         id: creator.id,
         name: creator.name,

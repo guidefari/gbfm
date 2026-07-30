@@ -67,35 +67,45 @@ const searchEffect = (query: string, limit: number) =>
 
     const audio = Effect.tryPromise({
       try: () =>
-        db
-          .select({
-            id: audioTable.id,
-            title: audioTable.title,
-            slug: audioTable.slug,
-            type: audioTable.type,
-            thumbnailUrl: audioTable.thumbnailUrl,
-            description: audioTable.description
-          })
-          .from(audioTable)
-          .where(
-            and(
-              eq(audioTable.draft, false),
-              or(
-                ilike(audioTable.title, pattern),
-                ilike(audioTable.description, pattern),
-                ilike(audioTable.content, pattern),
-                tagMatches(audioTable.tags, pattern)
-              )
+        db.query.audioTable.findMany({
+          columns: {
+            id: true,
+            title: true,
+            slug: true,
+            type: true,
+            thumbnailUrl: true,
+            description: true
+          },
+          with: {
+            show: {
+              columns: { thumbnailUrl: true }
+            }
+          },
+          where: and(
+            eq(audioTable.draft, false),
+            or(
+              ilike(audioTable.title, pattern),
+              ilike(audioTable.description, pattern),
+              ilike(audioTable.content, pattern),
+              tagMatches(audioTable.tags, pattern)
             )
-          )
-          .limit(limit),
+          ),
+          limit
+        }),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to search audio: ${getErrorMessage(error)}`,
           operation: 'select',
           table: 'audio'
         })
-    })
+    }).pipe(
+      Effect.map((rows) =>
+        rows.map(({ show, ...row }) => ({
+          ...row,
+          thumbnailUrl: row.thumbnailUrl ?? show?.thumbnailUrl ?? null
+        }))
+      )
+    )
 
     const posts = Effect.tryPromise({
       try: () =>
