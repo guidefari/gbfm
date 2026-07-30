@@ -9,7 +9,7 @@ import { musicLabelCreatorsTable, musicLabelsTable } from '@/db/music-entity.sch
 import { postCreators, postsTable } from '@/db/post.schema'
 import { releasesTable } from '@/db/release.schema'
 import { showCreators, showsTable } from '@/db/show.schema'
-import { DatabaseError, NotFoundError } from '@/errors'
+import { DatabaseError, getErrorMessage, NotFoundError } from '@/errors'
 import { buildErrorHtml, buildOGHtml } from '@/routes/redirect/redirect.template'
 import { getCachedSitemap } from '@/routes/redirect/seo/sitemap.service'
 import { ResolveService } from '@/services/resolve.service'
@@ -76,7 +76,13 @@ const errorResponse =
 const fetchDb = <A>(query: () => Promise<A>, table: string) =>
   Effect.tryPromise({
     try: query,
-    catch: (error) => new DatabaseError({ message: String(error), operation: 'select', table })
+    catch: (cause) =>
+      new DatabaseError({
+        message: getErrorMessage(cause),
+        operation: 'select',
+        table,
+        cause
+      })
   })
 
 const shareMix = HttpRouter.params.pipe(

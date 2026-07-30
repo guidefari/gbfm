@@ -95,6 +95,7 @@ export const dbBackupTask = new sst.aws.Task('DatabaseBackupTask', {
     dockerfile: 'apps/vps/Dockerfile'
   },
   environment: {
+    SENTRY_RELEASE: process.env.SENTRY_RELEASE ?? '',
     DATABASE_BACKUP_BUCKET: dbBackupBucket.name,
     DatabaseHost: secret.DatabaseHost.value,
     DatabaseUser: secret.DatabaseUser.value,

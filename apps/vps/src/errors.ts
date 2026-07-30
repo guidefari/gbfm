@@ -1,7 +1,20 @@
-import { Data } from 'effect'
+import { Data, Option, Schema } from 'effect'
+
+const DRIZZLE_QUERY_FAILURE = /^Failed query:/i
+const PostgresFailureCause = Schema.Struct({
+  code: Schema.String.pipe(Schema.check(Schema.isPattern(/^[A-Z0-9]{5}$/)))
+})
+const decodePostgresFailureCause = Schema.decodeUnknownOption(PostgresFailureCause)
+
+function databaseFailureSummary(error: Error): string {
+  const cause = Option.getOrUndefined(decodePostgresFailureCause(error.cause))
+  if (cause) return `Database query failed (${cause.code})`
+
+  return 'Database query failed'
+}
 
 /**
- * Extracts a human-readable message from any error type.
+ * Extracts a human-readable, telemetry-safe message from any error type.
  *
  * @param error - The error to extract a message from
  * @returns The error message string
@@ -19,7 +32,11 @@ import { Data } from 'effect'
  * // => 'Unknown error'
  */
 export function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message
+  if (error instanceof Error) {
+    return DRIZZLE_QUERY_FAILURE.test(error.message)
+      ? databaseFailureSummary(error)
+      : error.message.replace(/\nparams:[\s\S]*$/i, '')
+  }
   if (typeof error === 'string') return error
   return 'Unknown error'
 }
@@ -34,6 +51,7 @@ export class DatabaseError extends Data.TaggedError('DatabaseError')<{
   readonly message: string
   readonly operation: string
   readonly table?: string
+  readonly cause?: unknown
 }> {}
 
 export class ReminderProcessingError extends Data.TaggedError('ReminderProcessingError')<{

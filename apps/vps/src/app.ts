@@ -10,6 +10,7 @@ const RECOVERY_INTERVAL_MS = 5 * 60 * 1000
 
 const reminderLoopEffect = Effect.gen(function* () {
   const { await: awaitSignal } = yield* ReminderSignalService
+  const sentry = yield* SentryService
 
   const nextDate = yield* queryNextDueReminder.pipe(Effect.catch(() => Effect.succeed(null)))
 
@@ -18,7 +19,18 @@ const reminderLoopEffect = Effect.gen(function* () {
 
   yield* Effect.race(Effect.sleep(Duration.millis(sleepMs)), awaitSignal)
 
-  yield* processPendingReminders
+  const checkInId = yield* sentry.startCheckIn('reminder-processing', {
+    schedule: { type: 'interval', value: 5, unit: 'minute' },
+    checkinMargin: 2,
+    maxRuntime: 4,
+    failureIssueThreshold: 2,
+    recoveryThreshold: 1
+  })
+
+  yield* processPendingReminders.pipe(
+    Effect.tap(() => sentry.finishCheckIn('reminder-processing', checkInId, 'ok')),
+    Effect.tapError(() => sentry.finishCheckIn('reminder-processing', checkInId, 'error'))
+  )
 }).pipe(
   Effect.catch((error) =>
     Effect.logError(
@@ -28,7 +40,21 @@ const reminderLoopEffect = Effect.gen(function* () {
   Effect.repeat(Schedule.forever)
 )
 
-const sitemapRegenerationEffect = regenerateSitemap.pipe(
+const sitemapRegenerationEffect = Effect.gen(function* () {
+  const sentry = yield* SentryService
+  const checkInId = yield* sentry.startCheckIn('sitemap-regeneration', {
+    schedule: { type: 'interval', value: 1, unit: 'hour' },
+    checkinMargin: 5,
+    maxRuntime: 10,
+    failureIssueThreshold: 2,
+    recoveryThreshold: 1
+  })
+
+  yield* regenerateSitemap.pipe(
+    Effect.tap(() => sentry.finishCheckIn('sitemap-regeneration', checkInId, 'ok')),
+    Effect.tapError(() => sentry.finishCheckIn('sitemap-regeneration', checkInId, 'error'))
+  )
+}).pipe(
   Effect.catch((error) =>
     Effect.logError(
       `Sitemap regeneration failed: ${error instanceof Error ? error.message : String(error)}`

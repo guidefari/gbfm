@@ -67,4 +67,4 @@ COPY --from=deps /usr/src/app/packages/theme ./packages/theme
 COPY --from=deps /usr/src/app/apps/vps ./apps/vps
 COPY --from=deps /usr/src/app/tsconfig.json ./tsconfig.json
 
-CMD ["bun", "run", "apps/vps/scripts/run-backup-task.ts"]
+CMD ["bun", "--preload", "apps/vps/src/instrument.ts", "run", "apps/vps/scripts/run-backup-task.ts"]

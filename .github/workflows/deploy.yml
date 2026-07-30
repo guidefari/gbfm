@@ -80,6 +80,7 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_DEFAULT_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_DEFAULT_ACCOUNT_ID }}
           CF_RULESET_IMPORT: ${{ inputs.cf_ruleset_import }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
           SENTRY_RELEASE: ${{ steps.deployment-ref.outputs.ref }}
 
         run: |
@@ -87,3 +88,15 @@ jobs:
             bun run sst refresh --stage=prod
           fi
           bun run sst deploy --stage=prod
+
+      - name: Install Sentry CLI
+        run: curl https://cli.sentry.dev/install -fsS | bash
+
+      - name: Publish Sentry release metadata
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_RELEASE: ${{ steps.deployment-ref.outputs.ref }}
+        run: |
+          sentry release set-commits "goosebumps-collective/$SENTRY_RELEASE" --auto
+          sentry release finalize "goosebumps-collective/$SENTRY_RELEASE"
+          sentry release deploy "goosebumps-collective/$SENTRY_RELEASE" production

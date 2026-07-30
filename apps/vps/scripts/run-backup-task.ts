@@ -1,5 +1,6 @@
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { sendBackupNotificationEmail } from '@gbfm/email/index'
+import * as Sentry from '@sentry/bun'
 import { Console, Effect } from 'effect'
 import { config } from '../src/services/config.service'
 import {
@@ -150,14 +151,38 @@ const createBackupEffect = withLogCapture((capture) =>
   })
 )
 
-const program = createBackupEffect.pipe(
-  Effect.match({
-    onSuccess: () => process.exit(0),
-    onFailure: (error) => {
-      console.error('Backup failed:', error)
-      process.exit(1)
-    }
-  })
+const monitorSlug = 'database-backup'
+const checkInId = Sentry.captureCheckIn(
+  { monitorSlug, status: 'in_progress' },
+  {
+    schedule: { type: 'crontab', value: '0 2 * * *' },
+    checkinMargin: 10,
+    maxRuntime: 30,
+    timezone: 'UTC',
+    failureIssueThreshold: 1,
+    recoveryThreshold: 1
+  }
 )
 
-Effect.runPromise(program)
+const finish = async (status: 'ok' | 'error') => {
+  Sentry.captureCheckIn({ monitorSlug, checkInId, status })
+  await Sentry.flush(2000)
+}
+
+const program = createBackupEffect.pipe(
+  Effect.match({
+    onSuccess: async () => {
+      await finish('ok')
+      process.exit(0)
+    },
+    onFailure: async (error) => {
+      console.error('Backup failed:', error)
+      Sentry.captureException(error)
+      await finish('error')
+      process.exit(1)
+    }
+  }),
+  Effect.runPromise
+)
+
+await program
