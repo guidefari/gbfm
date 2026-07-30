@@ -1,9 +1,9 @@
-import { NodeSdk } from '@effect/opentelemetry'
-import { propagation, trace } from '@opentelemetry/api'
+import { OtelTracer, Resource } from '@effect/opentelemetry'
+import { trace } from '@opentelemetry/api'
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
 import { SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
-import { SentryPropagator, SentrySampler, SentrySpanProcessor } from '@sentry/opentelemetry'
+import * as Sentry from '@sentry/bun'
 import { Effect, Layer } from 'effect'
 import { ConfigService } from '@/services/config.service'
 import { SentryClientService } from '@/services/sentry-client.service'
@@ -33,8 +33,7 @@ export const OtlpLive = Effect.gen(function* () {
   const otlpEndpoint = (config.otel.endpoint || '').replace(/\/$/, '')
   const otelHeaders = parseOtelHeaders(config.otel.headers)
 
-  const makeSpanProcessors = () => [
-    ...(sentry.enabled ? [new SentrySpanProcessor()] : []),
+  const makeAdditionalSpanProcessors = () => [
     ...(otlpEndpoint
       ? [
           new SimpleSpanProcessor(
@@ -55,41 +54,44 @@ export const OtlpLive = Effect.gen(function* () {
       : [])
   ]
 
-  if (sentry.client) {
-    propagation.setGlobalPropagator(new SentryPropagator())
-  }
-
-  const tracerConfig = sentry.client ? { sampler: new SentrySampler(sentry.client) } : undefined
-  const globalProviderLive = Layer.effectDiscard(
-    Effect.acquireRelease(
-      Effect.sync(() => {
-        const provider = new NodeTracerProvider({
-          spanProcessors: makeSpanProcessors(),
-          ...(tracerConfig ? { sampler: tracerConfig.sampler } : {})
+  const sentryClient = sentry.client
+  const globalProviderLive = sentryClient
+    ? Layer.effectDiscard(
+        Effect.sync(() => {
+          Sentry.initOpenTelemetry(sentryClient, {
+            spanProcessors: makeAdditionalSpanProcessors()
+          })
         })
-        provider.register()
-        return provider
-      }),
-      (provider) =>
-        Effect.promise(async () => {
-          await provider.forceFlush()
-          await provider.shutdown()
-          trace.disable()
-        }).pipe(Effect.ignore)
-    )
-  )
-  const effectTracingLive = NodeSdk.layer(() => ({
-    resource: {
-      serviceName: 'goosebumps-fm-api',
-      serviceVersion: process.env.npm_package_version || '1.0.0',
-      serviceNamespace: 'application',
-      attributes: {
-        'deployment.environment': config.app.nodeEnv
-      }
-    },
-    spanProcessor: makeSpanProcessors(),
-    ...(tracerConfig ? { tracerConfig } : {})
-  }))
+      )
+    : Layer.effectDiscard(
+        Effect.acquireRelease(
+          Effect.sync(() => {
+            const provider = new NodeTracerProvider({
+              spanProcessors: makeAdditionalSpanProcessors()
+            })
+            provider.register()
+            return provider
+          }),
+          (provider) =>
+            Effect.promise(async () => {
+              await provider.forceFlush()
+              await provider.shutdown()
+              trace.disable()
+            }).pipe(Effect.ignore)
+        )
+      )
 
-  return Layer.merge(effectTracingLive, globalProviderLive)
+  const resourceLive = Resource.layer({
+    serviceName: 'goosebumps-fm-api',
+    serviceVersion: process.env.npm_package_version || '1.0.0',
+    attributes: {
+      'service.namespace': 'application',
+      'deployment.environment': config.app.nodeEnv
+    }
+  })
+  const effectTracingLive = OtelTracer.layerGlobal.pipe(
+    Layer.provide(Layer.merge(globalProviderLive, resourceLive))
+  )
+
+  return effectTracingLive
 }).pipe(Layer.unwrap)

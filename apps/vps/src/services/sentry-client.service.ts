@@ -1,7 +1,7 @@
 import { traceSampleRate } from '@gbfm/core/observability/trace-sampling'
 import * as Sentry from '@sentry/bun'
 
-type Client = NonNullable<ReturnType<typeof Sentry.getClient>>
+type Client = Sentry.NodeClient
 
 import { Context, Effect, Layer } from 'effect'
 import { sanitizeDatabaseSpan } from '@/lib/database-telemetry'
@@ -28,7 +28,7 @@ export const SentryClientServiceLayer = Layer.effect(
       return { client: undefined, enabled: false }
     }
 
-    const existingClient = Sentry.getClient()
+    const existingClient = Sentry.getClient<Client>()
     if (existingClient) {
       return { client: existingClient, enabled: true }
     }
@@ -40,6 +40,7 @@ export const SentryClientServiceLayer = Layer.effect(
           dsn: sentry.dsn,
           environment: sentry.environment,
           release: process.env.SENTRY_RELEASE,
+          skipOpenTelemetrySetup: true,
           tracesSampler: ({ inheritOrSampleWith, name, normalizedRequest }) =>
             inheritOrSampleWith(traceSampleRate({ name, url: normalizedRequest?.url })),
           sendDefaultPii: false,
