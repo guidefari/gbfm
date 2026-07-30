@@ -1,3 +1,15 @@
+# [2.76.0](https://github.com/guidefari/gbfm/compare/v2.75.4...v2.76.0) (2026-07-30)
+
+
+### Bug Fixes
+
+* close observability review gaps ([dbde52f](https://github.com/guidefari/gbfm/commit/dbde52f240ae7853c334a47941d9b3d0791b7160))
+
+
+### Features
+
+* harden production observability ([224cf4a](https://github.com/guidefari/gbfm/commit/224cf4a14ba615c3ec3f7baa2d9ffe0582f95731))
+
 ## [2.75.4](https://github.com/guidefari/gbfm/compare/v2.75.3...v2.75.4) (2026-07-30)
 
 
