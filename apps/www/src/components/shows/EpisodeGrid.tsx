@@ -1,5 +1,5 @@
+import { EpisodeRow } from '@/components/EpisodeRow'
 import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
-import { MixListItem } from '@/components/MixListItem'
 import { useShowEpisodes } from '@/lib/http'
 
 interface EpisodeGridProps {
@@ -18,17 +18,17 @@ export function EpisodeGrid({ showSlug }: EpisodeGridProps) {
 
   if (isPending) {
     return (
-      <div className='grid gap-2'>
+      <div className='space-y-3'>
         {Array.from({ length: 5 }).map((_, i) => (
           <div
             // oxlint-disable-next-line react/no-array-index-key
             key={i}
-            className='flex gap-3 items-start p-2'>
-            <div className='w-14 h-14 rounded-sm bg-muted/50 animate-pulse shrink-0' />
+            className='flex items-center justify-between gap-4 border border-border p-4'>
             <div className='flex-1 space-y-2'>
               <div className='h-4 w-3/4 rounded bg-muted/50 animate-pulse' />
               <div className='h-3 w-1/2 rounded bg-muted/50 animate-pulse' />
             </div>
+            <div className='h-8 w-24 rounded bg-muted/50 animate-pulse shrink-0' />
           </div>
         ))}
       </div>
@@ -52,7 +52,7 @@ export function EpisodeGrid({ showSlug }: EpisodeGridProps) {
       <h2 className='text-xl font-bold'>Episodes</h2>
       <div className='space-y-3'>
         {episodes.map((episode) => (
-          <MixListItem key={episode.id} mix={episode} />
+          <EpisodeRow key={episode.id} mix={episode} />
         ))}
         <LoadMoreTrigger
           onLoadMore={fetchNextPage}

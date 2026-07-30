@@ -4,7 +4,7 @@ import { useEffect, useMemo } from 'react'
 import { z } from 'zod'
 import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
 import { EpisodeGrid } from '@/components/shows/EpisodeGrid'
-import { ShowHeroPanel } from '@/components/shows/ShowHeroPanel'
+import { SelectedShowBar } from '@/components/shows/SelectedShowBar'
 import { ShowListItem } from '@/components/shows/ShowListItem'
 import { ShowSwitcherRail } from '@/components/shows/ShowSwitcherRail'
 import { useAllShows, type ShowWithHosts } from '@/lib/http'
@@ -117,7 +117,7 @@ function ShowsListPage() {
 function SelectedShowPanel({ show }: { show: ShowWithHosts }) {
   return (
     <section>
-      <ShowHeroPanel show={show} />
+      <SelectedShowBar show={show} />
       <EpisodeGrid showSlug={show.slug} />
     </section>
   )
