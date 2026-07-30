@@ -1,3 +1,10 @@
+## [2.76.6](https://github.com/guidefari/gbfm/compare/v2.76.5...v2.76.6) (2026-07-30)
+
+
+### Bug Fixes
+
+* **vps:** prevent raw SQL telemetry ([3b9bdac](https://github.com/guidefari/gbfm/commit/3b9bdacf3b5b17c7161a2998f83f41e403330ace))
+
 ## [2.76.5](https://github.com/guidefari/gbfm/compare/v2.76.4...v2.76.5) (2026-07-30)
 
 
