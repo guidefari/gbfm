@@ -1,4 +1,4 @@
-import { trace } from '@opentelemetry/api'
+import { context, trace } from '@opentelemetry/api'
 import { InMemorySpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
 import { describe, expect, test, vi } from 'vitest'
@@ -83,11 +83,15 @@ describe('instrumentDatabaseClient', () => {
   })
 
   test('emits one child span when a pool delegates asynchronously to a client', async () => {
-    const exporter = new InMemorySpanExporter()
-    const provider = new NodeTracerProvider({
-      spanProcessors: [new SimpleSpanProcessor(exporter)]
+    const databaseExporter = new InMemorySpanExporter()
+    const databaseProvider = new NodeTracerProvider({
+      spanProcessors: [new SimpleSpanProcessor(databaseExporter)]
     })
-    provider.register()
+    databaseProvider.register()
+    const effectExporter = new InMemorySpanExporter()
+    const effectProvider = new NodeTracerProvider({
+      spanProcessors: [new SimpleSpanProcessor(effectExporter)]
+    })
 
     try {
       const clientQuery = vi.fn(async (_queryConfig: unknown) => 'ok')
@@ -97,19 +101,25 @@ describe('instrumentDatabaseClient', () => {
         return client.query(queryConfig)
       })
       const pool = instrumentDatabaseClient({ query: poolQuery })
-      const tracer = provider.getTracer('database-instrumentation-test')
+      const requestSpan = effectProvider
+        .getTracer('database-instrumentation-test')
+        .startSpan('request')
 
-      await tracer.startActiveSpan('request', async (requestSpan) => {
+      await context.with(trace.setSpan(context.active(), requestSpan), async () => {
         await pool.query('select "id" from "audio"')
-        requestSpan.end()
       })
-      await provider.forceFlush()
+      requestSpan.end()
+      await Promise.all([databaseProvider.forceFlush(), effectProvider.forceFlush()])
 
-      const spans = exporter.getFinishedSpans()
-      const databaseSpan = spans.find((span) => span.name === 'SELECT audio')
-      const requestSpan = spans.find((span) => span.name === 'request')
+      const databaseSpans = databaseExporter.getFinishedSpans()
+      const databaseSpan = databaseSpans.find((span) => span.name === 'SELECT audio')
+      const finishedRequestSpan = effectExporter
+        .getFinishedSpans()
+        .find((span) => span.name === 'request')
 
-      expect(databaseSpan?.parentSpanContext?.spanId).toBe(requestSpan?.spanContext().spanId)
+      expect(databaseSpan?.parentSpanContext?.spanId).toBe(
+        finishedRequestSpan?.spanContext().spanId
+      )
       expect(databaseSpan?.attributes).toMatchObject({
         'sentry.op': 'db.query',
         'db.system.name': 'postgresql',
@@ -117,11 +127,11 @@ describe('instrumentDatabaseClient', () => {
         'db.collection.name': 'audio',
         'db.query.summary': 'SELECT audio'
       })
-      expect(spans.filter((span) => span.name === 'SELECT audio')).toHaveLength(1)
+      expect(databaseSpans.filter((span) => span.name === 'SELECT audio')).toHaveLength(1)
       expect(poolQuery).toHaveBeenCalledOnce()
       expect(clientQuery).toHaveBeenCalledOnce()
     } finally {
-      await provider.shutdown()
+      await Promise.all([databaseProvider.shutdown(), effectProvider.shutdown()])
       trace.disable()
     }
   })

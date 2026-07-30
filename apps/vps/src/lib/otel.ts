@@ -1,7 +1,8 @@
 import { NodeSdk } from '@effect/opentelemetry'
-import { propagation } from '@opentelemetry/api'
+import { propagation, trace } from '@opentelemetry/api'
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
 import { SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
+import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
 import { SentryPropagator, SentrySampler, SentrySpanProcessor } from '@sentry/opentelemetry'
 import { Effect, Layer } from 'effect'
 import { ConfigService } from '@/services/config.service'
@@ -32,33 +33,52 @@ export const OtlpLive = Effect.gen(function* () {
   const otlpEndpoint = (config.otel.endpoint || '').replace(/\/$/, '')
   const otelHeaders = parseOtelHeaders(config.otel.headers)
 
-  const otlpProcessors = otlpEndpoint
-    ? [
-        new SimpleSpanProcessor(
-          new OTLPTraceExporter({
-            url: otlpEndpoint.endsWith('/v1/traces') ? otlpEndpoint : `${otlpEndpoint}/v1/traces`,
-            ...(otelHeaders ? { headers: otelHeaders } : {})
-          })
-        )
-      ]
-    : []
-
-  // Dual export in dev: Jaeger (above) for the trace-waterfall UI, motel
-  // (github.com/kitlangton/motel) for terminal/agent-queryable local
-  // telemetry. Span export failures are caught by OTel's own SDK and never
-  // throw into the request path, so this is safe to leave unconditional
-  // within the dev/local gate even when the motel server isn't running.
-  const motelProcessors = ['dev', 'local'].includes(config.app.stage)
-    ? [new SimpleSpanProcessor(new OTLPTraceExporter({ url: MOTEL_TRACES_URL }))]
-    : []
-
-  const sentryProcessors = sentry.enabled ? [new SentrySpanProcessor()] : []
+  const makeSpanProcessors = () => [
+    ...(sentry.enabled ? [new SentrySpanProcessor()] : []),
+    ...(otlpEndpoint
+      ? [
+          new SimpleSpanProcessor(
+            new OTLPTraceExporter({
+              url: otlpEndpoint.endsWith('/v1/traces') ? otlpEndpoint : `${otlpEndpoint}/v1/traces`,
+              ...(otelHeaders ? { headers: otelHeaders } : {})
+            })
+          )
+        ]
+      : []),
+    // Dual export in dev: Jaeger (above) for the trace-waterfall UI, motel
+    // (github.com/kitlangton/motel) for terminal/agent-queryable local
+    // telemetry. Span export failures are caught by OTel's own SDK and never
+    // throw into the request path, so this is safe to leave unconditional
+    // within the dev/local gate even when the motel server isn't running.
+    ...(['dev', 'local'].includes(config.app.stage)
+      ? [new SimpleSpanProcessor(new OTLPTraceExporter({ url: MOTEL_TRACES_URL }))]
+      : [])
+  ]
 
   if (sentry.client) {
     propagation.setGlobalPropagator(new SentryPropagator())
   }
 
-  return NodeSdk.layer(() => ({
+  const tracerConfig = sentry.client ? { sampler: new SentrySampler(sentry.client) } : undefined
+  const globalProviderLive = Layer.effectDiscard(
+    Effect.acquireRelease(
+      Effect.sync(() => {
+        const provider = new NodeTracerProvider({
+          spanProcessors: makeSpanProcessors(),
+          ...(tracerConfig ? { sampler: tracerConfig.sampler } : {})
+        })
+        provider.register()
+        return provider
+      }),
+      (provider) =>
+        Effect.promise(async () => {
+          await provider.forceFlush()
+          await provider.shutdown()
+          trace.disable()
+        }).pipe(Effect.ignore)
+    )
+  )
+  const effectTracingLive = NodeSdk.layer(() => ({
     resource: {
       serviceName: 'goosebumps-fm-api',
       serviceVersion: process.env.npm_package_version || '1.0.0',
@@ -67,7 +87,9 @@ export const OtlpLive = Effect.gen(function* () {
         'deployment.environment': config.app.nodeEnv
       }
     },
-    spanProcessor: [...sentryProcessors, ...otlpProcessors, ...motelProcessors],
-    ...(sentry.client ? { tracerConfig: { sampler: new SentrySampler(sentry.client) } } : {})
+    spanProcessor: makeSpanProcessors(),
+    ...(tracerConfig ? { tracerConfig } : {})
   }))
+
+  return Layer.merge(effectTracingLive, globalProviderLive)
 }).pipe(Layer.unwrap)
