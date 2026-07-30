@@ -1,7 +1,9 @@
 import { SpanStatusCode, trace } from '@opentelemetry/api'
+import { AsyncLocalStorage } from 'node:async_hooks'
 import { extractDatabaseQueryText, summarizeDatabaseQuery } from './database-telemetry'
 
 const INSTRUMENTED_DATABASE_CLIENT = Symbol('instrumented-database-client')
+const activeDatabaseQuery = new AsyncLocalStorage<boolean>()
 
 type DatabaseSpanOptions = {
   readonly name: string
@@ -73,10 +75,11 @@ const openTelemetryDatabaseInstrumentation: DatabaseInstrumentation = {
 /**
  * Instruments the concrete pg query boundary without relying on runtime module hooks.
  *
- * Bun does not currently activate Sentry's OpenTelemetry pg patch, so PoolClient
- * instances are wrapped explicitly. The Effect runtime owns the active OpenTelemetry
- * context, so spans are created through that API and exported by SentrySpanProcessor.
- * Queries without a recording trace take the direct path without parsing SQL.
+ * Bun does not currently activate Sentry's OpenTelemetry pg patch, so Pool and
+ * PoolClient instances are wrapped explicitly. The Pool boundary preserves Effect's
+ * active context before pg switches to its callback internals. Async-local re-entry
+ * protection prevents the PoolClient call delegated by Pool.query from creating a
+ * duplicate span. Queries without a recording trace take the direct path.
  */
 export function instrumentDatabaseClient<T extends QueryableClient>(
   client: T,
@@ -90,7 +93,7 @@ export function instrumentDatabaseClient<T extends QueryableClient>(
     queryConfig: unknown,
     ...arguments_: readonly unknown[]
   ): unknown {
-    if (!instrumentation.hasActiveSpan()) {
+    if (activeDatabaseQuery.getStore() || !instrumentation.hasActiveSpan()) {
       return Reflect.apply(originalQuery, this, [queryConfig, ...arguments_])
     }
 
@@ -106,7 +109,10 @@ export function instrumentDatabaseClient<T extends QueryableClient>(
           'db.query.summary': summary.description
         }
       },
-      () => Reflect.apply(originalQuery, this, [queryConfig, ...arguments_])
+      () =>
+        activeDatabaseQuery.run(true, () =>
+          Reflect.apply(originalQuery, this, [queryConfig, ...arguments_])
+        )
     )
   }
 
