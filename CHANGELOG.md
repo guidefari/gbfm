@@ -1,3 +1,10 @@
+## [2.76.3](https://github.com/guidefari/gbfm/compare/v2.76.2...v2.76.3) (2026-07-30)
+
+
+### Bug Fixes
+
+* **vps:** trace queries at the pool boundary ([dd14fbe](https://github.com/guidefari/gbfm/commit/dd14fbe6a7c509259251326dd957c30b4b4b2801))
+
 ## [2.76.2](https://github.com/guidefari/gbfm/compare/v2.76.1...v2.76.2) (2026-07-30)
 
 
