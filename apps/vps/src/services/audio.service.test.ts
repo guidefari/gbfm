@@ -13,6 +13,7 @@ import { UploadAssetServiceLayer } from '@/services/upload-asset.service'
 import { AudioService, AudioServiceLayer, createAudioFingerprint } from './audio.service'
 
 const actorId = `audio-idempotency-${randomUUID()}`
+const otherActorId = `audio-other-${randomUUID()}`
 
 const makeAudio = (slug: string) => ({
   title: `Audio ${slug}`,
@@ -37,10 +38,61 @@ const getService = () =>
   )
 
 beforeAll(async () => {
-  await db.insert(user).values({
-    id: actorId,
-    name: 'Audio idempotency actor',
-    email: `${actorId}@example.com`
+  await db.insert(user).values([
+    {
+      id: actorId,
+      name: 'Audio idempotency actor',
+      email: `${actorId}@example.com`
+    },
+    {
+      id: otherActorId,
+      name: 'Audio other actor',
+      email: `${otherActorId}@example.com`
+    }
+  ])
+})
+
+describe('AudioService.getByTypeForEdit visibility', () => {
+  test('returns only the non-admin actor own audio', async () => {
+    const service = await getService()
+    const ownSlug = `own-${randomUUID()}`
+    const otherSlug = `other-${randomUUID()}`
+
+    const own = await Effect.runPromise(
+      service.create(makeAudio(ownSlug), [actorId], { actorId, idempotencyKey: randomUUID() })
+    )
+    const other = await Effect.runPromise(
+      service.create(makeAudio(otherSlug), [otherActorId], {
+        actorId: otherActorId,
+        idempotencyKey: randomUUID()
+      })
+    )
+
+    const { data } = await Effect.runPromise(
+      service.getByTypeForEdit('mix', { limit: 200, offset: 0 }, actorId, 'user')
+    )
+    const ids = data.map((audio) => audio.id)
+
+    expect(ids).toContain(own.id)
+    expect(ids).not.toContain(other.id)
+  })
+
+  test('returns audio owned by others for an admin actor', async () => {
+    const service = await getService()
+    const otherSlug = `admin-view-${randomUUID()}`
+
+    const other = await Effect.runPromise(
+      service.create(makeAudio(otherSlug), [otherActorId], {
+        actorId: otherActorId,
+        idempotencyKey: randomUUID()
+      })
+    )
+
+    const { data } = await Effect.runPromise(
+      service.getByTypeForEdit('mix', { limit: 200, offset: 0 }, actorId, 'admin')
+    )
+
+    expect(data.map((audio) => audio.id)).toContain(other.id)
   })
 })
 

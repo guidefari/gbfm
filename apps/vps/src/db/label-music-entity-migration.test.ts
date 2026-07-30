@@ -74,6 +74,36 @@ CREATE TABLE "label_creators" (
   CONSTRAINT "label_creators_labelId_creatorId_pk" PRIMARY KEY ("labelId", "creatorId")
 );
 
+CREATE TABLE "shows" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL
+);
+
+CREATE TABLE "audio" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL
+);
+
+CREATE TABLE "posts" (
+  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL
+);
+
+CREATE TABLE "audio_creators" (
+  "audioId" uuid NOT NULL REFERENCES "audio"("id"),
+  "creatorId" text NOT NULL REFERENCES "user"("id") ON DELETE cascade,
+  CONSTRAINT "audio_creators_audioId_creatorId_pk" PRIMARY KEY ("audioId", "creatorId")
+);
+
+CREATE TABLE "show_creators" (
+  "showId" uuid NOT NULL REFERENCES "shows"("id") ON DELETE cascade,
+  "creatorId" text NOT NULL REFERENCES "user"("id") ON DELETE cascade,
+  CONSTRAINT "show_creators_showId_creatorId_pk" PRIMARY KEY ("showId", "creatorId")
+);
+
+CREATE TABLE "post_creators" (
+  "postId" uuid NOT NULL REFERENCES "posts"("id"),
+  "creatorId" text NOT NULL REFERENCES "user"("id") ON DELETE cascade,
+  CONSTRAINT "post_creators_postId_creatorId_pk" PRIMARY KEY ("postId", "creatorId")
+);
+
 CREATE TABLE "releases" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
   "title" varchar(255) NOT NULL,

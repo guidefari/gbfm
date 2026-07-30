@@ -135,7 +135,10 @@ export const audioCreators = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' })
   },
-  (t) => [primaryKey({ columns: [t.audioId, t.creatorId] })]
+  (t) => [
+    primaryKey({ columns: [t.audioId, t.creatorId] }),
+    index('audio_creators_creatorId_idx').on(t.creatorId)
+  ]
 )
 
 export const audioRelations = relations(audioTable, ({ many, one }) => ({

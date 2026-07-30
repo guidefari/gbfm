@@ -1,7 +1,8 @@
-import { and, asc, eq, exists } from 'drizzle-orm'
+import { and, asc, eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { audioCreators, audioTable } from '@/db/audio.schema'
+import { audioIdsForCreator } from '@/db/creator-membership'
 import {
   SOCIAL_LINK_PLATFORMS,
   type SocialLinkPlatform,
@@ -139,20 +140,7 @@ export const getPublicProfileEffect = (username: string) =>
               columns: { thumbnailUrl: true }
             }
           },
-          where: and(
-            exists(
-              db
-                .select({ id: audioCreators.audioId })
-                .from(audioCreators)
-                .where(
-                  and(
-                    eq(audioCreators.audioId, audioTable.id),
-                    eq(audioCreators.creatorId, foundUser.id)
-                  )
-                )
-            ),
-            eq(audioTable.draft, false)
-          ),
+          where: and(audioIdsForCreator(foundUser.id), eq(audioTable.draft, false)),
           orderBy: asc(audioTable.createdAt)
         }),
       catch: (error) =>
