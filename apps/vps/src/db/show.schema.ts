@@ -33,7 +33,10 @@ export const showCreators = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' })
   },
-  (t) => [primaryKey({ columns: [t.showId, t.creatorId] })]
+  (t) => [
+    primaryKey({ columns: [t.showId, t.creatorId] }),
+    index('show_creators_creatorId_idx').on(t.creatorId)
+  ]
 )
 
 export const showSubscriptionsTable = pgTable(

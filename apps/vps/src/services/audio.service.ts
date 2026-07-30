@@ -1,4 +1,4 @@
-import { and, arrayContains, count, desc, eq, inArray, sql } from 'drizzle-orm'
+import { and, arrayContains, count, desc, eq, sql } from 'drizzle-orm'
 import { Context, Crypto, Effect, Encoding, Layer } from 'effect'
 import { db } from '@/db'
 import {
@@ -8,6 +8,7 @@ import {
   type SelectAudio,
   type SelectMdxCompiledAudio
 } from '@/db/audio.schema'
+import { audioIdsForCreator } from '@/db/creator-membership'
 import { timeQuery } from '@/db/query-timer'
 import { showsTable } from '@/db/show.schema'
 import {
@@ -126,13 +127,7 @@ const getByTypeEffect = (
     const visibilityCondition = actor
       ? actor.userRole === 'admin'
         ? undefined
-        : inArray(
-            audioTable.id,
-            db
-              .select({ id: audioCreators.audioId })
-              .from(audioCreators)
-              .where(eq(audioCreators.creatorId, actor.userId))
-          )
+        : audioIdsForCreator(actor.userId)
       : eq(audioTable.draft, false)
     const whereCondition = and(
       eq(audioTable.type, type),

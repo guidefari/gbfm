@@ -121,7 +121,10 @@ export const postCreators = pgTable(
       .notNull()
       .references(() => user.id, { onDelete: 'cascade' })
   },
-  (t) => [primaryKey({ columns: [t.postId, t.creatorId] })]
+  (t) => [
+    primaryKey({ columns: [t.postId, t.creatorId] }),
+    index('post_creators_creatorId_idx').on(t.creatorId)
+  ]
 )
 
 export const postsRelations = relations(postsTable, ({ many }) => ({

@@ -1,6 +1,7 @@
-import { and, arrayContains, count, desc, eq, exists, inArray, sql } from 'drizzle-orm'
+import { and, arrayContains, count, desc, eq, inArray, sql } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
+import { postIdsForCreator } from '@/db/creator-membership'
 import { user as usersTable } from '@/db/auth.schema'
 import {
   type InsertPost,
@@ -246,17 +247,7 @@ const getAllEffect = (
     const visibilityCondition = actor
       ? actor.userRole === 'admin'
         ? undefined
-        : exists(
-            db
-              .select({ id: postCreators.postId })
-              .from(postCreators)
-              .where(
-                and(
-                  eq(postCreators.postId, postsTable.id),
-                  eq(postCreators.creatorId, actor.userId)
-                )
-              )
-          )
+        : postIdsForCreator(actor.userId)
       : eq(postsTable.draft, false)
     const whereCondition = and(visibilityCondition, contentCondition)
 

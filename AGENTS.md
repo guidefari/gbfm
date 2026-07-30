@@ -13,3 +13,7 @@ The standard five-role triage vocabulary. See `docs/agents/triage-labels.md`.
 ### Domain docs
 
 Single-context. See `docs/agents/domain.md`.
+
+### Drizzle queries
+
+Relational-query rules and the generated-SQL test strategy. See `docs/agents/drizzle-queries.md`.

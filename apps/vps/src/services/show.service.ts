@@ -1,7 +1,8 @@
-import { and, asc, count, desc, eq, inArray } from 'drizzle-orm'
+import { and, asc, count, desc, eq } from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { audioTable, type SelectAudio } from '@/db/audio.schema'
+import { showIdsForCreator } from '@/db/creator-membership'
 import {
   type InsertShow,
   type SelectMdxCompiledShow,
@@ -82,13 +83,7 @@ const getAllEffect = (
     const whereCondition = actor
       ? actor.userRole === 'admin'
         ? undefined
-        : inArray(
-            showsTable.id,
-            db
-              .select({ id: showCreators.showId })
-              .from(showCreators)
-              .where(eq(showCreators.creatorId, actor.userId))
-          )
+        : showIdsForCreator(actor.userId)
       : eq(showsTable.draft, false)
 
     const countResult = yield* Effect.tryPromise({
