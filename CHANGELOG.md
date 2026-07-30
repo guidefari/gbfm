@@ -1,3 +1,10 @@
+## [2.76.1](https://github.com/guidefari/gbfm/compare/v2.76.0...v2.76.1) (2026-07-30)
+
+
+### Bug Fixes
+
+* **vps:** instrument pg at runtime boundary ([c39bc3f](https://github.com/guidefari/gbfm/commit/c39bc3fd157584c06c7574090552f704a4df7f5c))
+
 # [2.76.0](https://github.com/guidefari/gbfm/compare/v2.75.4...v2.76.0) (2026-07-30)
 
 
