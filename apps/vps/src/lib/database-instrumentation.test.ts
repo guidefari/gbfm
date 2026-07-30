@@ -1,3 +1,6 @@
+import { trace } from '@opentelemetry/api'
+import { InMemorySpanExporter, SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
+import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
 import { describe, expect, test, vi } from 'vitest'
 import { instrumentDatabaseClient } from './database-instrumentation'
 
@@ -77,5 +80,41 @@ describe('instrumentDatabaseClient', () => {
     await expect(client.query('select 1')).resolves.toBe('ok')
     expect(spanCount).toBe(1)
     expect(query).toHaveBeenCalledOnce()
+  })
+
+  test('emits a child span through the active OpenTelemetry context', async () => {
+    const exporter = new InMemorySpanExporter()
+    const provider = new NodeTracerProvider({
+      spanProcessors: [new SimpleSpanProcessor(exporter)]
+    })
+    provider.register()
+
+    try {
+      const query = vi.fn(async (_queryConfig: unknown) => 'ok')
+      const client = instrumentDatabaseClient({ query })
+      const tracer = provider.getTracer('database-instrumentation-test')
+
+      await tracer.startActiveSpan('request', async (requestSpan) => {
+        await client.query('select "id" from "audio"')
+        requestSpan.end()
+      })
+      await provider.forceFlush()
+
+      const spans = exporter.getFinishedSpans()
+      const databaseSpan = spans.find((span) => span.name === 'SELECT audio')
+      const requestSpan = spans.find((span) => span.name === 'request')
+
+      expect(databaseSpan?.parentSpanContext?.spanId).toBe(requestSpan?.spanContext().spanId)
+      expect(databaseSpan?.attributes).toMatchObject({
+        'sentry.op': 'db.query',
+        'db.system.name': 'postgresql',
+        'db.operation.name': 'SELECT',
+        'db.collection.name': 'audio',
+        'db.query.summary': 'SELECT audio'
+      })
+    } finally {
+      await provider.shutdown()
+      trace.disable()
+    }
   })
 })
