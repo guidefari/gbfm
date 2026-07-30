@@ -1,4 +1,5 @@
 import * as Sentry from '@sentry/react'
+import { traceSampleRate } from '@gbfm/core/observability/trace-sampling'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { createRouter, RouterProvider } from '@tanstack/react-router'
 import { Loader2 } from 'lucide-react'
@@ -61,7 +62,13 @@ if (env.sentryDsn && (!env.isDev || env.sentryEnableLocal)) {
     debug: env.isDev,
     enableLogs: true,
     integrations: [Sentry.browserTracingIntegration()],
-    tracesSampleRate: 1.0,
+    tracesSampler: ({ inheritOrSampleWith, location, name }) =>
+      inheritOrSampleWith(
+        traceSampleRate({
+          name,
+          url: location ? `${location.pathname}${location.search}` : undefined
+        })
+      ),
     tracePropagationTargets,
     replaysSessionSampleRate: 0,
     replaysOnErrorSampleRate: env.isDev ? 0 : 1.0,
@@ -70,23 +77,21 @@ if (env.sentryDsn && (!env.isDev || env.sentryEnableLocal)) {
     beforeSendTransaction: (event) => (hasLocalUrl(event) ? null : event)
   })
 
-  // Replay only ever fires on error (replaysSessionSampleRate is 0), so its ~300KB
-  // client is loaded on first error instead of shipping in the initial bundle.
   if (!env.isDev) {
-    let replayLoading = false
     const client = Sentry.getClient()
-    client?.on('beforeSendEvent', (event) => {
-      if (replayLoading || event.exception === undefined) return
-      replayLoading = true
-      import('@sentry/react').then(({ replayIntegration }) => {
-        client.addIntegration(
+    Sentry.lazyLoadIntegration('replayIntegration').then(
+      (replayIntegration) => {
+        client?.addIntegration(
           replayIntegration({
-            maskAllText: false,
-            blockAllMedia: false
+            maskAllText: true,
+            blockAllMedia: true
           })
         )
-      })
-    })
+      },
+      () => {
+        Sentry.captureMessage('Failed to load browser replay integration', 'warning')
+      }
+    )
   }
 }
 

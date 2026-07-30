@@ -1,4 +1,5 @@
 import type { IncomingMessage } from 'node:http'
+import { sentryVitePlugin } from '@sentry/vite-plugin'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { resolve } from 'node:path'
@@ -10,6 +11,8 @@ import { repoChangelogPlugin } from './plugins/repo-changelog'
 import { themeColorsPlugin } from './plugins/theme-colors'
 
 const VPS_PROXY_TARGET = process.env.VITE_VPS_BASE_URL || 'http://127.0.0.1:3003'
+const sentryRelease = process.env.SENTRY_RELEASE
+const shouldUploadSourceMaps = Boolean(process.env.SENTRY_AUTH_TOKEN && sentryRelease)
 
 const vpsProxy = {
   target: VPS_PROXY_TARGET,
@@ -37,8 +40,31 @@ export default defineConfig({
       })
     },
     tanstackRouter({ autoCodeSplitting: true }),
-    react({ include: /\.(jsx|js|mdx|md|tsx|ts)$/ })
+    react({ include: /\.(jsx|js|mdx|md|tsx|ts)$/ }),
+    ...(shouldUploadSourceMaps
+      ? [
+          sentryVitePlugin({
+            org: 'goosebumps-collective',
+            project: 'gbfm-frontend',
+            authToken: process.env.SENTRY_AUTH_TOKEN,
+            telemetry: false,
+            sourcemaps: {
+              filesToDeleteAfterUpload: ['./dist/**/*.map']
+            },
+            release: {
+              name: sentryRelease,
+              create: true,
+              finalize: false,
+              setCommits: false,
+              deploy: false
+            }
+          })
+        ]
+      : [])
   ],
+  build: {
+    sourcemap: shouldUploadSourceMaps ? 'hidden' : false
+  },
   resolve: {
     alias: {
       '@': resolve(fileURLToPath(new URL('.', import.meta.url)), 'src')

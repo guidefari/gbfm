@@ -7,6 +7,7 @@
     "./utils/slug": "./src/utils/slug.ts",
     "./api": "./src/api/index.ts",
     "./feature-flags": "./src/feature-flags/index.ts",
+    "./observability/trace-sampling": "./src/observability/trace-sampling.ts",
     "./status": "./src/status/index.ts"
   },
   "scripts": {

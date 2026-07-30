@@ -1,8 +1,10 @@
+import { traceSampleRate } from '@gbfm/core/observability/trace-sampling'
 import * as Sentry from '@sentry/bun'
 
 type Client = NonNullable<ReturnType<typeof Sentry.getClient>>
 
 import { Context, Effect, Layer } from 'effect'
+import { sanitizeDatabaseSpan } from '@/lib/database-telemetry'
 import { hasLocalSentryContext, shouldEnableSentry } from '@/lib/sentry'
 import { ConfigService } from './config.service'
 
@@ -38,10 +40,13 @@ export const SentryClientServiceLayer = Layer.effect(
           dsn: sentry.dsn,
           environment: sentry.environment,
           release: process.env.SENTRY_RELEASE,
-          tracesSampleRate: 1.0,
+          tracesSampler: ({ inheritOrSampleWith, name, normalizedRequest }) =>
+            inheritOrSampleWith(traceSampleRate({ name, url: normalizedRequest?.url })),
+          integrations: [Sentry.postgresIntegration({ ignoreConnectSpans: true })],
           sendDefaultPii: false,
           enableLogs: true,
           debug: debugSentry,
+          beforeSendSpan: sanitizeDatabaseSpan,
           beforeSend: (event) => {
             return hasLocalSentryContext(event) ? null : event
           },

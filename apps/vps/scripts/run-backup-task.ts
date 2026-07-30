@@ -1,6 +1,7 @@
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { sendBackupNotificationEmail } from '@gbfm/email/index'
-import { Console, Effect } from 'effect'
+import * as Sentry from '@sentry/bun'
+import { Console, Effect, Exit } from 'effect'
 import { config } from '../src/services/config.service'
 import {
   type BackupConfig,
@@ -150,14 +151,39 @@ const createBackupEffect = withLogCapture((capture) =>
   })
 )
 
-const program = createBackupEffect.pipe(
-  Effect.match({
-    onSuccess: () => process.exit(0),
-    onFailure: (error) => {
-      console.error('Backup failed:', error)
-      process.exit(1)
-    }
-  })
-)
+const monitorSlug = 'database-backup'
+const monitorConfig = {
+  schedule: { type: 'crontab' as const, value: '0 2 * * *' },
+  checkinMargin: 10,
+  maxRuntime: 30,
+  timezone: 'UTC',
+  failureIssueThreshold: 1,
+  recoveryThreshold: 1
+}
 
-Effect.runPromise(program)
+const finish = async (checkInId: string, status: 'ok' | 'error') => {
+  Sentry.captureCheckIn({ monitorSlug, checkInId, status })
+  await Sentry.flush(2000)
+}
+
+const runBackupTask = async (): Promise<number> => {
+  const sentryEnabled = Sentry.getClient() !== undefined
+  const checkInId = sentryEnabled
+    ? Sentry.captureCheckIn({ monitorSlug, status: 'in_progress' }, monitorConfig)
+    : undefined
+  const exit = await Effect.runPromiseExit(createBackupEffect)
+
+  if (Exit.isSuccess(exit)) {
+    if (checkInId) await finish(checkInId, 'ok')
+    return 0
+  }
+
+  console.error('Database backup task failed')
+  if (checkInId) {
+    Sentry.captureException(new Error('Database backup task failed'))
+    await finish(checkInId, 'error')
+  }
+  return 1
+}
+
+process.exitCode = await runBackupTask()

@@ -29,6 +29,8 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-24.04
+    env:
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
     permissions:
       id-token: write
       contents: read
@@ -87,3 +89,17 @@ jobs:
             bun run sst refresh --stage=prod
           fi
           bun run sst deploy --stage=prod
+
+      - name: Publish Sentry release metadata
+        if: ${{ env.SENTRY_AUTH_TOKEN != '' }}
+        # getsentry/action-release v3.7.0
+        uses: getsentry/action-release@ff07929a6537bac57790c3451cf4d364aca38528
+        env:
+          SENTRY_RELEASE: ${{ steps.deployment-ref.outputs.ref }}
+          SENTRY_ORG: goosebumps-collective
+          SENTRY_PROJECT: gbfm-frontend
+        with:
+          environment: production
+          release: ${{ steps.deployment-ref.outputs.ref }}
+          set_commits: auto
+          finalize: true
