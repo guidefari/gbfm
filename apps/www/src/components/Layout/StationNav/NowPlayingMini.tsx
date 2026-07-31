@@ -47,7 +47,7 @@ export function NowPlayingMini({ onClose }: NowPlayingMiniProps) {
                 to='/mixes/$mixId'
                 params={{ mixId: slug }}
                 onClick={onClose}
-                className='hover:underline'>
+                className='no-underline hover:text-highlight'>
                 <OverflowTitle text={title} textClassName='text-sm font-semibold text-foreground' />
               </Link>
             ) : (
@@ -63,7 +63,7 @@ export function NowPlayingMini({ onClose }: NowPlayingMiniProps) {
                       <Link
                         to='/profile/$username'
                         params={{ username: creator.username }}
-                        className='hover:text-foreground hover:underline'
+                        className='no-underline hover:text-foreground'
                         onClick={(e) => e.stopPropagation()}>
                         {creator.name}
                       </Link>

@@ -32,14 +32,14 @@ export default function AppShell({ children }: Props) {
   return (
     <div className='grid h-dvh w-full grid-cols-1 bg-background'>
       <div className='relative flex h-dvh min-w-0 flex-col overflow-hidden'>
-        <StationNav className='z-40 shrink-0 border-x-0 border-t-0 pt-[env(safe-area-inset-top)]' />
+        <StationNav className='z-40 shrink-0 pt-[env(safe-area-inset-top)]' />
 
         <div className='relative min-h-0 flex-1'>
           <main
             id={MAIN_SCROLL_CONTAINER_ID}
             tabIndex={-1}
             style={{ overflowAnchor: 'none' }}
-            className='h-full min-w-0 overflow-x-hidden overflow-y-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none] bg-background focus:outline-none'>
+            className='h-full min-w-0 overflow-x-hidden overflow-y-auto bg-background pb-[calc(2.75rem+env(safe-area-inset-bottom))] focus:outline-none lg:pb-0 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]'>
             {children}
           </main>
         </div>
