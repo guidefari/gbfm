@@ -37,10 +37,13 @@ as `AccessDeniedException`.
 
 ## Timing
 
-ECS stability is polled for up to 10 minutes. Sentry ingestion is polled for up
-to 5 minutes, followed by bounded settlement polling. The gate requires three
-identical, fully valid span snapshots before the unsanitized database-span
-invariant is checked. A response that reaches Sentry's 100-span page boundary
-fails closed instead of validating a partial result. An 18-minute internal
-timeout preserves the failure summary before the workflow step's 20-minute
-outer timeout.
+ECS stability has a 28-attempt budget (up to 6 minutes 45 seconds of polling
+sleep). Sentry ingestion has its own 16-attempt budget (up to 3 minutes 45
+seconds), followed by an independent 8-attempt settlement budget (up to 1
+minute 45 seconds). The gate requires three identical, fully valid span
+snapshots before the unsanitized database-span invariant is checked. A response
+that reaches Sentry's 100-span page boundary fails closed instead of validating
+a partial result. The internal timeout is derived from those three polling
+budgets plus two minutes for AWS, HTTP, and Sentry request latency; the current
+configuration is 14 minutes 15 seconds, preserving failure reporting before the
+workflow step's 20-minute outer timeout.

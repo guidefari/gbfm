@@ -143,8 +143,9 @@ export type ProductionVerificationConfig = {
     readonly intervalMs: number
   }
   readonly sentry: {
-    readonly attempts: number
+    readonly ingestionAttempts: number
     readonly intervalMs: number
+    readonly settlementAttempts: number
   }
 }
 
@@ -500,17 +501,17 @@ const waitForDatabaseSpans = (
   Effect.gen(function* () {
     const port = yield* ProductionVerificationPort
 
-    for (let attempt = 1; attempt <= config.sentry.attempts; attempt += 1) {
+    for (let attempt = 1; attempt <= config.sentry.ingestionAttempts; attempt += 1) {
       const spans = yield* queryDatabaseSpans(config, 'sentry-ingestion')
 
       if (spans.length > 0) return
 
-      if (attempt < config.sentry.attempts) yield* port.wait(config.sentry.intervalMs)
+      if (attempt < config.sentry.ingestionAttempts) yield* port.wait(config.sentry.intervalMs)
     }
 
     return yield* fail(
       'sentry-ingestion',
-      `No database spans arrived for the verification trace after ${config.sentry.attempts} attempts`
+      `No database spans arrived for the verification trace after ${config.sentry.ingestionAttempts} attempts`
     )
   })
 
@@ -523,7 +524,7 @@ const verifySettledDatabaseSpans = (
     let previousFingerprint: string | undefined
     let lastViolation: ProductionVerificationError | undefined
 
-    for (let attempt = 1; attempt <= config.sentry.attempts; attempt += 1) {
+    for (let attempt = 1; attempt <= config.sentry.settlementAttempts; attempt += 1) {
       const spans = yield* queryDatabaseSpans(config, 'sentry-privacy')
       const violation =
         spans.length === 0
@@ -545,13 +546,13 @@ const verifySettledDatabaseSpans = (
         lastViolation = violation
       }
 
-      if (attempt < config.sentry.attempts) yield* port.wait(config.sentry.intervalMs)
+      if (attempt < config.sentry.settlementAttempts) yield* port.wait(config.sentry.intervalMs)
     }
 
     if (lastViolation !== undefined) return yield* Effect.fail(lastViolation)
     return yield* fail(
       'sentry-ingestion',
-      `Database spans did not converge after ${config.sentry.attempts} settlement attempts`
+      `Database spans did not converge after ${config.sentry.settlementAttempts} settlement attempts`
     )
   })
 

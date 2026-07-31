@@ -23,7 +23,7 @@ const config: ProductionVerificationConfig = {
   traceId,
   parentSpanId,
   ecs: { attempts: 2, intervalMs: 1 },
-  sentry: { attempts: 4, intervalMs: 1 }
+  sentry: { ingestionAttempts: 4, intervalMs: 1, settlementAttempts: 4 }
 }
 
 const resources = {
@@ -201,6 +201,35 @@ describe('verifyProductionDeployment', () => {
       }
     ])
     expect(testLayer.waitCount()).toBeGreaterThanOrEqual(3)
+  })
+
+  test('reserves an independent convergence budget after late Sentry ingestion', async () => {
+    const lateIngestionConfig: ProductionVerificationConfig = {
+      ...config,
+      sentry: {
+        ingestionAttempts: 2,
+        intervalMs: 1,
+        settlementAttempts: 3
+      }
+    }
+    const testLayer = makeTestLayer({
+      expectedSpanResponses: [
+        { data: [] },
+        { data: [databaseSpan] },
+        { data: [databaseSpan] },
+        { data: [databaseSpan] },
+        { data: [databaseSpan] }
+      ]
+    })
+
+    await expect(
+      Effect.runPromise(
+        verifyProductionDeployment(lateIngestionConfig).pipe(Effect.provide(testLayer.layer))
+      )
+    ).resolves.toMatchObject({
+      databaseSpanCount: 1,
+      traceId
+    })
   })
 
   test('fails when ECS never reaches a single completed deployment', async () => {

@@ -23,6 +23,14 @@ const Environment = Schema.Struct({
   SST_STAGE: Schema.NonEmptyString
 })
 
+const VERIFICATION_REQUEST_HEADROOM_MS = 2 * 60_000
+
+const verificationTimeoutMs = (config: ProductionVerificationConfig) =>
+  Math.max(0, config.ecs.attempts - 1) * config.ecs.intervalMs +
+  Math.max(0, config.sentry.ingestionAttempts - 1) * config.sentry.intervalMs +
+  Math.max(0, config.sentry.settlementAttempts - 1) * config.sentry.intervalMs +
+  VERIFICATION_REQUEST_HEADROOM_MS
+
 const reportMarkdown = (report: ProductionVerificationReport) => `## Production verification
 
 | Gate | Evidence |
@@ -77,14 +85,16 @@ const program = Effect.gen(function* () {
     traceId: randomBytes(16).toString('hex'),
     parentSpanId: randomBytes(8).toString('hex'),
     ecs: {
-      attempts: 40,
+      attempts: 28,
       intervalMs: 15_000
     },
     sentry: {
-      attempts: 20,
-      intervalMs: 15_000
+      ingestionAttempts: 16,
+      intervalMs: 15_000,
+      settlementAttempts: 8
     }
   }
+  const timeoutMs = verificationTimeoutMs(config)
 
   const report = yield* verifyProductionDeployment(config).pipe(
     Effect.provide(
@@ -95,13 +105,13 @@ const program = Effect.gen(function* () {
         sentryToken: environment.SENTRY_AUTH_TOKEN
       })
     ),
-    Effect.timeout('18 minutes'),
+    Effect.timeout(timeoutMs),
     Effect.mapError((error) =>
       error instanceof ProductionVerificationError
         ? error
         : new ProductionVerificationError({
             phase: 'verification-timeout',
-            summary: 'Production verification exceeded its 18-minute internal timeout'
+            summary: `Production verification exceeded its ${timeoutMs}ms internal timeout`
           })
     )
   )
