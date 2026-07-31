@@ -18,6 +18,10 @@ export interface SemanticTokens {
   accentForeground: string
   destructive: string
   destructiveForeground: string
+  success: string
+  successForeground: string
+  warning: string
+  warningForeground: string
   border: string
   input: string
   ring: string
@@ -44,6 +48,10 @@ export const light: SemanticTokens = {
   accentForeground: 'hsl(213 60% 26%)',
   destructive: 'hsl(0 72% 42%)',
   destructiveForeground: 'hsl(0 0% 100%)',
+  success: 'hsl(142 72% 29%)',
+  successForeground: 'hsl(142 78% 18%)',
+  warning: 'hsl(38 92% 38%)',
+  warningForeground: 'hsl(30 90% 20%)',
   border: 'hsl(213 25% 84%)',
   input: 'hsl(213 25% 82%)',
   ring: 'hsl(213 60% 35%)',
@@ -68,8 +76,12 @@ export const dark: SemanticTokens = {
   mutedForeground: 'hsl(195 35% 60%)',
   accent: 'hsl(215 30% 18%)',
   accentForeground: 'hsl(195, 55%, 72%)',
-  destructive: 'hsl(0, 62.8%, 30.6%)',
-  destructiveForeground: 'hsl(195, 55%, 72%)',
+  destructive: 'hsl(0 62.8% 30.6%)',
+  destructiveForeground: 'hsl(0 0% 100%)',
+  success: 'hsl(142 69% 58%)',
+  successForeground: 'hsl(142 70% 72%)',
+  warning: 'hsl(45 93% 55%)',
+  warningForeground: 'hsl(45 90% 70%)',
   border: 'hsl(215 20% 32%)',
   input: 'hsl(215 30% 18%)',
   ring: 'hsl(195 75% 75%)',
@@ -95,7 +107,11 @@ export const studio: SemanticTokens = {
   accent: 'hsl(343 54% 38%)',
   accentForeground: 'hsl(38 54% 84%)',
   destructive: 'hsl(0 70% 44%)',
-  destructiveForeground: 'hsl(38 54% 84%)',
+  destructiveForeground: 'hsl(0 0% 100%)',
+  success: 'hsl(142 60% 55%)',
+  successForeground: 'hsl(142 62% 70%)',
+  warning: 'hsl(45 88% 58%)',
+  warningForeground: 'hsl(45 85% 72%)',
   border: 'hsl(39 26% 34%)',
   input: 'hsl(31 20% 20%)',
   ring: 'hsl(24 100% 63%)',
