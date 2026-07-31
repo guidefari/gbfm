@@ -7,7 +7,7 @@ import {
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/PlayToggle'
+  title: '@gbfm/ui/New/Play toggle'
 }
 
 const allStates = Object.values(playbackStates)
@@ -30,7 +30,7 @@ export function PlayToggle() {
           <PlayToggleComponent
             state={state}
             variant='button'
-            label='mix'
+            label='Late Night Transmissions 04'
             onToggle={() =>
               setState((current) =>
                 current === playbackStates.playing ? playbackStates.idle : playbackStates.playing
@@ -60,7 +60,7 @@ export function PlayToggle() {
                 <PlayToggleComponent
                   state={candidate}
                   variant={variant}
-                  label='mix'
+                  label='Late Night Transmissions 04'
                   onToggle={() => {}}
                 />
                 <p className='text-xs text-muted-foreground'>{candidate}</p>

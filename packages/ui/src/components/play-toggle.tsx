@@ -18,8 +18,8 @@ const playToggleVariants = cva(
     variants: {
       variant: {
         icon: 'text-foreground/70 hover:text-highlight',
-        button: 'gap-2 border-2 px-5 py-2 text-sm font-bold',
-        hero: 'gap-2 rounded-full bg-highlight px-6 py-3 font-bold text-highlight-foreground hover:opacity-90'
+        button: 'gap-1.5 border px-2.5 py-1 text-sm font-medium',
+        hero: 'gap-1.5 rounded-sm bg-highlight px-3.5 py-1.5 font-medium text-highlight-foreground hover:opacity-90'
       },
       active: {
         true: '',
@@ -47,6 +47,8 @@ const playToggleVariants = cva(
 )
 
 const iconSizes = { icon: 20, button: 14, hero: 18 } as const
+
+const labelWidthReserve = ['play', 'pause', 'retry'] as const
 
 export interface PlayToggleProps extends Omit<
   React.ButtonHTMLAttributes<HTMLButtonElement>,
@@ -80,6 +82,7 @@ function PlayToggle({
     : isPlaying
       ? `Pause ${label ?? 'track'}`
       : `Play ${label ?? 'track'}`
+  const visibleLabel = isError ? 'retry' : isPlaying ? 'pause' : 'play'
 
   const withLabel = showLabel ?? variant !== 'icon'
 
@@ -99,8 +102,13 @@ function PlayToggle({
         className={cn(isLoading && 'animate-spin', isError && 'text-destructive')}
       />
       {withLabel && (
-        <span>
-          {isError ? 'unavailable' : isPlaying ? 'playing' : `play ${label ?? ''}`.trim()}
+        <span className='grid'>
+          {labelWidthReserve.map((reserved) => (
+            <span key={reserved} aria-hidden className='invisible col-start-1 row-start-1'>
+              {reserved}
+            </span>
+          ))}
+          <span className='col-start-1 row-start-1 text-left'>{visibleLabel}</span>
         </span>
       )}
     </button>
