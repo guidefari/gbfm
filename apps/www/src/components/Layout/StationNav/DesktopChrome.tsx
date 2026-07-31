@@ -2,7 +2,7 @@ import { Link, useLocation } from '@tanstack/react-router'
 import { Pause, Play } from 'lucide-react'
 import { useSession } from '@/lib/auth-client'
 import { cn } from '@/lib/utils'
-import { useNowPlayingTrack, usePlayerActions, useTransport } from '@/services/player'
+import { useNowPlayingTrack, usePlayerActions, useProgress, useTransport } from '@/services/player'
 import { MenuTrigger } from './MenuTrigger'
 
 function AccountChip() {
@@ -65,13 +65,31 @@ function NowPlayingChip() {
   )
 }
 
+function ProgressTicker() {
+  const currentTrack = useNowPlayingTrack()
+  const { progress } = useProgress()
+
+  if (!currentTrack) return null
+
+  return (
+    <div className='absolute inset-x-0 top-0 h-px bg-border/60'>
+      <div
+        className='h-full bg-highlight transition-[width] duration-300 ease-linear'
+        style={{ width: `${progress}%` }}
+      />
+    </div>
+  )
+}
+
 export function DesktopChrome({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        'hidden h-12 shrink-0 items-center gap-3 border-t border-border bg-background/95 px-4 backdrop-blur lg:flex',
+        'relative hidden h-12 shrink-0 items-center gap-3 border-t border-border bg-background/95 px-4 backdrop-blur lg:flex',
         className
       )}>
+      <ProgressTicker />
+
       <Link
         to='/'
         className='shrink-0 text-sm font-black tracking-tight text-foreground no-underline hover:text-highlight'>
