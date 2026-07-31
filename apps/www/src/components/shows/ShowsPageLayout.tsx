@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
 
 export function ShowsPageLayout({ children }: { children: ReactNode }) {
-  return <div className='mx-auto w-full max-w-6xl px-4 py-6 sm:py-8'>{children}</div>
+  return <div className='w-full px-4 py-4 sm:px-6 sm:py-6'>{children}</div>
 }
