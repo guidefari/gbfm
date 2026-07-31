@@ -1,7 +1,7 @@
-import { Sheet, SheetContent, SheetTitle } from '@gbfm/ui'
+import { Sheet, SheetClose, SheetContent, SheetTitle } from '@gbfm/ui'
 import { useHotkey } from '@tanstack/react-hotkeys'
 import { Link, useLocation } from '@tanstack/react-router'
-import { BookOpen, Disc3, Ellipsis, House } from 'lucide-react'
+import { BookOpen, Disc3, Ellipsis, House, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
@@ -103,6 +103,7 @@ export function StationNav() {
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetContent
           side={sheetSide}
+          showClose={false}
           className={cn(
             'flex flex-col gap-0 overflow-hidden border-border p-0',
             isDesktop
@@ -112,10 +113,14 @@ export function StationNav() {
           {!isDesktop ? (
             <div className='mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-border' />
           ) : null}
-          <div className='flex h-12 shrink-0 items-center border-b border-border px-4 pr-14'>
+          <div className='relative flex h-12 shrink-0 items-center border-b border-border px-4 pr-14'>
             <SheetTitle className='text-sm font-black tracking-tight'>Menu</SheetTitle>
+            <SheetClose className='absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
+              <X className='h-4 w-4' />
+              <span className='sr-only'>Close</span>
+            </SheetClose>
           </div>
-          <div className='min-h-0 flex-1 overflow-y-auto overscroll-contain'>
+          <div className='min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-hide'>
             <div className='p-3'>
               <StationNavPanel activeStationSlug={activeStationSlug} onNavigate={close} />
             </div>

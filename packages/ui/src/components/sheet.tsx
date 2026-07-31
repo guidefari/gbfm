@@ -49,19 +49,23 @@ const sheetVariants = cva(
 interface SheetContentProps
   extends
     React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>,
-    VariantProps<typeof sheetVariants> {}
+    VariantProps<typeof sheetVariants> {
+  showClose?: boolean
+}
 
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
->(({ side = 'right', className, children, ...props }, ref) => (
+>(({ side = 'right', className, children, showClose = true, ...props }, ref) => (
   <SheetPortal>
     <SheetOverlay />
     <SheetPrimitive.Content ref={ref} className={cn(sheetVariants({ side }), className)} {...props}>
-      <SheetPrimitive.Close className='absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none'>
-        <Cross2Icon className='h-4 w-4' />
-        <span className='sr-only'>Close</span>
-      </SheetPrimitive.Close>
+      {showClose ? (
+        <SheetPrimitive.Close className='absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none'>
+          <Cross2Icon className='h-4 w-4' />
+          <span className='sr-only'>Close</span>
+        </SheetPrimitive.Close>
+      ) : null}
       {children}
     </SheetPrimitive.Content>
   </SheetPortal>
