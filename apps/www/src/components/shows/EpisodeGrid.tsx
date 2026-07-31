@@ -23,7 +23,7 @@ export function EpisodeGrid({ showSlug }: EpisodeGridProps) {
           <div
             // oxlint-disable-next-line react/no-array-index-key
             key={i}
-            className='flex items-center gap-3 border border-border px-3 py-2.5'>
+            className='flex items-center gap-3 border-b border-border/40 px-2 py-3'>
             <div className='size-8 shrink-0 rounded bg-muted/50 animate-pulse' />
             <div className='min-w-0 flex-1 space-y-2'>
               <div className='h-4 w-3/4 rounded bg-muted/50 animate-pulse' />
