@@ -32,14 +32,22 @@ export function EpisodeRow({ mix }: EpisodeRowProps) {
     <article
       data-testid='episode-row'
       className={cn(
-        'flex items-center justify-between gap-4 border border-border bg-card px-4 py-3 transition-colors duration-200 hover:border-foreground/50',
+        'group/item flex items-center gap-3 border border-border bg-card px-3 py-2.5 transition-colors duration-200 hover:border-foreground/50',
         isActive && 'ring-1 ring-highlight bg-secondary'
       )}>
+      <PlayToggle
+        state={toPlaybackState({ isCurrent: isActive, isPlaying, isBuffering, isLoaded })}
+        variant='icon'
+        label={mix.title}
+        onToggle={handlePlay}
+        className='shrink-0 p-1.5'
+      />
+
       <div className='min-w-0 flex-1'>
         <Link
           to='/mixes/$mixId'
           params={{ mixId: mix.slug }}
-          className='text-base font-bold leading-tight tracking-tight text-foreground line-clamp-1 transition-colors'>
+          className='text-base font-bold leading-tight tracking-tight text-foreground line-clamp-1 transition-colors group-hover/item:text-highlight'>
           {mix.title}
         </Link>
         <div className='mt-1 flex flex-wrap items-center gap-x-2 gap-y-1'>
@@ -69,15 +77,6 @@ export function EpisodeRow({ mix }: EpisodeRowProps) {
             </p>
           )}
         </div>
-      </div>
-
-      <div className='shrink-0'>
-        <PlayToggle
-          state={toPlaybackState({ isCurrent: isActive, isPlaying, isBuffering, isLoaded })}
-          variant='button'
-          label={mix.title.split(' ')[0]}
-          onToggle={handlePlay}
-        />
       </div>
     </article>
   )
