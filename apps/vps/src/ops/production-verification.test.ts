@@ -245,6 +245,36 @@ describe('verifyProductionDeployment', () => {
     })
   })
 
+  test('ignores failed-task history from the draining previous deployment', async () => {
+    const rollingService = ecsService('IN_PROGRESS')
+    const service = rollingService.services[0]
+    const testLayer = makeTestLayer({
+      ecsResponses: [
+        {
+          ...rollingService,
+          services:
+            service === undefined
+              ? []
+              : [
+                  {
+                    ...service,
+                    deployments: service.deployments.map((deployment, index) =>
+                      index === 1 ? { ...deployment, failedTasks: 2 } : deployment
+                    )
+                  }
+                ]
+        },
+        ecsService()
+      ]
+    })
+
+    await expect(
+      Effect.runPromise(verifyProductionDeployment(config).pipe(Effect.provide(testLayer.layer)))
+    ).resolves.toMatchObject({
+      taskDefinition: 'arn:aws:ecs:us-east-1:123:task-definition/gbfm_vps:202'
+    })
+  })
+
   test('fails safely when AWS returns a malformed service boundary', async () => {
     const testLayer = makeTestLayer({
       ecsResponses: [{ services: 'not-an-array', failures: [] }]

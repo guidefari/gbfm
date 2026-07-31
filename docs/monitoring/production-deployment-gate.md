@@ -44,6 +44,6 @@ minute 45 seconds). The gate requires three identical, fully valid span
 snapshots before the unsanitized database-span invariant is checked. A response
 that reaches Sentry's 100-span page boundary fails closed instead of validating
 a partial result. The internal timeout is derived from those three polling
-budgets plus two minutes for AWS, HTTP, and Sentry request latency; the current
-configuration is 14 minutes 15 seconds, preserving failure reporting before the
+budgets plus five minutes for AWS, HTTP, and Sentry request latency; the current
+configuration is 17 minutes 15 seconds, preserving failure reporting before the
 workflow step's 20-minute outer timeout.

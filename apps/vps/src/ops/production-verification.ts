@@ -306,10 +306,7 @@ const waitForStableEcsService = (
       }
 
       const deployment = service.deployments[0]
-      const failedTasks = service.deployments.reduce(
-        (count, candidate) => count + candidate.failedTasks,
-        0
-      )
+      const failedTasks = deployment?.failedTasks ?? 0
 
       if (failedTasks > 0) {
         return yield* fail('ecs-rollout', `ECS rollout recorded ${failedTasks} failed task(s)`)

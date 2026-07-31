@@ -23,7 +23,7 @@ const Environment = Schema.Struct({
   SST_STAGE: Schema.NonEmptyString
 })
 
-const VERIFICATION_REQUEST_HEADROOM_MS = 2 * 60_000
+const VERIFICATION_REQUEST_HEADROOM_MS = 5 * 60_000
 
 const verificationTimeoutMs = (config: ProductionVerificationConfig) =>
   Math.max(0, config.ecs.attempts - 1) * config.ecs.intervalMs +
