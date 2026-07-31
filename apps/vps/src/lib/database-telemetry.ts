@@ -4,6 +4,7 @@ const SAFE_DATABASE_ATTRIBUTE_KEYS = new Set([
   'db.system.name',
   'db.namespace',
   'db.name',
+  'gbfm.db.instrumentation',
   'server.address',
   'server.port'
 ])

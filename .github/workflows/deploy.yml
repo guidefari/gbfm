@@ -107,6 +107,7 @@ jobs:
       - name: Verify production deployment and telemetry
         timeout-minutes: 20
         env:
+          AWS_REGION: us-east-1
           PRODUCTION_BASE_URL: https://vps.goosebumps.fm
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_OBSERVABILITY_TOKEN }}
           SENTRY_ENVIRONMENT: production

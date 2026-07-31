@@ -1,10 +1,12 @@
 import { appendFile } from 'node:fs/promises'
 import { randomBytes } from 'node:crypto'
-import { Effect, Redacted, Schema } from 'effect'
+import { PUBLIC_PROFILE_PATH } from '@gbfm/api/profile'
+import { Cause, Effect, Exit, Schema } from 'effect'
 import {
   ProductionVerificationError,
   type ProductionVerificationConfig,
   type ProductionVerificationReport,
+  summarizeProductionVerificationFailure,
   verifyProductionDeployment
 } from '../src/ops/production-verification'
 import { makeProductionVerificationLive } from './production-verification-live'
@@ -20,11 +22,6 @@ const Environment = Schema.Struct({
   SST_APP: Schema.NonEmptyString,
   SST_STAGE: Schema.NonEmptyString
 })
-
-const safeFailureSummary = (error: unknown) =>
-  error instanceof ProductionVerificationError
-    ? `${error.phase}: ${error.summary}`
-    : 'configuration: unexpected production verification defect'
 
 const reportMarkdown = (report: ProductionVerificationReport) => `## Production verification
 
@@ -75,7 +72,8 @@ const program = Effect.gen(function* () {
     environment: environment.SENTRY_ENVIRONMENT,
     release: environment.SENTRY_RELEASE,
     baseUrl: environment.PRODUCTION_BASE_URL,
-    profilePath: '/api/profile/guidefari',
+    profilePath: PUBLIC_PROFILE_PATH.replace(':username', 'guidefari'),
+    profileTransaction: `GET ${PUBLIC_PROFILE_PATH}`,
     traceId: randomBytes(16).toString('hex'),
     parentSpanId: randomBytes(8).toString('hex'),
     ecs: {
@@ -96,6 +94,15 @@ const program = Effect.gen(function* () {
         sentryProjectId: environment.SENTRY_PROJECT_ID,
         sentryToken: environment.SENTRY_AUTH_TOKEN
       })
+    ),
+    Effect.timeout('18 minutes'),
+    Effect.mapError((error) =>
+      error instanceof ProductionVerificationError
+        ? error
+        : new ProductionVerificationError({
+            phase: 'verification-timeout',
+            summary: 'Production verification exceeded its 18-minute internal timeout'
+          })
     )
   )
 
@@ -109,11 +116,15 @@ const program = Effect.gen(function* () {
   return report
 })
 
-try {
-  await Effect.runPromise(program)
-} catch (error: unknown) {
-  const summary = safeFailureSummary(error)
+const reportFailure = async (error: unknown) => {
+  const summary = summarizeProductionVerificationFailure(error)
   console.error(`Production verification failed: ${summary}`)
   await Effect.runPromise(appendSummary(failureMarkdown(summary))).catch(() => undefined)
   process.exitCode = 1
+}
+
+const exit = await Effect.runPromiseExit(program)
+if (Exit.isFailure(exit)) {
+  const failure = exit.cause.reasons.find(Cause.isFailReason)
+  await reportFailure(failure?.error)
 }

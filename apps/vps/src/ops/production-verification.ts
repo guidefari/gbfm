@@ -33,6 +33,21 @@ const DescribeServicesResponse = Schema.Struct({
   failures: Schema.Array(Schema.Unknown)
 })
 
+const DescribeTaskDefinitionResponse = Schema.Struct({
+  taskDefinition: Schema.Struct({
+    containerDefinitions: Schema.Array(
+      Schema.Struct({
+        environment: Schema.Array(
+          Schema.Struct({
+            name: Schema.String,
+            value: Schema.String
+          })
+        )
+      })
+    )
+  })
+})
+
 const SentrySpan = Schema.Struct({
   id: Schema.String,
   parent_span: Schema.NullOr(Schema.String),
@@ -46,6 +61,7 @@ const SentrySpan = Schema.Struct({
   'db.operation.name': Schema.NullOr(Schema.String),
   'db.collection.name': Schema.NullOr(Schema.String),
   'db.query.summary': Schema.NullOr(Schema.String),
+  'gbfm.db.instrumentation': Schema.NullOr(Schema.String),
   'db.statement': Schema.NullOr(Schema.String),
   'db.query': Schema.NullOr(Schema.String),
   'db.query.text': Schema.NullOr(Schema.String)
@@ -58,7 +74,6 @@ const SentrySpansResponse = Schema.Struct({
 const SAFE_DATABASE_OPERATION = /^(?:SELECT|INSERT|UPDATE|DELETE|QUERY)$/
 const SAFE_DATABASE_COLLECTION = /^(?:unknown|[A-Za-z_][\w$]*)$/
 const SAFE_DATABASE_SUMMARY = /^(?:SELECT|INSERT|UPDATE|DELETE|QUERY)(?: [A-Za-z_][\w$]*)?$/
-const PROFILE_TRANSACTION = 'GET /api/profile/:username'
 
 type VerificationPhase =
   | 'configuration'
@@ -67,7 +82,9 @@ type VerificationPhase =
   | 'health-probe'
   | 'profile-probe'
   | 'sentry-ingestion'
+  | 'sentry-correlation'
   | 'sentry-privacy'
+  | 'verification-timeout'
 
 type EcsResources = {
   readonly clusterArn: string
@@ -100,6 +117,14 @@ export class ProductionVerificationError extends Data.TaggedError('ProductionVer
 }> {}
 
 /**
+ * Converts a typed verifier failure into a credential-safe operator summary.
+ */
+export const summarizeProductionVerificationFailure = (error: unknown) =>
+  error instanceof ProductionVerificationError
+    ? `${error.phase}: ${error.summary}`
+    : 'configuration: unexpected production verification defect'
+
+/**
  * Runtime configuration for one production verification run.
  */
 export type ProductionVerificationConfig = {
@@ -109,6 +134,7 @@ export type ProductionVerificationConfig = {
   readonly release: string
   readonly baseUrl: URL
   readonly profilePath: string
+  readonly profileTransaction: string
   readonly traceId: string
   readonly parentSpanId: string
   readonly ecs: {
@@ -134,6 +160,9 @@ export interface ProductionVerificationPort {
   ) => Effect.Effect<unknown, ProductionVerificationError>
   readonly describeEcsService: (
     resources: EcsResources
+  ) => Effect.Effect<unknown, ProductionVerificationError>
+  readonly describeTaskDefinition: (
+    taskDefinitionArn: string
   ) => Effect.Effect<unknown, ProductionVerificationError>
   readonly probe: (
     request: ProbeRequest
@@ -187,6 +216,17 @@ const decodeEcsService = (input: unknown) =>
         new ProductionVerificationError({
           phase: 'ecs-rollout',
           summary: 'AWS returned an invalid ECS service response'
+        })
+    )
+  )
+
+const decodeTaskDefinition = (input: unknown) =>
+  Schema.decodeUnknownEffect(DescribeTaskDefinitionResponse)(input).pipe(
+    Effect.mapError(
+      () =>
+        new ProductionVerificationError({
+          phase: 'ecs-rollout',
+          summary: 'AWS returned an invalid ECS task-definition response'
         })
     )
   )
@@ -283,7 +323,7 @@ const waitForStableEcsService = (
         deployment.runningCount === service.desiredCount &&
         deployment.pendingCount === 0
 
-      if (isStable && deployment !== undefined) return deployment.taskDefinition
+      if (isStable) return deployment.taskDefinition
 
       lastState = `desired=${service.desiredCount}, running=${service.runningCount}, pending=${service.pendingCount}, deployments=${service.deployments.length}, rollout=${deployment?.rolloutState ?? 'unknown'}`
       if (attempt < config.attempts) yield* port.wait(config.intervalMs)
@@ -293,6 +333,27 @@ const waitForStableEcsService = (
       'ecs-rollout',
       `ECS did not reach steady state after ${config.attempts} attempts (${lastState})`
     )
+  })
+
+const verifyTaskDefinitionRelease = (
+  taskDefinitionArn: string,
+  release: string
+): Effect.Effect<void, ProductionVerificationError, ProductionVerificationPort> =>
+  Effect.gen(function* () {
+    const port = yield* ProductionVerificationPort
+    const response = yield* port
+      .describeTaskDefinition(taskDefinitionArn)
+      .pipe(Effect.flatMap(decodeTaskDefinition))
+    const releases = response.taskDefinition.containerDefinitions.flatMap(({ environment }) =>
+      environment.flatMap(({ name, value }) => (name === 'SENTRY_RELEASE' ? [value] : []))
+    )
+
+    if (releases.length !== 1 || releases[0] !== release) {
+      return yield* fail(
+        'ecs-rollout',
+        'The stable ECS task definition does not contain the deployed Sentry release'
+      )
+    }
   })
 
 const verifyHealthProbe = (
@@ -344,17 +405,20 @@ const verifyProfileProbe = (
     return response.status
   })
 
-const spanHasSafeDatabaseData = (
+const spanHasExpectedCorrelation = (
   span: typeof SentrySpan.Type,
   config: ProductionVerificationConfig
 ) =>
   span.parent_span !== null &&
   span['span.op'] === 'db.query' &&
-  span.transaction === PROFILE_TRANSACTION &&
+  span.transaction === config.profileTransaction &&
   span.trace === config.traceId &&
   span.release === config.release &&
-  span.environment === config.environment &&
+  span.environment === config.environment
+
+const spanHasSafeDatabaseData = (span: typeof SentrySpan.Type) =>
   span['db.system.name'] === 'postgresql' &&
+  span['gbfm.db.instrumentation'] === 'manual' &&
   span['db.operation.name'] !== null &&
   SAFE_DATABASE_OPERATION.test(span['db.operation.name']) &&
   span['db.collection.name'] !== null &&
@@ -366,30 +430,55 @@ const spanHasSafeDatabaseData = (
   span['db.query'] === null &&
   span['db.query.text'] === null
 
+const validateDatabaseSpans = (
+  spans: ReadonlyArray<typeof SentrySpan.Type>,
+  config: ProductionVerificationConfig
+): Effect.Effect<void, ProductionVerificationError> => {
+  if (!spans.every((span) => spanHasExpectedCorrelation(span, config))) {
+    return fail(
+      'sentry-correlation',
+      'Sentry returned a database span with missing or mismatched trace correlation'
+    )
+  }
+  if (!spans.every(spanHasSafeDatabaseData)) {
+    return fail('sentry-privacy', 'Sentry returned an automatic or privacy-unsafe database span')
+  }
+  return Effect.void
+}
+
+const queryDatabaseSpans = (
+  config: ProductionVerificationConfig,
+  phase: 'sentry-ingestion' | 'sentry-privacy'
+): Effect.Effect<
+  ReadonlyArray<typeof SentrySpan.Type>,
+  ProductionVerificationError,
+  ProductionVerificationPort
+> =>
+  Effect.gen(function* () {
+    const port = yield* ProductionVerificationPort
+    const response = yield* port
+      .querySpans({
+        environment: config.environment,
+        operation: 'db.query',
+        release: config.release,
+        traceId: config.traceId
+      })
+      .pipe(Effect.flatMap((input) => decodeSentrySpans(input, phase)))
+    return response.data
+  })
+
 const waitForDatabaseSpans = (
   config: ProductionVerificationConfig
-): Effect.Effect<number, ProductionVerificationError, ProductionVerificationPort> =>
+): Effect.Effect<void, ProductionVerificationError, ProductionVerificationPort> =>
   Effect.gen(function* () {
     const port = yield* ProductionVerificationPort
 
     for (let attempt = 1; attempt <= config.sentry.attempts; attempt += 1) {
-      const response = yield* port
-        .querySpans({
-          environment: config.environment,
-          operation: 'db.query',
-          release: config.release,
-          traceId: config.traceId
-        })
-        .pipe(Effect.flatMap((input) => decodeSentrySpans(input, 'sentry-ingestion')))
+      const spans = yield* queryDatabaseSpans(config, 'sentry-ingestion')
 
-      if (response.data.length > 0) {
-        if (!response.data.every((span) => spanHasSafeDatabaseData(span, config))) {
-          return yield* fail(
-            'sentry-privacy',
-            'Sentry returned an unparented, uncorrelated, or unsafe database span'
-          )
-        }
-        return response.data.length
+      if (spans.length > 0) {
+        yield* validateDatabaseSpans(spans, config)
+        return
       }
 
       if (attempt < config.sentry.attempts) yield* port.wait(config.sentry.intervalMs)
@@ -399,6 +488,21 @@ const waitForDatabaseSpans = (
       'sentry-ingestion',
       `No database spans arrived for the verification trace after ${config.sentry.attempts} attempts`
     )
+  })
+
+const verifySettledDatabaseSpans = (
+  config: ProductionVerificationConfig
+): Effect.Effect<number, ProductionVerificationError, ProductionVerificationPort> =>
+  Effect.gen(function* () {
+    const spans = yield* queryDatabaseSpans(config, 'sentry-privacy')
+    if (spans.length === 0) {
+      return yield* fail(
+        'sentry-ingestion',
+        'Database spans disappeared during the Sentry settlement interval'
+      )
+    }
+    yield* validateDatabaseSpans(spans, config)
+    return spans.length
   })
 
 const verifyNoAutomaticDatabaseSpans = (
@@ -440,10 +544,12 @@ export const verifyProductionDeployment = (
       .discoverEcsResources(config.app, config.stage)
       .pipe(Effect.flatMap(parseEcsResources))
     const taskDefinition = yield* waitForStableEcsService(resources, config.ecs)
+    yield* verifyTaskDefinitionRelease(taskDefinition, config.release)
     const healthStatus = yield* verifyHealthProbe(config.baseUrl)
     const profileStatus = yield* verifyProfileProbe(config)
-    const databaseSpanCount = yield* waitForDatabaseSpans(config)
+    yield* waitForDatabaseSpans(config)
     yield* port.wait(config.sentry.intervalMs)
+    const databaseSpanCount = yield* verifySettledDatabaseSpans(config)
     yield* verifyNoAutomaticDatabaseSpans(config)
 
     return {

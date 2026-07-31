@@ -18,6 +18,7 @@ const SENTRY_SPAN_FIELDS = [
   'db.operation.name',
   'db.collection.name',
   'db.query.summary',
+  'gbfm.db.instrumentation',
   'db.statement',
   'db.query',
   'db.query.text'
@@ -40,6 +41,18 @@ const dependencyFailure = (
   summary: string
 ) => new ProductionVerificationError({ phase, summary })
 
+const safeAwsErrorCode = (standardError: string) =>
+  /An error occurred \(([A-Za-z0-9._-]+)\)/.exec(standardError)?.[1]
+
+class SafeAwsCliError extends Error {
+  readonly code: string | undefined
+
+  constructor(code: string | undefined) {
+    super('AWS CLI request failed')
+    this.code = code
+  }
+}
+
 const runAwsJson = (
   region: string,
   phase: 'resource-discovery' | 'ecs-rollout',
@@ -47,7 +60,7 @@ const runAwsJson = (
 ): Effect.Effect<unknown, ProductionVerificationError> =>
   Effect.tryPromise({
     try: async () => {
-      const process = Bun.spawn(
+      const child = Bun.spawn(
         [
           'aws',
           ...args,
@@ -66,17 +79,25 @@ const runAwsJson = (
           stderr: 'pipe'
         }
       )
-      const [stdout, _stderr, exitCode] = await Promise.all([
-        new Response(process.stdout).text(),
-        new Response(process.stderr).text(),
-        process.exited
+      const [stdout, standardError, exitCode] = await Promise.all([
+        new Response(child.stdout).text(),
+        new Response(child.stderr).text(),
+        child.exited
       ])
 
-      if (exitCode !== 0) throw new Error('AWS CLI command failed')
+      if (exitCode !== 0) {
+        throw new SafeAwsCliError(safeAwsErrorCode(standardError))
+      }
       const output: unknown = JSON.parse(stdout)
       return output
     },
-    catch: () => dependencyFailure(phase, 'AWS CLI request failed')
+    catch: (error) => {
+      const code = error instanceof SafeAwsCliError ? error.code : undefined
+      return dependencyFailure(
+        phase,
+        code === undefined ? 'AWS CLI request failed' : `AWS CLI request failed (${code})`
+      )
+    }
   })
 
 const fetchJson = (
@@ -125,6 +146,13 @@ export const makeProductionVerificationLive = (
         clusterArn,
         '--services',
         serviceArn
+      ]),
+    describeTaskDefinition: (taskDefinitionArn) =>
+      runAwsJson(config.awsRegion, 'ecs-rollout', [
+        'ecs',
+        'describe-task-definition',
+        '--task-definition',
+        taskDefinitionArn
       ]),
     probe: ({ url, traceparent }) => {
       const headers = new Headers()

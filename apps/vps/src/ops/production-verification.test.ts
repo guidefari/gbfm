@@ -1,9 +1,11 @@
-import { Effect, Layer } from 'effect'
+import { Cause, Effect, Exit, Layer } from 'effect'
 import { describe, expect, test } from 'vitest'
 import {
   ProductionVerificationPort,
+  ProductionVerificationError,
   type ProductionVerificationConfig,
   type ProductionVerificationPort as ProductionVerificationPortShape,
+  summarizeProductionVerificationFailure,
   verifyProductionDeployment
 } from './production-verification'
 
@@ -17,6 +19,7 @@ const config: ProductionVerificationConfig = {
   release: 'v2.76.7',
   baseUrl: new URL('https://vps.goosebumps.fm'),
   profilePath: '/api/profile/guidefari',
+  profileTransaction: 'GET /api/profile/:username',
   traceId,
   parentSpanId,
   ecs: { attempts: 2, intervalMs: 1 },
@@ -106,13 +109,25 @@ const databaseSpan = {
   'db.operation.name': 'SELECT',
   'db.collection.name': 'user',
   'db.query.summary': 'SELECT user',
+  'gbfm.db.instrumentation': 'manual',
   'db.statement': null,
   'db.query': null,
   'db.query.text': null
 }
 
+const taskDefinition = (release = config.release) => ({
+  taskDefinition: {
+    containerDefinitions: [
+      {
+        environment: [{ name: 'SENTRY_RELEASE', value: release }]
+      }
+    ]
+  }
+})
+
 type TestOverrides = {
   readonly ecsResponses?: ReadonlyArray<unknown>
+  readonly taskDefinitionResponse?: unknown
   readonly expectedSpanResponses?: ReadonlyArray<unknown>
   readonly forbiddenSpanResponse?: unknown
 }
@@ -123,11 +138,14 @@ const makeTestLayer = (overrides: TestOverrides = {}) => {
   const probes: Array<{ readonly url: string; readonly traceparent?: string }> = []
   let waits = 0
 
-  const take = (values: Array<unknown>, fallback: unknown) => values.shift() ?? fallback
+  const take = (values: Array<unknown>, fallback: unknown) =>
+    values.length > 1 ? (values.shift() ?? fallback) : (values[0] ?? fallback)
 
   const port: ProductionVerificationPortShape = {
     discoverEcsResources: () => Effect.succeed(resources),
     describeEcsService: () => Effect.succeed(take(ecsResponses, ecsService())),
+    describeTaskDefinition: () =>
+      Effect.succeed(overrides.taskDefinitionResponse ?? taskDefinition()),
     probe: ({ traceparent, url }) => {
       probes.push({ url: url.toString(), traceparent })
       return Effect.succeed({
@@ -158,7 +176,7 @@ describe('verifyProductionDeployment', () => {
   test('waits for ECS and proves functional, correlated, privacy-safe telemetry', async () => {
     const testLayer = makeTestLayer({
       ecsResponses: [ecsService('IN_PROGRESS'), ecsService()],
-      expectedSpanResponses: [{ data: [] }, { data: [databaseSpan] }]
+      expectedSpanResponses: [{ data: [] }, { data: [databaseSpan] }, { data: [databaseSpan] }]
     })
 
     const report = await Effect.runPromise(
@@ -182,7 +200,7 @@ describe('verifyProductionDeployment', () => {
         traceparent: `00-${traceId}-${parentSpanId}-01`
       }
     ])
-    expect(testLayer.waitCount()).toBe(3)
+    expect(testLayer.waitCount()).toBeGreaterThanOrEqual(3)
   })
 
   test('fails when ECS never reaches a single completed deployment', async () => {
@@ -208,6 +226,19 @@ describe('verifyProductionDeployment', () => {
     ).rejects.toMatchObject({
       phase: 'ecs-rollout',
       summary: 'AWS returned an invalid ECS service response'
+    })
+  })
+
+  test('fails when the stable ECS task belongs to a different release', async () => {
+    const testLayer = makeTestLayer({
+      taskDefinitionResponse: taskDefinition('v-old')
+    })
+
+    await expect(
+      Effect.runPromise(verifyProductionDeployment(config).pipe(Effect.provide(testLayer.layer)))
+    ).rejects.toMatchObject({
+      phase: 'ecs-rollout',
+      summary: expect.stringContaining('does not contain the deployed Sentry release')
     })
   })
 
@@ -237,27 +268,60 @@ describe('verifyProductionDeployment', () => {
     })
   })
 
+  test('revalidates all database spans after Sentry ingestion settles', async () => {
+    const testLayer = makeTestLayer({
+      expectedSpanResponses: [
+        { data: [databaseSpan] },
+        {
+          data: [
+            databaseSpan,
+            {
+              ...databaseSpan,
+              id: 'late-automatic-span',
+              'gbfm.db.instrumentation': null
+            }
+          ]
+        }
+      ]
+    })
+
+    await expect(
+      Effect.runPromise(verifyProductionDeployment(config).pipe(Effect.provide(testLayer.layer)))
+    ).rejects.toMatchObject({
+      phase: 'sentry-privacy',
+      summary: expect.stringContaining('automatic or privacy-unsafe')
+    })
+  })
+
   test.each([
     {
       name: 'missing parent correlation',
-      span: { ...databaseSpan, parent_span: null }
+      span: { ...databaseSpan, parent_span: null },
+      phase: 'sentry-correlation',
+      summary: 'missing or mismatched trace correlation'
     },
     {
       name: 'raw SQL attribute',
       span: {
         ...databaseSpan,
         'db.statement': 'select * from user where id = $1'
-      }
+      },
+      phase: 'sentry-privacy',
+      summary: 'automatic or privacy-unsafe database span'
     },
     {
       name: 'wrong release',
-      span: { ...databaseSpan, release: 'v-old' }
+      span: { ...databaseSpan, release: 'v-old' },
+      phase: 'sentry-correlation',
+      summary: 'missing or mismatched trace correlation'
     },
     {
       name: 'SQL-shaped description',
-      span: { ...databaseSpan, description: 'select * from user where id = $1' }
+      span: { ...databaseSpan, description: 'select * from user where id = $1' },
+      phase: 'sentry-privacy',
+      summary: 'automatic or privacy-unsafe database span'
     }
-  ])('fails privacy and correlation for $name', async ({ span }) => {
+  ])('fails privacy and correlation for $name', async ({ phase, span, summary }) => {
     const testLayer = makeTestLayer({
       expectedSpanResponses: [{ data: [span] }]
     })
@@ -265,8 +329,8 @@ describe('verifyProductionDeployment', () => {
     await expect(
       Effect.runPromise(verifyProductionDeployment(config).pipe(Effect.provide(testLayer.layer)))
     ).rejects.toMatchObject({
-      phase: 'sentry-privacy',
-      summary: expect.stringContaining('unsafe database span')
+      phase,
+      summary: expect.stringContaining(summary)
     })
   })
 
@@ -283,5 +347,22 @@ describe('verifyProductionDeployment', () => {
       phase: 'sentry-privacy',
       summary: expect.stringContaining('forbidden automatic database span')
     })
+  })
+
+  test('retains a typed failure summary across the Effect promise boundary', async () => {
+    const exit = await Effect.runPromiseExit(
+      Effect.fail(
+        new ProductionVerificationError({
+          phase: 'ecs-rollout',
+          summary: 'ECS did not stabilize'
+        })
+      )
+    )
+
+    expect(Exit.isFailure(exit)).toBe(true)
+    const failure = Exit.isFailure(exit) ? exit.cause.reasons.find(Cause.isFailReason) : undefined
+    expect(summarizeProductionVerificationFailure(failure?.error)).toBe(
+      'ecs-rollout: ECS did not stabilize'
+    )
   })
 })
