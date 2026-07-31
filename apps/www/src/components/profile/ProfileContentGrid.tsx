@@ -1,8 +1,8 @@
 import { HorizontalScrollCards } from '@gbfm/ui'
 import { Link } from '@tanstack/react-router'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { Artwork } from '@/components/common/Artwork'
 import { useHorizontalScroll } from '@/hooks/useHorizontalScroll'
-import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import type { PublicProfile } from '@/lib/http'
 
 interface ProfileContentGridProps {
@@ -21,13 +21,7 @@ function StandaloneMixCard({ mix }: { mix: Mix }) {
       to='/mixes/$mixId'
       params={{ mixId: mix.slug }}
       className={`${CARD_CLASS} group flex flex-col gap-2`}>
-      <div className='aspect-square w-full overflow-hidden rounded-sm border border-border bg-background'>
-        <img
-          src={mix.thumbnailUrl || DEFAULT_IMAGE_URL}
-          alt={mix.title}
-          className='h-full w-full object-cover transition-opacity group-hover:opacity-80'
-        />
-      </div>
+      <Artwork src={mix.thumbnailUrl} alt={mix.title} hover='fade' className='w-full' />
       <h3 className='line-clamp-2 font-mono text-sm font-medium leading-tight text-foreground transition-colors group-hover:text-highlight'>
         {mix.title}
       </h3>
@@ -42,13 +36,13 @@ function ProfileEditorialCard({ editorial }: { editorial: Editorial }) {
       params={{ slug: editorial.slug }}
       className={`${CARD_CLASS} group flex flex-col gap-2`}>
       {editorial.thumbnailUrl && (
-        <div className='aspect-video w-full overflow-hidden rounded-sm border border-border bg-background'>
-          <img
-            src={editorial.thumbnailUrl}
-            alt={editorial.title}
-            className='h-full w-full object-cover transition-opacity group-hover:opacity-80'
-          />
-        </div>
+        <Artwork
+          src={editorial.thumbnailUrl}
+          alt={editorial.title}
+          aspect='auto'
+          hover='fade'
+          className='aspect-video w-full'
+        />
       )}
       <h3 className='line-clamp-2 font-mono text-sm font-medium leading-tight text-foreground transition-colors group-hover:text-highlight'>
         {editorial.title}

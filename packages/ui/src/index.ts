@@ -1,4 +1,6 @@
 export * from './components/accordion'
+export type { ArtworkProps } from './components/artwork'
+export { Artwork, artworkVariants } from './components/artwork'
 export { ArtworkUploader } from './components/artwork-uploader'
 export { AudioDropZone } from './components/audio-drop-zone'
 export { AudioFileCard } from './components/audio-file-card'
@@ -68,6 +70,8 @@ export type {
 export { MusicEntityMetadataForm } from './components/music-entity-metadata-form'
 export { OverflowTitle } from './components/overflow-title'
 export { PageTitle } from './components/page-title'
+export type { PlaybackState, PlayToggleProps } from './components/play-toggle'
+export { playbackStates, PlayToggle, playToggleVariants } from './components/play-toggle'
 export {
   isPasswordValid,
   PasswordChecklist,

@@ -1,9 +1,8 @@
 import { getMixRecencyLabel } from '@gbfm/core/utils'
-import { Badge } from '@gbfm/ui'
+import { Badge, playbackStates, PlayToggle } from '@gbfm/ui'
 import type { SelectAudio } from '@gbfm/vps/schemas'
 import { Link } from '@tanstack/react-router'
-import { PlayButton } from '@/components/PlayButton'
-import { DEFAULT_IMAGE_URL } from '@/lib/constants'
+import { Artwork } from '@/components/common/Artwork'
 import { cn } from '@/lib/utils'
 import { useNowPlayingTrack, usePlayerActions, useTransport } from '@/services/player'
 import { toQueueTrack } from '@/services/player/toQueueTrack'
@@ -100,33 +99,35 @@ export function MixListItem({ mix, actions }: MixListItemProps) {
           )}
 
           <div className='mt-5 pt-4 border-t border-border/50 flex items-center gap-5'>
-            <PlayButton
-              isActive={isActive}
-              isPlaying={isPlaying}
-              title={mix.title}
-              onClick={handlePlay}
+            <PlayToggle
+              state={isActive && isPlaying ? playbackStates.playing : playbackStates.idle}
+              variant='button'
+              label={mix.title.split(' ')[0]}
+              onToggle={handlePlay}
             />
           </div>
         </div>
 
-        <div className='relative shrink-0 order-first lg:order-last'>
-          <img
-            src={mix.thumbnailUrl || DEFAULT_IMAGE_URL}
-            alt={mix.title}
-            className='object-cover border w-full lg:w-48 h-48 border-border bg-background'
-          />
-          {recencyLabel && (
-            <span
-              className={cn(
-                'absolute right-2 top-2 border px-2 py-1 text-[10px] font-bold tracking-widest leading-none',
-                recencyLabel === 'new'
-                  ? 'border-highlight bg-highlight text-highlight-foreground'
-                  : 'border-border bg-background/90 text-foreground/75 backdrop-blur-sm'
-              )}>
-              {recencyLabel}
-            </span>
-          )}
-        </div>
+        <Artwork
+          src={mix.thumbnailUrl}
+          alt={mix.title}
+          aspect='auto'
+          radius='none'
+          className='shrink-0 order-first lg:order-last w-full lg:w-48 h-48'
+          overlay={
+            recencyLabel && (
+              <span
+                className={cn(
+                  'absolute right-2 top-2 border px-2 py-1 text-[10px] font-bold tracking-widest leading-none',
+                  recencyLabel === 'new'
+                    ? 'border-highlight bg-highlight text-highlight-foreground'
+                    : 'border-border bg-background/90 text-foreground/75 backdrop-blur-sm'
+                )}>
+                {recencyLabel}
+              </span>
+            )
+          }
+        />
       </div>
     </article>
   )

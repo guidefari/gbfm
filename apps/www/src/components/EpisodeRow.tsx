@@ -1,6 +1,6 @@
+import { playbackStates, PlayToggle } from '@gbfm/ui'
 import type { SelectAudio } from '@gbfm/vps/schemas'
 import { Link } from '@tanstack/react-router'
-import { PlayButton } from '@/components/PlayButton'
 import { cn } from '@/lib/utils'
 import { useNowPlayingTrack, usePlayerActions, useTransport } from '@/services/player'
 import { toQueueTrack } from '@/services/player/toQueueTrack'
@@ -71,11 +71,11 @@ export function EpisodeRow({ mix }: EpisodeRowProps) {
       </div>
 
       <div className='shrink-0'>
-        <PlayButton
-          isActive={isActive}
-          isPlaying={isPlaying}
-          title={mix.title}
-          onClick={handlePlay}
+        <PlayToggle
+          state={isActive && isPlaying ? playbackStates.playing : playbackStates.idle}
+          variant='button'
+          label={mix.title.split(' ')[0]}
+          onToggle={handlePlay}
         />
       </div>
     </article>

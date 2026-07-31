@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { DEFAULT_IMAGE_URL } from '@/lib/constants'
+import { Artwork } from '@/components/common/Artwork'
 import type { ShowWithHosts } from '@/lib/http'
 
 interface ShowCardProps {
@@ -30,31 +30,19 @@ export function ShowCard({ show, isSelected, onSelect }: ShowCardProps) {
       className={`text-left flex flex-col gap-2 transition-all group ${
         isSelected ? 'scale-105' : 'hover:scale-105'
       }`}>
-      <div
-        className={`w-full overflow-hidden border rounded-sm shadow-sm aspect-square border-border bg-background ${
-          isSelected ? 'ring-2 ring-highlight' : ''
-        }`}>
-        <img
-          src={show.thumbnailUrl || DEFAULT_IMAGE_URL}
-          alt={show.title}
-          className='object-cover w-full h-full transition-opacity group-hover:opacity-80'
-        />
-      </div>
+      <Artwork
+        src={show.thumbnailUrl}
+        alt={show.title}
+        hover='fade'
+        className={`w-full shadow-sm ${isSelected ? 'ring-2 ring-highlight' : ''}`}
+      />
       <ShowInfo title={show.title} hostNames={hostNames} />
     </button>
   )
 }
 
 function ShowArtwork({ thumbnailUrl, title }: { thumbnailUrl: string | null; title: string }) {
-  return (
-    <div className='w-full overflow-hidden border rounded-sm shadow-sm aspect-square border-border bg-background'>
-      <img
-        src={thumbnailUrl || DEFAULT_IMAGE_URL}
-        alt={title}
-        className='object-cover w-full h-full transition-opacity group-hover:opacity-80'
-      />
-    </div>
-  )
+  return <Artwork src={thumbnailUrl} alt={title} hover='fade' className='w-full shadow-sm' />
 }
 
 function ShowInfo({ title, hostNames }: { title: string; hostNames?: string }) {
