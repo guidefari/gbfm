@@ -1,6 +1,7 @@
 import { PlayToggle } from '@gbfm/ui'
 import type { SelectAudio } from '@gbfm/vps/schemas'
 import { Link } from '@tanstack/react-router'
+import { Artwork } from '@/components/common/Artwork'
 import { cn } from '@/lib/utils'
 import { useNowPlayingTrack, usePlayerActions, useTransport } from '@/services/player'
 import { toPlaybackState } from '@/services/player/toPlaybackState'
@@ -35,23 +36,28 @@ export function EpisodeRow({ mix }: EpisodeRowProps) {
         'group/item flex items-center gap-3 border border-border bg-card px-3 py-2.5 transition-colors duration-200 hover:border-foreground/50',
         isActive && 'ring-1 ring-highlight bg-secondary'
       )}>
-      <PlayToggle
-        state={toPlaybackState({ isCurrent: isActive, isPlaying, isBuffering, isLoaded })}
-        variant='icon'
-        label={mix.title}
-        onToggle={handlePlay}
-        className='shrink-0 p-1.5'
+      <Artwork
+        src={mix.thumbnailUrl}
+        alt={mix.title}
+        className='aspect-square w-14 shrink-0 rounded-[2px]'
       />
 
       <div className='min-w-0 flex-1'>
-        <Link
-          to='/mixes/$mixId'
-          params={{ mixId: mix.slug }}
-          className='text-base font-bold leading-tight tracking-tight text-foreground line-clamp-1 transition-colors group-hover/item:text-highlight'>
-          {mix.title}
-        </Link>
+        <div className='flex min-w-0 items-center gap-2'>
+          {mix.episodeNumber !== null && mix.episodeNumber !== undefined && (
+            <span className='shrink-0 font-mono text-[11px] tracking-widest text-muted-foreground'>
+              {String(mix.episodeNumber).padStart(3, '0')}
+            </span>
+          )}
+          <Link
+            to='/mixes/$mixId'
+            params={{ mixId: mix.slug }}
+            className='truncate text-base font-bold leading-tight tracking-tight text-foreground transition-colors group-hover/item:text-highlight'>
+            {mix.title}
+          </Link>
+        </div>
         <div className='mt-1 flex flex-wrap items-center gap-x-2 gap-y-1'>
-          <span className='text-[11px] font-mono tracking-widest text-muted-foreground'>
+          <span className='font-mono text-[11px] tracking-widest text-muted-foreground'>
             {dateLabel}
           </span>
           {hasCreators && (
@@ -78,6 +84,14 @@ export function EpisodeRow({ mix }: EpisodeRowProps) {
           )}
         </div>
       </div>
+
+      <PlayToggle
+        state={toPlaybackState({ isCurrent: isActive, isPlaying, isBuffering, isLoaded })}
+        variant='icon'
+        label={mix.title}
+        onToggle={handlePlay}
+        className='shrink-0 p-1.5'
+      />
     </article>
   )
 }
