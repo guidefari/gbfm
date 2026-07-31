@@ -72,7 +72,7 @@ function ProgressTicker() {
   if (!currentTrack) return null
 
   return (
-    <div className='absolute inset-x-0 top-0 h-px bg-border/60'>
+    <div className='absolute inset-x-0 bottom-0 h-px bg-border/60'>
       <div
         className='h-full bg-highlight transition-[width] duration-300 ease-linear'
         style={{ width: `${progress}%` }}
@@ -85,7 +85,7 @@ export function DesktopChrome({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        'relative hidden h-12 shrink-0 items-center gap-3 border-t border-border bg-background/95 px-4 backdrop-blur lg:flex',
+        'fixed inset-x-0 top-0 z-40 hidden h-12 shrink-0 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur lg:flex',
         className
       )}>
       <ProgressTicker />
