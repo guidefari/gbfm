@@ -1,5 +1,5 @@
-import { Artwork } from '@/components/common/Artwork'
 import type { ShowWithHosts } from '@/lib/http'
+import { cn } from '@/lib/utils'
 
 interface ShowListItemProps {
   show: ShowWithHosts
@@ -14,16 +14,20 @@ export function ShowListItem({ show, isSelected, onSelect }: ShowListItemProps) 
     <button
       type='button'
       onClick={onSelect}
-      className={`w-full flex items-center gap-3 p-2 rounded-sm border text-left transition-all ${
-        isSelected
-          ? 'border-highlight bg-secondary ring-1 ring-highlight'
-          : 'border-transparent hover:bg-muted/40 hover:border-border/60'
-      }`}>
-      <Artwork src={show.thumbnailUrl} alt={show.title} className='w-16 shrink-0' />
-      <div className='min-w-0'>
-        <p className='text-sm font-semibold text-foreground line-clamp-2'>{show.title}</p>
-        {hostNames && <p className='text-xs text-muted-foreground line-clamp-1'>{hostNames}</p>}
-      </div>
+      className={cn(
+        'w-full rounded-sm border-l-2 px-2 py-1.5 text-left transition-colors',
+        isSelected ? 'border-highlight bg-secondary/60' : 'border-transparent hover:bg-muted/40'
+      )}>
+      <p
+        className={cn(
+          'truncate text-sm font-semibold',
+          isSelected ? 'text-highlight' : 'text-foreground'
+        )}>
+        {show.title}
+      </p>
+      {hostNames && !isSelected && (
+        <p className='truncate text-xs text-muted-foreground'>{hostNames}</p>
+      )}
     </button>
   )
 }
