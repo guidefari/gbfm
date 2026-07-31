@@ -162,14 +162,26 @@ export const PlayerProvider = ({ children }: PropsWithChildren) => {
       jumpBackward: (seconds) => runPlayback((playback) => playback.jumpBackward(seconds)),
       setVolume: (volume) => runPlayback((playback) => playback.setVolume(volume)),
       toggleMute: () => runPlayback((playback) => playback.toggleMute),
-      playTrack: (track) => runPlayback((playback) => playback.playTrack(track)),
-      playAll: (tracks) => runPlayback((playback) => playback.playAll(tracks)),
+      playTrack: (track) => {
+        runPlayback((playback) => playback.playTrack(track))
+        persistFullscreenVisibility(true)
+        setVisibility((state) => ({ ...state, isFullscreenVisible: true }))
+      },
+      playAll: (tracks) => {
+        runPlayback((playback) => playback.playAll(tracks))
+        persistFullscreenVisibility(true)
+        setVisibility((state) => ({ ...state, isFullscreenVisible: true }))
+      },
       enqueue: (track) => runPlayback((playback) => playback.enqueue(track)),
       enqueueAll: (tracks) => runPlayback((playback) => playback.enqueueAll(tracks)),
       removeFromQueue: (index) => runPlayback((playback) => playback.removeFromQueue(index)),
       reorderQueue: (from, to) => runPlayback((playback) => playback.reorderQueue(from, to)),
       clearQueue: () => runPlayback((playback) => playback.clearQueue),
-      playFromQueue: (index) => runPlayback((playback) => playback.playFromQueue(index)),
+      playFromQueue: (index) => {
+        runPlayback((playback) => playback.playFromQueue(index))
+        persistFullscreenVisibility(true)
+        setVisibility((state) => ({ ...state, isFullscreenVisible: true }))
+      },
       playNext: () => runPlayback((playback) => playback.playNext),
       playPrevious: () => runPlayback((playback) => playback.playPrevious),
       toggleQueue: () =>
