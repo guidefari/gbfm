@@ -10,8 +10,8 @@ const artworkVariants = cva('overflow-hidden bg-background', {
     },
     radius: {
       none: 'rounded-none',
-      sm: 'rounded-sm',
-      md: 'rounded-md'
+      sm: 'rounded-[2px]',
+      md: 'rounded-[4px]'
     },
     border: {
       none: '',
@@ -26,13 +26,27 @@ const artworkVariants = cva('overflow-hidden bg-background', {
   }
 })
 
+const hoverVariants = cva('group relative', {
+  variants: {
+    hover: {
+      none: '',
+      fade: '',
+      zoom: '',
+      ring: 'transition-shadow duration-300 hover:ring-4 hover:ring-highlight'
+    }
+  },
+  defaultVariants: {
+    hover: 'none'
+  }
+})
+
 const imageVariants = cva('h-full w-full object-cover', {
   variants: {
     hover: {
       none: '',
       fade: 'transition-opacity duration-300 group-hover:opacity-80',
       zoom: 'transition duration-300 group-hover:scale-105',
-      ring: 'transition duration-300 group-hover:ring-4 ring-highlight'
+      ring: ''
     },
     loading: {
       true: 'scale-102 blur-2xl',
@@ -74,7 +88,12 @@ function Artwork({
   ...props
 }: ArtworkProps) {
   return (
-    <div className={cn('relative', artworkVariants({ aspect, radius, border }), className)}>
+    <div
+      className={cn(
+        artworkVariants({ aspect, radius, border }),
+        hoverVariants({ hover }),
+        className
+      )}>
       <img
         src={src || fallbackSrc}
         alt={alt}
