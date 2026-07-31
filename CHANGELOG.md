@@ -1,3 +1,14 @@
+## [2.76.7](https://github.com/guidefari/gbfm/compare/v2.76.6...v2.76.7) (2026-07-31)
+
+
+### Bug Fixes
+
+* **ci:** avoid rollout gate false failures ([a5506a3](https://github.com/guidefari/gbfm/commit/a5506a3cb49d429f2fd94dbdd1cdf18948159641))
+* **ci:** budget telemetry verification phases ([03c46d9](https://github.com/guidefari/gbfm/commit/03c46d9e69fa5f26ea3b33924380e26acc51aec1))
+* **ci:** harden production verification gate ([dafd0c5](https://github.com/guidefari/gbfm/commit/dafd0c5edaa1fcf9e7c492e75d13b08b0eeb9fb0))
+* **ci:** identify primary ECS deployment ([204a5c0](https://github.com/guidefari/gbfm/commit/204a5c0321fa3a9b0a19cbcb9ecf47db71e65cac))
+* **ci:** wait for telemetry convergence ([a286e59](https://github.com/guidefari/gbfm/commit/a286e59ce7e750b62717f4dd890f349fe5821c40))
+
 ## [2.76.6](https://github.com/guidefari/gbfm/compare/v2.76.5...v2.76.6) (2026-07-30)
 
 
