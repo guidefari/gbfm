@@ -27,7 +27,7 @@ export function NavAccountFooter({ onNavigate }: { onNavigate?: () => void }) {
 
   if (!isAuthenticated) {
     return (
-      <div className='shrink-0 border-t border-border bg-background p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]'>
+      <div className='shrink-0 border-t border-border bg-background p-3'>
         <Link
           to='/auth/sign-in'
           search={{ redirect: location.pathname }}
@@ -44,7 +44,7 @@ export function NavAccountFooter({ onNavigate }: { onNavigate?: () => void }) {
   }
 
   return (
-    <div className='shrink-0 border-t border-border bg-background p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]'>
+    <div className='shrink-0 border-t border-border bg-background p-3'>
       <div className='mb-2 flex items-center gap-3 px-1'>
         <div className='flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-border bg-muted text-sm font-bold'>
           {user?.image ? (

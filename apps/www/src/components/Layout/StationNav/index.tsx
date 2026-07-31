@@ -2,11 +2,13 @@ import { Sheet, SheetContent, SheetTitle } from '@gbfm/ui'
 import { useHotkey } from '@tanstack/react-hotkeys'
 import { Link, useLocation } from '@tanstack/react-router'
 import { BookOpen, Disc3, Ellipsis, House } from 'lucide-react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
 import { useVisibility } from '@/services/player'
-import { DesktopTopBar } from './DesktopTopBar'
+import { DesktopChrome } from './DesktopChrome'
 import { NavAccountFooter } from './NavAccountFooter'
+import { NavMenuProvider } from './nav-menu-context'
 import { StationNavPanel } from './StationNavPanel'
 
 function useActiveStationSlug() {
@@ -28,11 +30,12 @@ const tabClass = cn(
   'aria-[current=page]:text-highlight'
 )
 
-export function StationNav({ className }: { className?: string }) {
+export function StationNav() {
   const [isOpen, setIsOpen] = useState(false)
   const { isFullscreenVisible } = useVisibility()
   const location = useLocation()
   const activeStationSlug = useActiveStationSlug()
+  const isDesktop = useMediaQuery('(min-width: 1024px)')
 
   const close = useCallback(() => setIsOpen(false), [])
   const open = useCallback(() => setIsOpen(true), [])
@@ -43,13 +46,22 @@ export function StationNav({ className }: { className?: string }) {
     close()
   }, [close, location.href])
 
+  const menuValue = useMemo(
+    () => ({
+      openMenu: open,
+      isMenuOpen: isOpen
+    }),
+    [open, isOpen]
+  )
+
   if (isFullscreenVisible) return null
 
   const pathname = location.pathname
+  const sheetSide = isDesktop ? 'right' : 'bottom'
 
   return (
-    <>
-      <DesktopTopBar onOpenMenu={open} className={className} />
+    <NavMenuProvider value={menuValue}>
+      <DesktopChrome />
 
       <nav
         aria-label='Primary'
@@ -90,13 +102,20 @@ export function StationNav({ className }: { className?: string }) {
 
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetContent
-          side='bottom'
-          className='flex h-auto max-h-[85dvh] flex-col gap-0 rounded-t-lg border-border p-0 sm:mx-auto sm:max-w-lg lg:max-h-[min(85dvh,40rem)]'>
-          <div className='mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-border' />
-          <div className='flex h-12 shrink-0 items-center px-4 pr-14'>
+          side={sheetSide}
+          className={cn(
+            'flex flex-col gap-0 overflow-hidden border-border p-0',
+            isDesktop
+              ? 'h-full w-full max-w-sm sm:max-w-sm'
+              : 'h-auto max-h-[85dvh] rounded-t-lg sm:mx-auto sm:max-w-lg'
+          )}>
+          {!isDesktop ? (
+            <div className='mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-border' />
+          ) : null}
+          <div className='flex h-12 shrink-0 items-center border-b border-border px-4 pr-14'>
             <SheetTitle className='text-sm font-black tracking-tight'>Menu</SheetTitle>
           </div>
-          <div className='min-h-0 flex-1 overflow-y-auto'>
+          <div className='min-h-0 flex-1 overflow-y-auto overscroll-contain'>
             <div className='p-3'>
               <StationNavPanel activeStationSlug={activeStationSlug} onNavigate={close} />
             </div>
@@ -104,6 +123,6 @@ export function StationNav({ className }: { className?: string }) {
           <NavAccountFooter onNavigate={close} />
         </SheetContent>
       </Sheet>
-    </>
+    </NavMenuProvider>
   )
 }
