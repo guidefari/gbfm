@@ -16,7 +16,7 @@ export function NavItemLink({ item, onNavigate }: { item: NavItem; onNavigate?: 
         rel='noreferrer'
         onClick={onNavigate}
         className={navRowClass}>
-        {item.icon}
+        <span className='flex h-5 w-5 shrink-0 items-center justify-center'>{item.icon}</span>
         <span className='min-w-0 flex-1 truncate'>{item.name}</span>
       </a>
     )
@@ -25,7 +25,9 @@ export function NavItemLink({ item, onNavigate }: { item: NavItem; onNavigate?: 
   if (item.CustomComponent) {
     return (
       <div className={navRowClass}>
-        {item.CustomComponent}
+        <span className='flex h-5 w-5 shrink-0 items-center justify-center'>
+          {item.CustomComponent}
+        </span>
         <span className='min-w-0 flex-1 truncate'>{item.name}</span>
       </div>
     )
@@ -33,7 +35,7 @@ export function NavItemLink({ item, onNavigate }: { item: NavItem; onNavigate?: 
 
   return (
     <Link to={item.slug} onClick={onNavigate} className={navRowClass}>
-      {item.icon}
+      <span className='flex h-5 w-5 shrink-0 items-center justify-center'>{item.icon}</span>
       <span className='min-w-0 flex-1 truncate'>{item.name}</span>
     </Link>
   )

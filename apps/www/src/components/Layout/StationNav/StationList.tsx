@@ -31,7 +31,7 @@ export function StationList({
 
   return (
     <div className='flex flex-col gap-1'>
-      <ul className='flex max-h-64 list-none flex-col gap-0.5 overflow-y-auto overscroll-contain pl-0'>
+      <ul className='flex max-h-64 list-none flex-col gap-0.5 overflow-y-auto overscroll-contain scrollbar-hide pl-0'>
         {data.map((show) => {
           const isActive = show.slug === activeSlug
           const hostNames = show.hosts?.map((h) => h.name).join(', ')

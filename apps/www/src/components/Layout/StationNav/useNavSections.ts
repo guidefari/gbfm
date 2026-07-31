@@ -23,7 +23,10 @@ export function useNavSections(): NavSections {
     return {
       isAuthenticated,
       browse: items.filter(
-        (item) => (item.tier === 'primary' || item.tier === 'secondary') && !item.adminOnly
+        (item) =>
+          (item.tier === 'primary' || item.tier === 'secondary') &&
+          !item.adminOnly &&
+          item.id !== 'home'
       ),
       create: items.filter((item) => item.tier === 'create' && canSeeNavItem(item, access)),
       admin: items.filter((item) => item.adminOnly && canSeeNavItem(item, access)),
