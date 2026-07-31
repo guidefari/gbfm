@@ -33,7 +33,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './tool
 import { UploadProgress } from './upload-progress'
 
 export default {
-  title: '@gbfm/ui/KitchenSink'
+  title: '@gbfm/ui/Start here/Kitchen sink'
 }
 
 const tiles = [

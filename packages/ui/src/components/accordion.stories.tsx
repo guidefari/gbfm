@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './car
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/Accordion'
+  title: '@gbfm/ui/Primitives/Accordion'
 }
 
 export function Accordions() {

@@ -3,7 +3,7 @@ import { ScrollArea } from './scroll-area'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/ScrollArea'
+  title: '@gbfm/ui/Primitives/Scroll area'
 }
 
 export function ScrollAreas() {

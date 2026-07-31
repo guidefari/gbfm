@@ -3,7 +3,7 @@ import { MediaCard as MediaCardComponent } from './media-card'
 import { mediaExamples, StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/MediaCard'
+  title: '@gbfm/ui/Media/Media card'
 }
 
 export function MediaCard() {

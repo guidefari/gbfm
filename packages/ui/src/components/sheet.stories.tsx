@@ -11,7 +11,7 @@ import {
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/Sheet'
+  title: '@gbfm/ui/Primitives/Sheet'
 }
 
 export function Sheets() {

@@ -4,7 +4,7 @@ import { playbackStates, PlayToggle } from './play-toggle'
 import { mediaExamples, StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/MusicCardPatterns'
+  title: '@gbfm/ui/New/Music card patterns'
 }
 
 const FALLBACK = 'https://d20tmfka7s58bt.cloudfront.net/gb-default.png'

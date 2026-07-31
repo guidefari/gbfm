@@ -10,7 +10,7 @@ import {
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/Breadcrumb'
+  title: '@gbfm/ui/Content/Breadcrumb'
 }
 
 export function Breadcrumbs() {

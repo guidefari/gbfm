@@ -3,7 +3,7 @@ import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 import { TagsInput } from './tags-input'
 
 export default {
-  title: '@gbfm/ui/TagsInput'
+  title: '@gbfm/ui/Forms/Tags input'
 }
 
 export function Tags() {

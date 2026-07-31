@@ -3,7 +3,7 @@ import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 import { Toast, ToastDescription, ToastProvider, ToastTitle } from './toast'
 
 export default {
-  title: '@gbfm/ui/Toast'
+  title: '@gbfm/ui/Primitives/Toast'
 }
 
 export function Toasts() {

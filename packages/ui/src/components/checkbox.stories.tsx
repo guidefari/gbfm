@@ -4,7 +4,7 @@ import { Label } from './label'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/Checkbox'
+  title: '@gbfm/ui/Primitives/Checkbox'
 }
 
 export function Checkboxes() {

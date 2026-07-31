@@ -3,7 +3,7 @@ import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 import { type TrackEntry, TracklistEditor } from './tracklist-editor'
 
 export default {
-  title: '@gbfm/ui/TracklistEditor'
+  title: '@gbfm/ui/Workflows/Tracklist editor'
 }
 
 export function Tracklist() {

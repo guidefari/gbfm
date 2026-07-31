@@ -6,7 +6,7 @@ import { MusicEntityMetadataForm } from './music-entity-metadata-form'
 import { mockArtists, mockLinks, StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/MusicEntityDetail'
+  title: '@gbfm/ui/Media/Music entity detail'
 }
 
 export function MusicEntityDetails() {

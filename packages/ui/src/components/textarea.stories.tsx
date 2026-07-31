@@ -3,7 +3,7 @@ import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 import { Textarea } from './textarea'
 
 export default {
-  title: '@gbfm/ui/Textarea'
+  title: '@gbfm/ui/Primitives/Textarea'
 }
 
 export function Textareas() {

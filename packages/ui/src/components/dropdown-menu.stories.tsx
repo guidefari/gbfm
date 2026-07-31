@@ -11,7 +11,7 @@ import {
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/DropdownMenu'
+  title: '@gbfm/ui/Primitives/Dropdown menu'
 }
 
 export function DropdownMenus() {

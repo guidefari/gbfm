@@ -3,7 +3,7 @@ import { Skeleton } from './skeleton'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/Skeleton'
+  title: '@gbfm/ui/Primitives/Skeleton'
 }
 
 export function Skeletons() {

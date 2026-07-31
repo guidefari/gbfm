@@ -5,7 +5,7 @@ import { PasswordChecklist } from './password-checklist'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/PasswordChecklist'
+  title: '@gbfm/ui/Forms/Password checklist'
 }
 
 export function PasswordChecklists() {

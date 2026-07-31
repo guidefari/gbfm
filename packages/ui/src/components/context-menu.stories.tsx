@@ -14,7 +14,7 @@ import {
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/ContextMenu'
+  title: '@gbfm/ui/Primitives/Context menu'
 }
 
 export function ContextMenus() {

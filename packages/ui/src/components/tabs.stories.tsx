@@ -3,7 +3,7 @@ import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './tabs'
 
 export default {
-  title: '@gbfm/ui/Tabs'
+  title: '@gbfm/ui/Primitives/Tabs'
 }
 
 export function TabSet() {

@@ -2,7 +2,7 @@ import { LilDate } from './lil-date'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/LilDate'
+  title: '@gbfm/ui/Content/Lil date'
 }
 
 export function Dates() {

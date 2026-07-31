@@ -2,7 +2,7 @@ import { OverflowTitle } from './overflow-title'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/OverflowTitle'
+  title: '@gbfm/ui/Content/Overflow title'
 }
 
 export function OverflowTitles() {

@@ -4,7 +4,7 @@ import { MediaCard } from './media-card'
 import { mediaExamples, StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/HorizontalScrollCards'
+  title: '@gbfm/ui/Content/Horizontal scroll cards'
 }
 
 const items = [
