@@ -60,6 +60,41 @@ export function MusicEntityDetails() {
           </Button>
         }
       />
+
+      <h2 className='text-sm tracking-[0.2em] text-muted-foreground'>Draft, no artwork</h2>
+      <MusicEntityDetail
+        entityType='album'
+        name='Untrue'
+        imageUrl={null}
+        publishedAt={null}
+        createdAt={new Date('2024-05-02')}
+        updatedAt={new Date('2024-05-09')}
+        createdBy={{ name: 'Guide Fari', email: 'guideg6@gmail.com' }}
+        metadataSlot={
+          <MusicEntityMetadataForm
+            entityType='album'
+            initialData={{
+              title: 'Untrue',
+              artistNames: ['Burial'],
+              releaseDate: new Date('2007-11-05'),
+              coverImageUrl: null,
+              genres: ['dubstep'],
+              albumType: 'album',
+              slug: 'untrue',
+              publishedAt: null
+            }}
+            onSubmit={(data) => console.log('save', data)}
+          />
+        }
+        linksSlot={
+          <MusicEntityLinksPanel
+            links={mockLinks}
+            onAdd={(platform, url) => console.log('add', platform, url)}
+            onUpdateStatus={(id, status) => console.log('status', id, status)}
+            onDelete={(id) => console.log('delete', id)}
+          />
+        }
+      />
     </div>
   )
 }
