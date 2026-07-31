@@ -252,6 +252,24 @@ new sst.x.DevCommand('Verify_Backup', {
 //   }
 // })
 
+// new sst.x.DevCommand('Backfill_Episode_Numbers', {
+//   link: [...allSecrets, email],
+//   dev: {
+//     command: 'bun scripts/backfill-episode-numbers.ts',
+//     directory: './apps/vps',
+//     autostart: false
+//   }
+// })
+
+// new sst.x.DevCommand('Backfill_Episode_Numbers_Apply', {
+//   link: [...allSecrets, email],
+//   dev: {
+//     command: 'bun scripts/backfill-episode-numbers.ts --apply',
+//     directory: './apps/vps',
+//     autostart: false
+//   }
+// })
+
 new sst.x.DevCommand('Otel_Stack', {
   dev: {
     command: 'docker compose up jaeger -d',
