@@ -6,6 +6,7 @@ import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
 import { EpisodeGrid } from '@/components/shows/EpisodeGrid'
 import { SelectedShowBar } from '@/components/shows/SelectedShowBar'
 import { ShowListItem } from '@/components/shows/ShowListItem'
+import { ShowsPageLayout } from '@/components/shows/ShowsPageLayout'
 import { ShowSwitcherRail } from '@/components/shows/ShowSwitcherRail'
 import { useAllShows, type ShowWithHosts } from '@/lib/http'
 import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'
@@ -43,21 +44,31 @@ function ShowsListPage() {
   )
 
   if (isPending) {
-    return <ShowsSkeleton />
+    return (
+      <ShowsPageLayout>
+        <ShowsSkeleton />
+      </ShowsPageLayout>
+    )
   }
 
   if (error) {
     return (
-      <div className='p-4 text-center text-destructive'>Error loading shows: {error.message}</div>
+      <ShowsPageLayout>
+        <div className='p-4 text-center text-destructive'>Error loading shows: {error.message}</div>
+      </ShowsPageLayout>
     )
   }
 
   if (!data || data.length === 0) {
-    return <div className='p-4 text-center text-muted-foreground'>No shows found</div>
+    return (
+      <ShowsPageLayout>
+        <div className='p-4 text-center text-muted-foreground'>No shows found</div>
+      </ShowsPageLayout>
+    )
   }
 
   return (
-    <div className='p-4 mx-auto max-w-7xl'>
+    <ShowsPageLayout>
       <div className='grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr] lg:gap-8'>
         <aside className='hidden lg:block'>
           <nav className='sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto space-y-2 pr-2 no-scrollbar'>
@@ -110,7 +121,7 @@ function ShowsListPage() {
           )}
         </main>
       </div>
-    </div>
+    </ShowsPageLayout>
   )
 }
 
