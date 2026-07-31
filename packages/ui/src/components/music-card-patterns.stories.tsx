@@ -1,5 +1,4 @@
 import { Artwork } from './artwork'
-import { Badge } from './badge'
 import { playbackStates, PlayToggle } from './play-toggle'
 import { mediaExamples, StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
@@ -21,92 +20,149 @@ export function MusicCardPatterns() {
 
       <section className='space-y-3'>
         <h2 className='text-sm tracking-[0.2em] text-muted-foreground'>Mix list item</h2>
-        <article className='group border border-border bg-card p-5 transition-all duration-200 hover:border-foreground/50'>
-          <div className='flex flex-col lg:flex-row gap-6'>
-            <div className='flex-1 min-w-0'>
-              <h3 className='text-2xl font-black leading-tight tracking-tight text-foreground'>
-                {mix.title}
-              </h3>
-              <p className='mt-4 text-sm leading-relaxed text-foreground/50 border-l-2 border-highlight/20 pl-4 py-1 italic'>
-                {mix.description}
-              </p>
-              <div className='flex flex-wrap items-center gap-1.5 mt-4'>
-                {mix.tags.map((tag) => (
-                  <Badge
-                    key={tag}
-                    variant='secondary'
-                    className='rounded-none border border-border bg-muted/50 text-foreground/70 text-[10px] tracking-widest px-2 py-0.5'>
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-              <div className='mt-5 pt-4 border-t border-border/50 flex items-center gap-5'>
-                <PlayToggle
-                  state={playbackStates.idle}
-                  variant='button'
-                  label='Late'
-                  onToggle={() => {}}
-                />
-              </div>
-            </div>
-            <Artwork
-              src={mix.imageUrl}
-              alt={mix.title}
-              fallbackSrc={FALLBACK}
-              aspect='auto'
-              radius='none'
-              className='shrink-0 order-first lg:order-last w-full lg:w-48 h-48'
-              overlay={
-                <span className='absolute right-2 top-2 border border-highlight bg-highlight px-2 py-1 text-[10px] font-bold tracking-widest leading-none text-highlight-foreground'>
+        <article className='group/row flex flex-col sm:flex-row gap-5 border-b border-border/60 pb-6 transition-colors hover:border-highlight/40'>
+          <Artwork
+            src={mix.imageUrl}
+            alt={mix.title}
+            fallbackSrc={FALLBACK}
+            radius='none'
+            border='none'
+            className='w-full sm:w-40 md:w-52 shrink-0'
+            overlay={
+              <>
+                <span className='pointer-events-none absolute inset-0 bg-gradient-to-t from-background/70 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover/row:opacity-100' />
+                <span className='absolute left-3 top-3 bg-highlight px-1.5 py-0.5 text-[10px] font-medium tracking-widest leading-none text-highlight-foreground'>
                   new
                 </span>
-              }
-            />
+                <span className='absolute inset-0 flex items-center justify-center transition-opacity duration-200 [@media(hover:hover)]:opacity-0 group-hover/row:opacity-100 focus-within:opacity-100'>
+                  <PlayToggle
+                    state={playbackStates.idle}
+                    variant='hero'
+                    label={mix.title}
+                    onToggle={() => {}}
+                  />
+                </span>
+              </>
+            }
+          />
+
+          <div className='flex min-w-0 flex-1 flex-col justify-center gap-3'>
+            <div className='space-y-1.5'>
+              <p className='text-[11px] tracking-[0.2em] text-muted-foreground'>{mix.eyebrow}</p>
+              <h3 className='text-2xl md:text-3xl font-bold leading-[1.1] tracking-tight text-foreground transition-colors group-hover/row:text-highlight'>
+                {mix.title}
+              </h3>
+            </div>
+
+            <p className='max-w-prose text-sm leading-relaxed text-muted-foreground'>
+              {mix.description}
+            </p>
+
+            <div className='flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] tracking-widest text-muted-foreground'>
+              {mix.tags.map((tag, index) => (
+                <span key={tag} className='flex items-center gap-2'>
+                  {index > 0 && (
+                    <span aria-hidden className='text-border'>
+                      /
+                    </span>
+                  )}
+                  <span className='transition-colors hover:text-highlight'>{tag}</span>
+                </span>
+              ))}
+            </div>
           </div>
         </article>
       </section>
 
       <section className='space-y-3'>
         <h2 className='text-sm tracking-[0.2em] text-muted-foreground'>Show card grid</h2>
-        <div className='grid gap-4 grid-cols-2 md:grid-cols-4'>
-          {[0, 1, 2, 3].map((index) => (
-            <div key={index} className='group flex flex-col gap-2'>
-              <Artwork
-                src={index === 2 ? null : mediaExamples[index % 2].imageUrl}
-                alt='Show artwork'
-                fallbackSrc={FALLBACK}
-                hover='fade'
-                className='w-full shadow-sm'
-              />
-              <span className='text-sm font-semibold leading-tight text-foreground group-hover:text-highlight line-clamp-2'>
-                {mediaExamples[index % 2].title}
-              </span>
-            </div>
-          ))}
+        <div className='grid gap-x-4 gap-y-6 grid-cols-2 md:grid-cols-4'>
+          {[0, 1, 2, 3].map((index) => {
+            const example = mediaExamples[index % 2]
+            return (
+              <article key={index} className='group/card flex flex-col gap-3'>
+                <Artwork
+                  src={index === 2 ? null : example.imageUrl}
+                  alt={example.title}
+                  fallbackSrc={FALLBACK}
+                  radius='none'
+                  border='none'
+                  className='w-full'
+                  overlay={
+                    <>
+                      <span className='pointer-events-none absolute inset-0 bg-gradient-to-t from-background/80 via-background/10 to-transparent' />
+                      <span
+                        aria-hidden
+                        className='pointer-events-none absolute -bottom-3 -left-1 text-7xl font-black italic leading-none tracking-tighter text-foreground/85 mix-blend-overlay transition-transform duration-300 group-hover/card:-translate-y-1'>
+                        {String(index + 1).padStart(2, '0')}
+                      </span>
+                      <span className='absolute right-1.5 top-1.5 transition-opacity duration-200 [@media(hover:hover)]:opacity-0 group-hover/card:opacity-100 focus-within:opacity-100'>
+                        <PlayToggle
+                          state={playbackStates.idle}
+                          variant='icon'
+                          label={example.title}
+                          onToggle={() => {}}
+                          className='bg-background/70 p-1.5 text-foreground hover:text-highlight'
+                        />
+                      </span>
+                    </>
+                  }
+                />
+                <div className='space-y-1'>
+                  <p className='text-[10px] tracking-[0.2em] text-muted-foreground'>
+                    {example.eyebrow}
+                  </p>
+                  <h3 className='text-sm font-semibold leading-snug text-foreground transition-colors group-hover/card:text-highlight line-clamp-2'>
+                    {example.title}
+                  </h3>
+                </div>
+              </article>
+            )
+          })}
         </div>
       </section>
 
       <section className='space-y-3'>
         <h2 className='text-sm tracking-[0.2em] text-muted-foreground'>Show list row</h2>
-        <div className='max-w-md space-y-2'>
-          {mediaExamples.map((example) => (
-            <button
+        <div className='max-w-2xl'>
+          {mediaExamples.map((example, index) => (
+            <article
               key={example.title}
-              type='button'
-              className='w-full flex items-center gap-3 p-2 rounded-sm border border-transparent text-left transition-all hover:bg-muted/40 hover:border-border/60'>
+              className='group/item relative flex items-center gap-4 border-b border-border/50 py-3 pl-3 transition-colors hover:border-highlight/40 hover:bg-foreground/[0.03]'>
+              <span className='absolute inset-y-0 left-0 w-px bg-highlight opacity-0 transition-opacity group-hover/item:opacity-100' />
+
+              <span className='w-7 shrink-0 text-lg font-bold italic tabular-nums leading-none text-muted-foreground/40 transition-colors group-hover/item:text-highlight'>
+                {String(index + 1).padStart(2, '0')}
+              </span>
+
               <Artwork
                 src={example.imageUrl}
                 alt={example.title}
                 fallbackSrc={FALLBACK}
-                className='w-16 shrink-0'
+                radius='none'
+                border='none'
+                className='w-14 shrink-0'
+                overlay={
+                  <span className='absolute inset-0 flex items-center justify-center bg-background/50 transition-opacity duration-200 [@media(hover:hover)]:opacity-0 group-hover/item:opacity-100 focus-within:opacity-100'>
+                    <PlayToggle
+                      state={playbackStates.idle}
+                      variant='icon'
+                      label={example.title}
+                      onToggle={() => {}}
+                    />
+                  </span>
+                }
               />
-              <div className='min-w-0'>
-                <p className='text-sm font-semibold text-foreground line-clamp-2'>
+
+              <div className='min-w-0 flex-1 space-y-0.5'>
+                <h3 className='truncate text-sm font-semibold leading-tight text-foreground transition-colors group-hover/item:text-highlight'>
                   {example.title}
+                </h3>
+                <p className='truncate text-xs leading-relaxed text-muted-foreground'>
+                  {example.description}
                 </p>
-                <p className='text-xs text-muted-foreground line-clamp-1'>{example.eyebrow}</p>
               </div>
-            </button>
+            </article>
           ))}
         </div>
       </section>
