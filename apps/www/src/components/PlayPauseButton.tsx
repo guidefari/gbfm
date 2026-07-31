@@ -1,11 +1,12 @@
 'use client'
-import { playbackStates, PlayToggle } from '@gbfm/ui'
+import { PlayToggle } from '@gbfm/ui'
 import { useNowPlayingTrack, usePlayerActions, useTransport } from '@/services/player'
+import { toPlaybackState } from '@/services/player/toPlaybackState'
 import { toQueueTrack, type PlayableAudio } from '@/services/player/toQueueTrack'
 
 export const PlayPauseButton = ({ audio }: { audio: PlayableAudio }) => {
   const current = useNowPlayingTrack()
-  const { isPlaying } = useTransport()
+  const { isPlaying, isBuffering, isLoaded } = useTransport()
   const { playTrack, togglePlayPause } = usePlayerActions()
 
   const isCurrent = current?.id === audio.id
@@ -20,7 +21,7 @@ export const PlayPauseButton = ({ audio }: { audio: PlayableAudio }) => {
 
   return (
     <PlayToggle
-      state={isCurrent && isPlaying ? playbackStates.playing : playbackStates.idle}
+      state={toPlaybackState({ isCurrent, isPlaying, isBuffering, isLoaded })}
       variant='icon'
       label={audio.title}
       onToggle={handleToggle}
