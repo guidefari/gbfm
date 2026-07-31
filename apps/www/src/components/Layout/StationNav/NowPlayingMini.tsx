@@ -25,11 +25,7 @@ export function NowPlayingMini({ onClose }: NowPlayingMiniProps) {
   const creators = currentTrack?.creators ?? []
 
   return (
-    <div
-      className={cn(
-        'mx-auto w-full max-w-full overflow-hidden rounded-sm border border-border bg-card p-3 shadow-xl',
-        'sm:max-w-md'
-      )}>
+    <div className='w-full min-w-0 overflow-hidden rounded-sm border border-border bg-card p-3'>
       <div className='flex items-start gap-3'>
         <button
           type='button'

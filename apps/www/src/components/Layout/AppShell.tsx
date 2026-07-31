@@ -8,7 +8,7 @@ import { MAIN_SCROLL_CONTAINER_ID } from '@/lib/constants'
 import { useNowPlayingTrack, useVisibility } from '@/services/player'
 import { useUIState } from '@/store'
 
-import { FloatingMenu } from './FloatingMenu'
+import { StationNav } from './StationNav'
 
 const QueueColumn = lazy(() =>
   import('@/components/queue/QueueColumn').then((m) => ({ default: m.QueueColumn }))
@@ -32,6 +32,8 @@ export default function AppShell({ children }: Props) {
   return (
     <div className='grid h-dvh w-full grid-cols-1 bg-background'>
       <div className='relative flex h-dvh min-w-0 flex-col overflow-hidden'>
+        <StationNav className='z-40 shrink-0 border-x-0 border-t-0 pt-[env(safe-area-inset-top)]' />
+
         <div className='relative min-h-0 flex-1'>
           <main
             id={MAIN_SCROLL_CONTAINER_ID}
@@ -40,8 +42,6 @@ export default function AppShell({ children }: Props) {
             className='h-full min-w-0 overflow-x-hidden overflow-y-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none] bg-background focus:outline-none'>
             {children}
           </main>
-
-          <FloatingMenu className='absolute bottom-[calc(1rem+env(safe-area-inset-bottom))] right-[calc(1rem+env(safe-area-inset-right))]' />
         </div>
 
         {showPlayer && (

@@ -79,14 +79,6 @@ export const navConfig: NavItem[] = [
     surfaces: ['overlay']
   },
   {
-    id: 'mixes',
-    name: 'Mixes',
-    slug: '/mixes',
-    icon: <Disc3 className={iconSytles} />,
-    tier: 'secondary',
-    surfaces: ['overlay']
-  },
-  {
     id: 'tweets',
     name: 'Tweets',
     slug: '/tweet',
