@@ -37,7 +37,7 @@ export function WelcomeModal() {
 
   const handleExplore = () => {
     handleClose()
-    navigate({ to: '/mixes' })
+    navigate({ to: '/shows' })
   }
 
   return (

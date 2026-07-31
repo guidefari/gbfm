@@ -158,10 +158,10 @@ function MixPage() {
   return (
     <div className='max-w-3xl px-4 py-6 mx-auto'>
       <Link
-        to='/mixes'
+        to='/shows'
         className='inline-flex items-center gap-1 mb-8 text-sm transition-colors text-muted-foreground hover:text-foreground'>
         <ArrowLeft className='w-4 h-4' />
-        Mixes
+        Radio shows
       </Link>
       <MixDetails mix={mix} />
     </div>

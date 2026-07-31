@@ -468,7 +468,7 @@ function MixUploadPage() {
                 params: { mixId: formData.slug || search.edit || '' }
               })
             } else {
-              router.navigate({ to: '/mixes' })
+              router.navigate({ to: '/shows' })
             }
           }, 2000)
           return

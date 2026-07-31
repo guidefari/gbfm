@@ -54,9 +54,9 @@ function NotFound({ slug }: { slug: string }) {
           Go home
         </Link>
         <Link
-          to='/mixes'
+          to='/shows'
           className='px-4 py-2 text-sm font-medium border rounded-md border-border text-foreground hover:bg-muted'>
-          Browse mixes
+          Browse radio shows
         </Link>
       </div>
     </div>

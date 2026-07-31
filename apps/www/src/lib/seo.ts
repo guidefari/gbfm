@@ -271,11 +271,6 @@ export const STATIC_PAGE_SEO = {
     'Discover curated music mixes, tracks, and releases. Your destination for deep house, electronic, and soulful sounds.',
     '/'
   ),
-  mixes: generateStaticPageSEO(
-    'Browse Mixes',
-    'Explore curated DJ mixes featuring deep house, electronic, ambient, and more. Stream or download your favorites.',
-    '/mixes'
-  ),
   labels: generateStaticPageSEO(
     'Record Labels',
     'Discover independent record labels and their music catalogs on goosebumps.fm.',
