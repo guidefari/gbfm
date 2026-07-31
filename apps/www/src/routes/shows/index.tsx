@@ -69,9 +69,11 @@ function ShowsListPage() {
 
   return (
     <ShowsPageLayout>
-      <div className='grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr] lg:gap-8'>
+      <div className='grid grid-cols-1 gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8 lg:items-start'>
         <aside className='hidden lg:block'>
-          <nav className='sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto space-y-2 pr-2 no-scrollbar'>
+          <nav
+            aria-label='Shows'
+            className='sticky top-4 max-h-[calc(100dvh-8rem)] space-y-1 overflow-y-auto pr-1 no-scrollbar'>
             {data.map((show) => (
               <ShowListItem
                 key={show.id}
@@ -93,7 +95,7 @@ function ShowsListPage() {
           </nav>
         </aside>
 
-        <div className='lg:hidden'>
+        <div className='space-y-4 lg:hidden'>
           <ShowSwitcherRail
             shows={data}
             selectedShowId={selectedShow?.id}
@@ -115,7 +117,7 @@ function ShowsListPage() {
           {selectedShow ? (
             <SelectedShowPanel show={selectedShow} />
           ) : (
-            <div className='text-center text-muted-foreground py-12'>
+            <div className='py-12 text-center text-muted-foreground'>
               Select a show to browse its mixes
             </div>
           )}
@@ -127,7 +129,7 @@ function ShowsListPage() {
 
 function SelectedShowPanel({ show }: { show: ShowWithHosts }) {
   return (
-    <section>
+    <section className='space-y-6'>
       <SelectedShowBar show={show} />
       <EpisodeGrid showSlug={show.slug} />
     </section>

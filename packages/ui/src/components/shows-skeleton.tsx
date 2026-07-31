@@ -29,7 +29,7 @@ function EpisodeRowSkeleton() {
 
 export function ShowsSkeleton() {
   return (
-    <div className='grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr] lg:gap-8'>
+    <div className='grid grid-cols-1 gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-8 lg:items-start'>
       <aside className='hidden lg:block'>
         <nav className='space-y-2 pr-2'>
           {railKeys.map((key) => (
