@@ -103,3 +103,16 @@ jobs:
           release: ${{ steps.deployment-ref.outputs.ref }}
           set_commits: auto
           finalize: true
+
+      - name: Verify production deployment and telemetry
+        timeout-minutes: 20
+        env:
+          PRODUCTION_BASE_URL: https://vps.goosebumps.fm
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_OBSERVABILITY_TOKEN }}
+          SENTRY_ENVIRONMENT: production
+          SENTRY_ORG: goosebumps-collective
+          SENTRY_PROJECT_ID: '4511355794227200'
+          SENTRY_RELEASE: ${{ steps.deployment-ref.outputs.ref }}
+          SST_APP: gbfm
+          SST_STAGE: prod
+        run: bun run apps/vps/scripts/verify-production-deployment.ts
