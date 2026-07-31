@@ -1,6 +1,5 @@
 import { FolderOpen, Music, Trash2 } from 'lucide-react'
 import { Button } from './button'
-import { Card, CardContent, CardHeader, CardTitle } from './card'
 
 interface AudioFileCardProps {
   fileName?: string
@@ -22,42 +21,37 @@ export function AudioFileCard({
   const displaySize = fileSize ? `${(fileSize / (1024 * 1024)).toFixed(2)} MB` : ''
 
   return (
-    <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
-      <CardHeader>
-        <CardTitle className='flex items-center text-gb-pastel-green-1'>
-          <Music className='w-5 h-5 mr-2' />
-          Audio File
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className='flex items-center justify-between p-3 rounded-sm bg-gb-bg'>
-          <div className='flex items-center min-w-0 space-x-3'>
-            <Music className='shrink-0 w-6 h-6 text-gb-highlight' />
-            <div className='min-w-0'>
-              <p className='font-medium leading-tight text-gb-pastel-green-1'>{displayName}</p>
-              {displaySize && <p className='text-xs text-muted-foreground'>{displaySize}</p>}
-            </div>
-          </div>
-          <div className='flex items-center gap-1 shrink-0'>
-            {onPickFromS3 && (
-              <Button
-                variant='ghost'
-                size='sm'
-                onClick={onPickFromS3}
-                className='text-gb-pastel-green-1 hover:text-gb-highlight'>
-                <FolderOpen className='w-4 h-4' />
-              </Button>
-            )}
-            <Button
-              variant='ghost'
-              size='sm'
-              onClick={onRemove}
-              className='text-red-400 hover:text-red-300'>
-              <Trash2 className='w-4 h-4' />
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <div className='flex items-center gap-3 border border-border bg-card px-3 py-2'>
+      <Music className='size-4 shrink-0 text-highlight' />
+
+      <div className='min-w-0 flex-1'>
+        <p className='truncate text-sm leading-tight text-foreground'>{displayName}</p>
+      </div>
+
+      {displaySize && (
+        <span className='shrink-0 text-xs tabular-nums text-muted-foreground'>{displaySize}</span>
+      )}
+
+      <div className='flex shrink-0 items-center'>
+        {onPickFromS3 && (
+          <Button
+            variant='ghost'
+            size='sm'
+            onClick={onPickFromS3}
+            aria-label='Pick from library'
+            className='size-7 p-0 text-muted-foreground hover:text-highlight'>
+            <FolderOpen className='size-4' />
+          </Button>
+        )}
+        <Button
+          variant='ghost'
+          size='sm'
+          onClick={onRemove}
+          aria-label='Remove file'
+          className='size-7 p-0 text-muted-foreground hover:text-destructive'>
+          <Trash2 className='size-4' />
+        </Button>
+      </div>
+    </div>
   )
 }
