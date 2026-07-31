@@ -1,0 +1,29 @@
+# Design audit — 2026-08-01 (late night pass)
+
+Quick sweep of the nav overlay + shows browser while fixing bugs live. Not exhaustive — flagging what stood out for review, not redesigning at 2am.
+
+## Fixed tonight
+
+- **Menu close button misaligned with title.** `SheetContent`'s default close button is absolutely positioned against the whole sheet, not the custom header row StationNav renders — broke visibly once the header height changed. Added a `showClose` prop to the shared `Sheet` primitive (`packages/ui/src/components/sheet.tsx`) so StationNav can render its own header-scoped close button instead of fighting the default one's positioning.
+- **"Home" duplicated in the menu.** Bottom tab bar (mobile) already has Home/Shows/Editorial; the overlay's "Browse" section repeated Home. Dropped Home from `useNavSections`' browse filter — Shows/Editorial stay since desktop has no other way to reach them.
+- **Icon misalignment in Follow section** (RSS vs YouTube rows) — icons weren't in a consistent fixed-size box, so a taller/wider brand SVG (YouTube) sat off-baseline from the lucide RSS icon. Wrapped both in a shared `h-5 w-5` centered box in `NavItemLink`.
+- **Ugly native scrollbar in menu sheet.** The `scrollbar-hide` utility was defined in `scrollbar.css` but never actually compiled — `main.css` imported it as `@import url(scrollbar.css)` *before* `@import 'tailwindcss'`, and Tailwind v4's `@utility` directive needs to be registered after the Tailwind import to be picked up by the engine. Also had to fix the import path (`./scrollbar.css`) since dropping `url()` switches it to module resolution. Confirmed fixed via computed style check (`scrollbar-width: none`).
+- **Removed the "Now playing" mini-player from the menu panel.** Redundant with the desktop chrome's now-playing chip and the mobile mini-player; added clutter without adding function. Deleted `NowPlayingMini.tsx` since nothing else referenced it.
+- **Episode/show lists firing a sequential API call per ~5 items.** `DEFAULT_PAGE_SIZE = 5` (`http-pagination.ts`) is a fine default for large editorial cards, but the shows/episode lists render as compact one-line text rows — 5 rows barely fills a screen, so the intersection-observer `LoadMoreTrigger` was re-firing almost immediately on load, causing a visible cascade of network requests. Bumped `EpisodeGrid` and `ShowsBrowser` to explicit `limit: 50` (matches what `StationList` in the nav already uses). Didn't touch the shared default — other consumers (editorial, mixes) may be intentionally tuned smaller.
+
+## Flagged, not fixed — for review
+
+1. **Shows browse page: right rail is a bare text list with zero context.** ([screenshot ref: shows?show=gbfm]) Each show is just a plain link (`gb#66`, `gb#65 - ambient tape`, ...) with a date on the far right — no artwork, no genre/tag, no duration, nothing to visually anchor scanning 25+ rows. Compare to the station switcher in the menu (`StationList.tsx`), which at least has a 40px thumbnail + host name. Worth deciding: is this list meant to be dense/utility (like a file browser), or should it borrow the same visual treatment as `EpisodeRow` used elsewhere? Recent commits (`text-forward episode rows`, `richer episode rows`) suggest this exact tension is already being worked through — may be intentional info density for now, but flagged since it was called out as "hard to browse."
+
+1a. **`EpisodeRow` (the middle-column episode list) called out directly as "doesn't quite feel right yet":**
+   - Play-toggle icon on every single row reads as visual noise at list density — a hover-reveal or a single row-level affordance (click title/row to play) might read cleaner than a persistent icon-per-row, especially once rows are 25+ deep.
+   - Date pinned hard-right (`text-[11px] tracking-widest text-muted-foreground`, `shrink-0`) creates a wide gap between title and date on anything but the narrowest screens — "far to the right of a list item is hard to read and lowkey useless" was the direct note. Options worth comparing: move date inline right after title (de-emphasized), drop it from the row entirely and surface it on hover/detail view only, or right-align it much closer to content (cap row max-width instead of letting it stretch full-bleed).
+   - Row overall reads too wide / stretched — worth trying a max-width constraint on the row itself rather than letting `flex-1` on the title push everything else to the edges of whatever column width it's given.
+   - This needs actual side-by-side iteration in daylight, not a blind swap — a few concrete layout variants (icon-on-hover vs no-icon vs icon-on-active-only; date-inline vs date-dropped vs date-on-hover) should be mocked and compared against real episode data (long titles, missing creators, etc.) before picking one.
+2. **`ShowMetaBlock` / left rail only shows on desktop when a show is selected** — worth checking what a first-time visitor sees on mobile before selecting anything (empty middle pane says "Select a show to browse its mixes" with no visual affordance pointing at the switcher rail above it).
+3. **No breakpoint-aware page size strategy.** The `limit: 50` bump above is a blunt fix. If show/episode counts grow meaningfully, consider sizing the initial fetch off viewport (e.g. `lg:` gets more since 3-col layout shows more real estate) rather than a flat number everywhere.
+4. **Sheet primitive's default close button positioning is fragile by design** — it assumes a roughly-fixed-height header. Any future custom `SheetHeader` replacement (like StationNav's) needs to either use `showClose={false}` + roll its own, or the shared header component. Worth a one-line comment in `sheet.tsx` so the next person doesn't rediscover this the hard way.
+
+## Not reviewed tonight (out of scope for this pass)
+
+- Editorial pages, tweet feed, admin surfaces, mobile bottom-sheet variant of the shows browser, dark/light theme parity.
