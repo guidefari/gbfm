@@ -23,6 +23,7 @@ const SENTRY_SPAN_FIELDS = [
   'db.query',
   'db.query.text'
 ] as const
+const SENTRY_PAGE_SIZE = 100
 
 type LiveVerificationConfig = {
   readonly awsRegion: string
@@ -41,8 +42,26 @@ const dependencyFailure = (
   summary: string
 ) => new ProductionVerificationError({ phase, summary })
 
-const safeAwsErrorCode = (standardError: string) =>
+export const safeAwsErrorCode = (standardError: string) =>
   /An error occurred \(([A-Za-z0-9._-]+)\)/.exec(standardError)?.[1]
+
+export const sentrySpanResponseIsTruncated = (response: Response, body: unknown) => {
+  const nextPageHasResults = response.headers
+    .get('link')
+    ?.split(',')
+    .some(
+      (part) =>
+        part.includes('rel="next"') &&
+        (part.includes('results="true"') || !part.includes('results='))
+    )
+  const reachedPageLimit =
+    typeof body === 'object' &&
+    body !== null &&
+    'data' in body &&
+    Array.isArray(body.data) &&
+    body.data.length >= SENTRY_PAGE_SIZE
+  return nextPageHasResults === true || reachedPageLimit
+}
 
 class SafeAwsCliError extends Error {
   readonly code: string | undefined
@@ -172,7 +191,7 @@ export const makeProductionVerificationLive = (
       url.searchParams.set('project', config.sentryProjectId)
       url.searchParams.set('environment', environment)
       url.searchParams.set('statsPeriod', '1h')
-      url.searchParams.set('per_page', '100')
+      url.searchParams.set('per_page', String(SENTRY_PAGE_SIZE))
       url.searchParams.set('query', `trace:${traceId} release:${release} span.op:${operation}`)
       for (const field of SENTRY_SPAN_FIELDS) url.searchParams.append('field', field)
 
@@ -183,16 +202,25 @@ export const makeProductionVerificationLive = (
         }
       })
       return fetchJson(request, 'sentry-ingestion').pipe(
-        Effect.flatMap(({ body, response }) =>
-          response.ok
-            ? Effect.succeed(body)
-            : Effect.fail(
-                dependencyFailure(
-                  'sentry-ingestion',
-                  `Sentry spans request returned HTTP ${response.status}`
-                )
+        Effect.flatMap(({ body, response }) => {
+          if (!response.ok) {
+            return Effect.fail(
+              dependencyFailure(
+                'sentry-ingestion',
+                `Sentry spans request returned HTTP ${response.status}`
               )
-        )
+            )
+          }
+          if (sentrySpanResponseIsTruncated(response, body)) {
+            return Effect.fail(
+              dependencyFailure(
+                'sentry-ingestion',
+                `Sentry span query reached its ${SENTRY_PAGE_SIZE}-span page limit`
+              )
+            )
+          }
+          return Effect.succeed(body)
+        })
       )
     },
     wait: (milliseconds) => Effect.sleep(milliseconds)

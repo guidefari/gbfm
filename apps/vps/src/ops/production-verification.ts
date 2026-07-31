@@ -74,6 +74,7 @@ const SentrySpansResponse = Schema.Struct({
 const SAFE_DATABASE_OPERATION = /^(?:SELECT|INSERT|UPDATE|DELETE|QUERY)$/
 const SAFE_DATABASE_COLLECTION = /^(?:unknown|[A-Za-z_][\w$]*)$/
 const SAFE_DATABASE_SUMMARY = /^(?:SELECT|INSERT|UPDATE|DELETE|QUERY)(?: [A-Za-z_][\w$]*)?$/
+const REQUIRED_STABLE_SENTRY_POLLS = 3
 
 type VerificationPhase =
   | 'configuration'
@@ -433,18 +434,44 @@ const spanHasSafeDatabaseData = (span: typeof SentrySpan.Type) =>
 const validateDatabaseSpans = (
   spans: ReadonlyArray<typeof SentrySpan.Type>,
   config: ProductionVerificationConfig
-): Effect.Effect<void, ProductionVerificationError> => {
+): ProductionVerificationError | undefined => {
   if (!spans.every((span) => spanHasExpectedCorrelation(span, config))) {
-    return fail(
-      'sentry-correlation',
-      'Sentry returned a database span with missing or mismatched trace correlation'
-    )
+    return new ProductionVerificationError({
+      phase: 'sentry-correlation',
+      summary: 'Sentry returned a database span with missing or mismatched trace correlation'
+    })
   }
   if (!spans.every(spanHasSafeDatabaseData)) {
-    return fail('sentry-privacy', 'Sentry returned an automatic or privacy-unsafe database span')
+    return new ProductionVerificationError({
+      phase: 'sentry-privacy',
+      summary: 'Sentry returned an automatic or privacy-unsafe database span'
+    })
   }
-  return Effect.void
 }
+
+const databaseSpanFingerprint = (spans: ReadonlyArray<typeof SentrySpan.Type>) =>
+  JSON.stringify(
+    [...spans]
+      .sort((left, right) => left.id.localeCompare(right.id))
+      .map((span) => ({
+        id: span.id,
+        parentSpan: span.parent_span,
+        operation: span['span.op'],
+        description: span.description,
+        transaction: span.transaction,
+        trace: span.trace,
+        release: span.release,
+        environment: span.environment,
+        databaseSystem: span['db.system.name'],
+        databaseOperation: span['db.operation.name'],
+        databaseCollection: span['db.collection.name'],
+        databaseSummary: span['db.query.summary'],
+        instrumentation: span['gbfm.db.instrumentation'],
+        statement: span['db.statement'],
+        query: span['db.query'],
+        queryText: span['db.query.text']
+      }))
+  )
 
 const queryDatabaseSpans = (
   config: ProductionVerificationConfig,
@@ -476,10 +503,7 @@ const waitForDatabaseSpans = (
     for (let attempt = 1; attempt <= config.sentry.attempts; attempt += 1) {
       const spans = yield* queryDatabaseSpans(config, 'sentry-ingestion')
 
-      if (spans.length > 0) {
-        yield* validateDatabaseSpans(spans, config)
-        return
-      }
+      if (spans.length > 0) return
 
       if (attempt < config.sentry.attempts) yield* port.wait(config.sentry.intervalMs)
     }
@@ -494,15 +518,41 @@ const verifySettledDatabaseSpans = (
   config: ProductionVerificationConfig
 ): Effect.Effect<number, ProductionVerificationError, ProductionVerificationPort> =>
   Effect.gen(function* () {
-    const spans = yield* queryDatabaseSpans(config, 'sentry-privacy')
-    if (spans.length === 0) {
-      return yield* fail(
-        'sentry-ingestion',
-        'Database spans disappeared during the Sentry settlement interval'
-      )
+    const port = yield* ProductionVerificationPort
+    let stablePolls = 0
+    let previousFingerprint: string | undefined
+    let lastViolation: ProductionVerificationError | undefined
+
+    for (let attempt = 1; attempt <= config.sentry.attempts; attempt += 1) {
+      const spans = yield* queryDatabaseSpans(config, 'sentry-privacy')
+      const violation =
+        spans.length === 0
+          ? new ProductionVerificationError({
+              phase: 'sentry-ingestion',
+              summary: 'Database spans disappeared during Sentry ingestion settlement'
+            })
+          : validateDatabaseSpans(spans, config)
+
+      if (violation === undefined) {
+        const fingerprint = databaseSpanFingerprint(spans)
+        stablePolls = fingerprint === previousFingerprint ? stablePolls + 1 : 1
+        previousFingerprint = fingerprint
+        lastViolation = undefined
+        if (stablePolls >= REQUIRED_STABLE_SENTRY_POLLS) return spans.length
+      } else {
+        stablePolls = 0
+        previousFingerprint = undefined
+        lastViolation = violation
+      }
+
+      if (attempt < config.sentry.attempts) yield* port.wait(config.sentry.intervalMs)
     }
-    yield* validateDatabaseSpans(spans, config)
-    return spans.length
+
+    if (lastViolation !== undefined) return yield* Effect.fail(lastViolation)
+    return yield* fail(
+      'sentry-ingestion',
+      `Database spans did not converge after ${config.sentry.attempts} settlement attempts`
+    )
   })
 
 const verifyNoAutomaticDatabaseSpans = (
@@ -548,7 +598,6 @@ export const verifyProductionDeployment = (
     const healthStatus = yield* verifyHealthProbe(config.baseUrl)
     const profileStatus = yield* verifyProfileProbe(config)
     yield* waitForDatabaseSpans(config)
-    yield* port.wait(config.sentry.intervalMs)
     const databaseSpanCount = yield* verifySettledDatabaseSpans(config)
     yield* verifyNoAutomaticDatabaseSpans(config)
 

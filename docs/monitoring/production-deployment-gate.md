@@ -38,7 +38,9 @@ as `AccessDeniedException`.
 ## Timing
 
 ECS stability is polled for up to 10 minutes. Sentry ingestion is polled for up
-to 5 minutes, followed by a settlement interval that revalidates the complete
-indexed span set before the unsanitized database-span invariant is checked. An
-18-minute internal timeout preserves the failure summary before the workflow
-step's 20-minute outer timeout.
+to 5 minutes, followed by bounded settlement polling. The gate requires three
+identical, fully valid span snapshots before the unsanitized database-span
+invariant is checked. A response that reaches Sentry's 100-span page boundary
+fails closed instead of validating a partial result. An 18-minute internal
+timeout preserves the failure summary before the workflow step's 20-minute
+outer timeout.

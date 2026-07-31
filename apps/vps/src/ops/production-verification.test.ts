@@ -23,7 +23,7 @@ const config: ProductionVerificationConfig = {
   traceId,
   parentSpanId,
   ecs: { attempts: 2, intervalMs: 1 },
-  sentry: { attempts: 2, intervalMs: 1 }
+  sentry: { attempts: 4, intervalMs: 1 }
 }
 
 const resources = {
@@ -290,6 +290,29 @@ describe('verifyProductionDeployment', () => {
     ).rejects.toMatchObject({
       phase: 'sentry-privacy',
       summary: expect.stringContaining('automatic or privacy-unsafe')
+    })
+  })
+
+  test('waits for custom span attributes to finish indexing before validation', async () => {
+    const indexingSpan = {
+      ...databaseSpan,
+      'gbfm.db.instrumentation': null
+    }
+    const testLayer = makeTestLayer({
+      expectedSpanResponses: [
+        { data: [indexingSpan] },
+        { data: [indexingSpan] },
+        { data: [databaseSpan] },
+        { data: [databaseSpan] },
+        { data: [databaseSpan] }
+      ]
+    })
+
+    await expect(
+      Effect.runPromise(verifyProductionDeployment(config).pipe(Effect.provide(testLayer.layer)))
+    ).resolves.toMatchObject({
+      databaseSpanCount: 1,
+      traceId
     })
   })
 
