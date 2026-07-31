@@ -95,9 +95,12 @@ export function ShowMetadataManager({ show }: ShowMetadataManagerProps) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant='outline' size='sm'>
-          <Settings2 className='w-4 h-4 mr-1.5' />
-          Manage
+        <Button
+          variant='ghost'
+          size='sm'
+          className='h-auto rounded-none border-0 bg-transparent p-0 font-mono text-xs text-muted-foreground hover:bg-transparent hover:text-highlight'>
+          <Settings2 className='w-3.5 h-3.5 mr-1' />
+          manage
         </Button>
       </DialogTrigger>
       <DialogContent className='max-w-2xl'>

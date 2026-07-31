@@ -12,7 +12,9 @@ interface ShowsBrowserProps {
 }
 
 export function ShowsBrowser({ selectedShow, onSelectShow }: ShowsBrowserProps) {
-  const { data, isPending, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useAllShows()
+  const { data, isPending, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useAllShows({
+    limit: 50
+  })
 
   if (isPending && !selectedShow) {
     return <ShowsSkeleton />
@@ -29,30 +31,10 @@ export function ShowsBrowser({ selectedShow, onSelectShow }: ShowsBrowserProps) 
   }
 
   return (
-    <div className='grid grid-cols-1 gap-6 lg:grid-cols-[300px_minmax(0,1fr)] lg:gap-8'>
+    <div className='grid grid-cols-1 gap-6 lg:grid-cols-[220px_minmax(0,1fr)_240px] lg:gap-10'>
       <aside className='hidden lg:block'>
-        <div className='no-scrollbar sticky top-4 max-h-[calc(100dvh-8rem)] overflow-y-auto pr-1'>
-          {selectedShow && (
-            <>
-              <ShowMetaBlock show={selectedShow} />
-              <div className='my-4 border-t border-border/40' />
-            </>
-          )}
-          <nav aria-label='Shows' className='space-y-1'>
-            {data.map((show) => (
-              <ShowListItem
-                key={show.id}
-                show={show}
-                isSelected={selectedShow?.id === show.id}
-                onSelect={() => onSelectShow(show.slug)}
-              />
-            ))}
-            <LoadMoreTrigger
-              onLoadMore={fetchNextPage}
-              hasNextPage={hasNextPage}
-              isFetchingNextPage={isFetchingNextPage}
-            />
-          </nav>
+        <div className='no-scrollbar sticky top-4 max-h-[calc(100dvh-8rem)] overflow-y-auto'>
+          {selectedShow && <ShowMetaBlock show={selectedShow} />}
         </div>
       </aside>
 
@@ -79,6 +61,26 @@ export function ShowsBrowser({ selectedShow, onSelectShow }: ShowsBrowserProps) 
           </div>
         )}
       </main>
+
+      <aside className='hidden lg:block'>
+        <div className='no-scrollbar sticky top-4 max-h-[calc(100dvh-8rem)] overflow-y-auto pl-1'>
+          <nav aria-label='Shows' className='space-y-0.5 font-mono text-sm'>
+            {data.map((show) => (
+              <ShowListItem
+                key={show.id}
+                show={show}
+                isSelected={selectedShow?.id === show.id}
+                onSelect={() => onSelectShow(show.slug)}
+              />
+            ))}
+            <LoadMoreTrigger
+              onLoadMore={fetchNextPage}
+              hasNextPage={hasNextPage}
+              isFetchingNextPage={isFetchingNextPage}
+            />
+          </nav>
+        </div>
+      </aside>
     </div>
   )
 }
