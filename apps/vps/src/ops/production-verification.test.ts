@@ -258,9 +258,11 @@ describe('verifyProductionDeployment', () => {
               : [
                   {
                     ...service,
-                    deployments: service.deployments.map((deployment, index) =>
-                      index === 1 ? { ...deployment, failedTasks: 2 } : deployment
-                    )
+                    deployments: service.deployments
+                      .map((deployment, index) =>
+                        index === 1 ? { ...deployment, failedTasks: 2 } : deployment
+                      )
+                      .toReversed()
                   }
                 ]
         },

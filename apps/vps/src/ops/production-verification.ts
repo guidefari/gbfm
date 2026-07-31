@@ -305,7 +305,7 @@ const waitForStableEcsService = (
         return yield* fail('ecs-rollout', 'AWS returned no ECS service')
       }
 
-      const deployment = service.deployments[0]
+      const deployment = service.deployments.find((candidate) => candidate.status === 'PRIMARY')
       const failedTasks = deployment?.failedTasks ?? 0
 
       if (failedTasks > 0) {
