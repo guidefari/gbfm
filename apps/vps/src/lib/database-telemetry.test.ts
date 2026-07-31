@@ -24,6 +24,7 @@ describe('sanitizeDatabaseSpan', () => {
       description: 'select "audio"."id" from "audio" where "creatorId" = $1',
       data: {
         'db.system': 'postgresql',
+        'gbfm.db.instrumentation': 'manual',
         'db.statement': 'select "audio"."id" from "audio" where "creatorId" = $1',
         'db.query.text': 'select "audio"."id" from "audio" where "creatorId" = $1',
         'db.query.parameters': 'secret-user-id',
@@ -38,6 +39,7 @@ describe('sanitizeDatabaseSpan', () => {
       description: 'SELECT audio',
       data: {
         'db.system': 'postgresql',
+        'gbfm.db.instrumentation': 'manual',
         'server.address': 'database.internal',
         'sentry.op': 'db.query',
         'db.system.name': 'postgresql',

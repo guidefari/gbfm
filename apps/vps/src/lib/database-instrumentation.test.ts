@@ -35,6 +35,7 @@ describe('instrumentDatabaseClient', () => {
         name: 'SELECT audio',
         op: 'db.query',
         attributes: {
+          'gbfm.db.instrumentation': 'manual',
           'db.system.name': 'postgresql',
           'db.operation.name': 'SELECT',
           'db.collection.name': 'audio',
@@ -117,6 +118,7 @@ describe('instrumentDatabaseClient', () => {
         finishedRequestSpan?.spanContext().spanId
       )
       expect(databaseSpan?.attributes).toMatchObject({
+        'gbfm.db.instrumentation': 'manual',
         'sentry.op': 'db.query',
         'db.system.name': 'postgresql',
         'db.operation.name': 'SELECT',

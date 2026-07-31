@@ -103,6 +103,7 @@ export function instrumentDatabaseClient<T extends QueryableClient>(
         name: summary.description,
         op: 'db.query',
         attributes: {
+          'gbfm.db.instrumentation': 'manual',
           'db.system.name': 'postgresql',
           'db.operation.name': summary.operation,
           'db.collection.name': summary.table,
