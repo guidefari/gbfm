@@ -11,38 +11,26 @@ export function SelectedShowBar({ show }: SelectedShowBarProps) {
   const hostNames = show.hosts?.map((h) => h.name).join(', ')
 
   return (
-    <div className='flex flex-col lg:flex-row gap-4 lg:gap-6 items-start pt-2 mb-6 pb-6 border-b border-border/40'>
+    <div className='sticky top-4 z-10 flex items-center gap-3 border-b border-border/40 bg-background/95 py-3 backdrop-blur'>
       <img
         src={show.thumbnailUrl || DEFAULT_IMAGE_URL}
         alt={show.title}
-        className='hidden lg:block w-40 h-40 object-cover border rounded-sm border-border bg-background shrink-0'
+        className='size-10 shrink-0 rounded-sm border border-border bg-background object-cover'
       />
-      <div className='flex-1 min-w-0 space-y-2 sm:space-y-3'>
-        <h2 className='text-xl sm:text-3xl font-black tracking-tight mt-0'>{show.title}</h2>
+      <div className='min-w-0 flex-1'>
+        <h2 className='truncate text-sm font-black tracking-tight text-foreground'>{show.title}</h2>
         {hostNames && (
-          <Link
-            to='/shows/$showSlug'
-            params={{ showSlug: show.slug }}
-            className='block text-sm text-muted-foreground hover:text-foreground transition-colors'>
-            Hosted by {hostNames}
-          </Link>
+          <p className='truncate text-xs text-muted-foreground'>Hosted by {hostNames}</p>
         )}
-        {show.description && (
-          <p className='hidden sm:block text-sm text-foreground/70 line-clamp-4'>
-            {show.description}
-          </p>
-        )}
-        <div className='flex flex-wrap items-center gap-3 pt-1'>
-          <div className='w-full sm:w-auto'>
-            <SubscribeButton showId={show.id} showTitle={show.title} />
-          </div>
-          <Link
-            to='/shows/$showSlug'
-            params={{ showSlug: show.slug }}
-            className='text-sm font-medium text-primary hover:opacity-80'>
-            View show page
-          </Link>
-        </div>
+      </div>
+      <div className='flex shrink-0 items-center gap-3'>
+        <SubscribeButton showId={show.id} showTitle={show.title} />
+        <Link
+          to='/shows/$showSlug'
+          params={{ showSlug: show.slug }}
+          className='hidden text-sm font-medium text-primary hover:opacity-80 sm:inline'>
+          View show page
+        </Link>
       </div>
     </div>
   )
