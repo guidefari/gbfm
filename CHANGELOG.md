@@ -1,3 +1,31 @@
+# [2.80.0](https://github.com/guidefari/gbfm/compare/v2.79.0...v2.80.0) (2026-08-01)
+
+
+### Bug Fixes
+
+* test ([d6fba22](https://github.com/guidefari/gbfm/commit/d6fba22cc942fb6b084f740a1d9751710a617e45))
+* **vps:** exclude replies from prev/next and random tweet nav ([9d378d2](https://github.com/guidefari/gbfm/commit/9d378d24c465e6519d37e723bc11a99e4556c32e))
+* **www:** show matched artist/track in tweet search results ([737cd61](https://github.com/guidefari/gbfm/commit/737cd616ad90da7c4f688ba7f998a00768d5ec09))
+
+
+### Features
+
+* support music entity embeds on tweet replies ([65c1928](https://github.com/guidefari/gbfm/commit/65c19281d15abcb6607f192c8288b0a63347272d))
+* tweet ux ([0bdffa9](https://github.com/guidefari/gbfm/commit/0bdffa90c388378667ea2686ceb7fbce81a73932))
+* **vps:** add community reply endpoint + fix missing create-post role gate ([f31c687](https://github.com/guidefari/gbfm/commit/f31c687c35d7eee334eccd820e71e9e104fd862e))
+* **vps:** add direct replies read endpoint ([32641c4](https://github.com/guidefari/gbfm/commit/32641c4929ccfdda87b0a127419ed77d12956b54))
+* **vps:** add full thread read endpoint ([a4d3b85](https://github.com/guidefari/gbfm/commit/a4d3b853414dcc019159bfdf80ae5e01237916d7))
+* **vps:** add quote-tweet backend (quotedPostId) ([26567d1](https://github.com/guidefari/gbfm/commit/26567d1c729efb28444ab8277ab95af6aea561e1))
+* **vps:** add thread fields to posts schema (parentPostId, rootPostId, depth) ([dc2c97b](https://github.com/guidefari/gbfm/commit/dc2c97b11af19a9b56e38256b5c2c3779d34b3bf))
+* **vps:** exclude replies from tweet feed, add createMicroPostReply ([47867bf](https://github.com/guidefari/gbfm/commit/47867bf301ec611db72058743d9a6e44f01cbea9))
+* **vps:** make slug optional on generic post create ([6765485](https://github.com/guidefari/gbfm/commit/67654858192e674446af12f2a79adfee39cfd704))
+* **vps:** reject non-replyable and invisible reply parents ([20d2693](https://github.com/guidefari/gbfm/commit/20d269315f13073777c40bb5677c8cc7f0cdfa96))
+* **vps:** strip thread fields from post update payload (defense-in-depth) ([aaba8cd](https://github.com/guidefari/gbfm/commit/aaba8cda9806c976460c0794cd40f80601c8a673))
+* **www:** add flat reply UI to the tweet page ([3a21807](https://github.com/guidefari/gbfm/commit/3a2180713fa9ac321473ef90577dccf0d5c286ab))
+* **www:** add floating compose button on tweet page ([c5a3e87](https://github.com/guidefari/gbfm/commit/c5a3e871df29d57d4adb4cc6a99d97cec86f5fab))
+* **www:** add listen-reminder button to tweet music entity card ([b6d1846](https://github.com/guidefari/gbfm/commit/b6d1846d7a5890446fc81b98985ddd90e7daee58))
+* **www:** quote-tweet UI in both composers and tweet/reply rendering ([a9669d7](https://github.com/guidefari/gbfm/commit/a9669d77e98f9a96b56b07abf707e33b46e86aa7))
+
 # [2.79.0](https://github.com/guidefari/gbfm/compare/v2.78.0...v2.79.0) (2026-08-01)
 
 
