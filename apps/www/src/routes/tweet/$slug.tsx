@@ -11,6 +11,8 @@ import { TweetActionsMenu } from '@/components/TweetActionsMenu'
 import { TweetAuthorRow } from '@/components/TweetAuthorRow'
 import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
 import { TweetNav } from '@/components/TweetNav'
+import { TweetReplyComposer } from '@/components/TweetReplyComposer'
+import { TweetReplyList } from '@/components/TweetReplyList'
 import { useSession } from '@/lib/auth-client'
 import { getApiClient } from '@/lib/api-client'
 import { generateMicroPostSEO, generateSEOMeta } from '@/lib/seo'
@@ -134,6 +136,10 @@ function TweetPostPage() {
           </div>
         )}
       </article>
+      <div className='mt-6 space-y-4'>
+        <TweetReplyComposer parentSlug={slug} />
+        <TweetReplyList parentSlug={slug} />
+      </div>
       <NewTweetFab />
     </div>
   )

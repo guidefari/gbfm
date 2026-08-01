@@ -504,6 +504,48 @@ export function useMicroPostBySlug(slug: string) {
   }
 }
 
+const microPostRepliesQueryKey = (parentSlug: string) => ['micro-post-replies', parentSlug]
+
+export function useMicroPostReplies(parentSlug: string, limit = 20) {
+  return useQuery({
+    queryKey: microPostRepliesQueryKey(parentSlug),
+    queryFn: async () => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.post
+          .getMicroPostReplies({ params: { parentSlug }, query: { limit, offset: 0 } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'post.getMicroPostReplies' })
+            )
+          )
+      )
+    },
+    enabled: Boolean(parentSlug)
+  })
+}
+
+export function useCreateMicroPostReply(parentSlug: string) {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: async (content: string) => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.post
+          .createMicroPostReply({ params: { parentSlug }, payload: { content } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'post.createMicroPostReply' })
+            )
+          )
+      )
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: microPostRepliesQueryKey(parentSlug) })
+    }
+  })
+}
+
 type SpotifyContentType = 'album' | 'track' | 'playlist'
 
 type SpotifyProxyInput<T extends SpotifyContentType> = {
