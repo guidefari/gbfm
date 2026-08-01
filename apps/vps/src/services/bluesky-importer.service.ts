@@ -1,3 +1,4 @@
+import { Context, Effect, Layer } from 'effect'
 import { z } from 'zod'
 
 const musicHosts = new Set([
@@ -42,6 +43,22 @@ export type ImportedRecord = {
 }
 
 export type ImportSkipReason = 'repost' | 'different-author' | 'malformed' | 'not-qualifying'
+
+export type ImportBatchSummary = {
+  readonly discovered: number
+  readonly qualifying: number
+  readonly records: ReadonlyArray<ImportedRecord>
+  readonly skipped: Readonly<Record<ImportSkipReason, number>>
+}
+
+export interface BlueskyImportService {
+  readonly normalizeFeed: (
+    entries: ReadonlyArray<unknown>,
+    expectedAuthorDid: string
+  ) => Effect.Effect<ImportBatchSummary>
+}
+
+export const BlueskyImportService = Context.Service<BlueskyImportService>('BlueskyImportService')
 
 export type NormalizedBlueskyRecord =
   | { readonly kind: 'import'; readonly record: ImportedRecord }
@@ -169,3 +186,37 @@ export const normalizeBlueskyRecord = (
     }
   }
 }
+
+const emptySkipped = (): Record<ImportSkipReason, number> => ({
+  repost: 0,
+  'different-author': 0,
+  malformed: 0,
+  'not-qualifying': 0
+})
+
+const normalizeFeed = (
+  entries: ReadonlyArray<unknown>,
+  expectedAuthorDid: string
+): Effect.Effect<ImportBatchSummary> =>
+  Effect.forEach(entries, (entry) =>
+    Effect.sync(() => normalizeBlueskyRecord(entry, expectedAuthorDid))
+  ).pipe(
+    Effect.map((results) => {
+      const skipped = emptySkipped()
+      const records: Array<ImportedRecord> = []
+      for (const result of results) {
+        if (result.kind === 'import') records.push(result.record)
+        else skipped[result.reason] += 1
+      }
+      return {
+        discovered: entries.length,
+        qualifying: records.length,
+        records,
+        skipped
+      }
+    })
+  )
+
+export const BlueskyImportServiceLayer = Layer.succeed(BlueskyImportService, {
+  normalizeFeed
+})

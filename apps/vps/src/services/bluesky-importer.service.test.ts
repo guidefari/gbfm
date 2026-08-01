@@ -1,5 +1,10 @@
+import { Effect } from 'effect'
 import { describe, expect, test } from 'vitest'
-import { normalizeBlueskyRecord } from './bluesky-importer.service'
+import {
+  BlueskyImportService,
+  BlueskyImportServiceLayer,
+  normalizeBlueskyRecord
+} from './bluesky-importer.service'
 
 const entry = (overrides: Record<string, unknown> = {}) => ({
   post: {
@@ -50,6 +55,24 @@ describe('normalizeBlueskyRecord', () => {
 
     const result = normalizeBlueskyRecord(input, 'did:plc:author')
     expect(result).toMatchObject({ kind: 'import', record: { candidateUrls: [], tags: ['gbfm'] } })
+  })
+
+  test('summarizes a feed through the Effect service boundary', async () => {
+    const summary = await Effect.runPromise(
+      Effect.gen(function* () {
+        const importer = yield* BlueskyImportService
+        return yield* importer.normalizeFeed(
+          [entry(), { ...entry(), reason: {} }],
+          'did:plc:author'
+        )
+      }).pipe(Effect.provide(BlueskyImportServiceLayer))
+    )
+
+    expect(summary).toMatchObject({
+      discovered: 2,
+      qualifying: 1,
+      skipped: { repost: 1 }
+    })
   })
 
   test('excludes reposts, other authors, and non-music links', () => {
