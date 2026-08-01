@@ -9,6 +9,7 @@ import {
 } from '@gbfm/api/music'
 import {
   CompiledMicroPostResponse,
+  CompiledPostResponse,
   GetMicroPostsResponse,
   MicroPostThreadResponse
 } from '@gbfm/api/post'
@@ -1780,6 +1781,87 @@ describe('GET /api/content/posts/micro/:slug/thread (Slice 7)', () => {
       new Request(`http://localhost/api/content/posts/micro/does-not-exist-${suffix}/thread`)
     )
     expect(res.status).toBe(404)
+  })
+})
+
+describe('PATCH /api/content/posts/:slug thread-field immutability (Slice 8)', () => {
+  it('ignores parentPostId/rootPostId/depth in the request body while still applying legitimate field changes', async () => {
+    const suffix = crypto.randomUUID()
+    const authorId = `patch-immutable-author-${suffix}`
+    const authorToken = `patch-immutable-author-token-${suffix}`
+    const rootSlug = `patch-immutable-root-${suffix}`
+    const replySlug = `patch-immutable-reply-${suffix}`
+
+    await db.insert(user).values({ id: authorId, name: 'Author', email: `${authorId}@example.com` })
+    await db.insert(session).values({
+      id: crypto.randomUUID(),
+      token: authorToken,
+      userId: authorId,
+      expiresAt: new Date(Date.now() + 60_000)
+    })
+
+    const [rootPost] = await db
+      .insert(postsTable)
+      .values({
+        title: null,
+        slug: rootSlug,
+        content: 'Root tweet',
+        type: 'micro',
+        draft: false
+      })
+      .returning()
+    if (!rootPost) throw new Error('Failed to seed root tweet')
+
+    const [reply] = await db
+      .insert(postsTable)
+      .values({
+        title: null,
+        slug: replySlug,
+        content: 'original reply content',
+        type: 'micro',
+        draft: false,
+        parentPostId: rootPost.id,
+        rootPostId: rootPost.id,
+        depth: 1
+      })
+      .returning()
+    if (!reply) throw new Error('Failed to seed reply')
+
+    await db.insert(postCreators).values([
+      { postId: rootPost.id, creatorId: authorId },
+      { postId: reply.id, creatorId: authorId }
+    ])
+
+    try {
+      const res = await webHandler.handler(
+        new Request(`http://localhost/api/content/posts/${replySlug}`, {
+          method: 'PATCH',
+          headers: {
+            authorization: `Bearer ${authorToken}`,
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({
+            content: 'edited content',
+            parentPostId: null,
+            rootPostId: null,
+            depth: 0
+          })
+        })
+      )
+
+      expect(res.status).toBe(200)
+      const body = await decodeResponseBody(CompiledPostResponse, res)
+      expect(body.content).toBe('edited content')
+      expect(body.parentPostId).toBe(rootPost.id)
+      expect(body.rootPostId).toBe(rootPost.id)
+      expect(body.depth).toBe(1)
+    } finally {
+      await db.delete(postCreators).where(eq(postCreators.postId, rootPost.id))
+      await db.delete(postCreators).where(eq(postCreators.postId, reply.id))
+      await db.delete(postsTable).where(eq(postsTable.id, reply.id))
+      await db.delete(postsTable).where(eq(postsTable.id, rootPost.id))
+      await db.delete(user).where(eq(user.id, authorId))
+    }
   })
 })
 

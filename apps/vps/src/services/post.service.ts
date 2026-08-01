@@ -1556,7 +1556,7 @@ const updateEffect = (
   slug: string,
   userId: string,
   userRole: string,
-  data: Partial<InsertPost> & { creatorIds?: string[] },
+  rawData: Partial<InsertPost> & { creatorIds?: string[] },
   mdx: MdxService
 ) =>
   Effect.gen(function* () {
@@ -1580,6 +1580,12 @@ const updateEffect = (
     }
 
     yield* requireCreatorOrAdmin('post', existingPost.id, userId, userRole)
+
+    // Thread structure (parentPostId/rootPostId/depth) must never be
+    // mutable via update, even though InsertPost's type allows it -- the
+    // HTTP schema (UpdatePostInput) already omits these fields, but this
+    // strip is defense-in-depth against a future caller that bypasses it.
+    const { parentPostId: _parentPostId, rootPostId: _rootPostId, depth: _depth, ...data } = rawData
 
     const nextPostData = { ...existingPost, ...data }
     const normalizedNextPostData = normalizePostData(nextPostData, nextPostData.type)
