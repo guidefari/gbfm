@@ -4,6 +4,7 @@ import { Link, useRouter } from '@tanstack/react-router'
 import { ChevronLeft, ChevronRight, Search, Shuffle, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useAdjacentMicroPosts, useMicroPostSearch, useRandomMicroPost } from '@/lib/http'
+import { TweetSearchResultRow } from '@/components/TweetSearchResultRow'
 
 type Props = {
   slug: string
@@ -76,14 +77,15 @@ export function TweetNav({ slug }: Props) {
               <p className='px-3 py-3 text-sm text-muted-foreground'>No matches.</p>
             ) : (
               search.data.map((result) => (
-                <Link
+                <TweetSearchResultRow
                   key={result.id}
-                  to='/tweet/$slug'
-                  params={{ slug: result.slug }}
+                  slug={result.slug}
+                  title={result.title}
+                  content={result.content}
+                  musicEntityType={result.musicEntityType}
+                  musicEntityId={result.musicEntityId}
                   onClick={closeSearch}
-                  className='block truncate border-b border-border/30 px-3 py-2 text-sm last:border-b-0 hover:bg-muted/50'>
-                  {result.title || result.content?.slice(0, 80) || '(untitled)'}
-                </Link>
+                />
               ))
             )}
           </div>
