@@ -1,3 +1,43 @@
+# [2.77.0](https://github.com/guidefari/gbfm/compare/v2.76.7...v2.77.0) (2026-08-01)
+
+
+### Bug Fixes
+
+* **theme:** format generated css so ci passes ([0cfdd3c](https://github.com/guidefari/gbfm/commit/0cfdd3c8f67ebe1aaf6ea49835a0556c1e73d7c9))
+* **theme:** make destructive foreground readable in dark ([5bb5cdd](https://github.com/guidefari/gbfm/commit/5bb5cddd1b1d3ed1e654034d60d2ed45a0dcb3ea))
+* **ui:** animate sheets with tailwindcss-animate ([938d825](https://github.com/guidefari/gbfm/commit/938d82580bb0bd33e72f146eee16b7ff1910d974))
+* **ui:** apply artwork hover ring to wrapper ([246f9f3](https://github.com/guidefari/gbfm/commit/246f9f31f0e670bb5a33f10ca68faf750929a73a))
+* **ui:** declare animation keyframes in ui package ([265fcbe](https://github.com/guidefari/gbfm/commit/265fcbe5b12ceffb9706361309e24b6bb08a285c))
+* **ui:** follow system theme in ladle ([9c68d2c](https://github.com/guidefari/gbfm/commit/9c68d2c6245ffdf070f7b66d4b1db6395946b497))
+* **ui:** match shows skeleton to the real shows layout ([68a3176](https://github.com/guidefari/gbfm/commit/68a3176151eb23be0c66e491062eadc207dedd7b))
+* **ui:** scope sheet close button to custom headers ([6f1f943](https://github.com/guidefari/gbfm/commit/6f1f94397f8b7f0cc6aaf0847915ecff24347159))
+* **ui:** stop play toggle label shifting layout ([64dffd8](https://github.com/guidefari/gbfm/commit/64dffd8ee9004347e21c6571371761aa9a7d242c))
+* **www:** dedupe Home in nav menu, align Follow icons, hide scrollbar ([8cfebcf](https://github.com/guidefari/gbfm/commit/8cfebcfb62a35e6595a7139689c77ef21f30a9d7))
+* **www:** dedupe Radio Shows nav entry, restore history on mix back-link ([1dc2267](https://github.com/guidefari/gbfm/commit/1dc22673b5d972a6dcb43daa6af14b67fa16fdfa))
+* **www:** keep episode play control next to the title ([1bb6c15](https://github.com/guidefari/gbfm/commit/1bb6c15e989a1657fd582c0d1c6102e93ba6d0e5))
+* **www:** scrollbar-hide utility not compiling ([11b4085](https://github.com/guidefari/gbfm/commit/11b408503d34ed07b080f7340c21520d40d746fc))
+* **www:** show loading feedback while a track buffers ([90d3213](https://github.com/guidefari/gbfm/commit/90d32137816ce03c76ee90cbadd129339b227da6))
+* **www:** wire favorite button in fullscreen player ([8f4351e](https://github.com/guidefari/gbfm/commit/8f4351e7b7ca3aaf053f5f8313acb90744a85023))
+
+
+### Features
+
+* **ui:** add Artwork and PlayToggle primitives ([3baff2a](https://github.com/guidefari/gbfm/commit/3baff2a027e5e3a88803797f7df70e75800e1171))
+* **vps:** add episode number backfill script ([2b080b7](https://github.com/guidefari/gbfm/commit/2b080b76f2ee5e718041309e910fe1637d8f5e5d))
+* **www:** desktop top bar and mobile bottom tabs for nav ([7ff13af](https://github.com/guidefari/gbfm/commit/7ff13af63ae66ccab0dd9aa5ed00e637f00bfcb0))
+* **www:** drop desktop mini player for fullscreen playback ([2dd4d16](https://github.com/guidefari/gbfm/commit/2dd4d1665449f6b0663f3cb3539af8302c8c3d45))
+* **www:** drop the every mix feed for browse by show ([7cf96ad](https://github.com/guidefari/gbfm/commit/7cf96ad3baef487a0d2d0364b14055b69eac12c3))
+* **www:** native view transitions on route navigation ([fdaaa04](https://github.com/guidefari/gbfm/commit/fdaaa04e10c065f98eab35a113e4193266041902))
+* **www:** persistent desktop dock with now-playing chip ([dd42319](https://github.com/guidefari/gbfm/commit/dd4231956a9df3977a0babbeea86f0c903542a09))
+* **www:** persistent mini-player tab, thicker progress ticker ([eaf3ec3](https://github.com/guidefari/gbfm/commit/eaf3ec30766d57d2c2f5bf05f714adfa4506ff99))
+* **www:** playback progress ticker in desktop chrome ([40003cf](https://github.com/guidefari/gbfm/commit/40003cf7626d994798834b9ab3601a4b908a3007))
+* **www:** redesign episode rows and show rail for scanability ([2eb03c1](https://github.com/guidefari/gbfm/commit/2eb03c14ca0e2356d3bd1ef2e1641a0702371bd5))
+* **www:** replace floating menu with a station nav ([12edf93](https://github.com/guidefari/gbfm/commit/12edf933c69014dc2a2041f5ec93b5e77d98cd00))
+* **www:** richer episode rows on shows browse ([1cf1910](https://github.com/guidefari/gbfm/commit/1cf19100afc515b34af252637b32f7d06cb0fcd4))
+* **www:** sticky show context bar on browse page ([9f6353a](https://github.com/guidefari/gbfm/commit/9f6353a5d8d7d9abf41adce9174d249c45f2bb27))
+* **www:** text-forward episode rows on shows browse ([518b54f](https://github.com/guidefari/gbfm/commit/518b54f69fc0843b1fa74537473ca12feac1de70))
+* **www:** tighten shows browse layout and match skeletons ([21aa04d](https://github.com/guidefari/gbfm/commit/21aa04d6933aa10da2a38b9d6d89e7f6f9448f8c))
+
 ## [2.76.7](https://github.com/guidefari/gbfm/compare/v2.76.6...v2.76.7) (2026-07-31)
 
 
