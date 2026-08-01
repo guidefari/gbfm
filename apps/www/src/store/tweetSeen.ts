@@ -4,35 +4,69 @@ import { persistedAtom } from './persistedAtom'
 
 const MAX_SEEN = 200
 
-const SeenTweets = Schema.Array(Schema.String)
-
-const { atom: seenTweetsAtom, write } = persistedAtom({
-  key: 'gbfm-tweet-seen.json',
-  schema: SeenTweets,
-  fallback: []
+const TweetBrowseState = Schema.Struct({
+  version: Schema.Literal(1),
+  lastViewed: Schema.NullOr(
+    Schema.Struct({
+      postId: Schema.String,
+      slug: Schema.String,
+      viewedAt: Schema.Number
+    })
+  ),
+  seenSlugs: Schema.Array(Schema.String)
 })
 
-export { seenTweetsAtom }
+export type TweetBrowseState = (typeof TweetBrowseState)['Type']
+export type TweetIdentity = {
+  readonly postId: string
+  readonly slug: string
+}
 
-export const useSeenTweets = (): readonly string[] => useAtomValue(seenTweetsAtom)
+const initialState: TweetBrowseState = {
+  version: 1,
+  lastViewed: null,
+  seenSlugs: []
+}
 
-export const useMarkTweetSeen = () => {
-  const set = useAtomSet(seenTweetsAtom)
-  return (slug: string) =>
+const {
+  atom: tweetBrowseAtom,
+  read,
+  write
+} = persistedAtom({
+  key: 'gbfm-tweet-browse-state.json',
+  schema: TweetBrowseState,
+  fallback: initialState
+})
+
+export { tweetBrowseAtom }
+
+export const readTweetBrowseState = read
+export const useTweetBrowseState = (): TweetBrowseState => useAtomValue(tweetBrowseAtom)
+export const useSeenTweets = (): readonly string[] => useTweetBrowseState().seenSlugs
+export const useResumeTweet = () => useTweetBrowseState().lastViewed
+
+export const useRecordTweetViewed = () => {
+  const set = useAtomSet(tweetBrowseAtom)
+  return (tweet: TweetIdentity) =>
     set((prev) => {
-      if (prev.includes(slug)) return prev
-      const next = [...prev, slug]
-      const capped = next.length > MAX_SEEN ? next.slice(next.length - MAX_SEEN) : next
-      write(capped)
-      return capped
+      const seenSlugs = prev.seenSlugs.includes(tweet.slug)
+        ? prev.seenSlugs
+        : [...prev.seenSlugs, tweet.slug].slice(-MAX_SEEN)
+      const next = {
+        version: 1 as const,
+        lastViewed: { ...tweet, viewedAt: Date.now() },
+        seenSlugs
+      }
+      write(next)
+      return next
     })
 }
 
-export const useResetSeenTweets = () => {
-  const set = useAtomSet(seenTweetsAtom)
+export const useResetTweetBrowse = () => {
+  const set = useAtomSet(tweetBrowseAtom)
   return () =>
     set(() => {
-      write([])
-      return []
+      write(initialState)
+      return initialState
     })
 }

@@ -22,7 +22,7 @@ import { Effect, Option, Schema } from 'effect'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { RuntimeClient } from '@/runtime'
 import { captureException } from '@/services/analytics'
-import { useMarkTweetSeen, useSeenTweets } from '@/store/tweetSeen'
+import { useSeenTweets } from '@/store/tweetSeen'
 import { getApiClient } from './api-client'
 import { useSession } from './auth-client'
 import { createFetcher, getRequestMethod, getRequestUrl, type ApiFailureInput } from './http-client'
@@ -415,7 +415,6 @@ export function useAdjacentMicroPosts(slug: string) {
 export function useRandomMicroPost() {
   const router = useRouter()
   const seen = useSeenTweets()
-  const markSeen = useMarkTweetSeen()
 
   const goToRandom = useCallback(
     async (currentSlug: string) => {
@@ -429,10 +428,9 @@ export function useRandomMicroPost() {
             )
           )
       )
-      markSeen(slug)
       router.navigate({ to: '/tweet/$slug', params: { slug } })
     },
-    [router, seen, markSeen]
+    [router, seen]
   )
 
   return { goToRandom }

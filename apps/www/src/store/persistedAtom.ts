@@ -34,5 +34,5 @@ export const persistedAtom = <S extends Schema.Top & { readonly DecodingServices
 
   const atom = Atom.make<S['Type']>(read()).pipe(Atom.keepAlive)
 
-  return { atom, write }
+  return { atom, read, write }
 }
