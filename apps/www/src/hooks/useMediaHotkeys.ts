@@ -39,17 +39,17 @@ export const useMediaHotkeys = () => {
 
   useHotkey('Space', () => togglePlayPause(), { enabled: hasAudio })
 
-  useHotkey('ArrowLeft', () => playPrevious(), {
+  useHotkey('Alt+ArrowLeft', () => playPrevious(), {
     enabled: canPlayPrevious
   })
 
-  useHotkey('ArrowRight', () => playNext(), {
+  useHotkey('Alt+ArrowRight', () => playNext(), {
     enabled: canPlayNext
   })
 
-  useHotkey('Alt+ArrowLeft', () => jumpBackward(10), { enabled: hasAudio })
+  useHotkey('Shift+ArrowLeft', () => jumpBackward(10), { enabled: hasAudio })
 
-  useHotkey('Alt+ArrowRight', () => jumpForward(10), { enabled: hasAudio })
+  useHotkey('Shift+ArrowRight', () => jumpForward(10), { enabled: hasAudio })
 
   useHotkey('M', () => toggleMute(), { enabled: hasAudio })
 
