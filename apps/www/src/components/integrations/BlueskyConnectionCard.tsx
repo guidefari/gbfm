@@ -30,6 +30,22 @@ export function BlueskyConnectionCard() {
     },
     onError: (error) => captureException(error, { endpoint: 'bluesky.connectBluesky' })
   })
+  const sync = useMutation({
+    mutationFn: async (id: string) => {
+      const client = await getApiClient()
+      return Effect.runPromise(client.bluesky.syncBluesky({ params: { id } }))
+    },
+    onSuccess: (summary) => {
+      queryClient.invalidateQueries({ queryKey: ['integrations', 'bluesky'] })
+      setSyncMessage(
+        `Imported ${summary.created} drafts (${summary.alreadyImported} already imported).`
+      )
+    },
+    onError: (error) => {
+      setSyncMessage(error.message)
+      captureException(error, { endpoint: 'bluesky.syncBluesky' })
+    }
+  })
   const disconnect = useMutation({
     mutationFn: async (id: string) => {
       const client = await getApiClient()
@@ -38,6 +54,7 @@ export function BlueskyConnectionCard() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['integrations', 'bluesky'] }),
     onError: (error) => captureException(error, { endpoint: 'bluesky.disconnectBluesky' })
   })
+  const [syncMessage, setSyncMessage] = useState<string | null>(null)
   const account = accounts.data?.[0]
 
   return (
@@ -66,14 +83,25 @@ export function BlueskyConnectionCard() {
               {account.status === 'active' ? 'Connected' : account.status}
             </span>
           </div>
-          <Button
-            type='button'
-            variant='ghost'
-            size='sm'
-            onClick={() => disconnect.mutate(account.id)}
-            disabled={disconnect.isPending}>
-            {disconnect.isPending ? 'Disconnecting…' : 'Disconnect'}
-          </Button>
+          <div className='flex flex-wrap gap-2'>
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              onClick={() => sync.mutate(account.id)}
+              disabled={sync.isPending}>
+              {sync.isPending ? 'Syncing…' : 'Sync archive'}
+            </Button>
+            <Button
+              type='button'
+              variant='ghost'
+              size='sm'
+              onClick={() => disconnect.mutate(account.id)}
+              disabled={disconnect.isPending}>
+              {disconnect.isPending ? 'Disconnecting…' : 'Disconnect'}
+            </Button>
+          </div>
+          {syncMessage ? <p className='text-xs text-muted-foreground'>{syncMessage}</p> : null}
         </div>
       ) : (
         <form
