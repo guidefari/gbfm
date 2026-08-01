@@ -37,6 +37,7 @@ import { Route as TweetNewRouteImport } from './routes/tweet/new'
 import { Route as TweetLatestRouteImport } from './routes/tweet/latest'
 import { Route as TweetSlugRouteImport } from './routes/tweet/$slug'
 import { Route as TracksTrackIdRouteImport } from './routes/tracks/$trackId'
+import { Route as TagsTagRouteImport } from './routes/tags/$tag'
 import { Route as SpotifyCallbackRouteImport } from './routes/spotify/callback'
 import { Route as ShowsShowSlugRouteImport } from './routes/shows/$showSlug'
 import { Route as ReleasesSlugRouteImport } from './routes/releases/$slug'
@@ -208,6 +209,11 @@ const TracksTrackIdRoute = TracksTrackIdRouteImport.update({
   id: '/$trackId',
   path: '/$trackId',
   getParentRoute: () => TracksRouteRoute,
+} as any)
+const TagsTagRoute = TagsTagRouteImport.update({
+  id: '/tags/$tag',
+  path: '/tags/$tag',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const SpotifyCallbackRoute = SpotifyCallbackRouteImport.update({
   id: '/spotify/callback',
@@ -413,6 +419,7 @@ export interface FileRoutesByFullPath {
   '/releases/$slug': typeof ReleasesSlugRoute
   '/shows/$showSlug': typeof ShowsShowSlugRoute
   '/spotify/callback': typeof SpotifyCallbackRoute
+  '/tags/$tag': typeof TagsTagRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
   '/tweet/$slug': typeof TweetSlugRoute
   '/tweet/latest': typeof TweetLatestRoute
@@ -469,6 +476,7 @@ export interface FileRoutesByTo {
   '/releases/$slug': typeof ReleasesSlugRoute
   '/shows/$showSlug': typeof ShowsShowSlugRoute
   '/spotify/callback': typeof SpotifyCallbackRoute
+  '/tags/$tag': typeof TagsTagRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
   '/tweet/$slug': typeof TweetSlugRoute
   '/tweet/latest': typeof TweetLatestRoute
@@ -531,6 +539,7 @@ export interface FileRoutesById {
   '/releases/$slug': typeof ReleasesSlugRoute
   '/shows/$showSlug': typeof ShowsShowSlugRoute
   '/spotify/callback': typeof SpotifyCallbackRoute
+  '/tags/$tag': typeof TagsTagRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
   '/tweet/$slug': typeof TweetSlugRoute
   '/tweet/latest': typeof TweetLatestRoute
@@ -594,6 +603,7 @@ export interface FileRouteTypes {
     | '/releases/$slug'
     | '/shows/$showSlug'
     | '/spotify/callback'
+    | '/tags/$tag'
     | '/tracks/$trackId'
     | '/tweet/$slug'
     | '/tweet/latest'
@@ -650,6 +660,7 @@ export interface FileRouteTypes {
     | '/releases/$slug'
     | '/shows/$showSlug'
     | '/spotify/callback'
+    | '/tags/$tag'
     | '/tracks/$trackId'
     | '/tweet/$slug'
     | '/tweet/latest'
@@ -711,6 +722,7 @@ export interface FileRouteTypes {
     | '/releases/$slug'
     | '/shows/$showSlug'
     | '/spotify/callback'
+    | '/tags/$tag'
     | '/tracks/$trackId'
     | '/tweet/$slug'
     | '/tweet/latest'
@@ -766,6 +778,7 @@ export interface RootRouteChildren {
   ReleasesSlugRoute: typeof ReleasesSlugRoute
   ShowsShowSlugRoute: typeof ShowsShowSlugRoute
   SpotifyCallbackRoute: typeof SpotifyCallbackRoute
+  TagsTagRoute: typeof TagsTagRoute
   AdminIndexRoute: typeof AdminIndexRoute
   DjsIndexRoute: typeof DjsIndexRoute
   ShowsIndexRoute: typeof ShowsIndexRoute
@@ -969,6 +982,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/tracks/$trackId'
       preLoaderRoute: typeof TracksTrackIdRouteImport
       parentRoute: typeof TracksRouteRoute
+    }
+    '/tags/$tag': {
+      id: '/tags/$tag'
+      path: '/tags/$tag'
+      fullPath: '/tags/$tag'
+      preLoaderRoute: typeof TagsTagRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/spotify/callback': {
       id: '/spotify/callback'
@@ -1322,6 +1342,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReleasesSlugRoute: ReleasesSlugRoute,
   ShowsShowSlugRoute: ShowsShowSlugRoute,
   SpotifyCallbackRoute: SpotifyCallbackRoute,
+  TagsTagRoute: TagsTagRoute,
   AdminIndexRoute: AdminIndexRoute,
   DjsIndexRoute: DjsIndexRoute,
   ShowsIndexRoute: ShowsIndexRoute,

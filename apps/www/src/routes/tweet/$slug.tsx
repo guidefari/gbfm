@@ -1,7 +1,5 @@
-import { Badge } from '@gbfm/ui'
 import { createFileRoute } from '@tanstack/react-router'
 import { Effect } from 'effect'
-import { Tag } from 'lucide-react'
 import { useEffect } from 'react'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { NewTweetFab } from '@/components/NewTweetFab'
@@ -15,6 +13,7 @@ import { TweetParentPreview } from '@/components/TweetParentPreview'
 import { TweetQuoteCard } from '@/components/TweetQuoteCard'
 import { TweetReplyComposer } from '@/components/TweetReplyComposer'
 import { TweetReplyList } from '@/components/TweetReplyList'
+import { TweetTagLinks } from '@/components/TweetTagLinks'
 import { useSession } from '@/lib/auth-client'
 import { getApiClient } from '@/lib/api-client'
 import { generateMicroPostSEO, generateSEOMeta } from '@/lib/seo'
@@ -128,16 +127,8 @@ function TweetPostPage() {
         {post.quotedPostId && <TweetQuoteCard quotedPostId={post.quotedPostId} />}
 
         {post.tags && post.tags.length > 0 && (
-          <div className='flex flex-wrap gap-1.5 pt-1'>
-            {post.tags.map((tag) => (
-              <Badge
-                key={tag}
-                variant='secondary'
-                className='text-[10px] tracking-widest px-2 py-0.5 rounded-sm font-bold bg-muted/50 text-muted-foreground border-none'>
-                <Tag className='w-3 h-3 mr-1 opacity-50' />
-                {tag}
-              </Badge>
-            ))}
+          <div className='pt-1'>
+            <TweetTagLinks tags={post.tags} />
           </div>
         )}
       </article>
