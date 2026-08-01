@@ -1,3 +1,10 @@
+# [2.78.0](https://github.com/guidefari/gbfm/compare/v2.77.0...v2.78.0) (2026-08-01)
+
+
+### Features
+
+* tweets ux ([d595a10](https://github.com/guidefari/gbfm/commit/d595a10e11a07881ec165b7441c94d7fc4901a60))
+
 # [2.77.0](https://github.com/guidefari/gbfm/compare/v2.76.7...v2.77.0) (2026-08-01)
 
 
