@@ -528,6 +528,7 @@ const getAdjacentMicroPostsEffect = (slug: string) =>
     const baseCondition = and(
       eq(postsTable.type, 'micro'),
       eq(postsTable.draft, false),
+      isNull(postsTable.parentPostId),
       ne(postsTable.id, current.id)
     )
 
@@ -579,7 +580,11 @@ const getAdjacentMicroPostsEffect = (slug: string) =>
 
 const getRandomMicroPostEffect = (excludeSlugs: string[]) =>
   Effect.gen(function* () {
-    const baseCondition = and(eq(postsTable.type, 'micro'), eq(postsTable.draft, false))
+    const baseCondition = and(
+      eq(postsTable.type, 'micro'),
+      eq(postsTable.draft, false),
+      isNull(postsTable.parentPostId)
+    )
     const withExclude =
       excludeSlugs.length > 0
         ? and(baseCondition, notInArray(postsTable.slug, excludeSlugs))
