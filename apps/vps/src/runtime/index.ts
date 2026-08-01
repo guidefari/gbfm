@@ -1,6 +1,7 @@
 import { Effect, ManagedRuntime } from 'effect'
 import type { AudioService } from '@/services/audio.service'
 import type { BlueskyAccountService } from '@/services/bluesky-account.service'
+import type { BlueskyArchiveService } from '@/services/bluesky-archive.service'
 import type { ConfigService } from '@/services/config.service'
 import type { EmailService } from '@/services/email.service'
 import type { FavoriteService } from '@/services/favorite.service'
@@ -26,6 +27,7 @@ import { AppLayer } from './services'
 export type AppServices =
   | ConfigService
   | BlueskyAccountService
+  | BlueskyArchiveService
   | LockService
   | DatabaseService
   | EmailService

@@ -8,6 +8,7 @@ export { DatabaseService, DatabaseServiceLayer } from '@/services/database.servi
 import { AudioServiceLayer } from '@/services/audio.service'
 import { ConfigServiceLayer } from '@/services/config.service'
 import { BlueskyAccountServiceLayer } from '@/services/bluesky-account.service'
+import { BlueskyArchiveServiceLayer } from '@/services/bluesky-archive.service'
 import { BlueskyClientLayer } from '@/services/bluesky-client.service'
 import { BlueskyImportServiceLayer } from '@/services/bluesky-importer.service'
 import { LockServiceLayer } from '@/services/lock.service'
@@ -72,7 +73,8 @@ const ServicesLayer = Layer.mergeAll(
   BaseServicesLayer,
   QRCodeServiceLayer.pipe(Layer.provide(BaseServicesLayer)),
   MusicEntityServiceLayer.pipe(Layer.provide(BaseServicesLayer)),
-  BlueskyAccountServiceLayer.pipe(Layer.provide(BaseServicesLayer))
+  BlueskyAccountServiceLayer.pipe(Layer.provide(BaseServicesLayer)),
+  BlueskyArchiveServiceLayer
 )
 
 export const AppLayer = ServicesLayer.pipe(Layer.provide(AppLoggerLive))
