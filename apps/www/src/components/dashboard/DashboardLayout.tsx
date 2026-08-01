@@ -1,5 +1,5 @@
 import { Link, type LinkProps, useLocation } from '@tanstack/react-router'
-import { Home, Mail, Music, Palette, User as UserIcon } from 'lucide-react'
+import { Home, Link2, Mail, Music, Palette, User as UserIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { useSession } from '@/lib/auth-client'
@@ -15,6 +15,7 @@ const tabs: DashboardTab[] = [
   { to: '/dashboard/profile', label: 'Profile', icon: UserIcon },
   { to: '/dashboard/appearance', label: 'Appearance', icon: Palette },
   { to: '/dashboard/player', label: 'Player', icon: Music },
+  { to: '/dashboard/integrations', label: 'Integrations', icon: Link2 },
   { to: '/dashboard/email', label: 'Email', icon: Mail }
 ]
 
