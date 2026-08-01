@@ -33,10 +33,11 @@ import {
   DatabaseError,
   getErrorMessage,
   NotFoundError,
+  ParentPostNotReplyableError,
   type UnauthorizedError,
   ValidationError
 } from '@/errors'
-import { requireCreatorOrAdmin } from '@/lib/authorization'
+import { checkCreatorAuthorship, requireCreatorOrAdmin } from '@/lib/authorization'
 import { MdxService } from '@/lib/mdx'
 import { createPaginationMetadata, type PaginationMetadata } from '@/lib/pagination'
 import { ConfigService } from '@/services/config.service'
@@ -128,7 +129,7 @@ export interface PostService {
     content?: string | null
   }) => Effect.Effect<
     SelectMdxCompiledMicroPost,
-    DatabaseError | NotFoundError | ConflictError | ValidationError
+    DatabaseError | NotFoundError | ConflictError | ValidationError | ParentPostNotReplyableError
   >
   readonly update: (
     slug: string,
@@ -1097,6 +1098,28 @@ const createMicroPostReplyEffect = (
         message: 'Parent post not found',
         resource: 'post',
         id: parentSlug
+      })
+    }
+
+    // Matches getBySlugEffect's public-read visibility policy: a draft is
+    // invisible to non-creators, so replying to one fails the same way an
+    // ordinary read would (NotFoundError), rather than leaking its existence.
+    if (parent.draft) {
+      const isCreator = yield* checkCreatorAuthorship('post', parent.id, actorUserId)
+      if (!isCreator) {
+        return yield* new NotFoundError({
+          message: 'Parent post not found',
+          resource: 'post',
+          id: parentSlug
+        })
+      }
+    }
+
+    if (parent.type !== 'micro') {
+      return yield* new ParentPostNotReplyableError({
+        message: 'Replies can only be created on tweets',
+        parentSlug,
+        parentType: parent.type ?? 'unknown'
       })
     }
 

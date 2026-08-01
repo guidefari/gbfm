@@ -82,6 +82,12 @@ export class ConflictError extends Data.TaggedError('ConflictError')<{
   readonly id?: string
 }> {}
 
+export class ParentPostNotReplyableError extends Data.TaggedError('ParentPostNotReplyableError')<{
+  readonly message: string
+  readonly parentSlug: string
+  readonly parentType: string
+}> {}
+
 export class S3Error extends Data.TaggedError('S3Error')<{
   readonly message: string
   readonly operation: string

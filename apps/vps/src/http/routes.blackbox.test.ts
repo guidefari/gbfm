@@ -1460,6 +1460,101 @@ describe('micro post replies (community permission, Slice 4)', () => {
   })
 })
 
+describe('micro post replies against non-replyable/invisible parents (Slice 5)', () => {
+  it('422s when the parent post is editorial, not a tweet', async () => {
+    const suffix = crypto.randomUUID()
+    const userId = `reply-editorial-parent-${suffix}`
+    const token = `reply-editorial-parent-token-${suffix}`
+    const parentSlug = `editorial-parent-${suffix}`
+
+    await db.insert(user).values({ id: userId, name: 'User', email: `${userId}@example.com` })
+    await db.insert(session).values({
+      id: crypto.randomUUID(),
+      token,
+      userId,
+      expiresAt: new Date(Date.now() + 60_000)
+    })
+    const [parentPost] = await db
+      .insert(postsTable)
+      .values({
+        title: 'An editorial post',
+        slug: parentSlug,
+        content: 'Editorial body',
+        type: 'post',
+        draft: false
+      })
+      .returning()
+    if (!parentPost) throw new Error('Failed to seed editorial parent')
+
+    try {
+      const res = await webHandler.handler(
+        new Request(`http://localhost/api/content/posts/micro/${parentSlug}/replies`, {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${token}`,
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({ content: 'reply to an editorial post' })
+        })
+      )
+      expect(res.status).toBe(422)
+    } finally {
+      await db.delete(postsTable).where(eq(postsTable.id, parentPost.id))
+      await db.delete(user).where(eq(user.id, userId))
+    }
+  })
+
+  it('404s when the parent tweet is a draft the actor cannot see', async () => {
+    const suffix = crypto.randomUUID()
+    const ownerId = `reply-draft-owner-${suffix}`
+    const outsiderId = `reply-draft-outsider-${suffix}`
+    const outsiderToken = `reply-draft-outsider-token-${suffix}`
+    const parentSlug = `draft-parent-${suffix}`
+
+    await db.insert(user).values([
+      { id: ownerId, name: 'Owner', email: `${ownerId}@example.com` },
+      { id: outsiderId, name: 'Outsider', email: `${outsiderId}@example.com` }
+    ])
+    await db.insert(session).values({
+      id: crypto.randomUUID(),
+      token: outsiderToken,
+      userId: outsiderId,
+      expiresAt: new Date(Date.now() + 60_000)
+    })
+    const [parentPost] = await db
+      .insert(postsTable)
+      .values({
+        title: null,
+        slug: parentSlug,
+        content: 'Draft tweet',
+        type: 'micro',
+        draft: true
+      })
+      .returning()
+    if (!parentPost) throw new Error('Failed to seed draft parent')
+    await db.insert(postCreators).values({ postId: parentPost.id, creatorId: ownerId })
+
+    try {
+      const res = await webHandler.handler(
+        new Request(`http://localhost/api/content/posts/micro/${parentSlug}/replies`, {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${outsiderToken}`,
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({ content: 'reply to a hidden draft' })
+        })
+      )
+      expect(res.status).toBe(404)
+    } finally {
+      await db.delete(postCreators).where(eq(postCreators.postId, parentPost.id))
+      await db.delete(postsTable).where(eq(postsTable.id, parentPost.id))
+      await db.delete(user).where(eq(user.id, ownerId))
+      await db.delete(user).where(eq(user.id, outsiderId))
+    }
+  })
+})
+
 describe('content draft management authorization', () => {
   it('keeps draft posts publicly hidden while allowing only their creator and admins to manage them', async () => {
     const suffix = crypto.randomUUID()

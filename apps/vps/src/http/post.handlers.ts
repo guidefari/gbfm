@@ -184,7 +184,8 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
             .pipe(
               Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
               Effect.catchTag('ConflictError', () => new HttpApiError.Conflict()),
-              Effect.catchTag('ValidationError', () => new ValidationHttpError())
+              Effect.catchTag('ValidationError', () => new ValidationHttpError()),
+              Effect.catchTag('ParentPostNotReplyableError', () => new ValidationHttpError())
             )
         )
 
