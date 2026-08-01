@@ -7,6 +7,7 @@ import {
   eq,
   gte,
   inArray,
+  isNull,
   lte,
   ne,
   notInArray,
@@ -120,6 +121,15 @@ export interface PostService {
     data: InsertPost,
     creatorIds: string[]
   ) => Effect.Effect<SelectPost, DatabaseError | ConflictError | ValidationError>
+  readonly createMicroPostReply: (options: {
+    parentSlug: string
+    actorUserId: string
+    title?: string | null
+    content?: string | null
+  }) => Effect.Effect<
+    SelectMdxCompiledMicroPost,
+    DatabaseError | NotFoundError | ConflictError | ValidationError
+  >
   readonly update: (
     slug: string,
     userId: string,
@@ -264,12 +274,18 @@ export const toMicroPost = (
       )
 
 const getAllEffect = (
-  options: { limit: number; offset: number; type?: PostType; tag?: string },
+  options: {
+    limit: number
+    offset: number
+    type?: PostType
+    tag?: string
+    topLevelOnly?: boolean
+  },
   mdx: MdxService,
   actor?: { userId: string; userRole: string }
 ) =>
   Effect.gen(function* () {
-    const { limit, offset, type, tag } = options
+    const { limit, offset, type, tag, topLevelOnly } = options
     const contentCondition =
       type && tag
         ? and(eq(postsTable.type, type), arrayContains(postsTable.tags, [tag]))
@@ -283,7 +299,8 @@ const getAllEffect = (
         ? undefined
         : postIdsForCreator(actor.userId)
       : eq(postsTable.draft, false)
-    const whereCondition = and(visibilityCondition, contentCondition)
+    const replyCondition = topLevelOnly ? isNull(postsTable.parentPostId) : undefined
+    const whereCondition = and(visibilityCondition, contentCondition, replyCondition)
 
     const countResult = yield* Effect.tryPromise({
       try: () =>
@@ -808,7 +825,7 @@ const getMicroPostsEffect = (
   mdx: MdxService
 ) =>
   Effect.gen(function* () {
-    const posts = yield* getAllEffect({ ...options, type: 'micro' }, mdx)
+    const posts = yield* getAllEffect({ ...options, type: 'micro', topLevelOnly: true }, mdx)
     const sentry = yield* SentryService
     const rawData = yield* Effect.forEach(
       posts.data,
@@ -1039,6 +1056,131 @@ const createEffect = (data: InsertPost, creatorIds: string[]) =>
     return result
   })
 
+export const deriveReplyThreadFields = (parent: {
+  id: string
+  rootPostId: string | null
+  depth: number
+}) => ({
+  parentPostId: parent.id,
+  rootPostId: parent.rootPostId ?? parent.id,
+  depth: parent.depth + 1
+})
+
+const generateReplySlug = () =>
+  `reply-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+
+const createMicroPostReplyEffect = (
+  options: {
+    parentSlug: string
+    actorUserId: string
+    title?: string | null
+    content?: string | null
+  },
+  mdx: MdxService
+) =>
+  Effect.gen(function* () {
+    const { parentSlug, actorUserId, title, content } = options
+
+    const parentRecords = yield* Effect.tryPromise({
+      try: () => db.select().from(postsTable).where(eq(postsTable.slug, parentSlug)).limit(1),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch parent post: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'posts'
+        })
+    })
+
+    const parent = parentRecords[0]
+    if (!parent) {
+      return yield* new NotFoundError({
+        message: 'Parent post not found',
+        resource: 'post',
+        id: parentSlug
+      })
+    }
+
+    const threadFields = deriveReplyThreadFields(parent)
+
+    const normalizedData = normalizePostData(
+      { title, content, type: 'micro' as const },
+      'micro' as const
+    )
+    yield* validatePostData(normalizedData)
+
+    const replyData: InsertPost = {
+      ...normalizedData,
+      type: 'micro',
+      slug: generateReplySlug(),
+      ...threadFields
+    }
+
+    const result = yield* Effect.tryPromise({
+      try: () =>
+        db.transaction(async (tx) => {
+          const [newPost] = await tx.insert(postsTable).values(replyData).returning()
+
+          if (!newPost) {
+            throw new Error('Failed to create reply')
+          }
+
+          await tx.insert(postCreators).values({
+            postId: newPost.id,
+            creatorId: actorUserId
+          })
+
+          return newPost
+        }),
+      catch: (error) => {
+        const errorMessage = getErrorMessage(error)
+        if (errorMessage.includes('unique constraint')) {
+          return new ConflictError({
+            message: 'Reply with this slug already exists',
+            resource: 'post'
+          })
+        }
+        if (errorMessage.includes('foreign key constraint')) {
+          return new ConflictError({
+            message: 'You may have entered a non-existent creator id',
+            resource: 'post'
+          })
+        }
+        return new DatabaseError({
+          message: `Failed to create reply: ${errorMessage}`,
+          operation: 'transaction',
+          table: 'posts'
+        })
+      }
+    })
+
+    yield* Effect.annotateCurrentSpan('postId', result.id)
+    yield* Effect.annotateCurrentSpan('parentPostId', threadFields.parentPostId)
+    yield* Effect.annotateCurrentSpan('rootPostId', threadFields.rootPostId)
+    yield* Effect.annotateCurrentSpan('depth', threadFields.depth)
+
+    yield* Effect.logInfo('[Content] Reply created', {
+      postId: result.id,
+      slug: result.slug,
+      parentPostId: threadFields.parentPostId,
+      rootPostId: threadFields.rootPostId,
+      depth: threadFields.depth
+    })
+
+    const compiled = yield* buildPostWithCreators(result, mdx)
+    return yield* toMicroPost(compiled).pipe(
+      Effect.mapError(
+        (error) =>
+          new DatabaseError({
+            message: `Reply was not created as a micro post: ${error.message}`,
+            operation: 'post_type_refinement',
+            table: 'posts'
+          })
+      )
+    )
+  }).pipe(
+    Effect.withSpan('post.createMicroPostReply', { attributes: { parentSlug: options.parentSlug } })
+  )
+
 const updateEffect = (
   slug: string,
   userId: string,
@@ -1164,6 +1306,7 @@ export const PostServiceLayer = Layer.effect(
           Effect.provideService(ConfigService, config),
           Effect.provideService(UploadAssetService, uploadAssetService)
         ),
+      createMicroPostReply: (opts) => createMicroPostReplyEffect(opts, mdx),
       update: (slug, userId, userRole, data) =>
         updateEffect(slug, userId, userRole, data, mdx).pipe(
           Effect.provideService(ConfigService, config),

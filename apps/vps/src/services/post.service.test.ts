@@ -2,7 +2,13 @@ import { Effect } from 'effect'
 import { describe, expect, test } from 'vitest'
 import type { SelectMdxCompiledPost } from '@/db/post.schema'
 import { DatabaseError, ValidationError } from '@/errors'
-import { normalizePostData, toEditorialPost, toMicroPost, validatePostData } from './post.service'
+import {
+  deriveReplyThreadFields,
+  normalizePostData,
+  toEditorialPost,
+  toMicroPost,
+  validatePostData
+} from './post.service'
 
 const basePost: SelectMdxCompiledPost = {
   id: '00000000-0000-0000-0000-000000000000',
@@ -17,6 +23,9 @@ const basePost: SelectMdxCompiledPost = {
   type: 'post',
   musicEntityType: null,
   musicEntityId: null,
+  parentPostId: null,
+  rootPostId: null,
+  depth: 0,
   createdAt: new Date('2026-01-01T00:00:00Z'),
   updatedAt: new Date('2026-01-01T00:00:00Z'),
   compiledContent: '',
@@ -85,6 +94,28 @@ describe('normalizePostData', () => {
 
   test('does not add absent fields while normalizing tweets', async () => {
     expect(normalizePostData({ title: ' ' }, 'micro')).toEqual({ title: null })
+  })
+})
+
+describe('deriveReplyThreadFields', () => {
+  test('derives root and depth from a top-level parent', () => {
+    const parent = { id: 'parent-id', rootPostId: null, depth: 0 }
+
+    expect(deriveReplyThreadFields(parent)).toEqual({
+      parentPostId: 'parent-id',
+      rootPostId: 'parent-id',
+      depth: 1
+    })
+  })
+
+  test('inherits the root and increments depth when replying to a reply', () => {
+    const parent = { id: 'reply-id', rootPostId: 'root-id', depth: 2 }
+
+    expect(deriveReplyThreadFields(parent)).toEqual({
+      parentPostId: 'reply-id',
+      rootPostId: 'root-id',
+      depth: 3
+    })
   })
 })
 
