@@ -11,7 +11,8 @@ import {
   CompiledMicroPostResponse,
   CompiledPostResponse,
   GetMicroPostsResponse,
-  MicroPostThreadResponse
+  MicroPostThreadResponse,
+  PostResponse
 } from '@gbfm/api/post'
 import { SearchResults } from '@gbfm/api/search'
 import { decodeResponseBody } from '@gbfm/api/testing'
@@ -2262,5 +2263,120 @@ describe('site routes (plain HttpRouter, Step 7)', () => {
 
     expect(res.status).toBe(404)
     expect(body).toContain('Mix not found')
+  })
+})
+
+describe('POST /api/content/post server-generated slug (Slice 9)', () => {
+  it('generates a slug server-side when the client omits one', async () => {
+    const suffix = crypto.randomUUID()
+    const userId = `create-no-slug-${suffix}`
+    const token = `create-no-slug-token-${suffix}`
+
+    await db.insert(user).values({
+      id: userId,
+      name: 'Creator',
+      email: `${userId}@example.com`,
+      role: 'creator'
+    })
+    await db.insert(session).values({
+      id: crypto.randomUUID(),
+      token,
+      userId,
+      expiresAt: new Date(Date.now() + 60_000)
+    })
+
+    let createdSlug: string | undefined
+    try {
+      const res = await webHandler.handler(
+        new Request('http://localhost/api/content/post', {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${token}`,
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({
+            title: `No slug supplied ${suffix}`,
+            content: 'created without a client-supplied slug',
+            type: 'post'
+          })
+        })
+      )
+
+      expect(res.status).toBe(200)
+      const body = await decodeResponseBody(PostResponse, res)
+      expect(body.slug.length).toBeGreaterThan(0)
+      createdSlug = body.slug
+
+      const fetchRes = await webHandler.handler(
+        new Request(`http://localhost/api/content/posts/${body.slug}`)
+      )
+      expect(fetchRes.status).toBe(200)
+    } finally {
+      if (createdSlug) {
+        const [createdPost] = await db
+          .select({ id: postsTable.id })
+          .from(postsTable)
+          .where(eq(postsTable.slug, createdSlug))
+          .limit(1)
+        if (createdPost) {
+          await db.delete(postCreators).where(eq(postCreators.postId, createdPost.id))
+        }
+        await db.delete(postsTable).where(eq(postsTable.slug, createdSlug))
+      }
+      await db.delete(user).where(eq(user.id, userId))
+    }
+  })
+
+  it('still accepts a client-supplied slug', async () => {
+    const suffix = crypto.randomUUID()
+    const userId = `create-with-slug-${suffix}`
+    const token = `create-with-slug-token-${suffix}`
+    const slug = `client-supplied-slug-${suffix}`
+
+    await db.insert(user).values({
+      id: userId,
+      name: 'Creator',
+      email: `${userId}@example.com`,
+      role: 'creator'
+    })
+    await db.insert(session).values({
+      id: crypto.randomUUID(),
+      token,
+      userId,
+      expiresAt: new Date(Date.now() + 60_000)
+    })
+
+    try {
+      const res = await webHandler.handler(
+        new Request('http://localhost/api/content/post', {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${token}`,
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({
+            slug,
+            title: `Client slug ${suffix}`,
+            content: 'created with a client-supplied slug',
+            type: 'post'
+          })
+        })
+      )
+
+      expect(res.status).toBe(200)
+      const body = await decodeResponseBody(PostResponse, res)
+      expect(body.slug).toBe(slug)
+    } finally {
+      const [createdPost] = await db
+        .select({ id: postsTable.id })
+        .from(postsTable)
+        .where(eq(postsTable.slug, slug))
+        .limit(1)
+      if (createdPost) {
+        await db.delete(postCreators).where(eq(postCreators.postId, createdPost.id))
+      }
+      await db.delete(postsTable).where(eq(postsTable.slug, slug))
+      await db.delete(user).where(eq(user.id, userId))
+    }
   })
 })

@@ -42,6 +42,7 @@ import { MdxService } from '@/lib/mdx'
 import { createPaginationMetadata, type PaginationMetadata } from '@/lib/pagination'
 import { ConfigService } from '@/services/config.service'
 import { SentryService } from '@/services/sentry.service'
+import { toSlug } from '@/services/to-slug'
 import { markAttachedAssets, UploadAssetService } from '@/services/upload-asset.service'
 
 export interface PostService {
@@ -119,7 +120,7 @@ export interface PostService {
     options: { limit: number; offset: number }
   ) => Effect.Effect<{ data: SelectPost[]; pagination: PaginationMetadata }, DatabaseError>
   readonly create: (
-    data: InsertPost,
+    data: Partial<InsertPost>,
     creatorIds: string[]
   ) => Effect.Effect<SelectPost, DatabaseError | ConflictError | ValidationError>
   readonly createMicroPostReply: (options: {
@@ -1014,15 +1015,27 @@ const getMicroPostBySlugEffect = (slug: string, mdx: MdxService) =>
     })
   )
 
-const createEffect = (data: InsertPost, creatorIds: string[]) =>
+export const generatePostSlug = (title?: string | null, content?: string | null) => {
+  const source = isNonBlankString(title) ? title : isNonBlankString(content) ? content : null
+  return source ? toSlug(source) : toSlug('post')
+}
+
+const createEffect = (data: Partial<InsertPost>, creatorIds: string[]) =>
   Effect.gen(function* () {
     const normalizedData = normalizePostData(data, data.type)
     yield* validatePostData(normalizedData)
 
+    const dataWithSlug: InsertPost = {
+      ...normalizedData,
+      slug: isNonBlankString(normalizedData.slug)
+        ? normalizedData.slug
+        : generatePostSlug(normalizedData.title, normalizedData.content)
+    }
+
     const result = yield* Effect.tryPromise({
       try: () =>
         db.transaction(async (tx) => {
-          const [newPost] = await tx.insert(postsTable).values(normalizedData).returning()
+          const [newPost] = await tx.insert(postsTable).values(dataWithSlug).returning()
 
           if (!newPost) {
             throw new Error('Failed to create post')

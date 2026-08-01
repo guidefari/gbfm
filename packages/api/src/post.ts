@@ -149,7 +149,7 @@ const insertPostFields = {
   title: Schema.optional(Schema.NullOr(Schema.String)),
   description: Schema.optional(Schema.String),
   thumbnailUrl: Schema.optional(Schema.String),
-  slug: Schema.NonEmptyString,
+  slug: Schema.optional(Schema.NonEmptyString),
   content: Schema.optional(Schema.NullOr(Schema.String)),
   draft: Schema.optional(Schema.Boolean),
   tags: Schema.optional(Schema.Array(Schema.String)),

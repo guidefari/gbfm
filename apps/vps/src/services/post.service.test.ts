@@ -4,11 +4,13 @@ import type { SelectMdxCompiledPost } from '@/db/post.schema'
 import { DatabaseError, ValidationError } from '@/errors'
 import {
   deriveReplyThreadFields,
+  generatePostSlug,
   normalizePostData,
   toEditorialPost,
   toMicroPost,
   validatePostData
 } from './post.service'
+import { stripSlugSuffix } from './to-slug'
 
 const basePost: SelectMdxCompiledPost = {
   id: '00000000-0000-0000-0000-000000000000',
@@ -116,6 +118,28 @@ describe('deriveReplyThreadFields', () => {
       rootPostId: 'root-id',
       depth: 3
     })
+  })
+})
+
+describe('generatePostSlug', () => {
+  test('derives the slug from the title when present', () => {
+    expect(stripSlugSuffix(generatePostSlug('Four Tet just dropped', null))).toBe(
+      'four-tet-just-dropped'
+    )
+  })
+
+  test('falls back to content when there is no title', () => {
+    expect(stripSlugSuffix(generatePostSlug(null, 'a body with no title'))).toBe(
+      'a-body-with-no-title'
+    )
+  })
+
+  test('falls back to a generic slug when title and content are both empty', () => {
+    expect(stripSlugSuffix(generatePostSlug(null, null))).toBe('post')
+  })
+
+  test('produces a non-empty slug', () => {
+    expect(generatePostSlug(null, null).length).toBeGreaterThan(0)
   })
 })
 
