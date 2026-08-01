@@ -1,6 +1,16 @@
 import { z } from 'zod'
 import { type InferInsertModel, type InferSelectModel, relations } from 'drizzle-orm'
-import { index, pgEnum, pgTable, primaryKey, text, uuid, varchar } from 'drizzle-orm/pg-core'
+import {
+  type AnyPgColumn,
+  index,
+  integer,
+  pgEnum,
+  pgTable,
+  primaryKey,
+  text,
+  uuid,
+  varchar
+} from 'drizzle-orm/pg-core'
 import { user } from './auth.schema'
 import { defaultContentFields } from './util'
 
@@ -21,13 +31,22 @@ export const postsTable = pgTable(
     content: text(),
     type: postTypeEnum(),
     musicEntityType: text('music_entity_type'),
-    musicEntityId: uuid('music_entity_id')
+    musicEntityId: uuid('music_entity_id'),
+    parentPostId: uuid('parent_post_id').references((): AnyPgColumn => postsTable.id, {
+      onDelete: 'set null'
+    }),
+    rootPostId: uuid('root_post_id').references((): AnyPgColumn => postsTable.id, {
+      onDelete: 'set null'
+    }),
+    depth: integer('depth').notNull().default(0)
   },
   (table) => [
     index('posts_slug_idx').on(table.slug),
     index('posts_music_entity_idx').on(table.musicEntityType, table.musicEntityId),
     index('posts_type_created_idx').on(table.type, table.createdAt),
-    index('posts_tags_gin_idx').using('gin', table.tags)
+    index('posts_tags_gin_idx').using('gin', table.tags),
+    index('posts_parent_created_idx').on(table.parentPostId, table.createdAt),
+    index('posts_root_created_idx').on(table.rootPostId, table.createdAt)
   ]
 )
 

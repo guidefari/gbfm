@@ -37,6 +37,9 @@ export const PostResponse = Schema.Struct({
   type: Schema.NullOr(PostType),
   musicEntityType: Schema.NullOr(Schema.String),
   musicEntityId: Schema.NullOr(Schema.String),
+  parentPostId: Schema.NullOr(Schema.String),
+  rootPostId: Schema.NullOr(Schema.String),
+  depth: Schema.Number,
   createdAt: Schema.String,
   updatedAt: Schema.String
 })
