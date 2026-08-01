@@ -590,7 +590,11 @@ const searchMicroPostsEffect = (
     // Only posts.music_entity_id/music_entity_type and the table names
     // themselves were given explicit snake_case strings.
     const matchCondition = sql`
-      (${postsTable.title} ILIKE ${pattern} OR ${postsTable.content} ILIKE ${pattern})
+      (
+        ${postsTable.title} ILIKE ${pattern}
+        OR ${postsTable.content} ILIKE ${pattern}
+        OR EXISTS (SELECT 1 FROM unnest(${postsTable.tags}) AS tag WHERE tag ILIKE ${pattern})
+      )
       OR (
         ${postsTable.musicEntityType} = 'track' AND EXISTS (
           SELECT 1 FROM music_tracks t
