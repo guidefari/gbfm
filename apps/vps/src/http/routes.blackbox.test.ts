@@ -1470,6 +1470,69 @@ describe('micro post replies (community permission, Slice 4)', () => {
       await db.delete(user).where(eq(user.id, userId))
     }
   })
+
+  it('accepts a music entity attached to a reply, matching top-level tweets (no existence check)', async () => {
+    const suffix = crypto.randomUUID()
+    const userId = `reply-music-entity-${suffix}`
+    const token = `reply-music-entity-token-${suffix}`
+    const parentSlug = `parent-tweet-music-${suffix}`
+    const fakeTrackId = crypto.randomUUID()
+
+    await db.insert(user).values({ id: userId, name: 'User', email: `${userId}@example.com` })
+    await db.insert(session).values({
+      id: crypto.randomUUID(),
+      token,
+      userId,
+      expiresAt: new Date(Date.now() + 60_000)
+    })
+    const [parentPost] = await db
+      .insert(postsTable)
+      .values({
+        title: null,
+        slug: parentSlug,
+        content: 'Original tweet',
+        type: 'micro',
+        draft: false
+      })
+      .returning()
+    if (!parentPost) throw new Error('Failed to seed parent tweet')
+    await db.insert(postCreators).values({ postId: parentPost.id, creatorId: userId })
+
+    let replyId: string | undefined
+
+    try {
+      const res = await webHandler.handler(
+        new Request(`http://localhost/api/content/posts/micro/${parentSlug}/replies`, {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${token}`,
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({
+            content: 'check out this track',
+            musicEntityType: 'track',
+            musicEntityId: fakeTrackId
+          })
+        })
+      )
+      expect(res.status).toBe(200)
+      const body = await decodeResponseBody(CompiledMicroPostResponse, res)
+      replyId = body.id
+      // No existence-check on musicEntityId today for top-level posts
+      // (createEffect relies on the FK constraint alone), so a reply to a
+      // non-existent track id succeeds the same way, matching that behavior.
+      expect(body.musicEntityType).toBe('track')
+      expect(body.musicEntityId).toBe(fakeTrackId)
+    } finally {
+      if (replyId) {
+        await db.delete(postCreators).where(eq(postCreators.postId, replyId))
+      }
+      await db.delete(postCreators).where(eq(postCreators.postId, parentPost.id))
+      await db.delete(postsTable).where(eq(postsTable.rootPostId, parentPost.id))
+      await db.delete(postsTable).where(eq(postsTable.id, parentPost.id))
+      await db.delete(user).where(eq(user.id, userId))
+    }
+  })
 })
 
 describe('micro post replies against non-replyable/invisible parents (Slice 5)', () => {

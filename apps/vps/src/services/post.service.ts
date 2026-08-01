@@ -128,6 +128,8 @@ export interface PostService {
     actorUserId: string
     title?: string | null
     content?: string | null
+    musicEntityType?: string | null
+    musicEntityId?: string | null
   }) => Effect.Effect<
     SelectMdxCompiledMicroPost,
     DatabaseError | NotFoundError | ConflictError | ValidationError | ParentPostNotReplyableError
@@ -1110,11 +1112,13 @@ const createMicroPostReplyEffect = (
     actorUserId: string
     title?: string | null
     content?: string | null
+    musicEntityType?: string | null
+    musicEntityId?: string | null
   },
   mdx: MdxService
 ) =>
   Effect.gen(function* () {
-    const { parentSlug, actorUserId, title, content } = options
+    const { parentSlug, actorUserId, title, content, musicEntityType, musicEntityId } = options
 
     const parentRecords = yield* Effect.tryPromise({
       try: () => db.select().from(postsTable).where(eq(postsTable.slug, parentSlug)).limit(1),
@@ -1169,6 +1173,8 @@ const createMicroPostReplyEffect = (
       ...normalizedData,
       type: 'micro',
       slug: generateReplySlug(),
+      musicEntityType,
+      musicEntityId,
       ...threadFields
     }
 

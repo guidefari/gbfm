@@ -188,7 +188,9 @@ const ParentSlugParam = { parentSlug: Schema.String }
 
 export const CreateMicroPostReplyInput = Schema.Struct({
   title: Schema.optional(Schema.NullOr(Schema.String)),
-  content: Schema.optional(Schema.NullOr(Schema.String))
+  content: Schema.optional(Schema.NullOr(Schema.String)),
+  musicEntityType: Schema.optional(Schema.NullOr(MusicEntityType)),
+  musicEntityId: Schema.optional(Schema.NullOr(Uuid))
 })
 export type CreateMicroPostReplyInput = typeof CreateMicroPostReplyInput.Type
 

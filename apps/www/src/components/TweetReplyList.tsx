@@ -1,5 +1,6 @@
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { TweetAuthorRow } from '@/components/TweetAuthorRow'
+import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
 import { useMicroPostReplies } from '@/lib/http'
 
 type Props = {
@@ -32,17 +33,28 @@ export function TweetReplyList({ parentSlug }: Props) {
 
   return (
     <div className='space-y-2'>
-      {replies.map((reply) => (
-        <div key={reply.id} className='space-y-2 rounded-lg border border-border/40 bg-card/40 p-3'>
-          <TweetAuthorRow
-            creators={reply.creators ? [...reply.creators] : []}
-            createdAt={reply.createdAt}
-          />
-          <div className='prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-p:my-0 prose-a:text-foreground prose-a:underline'>
-            <MDXRendrr mdxString={reply.compiledContent ?? reply.content ?? ''} />
+      {replies.map((reply) => {
+        const hasMusicEntity = Boolean(reply.musicEntityType && reply.musicEntityId)
+        return (
+          <div
+            key={reply.id}
+            className='space-y-2 rounded-lg border border-border/40 bg-card/40 p-3'>
+            <TweetAuthorRow
+              creators={reply.creators ? [...reply.creators] : []}
+              createdAt={reply.createdAt}
+            />
+            <div className='prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-p:my-0 prose-a:text-foreground prose-a:underline'>
+              <MDXRendrr mdxString={reply.compiledContent ?? reply.content ?? ''} />
+            </div>
+            {hasMusicEntity && reply.musicEntityType && reply.musicEntityId && (
+              <TweetMusicEntityCard
+                entityType={reply.musicEntityType}
+                entityId={reply.musicEntityId}
+              />
+            )}
           </div>
-        </div>
-      ))}
+        )
+      })}
     </div>
   )
 }

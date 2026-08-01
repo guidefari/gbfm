@@ -4,9 +4,10 @@ import * as Atom from 'effect/unstable/reactivity/Atom'
 type TweetReplyComposerState = {
   readonly isOpen: boolean
   readonly draft: string
+  readonly musicUrl: string
 }
 
-const initialState: TweetReplyComposerState = { isOpen: false, draft: '' }
+const initialState: TweetReplyComposerState = { isOpen: false, draft: '', musicUrl: '' }
 
 export const tweetReplyComposerAtom = Atom.make<TweetReplyComposerState>(initialState).pipe(
   Atom.keepAlive
@@ -20,6 +21,8 @@ export const useTweetReplyComposerActions = () => {
   return {
     open: () => set((state) => ({ ...state, isOpen: true })),
     setDraft: (draft: string) => set((state) => ({ ...state, draft })),
+    setMusicUrl: (musicUrl: string) => set((state) => ({ ...state, musicUrl })),
+    clearMusicUrl: () => set((state) => ({ ...state, musicUrl: '' })),
     reset: () => set(() => initialState)
   }
 }

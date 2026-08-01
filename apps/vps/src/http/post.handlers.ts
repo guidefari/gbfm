@@ -179,7 +179,9 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
               parentSlug: params.parentSlug,
               actorUserId: user.id,
               title: payload.title,
-              content: payload.content
+              content: payload.content,
+              musicEntityType: payload.musicEntityType,
+              musicEntityId: payload.musicEntityId
             })
             .pipe(
               Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),

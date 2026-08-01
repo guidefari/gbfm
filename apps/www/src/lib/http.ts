@@ -525,14 +525,27 @@ export function useMicroPostReplies(parentSlug: string, limit = 20) {
   })
 }
 
+export type CreateMicroPostReplyPayload = {
+  content: string
+  musicEntityType?: 'album' | 'track' | 'playlist' | null
+  musicEntityId?: string | null
+}
+
 export function useCreateMicroPostReply(parentSlug: string) {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: async (content: string) => {
+    mutationFn: async ({
+      content,
+      musicEntityType,
+      musicEntityId
+    }: CreateMicroPostReplyPayload) => {
       const client = await getApiClient()
       return Effect.runPromise(
         client.post
-          .createMicroPostReply({ params: { parentSlug }, payload: { content } })
+          .createMicroPostReply({
+            params: { parentSlug },
+            payload: { content, musicEntityType, musicEntityId }
+          })
           .pipe(
             Effect.tapError((error) =>
               captureException(error, { endpoint: 'post.createMicroPostReply' })
