@@ -1,4 +1,4 @@
-import { createFileRoute, useRouter } from '@tanstack/react-router'
+import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
 import { MessageCircle } from 'lucide-react'
 import type { MouseEvent } from 'react'
 import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
@@ -93,7 +93,14 @@ function TagPage() {
   return (
     <div className='mx-auto max-w-2xl px-4 py-8'>
       <PostsNav active='tweets' />
-      <h1 className='mb-6 text-lg font-black tracking-tight text-foreground'>#{tag}</h1>
+      <div className='mb-6 flex items-baseline gap-3'>
+        <h1 className='text-lg font-black tracking-tight text-foreground'>#{tag}</h1>
+        <Link
+          to='/tags'
+          className='text-xs text-muted-foreground no-underline transition-colors hover:text-foreground'>
+          All tags
+        </Link>
+      </div>
 
       {isPending ? (
         <div className='animate-pulse space-y-2'>

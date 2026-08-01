@@ -330,7 +330,7 @@ export function useMicroPosts(limit = DEFAULT_PAGE_SIZE, tag?: string) {
 }
 
 export function useMicroTags() {
-  const { data, error, isPending } = useQuery<string[], Error>({
+  const { data, error, isPending, refetch } = useQuery<string[], Error>({
     queryKey: ['posts', 'micro', 'tags'],
     queryFn: async () => {
       const client = await getApiClient()
@@ -345,7 +345,7 @@ export function useMicroTags() {
     },
     staleTime: 1000 * 60 * 60
   })
-  return { data: data ?? [], error, isPending }
+  return { data: data ?? [], error, isPending, refetch }
 }
 
 export function useMicroPostSearch(q: string, limit = DEFAULT_PAGE_SIZE) {
