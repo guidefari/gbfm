@@ -32,6 +32,8 @@ import { Route as EditorialIndexRouteImport } from './routes/editorial/index'
 import { Route as DjsIndexRouteImport } from './routes/djs/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as TweetNewRouteImport } from './routes/tweet/new'
+import { Route as TweetLatestRouteImport } from './routes/tweet/latest'
 import { Route as TweetSlugRouteImport } from './routes/tweet/$slug'
 import { Route as TracksTrackIdRouteImport } from './routes/tracks/$trackId'
 import { Route as SpotifyCallbackRouteImport } from './routes/spotify/callback'
@@ -180,6 +182,16 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const TweetNewRoute = TweetNewRouteImport.update({
+  id: '/new',
+  path: '/new',
+  getParentRoute: () => TweetRouteRoute,
+} as any)
+const TweetLatestRoute = TweetLatestRouteImport.update({
+  id: '/latest',
+  path: '/latest',
+  getParentRoute: () => TweetRouteRoute,
 } as any)
 const TweetSlugRoute = TweetSlugRouteImport.update({
   id: '/$slug',
@@ -396,6 +408,8 @@ export interface FileRoutesByFullPath {
   '/spotify/callback': typeof SpotifyCallbackRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
   '/tweet/$slug': typeof TweetSlugRoute
+  '/tweet/latest': typeof TweetLatestRoute
+  '/tweet/new': typeof TweetNewRoute
   '/admin/': typeof AdminIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/djs/': typeof DjsIndexRoute
@@ -449,6 +463,8 @@ export interface FileRoutesByTo {
   '/spotify/callback': typeof SpotifyCallbackRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
   '/tweet/$slug': typeof TweetSlugRoute
+  '/tweet/latest': typeof TweetLatestRoute
+  '/tweet/new': typeof TweetNewRoute
   '/admin': typeof AdminIndexRoute
   '/dashboard': typeof DashboardIndexRoute
   '/djs': typeof DjsIndexRoute
@@ -508,6 +524,8 @@ export interface FileRoutesById {
   '/spotify/callback': typeof SpotifyCallbackRoute
   '/tracks/$trackId': typeof TracksTrackIdRoute
   '/tweet/$slug': typeof TweetSlugRoute
+  '/tweet/latest': typeof TweetLatestRoute
+  '/tweet/new': typeof TweetNewRoute
   '/admin/': typeof AdminIndexRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/djs/': typeof DjsIndexRoute
@@ -568,6 +586,8 @@ export interface FileRouteTypes {
     | '/spotify/callback'
     | '/tracks/$trackId'
     | '/tweet/$slug'
+    | '/tweet/latest'
+    | '/tweet/new'
     | '/admin/'
     | '/dashboard/'
     | '/djs/'
@@ -621,6 +641,8 @@ export interface FileRouteTypes {
     | '/spotify/callback'
     | '/tracks/$trackId'
     | '/tweet/$slug'
+    | '/tweet/latest'
+    | '/tweet/new'
     | '/admin'
     | '/dashboard'
     | '/djs'
@@ -679,6 +701,8 @@ export interface FileRouteTypes {
     | '/spotify/callback'
     | '/tracks/$trackId'
     | '/tweet/$slug'
+    | '/tweet/latest'
+    | '/tweet/new'
     | '/admin/'
     | '/dashboard/'
     | '/djs/'
@@ -897,6 +921,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/tweet/new': {
+      id: '/tweet/new'
+      path: '/new'
+      fullPath: '/tweet/new'
+      preLoaderRoute: typeof TweetNewRouteImport
+      parentRoute: typeof TweetRouteRoute
+    }
+    '/tweet/latest': {
+      id: '/tweet/latest'
+      path: '/latest'
+      fullPath: '/tweet/latest'
+      preLoaderRoute: typeof TweetLatestRouteImport
+      parentRoute: typeof TweetRouteRoute
     }
     '/tweet/$slug': {
       id: '/tweet/$slug'
@@ -1188,11 +1226,15 @@ const TracksRouteRouteWithChildren = TracksRouteRoute._addFileChildren(
 
 interface TweetRouteRouteChildren {
   TweetSlugRoute: typeof TweetSlugRoute
+  TweetLatestRoute: typeof TweetLatestRoute
+  TweetNewRoute: typeof TweetNewRoute
   TweetIndexRoute: typeof TweetIndexRoute
 }
 
 const TweetRouteRouteChildren: TweetRouteRouteChildren = {
   TweetSlugRoute: TweetSlugRoute,
+  TweetLatestRoute: TweetLatestRoute,
+  TweetNewRoute: TweetNewRoute,
   TweetIndexRoute: TweetIndexRoute,
 }
 

@@ -1,24 +1,33 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { Effect } from 'effect'
+import { isNotFoundError } from '@/lib/http-errors'
 import { getApiClient } from '@/lib/api-client'
 import { captureException } from '@/services/analytics'
+import { readTweetBrowseState } from '@/store/tweetSeen'
+import { redirectToLatestTweet } from './-latest'
 
 export const Route = createFileRoute('/tweet/')({
   loader: async () => {
-    const client = await getApiClient()
-    const result = await Effect.runPromise(
-      client.post
-        .getMicroPosts({ query: { limit: 1, offset: 0 } })
-        .pipe(
-          Effect.tapError((error) => captureException(error, { endpoint: 'post.getMicroPosts' }))
+    const resume = readTweetBrowseState().lastViewed
+    if (resume) {
+      try {
+        const client = await getApiClient()
+        const post = await Effect.runPromise(
+          client.post
+            .getMicroPostBySlug({ params: { slug: resume.slug } })
+            .pipe(
+              Effect.tapError((error) =>
+                captureException(error, { endpoint: 'post.getMicroPostBySlug' })
+              )
+            )
         )
-    )
 
-    const latest = result.data[0]
-    if (!latest) {
-      throw redirect({ to: '/' })
+        throw redirect({ to: '/tweet/$slug', params: { slug: post.slug } })
+      } catch (error) {
+        if (!isNotFoundError(error)) throw error
+      }
     }
 
-    throw redirect({ to: '/tweet/$slug', params: { slug: latest.slug } })
+    return redirectToLatestTweet()
   }
 })
