@@ -40,6 +40,7 @@ export const PostResponse = Schema.Struct({
   parentPostId: Schema.NullOr(Schema.String),
   rootPostId: Schema.NullOr(Schema.String),
   depth: Schema.Number,
+  quotedPostId: Schema.NullOr(Schema.String),
   createdAt: Schema.String,
   updatedAt: Schema.String
 })
@@ -158,8 +159,13 @@ const insertPostFields = {
   musicEntityId: Schema.optional(Schema.NullOr(Uuid))
 }
 
+const quotedPostIdField = {
+  quotedPostId: Schema.optional(Schema.NullOr(Uuid))
+}
+
 export const CreatePostInput = Schema.Struct({
   ...insertPostFields,
+  ...quotedPostIdField,
   // Old zod schema had .min(1) on creatorIds, but the handler already
   // treats an empty array the same as omitted (falls back to [user.id]),
   // same no-op pattern established for shows/label.
@@ -185,12 +191,14 @@ export type UpdatePostInput = typeof UpdatePostInput.Type
 const TagParam = { tag: Schema.NonEmptyString }
 const SlugParam = { slug: Schema.String }
 const ParentSlugParam = { parentSlug: Schema.String }
+const IdParam = { id: Uuid }
 
 export const CreateMicroPostReplyInput = Schema.Struct({
   title: Schema.optional(Schema.NullOr(Schema.String)),
   content: Schema.optional(Schema.NullOr(Schema.String)),
   musicEntityType: Schema.optional(Schema.NullOr(MusicEntityType)),
-  musicEntityId: Schema.optional(Schema.NullOr(Uuid))
+  musicEntityId: Schema.optional(Schema.NullOr(Uuid)),
+  ...quotedPostIdField
 })
 export type CreateMicroPostReplyInput = typeof CreateMicroPostReplyInput.Type
 
@@ -264,6 +272,13 @@ export const PostGroup = HttpApiGroup.make('post')
     })
   )
   .add(
+    HttpApiEndpoint.get('getMicroPostById', '/api/content/posts/micro/by-id/:id', {
+      params: IdParam,
+      success: CompiledMicroPostResponse,
+      error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
+    })
+  )
+  .add(
     HttpApiEndpoint.get('getAdjacentMicroPosts', '/api/content/posts/micro/:slug/adjacent', {
       params: SlugParam,
       success: GetAdjacentMicroPostsResponse,
@@ -328,6 +343,7 @@ export const PostGroup = HttpApiGroup.make('post')
         ValidationHttpError,
         HttpApiError.Forbidden,
         HttpApiError.Conflict,
+        HttpApiError.NotFound,
         HttpApiError.InternalServerError
       ]
     }).middleware(AuthMiddleware)

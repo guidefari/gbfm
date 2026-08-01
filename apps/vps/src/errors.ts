@@ -88,6 +88,12 @@ export class ParentPostNotReplyableError extends Data.TaggedError('ParentPostNot
   readonly parentType: string
 }> {}
 
+export class QuotedPostNotEmbeddableError extends Data.TaggedError('QuotedPostNotEmbeddableError')<{
+  readonly message: string
+  readonly quotedPostId: string
+  readonly quotedPostType: string
+}> {}
+
 export class S3Error extends Data.TaggedError('S3Error')<{
   readonly message: string
   readonly operation: string

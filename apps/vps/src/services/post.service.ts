@@ -34,6 +34,7 @@ import {
   getErrorMessage,
   NotFoundError,
   ParentPostNotReplyableError,
+  QuotedPostNotEmbeddableError,
   type UnauthorizedError,
   ValidationError
 } from '@/errors'
@@ -94,6 +95,9 @@ export interface PostService {
   readonly getMicroPostBySlug: (
     slug: string
   ) => Effect.Effect<SelectMdxCompiledMicroPost, DatabaseError | NotFoundError>
+  readonly getMicroPostById: (
+    id: string
+  ) => Effect.Effect<SelectMdxCompiledMicroPost, DatabaseError | NotFoundError>
   readonly getEditorialTags: () => Effect.Effect<string[], DatabaseError>
   readonly getMicroTags: () => Effect.Effect<string[], DatabaseError>
   readonly getAdjacentMicroPosts: (slug: string) => Effect.Effect<
@@ -122,7 +126,10 @@ export interface PostService {
   readonly create: (
     data: Partial<InsertPost>,
     creatorIds: string[]
-  ) => Effect.Effect<SelectPost, DatabaseError | ConflictError | ValidationError>
+  ) => Effect.Effect<
+    SelectPost,
+    DatabaseError | ConflictError | ValidationError | NotFoundError | QuotedPostNotEmbeddableError
+  >
   readonly createMicroPostReply: (options: {
     parentSlug: string
     actorUserId: string
@@ -130,9 +137,15 @@ export interface PostService {
     content?: string | null
     musicEntityType?: string | null
     musicEntityId?: string | null
+    quotedPostId?: string | null
   }) => Effect.Effect<
     SelectMdxCompiledMicroPost,
-    DatabaseError | NotFoundError | ConflictError | ValidationError | ParentPostNotReplyableError
+    | DatabaseError
+    | NotFoundError
+    | ConflictError
+    | ValidationError
+    | ParentPostNotReplyableError
+    | QuotedPostNotEmbeddableError
   >
   readonly getMicroPostReplies: (
     parentSlug: string,
@@ -1017,6 +1030,80 @@ const getMicroPostBySlugEffect = (slug: string, mdx: MdxService) =>
     })
   )
 
+const getMicroPostByIdEffect = (id: string, mdx: MdxService) =>
+  Effect.gen(function* () {
+    const postRecords = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select()
+          .from(postsTable)
+          .where(and(eq(postsTable.id, id), eq(postsTable.draft, false)))
+          .limit(1),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch post: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'posts'
+        })
+    })
+
+    const post = postRecords[0]
+    if (!post) {
+      return yield* new NotFoundError({
+        message: 'Post not found',
+        resource: 'post',
+        id
+      })
+    }
+
+    const compiled = yield* buildPostWithCreators(post, mdx)
+    return yield* toMicroPost(compiled).pipe(
+      Effect.mapError(
+        () =>
+          new NotFoundError({
+            message: 'Micro post not found',
+            resource: 'post',
+            id
+          })
+      )
+    )
+  }).pipe(Effect.withSpan('post.getMicroPostById', { attributes: { 'post.id': id } }))
+
+// Shared by createEffect and createMicroPostReplyEffect: quoting requires
+// the referenced post to exist by id (NotFoundError otherwise) and be a
+// micro post specifically (QuotedPostNotEmbeddableError otherwise) -- the
+// exact same NotFoundError/type-mismatch split used for reply parents via
+// ParentPostNotReplyableError, just keyed by id instead of slug.
+const validateQuotedPost = (quotedPostId: string) =>
+  Effect.gen(function* () {
+    const quotedRecords = yield* Effect.tryPromise({
+      try: () => db.select().from(postsTable).where(eq(postsTable.id, quotedPostId)).limit(1),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch quoted post: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'posts'
+        })
+    })
+
+    const quoted = quotedRecords[0]
+    if (!quoted) {
+      return yield* new NotFoundError({
+        message: 'Quoted post not found',
+        resource: 'post',
+        id: quotedPostId
+      })
+    }
+
+    if (quoted.type !== 'micro') {
+      return yield* new QuotedPostNotEmbeddableError({
+        message: 'Only tweets can be quoted',
+        quotedPostId,
+        quotedPostType: quoted.type ?? 'unknown'
+      })
+    }
+  })
+
 export const generatePostSlug = (title?: string | null, content?: string | null) => {
   const source = isNonBlankString(title) ? title : isNonBlankString(content) ? content : null
   return source ? toSlug(source) : toSlug('post')
@@ -1026,6 +1113,10 @@ const createEffect = (data: Partial<InsertPost>, creatorIds: string[]) =>
   Effect.gen(function* () {
     const normalizedData = normalizePostData(data, data.type)
     yield* validatePostData(normalizedData)
+
+    if (normalizedData.quotedPostId) {
+      yield* validateQuotedPost(normalizedData.quotedPostId)
+    }
 
     const dataWithSlug: InsertPost = {
       ...normalizedData,
@@ -1114,11 +1205,24 @@ const createMicroPostReplyEffect = (
     content?: string | null
     musicEntityType?: string | null
     musicEntityId?: string | null
+    quotedPostId?: string | null
   },
   mdx: MdxService
 ) =>
   Effect.gen(function* () {
-    const { parentSlug, actorUserId, title, content, musicEntityType, musicEntityId } = options
+    const {
+      parentSlug,
+      actorUserId,
+      title,
+      content,
+      musicEntityType,
+      musicEntityId,
+      quotedPostId
+    } = options
+
+    if (quotedPostId) {
+      yield* validateQuotedPost(quotedPostId)
+    }
 
     const parentRecords = yield* Effect.tryPromise({
       try: () => db.select().from(postsTable).where(eq(postsTable.slug, parentSlug)).limit(1),
@@ -1175,6 +1279,7 @@ const createMicroPostReplyEffect = (
       slug: generateReplySlug(),
       musicEntityType,
       musicEntityId,
+      quotedPostId,
       ...threadFields
     }
 
@@ -1691,6 +1796,7 @@ export const PostServiceLayer = Layer.effect(
       getEditorialBySlug: (slug) => getEditorialBySlugEffect(slug, mdx),
       getMicroPosts: (opts) => getMicroPostsEffect(opts, mdx),
       getMicroPostBySlug: (slug) => getMicroPostBySlugEffect(slug, mdx),
+      getMicroPostById: (id) => getMicroPostByIdEffect(id, mdx),
       getEditorialTags: getEditorialTagsEffect,
       getMicroTags: getMicroTagsEffect,
       getAdjacentMicroPosts: getAdjacentMicroPostsEffect,

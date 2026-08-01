@@ -169,6 +169,18 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
         return toDateStrings(post)
       })
     )
+    .handle('getMicroPostById', ({ params }) =>
+      Effect.gen(function* () {
+        const svc = yield* PostService
+        const post = yield* dieOnDatabaseError(
+          svc
+            .getMicroPostById(params.id)
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+        )
+
+        return toDateStrings(post)
+      })
+    )
     .handle('createMicroPostReply', ({ params, payload }) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
@@ -181,13 +193,15 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
               title: payload.title,
               content: payload.content,
               musicEntityType: payload.musicEntityType,
-              musicEntityId: payload.musicEntityId
+              musicEntityId: payload.musicEntityId,
+              quotedPostId: payload.quotedPostId
             })
             .pipe(
               Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
               Effect.catchTag('ConflictError', () => new HttpApiError.Conflict()),
               Effect.catchTag('ValidationError', () => new ValidationHttpError()),
-              Effect.catchTag('ParentPostNotReplyableError', () => new ValidationHttpError())
+              Effect.catchTag('ParentPostNotReplyableError', () => new ValidationHttpError()),
+              Effect.catchTag('QuotedPostNotEmbeddableError', () => new ValidationHttpError())
             )
         )
 
@@ -276,7 +290,9 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
             )
             .pipe(
               Effect.catchTag('ConflictError', () => new HttpApiError.Conflict()),
-              Effect.catchTag('ValidationError', () => new ValidationHttpError())
+              Effect.catchTag('ValidationError', () => new ValidationHttpError()),
+              Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
+              Effect.catchTag('QuotedPostNotEmbeddableError', () => new ValidationHttpError())
             )
         )
 

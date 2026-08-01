@@ -38,7 +38,10 @@ export const postsTable = pgTable(
     rootPostId: uuid('root_post_id').references((): AnyPgColumn => postsTable.id, {
       onDelete: 'set null'
     }),
-    depth: integer('depth').notNull().default(0)
+    depth: integer('depth').notNull().default(0),
+    quotedPostId: uuid('quoted_post_id').references((): AnyPgColumn => postsTable.id, {
+      onDelete: 'set null'
+    })
   },
   (table) => [
     index('posts_slug_idx').on(table.slug),
@@ -46,7 +49,8 @@ export const postsTable = pgTable(
     index('posts_type_created_idx').on(table.type, table.createdAt),
     index('posts_tags_gin_idx').using('gin', table.tags),
     index('posts_parent_created_idx').on(table.parentPostId, table.createdAt),
-    index('posts_root_created_idx').on(table.rootPostId, table.createdAt)
+    index('posts_root_created_idx').on(table.rootPostId, table.createdAt),
+    index('posts_quoted_post_idx').on(table.quotedPostId)
   ]
 )
 

@@ -2449,3 +2449,277 @@ describe('POST /api/content/post server-generated slug (Slice 9)', () => {
     }
   })
 })
+
+describe('quote-tweet (quotedPostId)', () => {
+  it('creates a top-level post quoting an existing micro post and exposes quotedPostId', async () => {
+    const suffix = crypto.randomUUID()
+    const userId = `quote-create-${suffix}`
+    const token = `quote-create-token-${suffix}`
+    const quotedSlug = `quoted-tweet-${suffix}`
+
+    await db.insert(user).values({
+      id: userId,
+      name: 'Creator',
+      email: `${userId}@example.com`,
+      role: 'creator'
+    })
+    await db.insert(session).values({
+      id: crypto.randomUUID(),
+      token,
+      userId,
+      expiresAt: new Date(Date.now() + 60_000)
+    })
+    const [quotedPost] = await db
+      .insert(postsTable)
+      .values({
+        title: null,
+        slug: quotedSlug,
+        content: 'The original tweet being quoted',
+        type: 'micro',
+        draft: false
+      })
+      .returning()
+    if (!quotedPost) throw new Error('Failed to seed quoted tweet')
+
+    let createdSlug: string | undefined
+    try {
+      const res = await webHandler.handler(
+        new Request('http://localhost/api/content/post', {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${token}`,
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({
+            slug: `quoting-tweet-${suffix}`,
+            content: 'quoting another tweet',
+            type: 'micro',
+            quotedPostId: quotedPost.id
+          })
+        })
+      )
+
+      expect(res.status).toBe(200)
+      const body = await decodeResponseBody(PostResponse, res)
+      createdSlug = body.slug
+      expect(body.quotedPostId).toBe(quotedPost.id)
+    } finally {
+      if (createdSlug) {
+        const [createdPost] = await db
+          .select({ id: postsTable.id })
+          .from(postsTable)
+          .where(eq(postsTable.slug, createdSlug))
+          .limit(1)
+        if (createdPost) {
+          await db.delete(postCreators).where(eq(postCreators.postId, createdPost.id))
+        }
+        await db.delete(postsTable).where(eq(postsTable.slug, createdSlug))
+      }
+      await db.delete(postsTable).where(eq(postsTable.id, quotedPost.id))
+      await db.delete(user).where(eq(user.id, userId))
+    }
+  })
+
+  it('creates a reply quoting an existing micro post', async () => {
+    const suffix = crypto.randomUUID()
+    const userId = `quote-reply-${suffix}`
+    const token = `quote-reply-token-${suffix}`
+    const parentSlug = `quote-reply-parent-${suffix}`
+    const quotedSlug = `quote-reply-quoted-${suffix}`
+
+    await db.insert(user).values({ id: userId, name: 'User', email: `${userId}@example.com` })
+    await db.insert(session).values({
+      id: crypto.randomUUID(),
+      token,
+      userId,
+      expiresAt: new Date(Date.now() + 60_000)
+    })
+    const [parentPost] = await db
+      .insert(postsTable)
+      .values({
+        title: null,
+        slug: parentSlug,
+        content: 'Parent tweet',
+        type: 'micro',
+        draft: false
+      })
+      .returning()
+    if (!parentPost) throw new Error('Failed to seed parent tweet')
+    await db.insert(postCreators).values({ postId: parentPost.id, creatorId: userId })
+
+    const [quotedPost] = await db
+      .insert(postsTable)
+      .values({
+        title: null,
+        slug: quotedSlug,
+        content: 'A tweet to be quoted in a reply',
+        type: 'micro',
+        draft: false
+      })
+      .returning()
+    if (!quotedPost) throw new Error('Failed to seed quoted tweet')
+
+    let replyId: string | undefined
+    try {
+      const res = await webHandler.handler(
+        new Request(`http://localhost/api/content/posts/micro/${parentSlug}/replies`, {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${token}`,
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({
+            content: 'replying with a quote',
+            quotedPostId: quotedPost.id
+          })
+        })
+      )
+
+      expect(res.status).toBe(200)
+      const body = await decodeResponseBody(CompiledMicroPostResponse, res)
+      replyId = body.id
+      expect(body.quotedPostId).toBe(quotedPost.id)
+    } finally {
+      if (replyId) {
+        await db.delete(postCreators).where(eq(postCreators.postId, replyId))
+      }
+      await db.delete(postCreators).where(eq(postCreators.postId, parentPost.id))
+      await db.delete(postsTable).where(eq(postsTable.rootPostId, parentPost.id))
+      await db.delete(postsTable).where(eq(postsTable.id, parentPost.id))
+      await db.delete(postsTable).where(eq(postsTable.id, quotedPost.id))
+      await db.delete(user).where(eq(user.id, userId))
+    }
+  })
+
+  it('404s when quoting a nonexistent post id', async () => {
+    const suffix = crypto.randomUUID()
+    const userId = `quote-missing-${suffix}`
+    const token = `quote-missing-token-${suffix}`
+    const fakeQuotedId = crypto.randomUUID()
+
+    await db.insert(user).values({
+      id: userId,
+      name: 'Creator',
+      email: `${userId}@example.com`,
+      role: 'creator'
+    })
+    await db.insert(session).values({
+      id: crypto.randomUUID(),
+      token,
+      userId,
+      expiresAt: new Date(Date.now() + 60_000)
+    })
+
+    try {
+      const res = await webHandler.handler(
+        new Request('http://localhost/api/content/post', {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${token}`,
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({
+            slug: `quote-missing-post-${suffix}`,
+            content: 'quoting a post that does not exist',
+            type: 'micro',
+            quotedPostId: fakeQuotedId
+          })
+        })
+      )
+      expect(res.status).toBe(404)
+    } finally {
+      await db.delete(user).where(eq(user.id, userId))
+    }
+  })
+
+  it('422s when quoting an editorial post (type != micro)', async () => {
+    const suffix = crypto.randomUUID()
+    const userId = `quote-editorial-${suffix}`
+    const token = `quote-editorial-token-${suffix}`
+    const editorialSlug = `quote-editorial-target-${suffix}`
+
+    await db.insert(user).values({
+      id: userId,
+      name: 'Creator',
+      email: `${userId}@example.com`,
+      role: 'creator'
+    })
+    await db.insert(session).values({
+      id: crypto.randomUUID(),
+      token,
+      userId,
+      expiresAt: new Date(Date.now() + 60_000)
+    })
+    const [editorialPost] = await db
+      .insert(postsTable)
+      .values({
+        title: 'An editorial post',
+        slug: editorialSlug,
+        content: 'Editorial body',
+        type: 'post',
+        draft: false
+      })
+      .returning()
+    if (!editorialPost) throw new Error('Failed to seed editorial post')
+
+    try {
+      const res = await webHandler.handler(
+        new Request('http://localhost/api/content/post', {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${token}`,
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({
+            slug: `quote-editorial-post-${suffix}`,
+            content: 'quoting an editorial post',
+            type: 'micro',
+            quotedPostId: editorialPost.id
+          })
+        })
+      )
+      expect(res.status).toBe(422)
+    } finally {
+      await db.delete(postsTable).where(eq(postsTable.id, editorialPost.id))
+      await db.delete(user).where(eq(user.id, userId))
+    }
+  })
+})
+
+describe('GET /api/content/posts/micro/by-id/:id', () => {
+  it('returns the post by id', async () => {
+    const suffix = crypto.randomUUID()
+    const slug = `by-id-lookup-${suffix}`
+
+    const [post] = await db
+      .insert(postsTable)
+      .values({
+        title: null,
+        slug,
+        content: 'Fetchable by id',
+        type: 'micro',
+        draft: false
+      })
+      .returning()
+    if (!post) throw new Error('Failed to seed post')
+
+    try {
+      const res = await webHandler.handler(
+        new Request(`http://localhost/api/content/posts/micro/by-id/${post.id}`)
+      )
+      expect(res.status).toBe(200)
+      const body = await decodeResponseBody(CompiledMicroPostResponse, res)
+      expect(body.id).toBe(post.id)
+      expect(body.slug).toBe(slug)
+    } finally {
+      await db.delete(postsTable).where(eq(postsTable.id, post.id))
+    }
+  })
+
+  it('404s for an unknown id', async () => {
+    const res = await webHandler.handler(
+      new Request(`http://localhost/api/content/posts/micro/by-id/${crypto.randomUUID()}`)
+    )
+    expect(res.status).toBe(404)
+  })
+})
