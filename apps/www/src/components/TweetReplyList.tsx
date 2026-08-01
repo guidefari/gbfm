@@ -36,11 +36,9 @@ export function TweetReplyList({ parentSlug }: Props) {
     return null
   }
 
-  const stopRowNavigateOnInteractive = (event: MouseEvent) => {
-    if (event.target instanceof HTMLElement && event.target.closest('a, button')) {
-      event.stopPropagation()
-    }
-  }
+  const isInteractiveTarget = (event: MouseEvent) =>
+    event.target instanceof HTMLElement &&
+    Boolean(event.target.closest('a, button, input, textarea, select, [role="menuitem"]'))
 
   return (
     <div>
@@ -61,41 +59,30 @@ export function TweetReplyList({ parentSlug }: Props) {
             <div
               role='link'
               tabIndex={0}
-              onClick={() => router.navigate({ to: '/tweet/$slug', params: { slug: reply.slug } })}
+              onClick={(event) => {
+                if (isInteractiveTarget(event)) return
+                router.navigate({ to: '/tweet/$slug', params: { slug: reply.slug } })
+              }}
               onKeyDown={(event) => {
                 if (event.key !== 'Enter') return
+                if (event.target !== event.currentTarget) return
                 router.navigate({ to: '/tweet/$slug', params: { slug: reply.slug } })
               }}
               className={`cursor-pointer space-y-2 rounded-lg border border-border/40 bg-card p-3 transition-colors hover:bg-card/80 ${isLast ? '' : 'mb-2'}`}>
-              <div role='presentation' onClickCapture={stopRowNavigateOnInteractive}>
-                <TweetAuthorRow
-                  creators={reply.creators ? [...reply.creators] : []}
-                  createdAt={reply.createdAt}
-                />
-              </div>
-              <div
-                role='presentation'
-                onClickCapture={(event) => {
-                  if (event.target instanceof HTMLElement && event.target.closest('a')) {
-                    event.stopPropagation()
-                  }
-                }}
-                className='prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-p:my-0 prose-a:text-foreground prose-a:underline'>
+              <TweetAuthorRow
+                creators={reply.creators ? [...reply.creators] : []}
+                createdAt={reply.createdAt}
+              />
+              <div className='prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-p:my-0 prose-a:text-foreground prose-a:underline'>
                 <MDXRendrr mdxString={reply.compiledContent ?? reply.content ?? ''} />
               </div>
               {hasMusicEntity && reply.musicEntityType && reply.musicEntityId && (
-                <div role='presentation' onClickCapture={stopRowNavigateOnInteractive}>
-                  <TweetMusicEntityCard
-                    entityType={reply.musicEntityType}
-                    entityId={reply.musicEntityId}
-                  />
-                </div>
+                <TweetMusicEntityCard
+                  entityType={reply.musicEntityType}
+                  entityId={reply.musicEntityId}
+                />
               )}
-              {reply.quotedPostId && (
-                <div role='presentation' onClickCapture={stopRowNavigateOnInteractive}>
-                  <TweetQuoteCard quotedPostId={reply.quotedPostId} />
-                </div>
-              )}
+              {reply.quotedPostId && <TweetQuoteCard quotedPostId={reply.quotedPostId} />}
               {Boolean(reply.replyCount) && (
                 <div className='flex items-center gap-1.5 text-xs text-muted-foreground'>
                   <MessageCircle className='h-3 w-3' />
