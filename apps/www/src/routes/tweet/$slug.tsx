@@ -1,31 +1,28 @@
 import { Badge } from '@gbfm/ui'
-import { createFileRoute, Link, useRouter } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { Effect } from 'effect'
-import { ArrowLeft, Tag } from 'lucide-react'
+import { Tag } from 'lucide-react'
+import { useEffect } from 'react'
 import { MDXRendrr } from '@/components/MDXRendrr'
+import { PostsNav } from '@/components/PostsNav'
 import { RouteError } from '@/components/RouteError'
 import { TweetActionsMenu } from '@/components/TweetActionsMenu'
 import { TweetAuthorRow } from '@/components/TweetAuthorRow'
 import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
+import { TweetNav } from '@/components/TweetNav'
 import { useSession } from '@/lib/auth-client'
 import { getApiClient } from '@/lib/api-client'
 import { generateMicroPostSEO, generateSEOMeta } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
+import { useMarkTweetSeen } from '@/store/tweetSeen'
 
 export const Route = createFileRoute('/tweet/$slug')({
   component: TweetPostPage,
   errorComponent: ({ error }) => (
-    <RouteError
-      error={error}
-      backLink={
-        <Link
-          to='/tweet'
-          className='-mb-px inline-flex items-center gap-1 border-b-2 border-transparent pb-3 text-lg font-black tracking-tight text-muted-foreground transition-colors hover:border-border hover:text-foreground'>
-          <ArrowLeft className='w-4 h-4' />
-          Tweets
-        </Link>
-      }
-    />
+    <div className='max-w-3xl px-4 pt-8 mx-auto'>
+      <PostsNav active='tweets' />
+      <RouteError error={error} />
+    </div>
   ),
   loader: async ({ params }) => {
     const client = await getApiClient()
@@ -64,34 +61,17 @@ export const Route = createFileRoute('/tweet/$slug')({
   }
 })
 
-const backLinkClassName =
-  '-mb-px inline-flex items-center gap-1 border-b-2 border-transparent pb-3 text-lg font-black tracking-tight text-muted-foreground transition-colors hover:border-border hover:text-foreground'
-
-function TweetsBackLink() {
-  const router = useRouter()
-
-  if (router.history.canGoBack()) {
-    return (
-      <button type='button' onClick={() => router.history.back()} className={backLinkClassName}>
-        <ArrowLeft className='w-4 h-4' />
-        Tweets
-      </button>
-    )
-  }
-
-  return (
-    <Link to='/tweet' className={backLinkClassName}>
-      <ArrowLeft className='w-4 h-4' />
-      Tweets
-    </Link>
-  )
-}
-
 function TweetPostPage() {
   const { slug } = Route.useParams()
   const { post } = Route.useLoaderData()
   const { data: session } = useSession()
   const user = session?.user
+  const markSeen = useMarkTweetSeen()
+
+  useEffect(() => {
+    markSeen(slug)
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug])
 
   if (!post) return null
 
@@ -105,9 +85,10 @@ function TweetPostPage() {
 
   return (
     <div className='max-w-3xl px-4 py-8 mx-auto'>
-      <nav className='mb-6 flex items-end gap-6 border-b border-border/40'>
-        <TweetsBackLink />
-      </nav>
+      <PostsNav active='tweets' />
+      <div className='mb-6'>
+        <TweetNav slug={slug} />
+      </div>
       <article className='space-y-4 rounded-lg border border-border/60 bg-card/60 p-4 shadow-sm sm:p-5'>
         <div className='flex items-start justify-between gap-3'>
           <div className='space-y-1'>

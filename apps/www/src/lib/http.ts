@@ -16,10 +16,13 @@ import type {
   SelectShow,
   SelectShowSubscription
 } from '@gbfm/vps/schemas'
+import { useCallback } from 'react'
+import { useRouter } from '@tanstack/react-router'
 import { Effect } from 'effect'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { RuntimeClient } from '@/runtime'
 import { captureException } from '@/services/analytics'
+import { useMarkTweetSeen, useSeenTweets } from '@/store/tweetSeen'
 import { getApiClient } from './api-client'
 import { useSession } from './auth-client'
 import { createFetcher, getRequestMethod, getRequestUrl, type ApiFailureInput } from './http-client'
@@ -284,15 +287,15 @@ export function useEditorialPosts(tag?: string, limit = DEFAULT_PAGE_SIZE) {
   }
 }
 
-export function useMicroPosts(limit = DEFAULT_PAGE_SIZE) {
+export function useMicroPosts(limit = DEFAULT_PAGE_SIZE, tag?: string) {
   const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage, isPending, refetch } =
     useInfiniteQuery<PaginatedResponse<SelectMdxCompiledMicroPost>, Error>({
-      queryKey: ['posts', 'micro', limit],
+      queryKey: ['posts', 'micro', limit, tag],
       queryFn: async ({ pageParam = 0 }) => {
         const client = await getApiClient()
         const result = await Effect.runPromise(
           client.post
-            .getMicroPosts({ query: { limit, offset: Number(pageParam) } })
+            .getMicroPosts({ query: { limit, offset: Number(pageParam), tag } })
             .pipe(
               Effect.tapError((error) =>
                 captureException(error, { endpoint: 'post.getMicroPosts' })
@@ -324,6 +327,115 @@ export function useMicroPosts(limit = DEFAULT_PAGE_SIZE) {
     isFetchingNextPage,
     refetch
   }
+}
+
+export function useMicroTags() {
+  const { data, error, isPending } = useQuery<string[], Error>({
+    queryKey: ['posts', 'micro', 'tags'],
+    queryFn: async () => {
+      const client = await getApiClient()
+      const tags = await Effect.runPromise(
+        client.post
+          .getMicroTags()
+          .pipe(
+            Effect.tapError((error) => captureException(error, { endpoint: 'post.getMicroTags' }))
+          )
+      )
+      return [...tags]
+    },
+    staleTime: 1000 * 60 * 60
+  })
+  return { data: data ?? [], error, isPending }
+}
+
+export function useMicroPostSearch(q: string, limit = DEFAULT_PAGE_SIZE) {
+  const trimmed = q.trim()
+  const { data, error, fetchNextPage, hasNextPage, isFetchingNextPage, isPending, refetch } =
+    useInfiniteQuery<PaginatedResponse<SelectMdxCompiledMicroPost>, Error>({
+      queryKey: ['posts', 'micro', 'search', trimmed, limit],
+      queryFn: async ({ pageParam = 0 }) => {
+        const client = await getApiClient()
+        const result = await Effect.runPromise(
+          client.post
+            .searchMicroPosts({ query: { q: trimmed, limit, offset: Number(pageParam) } })
+            .pipe(
+              Effect.tapError((error) =>
+                captureException(error, { endpoint: 'post.searchMicroPosts' })
+              )
+            )
+        )
+        return {
+          data: result.data.map((post) => ({
+            ...post,
+            bannerImageUrl: null,
+            createdAt: new Date(post.createdAt),
+            updatedAt: new Date(post.updatedAt),
+            tags: post.tags ? [...post.tags] : null,
+            creators: post.creators ? [...post.creators] : undefined
+          })),
+          pagination: result.pagination
+        }
+      },
+      initialPageParam: 0,
+      getNextPageParam: getNextOffsetPageParam,
+      enabled: trimmed.length > 0
+    })
+
+  return {
+    data: data?.pages.flatMap((page) => page.data) ?? [],
+    error,
+    isPending,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch
+  }
+}
+
+export function useAdjacentMicroPosts(slug: string) {
+  const { data, error, isPending } = useQuery({
+    queryKey: ['post', 'micro', slug, 'adjacent'],
+    queryFn: async () => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.post
+          .getAdjacentMicroPosts({ params: { slug } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'post.getAdjacentMicroPosts' })
+            )
+          )
+      )
+    },
+    enabled: Boolean(slug)
+  })
+  return { data, error, isPending }
+}
+
+export function useRandomMicroPost() {
+  const router = useRouter()
+  const seen = useSeenTweets()
+  const markSeen = useMarkTweetSeen()
+
+  const goToRandom = useCallback(
+    async (currentSlug: string) => {
+      const client = await getApiClient()
+      const { slug } = await Effect.runPromise(
+        client.post
+          .getRandomMicroPost({ query: { exclude: [...seen, currentSlug].join(',') } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'post.getRandomMicroPost' })
+            )
+          )
+      )
+      markSeen(slug)
+      router.navigate({ to: '/tweet/$slug', params: { slug } })
+    },
+    [router, seen, markSeen]
+  )
+
+  return { goToRandom }
 }
 
 export function useEditorialPostBySlug(slug: string) {

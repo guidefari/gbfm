@@ -1,4 +1,17 @@
-import { and, arrayContains, count, desc, eq, inArray, sql } from 'drizzle-orm'
+import {
+  and,
+  arrayContains,
+  asc,
+  count,
+  desc,
+  eq,
+  gte,
+  inArray,
+  lte,
+  ne,
+  notInArray,
+  sql
+} from 'drizzle-orm'
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { postIdsForCreator } from '@/db/creator-membership'
@@ -69,6 +82,7 @@ export interface PostService {
   readonly getMicroPosts: (options: {
     limit: number
     offset: number
+    tag?: string
   }) => Effect.Effect<
     { data: SelectMdxCompiledMicroPost[]; pagination: PaginationMetadata },
     DatabaseError,
@@ -78,6 +92,26 @@ export interface PostService {
     slug: string
   ) => Effect.Effect<SelectMdxCompiledMicroPost, DatabaseError | NotFoundError>
   readonly getEditorialTags: () => Effect.Effect<string[], DatabaseError>
+  readonly getMicroTags: () => Effect.Effect<string[], DatabaseError>
+  readonly getAdjacentMicroPosts: (slug: string) => Effect.Effect<
+    {
+      prev: { slug: string; title: string | null } | null
+      next: { slug: string; title: string | null } | null
+    },
+    DatabaseError | NotFoundError
+  >
+  readonly getRandomMicroPost: (
+    excludeSlugs: string[]
+  ) => Effect.Effect<{ slug: string }, DatabaseError | NotFoundError>
+  readonly searchMicroPosts: (options: {
+    q: string
+    limit: number
+    offset: number
+  }) => Effect.Effect<
+    { data: SelectMdxCompiledMicroPost[]; pagination: PaginationMetadata },
+    DatabaseError,
+    SentryService
+  >
   readonly getByTag: (
     tag: string,
     options: { limit: number; offset: number }
@@ -386,6 +420,353 @@ const getEditorialTagsEffect = () =>
       .toSorted()
   })
 
+const getMicroTagsEffect = () =>
+  Effect.gen(function* () {
+    const rows = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .selectDistinct({
+            tag: sql<string | null>`unnest(${postsTable.tags})`
+          })
+          .from(postsTable)
+          .where(and(eq(postsTable.type, 'micro'), eq(postsTable.draft, false))),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch micro tags: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'posts'
+        })
+    })
+
+    return rows
+      .map((r) => r.tag)
+      .filter((t): t is string => typeof t === 'string' && t.length > 0)
+      .toSorted()
+  })
+
+const getAdjacentMicroPostsEffect = (slug: string) =>
+  Effect.gen(function* () {
+    const currentRecords = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select({ id: postsTable.id, createdAt: postsTable.createdAt })
+          .from(postsTable)
+          .where(and(eq(postsTable.slug, slug), eq(postsTable.type, 'micro')))
+          .limit(1),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch micro post: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'posts'
+        })
+    })
+
+    const current = currentRecords[0]
+    if (!current) {
+      return yield* new NotFoundError({
+        message: 'Micro post not found',
+        resource: 'post',
+        id: slug
+      })
+    }
+
+    const baseCondition = and(
+      eq(postsTable.type, 'micro'),
+      eq(postsTable.draft, false),
+      ne(postsTable.id, current.id)
+    )
+
+    // prev = newer (toward present), next = older (back in time) -- the
+    // index redirects to the newest post, so "next" continuing to walk
+    // backward through history is the intuitive direction from there.
+    // Uses gte/lte + excludes the current row by id, rather than strict
+    // gt/lt on createdAt alone: Postgres timestamps store microsecond
+    // precision but JS Date only carries milliseconds, so a value read
+    // out and passed back in as a query param can silently round down
+    // and no longer compare equal to the row it came from.
+    const prevRows = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select({ slug: postsTable.slug, title: postsTable.title })
+          .from(postsTable)
+          .where(and(baseCondition, gte(postsTable.createdAt, current.createdAt)))
+          .orderBy(asc(postsTable.createdAt))
+          .limit(1),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch previous micro post: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'posts'
+        })
+    })
+
+    const nextRows = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select({ slug: postsTable.slug, title: postsTable.title })
+          .from(postsTable)
+          .where(and(baseCondition, lte(postsTable.createdAt, current.createdAt)))
+          .orderBy(desc(postsTable.createdAt))
+          .limit(1),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch next micro post: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'posts'
+        })
+    })
+
+    return {
+      prev: prevRows[0] ?? null,
+      next: nextRows[0] ?? null
+    }
+  }).pipe(Effect.withSpan('post.getAdjacentMicroPosts', { attributes: { slug } }))
+
+const getRandomMicroPostEffect = (excludeSlugs: string[]) =>
+  Effect.gen(function* () {
+    const baseCondition = and(eq(postsTable.type, 'micro'), eq(postsTable.draft, false))
+    const withExclude =
+      excludeSlugs.length > 0
+        ? and(baseCondition, notInArray(postsTable.slug, excludeSlugs))
+        : baseCondition
+
+    const rows = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select({ slug: postsTable.slug })
+          .from(postsTable)
+          .where(withExclude)
+          .orderBy(sql`random()`)
+          .limit(1),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch random micro post: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'posts'
+        })
+    })
+
+    if (rows[0]) return rows[0]
+
+    const fallback = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select({ slug: postsTable.slug })
+          .from(postsTable)
+          .where(baseCondition)
+          .orderBy(sql`random()`)
+          .limit(1),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch random micro post: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'posts'
+        })
+    })
+
+    const fallbackPost = fallback[0]
+    if (!fallbackPost) {
+      return yield* new NotFoundError({
+        message: 'No micro posts exist',
+        resource: 'post',
+        id: 'random'
+      })
+    }
+    return fallbackPost
+  }).pipe(Effect.withSpan('post.getRandomMicroPost'))
+
+const searchMicroPostsEffect = (
+  options: { q: string; limit: number; offset: number },
+  mdx: MdxService
+) =>
+  Effect.gen(function* () {
+    const { q, limit, offset } = options
+    const pattern = `%${q}%`
+
+    // Join columns below are quoted camelCase (e.g. "albumId", "artistNames")
+    // rather than snake_case: these tables were defined without explicit
+    // db-name strings on individual columns, so Drizzle's default naming
+    // keeps the JS property name verbatim as the real Postgres column name.
+    // Only posts.music_entity_id/music_entity_type and the table names
+    // themselves were given explicit snake_case strings.
+    const matchCondition = sql`
+      (${postsTable.title} ILIKE ${pattern} OR ${postsTable.content} ILIKE ${pattern})
+      OR (
+        ${postsTable.musicEntityType} = 'track' AND EXISTS (
+          SELECT 1 FROM music_tracks t
+          LEFT JOIN music_albums alb ON alb.id = t."albumId"
+          WHERE t.id = ${postsTable.musicEntityId}
+            AND (
+              t.title ILIKE ${pattern}
+              OR t."artistNames"::text ILIKE ${pattern}
+              OR alb.title ILIKE ${pattern}
+              OR EXISTS (
+                SELECT 1 FROM music_track_artists mta
+                JOIN music_artists a ON a.id = mta."artistId"
+                WHERE mta."trackId" = t.id AND a.name ILIKE ${pattern}
+              )
+            )
+        )
+      )
+      OR (
+        ${postsTable.musicEntityType} = 'album' AND EXISTS (
+          SELECT 1 FROM music_albums alb
+          WHERE alb.id = ${postsTable.musicEntityId}
+            AND (
+              alb.title ILIKE ${pattern}
+              OR alb."artistNames"::text ILIKE ${pattern}
+              OR EXISTS (
+                SELECT 1 FROM music_album_artists maa
+                JOIN music_artists a ON a.id = maa."artistId"
+                WHERE maa."albumId" = alb.id AND a.name ILIKE ${pattern}
+              )
+            )
+        )
+      )
+      OR (
+        ${postsTable.musicEntityType} = 'playlist' AND EXISTS (
+          SELECT 1 FROM music_playlists pl
+          WHERE pl.id = ${postsTable.musicEntityId}
+            AND (
+              pl.title ILIKE ${pattern}
+              OR pl.description ILIKE ${pattern}
+              OR EXISTS (
+                SELECT 1 FROM music_playlist_tracks mpt
+                JOIN music_tracks t2 ON t2.id = mpt."trackId"
+                WHERE mpt."playlistId" = pl.id
+                  AND (
+                    t2.title ILIKE ${pattern}
+                    OR t2."artistNames"::text ILIKE ${pattern}
+                    OR EXISTS (
+                      SELECT 1 FROM music_track_artists mta2
+                      JOIN music_artists a2 ON a2.id = mta2."artistId"
+                      WHERE mta2."trackId" = t2.id AND a2.name ILIKE ${pattern}
+                    )
+                  )
+              )
+            )
+        )
+      )
+    `
+
+    const whereCondition = and(
+      eq(postsTable.type, 'micro'),
+      eq(postsTable.draft, false),
+      matchCondition
+    )
+
+    const countResult = yield* Effect.tryPromise({
+      try: () =>
+        timeQuery(
+          () => db.select({ total: count() }).from(postsTable).where(whereCondition),
+          'search-micro-posts-count'
+        ),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to count micro posts: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'posts'
+        })
+    })
+
+    const total = countResult[0]?.total ?? 0
+
+    const data = yield* Effect.tryPromise({
+      try: () =>
+        timeQuery(
+          () =>
+            db
+              .select()
+              .from(postsTable)
+              .where(whereCondition)
+              .orderBy(desc(postsTable.createdAt))
+              .limit(limit)
+              .offset(offset),
+          'search-micro-posts-data'
+        ),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to search micro posts: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'posts'
+        })
+    })
+
+    const postIds = data.map((p) => p.id)
+
+    const creatorsData =
+      postIds.length > 0
+        ? yield* Effect.tryPromise({
+            try: () =>
+              db
+                .select({
+                  postId: postCreators.postId,
+                  creatorId: usersTable.id,
+                  creatorName: usersTable.name,
+                  creatorUsername: usersTable.username
+                })
+                .from(postCreators)
+                .innerJoin(usersTable, eq(postCreators.creatorId, usersTable.id))
+                .where(inArray(postCreators.postId, postIds)),
+            catch: (error) =>
+              new DatabaseError({
+                message: `Failed to fetch creators: ${getErrorMessage(error)}`,
+                operation: 'select',
+                table: 'post_creators'
+              })
+          })
+        : []
+
+    const creatorsByPostId: Record<
+      string,
+      Array<{ id: string; name: string; username: string | null }>
+    > = {}
+    for (const row of creatorsData) {
+      const existing = creatorsByPostId[row.postId]
+      const creator = {
+        id: row.creatorId,
+        name: row.creatorName,
+        username: row.creatorUsername
+      }
+      if (existing) {
+        existing.push(creator)
+      } else {
+        creatorsByPostId[row.postId] = [creator]
+      }
+    }
+
+    const compiledData = yield* Effect.forEach(
+      data,
+      (post) => buildPostWithPreloadedCreators(post, creatorsByPostId[post.id] ?? [], mdx),
+      { concurrency: 5 }
+    )
+
+    const sentry = yield* SentryService
+    const rawData = yield* Effect.forEach(
+      compiledData,
+      (post) =>
+        toMicroPost(post).pipe(
+          Effect.catchTag('DatabaseError', (e) =>
+            Effect.andThen(
+              sentry.captureException(e, {
+                slug: post.slug,
+                type: post.type,
+                operation: 'toMicroPost'
+              }),
+              Effect.succeed<SelectMdxCompiledMicroPost | null>(null)
+            )
+          )
+        ),
+      { concurrency: 5 }
+    )
+    const filteredData = rawData.filter((p): p is SelectMdxCompiledMicroPost => p !== null)
+
+    return {
+      data: filteredData,
+      pagination: createPaginationMetadata(total, limit, offset)
+    }
+  }).pipe(Effect.withSpan('post.searchMicroPosts', { attributes: { q: options.q } }))
+
 const getEditorialsEffect = (
   options: { limit: number; offset: number; tag?: string },
   mdx: MdxService
@@ -418,7 +799,10 @@ const getEditorialsEffect = (
     }
   }).pipe(Effect.withSpan('post.getEditorials'))
 
-const getMicroPostsEffect = (options: { limit: number; offset: number }, mdx: MdxService) =>
+const getMicroPostsEffect = (
+  options: { limit: number; offset: number; tag?: string },
+  mdx: MdxService
+) =>
   Effect.gen(function* () {
     const posts = yield* getAllEffect({ ...options, type: 'micro' }, mdx)
     const sentry = yield* SentryService
@@ -766,6 +1150,10 @@ export const PostServiceLayer = Layer.effect(
       getMicroPosts: (opts) => getMicroPostsEffect(opts, mdx),
       getMicroPostBySlug: (slug) => getMicroPostBySlugEffect(slug, mdx),
       getEditorialTags: getEditorialTagsEffect,
+      getMicroTags: getMicroTagsEffect,
+      getAdjacentMicroPosts: getAdjacentMicroPostsEffect,
+      getRandomMicroPost: getRandomMicroPostEffect,
+      searchMicroPosts: (opts) => searchMicroPostsEffect(opts, mdx),
       getByTag: getByTagEffect,
       create: (data, creatorIds) =>
         createEffect(data, creatorIds).pipe(

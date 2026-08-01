@@ -3,6 +3,7 @@ import { AuthSession } from '@gbfm/api/middleware/auth'
 import {
   GetEditorialPostsResponse,
   GetEditorialTagsResponse,
+  GetMicroTagsResponse,
   ValidationHttpError
 } from '@gbfm/api/post'
 import { Effect, Schema } from 'effect'
@@ -97,13 +98,61 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
       Effect.gen(function* () {
         const svc = yield* PostService
         const result = yield* dieOnDatabaseError(
-          svc.getMicroPosts({ limit: query.limit ?? 20, offset: query.offset ?? 0 })
+          svc.getMicroPosts({ limit: query.limit ?? 20, offset: query.offset ?? 0, tag: query.tag })
         )
 
         return {
           data: result.data.map(toDateStrings),
           pagination: result.pagination
         }
+      })
+    )
+    .handle('getMicroTags', () =>
+      Effect.gen(function* () {
+        const svc = yield* PostService
+        const tags = yield* dieOnDatabaseError(svc.getMicroTags())
+        const body = yield* Schema.encodeEffect(GetMicroTagsResponse)(tags).pipe(Effect.orDie)
+        return HttpServerResponse.setHeader(
+          yield* HttpServerResponse.json(body).pipe(Effect.orDie),
+          'Cache-Control',
+          'public, max-age=3600, stale-while-revalidate=86400'
+        )
+      })
+    )
+    .handle('searchMicroPosts', ({ query }) =>
+      Effect.gen(function* () {
+        const svc = yield* PostService
+        const result = yield* dieOnDatabaseError(
+          svc.searchMicroPosts({ q: query.q, limit: query.limit ?? 20, offset: query.offset ?? 0 })
+        )
+
+        return {
+          data: result.data.map(toDateStrings),
+          pagination: result.pagination
+        }
+      })
+    )
+    .handle('getRandomMicroPost', ({ query }) =>
+      Effect.gen(function* () {
+        const svc = yield* PostService
+        const excludeSlugs = query.exclude ? query.exclude.split(',').filter(Boolean) : []
+        const result = yield* dieOnDatabaseError(
+          svc
+            .getRandomMicroPost(excludeSlugs)
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+        )
+        return result
+      })
+    )
+    .handle('getAdjacentMicroPosts', ({ params }) =>
+      Effect.gen(function* () {
+        const svc = yield* PostService
+        const result = yield* dieOnDatabaseError(
+          svc
+            .getAdjacentMicroPosts(params.slug)
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+        )
+        return result
       })
     )
     .handle('getMicroPostBySlug', ({ params }) =>

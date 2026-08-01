@@ -71,9 +71,9 @@ export function TweetMusicEntityCard({ entityType, entityId }: Props) {
 
   if (isPending || isLinksPending) {
     return (
-      <div className='not-prose flex items-center gap-4 rounded-md border border-border/50 bg-muted/20 p-3 animate-pulse'>
-        <div className='h-24 w-24 shrink-0 rounded-sm bg-muted sm:h-28 sm:w-28' />
-        <div className='flex-1 space-y-2'>
+      <div className='not-prose overflow-hidden rounded-md border border-border/50 bg-muted/20 animate-pulse'>
+        <div className='aspect-square w-full bg-muted' />
+        <div className='space-y-2 p-4'>
           <div className='h-2.5 w-16 rounded-full bg-muted' />
           <div className='h-4 w-2/3 rounded-full bg-muted' />
           <div className='h-3 w-1/3 rounded-full bg-muted' />
@@ -89,43 +89,43 @@ export function TweetMusicEntityCard({ entityType, entityId }: Props) {
   const verifiedLinks = links?.filter((l) => l.status === LINK_STATUS.VERIFIED) ?? []
 
   return (
-    <section className='not-prose overflow-hidden rounded-md border border-border/50 bg-muted/20 transition-colors hover:bg-muted/30'>
-      <div className='flex gap-4 p-3'>
-        <div className='flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-sm bg-muted sm:h-28 sm:w-28'>
-          {data.coverImageUrl ? (
-            <img
-              src={data.coverImageUrl}
-              alt={data.title}
-              className='h-full w-full object-cover'
-              loading='lazy'
-            />
-          ) : (
-            <Music4 className='h-8 w-8 text-muted-foreground/70' />
-          )}
-        </div>
+    <section className='not-prose overflow-hidden rounded-md border border-border/50 bg-muted/20'>
+      <div className='flex aspect-square w-full items-center justify-center overflow-hidden bg-muted'>
+        {data.coverImageUrl ? (
+          <img
+            src={data.coverImageUrl}
+            alt={data.title}
+            className='h-full w-full object-cover'
+            loading='lazy'
+          />
+        ) : (
+          <Music4 className='h-12 w-12 text-muted-foreground/70' />
+        )}
+      </div>
 
-        <div className='min-w-0 flex-1 self-center space-y-0.5'>
-          <div className='text-[10px] font-bold tracking-[0.3em] text-muted-foreground/60'>
-            {entityLabelByType[supportedType]}
-          </div>
-          <h2 className='truncate text-[15px] font-bold leading-snug tracking-tight text-foreground'>
-            {data.title}
-          </h2>
-          {data.artistNames?.length ? (
-            <p className='truncate text-sm text-muted-foreground'>{data.artistNames.join(', ')}</p>
-          ) : null}
+      <div className='space-y-1 p-4'>
+        <div className='text-[10px] font-bold tracking-[0.3em] text-muted-foreground/60'>
+          {entityLabelByType[supportedType]}
         </div>
+        <h2 className='text-lg font-bold leading-snug tracking-tight text-foreground'>
+          {data.title}
+        </h2>
+        {data.artistNames?.length ? (
+          <p className='text-sm text-muted-foreground'>{data.artistNames.join(', ')}</p>
+        ) : null}
       </div>
 
       {data.description ? (
-        <p className='border-t border-border/40 px-3 py-2 text-xs leading-relaxed text-muted-foreground'>
+        <p className='border-t border-border/40 px-4 py-2 text-xs leading-relaxed text-muted-foreground'>
           {data.description}
         </p>
       ) : null}
 
       {verifiedLinks.length > 0 && (
-        <div className='border-t border-border/40 px-3 py-2.5'>
-          <StreamLinks links={verifiedLinks} />
+        <div className='-mx-4 overflow-x-auto border-t border-border/40 px-4 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
+          <div className='w-max'>
+            <StreamLinks links={verifiedLinks} />
+          </div>
         </div>
       )}
     </section>

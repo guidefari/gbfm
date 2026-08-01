@@ -107,6 +107,41 @@ export const GetPostsByTagResponse = Schema.Struct({
 
 export const GetEditorialTagsResponse = Schema.Array(Schema.String)
 
+export const GetMicroTagsResponse = Schema.Array(Schema.String)
+
+export const GetMicroPostsQuery = {
+  ...PaginationQuery,
+  tag: Schema.optional(Schema.String)
+}
+
+const MicroPostSummary = Schema.Struct({
+  slug: Schema.String,
+  title: Schema.NullOr(Schema.String)
+})
+
+export const GetAdjacentMicroPostsResponse = Schema.Struct({
+  prev: Schema.NullOr(MicroPostSummary),
+  next: Schema.NullOr(MicroPostSummary)
+})
+
+export const GetRandomMicroPostResponse = Schema.Struct({
+  slug: Schema.String
+})
+
+// Comma-joined string, not Schema.Array -- no existing endpoint in this
+// package puts Schema.Array in a `query` field, so there's no proven
+// pattern for how Effect HttpApi encodes/decodes an array-valued query
+// param. Encoding as a single comma-joined string and splitting
+// server-side avoids being the first to find out.
+const GetRandomMicroPostQuery = {
+  exclude: Schema.optional(Schema.String)
+}
+
+const SearchMicroPostsQuery = {
+  ...PaginationQuery,
+  q: Schema.NonEmptyString
+}
+
 const insertPostFields = {
   title: Schema.optional(Schema.NullOr(Schema.String)),
   description: Schema.optional(Schema.String),
@@ -184,9 +219,36 @@ export const PostGroup = HttpApiGroup.make('post')
   )
   .add(
     HttpApiEndpoint.get('getMicroPosts', '/api/content/posts/micro', {
-      query: PaginationQuery,
+      query: GetMicroPostsQuery,
       success: GetMicroPostsResponse,
       error: HttpApiError.InternalServerError
+    })
+  )
+  .add(
+    HttpApiEndpoint.get('getMicroTags', '/api/content/posts/micro/tags', {
+      success: GetMicroTagsResponse,
+      error: HttpApiError.InternalServerError
+    })
+  )
+  .add(
+    HttpApiEndpoint.get('searchMicroPosts', '/api/content/posts/micro/search', {
+      query: SearchMicroPostsQuery,
+      success: GetMicroPostsResponse,
+      error: HttpApiError.InternalServerError
+    })
+  )
+  .add(
+    HttpApiEndpoint.get('getRandomMicroPost', '/api/content/posts/micro/random', {
+      query: GetRandomMicroPostQuery,
+      success: GetRandomMicroPostResponse,
+      error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
+    })
+  )
+  .add(
+    HttpApiEndpoint.get('getAdjacentMicroPosts', '/api/content/posts/micro/:slug/adjacent', {
+      params: SlugParam,
+      success: GetAdjacentMicroPostsResponse,
+      error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
     })
   )
   .add(
