@@ -21,7 +21,7 @@ import {
 } from '@gbfm/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useRouter, useSearch } from '@tanstack/react-router'
-import { ArrowLeft, Loader2, Music4, Send, Tag, X } from 'lucide-react'
+import { ArrowLeft, Loader2, MessageSquareQuote, Music4, Send, Tag, X } from 'lucide-react'
 import { type KeyboardEvent, type ReactNode, useEffect, useMemo, useState } from 'react'
 import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { PostPageHeader } from '@/components/PostPageHeader'
@@ -29,9 +29,11 @@ import { useSession } from '@/lib/auth-client'
 import {
   apiUrl,
   fetcher,
+  parseTweetSlugInput,
   useAddAdminEntityLink,
   useAdminEntityLinks,
   useDeleteAdminEntityLink,
+  useMicroPostBySlug,
   useMicroTags,
   useResolveMusicEntity,
   useUpdateAdminEntityLinkStatus
@@ -61,6 +63,7 @@ interface PostItem {
   type: PostType | null
   musicEntityType: MusicEntityType | null
   musicEntityId: string | null
+  quotedPostId?: string | null
   creators?: Array<{ id: string; name: string; username: string | null }>
 }
 
@@ -313,6 +316,61 @@ function ResolvedMusicCard({
   )
 }
 
+function QuoteTweetCard({
+  quoteInput,
+  onQuoteInputChange,
+  isResolving,
+  resolvedTitle,
+  resolvedContent
+}: {
+  quoteInput: string
+  onQuoteInputChange: (value: string) => void
+  isResolving: boolean
+  resolvedTitle: string | null
+  resolvedContent: string | null
+}) {
+  return (
+    <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
+      <CardHeader className='pb-3'>
+        <CardTitle className='flex items-center gap-2 text-base text-gb-pastel-green-1'>
+          <MessageSquareQuote className='size-4' />
+          Quote a tweet
+        </CardTitle>
+      </CardHeader>
+      <CardContent className='space-y-3'>
+        <div className='space-y-1.5'>
+          <Label
+            htmlFor='quoteInput'
+            className='text-xs font-medium tracking-wide text-muted-foreground'>
+            Tweet link or slug (optional)
+          </Label>
+          <div className='relative'>
+            <Input
+              id='quoteInput'
+              value={quoteInput}
+              onChange={(e) => onQuoteInputChange(e.target.value)}
+              placeholder='https://goosebumps.fm/tweet/some-slug'
+              className='pr-9'
+            />
+            {isResolving && (
+              <Loader2 className='absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground' />
+            )}
+          </div>
+        </div>
+
+        {(resolvedTitle || resolvedContent) && (
+          <div className='flex items-center gap-3 rounded-md border border-gb-pastel-green-2/15 bg-black/20 p-2.5'>
+            <MessageSquareQuote className='size-4 shrink-0 text-muted-foreground' />
+            <div className='min-w-0 flex-1 truncate text-sm text-muted-foreground'>
+              {resolvedTitle || resolvedContent}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
 export function TweetCapturePage() {
   const queryClient = useQueryClient()
   const router = useRouter()
@@ -323,6 +381,7 @@ export function TweetCapturePage() {
   const isDesktop = useMediaQuery('(min-width: 1024px)')
 
   const [musicUrl, setMusicUrl] = useState('')
+  const [quoteInput, setQuoteInput] = useState('')
   const [title, setTitle] = useState('')
   const [commentary, setCommentary] = useState('')
   const [tags, setTags] = useState<string[]>([])
@@ -347,6 +406,8 @@ export function TweetCapturePage() {
   })
 
   const resolved = useResolveMusicEntity(musicUrl.trim())
+  const quotedSlug = parseTweetSlugInput(quoteInput)
+  const resolvedQuote = useMicroPostBySlug(quotedSlug)
 
   useEffect(() => {
     if (!existingPost) return
@@ -500,6 +561,7 @@ export function TweetCapturePage() {
         type: 'micro' as const,
         musicEntityType: resolved.data?.entityType ?? existingPost?.musicEntityType ?? null,
         musicEntityId: resolved.data?.entity?.id ?? existingPost?.musicEntityId ?? null,
+        quotedPostId: resolvedQuote.data?.id ?? existingPost?.quotedPostId ?? null,
         ...(creatorIds ? { creatorIds } : {})
       }
 
@@ -649,16 +711,28 @@ export function TweetCapturePage() {
           />
         )
 
+        const quoteCard = (
+          <QuoteTweetCard
+            quoteInput={quoteInput}
+            onQuoteInputChange={setQuoteInput}
+            isResolving={Boolean(quotedSlug) && resolvedQuote.isPending}
+            resolvedTitle={resolvedQuote.data?.title ?? null}
+            resolvedContent={resolvedQuote.data?.content ?? null}
+          />
+        )
+
         if (!isDesktop) {
           return (
             <Tabs defaultValue='music' className='w-full'>
-              <TabsList className='grid w-full grid-cols-3'>
+              <TabsList className='grid w-full grid-cols-4'>
                 <TabsTrigger value='music'>Music</TabsTrigger>
                 <TabsTrigger value='post'>Post</TabsTrigger>
+                <TabsTrigger value='quote'>Quote</TabsTrigger>
                 <TabsTrigger value='tags'>Tags</TabsTrigger>
               </TabsList>
               <TabsContent value='music'>{musicCard}</TabsContent>
               <TabsContent value='post'>{composerCard}</TabsContent>
+              <TabsContent value='quote'>{quoteCard}</TabsContent>
               <TabsContent value='tags'>{tagsCard}</TabsContent>
             </Tabs>
           )
@@ -670,7 +744,10 @@ export function TweetCapturePage() {
               {composerCard}
               {tagsCard}
             </div>
-            <div>{musicCard}</div>
+            <div className='space-y-6'>
+              {musicCard}
+              {quoteCard}
+            </div>
           </div>
         )
       })()}

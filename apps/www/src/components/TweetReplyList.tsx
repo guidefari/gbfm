@@ -1,6 +1,7 @@
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { TweetAuthorRow } from '@/components/TweetAuthorRow'
 import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
+import { TweetQuoteCard } from '@/components/TweetQuoteCard'
 import { useMicroPostReplies } from '@/lib/http'
 
 type Props = {
@@ -52,6 +53,7 @@ export function TweetReplyList({ parentSlug }: Props) {
                 entityId={reply.musicEntityId}
               />
             )}
+            {reply.quotedPostId && <TweetQuoteCard quotedPostId={reply.quotedPostId} />}
           </div>
         )
       })}

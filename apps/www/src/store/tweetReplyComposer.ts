@@ -5,9 +5,15 @@ type TweetReplyComposerState = {
   readonly isOpen: boolean
   readonly draft: string
   readonly musicUrl: string
+  readonly quoteInput: string
 }
 
-const initialState: TweetReplyComposerState = { isOpen: false, draft: '', musicUrl: '' }
+const initialState: TweetReplyComposerState = {
+  isOpen: false,
+  draft: '',
+  musicUrl: '',
+  quoteInput: ''
+}
 
 export const tweetReplyComposerAtom = Atom.make<TweetReplyComposerState>(initialState).pipe(
   Atom.keepAlive
@@ -23,6 +29,7 @@ export const useTweetReplyComposerActions = () => {
     setDraft: (draft: string) => set((state) => ({ ...state, draft })),
     setMusicUrl: (musicUrl: string) => set((state) => ({ ...state, musicUrl })),
     clearMusicUrl: () => set((state) => ({ ...state, musicUrl: '' })),
+    setQuoteInput: (quoteInput: string) => set((state) => ({ ...state, quoteInput })),
     reset: () => set(() => initialState)
   }
 }

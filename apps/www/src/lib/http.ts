@@ -471,6 +471,18 @@ export function useEditorialPostBySlug(slug: string) {
   }
 }
 
+// Accepts a bare slug or a full URL/path containing /tweet/:slug (e.g.
+// https://goosebumps.fm/tweet/some-slug or /tweet/some-slug) and returns
+// just the slug, trimming a trailing slash or query string. No URL
+// resolver service needed here (unlike music links) since /tweet/:slug is
+// this app's own fixed route shape.
+export function parseTweetSlugInput(input: string): string {
+  const trimmed = input.trim()
+  if (!trimmed) return ''
+  const afterMarker = trimmed.split('/tweet/')[1] ?? trimmed
+  return afterMarker.split(/[/?#]/)[0] ?? ''
+}
+
 export function useMicroPostBySlug(slug: string) {
   const { data, error, isPending } = useQuery<SelectMdxCompiledMicroPost, Error>({
     queryKey: ['post', 'micro', slug],
@@ -495,6 +507,39 @@ export function useMicroPostBySlug(slug: string) {
       }
     },
     enabled: Boolean(slug)
+  })
+
+  return {
+    data,
+    error,
+    isPending
+  }
+}
+
+export function useMicroPostById(id: string) {
+  const { data, error, isPending } = useQuery<SelectMdxCompiledMicroPost, Error>({
+    queryKey: ['post', 'micro', 'by-id', id],
+    queryFn: async () => {
+      const client = await getApiClient()
+      const post = await Effect.runPromise(
+        client.post
+          .getMicroPostById({ params: { id } })
+          .pipe(
+            Effect.tapError((error) =>
+              captureException(error, { endpoint: 'post.getMicroPostById' })
+            )
+          )
+      )
+      return {
+        ...post,
+        bannerImageUrl: null,
+        createdAt: new Date(post.createdAt),
+        updatedAt: new Date(post.updatedAt),
+        tags: post.tags ? [...post.tags] : null,
+        creators: post.creators ? [...post.creators] : undefined
+      }
+    },
+    enabled: Boolean(id)
   })
 
   return {
@@ -529,6 +574,7 @@ export type CreateMicroPostReplyPayload = {
   content: string
   musicEntityType?: 'album' | 'track' | 'playlist' | null
   musicEntityId?: string | null
+  quotedPostId?: string | null
 }
 
 export function useCreateMicroPostReply(parentSlug: string) {
@@ -537,14 +583,15 @@ export function useCreateMicroPostReply(parentSlug: string) {
     mutationFn: async ({
       content,
       musicEntityType,
-      musicEntityId
+      musicEntityId,
+      quotedPostId
     }: CreateMicroPostReplyPayload) => {
       const client = await getApiClient()
       return Effect.runPromise(
         client.post
           .createMicroPostReply({
             params: { parentSlug },
-            payload: { content, musicEntityType, musicEntityId }
+            payload: { content, musicEntityType, musicEntityId, quotedPostId }
           })
           .pipe(
             Effect.tapError((error) =>

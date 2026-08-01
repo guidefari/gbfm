@@ -1,8 +1,13 @@
 import { Button, Input, Textarea, useToast } from '@gbfm/ui'
 import { Link } from '@tanstack/react-router'
-import { Loader2, Music4 } from 'lucide-react'
+import { Loader2, MessageSquareQuote, Music4 } from 'lucide-react'
 import { useSession } from '@/lib/auth-client'
-import { useCreateMicroPostReply, useResolveMusicEntity } from '@/lib/http'
+import {
+  parseTweetSlugInput,
+  useCreateMicroPostReply,
+  useMicroPostBySlug,
+  useResolveMusicEntity
+} from '@/lib/http'
 import { useTweetReplyComposer, useTweetReplyComposerActions } from '@/store/tweetReplyComposer'
 
 type Props = {
@@ -12,11 +17,13 @@ type Props = {
 export function TweetReplyComposer({ parentSlug }: Props) {
   const { data: session } = useSession()
   const isAuthenticated = Boolean(session?.user)
-  const { isOpen, draft, musicUrl } = useTweetReplyComposer()
-  const { open, setDraft, setMusicUrl, reset } = useTweetReplyComposerActions()
+  const { isOpen, draft, musicUrl, quoteInput } = useTweetReplyComposer()
+  const { open, setDraft, setMusicUrl, setQuoteInput, reset } = useTweetReplyComposerActions()
   const { toast } = useToast()
   const createReply = useCreateMicroPostReply(parentSlug)
   const resolved = useResolveMusicEntity(musicUrl.trim())
+  const quotedSlug = parseTweetSlugInput(quoteInput)
+  const resolvedQuote = useMicroPostBySlug(quotedSlug)
 
   if (!isAuthenticated) {
     return (
@@ -45,7 +52,8 @@ export function TweetReplyComposer({ parentSlug }: Props) {
       await createReply.mutateAsync({
         content,
         musicEntityType: resolved.data?.entityType,
-        musicEntityId: resolved.data?.entity?.id
+        musicEntityId: resolved.data?.entity?.id,
+        quotedPostId: resolvedQuote.data?.id
       })
       reset()
       toast({ title: 'Reply posted' })
@@ -90,6 +98,25 @@ export function TweetReplyComposer({ parentSlug }: Props) {
             <Music4 className='size-4 shrink-0 text-muted-foreground' />
           )}
           <span className='truncate text-muted-foreground'>{resolved.data.entity.title}</span>
+        </div>
+      )}
+      <div className='relative'>
+        <Input
+          value={quoteInput}
+          onChange={(e) => setQuoteInput(e.target.value)}
+          placeholder='Quote a tweet (paste link or slug, optional)'
+          className='h-8 text-xs pr-8'
+        />
+        {quotedSlug && resolvedQuote.isPending && (
+          <Loader2 className='absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 animate-spin text-muted-foreground' />
+        )}
+      </div>
+      {resolvedQuote.data && (
+        <div className='flex items-center gap-2 rounded-md border border-border/40 bg-muted/30 px-2 py-1.5 text-xs'>
+          <MessageSquareQuote className='size-4 shrink-0 text-muted-foreground' />
+          <span className='truncate text-muted-foreground'>
+            {resolvedQuote.data.title || resolvedQuote.data.content}
+          </span>
         </div>
       )}
       <div className='flex justify-end gap-2'>

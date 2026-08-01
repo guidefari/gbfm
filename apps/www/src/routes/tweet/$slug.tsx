@@ -11,6 +11,7 @@ import { TweetActionsMenu } from '@/components/TweetActionsMenu'
 import { TweetAuthorRow } from '@/components/TweetAuthorRow'
 import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
 import { TweetNav } from '@/components/TweetNav'
+import { TweetQuoteCard } from '@/components/TweetQuoteCard'
 import { TweetReplyComposer } from '@/components/TweetReplyComposer'
 import { TweetReplyList } from '@/components/TweetReplyList'
 import { useSession } from '@/lib/auth-client'
@@ -121,6 +122,8 @@ function TweetPostPage() {
         {hasMusicEntity && post.musicEntityType && post.musicEntityId && (
           <TweetMusicEntityCard entityType={post.musicEntityType} entityId={post.musicEntityId} />
         )}
+
+        {post.quotedPostId && <TweetQuoteCard quotedPostId={post.quotedPostId} />}
 
         {post.tags && post.tags.length > 0 && (
           <div className='flex flex-wrap gap-1.5 pt-1'>
