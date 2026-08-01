@@ -1,3 +1,11 @@
+## [2.81.1](https://github.com/guidefari/gbfm/compare/v2.81.0...v2.81.1) (2026-08-01)
+
+
+### Bug Fixes
+
+* **www:** restore control clicks inside tweet replies ([e05bed0](https://github.com/guidefari/gbfm/commit/e05bed0476e06de2ad5a2bd9a32c571266311729))
+* **www:** unify stream control sizing on music cards ([b1055f7](https://github.com/guidefari/gbfm/commit/b1055f72e6951c577edef99ec52a02e5c2b6b562))
+
 # [2.81.0](https://github.com/guidefari/gbfm/compare/v2.80.0...v2.81.0) (2026-08-01)
 
 
