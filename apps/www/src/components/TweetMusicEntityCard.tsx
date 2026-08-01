@@ -1,8 +1,21 @@
 import { LINK_STATUS } from '@gbfm/core/status'
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Input,
+  useToast
+} from '@gbfm/ui'
 import { useQuery } from '@tanstack/react-query'
-import { Music4 } from 'lucide-react'
+import { Bell, Music4 } from 'lucide-react'
+import { useState } from 'react'
 import { StreamLinks } from '@/components/StreamLinks'
-import { apiUrl, fetcher } from '@/lib/http'
+import { useSession } from '@/lib/auth-client'
+import { apiUrl, fetcher, useCreateMusicReminder } from '@/lib/http'
+import { log } from '@/services/logger'
 
 type MusicEntityType = 'album' | 'track' | 'playlist'
 
@@ -45,6 +58,8 @@ function isMusicEntityType(value: string): value is MusicEntityType {
 
 export function TweetMusicEntityCard({ entityType, entityId }: Props) {
   const supportedType: MusicEntityType | null = isMusicEntityType(entityType) ? entityType : null
+  const { data: session } = useSession()
+  const isAuthenticated = Boolean(session?.user)
 
   const { data, isPending } = useQuery<MusicEntityPreview>({
     queryKey: ['music-entity', entityType, entityId],
@@ -104,16 +119,27 @@ export function TweetMusicEntityCard({ entityType, entityId }: Props) {
       </div>
 
       <div className='flex min-w-0 flex-1 flex-col'>
-        <div className='space-y-1 p-4'>
-          <div className='text-[10px] font-bold tracking-[0.3em] text-muted-foreground/60'>
-            {entityLabelByType[supportedType]}
+        <div className='flex items-start justify-between gap-2 p-4'>
+          <div className='space-y-1'>
+            <div className='text-[10px] font-bold tracking-[0.3em] text-muted-foreground/60'>
+              {entityLabelByType[supportedType]}
+            </div>
+            <h2 className='text-lg font-bold leading-snug tracking-tight text-foreground'>
+              {data.title}
+            </h2>
+            {data.artistNames?.length ? (
+              <p className='text-sm text-muted-foreground'>{data.artistNames.join(', ')}</p>
+            ) : null}
           </div>
-          <h2 className='text-lg font-bold leading-snug tracking-tight text-foreground'>
-            {data.title}
-          </h2>
-          {data.artistNames?.length ? (
-            <p className='text-sm text-muted-foreground'>{data.artistNames.join(', ')}</p>
-          ) : null}
+
+          {isAuthenticated && (
+            <RemindMeButton
+              title={data.title}
+              artistNames={data.artistNames}
+              coverImageUrl={data.coverImageUrl}
+              musicUrl={verifiedLinks[0]?.url ?? null}
+            />
+          )}
         </div>
 
         {data.description ? (
@@ -131,5 +157,90 @@ export function TweetMusicEntityCard({ entityType, entityId }: Props) {
         )}
       </div>
     </section>
+  )
+}
+
+function RemindMeButton({
+  title,
+  artistNames,
+  coverImageUrl,
+  musicUrl
+}: {
+  title: string
+  artistNames?: string[] | null
+  coverImageUrl: string | null
+  musicUrl: string | null
+}) {
+  const [open, setOpen] = useState(false)
+  const [reminderDate, setReminderDate] = useState('')
+  const { toast } = useToast()
+  const createReminderMutation = useCreateMusicReminder()
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!musicUrl || !reminderDate) return
+
+    try {
+      await createReminderMutation.mutateAsync({
+        musicTitle: title,
+        artistName: artistNames?.join(', ') || 'Unknown artist',
+        musicUrl,
+        albumCoverUrl: coverImageUrl ?? undefined,
+        reminderDate: new Date(reminderDate).toISOString()
+      })
+      toast({
+        title: 'Reminder created',
+        description: "We'll send you an email when the time comes!"
+      })
+      setOpen(false)
+      setReminderDate('')
+    } catch (error) {
+      log('error', 'Failed to create reminder', { error })
+      toast({
+        variant: 'destructive',
+        title: 'Failed to create reminder',
+        description: 'Please try again later.'
+      })
+    }
+  }
+
+  if (!musicUrl) return null
+
+  return (
+    <Dialog open={open} onOpenChange={setOpen}>
+      <Button
+        type='button'
+        variant='outline'
+        size='sm'
+        className='shrink-0 gap-1.5 rounded-sm'
+        onClick={() => setOpen(true)}>
+        <Bell className='h-3.5 w-3.5' />
+        Remind me
+      </Button>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Set a listen reminder</DialogTitle>
+        </DialogHeader>
+        <form className='space-y-4' onSubmit={handleSubmit}>
+          <div>
+            <label htmlFor='reminder-date' className='mb-1 block text-sm font-medium'>
+              Remind me on
+            </label>
+            <Input
+              type='datetime-local'
+              id='reminder-date'
+              required
+              value={reminderDate}
+              onChange={(e) => setReminderDate(e.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button type='submit' disabled={createReminderMutation.isPending}>
+              {createReminderMutation.isPending ? 'Saving…' : 'Set reminder'}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }
