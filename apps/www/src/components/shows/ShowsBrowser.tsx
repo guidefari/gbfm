@@ -34,7 +34,14 @@ export function ShowsBrowser({ selectedShow, onSelectShow }: ShowsBrowserProps) 
     <div className='grid grid-cols-1 gap-6 lg:grid-cols-[220px_minmax(0,1fr)_240px] lg:gap-10'>
       <aside className='hidden lg:block'>
         <div className='no-scrollbar sticky top-4 max-h-[calc(100dvh-8rem)] overflow-y-auto'>
-          {selectedShow && <ShowMetaBlock show={selectedShow} />}
+          {selectedShow && (
+            <>
+              <h2 className='mb-2 border-b border-border/60 pb-2 text-xs font-semibold tracking-wider text-muted-foreground'>
+                Show
+              </h2>
+              <ShowMetaBlock show={selectedShow} />
+            </>
+          )}
         </div>
       </aside>
 
@@ -53,6 +60,11 @@ export function ShowsBrowser({ selectedShow, onSelectShow }: ShowsBrowserProps) 
       </div>
 
       <main className='min-w-0'>
+        {selectedShow && (
+          <h1 className='mb-3 border-b border-border/60 pb-2 text-xs font-semibold tracking-wider text-muted-foreground'>
+            Episodes
+          </h1>
+        )}
         {selectedShow ? (
           <EpisodeGrid showSlug={selectedShow.slug} />
         ) : (
@@ -64,7 +76,10 @@ export function ShowsBrowser({ selectedShow, onSelectShow }: ShowsBrowserProps) 
 
       <aside className='hidden lg:block'>
         <div className='no-scrollbar sticky top-4 max-h-[calc(100dvh-8rem)] overflow-y-auto pl-1'>
-          <nav aria-label='Shows' className='space-y-0.5 font-mono text-sm'>
+          <h2 className='mb-2 border-b border-border/60 pb-2 text-xs font-semibold tracking-wider text-muted-foreground'>
+            All shows
+          </h2>
+          <nav aria-label='Shows' className='font-mono text-sm'>
             {data.map((show) => (
               <ShowListItem
                 key={show.id}

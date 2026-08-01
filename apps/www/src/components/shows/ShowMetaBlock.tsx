@@ -37,7 +37,9 @@ export function ShowMetaBlock({ show }: ShowMetaBlockProps) {
       <h2 className='mt-3 text-lg font-bold tracking-tight text-foreground'>{show.title}</h2>
       {hostNames && <p className='mt-1 text-xs text-muted-foreground'>hosted by {hostNames}</p>}
       {show.description && (
-        <p className='mt-3 text-xs leading-relaxed text-muted-foreground'>{show.description}</p>
+        <p className='mt-3 border-t border-border/40 pt-3 text-xs leading-relaxed text-muted-foreground'>
+          {show.description}
+        </p>
       )}
       <div className='mt-4 flex items-center gap-1'>
         <SubscribeButton

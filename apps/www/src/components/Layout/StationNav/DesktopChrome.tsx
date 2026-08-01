@@ -85,7 +85,7 @@ export function DesktopChrome({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        'fixed inset-x-0 top-0 z-40 hidden h-12 shrink-0 items-center gap-3 border-b border-border bg-background/95 px-4 backdrop-blur lg:flex',
+        'fixed inset-x-0 top-0 z-40 hidden h-12 shrink-0 items-center gap-3 border-b-2 border-foreground bg-background/95 px-4 backdrop-blur lg:flex',
         className
       )}>
       <ProgressTicker />
