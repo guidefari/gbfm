@@ -1,3 +1,12 @@
+# [2.82.0](https://github.com/guidefari/gbfm/compare/v2.81.1...v2.82.0) (2026-08-01)
+
+
+### Features
+
+* **www:** add tags index page ([a2ae1f5](https://github.com/guidefari/gbfm/commit/a2ae1f5c078eaa13d63271a96b3f9b2a960a3efa))
+* **www:** link tags as hashtags to a tag page ([81fa3da](https://github.com/guidefari/gbfm/commit/81fa3da1e5fd2dcb3d43ca54def0295cd244acc8)), closes [#hashtag](https://github.com/guidefari/gbfm/issues/hashtag)
+* **www:** render full post content on tag pages ([1e8f992](https://github.com/guidefari/gbfm/commit/1e8f992530c393d32a20f02c06e19aea1dc25881))
+
 ## [2.81.1](https://github.com/guidefari/gbfm/compare/v2.81.0...v2.81.1) (2026-08-01)
 
 
