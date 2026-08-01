@@ -58,6 +58,15 @@ export class CryptoError extends Data.TaggedError('CryptoError')<{
   readonly operation: 'encrypt' | 'decrypt' | 'keyResolve'
 }> {}
 
+export class BlueskyProviderError extends Data.TaggedError('BlueskyProviderError')<{
+  readonly message: string
+  readonly operation: 'resolveIdentity' | 'login'
+}> {}
+
+export class IdentityResolutionError extends Data.TaggedError('IdentityResolutionError')<{
+  readonly message: string
+}> {}
+
 export class ReminderProcessingError extends Data.TaggedError('ReminderProcessingError')<{
   readonly message: string
   readonly reminderId: string

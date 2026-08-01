@@ -7,6 +7,7 @@ export { DatabaseService, DatabaseServiceLayer } from '@/services/database.servi
 
 import { AudioServiceLayer } from '@/services/audio.service'
 import { ConfigServiceLayer } from '@/services/config.service'
+import { BlueskyClientLayer } from '@/services/bluesky-client.service'
 import { BlueskyImportServiceLayer } from '@/services/bluesky-importer.service'
 import { CryptoServiceLayer } from '@/services/crypto.service'
 import { EmailServiceLayer } from '@/services/email.service'
@@ -38,6 +39,7 @@ const UploadAssetDepsLive = Layer.mergeAll(ConfigServiceLayer, UploadAssetServic
 
 const BaseServicesLayer = Layer.mergeAll(
   ConfigServiceLayer,
+  BlueskyClientLayer,
   BlueskyImportServiceLayer,
   CryptoServiceLayer.pipe(Layer.provide(ConfigServiceLayer)),
   DatabaseServiceLayer,
