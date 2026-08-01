@@ -5,6 +5,7 @@ import { MDXRendrr } from '@/components/MDXRendrr'
 import { TweetAuthorRow } from '@/components/TweetAuthorRow'
 import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
 import { TweetQuoteCard } from '@/components/TweetQuoteCard'
+import { TweetTagLinks } from '@/components/TweetTagLinks'
 import { useMicroPostReplies } from '@/lib/http'
 
 type Props = {
@@ -57,8 +58,9 @@ export function TweetReplyList({ parentSlug }: Props) {
               <div className='absolute left-[35px] top-full h-2 w-px bg-border/60' aria-hidden />
             )}
             <div
-              role='link'
+              role='button'
               tabIndex={0}
+              aria-label={`Open reply by ${reply.creators?.[0]?.name ?? 'author'}`}
               onClick={(event) => {
                 if (isInteractiveTarget(event)) return
                 router.navigate({ to: '/tweet/$slug', params: { slug: reply.slug } })
@@ -83,6 +85,7 @@ export function TweetReplyList({ parentSlug }: Props) {
                 />
               )}
               {reply.quotedPostId && <TweetQuoteCard quotedPostId={reply.quotedPostId} />}
+              {reply.tags && reply.tags.length > 0 && <TweetTagLinks tags={reply.tags} />}
               {Boolean(reply.replyCount) && (
                 <div className='flex items-center gap-1.5 text-xs text-muted-foreground'>
                   <MessageCircle className='h-3 w-3' />
