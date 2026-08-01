@@ -4,6 +4,7 @@ import { Effect } from 'effect'
 import { Tag } from 'lucide-react'
 import { useEffect } from 'react'
 import { MDXRendrr } from '@/components/MDXRendrr'
+import { NewTweetFab } from '@/components/NewTweetFab'
 import { PostsNav } from '@/components/PostsNav'
 import { RouteError } from '@/components/RouteError'
 import { TweetActionsMenu } from '@/components/TweetActionsMenu'
@@ -133,6 +134,7 @@ function TweetPostPage() {
           </div>
         )}
       </article>
+      <NewTweetFab />
     </div>
   )
 }
