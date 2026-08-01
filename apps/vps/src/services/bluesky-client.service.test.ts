@@ -50,6 +50,23 @@ describe('BlueskyClient', () => {
     expect(Redacted.value(result.accessJwt)).toBe('access-token')
   })
 
+  test('reads an authored feed page with the verified access token', async () => {
+    const result = await Effect.runPromise(
+      makeBlueskyClient(async (input, init) => {
+        expect(String(input)).toContain('getAuthorFeed')
+        expect(init?.headers).toMatchObject({ authorization: 'Bearer access-token' })
+        return Response.json({ feed: [{ post: { uri: 'at://post' } }], cursor: 'next-page' })
+      }).getAuthorFeed({
+        serviceEndpoint: 'https://pds.example.test',
+        actorDid: 'did:plc:author',
+        accessJwt: Redacted.make('access-token')
+      })
+    )
+
+    expect(result.entries).toHaveLength(1)
+    expect(result.cursor).toBe('next-page')
+  })
+
   test('fails closed when the handle resolves to a different login identity', async () => {
     const client = makeBlueskyClient(async (input, init) => {
       const response = await fakeFetch(input, init)

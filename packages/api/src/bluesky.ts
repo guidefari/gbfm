@@ -18,6 +18,16 @@ export const BlueskyAccount = Schema.Struct({
   updatedAt: Schema.String
 })
 
+const SyncRunResponse = Schema.Struct({
+  runId: Uuid,
+  discovered: Schema.Number,
+  qualifying: Schema.Number,
+  created: Schema.Number,
+  alreadyImported: Schema.Number,
+  failed: Schema.Number,
+  cursor: Schema.NullOr(Schema.String)
+})
+
 const ConnectBlueskyInput = Schema.Struct({
   handle: Schema.NonEmptyString,
   appPassword: Schema.NonEmptyString
@@ -34,6 +44,13 @@ export const BlueskyGroup = HttpApiGroup.make('bluesky')
   .add(
     HttpApiEndpoint.get('listBlueskyAccounts', '/api/integrations/bluesky', {
       success: Schema.Array(BlueskyAccount)
+    }).middleware(AuthMiddleware)
+  )
+  .add(
+    HttpApiEndpoint.post('syncBluesky', '/api/integrations/bluesky/:id/sync', {
+      params: { id: Uuid },
+      success: SyncRunResponse,
+      error: [HttpApiError.BadRequest, HttpApiError.NotFound]
     }).middleware(AuthMiddleware)
   )
   .add(

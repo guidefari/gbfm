@@ -13,6 +13,10 @@ const didDocument = z.object({
     })
   )
 })
+const authorFeedResponse = z.object({
+  feed: z.array(z.unknown()),
+  cursor: z.string().optional()
+})
 const sessionResponse = z.object({
   did: z.string().min(1),
   handle: z.string().min(1),
@@ -33,6 +37,15 @@ export interface BlueskyClient {
     readonly handle: string
     readonly appPassword: Redacted.Redacted<string>
   }) => Effect.Effect<BlueskyLogin, BlueskyProviderError | IdentityResolutionError>
+  readonly getAuthorFeed: (input: {
+    readonly serviceEndpoint: string
+    readonly actorDid: string
+    readonly accessJwt: Redacted.Redacted<string>
+    readonly cursor?: string
+  }) => Effect.Effect<
+    { readonly entries: ReadonlyArray<unknown>; readonly cursor: string | undefined },
+    BlueskyProviderError
+  >
 }
 
 export const BlueskyClient = Context.Service<BlueskyClient>('BlueskyClient')
@@ -102,6 +115,29 @@ const resolveIdentity = (fetcher: Fetch, handle: string) =>
   })
 
 export const makeBlueskyClient = (fetcher: Fetch = globalThis.fetch): BlueskyClient => ({
+  getAuthorFeed: ({ serviceEndpoint, actorDid, accessJwt, cursor }) =>
+    Effect.tryPromise({
+      try: async () => {
+        const url = new URL(`${serviceEndpoint}/xrpc/app.bsky.feed.getAuthorFeed`)
+        url.searchParams.set('actor', actorDid)
+        url.searchParams.set('filter', 'posts_and_author_threads')
+        url.searchParams.set('limit', '100')
+        if (cursor) url.searchParams.set('cursor', cursor)
+        const response = await fetcher(url, {
+          headers: { authorization: `Bearer ${Redacted.value(accessJwt)}` },
+          signal: AbortSignal.timeout(10_000)
+        })
+        if (!response.ok) throw providerError('feed', 'Unable to read Bluesky archive')
+        const payload: unknown = await response.json()
+        const parsed = authorFeedResponse.safeParse(payload)
+        if (!parsed.success) throw providerError('feed', 'Bluesky returned an invalid feed')
+        return { entries: parsed.data.feed, cursor: parsed.data.cursor }
+      },
+      catch: (error) =>
+        error instanceof BlueskyProviderError
+          ? error
+          : providerError('feed', 'Unable to read Bluesky archive')
+    }),
   login: ({ handle, appPassword }) =>
     Effect.gen(function* () {
       const identity = yield* resolveIdentity(fetcher, handle)

@@ -11,6 +11,7 @@ import { BlueskyAccountServiceLayer } from '@/services/bluesky-account.service'
 import { BlueskyArchiveServiceLayer } from '@/services/bluesky-archive.service'
 import { BlueskyClientLayer } from '@/services/bluesky-client.service'
 import { BlueskyImportServiceLayer } from '@/services/bluesky-importer.service'
+import { BlueskySyncServiceLayer } from '@/services/bluesky-sync.service'
 import { LockServiceLayer } from '@/services/lock.service'
 import { CryptoServiceLayer } from '@/services/crypto.service'
 import { EmailServiceLayer } from '@/services/email.service'
@@ -74,7 +75,10 @@ const ServicesLayer = Layer.mergeAll(
   QRCodeServiceLayer.pipe(Layer.provide(BaseServicesLayer)),
   MusicEntityServiceLayer.pipe(Layer.provide(BaseServicesLayer)),
   BlueskyAccountServiceLayer.pipe(Layer.provide(BaseServicesLayer)),
-  BlueskyArchiveServiceLayer
+  BlueskyArchiveServiceLayer,
+  BlueskySyncServiceLayer.pipe(
+    Layer.provide(Layer.mergeAll(BaseServicesLayer, BlueskyArchiveServiceLayer))
+  )
 )
 
 export const AppLayer = ServicesLayer.pipe(Layer.provide(AppLoggerLive))

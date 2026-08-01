@@ -4,6 +4,7 @@ import { Effect, Redacted } from 'effect'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
 import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
 import { BlueskyAccountService } from '@/services/bluesky-account.service'
+import { BlueskySyncService } from '@/services/bluesky-sync.service'
 
 const dieOnDatabaseError = makeDieOnDatabaseError('bluesky')
 
@@ -48,6 +49,24 @@ export const BlueskyHandlersLive = HttpApiBuilder.group(Api, 'bluesky', (handler
             )
         )
         return toAccountResponse(account)
+      })
+    )
+    .handle('syncBluesky', ({ params }) =>
+      Effect.gen(function* () {
+        const { user } = yield* AuthSession
+        const service = yield* BlueskySyncService
+        const summary = yield* dieOnDatabaseError(
+          service.sync({ userId: user.id, accountId: params.id }).pipe(
+            Effect.catchTags({
+              NotFoundError: () => new HttpApiError.NotFound(),
+              BlueskyProviderError: () => new HttpApiError.BadRequest(),
+              IdentityResolutionError: () => new HttpApiError.BadRequest(),
+              LockUnavailable: () => new HttpApiError.BadRequest(),
+              CryptoError: (cause) => Effect.die(cause)
+            })
+          )
+        )
+        return { ...summary, cursor: summary.cursor ?? null }
       })
     )
     .handle('listBlueskyAccounts', () =>
