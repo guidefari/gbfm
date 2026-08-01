@@ -26,7 +26,8 @@ export function useNavSections(): NavSections {
         (item) =>
           (item.tier === 'primary' || item.tier === 'secondary') &&
           !item.adminOnly &&
-          item.id !== 'home'
+          item.id !== 'home' &&
+          item.id !== 'shows'
       ),
       create: items.filter((item) => item.tier === 'create' && canSeeNavItem(item, access)),
       admin: items.filter((item) => item.adminOnly && canSeeNavItem(item, access)),
