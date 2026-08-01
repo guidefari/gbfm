@@ -53,6 +53,11 @@ export class DatabaseError extends Data.TaggedError('DatabaseError')<{
   readonly table?: string
 }> {}
 
+export class CryptoError extends Data.TaggedError('CryptoError')<{
+  readonly message: string
+  readonly operation: 'encrypt' | 'decrypt' | 'keyResolve'
+}> {}
+
 export class ReminderProcessingError extends Data.TaggedError('ReminderProcessingError')<{
   readonly message: string
   readonly reminderId: string

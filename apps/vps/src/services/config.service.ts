@@ -69,6 +69,9 @@ const ConfigSchema = Schema.Struct({
     betterAuthSecret: Schema.String,
     betterAuthUrl: Schema.String
   }),
+  encryption: Schema.Struct({
+    rootKey: Schema.String
+  }),
   spotify: Schema.Struct({
     clientId: Schema.String,
     clientSecret: Schema.String
@@ -125,6 +128,10 @@ export function createConfig(): ConfigService {
   const refreshTokenSecret = 'secret'
   const betterAuthSecret = secretString('BETTER_AUTH_SECRET', '')
   const betterAuthUrl = secretString('BETTER_AUTH_URL', '')
+  const encryptionRootKey = secretString(
+    'GBFM_ENCRYPTION_ROOT_KEY',
+    'local-development-encryption-key'
+  )
 
   const spotifyClientId = secretString('SpotifyClientId', '')
   const spotifyClientSecret = secretString('SpotifyClientSecret', '')
@@ -172,6 +179,9 @@ export function createConfig(): ConfigService {
       refreshTokenSecret,
       betterAuthSecret,
       betterAuthUrl
+    },
+    encryption: {
+      rootKey: encryptionRootKey
     },
     spotify: {
       clientId: spotifyClientId,

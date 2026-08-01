@@ -7,6 +7,7 @@ export { DatabaseService, DatabaseServiceLayer } from '@/services/database.servi
 
 import { AudioServiceLayer } from '@/services/audio.service'
 import { ConfigServiceLayer } from '@/services/config.service'
+import { CryptoServiceLayer } from '@/services/crypto.service'
 import { EmailServiceLayer } from '@/services/email.service'
 import { FavoriteServiceLayer } from '@/services/favorite.service'
 import { AppLoggerLive } from '@/services/logger.service'
@@ -36,6 +37,7 @@ const UploadAssetDepsLive = Layer.mergeAll(ConfigServiceLayer, UploadAssetServic
 
 const BaseServicesLayer = Layer.mergeAll(
   ConfigServiceLayer,
+  CryptoServiceLayer.pipe(Layer.provide(ConfigServiceLayer)),
   DatabaseServiceLayer,
   EmailServiceLayer,
   FavoriteServiceLayer,
