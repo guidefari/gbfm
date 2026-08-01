@@ -32,7 +32,9 @@ export function StreamLinks({ links }: Props) {
 
   return (
     <div className='pointer-events-auto flex flex-wrap items-center gap-1.5'>
-      <span className='text-[10px] font-bold tracking-widest text-muted-foreground/50'>Stream</span>
+      <span className='px-1 text-[10px] font-bold tracking-widest text-muted-foreground/50'>
+        Stream
+      </span>
       {links.map((link) => {
         const label = PLATFORM_LABELS[link.platform] ?? link.platform
 

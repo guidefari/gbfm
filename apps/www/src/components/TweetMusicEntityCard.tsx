@@ -71,8 +71,8 @@ export function TweetMusicEntityCard({ entityType, entityId }: Props) {
 
   if (isPending || isLinksPending) {
     return (
-      <div className='not-prose overflow-hidden rounded-md border border-border/50 bg-muted/20 animate-pulse'>
-        <div className='aspect-square w-full bg-muted' />
+      <div className='not-prose overflow-hidden rounded-md border border-border/50 bg-muted/20 animate-pulse sm:flex'>
+        <div className='aspect-square w-full bg-muted sm:h-40 sm:w-40 sm:shrink-0' />
         <div className='space-y-2 p-4'>
           <div className='h-2.5 w-16 rounded-full bg-muted' />
           <div className='h-4 w-2/3 rounded-full bg-muted' />
@@ -89,8 +89,8 @@ export function TweetMusicEntityCard({ entityType, entityId }: Props) {
   const verifiedLinks = links?.filter((l) => l.status === LINK_STATUS.VERIFIED) ?? []
 
   return (
-    <section className='not-prose overflow-hidden rounded-md border border-border/50 bg-muted/20'>
-      <div className='flex aspect-square w-full items-center justify-center overflow-hidden bg-muted'>
+    <section className='not-prose overflow-hidden rounded-md border border-border/50 bg-muted/20 sm:flex sm:items-stretch'>
+      <div className='flex aspect-square w-full shrink-0 items-center justify-center overflow-hidden bg-muted sm:h-auto sm:w-40'>
         {data.coverImageUrl ? (
           <img
             src={data.coverImageUrl}
@@ -103,31 +103,33 @@ export function TweetMusicEntityCard({ entityType, entityId }: Props) {
         )}
       </div>
 
-      <div className='space-y-1 p-4'>
-        <div className='text-[10px] font-bold tracking-[0.3em] text-muted-foreground/60'>
-          {entityLabelByType[supportedType]}
-        </div>
-        <h2 className='text-lg font-bold leading-snug tracking-tight text-foreground'>
-          {data.title}
-        </h2>
-        {data.artistNames?.length ? (
-          <p className='text-sm text-muted-foreground'>{data.artistNames.join(', ')}</p>
-        ) : null}
-      </div>
-
-      {data.description ? (
-        <p className='border-t border-border/40 px-4 py-2 text-xs leading-relaxed text-muted-foreground'>
-          {data.description}
-        </p>
-      ) : null}
-
-      {verifiedLinks.length > 0 && (
-        <div className='-mx-4 overflow-x-auto border-t border-border/40 px-4 py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
-          <div className='w-max'>
-            <StreamLinks links={verifiedLinks} />
+      <div className='flex min-w-0 flex-1 flex-col'>
+        <div className='space-y-1 p-4'>
+          <div className='text-[10px] font-bold tracking-[0.3em] text-muted-foreground/60'>
+            {entityLabelByType[supportedType]}
           </div>
+          <h2 className='text-lg font-bold leading-snug tracking-tight text-foreground'>
+            {data.title}
+          </h2>
+          {data.artistNames?.length ? (
+            <p className='text-sm text-muted-foreground'>{data.artistNames.join(', ')}</p>
+          ) : null}
         </div>
-      )}
+
+        {data.description ? (
+          <p className='border-t border-border/40 px-4 py-2 text-xs leading-relaxed text-muted-foreground'>
+            {data.description}
+          </p>
+        ) : null}
+
+        {verifiedLinks.length > 0 && (
+          <div className='-mx-4 mt-auto overflow-x-auto border-t border-border/40 px-4 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
+            <div className='w-max'>
+              <StreamLinks links={verifiedLinks} />
+            </div>
+          </div>
+        )}
+      </div>
     </section>
   )
 }
