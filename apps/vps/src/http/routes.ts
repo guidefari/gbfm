@@ -7,6 +7,7 @@ import { HttpRouter, HttpServer, HttpServerRequest, HttpServerResponse } from 'e
 import { HttpApiBuilder } from 'effect/unstable/httpapi'
 import { AdminHandlersLive } from '@/http/admin.handlers'
 import { AudioHandlersLive } from '@/http/audio.handlers'
+import { BlueskyHandlersLive } from '@/http/bluesky.handlers'
 import { EmailHandlersLive } from '@/http/email.handlers'
 import { FavoritesHandlersLive } from '@/http/favorites.handlers'
 import { FileManagerHandlersLive } from '@/http/file-manager.handlers'
@@ -84,6 +85,7 @@ export const createWebHandler = (options?: {
     Layer.provide(ReleaseHandlersLive),
     Layer.provide(PostHandlersLive),
     Layer.provide(AudioHandlersLive),
+    Layer.provide(BlueskyHandlersLive),
     Layer.provide(EmailHandlersLive),
     Layer.provide(
       Layer.mergeAll(FavoritesHandlersLive, MusicRemindersHandlersLive, NewsletterHandlersLive)
