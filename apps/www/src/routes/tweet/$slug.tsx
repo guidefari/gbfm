@@ -11,6 +11,7 @@ import { TweetActionsMenu } from '@/components/TweetActionsMenu'
 import { TweetAuthorRow } from '@/components/TweetAuthorRow'
 import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
 import { TweetNav } from '@/components/TweetNav'
+import { TweetParentPreview } from '@/components/TweetParentPreview'
 import { TweetQuoteCard } from '@/components/TweetQuoteCard'
 import { TweetReplyComposer } from '@/components/TweetReplyComposer'
 import { TweetReplyList } from '@/components/TweetReplyList'
@@ -93,6 +94,7 @@ function TweetPostPage() {
       <div className='mb-6'>
         <TweetNav slug={slug} />
       </div>
+      {post.parentPostId && <TweetParentPreview parentPostId={post.parentPostId} />}
       <article className='space-y-4 rounded-lg border border-border/60 bg-card/60 p-4 shadow-sm sm:p-5'>
         <div className='flex items-start justify-between gap-3'>
           <div className='space-y-1'>

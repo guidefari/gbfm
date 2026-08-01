@@ -1,3 +1,5 @@
+import { useRouter } from '@tanstack/react-router'
+import type { MouseEvent } from 'react'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { TweetAuthorRow } from '@/components/TweetAuthorRow'
 import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
@@ -9,6 +11,7 @@ type Props = {
 }
 
 export function TweetReplyList({ parentSlug }: Props) {
+  const router = useRouter()
   const { data, isPending } = useMicroPostReplies(parentSlug)
 
   if (isPending) {
@@ -32,28 +35,57 @@ export function TweetReplyList({ parentSlug }: Props) {
     return null
   }
 
+  const stopRowNavigate = (event: MouseEvent) => event.stopPropagation()
+
   return (
-    <div className='space-y-2'>
-      {replies.map((reply) => {
+    <div>
+      {replies.map((reply, index) => {
         const hasMusicEntity = Boolean(reply.musicEntityType && reply.musicEntityId)
+        const isLast = index === replies.length - 1
         return (
-          <div
-            key={reply.id}
-            className='space-y-2 rounded-lg border border-border/40 bg-card/40 p-3'>
-            <TweetAuthorRow
-              creators={reply.creators ? [...reply.creators] : []}
-              createdAt={reply.createdAt}
-            />
-            <div className='prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-p:my-0 prose-a:text-foreground prose-a:underline'>
-              <MDXRendrr mdxString={reply.compiledContent ?? reply.content ?? ''} />
-            </div>
-            {hasMusicEntity && reply.musicEntityType && reply.musicEntityId && (
-              <TweetMusicEntityCard
-                entityType={reply.musicEntityType}
-                entityId={reply.musicEntityId}
-              />
+          <div key={reply.id} className='relative'>
+            {!isLast && (
+              <div className='absolute left-[35px] top-full h-2 w-px bg-border/60' aria-hidden />
             )}
-            {reply.quotedPostId && <TweetQuoteCard quotedPostId={reply.quotedPostId} />}
+            <div
+              role='link'
+              tabIndex={0}
+              onClick={() => router.navigate({ to: '/tweet/$slug', params: { slug: reply.slug } })}
+              onKeyDown={(event) => {
+                if (event.key !== 'Enter') return
+                router.navigate({ to: '/tweet/$slug', params: { slug: reply.slug } })
+              }}
+              className={`cursor-pointer space-y-2 rounded-lg border border-border/40 bg-card p-3 transition-colors hover:bg-card/80 ${isLast ? '' : 'mb-2'}`}>
+              <div role='presentation' onClick={stopRowNavigate}>
+                <TweetAuthorRow
+                  creators={reply.creators ? [...reply.creators] : []}
+                  createdAt={reply.createdAt}
+                />
+              </div>
+              <div
+                role='presentation'
+                onClickCapture={(event) => {
+                  if (event.target instanceof HTMLElement && event.target.closest('a')) {
+                    event.stopPropagation()
+                  }
+                }}
+                className='prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-p:my-0 prose-a:text-foreground prose-a:underline'>
+                <MDXRendrr mdxString={reply.compiledContent ?? reply.content ?? ''} />
+              </div>
+              {hasMusicEntity && reply.musicEntityType && reply.musicEntityId && (
+                <div role='presentation' onClick={stopRowNavigate}>
+                  <TweetMusicEntityCard
+                    entityType={reply.musicEntityType}
+                    entityId={reply.musicEntityId}
+                  />
+                </div>
+              )}
+              {reply.quotedPostId && (
+                <div role='presentation' onClick={stopRowNavigate}>
+                  <TweetQuoteCard quotedPostId={reply.quotedPostId} />
+                </div>
+              )}
+            </div>
           </div>
         )
       })}
