@@ -317,7 +317,7 @@ export const MusicPlatform = Schema.Literals([
   'discogs',
   'other'
 ])
-export const LinkStatus = Schema.Literals(['pending_review', 'verified', 'rejected'])
+export const LinkStatus = Schema.Literals(['verified', 'rejected'])
 
 // Mirrors selectMusicEntityLinkSchema -- entityType/platform/status use plain
 // String in the select shape (Drizzle types varchar FK columns as string;
@@ -377,15 +377,6 @@ export const ScrapeEntityLinksInput = Schema.Struct({
 export const ScrapeEntityLinksResponse = Schema.Struct({
   entity: Schema.Record(Schema.String, Schema.Unknown),
   links: Schema.Array(EntityLinkResponse)
-})
-
-export const PendingLinksQuery = Schema.Struct({
-  limit: Schema.optional(
-    Schema.NumberFromString.pipe(Schema.check(Schema.isBetween({ minimum: 1, maximum: 100 })))
-  ),
-  offset: Schema.optional(
-    Schema.NumberFromString.pipe(Schema.check(Schema.isGreaterThanOrEqualTo(0)))
-  )
 })
 
 export const MusicGroup = HttpApiGroup.make('music')
@@ -781,13 +772,4 @@ export const MusicGroup = HttpApiGroup.make('music')
       error: [HttpApiError.BadRequest, HttpApiError.Forbidden]
     }).middleware(AuthMiddleware)
   )
-  // ---------------------------------------------------------------------
-  // Review queue -- all pending links (admin)
-  // ---------------------------------------------------------------------
-  .add(
-    HttpApiEndpoint.get('listPendingLinks', '/api/music/links/pending', {
-      query: PendingLinksQuery,
-      success: EntityLinkListResponse,
-      error: HttpApiError.Forbidden
-    }).middleware(AuthMiddleware)
-  )
+// ---------------------------------------------------------------------

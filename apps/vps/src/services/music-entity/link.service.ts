@@ -1,5 +1,5 @@
 import { LINK_STATUS, type LinkStatus } from '@gbfm/core/status'
-import { and, desc, eq, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { Effect } from 'effect'
 import type { db as DbType } from '@/db'
 import {
@@ -59,7 +59,7 @@ export const addLinkEffect = (db: typeof DbType) =>
             ],
             set: {
               url: data.url,
-              status: data.status ?? LINK_STATUS.PENDING_REVIEW,
+              status: data.status ?? LINK_STATUS.VERIFIED,
               metadata: data.metadata,
               updatedAt: sql`now()`
             }
@@ -153,22 +153,3 @@ export const deleteLinkEffect =
         attributes: { entityType, entityId, linkId }
       })
     )
-
-export const getPendingLinksEffect =
-  (db: typeof DbType) => (opts?: { limit?: number; offset?: number }) =>
-    Effect.tryPromise({
-      try: () =>
-        db
-          .select()
-          .from(musicEntityLinksTable)
-          .where(eq(musicEntityLinksTable.status, LINK_STATUS.PENDING_REVIEW))
-          .orderBy(desc(musicEntityLinksTable.scrapedAt))
-          .limit(opts?.limit ?? 50)
-          .offset(opts?.offset ?? 0),
-      catch: (e) =>
-        new DatabaseError({
-          message: `Failed to get pending links: ${getErrorMessage(e)}`,
-          operation: 'select',
-          table: 'music_entity_links'
-        })
-    }).pipe(Effect.withSpan('musicEntity.getPendingLinks'))

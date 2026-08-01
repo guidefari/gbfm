@@ -6,7 +6,6 @@ import {
   CreateLabelInput,
   CreatePlaylistInput,
   CreateTrackInput,
-  PendingLinksQuery,
   EntityType,
   MusicPlatform,
   ScrapeEntityType,
@@ -127,30 +126,6 @@ describe('music API contract', () => {
         metadata: null
       })
       expect(result.metadata).toBeNull()
-    })
-  })
-
-  // Same review: limit/offset had no bounds checking, unlike the old Zod
-  // schema's .min(1).max(100) / .min(0) -- an admin-authenticated caller
-  // could request a negative offset or an unbounded limit.
-  describe('PendingLinksQuery', () => {
-    it('rejects a limit outside 1-100', () => {
-      const tooLow = Schema.decodeUnknownExit(PendingLinksQuery)({ limit: '0' })
-      const tooHigh = Schema.decodeUnknownExit(PendingLinksQuery)({ limit: '101' })
-
-      expect(Exit.isFailure(tooLow)).toBe(true)
-      expect(Exit.isFailure(tooHigh)).toBe(true)
-    })
-
-    it('rejects a negative offset', () => {
-      const result = Schema.decodeUnknownExit(PendingLinksQuery)({ offset: '-1' })
-      expect(Exit.isFailure(result)).toBe(true)
-    })
-
-    it('accepts valid limit/offset within bounds', () => {
-      const result = Schema.decodeUnknownSync(PendingLinksQuery)({ limit: '50', offset: '0' })
-      expect(result.limit).toBe(50)
-      expect(result.offset).toBe(0)
     })
   })
 })

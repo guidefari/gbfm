@@ -65,7 +65,6 @@ import {
   addLinkEffect,
   deleteLinkEffect,
   getLinksForEntityEffect,
-  getPendingLinksEffect,
   updateLinkStatusEffect
 } from './link.service'
 import {
@@ -292,10 +291,6 @@ export interface MusicEntityService {
     entityId: string,
     linkId: string
   ) => Effect.Effect<void, DatabaseError | NotFoundError>
-  readonly getPendingLinks: (opts?: {
-    limit?: number
-    offset?: number
-  }) => Effect.Effect<SelectMusicEntityLink[], DatabaseError>
 
   readonly scrapeAndCreateEntity: (
     entityType: ScrapeableMusicEntityType,
@@ -394,7 +389,6 @@ export const MusicEntityServiceLayer = Layer.effect(
       addLink: addLinkEffect(db),
       updateLinkStatus: updateLinkStatusEffect(db),
       deleteLink: deleteLinkEffect(db),
-      getPendingLinks: getPendingLinksEffect(db),
       scrapeAndCreateEntity: scrapeAndCreateEntityEffect(db, scraper)
     } satisfies MusicEntityService
   })

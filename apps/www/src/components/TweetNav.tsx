@@ -52,22 +52,24 @@ export function TweetNav({ slug }: Props) {
 
   if (isSearchOpen) {
     return (
-      <div className='relative flex items-center gap-2 border-b border-border/40 pb-4'>
-        <Search className='pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60' />
-        <Input
-          ref={inputRef}
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          placeholder='Search tweets, tracks, artists...'
-          className='h-8 pl-8 text-sm'
-        />
-        <button
-          type='button'
-          onClick={closeSearch}
-          aria-label='Close search'
-          className={iconButtonClassName}>
-          <X className='h-4 w-4' />
-        </button>
+      <div className='relative border-b border-border/40 pb-4'>
+        <div className='relative flex items-center gap-2'>
+          <Search className='pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60' />
+          <Input
+            ref={inputRef}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder='Search tweets, tracks, artists...'
+            className='h-8 pl-8 text-sm'
+          />
+          <button
+            type='button'
+            onClick={closeSearch}
+            aria-label='Close search'
+            className={iconButtonClassName}>
+            <X className='h-4 w-4' />
+          </button>
+        </div>
 
         {showResults && (
           <div className='absolute left-0 right-0 top-full z-20 mt-1 max-h-80 overflow-y-auto rounded-sm border border-border/60 bg-popover shadow-md'>

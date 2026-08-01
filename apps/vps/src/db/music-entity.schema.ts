@@ -300,7 +300,7 @@ export const musicEntityLinksTable = pgTable(
       .notNull()
       .references(() => musicPlatformsTable.id),
     url: varchar({ length: 2048 }).notNull(),
-    status: varchar({ length: 50 }).notNull().default(LINK_STATUS.PENDING_REVIEW),
+    status: varchar({ length: 50 }).notNull().default(LINK_STATUS.VERIFIED),
     scrapedAt: timestamp({ withTimezone: true }),
     verifiedAt: timestamp({ withTimezone: true }),
     verifiedBy: text().references(() => user.id, { onDelete: 'set null' }),
@@ -621,7 +621,7 @@ export const insertMusicEntityLinkSchema = z.object({
   entityId: z.string().uuid(),
   platform: musicPlatformEnum,
   url: z.string().url(),
-  status: linkStatusEnum.optional().default(LINK_STATUS.PENDING_REVIEW),
+  status: linkStatusEnum.optional().default(LINK_STATUS.VERIFIED),
   scrapedAt: z.coerce.date().optional(),
   metadata: z.record(z.string(), z.unknown()).optional()
 })

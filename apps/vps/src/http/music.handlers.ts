@@ -901,15 +901,4 @@ export const MusicHandlersLive = HttpApiBuilder.group(Api, 'music', (handlers) =
         }
       })
     )
-    // -----------------------------------------------------------------
-    // Review queue
-    // -----------------------------------------------------------------
-    .handle('listPendingLinks', ({ query }) =>
-      Effect.gen(function* () {
-        yield* requireAdmin
-        const svc = yield* MusicEntityService
-        const rows = yield* dieOnDatabaseError(svc.getPendingLinks(query))
-        return rows.map(toEntityLinkResponse)
-      })
-    )
 )

@@ -166,7 +166,8 @@ export const scrapeAndCreateEntityEffect =
             entityId,
             platform: link.platform,
             url: link.url,
-            status: LINK_STATUS.PENDING_REVIEW,
+            status: LINK_STATUS.VERIFIED,
+            verifiedAt: link.scrapedAt,
             scrapedAt: link.scrapedAt,
             metadata: link.metadata
           }),

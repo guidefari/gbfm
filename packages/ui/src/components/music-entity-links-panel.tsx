@@ -1,4 +1,4 @@
-import { Check, MoreHorizontal, Plus } from 'lucide-react'
+import { MoreHorizontal, Plus } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from './button'
 import { Card, CardContent, CardHeader } from './card'
@@ -12,7 +12,7 @@ import {
 import { Input } from './input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select'
 
-export type LinkStatus = 'pending_review' | 'verified' | 'rejected'
+export type LinkStatus = 'verified' | 'rejected'
 
 export type MusicPlatform =
   | 'spotify'
@@ -68,7 +68,6 @@ const PLATFORMS: MusicPlatform[] = [
 
 const STATUS_DOTS: Record<string, string> = {
   verified: 'bg-gb-pastel-green-1',
-  pending_review: 'bg-amber-400',
   rejected: 'bg-destructive'
 }
 
@@ -100,8 +99,6 @@ export function MusicEntityLinksPanel({
   const [activeLinkId, setActiveLinkId] = useState<string | null>(null)
   const [draftPlatform, setDraftPlatform] = useState<MusicPlatform>('spotify')
   const [draftUrl, setDraftUrl] = useState('')
-
-  const pendingLinks = links.filter((link) => link.status === 'pending_review')
 
   function closeDialog() {
     setDialogMode(null)
@@ -136,35 +133,14 @@ export function MusicEntityLinksPanel({
     }
   }
 
-  function verifyAllPending() {
-    for (const link of pendingLinks) {
-      onUpdateStatus?.(link.id, 'verified')
-    }
-  }
-
   const header = (
     <div className='flex flex-row flex-wrap items-center justify-between gap-x-3 gap-y-2'>
       <div className='flex items-baseline gap-2'>
         <span className='whitespace-nowrap text-xs font-medium tracking-wide text-muted-foreground'>
           Streaming links
         </span>
-        {pendingLinks.length > 0 && (
-          <span className='whitespace-nowrap text-xs text-muted-foreground/70'>
-            {pendingLinks.length} to verify
-          </span>
-        )}
       </div>
       <div className='flex items-center gap-1'>
-        {!readOnly && pendingLinks.length > 0 && (
-          <Button
-            size='sm'
-            variant='outline'
-            className='h-7 rounded-sm px-2 text-xs'
-            onClick={verifyAllPending}>
-            <Check className='mr-1 size-3' />
-            Verify all
-          </Button>
-        )}
         {!readOnly && (
           <Button
             size='sm'
@@ -205,15 +181,6 @@ export function MusicEntityLinksPanel({
             </a>
             {!readOnly && (
               <div className='flex shrink-0 items-center gap-1'>
-                {link.status !== 'verified' && (
-                  <Button
-                    size='sm'
-                    variant='ghost'
-                    className='h-7 rounded-sm px-2 text-xs text-gb-pastel-green-1 opacity-0 focus-visible:opacity-100 group-hover:opacity-100'
-                    onClick={() => onUpdateStatus?.(link.id, 'verified')}>
-                    Verify
-                  </Button>
-                )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button

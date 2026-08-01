@@ -46,7 +46,7 @@ export const mockLinks = [
     entityId: 'entity-1',
     platform: 'bandcamp',
     url: 'https://burial.bandcamp.com',
-    status: 'pending_review',
+    status: 'verified',
     scrapedAt: null,
     verifiedAt: null,
     verifiedBy: null,

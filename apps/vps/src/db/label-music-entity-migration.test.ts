@@ -151,7 +151,7 @@ CREATE TABLE "music_entity_links" (
   "entityId" uuid NOT NULL,
   "platform" varchar(50) NOT NULL REFERENCES "music_platforms"("id"),
   "url" varchar(2048) NOT NULL,
-  "status" varchar(50) DEFAULT 'pending_review' NOT NULL,
+  "status" varchar(50) DEFAULT 'verified' NOT NULL,
   "scrapedAt" timestamp with time zone,
   "verifiedAt" timestamp with time zone,
   "verifiedBy" text REFERENCES "user"("id") ON DELETE set null,
