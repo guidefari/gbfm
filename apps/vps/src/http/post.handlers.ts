@@ -210,6 +210,26 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
         }
       })
     )
+    .handle('getMicroPostThread', ({ params, query }) =>
+      Effect.gen(function* () {
+        const svc = yield* PostService
+        const result = yield* dieOnDatabaseError(
+          svc
+            .getMicroPostThread(params.slug, {
+              limit: query.limit ?? 20,
+              offset: query.offset ?? 0
+            })
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+        )
+
+        return {
+          root: toDateStrings(result.root),
+          focus: toDateStrings(result.focus),
+          posts: result.posts.map(toDateStrings),
+          pagination: result.pagination
+        }
+      })
+    )
     .handle('getPostBySlug', ({ params }) =>
       Effect.gen(function* () {
         const svc = yield* PostService

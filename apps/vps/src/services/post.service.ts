@@ -139,6 +139,19 @@ export interface PostService {
     DatabaseError | NotFoundError,
     SentryService
   >
+  readonly getMicroPostThread: (
+    slug: string,
+    options: { limit: number; offset: number }
+  ) => Effect.Effect<
+    {
+      root: SelectMdxCompiledMicroPost
+      focus: SelectMdxCompiledMicroPost
+      posts: SelectMdxCompiledMicroPost[]
+      pagination: PaginationMetadata
+    },
+    DatabaseError | NotFoundError,
+    SentryService
+  >
   readonly update: (
     slug: string,
     userId: string,
@@ -1353,6 +1366,192 @@ const getMicroPostRepliesEffect = (
     }
   }).pipe(Effect.withSpan('post.getMicroPostReplies', { attributes: { parentSlug } }))
 
+const getMicroPostThreadEffect = (
+  slug: string,
+  options: { limit: number; offset: number },
+  mdx: MdxService
+) =>
+  Effect.gen(function* () {
+    const { limit, offset } = options
+
+    const focusRecords = yield* Effect.tryPromise({
+      try: () => db.select().from(postsTable).where(eq(postsTable.slug, slug)).limit(1),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch post: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'posts'
+        })
+    })
+
+    const focusRow = focusRecords[0]
+    if (!focusRow) {
+      return yield* new NotFoundError({
+        message: 'Post not found',
+        resource: 'post',
+        id: slug
+      })
+    }
+
+    const rootId = focusRow.rootPostId ?? focusRow.id
+
+    const rootRow = yield* rootId === focusRow.id
+      ? Effect.succeed(focusRow)
+      : Effect.gen(function* () {
+          const rootRecords = yield* Effect.tryPromise({
+            try: () => db.select().from(postsTable).where(eq(postsTable.id, rootId)).limit(1),
+            catch: (error) =>
+              new DatabaseError({
+                message: `Failed to fetch root post: ${getErrorMessage(error)}`,
+                operation: 'select',
+                table: 'posts'
+              })
+          })
+
+          const row = rootRecords[0]
+          if (!row) {
+            return yield* new NotFoundError({
+              message: 'Root post not found',
+              resource: 'post',
+              id: rootId
+            })
+          }
+          return row
+        })
+
+    const whereCondition = eq(postsTable.rootPostId, rootId)
+
+    const countResult = yield* Effect.tryPromise({
+      try: () =>
+        timeQuery(
+          () => db.select({ total: count() }).from(postsTable).where(whereCondition),
+          'get-micro-post-thread-count'
+        ),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to count thread posts: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'posts'
+        })
+    })
+
+    const total = countResult[0]?.total ?? 0
+
+    const descendantRows = yield* Effect.tryPromise({
+      try: () =>
+        timeQuery(
+          () =>
+            db
+              .select()
+              .from(postsTable)
+              .where(whereCondition)
+              .orderBy(asc(postsTable.createdAt))
+              .limit(limit)
+              .offset(offset),
+          'get-micro-post-thread-data'
+        ),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch thread posts: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'posts'
+        })
+    })
+
+    const rowsToCompile = [rootRow, focusRow, ...descendantRows]
+    const postIds = rowsToCompile.map((p) => p.id)
+
+    const creatorsData =
+      postIds.length > 0
+        ? yield* Effect.tryPromise({
+            try: () =>
+              db
+                .select({
+                  postId: postCreators.postId,
+                  creatorId: usersTable.id,
+                  creatorName: usersTable.name,
+                  creatorUsername: usersTable.username
+                })
+                .from(postCreators)
+                .innerJoin(usersTable, eq(postCreators.creatorId, usersTable.id))
+                .where(inArray(postCreators.postId, postIds)),
+            catch: (error) =>
+              new DatabaseError({
+                message: `Failed to fetch creators: ${getErrorMessage(error)}`,
+                operation: 'select',
+                table: 'post_creators'
+              })
+          })
+        : []
+
+    const creatorsByPostId: Record<
+      string,
+      Array<{ id: string; name: string; username: string | null }>
+    > = {}
+    for (const row of creatorsData) {
+      const existing = creatorsByPostId[row.postId]
+      const creator = {
+        id: row.creatorId,
+        name: row.creatorName,
+        username: row.creatorUsername
+      }
+      if (existing) {
+        existing.push(creator)
+      } else {
+        creatorsByPostId[row.postId] = [creator]
+      }
+    }
+
+    const sentry = yield* SentryService
+    const compileRow = (post: SelectPost) =>
+      buildPostWithPreloadedCreators(post, creatorsByPostId[post.id] ?? [], mdx).pipe(
+        Effect.flatMap((compiled) =>
+          toMicroPost(compiled).pipe(
+            Effect.catchTag('DatabaseError', (e) =>
+              Effect.andThen(
+                sentry.captureException(e, {
+                  slug: compiled.slug,
+                  type: compiled.type,
+                  operation: 'toMicroPost'
+                }),
+                Effect.succeed<SelectMdxCompiledMicroPost | null>(null)
+              )
+            )
+          )
+        )
+      )
+
+    const root = yield* compileRow(rootRow)
+    if (!root) {
+      return yield* new DatabaseError({
+        message: `Root post was not a micro post: ${rootRow.slug}`,
+        operation: 'post_type_refinement',
+        table: 'posts'
+      })
+    }
+
+    const focus = yield* compileRow(focusRow)
+    if (!focus) {
+      return yield* new DatabaseError({
+        message: `Focus post was not a micro post: ${focusRow.slug}`,
+        operation: 'post_type_refinement',
+        table: 'posts'
+      })
+    }
+
+    const compiledDescendants = yield* Effect.forEach(descendantRows, compileRow, {
+      concurrency: 5
+    })
+    const posts = compiledDescendants.filter((p): p is SelectMdxCompiledMicroPost => p !== null)
+
+    return {
+      root,
+      focus,
+      posts,
+      pagination: createPaginationMetadata(total, limit, offset)
+    }
+  }).pipe(Effect.withSpan('post.getMicroPostThread', { attributes: { slug } }))
+
 const updateEffect = (
   slug: string,
   userId: string,
@@ -1480,6 +1679,7 @@ export const PostServiceLayer = Layer.effect(
         ),
       createMicroPostReply: (opts) => createMicroPostReplyEffect(opts, mdx),
       getMicroPostReplies: (parentSlug, opts) => getMicroPostRepliesEffect(parentSlug, opts, mdx),
+      getMicroPostThread: (slug, opts) => getMicroPostThreadEffect(slug, opts, mdx),
       update: (slug, userId, userRole, data) =>
         updateEffect(slug, userId, userRole, data, mdx).pipe(
           Effect.provideService(ConfigService, config),

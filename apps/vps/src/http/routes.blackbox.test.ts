@@ -7,7 +7,11 @@ import {
   PlaylistListResponse,
   TrackListResponse
 } from '@gbfm/api/music'
-import { CompiledMicroPostResponse, GetMicroPostsResponse } from '@gbfm/api/post'
+import {
+  CompiledMicroPostResponse,
+  GetMicroPostsResponse,
+  MicroPostThreadResponse
+} from '@gbfm/api/post'
 import { SearchResults } from '@gbfm/api/search'
 import { decodeResponseBody } from '@gbfm/api/testing'
 import { eq } from 'drizzle-orm'
@@ -1672,6 +1676,108 @@ describe('GET /api/content/posts/micro/:parentSlug/replies (Slice 6)', () => {
 
     const res = await webHandler.handler(
       new Request(`http://localhost/api/content/posts/micro/does-not-exist-${suffix}/replies`)
+    )
+    expect(res.status).toBe(404)
+  })
+})
+
+describe('GET /api/content/posts/micro/:slug/thread (Slice 7)', () => {
+  it('returns the full thread regardless of which node in it is requested', async () => {
+    const suffix = crypto.randomUUID()
+    const authorId = `thread-author-${suffix}`
+    const rootSlug = `thread-root-${suffix}`
+    const replySlug = `thread-reply-${suffix}`
+    const nestedReplySlug = `thread-nested-reply-${suffix}`
+
+    await db.insert(user).values({ id: authorId, name: 'Author', email: `${authorId}@example.com` })
+
+    const [rootPost] = await db
+      .insert(postsTable)
+      .values({
+        title: null,
+        slug: rootSlug,
+        content: 'Root tweet',
+        type: 'micro',
+        draft: false,
+        createdAt: new Date(Date.now() - 120_000)
+      })
+      .returning()
+    if (!rootPost) throw new Error('Failed to seed root tweet')
+
+    const [reply] = await db
+      .insert(postsTable)
+      .values({
+        title: null,
+        slug: replySlug,
+        content: 'direct reply',
+        type: 'micro',
+        draft: false,
+        parentPostId: rootPost.id,
+        rootPostId: rootPost.id,
+        depth: 1,
+        createdAt: new Date(Date.now() - 60_000)
+      })
+      .returning()
+    if (!reply) throw new Error('Failed to seed direct reply')
+
+    const [nestedReply] = await db
+      .insert(postsTable)
+      .values({
+        title: null,
+        slug: nestedReplySlug,
+        content: 'nested reply',
+        type: 'micro',
+        draft: false,
+        parentPostId: reply.id,
+        rootPostId: rootPost.id,
+        depth: 2,
+        createdAt: new Date()
+      })
+      .returning()
+    if (!nestedReply) throw new Error('Failed to seed nested reply')
+
+    await db.insert(postCreators).values([
+      { postId: rootPost.id, creatorId: authorId },
+      { postId: reply.id, creatorId: authorId },
+      { postId: nestedReply.id, creatorId: authorId }
+    ])
+
+    try {
+      const rootRes = await webHandler.handler(
+        new Request(`http://localhost/api/content/posts/micro/${rootSlug}/thread`)
+      )
+      expect(rootRes.status).toBe(200)
+      const rootBody = await decodeResponseBody(MicroPostThreadResponse, rootRes)
+      expect(rootBody.root.slug).toBe(rootSlug)
+      expect(rootBody.focus.slug).toBe(rootSlug)
+      expect(rootBody.posts.map((p) => p.slug)).toEqual([replySlug, nestedReplySlug])
+      expect(rootBody.pagination.total).toBe(2)
+
+      const nestedRes = await webHandler.handler(
+        new Request(`http://localhost/api/content/posts/micro/${nestedReplySlug}/thread`)
+      )
+      expect(nestedRes.status).toBe(200)
+      const nestedBody = await decodeResponseBody(MicroPostThreadResponse, nestedRes)
+      expect(nestedBody.root.slug).toBe(rootSlug)
+      expect(nestedBody.focus.slug).toBe(nestedReplySlug)
+      expect(nestedBody.posts.map((p) => p.slug)).toEqual([replySlug, nestedReplySlug])
+      expect(nestedBody.pagination.total).toBe(2)
+    } finally {
+      await db.delete(postCreators).where(eq(postCreators.postId, rootPost.id))
+      await db.delete(postCreators).where(eq(postCreators.postId, reply.id))
+      await db.delete(postCreators).where(eq(postCreators.postId, nestedReply.id))
+      await db.delete(postsTable).where(eq(postsTable.id, nestedReply.id))
+      await db.delete(postsTable).where(eq(postsTable.id, reply.id))
+      await db.delete(postsTable).where(eq(postsTable.id, rootPost.id))
+      await db.delete(user).where(eq(user.id, authorId))
+    }
+  })
+
+  it('404s when the slug does not exist', async () => {
+    const suffix = crypto.randomUUID()
+
+    const res = await webHandler.handler(
+      new Request(`http://localhost/api/content/posts/micro/does-not-exist-${suffix}/thread`)
     )
     expect(res.status).toBe(404)
   })

@@ -192,6 +192,13 @@ export const CreateMicroPostReplyInput = Schema.Struct({
 })
 export type CreateMicroPostReplyInput = typeof CreateMicroPostReplyInput.Type
 
+export const MicroPostThreadResponse = Schema.Struct({
+  root: CompiledMicroPostResponse,
+  focus: CompiledMicroPostResponse,
+  posts: Schema.Array(CompiledMicroPostResponse),
+  pagination: PaginationMeta
+})
+
 export const PostGroup = HttpApiGroup.make('post')
   .add(
     HttpApiEndpoint.get('getPosts', '/api/content/posts', {
@@ -286,6 +293,14 @@ export const PostGroup = HttpApiGroup.make('post')
       params: ParentSlugParam,
       query: PaginationQuery,
       success: GetMicroPostsResponse,
+      error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
+    })
+  )
+  .add(
+    HttpApiEndpoint.get('getMicroPostThread', '/api/content/posts/micro/:slug/thread', {
+      params: SlugParam,
+      query: PaginationQuery,
+      success: MicroPostThreadResponse,
       error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
     })
   )
