@@ -4,7 +4,6 @@ import { Button, OverflowTitle } from '@gbfm/ui'
 import { Link } from '@tanstack/react-router'
 import {
   ChevronDown,
-  Heart,
   List,
   Pause,
   Play,
@@ -16,6 +15,7 @@ import {
 import { AnimatePresence, motion } from 'motion/react'
 import type React from 'react'
 import { useEffect, useRef } from 'react'
+import { FavoriteButton } from '@/components/FavoriteButton'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import { formatSeconds } from '@/lib/utils'
 import { attachVolumeScroll } from '@/lib/volumeScrollHandler'
@@ -169,12 +169,14 @@ const FullscreenAudioPlayer = () => {
                     />
                   )}
                   <div className='flex items-center shrink-0 gap-1 sm:gap-2'>
-                    <Button
+                    <FavoriteButton
+                      contentType='mix'
+                      contentId={currentTrack.id}
+                      contentTitle={currentTrack.title}
                       variant='ghost'
                       size='icon'
-                      className='text-muted-foreground hover:text-foreground hover:bg-muted'>
-                      <Heart className='w-5 h-5' />
-                    </Button>
+                      className='text-muted-foreground hover:text-foreground hover:bg-muted'
+                    />
                     {isQueueEnabled && (
                       <Button
                         variant='ghost'

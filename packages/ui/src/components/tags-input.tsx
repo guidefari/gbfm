@@ -1,9 +1,9 @@
 import { X } from 'lucide-react'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { Badge } from './badge'
 import { Button } from './button'
-import { Card, CardContent, CardHeader, CardTitle } from './card'
 import { Input } from './input'
+import { Label } from './label'
 
 interface TagsInputProps {
   tags: string[]
@@ -14,62 +14,57 @@ interface TagsInputProps {
 
 export function TagsInput({ tags, onAddTag, onRemoveTag, contentTypeLabel }: TagsInputProps) {
   const [newTag, setNewTag] = useState('')
+  const inputId = useId()
 
   const handleAddTag = () => {
-    if (newTag.trim() && !tags.includes(newTag.trim())) {
-      onAddTag(newTag.trim())
+    const trimmed = newTag.trim()
+    if (trimmed && !tags.includes(trimmed)) {
+      onAddTag(trimmed)
       setNewTag('')
     }
   }
 
   return (
-    <Card className='bg-gb-darker-bg border-gb-pastel-green-2/20'>
-      <CardHeader>
-        <CardTitle className='text-gb-pastel-green-1'>Tags</CardTitle>
-      </CardHeader>
-      <CardContent className='space-y-4'>
-        <div className='flex gap-2'>
-          <Input
-            value={newTag}
-            onChange={(e) => setNewTag(e.target.value)}
-            placeholder='Add a tag...'
-            className='bg-gb-bg border-gb-pastel-green-2/30 text-gb-default-text focus:border-gb-highlight'
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                handleAddTag()
-              }
-            }}
-          />
-          <Button
-            onClick={handleAddTag}
-            variant='outline'
-            className='bg-transparent border-gb-pastel-green-2/30 text-gb-pastel-green-1 hover:bg-gb-pastel-green-2/20'>
-            Add
-          </Button>
-        </div>
+    <div className='space-y-2'>
+      <Label htmlFor={inputId}>Tags</Label>
+      <div className='flex gap-2'>
+        <Input
+          id={inputId}
+          value={newTag}
+          onChange={(e) => setNewTag(e.target.value)}
+          placeholder='Add a tag...'
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              handleAddTag()
+            }
+          }}
+        />
+        <Button type='button' onClick={handleAddTag} variant='outline'>
+          Add
+        </Button>
+      </div>
 
-        <div className='flex flex-wrap gap-2'>
+      {tags.length > 0 ? (
+        <div className='flex flex-wrap gap-1.5'>
           {tags.map((tag) => (
-            <Badge
-              key={tag}
-              variant='secondary'
-              className='flex items-center gap-1 bg-gb-pastel-green-2/20 text-gb-pastel-green-1'>
+            <Badge key={tag} variant='outline' className='gap-1 font-normal'>
               {tag}
-              <X
-                className='w-3 h-3 cursor-pointer hover:text-gb-highlight'
+              <button
+                type='button'
+                aria-label={`Remove ${tag}`}
                 onClick={() => onRemoveTag(tag)}
-              />
+                className='rounded-sm text-muted-foreground transition-colors hover:text-destructive'>
+                <X className='size-3' />
+              </button>
             </Badge>
           ))}
         </div>
-
-        {tags.length === 0 && (
-          <p className='text-xs text-gb-default-text/70'>
-            Add tags to help people discover your {contentTypeLabel}
-          </p>
-        )}
-      </CardContent>
-    </Card>
+      ) : (
+        <p className='text-xs text-muted-foreground'>
+          Add tags to help people discover your {contentTypeLabel}
+        </p>
+      )}
+    </div>
   )
 }

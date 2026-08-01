@@ -11,7 +11,7 @@ import {
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/Dialog'
+  title: '@gbfm/ui/Primitives/Dialog'
 }
 
 export function Dialogs() {

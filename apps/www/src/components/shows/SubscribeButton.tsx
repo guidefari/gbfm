@@ -3,13 +3,21 @@ import { useNavigate } from '@tanstack/react-router'
 import { Bell, BellOff, Loader2 } from 'lucide-react'
 import { useSession } from '@/lib/auth-client'
 import { useSubscribeToShow, useUnsubscribeFromShow, useUserSubscriptions } from '@/lib/http'
+import { cn } from '@/lib/utils'
 
 interface SubscribeButtonProps {
   showId: string
   showTitle: string
+  iconOnly?: boolean
+  className?: string
 }
 
-export function SubscribeButton({ showId, showTitle }: SubscribeButtonProps) {
+export function SubscribeButton({
+  showId,
+  showTitle,
+  iconOnly = false,
+  className
+}: SubscribeButtonProps) {
   const { data: session } = useSession()
   const isAuthenticated = Boolean(session?.user)
   const navigate = useNavigate()
@@ -19,6 +27,7 @@ export function SubscribeButton({ showId, showTitle }: SubscribeButtonProps) {
 
   const isSubscribed = subscriptions.some((sub) => sub.showId === showId)
   const isLoading = isSubscribing || isUnsubscribing
+  const label = isSubscribed ? 'Unsubscribe' : 'Subscribe'
 
   const handleClick = async () => {
     if (!isAuthenticated) {
@@ -57,8 +66,11 @@ export function SubscribeButton({ showId, showTitle }: SubscribeButtonProps) {
     <Button
       onClick={handleClick}
       disabled={isLoading}
-      variant={isSubscribed ? 'outline' : 'default'}
-      className='w-full gap-2'>
+      variant={iconOnly ? 'ghost' : isSubscribed ? 'outline' : 'default'}
+      size={iconOnly ? 'icon' : 'default'}
+      aria-label={iconOnly ? label : undefined}
+      title={label}
+      className={cn('gap-2', iconOnly && 'h-9 w-9 rounded-none', className)}>
       {isLoading ? (
         <Loader2 className='w-4 h-4 animate-spin' />
       ) : isSubscribed ? (
@@ -66,7 +78,7 @@ export function SubscribeButton({ showId, showTitle }: SubscribeButtonProps) {
       ) : (
         <Bell className='w-4 h-4' />
       )}
-      {isSubscribed ? 'Subscribed' : 'Subscribe'}
+      {!iconOnly && (isSubscribed ? 'Subscribed' : 'Subscribe')}
     </Button>
   )
 }

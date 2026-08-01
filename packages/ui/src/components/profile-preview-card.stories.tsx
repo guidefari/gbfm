@@ -2,7 +2,7 @@ import { ProfilePreviewCard } from './profile-preview-card'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/ProfilePreviewCard'
+  title: '@gbfm/ui/Content/Profile preview card'
 }
 
 export function ProfilePreviews() {

@@ -1,13 +1,9 @@
-import { ShowsSkeleton } from '@gbfm/ui'
 import { createFileRoute } from '@tanstack/react-router'
 import { useEffect, useMemo } from 'react'
 import { z } from 'zod'
-import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
-import { EpisodeGrid } from '@/components/shows/EpisodeGrid'
-import { SelectedShowBar } from '@/components/shows/SelectedShowBar'
-import { ShowListItem } from '@/components/shows/ShowListItem'
-import { ShowSwitcherRail } from '@/components/shows/ShowSwitcherRail'
-import { useAllShows, type ShowWithHosts } from '@/lib/http'
+import { ShowsBrowser } from '@/components/shows/ShowsBrowser'
+import { ShowsPageLayout } from '@/components/shows/ShowsPageLayout'
+import { useAllShows } from '@/lib/http'
 import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'
 
 const searchSchema = z.object({
@@ -25,7 +21,7 @@ export const Route = createFileRoute('/shows/')({
 function ShowsListPage() {
   const { show: selectedSlug } = Route.useSearch()
   const navigate = Route.useNavigate()
-  const { data, isPending, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useAllShows()
+  const { data } = useAllShows()
 
   useEffect(() => {
     if (data.length > 0 && !selectedSlug) {
@@ -42,83 +38,12 @@ function ShowsListPage() {
     [data, selectedSlug]
   )
 
-  if (isPending) {
-    return <ShowsSkeleton />
-  }
-
-  if (error) {
-    return (
-      <div className='p-4 text-center text-destructive'>Error loading shows: {error.message}</div>
-    )
-  }
-
-  if (!data || data.length === 0) {
-    return <div className='p-4 text-center text-muted-foreground'>No shows found</div>
-  }
-
   return (
-    <div className='p-4 mx-auto max-w-7xl'>
-      <div className='grid grid-cols-1 gap-6 lg:grid-cols-[280px_1fr] lg:gap-8'>
-        <aside className='hidden lg:block'>
-          <nav className='sticky top-6 max-h-[calc(100vh-3rem)] overflow-y-auto space-y-2 pr-2 no-scrollbar'>
-            {data.map((show) => (
-              <ShowListItem
-                key={show.id}
-                show={show}
-                isSelected={selectedShow?.id === show.id}
-                onSelect={() =>
-                  navigate({
-                    to: '.',
-                    search: { show: show.slug }
-                  })
-                }
-              />
-            ))}
-            <LoadMoreTrigger
-              onLoadMore={fetchNextPage}
-              hasNextPage={hasNextPage}
-              isFetchingNextPage={isFetchingNextPage}
-            />
-          </nav>
-        </aside>
-
-        <div className='lg:hidden'>
-          <ShowSwitcherRail
-            shows={data}
-            selectedShowId={selectedShow?.id}
-            onSelect={(show) =>
-              navigate({
-                to: '.',
-                search: { show: show.slug }
-              })
-            }
-          />
-          <LoadMoreTrigger
-            onLoadMore={fetchNextPage}
-            hasNextPage={hasNextPage}
-            isFetchingNextPage={isFetchingNextPage}
-          />
-        </div>
-
-        <main className='min-w-0'>
-          {selectedShow ? (
-            <SelectedShowPanel show={selectedShow} />
-          ) : (
-            <div className='text-center text-muted-foreground py-12'>
-              Select a show to browse its mixes
-            </div>
-          )}
-        </main>
-      </div>
-    </div>
-  )
-}
-
-function SelectedShowPanel({ show }: { show: ShowWithHosts }) {
-  return (
-    <section>
-      <SelectedShowBar show={show} />
-      <EpisodeGrid showSlug={show.slug} />
-    </section>
+    <ShowsPageLayout>
+      <ShowsBrowser
+        selectedShow={selectedShow}
+        onSelectShow={(slug) => navigate({ to: '.', search: { show: slug } })}
+      />
+    </ShowsPageLayout>
   )
 }

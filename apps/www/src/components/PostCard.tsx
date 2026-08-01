@@ -1,6 +1,6 @@
 import { CustomLink } from '@gbfm/ui'
 import type React from 'react'
-import { DEFAULT_IMAGE_URL } from '../lib/constants'
+import { Artwork } from './common/Artwork'
 
 interface Props {
   date?: string
@@ -13,13 +13,15 @@ interface Props {
 export const PostCard: React.FC<Props> = ({ title, description, thumbnailUrl, slug }) => (
   <div className='grid px-1 pb-4 border-2 border-t-0 border-l-0 rounded-md shadow-lg sm:grid-flow-col sm:grid-cols-5 border-gb-tomato'>
     <CustomLink href={slug} className='my-auto text-xl group sm:mr-3 sm:col-span-2'>
-      <img
-        className='object-cover w-32 transition ease-in-out rounded-md shadow-md sm:w-full sm:col-span-2 aspect-square group-hover:ring-4 ring-gb-highlight'
-        src={thumbnailUrl || DEFAULT_IMAGE_URL}
+      <Artwork
+        src={thumbnailUrl}
         alt={`${title} thumbnail`}
+        radius='md'
+        border='none'
+        className='w-32 shadow-md sm:w-full sm:col-span-2'
+        imageClassName='transition ease-in-out group-hover:ring-4 ring-gb-highlight'
         width={320}
         height={320}
-        loading='lazy'
       />
     </CustomLink>
 

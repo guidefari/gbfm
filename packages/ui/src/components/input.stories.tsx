@@ -4,7 +4,7 @@ import { Label } from './label'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/Input'
+  title: '@gbfm/ui/Primitives/Input'
 }
 
 export function Inputs() {

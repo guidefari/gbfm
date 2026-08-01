@@ -2,7 +2,7 @@ import { AudioFileCard } from './audio-file-card'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/AudioFileCard'
+  title: '@gbfm/ui/Media/Audio file card'
 }
 
 export function AudioFileCards() {

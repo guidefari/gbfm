@@ -1,5 +1,6 @@
-import { DEFAULT_IMAGE_URL } from '@/lib/constants'
+import { Artwork } from '@/components/common/Artwork'
 import type { ShowWithHosts } from '@/lib/http'
+import { cn } from '@/lib/utils'
 
 interface ShowListItemProps {
   show: ShowWithHosts
@@ -14,20 +15,17 @@ export function ShowListItem({ show, isSelected, onSelect }: ShowListItemProps) 
     <button
       type='button'
       onClick={onSelect}
-      className={`w-full flex items-center gap-3 p-2 rounded-sm border text-left transition-all ${
-        isSelected
-          ? 'border-highlight bg-secondary ring-1 ring-highlight'
-          : 'border-transparent hover:bg-muted/40 hover:border-border/60'
-      }`}>
-      <img
-        src={show.thumbnailUrl || DEFAULT_IMAGE_URL}
-        alt={show.title}
-        className='w-16 h-16 object-cover rounded-sm border border-border bg-background shrink-0'
-      />
-      <div className='min-w-0'>
-        <p className='text-sm font-semibold text-foreground line-clamp-2'>{show.title}</p>
-        {hostNames && <p className='text-xs text-muted-foreground line-clamp-1'>{hostNames}</p>}
-      </div>
+      className={cn(
+        'flex w-full items-center gap-2 border-b border-border/40 px-1 py-1.5 text-left transition-colors last:border-b-0',
+        isSelected ? 'text-highlight' : 'text-foreground/70 hover:text-foreground'
+      )}>
+      <Artwork src={show.thumbnailUrl} alt={show.title} className='size-8 shrink-0' />
+      <span className='min-w-0 flex-1'>
+        <span className='block truncate'>{show.title}</span>
+        {hostNames && (
+          <span className='block truncate text-xs text-muted-foreground'>{hostNames}</span>
+        )}
+      </span>
     </button>
   )
 }

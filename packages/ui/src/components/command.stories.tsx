@@ -10,7 +10,7 @@ import {
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/Command'
+  title: '@gbfm/ui/Primitives/Command'
 }
 
 export function Commands() {

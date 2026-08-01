@@ -2,7 +2,7 @@ import { ReadMoreModal } from './read-more-modal'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/ReadMoreModal'
+  title: '@gbfm/ui/Content/Read more modal'
 }
 
 export function ReadMoreModals() {

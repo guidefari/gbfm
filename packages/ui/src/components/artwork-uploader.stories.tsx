@@ -3,7 +3,7 @@ import { ArtworkUploader } from './artwork-uploader'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/ArtworkUploader'
+  title: '@gbfm/ui/Workflows/Artwork uploader'
 }
 
 export function ArtworkUploaders() {

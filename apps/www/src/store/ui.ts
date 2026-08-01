@@ -8,15 +8,13 @@ const UIState = Schema.Struct({
   mixesSorting: Schema.Struct({
     sortBy: Schema.Literals(['date', 'title']),
     sortOrder: Schema.Literals(['asc', 'desc'])
-  }),
-  showBottomPlayer: Schema.Boolean
+  })
 })
 
 export type UIState = (typeof UIState)['Type']
 
 const initialUIState: UIState = {
-  mixesSorting: { sortBy: 'date', sortOrder: 'desc' },
-  showBottomPlayer: true
+  mixesSorting: { sortBy: 'date', sortOrder: 'desc' }
 }
 
 const { atom: uiAtom, write } = persistedAtom({

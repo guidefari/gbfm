@@ -19,6 +19,7 @@ import { useSession } from './lib/auth-client'
 const router = createRouter({
   routeTree,
   defaultPreload: 'intent',
+  defaultViewTransition: true,
   scrollRestoration: true,
   scrollToTopSelectors: [() => document.getElementById(MAIN_SCROLL_CONTAINER_ID)],
   context: {

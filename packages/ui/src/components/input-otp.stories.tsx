@@ -3,7 +3,7 @@ import { InputOTP, InputOTPGroup, InputOTPSlot } from './input-otp'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/InputOTP'
+  title: '@gbfm/ui/Primitives/Input OTP'
 }
 
 export function InputOtps() {

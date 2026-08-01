@@ -3,7 +3,7 @@ import { IconGrid } from './icon-grid'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/IconGrid'
+  title: '@gbfm/ui/Content/Icon grid'
 }
 
 const tiles = [

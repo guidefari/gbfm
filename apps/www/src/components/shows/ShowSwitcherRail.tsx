@@ -1,4 +1,3 @@
-import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 import type { ShowWithHosts } from '@/lib/http'
 import { cn } from '@/lib/utils'
 
@@ -10,59 +9,24 @@ interface ShowSwitcherRailProps {
 
 export function ShowSwitcherRail({ shows, selectedShowId, onSelect }: ShowSwitcherRailProps) {
   return (
-    <nav
-      className='flex gap-3 overflow-x-auto snap-x snap-mandatory pb-1 no-scrollbar'
-      aria-label='Show switcher'>
-      {shows.map((show) => (
-        <ShowSwitcherCard
-          key={show.id}
-          show={show}
-          isSelected={selectedShowId === show.id}
-          onSelect={() => onSelect(show)}
-        />
-      ))}
+    <nav className='no-scrollbar flex gap-2 overflow-x-auto' aria-label='Show switcher'>
+      {shows.map((show) => {
+        const isSelected = selectedShowId === show.id
+        return (
+          <button
+            key={show.id}
+            type='button'
+            onClick={() => onSelect(show)}
+            className={cn(
+              'shrink-0 whitespace-nowrap rounded-sm border px-2.5 py-1 text-xs font-semibold transition-colors',
+              isSelected
+                ? 'border-highlight bg-secondary text-highlight'
+                : 'border-border text-foreground/70 hover:bg-muted/40'
+            )}>
+            {show.title}
+          </button>
+        )
+      })}
     </nav>
-  )
-}
-
-function ShowSwitcherCard({
-  show,
-  isSelected,
-  onSelect
-}: {
-  show: ShowWithHosts
-  isSelected: boolean
-  onSelect: () => void
-}) {
-  const hostNames = show.hosts?.map((h) => h.name).join(', ')
-
-  return (
-    <button
-      type='button'
-      onClick={onSelect}
-      className={cn(
-        'shrink-0 snap-start w-24 flex flex-col gap-1.5 text-left transition-opacity',
-        !isSelected && 'opacity-60 hover:opacity-90'
-      )}>
-      <div
-        className={cn(
-          'aspect-square w-full overflow-hidden border rounded-sm bg-background',
-          isSelected ? 'border-highlight ring-1 ring-highlight' : 'border-border'
-        )}>
-        <img
-          src={show.thumbnailUrl || DEFAULT_IMAGE_URL}
-          alt={show.title}
-          className='object-cover w-full h-full'
-        />
-      </div>
-      <p
-        className={cn(
-          'text-[11px] font-semibold leading-tight line-clamp-2',
-          isSelected ? 'text-highlight' : 'text-foreground/70'
-        )}>
-        {show.title}
-      </p>
-      {hostNames && <p className='text-[10px] text-muted-foreground line-clamp-1'>{hostNames}</p>}
-    </button>
   )
 }

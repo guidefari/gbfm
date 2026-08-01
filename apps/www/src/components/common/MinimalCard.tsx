@@ -2,8 +2,8 @@ import { useFeatureFlag } from '@gbfm/core/feature-flags'
 import { toast } from '@gbfm/ui'
 import { Download, Share } from 'lucide-react'
 import type React from 'react'
-import { DEFAULT_IMAGE_URL } from '@/lib/constants'
-import { cn, copyToClipboard } from '@/lib/utils'
+import { Artwork } from '@/components/common/Artwork'
+import { copyToClipboard } from '@/lib/utils'
 import { log } from '@/services/logger'
 
 // this component needs to support:
@@ -82,29 +82,27 @@ export const MinimalCard: React.FC<Props> = ({
             target='_blank'
             rel='noopener noreferrer'
             className='block transition-opacity hover:opacity-80'>
-            <img
-              className={cn(
-                'object-cover w-full rounded-md aspect-square  mx-auto',
-                loading ? 'scale-102 blur-2xl' : 'scale-100 blur-0'
-              )}
-              src={imageUrl || DEFAULT_IMAGE_URL}
+            <Artwork
+              src={imageUrl}
               alt={title}
+              radius='md'
+              border='none'
+              isLoading={loading}
+              className='w-full'
               width={300}
               height={300}
-              loading='lazy'
             />
           </a>
         ) : (
-          <img
-            className={cn(
-              'object-cover w-full rounded-md aspect-square  mx-auto',
-              loading ? 'scale-102 blur-2xl' : 'scale-100 blur-0'
-            )}
-            src={imageUrl || DEFAULT_IMAGE_URL}
+          <Artwork
+            src={imageUrl}
             alt={title}
+            radius='md'
+            border='none'
+            isLoading={loading}
+            className='w-full'
             width={300}
             height={300}
-            loading='lazy'
           />
         )}
       </div>

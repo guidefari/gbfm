@@ -3,7 +3,7 @@ import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 import { TagsInput } from './tags-input'
 
 export default {
-  title: '@gbfm/ui/TagsInput'
+  title: '@gbfm/ui/Forms/Tags input'
 }
 
 export function Tags() {
@@ -16,7 +16,7 @@ export function Tags() {
         title='TagsInput'
         description='Add and remove tags. Press Enter or click Add.'
       />
-      <div className='max-w-md space-y-6'>
+      <div className='max-w-md space-y-8'>
         <TagsInput
           tags={tags}
           onAddTag={(tag) => setTags((prev) => [...prev, tag])}

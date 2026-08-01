@@ -3,7 +3,7 @@ import { AudioUploader } from './audio-uploader'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/AudioUploader'
+  title: '@gbfm/ui/Workflows/Audio uploader'
 }
 
 export function AudioUploaders() {

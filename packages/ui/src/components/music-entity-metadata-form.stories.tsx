@@ -2,7 +2,7 @@ import { MusicEntityMetadataForm } from './music-entity-metadata-form'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/MusicEntityMetadataForm'
+  title: '@gbfm/ui/Forms/Music entity metadata'
 }
 
 export function AlbumMetadataForm() {

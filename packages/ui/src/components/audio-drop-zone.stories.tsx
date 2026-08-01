@@ -2,7 +2,7 @@ import { AudioDropZone } from './audio-drop-zone'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/AudioDropZone'
+  title: '@gbfm/ui/Workflows/Audio drop zone'
 }
 
 export function AudioDropZones() {

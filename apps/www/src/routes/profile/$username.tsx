@@ -50,9 +50,9 @@ function ProfileNotFound({ username }: { username: string }) {
           Go home
         </Link>
         <Link
-          to='/mixes'
+          to='/shows'
           className='rounded-md border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-muted'>
-          Browse mixes
+          Browse radio shows
         </Link>
       </div>
     </div>

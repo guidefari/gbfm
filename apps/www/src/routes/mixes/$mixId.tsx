@@ -9,7 +9,7 @@ import {
   useToast
 } from '@gbfm/ui'
 import type { SelectMdxCompiledAudio } from '@gbfm/vps/schemas'
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, useCanGoBack, useNavigate, useRouter } from '@tanstack/react-router'
 import { Effect } from 'effect'
 import {
   ArrowLeft,
@@ -139,6 +139,8 @@ function MixPage() {
   const { mixId } = Route.useParams()
   const setCurrentContent = useSetCurrentContent()
   const { mix } = Route.useLoaderData()
+  const router = useRouter()
+  const canGoBack = useCanGoBack()
 
   React.useEffect(() => {
     if (mix?.creators) {
@@ -157,12 +159,22 @@ function MixPage() {
 
   return (
     <div className='max-w-3xl px-4 py-6 mx-auto'>
-      <Link
-        to='/mixes'
-        className='inline-flex items-center gap-1 mb-8 text-sm transition-colors text-muted-foreground hover:text-foreground'>
-        <ArrowLeft className='w-4 h-4' />
-        Mixes
-      </Link>
+      {canGoBack ? (
+        <button
+          type='button'
+          onClick={() => router.history.back()}
+          className='inline-flex items-center gap-1 mb-8 text-sm transition-colors text-muted-foreground hover:text-foreground'>
+          <ArrowLeft className='w-4 h-4' />
+          Radio shows
+        </button>
+      ) : (
+        <Link
+          to='/shows'
+          className='inline-flex items-center gap-1 mb-8 text-sm transition-colors text-muted-foreground hover:text-foreground'>
+          <ArrowLeft className='w-4 h-4' />
+          Radio shows
+        </Link>
+      )}
       <MixDetails mix={mix} />
     </div>
   )

@@ -1,16 +1,17 @@
 'use client'
-import { Pause, Play } from 'lucide-react'
+import { PlayToggle } from '@gbfm/ui'
 import { useNowPlayingTrack, usePlayerActions, useTransport } from '@/services/player'
+import { toPlaybackState } from '@/services/player/toPlaybackState'
 import { toQueueTrack, type PlayableAudio } from '@/services/player/toQueueTrack'
 
 export const PlayPauseButton = ({ audio }: { audio: PlayableAudio }) => {
   const current = useNowPlayingTrack()
-  const { isPlaying } = useTransport()
+  const { isPlaying, isBuffering, isLoaded } = useTransport()
   const { playTrack, togglePlayPause } = usePlayerActions()
 
   const isCurrent = current?.id === audio.id
 
-  const handleClick = () => {
+  const handleToggle = () => {
     if (!isCurrent) {
       playTrack(toQueueTrack(audio))
       return
@@ -18,12 +19,13 @@ export const PlayPauseButton = ({ audio }: { audio: PlayableAudio }) => {
     togglePlayPause()
   }
 
-  const Icon = isCurrent && isPlaying ? Pause : Play
-
   return (
-    <Icon
+    <PlayToggle
+      state={toPlaybackState({ isCurrent, isPlaying, isBuffering, isLoaded })}
+      variant='icon'
+      label={audio.title}
+      onToggle={handleToggle}
       className={isCurrent && isPlaying ? 'py-[2px] text-green-300 default-icon' : 'default-icon'}
-      onClick={handleClick}
     />
   )
 }

@@ -2,7 +2,7 @@ import { PageTitle } from './page-title'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/PageTitle'
+  title: '@gbfm/ui/Content/Page title'
 }
 
 export function PageTitles() {

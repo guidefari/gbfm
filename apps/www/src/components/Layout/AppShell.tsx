@@ -1,14 +1,11 @@
 import { useFeatureFlag } from '@gbfm/core/feature-flags'
 import { lazy, Suspense } from 'react'
 import type React from 'react'
-import AudioPlayer from '@/components/AudioPlayer'
 import FullscreenAudioPlayer from '@/components/FullscreenAudioPlayer'
 import { useMediaHotkeys } from '@/hooks/useMediaHotkeys'
 import { MAIN_SCROLL_CONTAINER_ID } from '@/lib/constants'
-import { useNowPlayingTrack, useVisibility } from '@/services/player'
-import { useUIState } from '@/store'
 
-import { FloatingMenu } from './FloatingMenu'
+import { StationNav } from './StationNav'
 
 const QueueColumn = lazy(() =>
   import('@/components/queue/QueueColumn').then((m) => ({ default: m.QueueColumn }))
@@ -23,12 +20,6 @@ export default function AppShell({ children }: Props) {
   useMediaHotkeys()
   const isQueueEnabled = useFeatureFlag('ui.queue')
 
-  const currentTrack = useNowPlayingTrack()
-  const { isFullscreenVisible } = useVisibility()
-  const { showBottomPlayer } = useUIState()
-  const hasActiveAudio = Boolean(currentTrack)
-  const showPlayer = showBottomPlayer && !isFullscreenVisible && hasActiveAudio
-
   return (
     <div className='grid h-dvh w-full grid-cols-1 bg-background'>
       <div className='relative flex h-dvh min-w-0 flex-col overflow-hidden'>
@@ -37,18 +28,12 @@ export default function AppShell({ children }: Props) {
             id={MAIN_SCROLL_CONTAINER_ID}
             tabIndex={-1}
             style={{ overflowAnchor: 'none' }}
-            className='h-full min-w-0 overflow-x-hidden overflow-y-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none] bg-background focus:outline-none'>
+            className='h-full min-w-0 overflow-x-hidden overflow-y-auto bg-background pb-[calc(2.75rem+env(safe-area-inset-bottom))] focus:outline-none lg:pb-0 lg:pt-12 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]'>
             {children}
           </main>
-
-          <FloatingMenu className='absolute bottom-[calc(1rem+env(safe-area-inset-bottom))] right-[calc(1rem+env(safe-area-inset-right))]' />
         </div>
 
-        {showPlayer && (
-          <div className='z-20 hidden shrink-0 lg:block pb-[env(safe-area-inset-bottom)]'>
-            <AudioPlayer />
-          </div>
-        )}
+        <StationNav />
 
         {isQueueEnabled && (
           <Suspense fallback={null}>

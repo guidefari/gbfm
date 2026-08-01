@@ -2,7 +2,7 @@ import { ShowsSkeleton } from './shows-skeleton'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/ShowsSkeleton'
+  title: '@gbfm/ui/Media/Shows skeleton'
 }
 
 export function ShowsSkeletons() {

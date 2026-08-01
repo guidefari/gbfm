@@ -1,6 +1,6 @@
 @import url(fonts.css);
-@import url(scrollbar.css);
 @import 'tailwindcss';
+@import './scrollbar.css';
 @import '@gbfm/theme/styles.css';
 
 @source "../../../../packages/ui/src/**/*.{ts,tsx}";
@@ -56,6 +56,41 @@
 @utility container {
   margin-inline: auto;
   padding-inline: 2rem;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 180ms;
+  animation-timing-function: ease-out;
+}
+
+::view-transition-old(root) {
+  animation-name: page-out;
+}
+
+::view-transition-new(root) {
+  animation-name: page-in;
+}
+
+@keyframes page-out {
+  to {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(root),
+  ::view-transition-new(root) {
+    animation: none;
+  }
 }
 
 @keyframes accordion-down {

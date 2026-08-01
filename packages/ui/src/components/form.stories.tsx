@@ -13,7 +13,7 @@ import { Input } from './input'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/Form'
+  title: '@gbfm/ui/Forms/Form'
 }
 
 type FormValues = {

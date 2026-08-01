@@ -3,7 +3,7 @@ import { Section } from './section'
 import { StoryPanelHeader, storyPanelClassName } from './story-helpers'
 
 export default {
-  title: '@gbfm/ui/Section'
+  title: '@gbfm/ui/Content/Section'
 }
 
 export function Sections() {
