@@ -18,7 +18,7 @@ import { useSession } from '@/lib/auth-client'
 import { getApiClient } from '@/lib/api-client'
 import { generateMicroPostSEO, generateSEOMeta } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
-import { useMarkTweetSeen } from '@/store/tweetSeen'
+import { useRecordTweetViewed } from '@/store/tweetSeen'
 
 export const Route = createFileRoute('/tweet/$slug')({
   component: TweetPostPage,
@@ -70,10 +70,10 @@ function TweetPostPage() {
   const { post } = Route.useLoaderData()
   const { data: session } = useSession()
   const user = session?.user
-  const markSeen = useMarkTweetSeen()
+  const recordViewed = useRecordTweetViewed()
 
   useEffect(() => {
-    markSeen(slug)
+    recordViewed({ postId: post.id, slug })
     // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [slug])
 
