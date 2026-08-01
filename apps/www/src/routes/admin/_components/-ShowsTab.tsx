@@ -203,7 +203,7 @@ export function ShowsTab() {
         <div className='py-8 text-center text-muted-foreground'>Loading shows...</div>
       ) : (
         <div className='overflow-x-auto rounded-sm border'>
-          <table className='w-full text-sm'>
+          <table className='w-full text-base'>
             <thead>
               <tr className='border-b bg-muted/50'>
                 <th className='px-4 py-3 text-left font-medium'>Title</th>

@@ -32,7 +32,7 @@ function Subscribe() {
               Newsletter
             </p>
             <h1 className='mb-3 text-3xl font-bold tracking-tight sm:text-4xl'>Stay in the loop</h1>
-            <p className='mx-auto max-w-xl text-sm text-muted-foreground sm:text-base'>
+            <p className='mx-auto max-w-xl text-base text-muted-foreground'>
               Get notified when new mixes drop and other goosebumps updates.
             </p>
           </div>
@@ -44,7 +44,7 @@ function Subscribe() {
                 <p className='text-lg font-medium'>
                   {data?.subscribed ? "You're subscribed!" : "You're already subscribed!"}
                 </p>
-                <p className='mt-1 text-sm text-muted-foreground'>
+                <p className='mt-1 text-base text-muted-foreground'>
                   {data?.subscribed
                     ? `We'll send updates to ${data.email}`
                     : `${data?.email} is already on the list.`}
@@ -96,7 +96,7 @@ function Subscribe() {
           )}
 
           {isError && (
-            <p className='text-center text-sm text-destructive'>
+            <p className='text-center text-base text-destructive'>
               {error?.message || 'Something went wrong. Please try again.'}
             </p>
           )}

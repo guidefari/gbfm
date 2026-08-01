@@ -163,7 +163,7 @@ export function EmailLogsTab() {
       </div>
 
       <div className='flex items-center justify-between gap-3'>
-        <p className='text-sm text-muted-foreground'>
+        <p className='text-base text-muted-foreground'>
           {pagination ? `${pagination.total} total logs` : 'Email delivery logs'}
         </p>
         <Button variant='outline' onClick={resetFilters}>
@@ -172,13 +172,13 @@ export function EmailLogsTab() {
       </div>
 
       {error ? (
-        <div className='rounded-sm border border-destructive/50 bg-destructive/10 p-4 text-sm text-destructive'>
+        <div className='rounded-sm border border-destructive/50 bg-destructive/10 p-4 text-base text-destructive'>
           Failed to load email logs: {error.message}
         </div>
       ) : null}
 
       <div className='overflow-x-auto rounded-sm border'>
-        <table className='w-full text-sm'>
+        <table className='w-full text-base'>
           <thead>
             <tr className='border-b bg-muted/50'>
               <th className='px-4 py-3 text-left font-medium'>Created</th>
@@ -235,7 +235,7 @@ export function EmailLogsTab() {
       </div>
 
       <div className='flex items-center justify-between gap-3'>
-        <p className='text-sm text-muted-foreground'>
+        <p className='text-base text-muted-foreground'>
           Page {currentPage}
           {pagination ? ` of ${Math.max(Math.ceil(pagination.total / PAGE_SIZE), 1)}` : ''}
         </p>

@@ -19,7 +19,7 @@ export function MusicCardPatterns() {
       />
 
       <section className='space-y-3'>
-        <h2 className='text-sm tracking-[0.2em] text-muted-foreground'>Mix list item</h2>
+        <h2 className='text-base tracking-[0.2em] text-muted-foreground'>Mix list item</h2>
         <article className='group/row flex flex-col sm:flex-row gap-5 border-b border-border/60 pb-6 transition-colors hover:border-highlight/40'>
           <Artwork
             src={mix.imageUrl}
@@ -54,7 +54,7 @@ export function MusicCardPatterns() {
               </h3>
             </div>
 
-            <p className='max-w-prose text-sm leading-relaxed text-muted-foreground'>
+            <p className='max-w-prose text-base leading-relaxed text-muted-foreground'>
               {mix.description}
             </p>
 
@@ -75,7 +75,7 @@ export function MusicCardPatterns() {
       </section>
 
       <section className='space-y-3'>
-        <h2 className='text-sm tracking-[0.2em] text-muted-foreground'>Show card grid</h2>
+        <h2 className='text-base tracking-[0.2em] text-muted-foreground'>Show card grid</h2>
         <div className='grid gap-x-4 gap-y-6 grid-cols-2 md:grid-cols-4'>
           {[0, 1, 2, 3].map((index) => {
             const example = mediaExamples[index % 2]
@@ -112,7 +112,7 @@ export function MusicCardPatterns() {
                   <p className='text-[10px] tracking-[0.2em] text-muted-foreground'>
                     {example.eyebrow}
                   </p>
-                  <h3 className='text-sm font-semibold leading-snug text-foreground transition-colors group-hover/card:text-highlight line-clamp-2'>
+                  <h3 className='text-base font-semibold leading-snug text-foreground transition-colors group-hover/card:text-highlight line-clamp-2'>
                     {example.title}
                   </h3>
                 </div>
@@ -123,7 +123,7 @@ export function MusicCardPatterns() {
       </section>
 
       <section className='space-y-3'>
-        <h2 className='text-sm tracking-[0.2em] text-muted-foreground'>Show list row</h2>
+        <h2 className='text-base tracking-[0.2em] text-muted-foreground'>Show list row</h2>
         <div className='max-w-2xl'>
           {mediaExamples.map((example, index) => (
             <article
@@ -155,7 +155,7 @@ export function MusicCardPatterns() {
               />
 
               <div className='min-w-0 flex-1 space-y-0.5'>
-                <h3 className='truncate text-sm font-semibold leading-tight text-foreground transition-colors group-hover/item:text-highlight'>
+                <h3 className='truncate text-base font-semibold leading-tight text-foreground transition-colors group-hover/item:text-highlight'>
                   {example.title}
                 </h3>
                 <p className='truncate text-xs leading-relaxed text-muted-foreground'>

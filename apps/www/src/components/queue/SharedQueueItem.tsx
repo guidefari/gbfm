@@ -129,7 +129,7 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
   const getFontSizeClasses = () => {
     switch (fontSize) {
       case 'sm':
-        return 'text-sm'
+        return 'text-base'
       case 'base':
         return 'text-base'
       case 'lg':
@@ -146,13 +146,13 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
       case 'sm':
         return 'text-xs'
       case 'base':
-        return 'text-sm'
+        return 'text-base'
       case 'lg':
         return 'text-base'
       case 'xl':
         return 'text-lg'
       default:
-        return 'text-sm'
+        return 'text-base'
     }
   }
 
@@ -279,7 +279,7 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
           <button
             type='button'
             onClick={handlePlayNow}
-            className='flex items-center w-full gap-2 px-3 py-2 text-sm text-left transition-colors text-foreground hover:bg-muted'>
+            className='flex items-center w-full gap-2 px-3 py-2 text-base text-left transition-colors text-foreground hover:bg-muted'>
             <Play className='w-4 h-4' />
             Play now
           </button>
@@ -289,7 +289,7 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
           <button
             type='button'
             onClick={handleAddToFavorites}
-            className='flex items-center w-full gap-2 px-3 py-2 text-sm text-left transition-colors text-foreground hover:bg-muted'>
+            className='flex items-center w-full gap-2 px-3 py-2 text-base text-left transition-colors text-foreground hover:bg-muted'>
             <Heart className='w-4 h-4' />
             Add to favorites
           </button>
@@ -298,7 +298,7 @@ export const SharedQueueItem: React.FC<SharedQueueItemProps> = ({
             <button
               type='button'
               onClick={handleShare}
-              className='flex items-center w-full gap-2 px-3 py-2 text-sm text-left transition-colors text-foreground hover:bg-muted'>
+              className='flex items-center w-full gap-2 px-3 py-2 text-base text-left transition-colors text-foreground hover:bg-muted'>
               <Share2 className='w-4 h-4' />
               Share
             </button>

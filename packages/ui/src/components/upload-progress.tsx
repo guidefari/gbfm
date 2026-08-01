@@ -75,7 +75,7 @@ export function UploadProgress({ step, title }: UploadProgressProps) {
               style={{ width: getProgressWidth(step) }}
             />
           </div>
-          <p className='text-sm text-gb-default-text'>
+          <p className='text-base text-gb-default-text'>
             {isSuccess ? `"${title}" has been uploaded successfully! Redirecting...` : stepText}
           </p>
         </div>

@@ -40,7 +40,7 @@ function UnsubscribeWithToken({ token }: { token: string }) {
             <CheckCircle className='w-12 h-12 text-green-500' />
             <div className='text-center'>
               <p className='font-medium text-lg'>Unsubscribed</p>
-              <p className='text-sm text-muted-foreground mt-1'>
+              <p className='text-base text-muted-foreground mt-1'>
                 You've been removed from the mailing list.
               </p>
             </div>
@@ -51,7 +51,7 @@ function UnsubscribeWithToken({ token }: { token: string }) {
             <XCircle className='w-12 h-12 text-destructive' />
             <div className='text-center'>
               <p className='font-medium text-lg'>Something went wrong</p>
-              <p className='text-sm text-muted-foreground mt-1'>
+              <p className='text-base text-muted-foreground mt-1'>
                 This link may have already been used or is invalid.
               </p>
             </div>
@@ -90,7 +90,7 @@ function RequestUnsubscribeForm() {
           <CheckCircle className='w-12 h-12 text-green-500' />
           <div className='text-center'>
             <p className='font-medium text-lg'>Check your inbox</p>
-            <p className='text-sm text-muted-foreground mt-1'>
+            <p className='text-base text-muted-foreground mt-1'>
               If that address is on the list, we've sent an unsubscribe link.
             </p>
           </div>
@@ -121,7 +121,7 @@ function RequestUnsubscribeForm() {
       )}
 
       {isError && (
-        <p className='text-sm text-destructive mt-3 text-center'>
+        <p className='text-base text-destructive mt-3 text-center'>
           Something went wrong. Please try again.
         </p>
       )}

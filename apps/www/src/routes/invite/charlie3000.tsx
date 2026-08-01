@@ -94,7 +94,9 @@ function InviteCharliePage() {
                   className={`p-5 border border-border/60 bg-muted/30 backdrop-blur-sm transition-transform duration-200 hover:rotate-0 hover:-translate-y-1 ${card.rotation}`}>
                   <card.icon className='w-5 h-5 mb-3 text-gb-highlight' />
                   <h2 className='text-base font-bold'>{card.title}</h2>
-                  <p className='mt-2 text-sm leading-relaxed text-muted-foreground'>{card.body}</p>
+                  <p className='mt-2 text-base leading-relaxed text-muted-foreground'>
+                    {card.body}
+                  </p>
                 </article>
               ))}
             </div>
@@ -141,7 +143,7 @@ function InviteCharliePage() {
                       <dt className='text-[10px] font-semibold tracking-[0.2em] text-muted-foreground'>
                         {fact.label}
                       </dt>
-                      <dd className='mt-1 text-sm font-medium'>
+                      <dd className='mt-1 text-base font-medium'>
                         {fact.to ? (
                           <Link
                             to={fact.to}

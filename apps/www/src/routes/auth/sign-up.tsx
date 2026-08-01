@@ -123,7 +123,7 @@ function SignUpPage() {
         ) : null
       }
       footer={
-        <div className='space-y-3 border-t border-gb-pastel-green-2/20 pt-4 text-sm text-muted-foreground'>
+        <div className='space-y-3 border-t border-gb-pastel-green-2/20 pt-4 text-base text-muted-foreground'>
           <p>
             Already have an account?{' '}
             <Link
@@ -148,13 +148,13 @@ function SignUpPage() {
         <div className='space-y-5'>
           <div className='flex flex-col items-center gap-3 border border-gb-pastel-green-2/30 bg-gb-pastel-green-2/10 px-6 py-8 text-center'>
             <MailCheck className='h-10 w-10 text-gb-pastel-green-1' />
-            <p className='text-sm text-muted-foreground'>Verification email sent to</p>
+            <p className='text-base text-muted-foreground'>Verification email sent to</p>
             <p className='text-base font-semibold break-all text-foreground'>{signedUpEmail}</p>
           </div>
 
           {resendError ? <AuthStatusNotice variant='error'>{resendError}</AuthStatusNotice> : null}
 
-          <div className='space-y-2 text-sm'>
+          <div className='space-y-2 text-base'>
             <p className='text-muted-foreground'>
               Didn&apos;t get the email? Check spam, or resend.
             </p>

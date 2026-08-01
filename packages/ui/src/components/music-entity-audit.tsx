@@ -19,10 +19,10 @@ export function MusicEntityAudit({ createdAt, updatedAt, createdBy }: MusicEntit
   return (
     <Card>
       <CardHeader>
-        <CardTitle className='text-sm font-medium'>Audit</CardTitle>
+        <CardTitle className='text-base font-medium'>Audit</CardTitle>
       </CardHeader>
       <CardContent>
-        <dl className='grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2 text-sm'>
+        <dl className='grid grid-cols-[max-content_1fr] gap-x-6 gap-y-2 text-base'>
           <dt className='text-muted-foreground'>Created</dt>
           <dd>{formatDate(createdAt)}</dd>
           <dt className='text-muted-foreground'>Updated</dt>

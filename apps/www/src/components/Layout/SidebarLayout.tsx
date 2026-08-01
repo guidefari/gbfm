@@ -28,7 +28,7 @@ export function SidebarNavLink({
       onClick={onNavigate}
       aria-current={isActive ? 'page' : undefined}
       className={cn(
-        'flex items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium transition-colors',
+        'flex items-center gap-3 rounded-sm px-3 py-2 text-base font-medium transition-colors',
         'hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
         isActive ? 'bg-foreground text-background hover:bg-foreground' : 'text-foreground'
       )}>
@@ -81,7 +81,7 @@ export function SidebarLayout({
   const content = (
     <div className='flex min-h-full'>
       <aside className='sticky top-0 hidden h-dvh w-64 shrink-0 self-start border-r lg:block'>
-        <div className='border-b px-4 py-4 text-sm font-black tracking-[0.18em]'>{brand}</div>
+        <div className='border-b px-4 py-4 text-base font-black tracking-[0.18em]'>{brand}</div>
         <ScrollArea className='h-[calc(100dvh-3.5rem)]'>
           <nav aria-label={brand} className='flex flex-col gap-6 p-4'>
             {nav({})}
@@ -101,7 +101,7 @@ export function SidebarLayout({
                   </Button>
                 </SheetTrigger>
                 <SheetContent side='left' className='w-72 p-0'>
-                  <SheetTitle className='border-b px-4 py-4 text-sm font-black tracking-[0.18em]'>
+                  <SheetTitle className='border-b px-4 py-4 text-base font-black tracking-[0.18em]'>
                     {brand}
                   </SheetTitle>
                   <ScrollArea className='h-[calc(100vh-3.5rem)]'>

@@ -61,7 +61,7 @@ export function MusicEntityDetails() {
         }
       />
 
-      <h2 className='text-sm tracking-[0.2em] text-muted-foreground'>Draft, no artwork</h2>
+      <h2 className='text-base tracking-[0.2em] text-muted-foreground'>Draft, no artwork</h2>
       <MusicEntityDetail
         entityType='album'
         name='Untrue'

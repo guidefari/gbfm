@@ -484,14 +484,14 @@ export function UsersTab() {
           <Plus className='w-4 h-4 mr-2' />
           Create User
         </Button>
-        <span className='text-sm text-muted-foreground'>{total} users</span>
+        <span className='text-base text-muted-foreground'>{total} users</span>
       </div>
 
       {isPending ? (
         <div className='py-8 text-center text-muted-foreground'>Loading users...</div>
       ) : (
         <div className='overflow-x-auto border rounded-sm'>
-          <table className='w-full text-sm'>
+          <table className='w-full text-base'>
             <thead>
               <tr className='border-b bg-muted/50'>
                 <th className='px-4 py-3 font-medium text-left'>Name</th>
@@ -866,7 +866,7 @@ export function UsersTab() {
             <TabsContent value='social-links' className='space-y-3'>
               <div className='flex items-center justify-between'>
                 <div>
-                  <h4 className='text-sm font-medium'>Social Links</h4>
+                  <h4 className='text-base font-medium'>Social Links</h4>
                   <p className='text-xs text-muted-foreground'>
                     Drag to reorder. Empty URLs are ignored on save.
                   </p>
@@ -878,9 +878,9 @@ export function UsersTab() {
               </div>
 
               {socialLinksQuery.isPending ? (
-                <p className='text-sm text-muted-foreground'>Loading social links...</p>
+                <p className='text-base text-muted-foreground'>Loading social links...</p>
               ) : socialLinksDraft.length === 0 ? (
-                <div className='rounded-sm border border-dashed p-4 text-sm text-muted-foreground'>
+                <div className='rounded-sm border border-dashed p-4 text-base text-muted-foreground'>
                   No social links yet.
                 </div>
               ) : (

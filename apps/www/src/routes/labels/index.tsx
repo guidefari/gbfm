@@ -57,7 +57,7 @@ function Component() {
               />
             </div>
             <div className='flex flex-col gap-1'>
-              <h2 className='text-sm font-semibold leading-tight transition-colors text-foreground group-hover:text-highlight line-clamp-2'>
+              <h2 className='text-base font-semibold leading-tight transition-colors text-foreground group-hover:text-highlight line-clamp-2'>
                 {label.name}
               </h2>
               {label.genres && label.genres.length > 0 && (

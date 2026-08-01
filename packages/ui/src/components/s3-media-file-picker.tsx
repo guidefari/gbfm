@@ -130,7 +130,7 @@ export function S3MediaFilePicker({
                 onBucketChange(v)
                 setSelectedKey(null)
               }}>
-              <SelectTrigger className='flex-1 h-9 text-sm'>
+              <SelectTrigger className='flex-1 h-9 text-base'>
                 <SelectValue placeholder='Select bucket' />
               </SelectTrigger>
               <SelectContent>
@@ -152,7 +152,9 @@ export function S3MediaFilePicker({
                 <Loader2 className='h-6 w-6 animate-spin text-gb-highlight' />
               </div>
             ) : mediaFiles.length === 0 ? (
-              <div className='py-12 text-center text-sm text-muted-foreground'>{emptyMessage}</div>
+              <div className='py-12 text-center text-base text-muted-foreground'>
+                {emptyMessage}
+              </div>
             ) : (
               <div className='max-h-80 overflow-y-auto overflow-x-hidden'>
                 {mediaFiles.map((obj) => {
@@ -197,7 +199,7 @@ export function S3MediaFilePicker({
                           )}
                         </div>
                       )}
-                      <p className='flex-1 min-w-0 text-sm font-mono text-gb-default-text truncate'>
+                      <p className='flex-1 min-w-0 text-base font-mono text-gb-default-text truncate'>
                         {obj.key.split('/').pop() ?? obj.key}
                       </p>
                       <span className='flex-none text-xs tabular-nums text-muted-foreground ml-3'>

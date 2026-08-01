@@ -49,7 +49,7 @@ export function TweetQuoteCard({ quotedPostId }: Props) {
         createdAt={data.createdAt}
         interactive={false}
       />
-      {snippet ? <p className='mt-2 truncate text-sm text-muted-foreground'>{snippet}</p> : null}
+      {snippet ? <p className='mt-2 truncate text-base text-muted-foreground'>{snippet}</p> : null}
     </Link>
   )
 }

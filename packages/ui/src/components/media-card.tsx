@@ -67,7 +67,7 @@ function MediaCard({
             )}
           </h3>
           {description && (
-            <div className='text-sm leading-6 text-muted-foreground'>{description}</div>
+            <div className='text-base leading-6 text-muted-foreground'>{description}</div>
           )}
         </div>
         {tags && tags.length > 0 && (
@@ -80,7 +80,7 @@ function MediaCard({
           </div>
         )}
         {actions && <div className='flex flex-wrap items-center gap-2'>{actions}</div>}
-        {footer && <div className='border-t pt-4 text-sm text-muted-foreground'>{footer}</div>}
+        {footer && <div className='border-t pt-4 text-base text-muted-foreground'>{footer}</div>}
       </div>
     </article>
   )

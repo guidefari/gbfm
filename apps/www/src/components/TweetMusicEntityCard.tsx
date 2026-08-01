@@ -128,7 +128,7 @@ export function TweetMusicEntityCard({ entityType, entityId }: Props) {
               {data.title}
             </h2>
             {data.artistNames?.length ? (
-              <p className='text-sm text-muted-foreground'>{data.artistNames.join(', ')}</p>
+              <p className='text-base text-muted-foreground'>{data.artistNames.join(', ')}</p>
             ) : null}
           </div>
 
@@ -223,7 +223,7 @@ function RemindMeButton({
         </DialogHeader>
         <form className='space-y-4' onSubmit={handleSubmit}>
           <div>
-            <label htmlFor='reminder-date' className='mb-1 block text-sm font-medium'>
+            <label htmlFor='reminder-date' className='mb-1 block text-base font-medium'>
               Remind me on
             </label>
             <Input

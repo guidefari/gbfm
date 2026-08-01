@@ -74,7 +74,7 @@ function ForgotPasswordPage() {
         !isSent && error ? <AuthStatusNotice variant='error'>{error}</AuthStatusNotice> : null
       }
       footer={
-        <div className='space-y-3 border-t border-gb-pastel-green-2/20 pt-4 text-sm text-muted-foreground'>
+        <div className='space-y-3 border-t border-gb-pastel-green-2/20 pt-4 text-base text-muted-foreground'>
           <p>
             Remembered your password?{' '}
             <Link
@@ -97,13 +97,13 @@ function ForgotPasswordPage() {
         <div className='space-y-5'>
           <div className='flex flex-col items-center gap-3 border border-gb-pastel-green-2/30 bg-gb-pastel-green-2/10 px-6 py-8 text-center'>
             <MailCheck className='h-10 w-10 text-gb-pastel-green-1' />
-            <p className='text-sm text-muted-foreground'>Reset link sent to</p>
+            <p className='text-base text-muted-foreground'>Reset link sent to</p>
             <p className='text-base font-semibold break-all text-foreground'>{sentEmail}</p>
           </div>
 
           {error ? <AuthStatusNotice variant='error'>{error}</AuthStatusNotice> : null}
 
-          <div className='space-y-2 text-sm'>
+          <div className='space-y-2 text-base'>
             <p className='text-muted-foreground'>Didn&apos;t get the email?</p>
             <div className='flex flex-wrap gap-x-4 gap-y-2'>
               <button

@@ -68,7 +68,9 @@ function DjCard({ dj }: { dj: DjListItem }) {
         </div>
       </div>
       {dj.bio && (
-        <p className='mt-3 text-sm leading-relaxed text-muted-foreground line-clamp-3'>{dj.bio}</p>
+        <p className='mt-3 text-base leading-relaxed text-muted-foreground line-clamp-3'>
+          {dj.bio}
+        </p>
       )}
     </Link>
   )

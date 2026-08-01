@@ -126,7 +126,7 @@ export function IconGrid({ tiles, onTileSelect, isAuthenticated, className }: Ic
             />
             <span
               className={cn(
-                'text-sm font-medium transition-colors',
+                'text-base font-medium transition-colors',
                 isSelected ? 'text-accent-foreground' : 'text-muted-foreground'
               )}>
               {tile.label}

@@ -65,7 +65,7 @@ export function EditorialListItem({ post }: EditorialListItemProps) {
         )}
 
         {post.description && (
-          <div className='mt-2 text-sm leading-relaxed text-foreground/70 line-clamp-2'>
+          <div className='mt-2 text-base leading-relaxed text-foreground/70 line-clamp-2'>
             {post.description}
           </div>
         )}

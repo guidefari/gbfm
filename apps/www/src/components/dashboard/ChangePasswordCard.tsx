@@ -43,7 +43,7 @@ export function ChangePasswordCard({ email }: ChangePasswordCardProps) {
         <CardTitle>Change Password</CardTitle>
       </CardHeader>
       <CardContent className='space-y-4'>
-        <p className='text-sm text-muted-foreground'>
+        <p className='text-base text-muted-foreground'>
           We'll send a password reset link to{' '}
           <span className='font-medium text-foreground'>{email}</span>.
         </p>

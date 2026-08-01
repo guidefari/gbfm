@@ -25,7 +25,7 @@ export function AudioFileCard({
       <Music className='size-4 shrink-0 text-highlight' />
 
       <div className='min-w-0 flex-1'>
-        <p className='truncate text-sm leading-tight text-foreground'>{displayName}</p>
+        <p className='truncate text-base leading-tight text-foreground'>{displayName}</p>
       </div>
 
       {displaySize && (

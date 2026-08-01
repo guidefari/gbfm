@@ -10,7 +10,7 @@ export function OfflineBanner() {
     <div
       role='status'
       aria-live='polite'
-      className='flex items-center justify-center gap-2 bg-destructive/10 border-b border-destructive/20 px-4 py-2 text-sm text-destructive'>
+      className='flex items-center justify-center gap-2 bg-destructive/10 border-b border-destructive/20 px-4 py-2 text-base text-destructive'>
       <WifiOff className='w-4 h-4 shrink-0' />
       <span>No internet connection</span>
     </div>

@@ -22,7 +22,7 @@ function StandaloneMixCard({ mix }: { mix: Mix }) {
       params={{ mixId: mix.slug }}
       className={`${CARD_CLASS} group flex flex-col gap-2`}>
       <Artwork src={mix.thumbnailUrl} alt={mix.title} hover='fade' className='w-full' />
-      <h3 className='line-clamp-2 font-mono text-sm font-medium leading-tight text-foreground transition-colors group-hover:text-highlight'>
+      <h3 className='line-clamp-2 font-mono text-base font-medium leading-tight text-foreground transition-colors group-hover:text-highlight'>
         {mix.title}
       </h3>
     </Link>
@@ -44,7 +44,7 @@ function ProfileEditorialCard({ editorial }: { editorial: Editorial }) {
           className='aspect-video w-full'
         />
       )}
-      <h3 className='line-clamp-2 font-mono text-sm font-medium leading-tight text-foreground transition-colors group-hover:text-highlight'>
+      <h3 className='line-clamp-2 font-mono text-base font-medium leading-tight text-foreground transition-colors group-hover:text-highlight'>
         {editorial.title}
       </h3>
     </Link>
@@ -64,7 +64,7 @@ function ProfileTweetCard({ tweet }: { tweet: Tweet }) {
       params={{ slug: tweet.slug }}
       className={`${CARD_CLASS} group flex flex-col gap-1 rounded-sm border border-border bg-card p-3 transition-colors hover:bg-muted/50`}>
       {tweet.title && (
-        <h3 className='line-clamp-2 font-mono text-sm font-semibold leading-tight text-foreground transition-colors group-hover:text-highlight'>
+        <h3 className='line-clamp-2 font-mono text-base font-semibold leading-tight text-foreground transition-colors group-hover:text-highlight'>
           {tweet.title}
         </h3>
       )}
@@ -135,7 +135,7 @@ export function ProfileContentGrid({ content }: ProfileContentGridProps) {
 
   if (!hasContent) {
     return (
-      <div className='px-4 py-8 font-mono text-sm text-muted-foreground lg:px-0'>
+      <div className='px-4 py-8 font-mono text-base text-muted-foreground lg:px-0'>
         No public content yet
       </div>
     )

@@ -19,7 +19,7 @@ export function SpotifyConnectionCard() {
   return (
     <div className='space-y-8'>
       <div className='space-y-1'>
-        <h3 className='flex items-center gap-2 text-sm font-bold tracking-widest text-muted-foreground'>
+        <h3 className='flex items-center gap-2 text-base font-bold tracking-widest text-muted-foreground'>
           <SpotifyIcon aria-hidden className='h-4 w-4' style={{ color: SPOTIFY_GREEN }} />
           Spotify Connection
         </h3>
@@ -39,7 +39,7 @@ export function SpotifyConnectionCard() {
         <div className='w-full max-w-md space-y-4'>
           <div className='flex items-center justify-between gap-6 border-2 border-border p-6'>
             <div className='min-w-0 space-y-2'>
-              <div className='truncate text-sm font-bold tracking-widest text-foreground'>
+              <div className='truncate text-base font-bold tracking-widest text-foreground'>
                 {profile?.display_name ?? profile?.id ?? 'Connected'}
               </div>
               <div className='text-xs font-medium tracking-wider text-muted-foreground'>

@@ -13,7 +13,9 @@ export const AudioPlayerWithTimestamp = forwardRef<HTMLAudioElement, AudioPlayer
       return (
         <div className='flex flex-col items-center justify-center p-8 border-2 border-dashed rounded-sm border-gb-pastel-green-2/30'>
           <Music className='w-12 h-12 mb-3 text-gb-pastel-green-2' />
-          <p className='text-sm text-muted-foreground'>Upload an audio file to enable the player</p>
+          <p className='text-base text-muted-foreground'>
+            Upload an audio file to enable the player
+          </p>
         </div>
       )
     }
@@ -28,7 +30,7 @@ export const AudioPlayerWithTimestamp = forwardRef<HTMLAudioElement, AudioPlayer
             <h3 className='text-lg font-bold truncate text-gb-pastel-green-1'>
               {title || 'Untitled Mix'}
             </h3>
-            <p className='text-sm text-gb-highlight'>Ready to Publish</p>
+            <p className='text-base text-gb-highlight'>Ready to Publish</p>
           </div>
         </div>
 

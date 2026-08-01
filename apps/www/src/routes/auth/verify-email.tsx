@@ -76,7 +76,7 @@ function VerifyEmailPage() {
         ) : null
       }
       footer={
-        <div className='space-y-3 border-t border-gb-pastel-green-2/20 pt-4 text-sm text-muted-foreground'>
+        <div className='space-y-3 border-t border-gb-pastel-green-2/20 pt-4 text-base text-muted-foreground'>
           <p>
             <Link
               to='/'
@@ -95,7 +95,7 @@ function VerifyEmailPage() {
         <div className='flex flex-col items-center gap-3 border border-gb-pastel-green-2/30 bg-gb-pastel-green-2/10 px-6 py-8 text-center'>
           <MailCheck className='h-10 w-10 text-gb-pastel-green-1' />
           <p className='text-base font-semibold text-foreground'>Email verified</p>
-          <p className='text-sm text-muted-foreground'>
+          <p className='text-base text-muted-foreground'>
             Thanks for confirming. Redirecting you now.
           </p>
         </div>

@@ -62,7 +62,7 @@ export function TweetAuthorRow({ creators, createdAt, interactive = true }: Prop
         ) : (
           <span className='block truncate font-bold text-foreground'>{primaryCreator.name}</span>
         )}
-        <div className='flex items-center gap-1.5 truncate text-sm text-muted-foreground'>
+        <div className='flex items-center gap-1.5 truncate text-base text-muted-foreground'>
           {username ? (
             linkable ? (
               <Link

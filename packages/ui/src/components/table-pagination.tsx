@@ -22,7 +22,7 @@ export function TablePagination({
 
   return (
     <div className={cn('flex items-center justify-between gap-3')}>
-      <p className='text-sm text-muted-foreground'>
+      <p className='text-base text-muted-foreground'>
         Page {page} of {totalPages}
       </p>
       <div className='flex gap-2'>

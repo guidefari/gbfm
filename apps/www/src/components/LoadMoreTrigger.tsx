@@ -40,7 +40,7 @@ export const LoadMoreTrigger = forwardRef<HTMLDivElement, LoadMoreTriggerProps>(
         className={`flex items-center justify-center py-8 ${className}`}
         data-testid='load-more-trigger'>
         {isFetchingNextPage && (
-          <div className='flex items-center gap-2 text-sm text-foreground/60'>
+          <div className='flex items-center gap-2 text-base text-foreground/60'>
             <div className='w-4 h-4 border-2 border-muted-foreground/30 border-t-foreground/60 rounded-full animate-spin' />
             Loading more...
           </div>

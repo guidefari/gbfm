@@ -72,11 +72,11 @@ export function NewsletterTab() {
   const [confirmOpen, setConfirmOpen] = useState(false)
 
   if (isPending) {
-    return <p className='text-sm text-muted-foreground'>Loading...</p>
+    return <p className='text-base text-muted-foreground'>Loading...</p>
   }
 
   if (isError) {
-    return <p className='text-sm text-destructive'>Failed to load subscribers.</p>
+    return <p className='text-base text-destructive'>Failed to load subscribers.</p>
   }
 
   const subscribers = data?.subscribers ?? []
@@ -127,48 +127,48 @@ export function NewsletterTab() {
       <div className='grid gap-4 md:grid-cols-2 xl:grid-cols-4'>
         <Card>
           <CardHeader className='pb-2'>
-            <CardTitle className='text-sm text-muted-foreground'>Active subscribers</CardTitle>
+            <CardTitle className='text-base text-muted-foreground'>Active subscribers</CardTitle>
           </CardHeader>
           <CardContent>
             <div className='text-3xl font-black tracking-tight'>
               {formatCount(activeSubscribers.length)}
             </div>
-            <p className='mt-2 text-sm text-muted-foreground'>
+            <p className='mt-2 text-base text-muted-foreground'>
               Audience currently able to receive sends.
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className='pb-2'>
-            <CardTitle className='text-sm text-muted-foreground'>New in 30 days</CardTitle>
+            <CardTitle className='text-base text-muted-foreground'>New in 30 days</CardTitle>
           </CardHeader>
           <CardContent>
             <div className='text-3xl font-black tracking-tight'>{formatCount(newLast30Days)}</div>
-            <p className='mt-2 text-sm text-muted-foreground'>
+            <p className='mt-2 text-base text-muted-foreground'>
               Recent list growth from the existing funnel.
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className='pb-2'>
-            <CardTitle className='text-sm text-muted-foreground'>Unsubscribed</CardTitle>
+            <CardTitle className='text-base text-muted-foreground'>Unsubscribed</CardTitle>
           </CardHeader>
           <CardContent>
             <div className='text-3xl font-black tracking-tight'>
               {formatCount(unsubscribedCount)}
             </div>
-            <p className='mt-2 text-sm text-muted-foreground'>
+            <p className='mt-2 text-base text-muted-foreground'>
               Useful for measuring churn once campaigns land.
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className='pb-2'>
-            <CardTitle className='text-sm text-muted-foreground'>Sendable mixes</CardTitle>
+            <CardTitle className='text-base text-muted-foreground'>Sendable mixes</CardTitle>
           </CardHeader>
           <CardContent>
             <div className='text-3xl font-black tracking-tight'>{formatCount(mixes.length)}</div>
-            <p className='mt-2 text-sm text-muted-foreground'>
+            <p className='mt-2 text-base text-muted-foreground'>
               Recently published mixes ready to announce.
             </p>
           </CardContent>
@@ -183,13 +183,13 @@ export function NewsletterTab() {
           </CardTitle>
         </CardHeader>
         <CardContent className='space-y-5'>
-          <p className='text-sm text-muted-foreground'>
+          <p className='text-base text-muted-foreground'>
             Pick a recently published mix and email every opted-in subscriber. Send a test to
             yourself first to preview the email.
           </p>
 
           {mixes.length === 0 ? (
-            <p className='text-sm text-muted-foreground'>
+            <p className='text-base text-muted-foreground'>
               No published mixes available yet. Upload and publish a mix to announce it here.
             </p>
           ) : (
@@ -205,14 +205,14 @@ export function NewsletterTab() {
                     className={`rounded-lg border p-4 text-left transition ${
                       isSelected ? 'border-foreground bg-muted/50' : 'hover:bg-muted/40'
                     }`}>
-                    <div className='flex items-center gap-2 text-sm text-muted-foreground'>
+                    <div className='flex items-center gap-2 text-base text-muted-foreground'>
                       <Disc3 className='h-4 w-4' />
                       <span>Mix</span>
                       <span>•</span>
                       <span>{formatDate(mix.createdAt)}</span>
                     </div>
                     <div className='mt-2 font-semibold'>{mix.title}</div>
-                    <div className='mt-1 text-sm text-muted-foreground'>/mixes/{mix.slug}</div>
+                    <div className='mt-1 text-base text-muted-foreground'>/mixes/{mix.slug}</div>
                   </button>
                 )
               })}
@@ -233,7 +233,7 @@ export function NewsletterTab() {
           </div>
 
           {selectedMix && (
-            <div className='rounded-lg border bg-muted/30 p-4 text-sm'>
+            <div className='rounded-lg border bg-muted/30 p-4 text-base'>
               <div className='flex items-center gap-2 font-medium'>
                 <MailCheck className='h-4 w-4' />
                 Email preview
@@ -285,11 +285,11 @@ export function NewsletterTab() {
           </CardHeader>
           <CardContent className='space-y-3'>
             {overview.isPending ? (
-              <p className='text-sm text-muted-foreground'>Loading subscriber activity...</p>
+              <p className='text-base text-muted-foreground'>Loading subscriber activity...</p>
             ) : overview.isError ? (
-              <p className='text-sm text-destructive'>Failed to load subscriber activity.</p>
+              <p className='text-base text-destructive'>Failed to load subscriber activity.</p>
             ) : recentSubscribers.length === 0 ? (
-              <p className='text-sm text-muted-foreground'>No recent subscriber activity yet.</p>
+              <p className='text-base text-muted-foreground'>No recent subscriber activity yet.</p>
             ) : (
               recentSubscribers.map((sub) => (
                 <div
@@ -297,11 +297,11 @@ export function NewsletterTab() {
                   className='flex items-center justify-between gap-4 border-b pb-3 last:border-0 last:pb-0'>
                   <div className='min-w-0'>
                     <div className='truncate font-medium'>{sub.email}</div>
-                    <div className='text-sm text-muted-foreground'>
+                    <div className='text-base text-muted-foreground'>
                       {sub.source ?? 'unknown source'}
                     </div>
                   </div>
-                  <div className='shrink-0 text-sm text-muted-foreground'>
+                  <div className='shrink-0 text-base text-muted-foreground'>
                     {formatDate(sub.createdAt)}
                   </div>
                 </div>
@@ -314,14 +314,14 @@ export function NewsletterTab() {
           <CardHeader>
             <CardTitle>
               Audience table
-              <span className='ml-2 text-sm font-normal text-muted-foreground'>
+              <span className='ml-2 text-base font-normal text-muted-foreground'>
                 {subscribers.length} subscriber{subscribers.length !== 1 ? 's' : ''}
               </span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className='overflow-x-auto'>
-              <table className='w-full text-sm'>
+              <table className='w-full text-base'>
                 <thead>
                   <tr className='border-b text-left text-muted-foreground'>
                     <th className='pb-2 pr-4 font-medium'>Email</th>

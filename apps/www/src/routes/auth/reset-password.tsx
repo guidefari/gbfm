@@ -86,7 +86,7 @@ function ResetPasswordPage() {
           ) : null
         }
         footer={
-          <div className='space-y-3 border-t border-gb-pastel-green-2/20 pt-4 text-sm text-muted-foreground'>
+          <div className='space-y-3 border-t border-gb-pastel-green-2/20 pt-4 text-base text-muted-foreground'>
             <p>
               Need a new link?{' '}
               <Link
@@ -97,7 +97,7 @@ function ResetPasswordPage() {
             </p>
           </div>
         }>
-        <div className='border border-gb-pastel-green-2/20 bg-background/50 px-4 py-4 text-sm leading-6 text-muted-foreground'>
+        <div className='border border-gb-pastel-green-2/20 bg-background/50 px-4 py-4 text-base leading-6 text-muted-foreground'>
           Reset links expire for safety. If the email is still in your inbox, the newest link is the
           one to use.
         </div>
@@ -125,7 +125,7 @@ function ResetPasswordPage() {
         ) : null
       }
       footer={
-        <div className='space-y-3 border-t border-gb-pastel-green-2/20 pt-4 text-sm text-muted-foreground'>
+        <div className='space-y-3 border-t border-gb-pastel-green-2/20 pt-4 text-base text-muted-foreground'>
           <p>
             Remembered it after all?{' '}
             <Link

@@ -113,7 +113,7 @@ export function AuthPromptDialog() {
           )}
         </DialogHeader>
 
-        {error && <div className='p-3 text-sm text-red-700 bg-red-100 rounded-md'>{error}</div>}
+        {error && <div className='p-3 text-base text-red-700 bg-red-100 rounded-md'>{error}</div>}
 
         {mode === 'choice' && (
           <div className='flex flex-col gap-2'>
@@ -166,7 +166,7 @@ export function AuthPromptDialog() {
                 Back
               </Button>
             </div>
-            <p className='text-sm text-center text-muted-foreground'>
+            <p className='text-base text-center text-muted-foreground'>
               Don't have an account?{' '}
               <button
                 type='button'
@@ -243,7 +243,7 @@ export function AuthPromptDialog() {
                 Back
               </Button>
             </div>
-            <p className='text-sm text-center text-muted-foreground'>
+            <p className='text-base text-center text-muted-foreground'>
               Already have an account?{' '}
               <button
                 type='button'

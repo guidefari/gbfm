@@ -69,7 +69,9 @@ export function MultiTrack({
           {genres && genres[0] !== '' && (
             <div className='flex flex-wrap mt-6'>
               {genres.map((genre) => (
-                <span key={genre} className='p-1 px-2 m-1 mr-2 text-sm rounded-sm bg-gb-darker-bg'>
+                <span
+                  key={genre}
+                  className='p-1 px-2 m-1 mr-2 text-base rounded-sm bg-gb-darker-bg'>
                   {genre}
                 </span>
               ))}
@@ -111,7 +113,9 @@ export function MultiTrack({
           </ScrollArea.Root>
         </div>
       </div>
-      {(blurb || children) && <div className='mt-6 text-sm leading-snug '>{blurb || children}</div>}
+      {(blurb || children) && (
+        <div className='mt-6 text-base leading-snug '>{blurb || children}</div>
+      )}
     </section>
   )
 }

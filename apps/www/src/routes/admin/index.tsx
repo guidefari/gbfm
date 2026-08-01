@@ -26,12 +26,12 @@ function MetricCard({
   return (
     <Card>
       <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-        <CardTitle className='text-sm font-medium text-muted-foreground'>{title}</CardTitle>
+        <CardTitle className='text-base font-medium text-muted-foreground'>{title}</CardTitle>
         <Icon className='h-4 w-4 text-muted-foreground' />
       </CardHeader>
       <CardContent>
         <div className='text-3xl font-black tracking-tight'>{formatCount(value)}</div>
-        <p className='mt-2 text-sm text-muted-foreground'>{detail}</p>
+        <p className='mt-2 text-base text-muted-foreground'>{detail}</p>
       </CardContent>
     </Card>
   )
@@ -102,7 +102,7 @@ function AdminDashboard() {
         <CardHeader>
           <CardTitle>What changed</CardTitle>
         </CardHeader>
-        <CardContent className='grid gap-4 text-sm md:grid-cols-3'>
+        <CardContent className='grid gap-4 text-base md:grid-cols-3'>
           <div className='flex items-start gap-3'>
             <Users className='mt-0.5 h-4 w-4 text-muted-foreground' />
             <div>

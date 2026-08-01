@@ -109,9 +109,9 @@ export function SocialLinksCard() {
         </p>
 
         {socialLinksQuery.isPending ? (
-          <p className='text-sm text-muted-foreground'>Loading social links...</p>
+          <p className='text-base text-muted-foreground'>Loading social links...</p>
         ) : draft.length === 0 ? (
-          <div className='rounded-sm border border-dashed p-4 text-sm text-muted-foreground'>
+          <div className='rounded-sm border border-dashed p-4 text-base text-muted-foreground'>
             No social links yet.
           </div>
         ) : (

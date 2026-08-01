@@ -44,7 +44,7 @@ export function TweetReplyList({ parentSlug }: Props) {
 
   return (
     <div>
-      <div className='mb-2 flex items-center gap-1.5 text-sm text-muted-foreground'>
+      <div className='mb-2 flex items-center gap-1.5 text-base text-muted-foreground'>
         <MessageCircle className='h-3.5 w-3.5' />
         <span>
           {replies.length} {replies.length === 1 ? 'reply' : 'replies'}

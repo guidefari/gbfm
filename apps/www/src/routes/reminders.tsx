@@ -154,7 +154,7 @@ function MusicReminders() {
           </p>
           <a
             href='/auth/sign-in'
-            className='inline-flex items-center justify-center px-4 py-2 text-sm font-medium  bg-primary text-primary-foreground hover:bg-primary/90'>
+            className='inline-flex items-center justify-center px-4 py-2 text-base font-medium  bg-primary text-primary-foreground hover:bg-primary/90'>
             Sign In
           </a>
         </div>
@@ -176,7 +176,7 @@ function MusicReminders() {
           <h2 className='mb-4 text-xl font-semibold'>Add New Reminder</h2>
           <form className='space-y-4' onSubmit={handleSubmit}>
             <div>
-              <label htmlFor='musicUrl' className='block mb-1 text-sm font-medium'>
+              <label htmlFor='musicUrl' className='block mb-1 text-base font-medium'>
                 Music URL (Spotify, YouTube, etc.)
               </label>
               <Input
@@ -222,7 +222,7 @@ function MusicReminders() {
             </div>
             <div className='grid gap-4 md:grid-cols-2'>
               <div>
-                <label htmlFor='musicTitle' className='block mb-1 text-sm font-medium'>
+                <label htmlFor='musicTitle' className='block mb-1 text-base font-medium'>
                   Music Title
                 </label>
                 <Input
@@ -237,7 +237,7 @@ function MusicReminders() {
                 />
               </div>
               <div>
-                <label htmlFor='artistName' className='block mb-1 text-sm font-medium'>
+                <label htmlFor='artistName' className='block mb-1 text-base font-medium'>
                   Artist Name
                 </label>
                 <Input
@@ -254,7 +254,7 @@ function MusicReminders() {
             </div>
             <div className='grid gap-4 md:grid-cols-2'>
               <div>
-                <label htmlFor='reminderDate' className='block mb-1 text-sm font-medium'>
+                <label htmlFor='reminderDate' className='block mb-1 text-base font-medium'>
                   Reminder Date
                 </label>
                 <div className='relative w-full h-10 overflow-hidden border  border-input bg-background'>
@@ -281,7 +281,7 @@ function MusicReminders() {
                 </div>
               </div>
               <div>
-                <label htmlFor='notes' className='block mb-2 text-sm font-medium'>
+                <label htmlFor='notes' className='block mb-2 text-base font-medium'>
                   Notes (Optional)
                 </label>
                 <Textarea
@@ -297,7 +297,7 @@ function MusicReminders() {
             <button
               type='submit'
               disabled={createReminderMutation.isPending}
-              className='inline-flex items-center justify-center px-4 py-2 text-sm font-medium  bg-primary text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50'>
+              className='inline-flex items-center justify-center px-4 py-2 text-base font-medium  bg-primary text-primary-foreground hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50'>
               {createReminderMutation.isPending ? 'Creating...' : 'Add Reminder'}
             </button>
           </form>
@@ -330,7 +330,7 @@ function MusicReminders() {
                       )}
                       <div>
                         <p className='font-medium'>{reminder.musicTitle}</p>
-                        <p className='text-sm text-muted-foreground'>by {reminder.artistName}</p>
+                        <p className='text-base text-muted-foreground'>by {reminder.artistName}</p>
                         <p className='text-xs text-muted-foreground'>
                           {new Date(reminder.reminderDate).toLocaleString()}
                         </p>
@@ -361,7 +361,7 @@ function MusicReminders() {
           ) : (
             <div className='py-8 text-center text-muted-foreground'>
               <p>No music reminders yet.</p>
-              <p className='mt-2 text-sm'>Add your first reminder above!</p>
+              <p className='mt-2 text-base'>Add your first reminder above!</p>
             </div>
           )}
         </div>

@@ -34,7 +34,7 @@ function DashboardTabs() {
             to={to}
             aria-current={isActive ? 'page' : undefined}
             className={cn(
-              'flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors',
+              'flex shrink-0 items-center gap-1.5 border-b-2 px-3 py-2 text-base font-medium transition-colors',
               isActive
                 ? 'border-highlight text-highlight'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -78,7 +78,7 @@ export function DashboardLayout({
           </p>
           <a
             href='/auth/sign-in'
-            className='inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-none bg-primary text-primary-foreground hover:bg-primary/90'>
+            className='inline-flex items-center justify-center px-4 py-2 text-base font-medium rounded-none bg-primary text-primary-foreground hover:bg-primary/90'>
             Sign In
           </a>
         </div>

@@ -166,7 +166,7 @@ export function MusicEntityLinksPanel({
         {links.map((link) => (
           <div
             key={link.id}
-            className='group flex items-center gap-2.5 px-2.5 py-2 text-sm first:rounded-t-md last:rounded-b-md hover:bg-muted/40'>
+            className='group flex items-center gap-2.5 px-2.5 py-2 text-base first:rounded-t-md last:rounded-b-md hover:bg-muted/40'>
             <span
               className={`size-2 shrink-0 rounded-full ${STATUS_DOTS[link.status] ?? 'bg-muted-foreground/40'}`}
               title={link.status.replace('_', ' ')}

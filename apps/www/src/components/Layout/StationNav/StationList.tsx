@@ -26,7 +26,7 @@ export function StationList({
   }
 
   if (data.length === 0) {
-    return <p className='px-3 py-2 text-sm text-muted-foreground'>No stations on air yet.</p>
+    return <p className='px-3 py-2 text-base text-muted-foreground'>No stations on air yet.</p>
   }
 
   return (
@@ -54,7 +54,7 @@ export function StationList({
                   className='size-10 w-10 shrink-0'
                 />
                 <span className='min-w-0 flex-1'>
-                  <span className='block truncate text-sm font-semibold'>{show.title}</span>
+                  <span className='block truncate text-base font-semibold'>{show.title}</span>
                   {hostNames ? (
                     <span className='block truncate text-xs text-muted-foreground'>
                       {hostNames}

@@ -100,7 +100,7 @@ export function SessionsTab() {
   return (
     <div className='space-y-6'>
       <div className='space-y-2'>
-        <label htmlFor='user-email-search' className='text-sm font-medium'>
+        <label htmlFor='user-email-search' className='text-base font-medium'>
           Search User by Email
         </label>
         <Input
@@ -114,7 +114,7 @@ export function SessionsTab() {
           className='max-w-sm'
         />
         {searchPending && userEmail.length > 2 && (
-          <p className='text-sm text-muted-foreground'>Searching...</p>
+          <p className='text-base text-muted-foreground'>Searching...</p>
         )}
         {searchResults.length > 0 && !selectedUser && (
           <div className='mt-2 max-w-sm space-y-1 rounded-sm border p-2'>
@@ -122,7 +122,7 @@ export function SessionsTab() {
               <button
                 type='button'
                 key={user.id}
-                className='block w-full rounded-sm px-2 py-1 text-left text-sm hover:bg-muted'
+                className='block w-full rounded-sm px-2 py-1 text-left text-base hover:bg-muted'
                 onClick={() => setSelectedUser(user)}>
                 <span className='font-medium'>{user.name}</span>
                 <span className='ml-2 text-muted-foreground'>{user.email}</span>
@@ -137,7 +137,7 @@ export function SessionsTab() {
           <div className='flex items-center justify-between'>
             <div>
               <h3 className='font-medium'>Sessions for {selectedUser.name}</h3>
-              <p className='text-sm text-muted-foreground'>{selectedUser.email}</p>
+              <p className='text-base text-muted-foreground'>{selectedUser.email}</p>
             </div>
             <div className='flex gap-2'>
               <Button variant='outline' size='sm' onClick={() => setSelectedUser(null)}>
@@ -157,7 +157,7 @@ export function SessionsTab() {
             <div className='py-8 text-center text-muted-foreground'>No active sessions found</div>
           ) : (
             <div className='overflow-x-auto rounded-sm border'>
-              <table className='w-full text-sm'>
+              <table className='w-full text-base'>
                 <thead>
                   <tr className='border-b bg-muted/50'>
                     <th className='px-4 py-3 text-left font-medium'>Session ID</th>

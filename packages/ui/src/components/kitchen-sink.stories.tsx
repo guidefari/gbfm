@@ -197,7 +197,7 @@ export function KitchenSink() {
             <AccordionItem value='tracklist'>
               <AccordionTrigger>Tracklist</AccordionTrigger>
               <AccordionContent>
-                <ol className='list-decimal pl-4 space-y-1 text-sm text-muted-foreground'>
+                <ol className='list-decimal pl-4 space-y-1 text-base text-muted-foreground'>
                   <li>Burial — Archangel</li>
                   <li>Four Tet — She Moves She</li>
                   <li>Actress — Maze</li>
@@ -208,7 +208,7 @@ export function KitchenSink() {
           <ReadMoreModal
             title='About this mix'
             trigger={
-              <span className='underline cursor-pointer text-sm text-muted-foreground'>
+              <span className='underline cursor-pointer text-base text-muted-foreground'>
                 Read full description...
               </span>
             }>

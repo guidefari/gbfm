@@ -62,9 +62,7 @@ export function AuthPageLayout({
                       <h2 className='mt-0 text-3xl font-black tracking-tight text-foreground'>
                         {title}
                       </h2>
-                      <p className='text-sm leading-6 text-muted-foreground sm:text-base'>
-                        {description}
-                      </p>
+                      <p className='text-base leading-6 text-muted-foreground'>{description}</p>
                     </div>
                   </div>
 
@@ -85,7 +83,7 @@ export function AuthStatusNotice({ variant, children }: AuthStatusNoticeProps) {
   return (
     <div
       className={cn(
-        'border px-4 py-3 text-sm leading-6 backdrop-blur-sm',
+        'border px-4 py-3 text-base leading-6 backdrop-blur-sm',
         variant === 'success'
           ? 'border-gb-pastel-green-2/45 bg-gb-pastel-green-2/15 text-gb-pastel-green-1'
           : variant === 'warning'

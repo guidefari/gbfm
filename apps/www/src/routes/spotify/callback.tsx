@@ -53,7 +53,7 @@ function SpotifyCallback() {
     <div className='flex min-h-[50vh] flex-col items-center justify-center gap-3 px-6 text-center'>
       {error ? (
         <>
-          <h1 className='text-sm font-bold tracking-widest text-destructive'>
+          <h1 className='text-base font-bold tracking-widest text-destructive'>
             Spotify connection failed
           </h1>
           <p className='max-w-md text-xs font-medium tracking-wider text-muted-foreground'>
@@ -67,7 +67,7 @@ function SpotifyCallback() {
           </button>
         </>
       ) : (
-        <p className='text-sm font-medium tracking-wider text-muted-foreground'>
+        <p className='text-base font-medium tracking-wider text-muted-foreground'>
           Connecting Spotify…
         </p>
       )}

@@ -148,7 +148,7 @@ export function SortableTrackRow({
       <CoverThumb src={track.coverImageUrl} className='size-9 shrink-0 rounded-sm' />
 
       <div className='min-w-0 flex-1'>
-        <div className='truncate text-sm font-medium'>
+        <div className='truncate text-base font-medium'>
           <TrackTitle title={track.title} links={track.links} />
         </div>
         <div className='truncate text-xs text-muted-foreground'>

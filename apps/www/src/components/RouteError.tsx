@@ -23,7 +23,7 @@ export function RouteError({ error, backLink }: RouteErrorProps) {
       <div className='flex flex-col items-center gap-3 py-16 text-center'>
         {isOffline && <WifiOff className='w-8 h-8 text-muted-foreground/50' />}
         {isNotFound && <SearchX className='w-8 h-8 text-muted-foreground/50' />}
-        <p className='text-sm font-medium text-muted-foreground'>
+        <p className='text-base font-medium text-muted-foreground'>
           {isOffline ? 'No connection' : isNotFound ? 'Not found' : 'Failed to load'}
         </p>
         {isNotFound ? (

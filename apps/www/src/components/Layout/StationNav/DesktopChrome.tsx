@@ -92,7 +92,7 @@ export function DesktopChrome({ className }: { className?: string }) {
 
       <Link
         to='/'
-        className='shrink-0 text-sm font-black tracking-tight text-foreground no-underline hover:text-highlight'>
+        className='shrink-0 text-base font-black tracking-tight text-foreground no-underline hover:text-highlight'>
         goosebumps.fm
       </Link>
 

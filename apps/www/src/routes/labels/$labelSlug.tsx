@@ -123,7 +123,7 @@ function LabelPage() {
               </div>
               {label.description && <p className='text-muted-foreground'>{label.description}</p>}
               {label.genres && label.genres.length > 0 && (
-                <p className='text-sm text-muted-foreground'>{label.genres.join(', ')}</p>
+                <p className='text-base text-muted-foreground'>{label.genres.join(', ')}</p>
               )}
               {links.length > 0 && (
                 <div>
@@ -135,7 +135,7 @@ function LabelPage() {
                         href={link.url}
                         target='_blank'
                         rel='noopener noreferrer'
-                        className='rounded-sm bg-primary/10 px-4 py-2 text-sm font-medium capitalize transition-colors hover:bg-primary/20'>
+                        className='rounded-sm bg-primary/10 px-4 py-2 text-base font-medium capitalize transition-colors hover:bg-primary/20'>
                         {link.platform.replaceAll('_', ' ')}
                       </a>
                     ))}
@@ -196,7 +196,7 @@ function PublicLabelAffiliations({ artists, albums }: PublicLabelAffiliationsPro
                 <div className='min-w-0'>
                   <p className='truncate font-medium'>{artist.name}</p>
                   {artist.genres && artist.genres.length > 0 && (
-                    <p className='truncate text-sm text-muted-foreground'>
+                    <p className='truncate text-base text-muted-foreground'>
                       {artist.genres.join(', ')}
                     </p>
                   )}
@@ -223,7 +223,9 @@ function PublicLabelAffiliations({ artists, albums }: PublicLabelAffiliationsPro
                 <div className='space-y-1 p-3'>
                   <p className='font-medium'>{album.title}</p>
                   {album.artistNames && album.artistNames.length > 0 && (
-                    <p className='text-sm text-muted-foreground'>{album.artistNames.join(', ')}</p>
+                    <p className='text-base text-muted-foreground'>
+                      {album.artistNames.join(', ')}
+                    </p>
                   )}
                   {album.releaseDate && (
                     <p className='text-xs text-muted-foreground'>

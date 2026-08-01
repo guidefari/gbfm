@@ -125,7 +125,7 @@ function FrontendErrorsPage() {
               <div className='flex items-start justify-between gap-3'>
                 <div>
                   <div className='font-semibold'>{scenario.label}</div>
-                  <p className='mt-1 text-sm text-muted-foreground'>{scenario.description}</p>
+                  <p className='mt-1 text-base text-muted-foreground'>{scenario.description}</p>
                 </div>
                 <div className='shrink-0 rounded-full border px-2 py-1 text-xs text-muted-foreground'>
                   {scenario.shouldReport ? 'Sentry' : 'Quiet'}
@@ -149,7 +149,7 @@ function FrontendErrorsPage() {
         <CardContent className='flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between'>
           <div>
             <p className='font-semibold'>Failed fetch / unreachable host</p>
-            <p className='mt-1 text-sm text-muted-foreground'>
+            <p className='mt-1 text-base text-muted-foreground'>
               Calls an unreachable loopback URL to trigger the fetcher network failure reporting
               path.
             </p>
@@ -174,7 +174,7 @@ function FrontendErrorsPage() {
             )}
             <div>
               <div className='font-semibold'>{result.label}</div>
-              <p className='mt-1 text-sm text-muted-foreground'>{result.message}</p>
+              <p className='mt-1 text-base text-muted-foreground'>{result.message}</p>
             </div>
           </CardContent>
         </Card>

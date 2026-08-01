@@ -60,7 +60,7 @@ export function TweetNav({ slug }: Props) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder='Search tweets, tracks, artists...'
-            className='h-8 pl-8 text-sm'
+            className='h-8 pl-8 text-base'
           />
           <button
             type='button'
@@ -74,9 +74,9 @@ export function TweetNav({ slug }: Props) {
         {showResults && (
           <div className='absolute left-0 right-0 top-full z-20 mt-1 max-h-80 overflow-y-auto rounded-sm border border-border/60 bg-popover shadow-md'>
             {search.isPending ? (
-              <p className='px-3 py-3 text-sm text-muted-foreground'>Searching...</p>
+              <p className='px-3 py-3 text-base text-muted-foreground'>Searching...</p>
             ) : search.data.length === 0 ? (
-              <p className='px-3 py-3 text-sm text-muted-foreground'>No matches.</p>
+              <p className='px-3 py-3 text-base text-muted-foreground'>No matches.</p>
             ) : (
               search.data.map((result) => (
                 <TweetSearchResultRow

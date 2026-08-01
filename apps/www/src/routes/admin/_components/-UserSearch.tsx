@@ -52,7 +52,7 @@ export function UserSearch({ selectedUsers, onSelectionChange, label = 'Hosts' }
 
   return (
     <div className='space-y-2'>
-      <label htmlFor={inputId} className='text-sm font-medium'>
+      <label htmlFor={inputId} className='text-base font-medium'>
         {label}
       </label>
 
@@ -89,7 +89,7 @@ export function UserSearch({ selectedUsers, onSelectionChange, label = 'Hosts' }
         {showResults && searchQuery.length >= 2 && (
           <div className='absolute z-10 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-48 overflow-auto'>
             {isPending ? (
-              <div className='p-2 text-sm text-muted-foreground'>Searching...</div>
+              <div className='p-2 text-base text-muted-foreground'>Searching...</div>
             ) : filteredResults && filteredResults.length > 0 ? (
               filteredResults.map((user) => (
                 <button
@@ -104,7 +104,7 @@ export function UserSearch({ selectedUsers, onSelectionChange, label = 'Hosts' }
                 </button>
               ))
             ) : (
-              <div className='p-2 text-sm text-muted-foreground'>No users found</div>
+              <div className='p-2 text-base text-muted-foreground'>No users found</div>
             )}
           </div>
         )}

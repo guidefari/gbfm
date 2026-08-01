@@ -36,11 +36,11 @@ export function MusicEntityArtistsPanel({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className='text-sm font-medium'>Artists</CardTitle>
+        <CardTitle className='text-base font-medium'>Artists</CardTitle>
       </CardHeader>
       <CardContent className='space-y-4'>
         {artists.length === 0 && (
-          <p className='text-sm text-muted-foreground'>No artists linked.</p>
+          <p className='text-base text-muted-foreground'>No artists linked.</p>
         )}
         <ul className='space-y-2'>
           {[...artists]
@@ -48,7 +48,7 @@ export function MusicEntityArtistsPanel({
             .map((a) => (
               <li
                 key={a.artistId}
-                className='flex items-center gap-3 rounded-md border px-3 py-2 text-sm'>
+                className='flex items-center gap-3 rounded-md border px-3 py-2 text-base'>
                 <span className='flex-1 font-medium'>{a.artistName}</span>
                 {a.role && (
                   <span className='text-xs capitalize text-muted-foreground'>{a.role}</span>

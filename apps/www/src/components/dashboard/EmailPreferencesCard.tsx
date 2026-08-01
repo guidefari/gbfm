@@ -50,10 +50,10 @@ export function EmailPreferencesCard() {
       <CardContent className='space-y-4'>
         <div className='flex items-center justify-between'>
           <div className='flex-1'>
-            <Label htmlFor='mixReleaseEnabled' className='text-sm font-medium'>
+            <Label htmlFor='mixReleaseEnabled' className='text-base font-medium'>
               New Mix & Show Updates
             </Label>
-            <p className='text-sm text-muted-foreground'>
+            <p className='text-base text-muted-foreground'>
               The newsletter: get notified when a new mix or show drops
             </p>
           </div>
@@ -69,10 +69,10 @@ export function EmailPreferencesCard() {
 
         <div className='flex items-center justify-between'>
           <div className='flex-1'>
-            <Label htmlFor='promotionalEnabled' className='text-sm font-medium'>
+            <Label htmlFor='promotionalEnabled' className='text-base font-medium'>
               Promotional Emails
             </Label>
-            <p className='text-sm text-muted-foreground'>
+            <p className='text-base text-muted-foreground'>
               Receive updates about new features and promotions
             </p>
           </div>
@@ -88,10 +88,10 @@ export function EmailPreferencesCard() {
 
         <div className='flex items-center justify-between'>
           <div className='flex-1'>
-            <Label htmlFor='systemEnabled' className='text-sm font-medium'>
+            <Label htmlFor='systemEnabled' className='text-base font-medium'>
               System Notifications
             </Label>
-            <p className='text-sm text-muted-foreground'>
+            <p className='text-base text-muted-foreground'>
               Important updates about your account and system changes
             </p>
           </div>
@@ -108,10 +108,10 @@ export function EmailPreferencesCard() {
         <div className='border-t pt-4'>
           <div className='flex items-center justify-between'>
             <div className='flex-1'>
-              <Label htmlFor='globalUnsubscribe' className='text-sm font-medium text-destructive'>
+              <Label htmlFor='globalUnsubscribe' className='text-base font-medium text-destructive'>
                 Unsubscribe from All
               </Label>
-              <p className='text-sm text-muted-foreground'>
+              <p className='text-base text-muted-foreground'>
                 Opt out of the newsletter and all non-essential emails
               </p>
             </div>

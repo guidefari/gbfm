@@ -50,12 +50,12 @@ function NotFound({ slug }: { slug: string }) {
       <div className='flex justify-center gap-3 mt-6'>
         <Link
           to='/'
-          className='px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90'>
+          className='px-4 py-2 text-base font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90'>
           Go home
         </Link>
         <Link
           to='/shows'
-          className='px-4 py-2 text-sm font-medium border rounded-md border-border text-foreground hover:bg-muted'>
+          className='px-4 py-2 text-base font-medium border rounded-md border-border text-foreground hover:bg-muted'>
           Browse radio shows
         </Link>
       </div>

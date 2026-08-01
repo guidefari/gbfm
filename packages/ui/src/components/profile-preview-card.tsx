@@ -26,7 +26,7 @@ export function ProfilePreviewCard({ displayName, username }: ProfilePreviewCard
         </div>
         <div className='min-w-0 flex-1'>
           <p className='truncate text-base font-semibold text-foreground'>{name}</p>
-          <p className='truncate text-sm text-muted-foreground'>{handle}</p>
+          <p className='truncate text-base text-muted-foreground'>{handle}</p>
         </div>
       </div>
       <p className='mt-4 text-xs leading-5 text-muted-foreground'>

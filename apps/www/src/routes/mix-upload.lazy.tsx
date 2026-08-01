@@ -783,7 +783,7 @@ function MixUploadPage() {
                     <CardTitle className='text-gb-pastel-green-1'>
                       Mark Tracklist Timestamps
                     </CardTitle>
-                    <p className='text-sm text-muted-foreground'>
+                    <p className='text-base text-muted-foreground'>
                       Play your mix and click "Mark Track Start" when each track begins.
                     </p>
                   </CardHeader>
@@ -826,7 +826,7 @@ Add any technical details, equipment used, or special techniques...`}
                 <AlertTriangle className='w-5 h-5 mt-0.5 shrink-0' aria-hidden='true' />
                 <div className='flex-1 space-y-2'>
                   <p className='font-medium'>Your audio file is no longer available.</p>
-                  <p className='text-sm text-amber-200/80'>
+                  <p className='text-base text-amber-200/80'>
                     We restored your draft details, but the local audio file can't be recovered
                     after a page reload. Re-select it below to continue.
                   </p>

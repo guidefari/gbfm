@@ -110,7 +110,7 @@ export const MinimalCard: React.FC<Props> = ({
         {genres && genres.length > 0 && (
           <div className='flex flex-wrap space-x-2'>
             {genres.map((genre) => (
-              <span key={genre} className='p-1 px-2 text-sm rounded-sm bg-gb-darker-bg'>
+              <span key={genre} className='p-1 px-2 text-base rounded-sm bg-gb-darker-bg'>
                 {genre}
               </span>
             ))}
@@ -137,7 +137,7 @@ export const MinimalCard: React.FC<Props> = ({
         )}
 
         {!hideTitle && (
-          <div className='mt-3 text-sm font-medium leading-6'>
+          <div className='mt-3 text-base font-medium leading-6'>
             {trackUrl ? (
               <a
                 href={trackUrl}

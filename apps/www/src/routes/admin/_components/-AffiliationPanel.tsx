@@ -64,30 +64,30 @@ export function AffiliationPanel({
   return (
     <Card>
       <CardHeader className='space-y-1'>
-        <CardTitle className='text-sm font-medium'>{title}</CardTitle>
-        <p className='text-sm text-muted-foreground'>{description}</p>
+        <CardTitle className='text-base font-medium'>{title}</CardTitle>
+        <p className='text-base text-muted-foreground'>{description}</p>
       </CardHeader>
       <CardContent className='space-y-5'>
         {error && (
-          <p role='alert' className='text-sm text-destructive'>
+          <p role='alert' className='text-base text-destructive'>
             Could not load affiliations: {error.message}
           </p>
         )}
         {mutationError && (
-          <p role='alert' className='text-sm text-destructive'>
+          <p role='alert' className='text-base text-destructive'>
             {mutationError}
           </p>
         )}
         {isLoading ? (
-          <p className='text-sm text-muted-foreground'>Loading affiliations…</p>
+          <p className='text-base text-muted-foreground'>Loading affiliations…</p>
         ) : items.length === 0 ? (
-          <p className='text-sm text-muted-foreground'>No affiliations yet.</p>
+          <p className='text-base text-muted-foreground'>No affiliations yet.</p>
         ) : (
           <ul className='space-y-2' aria-label={`Current ${title.toLocaleLowerCase()}`}>
             {items.map((item) => (
               <li key={item.id} className='flex items-center gap-3 rounded-md border px-3 py-2'>
                 <div className='min-w-0 flex-1'>
-                  <p className='truncate text-sm font-medium'>{item.name}</p>
+                  <p className='truncate text-base font-medium'>{item.name}</p>
                   {item.detail && (
                     <p className='truncate text-xs text-muted-foreground'>{item.detail}</p>
                   )}
@@ -110,7 +110,7 @@ export function AffiliationPanel({
         )}
 
         <div className='space-y-2'>
-          <label htmlFor={searchId} className='text-sm font-medium'>
+          <label htmlFor={searchId} className='text-base font-medium'>
             Add {title.toLocaleLowerCase()}
           </label>
           <Input
@@ -131,7 +131,7 @@ export function AffiliationPanel({
                   onClick={() => void runMutation(() => onAdd(option.id), true)}>
                   <Plus className='h-4 w-4 shrink-0' />
                   <span className='min-w-0'>
-                    <span className='block truncate text-sm font-medium'>{option.name}</span>
+                    <span className='block truncate text-base font-medium'>{option.name}</span>
                     {option.detail && (
                       <span className='block truncate text-xs text-muted-foreground'>
                         {option.detail}

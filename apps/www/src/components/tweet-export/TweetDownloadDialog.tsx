@@ -126,7 +126,7 @@ export function TweetDownloadDialog({ post, slug, open, onOpenChange }: Props) {
           <ActiveFrame data={data} />
         </div>
 
-        {error && <p className='text-sm text-destructive'>{error}</p>}
+        {error && <p className='text-base text-destructive'>{error}</p>}
 
         <Button onClick={download} disabled={downloading || isPending} className='w-full'>
           {downloading ? (

@@ -31,7 +31,9 @@ export function AudioUploader({
         {!audioFile ? (
           <div className='p-6 text-center transition-colors border-2 border-dashed rounded-sm border-gb-pastel-green-2/30 hover:border-gb-highlight/50'>
             <Music className='w-8 h-8 mx-auto mb-3 text-gb-pastel-green-2' />
-            <p className='mb-3 text-sm text-gb-default-text'>Drag and drop your audio file here</p>
+            <p className='mb-3 text-base text-gb-default-text'>
+              Drag and drop your audio file here
+            </p>
             <input
               type='file'
               accept='audio/*'

@@ -38,15 +38,15 @@ export function Badges() {
         <CardContent className='flex flex-col gap-3'>
           <div className='flex items-center gap-2'>
             <Badge variant='destructive'>Upload failed</Badge>
-            <span className='text-sm text-muted-foreground'>needs attention now</span>
+            <span className='text-base text-muted-foreground'>needs attention now</span>
           </div>
           <div className='flex items-center gap-2'>
             <Badge>Published</Badge>
-            <span className='text-sm text-muted-foreground'>informational</span>
+            <span className='text-base text-muted-foreground'>informational</span>
           </div>
           <div className='flex items-center gap-2'>
             <Badge variant='outline'>Archived</Badge>
-            <span className='text-sm text-muted-foreground'>inactive</span>
+            <span className='text-base text-muted-foreground'>inactive</span>
           </div>
         </CardContent>
       </Card>

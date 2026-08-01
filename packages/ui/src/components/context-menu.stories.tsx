@@ -27,7 +27,7 @@ export function ContextMenus() {
       />
       <div className='flex items-center justify-center h-40 border border-dashed border-border rounded-sm'>
         <ContextMenu>
-          <ContextMenuTrigger className='px-6 py-3 border border-border rounded-sm text-sm text-muted-foreground select-none'>
+          <ContextMenuTrigger className='px-6 py-3 border border-border rounded-sm text-base text-muted-foreground select-none'>
             Right-click me
           </ContextMenuTrigger>
           <ContextMenuContent>

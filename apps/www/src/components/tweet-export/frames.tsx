@@ -71,7 +71,7 @@ export function PosterFrame({ data }: { data: TweetExportData }) {
                   {data.entityLabel}
                 </div>
               )}
-              <div className='truncate text-sm font-bold text-foreground'>{data.entityTitle}</div>
+              <div className='truncate text-base font-bold text-foreground'>{data.entityTitle}</div>
               {data.entityArtists && (
                 <div className='truncate text-xs text-muted-foreground'>{data.entityArtists}</div>
               )}
@@ -113,7 +113,7 @@ export function SleeveFrame({ data }: { data: TweetExportData }) {
               {data.entityTitle}
             </div>
             {data.entityArtists && (
-              <div className='text-sm text-white/70'>{data.entityArtists}</div>
+              <div className='text-base text-white/70'>{data.entityArtists}</div>
             )}
           </div>
         )}

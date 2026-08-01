@@ -37,7 +37,7 @@ export function MDXRendrr({ mdxString }: { mdxString: string }) {
   if (error) {
     return (
       <div className='p-4 rounded-md bg-red-900/20 border border-red-500/20'>
-        <p className='text-red-400 text-sm'>{error}</p>
+        <p className='text-red-400 text-base'>{error}</p>
         <details className='mt-2'>
           <summary className='text-red-300 text-xs cursor-pointer'>Show raw content</summary>
           <pre className='mt-2 p-2 bg-red-900/10 rounded text-xs text-red-200 whitespace-pre-wrap wrap-break-word'>

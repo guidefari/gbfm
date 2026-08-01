@@ -151,7 +151,7 @@ export function StationNav() {
             <div className='mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-border' />
           ) : null}
           <div className='relative flex h-12 shrink-0 items-center border-b border-border px-4 pr-14'>
-            <SheetTitle className='text-sm font-black tracking-tight'>Menu</SheetTitle>
+            <SheetTitle className='text-base font-black tracking-tight'>Menu</SheetTitle>
             <SheetClose className='absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
               <X className='h-4 w-4' />
               <span className='sr-only'>Close</span>

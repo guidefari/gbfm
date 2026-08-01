@@ -45,7 +45,7 @@ export function UploadSummaryCard({
             <h3 className='text-lg font-bold truncate text-gb-pastel-green-1'>
               {title || 'Untitled Mix'}
             </h3>
-            <p className='text-sm text-gb-highlight'>Ready to Publish</p>
+            <p className='text-base text-gb-highlight'>Ready to Publish</p>
           </div>
         </div>
 
@@ -66,7 +66,7 @@ export function UploadSummaryCard({
               Final Checks
             </h4>
             <div className='space-y-3'>
-              <div className='flex items-center justify-between text-sm'>
+              <div className='flex items-center justify-between text-base'>
                 <span className='flex items-center gap-2 text-muted-foreground'>
                   <CheckCircle2
                     className={`w-3.5 h-3.5 ${title ? 'text-green-500' : 'text-muted-foreground'}`}
@@ -75,7 +75,7 @@ export function UploadSummaryCard({
                 </span>
                 <span className='font-mono text-xs'>{title.length} chars</span>
               </div>
-              <div className='flex items-center justify-between text-sm'>
+              <div className='flex items-center justify-between text-base'>
                 <span className='flex items-center gap-2 text-muted-foreground'>
                   <CheckCircle2
                     className={`w-3.5 h-3.5 ${tracklist.length > 0 ? 'text-green-500' : 'text-muted-foreground'}`}
@@ -84,7 +84,7 @@ export function UploadSummaryCard({
                 </span>
                 <span className='font-mono text-xs'>{tracklist.length} tracks</span>
               </div>
-              <div className='flex items-center justify-between text-sm'>
+              <div className='flex items-center justify-between text-base'>
                 <span className='flex items-center gap-2 text-muted-foreground'>
                   <CheckCircle2
                     className={`w-3.5 h-3.5 ${tags.length > 0 ? 'text-green-500' : 'text-muted-foreground'}`}
@@ -140,7 +140,7 @@ export function UploadSummaryCard({
 
       {tracklist.length > 0 && (
         <div className='p-6 border rounded-sm bg-gb-pastel-green-2/10 border-gb-pastel-green-2/20'>
-          <h4 className='mb-4 text-sm font-bold text-gb-pastel-green-1'>Track Preview Links</h4>
+          <h4 className='mb-4 text-base font-bold text-gb-pastel-green-1'>Track Preview Links</h4>
           <div className='space-y-2'>
             {tracklist.map((t) => (
               <div

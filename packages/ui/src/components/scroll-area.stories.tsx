@@ -21,7 +21,7 @@ export function ScrollAreas() {
         </CardHeader>
         <CardContent>
           <ScrollArea className='h-28 rounded-sm border p-3'>
-            <div className='space-y-2 text-sm text-muted-foreground'>
+            <div className='space-y-2 text-base text-muted-foreground'>
               {['Dub report', 'Ambient dispatch', 'Label notes', 'Club memo', 'Release scan'].map(
                 (item) => (
                   <p key={item}>{item}</p>

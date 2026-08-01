@@ -48,7 +48,7 @@ function ShowArtwork({ thumbnailUrl, title }: { thumbnailUrl: string | null; tit
 function ShowInfo({ title, hostNames }: { title: string; hostNames?: string }) {
   return (
     <div className='flex flex-col gap-1'>
-      <span className='text-sm font-semibold leading-tight transition-colors text-foreground group-hover:text-highlight line-clamp-2'>
+      <span className='text-base font-semibold leading-tight transition-colors text-foreground group-hover:text-highlight line-clamp-2'>
         {title}
       </span>
       {hostNames && <p className='text-xs p-0 text-muted-foreground line-clamp-1'>{hostNames}</p>}

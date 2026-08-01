@@ -27,7 +27,7 @@ export function ProfileUserColumn({ profile }: ProfileUserColumnProps) {
           <div className='flex flex-col gap-1'>
             <h1 className='font-mono text-2xl font-bold my-0 text-highlight'>{profile.name}</h1>
             {profile.username && (
-              <p className='font-mono text-sm text-foreground'>@{profile.username}</p>
+              <p className='font-mono text-base text-foreground'>@{profile.username}</p>
             )}
             <p className='font-mono text-xs text-foreground'>Member since {memberSince}</p>
           </div>
@@ -41,7 +41,7 @@ export function ProfileUserColumn({ profile }: ProfileUserColumnProps) {
         {profile.bio && (
           <div className='flex flex-col'>
             <h2 className='font-mono text-base font-bold text-highlight'>About</h2>
-            <p className='font-mono p-0 text-sm leading-relaxed text-foreground'>{profile.bio}</p>
+            <p className='font-mono p-0 text-base leading-relaxed text-foreground'>{profile.bio}</p>
           </div>
         )}
 

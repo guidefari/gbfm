@@ -20,7 +20,7 @@ export const Route = createFileRoute('/editorial/$slug')({
       backLink={
         <Link
           to='/editorial'
-          className='inline-flex items-center gap-1 text-sm transition-colors text-muted-foreground hover:text-foreground'>
+          className='inline-flex items-center gap-1 text-base transition-colors text-muted-foreground hover:text-foreground'>
           <ArrowLeft className='w-4 h-4' />
           Editorial
         </Link>
@@ -74,7 +74,7 @@ function EditorialPostPage() {
     <div className='max-w-3xl px-4 py-6 mx-auto'>
       <Link
         to='/editorial'
-        className='inline-flex items-center gap-1 mb-8 text-sm transition-colors text-muted-foreground hover:text-foreground'>
+        className='inline-flex items-center gap-1 mb-8 text-base transition-colors text-muted-foreground hover:text-foreground'>
         <ArrowLeft className='w-4 h-4' />
         Editorial
       </Link>
@@ -135,7 +135,7 @@ function PostDetails({ post, slug }: { post: SelectMdxCompiledEditorialPost; slu
               </p>
             )}
             {post.createdAt && (
-              <p className='font-mono text-sm text-muted-foreground/60'>
+              <p className='font-mono text-base text-muted-foreground/60'>
                 {new Date(post.createdAt).toLocaleDateString('en-US', {
                   year: 'numeric',
                   month: 'long',

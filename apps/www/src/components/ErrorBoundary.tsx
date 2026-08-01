@@ -51,7 +51,7 @@ export class ErrorBoundary extends Component<Props, State> {
             </p>
             {this.state.error && (
               <details className='text-left'>
-                <summary className='cursor-pointer text-sm text-muted-foreground hover:text-foreground'>
+                <summary className='cursor-pointer text-base text-muted-foreground hover:text-foreground'>
                   Error details
                 </summary>
                 <pre className='mt-2 rounded-md bg-muted p-4 text-xs overflow-auto'>

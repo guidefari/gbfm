@@ -16,7 +16,7 @@ export function ReadMoreModals() {
       <ReadMoreModal
         title='About Late Night Transmissions 04'
         trigger={
-          <span className='underline cursor-pointer text-sm text-muted-foreground hover:text-foreground'>
+          <span className='underline cursor-pointer text-base text-muted-foreground hover:text-foreground'>
             Read more...
           </span>
         }>

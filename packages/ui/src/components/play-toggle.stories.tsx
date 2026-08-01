@@ -25,7 +25,7 @@ export function PlayToggle() {
       />
 
       <section className='space-y-3'>
-        <h2 className='text-sm tracking-[0.2em] text-muted-foreground'>Interactive</h2>
+        <h2 className='text-base tracking-[0.2em] text-muted-foreground'>Interactive</h2>
         <div className='flex flex-wrap items-center gap-6 border border-border p-6'>
           <PlayToggleComponent
             state={state}
@@ -53,7 +53,7 @@ export function PlayToggle() {
 
       {variants.map((variant) => (
         <section key={variant} className='space-y-3'>
-          <h2 className='text-sm tracking-[0.2em] text-muted-foreground'>variant={variant}</h2>
+          <h2 className='text-base tracking-[0.2em] text-muted-foreground'>variant={variant}</h2>
           <div className='flex flex-wrap items-center gap-6 border border-border p-6'>
             {allStates.map((candidate) => (
               <div key={candidate} className='space-y-2 text-center'>

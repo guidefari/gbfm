@@ -417,7 +417,7 @@ export function EditorialPage() {
             <Link
               to='/editorial/$slug'
               params={{ slug: existingPost.slug }}
-              className='inline-flex items-center gap-2 mb-3 text-sm text-muted-foreground hover:text-foreground'>
+              className='inline-flex items-center gap-2 mb-3 text-base text-muted-foreground hover:text-foreground'>
               <ArrowLeft className='w-4 h-4' />
               Back to post
             </Link>
@@ -426,7 +426,7 @@ export function EditorialPage() {
         switchLink={
           <Link
             to='/new/tweet'
-            className='mt-2 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground underline underline-offset-4'>
+            className='mt-2 inline-flex items-center gap-1 text-base text-muted-foreground hover:text-foreground underline underline-offset-4'>
             Switch to tweet capture
           </Link>
         }

@@ -46,7 +46,7 @@ export function VerifyEmailBanner() {
   }
 
   return (
-    <div className='sticky top-0 z-40 flex items-center gap-3 border-b border-gb-pastel-green-2/30 bg-gb-pastel-green-2/10 px-4 py-2 text-sm text-foreground backdrop-blur'>
+    <div className='sticky top-0 z-40 flex items-center gap-3 border-b border-gb-pastel-green-2/30 bg-gb-pastel-green-2/10 px-4 py-2 text-base text-foreground backdrop-blur'>
       <MailWarning className='h-4 w-4 shrink-0 text-gb-pastel-green-1' />
       <p className='flex-1'>
         Verify your email to unlock everything.{' '}

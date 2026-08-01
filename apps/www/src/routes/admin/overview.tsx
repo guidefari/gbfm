@@ -35,12 +35,12 @@ function KpiCard({
   return (
     <Card>
       <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-        <CardTitle className='text-sm font-medium text-muted-foreground'>{title}</CardTitle>
+        <CardTitle className='text-base font-medium text-muted-foreground'>{title}</CardTitle>
         <Icon className='w-4 h-4 text-muted-foreground' />
       </CardHeader>
       <CardContent>
         <div className='text-3xl font-black tracking-tight'>{formatCount(value)}</div>
-        <p className='mt-2 text-sm text-muted-foreground'>{detail}</p>
+        <p className='mt-2 text-base text-muted-foreground'>{detail}</p>
       </CardContent>
     </Card>
   )
@@ -58,7 +58,7 @@ function ContentBreakdownCard({
       <CardHeader>
         <CardTitle className='text-base'>{title}</CardTitle>
       </CardHeader>
-      <CardContent className='grid grid-cols-3 gap-3 text-sm'>
+      <CardContent className='grid grid-cols-3 gap-3 text-base'>
         <div>
           <div className='text-muted-foreground'>Published</div>
           <div className='mt-1 text-xl font-bold'>{formatCount(stats.published)}</div>
@@ -156,7 +156,7 @@ function AdminOverviewPage() {
                 <CardHeader>
                   <CardTitle>Community Snapshot</CardTitle>
                 </CardHeader>
-                <CardContent className='space-y-3 text-sm'>
+                <CardContent className='space-y-3 text-base'>
                   <div className='flex items-center justify-between'>
                     <span className='text-muted-foreground'>Verified users</span>
                     <span className='font-semibold'>
@@ -196,7 +196,7 @@ function AdminOverviewPage() {
                 <CardHeader>
                   <CardTitle>Operational Health</CardTitle>
                 </CardHeader>
-                <CardContent className='space-y-3 text-sm'>
+                <CardContent className='space-y-3 text-base'>
                   <div className='flex items-center justify-between'>
                     <span className='text-muted-foreground'>Emails failed in 7d</span>
                     <span className='font-semibold'>
@@ -268,7 +268,9 @@ function AdminOverviewPage() {
                         {mix.creators.length > 0 ? mix.creators.join(', ') : 'No creator assigned'}
                       </div>
                     </div>
-                    <div className='text-sm font-semibold'>{formatCount(mix.playCount)} plays</div>
+                    <div className='text-base font-semibold'>
+                      {formatCount(mix.playCount)} plays
+                    </div>
                   </div>
                 ))}
               </CardContent>
@@ -280,7 +282,7 @@ function AdminOverviewPage() {
               </CardHeader>
               <CardContent className='space-y-4'>
                 {data.operations.emails.recentFailures.length === 0 ? (
-                  <div className='text-sm text-muted-foreground'>No recent failures.</div>
+                  <div className='text-base text-muted-foreground'>No recent failures.</div>
                 ) : (
                   data.operations.emails.recentFailures.map((item) => (
                     <div key={item.id} className='flex items-start gap-3'>

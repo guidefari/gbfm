@@ -26,7 +26,7 @@ export function CustomLinks() {
           External link (new tab)
         </CustomLink>
         <br />
-        <CustomLink href='#' className='text-sm text-muted-foreground'>
+        <CustomLink href='#' className='text-base text-muted-foreground'>
           Muted link
         </CustomLink>
       </div>

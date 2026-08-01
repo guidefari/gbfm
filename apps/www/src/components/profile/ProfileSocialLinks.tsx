@@ -203,7 +203,7 @@ export function ProfileSocialLinks({ username, socialLinks }: ProfileSocialLinks
                 style={{ backgroundColor: '#7ec8da' }}
               />
             )}
-            <span className='flex-1 font-mono text-sm text-foreground'>
+            <span className='flex-1 font-mono text-base text-foreground'>
               {config?.label ?? link.platform}
             </span>
             <svg
@@ -226,7 +226,7 @@ export function ProfileSocialLinks({ username, socialLinks }: ProfileSocialLinks
           onClick={handleCopyShareUrl}
           className='flex w-full items-center gap-2.5 px-3 py-2 text-left transition-colors hover:bg-muted/30'>
           <Share2 className='h-3.5 w-3.5 shrink-0 text-[#4e8c71]' />
-          <span className='flex-1 font-mono text-sm text-foreground'>Copy profile link</span>
+          <span className='flex-1 font-mono text-base text-foreground'>Copy profile link</span>
         </button>
       )}
     </div>

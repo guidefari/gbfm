@@ -206,7 +206,7 @@ const FullscreenAudioPlayer = () => {
                   step={0.1}
                   className='w-full h-2 bg-muted rounded-sm appearance-none cursor-pointer [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-6 [&::-webkit-slider-thumb]:w-6 [&::-webkit-slider-thumb]:rounded-sm [&::-webkit-slider-thumb]:bg-primary [&::-webkit-slider-thumb]:shadow-lg'
                 />
-                <div className='flex justify-between mt-2 text-sm text-muted-foreground'>
+                <div className='flex justify-between mt-2 text-base text-muted-foreground'>
                   <span>{formatSeconds(currentTime)}</span>
                   <span>-{formatSeconds(duration - currentTime)}</span>
                 </div>

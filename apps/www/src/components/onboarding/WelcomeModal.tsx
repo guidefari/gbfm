@@ -47,7 +47,7 @@ export function WelcomeModal() {
           <DialogTitle className='text-lg sm:text-xl'>
             Welcome{user?.name && `, ${user.name.split(' ')[0]}`}
           </DialogTitle>
-          <DialogDescription className='text-sm'>
+          <DialogDescription className='text-base'>
             You're now part of the archive. Here's what you can do:
           </DialogDescription>
         </DialogHeader>
@@ -58,7 +58,7 @@ export function WelcomeModal() {
               <Heart className='w-4 h-4 text-highlight' />
             </div>
             <div>
-              <p className='text-sm font-medium'>Favorite mixes</p>
+              <p className='text-base font-medium'>Favorite mixes</p>
               <p className='text-xs text-muted-foreground'>
                 Save the ones that give you goosebumps
               </p>
@@ -70,7 +70,7 @@ export function WelcomeModal() {
               <Bell className='w-4 h-4 text-highlight' />
             </div>
             <div>
-              <p className='text-sm font-medium'>Get notified</p>
+              <p className='text-base font-medium'>Get notified</p>
               <p className='text-xs text-muted-foreground'>Know when new mixes drop</p>
             </div>
           </div>
@@ -80,7 +80,7 @@ export function WelcomeModal() {
               <Disc3 className='w-4 h-4 text-highlight' />
             </div>
             <div>
-              <p className='text-sm font-medium'>Contribute</p>
+              <p className='text-base font-medium'>Contribute</p>
               <p className='text-xs text-muted-foreground'>Upload your own mixes to the archive</p>
             </div>
           </div>

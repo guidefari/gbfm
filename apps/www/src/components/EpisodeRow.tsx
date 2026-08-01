@@ -32,7 +32,7 @@ export function EpisodeRow({ mix }: EpisodeRowProps) {
     <article
       data-testid='episode-row'
       className={cn(
-        'group/item flex max-w-2xl items-center gap-2 border-b border-border/40 px-1 py-1.5 text-sm transition-colors duration-150 last:border-b-0',
+        'group/item flex max-w-2xl items-center gap-2 border-b border-border/40 px-1 py-1.5 text-base transition-colors duration-150 last:border-b-0',
         isActive && 'text-highlight'
       )}>
       <PlayToggle

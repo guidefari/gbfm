@@ -301,7 +301,7 @@ function ResolvedMusicCard({
             )}
           </div>
           <div className='min-w-0 flex-1'>
-            <div className='truncate text-sm font-medium'>
+            <div className='truncate text-base font-medium'>
               {displayedEntityTitle || (isResolving ? 'Resolving…' : 'Paste a link to start')}
             </div>
             <div className='truncate text-xs capitalize text-muted-foreground'>
@@ -343,7 +343,7 @@ function QuoteTweetCard({
         {!isResolving && (resolvedTitle || resolvedContent) && (
           <div className='flex items-center gap-3 rounded-md border border-gb-pastel-green-2/15 bg-black/20 p-2.5'>
             <MessageSquareQuote className='size-4 shrink-0 text-muted-foreground' />
-            <div className='min-w-0 flex-1 truncate text-sm text-muted-foreground'>
+            <div className='min-w-0 flex-1 truncate text-base text-muted-foreground'>
               {resolvedTitle || resolvedContent}
             </div>
           </div>
@@ -606,7 +606,7 @@ export function TweetCapturePage() {
           </p>
           <Link
             to={!user ? '/auth/sign-in' : '/'}
-            className='inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90'>
+            className='inline-flex items-center justify-center px-4 py-2 text-base font-medium rounded-md bg-primary text-primary-foreground hover:bg-primary/90'>
             {!user ? 'Sign In' : 'Go Home'}
           </Link>
         </div>
@@ -629,7 +629,7 @@ export function TweetCapturePage() {
             <Link
               to='/tweet/$slug'
               params={{ slug: existingPost.slug }}
-              className='inline-flex items-center gap-2 mb-3 text-sm text-muted-foreground hover:text-foreground'>
+              className='inline-flex items-center gap-2 mb-3 text-base text-muted-foreground hover:text-foreground'>
               <ArrowLeft className='w-4 h-4' />
               Back to tweet
             </Link>
@@ -639,7 +639,7 @@ export function TweetCapturePage() {
           <Link
             to='/new/editorial'
             search={{ edit: undefined }}
-            className='mt-2 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground underline underline-offset-4'>
+            className='mt-2 inline-flex items-center gap-1 text-base text-muted-foreground hover:text-foreground underline underline-offset-4'>
             Switch to editorial
           </Link>
         }

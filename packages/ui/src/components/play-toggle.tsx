@@ -18,7 +18,7 @@ const playToggleVariants = cva(
     variants: {
       variant: {
         icon: 'text-foreground/70 hover:text-highlight',
-        button: 'gap-1.5 border px-2.5 py-1 text-sm font-medium',
+        button: 'gap-1.5 border px-2.5 py-1 text-base font-medium',
         hero: 'gap-1.5 rounded-sm bg-highlight px-3.5 py-1.5 font-medium text-highlight-foreground hover:opacity-90'
       },
       active: {

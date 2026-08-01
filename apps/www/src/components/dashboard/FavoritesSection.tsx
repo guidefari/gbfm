@@ -13,11 +13,11 @@ export function FavoritesSection() {
   if (isPending) {
     return (
       <div>
-        <h3 className='flex items-center gap-2 text-sm font-medium text-muted-foreground mb-3'>
+        <h3 className='flex items-center gap-2 text-base font-medium text-muted-foreground mb-3'>
           <Heart className='w-4 h-4' />
           Favorites
         </h3>
-        <p className='text-sm text-muted-foreground'>Loading...</p>
+        <p className='text-base text-muted-foreground'>Loading...</p>
       </div>
     )
   }
@@ -54,18 +54,18 @@ export function FavoritesSection() {
                 <Link
                   to='/mixes/$mixId'
                   params={{ mixId: favorite.audio.slug }}
-                  className='text-sm font-bold tracking-tight truncate block no-underline hover:text-primary transition-colors'>
+                  className='text-base font-bold tracking-tight truncate block no-underline hover:text-primary transition-colors'>
                   {favorite.audio.title}
                 </Link>
               ) : favorite.audio.type === 'track' ? (
                 <Link
                   to='/tracks/$trackId'
                   params={{ trackId: favorite.audio.slug }}
-                  className='text-sm font-bold tracking-tight truncate block no-underline hover:text-primary transition-colors'>
+                  className='text-base font-bold tracking-tight truncate block no-underline hover:text-primary transition-colors'>
                   {favorite.audio.title}
                 </Link>
               ) : (
-                <span className='text-sm font-bold tracking-tight truncate block'>
+                <span className='text-base font-bold tracking-tight truncate block'>
                   {favorite.audio.title}
                 </span>
               )}

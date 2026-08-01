@@ -29,12 +29,12 @@ function ResultGroup({ label, items }: { label: string; items: ReadonlyArray<Sea
   return (
     <div className='space-y-2'>
       <div className='flex items-center gap-2'>
-        <h3 className='text-sm font-semibold tracking-[0.18em] text-muted-foreground'>{label}</h3>
+        <h3 className='text-base font-semibold tracking-[0.18em] text-muted-foreground'>{label}</h3>
         <Badge variant='secondary'>{items.length}</Badge>
       </div>
 
       {items.length === 0 ? (
-        <p className='text-sm text-muted-foreground'>No matches.</p>
+        <p className='text-base text-muted-foreground'>No matches.</p>
       ) : (
         <ul className='divide-y rounded-sm border'>
           {items.map((item) => (
@@ -45,7 +45,7 @@ function ResultGroup({ label, items }: { label: string; items: ReadonlyArray<Sea
               </div>
               <span className='text-xs text-muted-foreground'>/{item.slug}</span>
               {item.description && (
-                <span className='line-clamp-2 text-sm text-muted-foreground'>
+                <span className='line-clamp-2 text-base text-muted-foreground'>
                   {item.description}
                 </span>
               )}
@@ -72,7 +72,7 @@ export function SearchTab() {
 
   return (
     <div className='space-y-4'>
-      <label htmlFor={inputId} className='text-sm font-medium'>
+      <label htmlFor={inputId} className='text-base font-medium'>
         Query
       </label>
       <Input
@@ -83,11 +83,11 @@ export function SearchTab() {
       />
 
       {query.length < 2 ? (
-        <p className='text-sm text-muted-foreground'>Type at least 2 characters to search.</p>
+        <p className='text-base text-muted-foreground'>Type at least 2 characters to search.</p>
       ) : isPending ? (
-        <p className='text-sm text-muted-foreground'>Searching...</p>
+        <p className='text-base text-muted-foreground'>Searching...</p>
       ) : isError ? (
-        <p className='text-sm text-destructive'>Search failed.</p>
+        <p className='text-base text-destructive'>Search failed.</p>
       ) : data ? (
         <div className='space-y-6'>
           {GROUPS.map(({ key, label }) => (

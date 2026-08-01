@@ -111,7 +111,7 @@ function MetadataForm<T>({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className='text-sm font-medium'>Metadata</CardTitle>
+        <CardTitle className='text-base font-medium'>Metadata</CardTitle>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className='space-y-4'>
@@ -180,7 +180,7 @@ function GenreTagInput({
         onKeyDown={handleKeyDown}
         onBlur={() => addTag(input)}
         placeholder={tags.length === 0 ? 'Add genre, press Enter' : ''}
-        className='min-w-20 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground'
+        className='min-w-20 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground'
       />
     </div>
   )
@@ -298,7 +298,7 @@ function ArtistFields({ data, set }: { data: ArtistMetadata; set: SetFn<ArtistMe
           <Input
             value={data.slug}
             onChange={(e) => set('slug', e.target.value)}
-            className='font-mono text-sm'
+            className='font-mono text-base'
           />
         </Field>
       </Row>
@@ -339,7 +339,7 @@ function AlbumFields({ data, set }: { data: AlbumMetadata; set: SetFn<AlbumMetad
           <Input
             value={data.slug}
             onChange={(e) => set('slug', e.target.value)}
-            className='font-mono text-sm'
+            className='font-mono text-base'
           />
         </Field>
       </Row>
@@ -394,7 +394,7 @@ function TrackFields({ data, set }: { data: TrackMetadata; set: SetFn<TrackMetad
           <Input
             value={data.slug}
             onChange={(e) => set('slug', e.target.value)}
-            className='font-mono text-sm'
+            className='font-mono text-base'
           />
         </Field>
       </Row>
@@ -433,7 +433,7 @@ function PlaylistFields({ data, set }: { data: PlaylistMetadata; set: SetFn<Play
           <Input
             value={data.slug}
             onChange={(e) => set('slug', e.target.value)}
-            className='font-mono text-sm'
+            className='font-mono text-base'
           />
         </Field>
       </Row>
@@ -462,7 +462,7 @@ function LabelFields({ data, set }: { data: LabelMetadata; set: SetFn<LabelMetad
           <Input
             value={data.slug}
             onChange={(e) => set('slug', e.target.value)}
-            className='font-mono text-sm'
+            className='font-mono text-base'
           />
         </Field>
       </Row>
@@ -501,7 +501,7 @@ function LabelFields({ data, set }: { data: LabelMetadata; set: SetFn<LabelMetad
         <Textarea
           value={data.content}
           onChange={(e) => set('content', e.target.value)}
-          className='min-h-64 font-mono text-sm'
+          className='min-h-64 font-mono text-base'
         />
       </Field>
     </>

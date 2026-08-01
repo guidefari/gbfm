@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils'
 import type { NavItem } from '../NavLinks'
 
 export const navRowClass = cn(
-  'flex w-full items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium no-underline transition-colors',
+  'flex w-full items-center gap-3 rounded-sm px-3 py-2 text-base font-medium no-underline transition-colors',
   'text-foreground hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
 )
 

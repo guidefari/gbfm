@@ -40,7 +40,7 @@ function AdminMusicPage() {
       <Card className='overflow-hidden'>
         <Tabs defaultValue='artists' className='flex min-h-0 flex-col'>
           <div className='flex items-center justify-between gap-4 border-b px-6 py-3'>
-            <div className='text-sm text-muted-foreground'>
+            <div className='text-base text-muted-foreground'>
               Switch between music entity types without leaving the catalog route.
             </div>
             <div className='flex items-center gap-3'>
@@ -171,7 +171,7 @@ function EntityList({ isLoading, children }: { isLoading: boolean; children: Rea
   return (
     <Card>
       <CardHeader className='pb-2'>
-        <CardTitle className='text-sm font-medium text-muted-foreground'>Entities</CardTitle>
+        <CardTitle className='text-base font-medium text-muted-foreground'>Entities</CardTitle>
       </CardHeader>
       <CardContent className='p-0'>
         <ul className='divide-y'>{children}</ul>

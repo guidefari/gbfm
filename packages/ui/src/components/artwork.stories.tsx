@@ -18,7 +18,7 @@ export function Artwork() {
       />
 
       <section className='space-y-3'>
-        <h2 className='text-sm tracking-[0.2em] text-muted-foreground'>Radius</h2>
+        <h2 className='text-base tracking-[0.2em] text-muted-foreground'>Radius</h2>
         <div className='grid w-full max-w-3xl gap-4 grid-cols-3'>
           {(['none', 'sm', 'md'] as const).map((radius) => (
             <div key={radius} className='space-y-2'>
@@ -35,7 +35,7 @@ export function Artwork() {
       </section>
 
       <section className='space-y-3'>
-        <h2 className='text-sm tracking-[0.2em] text-muted-foreground'>Hover treatment</h2>
+        <h2 className='text-base tracking-[0.2em] text-muted-foreground'>Hover treatment</h2>
         <div className='grid w-full max-w-4xl gap-4 grid-cols-4'>
           {(['none', 'fade', 'zoom', 'ring'] as const).map((hover) => (
             <div key={hover} className='space-y-2 group'>
@@ -52,7 +52,7 @@ export function Artwork() {
       </section>
 
       <section className='space-y-3'>
-        <h2 className='text-sm tracking-[0.2em] text-muted-foreground'>States</h2>
+        <h2 className='text-base tracking-[0.2em] text-muted-foreground'>States</h2>
         <div className='grid w-full max-w-3xl gap-4 grid-cols-3'>
           <div className='space-y-2'>
             <ArtworkComponent
@@ -84,7 +84,7 @@ export function Artwork() {
       </section>
 
       <section className='space-y-3'>
-        <h2 className='text-sm tracking-[0.2em] text-muted-foreground'>Thumbnail</h2>
+        <h2 className='text-base tracking-[0.2em] text-muted-foreground'>Thumbnail</h2>
         <ArtworkComponent
           src={primary.imageUrl}
           alt={primary.title}

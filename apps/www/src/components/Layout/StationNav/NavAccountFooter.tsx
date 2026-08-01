@@ -46,7 +46,7 @@ export function NavAccountFooter({ onNavigate }: { onNavigate?: () => void }) {
   return (
     <div className='shrink-0 border-t border-border bg-background p-3'>
       <div className='mb-2 flex items-center gap-3 px-1'>
-        <div className='flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-border bg-muted text-sm font-bold'>
+        <div className='flex size-9 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-border bg-muted text-base font-bold'>
           {user?.image ? (
             <img src={user.image} alt='' className='size-full object-cover' />
           ) : (
@@ -54,7 +54,7 @@ export function NavAccountFooter({ onNavigate }: { onNavigate?: () => void }) {
           )}
         </div>
         <div className='min-w-0 flex-1'>
-          <p className='truncate text-sm font-semibold text-foreground'>{user?.name}</p>
+          <p className='truncate text-base font-semibold text-foreground'>{user?.name}</p>
           {user?.username ? (
             <p className='truncate text-xs text-muted-foreground'>@{user.username}</p>
           ) : null}

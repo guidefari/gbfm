@@ -27,7 +27,7 @@ export function TweetReplyComposer({ parentSlug }: Props) {
 
   if (!isAuthenticated) {
     return (
-      <p className='text-sm text-muted-foreground'>
+      <p className='text-base text-muted-foreground'>
         <Link to='/auth/sign-in' className='underline'>
           Sign in
         </Link>{' '}

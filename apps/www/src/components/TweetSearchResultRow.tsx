@@ -55,7 +55,7 @@ export function TweetSearchResultRow({
       to='/tweet/$slug'
       params={{ slug }}
       onClick={onClick}
-      className='block truncate border-b border-border/30 px-3 py-2 text-sm last:border-b-0 hover:bg-muted/50'>
+      className='block truncate border-b border-border/30 px-3 py-2 text-base last:border-b-0 hover:bg-muted/50'>
       <div className='truncate'>{title || content?.slice(0, 80) || '(untitled)'}</div>
       {data && (
         <div className='mt-0.5 flex items-center gap-1 truncate text-xs text-muted-foreground'>

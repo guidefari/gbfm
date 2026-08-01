@@ -69,7 +69,7 @@ function SignInPage() {
       description='Sign in to pick up where you left off.'
       status={error ? <AuthStatusNotice variant='error'>{error}</AuthStatusNotice> : null}
       footer={
-        <div className='space-y-3 border-t border-gb-pastel-green-2/20 pt-4 text-sm text-muted-foreground'>
+        <div className='space-y-3 border-t border-gb-pastel-green-2/20 pt-4 text-base text-muted-foreground'>
           <p>
             Don&apos;t have an account?{' '}
             <Link

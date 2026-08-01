@@ -300,7 +300,7 @@ export function PlaylistEditor({ playlist }: Props) {
                   className='text-xs tracking-wide text-muted-foreground'>
                   Source
                 </Label>
-                <div className='flex h-10 items-center gap-3 text-sm text-muted-foreground'>
+                <div className='flex h-10 items-center gap-3 text-base text-muted-foreground'>
                   <span className='font-mono'>{playlist.slug}</span>
                   {playlist.spotifyUrl && (
                     <a
@@ -366,7 +366,7 @@ export function PlaylistEditor({ playlist }: Props) {
           <div>
             <h2 className='text-base font-semibold'>
               Tracks{' '}
-              <span className='text-sm font-normal text-muted-foreground'>
+              <span className='text-base font-normal text-muted-foreground'>
                 ({orderedIds.length})
               </span>
             </h2>
@@ -417,11 +417,11 @@ export function PlaylistEditor({ playlist }: Props) {
 
         <div className='min-h-0 flex-1 overflow-y-auto [&::-webkit-scrollbar]:hidden [scrollbar-width:none]'>
           {tracksQuery.isLoading && (
-            <div className='px-4 py-3 text-sm text-muted-foreground lg:px-6'>Loading tracks…</div>
+            <div className='px-4 py-3 text-base text-muted-foreground lg:px-6'>Loading tracks…</div>
           )}
 
           {tracksQuery.data && orderedIds.length === 0 && (
-            <div className='px-4 py-3 text-sm text-muted-foreground lg:px-6'>No tracks yet.</div>
+            <div className='px-4 py-3 text-base text-muted-foreground lg:px-6'>No tracks yet.</div>
           )}
 
           <DndContext

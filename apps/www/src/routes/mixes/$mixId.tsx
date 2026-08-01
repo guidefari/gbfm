@@ -163,14 +163,14 @@ function MixPage() {
         <button
           type='button'
           onClick={() => router.history.back()}
-          className='inline-flex items-center gap-1 mb-8 text-sm transition-colors text-muted-foreground hover:text-foreground'>
+          className='inline-flex items-center gap-1 mb-8 text-base transition-colors text-muted-foreground hover:text-foreground'>
           <ArrowLeft className='w-4 h-4' />
           Radio shows
         </button>
       ) : (
         <Link
           to='/shows'
-          className='inline-flex items-center gap-1 mb-8 text-sm transition-colors text-muted-foreground hover:text-foreground'>
+          className='inline-flex items-center gap-1 mb-8 text-base transition-colors text-muted-foreground hover:text-foreground'>
           <ArrowLeft className='w-4 h-4' />
           Radio shows
         </Link>
@@ -473,7 +473,7 @@ function MixDetails({ mix }: { mix: SelectMdxCompiledAudio }) {
               </p>
             )}
             {mix.createdAt && (
-              <p className='font-mono text-sm text-muted-foreground/60'>
+              <p className='font-mono text-base text-muted-foreground/60'>
                 {new Date(mix.createdAt).toLocaleDateString('en-US', {
                   year: 'numeric',
                   month: 'long',

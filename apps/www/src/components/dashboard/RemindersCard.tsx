@@ -158,7 +158,7 @@ function ReminderItem({ reminder }: { reminder: MusicReminder }) {
         )}
       </div>
       <div className='flex-1 min-w-0'>
-        <p className='text-sm font-bold tracking-tight truncate group-hover:text-primary transition-colors'>
+        <p className='text-base font-bold tracking-tight truncate group-hover:text-primary transition-colors'>
           {reminder.musicTitle}
         </p>
         <p className='text-xs text-muted-foreground truncate font-medium'>{reminder.artistName}</p>

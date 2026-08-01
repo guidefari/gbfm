@@ -62,7 +62,7 @@ export function TracklistEditor({
                   className='flex items-center justify-center shrink-0 w-10 h-10 transition-colors border rounded-sm bg-gb-darker-bg border-gb-pastel-green-2/30 text-gb-highlight hover:bg-gb-pastel-green-2/20'>
                   <Play className='w-3.5 h-3.5' fill='currentColor' />
                 </button>
-                <span className='w-12 font-mono text-sm text-muted-foreground'>
+                <span className='w-12 font-mono text-base text-muted-foreground'>
                   {formatTime(track.time)}
                 </span>
                 <Input

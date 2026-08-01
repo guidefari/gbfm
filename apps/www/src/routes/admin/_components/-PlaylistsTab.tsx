@@ -77,7 +77,7 @@ export function PlaylistsTab() {
           <button
             type='button'
             onClick={() => setImportOpen((v) => !v)}
-            className='flex w-full items-center justify-between gap-2 px-4 py-3 text-sm font-medium hover:bg-muted/40'>
+            className='flex w-full items-center justify-between gap-2 px-4 py-3 text-base font-medium hover:bg-muted/40'>
             <span className='flex items-center gap-2'>
               <Plus className='h-4 w-4' />
               Import Spotify playlist
@@ -133,13 +133,13 @@ export function PlaylistsTab() {
 
         <div className='flex-1 overflow-y-auto px-3 pb-3 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]'>
           {playlistsQuery.isLoading && (
-            <div className='px-4 py-2 text-sm text-muted-foreground'>Loading…</div>
+            <div className='px-4 py-2 text-base text-muted-foreground'>Loading…</div>
           )}
           {playlistsQuery.error && (
-            <div className='px-4 py-2 text-sm text-destructive'>Failed to load</div>
+            <div className='px-4 py-2 text-base text-destructive'>Failed to load</div>
           )}
           {!playlistsQuery.isLoading && playlists.length === 0 && (
-            <div className='px-4 py-2 text-sm text-muted-foreground'>No playlists yet.</div>
+            <div className='px-4 py-2 text-base text-muted-foreground'>No playlists yet.</div>
           )}
           <ul className='overflow-hidden rounded-sm border'>
             {playlists.map((p) => {
@@ -154,7 +154,7 @@ export function PlaylistsTab() {
                     }`}>
                     <CoverThumb src={p.coverImageUrl} className='h-10 w-10 shrink-0 rounded-sm' />
                     <div className='min-w-0'>
-                      <div className='truncate text-sm font-medium'>{p.title}</div>
+                      <div className='truncate text-base font-medium'>{p.title}</div>
                       <div className='truncate text-xs text-muted-foreground'>{p.slug}</div>
                     </div>
                   </button>
@@ -180,7 +180,7 @@ export function PlaylistsTab() {
                 <ArrowLeft className='mr-2 h-4 w-4' />
                 Playlists
               </Button>
-              <span className='flex-1 truncate text-sm font-medium'>{selected.title}</span>
+              <span className='flex-1 truncate text-base font-medium'>{selected.title}</span>
               <Button asChild variant='ghost' size='sm' aria-label='Edit playlist'>
                 <Link
                   to='/admin/music-entity/$entityType/$id'
@@ -194,7 +194,7 @@ export function PlaylistsTab() {
             </div>
           </>
         ) : (
-          <div className='hidden h-full items-center justify-center text-sm text-muted-foreground md:flex'>
+          <div className='hidden h-full items-center justify-center text-base text-muted-foreground md:flex'>
             Select a playlist to edit.
           </div>
         )}

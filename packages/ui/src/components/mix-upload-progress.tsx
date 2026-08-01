@@ -53,7 +53,7 @@ export function MixUploadProgress({ step, audioProgress }: MixUploadProgressProp
 
   return (
     <div className='w-full p-4 border rounded-sm md:w-72 bg-gb-darker-bg border-gb-pastel-green-2/20'>
-      <div className='flex justify-between items-center mb-2 text-sm'>
+      <div className='flex justify-between items-center mb-2 text-base'>
         <span className='font-medium text-gb-pastel-green-1'>{stepLabel}</span>
         {isPaused ? (
           <span className='text-xs text-gb-pastel-green-2/70'>paused</span>

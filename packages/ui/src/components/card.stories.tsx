@@ -19,7 +19,7 @@ export function Cards() {
           <CardDescription>Card header and content spacing.</CardDescription>
         </CardHeader>
         <CardContent>
-          <p className='text-sm text-muted-foreground'>
+          <p className='text-base text-muted-foreground'>
             Primitive card, text, and content styling in one place.
           </p>
         </CardContent>

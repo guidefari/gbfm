@@ -49,7 +49,9 @@ export function TweetParentPreview({ parentPostId }: Props) {
           createdAt={data.createdAt}
           interactive={false}
         />
-        {snippet ? <p className='mt-2 truncate text-sm text-muted-foreground'>{snippet}</p> : null}
+        {snippet ? (
+          <p className='mt-2 truncate text-base text-muted-foreground'>{snippet}</p>
+        ) : null}
       </Link>
       <div className='relative h-2'>
         <div className='absolute left-5 top-0 h-2 w-px bg-border/60' aria-hidden />

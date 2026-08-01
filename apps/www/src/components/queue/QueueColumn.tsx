@@ -60,7 +60,7 @@ export const QueueColumn = () => {
                   alt={currentTrack.title}
                   className='shrink-0 object-cover w-12 h-12 rounded'
                 />
-                <h4 className='flex-1 min-w-0 text-sm font-medium truncate'>
+                <h4 className='flex-1 min-w-0 text-base font-medium truncate'>
                   {currentTrack.title}
                 </h4>
               </div>
@@ -71,11 +71,11 @@ export const QueueColumn = () => {
             <div className='flex flex-col items-center justify-center p-8 text-center'>
               <Play className='w-8 h-8 mb-4 text-muted-foreground' />
               <h3 className='mb-2 font-medium'>Your queue is empty</h3>
-              <p className='text-sm text-muted-foreground'>Add some tracks to get started</p>
+              <p className='text-base text-muted-foreground'>Add some tracks to get started</p>
             </div>
           ) : (
             <div className='w-full'>
-              <h3 className='mb-3 text-sm font-medium text-muted-foreground'>
+              <h3 className='mb-3 text-base font-medium text-muted-foreground'>
                 Up Next ({tracks.length})
               </h3>
               <DndContext
