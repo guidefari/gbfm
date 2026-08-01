@@ -7,7 +7,7 @@ import {
   PlaylistListResponse,
   TrackListResponse
 } from '@gbfm/api/music'
-import { CompiledMicroPostResponse } from '@gbfm/api/post'
+import { CompiledMicroPostResponse, GetMicroPostsResponse } from '@gbfm/api/post'
 import { SearchResults } from '@gbfm/api/search'
 import { decodeResponseBody } from '@gbfm/api/testing'
 import { eq } from 'drizzle-orm'
@@ -1552,6 +1552,128 @@ describe('micro post replies against non-replyable/invisible parents (Slice 5)',
       await db.delete(user).where(eq(user.id, ownerId))
       await db.delete(user).where(eq(user.id, outsiderId))
     }
+  })
+})
+
+describe('GET /api/content/posts/micro/:parentSlug/replies (Slice 6)', () => {
+  it('returns only direct replies to the given parent, oldest-first, excluding unrelated replies and the parent itself', async () => {
+    const suffix = crypto.randomUUID()
+    const authorId = `replies-author-${suffix}`
+    const parentSlug = `replies-parent-${suffix}`
+    const otherParentSlug = `replies-other-parent-${suffix}`
+
+    await db.insert(user).values({ id: authorId, name: 'Author', email: `${authorId}@example.com` })
+
+    const [parentPost] = await db
+      .insert(postsTable)
+      .values({
+        title: null,
+        slug: parentSlug,
+        content: 'Original tweet',
+        type: 'micro',
+        draft: false
+      })
+      .returning()
+    if (!parentPost) throw new Error('Failed to seed parent tweet')
+
+    const [otherParentPost] = await db
+      .insert(postsTable)
+      .values({
+        title: null,
+        slug: otherParentSlug,
+        content: 'A different tweet',
+        type: 'micro',
+        draft: false
+      })
+      .returning()
+    if (!otherParentPost) throw new Error('Failed to seed other parent tweet')
+
+    const [firstReply] = await db
+      .insert(postsTable)
+      .values({
+        title: null,
+        slug: `replies-first-${suffix}`,
+        content: 'first reply',
+        type: 'micro',
+        draft: false,
+        parentPostId: parentPost.id,
+        rootPostId: parentPost.id,
+        depth: 1,
+        createdAt: new Date(Date.now() - 60_000)
+      })
+      .returning()
+    if (!firstReply) throw new Error('Failed to seed first reply')
+
+    const [secondReply] = await db
+      .insert(postsTable)
+      .values({
+        title: null,
+        slug: `replies-second-${suffix}`,
+        content: 'second reply',
+        type: 'micro',
+        draft: false,
+        parentPostId: parentPost.id,
+        rootPostId: parentPost.id,
+        depth: 1,
+        createdAt: new Date()
+      })
+      .returning()
+    if (!secondReply) throw new Error('Failed to seed second reply')
+
+    const [unrelatedReply] = await db
+      .insert(postsTable)
+      .values({
+        title: null,
+        slug: `replies-unrelated-${suffix}`,
+        content: 'reply to a different parent',
+        type: 'micro',
+        draft: false,
+        parentPostId: otherParentPost.id,
+        rootPostId: otherParentPost.id,
+        depth: 1
+      })
+      .returning()
+    if (!unrelatedReply) throw new Error('Failed to seed unrelated reply')
+
+    await db.insert(postCreators).values([
+      { postId: parentPost.id, creatorId: authorId },
+      { postId: otherParentPost.id, creatorId: authorId },
+      { postId: firstReply.id, creatorId: authorId },
+      { postId: secondReply.id, creatorId: authorId },
+      { postId: unrelatedReply.id, creatorId: authorId }
+    ])
+
+    try {
+      const res = await webHandler.handler(
+        new Request(`http://localhost/api/content/posts/micro/${parentSlug}/replies`)
+      )
+      expect(res.status).toBe(200)
+
+      const body = await decodeResponseBody(GetMicroPostsResponse, res)
+      expect(body.data.map((p) => p.slug)).toEqual([firstReply.slug, secondReply.slug])
+      expect(body.pagination.total).toBe(2)
+    } finally {
+      await db.delete(postCreators).where(eq(postCreators.postId, parentPost.id))
+      await db.delete(postCreators).where(eq(postCreators.postId, otherParentPost.id))
+      await db.delete(postCreators).where(eq(postCreators.postId, firstReply.id))
+      await db.delete(postCreators).where(eq(postCreators.postId, secondReply.id))
+      await db.delete(postCreators).where(eq(postCreators.postId, unrelatedReply.id))
+      await db.delete(postsTable).where(eq(postsTable.id, firstReply.id))
+      await db.delete(postsTable).where(eq(postsTable.id, secondReply.id))
+      await db.delete(postsTable).where(eq(postsTable.id, unrelatedReply.id))
+      await db.delete(postsTable).where(eq(postsTable.id, parentPost.id))
+      await db.delete(postsTable).where(eq(postsTable.id, otherParentPost.id))
+      await db.delete(user).where(eq(user.id, authorId))
+    }
+  })
+
+  it('404s when the parent slug does not exist', async () => {
+    const suffix = crypto.randomUUID()
+
+    const res = await webHandler.handler(
+      new Request(`http://localhost/api/content/posts/micro/does-not-exist-${suffix}/replies`)
+    )
+    expect(res.status).toBe(404)
   })
 })
 

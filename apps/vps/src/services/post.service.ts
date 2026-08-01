@@ -131,6 +131,14 @@ export interface PostService {
     SelectMdxCompiledMicroPost,
     DatabaseError | NotFoundError | ConflictError | ValidationError | ParentPostNotReplyableError
   >
+  readonly getMicroPostReplies: (
+    parentSlug: string,
+    options: { limit: number; offset: number }
+  ) => Effect.Effect<
+    { data: SelectMdxCompiledMicroPost[]; pagination: PaginationMetadata },
+    DatabaseError | NotFoundError,
+    SentryService
+  >
   readonly update: (
     slug: string,
     userId: string,
@@ -1204,6 +1212,147 @@ const createMicroPostReplyEffect = (
     Effect.withSpan('post.createMicroPostReply', { attributes: { parentSlug: options.parentSlug } })
   )
 
+const getMicroPostRepliesEffect = (
+  parentSlug: string,
+  options: { limit: number; offset: number },
+  mdx: MdxService
+) =>
+  Effect.gen(function* () {
+    const { limit, offset } = options
+
+    const parentRecords = yield* Effect.tryPromise({
+      try: () => db.select().from(postsTable).where(eq(postsTable.slug, parentSlug)).limit(1),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch parent post: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'posts'
+        })
+    })
+
+    const parent = parentRecords[0]
+    if (!parent) {
+      return yield* new NotFoundError({
+        message: 'Parent post not found',
+        resource: 'post',
+        id: parentSlug
+      })
+    }
+
+    const whereCondition = eq(postsTable.parentPostId, parent.id)
+
+    const countResult = yield* Effect.tryPromise({
+      try: () =>
+        timeQuery(
+          () => db.select({ total: count() }).from(postsTable).where(whereCondition),
+          'get-micro-post-replies-count'
+        ),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to count replies: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'posts'
+        })
+    })
+
+    const total = countResult[0]?.total ?? 0
+
+    const data = yield* Effect.tryPromise({
+      try: () =>
+        timeQuery(
+          () =>
+            db
+              .select()
+              .from(postsTable)
+              .where(whereCondition)
+              .orderBy(asc(postsTable.createdAt))
+              .limit(limit)
+              .offset(offset),
+          'get-micro-post-replies-data'
+        ),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch replies: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'posts'
+        })
+    })
+
+    const postIds = data.map((p) => p.id)
+
+    const creatorsData =
+      postIds.length > 0
+        ? yield* Effect.tryPromise({
+            try: () =>
+              db
+                .select({
+                  postId: postCreators.postId,
+                  creatorId: usersTable.id,
+                  creatorName: usersTable.name,
+                  creatorUsername: usersTable.username
+                })
+                .from(postCreators)
+                .innerJoin(usersTable, eq(postCreators.creatorId, usersTable.id))
+                .where(inArray(postCreators.postId, postIds)),
+            catch: (error) =>
+              new DatabaseError({
+                message: `Failed to fetch creators: ${getErrorMessage(error)}`,
+                operation: 'select',
+                table: 'post_creators'
+              })
+          })
+        : []
+
+    const creatorsByPostId: Record<
+      string,
+      Array<{ id: string; name: string; username: string | null }>
+    > = {}
+    for (const row of creatorsData) {
+      const existing = creatorsByPostId[row.postId]
+      const creator = {
+        id: row.creatorId,
+        name: row.creatorName,
+        username: row.creatorUsername
+      }
+      if (existing) {
+        existing.push(creator)
+      } else {
+        creatorsByPostId[row.postId] = [creator]
+      }
+    }
+
+    const compiledData = yield* Effect.forEach(
+      data,
+      (post) => buildPostWithPreloadedCreators(post, creatorsByPostId[post.id] ?? [], mdx),
+      { concurrency: 5 }
+    )
+
+    const sentry = yield* SentryService
+    const rawData = yield* Effect.forEach(
+      compiledData,
+      (post) =>
+        toMicroPost(post).pipe(
+          Effect.catchTag('DatabaseError', (e) =>
+            Effect.andThen(
+              sentry.captureException(e, {
+                slug: post.slug,
+                type: post.type,
+                operation: 'toMicroPost'
+              }),
+              Effect.succeed<SelectMdxCompiledMicroPost | null>(null)
+            )
+          )
+        ),
+      { concurrency: 5 }
+    )
+    const filteredData = rawData.filter((p): p is SelectMdxCompiledMicroPost => p !== null)
+
+    return {
+      data: filteredData,
+      pagination: createPaginationMetadata(total, limit, offset)
+    }
+  }).pipe(Effect.withSpan('post.getMicroPostReplies', { attributes: { parentSlug } }))
+
 const updateEffect = (
   slug: string,
   userId: string,
@@ -1330,6 +1479,7 @@ export const PostServiceLayer = Layer.effect(
           Effect.provideService(UploadAssetService, uploadAssetService)
         ),
       createMicroPostReply: (opts) => createMicroPostReplyEffect(opts, mdx),
+      getMicroPostReplies: (parentSlug, opts) => getMicroPostRepliesEffect(parentSlug, opts, mdx),
       update: (slug, userId, userRole, data) =>
         updateEffect(slug, userId, userRole, data, mdx).pipe(
           Effect.provideService(ConfigService, config),

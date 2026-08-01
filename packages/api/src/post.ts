@@ -282,6 +282,14 @@ export const PostGroup = HttpApiGroup.make('post')
     }).middleware(AuthMiddleware)
   )
   .add(
+    HttpApiEndpoint.get('getMicroPostReplies', '/api/content/posts/micro/:parentSlug/replies', {
+      params: ParentSlugParam,
+      query: PaginationQuery,
+      success: GetMicroPostsResponse,
+      error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
+    })
+  )
+  .add(
     HttpApiEndpoint.get('getPostBySlug', '/api/content/posts/:slug', {
       params: SlugParam,
       success: CompiledPostResponse,
