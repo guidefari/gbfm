@@ -1385,6 +1385,8 @@ describe('micro post replies (community permission, Slice 4)', () => {
         headers: { ...init.headers, authorization: `Bearer ${token}` }
       })
 
+    let replyId: string | undefined
+
     try {
       const unauthenticatedReply = await webHandler.handler(
         new Request(`http://localhost/api/content/posts/micro/${parentSlug}/replies`, {
@@ -1408,6 +1410,7 @@ describe('micro post replies (community permission, Slice 4)', () => {
       )
       expect(replyRes.status).toBe(200)
       const replyBody = await decodeResponseBody(CompiledMicroPostResponse, replyRes)
+      replyId = replyBody.id
       expect(replyBody.parentPostId).toBe(parentPost.id)
       expect(replyBody.rootPostId).toBe(parentPost.id)
       expect(replyBody.depth).toBe(1)
@@ -1428,6 +1431,9 @@ describe('micro post replies (community permission, Slice 4)', () => {
       expect(createTopLevelRes.status).toBe(403)
     } finally {
       await db.delete(postCreators).where(eq(postCreators.postId, parentPost.id))
+      if (replyId) {
+        await db.delete(postCreators).where(eq(postCreators.postId, replyId))
+      }
       await db.delete(postsTable).where(eq(postsTable.rootPostId, parentPost.id))
       await db.delete(postsTable).where(eq(postsTable.id, parentPost.id))
       await db.delete(postsTable).where(eq(postsTable.slug, `plain-user-post-${suffix}`))
