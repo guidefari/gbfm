@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
+import { Route as TweetsRouteImport } from './routes/tweets'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SubscribeRouteImport } from './routes/subscribe'
 import { Route as RemindersRouteImport } from './routes/reminders'
@@ -71,6 +72,11 @@ import { Route as AdminMusicEntityEntityTypeIdRouteImport } from './routes/admin
 const UnsubscribeRoute = UnsubscribeRouteImport.update({
   id: '/unsubscribe',
   path: '/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TweetsRoute = TweetsRouteImport.update({
+  id: '/tweets',
+  path: '/tweets',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TermsRoute = TermsRouteImport.update({
@@ -375,6 +381,7 @@ export interface FileRoutesByFullPath {
   '/reminders': typeof RemindersRoute
   '/subscribe': typeof SubscribeRoute
   '/terms': typeof TermsRoute
+  '/tweets': typeof TweetsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/admin/content': typeof AdminContentRoute
   '/admin/email-logs': typeof AdminEmailLogsRoute
@@ -430,6 +437,7 @@ export interface FileRoutesByTo {
   '/reminders': typeof RemindersRoute
   '/subscribe': typeof SubscribeRoute
   '/terms': typeof TermsRoute
+  '/tweets': typeof TweetsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/admin/content': typeof AdminContentRoute
   '/admin/email-logs': typeof AdminEmailLogsRoute
@@ -491,6 +499,7 @@ export interface FileRoutesById {
   '/reminders': typeof RemindersRoute
   '/subscribe': typeof SubscribeRoute
   '/terms': typeof TermsRoute
+  '/tweets': typeof TweetsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/admin/content': typeof AdminContentRoute
   '/admin/email-logs': typeof AdminEmailLogsRoute
@@ -553,6 +562,7 @@ export interface FileRouteTypes {
     | '/reminders'
     | '/subscribe'
     | '/terms'
+    | '/tweets'
     | '/unsubscribe'
     | '/admin/content'
     | '/admin/email-logs'
@@ -608,6 +618,7 @@ export interface FileRouteTypes {
     | '/reminders'
     | '/subscribe'
     | '/terms'
+    | '/tweets'
     | '/unsubscribe'
     | '/admin/content'
     | '/admin/email-logs'
@@ -668,6 +679,7 @@ export interface FileRouteTypes {
     | '/reminders'
     | '/subscribe'
     | '/terms'
+    | '/tweets'
     | '/unsubscribe'
     | '/admin/content'
     | '/admin/email-logs'
@@ -729,6 +741,7 @@ export interface RootRouteChildren {
   RemindersRoute: typeof RemindersRoute
   SubscribeRoute: typeof SubscribeRoute
   TermsRoute: typeof TermsRoute
+  TweetsRoute: typeof TweetsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
   AdminContentRoute: typeof AdminContentRoute
   AdminEmailLogsRoute: typeof AdminEmailLogsRoute
@@ -766,6 +779,13 @@ declare module '@tanstack/react-router' {
       path: '/unsubscribe'
       fullPath: '/unsubscribe'
       preLoaderRoute: typeof UnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/tweets': {
+      id: '/tweets'
+      path: '/tweets'
+      fullPath: '/tweets'
+      preLoaderRoute: typeof TweetsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/terms': {
@@ -1277,6 +1297,7 @@ const rootRouteChildren: RootRouteChildren = {
   RemindersRoute: RemindersRoute,
   SubscribeRoute: SubscribeRoute,
   TermsRoute: TermsRoute,
+  TweetsRoute: TweetsRoute,
   UnsubscribeRoute: UnsubscribeRoute,
   AdminContentRoute: AdminContentRoute,
   AdminEmailLogsRoute: AdminEmailLogsRoute,

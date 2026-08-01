@@ -2,8 +2,8 @@ import { Link } from '@tanstack/react-router'
 
 type Tab = 'tweets' | 'editorial'
 
-const tabs: { id: Tab; label: string; to: '/tweet' | '/editorial' }[] = [
-  { id: 'tweets', label: 'Tweets', to: '/tweet' },
+const tabs: { id: Tab; label: string; to: '/tweets' | '/editorial' }[] = [
+  { id: 'tweets', label: 'Tweets', to: '/tweets' },
   { id: 'editorial', label: 'Editorial', to: '/editorial' }
 ]
 

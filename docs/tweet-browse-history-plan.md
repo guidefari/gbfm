@@ -3,7 +3,7 @@
 ## Summary
 
 Persist the user's lightweight tweet browsing progress in the web app so that
-visiting `/tweet` resumes at the last successfully viewed tweet instead of
+visiting `/tweets` resumes at the last successfully viewed tweet instead of
 always opening the newest tweet.
 
 The feature is intentionally local and small:
@@ -52,7 +52,8 @@ under `gbfm-tweet-seen.json`.
 
 ## Goals
 
-- Opening `/tweet` resumes the last viewed tweet for the default tweet feed.
+- Opening `/tweets` resumes the last viewed tweet for the default tweet feed.
+- `/tweet` redirects to the canonical `/tweets` landing URL.
 - `/tweet/latest` explicitly opens the newest published tweet.
 - `/tweet/new` opens the authenticated authoring flow for a new tweet.
 - A first-time visitor still opens the newest tweet.
@@ -84,9 +85,10 @@ type TweetEntryAction = 'resume' | 'latest'
 
 | URL | Action | Resolution |
 | --- | --- | --- |
-| `/tweet` | `resume` | Open the saved `lastViewed` tweet; fall back to latest. |
+| `/tweets` | `resume` | Open the saved `lastViewed` tweet; fall back to latest. |
 | `/tweet/latest` | `latest` | Open the newest published tweet; ignore saved progress. |
 | `/tweet/new` | `author` | Open the authenticated authoring flow for a new tweet. |
+| `/tweet` | `legacy` | Redirect to `/tweets`. |
 | `/tweet/$slug` | `direct` | Open the explicitly requested tweet. |
 
 `/tweet/new` is an authoring action, not a browsing action. It should require
@@ -104,7 +106,7 @@ resolve(action)
   direct -> requested slug
 ```
 
-The `/tweet` and `/tweet/latest` browse routes should share one internal
+The `/tweets` and `/tweet/latest` browse routes should share one internal
 resolver rather than duplicating API calls and fallback logic. The authoring
 route is separate and must not invoke the browse resolver.
 
@@ -256,7 +258,7 @@ type TweetBrowseEvent =
 
 ### `tweet-root-opened`
 
-Produced by `/tweet` and `/tweet/latest` with the requested entry action when
+Produced by `/tweets` and `/tweet/latest` with the requested entry action when
 they need to choose a destination. This event is
 observational. It does not mutate persisted state.
 
@@ -372,11 +374,11 @@ tweet-browse-reset
 
 ## Call Stack
 
-### Opening `/tweet`
+### Opening `/tweets`
 
 ```text
-User navigates to /tweet
-  -> TanStack Router matches routes/tweet/index.tsx
+User navigates to /tweets
+  -> TanStack Router matches routes/tweets.tsx
   -> resolver receives action = resume
   -> root loader reads tweetBrowseState
   -> if lastViewed exists:
@@ -472,7 +474,7 @@ page-level transition.
 
 ```mermaid
 flowchart LR
-  Root["/tweet root route"]
+  Root["/tweets landing route"]
   Latest["/tweet/latest route"]
   Author["/tweet/new authoring route"]
   Browse["Tweet browse module<br/>Atom + transitions"]
@@ -552,7 +554,7 @@ harmless for this feature because no view count is kept.
    the slug when absent.
 4. Preserve the existing hooks needed by random-post navigation, or update
    their callers to read `seenSlugs` from the new module.
-5. Add a non-React decoded read for the `/tweet` root loader.
+5. Add a non-React decoded read for the `/tweets` landing loader.
 6. Update `apps/www/src/routes/tweet/$slug.tsx` to record the loaded post's
    stable ID and slug through the new operation.
 7. Add a shared tweet-entry resolver that accepts `resume`, `latest`, or
