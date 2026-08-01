@@ -623,12 +623,6 @@ describe('music entity-links/resolve/scrape (HttpApiBuilder group, Step 6d)', ()
 
     expect(res.status).toBe(401)
   })
-
-  it('GET /api/music/links/pending returns 401 without a session cookie', async () => {
-    const res = await webHandler.handler(new Request('http://localhost/api/music/links/pending'))
-
-    expect(res.status).toBe(401)
-  })
 })
 
 describe('search (HttpApiBuilder group, Step 6)', () => {

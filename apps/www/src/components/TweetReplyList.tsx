@@ -1,4 +1,5 @@
 import { useRouter } from '@tanstack/react-router'
+import { MessageCircle } from 'lucide-react'
 import type { MouseEvent } from 'react'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { TweetAuthorRow } from '@/components/TweetAuthorRow'
@@ -35,10 +36,20 @@ export function TweetReplyList({ parentSlug }: Props) {
     return null
   }
 
-  const stopRowNavigate = (event: MouseEvent) => event.stopPropagation()
+  const stopRowNavigateOnInteractive = (event: MouseEvent) => {
+    if (event.target instanceof HTMLElement && event.target.closest('a, button')) {
+      event.stopPropagation()
+    }
+  }
 
   return (
     <div>
+      <div className='mb-2 flex items-center gap-1.5 text-sm text-muted-foreground'>
+        <MessageCircle className='h-3.5 w-3.5' />
+        <span>
+          {replies.length} {replies.length === 1 ? 'reply' : 'replies'}
+        </span>
+      </div>
       {replies.map((reply, index) => {
         const hasMusicEntity = Boolean(reply.musicEntityType && reply.musicEntityId)
         const isLast = index === replies.length - 1
@@ -56,7 +67,7 @@ export function TweetReplyList({ parentSlug }: Props) {
                 router.navigate({ to: '/tweet/$slug', params: { slug: reply.slug } })
               }}
               className={`cursor-pointer space-y-2 rounded-lg border border-border/40 bg-card p-3 transition-colors hover:bg-card/80 ${isLast ? '' : 'mb-2'}`}>
-              <div role='presentation' onClick={stopRowNavigate}>
+              <div role='presentation' onClickCapture={stopRowNavigateOnInteractive}>
                 <TweetAuthorRow
                   creators={reply.creators ? [...reply.creators] : []}
                   createdAt={reply.createdAt}
@@ -73,7 +84,7 @@ export function TweetReplyList({ parentSlug }: Props) {
                 <MDXRendrr mdxString={reply.compiledContent ?? reply.content ?? ''} />
               </div>
               {hasMusicEntity && reply.musicEntityType && reply.musicEntityId && (
-                <div role='presentation' onClick={stopRowNavigate}>
+                <div role='presentation' onClickCapture={stopRowNavigateOnInteractive}>
                   <TweetMusicEntityCard
                     entityType={reply.musicEntityType}
                     entityId={reply.musicEntityId}
@@ -81,8 +92,16 @@ export function TweetReplyList({ parentSlug }: Props) {
                 </div>
               )}
               {reply.quotedPostId && (
-                <div role='presentation' onClick={stopRowNavigate}>
+                <div role='presentation' onClickCapture={stopRowNavigateOnInteractive}>
                   <TweetQuoteCard quotedPostId={reply.quotedPostId} />
+                </div>
+              )}
+              {Boolean(reply.replyCount) && (
+                <div className='flex items-center gap-1.5 text-xs text-muted-foreground'>
+                  <MessageCircle className='h-3 w-3' />
+                  <span>
+                    {reply.replyCount} {reply.replyCount === 1 ? 'reply' : 'replies'}
+                  </span>
                 </div>
               )}
             </div>

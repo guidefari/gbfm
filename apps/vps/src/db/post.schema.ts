@@ -64,6 +64,7 @@ export type SelectMdxCompiledPost = SelectPost & {
     name: string
     username: string | null
   }>
+  replyCount?: number
 }
 
 export type SelectMdxCompiledEditorialPost = SelectMdxCompiledPost & {
@@ -102,7 +103,8 @@ export const selectMdxCompiledPostSchema = selectPostSchema.extend({
         username: z.string().nullable()
       })
     )
-    .optional()
+    .optional(),
+  replyCount: z.number().optional()
 })
 
 export const selectMdxCompiledEditorialPostSchema = selectMdxCompiledPostSchema.extend({

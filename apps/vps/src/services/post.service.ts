@@ -1463,6 +1463,29 @@ const getMicroPostRepliesEffect = (
       }
     }
 
+    const replyCountsByParentId: Record<string, number> = {}
+    if (postIds.length > 0) {
+      const replyCountRows = yield* Effect.tryPromise({
+        try: () =>
+          db
+            .select({ parentPostId: postsTable.parentPostId, total: count() })
+            .from(postsTable)
+            .where(inArray(postsTable.parentPostId, postIds))
+            .groupBy(postsTable.parentPostId),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to count nested replies: ${getErrorMessage(error)}`,
+            operation: 'select',
+            table: 'posts'
+          })
+      })
+      for (const row of replyCountRows) {
+        if (row.parentPostId) {
+          replyCountsByParentId[row.parentPostId] = row.total
+        }
+      }
+    }
+
     const compiledData = yield* Effect.forEach(
       data,
       (post) => buildPostWithPreloadedCreators(post, creatorsByPostId[post.id] ?? [], mdx),
@@ -1487,7 +1510,9 @@ const getMicroPostRepliesEffect = (
         ),
       { concurrency: 5 }
     )
-    const filteredData = rawData.filter((p): p is SelectMdxCompiledMicroPost => p !== null)
+    const filteredData = rawData
+      .filter((p): p is SelectMdxCompiledMicroPost => p !== null)
+      .map((post) => ({ ...post, replyCount: replyCountsByParentId[post.id] ?? 0 }))
 
     return {
       data: filteredData,

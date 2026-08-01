@@ -48,7 +48,8 @@ export const PostResponse = Schema.Struct({
 export const CompiledPostResponse = Schema.Struct({
   ...PostResponse.fields,
   compiledContent: Schema.String,
-  creators: Schema.optional(Schema.Array(Creator))
+  creators: Schema.optional(Schema.Array(Creator)),
+  replyCount: Schema.optional(Schema.Number)
 })
 
 export const CompiledEditorialPostResponse = Schema.Struct({
