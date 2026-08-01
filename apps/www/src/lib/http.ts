@@ -18,7 +18,7 @@ import type {
 } from '@gbfm/vps/schemas'
 import { useCallback } from 'react'
 import { useRouter } from '@tanstack/react-router'
-import { Effect } from 'effect'
+import { Effect, Option, Schema } from 'effect'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { RuntimeClient } from '@/runtime'
 import { captureException } from '@/services/analytics'
@@ -471,16 +471,17 @@ export function useEditorialPostBySlug(slug: string) {
   }
 }
 
-// Accepts a bare slug or a full URL/path containing /tweet/:slug (e.g.
-// https://goosebumps.fm/tweet/some-slug or /tweet/some-slug) and returns
-// just the slug, trimming a trailing slash or query string. No URL
-// resolver service needed here (unlike music links) since /tweet/:slug is
-// this app's own fixed route shape.
-export function parseTweetSlugInput(input: string): string {
-  const trimmed = input.trim()
-  if (!trimmed) return ''
-  const afterMarker = trimmed.split('/tweet/')[1] ?? trimmed
-  return afterMarker.split(/[/?#]/)[0] ?? ''
+// Scans free text for the first substring containing /tweet/:slug (any host,
+// so local IP / staging / prod links all match) and returns just the slug.
+// Used to auto-detect a quoted tweet from body text instead of a separate input.
+const TWEET_LINK_PATTERN = /\/tweet\/([^\s/?#]+)/
+
+const TweetSlugSchema = Schema.NonEmptyString
+
+export function extractTweetSlugFromText(text: string): string {
+  const match = text.match(TWEET_LINK_PATTERN)
+
+  return Schema.decodeUnknownOption(TweetSlugSchema)(match?.[1]).pipe(Option.getOrElse(() => ''))
 }
 
 export function useMicroPostBySlug(slug: string) {

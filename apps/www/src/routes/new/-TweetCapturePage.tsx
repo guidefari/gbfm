@@ -28,8 +28,8 @@ import { PostPageHeader } from '@/components/PostPageHeader'
 import { useSession } from '@/lib/auth-client'
 import {
   apiUrl,
+  extractTweetSlugFromText,
   fetcher,
-  parseTweetSlugInput,
   useAddAdminEntityLink,
   useAdminEntityLinks,
   useDeleteAdminEntityLink,
@@ -317,14 +317,10 @@ function ResolvedMusicCard({
 }
 
 function QuoteTweetCard({
-  quoteInput,
-  onQuoteInputChange,
   isResolving,
   resolvedTitle,
   resolvedContent
 }: {
-  quoteInput: string
-  onQuoteInputChange: (value: string) => void
   isResolving: boolean
   resolvedTitle: string | null
   resolvedContent: string | null
@@ -334,37 +330,28 @@ function QuoteTweetCard({
       <CardHeader className='pb-3'>
         <CardTitle className='flex items-center gap-2 text-base text-gb-pastel-green-1'>
           <MessageSquareQuote className='size-4' />
-          Quote a tweet
+          Quoted tweet
         </CardTitle>
       </CardHeader>
-      <CardContent className='space-y-3'>
-        <div className='space-y-1.5'>
-          <Label
-            htmlFor='quoteInput'
-            className='text-xs font-medium tracking-wide text-muted-foreground'>
-            Tweet link or slug (optional)
-          </Label>
-          <div className='relative'>
-            <Input
-              id='quoteInput'
-              value={quoteInput}
-              onChange={(e) => onQuoteInputChange(e.target.value)}
-              placeholder='https://goosebumps.fm/tweet/some-slug'
-              className='pr-9'
-            />
-            {isResolving && (
-              <Loader2 className='absolute right-3 top-1/2 size-4 -translate-y-1/2 animate-spin text-muted-foreground' />
-            )}
+      <CardContent>
+        {isResolving && (
+          <div className='flex items-center gap-2 text-xs text-muted-foreground'>
+            <Loader2 className='size-3.5 animate-spin' />
+            Resolving quoted tweet…
           </div>
-        </div>
-
-        {(resolvedTitle || resolvedContent) && (
+        )}
+        {!isResolving && (resolvedTitle || resolvedContent) && (
           <div className='flex items-center gap-3 rounded-md border border-gb-pastel-green-2/15 bg-black/20 p-2.5'>
             <MessageSquareQuote className='size-4 shrink-0 text-muted-foreground' />
             <div className='min-w-0 flex-1 truncate text-sm text-muted-foreground'>
               {resolvedTitle || resolvedContent}
             </div>
           </div>
+        )}
+        {!isResolving && !resolvedTitle && !resolvedContent && (
+          <p className='text-xs text-muted-foreground'>
+            Paste a tweet link in the commentary to auto-attach it as a quote.
+          </p>
         )}
       </CardContent>
     </Card>
@@ -381,7 +368,6 @@ export function TweetCapturePage() {
   const isDesktop = useMediaQuery('(min-width: 1024px)')
 
   const [musicUrl, setMusicUrl] = useState('')
-  const [quoteInput, setQuoteInput] = useState('')
   const [title, setTitle] = useState('')
   const [commentary, setCommentary] = useState('')
   const [tags, setTags] = useState<string[]>([])
@@ -406,7 +392,7 @@ export function TweetCapturePage() {
   })
 
   const resolved = useResolveMusicEntity(musicUrl.trim())
-  const quotedSlug = parseTweetSlugInput(quoteInput)
+  const quotedSlug = extractTweetSlugFromText(commentary)
   const resolvedQuote = useMicroPostBySlug(quotedSlug)
 
   useEffect(() => {
@@ -711,28 +697,27 @@ export function TweetCapturePage() {
           />
         )
 
-        const quoteCard = (
+        const quoteCard = quotedSlug ? (
           <QuoteTweetCard
-            quoteInput={quoteInput}
-            onQuoteInputChange={setQuoteInput}
-            isResolving={Boolean(quotedSlug) && resolvedQuote.isPending}
+            isResolving={resolvedQuote.isPending}
             resolvedTitle={resolvedQuote.data?.title ?? null}
             resolvedContent={resolvedQuote.data?.content ?? null}
           />
-        )
+        ) : null
 
         if (!isDesktop) {
           return (
             <Tabs defaultValue='music' className='w-full'>
-              <TabsList className='grid w-full grid-cols-4'>
+              <TabsList className='grid w-full grid-cols-3'>
                 <TabsTrigger value='music'>Music</TabsTrigger>
                 <TabsTrigger value='post'>Post</TabsTrigger>
-                <TabsTrigger value='quote'>Quote</TabsTrigger>
                 <TabsTrigger value='tags'>Tags</TabsTrigger>
               </TabsList>
               <TabsContent value='music'>{musicCard}</TabsContent>
-              <TabsContent value='post'>{composerCard}</TabsContent>
-              <TabsContent value='quote'>{quoteCard}</TabsContent>
+              <TabsContent value='post' className='space-y-6'>
+                {composerCard}
+                {quoteCard}
+              </TabsContent>
               <TabsContent value='tags'>{tagsCard}</TabsContent>
             </Tabs>
           )
