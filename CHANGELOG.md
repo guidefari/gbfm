@@ -1,3 +1,10 @@
+# [2.79.0](https://github.com/guidefari/gbfm/compare/v2.78.0...v2.79.0) (2026-08-01)
+
+
+### Features
+
+* tweet styles ([cbd06e4](https://github.com/guidefari/gbfm/commit/cbd06e46f7213fdc061bbf197461a81efe06575f))
+
 # [2.78.0](https://github.com/guidefari/gbfm/compare/v2.77.0...v2.78.0) (2026-08-01)
 
 
