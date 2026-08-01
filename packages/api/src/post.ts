@@ -184,6 +184,13 @@ export type UpdatePostInput = typeof UpdatePostInput.Type
 
 const TagParam = { tag: Schema.NonEmptyString }
 const SlugParam = { slug: Schema.String }
+const ParentSlugParam = { parentSlug: Schema.String }
+
+export const CreateMicroPostReplyInput = Schema.Struct({
+  title: Schema.optional(Schema.NullOr(Schema.String)),
+  content: Schema.optional(Schema.NullOr(Schema.String))
+})
+export type CreateMicroPostReplyInput = typeof CreateMicroPostReplyInput.Type
 
 export const PostGroup = HttpApiGroup.make('post')
   .add(
@@ -262,6 +269,19 @@ export const PostGroup = HttpApiGroup.make('post')
     })
   )
   .add(
+    HttpApiEndpoint.post('createMicroPostReply', '/api/content/posts/micro/:parentSlug/replies', {
+      params: ParentSlugParam,
+      payload: CreateMicroPostReplyInput,
+      success: CompiledMicroPostResponse,
+      error: [
+        ValidationHttpError,
+        HttpApiError.NotFound,
+        HttpApiError.Conflict,
+        HttpApiError.InternalServerError
+      ]
+    }).middleware(AuthMiddleware)
+  )
+  .add(
     HttpApiEndpoint.get('getPostBySlug', '/api/content/posts/:slug', {
       params: SlugParam,
       success: CompiledPostResponse,
@@ -279,7 +299,12 @@ export const PostGroup = HttpApiGroup.make('post')
     HttpApiEndpoint.post('createPost', '/api/content/post', {
       payload: CreatePostInput,
       success: PostResponse,
-      error: [ValidationHttpError, HttpApiError.Conflict, HttpApiError.InternalServerError]
+      error: [
+        ValidationHttpError,
+        HttpApiError.Forbidden,
+        HttpApiError.Conflict,
+        HttpApiError.InternalServerError
+      ]
     }).middleware(AuthMiddleware)
   )
   .add(

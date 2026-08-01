@@ -7,6 +7,7 @@ import {
   PlaylistListResponse,
   TrackListResponse
 } from '@gbfm/api/music'
+import { CompiledMicroPostResponse } from '@gbfm/api/post'
 import { SearchResults } from '@gbfm/api/search'
 import { decodeResponseBody } from '@gbfm/api/testing'
 import { eq } from 'drizzle-orm'
@@ -1337,6 +1338,125 @@ describe('shows (HttpApiBuilder group, Step 6)', () => {
     )
 
     expect(res.status).not.toBe(401)
+  })
+})
+
+describe('micro post replies (community permission, Slice 4)', () => {
+  it('lets any authenticated user reply to a tweet, without broadening top-level post-create access', async () => {
+    const suffix = crypto.randomUUID()
+    const plainUserId = `reply-user-${suffix}`
+    const plainUserToken = `reply-user-token-${suffix}`
+    const parentSlug = `parent-tweet-${suffix}`
+
+    await db.insert(user).values({
+      id: plainUserId,
+      name: 'Plain user',
+      email: `${plainUserId}@example.com`
+      // no role -- not creator/editor/admin
+    })
+    await db.insert(session).values({
+      id: crypto.randomUUID(),
+      token: plainUserToken,
+      userId: plainUserId,
+      expiresAt: new Date(Date.now() + 60_000)
+    })
+    const [parentPost] = await db
+      .insert(postsTable)
+      .values({
+        title: null,
+        slug: parentSlug,
+        content: 'Original tweet',
+        type: 'micro',
+        draft: false
+      })
+      .returning()
+    if (!parentPost) throw new Error('Failed to seed parent tweet')
+    await db.insert(postCreators).values({ postId: parentPost.id, creatorId: plainUserId })
+
+    const authenticatedRequest = (url: string, token: string, init: RequestInit = {}) =>
+      new Request(url, {
+        ...init,
+        headers: { ...init.headers, authorization: `Bearer ${token}` }
+      })
+
+    try {
+      const unauthenticatedReply = await webHandler.handler(
+        new Request(`http://localhost/api/content/posts/micro/${parentSlug}/replies`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ content: 'no session' })
+        })
+      )
+      expect(unauthenticatedReply.status).toBe(401)
+
+      const replyRes = await webHandler.handler(
+        authenticatedRequest(
+          `http://localhost/api/content/posts/micro/${parentSlug}/replies`,
+          plainUserToken,
+          {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ content: 'a reply from a plain user' })
+          }
+        )
+      )
+      expect(replyRes.status).toBe(200)
+      const replyBody = await decodeResponseBody(CompiledMicroPostResponse, replyRes)
+      expect(replyBody.parentPostId).toBe(parentPost.id)
+      expect(replyBody.rootPostId).toBe(parentPost.id)
+      expect(replyBody.depth).toBe(1)
+
+      const createTopLevelRes = await webHandler.handler(
+        authenticatedRequest('http://localhost/api/content/post', plainUserToken, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            slug: `plain-user-post-${suffix}`,
+            content: 'attempted top-level tweet',
+            type: 'micro'
+          })
+        })
+      )
+      // Community reply permission must not broaden top-level create access:
+      // a plain-role user can reply (above) but cannot create a top-level post.
+      expect(createTopLevelRes.status).toBe(403)
+    } finally {
+      await db.delete(postCreators).where(eq(postCreators.postId, parentPost.id))
+      await db.delete(postsTable).where(eq(postsTable.rootPostId, parentPost.id))
+      await db.delete(postsTable).where(eq(postsTable.id, parentPost.id))
+      await db.delete(postsTable).where(eq(postsTable.slug, `plain-user-post-${suffix}`))
+      await db.delete(user).where(eq(user.id, plainUserId))
+    }
+  })
+
+  it('404s when the parent slug does not exist', async () => {
+    const suffix = crypto.randomUUID()
+    const userId = `reply-missing-parent-${suffix}`
+    const token = `reply-missing-parent-token-${suffix}`
+
+    await db.insert(user).values({ id: userId, name: 'User', email: `${userId}@example.com` })
+    await db.insert(session).values({
+      id: crypto.randomUUID(),
+      token,
+      userId,
+      expiresAt: new Date(Date.now() + 60_000)
+    })
+
+    try {
+      const res = await webHandler.handler(
+        new Request(`http://localhost/api/content/posts/micro/does-not-exist-${suffix}/replies`, {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${token}`,
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({ content: 'reply to nothing' })
+        })
+      )
+      expect(res.status).toBe(404)
+    } finally {
+      await db.delete(user).where(eq(user.id, userId))
+    }
   })
 })
 

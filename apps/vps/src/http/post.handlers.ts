@@ -14,6 +14,8 @@ import { PostService } from '@/services/post.service'
 
 const dieOnDatabaseError = makeDieOnDatabaseError('post')
 
+const POST_CREATE_ROLES = new Set(['creator', 'editor', 'admin'])
+
 const toDateStrings = <T extends { createdAt: Date; updatedAt: Date }>(post: T) => ({
   ...post,
   createdAt: post.createdAt.toISOString(),
@@ -167,6 +169,28 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
         return toDateStrings(post)
       })
     )
+    .handle('createMicroPostReply', ({ params, payload }) =>
+      Effect.gen(function* () {
+        const { user } = yield* AuthSession
+        const svc = yield* PostService
+        const reply = yield* dieOnDatabaseError(
+          svc
+            .createMicroPostReply({
+              parentSlug: params.parentSlug,
+              actorUserId: user.id,
+              title: payload.title,
+              content: payload.content
+            })
+            .pipe(
+              Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
+              Effect.catchTag('ConflictError', () => new HttpApiError.Conflict()),
+              Effect.catchTag('ValidationError', () => new ValidationHttpError())
+            )
+        )
+
+        return toDateStrings(reply)
+      })
+    )
     .handle('getPostBySlug', ({ params }) =>
       Effect.gen(function* () {
         const svc = yield* PostService
@@ -195,6 +219,10 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
     .handle('createPost', ({ payload }) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
+        if (!POST_CREATE_ROLES.has(user.role ?? '')) {
+          return yield* new HttpApiError.Forbidden()
+        }
+
         const { creatorIds, ...postData } = payload
         const finalCreatorIds = creatorIds?.length ? [...creatorIds] : [user.id]
 
