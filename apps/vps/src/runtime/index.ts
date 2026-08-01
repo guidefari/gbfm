@@ -4,6 +4,7 @@ import type { BlueskyAccountService } from '@/services/bluesky-account.service'
 import type { ConfigService } from '@/services/config.service'
 import type { EmailService } from '@/services/email.service'
 import type { FavoriteService } from '@/services/favorite.service'
+import type { LockService } from '@/services/lock.service'
 import type { MusicEntityService } from '@/services/music-entity'
 import type { MusicLinkScraperService } from '@/services/music-link-scraper.service'
 import type { MusicReminderService } from '@/services/music-reminder.service'
@@ -25,6 +26,7 @@ import { AppLayer } from './services'
 export type AppServices =
   | ConfigService
   | BlueskyAccountService
+  | LockService
   | DatabaseService
   | EmailService
   | FavoriteService

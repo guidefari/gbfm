@@ -10,6 +10,7 @@ import { ConfigServiceLayer } from '@/services/config.service'
 import { BlueskyAccountServiceLayer } from '@/services/bluesky-account.service'
 import { BlueskyClientLayer } from '@/services/bluesky-client.service'
 import { BlueskyImportServiceLayer } from '@/services/bluesky-importer.service'
+import { LockServiceLayer } from '@/services/lock.service'
 import { CryptoServiceLayer } from '@/services/crypto.service'
 import { EmailServiceLayer } from '@/services/email.service'
 import { FavoriteServiceLayer } from '@/services/favorite.service'
@@ -42,6 +43,7 @@ const BaseServicesLayer = Layer.mergeAll(
   ConfigServiceLayer,
   BlueskyClientLayer,
   BlueskyImportServiceLayer,
+  LockServiceLayer,
   CryptoServiceLayer.pipe(Layer.provide(ConfigServiceLayer)),
   DatabaseServiceLayer,
   EmailServiceLayer,

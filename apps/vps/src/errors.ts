@@ -67,6 +67,10 @@ export class IdentityResolutionError extends Data.TaggedError('IdentityResolutio
   readonly message: string
 }> {}
 
+export class LockUnavailable extends Data.TaggedError('LockUnavailable')<{
+  readonly key: string
+}> {}
+
 export class ReminderProcessingError extends Data.TaggedError('ReminderProcessingError')<{
   readonly message: string
   readonly reminderId: string
