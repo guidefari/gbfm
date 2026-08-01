@@ -1,3 +1,22 @@
+# [2.81.0](https://github.com/guidefari/gbfm/compare/v2.80.0...v2.81.0) (2026-08-01)
+
+
+### Bug Fixes
+
+* style ([3fc91c0](https://github.com/guidefari/gbfm/commit/3fc91c00987df61fb24699ae65c27558ad83f672))
+* **www:** stop tweet nav arrows from also skipping tracks ([1d71355](https://github.com/guidefari/gbfm/commit/1d713557223c374af12e6d9659561daadfa49d0c))
+
+
+### Features
+
+* indicate reply count on tweet ([3072f3a](https://github.com/guidefari/gbfm/commit/3072f3ab6588b55a0ddc51c5906473d45176c618))
+* **www:** add tweet entry actions ([bb2870b](https://github.com/guidefari/gbfm/commit/bb2870b1da3e8894dd8cac21ff0640b2bdfa2257))
+* **www:** auto-detect quoted tweet from body text ([526a4cc](https://github.com/guidefari/gbfm/commit/526a4cc5ee51bcffad3a7e9cdd5ae4d98759a2bc))
+* **www:** link tweet replies and parents ([69c95f1](https://github.com/guidefari/gbfm/commit/69c95f19b7690527e7eeee1a608adac97303c9fa))
+* **www:** make tweets the canonical landing route ([c7db133](https://github.com/guidefari/gbfm/commit/c7db133a6e6bf2ff799e0d2fd1acdb15143372ae))
+* **www:** persist tweet browse progress ([f0b2ee5](https://github.com/guidefari/gbfm/commit/f0b2ee566770427164dac62c2bd922fc63e705fe))
+* **www:** record loaded tweet progress ([e3667a1](https://github.com/guidefari/gbfm/commit/e3667a1bf24281b289b622e266801d22d968545d))
+
 # [2.80.0](https://github.com/guidefari/gbfm/compare/v2.79.0...v2.80.0) (2026-08-01)
 
 
