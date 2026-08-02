@@ -69,6 +69,7 @@ export function BlueskyConnectionCard() {
     created: number
     conflicted: number
     failed: number
+    unresolved?: number
   }
   const [syncMessage, setSyncMessage] = useState<string | null>(null)
   const [syncRunId, setSyncRunId] = useState<string | null>(null)
@@ -102,9 +103,13 @@ export function BlueskyConnectionCard() {
     const onError = () => setSyncMessage('Connection interrupted; retrying live sync updates…')
 
     events.addEventListener('sync', onSyncEvent)
+    events.addEventListener('done', onSyncEvent)
+    events.addEventListener('fatal', onSyncEvent)
     events.addEventListener('error', onError)
     return () => {
       events.removeEventListener('sync', onSyncEvent)
+      events.removeEventListener('done', onSyncEvent)
+      events.removeEventListener('fatal', onSyncEvent)
       events.removeEventListener('error', onError)
       events.close()
     }

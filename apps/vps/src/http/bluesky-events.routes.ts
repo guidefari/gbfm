@@ -18,6 +18,8 @@ const toEvent = (row: {
   readonly alreadyImported: number
   readonly conflicted: number
   readonly failed: number
+  readonly skipped: number
+  readonly unresolved: number
   readonly pageCount: number
   readonly errorCategory: string | null
   readonly startedAt: Date
@@ -31,6 +33,8 @@ const toEvent = (row: {
   alreadyImported: row.alreadyImported,
   conflicted: row.conflicted,
   failed: row.failed,
+  skipped: row.skipped,
+  unresolved: row.unresolved,
   pageCount: row.pageCount,
   errorCategory: row.errorCategory,
   startedAt: row.startedAt.toISOString(),
@@ -66,6 +70,8 @@ export const BlueskyEventsRoute = HttpRouter.add(
                 alreadyImported: blueskySyncRuns.alreadyImported,
                 conflicted: blueskySyncRuns.conflicted,
                 failed: blueskySyncRuns.failed,
+                skipped: blueskySyncRuns.skipped,
+                unresolved: blueskySyncRuns.unresolved,
                 pageCount: blueskySyncRuns.pageCount,
                 errorCategory: blueskySyncRuns.errorCategory,
                 startedAt: blueskySyncRuns.startedAt,
@@ -92,13 +98,20 @@ export const BlueskyEventsRoute = HttpRouter.add(
         const initial = yield* load
         if (!initial) return HttpServerResponse.text('Not found', { status: 404 })
 
-        const stream = Stream.fromEffect(load).pipe(
-          Stream.filter((row): row is NonNullable<typeof row> => row !== undefined),
-          Stream.map(toEvent),
-          Stream.repeat(Schedule.spaced('1 second')),
-          Stream.takeUntil((event) => terminalStatuses.has(event.status)),
-          Stream.map((event) =>
-            new TextEncoder().encode(`event: sync\ndata: ${JSON.stringify(event)}\n\n`)
+        const stream = Stream.concat(
+          Stream.succeed(new TextEncoder().encode('retry: 3000\n\n')),
+          Stream.fromEffect(load).pipe(
+            Stream.filter((row): row is NonNullable<typeof row> => row !== null),
+            Stream.map(toEvent),
+            Stream.repeat(Schedule.spaced('1 second')),
+            Stream.takeUntil((event) => terminalStatuses.has(event.status)),
+            Stream.map((event) => {
+              const eventName =
+                event.status === 'succeeded' ? 'done' : event.status === 'failed' ? 'fatal' : 'sync'
+              return new TextEncoder().encode(
+                `event: ${eventName}\ndata: ${JSON.stringify(event)}\n\n`
+              )
+            })
           )
         )
 
@@ -106,7 +119,8 @@ export const BlueskyEventsRoute = HttpRouter.add(
           contentType: 'text/event-stream',
           headers: {
             'cache-control': 'no-cache, no-transform',
-            connection: 'keep-alive'
+            connection: 'keep-alive',
+            'x-accel-buffering': 'no'
           }
         })
       })
