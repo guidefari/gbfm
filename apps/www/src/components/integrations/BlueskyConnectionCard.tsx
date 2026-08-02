@@ -38,7 +38,7 @@ export function BlueskyConnectionCard() {
     onSuccess: (summary) => {
       queryClient.invalidateQueries({ queryKey: ['integrations', 'bluesky'] })
       setSyncMessage(
-        `Imported ${summary.created} drafts (${summary.alreadyImported} already imported).`
+        `Imported ${summary.created} drafts (${summary.alreadyImported} already imported, ${summary.conflicted} conflicts).`
       )
     },
     onError: (error) => {

@@ -24,6 +24,7 @@ const SyncRunResponse = Schema.Struct({
   qualifying: Schema.Number,
   created: Schema.Number,
   alreadyImported: Schema.Number,
+  conflicted: Schema.Number,
   failed: Schema.Number,
   cursor: Schema.NullOr(Schema.String)
 })

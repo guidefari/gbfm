@@ -30,6 +30,7 @@ export type SyncRunSummary = {
   readonly qualifying: number
   readonly created: number
   readonly alreadyImported: number
+  readonly conflicted: number
   readonly failed: number
   readonly cursor: string | undefined
 }
@@ -153,6 +154,7 @@ const sync = (
         qualifying: normalized.qualifying,
         created: written.created,
         alreadyImported: written.alreadyImported,
+        conflicted: written.conflicted,
         failed: written.failed,
         cursor: feed.cursor
       }
@@ -168,6 +170,7 @@ const sync = (
                 qualifying: summary.qualifying,
                 created: summary.created,
                 alreadyImported: summary.alreadyImported,
+                conflicted: summary.conflicted,
                 failed: summary.failed,
                 finishedAt: new Date()
               })

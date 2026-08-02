@@ -10,6 +10,7 @@ import { generatePostSlug } from './post.service'
 export type ArchiveImportSummary = {
   readonly created: number
   readonly alreadyImported: number
+  readonly conflicted: number
   readonly failed: number
 }
 
@@ -28,7 +29,7 @@ const databaseError = new DatabaseError({
   operation: 'import-archive'
 })
 
-type WriteResult = 'created' | 'alreadyImported' | 'failed'
+type WriteResult = 'created' | 'alreadyImported' | 'conflicted' | 'failed'
 
 const write = ({
   ownerUserId,
@@ -55,7 +56,34 @@ const write = ({
             })
             .onConflictDoNothing({ target: blueskyPostSources.atUri })
             .returning()
-          if (!source) return 'alreadyImported'
+          if (!source) {
+            const [existing] = await tx
+              .select({
+                id: blueskyPostSources.id,
+                cid: blueskyPostSources.cid,
+                locallyEdited: blueskyPostSources.locallyEdited
+              })
+              .from(blueskyPostSources)
+              .where(eq(blueskyPostSources.atUri, record.atUri))
+              .limit(1)
+            if (!existing) throw databaseError
+            const changed = existing.cid !== record.cid
+            const conflicted = changed && existing.locallyEdited
+            await tx
+              .update(blueskyPostSources)
+              .set({
+                authorHandle: record.authorHandle,
+                cid: record.cid,
+                sourceText: record.text,
+                sourceFingerprint: record.cid,
+                sourceStatus: conflicted ? 'conflict' : changed ? 'edited' : 'active',
+                lastSeenAt: new Date(),
+                lastError: null,
+                updatedAt: new Date()
+              })
+              .where(eq(blueskyPostSources.id, existing.id))
+            return conflicted ? 'conflicted' : 'alreadyImported'
+          }
 
           const postValues: InsertPost = {
             content: record.normalizedContent,
@@ -80,6 +108,7 @@ const write = ({
     Effect.map((results) => ({
       created: results.filter((result) => result === 'created').length,
       alreadyImported: results.filter((result) => result === 'alreadyImported').length,
+      conflicted: results.filter((result) => result === 'conflicted').length,
       failed: results.filter((result) => result === 'failed').length
     }))
   )

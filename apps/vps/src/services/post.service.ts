@@ -1808,6 +1808,22 @@ const updateEffect = (
       ])
     }
 
+    if (updatedPost.type === 'micro' && Object.keys(normalizedUpdateData).length > 0) {
+      yield* Effect.tryPromise({
+        try: () =>
+          db
+            .update(blueskyPostSources)
+            .set({ locallyEdited: true, updatedAt: new Date() })
+            .where(eq(blueskyPostSources.postId, updatedPost.id)),
+        catch: (error) =>
+          new DatabaseError({
+            message: `Failed to mark Bluesky source as edited: ${getErrorMessage(error)}`,
+            operation: 'update',
+            table: 'bluesky_post_sources'
+          })
+      })
+    }
+
     if (creatorIds && creatorIds.length > 0) {
       yield* Effect.tryPromise({
         try: async () => {
