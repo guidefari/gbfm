@@ -18,7 +18,7 @@ import { Settings2 } from 'lucide-react'
 import { useState } from 'react'
 import { useSession } from '@/lib/auth-client'
 import { apiUrl, fetcher } from '@/lib/http'
-import { ImageUploadField } from '@/routes/admin/_components/-ImageUploadField'
+import { ImageUploadField } from '@/components/content/ImageUploadField'
 
 interface ShowMetadataFormState {
   title: string

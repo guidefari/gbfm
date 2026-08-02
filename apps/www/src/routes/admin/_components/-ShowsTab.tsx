@@ -16,7 +16,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Edit, ExternalLink, Plus, Trash } from 'lucide-react'
 import { useState } from 'react'
 import { apiUrl, fetcher, type PaginatedResponse } from '@/lib/http'
-import { ImageUploadField } from './-ImageUploadField'
+import { ImageUploadField } from '@/components/content/ImageUploadField'
 import { UserSearch } from './-UserSearch'
 
 interface ShowItem {

@@ -1,6 +1,6 @@
 import { Card, CardContent } from '@gbfm/ui'
 import { createFileRoute } from '@tanstack/react-router'
-import { ContentTab } from './_components/-ContentTab'
+import { ContentManager } from '@/components/content/ContentManager'
 import { AdminPage } from './_components/-AdminLayout'
 
 export const Route = createFileRoute('/admin/content')({
@@ -15,7 +15,7 @@ function AdminContentPage() {
       backToAdmin>
       <Card>
         <CardContent className='pt-6'>
-          <ContentTab />
+          <ContentManager scope='all' />
         </CardContent>
       </Card>
     </AdminPage>
