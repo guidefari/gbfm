@@ -185,27 +185,61 @@ const sync = (
       })
       if (!run) return yield* databaseError('create-run')
 
-      const feed = yield* client.getAuthorFeed({
-        serviceEndpoint: account.serviceEndpoint ?? '',
-        actorDid: account.providerAccountId,
-        accessJwt: authenticated.accessJwt,
-        cursor: currentState.cursor ?? undefined
-      })
-      const normalized = yield* importer.normalizeFeed(feed.entries, account.providerAccountId)
-      const written = yield* archive.write({
-        ownerUserId: userId,
-        externalAccountId: accountId,
-        records: normalized.records
-      })
+      const cutoff = new Date(Date.now() - currentState.lookbackDays * 24 * 60 * 60 * 1000)
+      let cursor = currentState.cursor ?? undefined
+      let pageCount = 0
+      let discovered = 0
+      let qualifying = 0
+      let created = 0
+      let alreadyImported = 0
+      let conflicted = 0
+      let failed = 0
+      let reachedLookback = false
+
+      while (!reachedLookback) {
+        const feed = yield* client.getAuthorFeed({
+          serviceEndpoint: account.serviceEndpoint ?? '',
+          actorDid: account.providerAccountId,
+          accessJwt: authenticated.accessJwt,
+          cursor
+        })
+        pageCount += 1
+        const normalized = yield* importer.normalizeFeed(feed.entries, account.providerAccountId)
+        const written = yield* archive.write({
+          ownerUserId: userId,
+          externalAccountId: accountId,
+          records: normalized.records
+        })
+        discovered += normalized.discovered
+        qualifying += normalized.qualifying
+        created += written.created
+        alreadyImported += written.alreadyImported
+        conflicted += written.conflicted
+        failed += written.failed
+        cursor = feed.cursor
+        reachedLookback =
+          !feed.cursor || normalized.records.some((record) => record.sourceCreatedAt <= cutoff)
+
+        yield* Effect.tryPromise({
+          try: () =>
+            db
+              .update(blueskySyncStates)
+              .set({ cursor, updatedAt: new Date() })
+              .where(eq(blueskySyncStates.externalAccountId, accountId)),
+          catch: () => databaseError('advance-cursor')
+        })
+      }
+
       const summary = {
         runId: run.id,
-        discovered: normalized.discovered,
-        qualifying: normalized.qualifying,
-        created: written.created,
-        alreadyImported: written.alreadyImported,
-        conflicted: written.conflicted,
-        failed: written.failed,
-        cursor: feed.cursor
+        discovered,
+        qualifying,
+        created,
+        alreadyImported,
+        conflicted,
+        failed,
+        pageCount,
+        cursor
       }
 
       yield* Effect.tryPromise({
@@ -221,6 +255,7 @@ const sync = (
                 alreadyImported: summary.alreadyImported,
                 conflicted: summary.conflicted,
                 failed: summary.failed,
+                pageCount: summary.pageCount,
                 finishedAt: new Date()
               })
               .where(eq(blueskySyncRuns.id, run.id))
