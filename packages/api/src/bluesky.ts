@@ -19,15 +19,9 @@ export const BlueskyAccount = Schema.Struct({
   updatedAt: Schema.String
 })
 
-const SyncRunResponse = Schema.Struct({
+export const SyncRunAccepted = Schema.Struct({
   runId: Uuid,
-  discovered: Schema.Number,
-  qualifying: Schema.Number,
-  created: Schema.Number,
-  alreadyImported: Schema.Number,
-  conflicted: Schema.Number,
-  failed: Schema.Number,
-  cursor: Schema.NullOr(Schema.String)
+  status: Schema.Literal('queued')
 })
 
 const ScheduleBlueskyInput = Schema.Struct({ scheduled: Schema.Boolean })
@@ -53,7 +47,7 @@ export const BlueskyGroup = HttpApiGroup.make('bluesky')
   .add(
     HttpApiEndpoint.post('syncBluesky', '/api/integrations/bluesky/:id/sync', {
       params: { id: Uuid },
-      success: SyncRunResponse,
+      success: SyncRunAccepted,
       error: [HttpApiError.BadRequest, HttpApiError.NotFound]
     }).middleware(AuthMiddleware)
   )

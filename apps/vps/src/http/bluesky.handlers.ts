@@ -57,18 +57,26 @@ export const BlueskyHandlersLive = HttpApiBuilder.group(Api, 'bluesky', (handler
       Effect.gen(function* () {
         const { user } = yield* AuthSession
         const service = yield* BlueskySyncService
-        const summary = yield* dieOnDatabaseError(
-          service.sync({ userId: user.id, accountId: params.id }).pipe(
+        const handle = yield* dieOnDatabaseError(
+          service.start({ userId: user.id, accountId: params.id }).pipe(
             Effect.catchTags({
               NotFoundError: () => new HttpApiError.NotFound(),
-              BlueskyProviderError: () => new HttpApiError.BadRequest(),
-              IdentityResolutionError: () => new HttpApiError.BadRequest(),
-              LockUnavailable: () => new HttpApiError.BadRequest(),
-              CryptoError: (cause) => Effect.die(cause)
+              LockUnavailable: () => new HttpApiError.BadRequest()
             })
           )
         )
-        return { ...summary, cursor: summary.cursor ?? null }
+        yield* Effect.forkDetach(
+          service.sync({ userId: user.id, accountId: params.id, runId: handle.runId }).pipe(
+            Effect.tapError((error) =>
+              Effect.logError('[bluesky] asynchronous sync failed', {
+                runId: handle.runId,
+                error
+              })
+            ),
+            Effect.catch(() => Effect.void)
+          )
+        )
+        return handle
       })
     )
     .handle('scheduleBluesky', ({ params, payload }) =>

@@ -35,6 +35,11 @@ const sessionPayload = (session: {
     })
   )
 
+export type SyncRunHandle = {
+  readonly runId: string
+  readonly status: 'queued'
+}
+
 export type SyncRunSummary = {
   readonly runId: string
   readonly discovered: number
@@ -47,9 +52,14 @@ export type SyncRunSummary = {
 }
 
 export interface BlueskySyncService {
+  readonly start: (input: {
+    readonly userId: string
+    readonly accountId: string
+  }) => Effect.Effect<SyncRunHandle, DatabaseError | NotFoundError | LockUnavailable>
   readonly sync: (input: {
     readonly userId: string
     readonly accountId: string
+    readonly runId?: string
   }) => Effect.Effect<
     SyncRunSummary,
     | DatabaseError
@@ -66,13 +76,55 @@ export const BlueskySyncService = Context.Service<BlueskySyncService>('BlueskySy
 const databaseError = (operation: string) =>
   new DatabaseError({ message: 'Bluesky sync database operation failed', operation })
 
+const start = (
+  locks: LockService,
+  { userId, accountId }: Parameters<BlueskySyncService['start']>[0]
+): Effect.Effect<SyncRunHandle, DatabaseError | NotFoundError | LockUnavailable> =>
+  locks.withLock(
+    `bluesky-sync:${accountId}`,
+    Effect.tryPromise({
+      try: async () => {
+        const [account] = await db
+          .select({ id: externalAccounts.id })
+          .from(externalAccounts)
+          .where(and(eq(externalAccounts.id, accountId), eq(externalAccounts.userId, userId)))
+          .limit(1)
+        if (!account) throw new NotFoundError({ message: 'Bluesky account not found' })
+
+        const [existing] = await db
+          .select({ id: blueskySyncRuns.id })
+          .from(blueskySyncRuns)
+          .where(
+            and(
+              eq(blueskySyncRuns.externalAccountId, accountId),
+              eq(blueskySyncRuns.status, 'running')
+            )
+          )
+          .orderBy(blueskySyncRuns.startedAt)
+          .limit(1)
+        if (existing) return { runId: existing.id, status: 'queued' as const }
+
+        const [run] = await db
+          .insert(blueskySyncRuns)
+          .values({ externalAccountId: accountId })
+          .returning({ id: blueskySyncRuns.id })
+        if (!run) throw databaseError('create-run')
+        return { runId: run.id, status: 'queued' as const }
+      },
+      catch: (error): DatabaseError | NotFoundError =>
+        error instanceof NotFoundError || error instanceof DatabaseError
+          ? error
+          : databaseError('start-run')
+    })
+  )
+
 const sync = (
   client: BlueskyClient,
   importer: BlueskyImportService,
   archive: BlueskyArchiveService,
   crypto: CryptoService,
   locks: LockService,
-  { userId, accountId }: Parameters<BlueskySyncService['sync']>[0]
+  { userId, accountId, runId }: Parameters<BlueskySyncService['sync']>[0]
 ) =>
   locks.withLock(
     `bluesky-sync:${accountId}`,
@@ -177,13 +229,24 @@ const sync = (
 
       const [run] = yield* Effect.tryPromise({
         try: () =>
-          db
-            .insert(blueskySyncRuns)
-            .values({ externalAccountId: accountId })
-            .returning({ id: blueskySyncRuns.id }),
-        catch: () => databaseError('create-run')
+          runId
+            ? db
+                .select({ id: blueskySyncRuns.id })
+                .from(blueskySyncRuns)
+                .where(
+                  and(
+                    eq(blueskySyncRuns.id, runId),
+                    eq(blueskySyncRuns.externalAccountId, accountId)
+                  )
+                )
+                .limit(1)
+            : db
+                .insert(blueskySyncRuns)
+                .values({ externalAccountId: accountId })
+                .returning({ id: blueskySyncRuns.id }),
+        catch: () => databaseError('load-run')
       })
-      if (!run) return yield* databaseError('create-run')
+      if (!run) return yield* databaseError('load-run')
 
       const cutoff = new Date(Date.now() - currentState.lookbackDays * 24 * 60 * 60 * 1000)
       let cursor = currentState.cursor ?? undefined
@@ -277,7 +340,20 @@ const sync = (
         catch: () => databaseError('complete-run')
       })
       return summary
-    })
+    }).pipe(
+      Effect.tapError((error) =>
+        runId
+          ? Effect.tryPromise({
+              try: () =>
+                db
+                  .update(blueskySyncRuns)
+                  .set({ status: 'failed', errorCategory: error._tag, finishedAt: new Date() })
+                  .where(eq(blueskySyncRuns.id, runId)),
+              catch: () => undefined
+            }).pipe(Effect.catch(() => Effect.void))
+          : Effect.void
+      )
+    )
   )
 
 export const BlueskySyncServiceLayer = Layer.effect(
@@ -289,6 +365,7 @@ export const BlueskySyncServiceLayer = Layer.effect(
     const crypto = yield* CryptoService
     const locks = yield* LockService
     return {
+      start: (input: Parameters<BlueskySyncService['start']>[0]) => start(locks, input),
       sync: (input: Parameters<BlueskySyncService['sync']>[0]) =>
         sync(client, importer, archive, crypto, locks, input)
     }

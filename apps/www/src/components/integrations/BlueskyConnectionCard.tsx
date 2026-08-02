@@ -35,11 +35,9 @@ export function BlueskyConnectionCard() {
       const client = await getApiClient()
       return Effect.runPromise(client.bluesky.syncBluesky({ params: { id } }))
     },
-    onSuccess: (summary) => {
+    onSuccess: (handle) => {
       queryClient.invalidateQueries({ queryKey: ['integrations', 'bluesky'] })
-      setSyncMessage(
-        `Imported ${summary.created} drafts (${summary.alreadyImported} already imported, ${summary.conflicted} conflicts).`
-      )
+      setSyncMessage(`Sync queued. Run ${handle.runId.slice(0, 8)} is starting in the background.`)
     },
     onError: (error) => {
       setSyncMessage(error.message)
