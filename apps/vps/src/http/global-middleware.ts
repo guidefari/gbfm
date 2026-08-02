@@ -1,4 +1,4 @@
-import { Effect, Exit } from 'effect'
+import { Cause, Effect, Exit } from 'effect'
 import {
   HttpMiddleware,
   HttpRouter,
@@ -130,12 +130,22 @@ export const RequestLoggerLive = HttpRouter.middleware(
       const duration = Date.now() - start
 
       if (Exit.isFailure(result)) {
-        yield* Effect.logError('[HTTP] request failed', {
-          method: request.method,
-          path: request.url,
-          duration,
-          cause: result.cause
-        })
+        const clientAborted = Cause.hasInterruptsOnly(result.cause)
+        yield* clientAborted
+          ? Effect.logInfo('[HTTP] client aborted request', {
+              method: request.method,
+              path: request.url,
+              status: 499,
+              duration,
+              outcome: 'client_abort'
+            })
+          : Effect.logError('[HTTP] request failed', {
+              method: request.method,
+              path: request.url,
+              duration,
+              cause: result.cause
+            })
+        if (clientAborted) yield* recordRequest(duration, false)
         return yield* Effect.failCause(result.cause)
       }
 
