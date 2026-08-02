@@ -16,6 +16,7 @@ import {
 import { Context, Effect, Layer } from 'effect'
 import { db } from '@/db'
 import { postIdsForCreator } from '@/db/creator-membership'
+import { blueskyPostSources } from '@/db/external-account.schema'
 import { user as usersTable } from '@/db/auth.schema'
 import {
   type InsertPost,
@@ -235,6 +236,29 @@ export function normalizePostData(
 
 const buildPostWithCreators = (post: SelectPost, mdx: MdxService) =>
   Effect.gen(function* () {
+    const [blueskySource] = yield* Effect.tryPromise({
+      try: () =>
+        db
+          .select({
+            authorDid: blueskyPostSources.authorDid,
+            authorHandle: blueskyPostSources.authorHandle,
+            publicUrl: blueskyPostSources.publicUrl,
+            sourceCreatedAt: blueskyPostSources.sourceCreatedAt,
+            sourceStatus: blueskyPostSources.sourceStatus,
+            locallyEdited: blueskyPostSources.locallyEdited,
+            lastError: blueskyPostSources.lastError
+          })
+          .from(blueskyPostSources)
+          .where(eq(blueskyPostSources.postId, post.id))
+          .limit(1),
+      catch: (error) =>
+        new DatabaseError({
+          message: `Failed to fetch Bluesky source: ${getErrorMessage(error)}`,
+          operation: 'select',
+          table: 'bluesky_post_sources'
+        })
+    })
+
     const creators = yield* Effect.tryPromise({
       try: () =>
         db
@@ -254,7 +278,8 @@ const buildPostWithCreators = (post: SelectPost, mdx: MdxService) =>
         })
     }).pipe(Effect.withSpan('post.getCreators', { attributes: { postId: post.id } }))
 
-    return yield* buildPostWithPreloadedCreators(post, creators, mdx)
+    const compiled = yield* buildPostWithPreloadedCreators(post, creators, mdx)
+    return blueskySource ? { ...compiled, blueskySource } : compiled
   })
 
 const buildPostWithPreloadedCreators = (

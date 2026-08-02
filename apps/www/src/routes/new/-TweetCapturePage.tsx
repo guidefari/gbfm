@@ -65,6 +65,15 @@ interface PostItem {
   musicEntityId: string | null
   quotedPostId?: string | null
   creators?: Array<{ id: string; name: string; username: string | null }>
+  blueskySource?: {
+    authorDid: string
+    authorHandle: string | null
+    publicUrl: string
+    sourceCreatedAt: string
+    sourceStatus: string
+    locallyEdited: boolean
+    lastError: string | null
+  }
 }
 
 const entityPathByType: Record<MusicEntityType, string> = {
@@ -644,6 +653,30 @@ export function TweetCapturePage() {
           </Link>
         }
       />
+
+      {existingPost?.blueskySource ? (
+        <Card className='mt-6 border-border'>
+          <CardHeader>
+            <CardTitle className='text-sm tracking-widest'>Bluesky source</CardTitle>
+          </CardHeader>
+          <CardContent className='space-y-2 text-xs text-muted-foreground'>
+            <p>
+              {existingPost.blueskySource.authorHandle ?? existingPost.blueskySource.authorDid} ·{' '}
+              {existingPost.blueskySource.sourceStatus}
+            </p>
+            <a
+              href={existingPost.blueskySource.publicUrl}
+              target='_blank'
+              rel='noreferrer'
+              className='text-highlight underline underline-offset-4'>
+              Open original post
+            </a>
+            {existingPost.blueskySource.lastError ? (
+              <p className='text-destructive'>{existingPost.blueskySource.lastError}</p>
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : null}
 
       {(() => {
         const composerCard = (

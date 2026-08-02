@@ -16,10 +16,37 @@ const dieOnDatabaseError = makeDieOnDatabaseError('post')
 
 const POST_CREATE_ROLES = new Set(['creator', 'editor', 'admin'])
 
-const toDateStrings = <T extends { createdAt: Date; updatedAt: Date }>(post: T) => ({
+const toDateStrings = <
+  T extends {
+    createdAt: Date
+    updatedAt: Date
+    blueskySource?: {
+      readonly authorDid: string
+      readonly authorHandle: string | null
+      readonly publicUrl: string
+      readonly sourceCreatedAt: Date | string
+      readonly sourceStatus: string
+      readonly locallyEdited: boolean
+      readonly lastError: string | null
+    }
+  }
+>(
+  post: T
+) => ({
   ...post,
   createdAt: post.createdAt.toISOString(),
-  updatedAt: post.updatedAt.toISOString()
+  updatedAt: post.updatedAt.toISOString(),
+  ...(post.blueskySource
+    ? {
+        blueskySource: {
+          ...post.blueskySource,
+          sourceCreatedAt:
+            typeof post.blueskySource.sourceCreatedAt === 'string'
+              ? post.blueskySource.sourceCreatedAt
+              : post.blueskySource.sourceCreatedAt.toISOString()
+        }
+      }
+    : {})
 })
 
 export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
