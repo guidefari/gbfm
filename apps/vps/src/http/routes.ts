@@ -128,6 +128,9 @@ export const createWebHandler = (options?: {
       RequestLoggerLive,
       SentryDefectLive
     ).pipe(
+      // RequestLoggerLive is the single structured request event; disable
+      // Effect HttpMiddleware.logger to avoid a second response log line.
+      Layer.provide(HttpRouter.disableLogger),
       // HttpServerRequest.multipart (user group's updateProfile avatar
       // upload, see user.handlers.ts's uploadAvatar) needs a real
       // FileSystem.FileSystem + Path.Path to buffer parts to temp files.
@@ -148,6 +151,7 @@ export const createWebHandler = (options?: {
       // Pino + Sentry logger, not Effect's bare default console logger --
       // otherwise a DB outage's cause is logged nowhere on-call looks.
       Layer.provideMerge(AppLoggerLive)
-    )
+    ),
+    { disableLogger: true }
   )
 }

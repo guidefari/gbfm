@@ -1,4 +1,4 @@
-import { Effect } from 'effect'
+import { Effect, Exit } from 'effect'
 import {
   HttpMiddleware,
   HttpRouter,
@@ -126,8 +126,26 @@ export const RequestLoggerLive = HttpRouter.middleware(
     Effect.gen(function* () {
       const request = yield* HttpServerRequest.HttpServerRequest
       const start = Date.now()
-      const response = yield* httpEffect
+      const result = yield* Effect.exit(httpEffect)
       const duration = Date.now() - start
+
+      if (Exit.isFailure(result)) {
+        yield* Effect.logError('[HTTP] request failed', {
+          method: request.method,
+          path: request.url,
+          duration,
+          cause: result.cause
+        })
+        return yield* Effect.failCause(result.cause)
+      }
+
+      const response = result.value
+      yield* Effect.logInfo('[HTTP] request completed', {
+        method: request.method,
+        path: request.url,
+        status: response.status,
+        duration
+      })
 
       if (duration > VERY_SLOW_REQUEST_THRESHOLD) {
         yield* Effect.logError('[Performance] Very slow request detected', {
