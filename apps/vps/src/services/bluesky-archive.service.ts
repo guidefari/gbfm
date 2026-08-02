@@ -82,7 +82,8 @@ const makeWrite = (musicEntities: MusicEntityService, scraper: MusicLinkScraperS
                   .select({
                     id: blueskyPostSources.id,
                     cid: blueskyPostSources.cid,
-                    locallyEdited: blueskyPostSources.locallyEdited
+                    locallyEdited: blueskyPostSources.locallyEdited,
+                    postId: blueskyPostSources.postId
                   })
                   .from(blueskyPostSources)
                   .where(eq(blueskyPostSources.atUri, record.atUri))
@@ -98,11 +99,18 @@ const makeWrite = (musicEntities: MusicEntityService, scraper: MusicLinkScraperS
                     sourceText: record.text,
                     sourceFingerprint: record.cid,
                     sourceStatus: conflicted ? 'conflict' : changed ? 'edited' : 'active',
+                    sourceCreatedAt: record.sourceCreatedAt,
                     lastSeenAt: new Date(),
                     lastError: null,
                     updatedAt: new Date()
                   })
                   .where(eq(blueskyPostSources.id, existing.id))
+                if (existing.postId) {
+                  await tx
+                    .update(postsTable)
+                    .set({ createdAt: record.sourceCreatedAt })
+                    .where(eq(postsTable.id, existing.postId))
+                }
                 return conflicted ? 'conflicted' : 'alreadyImported'
               }
 
