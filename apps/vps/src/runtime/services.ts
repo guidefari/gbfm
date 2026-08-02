@@ -70,15 +70,21 @@ const BaseServicesLayer = Layer.mergeAll(
   DevToolsLive
 )
 
+const MusicEntityLive = MusicEntityServiceLayer.pipe(Layer.provide(BaseServicesLayer))
+const BlueskyArchiveLive = BlueskyArchiveServiceLayer.pipe(
+  Layer.provide(Layer.mergeAll(BaseServicesLayer, MusicEntityLive))
+)
+const BlueskySyncLive = BlueskySyncServiceLayer.pipe(
+  Layer.provide(Layer.mergeAll(BaseServicesLayer, MusicEntityLive, BlueskyArchiveLive))
+)
+
 const ServicesLayer = Layer.mergeAll(
   BaseServicesLayer,
   QRCodeServiceLayer.pipe(Layer.provide(BaseServicesLayer)),
-  MusicEntityServiceLayer.pipe(Layer.provide(BaseServicesLayer)),
+  MusicEntityLive,
   BlueskyAccountServiceLayer.pipe(Layer.provide(BaseServicesLayer)),
-  BlueskyArchiveServiceLayer,
-  BlueskySyncServiceLayer.pipe(
-    Layer.provide(Layer.mergeAll(BaseServicesLayer, BlueskyArchiveServiceLayer))
-  )
+  BlueskyArchiveLive,
+  BlueskySyncLive
 )
 
 export const AppLayer = ServicesLayer.pipe(Layer.provide(AppLoggerLive))
