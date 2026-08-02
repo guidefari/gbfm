@@ -8,6 +8,7 @@ import { HttpApiBuilder } from 'effect/unstable/httpapi'
 import { AdminHandlersLive } from '@/http/admin.handlers'
 import { AudioHandlersLive } from '@/http/audio.handlers'
 import { BlueskyHandlersLive } from '@/http/bluesky.handlers'
+import { BlueskyEventsRoute } from '@/http/bluesky-events.routes'
 import { EmailHandlersLive } from '@/http/email.handlers'
 import { FavoritesHandlersLive } from '@/http/favorites.handlers'
 import { FileManagerHandlersLive } from '@/http/file-manager.handlers'
@@ -118,6 +119,7 @@ export const createWebHandler = (options?: {
     Layer.mergeAll(
       ApiLive,
       betterAuthRoute,
+      BlueskyEventsRoute,
       SearchCacheHeaderLive,
       SiteRoutesLive,
       DocsLive,
