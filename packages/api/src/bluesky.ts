@@ -24,6 +24,59 @@ export const SyncRunAccepted = Schema.Struct({
   status: Schema.Literal('queued')
 })
 
+export const BlueskySyncRun = Schema.Struct({
+  id: Uuid,
+  status: Schema.Literals(['running', 'succeeded', 'failed']),
+  discovered: Schema.Number,
+  qualifying: Schema.Number,
+  created: Schema.Number,
+  alreadyImported: Schema.Number,
+  conflicted: Schema.Number,
+  failed: Schema.Number,
+  pageCount: Schema.Number,
+  errorCategory: Schema.NullOr(Schema.String),
+  startedAt: Schema.String,
+  finishedAt: Schema.NullOr(Schema.String)
+})
+
+export const BlueskySourceStatus = Schema.Literals([
+  'active',
+  'edited',
+  'deleted',
+  'unavailable',
+  'error',
+  'dismissed',
+  'conflict'
+])
+
+export const BlueskyPostSource = Schema.Struct({
+  id: Uuid,
+  postId: Schema.NullOr(Uuid),
+  postSlug: Schema.NullOr(Schema.String),
+  postDraft: Schema.NullOr(Schema.Boolean),
+  authorHandle: Schema.NullOr(Schema.String),
+  publicUrl: Schema.String,
+  sourceCreatedAt: Schema.String,
+  sourceStatus: BlueskySourceStatus,
+  sourceText: Schema.NullOr(Schema.String),
+  locallyEdited: Schema.Boolean,
+  lastError: Schema.NullOr(Schema.String)
+})
+
+const ListSourcesQuery = Schema.Struct({
+  status: Schema.optional(Schema.String),
+  limit: Schema.optional(Schema.FiniteFromString),
+  offset: Schema.optional(Schema.FiniteFromString)
+})
+
+const ListRunsQuery = Schema.Struct({
+  limit: Schema.optional(Schema.FiniteFromString)
+})
+
+const UpdateSourceStatusInput = Schema.Struct({
+  sourceStatus: Schema.Literals(['dismissed', 'active'])
+})
+
 const ScheduleBlueskyInput = Schema.Struct({ scheduled: Schema.Boolean })
 
 const ConnectBlueskyInput = Schema.Struct({
@@ -65,4 +118,32 @@ export const BlueskyGroup = HttpApiGroup.make('bluesky')
       success: Schema.Struct({ success: Schema.Literal(true) }),
       error: [HttpApiError.NotFound, HttpApiError.BadRequest]
     }).middleware(AuthMiddleware)
+  )
+  .add(
+    HttpApiEndpoint.get('listBlueskySyncRuns', '/api/integrations/bluesky/:id/runs', {
+      params: { id: Uuid },
+      query: ListRunsQuery,
+      success: Schema.Array(BlueskySyncRun),
+      error: HttpApiError.NotFound
+    }).middleware(AuthMiddleware)
+  )
+  .add(
+    HttpApiEndpoint.get('listBlueskySources', '/api/integrations/bluesky/:id/sources', {
+      params: { id: Uuid },
+      query: ListSourcesQuery,
+      success: Schema.Array(BlueskyPostSource),
+      error: HttpApiError.NotFound
+    }).middleware(AuthMiddleware)
+  )
+  .add(
+    HttpApiEndpoint.patch(
+      'updateBlueskySourceStatus',
+      '/api/integrations/bluesky/sources/:sourceId',
+      {
+        params: { sourceId: Uuid },
+        payload: UpdateSourceStatusInput,
+        success: Schema.Struct({ success: Schema.Literal(true) }),
+        error: HttpApiError.NotFound
+      }
+    ).middleware(AuthMiddleware)
   )

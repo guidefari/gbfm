@@ -11,6 +11,7 @@ import { BlueskyAccountServiceLayer } from '@/services/bluesky-account.service'
 import { BlueskyArchiveServiceLayer } from '@/services/bluesky-archive.service'
 import { BlueskyClientLayer } from '@/services/bluesky-client.service'
 import { BlueskyImportServiceLayer } from '@/services/bluesky-importer.service'
+import { BlueskyRunsServiceLayer } from '@/services/bluesky-runs.service'
 import { BlueskySyncServiceLayer } from '@/services/bluesky-sync.service'
 import { LockServiceLayer } from '@/services/lock.service'
 import { CryptoServiceLayer } from '@/services/crypto.service'
@@ -84,6 +85,7 @@ const ServicesLayer = Layer.mergeAll(
   MusicEntityLive,
   BlueskyAccountServiceLayer.pipe(Layer.provide(BaseServicesLayer)),
   BlueskyArchiveLive,
+  BlueskyRunsServiceLayer,
   BlueskySyncLive
 )
 

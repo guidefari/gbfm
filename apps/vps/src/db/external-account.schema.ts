@@ -219,3 +219,5 @@ export type SelectExternalAccountSession = InferSelectModel<typeof externalAccou
 export type InsertExternalAccountSession = InferInsertModel<typeof externalAccountSessions>
 export type SelectBlueskyPostSource = InferSelectModel<typeof blueskyPostSources>
 export type InsertBlueskyPostSource = InferInsertModel<typeof blueskyPostSources>
+export type SelectBlueskySyncRun = InferSelectModel<typeof blueskySyncRuns>
+export type BlueskySourceStatus = SelectBlueskyPostSource['sourceStatus']
