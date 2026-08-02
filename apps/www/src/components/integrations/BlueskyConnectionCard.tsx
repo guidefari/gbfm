@@ -1,10 +1,11 @@
 import { Button, Input } from '@gbfm/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Effect } from 'effect'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BlueskyAccount as BlueskyAccountSchema } from '@gbfm/api/bluesky'
 import { captureException } from '@/services/analytics'
 import { getApiClient } from '@/lib/api-client'
+import { apiUrl } from '@/lib/http-url'
 
 type BlueskyAccount = typeof BlueskyAccountSchema.Type
 
@@ -37,6 +38,7 @@ export function BlueskyConnectionCard() {
     },
     onSuccess: (handle) => {
       queryClient.invalidateQueries({ queryKey: ['integrations', 'bluesky'] })
+      setSyncRunId(handle.runId)
       setSyncMessage(`Sync queued. Run ${handle.runId.slice(0, 8)} is starting in the background.`)
     },
     onError: (error) => {
@@ -62,8 +64,51 @@ export function BlueskyConnectionCard() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['integrations', 'bluesky'] }),
     onError: (error) => captureException(error, { endpoint: 'bluesky.disconnectBluesky' })
   })
+  type SyncUpdate = {
+    status: 'running' | 'succeeded' | 'failed'
+    created: number
+    conflicted: number
+    failed: number
+  }
   const [syncMessage, setSyncMessage] = useState<string | null>(null)
+  const [syncRunId, setSyncRunId] = useState<string | null>(null)
   const account = accounts.data?.[0]
+
+  useEffect(() => {
+    if (!account || !syncRunId) return
+
+    const events = new EventSource(
+      apiUrl(`/integrations/bluesky/${account.id}/sync/${syncRunId}/events`),
+      { withCredentials: true }
+    )
+    const onSyncEvent = (event: Event) => {
+      if (!(event instanceof MessageEvent) || typeof event.data !== 'string') return
+      const update: SyncUpdate = JSON.parse(event.data)
+      if (update.status === 'succeeded') {
+        setSyncMessage(
+          `Import complete: ${update.created} drafts created (${update.conflicted} conflicts).`
+        )
+        queryClient.invalidateQueries({ queryKey: ['integrations', 'bluesky'] })
+        events.close()
+      } else if (update.status === 'failed') {
+        setSyncMessage('Import failed. Open the integration again to retry.')
+        events.close()
+      } else {
+        setSyncMessage(
+          `Importing… ${update.created} drafts created, ${update.conflicted} conflicts, ${update.failed} failed.`
+        )
+      }
+    }
+    const onError = () => setSyncMessage('Connection interrupted; retrying live sync updates…')
+
+    events.addEventListener('sync', onSyncEvent)
+    events.addEventListener('error', onError)
+    return () => {
+      events.removeEventListener('sync', onSyncEvent)
+      events.removeEventListener('error', onError)
+      events.close()
+    }
+  }, [account, queryClient, syncRunId])
 
   return (
     <section className='space-y-6'>
