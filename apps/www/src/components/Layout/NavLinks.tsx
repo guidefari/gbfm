@@ -120,6 +120,16 @@ export const navConfig: NavItem[] = [
     adminOnly: true
   },
   {
+    id: 'my-content',
+    name: 'My content',
+    slug: '/dashboard/content',
+    icon: <Newspaper className={iconSytles} />,
+    tier: 'create',
+    surfaces: ['overlay'],
+    description: 'Review and publish your mixes, editorials, and tweets.',
+    minRole: 'creator'
+  },
+  {
     id: 'create-mix',
     name: 'New mix',
     slug: '/mix-upload',
