@@ -37,6 +37,11 @@ export interface BlueskyClient {
     readonly handle: string
     readonly appPassword: Redacted.Redacted<string>
   }) => Effect.Effect<BlueskyLogin, BlueskyProviderError | IdentityResolutionError>
+  readonly refreshSession: (input: {
+    readonly serviceEndpoint: string
+    readonly refreshJwt: Redacted.Redacted<string>
+    readonly expectedDid: string
+  }) => Effect.Effect<BlueskyLogin, BlueskyProviderError | IdentityResolutionError>
   readonly getAuthorFeed: (input: {
     readonly serviceEndpoint: string
     readonly actorDid: string
@@ -115,6 +120,36 @@ const resolveIdentity = (fetcher: Fetch, handle: string) =>
   })
 
 export const makeBlueskyClient = (fetcher: Fetch = globalThis.fetch): BlueskyClient => ({
+  refreshSession: ({ serviceEndpoint, refreshJwt, expectedDid }) =>
+    Effect.tryPromise({
+      try: async () => {
+        const response = await fetcher(
+          `${serviceEndpoint}/xrpc/com.atproto.server.refreshSession`,
+          {
+            method: 'POST',
+            headers: { authorization: `Bearer ${Redacted.value(refreshJwt)}` },
+            signal: AbortSignal.timeout(10_000)
+          }
+        )
+        if (!response.ok) throw providerError('refresh', 'Bluesky session refresh failed')
+        const payload: unknown = await response.json()
+        const session = sessionResponse.safeParse(payload)
+        if (!session.success || session.data.did !== expectedDid) {
+          throw new IdentityResolutionError({ message: 'Bluesky identity verification failed' })
+        }
+        return {
+          did: session.data.did,
+          handle: session.data.handle,
+          serviceEndpoint,
+          accessJwt: Redacted.make(session.data.accessJwt),
+          refreshJwt: Redacted.make(session.data.refreshJwt)
+        }
+      },
+      catch: (error) =>
+        error instanceof BlueskyProviderError || error instanceof IdentityResolutionError
+          ? error
+          : providerError('refresh', 'Bluesky session refresh failed')
+    }),
   getAuthorFeed: ({ serviceEndpoint, actorDid, accessJwt, cursor }) =>
     Effect.tryPromise({
       try: async () => {

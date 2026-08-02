@@ -24,6 +24,17 @@ import { z } from 'zod'
 
 const cachedSession = z.object({ accessJwt: z.string().min(1), refreshJwt: z.string().min(1) })
 
+const sessionPayload = (session: {
+  readonly accessJwt: Redacted.Redacted<string>
+  readonly refreshJwt: Redacted.Redacted<string>
+}) =>
+  Redacted.make(
+    JSON.stringify({
+      accessJwt: Redacted.value(session.accessJwt),
+      refreshJwt: Redacted.value(session.refreshJwt)
+    })
+  )
+
 export type SyncRunSummary = {
   readonly runId: string
   readonly discovered: number
@@ -80,7 +91,10 @@ const sync = (
       const [credentials] = yield* Effect.tryPromise({
         try: () =>
           db
-            .select({ session: externalAccountSessions.session })
+            .select({
+              session: externalAccountSessions.session,
+              appPassword: externalAccountSessions.appPassword
+            })
             .from(externalAccountSessions)
             .where(eq(externalAccountSessions.externalAccountId, accountId))
             .limit(1),
@@ -104,6 +118,41 @@ const sync = (
           operation: 'decrypt'
         })
       }
+
+      const appPassword = credentials.appPassword
+      const authenticated = yield* client
+        .refreshSession({
+          serviceEndpoint: account.serviceEndpoint ?? '',
+          refreshJwt: Redacted.make(session.data.refreshJwt),
+          expectedDid: account.providerAccountId
+        })
+        .pipe(
+          Effect.catch(() =>
+            appPassword
+              ? Effect.gen(function* () {
+                  const password = yield* crypto.decrypt(appPassword)
+                  return yield* client.login({
+                    handle: account.handle ?? account.providerAccountId,
+                    appPassword: password
+                  })
+                })
+              : Effect.fail(
+                  new BlueskyProviderError({
+                    operation: 'refresh',
+                    message: 'Bluesky authorization needs reconnection'
+                  })
+                )
+          )
+        )
+      const refreshedEnvelope = yield* crypto.encrypt(sessionPayload(authenticated))
+      yield* Effect.tryPromise({
+        try: () =>
+          db
+            .update(externalAccountSessions)
+            .set({ session: refreshedEnvelope, updatedAt: new Date() })
+            .where(eq(externalAccountSessions.externalAccountId, accountId)),
+        catch: () => databaseError('persist-session')
+      })
 
       const [state] = yield* Effect.tryPromise({
         try: () =>
@@ -139,7 +188,7 @@ const sync = (
       const feed = yield* client.getAuthorFeed({
         serviceEndpoint: account.serviceEndpoint ?? '',
         actorDid: account.providerAccountId,
-        accessJwt: Redacted.make(session.data.accessJwt),
+        accessJwt: authenticated.accessJwt,
         cursor: currentState.cursor ?? undefined
       })
       const normalized = yield* importer.normalizeFeed(feed.entries, account.providerAccountId)

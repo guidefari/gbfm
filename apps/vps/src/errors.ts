@@ -60,7 +60,7 @@ export class CryptoError extends Data.TaggedError('CryptoError')<{
 
 export class BlueskyProviderError extends Data.TaggedError('BlueskyProviderError')<{
   readonly message: string
-  readonly operation: 'resolveIdentity' | 'login' | 'feed'
+  readonly operation: 'resolveIdentity' | 'login' | 'refresh' | 'feed'
 }> {}
 
 export class IdentityResolutionError extends Data.TaggedError('IdentityResolutionError')<{
