@@ -16,7 +16,7 @@ export type NavSurface = 'overlay'
 
 export type NavTier = 'primary' | 'secondary' | 'utility' | 'create'
 
-export type MinRole = 'editor' | 'admin'
+export type MinRole = 'creator' | 'editor' | 'admin'
 
 type BaseNavItem = {
   id: string

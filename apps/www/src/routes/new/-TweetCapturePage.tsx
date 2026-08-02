@@ -1,5 +1,6 @@
 'use client'
 
+import { canCreatePosts as roleCanCreatePosts } from '@gbfm/core/roles'
 import { LINK_STATUS, type LinkStatus } from '@gbfm/core/status'
 import { normalizeSlugBase } from '@gbfm/core/utils/slug'
 import {
@@ -81,8 +82,6 @@ const entityPathByType: Record<MusicEntityType, string> = {
   track: 'tracks',
   playlist: 'playlists'
 }
-
-const POST_CREATE_ROLES = new Set(['creator', 'editor', 'admin'])
 
 function TweetComposerCard({
   title,
@@ -428,7 +427,7 @@ export function TweetCapturePage() {
   }
 
   const canSubmit = useMemo(() => Boolean(title.trim() || commentary.trim()), [title, commentary])
-  const canCreatePosts = POST_CREATE_ROLES.has(user?.role ?? '')
+  const canCreatePosts = roleCanCreatePosts(user?.role)
   const isOwnPost = Boolean(existingPost?.creators?.some((creator) => creator.id === user?.id))
   const canAccess = Boolean(
     user && (isEditMode ? user.role === 'admin' || isOwnPost : canCreatePosts)

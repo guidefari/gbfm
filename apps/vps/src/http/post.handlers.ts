@@ -1,5 +1,6 @@
 import { Api } from '@gbfm/api/api'
 import { AuthSession } from '@gbfm/api/middleware/auth'
+import { canCreatePosts } from '@gbfm/core/roles'
 import {
   GetEditorialPostsResponse,
   GetEditorialTagsResponse,
@@ -13,8 +14,6 @@ import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-uti
 import { PostService } from '@/services/post.service'
 
 const dieOnDatabaseError = makeDieOnDatabaseError('post')
-
-const POST_CREATE_ROLES = new Set(['creator', 'editor', 'admin'])
 
 const toDateStrings = <
   T extends {
@@ -301,7 +300,7 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
     .handle('createPost', ({ payload }) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
-        if (!POST_CREATE_ROLES.has(user.role ?? '')) {
+        if (!canCreatePosts(user.role)) {
           return yield* new HttpApiError.Forbidden()
         }
 

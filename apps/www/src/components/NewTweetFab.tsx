@@ -1,14 +1,13 @@
+import { canCreatePosts } from '@gbfm/core/roles'
 import { Link } from '@tanstack/react-router'
 import { Pencil } from 'lucide-react'
 import { useSession } from '@/lib/auth-client'
-
-const POST_CREATE_ROLES = new Set(['creator', 'editor', 'admin'])
 
 export function NewTweetFab() {
   const { data: session } = useSession()
   const user = session?.user
 
-  if (!user || !POST_CREATE_ROLES.has(user.role ?? '')) return null
+  if (!user || !canCreatePosts(user.role)) return null
 
   return (
     <Link
