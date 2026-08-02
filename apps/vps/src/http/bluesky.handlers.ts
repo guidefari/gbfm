@@ -16,11 +16,13 @@ const toAccountResponse = (account: {
   displayName: string | null
   avatarUrl: string | null
   status: 'active' | 'needs_reconnect' | 'revoked' | 'error'
+  scheduled?: boolean
   lastSuccessfulSyncAt: Date | null
   createdAt: Date
   updatedAt: Date
 }) => ({
   ...account,
+  scheduled: account.scheduled ?? false,
   lastSuccessfulSyncAt: account.lastSuccessfulSyncAt?.toISOString() ?? null,
   createdAt: account.createdAt.toISOString(),
   updatedAt: account.updatedAt.toISOString()
@@ -67,6 +69,18 @@ export const BlueskyHandlersLive = HttpApiBuilder.group(Api, 'bluesky', (handler
           )
         )
         return { ...summary, cursor: summary.cursor ?? null }
+      })
+    )
+    .handle('scheduleBluesky', ({ params, payload }) =>
+      Effect.gen(function* () {
+        const { user } = yield* AuthSession
+        const service = yield* BlueskyAccountService
+        const scheduled = yield* dieOnDatabaseError(
+          service
+            .setScheduled(user.id, params.id, payload.scheduled)
+            .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
+        )
+        return { scheduled }
       })
     )
     .handle('listBlueskyAccounts', () =>

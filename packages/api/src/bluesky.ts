@@ -13,6 +13,7 @@ export const BlueskyAccount = Schema.Struct({
   displayName: Schema.NullOr(Schema.String),
   avatarUrl: Schema.NullOr(Schema.String),
   status: Schema.Literals(['active', 'needs_reconnect', 'revoked', 'error']),
+  scheduled: Schema.Boolean,
   lastSuccessfulSyncAt: Schema.NullOr(Schema.String),
   createdAt: Schema.String,
   updatedAt: Schema.String
@@ -28,6 +29,8 @@ const SyncRunResponse = Schema.Struct({
   failed: Schema.Number,
   cursor: Schema.NullOr(Schema.String)
 })
+
+const ScheduleBlueskyInput = Schema.Struct({ scheduled: Schema.Boolean })
 
 const ConnectBlueskyInput = Schema.Struct({
   handle: Schema.NonEmptyString,
@@ -52,6 +55,14 @@ export const BlueskyGroup = HttpApiGroup.make('bluesky')
       params: { id: Uuid },
       success: SyncRunResponse,
       error: [HttpApiError.BadRequest, HttpApiError.NotFound]
+    }).middleware(AuthMiddleware)
+  )
+  .add(
+    HttpApiEndpoint.patch('scheduleBluesky', '/api/integrations/bluesky/:id/schedule', {
+      params: { id: Uuid },
+      payload: ScheduleBlueskyInput,
+      success: Schema.Struct({ scheduled: Schema.Boolean }),
+      error: HttpApiError.NotFound
     }).middleware(AuthMiddleware)
   )
   .add(

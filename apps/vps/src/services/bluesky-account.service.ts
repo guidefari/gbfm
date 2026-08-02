@@ -2,6 +2,7 @@ import { and, eq } from 'drizzle-orm'
 import { Context, Effect, Layer, Redacted } from 'effect'
 import { db } from '@/db'
 import {
+  blueskySyncStates,
   externalAccountSessions,
   externalAccounts,
   type SelectExternalAccount
@@ -27,11 +28,19 @@ export interface BlueskyAccountService {
   >
   readonly list: (
     userId: string
-  ) => Effect.Effect<ReadonlyArray<SelectExternalAccount>, DatabaseError>
+  ) => Effect.Effect<
+    ReadonlyArray<SelectExternalAccount & { readonly scheduled: boolean }>,
+    DatabaseError
+  >
   readonly disconnect: (
     userId: string,
     accountId: string
   ) => Effect.Effect<void, DatabaseError | NotFoundError>
+  readonly setScheduled: (
+    userId: string,
+    accountId: string,
+    scheduled: boolean
+  ) => Effect.Effect<boolean, DatabaseError | NotFoundError>
 }
 
 export const BlueskyAccountService = Context.Service<BlueskyAccountService>('BlueskyAccountService')
@@ -110,13 +119,46 @@ const makeService = (client: BlueskyClient, crypto: CryptoService): BlueskyAccou
     }),
   list: (userId) =>
     Effect.tryPromise({
-      try: () =>
-        db
-          .select()
+      try: async () => {
+        const rows = await db
+          .select({ account: externalAccounts, scheduled: blueskySyncStates.scheduled })
           .from(externalAccounts)
+          .leftJoin(blueskySyncStates, eq(blueskySyncStates.externalAccountId, externalAccounts.id))
           .where(eq(externalAccounts.userId, userId))
-          .orderBy(externalAccounts.createdAt),
+          .orderBy(externalAccounts.createdAt)
+        return rows.map(({ account, scheduled }) => ({ ...account, scheduled: scheduled ?? false }))
+      },
       catch: () => databaseError('list')
+    }),
+  setScheduled: (userId, accountId, scheduled) =>
+    Effect.gen(function* () {
+      const [account] = yield* Effect.tryPromise({
+        try: () =>
+          db
+            .select({ id: externalAccounts.id })
+            .from(externalAccounts)
+            .where(and(eq(externalAccounts.id, accountId), eq(externalAccounts.userId, userId)))
+            .limit(1),
+        catch: () => databaseError('schedule-account')
+      })
+      if (!account) return yield* new NotFoundError({ message: 'Bluesky account not found' })
+      yield* Effect.tryPromise({
+        try: () =>
+          db
+            .insert(blueskySyncStates)
+            .values({ externalAccountId: accountId, scheduled })
+            .onConflictDoUpdate({
+              target: blueskySyncStates.externalAccountId,
+              set: {
+                scheduled,
+                consecutiveFailures: 0,
+                nextEligibleAt: null,
+                updatedAt: new Date()
+              }
+            }),
+        catch: () => databaseError('schedule')
+      })
+      return scheduled
     }),
   disconnect: (userId, accountId) =>
     Effect.gen(function* () {

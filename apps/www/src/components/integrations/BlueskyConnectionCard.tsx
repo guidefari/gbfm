@@ -46,6 +46,16 @@ export function BlueskyConnectionCard() {
       captureException(error, { endpoint: 'bluesky.syncBluesky' })
     }
   })
+  const schedule = useMutation({
+    mutationFn: async ({ id, scheduled }: { id: string; scheduled: boolean }) => {
+      const client = await getApiClient()
+      return Effect.runPromise(
+        client.bluesky.scheduleBluesky({ params: { id }, payload: { scheduled } })
+      )
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['integrations', 'bluesky'] }),
+    onError: (error) => captureException(error, { endpoint: 'bluesky.scheduleBluesky' })
+  })
   const disconnect = useMutation({
     mutationFn: async (id: string) => {
       const client = await getApiClient()
@@ -91,6 +101,18 @@ export function BlueskyConnectionCard() {
               onClick={() => sync.mutate(account.id)}
               disabled={sync.isPending}>
               {sync.isPending ? 'Syncing…' : 'Sync archive'}
+            </Button>
+            <Button
+              type='button'
+              variant='outline'
+              size='sm'
+              onClick={() => schedule.mutate({ id: account.id, scheduled: !account.scheduled })}
+              disabled={schedule.isPending}>
+              {schedule.isPending
+                ? 'Saving…'
+                : account.scheduled
+                  ? 'Disable hourly sync'
+                  : 'Enable hourly sync'}
             </Button>
             <Button
               type='button'
