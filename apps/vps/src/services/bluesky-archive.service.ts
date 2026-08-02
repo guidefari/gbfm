@@ -5,6 +5,7 @@ import { blueskyPostSources } from '@/db/external-account.schema'
 import { postCreators, postsTable, type InsertPost } from '@/db/post.schema'
 import { DatabaseError } from '@/errors'
 import type { ImportedRecord } from './bluesky-importer.service'
+import { MusicLinkScraperService } from './music-link-scraper.service'
 import { MusicEntityService } from './music-entity'
 import { generatePostSlug } from './post.service'
 
@@ -35,7 +36,7 @@ type WriteResult = 'created' | 'alreadyImported' | 'conflicted' | 'failed'
 const entityTypeForUrl = (url: string): 'album' | 'track' =>
   /\/album(?:s)?\//i.test(url) ? 'album' : 'track'
 
-const makeWrite = (musicEntities: MusicEntityService) => ({
+const makeWrite = (musicEntities: MusicEntityService, scraper: MusicLinkScraperService) => ({
   write: ({
     ownerUserId,
     externalAccountId,
@@ -44,11 +45,18 @@ const makeWrite = (musicEntities: MusicEntityService) => ({
     Effect.forEach(records, (record) =>
       Effect.gen(function* () {
         const candidateUrl = record.candidateUrls[0]
-        const resolved = candidateUrl
-          ? yield* musicEntities
-              .scrapeAndCreateEntity(entityTypeForUrl(candidateUrl), { url: candidateUrl })
-              .pipe(Effect.catch(() => Effect.succeed(null)))
-          : null
+        const scraped = candidateUrl
+          ? yield* scraper.scrape({ url: candidateUrl })
+          : { links: [], entityMeta: undefined }
+        const resolved =
+          candidateUrl && scraped.entityMeta
+            ? yield* musicEntities
+                .scrapeAndCreateEntity(
+                  scraped.entityMeta.type === 'album' ? 'album' : entityTypeForUrl(candidateUrl),
+                  { url: candidateUrl }
+                )
+                .pipe(Effect.catch(() => Effect.succeed(null)))
+            : null
 
         return yield* Effect.tryPromise({
           try: () =>
@@ -133,6 +141,6 @@ const makeWrite = (musicEntities: MusicEntityService) => ({
 export const BlueskyArchiveServiceLayer = Layer.effect(
   BlueskyArchiveService,
   Effect.gen(function* () {
-    return makeWrite(yield* MusicEntityService)
+    return makeWrite(yield* MusicEntityService, yield* MusicLinkScraperService)
   })
 )
