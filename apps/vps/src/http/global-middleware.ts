@@ -115,7 +115,7 @@ export const RequestLoggerLive = HttpRouter.middleware(
   (httpEffect) =>
     Effect.gen(function* () {
       const request = yield* HttpServerRequest.HttpServerRequest
-      const path = new URL(request.url).pathname
+      const path = new URL(request.url, 'http://localhost').pathname
       const start = Date.now()
       const result = yield* Effect.exit(httpEffect)
       const duration = Date.now() - start
