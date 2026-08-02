@@ -1,5 +1,6 @@
 import { Api } from '@gbfm/api/api'
 import { AuthSession } from '@gbfm/api/middleware/auth'
+import { canCreatePosts } from '@gbfm/core/roles'
 import { Effect, Redacted } from 'effect'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
 import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
@@ -33,6 +34,9 @@ export const BlueskyHandlersLive = HttpApiBuilder.group(Api, 'bluesky', (handler
     .handle('connectBluesky', ({ payload }) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
+        if (!canCreatePosts(user.role)) {
+          return yield* new HttpApiError.Forbidden()
+        }
         const service = yield* BlueskyAccountService
         const account = yield* dieOnDatabaseError(
           service
@@ -56,6 +60,9 @@ export const BlueskyHandlersLive = HttpApiBuilder.group(Api, 'bluesky', (handler
     .handle('syncBluesky', ({ params }) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
+        if (!canCreatePosts(user.role)) {
+          return yield* new HttpApiError.Forbidden()
+        }
         const service = yield* BlueskySyncService
         const handle = yield* dieOnDatabaseError(
           service.start({ userId: user.id, accountId: params.id }).pipe(

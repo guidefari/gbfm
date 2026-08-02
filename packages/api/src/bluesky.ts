@@ -36,7 +36,7 @@ export const BlueskyGroup = HttpApiGroup.make('bluesky')
     HttpApiEndpoint.post('connectBluesky', '/api/integrations/bluesky', {
       payload: ConnectBlueskyInput,
       success: BlueskyAccount,
-      error: HttpApiError.BadRequest
+      error: [HttpApiError.BadRequest, HttpApiError.Forbidden]
     }).middleware(AuthMiddleware)
   )
   .add(
@@ -48,7 +48,7 @@ export const BlueskyGroup = HttpApiGroup.make('bluesky')
     HttpApiEndpoint.post('syncBluesky', '/api/integrations/bluesky/:id/sync', {
       params: { id: Uuid },
       success: SyncRunAccepted,
-      error: [HttpApiError.BadRequest, HttpApiError.NotFound]
+      error: [HttpApiError.BadRequest, HttpApiError.Forbidden, HttpApiError.NotFound]
     }).middleware(AuthMiddleware)
   )
   .add(
