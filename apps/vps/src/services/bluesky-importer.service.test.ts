@@ -36,7 +36,8 @@ describe('normalizeBlueskyRecord', () => {
       record: expect.objectContaining({
         candidateUrls: ['https://open.spotify.com/track/123'],
         normalizedContent: 'listen https://open.spotify.com/track/123',
-        publicUrl: 'https://bsky.app/profile/did:plc:author/post/3abc'
+        publicUrl: 'https://bsky.app/profile/did:plc:author/post/3abc',
+        sourceCreatedAt: new Date('2026-01-01T12:00:00.000Z')
       })
     })
   })

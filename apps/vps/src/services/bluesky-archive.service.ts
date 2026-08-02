@@ -109,6 +109,7 @@ const makeWrite = (musicEntities: MusicEntityService, scraper: MusicLinkScraperS
               const postValues: InsertPost = {
                 content: record.normalizedContent,
                 slug: generatePostSlug(null, record.normalizedContent),
+                createdAt: record.sourceCreatedAt,
                 draft: true,
                 tags: [...record.tags],
                 type: 'micro',
