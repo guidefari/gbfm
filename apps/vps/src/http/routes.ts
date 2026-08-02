@@ -147,7 +147,7 @@ export const createWebHandler = (options?: {
       // Effect.logError inside health handlers must reach the app's real
       // Pino + Sentry logger, not Effect's bare default console logger --
       // otherwise a DB outage's cause is logged nowhere on-call looks.
-      Layer.provide(AppLoggerLive)
+      Layer.provideMerge(AppLoggerLive)
     )
   )
 }

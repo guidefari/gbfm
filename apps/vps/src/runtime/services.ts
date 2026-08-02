@@ -87,4 +87,4 @@ const ServicesLayer = Layer.mergeAll(
   BlueskySyncLive
 )
 
-export const AppLayer = ServicesLayer.pipe(Layer.provide(AppLoggerLive))
+export const AppLayer = ServicesLayer.pipe(Layer.provideMerge(AppLoggerLive))
