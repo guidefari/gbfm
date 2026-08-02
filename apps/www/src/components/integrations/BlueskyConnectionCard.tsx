@@ -1,5 +1,6 @@
 import { Button, Input } from '@gbfm/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link } from '@tanstack/react-router'
 import { Effect } from 'effect'
 import { useEffect, useState } from 'react'
 import { BlueskyAccount as BlueskyAccountSchema } from '@gbfm/api/bluesky'
@@ -73,6 +74,7 @@ export function BlueskyConnectionCard() {
   }
   const [syncMessage, setSyncMessage] = useState<string | null>(null)
   const [syncRunId, setSyncRunId] = useState<string | null>(null)
+  const [createdCount, setCreatedCount] = useState<number | null>(null)
   const account = accounts.data?.[0]
 
   useEffect(() => {
@@ -89,6 +91,7 @@ export function BlueskyConnectionCard() {
         setSyncMessage(
           `Import complete: ${update.created} drafts created (${update.conflicted} conflicts).`
         )
+        setCreatedCount(update.created)
         queryClient.invalidateQueries({ queryKey: ['integrations', 'bluesky'] })
         events.close()
       } else if (update.status === 'failed') {
@@ -172,6 +175,11 @@ export function BlueskyConnectionCard() {
             </Button>
           </div>
           {syncMessage ? <p className='text-xs text-muted-foreground'>{syncMessage}</p> : null}
+          {createdCount && createdCount > 0 ? (
+            <Link to='/dashboard/content' className='text-xs underline'>
+              Review {createdCount} {createdCount === 1 ? 'draft' : 'drafts'} →
+            </Link>
+          ) : null}
         </div>
       ) : (
         <form
