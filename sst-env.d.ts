@@ -19,6 +19,15 @@ declare module "sst" {
       "type": "sst.aws.Function"
       "url": string
     }
+    "BlueskySyncTask": {
+      "assignPublicIp": boolean
+      "cluster": string
+      "containers": any
+      "securityGroups": any
+      "subnets": any
+      "taskDefinition": string
+      "type": "sst.aws.Task"
+    }
     "DatabaseBackupTask": {
       "assignPublicIp": boolean
       "cluster": string
@@ -56,6 +65,10 @@ declare module "sst" {
       "configSet": string
       "sender": string
       "type": "sst.aws.Email"
+    }
+    "GBFM_ENCRYPTION_ROOT_KEY": {
+      "type": "sst.sst.Secret"
+      "value": string
     }
     "Mixes": {
       "name": string
