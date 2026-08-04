@@ -1,5 +1,15 @@
 import { describe, expect, test } from 'vitest'
-import { rateLimitClientKey } from './global-middleware'
+import { rateLimitClientKey, requestPath } from './global-middleware'
+
+describe('requestPath', () => {
+  test('parses relative request URLs from the Bun adapter', () => {
+    expect(requestPath('/api/content/audio/mix?limit=18&offset=0')).toBe('/api/content/audio/mix')
+  })
+
+  test('parses absolute request URLs', () => {
+    expect(requestPath('http://localhost/health/live')).toBe('/health/live')
+  })
+})
 
 describe('rateLimitClientKey', () => {
   test('uses the first ip from x-forwarded-for', () => {
