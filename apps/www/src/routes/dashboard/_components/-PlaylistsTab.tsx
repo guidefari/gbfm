@@ -159,7 +159,7 @@ export function PlaylistsTab() {
                     </div>
                   </button>
                   <Link
-                    to='/admin/music-entity/$entityType/$id'
+                    to='/dashboard/music-entity/$entityType/$id'
                     params={{ entityType: 'playlist', id: p.id }}
                     aria-label='Edit playlist metadata'
                     className='absolute right-2 top-1/2 rounded-sm p-1.5 text-muted-foreground opacity-0 transition-opacity -translate-y-1/2 hover:bg-muted hover:text-foreground group-hover:opacity-100'>
@@ -183,7 +183,7 @@ export function PlaylistsTab() {
               <span className='flex-1 truncate text-base font-medium'>{selected.title}</span>
               <Button asChild variant='ghost' size='sm' aria-label='Edit playlist'>
                 <Link
-                  to='/admin/music-entity/$entityType/$id'
+                  to='/dashboard/music-entity/$entityType/$id'
                   params={{ entityType: 'playlist', id: selected.id }}>
                   <Pencil className='h-4 w-4' />
                 </Link>

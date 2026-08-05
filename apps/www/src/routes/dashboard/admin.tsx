@@ -4,7 +4,7 @@ import { ChartColumn, FileText, Mail, Radio, Shield, Users } from 'lucide-react'
 import { AdminPage } from './_components/-AdminLayout'
 import { useAdminOverview } from './-overview.data'
 
-export const Route = createFileRoute('/admin/')({
+export const Route = createFileRoute('/dashboard/admin')({
   component: AdminDashboard
 })
 
@@ -47,13 +47,13 @@ function AdminDashboard() {
       actions={
         <>
           <Button asChild variant='outline'>
-            <Link to='/admin/overview'>Full overview</Link>
+            <Link to='/dashboard/overview'>Full overview</Link>
           </Button>
           <Button asChild variant='outline'>
-            <Link to='/admin/music'>Music catalog</Link>
+            <Link to='/dashboard/music'>Music catalog</Link>
           </Button>
           <Button asChild variant='outline'>
-            <Link to='/admin/frontend-errors'>Frontend errors</Link>
+            <Link to='/dashboard/frontend-errors'>Frontend errors</Link>
           </Button>
         </>
       }>

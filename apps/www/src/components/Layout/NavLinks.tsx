@@ -1,18 +1,8 @@
-import {
-  Disc3,
-  Home,
-  Mail,
-  MessageSquare,
-  Newspaper,
-  Radio,
-  Rss,
-  Settings,
-  Tag
-} from 'lucide-react'
+import { Disc3, Home, Mail, MessageSquare, Newspaper, Radio, Rss, Tag } from 'lucide-react'
 import { RSS } from '@/components/RSS'
 import { YoutubeIcon } from '@/components/icons/YoutubeIcon'
 
-export type NavSurface = 'overlay'
+export type NavSurface = 'overlay' | 'desktop'
 
 export type NavTier = 'primary' | 'secondary' | 'utility' | 'create'
 
@@ -60,7 +50,7 @@ export const navConfig: NavItem[] = [
     slug: '/shows',
     icon: <Radio className={iconSytles} />,
     tier: 'primary',
-    surfaces: ['overlay']
+    surfaces: ['overlay', 'desktop']
   },
   {
     id: 'editorial',
@@ -68,7 +58,7 @@ export const navConfig: NavItem[] = [
     slug: '/editorial',
     icon: <Newspaper className={iconSytles} />,
     tier: 'primary',
-    surfaces: ['overlay']
+    surfaces: ['overlay', 'desktop']
   },
   {
     id: 'subscribe',
@@ -84,7 +74,7 @@ export const navConfig: NavItem[] = [
     slug: '/tweet',
     icon: <MessageSquare className={iconSytles} />,
     tier: 'secondary',
-    surfaces: ['overlay']
+    surfaces: ['overlay', 'desktop']
   },
   {
     id: 'labels',
@@ -92,7 +82,7 @@ export const navConfig: NavItem[] = [
     slug: '/labels',
     icon: <Tag className={iconSytles} />,
     tier: 'secondary',
-    surfaces: ['overlay']
+    surfaces: ['overlay', 'desktop']
   },
   {
     id: 'rss',
@@ -109,15 +99,6 @@ export const navConfig: NavItem[] = [
     tier: 'utility',
     surfaces: ['overlay'],
     external: 'https://youtube.com/@goosebumpsfm'
-  },
-  {
-    id: 'admin',
-    name: 'Admin',
-    slug: '/admin',
-    icon: <Settings className={iconSytles} />,
-    tier: 'secondary',
-    surfaces: ['overlay'],
-    adminOnly: true
   },
   {
     id: 'my-content',
@@ -162,7 +143,7 @@ export const navConfig: NavItem[] = [
   {
     id: 'create-label',
     name: 'Manage labels',
-    slug: '/admin/music',
+    slug: '/dashboard/music',
     icon: <Tag className={iconSytles} />,
     tier: 'create',
     surfaces: ['overlay'],

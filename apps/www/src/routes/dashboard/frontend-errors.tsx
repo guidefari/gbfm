@@ -5,7 +5,7 @@ import * as React from 'react'
 import { apiUrl, fetcher } from '@/lib/http'
 import { AdminPage } from './_components/-AdminLayout'
 
-export const Route = createFileRoute('/admin/frontend-errors')({
+export const Route = createFileRoute('/dashboard/frontend-errors')({
   component: FrontendErrorsPage
 })
 

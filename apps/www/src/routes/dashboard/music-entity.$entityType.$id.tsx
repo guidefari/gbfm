@@ -5,7 +5,7 @@ import { ArrowLeft } from 'lucide-react'
 import { AdminAccessGuard } from './_components/-AdminAccessGuard'
 import { MusicEntityDetailPage } from './_components/-MusicEntityDetailPage'
 
-export const Route = createFileRoute('/admin/music-entity/$entityType/$id')({
+export const Route = createFileRoute('/dashboard/music-entity/$entityType/$id')({
   component: MusicDetailRoute
 })
 
@@ -31,7 +31,7 @@ function MusicDetailRoute() {
       <div className='flex flex-col min-h-[calc(100vh-8rem)]'>
         <header className='flex items-center gap-4 px-6 py-4 border-b shrink-0'>
           <Button asChild variant='ghost' size='sm'>
-            <Link to='/admin/music'>
+            <Link to='/dashboard/music'>
               <ArrowLeft className='w-4 h-4 mr-1' />
               Music catalog
             </Link>

@@ -3,7 +3,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { EmailLogsTab } from './_components/-EmailLogsTab'
 import { AdminPage } from './_components/-AdminLayout'
 
-export const Route = createFileRoute('/admin/email-logs')({
+export const Route = createFileRoute('/dashboard/email-logs')({
   component: AdminEmailLogsPage
 })
 

@@ -9,7 +9,7 @@ const searchSchema = z.object({
   offset: z.coerce.number().int().min(0).catch(0)
 })
 
-export const Route = createFileRoute('/admin/content/tweets')({
+export const Route = createFileRoute('/dashboard/all/tweets')({
   validateSearch: searchSchema,
   component: AdminTweetsPage
 })

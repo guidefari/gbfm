@@ -1,37 +1,118 @@
-import { Link, useLocation } from '@tanstack/react-router'
-import { Pause, Play } from 'lucide-react'
-import { useSession } from '@/lib/auth-client'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@gbfm/ui'
+import { Link, useLocation, useNavigate } from '@tanstack/react-router'
+import { LayoutDashboard, LogOut, Pause, Play } from 'lucide-react'
+import { useCallback } from 'react'
+import { signOut, useSession } from '@/lib/auth-client'
 import { cn } from '@/lib/utils'
 import { useNowPlayingTrack, usePlayerActions, useProgress, useTransport } from '@/services/player'
-import { MenuTrigger } from './MenuTrigger'
+import { useUIActions } from '@/store/ui'
+import { isPathActive } from './is-path-active'
+import { navItemsForSurface } from '../NavLinks'
+import { useNavSections } from './useNavSections'
 
-function AccountChip() {
+const desktopLinkClass = cn(
+  'shrink-0 rounded-sm px-2 py-1 text-xs font-semibold tracking-wide no-underline transition-colors',
+  'text-muted-foreground hover:text-foreground',
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+  'aria-[current=page]:text-highlight'
+)
+
+function DesktopLinks() {
+  const pathname = useLocation().pathname
+
+  return (
+    <nav aria-label='Primary' className='flex shrink-0 items-center gap-1'>
+      {navItemsForSurface('desktop').map((item) =>
+        item.slug ? (
+          <Link
+            key={item.id}
+            to={item.slug}
+            aria-current={isPathActive(pathname, item.slug) ? 'page' : undefined}
+            className={desktopLinkClass}>
+            {item.name}
+          </Link>
+        ) : null
+      )}
+    </nav>
+  )
+}
+
+function AccountMenu() {
   const location = useLocation()
+  const navigate = useNavigate()
   const { data: session } = useSession()
+  const { resetUI } = useUIActions()
+  const { create } = useNavSections()
   const user = session?.user
 
-  if (user) {
+  const handleSignOut = useCallback(async () => {
+    await signOut()
+    resetUI()
+    navigate({ to: '/' })
+  }, [resetUI, navigate])
+
+  if (!user) {
     return (
       <Link
-        to='/dashboard'
-        className='flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-border bg-muted text-xs font-bold text-foreground no-underline'
-        title={user.name}>
-        {user.image ? (
-          <img src={user.image} alt='' className='size-full object-cover' />
-        ) : (
-          (user.name?.[0] ?? '?')
-        )}
+        to='/auth/sign-in'
+        search={{ redirect: location.pathname }}
+        className='shrink-0 text-xs font-semibold text-highlight no-underline hover:opacity-90'>
+        Log in
       </Link>
     )
   }
 
   return (
-    <Link
-      to='/auth/sign-in'
-      search={{ redirect: location.pathname }}
-      className='shrink-0 text-xs font-semibold text-highlight no-underline hover:opacity-90'>
-      Log in
-    </Link>
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        aria-label='Account menu'
+        className='flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-sm border border-border bg-muted text-xs font-bold text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
+        {user.image ? (
+          <img src={user.image} alt='' className='size-full object-cover' />
+        ) : (
+          (user.name?.[0] ?? '?')
+        )}
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align='end' className='min-w-52'>
+        <DropdownMenuLabel className='flex flex-col gap-0.5'>
+          <span className='truncate text-base font-semibold'>{user.name}</span>
+          {user.username ? (
+            <span className='truncate text-xs font-normal text-muted-foreground'>
+              @{user.username}
+            </span>
+          ) : null}
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem asChild>
+          <Link to='/dashboard' className='no-underline'>
+            <LayoutDashboard className='h-4 w-4' />
+            Dashboard
+          </Link>
+        </DropdownMenuItem>
+        {create.length > 0 ? <DropdownMenuSeparator /> : null}
+        {create.map((item) =>
+          item.slug ? (
+            <DropdownMenuItem key={item.id} asChild>
+              <Link to={item.slug} className='no-underline'>
+                {item.name}
+              </Link>
+            </DropdownMenuItem>
+          ) : null
+        )}
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={handleSignOut}>
+          <LogOut className='h-4 w-4' />
+          Log out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
@@ -96,13 +177,14 @@ export function DesktopChrome({ className }: { className?: string }) {
         goosebumps.fm
       </Link>
 
-      <NowPlayingChip />
+      <DesktopLinks />
 
       <div className='min-w-0 flex-1' />
 
+      <NowPlayingChip />
+
       <div className='flex shrink-0 items-center gap-2'>
-        <MenuTrigger />
-        <AccountChip />
+        <AccountMenu />
       </div>
     </div>
   )

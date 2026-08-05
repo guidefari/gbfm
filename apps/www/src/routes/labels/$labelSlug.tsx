@@ -109,7 +109,7 @@ function LabelPage() {
                     <Button
                       onClick={() =>
                         navigate({
-                          to: '/admin/music-entity/$entityType/$id',
+                          to: '/dashboard/music-entity/$entityType/$id',
                           params: { entityType: 'label', id: label.id }
                         })
                       }

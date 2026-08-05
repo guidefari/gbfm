@@ -4,14 +4,12 @@ import { useCallback } from 'react'
 import { signOut, useSession } from '@/lib/auth-client'
 import { cn } from '@/lib/utils'
 import { useUIActions } from '@/store/ui'
-import { useNavSections } from './useNavSections'
-import { NavItemLink, navRowClass } from './NavItemLink'
+import { navRowClass } from './NavItemLink'
 
 const iconClass = 'h-5 w-5 shrink-0'
 
 export function NavAccountFooter({ onNavigate }: { onNavigate?: () => void }) {
   const { data: session } = useSession()
-  const { admin } = useNavSections()
   const location = useLocation()
   const navigate = useNavigate()
   const { resetUI } = useUIActions()
@@ -66,9 +64,6 @@ export function NavAccountFooter({ onNavigate }: { onNavigate?: () => void }) {
           <LayoutDashboard className={iconClass} />
           <span className='min-w-0 flex-1 truncate'>Dashboard</span>
         </Link>
-        {admin.map((item) => (
-          <NavItemLink key={item.id} item={item} onNavigate={onNavigate} />
-        ))}
         <button type='button' onClick={handleSignOut} className={navRowClass}>
           <LogOut className={iconClass} />
           <span className='min-w-0 flex-1 truncate text-left'>Log out</span>

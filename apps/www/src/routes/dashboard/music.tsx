@@ -27,7 +27,7 @@ import { useCreateAdminLabel } from '@/lib/http'
 import { AdminPage } from './_components/-AdminLayout'
 import { PlaylistsTab } from './_components/-PlaylistsTab'
 
-export const Route = createFileRoute('/admin/music')({
+export const Route = createFileRoute('/dashboard/music')({
   component: AdminMusicPage
 })
 
@@ -130,7 +130,7 @@ function LabelsTab() {
         content: ''
       })
       navigate({
-        to: '/admin/music-entity/$entityType/$id',
+        to: '/dashboard/music-entity/$entityType/$id',
         params: { entityType: 'label', id: label.id }
       })
     } catch {
@@ -202,7 +202,7 @@ function ArtistRow({ artist }: { artist: MusicArtist }) {
         )}
         <Button asChild size='sm' variant='outline'>
           <Link
-            to='/admin/music-entity/$entityType/$id'
+            to='/dashboard/music-entity/$entityType/$id'
             params={{ entityType: 'artist', id: artist.id }}>
             Edit
           </Link>
@@ -245,7 +245,7 @@ function AlbumRow({ album }: { album: MusicAlbum }) {
         )}
         <Button asChild size='sm' variant='outline'>
           <Link
-            to='/admin/music-entity/$entityType/$id'
+            to='/dashboard/music-entity/$entityType/$id'
             params={{ entityType: 'album', id: album.id }}>
             Edit
           </Link>
@@ -283,7 +283,7 @@ function TrackRow({ track }: { track: MusicTrack }) {
         )}
         <Button asChild size='sm' variant='outline'>
           <Link
-            to='/admin/music-entity/$entityType/$id'
+            to='/dashboard/music-entity/$entityType/$id'
             params={{ entityType: 'track', id: track.id }}>
             Edit
           </Link>
@@ -311,7 +311,7 @@ function LabelRow({ label }: { label: MusicLabel }) {
         </Badge>
         <Button asChild size='sm' variant='outline'>
           <Link
-            to='/admin/music-entity/$entityType/$id'
+            to='/dashboard/music-entity/$entityType/$id'
             params={{ entityType: 'label', id: label.id }}>
             Edit
           </Link>

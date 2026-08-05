@@ -4,7 +4,7 @@ import { AlertTriangle, Clock3, Disc3, Mail, Radio, Users } from 'lucide-react'
 import { AdminPage } from './_components/-AdminLayout'
 import { type AdminOverviewContentBreakdown, useAdminOverview } from './-overview.data'
 
-export const Route = createFileRoute('/admin/overview')({
+export const Route = createFileRoute('/dashboard/overview')({
   component: AdminOverviewPage
 })
 

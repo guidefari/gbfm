@@ -6,7 +6,7 @@ import { BlueskyConnectPanel } from './_components/-bluesky/-BlueskyConnectPanel
 import { ImportedDraftsList } from './_components/-bluesky/-ImportedDraftsList'
 import { useBlueskySync } from './_components/-bluesky/useBlueskySync'
 
-export const Route = createFileRoute('/admin/bluesky')({
+export const Route = createFileRoute('/dashboard/bluesky')({
   component: AdminBlueskyPage
 })
 

@@ -54,7 +54,7 @@ export function BlueskyConnectionCard() {
         )}
 
         <Button asChild size='sm' variant={account ? 'outline' : 'default'}>
-          <Link to='/admin/bluesky'>
+          <Link to='/dashboard/bluesky'>
             {account ? 'Manage sync and drafts' : 'Connect Bluesky'}
             <ArrowRight className='ml-2 size-4' />
           </Link>

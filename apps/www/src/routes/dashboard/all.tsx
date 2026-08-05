@@ -1,9 +1,9 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/admin/content')({
+export const Route = createFileRoute('/dashboard/all')({
   beforeLoad: () => {
     throw redirect({
-      to: '/admin/content/mixes',
+      to: '/dashboard/all/mixes',
       search: { offset: 0, sort: 'created', order: 'desc' }
     })
   }

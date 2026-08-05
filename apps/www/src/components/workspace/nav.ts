@@ -65,7 +65,7 @@ export const workspaceNav: WorkspaceNavGroup[] = [
         access: 'postCreate'
       },
       {
-        to: '/admin/bluesky',
+        to: '/dashboard/bluesky',
         label: 'Bluesky',
         description: 'Sync your archive and review imported drafts.',
         icon: AtSign,
@@ -89,63 +89,63 @@ export const workspaceNav: WorkspaceNavGroup[] = [
     title: 'Admin',
     items: [
       {
-        to: '/admin/overview',
+        to: '/dashboard/overview',
         label: 'Overview',
         description: 'Growth, publishing, and operational health.',
         icon: ChartColumn,
         access: 'admin'
       },
       {
-        to: '/admin/users',
+        to: '/dashboard/users',
         label: 'Users',
         description: 'Accounts, roles, bans, and profile editing.',
         icon: Users,
         access: 'admin'
       },
       {
-        to: '/admin/content/mixes',
+        to: '/dashboard/all/mixes',
         label: 'All mixes',
         description: 'Every mix across the site.',
         icon: Music4,
         access: 'admin'
       },
       {
-        to: '/admin/content/editorial',
+        to: '/dashboard/all/editorial',
         label: 'All editorial',
         description: 'Every editorial post across the site.',
         icon: FileText,
         access: 'admin'
       },
       {
-        to: '/admin/content/tweets',
+        to: '/dashboard/all/tweets',
         label: 'All tweets',
         description: 'Every tweet across the site.',
         icon: MessageSquare,
         access: 'admin'
       },
       {
-        to: '/admin/shows',
+        to: '/dashboard/shows',
         label: 'Shows',
         description: 'Manage show metadata, hosts, and publishing.',
         icon: Radio,
         access: 'admin'
       },
       {
-        to: '/admin/newsletter',
+        to: '/dashboard/newsletter',
         label: 'Newsletter',
         description: 'Subscriber audience and campaign shaping.',
         icon: Mail,
         access: 'admin'
       },
       {
-        to: '/admin/email-logs',
+        to: '/dashboard/email-logs',
         label: 'Email Logs',
         description: 'Delivery status, failures, and recent sends.',
         icon: FileAudio,
         access: 'admin'
       },
       {
-        to: '/admin/sessions',
+        to: '/dashboard/sessions',
         label: 'Sessions',
         description: 'Session visibility and auth state cleanup.',
         icon: Shield,
@@ -157,28 +157,28 @@ export const workspaceNav: WorkspaceNavGroup[] = [
     title: 'Catalog',
     items: [
       {
-        to: '/admin/music',
+        to: '/dashboard/music',
         label: 'Music Catalog',
         description: 'Artists, albums, tracks, and playlists.',
         icon: Music4,
         access: 'admin'
       },
       {
-        to: '/admin/playlists',
+        to: '/dashboard/playlists',
         label: 'Playlists',
         description: 'Dedicated playlist import and editing flow.',
         icon: Music4,
         access: 'admin'
       },
       {
-        to: '/admin/search',
+        to: '/dashboard/search',
         label: 'Search',
         description: 'Test the content search endpoint.',
         icon: Search,
         access: 'admin'
       },
       {
-        to: '/admin/frontend-errors',
+        to: '/dashboard/frontend-errors',
         label: 'Frontend Errors',
         description: 'Shared fetcher and Sentry behavior checks.',
         icon: AlertTriangle,

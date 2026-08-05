@@ -10,7 +10,7 @@ const searchSchema = z.object({
   order: z.enum(['asc', 'desc']).catch('desc')
 })
 
-export const Route = createFileRoute('/admin/content/mixes')({
+export const Route = createFileRoute('/dashboard/all/mixes')({
   validateSearch: searchSchema,
   component: AdminMixesPage
 })

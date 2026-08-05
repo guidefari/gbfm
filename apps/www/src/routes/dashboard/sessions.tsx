@@ -1,21 +1,21 @@
 import { Card, CardContent } from '@gbfm/ui'
 import { createFileRoute } from '@tanstack/react-router'
+import { SessionsTab } from './_components/-SessionsTab'
 import { AdminPage } from './_components/-AdminLayout'
-import { SearchTab } from './_components/-SearchTab'
 
-export const Route = createFileRoute('/admin/search')({
-  component: AdminSearchPage
+export const Route = createFileRoute('/dashboard/sessions')({
+  component: AdminSessionsPage
 })
 
-function AdminSearchPage() {
+function AdminSessionsPage() {
   return (
     <AdminPage
-      title='Search'
-      description='Test the content search endpoint across shows, audio, and posts.'
+      title='Sessions'
+      description='Inspect active sessions and track account access activity.'
       backToAdmin>
       <Card>
         <CardContent className='pt-6'>
-          <SearchTab />
+          <SessionsTab />
         </CardContent>
       </Card>
     </AdminPage>

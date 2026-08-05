@@ -2,7 +2,7 @@ import { createFileRoute } from '@tanstack/react-router'
 import { AdminPage } from './_components/-AdminLayout'
 import { PlaylistsTab } from './_components/-PlaylistsTab'
 
-export const Route = createFileRoute('/admin/playlists')({
+export const Route = createFileRoute('/dashboard/playlists')({
   component: AdminPlaylistsPage
 })
 

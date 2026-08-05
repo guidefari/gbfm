@@ -198,7 +198,7 @@ export function SortableTrackRow({
         aria-label='Edit track'
         className='text-muted-foreground transition-opacity md:opacity-0 md:group-hover:opacity-100'>
         <Link
-          to='/admin/music-entity/$entityType/$id'
+          to='/dashboard/music-entity/$entityType/$id'
           params={{ entityType: 'track', id: track.trackId }}>
           <Pencil className='size-4' />
         </Link>
