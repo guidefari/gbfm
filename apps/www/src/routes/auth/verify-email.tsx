@@ -43,7 +43,7 @@ function VerifyEmailPage() {
       const redirectTo = callbackURL || '/'
       setTimeout(() => {
         if (redirectTo.startsWith('/')) {
-          navigate({ to: redirectTo })
+          navigate({ href: redirectTo })
         } else {
           window.location.href = redirectTo
         }

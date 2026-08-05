@@ -10,6 +10,10 @@ export const Route = createFileRoute('/dashboard/content')({
     if (!canCreatePosts(context.auth.user?.role)) {
       throw redirect({ to: '/dashboard' })
     }
+    // Children nest under this path, so beforeLoad also runs for them. Redirecting
+    // unconditionally would bounce the child back through this guard forever.
+    if (location.pathname.replace(/\/$/, '') !== '/dashboard/content') return
+
     throw redirect({
       to: '/dashboard/content/mixes',
       search: { offset: 0, sort: 'created', order: 'desc' }

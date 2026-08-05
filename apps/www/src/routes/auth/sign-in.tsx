@@ -17,9 +17,9 @@ export const Route = createFileRoute('/auth/sign-in')({
   validateSearch: searchSchema,
   beforeLoad: ({ context, search }) => {
     if (context.auth.isAuthenticated) {
-      throw redirect({
-        to: safeRedirect(search.redirect)
-      })
+      // href, not to: the target is a runtime string that may carry its own search params, and
+      // resolving it as a route template drops them.
+      throw redirect({ href: safeRedirect(search.redirect) })
     }
   },
   component: SignInPage
@@ -51,7 +51,7 @@ function SignInPage() {
           variant: 'default'
         })
         setError('')
-        navigate({ to: safeRedirect(search.redirect) })
+        navigate({ href: safeRedirect(search.redirect) })
       } else if (result.error) {
         setError(result.error.message || 'Failed to sign in')
       }
