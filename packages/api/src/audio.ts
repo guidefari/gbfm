@@ -61,6 +61,15 @@ export const GetAudioByTypeQuery = {
   tag: Schema.optional(Schema.String)
 }
 
+export const AudioSortField = Schema.Literals(['plays', 'created'])
+export const AudioSortOrder = Schema.Literals(['asc', 'desc'])
+
+export const ManageAudioQuery = {
+  ...GetAudioByTypeQuery,
+  sort: Schema.optional(AudioSortField),
+  order: Schema.optional(AudioSortOrder)
+}
+
 export const GetAudioByTypeResponse = Schema.Struct({
   data: Schema.Array(AudioResponse),
   pagination: PaginationMeta
@@ -151,7 +160,7 @@ export const AudioGroup = HttpApiGroup.make('audio')
   .add(
     HttpApiEndpoint.get('getAudioByTypeForEdit', '/api/content/audio/:type/manage', {
       params: AudioTypeParam,
-      query: GetAudioByTypeQuery,
+      query: ManageAudioQuery,
       success: GetAudioByTypeResponse,
       error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError]
     }).middleware(AuthMiddleware)

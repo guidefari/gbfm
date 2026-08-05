@@ -1,19 +1,14 @@
-import { Button, Input } from '@gbfm/ui'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Badge, Button } from '@gbfm/ui'
+import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { Effect } from 'effect'
-import { useEffect, useState } from 'react'
-import { BlueskyAccount as BlueskyAccountSchema } from '@gbfm/api/bluesky'
-import { captureException } from '@/services/analytics'
+import { ArrowRight } from 'lucide-react'
+import type { BlueskyAccount as BlueskyAccountSchema } from '@gbfm/api/bluesky'
 import { getApiClient } from '@/lib/api-client'
-import { apiUrl } from '@/lib/http-url'
 
 type BlueskyAccount = typeof BlueskyAccountSchema.Type
 
 export function BlueskyConnectionCard() {
-  const queryClient = useQueryClient()
-  const [handle, setHandle] = useState('')
-  const [appPassword, setAppPassword] = useState('')
   const accounts = useQuery<ReadonlyArray<BlueskyAccount>, Error>({
     queryKey: ['integrations', 'bluesky'],
     queryFn: async () => {
@@ -21,102 +16,8 @@ export function BlueskyConnectionCard() {
       return Effect.runPromise(client.bluesky.listBlueskyAccounts())
     }
   })
-  const connect = useMutation({
-    mutationFn: async () => {
-      const client = await getApiClient()
-      return Effect.runPromise(client.bluesky.connectBluesky({ payload: { handle, appPassword } }))
-    },
-    onSuccess: () => {
-      setAppPassword('')
-      queryClient.invalidateQueries({ queryKey: ['integrations', 'bluesky'] })
-    },
-    onError: (error) => captureException(error, { endpoint: 'bluesky.connectBluesky' })
-  })
-  const sync = useMutation({
-    mutationFn: async (id: string) => {
-      const client = await getApiClient()
-      return Effect.runPromise(client.bluesky.syncBluesky({ params: { id } }))
-    },
-    onSuccess: (handle) => {
-      queryClient.invalidateQueries({ queryKey: ['integrations', 'bluesky'] })
-      setSyncRunId(handle.runId)
-      setSyncMessage(`Sync queued. Run ${handle.runId.slice(0, 8)} is starting in the background.`)
-    },
-    onError: (error) => {
-      setSyncMessage(error.message)
-      captureException(error, { endpoint: 'bluesky.syncBluesky' })
-    }
-  })
-  const schedule = useMutation({
-    mutationFn: async ({ id, scheduled }: { id: string; scheduled: boolean }) => {
-      const client = await getApiClient()
-      return Effect.runPromise(
-        client.bluesky.scheduleBluesky({ params: { id }, payload: { scheduled } })
-      )
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['integrations', 'bluesky'] }),
-    onError: (error) => captureException(error, { endpoint: 'bluesky.scheduleBluesky' })
-  })
-  const disconnect = useMutation({
-    mutationFn: async (id: string) => {
-      const client = await getApiClient()
-      return Effect.runPromise(client.bluesky.disconnectBluesky({ params: { id } }))
-    },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['integrations', 'bluesky'] }),
-    onError: (error) => captureException(error, { endpoint: 'bluesky.disconnectBluesky' })
-  })
-  type SyncUpdate = {
-    status: 'running' | 'succeeded' | 'failed'
-    created: number
-    conflicted: number
-    failed: number
-    unresolved?: number
-  }
-  const [syncMessage, setSyncMessage] = useState<string | null>(null)
-  const [syncRunId, setSyncRunId] = useState<string | null>(null)
-  const [createdCount, setCreatedCount] = useState<number | null>(null)
+
   const account = accounts.data?.[0]
-
-  useEffect(() => {
-    if (!account || !syncRunId) return
-
-    const events = new EventSource(
-      apiUrl(`/integrations/bluesky/${account.id}/sync/${syncRunId}/events`),
-      { withCredentials: true }
-    )
-    const onSyncEvent = (event: Event) => {
-      if (!(event instanceof MessageEvent) || typeof event.data !== 'string') return
-      const update: SyncUpdate = JSON.parse(event.data)
-      if (update.status === 'succeeded') {
-        setSyncMessage(
-          `Import complete: ${update.created} drafts created (${update.conflicted} conflicts).`
-        )
-        setCreatedCount(update.created)
-        queryClient.invalidateQueries({ queryKey: ['integrations', 'bluesky'] })
-        events.close()
-      } else if (update.status === 'failed') {
-        setSyncMessage('Import failed. Open the integration again to retry.')
-        events.close()
-      } else {
-        setSyncMessage(
-          `Importing… ${update.created} drafts created, ${update.conflicted} conflicts, ${update.failed} failed.`
-        )
-      }
-    }
-    const onError = () => setSyncMessage('Connection interrupted; retrying live sync updates…')
-
-    events.addEventListener('sync', onSyncEvent)
-    events.addEventListener('done', onSyncEvent)
-    events.addEventListener('fatal', onSyncEvent)
-    events.addEventListener('error', onError)
-    return () => {
-      events.removeEventListener('sync', onSyncEvent)
-      events.removeEventListener('done', onSyncEvent)
-      events.removeEventListener('fatal', onSyncEvent)
-      events.removeEventListener('error', onError)
-      events.close()
-    }
-  }, [account, queryClient, syncRunId])
 
   return (
     <section className='space-y-6'>
@@ -127,91 +28,42 @@ export function BlueskyConnectionCard() {
         </p>
       </div>
 
-      {accounts.isPending ? (
-        <p className='text-xs text-muted-foreground'>Checking connection…</p>
-      ) : account ? (
-        <div className='w-full max-w-md space-y-4'>
+      <div className='w-full max-w-md space-y-4'>
+        {accounts.isPending ? (
+          <p className='text-xs text-muted-foreground'>Checking connection…</p>
+        ) : (
           <div className='flex items-center justify-between gap-6 border-2 border-border p-6'>
             <div className='min-w-0 space-y-2'>
               <div className='truncate text-base font-bold tracking-widest text-foreground'>
-                {account.handle ?? account.providerAccountId}
+                {account ? (account.handle ?? account.providerAccountId) : 'Not connected'}
               </div>
               <div className='text-xs font-medium tracking-wider text-muted-foreground'>
-                {account.providerAccountId}
+                {account
+                  ? account.lastSuccessfulSyncAt
+                    ? `Last synced ${new Date(account.lastSuccessfulSyncAt).toLocaleDateString()}`
+                    : 'Never synced'
+                  : 'Set up the import to get started.'}
               </div>
             </div>
-            <span className='text-xs font-bold tracking-widest text-green-500'>
-              {account.status === 'active' ? 'Connected' : account.status}
-            </span>
+            {account ? (
+              <Badge variant={account.status === 'active' ? 'default' : 'destructive'}>
+                {account.status === 'active' ? 'Connected' : account.status.replace('_', ' ')}
+              </Badge>
+            ) : null}
           </div>
-          <div className='flex flex-wrap gap-2'>
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              onClick={() => sync.mutate(account.id)}
-              disabled={sync.isPending}>
-              {sync.isPending ? 'Syncing…' : 'Sync archive'}
-            </Button>
-            <Button
-              type='button'
-              variant='outline'
-              size='sm'
-              onClick={() => schedule.mutate({ id: account.id, scheduled: !account.scheduled })}
-              disabled={schedule.isPending}>
-              {schedule.isPending
-                ? 'Saving…'
-                : account.scheduled
-                  ? 'Disable hourly sync'
-                  : 'Enable hourly sync'}
-            </Button>
-            <Button
-              type='button'
-              variant='ghost'
-              size='sm'
-              onClick={() => disconnect.mutate(account.id)}
-              disabled={disconnect.isPending}>
-              {disconnect.isPending ? 'Disconnecting…' : 'Disconnect'}
-            </Button>
-          </div>
-          {syncMessage ? <p className='text-xs text-muted-foreground'>{syncMessage}</p> : null}
-          {createdCount && createdCount > 0 ? (
-            <Link to='/dashboard/content' className='text-xs underline'>
-              Review {createdCount} {createdCount === 1 ? 'draft' : 'drafts'} →
-            </Link>
-          ) : null}
-        </div>
-      ) : (
-        <form
-          className='w-full max-w-md space-y-3'
-          onSubmit={(event) => {
-            event.preventDefault()
-            connect.mutate()
-          }}>
-          <Input
-            value={handle}
-            onChange={(event) => setHandle(event.target.value)}
-            placeholder='handle.bsky.social'
-            aria-label='Bluesky handle'
-            required
-          />
-          <Input
-            type='password'
-            value={appPassword}
-            onChange={(event) => setAppPassword(event.target.value)}
-            placeholder='App password'
-            aria-label='Bluesky app password'
-            required
-          />
-          <Button type='submit' size='sm' disabled={connect.isPending}>
-            {connect.isPending ? 'Connecting…' : 'Connect Bluesky'}
-          </Button>
-        </form>
-      )}
+        )}
 
-      {accounts.error || connect.error || disconnect.error ? (
+        <Button asChild size='sm' variant={account ? 'outline' : 'default'}>
+          <Link to='/admin/bluesky'>
+            {account ? 'Manage sync and drafts' : 'Connect Bluesky'}
+            <ArrowRight className='ml-2 size-4' />
+          </Link>
+        </Button>
+      </div>
+
+      {accounts.error ? (
         <p className='text-xs font-medium tracking-wider text-destructive'>
-          {(accounts.error ?? connect.error ?? disconnect.error)?.message ?? 'Integration failed'}
+          {accounts.error.message}
         </p>
       ) : null}
     </section>

@@ -96,6 +96,15 @@ export const GetPostsQuery = {
   type: Schema.optional(PostType)
 }
 
+export const PostSourceFilter = Schema.Literals(['bluesky', 'native'])
+
+export const ManagePostsQuery = {
+  ...GetPostsQuery,
+  source: Schema.optional(PostSourceFilter),
+  status: Schema.optional(Schema.Literals(['draft', 'live'])),
+  q: Schema.optional(Schema.String)
+}
+
 export const GetPostsResponse = Schema.Struct({
   data: Schema.Array(CompiledPostResponse),
   pagination: PaginationMeta
@@ -231,7 +240,7 @@ export const PostGroup = HttpApiGroup.make('post')
   )
   .add(
     HttpApiEndpoint.get('getPostsForEdit', '/api/content/posts/manage', {
-      query: GetPostsQuery,
+      query: ManagePostsQuery,
       success: GetPostsResponse,
       error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError]
     }).middleware(AuthMiddleware)

@@ -1,6 +1,7 @@
 import type { LinkProps } from '@tanstack/react-router'
 import {
   AlertTriangle,
+  AtSign,
   ChartColumn,
   FileAudio,
   FileText,
@@ -27,6 +28,7 @@ export type AdminNavTo = Extract<
   | '/admin/overview'
   | '/admin/users'
   | '/admin/content'
+  | '/admin/bluesky'
   | '/admin/shows'
   | '/admin/sessions'
   | '/admin/email-logs'
@@ -57,6 +59,12 @@ export const adminPrimaryNavItems: AdminNavItem[] = [
     label: 'Content',
     description: 'Mixes, editorials, and tweets.',
     icon: FileText
+  },
+  {
+    to: '/admin/bluesky',
+    label: 'Bluesky',
+    description: 'Sync your Bluesky archive and review imported drafts.',
+    icon: AtSign
   },
   {
     to: '/admin/shows',

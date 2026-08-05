@@ -47,6 +47,9 @@ import { SentryService } from '@/services/sentry.service'
 import { toSlug } from '@/services/to-slug'
 import { markAttachedAssets, UploadAssetService } from '@/services/upload-asset.service'
 
+export const POST_SOURCE_FILTERS = ['bluesky', 'native'] as const
+export type PostSourceFilter = (typeof POST_SOURCE_FILTERS)[number]
+
 export interface PostService {
   readonly getAll: (options: {
     limit: number
@@ -57,7 +60,14 @@ export interface PostService {
     DatabaseError
   >
   readonly getAllForEdit: (
-    options: { limit: number; offset: number; type?: PostType },
+    options: {
+      limit: number
+      offset: number
+      type?: PostType
+      source?: PostSourceFilter
+      draft?: boolean
+      q?: string
+    },
     userId: string,
     userRole: string
   ) => Effect.Effect<
@@ -336,6 +346,12 @@ export const toMicroPost = (
         })
       )
 
+export const importedPostIds = () =>
+  db
+    .select({ postId: blueskyPostSources.postId })
+    .from(blueskyPostSources)
+    .where(sql`${blueskyPostSources.postId} is not null`)
+
 const getAllEffect = (
   options: {
     limit: number
@@ -343,12 +359,15 @@ const getAllEffect = (
     type?: PostType
     tag?: string
     topLevelOnly?: boolean
+    source?: PostSourceFilter
+    draft?: boolean
+    q?: string
   },
   mdx: MdxService,
   actor?: { userId: string; userRole: string }
 ) =>
   Effect.gen(function* () {
-    const { limit, offset, type, tag, topLevelOnly } = options
+    const { limit, offset, type, tag, topLevelOnly, source, draft, q } = options
     const contentCondition =
       type && tag
         ? and(eq(postsTable.type, type), arrayContains(postsTable.tags, [tag]))
@@ -363,7 +382,25 @@ const getAllEffect = (
         : postIdsForCreator(actor.userId)
       : eq(postsTable.draft, false)
     const replyCondition = topLevelOnly ? isNull(postsTable.parentPostId) : undefined
-    const whereCondition = and(visibilityCondition, contentCondition, replyCondition)
+    const sourceCondition =
+      source === 'bluesky'
+        ? inArray(postsTable.id, importedPostIds())
+        : source === 'native'
+          ? notInArray(postsTable.id, importedPostIds())
+          : undefined
+    const draftCondition = draft === undefined ? undefined : eq(postsTable.draft, draft)
+    const searchTerm = q?.trim()
+    const searchCondition = searchTerm
+      ? sql`(${postsTable.title} ilike ${`%${searchTerm}%`} or ${postsTable.slug} ilike ${`%${searchTerm}%`} or ${postsTable.content} ilike ${`%${searchTerm}%`})`
+      : undefined
+    const whereCondition = and(
+      visibilityCondition,
+      contentCondition,
+      replyCondition,
+      sourceCondition,
+      draftCondition,
+      searchCondition
+    )
 
     const countResult = yield* Effect.tryPromise({
       try: () =>
@@ -457,11 +494,44 @@ const getAllEffect = (
       }
     }
 
+    const sourcesData =
+      postIds.length > 0
+        ? yield* Effect.tryPromise({
+            try: () =>
+              db
+                .select({
+                  postId: blueskyPostSources.postId,
+                  authorDid: blueskyPostSources.authorDid,
+                  authorHandle: blueskyPostSources.authorHandle,
+                  publicUrl: blueskyPostSources.publicUrl,
+                  sourceCreatedAt: blueskyPostSources.sourceCreatedAt,
+                  sourceStatus: blueskyPostSources.sourceStatus,
+                  locallyEdited: blueskyPostSources.locallyEdited,
+                  lastError: blueskyPostSources.lastError
+                })
+                .from(blueskyPostSources)
+                .where(inArray(blueskyPostSources.postId, postIds)),
+            catch: (error) =>
+              new DatabaseError({
+                message: `Failed to fetch Bluesky sources: ${getErrorMessage(error)}`,
+                operation: 'select',
+                table: 'bluesky_post_sources'
+              })
+          })
+        : []
+
+    const sourceByPostId = new Map(
+      sourcesData.flatMap(({ postId, ...source }) => (postId ? [[postId, source] as const] : []))
+    )
+
     const compiledData: SelectMdxCompiledPost[] = yield* Effect.forEach(
       data,
       (post) => {
         const creators = creatorsByPostId[post.id] ?? []
-        return buildPostWithPreloadedCreators(post, creators, mdx)
+        const blueskySource = sourceByPostId.get(post.id)
+        return buildPostWithPreloadedCreators(post, creators, mdx).pipe(
+          Effect.map((compiled) => (blueskySource ? { ...compiled, blueskySource } : compiled))
+        )
       },
       { concurrency: 5 }
     )

@@ -1,4 +1,4 @@
-import { and, arrayContains, count, desc, eq, sql } from 'drizzle-orm'
+import { and, arrayContains, asc, count, desc, eq, sql } from 'drizzle-orm'
 import { Context, Crypto, Effect, Encoding, Layer } from 'effect'
 import { db } from '@/db'
 import {
@@ -28,6 +28,20 @@ import { markAttachedAssets, UploadAssetService } from '@/services/upload-asset.
 
 type AudioType = 'mix' | 'track' | 'misc'
 type CreateAudioData = InsertAudio
+
+export type AudioSortField = 'plays' | 'created'
+export type AudioSortOrder = 'asc' | 'desc'
+
+const audioSortColumns = {
+  plays: audioTable.playCount,
+  created: audioTable.createdAt
+} as const
+
+const audioOrderBy = (sort: AudioSortField, order: AudioSortOrder) => {
+  const column = audioSortColumns[sort]
+  const primary = order === 'asc' ? asc(column) : desc(column)
+  return sort === 'created' ? [primary] : [primary, desc(audioTable.createdAt)]
+}
 
 type CreateAudioOptions = {
   actorId: string
@@ -78,7 +92,13 @@ export interface AudioService {
   ) => Effect.Effect<{ data: AudioWithCreators[]; pagination: PaginationMetadata }, DatabaseError>
   readonly getByTypeForEdit: (
     type: AudioType,
-    options: { limit: number; offset: number; tag?: string },
+    options: {
+      limit: number
+      offset: number
+      tag?: string
+      sort?: AudioSortField
+      order?: AudioSortOrder
+    },
     userId: string,
     userRole: string
   ) => Effect.Effect<{ data: AudioWithCreators[]; pagination: PaginationMetadata }, DatabaseError>
@@ -115,11 +135,18 @@ export const AudioService = Context.Service<AudioService>('AudioService')
 
 const getByTypeEffect = (
   type: AudioType,
-  options: { limit: number; offset: number; tag?: string },
+  options: {
+    limit: number
+    offset: number
+    tag?: string
+    sort?: AudioSortField
+    order?: AudioSortOrder
+  },
   actor?: { userId: string; userRole: string }
 ) =>
   Effect.gen(function* () {
     const { limit, offset, tag } = options
+    const orderBy = audioOrderBy(options.sort ?? 'created', options.order ?? 'desc')
     yield* Effect.annotateCurrentSpan('audio.type', type)
     yield* Effect.annotateCurrentSpan('audio.limit', limit)
     yield* Effect.annotateCurrentSpan('audio.offset', offset)
@@ -165,7 +192,7 @@ const getByTypeEffect = (
               where: whereCondition,
               limit,
               offset,
-              orderBy: desc(audioTable.createdAt),
+              orderBy,
               with: {
                 audioCreators: {
                   with: { creator: true }

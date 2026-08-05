@@ -1,45 +1,72 @@
-import { Badge, Button, Checkbox, TabsContent } from '@gbfm/ui'
+import {
+  Badge,
+  Button,
+  Checkbox,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  TabsContent
+} from '@gbfm/ui'
 import { Link } from '@tanstack/react-router'
-import type { ContentScope, PostListItem } from './types'
+import { ExternalLink, MoreHorizontal } from 'lucide-react'
+import type { PaginatedResponse } from '@/lib/http'
+import { TablePagination } from './TablePagination'
+import { PAGE_SIZE, type ContentScope, type PostListItem } from './types'
 
-function EditorialPostActions({ post, onEdit }: { post: PostListItem; onEdit: () => void }) {
+function PostRowActions({
+  post,
+  actionKind,
+  onEdit
+}: {
+  post: PostListItem
+  actionKind: 'editorial' | 'tweet'
+  onEdit: () => void
+}) {
   return (
-    <div className='flex gap-2'>
+    <div className='flex justify-end gap-2'>
       <Button variant='outline' size='sm' onClick={onEdit}>
         Edit
       </Button>
-      <Button variant='outline' size='sm' asChild>
-        <Link to='/editorial/$slug' params={{ slug: post.slug }}>
-          View
-        </Link>
-      </Button>
-      <Button variant='outline' size='sm' asChild>
-        <Link to='/new/editorial' search={{ edit: post.slug }}>
-          Full editor
-        </Link>
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant='ghost' size='sm' aria-label='More actions'>
+            <MoreHorizontal className='size-4' />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align='end'>
+          <DropdownMenuItem asChild>
+            {actionKind === 'editorial' ? (
+              <Link to='/editorial/$slug' params={{ slug: post.slug }}>
+                View
+              </Link>
+            ) : (
+              <Link to='/tweet/$slug' params={{ slug: post.slug }}>
+                View
+              </Link>
+            )}
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            {actionKind === 'editorial' ? (
+              <Link to='/new/editorial' search={{ edit: post.slug }}>
+                Full editor
+              </Link>
+            ) : (
+              <Link to='/new/tweet' search={{ edit: post.slug }}>
+                Full editor
+              </Link>
+            )}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 }
 
-function TweetPostActions({ post, onEdit }: { post: PostListItem; onEdit: () => void }) {
-  return (
-    <div className='flex gap-2'>
-      <Button variant='outline' size='sm' onClick={onEdit}>
-        Edit
-      </Button>
-      <Button variant='outline' size='sm' asChild>
-        <Link to='/tweet/$slug' params={{ slug: post.slug }}>
-          View
-        </Link>
-      </Button>
-      <Button variant='outline' size='sm' asChild>
-        <Link to='/new/tweet' search={{ edit: post.slug }}>
-          Full editor
-        </Link>
-      </Button>
-    </div>
-  )
+function postExcerpt(content: string | null) {
+  const collapsed = content?.replace(/\s+/g, ' ').trim()
+  if (!collapsed) return ''
+  return collapsed.length > 80 ? `${collapsed.slice(0, 80)}…` : collapsed
 }
 
 function StatusToggle({
@@ -78,7 +105,10 @@ export function PostsTable({
   onToggleSelected,
   onToggleAll,
   onToggleDraft,
-  onOpenEditDialog
+  onOpenEditDialog,
+  pagination,
+  offset,
+  onOffsetChange
 }: {
   value: 'editorial' | 'tweet'
   isPending: boolean
@@ -93,9 +123,12 @@ export function PostsTable({
   onToggleAll: (ids: string[]) => void
   onToggleDraft: (post: PostListItem) => void
   onOpenEditDialog: (post: PostListItem, type: 'post' | 'micro') => void
+  pagination?: PaginatedResponse<unknown>['pagination']
+  offset: number
+  onOffsetChange: (offset: number) => void
 }) {
   const showCreators = scope === 'all'
-  const columnCount = showCreators ? 10 : 9
+  const columnCount = showCreators ? 9 : 8
   const allSelected = items.length > 0 && items.every((item) => selectedIds.has(item.id))
 
   return (
@@ -117,13 +150,13 @@ export function PostsTable({
                   />
                 </th>
                 <th className='px-4 py-3 text-left font-medium'>Title</th>
-                <th className='px-4 py-3 text-left font-medium'>Slug</th>
                 <th className='px-4 py-3 text-left font-medium'>Status</th>
                 <th className='px-4 py-3 text-left font-medium'>Media</th>
                 <th className='px-4 py-3 text-left font-medium'>Tags</th>
+                <th className='px-4 py-3 text-left font-medium'>Source</th>
                 {showCreators && <th className='px-4 py-3 text-left font-medium'>Created By</th>}
                 <th className='px-4 py-3 text-left font-medium'>Created</th>
-                <th className='px-4 py-3 text-left font-medium'>Actions</th>
+                <th className='whitespace-nowrap px-4 py-3 text-right font-medium'>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -136,8 +169,14 @@ export function PostsTable({
                       onCheckedChange={() => onToggleSelected(post.id)}
                     />
                   </td>
-                  <td className='px-4 py-3'>{post.title || titleFallback}</td>
-                  <td className='px-4 py-3 text-muted-foreground'>{post.slug}</td>
+                  <td className='max-w-[320px] px-4 py-3'>
+                    <div className='truncate' title={post.title ?? undefined}>
+                      {post.title || postExcerpt(post.content) || titleFallback}
+                    </div>
+                    <div className='truncate text-xs text-muted-foreground' title={post.slug}>
+                      {post.slug}
+                    </div>
+                  </td>
                   <td className='px-4 py-3'>
                     <StatusToggle
                       post={post}
@@ -151,29 +190,41 @@ export function PostsTable({
                       <Badge variant={post.content?.trim() ? 'default' : 'secondary'}>MDX</Badge>
                     </div>
                   </td>
-                  <td className='px-4 py-3 text-muted-foreground'>
+                  <td
+                    className='max-w-[160px] truncate px-4 py-3 text-muted-foreground'
+                    title={post.tags?.join(', ')}>
                     {post.tags?.join(', ') || '—'}
                   </td>
+                  <td className='px-4 py-3 text-muted-foreground'>
+                    {post.blueskySource ? (
+                      <a
+                        href={post.blueskySource.publicUrl}
+                        target='_blank'
+                        rel='noreferrer'
+                        className='inline-flex items-center gap-1 underline underline-offset-4 hover:text-foreground'>
+                        Bluesky
+                        <ExternalLink className='size-3' />
+                      </a>
+                    ) : (
+                      'Native'
+                    )}
+                  </td>
                   {showCreators && (
-                    <td className='px-4 py-3 text-muted-foreground'>
+                    <td className='max-w-[140px] truncate px-4 py-3 text-muted-foreground'>
                       {post.creators?.map((c) => c.name).join(', ') || '—'}
                     </td>
                   )}
-                  <td className='px-4 py-3 text-muted-foreground'>
+                  <td className='whitespace-nowrap px-4 py-3 text-muted-foreground'>
                     {new Date(post.createdAt).toLocaleDateString()}
                   </td>
-                  <td className='px-4 py-3'>
-                    {actionKind === 'editorial' ? (
-                      <EditorialPostActions
-                        post={post}
-                        onEdit={() => onOpenEditDialog(post, 'post')}
-                      />
-                    ) : (
-                      <TweetPostActions
-                        post={post}
-                        onEdit={() => onOpenEditDialog(post, 'micro')}
-                      />
-                    )}
+                  <td className='whitespace-nowrap px-4 py-3 text-right'>
+                    <PostRowActions
+                      post={post}
+                      actionKind={actionKind}
+                      onEdit={() =>
+                        onOpenEditDialog(post, actionKind === 'editorial' ? 'post' : 'micro')
+                      }
+                    />
                   </td>
                 </tr>
               ))}
@@ -187,6 +238,15 @@ export function PostsTable({
             </tbody>
           </table>
         </div>
+      )}
+      {pagination && (
+        <TablePagination
+          offset={offset}
+          pageSize={PAGE_SIZE}
+          total={pagination.total}
+          hasMore={pagination.hasMore}
+          onOffsetChange={onOffsetChange}
+        />
       )}
     </TabsContent>
   )

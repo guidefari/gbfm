@@ -80,7 +80,13 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
         const result = yield* dieOnDatabaseError(
           svc.getByTypeForEdit(
             params.type,
-            { limit: query.limit ?? 20, offset: query.offset ?? 0, tag: query.tag },
+            {
+              limit: query.limit ?? 20,
+              offset: query.offset ?? 0,
+              tag: query.tag,
+              sort: query.sort,
+              order: query.order
+            },
             user.id,
             user.role ?? 'user'
           )

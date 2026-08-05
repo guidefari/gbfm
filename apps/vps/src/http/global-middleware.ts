@@ -67,6 +67,8 @@ const limiter = new InMemoryRateLimiter()
 const RATE_LIMIT_EXCLUDED_PATHS = new Set(['/health', '/health/live', '/health/ready'])
 const RATE_LIMIT_CONFIG = { windowMs: 60_000, maxRequests: 60 }
 
+export const requestPath = (url: string) => new URL(url, 'http://localhost').pathname
+
 export const rateLimitClientKey = (headers: Readonly<Record<string, string | undefined>>) => {
   const forwarded = headers['x-forwarded-for']
   if (forwarded) return forwarded.split(',')[0]?.trim() || 'unknown'
@@ -77,7 +79,7 @@ export const RateLimiterLive = HttpRouter.middleware(
   (httpEffect) =>
     Effect.gen(function* () {
       const request = yield* HttpServerRequest.HttpServerRequest
-      const path = new URL(request.url, 'http://localhost').pathname
+      const path = requestPath(request.url)
       if (RATE_LIMIT_EXCLUDED_PATHS.has(path)) return yield* httpEffect
 
       const key = `${path}:${rateLimitClientKey(request.headers)}`
@@ -115,7 +117,7 @@ export const RequestLoggerLive = HttpRouter.middleware(
   (httpEffect) =>
     Effect.gen(function* () {
       const request = yield* HttpServerRequest.HttpServerRequest
-      const path = new URL(request.url, 'http://localhost').pathname
+      const path = requestPath(request.url)
       const start = Date.now()
       const result = yield* Effect.exit(httpEffect)
       const duration = Date.now() - start

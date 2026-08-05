@@ -1,25 +1,35 @@
 import { Badge, Button, TabsContent } from '@gbfm/ui'
 import { Link } from '@tanstack/react-router'
 import { ArrowUpDown } from 'lucide-react'
-import type { AudioItem, ContentScope } from './types'
+import type { PaginatedResponse } from '@/lib/http'
+import { TablePagination } from './TablePagination'
+import { PAGE_SIZE, type AudioItem, type ContentScope, type ContentView } from './types'
 
 export function MixesTable({
   isPending,
   mixes,
-  mixPlaySortOrder,
+  sort,
+  order,
   scope,
   onToggleSort,
-  onOpenEditDialog
+  onOpenEditDialog,
+  pagination,
+  offset,
+  onOffsetChange
 }: {
   isPending: boolean
   mixes: AudioItem[]
-  mixPlaySortOrder: 'asc' | 'desc'
+  sort: ContentView['sort']
+  order: ContentView['order']
   scope: ContentScope
   onToggleSort: () => void
   onOpenEditDialog: (mix: AudioItem) => void
+  pagination?: PaginatedResponse<unknown>['pagination']
+  offset: number
+  onOffsetChange: (offset: number) => void
 }) {
   const showCreators = scope === 'all'
-  const columnCount = showCreators ? 9 : 8
+  const columnCount = showCreators ? 7 : 6
 
   return (
     <TabsContent value='mixes' className='mt-4'>
@@ -31,7 +41,6 @@ export function MixesTable({
             <thead>
               <tr className='border-b bg-muted/50'>
                 <th className='px-4 py-3 text-left font-medium'>Title</th>
-                <th className='px-4 py-3 text-left font-medium'>Slug</th>
                 <th className='px-4 py-3 text-left font-medium'>Status</th>
                 <th className='px-4 py-3 text-left font-medium'>Media</th>
                 <th className='px-4 py-3 text-left font-medium'>Tags</th>
@@ -41,20 +50,26 @@ export function MixesTable({
                     size='sm'
                     className='-ml-3 h-auto px-3 py-0 font-medium'
                     onClick={onToggleSort}>
-                    Plays {mixPlaySortOrder === 'desc' ? '↓' : '↑'}
+                    Plays {sort === 'plays' ? (order === 'desc' ? '↓' : '↑') : ''}
                     <ArrowUpDown className='ml-2 size-3.5' />
                   </Button>
                 </th>
                 {showCreators && <th className='px-4 py-3 text-left font-medium'>Created By</th>}
                 <th className='px-4 py-3 text-left font-medium'>Created</th>
-                <th className='px-4 py-3 text-left font-medium'>Actions</th>
+                <th className='whitespace-nowrap px-4 py-3 text-right font-medium'>Actions</th>
               </tr>
             </thead>
             <tbody>
               {mixes.map((mix) => (
                 <tr key={mix.id} className='border-b hover:bg-muted/50'>
-                  <td className='px-4 py-3'>{mix.title}</td>
-                  <td className='px-4 py-3 text-muted-foreground'>{mix.slug}</td>
+                  <td className='max-w-[320px] px-4 py-3'>
+                    <div className='truncate' title={mix.title}>
+                      {mix.title}
+                    </div>
+                    <div className='truncate text-xs text-muted-foreground' title={mix.slug}>
+                      {mix.slug}
+                    </div>
+                  </td>
                   <td className='px-4 py-3'>
                     <Badge variant={mix.draft ? 'secondary' : 'default'}>
                       {mix.draft ? 'Draft' : 'Live'}
@@ -67,20 +82,24 @@ export function MixesTable({
                       <Badge variant={mix.content?.trim() ? 'default' : 'secondary'}>MDX</Badge>
                     </div>
                   </td>
-                  <td className='px-4 py-3 text-muted-foreground'>{mix.tags?.join(', ') || '—'}</td>
+                  <td
+                    className='max-w-[160px] truncate px-4 py-3 text-muted-foreground'
+                    title={mix.tags?.join(', ')}>
+                    {mix.tags?.join(', ') || '—'}
+                  </td>
                   <td className='px-4 py-3 text-muted-foreground'>
                     {mix.playCount.toLocaleString()}
                   </td>
                   {showCreators && (
-                    <td className='px-4 py-3 text-muted-foreground'>
+                    <td className='max-w-[140px] truncate px-4 py-3 text-muted-foreground'>
                       {mix.creators?.map((c) => c.name).join(', ') || '—'}
                     </td>
                   )}
-                  <td className='px-4 py-3 text-muted-foreground'>
+                  <td className='whitespace-nowrap px-4 py-3 text-muted-foreground'>
                     {new Date(mix.createdAt).toLocaleDateString()}
                   </td>
-                  <td className='px-4 py-3'>
-                    <div className='flex gap-2'>
+                  <td className='whitespace-nowrap px-4 py-3 text-right'>
+                    <div className='flex justify-end gap-2'>
                       <Button variant='outline' size='sm' onClick={() => onOpenEditDialog(mix)}>
                         Edit
                       </Button>
@@ -103,6 +122,15 @@ export function MixesTable({
             </tbody>
           </table>
         </div>
+      )}
+      {pagination && (
+        <TablePagination
+          offset={offset}
+          pageSize={PAGE_SIZE}
+          total={pagination.total}
+          hasMore={pagination.hasMore}
+          onOffsetChange={onOffsetChange}
+        />
       )}
     </TabsContent>
   )

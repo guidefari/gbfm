@@ -12,10 +12,14 @@ import {
   type AudioEditValues,
   type AudioItem,
   type ContentScope,
+  type ContentView,
+  defaultContentView,
   type EditDialogState,
   type EditorialPostItem,
   emptyAudioEditValues,
   emptyPostEditValues,
+  isContentTab,
+  PAGE_SIZE,
   type PostEditDialogState,
   type PostEditValues,
   type PostListItem,
@@ -43,9 +47,23 @@ function NewContentButtons() {
   )
 }
 
-export function ContentManager({ scope = 'all' }: { scope?: ContentScope }) {
+export function ContentManager({
+  scope = 'all',
+  view,
+  onViewChange
+}: {
+  scope?: ContentScope
+  view?: ContentView
+  onViewChange?: (view: ContentView) => void
+}) {
   const queryClient = useQueryClient()
-  const [mixPlaySortOrder, setMixPlaySortOrder] = useState<'asc' | 'desc'>('desc')
+  const [localView, setLocalView] = useState<ContentView>(defaultContentView)
+  const activeView = view ?? localView
+  const setView = (next: ContentView) => {
+    setLocalView(next)
+    onViewChange?.(next)
+  }
+  const { tab, offset, sort, order } = activeView
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [togglingSlug, setTogglingSlug] = useState<string | null>(null)
   const [editDialog, setEditDialog] = useState<EditDialogState>({
@@ -61,24 +79,31 @@ export function ContentManager({ scope = 'all' }: { scope?: ContentScope }) {
   })
 
   const { data: mixesData, isPending: mixesPending } = useQuery({
-    queryKey: ['admin', 'mixes'],
+    queryKey: ['admin', 'mixes', offset, sort, order],
     queryFn: () =>
-      fetcher<PaginatedResponse<AudioItem>>(apiUrl('/content/audio/mix/manage?limit=50&offset=0'))
+      fetcher<PaginatedResponse<AudioItem>>(
+        apiUrl(
+          `/content/audio/mix/manage?limit=${PAGE_SIZE}&offset=${offset}&sort=${sort}&order=${order}`
+        )
+      ),
+    placeholderData: (previous) => previous
   })
 
   const { data: editorialData, isPending: editorialPending } = useQuery({
-    queryKey: ['admin', 'posts', 'post'],
+    queryKey: ['admin', 'posts', 'post', offset],
     queryFn: () =>
       fetcher<PaginatedResponse<EditorialPostItem>>(
-        apiUrl('/content/posts/manage?type=post&limit=50&offset=0')
-      )
+        apiUrl(`/content/posts/manage?type=post&limit=${PAGE_SIZE}&offset=${offset}`)
+      ),
+    placeholderData: (previous) => previous
   })
   const { data: tweetData, isPending: tweetPending } = useQuery({
-    queryKey: ['admin', 'posts', 'micro'],
+    queryKey: ['admin', 'posts', 'micro', offset],
     queryFn: () =>
       fetcher<PaginatedResponse<TweetPostItem>>(
-        apiUrl('/content/posts/manage?type=micro&limit=50&offset=0')
-      )
+        apiUrl(`/content/posts/manage?type=micro&limit=${PAGE_SIZE}&offset=${offset}`)
+      ),
+    placeholderData: (previous) => previous
   })
 
   const invalidatePostQueries = () => {
@@ -175,14 +200,6 @@ export function ContentManager({ scope = 'all' }: { scope?: ContentScope }) {
   const mixes = mixesData?.data
   const editorialPosts = editorialData?.data
   const tweetPosts = tweetData?.data
-
-  const sortedMixes = useMemo(() => {
-    return (mixes ?? []).toSorted((left, right) =>
-      mixPlaySortOrder === 'asc'
-        ? left.playCount - right.playCount
-        : right.playCount - left.playCount
-    )
-  }, [mixPlaySortOrder, mixes])
 
   const postsById = useMemo(() => {
     const map = new Map<string, PostListItem>()
@@ -350,21 +367,36 @@ export function ContentManager({ scope = 'all' }: { scope?: ContentScope }) {
         onUnpublish={() => applyBulkDraft(true)}
         onClear={() => setSelectedIds(new Set())}
       />
-      <Tabs defaultValue='mixes'>
+      <Tabs
+        value={tab}
+        onValueChange={(next) => {
+          if (isContentTab(next)) setView({ ...activeView, tab: next, offset: 0 })
+        }}>
         <TabsList>
-          <TabsTrigger value='mixes'>Mixes ({mixes?.length ?? 0})</TabsTrigger>
-          <TabsTrigger value='editorial'>Editorial ({editorialPosts?.length ?? 0})</TabsTrigger>
-          <TabsTrigger value='tweet'>Tweet ({tweetPosts?.length ?? 0})</TabsTrigger>
+          <TabsTrigger value='mixes'>Mixes ({mixesData?.pagination.total ?? 0})</TabsTrigger>
+          <TabsTrigger value='editorial'>
+            Editorial ({editorialData?.pagination.total ?? 0})
+          </TabsTrigger>
+          <TabsTrigger value='tweet'>Tweet ({tweetData?.pagination.total ?? 0})</TabsTrigger>
         </TabsList>
         <MixesTable
           isPending={mixesPending}
-          mixes={sortedMixes}
-          mixPlaySortOrder={mixPlaySortOrder}
+          mixes={mixes ?? []}
+          sort={sort}
+          order={order}
           scope={scope}
           onToggleSort={() =>
-            setMixPlaySortOrder((current) => (current === 'desc' ? 'asc' : 'desc'))
+            setView({
+              ...activeView,
+              sort: 'plays',
+              order: sort === 'plays' && order === 'desc' ? 'asc' : 'desc',
+              offset: 0
+            })
           }
           onOpenEditDialog={openEditDialog}
+          pagination={mixesData?.pagination}
+          offset={offset}
+          onOffsetChange={(next) => setView({ ...activeView, offset: next })}
         />
         <PostsTable
           value='editorial'
@@ -379,6 +411,9 @@ export function ContentManager({ scope = 'all' }: { scope?: ContentScope }) {
           onToggleAll={toggleAll}
           onToggleDraft={toggleDraft}
           onOpenEditDialog={openPostEditDialog}
+          pagination={editorialData?.pagination}
+          offset={offset}
+          onOffsetChange={(next) => setView({ ...activeView, offset: next })}
         />
         <PostsTable
           value='tweet'
@@ -394,6 +429,9 @@ export function ContentManager({ scope = 'all' }: { scope?: ContentScope }) {
           onToggleAll={toggleAll}
           onToggleDraft={toggleDraft}
           onOpenEditDialog={openPostEditDialog}
+          pagination={tweetData?.pagination}
+          offset={offset}
+          onOffsetChange={(next) => setView({ ...activeView, offset: next })}
         />
       </Tabs>
       <MetadataDrawer

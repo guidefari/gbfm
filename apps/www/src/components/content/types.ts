@@ -2,6 +2,30 @@ import type { SelectMdxCompiledEditorialPost, SelectMdxCompiledMicroPost } from 
 
 export type ContentScope = 'all' | 'mine'
 
+export const PAGE_SIZE = 25
+
+const contentTabs = { mixes: true, editorial: true, tweet: true }
+
+export type ContentTab = keyof typeof contentTabs
+
+export function isContentTab(value: string): value is ContentTab {
+  return value in contentTabs
+}
+
+export type ContentView = {
+  tab: ContentTab
+  offset: number
+  sort: 'plays' | 'created'
+  order: 'asc' | 'desc'
+}
+
+export const defaultContentView: ContentView = {
+  tab: 'mixes',
+  offset: 0,
+  sort: 'created',
+  order: 'desc'
+}
+
 export interface AudioItem {
   id: string
   title: string
@@ -48,6 +72,7 @@ export type PostListItem = {
   tags?: string[] | null
   creators?: Array<{ id: string; name: string }>
   createdAt: string
+  blueskySource?: { publicUrl: string }
 }
 
 export interface AudioEditValues {
