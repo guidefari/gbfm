@@ -2,6 +2,10 @@ import {
   Badge,
   Button,
   Checkbox,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
   Input,
   Label,
   Sheet,
@@ -20,12 +24,29 @@ import {
 } from '@gbfm/ui'
 import type { SelectMdxCompiledEditorialPost, SelectMdxCompiledMicroPost } from '@gbfm/vps/schemas'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link } from '@tanstack/react-router'
-import { ArrowUpDown, ExternalLink, Plus, Save } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { Link, useNavigate, useSearch } from '@tanstack/react-router'
+import { ArrowUpDown, ExternalLink, MoreHorizontal, Plus, Save } from 'lucide-react'
+import { useState } from 'react'
 import { SimpleMarkdownEditor } from '@/components/simple-markdown-editor'
 import { apiUrl, fetcher, type PaginatedResponse } from '@/lib/http'
 import { ImageUploadField } from './-ImageUploadField'
+import { TablePagination } from './-TablePagination'
+
+const PAGE_SIZE = 25
+
+const contentTabs = { mixes: true, editorial: true, tweet: true }
+
+function isContentTab(value: string): value is keyof typeof contentTabs {
+  return value in contentTabs
+}
+
+function postExcerpt(content: string | null) {
+  const collapsed = content?.replace(/\s+/g, ' ').trim()
+  if (!collapsed) return ''
+  return collapsed.length > 80 ? `${collapsed.slice(0, 80)}…` : collapsed
+}
+
+type PaginationMeta = PaginatedResponse<unknown>['pagination']
 
 interface AudioItem {
   id: string
@@ -105,6 +126,7 @@ type PostListItem = {
   tags?: string[] | null
   creators?: Array<{ id: string; name: string }>
   createdAt: string
+  blueskySource?: { publicUrl: string }
 }
 
 const emptyAudioEditValues: AudioEditValues = {
@@ -177,15 +199,23 @@ function NewContentButtons() {
 function MixesTabContent({
   isPending,
   mixes,
-  mixPlaySortOrder,
+  sort,
+  order,
   onToggleSort,
-  onOpenEditDialog
+  onOpenEditDialog,
+  pagination,
+  offset,
+  onOffsetChange
 }: {
   isPending: boolean
   mixes: AudioItem[]
-  mixPlaySortOrder: 'asc' | 'desc'
+  sort: 'plays' | 'created'
+  order: 'asc' | 'desc'
   onToggleSort: () => void
   onOpenEditDialog: (mix: AudioItem) => void
+  pagination?: PaginationMeta
+  offset: number
+  onOffsetChange: (offset: number) => void
 }) {
   return (
     <TabsContent value='mixes' className='mt-4'>
@@ -197,7 +227,6 @@ function MixesTabContent({
             <thead>
               <tr className='border-b bg-muted/50'>
                 <th className='px-4 py-3 text-left font-medium'>Title</th>
-                <th className='px-4 py-3 text-left font-medium'>Slug</th>
                 <th className='px-4 py-3 text-left font-medium'>Status</th>
                 <th className='px-4 py-3 text-left font-medium'>Media</th>
                 <th className='px-4 py-3 text-left font-medium'>Tags</th>
@@ -207,20 +236,25 @@ function MixesTabContent({
                     size='sm'
                     className='-ml-3 h-auto px-3 py-0 font-medium'
                     onClick={onToggleSort}>
-                    Plays {mixPlaySortOrder === 'desc' ? '↓' : '↑'}
+                    Plays {sort === 'plays' ? (order === 'desc' ? '↓' : '↑') : ''}
                     <ArrowUpDown className='ml-2 size-3.5' />
                   </Button>
                 </th>
-                <th className='px-4 py-3 text-left font-medium'>Created By</th>
                 <th className='px-4 py-3 text-left font-medium'>Created</th>
-                <th className='px-4 py-3 text-left font-medium'>Actions</th>
+                <th className='whitespace-nowrap px-4 py-3 text-right font-medium'>Actions</th>
               </tr>
             </thead>
             <tbody>
               {mixes.map((mix) => (
                 <tr key={mix.id} className='border-b hover:bg-muted/50'>
-                  <td className='px-4 py-3'>{mix.title}</td>
-                  <td className='px-4 py-3 text-muted-foreground'>{mix.slug}</td>
+                  <td className='max-w-[320px] px-4 py-3'>
+                    <div className='truncate' title={mix.title}>
+                      {mix.title}
+                    </div>
+                    <div className='truncate text-xs text-muted-foreground' title={mix.slug}>
+                      {mix.slug}
+                    </div>
+                  </td>
                   <td className='px-4 py-3'>
                     <Badge variant={mix.draft ? 'secondary' : 'default'}>
                       {mix.draft ? 'Draft' : 'Live'}
@@ -233,18 +267,19 @@ function MixesTabContent({
                       <Badge variant={mix.content?.trim() ? 'default' : 'secondary'}>MDX</Badge>
                     </div>
                   </td>
-                  <td className='px-4 py-3 text-muted-foreground'>{mix.tags?.join(', ') || '—'}</td>
+                  <td
+                    className='max-w-[160px] truncate px-4 py-3 text-muted-foreground'
+                    title={mix.tags?.join(', ')}>
+                    {mix.tags?.join(', ') || '—'}
+                  </td>
                   <td className='px-4 py-3 text-muted-foreground'>
                     {mix.playCount.toLocaleString()}
                   </td>
-                  <td className='px-4 py-3 text-muted-foreground'>
-                    {mix.creators?.map((c) => c.name).join(', ') || '—'}
-                  </td>
-                  <td className='px-4 py-3 text-muted-foreground'>
+                  <td className='whitespace-nowrap px-4 py-3 text-muted-foreground'>
                     {new Date(mix.createdAt).toLocaleDateString()}
                   </td>
-                  <td className='px-4 py-3'>
-                    <div className='flex gap-2'>
+                  <td className='whitespace-nowrap px-4 py-3 text-right'>
+                    <div className='flex justify-end gap-2'>
                       <Button variant='outline' size='sm' onClick={() => onOpenEditDialog(mix)}>
                         Edit
                       </Button>
@@ -259,7 +294,7 @@ function MixesTabContent({
               ))}
               {mixes.length === 0 && (
                 <tr>
-                  <td colSpan={9} className='px-4 py-8 text-center text-muted-foreground'>
+                  <td colSpan={7} className='px-4 py-8 text-center text-muted-foreground'>
                     No mixes found
                   </td>
                 </tr>
@@ -267,6 +302,15 @@ function MixesTabContent({
             </tbody>
           </table>
         </div>
+      )}
+      {pagination && (
+        <TablePagination
+          offset={offset}
+          pageSize={PAGE_SIZE}
+          total={pagination.total}
+          hasMore={pagination.hasMore}
+          onOffsetChange={onOffsetChange}
+        />
       )}
     </TabsContent>
   )
@@ -279,7 +323,10 @@ function PostsTabContent({
   emptyLabel,
   actionKind,
   titleFallback,
-  onOpenEditDialog
+  onOpenEditDialog,
+  pagination,
+  offset,
+  onOffsetChange
 }: {
   value: 'editorial' | 'tweet'
   isPending: boolean
@@ -288,6 +335,9 @@ function PostsTabContent({
   actionKind: 'editorial' | 'tweet'
   titleFallback?: string
   onOpenEditDialog: (post: PostListItem, type: 'post' | 'micro') => void
+  pagination?: PaginationMeta
+  offset: number
+  onOffsetChange: (offset: number) => void
 }) {
   return (
     <TabsContent value={value} className='mt-4'>
@@ -301,20 +351,25 @@ function PostsTabContent({
             <thead>
               <tr className='border-b bg-muted/50'>
                 <th className='px-4 py-3 text-left font-medium'>Title</th>
-                <th className='px-4 py-3 text-left font-medium'>Slug</th>
                 <th className='px-4 py-3 text-left font-medium'>Status</th>
                 <th className='px-4 py-3 text-left font-medium'>Media</th>
                 <th className='px-4 py-3 text-left font-medium'>Tags</th>
-                <th className='px-4 py-3 text-left font-medium'>Created By</th>
+                <th className='px-4 py-3 text-left font-medium'>Source</th>
                 <th className='px-4 py-3 text-left font-medium'>Created</th>
-                <th className='px-4 py-3 text-left font-medium'>Actions</th>
+                <th className='whitespace-nowrap px-4 py-3 text-right font-medium'>Actions</th>
               </tr>
             </thead>
             <tbody>
               {items.map((post) => (
                 <tr key={post.id} className='border-b hover:bg-muted/50'>
-                  <td className='px-4 py-3'>{post.title || titleFallback}</td>
-                  <td className='px-4 py-3 text-muted-foreground'>{post.slug}</td>
+                  <td className='max-w-[320px] px-4 py-3'>
+                    <div className='truncate' title={post.title ?? undefined}>
+                      {post.title || postExcerpt(post.content) || titleFallback}
+                    </div>
+                    <div className='truncate text-xs text-muted-foreground' title={post.slug}>
+                      {post.slug}
+                    </div>
+                  </td>
                   <td className='px-4 py-3'>
                     <Badge variant={post.draft ? 'secondary' : 'default'}>
                       {post.draft ? 'Draft' : 'Live'}
@@ -326,33 +381,42 @@ function PostsTabContent({
                       <Badge variant={post.content?.trim() ? 'default' : 'secondary'}>MDX</Badge>
                     </div>
                   </td>
-                  <td className='px-4 py-3 text-muted-foreground'>
+                  <td
+                    className='max-w-[160px] truncate px-4 py-3 text-muted-foreground'
+                    title={post.tags?.join(', ')}>
                     {post.tags?.join(', ') || '—'}
                   </td>
                   <td className='px-4 py-3 text-muted-foreground'>
-                    {post.creators?.map((c) => c.name).join(', ') || '—'}
+                    {post.blueskySource ? (
+                      <a
+                        href={post.blueskySource.publicUrl}
+                        target='_blank'
+                        rel='noreferrer'
+                        className='inline-flex items-center gap-1 underline underline-offset-4 hover:text-foreground'>
+                        Bluesky
+                        <ExternalLink className='size-3' />
+                      </a>
+                    ) : (
+                      'Native'
+                    )}
                   </td>
-                  <td className='px-4 py-3 text-muted-foreground'>
+                  <td className='whitespace-nowrap px-4 py-3 text-muted-foreground'>
                     {new Date(post.createdAt).toLocaleDateString()}
                   </td>
-                  <td className='px-4 py-3'>
-                    {actionKind === 'editorial' ? (
-                      <EditorialPostActions
-                        post={post}
-                        onEdit={() => onOpenEditDialog(post, 'post')}
-                      />
-                    ) : (
-                      <TweetPostActions
-                        post={post}
-                        onEdit={() => onOpenEditDialog(post, 'micro')}
-                      />
-                    )}
+                  <td className='whitespace-nowrap px-4 py-3 text-right'>
+                    <PostRowActions
+                      post={post}
+                      actionKind={actionKind}
+                      onEdit={() =>
+                        onOpenEditDialog(post, actionKind === 'editorial' ? 'post' : 'micro')
+                      }
+                    />
                   </td>
                 </tr>
               ))}
               {items.length === 0 && (
                 <tr>
-                  <td colSpan={8} className='px-4 py-8 text-center text-muted-foreground'>
+                  <td colSpan={7} className='px-4 py-8 text-center text-muted-foreground'>
                     No {emptyLabel.toLowerCase()} found
                   </td>
                 </tr>
@@ -361,46 +425,64 @@ function PostsTabContent({
           </table>
         </div>
       )}
+      {pagination && (
+        <TablePagination
+          offset={offset}
+          pageSize={PAGE_SIZE}
+          total={pagination.total}
+          hasMore={pagination.hasMore}
+          onOffsetChange={onOffsetChange}
+        />
+      )}
     </TabsContent>
   )
 }
 
-function EditorialPostActions({ post, onEdit }: { post: PostListItem; onEdit: () => void }) {
+function PostRowActions({
+  post,
+  actionKind,
+  onEdit
+}: {
+  post: PostListItem
+  actionKind: 'editorial' | 'tweet'
+  onEdit: () => void
+}) {
   return (
-    <div className='flex gap-2'>
+    <div className='flex justify-end gap-2'>
       <Button variant='outline' size='sm' onClick={onEdit}>
         Edit
       </Button>
-      <Button variant='outline' size='sm' asChild>
-        <Link to='/editorial/$slug' params={{ slug: post.slug }}>
-          View
-        </Link>
-      </Button>
-      <Button variant='outline' size='sm' asChild>
-        <Link to='/new/editorial' search={{ edit: post.slug }}>
-          Full editor
-        </Link>
-      </Button>
-    </div>
-  )
-}
-
-function TweetPostActions({ post, onEdit }: { post: PostListItem; onEdit: () => void }) {
-  return (
-    <div className='flex gap-2'>
-      <Button variant='outline' size='sm' onClick={onEdit}>
-        Edit
-      </Button>
-      <Button variant='outline' size='sm' asChild>
-        <Link to='/tweet/$slug' params={{ slug: post.slug }}>
-          View
-        </Link>
-      </Button>
-      <Button variant='outline' size='sm' asChild>
-        <Link to='/new/tweet' search={{ edit: post.slug }}>
-          Full editor
-        </Link>
-      </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant='ghost' size='sm' aria-label='More actions'>
+            <MoreHorizontal className='size-4' />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align='end'>
+          <DropdownMenuItem asChild>
+            {actionKind === 'editorial' ? (
+              <Link to='/editorial/$slug' params={{ slug: post.slug }}>
+                View
+              </Link>
+            ) : (
+              <Link to='/tweet/$slug' params={{ slug: post.slug }}>
+                View
+              </Link>
+            )}
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild>
+            {actionKind === 'editorial' ? (
+              <Link to='/new/editorial' search={{ edit: post.slug }}>
+                Full editor
+              </Link>
+            ) : (
+              <Link to='/new/tweet' search={{ edit: post.slug }}>
+                Full editor
+              </Link>
+            )}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 }
@@ -678,7 +760,6 @@ function TextareaField({
 
 export function ContentTab() {
   const queryClient = useQueryClient()
-  const [mixPlaySortOrder, setMixPlaySortOrder] = useState<'asc' | 'desc'>('desc')
   const [editDialog, setEditDialog] = useState<EditDialogState>({
     open: false,
     mix: null,
@@ -691,25 +772,53 @@ export function ContentTab() {
     type: 'post'
   })
 
+  const { tab, offset, sort, order } = useSearch({ from: '/admin/content' })
+  const navigate = useNavigate({ from: '/admin/content' })
+
+  const setOffset = (next: number) => navigate({ search: (prev) => ({ ...prev, offset: next }) })
+
+  const setTab = (next: string) => {
+    if (!isContentTab(next)) return
+    navigate({ search: (prev) => ({ ...prev, tab: next, offset: 0 }) })
+  }
+
+  const toggleSort = () =>
+    navigate({
+      search: (prev) => ({
+        ...prev,
+        sort: 'plays',
+        order: prev.sort === 'plays' && prev.order === 'desc' ? 'asc' : 'desc',
+        offset: 0
+      }),
+      replace: true
+    })
+
   const { data: mixesData, isPending: mixesPending } = useQuery({
-    queryKey: ['admin', 'mixes'],
+    queryKey: ['admin', 'mixes', offset, sort, order],
     queryFn: () =>
-      fetcher<PaginatedResponse<AudioItem>>(apiUrl('/content/audio/mix/manage?limit=50&offset=0'))
+      fetcher<PaginatedResponse<AudioItem>>(
+        apiUrl(
+          `/content/audio/mix/manage?limit=${PAGE_SIZE}&offset=${offset}&sort=${sort}&order=${order}`
+        )
+      ),
+    placeholderData: (previous) => previous
   })
 
   const { data: editorialData, isPending: editorialPending } = useQuery({
-    queryKey: ['admin', 'posts', 'post'],
+    queryKey: ['admin', 'posts', 'post', offset],
     queryFn: () =>
       fetcher<PaginatedResponse<EditorialPostItem>>(
-        apiUrl('/content/posts/manage?type=post&limit=50&offset=0')
-      )
+        apiUrl(`/content/posts/manage?type=post&limit=${PAGE_SIZE}&offset=${offset}`)
+      ),
+    placeholderData: (previous) => previous
   })
   const { data: tweetData, isPending: tweetPending } = useQuery({
-    queryKey: ['admin', 'posts', 'micro'],
+    queryKey: ['admin', 'posts', 'micro', offset],
     queryFn: () =>
       fetcher<PaginatedResponse<TweetPostItem>>(
-        apiUrl('/content/posts/manage?type=micro&limit=50&offset=0')
-      )
+        apiUrl(`/content/posts/manage?type=micro&limit=${PAGE_SIZE}&offset=${offset}`)
+      ),
+    placeholderData: (previous) => previous
   })
 
   const updateMixMutation = useMutation({
@@ -795,14 +904,6 @@ export function ContentTab() {
   const editorialPosts = editorialData?.data
   const tweetPosts = tweetData?.data
 
-  const sortedMixes = useMemo(() => {
-    return (mixes ?? []).toSorted((left, right) =>
-      mixPlaySortOrder === 'asc'
-        ? left.playCount - right.playCount
-        : right.playCount - left.playCount
-    )
-  }, [mixPlaySortOrder, mixes])
-
   const openEditDialog = (mix: AudioItem) => {
     setEditDialog({
       open: true,
@@ -887,20 +988,24 @@ export function ContentTab() {
   return (
     <div className='space-y-4'>
       <NewContentButtons />
-      <Tabs defaultValue='mixes'>
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
-          <TabsTrigger value='mixes'>Mixes ({mixes?.length ?? 0})</TabsTrigger>
-          <TabsTrigger value='editorial'>Editorial ({editorialPosts?.length ?? 0})</TabsTrigger>
-          <TabsTrigger value='tweet'>Tweet ({tweetPosts?.length ?? 0})</TabsTrigger>
+          <TabsTrigger value='mixes'>Mixes ({mixesData?.pagination.total ?? 0})</TabsTrigger>
+          <TabsTrigger value='editorial'>
+            Editorial ({editorialData?.pagination.total ?? 0})
+          </TabsTrigger>
+          <TabsTrigger value='tweet'>Tweet ({tweetData?.pagination.total ?? 0})</TabsTrigger>
         </TabsList>
         <MixesTabContent
           isPending={mixesPending}
-          mixes={sortedMixes}
-          mixPlaySortOrder={mixPlaySortOrder}
-          onToggleSort={() =>
-            setMixPlaySortOrder((current) => (current === 'desc' ? 'asc' : 'desc'))
-          }
+          mixes={mixes ?? []}
+          sort={sort}
+          order={order}
+          onToggleSort={toggleSort}
           onOpenEditDialog={openEditDialog}
+          pagination={mixesData?.pagination}
+          offset={offset}
+          onOffsetChange={setOffset}
         />
         <PostsTabContent
           value='editorial'
@@ -909,6 +1014,9 @@ export function ContentTab() {
           emptyLabel='Editorial posts'
           actionKind='editorial'
           onOpenEditDialog={openPostEditDialog}
+          pagination={editorialData?.pagination}
+          offset={offset}
+          onOffsetChange={setOffset}
         />
         <PostsTabContent
           value='tweet'
@@ -918,6 +1026,9 @@ export function ContentTab() {
           actionKind='tweet'
           titleFallback='Tweet'
           onOpenEditDialog={openPostEditDialog}
+          pagination={tweetData?.pagination}
+          offset={offset}
+          onOffsetChange={setOffset}
         />
       </Tabs>
       <MetadataDrawer
