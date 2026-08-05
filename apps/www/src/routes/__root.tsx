@@ -78,7 +78,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
           </QueryClientProvider>
         </ThemeProvider>
       </ErrorBoundary>
-      <Toaster />
+      <Toaster viewportClassName='lg:bottom-12' />
       <Suspense>{/* <TanStackRouterDevtools position="" /> */}</Suspense>
     </>
   )

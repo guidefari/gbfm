@@ -10,7 +10,7 @@ import {
 } from './toast'
 import { useToast } from './use-toast'
 
-export function Toaster() {
+export function Toaster({ viewportClassName }: { viewportClassName?: string }) {
   const { toasts } = useToast()
 
   return (
@@ -25,7 +25,7 @@ export function Toaster() {
           <ToastClose />
         </Toast>
       ))}
-      <ToastViewport />
+      <ToastViewport className={viewportClassName} />
     </ToastProvider>
   )
 }

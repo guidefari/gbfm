@@ -13,7 +13,7 @@ export function NewTweetFab() {
     <Link
       to='/new/tweet'
       aria-label='New tweet'
-      className='fixed bottom-[calc(env(safe-area-inset-bottom)+3.75rem)] right-4 z-50 flex h-12 w-12 items-center justify-center rounded-sm bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105 hover:bg-primary/90 lg:bottom-8 lg:right-8'>
+      className='fixed bottom-[calc(env(safe-area-inset-bottom)+3.75rem)] right-4 z-50 flex h-12 w-12 items-center justify-center rounded-sm bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105 hover:bg-primary/90 lg:bottom-16 lg:right-8'>
       <Pencil className='h-5 w-5' />
     </Link>
   )
