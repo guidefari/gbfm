@@ -9,6 +9,7 @@ import {
 import { Link, useLocation, useNavigate } from '@tanstack/react-router'
 import { LayoutDashboard, LogOut, Pause, Play } from 'lucide-react'
 import { useCallback } from 'react'
+import { GoosebumpsLogo } from '@/components/icons/GoosebumpsLogo'
 import { signOut, useSession } from '@/lib/auth-client'
 import { cn } from '@/lib/utils'
 import { useNowPlayingTrack, usePlayerActions, useProgress, useTransport } from '@/services/player'
@@ -173,8 +174,10 @@ export function DesktopChrome({ className }: { className?: string }) {
 
       <Link
         to='/'
-        className='shrink-0 text-base font-black tracking-tight text-foreground no-underline hover:text-highlight'>
-        goosebumps.fm
+        aria-label='goosebumps.fm home'
+        className='flex shrink-0 items-center gap-2 text-foreground no-underline transition-colors hover:text-highlight'>
+        <GoosebumpsLogo className='h-7 w-7 shrink-0' />
+        <span className='text-base font-black tracking-tight'>goosebumps.fm</span>
       </Link>
 
       <DesktopLinks />
