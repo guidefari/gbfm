@@ -21,7 +21,7 @@ import { useEffect, useState } from 'react'
 import { apiUrl, fetcher } from '@/lib/http'
 import { checkSavedTracksEffect, spotifyIdFromUrl } from '@/lib/spotify-pkce'
 import { runAppEffect } from '@/runtime'
-import { ImageUploadField } from './-ImageUploadField'
+import { ImageUploadField } from '@/components/content/ImageUploadField'
 import { type PlaylistTrackRow, SortableTrackRow } from './-SortableTrackRow'
 
 export interface PlaylistSummary {

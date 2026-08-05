@@ -1,4 +1,4 @@
-import { Effect } from 'effect'
+import { Cause, Effect, Exit } from 'effect'
 import {
   HttpMiddleware,
   HttpRouter,
@@ -104,20 +104,10 @@ export const RateLimiterLive = HttpRouter.middleware(
 )
 
 // ── Performance metrics + slow-request warnings ──────────────────
-// Basic per-request "method/url/status" logging is NOT ported here --
-// HttpRouter.toWebHandler already applies HttpMiddleware.logger by default
-// (disableLogger defaults to false/unset), confirmed against HttpRouter.ts:
-// every request already logs "Sent HTTP response" with http.method/
-// http.url/http.status annotations for free, matching what the old
-// effectLogger()'s plain `Effect.log(...)` line duplicated. Only the parts
-// with no free equivalent are ported: slow-request warnings and the
-// recordRequest/checkPerformanceHealth Effect Metrics
-// (apps/vps/src/lib/performance-monitoring.ts, already framework-agnostic,
-// reused unchanged). HttpMiddleware.tracer (OpenTelemetry span-per-request)
-// is intentionally not added here either -- it wasn't free, and the
-// migration doc flags the old effectLogger()'s span behavior as possibly
-// redundant with what toWebHandler's own tracing already does; left as a
-// separate follow-up decision rather than folded into this middleware move.
+// Request events are emitted here so the application has one structured
+// request-log producer. HttpRouter's built-in logger is disabled in routes.ts
+// to avoid a second response line. Slow-request warnings and the
+// recordRequest/checkPerformanceHealth Effect Metrics remain separate events.
 const SLOW_REQUEST_THRESHOLD = 500
 const VERY_SLOW_REQUEST_THRESHOLD = 2000
 
@@ -125,14 +115,43 @@ export const RequestLoggerLive = HttpRouter.middleware(
   (httpEffect) =>
     Effect.gen(function* () {
       const request = yield* HttpServerRequest.HttpServerRequest
+      const path = new URL(request.url, 'http://localhost').pathname
       const start = Date.now()
-      const response = yield* httpEffect
+      const result = yield* Effect.exit(httpEffect)
       const duration = Date.now() - start
+
+      if (Exit.isFailure(result)) {
+        const clientAborted = Cause.hasInterruptsOnly(result.cause)
+        yield* clientAborted
+          ? Effect.logInfo('[HTTP] client aborted request', {
+              method: request.method,
+              path,
+              status: 499,
+              duration,
+              outcome: 'client_abort'
+            })
+          : Effect.logError('[HTTP] request failed', {
+              method: request.method,
+              path,
+              duration,
+              cause: result.cause
+            })
+        if (clientAborted) yield* recordRequest(duration, false)
+        return yield* Effect.failCause(result.cause)
+      }
+
+      const response = result.value
+      yield* Effect.logInfo('[HTTP] request completed', {
+        method: request.method,
+        path,
+        status: response.status,
+        duration
+      })
 
       if (duration > VERY_SLOW_REQUEST_THRESHOLD) {
         yield* Effect.logError('[Performance] Very slow request detected', {
           method: request.method,
-          path: request.url,
+          path,
           status: response.status,
           duration,
           threshold: VERY_SLOW_REQUEST_THRESHOLD,
@@ -141,7 +160,7 @@ export const RequestLoggerLive = HttpRouter.middleware(
       } else if (duration > SLOW_REQUEST_THRESHOLD) {
         yield* Effect.logWarning('[Performance] Slow request detected', {
           method: request.method,
-          path: request.url,
+          path,
           status: response.status,
           duration,
           threshold: SLOW_REQUEST_THRESHOLD,

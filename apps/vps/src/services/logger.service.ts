@@ -1,6 +1,6 @@
 import { isRecord } from '@gbfm/core/utils'
 import * as Sentry from '@sentry/bun'
-import { Logger, type LogLevel } from 'effect'
+import { Logger, References, type LogLevel } from 'effect'
 import pino from 'pino'
 import pretty from 'pino-pretty'
 import { config } from './config.service'
@@ -81,7 +81,12 @@ function formatMessage(message: unknown): string {
 
 export const AppLogger = Logger.make(({ logLevel, message, cause, fiber, date }) => {
   const msg = formatMessage(message)
-  const data = redactValue({ cause, fiberId: fiber.id, date })
+  const data = redactValue({
+    annotations: fiber.getRef(References.CurrentLogAnnotations),
+    cause,
+    fiberId: fiber.id,
+    date
+  })
   const payload = {
     ...(isRecord(data) ? data : {}),
     logLevel
@@ -89,7 +94,7 @@ export const AppLogger = Logger.make(({ logLevel, message, cause, fiber, date })
 
   pinoInstance[pinoLevel(logLevel)](payload, msg)
 
-  if (!Sentry.getClient()) return
+  if (!Sentry.getClient() || ['Trace', 'Debug', 'Info'].includes(logLevel)) return
 
   const sentryLogger = Sentry.logger
   switch (logLevel) {

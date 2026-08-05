@@ -25,6 +25,16 @@ const Creator = Schema.Struct({
   username: Schema.NullOr(Schema.String)
 })
 
+const BlueskySource = Schema.Struct({
+  authorDid: Schema.String,
+  authorHandle: Schema.NullOr(Schema.String),
+  publicUrl: Schema.String,
+  sourceCreatedAt: Schema.String,
+  sourceStatus: Schema.String,
+  locallyEdited: Schema.Boolean,
+  lastError: Schema.NullOr(Schema.String)
+})
+
 export const PostResponse = Schema.Struct({
   id: Schema.String,
   title: Schema.NullOr(Schema.String),
@@ -42,7 +52,8 @@ export const PostResponse = Schema.Struct({
   depth: Schema.Number,
   quotedPostId: Schema.NullOr(Schema.String),
   createdAt: Schema.String,
-  updatedAt: Schema.String
+  updatedAt: Schema.String,
+  blueskySource: Schema.optional(BlueskySource)
 })
 
 export const CompiledPostResponse = Schema.Struct({

@@ -1,5 +1,6 @@
 import { Api } from '@gbfm/api/api'
 import { AuthSession } from '@gbfm/api/middleware/auth'
+import { canCreatePosts } from '@gbfm/core/roles'
 import {
   GetEditorialPostsResponse,
   GetEditorialTagsResponse,
@@ -14,12 +15,37 @@ import { PostService } from '@/services/post.service'
 
 const dieOnDatabaseError = makeDieOnDatabaseError('post')
 
-const POST_CREATE_ROLES = new Set(['creator', 'editor', 'admin'])
-
-const toDateStrings = <T extends { createdAt: Date; updatedAt: Date }>(post: T) => ({
+const toDateStrings = <
+  T extends {
+    createdAt: Date
+    updatedAt: Date
+    blueskySource?: {
+      readonly authorDid: string
+      readonly authorHandle: string | null
+      readonly publicUrl: string
+      readonly sourceCreatedAt: Date | string
+      readonly sourceStatus: string
+      readonly locallyEdited: boolean
+      readonly lastError: string | null
+    }
+  }
+>(
+  post: T
+) => ({
   ...post,
   createdAt: post.createdAt.toISOString(),
-  updatedAt: post.updatedAt.toISOString()
+  updatedAt: post.updatedAt.toISOString(),
+  ...(post.blueskySource
+    ? {
+        blueskySource: {
+          ...post.blueskySource,
+          sourceCreatedAt:
+            typeof post.blueskySource.sourceCreatedAt === 'string'
+              ? post.blueskySource.sourceCreatedAt
+              : post.blueskySource.sourceCreatedAt.toISOString()
+        }
+      }
+    : {})
 })
 
 export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
@@ -274,7 +300,7 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
     .handle('createPost', ({ payload }) =>
       Effect.gen(function* () {
         const { user } = yield* AuthSession
-        if (!POST_CREATE_ROLES.has(user.role ?? '')) {
+        if (!canCreatePosts(user.role)) {
           return yield* new HttpApiError.Forbidden()
         }
 

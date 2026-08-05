@@ -51,7 +51,10 @@ import { Route as InviteCharlie3000RouteImport } from './routes/invite/charlie30
 import { Route as EditorialSlugRouteImport } from './routes/editorial/$slug'
 import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile'
 import { Route as DashboardPlayerRouteImport } from './routes/dashboard/player'
+import { Route as DashboardIntegrationsRouteImport } from './routes/dashboard/integrations'
+import { Route as DashboardImportsRouteImport } from './routes/dashboard/imports'
 import { Route as DashboardEmailRouteImport } from './routes/dashboard/email'
+import { Route as DashboardContentRouteImport } from './routes/dashboard/content'
 import { Route as DashboardAppearanceRouteImport } from './routes/dashboard/appearance'
 import { Route as AuthVerifyEmailRouteImport } from './routes/auth/verify-email'
 import { Route as AuthSignUpRouteImport } from './routes/auth/sign-up'
@@ -281,9 +284,24 @@ const DashboardPlayerRoute = DashboardPlayerRouteImport.update({
   path: '/player',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardIntegrationsRoute = DashboardIntegrationsRouteImport.update({
+  id: '/integrations',
+  path: '/integrations',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardImportsRoute = DashboardImportsRouteImport.update({
+  id: '/imports',
+  path: '/imports',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardEmailRoute = DashboardEmailRouteImport.update({
   id: '/email',
   path: '/email',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardContentRoute = DashboardContentRouteImport.update({
+  id: '/content',
+  path: '/content',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardAppearanceRoute = DashboardAppearanceRouteImport.update({
@@ -412,7 +430,10 @@ export interface FileRoutesByFullPath {
   '/auth/sign-up': typeof AuthSignUpRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/dashboard/appearance': typeof DashboardAppearanceRoute
+  '/dashboard/content': typeof DashboardContentRoute
   '/dashboard/email': typeof DashboardEmailRoute
+  '/dashboard/imports': typeof DashboardImportsRoute
+  '/dashboard/integrations': typeof DashboardIntegrationsRoute
   '/dashboard/player': typeof DashboardPlayerRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/editorial/$slug': typeof EditorialSlugRoute
@@ -470,7 +491,10 @@ export interface FileRoutesByTo {
   '/auth/sign-up': typeof AuthSignUpRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/dashboard/appearance': typeof DashboardAppearanceRoute
+  '/dashboard/content': typeof DashboardContentRoute
   '/dashboard/email': typeof DashboardEmailRoute
+  '/dashboard/imports': typeof DashboardImportsRoute
+  '/dashboard/integrations': typeof DashboardIntegrationsRoute
   '/dashboard/player': typeof DashboardPlayerRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/editorial/$slug': typeof EditorialSlugRoute
@@ -534,7 +558,10 @@ export interface FileRoutesById {
   '/auth/sign-up': typeof AuthSignUpRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/dashboard/appearance': typeof DashboardAppearanceRoute
+  '/dashboard/content': typeof DashboardContentRoute
   '/dashboard/email': typeof DashboardEmailRoute
+  '/dashboard/imports': typeof DashboardImportsRoute
+  '/dashboard/integrations': typeof DashboardIntegrationsRoute
   '/dashboard/player': typeof DashboardPlayerRoute
   '/dashboard/profile': typeof DashboardProfileRoute
   '/editorial/$slug': typeof EditorialSlugRoute
@@ -599,7 +626,10 @@ export interface FileRouteTypes {
     | '/auth/sign-up'
     | '/auth/verify-email'
     | '/dashboard/appearance'
+    | '/dashboard/content'
     | '/dashboard/email'
+    | '/dashboard/imports'
+    | '/dashboard/integrations'
     | '/dashboard/player'
     | '/dashboard/profile'
     | '/editorial/$slug'
@@ -657,7 +687,10 @@ export interface FileRouteTypes {
     | '/auth/sign-up'
     | '/auth/verify-email'
     | '/dashboard/appearance'
+    | '/dashboard/content'
     | '/dashboard/email'
+    | '/dashboard/imports'
+    | '/dashboard/integrations'
     | '/dashboard/player'
     | '/dashboard/profile'
     | '/editorial/$slug'
@@ -720,7 +753,10 @@ export interface FileRouteTypes {
     | '/auth/sign-up'
     | '/auth/verify-email'
     | '/dashboard/appearance'
+    | '/dashboard/content'
     | '/dashboard/email'
+    | '/dashboard/imports'
+    | '/dashboard/integrations'
     | '/dashboard/player'
     | '/dashboard/profile'
     | '/editorial/$slug'
@@ -1094,11 +1130,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardPlayerRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/integrations': {
+      id: '/dashboard/integrations'
+      path: '/integrations'
+      fullPath: '/dashboard/integrations'
+      preLoaderRoute: typeof DashboardIntegrationsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/imports': {
+      id: '/dashboard/imports'
+      path: '/imports'
+      fullPath: '/dashboard/imports'
+      preLoaderRoute: typeof DashboardImportsRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/email': {
       id: '/dashboard/email'
       path: '/email'
       fullPath: '/dashboard/email'
       preLoaderRoute: typeof DashboardEmailRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/content': {
+      id: '/dashboard/content'
+      path: '/content'
+      fullPath: '/dashboard/content'
+      preLoaderRoute: typeof DashboardContentRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/appearance': {
@@ -1304,7 +1361,10 @@ const TweetRouteRouteWithChildren = TweetRouteRoute._addFileChildren(
 
 interface DashboardRouteChildren {
   DashboardAppearanceRoute: typeof DashboardAppearanceRoute
+  DashboardContentRoute: typeof DashboardContentRoute
   DashboardEmailRoute: typeof DashboardEmailRoute
+  DashboardImportsRoute: typeof DashboardImportsRoute
+  DashboardIntegrationsRoute: typeof DashboardIntegrationsRoute
   DashboardPlayerRoute: typeof DashboardPlayerRoute
   DashboardProfileRoute: typeof DashboardProfileRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
@@ -1312,7 +1372,10 @@ interface DashboardRouteChildren {
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAppearanceRoute: DashboardAppearanceRoute,
+  DashboardContentRoute: DashboardContentRoute,
   DashboardEmailRoute: DashboardEmailRoute,
+  DashboardImportsRoute: DashboardImportsRoute,
+  DashboardIntegrationsRoute: DashboardIntegrationsRoute,
   DashboardPlayerRoute: DashboardPlayerRoute,
   DashboardProfileRoute: DashboardProfileRoute,
   DashboardIndexRoute: DashboardIndexRoute,

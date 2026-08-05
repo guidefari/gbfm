@@ -57,8 +57,19 @@ export const postsTable = pgTable(
 export type SelectPost = InferSelectModel<typeof postsTable>
 export type InsertPost = InferInsertModel<typeof postsTable>
 
+export type BlueskySourceAttribution = {
+  readonly authorDid: string
+  readonly authorHandle: string | null
+  readonly publicUrl: string
+  readonly sourceCreatedAt: Date | string
+  readonly sourceStatus: string
+  readonly locallyEdited: boolean
+  readonly lastError: string | null
+}
+
 export type SelectMdxCompiledPost = SelectPost & {
   compiledContent: string
+  blueskySource?: BlueskySourceAttribution
   creators?: Array<{
     id: string
     name: string

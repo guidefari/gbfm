@@ -16,7 +16,7 @@ export type NavSurface = 'overlay'
 
 export type NavTier = 'primary' | 'secondary' | 'utility' | 'create'
 
-export type MinRole = 'editor' | 'admin'
+export type MinRole = 'creator' | 'editor' | 'admin'
 
 type BaseNavItem = {
   id: string
@@ -118,6 +118,16 @@ export const navConfig: NavItem[] = [
     tier: 'secondary',
     surfaces: ['overlay'],
     adminOnly: true
+  },
+  {
+    id: 'my-content',
+    name: 'My content',
+    slug: '/dashboard/content',
+    icon: <Newspaper className={iconSytles} />,
+    tier: 'create',
+    surfaces: ['overlay'],
+    description: 'Review and publish your mixes, editorials, and tweets.',
+    minRole: 'creator'
   },
   {
     id: 'create-mix',

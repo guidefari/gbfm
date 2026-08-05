@@ -1,5 +1,15 @@
+import { canCreatePosts } from '@gbfm/core/roles'
 import { Link, type LinkProps, useLocation } from '@tanstack/react-router'
-import { Home, Mail, Music, Palette, User as UserIcon } from 'lucide-react'
+import {
+  DownloadCloud,
+  FileText,
+  Home,
+  Link2,
+  Mail,
+  Music,
+  Palette,
+  User as UserIcon
+} from 'lucide-react'
 import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { useSession } from '@/lib/auth-client'
@@ -8,24 +18,29 @@ type DashboardTab = {
   to: LinkProps['to']
   label: string
   icon: typeof Home
+  requiresPostCreate?: boolean
 }
 
 const tabs: DashboardTab[] = [
   { to: '/dashboard', label: 'Home', icon: Home },
+  { to: '/dashboard/content', label: 'Content', icon: FileText, requiresPostCreate: true },
+  { to: '/dashboard/imports', label: 'Imports', icon: DownloadCloud, requiresPostCreate: true },
   { to: '/dashboard/profile', label: 'Profile', icon: UserIcon },
   { to: '/dashboard/appearance', label: 'Appearance', icon: Palette },
   { to: '/dashboard/player', label: 'Player', icon: Music },
+  { to: '/dashboard/integrations', label: 'Integrations', icon: Link2 },
   { to: '/dashboard/email', label: 'Email', icon: Mail }
 ]
 
-function DashboardTabs() {
+function DashboardTabs({ role }: { role: string | null | undefined }) {
   const pathname = useLocation().pathname
+  const visibleTabs = tabs.filter((tab) => !tab.requiresPostCreate || canCreatePosts(role))
 
   return (
     <nav
       aria-label='Dashboard'
       className='-mx-4 flex gap-1 overflow-x-auto border-b border-border/60 px-4 pb-px sm:mx-0 sm:px-0'>
-      {tabs.map(({ to, label, icon: Icon }) => {
+      {visibleTabs.map(({ to, label, icon: Icon }) => {
         const isActive = pathname === to
 
         return (
@@ -88,7 +103,7 @@ export function DashboardLayout({
 
   return (
     <div className='container mx-auto max-w-5xl space-y-6 px-4 py-8 font-jetbrains'>
-      <DashboardTabs />
+      <DashboardTabs role={session.user.role} />
 
       <div className='flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between'>
         <div className='max-w-3xl'>
