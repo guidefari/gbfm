@@ -175,9 +175,8 @@ export function DesktopChrome({ className }: { className?: string }) {
       <Link
         to='/'
         aria-label='goosebumps.fm home'
-        className='flex shrink-0 items-center gap-2 text-foreground no-underline transition-colors hover:text-highlight'>
-        <GoosebumpsLogo className='h-7 w-7 shrink-0' />
-        <span className='text-base font-black tracking-tight'>goosebumps.fm</span>
+        className='flex shrink-0 items-center text-white no-underline transition-opacity hover:opacity-80'>
+        <GoosebumpsLogo className='h-8 w-8 shrink-0' />
       </Link>
 
       <DesktopLinks />
