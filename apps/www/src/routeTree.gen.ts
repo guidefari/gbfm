@@ -73,6 +73,12 @@ import { Route as AdminFrontendErrorsRouteImport } from './routes/admin/frontend
 import { Route as AdminEmailLogsRouteImport } from './routes/admin/email-logs'
 import { Route as AdminContentRouteImport } from './routes/admin/content'
 import { Route as AdminBlueskyRouteImport } from './routes/admin/bluesky'
+import { Route as DashboardContentTweetsRouteImport } from './routes/dashboard/content.tweets'
+import { Route as DashboardContentMixesRouteImport } from './routes/dashboard/content.mixes'
+import { Route as DashboardContentEditorialRouteImport } from './routes/dashboard/content.editorial'
+import { Route as AdminContentTweetsRouteImport } from './routes/admin/content.tweets'
+import { Route as AdminContentMixesRouteImport } from './routes/admin/content.mixes'
+import { Route as AdminContentEditorialRouteImport } from './routes/admin/content.editorial'
 import { Route as AdminMusicEntityEntityTypeIdRouteImport } from './routes/admin/music-entity.$entityType.$id'
 
 const UnsubscribeRoute = UnsubscribeRouteImport.update({
@@ -395,6 +401,37 @@ const AdminBlueskyRoute = AdminBlueskyRouteImport.update({
   path: '/admin/bluesky',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardContentTweetsRoute = DashboardContentTweetsRouteImport.update({
+  id: '/tweets',
+  path: '/tweets',
+  getParentRoute: () => DashboardContentRoute,
+} as any)
+const DashboardContentMixesRoute = DashboardContentMixesRouteImport.update({
+  id: '/mixes',
+  path: '/mixes',
+  getParentRoute: () => DashboardContentRoute,
+} as any)
+const DashboardContentEditorialRoute =
+  DashboardContentEditorialRouteImport.update({
+    id: '/editorial',
+    path: '/editorial',
+    getParentRoute: () => DashboardContentRoute,
+  } as any)
+const AdminContentTweetsRoute = AdminContentTweetsRouteImport.update({
+  id: '/tweets',
+  path: '/tweets',
+  getParentRoute: () => AdminContentRoute,
+} as any)
+const AdminContentMixesRoute = AdminContentMixesRouteImport.update({
+  id: '/mixes',
+  path: '/mixes',
+  getParentRoute: () => AdminContentRoute,
+} as any)
+const AdminContentEditorialRoute = AdminContentEditorialRouteImport.update({
+  id: '/editorial',
+  path: '/editorial',
+  getParentRoute: () => AdminContentRoute,
+} as any)
 const AdminMusicEntityEntityTypeIdRoute =
   AdminMusicEntityEntityTypeIdRouteImport.update({
     id: '/admin/music-entity/$entityType/$id',
@@ -420,7 +457,7 @@ export interface FileRoutesByFullPath {
   '/tweets': typeof TweetsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/admin/bluesky': typeof AdminBlueskyRoute
-  '/admin/content': typeof AdminContentRoute
+  '/admin/content': typeof AdminContentRouteWithChildren
   '/admin/email-logs': typeof AdminEmailLogsRoute
   '/admin/frontend-errors': typeof AdminFrontendErrorsRoute
   '/admin/music': typeof AdminMusicRoute
@@ -437,7 +474,7 @@ export interface FileRoutesByFullPath {
   '/auth/sign-up': typeof AuthSignUpRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/dashboard/appearance': typeof DashboardAppearanceRoute
-  '/dashboard/content': typeof DashboardContentRoute
+  '/dashboard/content': typeof DashboardContentRouteWithChildren
   '/dashboard/email': typeof DashboardEmailRoute
   '/dashboard/imports': typeof DashboardImportsRoute
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
@@ -467,6 +504,12 @@ export interface FileRoutesByFullPath {
   '/shows/': typeof ShowsIndexRoute
   '/tags/': typeof TagsIndexRoute
   '/tweet/': typeof TweetIndexRoute
+  '/admin/content/editorial': typeof AdminContentEditorialRoute
+  '/admin/content/mixes': typeof AdminContentMixesRoute
+  '/admin/content/tweets': typeof AdminContentTweetsRoute
+  '/dashboard/content/editorial': typeof DashboardContentEditorialRoute
+  '/dashboard/content/mixes': typeof DashboardContentMixesRoute
+  '/dashboard/content/tweets': typeof DashboardContentTweetsRoute
   '/admin/music-entity/$entityType/$id': typeof AdminMusicEntityEntityTypeIdRoute
 }
 export interface FileRoutesByTo {
@@ -482,7 +525,7 @@ export interface FileRoutesByTo {
   '/tweets': typeof TweetsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/admin/bluesky': typeof AdminBlueskyRoute
-  '/admin/content': typeof AdminContentRoute
+  '/admin/content': typeof AdminContentRouteWithChildren
   '/admin/email-logs': typeof AdminEmailLogsRoute
   '/admin/frontend-errors': typeof AdminFrontendErrorsRoute
   '/admin/music': typeof AdminMusicRoute
@@ -499,7 +542,7 @@ export interface FileRoutesByTo {
   '/auth/sign-up': typeof AuthSignUpRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/dashboard/appearance': typeof DashboardAppearanceRoute
-  '/dashboard/content': typeof DashboardContentRoute
+  '/dashboard/content': typeof DashboardContentRouteWithChildren
   '/dashboard/email': typeof DashboardEmailRoute
   '/dashboard/imports': typeof DashboardImportsRoute
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
@@ -529,6 +572,12 @@ export interface FileRoutesByTo {
   '/shows': typeof ShowsIndexRoute
   '/tags': typeof TagsIndexRoute
   '/tweet': typeof TweetIndexRoute
+  '/admin/content/editorial': typeof AdminContentEditorialRoute
+  '/admin/content/mixes': typeof AdminContentMixesRoute
+  '/admin/content/tweets': typeof AdminContentTweetsRoute
+  '/dashboard/content/editorial': typeof DashboardContentEditorialRoute
+  '/dashboard/content/mixes': typeof DashboardContentMixesRoute
+  '/dashboard/content/tweets': typeof DashboardContentTweetsRoute
   '/admin/music-entity/$entityType/$id': typeof AdminMusicEntityEntityTypeIdRoute
 }
 export interface FileRoutesById {
@@ -550,7 +599,7 @@ export interface FileRoutesById {
   '/tweets': typeof TweetsRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/admin/bluesky': typeof AdminBlueskyRoute
-  '/admin/content': typeof AdminContentRoute
+  '/admin/content': typeof AdminContentRouteWithChildren
   '/admin/email-logs': typeof AdminEmailLogsRoute
   '/admin/frontend-errors': typeof AdminFrontendErrorsRoute
   '/admin/music': typeof AdminMusicRoute
@@ -567,7 +616,7 @@ export interface FileRoutesById {
   '/auth/sign-up': typeof AuthSignUpRoute
   '/auth/verify-email': typeof AuthVerifyEmailRoute
   '/dashboard/appearance': typeof DashboardAppearanceRoute
-  '/dashboard/content': typeof DashboardContentRoute
+  '/dashboard/content': typeof DashboardContentRouteWithChildren
   '/dashboard/email': typeof DashboardEmailRoute
   '/dashboard/imports': typeof DashboardImportsRoute
   '/dashboard/integrations': typeof DashboardIntegrationsRoute
@@ -597,6 +646,12 @@ export interface FileRoutesById {
   '/shows/': typeof ShowsIndexRoute
   '/tags/': typeof TagsIndexRoute
   '/tweet/': typeof TweetIndexRoute
+  '/admin/content/editorial': typeof AdminContentEditorialRoute
+  '/admin/content/mixes': typeof AdminContentMixesRoute
+  '/admin/content/tweets': typeof AdminContentTweetsRoute
+  '/dashboard/content/editorial': typeof DashboardContentEditorialRoute
+  '/dashboard/content/mixes': typeof DashboardContentMixesRoute
+  '/dashboard/content/tweets': typeof DashboardContentTweetsRoute
   '/admin/music-entity/$entityType/$id': typeof AdminMusicEntityEntityTypeIdRoute
 }
 export interface FileRouteTypes {
@@ -666,6 +721,12 @@ export interface FileRouteTypes {
     | '/shows/'
     | '/tags/'
     | '/tweet/'
+    | '/admin/content/editorial'
+    | '/admin/content/mixes'
+    | '/admin/content/tweets'
+    | '/dashboard/content/editorial'
+    | '/dashboard/content/mixes'
+    | '/dashboard/content/tweets'
     | '/admin/music-entity/$entityType/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -728,6 +789,12 @@ export interface FileRouteTypes {
     | '/shows'
     | '/tags'
     | '/tweet'
+    | '/admin/content/editorial'
+    | '/admin/content/mixes'
+    | '/admin/content/tweets'
+    | '/dashboard/content/editorial'
+    | '/dashboard/content/mixes'
+    | '/dashboard/content/tweets'
     | '/admin/music-entity/$entityType/$id'
   id:
     | '__root__'
@@ -795,6 +862,12 @@ export interface FileRouteTypes {
     | '/shows/'
     | '/tags/'
     | '/tweet/'
+    | '/admin/content/editorial'
+    | '/admin/content/mixes'
+    | '/admin/content/tweets'
+    | '/dashboard/content/editorial'
+    | '/dashboard/content/mixes'
+    | '/dashboard/content/tweets'
     | '/admin/music-entity/$entityType/$id'
   fileRoutesById: FileRoutesById
 }
@@ -816,7 +889,7 @@ export interface RootRouteChildren {
   TweetsRoute: typeof TweetsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
   AdminBlueskyRoute: typeof AdminBlueskyRoute
-  AdminContentRoute: typeof AdminContentRoute
+  AdminContentRoute: typeof AdminContentRouteWithChildren
   AdminEmailLogsRoute: typeof AdminEmailLogsRoute
   AdminFrontendErrorsRoute: typeof AdminFrontendErrorsRoute
   AdminMusicRoute: typeof AdminMusicRoute
@@ -1297,6 +1370,48 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminBlueskyRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard/content/tweets': {
+      id: '/dashboard/content/tweets'
+      path: '/tweets'
+      fullPath: '/dashboard/content/tweets'
+      preLoaderRoute: typeof DashboardContentTweetsRouteImport
+      parentRoute: typeof DashboardContentRoute
+    }
+    '/dashboard/content/mixes': {
+      id: '/dashboard/content/mixes'
+      path: '/mixes'
+      fullPath: '/dashboard/content/mixes'
+      preLoaderRoute: typeof DashboardContentMixesRouteImport
+      parentRoute: typeof DashboardContentRoute
+    }
+    '/dashboard/content/editorial': {
+      id: '/dashboard/content/editorial'
+      path: '/editorial'
+      fullPath: '/dashboard/content/editorial'
+      preLoaderRoute: typeof DashboardContentEditorialRouteImport
+      parentRoute: typeof DashboardContentRoute
+    }
+    '/admin/content/tweets': {
+      id: '/admin/content/tweets'
+      path: '/tweets'
+      fullPath: '/admin/content/tweets'
+      preLoaderRoute: typeof AdminContentTweetsRouteImport
+      parentRoute: typeof AdminContentRoute
+    }
+    '/admin/content/mixes': {
+      id: '/admin/content/mixes'
+      path: '/mixes'
+      fullPath: '/admin/content/mixes'
+      preLoaderRoute: typeof AdminContentMixesRouteImport
+      parentRoute: typeof AdminContentRoute
+    }
+    '/admin/content/editorial': {
+      id: '/admin/content/editorial'
+      path: '/editorial'
+      fullPath: '/admin/content/editorial'
+      preLoaderRoute: typeof AdminContentEditorialRouteImport
+      parentRoute: typeof AdminContentRoute
+    }
     '/admin/music-entity/$entityType/$id': {
       id: '/admin/music-entity/$entityType/$id'
       path: '/admin/music-entity/$entityType/$id'
@@ -1379,9 +1494,24 @@ const TweetRouteRouteWithChildren = TweetRouteRoute._addFileChildren(
   TweetRouteRouteChildren,
 )
 
+interface DashboardContentRouteChildren {
+  DashboardContentEditorialRoute: typeof DashboardContentEditorialRoute
+  DashboardContentMixesRoute: typeof DashboardContentMixesRoute
+  DashboardContentTweetsRoute: typeof DashboardContentTweetsRoute
+}
+
+const DashboardContentRouteChildren: DashboardContentRouteChildren = {
+  DashboardContentEditorialRoute: DashboardContentEditorialRoute,
+  DashboardContentMixesRoute: DashboardContentMixesRoute,
+  DashboardContentTweetsRoute: DashboardContentTweetsRoute,
+}
+
+const DashboardContentRouteWithChildren =
+  DashboardContentRoute._addFileChildren(DashboardContentRouteChildren)
+
 interface DashboardRouteChildren {
   DashboardAppearanceRoute: typeof DashboardAppearanceRoute
-  DashboardContentRoute: typeof DashboardContentRoute
+  DashboardContentRoute: typeof DashboardContentRouteWithChildren
   DashboardEmailRoute: typeof DashboardEmailRoute
   DashboardImportsRoute: typeof DashboardImportsRoute
   DashboardIntegrationsRoute: typeof DashboardIntegrationsRoute
@@ -1392,7 +1522,7 @@ interface DashboardRouteChildren {
 
 const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardAppearanceRoute: DashboardAppearanceRoute,
-  DashboardContentRoute: DashboardContentRoute,
+  DashboardContentRoute: DashboardContentRouteWithChildren,
   DashboardEmailRoute: DashboardEmailRoute,
   DashboardImportsRoute: DashboardImportsRoute,
   DashboardIntegrationsRoute: DashboardIntegrationsRoute,
@@ -1403,6 +1533,22 @@ const DashboardRouteChildren: DashboardRouteChildren = {
 
 const DashboardRouteWithChildren = DashboardRoute._addFileChildren(
   DashboardRouteChildren,
+)
+
+interface AdminContentRouteChildren {
+  AdminContentEditorialRoute: typeof AdminContentEditorialRoute
+  AdminContentMixesRoute: typeof AdminContentMixesRoute
+  AdminContentTweetsRoute: typeof AdminContentTweetsRoute
+}
+
+const AdminContentRouteChildren: AdminContentRouteChildren = {
+  AdminContentEditorialRoute: AdminContentEditorialRoute,
+  AdminContentMixesRoute: AdminContentMixesRoute,
+  AdminContentTweetsRoute: AdminContentTweetsRoute,
+}
+
+const AdminContentRouteWithChildren = AdminContentRoute._addFileChildren(
+  AdminContentRouteChildren,
 )
 
 const rootRouteChildren: RootRouteChildren = {
@@ -1423,7 +1569,7 @@ const rootRouteChildren: RootRouteChildren = {
   TweetsRoute: TweetsRoute,
   UnsubscribeRoute: UnsubscribeRoute,
   AdminBlueskyRoute: AdminBlueskyRoute,
-  AdminContentRoute: AdminContentRoute,
+  AdminContentRoute: AdminContentRouteWithChildren,
   AdminEmailLogsRoute: AdminEmailLogsRoute,
   AdminFrontendErrorsRoute: AdminFrontendErrorsRoute,
   AdminMusicRoute: AdminMusicRoute,

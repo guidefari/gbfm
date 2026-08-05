@@ -1,4 +1,4 @@
-import { Badge, Button, TabsContent } from '@gbfm/ui'
+import { Badge, Button } from '@gbfm/ui'
 import { Link } from '@tanstack/react-router'
 import { ArrowUpDown } from 'lucide-react'
 import type { PaginatedResponse } from '@/lib/http'
@@ -32,7 +32,7 @@ export function MixesTable({
   const columnCount = showCreators ? 7 : 6
 
   return (
-    <TabsContent value='mixes' className='mt-4'>
+    <div className='mt-4'>
       {isPending ? (
         <div className='py-8 text-center text-muted-foreground'>Loading mixes…</div>
       ) : (
@@ -132,6 +132,6 @@ export function MixesTable({
           onOffsetChange={onOffsetChange}
         />
       )}
-    </TabsContent>
+    </div>
   )
 }

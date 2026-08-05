@@ -1,7 +1,5 @@
 import { canCreatePosts } from '@gbfm/core/roles'
 import { createFileRoute, redirect } from '@tanstack/react-router'
-import { ContentManager } from '@/components/content/ContentManager'
-import { DashboardLayout } from '@/components/dashboard/DashboardLayout'
 import { signInRedirect } from '@/lib/route-guards'
 
 export const Route = createFileRoute('/dashboard/content')({
@@ -12,16 +10,9 @@ export const Route = createFileRoute('/dashboard/content')({
     if (!canCreatePosts(context.auth.user?.role)) {
       throw redirect({ to: '/dashboard' })
     }
-  },
-  component: DashboardContent
+    throw redirect({
+      to: '/dashboard/content/mixes',
+      search: { offset: 0, sort: 'created', order: 'desc' }
+    })
+  }
 })
-
-function DashboardContent() {
-  return (
-    <DashboardLayout
-      title='Content'
-      description='Your mixes, editorials, and tweets. Drafts stay private until you publish them.'>
-      <ContentManager scope='mine' />
-    </DashboardLayout>
-  )
-}

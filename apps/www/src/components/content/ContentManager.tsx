@@ -1,7 +1,5 @@
-import { Button, Tabs, TabsList, TabsTrigger, toast } from '@gbfm/ui'
+import { toast } from '@gbfm/ui'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link } from '@tanstack/react-router'
-import { Plus } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { apiUrl, fetcher, type PaginatedResponse } from '@/lib/http'
 import { BulkActionBar } from './BulkActionBar'
@@ -18,7 +16,6 @@ import {
   type EditorialPostItem,
   emptyAudioEditValues,
   emptyPostEditValues,
-  isContentTab,
   PAGE_SIZE,
   type PostEditDialogState,
   type PostEditValues,
@@ -27,25 +24,6 @@ import {
   toPostEditValues,
   type TweetPostItem
 } from './types'
-
-function NewContentButtons() {
-  return (
-    <div className='flex flex-wrap gap-2'>
-      <Button asChild size='sm'>
-        <Link to='/new/editorial' search={{ edit: undefined }}>
-          <Plus className='mr-2 size-4' />
-          New editorial
-        </Link>
-      </Button>
-      <Button asChild size='sm' variant='outline'>
-        <Link to='/new/tweet' search={{ edit: undefined }}>
-          <Plus className='mr-2 size-4' />
-          New tweet
-        </Link>
-      </Button>
-    </div>
-  )
-}
 
 export function ContentManager({
   scope = 'all',
@@ -80,6 +58,7 @@ export function ContentManager({
 
   const { data: mixesData, isPending: mixesPending } = useQuery({
     queryKey: ['admin', 'mixes', offset, sort, order],
+    enabled: tab === 'mixes',
     queryFn: () =>
       fetcher<PaginatedResponse<AudioItem>>(
         apiUrl(
@@ -91,6 +70,7 @@ export function ContentManager({
 
   const { data: editorialData, isPending: editorialPending } = useQuery({
     queryKey: ['admin', 'posts', 'post', offset],
+    enabled: tab === 'editorial',
     queryFn: () =>
       fetcher<PaginatedResponse<EditorialPostItem>>(
         apiUrl(`/content/posts/manage?type=post&limit=${PAGE_SIZE}&offset=${offset}`)
@@ -99,6 +79,7 @@ export function ContentManager({
   })
   const { data: tweetData, isPending: tweetPending } = useQuery({
     queryKey: ['admin', 'posts', 'micro', offset],
+    enabled: tab === 'tweet',
     queryFn: () =>
       fetcher<PaginatedResponse<TweetPostItem>>(
         apiUrl(`/content/posts/manage?type=micro&limit=${PAGE_SIZE}&offset=${offset}`)
@@ -359,7 +340,6 @@ export function ContentManager({
 
   return (
     <div className='space-y-4'>
-      <NewContentButtons />
       <BulkActionBar
         selectedCount={selectedIds.size}
         isPending={setDraftMutation.isPending}
@@ -367,20 +347,9 @@ export function ContentManager({
         onUnpublish={() => applyBulkDraft(true)}
         onClear={() => setSelectedIds(new Set())}
       />
-      <Tabs
-        value={tab}
-        onValueChange={(next) => {
-          if (isContentTab(next)) setView({ ...activeView, tab: next, offset: 0 })
-        }}>
-        <TabsList>
-          <TabsTrigger value='mixes'>Mixes ({mixesData?.pagination.total ?? 0})</TabsTrigger>
-          <TabsTrigger value='editorial'>
-            Editorial ({editorialData?.pagination.total ?? 0})
-          </TabsTrigger>
-          <TabsTrigger value='tweet'>Tweet ({tweetData?.pagination.total ?? 0})</TabsTrigger>
-        </TabsList>
+      {tab === 'mixes' && (
         <MixesTable
-          isPending={mixesPending}
+          isPending={mixesPending && !mixesData}
           mixes={mixes ?? []}
           sort={sort}
           order={order}
@@ -398,9 +367,10 @@ export function ContentManager({
           offset={offset}
           onOffsetChange={(next) => setView({ ...activeView, offset: next })}
         />
+      )}
+      {tab === 'editorial' && (
         <PostsTable
-          value='editorial'
-          isPending={editorialPending}
+          isPending={editorialPending && !editorialData}
           items={editorialPosts ?? []}
           emptyLabel='Editorial posts'
           actionKind='editorial'
@@ -415,9 +385,10 @@ export function ContentManager({
           offset={offset}
           onOffsetChange={(next) => setView({ ...activeView, offset: next })}
         />
+      )}
+      {tab === 'tweet' && (
         <PostsTable
-          value='tweet'
-          isPending={tweetPending}
+          isPending={tweetPending && !tweetData}
           items={tweetPosts ?? []}
           emptyLabel='Tweet posts'
           actionKind='tweet'
@@ -433,7 +404,7 @@ export function ContentManager({
           offset={offset}
           onOffsetChange={(next) => setView({ ...activeView, offset: next })}
         />
-      </Tabs>
+      )}
       <MetadataDrawer
         audioState={editDialog}
         postState={postEditDialog}

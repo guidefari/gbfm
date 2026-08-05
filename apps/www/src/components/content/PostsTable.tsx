@@ -5,8 +5,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuTrigger,
-  TabsContent
+  DropdownMenuTrigger
 } from '@gbfm/ui'
 import { Link } from '@tanstack/react-router'
 import { ExternalLink, MoreHorizontal } from 'lucide-react'
@@ -93,7 +92,6 @@ function StatusToggle({
 }
 
 export function PostsTable({
-  value,
   isPending,
   items,
   emptyLabel,
@@ -110,7 +108,6 @@ export function PostsTable({
   offset,
   onOffsetChange
 }: {
-  value: 'editorial' | 'tweet'
   isPending: boolean
   items: PostListItem[]
   emptyLabel: string
@@ -132,7 +129,7 @@ export function PostsTable({
   const allSelected = items.length > 0 && items.every((item) => selectedIds.has(item.id))
 
   return (
-    <TabsContent value={value} className='mt-4'>
+    <div className='mt-4'>
       {isPending ? (
         <div className='py-8 text-center text-muted-foreground'>
           Loading {emptyLabel.toLowerCase()}…
@@ -248,6 +245,6 @@ export function PostsTable({
           onOffsetChange={onOffsetChange}
         />
       )}
-    </TabsContent>
+    </div>
   )
 }
