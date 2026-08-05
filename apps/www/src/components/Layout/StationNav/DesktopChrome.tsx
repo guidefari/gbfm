@@ -80,7 +80,7 @@ function AccountMenu() {
           (user.name?.[0] ?? '?')
         )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent align='end' className='min-w-52'>
+      <DropdownMenuContent side='top' align='end' className='min-w-52'>
         <DropdownMenuLabel className='flex flex-col gap-0.5'>
           <span className='truncate text-base font-semibold'>{user.name}</span>
           {user.username ? (
@@ -124,7 +124,7 @@ function NowPlayingChip() {
   if (!currentTrack) return null
 
   return (
-    <div className='flex min-w-0 max-w-md flex-1 items-center gap-2'>
+    <div className='flex min-w-0 max-w-56 shrink items-center gap-2 border-r border-border pr-3'>
       <button
         type='button'
         onClick={togglePlayPause}
@@ -153,7 +153,7 @@ function ProgressTicker() {
   if (!currentTrack) return null
 
   return (
-    <div className='absolute inset-x-0 bottom-0 h-[3px] bg-border/60'>
+    <div className='absolute inset-x-0 top-0 h-[3px] bg-border/60'>
       <div
         className='h-full bg-highlight shadow-[0_0_6px_var(--highlight)] transition-[width] duration-300 ease-linear'
         style={{ width: `${progress}%` }}
@@ -166,7 +166,7 @@ export function DesktopChrome({ className }: { className?: string }) {
   return (
     <div
       className={cn(
-        'fixed inset-x-0 top-0 z-40 hidden h-12 shrink-0 items-center gap-3 border-b-2 border-foreground bg-background/95 px-4 backdrop-blur lg:flex',
+        'fixed inset-x-0 bottom-0 z-40 hidden h-12 shrink-0 items-center gap-4 border-t-2 border-foreground bg-background/95 pl-4 pr-6 backdrop-blur lg:flex',
         className
       )}>
       <ProgressTicker />
@@ -181,9 +181,8 @@ export function DesktopChrome({ className }: { className?: string }) {
 
       <div className='min-w-0 flex-1' />
 
-      <NowPlayingChip />
-
-      <div className='flex shrink-0 items-center gap-2'>
+      <div className='flex shrink-0 items-center gap-3'>
+        <NowPlayingChip />
         <AccountMenu />
       </div>
     </div>
