@@ -4,6 +4,7 @@ import { Link, useRouter } from '@tanstack/react-router'
 import { ChevronLeft, ChevronRight, Search, Shuffle, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useAdjacentMicroPosts, useMicroPostSearch, useRandomMicroPost } from '@/lib/http'
+import { cn } from '@/lib/utils'
 import { TweetSearchResultRow } from '@/components/TweetSearchResultRow'
 
 type Props = {
@@ -14,6 +15,77 @@ const iconButtonClassName =
   'inline-flex h-8 w-8 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground'
 const disabledIconButtonClassName =
   'inline-flex h-8 w-8 items-center justify-center rounded-sm text-muted-foreground/25'
+
+type AdjacentPost = { slug: string } | null
+
+const flankClassName =
+  'fixed top-1/2 z-30 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground lg:flex'
+
+function PrevLink({ prev }: { prev: AdjacentPost }) {
+  if (!prev) {
+    return (
+      <span aria-hidden className={disabledIconButtonClassName}>
+        <ChevronLeft className='h-4 w-4' />
+      </span>
+    )
+  }
+
+  return (
+    <Link
+      to='/tweet/$slug'
+      params={{ slug: prev.slug }}
+      aria-label='Previous tweet'
+      className={iconButtonClassName}>
+      <ChevronLeft className='h-4 w-4' />
+    </Link>
+  )
+}
+
+function NextLink({ next }: { next: AdjacentPost }) {
+  if (!next) {
+    return (
+      <span aria-hidden className={disabledIconButtonClassName}>
+        <ChevronRight className='h-4 w-4' />
+      </span>
+    )
+  }
+
+  return (
+    <Link
+      to='/tweet/$slug'
+      params={{ slug: next.slug }}
+      aria-label='Next tweet'
+      className={iconButtonClassName}>
+      <ChevronRight className='h-4 w-4' />
+    </Link>
+  )
+}
+
+function FlankingArrows({ prev, next }: { prev: AdjacentPost; next: AdjacentPost }) {
+  return (
+    <>
+      {prev ? (
+        <Link
+          to='/tweet/$slug'
+          params={{ slug: prev.slug }}
+          aria-label='Previous tweet'
+          className={cn(flankClassName, 'left-[max(1rem,calc(50%-30rem))]')}>
+          <ChevronLeft className='h-6 w-6' />
+        </Link>
+      ) : null}
+
+      {next ? (
+        <Link
+          to='/tweet/$slug'
+          params={{ slug: next.slug }}
+          aria-label='Next tweet'
+          className={cn(flankClassName, 'right-[max(1rem,calc(50%-30rem))]')}>
+          <ChevronRight className='h-6 w-6' />
+        </Link>
+      ) : null}
+    </>
+  )
+}
 
 export function TweetNav({ slug }: Props) {
   const router = useRouter()
@@ -98,37 +170,14 @@ export function TweetNav({ slug }: Props) {
 
   return (
     <div className='flex items-center justify-between border-b border-border/40 pb-4'>
-      <div className='flex items-center gap-1'>
-        {prev ? (
-          <Link
-            to='/tweet/$slug'
-            params={{ slug: prev.slug }}
-            aria-label='Previous tweet'
-            className={iconButtonClassName}>
-            <ChevronLeft className='h-4 w-4' />
-          </Link>
-        ) : (
-          <span aria-hidden className={disabledIconButtonClassName}>
-            <ChevronLeft className='h-4 w-4' />
-          </span>
-        )}
-
-        {next ? (
-          <Link
-            to='/tweet/$slug'
-            params={{ slug: next.slug }}
-            aria-label='Next tweet'
-            className={iconButtonClassName}>
-            <ChevronRight className='h-4 w-4' />
-          </Link>
-        ) : (
-          <span aria-hidden className={disabledIconButtonClassName}>
-            <ChevronRight className='h-4 w-4' />
-          </span>
-        )}
+      <div className='flex items-center gap-1 lg:hidden'>
+        <PrevLink prev={prev} />
+        <NextLink next={next} />
       </div>
 
-      <div className='flex items-center gap-1'>
+      <FlankingArrows prev={prev} next={next} />
+
+      <div className='flex items-center gap-1 lg:ml-auto'>
         <button
           type='button'
           onClick={() => setIsSearchOpen(true)}
