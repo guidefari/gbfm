@@ -62,6 +62,9 @@ function NextLink({ next }: { next: AdjacentPost }) {
 }
 
 function FlankingArrows({ prev, next }: { prev: AdjacentPost; next: AdjacentPost }) {
+  const leftPosition = 'left-[max(1rem,calc(50%-30rem))]'
+  const rightPosition = 'right-[max(1rem,calc(50%-30rem))]'
+
   return (
     <>
       {prev ? (
@@ -69,20 +72,28 @@ function FlankingArrows({ prev, next }: { prev: AdjacentPost; next: AdjacentPost
           to='/tweet/$slug'
           params={{ slug: prev.slug }}
           aria-label='Previous tweet'
-          className={cn(flankClassName, 'left-[max(1rem,calc(50%-30rem))]')}>
+          className={cn(flankClassName, leftPosition)}>
           <ChevronLeft className='h-6 w-6' />
         </Link>
-      ) : null}
+      ) : (
+        <span aria-hidden className={cn(flankClassName, leftPosition, 'text-muted-foreground/20')}>
+          <ChevronLeft className='h-6 w-6' />
+        </span>
+      )}
 
       {next ? (
         <Link
           to='/tweet/$slug'
           params={{ slug: next.slug }}
           aria-label='Next tweet'
-          className={cn(flankClassName, 'right-[max(1rem,calc(50%-30rem))]')}>
+          className={cn(flankClassName, rightPosition)}>
           <ChevronRight className='h-6 w-6' />
         </Link>
-      ) : null}
+      ) : (
+        <span aria-hidden className={cn(flankClassName, rightPosition, 'text-muted-foreground/20')}>
+          <ChevronRight className='h-6 w-6' />
+        </span>
+      )}
     </>
   )
 }
