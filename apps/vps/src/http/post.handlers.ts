@@ -70,7 +70,14 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
         const svc = yield* PostService
         const result = yield* dieOnDatabaseError(
           svc.getAllForEdit(
-            { limit: query.limit ?? 20, offset: query.offset ?? 0, type: query.type },
+            {
+              limit: query.limit ?? 20,
+              offset: query.offset ?? 0,
+              type: query.type,
+              source: query.source,
+              draft: query.status === undefined ? undefined : query.status === 'draft',
+              q: query.q
+            },
             user.id,
             user.role ?? 'user'
           )

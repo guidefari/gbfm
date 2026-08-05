@@ -70,6 +70,7 @@ import { Route as AdminMusicRouteImport } from './routes/admin/music'
 import { Route as AdminFrontendErrorsRouteImport } from './routes/admin/frontend-errors'
 import { Route as AdminEmailLogsRouteImport } from './routes/admin/email-logs'
 import { Route as AdminContentRouteImport } from './routes/admin/content'
+import { Route as AdminBlueskyRouteImport } from './routes/admin/bluesky'
 import { Route as AdminMusicEntityEntityTypeIdRouteImport } from './routes/admin/music-entity.$entityType.$id'
 
 const UnsubscribeRoute = UnsubscribeRouteImport.update({
@@ -377,6 +378,11 @@ const AdminContentRoute = AdminContentRouteImport.update({
   path: '/admin/content',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminBlueskyRoute = AdminBlueskyRouteImport.update({
+  id: '/admin/bluesky',
+  path: '/admin/bluesky',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminMusicEntityEntityTypeIdRoute =
   AdminMusicEntityEntityTypeIdRouteImport.update({
     id: '/admin/music-entity/$entityType/$id',
@@ -401,6 +407,7 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/tweets': typeof TweetsRoute
   '/unsubscribe': typeof UnsubscribeRoute
+  '/admin/bluesky': typeof AdminBlueskyRoute
   '/admin/content': typeof AdminContentRoute
   '/admin/email-logs': typeof AdminEmailLogsRoute
   '/admin/frontend-errors': typeof AdminFrontendErrorsRoute
@@ -460,6 +467,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/tweets': typeof TweetsRoute
   '/unsubscribe': typeof UnsubscribeRoute
+  '/admin/bluesky': typeof AdminBlueskyRoute
   '/admin/content': typeof AdminContentRoute
   '/admin/email-logs': typeof AdminEmailLogsRoute
   '/admin/frontend-errors': typeof AdminFrontendErrorsRoute
@@ -525,6 +533,7 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/tweets': typeof TweetsRoute
   '/unsubscribe': typeof UnsubscribeRoute
+  '/admin/bluesky': typeof AdminBlueskyRoute
   '/admin/content': typeof AdminContentRoute
   '/admin/email-logs': typeof AdminEmailLogsRoute
   '/admin/frontend-errors': typeof AdminFrontendErrorsRoute
@@ -591,6 +600,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/tweets'
     | '/unsubscribe'
+    | '/admin/bluesky'
     | '/admin/content'
     | '/admin/email-logs'
     | '/admin/frontend-errors'
@@ -650,6 +660,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/tweets'
     | '/unsubscribe'
+    | '/admin/bluesky'
     | '/admin/content'
     | '/admin/email-logs'
     | '/admin/frontend-errors'
@@ -714,6 +725,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/tweets'
     | '/unsubscribe'
+    | '/admin/bluesky'
     | '/admin/content'
     | '/admin/email-logs'
     | '/admin/frontend-errors'
@@ -779,6 +791,7 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   TweetsRoute: typeof TweetsRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
+  AdminBlueskyRoute: typeof AdminBlueskyRoute
   AdminContentRoute: typeof AdminContentRoute
   AdminEmailLogsRoute: typeof AdminEmailLogsRoute
   AdminFrontendErrorsRoute: typeof AdminFrontendErrorsRoute
@@ -1239,6 +1252,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminContentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/bluesky': {
+      id: '/admin/bluesky'
+      path: '/admin/bluesky'
+      fullPath: '/admin/bluesky'
+      preLoaderRoute: typeof AdminBlueskyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/music-entity/$entityType/$id': {
       id: '/admin/music-entity/$entityType/$id'
       path: '/admin/music-entity/$entityType/$id'
@@ -1360,6 +1380,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   TweetsRoute: TweetsRoute,
   UnsubscribeRoute: UnsubscribeRoute,
+  AdminBlueskyRoute: AdminBlueskyRoute,
   AdminContentRoute: AdminContentRoute,
   AdminEmailLogsRoute: AdminEmailLogsRoute,
   AdminFrontendErrorsRoute: AdminFrontendErrorsRoute,
