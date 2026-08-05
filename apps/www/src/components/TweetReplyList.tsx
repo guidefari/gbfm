@@ -1,19 +1,13 @@
-import { useRouter } from '@tanstack/react-router'
 import { MessageCircle } from 'lucide-react'
-import type { MouseEvent } from 'react'
-import { MDXRendrr } from '@/components/MDXRendrr'
-import { TweetAuthorRow } from '@/components/TweetAuthorRow'
-import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
-import { TweetQuoteCard } from '@/components/TweetQuoteCard'
-import { TweetTagLinks } from '@/components/TweetTagLinks'
+import { TweetReplyCard } from '@/components/TweetReplyCard'
 import { useMicroPostReplies } from '@/lib/http'
 
 type Props = {
   parentSlug: string
+  depth?: number
 }
 
-export function TweetReplyList({ parentSlug }: Props) {
-  const router = useRouter()
+export function TweetReplyList({ parentSlug, depth = 0 }: Props) {
   const { data, isPending } = useMicroPostReplies(parentSlug)
 
   if (isPending) {
@@ -37,68 +31,25 @@ export function TweetReplyList({ parentSlug }: Props) {
     return null
   }
 
-  const isInteractiveTarget = (event: MouseEvent) =>
-    event.target instanceof HTMLElement &&
-    Boolean(event.target.closest('a, button, input, textarea, select, [role="menuitem"]'))
-
   return (
     <div>
-      <div className='mb-3 flex items-center gap-3 text-xs text-muted-foreground'>
-        <span className='flex items-center gap-1.5'>
-          <MessageCircle className='h-3.5 w-3.5' />
-          {replies.length} {replies.length === 1 ? 'reply' : 'replies'}
-        </span>
-        <span aria-hidden className='h-px flex-1 bg-border/60' />
-      </div>
-      {replies.map((reply, index) => {
-        const hasMusicEntity = Boolean(reply.musicEntityType && reply.musicEntityId)
-        const isLast = index === replies.length - 1
-        return (
-          <div key={reply.id} className='relative'>
-            {!isLast && (
-              <div className='absolute left-[35px] top-full h-2 w-px bg-border/60' aria-hidden />
-            )}
-            <div
-              role='button'
-              tabIndex={0}
-              aria-label={`Open reply by ${reply.creators?.[0]?.name ?? 'author'}`}
-              onClick={(event) => {
-                if (isInteractiveTarget(event)) return
-                router.navigate({ to: '/tweet/$slug', params: { slug: reply.slug } })
-              }}
-              onKeyDown={(event) => {
-                if (event.key !== 'Enter') return
-                if (event.target !== event.currentTarget) return
-                router.navigate({ to: '/tweet/$slug', params: { slug: reply.slug } })
-              }}
-              className={`cursor-pointer space-y-2 rounded-lg border border-border/40 bg-card p-3 transition-colors hover:bg-card/80 ${isLast ? '' : 'mb-2'}`}>
-              <TweetAuthorRow
-                creators={reply.creators ? [...reply.creators] : []}
-                createdAt={reply.createdAt}
-              />
-              <div className='prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-p:my-0 prose-a:text-foreground prose-a:underline'>
-                <MDXRendrr mdxString={reply.compiledContent ?? reply.content ?? ''} />
-              </div>
-              {hasMusicEntity && reply.musicEntityType && reply.musicEntityId && (
-                <TweetMusicEntityCard
-                  entityType={reply.musicEntityType}
-                  entityId={reply.musicEntityId}
-                />
-              )}
-              {reply.quotedPostId && <TweetQuoteCard quotedPostId={reply.quotedPostId} />}
-              {reply.tags && reply.tags.length > 0 && <TweetTagLinks tags={reply.tags} />}
-              {Boolean(reply.replyCount) && (
-                <div className='flex items-center gap-1.5 text-xs text-muted-foreground'>
-                  <MessageCircle className='h-3 w-3' />
-                  <span>
-                    {reply.replyCount} {reply.replyCount === 1 ? 'reply' : 'replies'}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-        )
-      })}
+      {depth === 0 && (
+        <div className='mb-3 flex items-center gap-3 text-xs text-muted-foreground'>
+          <span className='flex items-center gap-1.5'>
+            <MessageCircle className='h-3.5 w-3.5' />
+            {replies.length} {replies.length === 1 ? 'reply' : 'replies'}
+          </span>
+          <span aria-hidden className='h-px flex-1 bg-border/60' />
+        </div>
+      )}
+      {replies.map((reply, index) => (
+        <TweetReplyCard
+          key={reply.id}
+          reply={reply}
+          depth={depth}
+          isLast={index === replies.length - 1}
+        />
+      ))}
     </div>
   )
 }

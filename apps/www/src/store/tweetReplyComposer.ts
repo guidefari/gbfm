@@ -1,32 +1,57 @@
 import { useAtomSet, useAtomValue } from '@effect/atom-react'
 import * as Atom from 'effect/unstable/reactivity/Atom'
+import { useMemo } from 'react'
 
-type TweetReplyComposerState = {
+type ComposerSlot = {
   readonly isOpen: boolean
   readonly draft: string
   readonly musicUrl: string
 }
 
-const initialState: TweetReplyComposerState = {
+type TweetReplyComposerState = {
+  readonly slots: Readonly<Record<string, ComposerSlot>>
+}
+
+const emptySlot: ComposerSlot = {
   isOpen: false,
   draft: '',
   musicUrl: ''
 }
 
+const initialState: TweetReplyComposerState = { slots: {} }
+
 export const tweetReplyComposerAtom = Atom.make<TweetReplyComposerState>(initialState).pipe(
   Atom.keepAlive
 )
 
-export const useTweetReplyComposer = () => useAtomValue(tweetReplyComposerAtom)
+export const useTweetReplyComposer = (slug: string): ComposerSlot => {
+  const state = useAtomValue(tweetReplyComposerAtom)
+  return state.slots[slug] ?? emptySlot
+}
 
-export const useTweetReplyComposerActions = () => {
+export const useTweetReplyComposerActions = (slug: string) => {
   const set = useAtomSet(tweetReplyComposerAtom)
 
-  return {
-    open: () => set((state) => ({ ...state, isOpen: true })),
-    setDraft: (draft: string) => set((state) => ({ ...state, draft })),
-    setMusicUrl: (musicUrl: string) => set((state) => ({ ...state, musicUrl })),
-    clearMusicUrl: () => set((state) => ({ ...state, musicUrl: '' })),
-    reset: () => set(() => initialState)
-  }
+  return useMemo(() => {
+    const update = (patch: Partial<ComposerSlot>) =>
+      set((state) => ({
+        slots: {
+          ...state.slots,
+          [slug]: { ...emptySlot, ...state.slots[slug], ...patch }
+        }
+      }))
+
+    return {
+      open: () => update({ isOpen: true }),
+      setDraft: (draft: string) => update({ draft }),
+      setMusicUrl: (musicUrl: string) => update({ musicUrl }),
+      clearMusicUrl: () => update({ musicUrl: '' }),
+      reset: () =>
+        set((state) => {
+          const nextSlots = { ...state.slots }
+          delete nextSlots[slug]
+          return { slots: nextSlots }
+        })
+    }
+  }, [set, slug])
 }
