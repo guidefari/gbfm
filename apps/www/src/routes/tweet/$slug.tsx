@@ -3,7 +3,6 @@ import { Effect } from 'effect'
 import { useEffect } from 'react'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { NewTweetFab } from '@/components/NewTweetFab'
-import { PostsNav } from '@/components/PostsNav'
 import { RouteError } from '@/components/RouteError'
 import { TweetActionsMenu } from '@/components/TweetActionsMenu'
 import { TweetAuthorRow } from '@/components/TweetAuthorRow'
@@ -24,7 +23,6 @@ export const Route = createFileRoute('/tweet/$slug')({
   component: TweetPostPage,
   errorComponent: ({ error }) => (
     <div className='max-w-3xl px-4 pt-8 mx-auto'>
-      <PostsNav active='tweets' />
       <RouteError error={error} />
     </div>
   ),
@@ -89,27 +87,23 @@ function TweetPostPage() {
 
   return (
     <div className='max-w-3xl px-4 py-8 mx-auto'>
-      <PostsNav active='tweets' />
       <div className='mb-6'>
         <TweetNav slug={slug} />
       </div>
       {post.parentPostId && <TweetParentPreview parentPostId={post.parentPostId} />}
       <article className='space-y-4 rounded-lg border border-border/60 bg-card/60 p-4 shadow-sm sm:p-5'>
-        <div className='flex items-start justify-between gap-3'>
-          <div className='space-y-1'>
-            <TweetAuthorRow creators={post.creators ?? []} createdAt={post.createdAt} />
-            {editedAt && (
-              <p className='pl-[52px] font-mono text-[11px] tracking-wider text-muted-foreground/60'>
-                Edited{' '}
-                {new Date(editedAt).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric'
-                })}
-              </p>
-            )}
-          </div>
-          <TweetActionsMenu post={post} slug={slug} canEdit={canEdit} />
+        <div className='space-y-1'>
+          <TweetAuthorRow creators={post.creators ?? []} createdAt={post.createdAt} />
+          {editedAt && (
+            <p className='pl-[52px] font-mono text-[11px] tracking-wider text-muted-foreground/60'>
+              Edited{' '}
+              {new Date(editedAt).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+              })}
+            </p>
+          )}
         </div>
 
         {post.title && (
@@ -126,11 +120,10 @@ function TweetPostPage() {
 
         {post.quotedPostId && <TweetQuoteCard quotedPostId={post.quotedPostId} />}
 
-        {post.tags && post.tags.length > 0 && (
-          <div className='pt-1'>
-            <TweetTagLinks tags={post.tags} />
-          </div>
-        )}
+        <div className='flex items-center justify-between gap-3 pt-1'>
+          {post.tags && post.tags.length > 0 ? <TweetTagLinks tags={post.tags} /> : <span />}
+          <TweetActionsMenu post={post} slug={slug} canEdit={canEdit} />
+        </div>
       </article>
       <div className='mt-6 space-y-4'>
         <TweetReplyComposer parentSlug={slug} />

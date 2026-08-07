@@ -1,12 +1,10 @@
-import { Badge, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@gbfm/ui'
 import { createFileRoute } from '@tanstack/react-router'
-import { Tag, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { z } from 'zod'
 import { EditorialListItem } from '@/components/EditorialListItem'
 import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
-import { PostsNav } from '@/components/PostsNav'
 import { QueryError } from '@/components/QueryError'
-import { useEditorialPosts, useEditorialTags } from '@/lib/http'
+import { useEditorialPosts } from '@/lib/http'
 import { generateSEOMeta, STATIC_PAGE_SEO } from '@/lib/seo'
 
 const searchSchema = z.object({
@@ -27,18 +25,9 @@ function EditorialListPage() {
   const { data, error, isPending, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useEditorialPosts(tag)
 
-  const { data: allTags } = useEditorialTags()
-
-  const handleTagChange = (newTag: string) => {
-    navigate({
-      search: newTag === 'all' ? {} : { tag: newTag }
-    })
-  }
-
   if (isPending) {
     return (
       <div className='max-w-2xl mx-auto px-4 py-8'>
-        <PostsNav active='editorial' />
         <div className='animate-pulse space-y-3'>
           {Array.from({ length: 5 }, (_, i) => `skeleton-${i}`).map((key) => (
             <div
@@ -62,7 +51,6 @@ function EditorialListPage() {
   if (error) {
     return (
       <div className='max-w-2xl mx-auto px-4 py-8'>
-        <PostsNav active='editorial' />
         <QueryError error={error} onRetry={() => refetch()} />
       </div>
     )
@@ -70,40 +58,16 @@ function EditorialListPage() {
 
   return (
     <div className='max-w-2xl mx-auto px-4 py-8'>
-      <PostsNav active='editorial' />
-      {allTags.length > 0 && (
-        <div className='mb-6'>
-          <Select value={tag || 'all'} onValueChange={handleTagChange}>
-            <SelectTrigger className='w-auto min-w-[120px] h-9 text-xs font-semibold tracking-wider bg-transparent border-none shadow-none hover:bg-muted/50 transition-colors px-3'>
-              <div className='flex items-center gap-2'>
-                <Tag className='w-3 h-3' />
-                <SelectValue placeholder='Filter' />
-              </div>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='all'>All tags</SelectItem>
-              {allTags.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {t}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      )}
       {tag && (
-        <div className='flex items-center gap-2 mb-3'>
-          <Badge variant='secondary' className='gap-1'>
-            <Tag className='w-3 h-3' />
-            {tag}
-            <button
-              type='button'
-              onClick={() => navigate({ search: {} })}
-              className='ml-1 hover:text-foreground'
-              aria-label='Remove tag filter'>
-              <X className='w-3 h-3' />
-            </button>
-          </Badge>
+        <div className='mb-6 flex items-center gap-2 text-xs tracking-wide text-muted-foreground'>
+          <span className='font-semibold text-foreground'>#{tag}</span>
+          <button
+            type='button'
+            onClick={() => navigate({ search: {} })}
+            className='hover:text-foreground'
+            aria-label='Remove tag filter'>
+            <X className='w-3 h-3' />
+          </button>
         </div>
       )}
       <div className='grid gap-3'>

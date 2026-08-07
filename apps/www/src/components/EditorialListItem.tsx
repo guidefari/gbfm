@@ -1,8 +1,7 @@
 import { getMixRecencyLabel } from '@gbfm/core/utils'
-import { Badge } from '@gbfm/ui'
 import type { SelectMdxCompiledEditorialPost } from '@gbfm/vps/schemas'
 import { Link } from '@tanstack/react-router'
-import { CalendarDays, Sparkles } from 'lucide-react'
+import { Sparkles } from 'lucide-react'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
 
 interface EditorialListItemProps {
@@ -23,16 +22,13 @@ export function EditorialListItem({ post }: EditorialListItemProps) {
 
       <div className='flex-1 min-w-0'>
         {recencyLabel && (
-          <Badge
-            variant='secondary'
-            className={`mb-1 ${
-              recencyLabel === 'new'
-                ? 'rounded-none border-none bg-highlight text-highlight-foreground text-[10px] tracking-widest font-bold gap-1 shadow-sm'
-                : 'rounded-none border-none bg-foreground text-black text-[10px] tracking-widest font-bold gap-1 shadow-sm'
+          <div
+            className={`mb-1 flex items-center gap-1 text-[10px] font-bold tracking-widest ${
+              recencyLabel === 'new' ? 'text-highlight' : 'text-muted-foreground'
             }`}>
             <Sparkles className='w-3 h-3' />
             {recencyLabel}
-          </Badge>
+          </div>
         )}
         <Link
           to='/editorial/$slug'
@@ -41,26 +37,40 @@ export function EditorialListItem({ post }: EditorialListItemProps) {
           {post.title}
         </Link>
 
-        {hasCreators && (
-          <div className='mt-2 text-xs tracking-widest text-muted-foreground/90'>
-            <span className='opacity-60'>By </span>
-            {post.creators?.map((creator, index) => (
-              <span key={creator.id}>
-                {creator.username ? (
-                  <Link
-                    to='/profile/$username'
-                    params={{ username: creator.username }}
-                    className='font-semibold text-foreground/90 hover:text-foreground hover:underline'>
-                    {creator.name}
-                  </Link>
-                ) : (
-                  <span className='font-semibold text-foreground/90'>{creator.name}</span>
-                )}
-                {index < (post.creators?.length || 0) - 1 && (
-                  <span className='mx-1 opacity-50'>&</span>
-                )}
+        {(hasCreators || post.createdAt) && (
+          <div className='mt-2 flex flex-wrap items-center gap-x-1.5 text-xs tracking-widest text-muted-foreground/90'>
+            {hasCreators && (
+              <>
+                <span className='opacity-60'>By </span>
+                {post.creators?.map((creator, index) => (
+                  <span key={creator.id}>
+                    {creator.username ? (
+                      <Link
+                        to='/profile/$username'
+                        params={{ username: creator.username }}
+                        className='font-semibold text-foreground/90 hover:text-foreground hover:underline'>
+                        {creator.name}
+                      </Link>
+                    ) : (
+                      <span className='font-semibold text-foreground/90'>{creator.name}</span>
+                    )}
+                    {index < (post.creators?.length || 0) - 1 && (
+                      <span className='mx-1 opacity-50'>&</span>
+                    )}
+                  </span>
+                ))}
+              </>
+            )}
+            {hasCreators && post.createdAt && <span className='opacity-40'>&middot;</span>}
+            {post.createdAt && (
+              <span>
+                {new Date(post.createdAt).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric'
+                })}
               </span>
-            ))}
+            )}
           </div>
         )}
 
@@ -71,30 +81,17 @@ export function EditorialListItem({ post }: EditorialListItemProps) {
         )}
 
         {post.tags && post.tags.length > 0 && (
-          <div className='mt-2 flex flex-wrap items-center gap-1.5'>
+          <div className='mt-2 flex flex-wrap gap-x-2 gap-y-1 text-xs tracking-wide text-muted-foreground/80'>
             {post.tags.map((postTag) => (
-              <Badge
+              <Link
                 key={postTag}
-                variant='secondary'
-                className='rounded-none border-none bg-muted/80 text-foreground/85 text-[10px] tracking-widest px-2 py-1'>
-                {postTag}
-              </Badge>
+                to='/editorial'
+                search={{ tag: postTag }}
+                onClick={(e) => e.stopPropagation()}
+                className='hover:text-foreground hover:underline'>
+                #{postTag}
+              </Link>
             ))}
-          </div>
-        )}
-
-        {post.createdAt && (
-          <div className='mt-2'>
-            <Badge
-              variant='secondary'
-              className='rounded-none border-none bg-muted/90 text-foreground/90 text-[10px] tracking-widest font-semibold px-2 py-1 gap-1.5'>
-              <CalendarDays className='w-3.5 h-3.5' />
-              {new Date(post.createdAt).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-              })}
-            </Badge>
           </div>
         )}
       </div>
