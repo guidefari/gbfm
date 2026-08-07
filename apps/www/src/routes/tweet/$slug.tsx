@@ -87,7 +87,7 @@ function TweetPostPage() {
 
   return (
     <div className='max-w-3xl px-4 py-8 mx-auto'>
-      <div className='mb-6'>
+      <div className='mb-6 lg:mb-0'>
         <TweetNav slug={slug} />
       </div>
       {post.parentPostId && <TweetParentPreview parentPostId={post.parentPostId} />}

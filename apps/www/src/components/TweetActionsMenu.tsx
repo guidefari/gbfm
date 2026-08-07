@@ -9,9 +9,11 @@ import {
 } from '@gbfm/ui'
 import type { SelectMdxCompiledMicroPost } from '@gbfm/vps/schemas'
 import { Link } from '@tanstack/react-router'
-import { Edit3, ImageDown, MoreHorizontal, Share2 } from 'lucide-react'
+import { Edit3, ImageDown, MoreHorizontal, Search, Share2, Shuffle } from 'lucide-react'
 import { useState } from 'react'
+import { TweetSearchDialog } from '@/components/TweetSearchDialog'
 import { TweetDownloadDialog } from '@/components/tweet-export/TweetDownloadDialog'
+import { useRandomMicroPost } from '@/lib/http'
 import { getShareUrl } from '@/lib/share'
 import { log } from '@/services/logger'
 
@@ -23,7 +25,9 @@ type Props = {
 
 export function TweetActionsMenu({ post, slug, canEdit }: Props) {
   const [downloadOpen, setDownloadOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const isShareEnabled = useFeatureFlag('ui.share')
+  const { goToRandom } = useRandomMicroPost()
 
   const handleShare = async () => {
     const shareUrl = getShareUrl('post', slug)
@@ -77,6 +81,17 @@ export function TweetActionsMenu({ post, slug, canEdit }: Props) {
               copy link
             </DropdownMenuItem>
           )}
+          <DropdownMenuItem
+            onSelect={() => {
+              setTimeout(() => setSearchOpen(true), 0)
+            }}>
+            <Search className='mr-2 h-4 w-4' />
+            search
+          </DropdownMenuItem>
+          <DropdownMenuItem onSelect={() => goToRandom(slug)}>
+            <Shuffle className='mr-2 h-4 w-4' />
+            random tweet
+          </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
 
@@ -86,6 +101,7 @@ export function TweetActionsMenu({ post, slug, canEdit }: Props) {
         open={downloadOpen}
         onOpenChange={setDownloadOpen}
       />
+      <TweetSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
     </>
   )
 }
