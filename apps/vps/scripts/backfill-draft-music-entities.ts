@@ -45,9 +45,18 @@ const isMusicHost = (url: string): boolean => {
 
 const URL_REGEX = /https?:\/\/[^\s)]+/g
 
+// Bluesky post content can contain HTML-entity-escaped markup fragments
+// right after a URL (e.g. `...si=xyz'}"&gt;Groove`) that the regex above
+// greedily swallows since it only stops at whitespace/`)`. Trim anything
+// from the first stray quote/brace/angle-bracket (raw or entity-escaped)
+// onward.
+const trimTrailingMarkup = (url: string): string =>
+  url.replace(/["'}]|&gt;|&lt;|>.*$/, '').replace(/[)>]+$/, '')
+
 const extractCandidateUrl = (content: string): string | undefined => {
   const matches = content.match(URL_REGEX) ?? []
-  return matches.find(isMusicHost)
+  const cleaned = matches.map(trimTrailingMarkup)
+  return cleaned.find(isMusicHost)
 }
 
 const entityTypeForUrl = (url: string): 'album' | 'track' =>
@@ -58,7 +67,7 @@ const apply = process.argv.includes('--apply')
 // Odesli rate-limits aggressively on repeated calls and gives no Retry-After
 // hint, so we space requests out ourselves rather than discover the limit
 // via a burst of 429s.
-const THROTTLE = '1500 millis'
+const THROTTLE = '6 seconds'
 
 type DraftOutcome = 'resolved' | 'skippedNoUrl' | 'failed'
 
@@ -96,8 +105,9 @@ const processDraft = (
       return 'failed' as const
     }
 
+    const marker = outcome.links.length === 0 ? '⚠' : '✓'
     console.log(
-      `✓ ${draft.id} — ${entityType}:${outcome.entity.id} "${scraped.entityMeta.title}" by ${scraped.entityMeta.artistName} (${outcome.links.length} links)`
+      `${marker} ${draft.id} — ${entityType}:${outcome.entity.id} "${scraped.entityMeta.title}" by ${scraped.entityMeta.artistName} (${outcome.links.length} links)`
     )
 
     if (apply) {

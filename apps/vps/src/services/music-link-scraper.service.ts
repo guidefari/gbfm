@@ -249,7 +249,7 @@ export class OdesliProvider implements MusicDataProvider {
       return { links, entityMeta } satisfies ProviderResult
     }).pipe(
       Effect.retry({
-        schedule: Schedule.exponential('1 second').pipe(Schedule.upTo({ times: 3 })),
+        schedule: Schedule.exponential('2 seconds').pipe(Schedule.upTo({ times: 5 })),
         while: (err) => err.statusCode === 429
       }),
       Effect.withSpan('musicScraper.odesli', {
