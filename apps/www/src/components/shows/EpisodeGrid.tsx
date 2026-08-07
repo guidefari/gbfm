@@ -36,7 +36,7 @@ export function EpisodeGrid({ showSlug }: EpisodeGridProps) {
 
   if (error) {
     return (
-      <div className='text-center text-destructive py-8 font-mono text-base'>
+      <div className='text-center text-destructive py-8 font-jetbrains text-base'>
         Error loading episodes: {error.message}
       </div>
     )
@@ -44,14 +44,14 @@ export function EpisodeGrid({ showSlug }: EpisodeGridProps) {
 
   if (!episodes || episodes.length === 0) {
     return (
-      <div className='text-center text-muted-foreground py-8 font-mono text-base'>
+      <div className='text-center text-muted-foreground py-8 font-jetbrains text-base'>
         No episodes yet
       </div>
     )
   }
 
   return (
-    <div className='font-mono'>
+    <div className='font-jetbrains'>
       {episodes.map((episode) => (
         <EpisodeRow key={episode.id} mix={episode} />
       ))}
