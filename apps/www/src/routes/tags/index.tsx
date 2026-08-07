@@ -1,5 +1,4 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
-import { PostsNav } from '@/components/PostsNav'
 import { QueryError } from '@/components/QueryError'
 import { useMicroTags } from '@/lib/http'
 import { generateSEOMeta } from '@/lib/seo'
@@ -20,7 +19,6 @@ function TagsIndexPage() {
 
   return (
     <div className='mx-auto max-w-2xl px-4 py-8'>
-      <PostsNav active='tweets' />
       <h1 className='mb-6 text-lg font-black tracking-tight text-foreground'>Tags</h1>
 
       {isPending ? (

@@ -3,7 +3,6 @@ import { MessageCircle } from 'lucide-react'
 import type { MouseEvent } from 'react'
 import { LoadMoreTrigger } from '@/components/LoadMoreTrigger'
 import { MDXRendrr } from '@/components/MDXRendrr'
-import { PostsNav } from '@/components/PostsNav'
 import { QueryError } from '@/components/QueryError'
 import { TweetAuthorRow } from '@/components/TweetAuthorRow'
 import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
@@ -92,7 +91,6 @@ function TagPage() {
 
   return (
     <div className='mx-auto max-w-2xl px-4 py-8'>
-      <PostsNav active='tweets' />
       <div className='mb-6 flex items-baseline gap-3'>
         <h1 className='text-lg font-black tracking-tight text-foreground'>#{tag}</h1>
         <Link
