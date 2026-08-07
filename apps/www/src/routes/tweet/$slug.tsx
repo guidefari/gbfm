@@ -2,7 +2,6 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Effect } from 'effect'
 import { useEffect } from 'react'
 import { MDXRendrr } from '@/components/MDXRendrr'
-import { NewTweetFab } from '@/components/NewTweetFab'
 import { RouteError } from '@/components/RouteError'
 import { TweetActionsMenu } from '@/components/TweetActionsMenu'
 import { TweetAuthorRow } from '@/components/TweetAuthorRow'
@@ -120,16 +119,17 @@ function TweetPostPage() {
 
         {post.quotedPostId && <TweetQuoteCard quotedPostId={post.quotedPostId} />}
 
-        <div className='flex items-center justify-between gap-3 pt-1'>
-          {post.tags && post.tags.length > 0 ? <TweetTagLinks tags={post.tags} /> : <span />}
-          <TweetActionsMenu post={post} slug={slug} canEdit={canEdit} />
-        </div>
+        {post.tags && post.tags.length > 0 && (
+          <div className='pt-1'>
+            <TweetTagLinks tags={post.tags} />
+          </div>
+        )}
       </article>
       <div className='mt-6 space-y-4'>
         <TweetReplyComposer parentSlug={slug} />
         <TweetReplyList parentSlug={slug} />
       </div>
-      <NewTweetFab />
+      <TweetActionsMenu post={post} slug={slug} canEdit={canEdit} />
     </div>
   )
 }

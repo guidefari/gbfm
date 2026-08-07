@@ -1,6 +1,6 @@
 import { useFeatureFlag } from '@gbfm/core/feature-flags'
+import { canCreatePosts } from '@gbfm/core/roles'
 import {
-  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -9,13 +9,14 @@ import {
 } from '@gbfm/ui'
 import type { SelectMdxCompiledMicroPost } from '@gbfm/vps/schemas'
 import { Link } from '@tanstack/react-router'
-import { Edit3, ImageDown, MoreHorizontal, Search, Share2, Shuffle } from 'lucide-react'
+import { Edit3, ImageDown, Pencil, PenSquare, Search, Share2, Shuffle } from 'lucide-react'
 import { useState } from 'react'
-import { TweetSearchDialog } from '@/components/TweetSearchDialog'
-import { TweetDownloadDialog } from '@/components/tweet-export/TweetDownloadDialog'
+import { useSession } from '@/lib/auth-client'
 import { useRandomMicroPost } from '@/lib/http'
 import { getShareUrl } from '@/lib/share'
 import { log } from '@/services/logger'
+import { TweetSearchDialog } from '@/components/TweetSearchDialog'
+import { TweetDownloadDialog } from '@/components/tweet-export/TweetDownloadDialog'
 
 type Props = {
   post: SelectMdxCompiledMicroPost
@@ -28,6 +29,9 @@ export function TweetActionsMenu({ post, slug, canEdit }: Props) {
   const [searchOpen, setSearchOpen] = useState(false)
   const isShareEnabled = useFeatureFlag('ui.share')
   const { goToRandom } = useRandomMicroPost()
+  const { data: session } = useSession()
+  const user = session?.user
+  const canCreate = Boolean(user && canCreatePosts(user.role))
 
   const handleShare = async () => {
     const shareUrl = getShareUrl('post', slug)
@@ -51,15 +55,22 @@ export function TweetActionsMenu({ post, slug, canEdit }: Props) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant='ghost'
-            size='icon'
+          <button
+            type='button'
             aria-label='Tweet actions'
-            className='h-8 w-8 rounded-md text-muted-foreground hover:text-foreground'>
-            <MoreHorizontal className='h-4 w-4' />
-          </Button>
+            className='fixed bottom-[calc(env(safe-area-inset-bottom)+3.75rem)] right-4 z-50 flex h-12 w-12 items-center justify-center rounded-sm bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105 hover:bg-primary/90 lg:bottom-16 lg:right-8'>
+            <Pencil className='h-5 w-5' />
+          </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align='end' className='min-w-44'>
+        <DropdownMenuContent align='end' side='top' className='min-w-44'>
+          {canCreate && (
+            <DropdownMenuItem asChild>
+              <Link to='/new/tweet'>
+                <PenSquare className='mr-2 h-4 w-4' />
+                new tweet
+              </Link>
+            </DropdownMenuItem>
+          )}
           {canEdit && (
             <DropdownMenuItem asChild>
               <Link to='/new/tweet' search={{ edit: slug }}>
