@@ -54,7 +54,7 @@ const BaseServicesLayer = Layer.mergeAll(
   SpotifyServiceLayer,
   MusicReminderServiceLayer,
   ReminderSignalServiceLayer,
-  MusicLinkScraperServiceLayer,
+  MusicLinkScraperServiceLayer.pipe(Layer.provide(SpotifyServiceLayer)),
   AudioServiceLayer.pipe(Layer.provide(MdxServiceLayer), Layer.provide(UploadAssetDepsLive)),
   PostServiceLayer.pipe(Layer.provide(MdxServiceLayer), Layer.provide(UploadAssetDepsLive)),
   ProfileServiceLayer,

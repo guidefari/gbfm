@@ -67,6 +67,19 @@ export interface SpotifyService {
     limit?: number,
     offset?: number
   ) => Effect.Effect<SearchAlbumsResponse, SpotifyError>
+  readonly searchTrackByIsrc: (
+    isrc: string
+  ) => Effect.Effect<
+    { id: string; url: string; title: string; artist: string } | null,
+    SpotifyError
+  >
+  readonly searchAlbumByTitleArtist: (
+    title: string,
+    artist: string
+  ) => Effect.Effect<
+    { id: string; url: string; title: string; artist: string } | null,
+    SpotifyError
+  >
   readonly enrichTrackFromUrl: (url: string) => Effect.Effect<
     {
       title: string
@@ -307,6 +320,84 @@ const searchAlbumsEffect = (query: string, limit = 10, offset = 0) =>
     return searchResponse
   })
 
+const searchTrackByIsrcEffect = (isrc: string) =>
+  Effect.gen(function* () {
+    if (!isrc || isrc.trim() === '') {
+      return yield* new SpotifyError({
+        message: 'ISRC is required',
+        operation: 'searchTrackByIsrc',
+        statusCode: 400
+      })
+    }
+
+    const data = yield* Effect.tryPromise({
+      try: () => spotifyClient.search(`isrc:${isrc}`, ['track'], undefined, 1),
+      catch: (error) =>
+        new SpotifyError({
+          message: `Failed to search track by ISRC: ${getErrorMessage(error)}`,
+          operation: 'searchTrackByIsrc',
+          statusCode: 500
+        })
+    })
+
+    const track = data.tracks?.items[0]
+    if (!track) return null
+
+    return {
+      id: track.id,
+      url: track.external_urls.spotify,
+      title: track.name,
+      artist: track.artists.map((artist) => artist.name).join(', ')
+    }
+  })
+
+const searchAlbumByTitleArtistEffect = (title: string, artist: string) =>
+  Effect.gen(function* () {
+    if (!title || title.trim() === '') {
+      return yield* new SpotifyError({
+        message: 'Album title is required',
+        operation: 'searchAlbumByTitleArtist',
+        statusCode: 400
+      })
+    }
+
+    const query = artist ? `album:${title} artist:${artist}` : `album:${title}`
+
+    const data = yield* Effect.tryPromise({
+      try: () => spotifyClient.search(query, ['album'], undefined, 1),
+      catch: (error) =>
+        new SpotifyError({
+          message: `Failed to search album by title/artist: ${getErrorMessage(error)}`,
+          operation: 'searchAlbumByTitleArtist',
+          statusCode: 500
+        })
+    })
+
+    const album = data.albums?.items[0]
+    if (!album) return null
+
+    return {
+      id: album.id,
+      url: album.external_urls.spotify,
+      title: album.name,
+      artist: album.artists.map((a) => a.name).join(', ')
+    }
+  })
+
+const searchTrackByIsrcWithSpan = (isrc: string) =>
+  searchTrackByIsrcEffect(isrc).pipe(
+    Effect.withSpan('spotify.searchTrackByIsrc', {
+      attributes: { 'spotify.isrc': isrc, 'external.system': 'spotify' }
+    })
+  )
+
+const searchAlbumByTitleArtistWithSpan = (title: string, artist: string) =>
+  searchAlbumByTitleArtistEffect(title, artist).pipe(
+    Effect.withSpan('spotify.searchAlbumByTitleArtist', {
+      attributes: { 'spotify.title': title, 'spotify.artist': artist, 'external.system': 'spotify' }
+    })
+  )
+
 const getTrackWithSpan = (id: string) =>
   getTrackEffect(id).pipe(
     Effect.withSpan('spotify.getTrack', {
@@ -524,5 +615,7 @@ export const SpotifyServiceLayer = Layer.succeed(SpotifyService, {
   getPlaylistForImport: getPlaylistForImportWithSpan,
   getTrackForImport: getTrackForImportWithSpan,
   searchAlbums: searchAlbumsWithSpan,
+  searchTrackByIsrc: searchTrackByIsrcWithSpan,
+  searchAlbumByTitleArtist: searchAlbumByTitleArtistWithSpan,
   enrichTrackFromUrl: enrichTrackFromUrlWithSpan
 })
