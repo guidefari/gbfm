@@ -9,7 +9,7 @@ import {
 } from '@gbfm/ui'
 import type { SelectMdxCompiledMicroPost } from '@gbfm/vps/schemas'
 import { Link } from '@tanstack/react-router'
-import { Edit3, ImageDown, MoreHorizontal, PenSquare, Search, Share2, Shuffle } from 'lucide-react'
+import { Edit3, ImageDown, Menu, PenSquare, Search, Share2, Shuffle } from 'lucide-react'
 import { useState } from 'react'
 import { useSession } from '@/lib/auth-client'
 import { useRandomMicroPost } from '@/lib/http'
@@ -59,7 +59,7 @@ export function TweetActionsMenu({ post, slug, canEdit }: Props) {
             type='button'
             aria-label='Tweet actions'
             className='fixed bottom-[calc(env(safe-area-inset-bottom)+3.75rem)] right-4 z-50 flex h-12 w-12 items-center justify-center rounded-sm bg-primary text-primary-foreground shadow-lg transition-transform hover:scale-105 hover:bg-primary/90 lg:bottom-16 lg:right-8'>
-            <MoreHorizontal className='h-5 w-5' />
+            <Menu className='h-5 w-5' />
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align='end' side='top' className='min-w-44'>
