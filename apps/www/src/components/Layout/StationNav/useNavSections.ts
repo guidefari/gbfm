@@ -7,7 +7,6 @@ export type NavSections = {
   isAuthenticated: boolean
   browse: NavItem[]
   create: NavItem[]
-  admin: NavItem[]
   utility: NavItem[]
 }
 
@@ -26,11 +25,9 @@ export function useNavSections(): NavSections {
         (item) =>
           (item.tier === 'primary' || item.tier === 'secondary') &&
           !item.adminOnly &&
-          item.id !== 'home' &&
-          item.id !== 'shows'
+          item.id !== 'home'
       ),
       create: items.filter((item) => item.tier === 'create' && canSeeNavItem(item, access)),
-      admin: items.filter((item) => item.adminOnly && canSeeNavItem(item, access)),
       utility: items.filter((item) => item.tier === 'utility')
     }
   }, [isAuthenticated, role])

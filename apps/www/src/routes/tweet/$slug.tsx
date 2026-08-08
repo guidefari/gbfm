@@ -2,11 +2,10 @@ import { createFileRoute } from '@tanstack/react-router'
 import { Effect } from 'effect'
 import { useEffect } from 'react'
 import { MDXRendrr } from '@/components/MDXRendrr'
-import { NewTweetFab } from '@/components/NewTweetFab'
-import { PostsNav } from '@/components/PostsNav'
 import { RouteError } from '@/components/RouteError'
 import { TweetActionsMenu } from '@/components/TweetActionsMenu'
 import { TweetAuthorRow } from '@/components/TweetAuthorRow'
+import { TweetCardActions } from '@/components/TweetCardActions'
 import { TweetMusicEntityCard } from '@/components/TweetMusicEntityCard'
 import { TweetNav } from '@/components/TweetNav'
 import { TweetParentPreview } from '@/components/TweetParentPreview'
@@ -16,6 +15,7 @@ import { TweetReplyList } from '@/components/TweetReplyList'
 import { TweetTagLinks } from '@/components/TweetTagLinks'
 import { useSession } from '@/lib/auth-client'
 import { getApiClient } from '@/lib/api-client'
+import { useMicroPostReplies } from '@/lib/http'
 import { generateMicroPostSEO, generateSEOMeta } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
 import { useRecordTweetViewed } from '@/store/tweetSeen'
@@ -24,7 +24,6 @@ export const Route = createFileRoute('/tweet/$slug')({
   component: TweetPostPage,
   errorComponent: ({ error }) => (
     <div className='max-w-3xl px-4 pt-8 mx-auto'>
-      <PostsNav active='tweets' />
       <RouteError error={error} />
     </div>
   ),
@@ -71,6 +70,12 @@ function TweetPostPage() {
   const { data: session } = useSession()
   const user = session?.user
   const recordViewed = useRecordTweetViewed()
+  const { data: repliesData } = useMicroPostReplies(slug)
+  const replyCount = repliesData?.data.length ?? 0
+
+  const scrollToReplies = () => {
+    document.getElementById('replies')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   useEffect(() => {
     recordViewed({ postId: post.id, slug })
@@ -89,27 +94,23 @@ function TweetPostPage() {
 
   return (
     <div className='max-w-3xl px-4 py-8 mx-auto'>
-      <PostsNav active='tweets' />
-      <div className='mb-6'>
+      <div className='mb-6 lg:mb-0'>
         <TweetNav slug={slug} />
       </div>
       {post.parentPostId && <TweetParentPreview parentPostId={post.parentPostId} />}
       <article className='space-y-4 rounded-lg border border-border/60 bg-card/60 p-4 shadow-sm sm:p-5'>
-        <div className='flex items-start justify-between gap-3'>
-          <div className='space-y-1'>
-            <TweetAuthorRow creators={post.creators ?? []} createdAt={post.createdAt} />
-            {editedAt && (
-              <p className='pl-[52px] font-mono text-[11px] tracking-wider text-muted-foreground/60'>
-                Edited{' '}
-                {new Date(editedAt).toLocaleDateString('en-US', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric'
-                })}
-              </p>
-            )}
-          </div>
-          <TweetActionsMenu post={post} slug={slug} canEdit={canEdit} />
+        <div className='space-y-1'>
+          <TweetAuthorRow creators={post.creators ?? []} createdAt={post.createdAt} />
+          {editedAt && (
+            <p className='pl-[52px] font-mono text-[11px] tracking-wider text-muted-foreground/60'>
+              Edited{' '}
+              {new Date(editedAt).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric'
+              })}
+            </p>
+          )}
         </div>
 
         {post.title && (
@@ -131,12 +132,22 @@ function TweetPostPage() {
             <TweetTagLinks tags={post.tags} />
           </div>
         )}
+
+        <div className='border-t border-border/40 pt-3'>
+          <TweetCardActions
+            post={post}
+            slug={slug}
+            canEdit={canEdit}
+            replyCount={replyCount}
+            onReplyCountClick={scrollToReplies}
+          />
+        </div>
       </article>
-      <div className='mt-6 space-y-4'>
+      <div id='replies' className='mt-6 scroll-mt-4 space-y-4'>
         <TweetReplyComposer parentSlug={slug} />
         <TweetReplyList parentSlug={slug} />
       </div>
-      <NewTweetFab />
+      <TweetActionsMenu />
     </div>
   )
 }

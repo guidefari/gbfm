@@ -1,32 +1,91 @@
-import { Effect } from 'effect'
+import { Effect, Schema } from 'effect'
 import { getErrorMessage, SpotifyError } from '@/errors'
 
 export interface BandcampAlbum {
-  '@type': 'MusicAlbum'
+  '@type': 'MusicAlbum' | 'MusicRecording'
   name: string
-  byArtist: { name: string } | { name: string }[]
+  byArtist: { readonly name: string } | ReadonlyArray<{ readonly name: string }>
   image: string
   datePublished: string
+  isrcCode?: string
   track?: {
-    itemListElement: Array<{
-      item: {
-        name: string
-        duration: string
-        '@id': string
+    readonly itemListElement: ReadonlyArray<{
+      readonly item: {
+        readonly name: string
+        readonly duration: string
+        readonly '@id': string
       }
     }>
   }
   description?: string
 }
 
+const BandcampArtistSchema = Schema.Struct({ name: Schema.String })
+const BandcampArtistOrArraySchema = Schema.Union([
+  BandcampArtistSchema,
+  Schema.Array(BandcampArtistSchema)
+])
+
+const BandcampTrackListSchema = Schema.Struct({
+  itemListElement: Schema.Array(
+    Schema.Struct({
+      item: Schema.Struct({
+        name: Schema.String,
+        duration: Schema.String,
+        '@id': Schema.String
+      })
+    })
+  )
+})
+
+const BandcampJsonLdSchema = Schema.Struct({
+  '@type': Schema.String,
+  name: Schema.optional(Schema.String),
+  image: Schema.optional(Schema.Union([Schema.String, Schema.Array(Schema.String)])),
+  datePublished: Schema.optional(Schema.String),
+  isrcCode: Schema.optional(Schema.String),
+  byArtist: Schema.optional(BandcampArtistOrArraySchema),
+  inAlbum: Schema.optional(
+    Schema.Struct({
+      byArtist: Schema.optional(BandcampArtistOrArraySchema)
+    })
+  ),
+  track: Schema.optional(BandcampTrackListSchema),
+  description: Schema.optional(Schema.String)
+})
+
+const decodeBandcampJsonLd = Schema.decodeUnknownOption(BandcampJsonLdSchema)
+
 const bandcampCache = new Map<string, { data: BandcampAlbum; timestamp: number }>()
 const CACHE_DURATION = 24 * 60 * 60 * 1000 // 24 hours
 
+// A track page's top-level byArtist is the label, not the performer — the
+// real artist (when different from the label) lives under inAlbum.byArtist.
+const artistForJsonLd = (raw: typeof BandcampJsonLdSchema.Type): BandcampAlbum['byArtist'] =>
+  raw.inAlbum?.byArtist ?? raw.byArtist ?? { name: '' }
+
 const parseBandcampJsonLd = (json: string): BandcampAlbum | undefined => {
+  let parsed: unknown
   try {
-    return JSON.parse(json)
+    parsed = JSON.parse(json)
   } catch {
     return undefined
+  }
+
+  const decoded = decodeBandcampJsonLd(parsed)
+  if (decoded._tag === 'None') return undefined
+  const raw = decoded.value
+
+  const image = Array.isArray(raw.image) ? raw.image[0] : raw.image
+  return {
+    '@type': raw['@type'] === 'MusicRecording' ? 'MusicRecording' : 'MusicAlbum',
+    name: raw.name ?? '',
+    byArtist: artistForJsonLd(raw),
+    image: image ?? '',
+    datePublished: raw.datePublished ?? new Date().toISOString(),
+    isrcCode: raw.isrcCode,
+    track: raw.track,
+    description: raw.description
   }
 }
 
@@ -171,8 +230,11 @@ export const calculateBandcampTotalDuration = (metadata: BandcampAlbum): number 
   )
 }
 
+const isArtistList = (
+  value: BandcampAlbum['byArtist']
+): value is ReadonlyArray<{ readonly name: string }> => Array.isArray(value)
+
 export const extractBandcampArtist = (metadata: BandcampAlbum): string => {
-  return Array.isArray(metadata.byArtist)
-    ? metadata.byArtist.map((a) => a.name).join(', ')
-    : metadata.byArtist.name
+  const byArtist = metadata.byArtist
+  return isArtistList(byArtist) ? byArtist.map((a) => a.name).join(', ') : byArtist.name
 }

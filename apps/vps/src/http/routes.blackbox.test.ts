@@ -2782,7 +2782,11 @@ describe('top-level navigation excludes replies', () => {
       const seenSlugs = new Set<string>()
       for (let i = 0; i < 20; i++) {
         const randomRes = await webHandler.handler(
-          new Request(`http://localhost/api/content/posts/micro/random`)
+          new Request(`http://localhost/api/content/posts/micro/random`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ exclude: [] })
+          })
         )
         expect(randomRes.status).toBe(200)
         const randomBody = await decodeResponseBody(GetRandomMicroPostResponse, randomRes)

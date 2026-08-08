@@ -1,0 +1,127 @@
+import { randomUUID } from 'node:crypto'
+import { inArray } from 'drizzle-orm'
+import { Effect, Layer } from 'effect'
+import { afterAll, beforeAll, describe, expect, test } from 'vitest'
+import { db } from '@/db'
+import { audioTable } from '@/db/audio.schema'
+import { MdxServiceLayer } from '@/lib/mdx'
+import { ConfigServiceLayer } from '@/services/config.service'
+import { UploadAssetServiceLayer } from '@/services/upload-asset.service'
+import { AudioService, AudioServiceLayer } from './audio.service'
+
+const slugPrefix = `audio-sort-${randomUUID().slice(0, 8)}`
+
+const seeded = [
+  { playCount: 5, minutesAgo: 40 },
+  { playCount: 90, minutesAgo: 30 },
+  { playCount: 1, minutesAgo: 20 },
+  { playCount: 42, minutesAgo: 10 }
+].map((row, index) => ({
+  ...row,
+  id: randomUUID(),
+  slug: `${slugPrefix}-${index}`
+}))
+
+const seededIds = seeded.map((row) => row.id)
+const seededSlugs = new Set(seeded.map((row) => row.slug))
+const slugAt = (index: number) => `${slugPrefix}-${index}`
+
+const adminId = `audio-sort-admin-${randomUUID()}`
+
+const getService = () =>
+  Effect.runPromise(
+    Effect.gen(function* () {
+      return yield* AudioService
+    }).pipe(
+      Effect.provide(
+        AudioServiceLayer.pipe(
+          Layer.provide(MdxServiceLayer),
+          Layer.provide(Layer.mergeAll(ConfigServiceLayer, UploadAssetServiceLayer))
+        )
+      )
+    )
+  )
+
+const fetchSeeded = async (options: {
+  limit: number
+  offset: number
+  sort?: 'plays' | 'created'
+  order?: 'asc' | 'desc'
+}) => {
+  const service = await getService()
+  const result = await Effect.runPromise(service.getByTypeForEdit('mix', options, adminId, 'admin'))
+  return result.data.filter((audio) => seededSlugs.has(audio.slug)).map((audio) => audio.slug)
+}
+
+beforeAll(async () => {
+  const now = Date.now()
+  await db.insert(audioTable).values(
+    seeded.map((row) => ({
+      id: row.id,
+      slug: row.slug,
+      title: `Sort fixture ${row.slug}`,
+      content: '',
+      type: 'mix' as const,
+      url: 'https://example.com/audio.mp3',
+      draft: false,
+      playCount: row.playCount,
+      createdAt: new Date(now - row.minutesAgo * 60_000)
+    }))
+  )
+})
+
+afterAll(async () => {
+  await db.delete(audioTable).where(inArray(audioTable.id, seededIds))
+})
+
+describe('AudioService.getByTypeForEdit ordering', () => {
+  test('defaults to newest first when sort and order are omitted', async () => {
+    const slugs = await fetchSeeded({ limit: 100, offset: 0 })
+
+    expect(slugs).toEqual([slugAt(3), slugAt(2), slugAt(1), slugAt(0)])
+  })
+
+  test('sorts by plays descending', async () => {
+    const slugs = await fetchSeeded({ limit: 100, offset: 0, sort: 'plays', order: 'desc' })
+
+    expect(slugs).toEqual([slugAt(1), slugAt(3), slugAt(0), slugAt(2)])
+  })
+
+  test('sorts by plays ascending', async () => {
+    const slugs = await fetchSeeded({ limit: 100, offset: 0, sort: 'plays', order: 'asc' })
+
+    expect(slugs).toEqual([slugAt(2), slugAt(0), slugAt(3), slugAt(1)])
+  })
+
+  test('sorts by created ascending', async () => {
+    const slugs = await fetchSeeded({ limit: 100, offset: 0, sort: 'created', order: 'asc' })
+
+    expect(slugs).toEqual([slugAt(0), slugAt(1), slugAt(2), slugAt(3)])
+  })
+
+  test('orders across all rows rather than within a page', async () => {
+    const service = await getService()
+    const unsorted = await Effect.runPromise(
+      service.getByTypeForEdit('mix', { limit: 100, offset: 0 }, adminId, 'admin')
+    )
+    const total = unsorted.pagination.total
+
+    const pageSize = 1
+    const collected: string[] = []
+    for (let offset = 0; offset < total; offset += pageSize) {
+      const page = await Effect.runPromise(
+        service.getByTypeForEdit(
+          'mix',
+          { limit: pageSize, offset, sort: 'plays', order: 'desc' },
+          adminId,
+          'admin'
+        )
+      )
+      for (const audio of page.data) {
+        if (seededSlugs.has(audio.slug)) collected.push(audio.slug)
+      }
+    }
+
+    expect(collected).toEqual([slugAt(1), slugAt(3), slugAt(0), slugAt(2)])
+  })
+})

@@ -2,7 +2,10 @@ import { Api } from '@gbfm/api/api'
 import { AuthSession } from '@gbfm/api/middleware/auth'
 import { Effect } from 'effect'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
-import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
+import {
+  dieOnDatabaseError as makeDieOnDatabaseError,
+  getOptionalActor
+} from '@/http/handler-utils'
 import { QRCodeService } from '@/services/qrcode.service'
 import { ShowService, ShowSubscriptionService } from '@/services/show.service'
 
@@ -143,10 +146,15 @@ export const ShowsHandlersLive = HttpApiBuilder.group(Api, 'shows', (handlers) =
     )
     .handle('getShowEpisodes', ({ params, query }) =>
       Effect.gen(function* () {
+        const actor = yield* getOptionalActor
         const svc = yield* ShowService
         const result = yield* dieOnDatabaseError(
           svc
-            .getEpisodes(params.slug, { limit: query.limit ?? 20, offset: query.offset ?? 0 })
+            .getEpisodes(
+              params.slug,
+              { limit: query.limit ?? 20, offset: query.offset ?? 0 },
+              actor
+            )
             .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
         )
 

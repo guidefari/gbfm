@@ -8,17 +8,20 @@ import {
   useMicroPostBySlug,
   useResolveMusicEntity
 } from '@/lib/http'
+import { cn } from '@/lib/utils'
 import { useTweetReplyComposer, useTweetReplyComposerActions } from '@/store/tweetReplyComposer'
 
 type Props = {
   parentSlug: string
+  compact?: boolean
+  onPosted?: () => void
 }
 
-export function TweetReplyComposer({ parentSlug }: Props) {
+export function TweetReplyComposer({ parentSlug, compact = false, onPosted }: Props) {
   const { data: session } = useSession()
   const isAuthenticated = Boolean(session?.user)
-  const { isOpen, draft, musicUrl } = useTweetReplyComposer()
-  const { open, setDraft, setMusicUrl, reset } = useTweetReplyComposerActions()
+  const { isOpen, draft, musicUrl } = useTweetReplyComposer(parentSlug)
+  const { open, setDraft, setMusicUrl, reset } = useTweetReplyComposerActions(parentSlug)
   const { toast } = useToast()
   const createReply = useCreateMicroPostReply(parentSlug)
   const resolved = useResolveMusicEntity(musicUrl.trim())
@@ -26,6 +29,8 @@ export function TweetReplyComposer({ parentSlug }: Props) {
   const resolvedQuote = useMicroPostBySlug(quotedSlug)
 
   if (!isAuthenticated) {
+    if (compact) return null
+
     return (
       <p className='text-base text-muted-foreground'>
         <Link to='/auth/sign-in' className='underline'>
@@ -37,6 +42,18 @@ export function TweetReplyComposer({ parentSlug }: Props) {
   }
 
   if (!isOpen) {
+    if (compact) {
+      return (
+        <button
+          type='button'
+          onClick={open}
+          className='inline-flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground'>
+          <MessageSquareQuote className='h-3.5 w-3.5' />
+          Reply
+        </button>
+      )
+    }
+
     return (
       <Button type='button' variant='outline' size='sm' className='rounded-sm' onClick={open}>
         Reply
@@ -56,6 +73,7 @@ export function TweetReplyComposer({ parentSlug }: Props) {
         quotedPostId: resolvedQuote.data?.id
       })
       reset()
+      onPosted?.()
       toast({ title: 'Reply posted' })
     } catch {
       toast({
@@ -67,12 +85,16 @@ export function TweetReplyComposer({ parentSlug }: Props) {
   }
 
   return (
-    <div className='space-y-2 rounded-lg border border-border/60 bg-card/60 p-3'>
+    <div
+      className={cn(
+        'space-y-2 rounded-lg border border-border/60 bg-card/60',
+        compact ? 'p-2' : 'p-3'
+      )}>
       <Textarea
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         placeholder='Write a reply…'
-        className='h-20'
+        className={compact ? 'h-16' : 'h-20'}
         autoFocus
       />
       <div className='relative'>

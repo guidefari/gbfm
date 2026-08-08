@@ -25,6 +25,16 @@ const Creator = Schema.Struct({
   username: Schema.NullOr(Schema.String)
 })
 
+const BlueskySource = Schema.Struct({
+  authorDid: Schema.String,
+  authorHandle: Schema.NullOr(Schema.String),
+  publicUrl: Schema.String,
+  sourceCreatedAt: Schema.String,
+  sourceStatus: Schema.String,
+  locallyEdited: Schema.Boolean,
+  lastError: Schema.NullOr(Schema.String)
+})
+
 export const PostResponse = Schema.Struct({
   id: Schema.String,
   title: Schema.NullOr(Schema.String),
@@ -42,7 +52,8 @@ export const PostResponse = Schema.Struct({
   depth: Schema.Number,
   quotedPostId: Schema.NullOr(Schema.String),
   createdAt: Schema.String,
-  updatedAt: Schema.String
+  updatedAt: Schema.String,
+  blueskySource: Schema.optional(BlueskySource)
 })
 
 export const CompiledPostResponse = Schema.Struct({
@@ -83,6 +94,15 @@ const PaginationQuery = {
 export const GetPostsQuery = {
   ...PaginationQuery,
   type: Schema.optional(PostType)
+}
+
+export const PostSourceFilter = Schema.Literals(['bluesky', 'native'])
+
+export const ManagePostsQuery = {
+  ...GetPostsQuery,
+  source: Schema.optional(PostSourceFilter),
+  status: Schema.optional(Schema.Literals(['draft', 'live'])),
+  q: Schema.optional(Schema.String)
 }
 
 export const GetPostsResponse = Schema.Struct({
@@ -133,14 +153,9 @@ export const GetRandomMicroPostResponse = Schema.Struct({
   slug: Schema.String
 })
 
-// Comma-joined string, not Schema.Array -- no existing endpoint in this
-// package puts Schema.Array in a `query` field, so there's no proven
-// pattern for how Effect HttpApi encodes/decodes an array-valued query
-// param. Encoding as a single comma-joined string and splitting
-// server-side avoids being the first to find out.
-const GetRandomMicroPostQuery = {
-  exclude: Schema.optional(Schema.String)
-}
+const GetRandomMicroPostInput = Schema.Struct({
+  exclude: Schema.optional(Schema.Array(Schema.String))
+})
 
 const SearchMicroPostsQuery = {
   ...PaginationQuery,
@@ -220,7 +235,7 @@ export const PostGroup = HttpApiGroup.make('post')
   )
   .add(
     HttpApiEndpoint.get('getPostsForEdit', '/api/content/posts/manage', {
-      query: GetPostsQuery,
+      query: ManagePostsQuery,
       success: GetPostsResponse,
       error: [HttpApiError.Unauthorized, HttpApiError.InternalServerError]
     }).middleware(AuthMiddleware)
@@ -266,8 +281,8 @@ export const PostGroup = HttpApiGroup.make('post')
     })
   )
   .add(
-    HttpApiEndpoint.get('getRandomMicroPost', '/api/content/posts/micro/random', {
-      query: GetRandomMicroPostQuery,
+    HttpApiEndpoint.post('getRandomMicroPost', '/api/content/posts/micro/random', {
+      payload: GetRandomMicroPostInput,
       success: GetRandomMicroPostResponse,
       error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
     })

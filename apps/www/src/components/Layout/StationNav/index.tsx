@@ -1,10 +1,9 @@
 import { Sheet, SheetClose, SheetContent, SheetTitle } from '@gbfm/ui'
-import { useHotkey } from '@tanstack/react-hotkeys'
 import { Link, useLocation } from '@tanstack/react-router'
-import { BookOpen, Disc3, Menu, Pause, Play, X } from 'lucide-react'
+import { BookOpen, Disc3, Menu, Pause, Play, Search, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { GlobalSearchDialog } from '@/components/GlobalSearchDialog'
 import { DEFAULT_IMAGE_URL } from '@/lib/constants'
-import { useMediaQuery } from '@/hooks/useMediaQuery'
 import { cn } from '@/lib/utils'
 import {
   useNowPlayingTrack,
@@ -13,21 +12,10 @@ import {
   useVisibility
 } from '@/services/player'
 import { DesktopChrome } from './DesktopChrome'
+import { isPathActive } from './is-path-active'
 import { NavAccountFooter } from './NavAccountFooter'
 import { NavMenuProvider } from './nav-menu-context'
 import { StationNavPanel } from './StationNavPanel'
-
-function useActiveStationSlug() {
-  const location = useLocation()
-  const search: Record<string, unknown> = location.search
-  const showParam = search.show
-  return location.pathname === '/shows' && typeof showParam === 'string' ? showParam : undefined
-}
-
-function isPathActive(pathname: string, slug: string) {
-  if (slug === '/') return pathname === '/'
-  return pathname === slug || pathname.startsWith(`${slug}/`)
-}
 
 const tabClass = cn(
   'relative flex h-full min-w-0 flex-1 items-center justify-center no-underline',
@@ -75,15 +63,12 @@ function PlayerTab() {
 
 export function StationNav() {
   const [isOpen, setIsOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const { isFullscreenVisible } = useVisibility()
   const location = useLocation()
-  const activeStationSlug = useActiveStationSlug()
-  const isDesktop = useMediaQuery('(min-width: 1024px)')
 
   const close = useCallback(() => setIsOpen(false), [])
   const open = useCallback(() => setIsOpen(true), [])
-
-  useHotkey('Mod+K', () => setIsOpen((prev) => !prev))
 
   useEffect(() => {
     close()
@@ -100,7 +85,6 @@ export function StationNav() {
   if (isFullscreenVisible) return null
 
   const pathname = location.pathname
-  const sheetSide = isDesktop ? 'right' : 'bottom'
 
   return (
     <NavMenuProvider value={menuValue}>
@@ -109,7 +93,7 @@ export function StationNav() {
       <nav
         aria-label='Primary'
         className='fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] lg:hidden'>
-        <div className='grid h-11 grid-cols-4'>
+        <div className='grid h-11 grid-cols-5'>
           <PlayerTab />
           <Link
             to='/shows'
@@ -127,6 +111,13 @@ export function StationNav() {
           </Link>
           <button
             type='button'
+            onClick={() => setSearchOpen(true)}
+            aria-label='Search'
+            className={tabClass}>
+            <Search className='h-5 w-5' strokeWidth={1.75} />
+          </button>
+          <button
+            type='button'
             onClick={open}
             aria-label='Menu'
             aria-expanded={isOpen}
@@ -137,19 +128,17 @@ export function StationNav() {
         </div>
       </nav>
 
+      <GlobalSearchDialog open={searchOpen} onOpenChange={setSearchOpen} />
+
       <Sheet open={isOpen} onOpenChange={setIsOpen}>
         <SheetContent
-          side={sheetSide}
+          side='bottom'
           showClose={false}
           className={cn(
-            'flex flex-col gap-0 overflow-hidden border-border p-0',
-            isDesktop
-              ? 'h-full w-full max-w-sm sm:max-w-sm'
-              : 'h-auto max-h-[85dvh] rounded-t-lg sm:mx-auto sm:max-w-lg'
+            'flex flex-col gap-0 overflow-hidden border-border p-0 lg:hidden',
+            'h-auto max-h-[85dvh] rounded-t-lg sm:mx-auto sm:max-w-lg'
           )}>
-          {!isDesktop ? (
-            <div className='mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-border' />
-          ) : null}
+          <div className='mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-border' />
           <div className='relative flex h-12 shrink-0 items-center border-b border-border px-4 pr-14'>
             <SheetTitle className='text-base font-black tracking-tight'>Menu</SheetTitle>
             <SheetClose className='absolute right-3 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring'>
@@ -159,7 +148,7 @@ export function StationNav() {
           </div>
           <div className='min-h-0 flex-1 overflow-y-auto overscroll-contain scrollbar-hide'>
             <div className='p-3'>
-              <StationNavPanel activeStationSlug={activeStationSlug} onNavigate={close} />
+              <StationNavPanel onNavigate={close} />
             </div>
           </div>
           <NavAccountFooter onNavigate={close} />

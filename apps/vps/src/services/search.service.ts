@@ -16,6 +16,7 @@ export type SearchResultItem = {
   type: string
   thumbnailUrl: string | null
   description: string | null
+  showSlug?: string | null
 }
 
 export type SearchResults = {
@@ -78,7 +79,7 @@ const searchEffect = (query: string, limit: number) =>
           },
           with: {
             show: {
-              columns: { thumbnailUrl: true }
+              columns: { thumbnailUrl: true, slug: true }
             }
           },
           where: and(
@@ -102,7 +103,8 @@ const searchEffect = (query: string, limit: number) =>
       Effect.map((rows) =>
         rows.map(({ show, ...row }) => ({
           ...row,
-          thumbnailUrl: row.thumbnailUrl ?? show?.thumbnailUrl ?? null
+          thumbnailUrl: row.thumbnailUrl ?? show?.thumbnailUrl ?? null,
+          showSlug: show?.slug ?? null
         }))
       )
     )

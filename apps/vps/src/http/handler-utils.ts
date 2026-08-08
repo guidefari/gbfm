@@ -1,4 +1,20 @@
 import { Effect } from 'effect'
+import { HttpServerRequest } from 'effect/unstable/http'
+import { auth } from '@/lib/auth'
+
+// For routes with no AuthMiddleware (public, but drafts/scoped content
+// should still open for an admin or the resource's own creator) -- reads
+// the session cookie directly and tolerates no-session/errors as "public
+// viewer" instead of rejecting the request the way AuthMiddleware does.
+export const getOptionalActor = Effect.gen(function* () {
+  const request = yield* HttpServerRequest.HttpServerRequest
+  const session = yield* Effect.tryPromise({
+    try: () => auth.api.getSession({ headers: new Headers(request.headers) }),
+    catch: () => null
+  }).pipe(Effect.orElseSucceed(() => null))
+
+  return session ? { userId: session.user.id, userRole: session.user.role ?? 'user' } : undefined
+})
 
 type DatabaseErrorTag = { readonly _tag: 'DatabaseError' }
 

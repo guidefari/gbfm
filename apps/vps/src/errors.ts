@@ -53,6 +53,24 @@ export class DatabaseError extends Data.TaggedError('DatabaseError')<{
   readonly table?: string
 }> {}
 
+export class CryptoError extends Data.TaggedError('CryptoError')<{
+  readonly message: string
+  readonly operation: 'encrypt' | 'decrypt' | 'keyResolve'
+}> {}
+
+export class BlueskyProviderError extends Data.TaggedError('BlueskyProviderError')<{
+  readonly message: string
+  readonly operation: 'resolveIdentity' | 'login' | 'refresh' | 'feed'
+}> {}
+
+export class IdentityResolutionError extends Data.TaggedError('IdentityResolutionError')<{
+  readonly message: string
+}> {}
+
+export class LockUnavailable extends Data.TaggedError('LockUnavailable')<{
+  readonly key: string
+}> {}
+
 export class ReminderProcessingError extends Data.TaggedError('ReminderProcessingError')<{
   readonly message: string
   readonly reminderId: string

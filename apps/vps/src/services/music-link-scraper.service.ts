@@ -22,8 +22,11 @@
  *   2. Add it to the providers array in MusicLinkScraperServiceLayer
  */
 
-import { Context, Data, Effect, Layer, Schema } from 'effect'
+import { Context, Data, Effect, Layer, Schedule, Schema } from 'effect'
 import { getErrorMessage } from '@/errors'
+import { extractBandcampArtist, getBandcampMetadataWithSpan } from '@/services/bandcamp.service'
+import { isBandcampUrl } from '@/services/url-utils'
+import { SpotifyService } from '@/services/spotify.service'
 import type { MusicPlatform } from '../db/music-entity.schema'
 
 // ---------------------------------------------------------------------------
@@ -65,6 +68,7 @@ export interface EntityMeta {
   artistName?: string
   thumbnailUrl?: string
   type?: 'song' | 'album' | 'artist' | 'playlist'
+  isrc?: string
 }
 
 export interface ProviderResult {
@@ -244,6 +248,10 @@ export class OdesliProvider implements MusicDataProvider {
 
       return { links, entityMeta } satisfies ProviderResult
     }).pipe(
+      Effect.retry({
+        schedule: Schedule.exponential('2 seconds').pipe(Schedule.upTo({ times: 5 })),
+        while: (err) => err.statusCode === 429
+      }),
       Effect.withSpan('musicScraper.odesli', {
         attributes: { 'scraper.seed_url': seedUrl }
       })
@@ -468,6 +476,53 @@ export class MusicBrainzProvider implements MusicDataProvider {
 }
 
 // ---------------------------------------------------------------------------
+// Bandcamp provider
+//   Scrapes the JSON-LD embedded in a Bandcamp page for title/artist/ISRC.
+//   Bandcamp isn't itself a cross-platform link source — Odesli currently
+//   fails to resolve most Bandcamp URLs directly (could_not_fetch_entity_data)
+//   — so this provider only supplies entityMeta. The scraper orchestrator
+//   uses that metadata (isrc for tracks, title+artist for albums) to find a
+//   Spotify URL, then re-runs Odesli against that URL for full coverage.
+// ---------------------------------------------------------------------------
+
+export class BandcampProvider implements MusicDataProvider {
+  readonly name = 'bandcamp'
+
+  fetchLinks(input: MusicScrapeInput): Effect.Effect<ProviderResult, MusicScraperError> {
+    if (!input.url || !isBandcampUrl(input.url)) return Effect.succeed({ links: [] })
+
+    const url = input.url
+    return Effect.gen(function* () {
+      const metadata = yield* getBandcampMetadataWithSpan(url).pipe(
+        Effect.catchTag('SpotifyError', (err) =>
+          Effect.fail(
+            new MusicScraperError({
+              message: `Bandcamp scrape failed: ${err.message}`,
+              provider: 'bandcamp',
+              statusCode: 502
+            })
+          )
+        )
+      )
+
+      const entityMeta: EntityMeta = {
+        title: metadata.name || undefined,
+        artistName: extractBandcampArtist(metadata) || undefined,
+        thumbnailUrl: metadata.image || undefined,
+        type: metadata['@type'] === 'MusicRecording' ? 'song' : 'album',
+        isrc: metadata.isrcCode
+      }
+
+      return { links: [], entityMeta } satisfies ProviderResult
+    }).pipe(
+      Effect.withSpan('musicScraper.bandcamp', {
+        attributes: { 'scraper.seed_url': url }
+      })
+    )
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Service interface & implementation
 // ---------------------------------------------------------------------------
 
@@ -483,7 +538,12 @@ export interface MusicLinkScraperService {
 export const MusicLinkScraperService =
   Context.Service<MusicLinkScraperService>('MusicLinkScraperService')
 
-function makeScraperWithProviders(providers: MusicDataProvider[]): MusicLinkScraperService {
+function makeScraperWithProviders(
+  providers: MusicDataProvider[],
+  spotify: SpotifyService
+): MusicLinkScraperService {
+  const odesli = new OdesliProvider()
+
   return {
     scrape: Effect.fn('musicScraper.scrape')(function* (input: MusicScrapeInput) {
       const platformMap = new Map<string, ScrapedLink>()
@@ -511,6 +571,31 @@ function makeScraperWithProviders(providers: MusicDataProvider[]): MusicLinkScra
         }
       }
 
+      // Odesli couldn't resolve the seed URL (e.g. a flaky Bandcamp lookup),
+      // but a provider like Bandcamp gave us enough metadata to find the
+      // track/album on Spotify ourselves — search for it, then re-run Odesli
+      // against the resolved Spotify URL to backfill full platform coverage.
+      if (!platformMap.has('spotify') && entityMeta) {
+        const spotifyMatch = yield* Effect.catch(
+          entityMeta.type === 'album'
+            ? spotify.searchAlbumByTitleArtist(entityMeta.title ?? '', entityMeta.artistName ?? '')
+            : entityMeta.isrc
+              ? spotify.searchTrackByIsrc(entityMeta.isrc)
+              : Effect.succeed(null),
+          () => Effect.succeed(null)
+        )
+
+        if (spotifyMatch) {
+          const odesliResult = yield* Effect.catch(
+            odesli.fetchLinks({ url: spotifyMatch.url }),
+            () => Effect.succeed({ links: [], entityMeta: undefined } satisfies ProviderResult)
+          )
+          for (const link of odesliResult.links) {
+            platformMap.set(link.platform, link)
+          }
+        }
+      }
+
       return {
         links: [...platformMap.values()],
         entityMeta
@@ -523,16 +608,25 @@ function makeScraperWithProviders(providers: MusicDataProvider[]): MusicLinkScra
 // Live layer — configure which providers are active
 // ---------------------------------------------------------------------------
 
-export const MusicLinkScraperServiceLayer = Layer.sync(MusicLinkScraperService, () => {
-  const providers: MusicDataProvider[] = [new OdesliProvider(), new MusicBrainzProvider()]
+export const MusicLinkScraperServiceLayer = Layer.effect(
+  MusicLinkScraperService,
+  Effect.gen(function* () {
+    const spotify = yield* SpotifyService
 
-  const firecrawlKey = process.env.FIRECRAWL_API_KEY
-  if (firecrawlKey) {
-    providers.push(new FirecrawlProvider(firecrawlKey))
-  }
+    const providers: MusicDataProvider[] = [
+      new OdesliProvider(),
+      new BandcampProvider(),
+      new MusicBrainzProvider()
+    ]
 
-  return makeScraperWithProviders(providers)
-})
+    const firecrawlKey = process.env.FIRECRAWL_API_KEY
+    if (firecrawlKey) {
+      providers.push(new FirecrawlProvider(firecrawlKey))
+    }
+
+    return makeScraperWithProviders(providers, spotify)
+  })
+)
 
 // ---------------------------------------------------------------------------
 // Helpers

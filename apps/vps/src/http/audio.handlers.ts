@@ -4,7 +4,10 @@ import { GetAudioByTypeResponse, GetAudioTagsResponse } from '@gbfm/api/audio'
 import { Effect, Schema } from 'effect'
 import { HttpServerResponse } from 'effect/unstable/http'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
-import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
+import {
+  dieOnDatabaseError as makeDieOnDatabaseError,
+  getOptionalActor
+} from '@/http/handler-utils'
 import { AudioService } from '@/services/audio.service'
 import { QRCodeService } from '@/services/qrcode.service'
 
@@ -80,7 +83,13 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
         const result = yield* dieOnDatabaseError(
           svc.getByTypeForEdit(
             params.type,
-            { limit: query.limit ?? 20, offset: query.offset ?? 0, tag: query.tag },
+            {
+              limit: query.limit ?? 20,
+              offset: query.offset ?? 0,
+              tag: query.tag,
+              sort: query.sort,
+              order: query.order
+            },
             user.id,
             user.role ?? 'user'
           )
@@ -93,10 +102,11 @@ export const AudioHandlersLive = HttpApiBuilder.group(Api, 'audio', (handlers) =
     )
     .handle('getAudioBySlug', ({ params }) =>
       Effect.gen(function* () {
+        const actor = yield* getOptionalActor
         const svc = yield* AudioService
         const audio = yield* dieOnDatabaseError(
           svc
-            .getBySlug(params.type, params.slug)
+            .getBySlug(params.type, params.slug, actor)
             .pipe(Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()))
         )
 

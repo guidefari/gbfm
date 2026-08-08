@@ -106,6 +106,16 @@ export const dbBackupTask = new sst.aws.Task('DatabaseBackupTask', {
   link: [dbBackupBucket, ...allSecrets]
 })
 
+export const blueskySyncTask = new sst.aws.Task('BlueskySyncTask', {
+  cluster,
+  image: {
+    context: './',
+    target: 'bluesky-sync-task',
+    dockerfile: 'apps/vps/Dockerfile'
+  },
+  link: [...allSecrets]
+})
+
 export const outputs = {
   vps_gateway: vps_gateway.url
 }

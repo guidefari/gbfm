@@ -98,10 +98,11 @@ if (env.sentryDsn && (!env.isDev || env.sentryEnableLocal)) {
 
 function App() {
   const { data: session, isPending } = useSession()
-  const auth = {
-    user: session?.user ?? null,
-    isAuthenticated: Boolean(session?.user)
-  }
+  const user = session?.user ?? null
+  const routerContext = React.useMemo(
+    () => ({ auth: { user, isAuthenticated: Boolean(user) } }),
+    [user]
+  )
 
   React.useEffect(() => {
     void RuntimeClient.runPromise(
@@ -120,7 +121,7 @@ function App() {
               <Loader2 className='h-6 w-6 animate-spin text-muted-foreground' />
             </div>
           ) : (
-            <RouterProvider router={router} context={{ auth }} />
+            <RouterProvider router={router} context={routerContext} />
           )}
         </PlayerProvider>
       </ThemeProvider>

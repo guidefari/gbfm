@@ -1,4 +1,4 @@
-export const localVPSPort = 3003
+export const localVPSPort = Number(process.env.VPS_PORT ?? 3003)
 export const localVPSHostname = process.env.VPS_HOSTNAME ?? '0.0.0.0'
 
 // Step 2 (docs/migration-effect-http-api.md): the process serves through this

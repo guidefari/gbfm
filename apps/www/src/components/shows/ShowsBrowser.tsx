@@ -79,7 +79,7 @@ export function ShowsBrowser({ selectedShow, onSelectShow }: ShowsBrowserProps) 
           <h2 className='mb-2 border-b border-border/60 pb-2 text-xs font-semibold tracking-wider text-muted-foreground'>
             All shows
           </h2>
-          <nav aria-label='Shows' className='font-mono text-base'>
+          <nav aria-label='Shows' className='font-jetbrains text-base'>
             {data.map((show) => (
               <ShowListItem
                 key={show.id}

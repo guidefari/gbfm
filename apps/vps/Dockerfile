@@ -68,3 +68,18 @@ COPY --from=deps /usr/src/app/apps/vps ./apps/vps
 COPY --from=deps /usr/src/app/tsconfig.json ./tsconfig.json
 
 CMD ["bun", "--preload", "apps/vps/src/instrument.ts", "run", "apps/vps/scripts/run-backup-task.ts"]
+
+# --- Scheduled Bluesky sync task ---
+FROM oven/bun:alpine AS bluesky-sync-task
+WORKDIR /usr/src/app
+
+COPY --from=deps /usr/src/app/node_modules ./node_modules
+COPY --from=deps /usr/src/app/package.json ./package.json
+COPY --from=deps /usr/src/app/packages/api ./packages/api
+COPY --from=deps /usr/src/app/packages/email ./packages/email
+COPY --from=deps /usr/src/app/packages/core ./packages/core
+COPY --from=deps /usr/src/app/packages/theme ./packages/theme
+COPY --from=deps /usr/src/app/apps/vps ./apps/vps
+COPY --from=deps /usr/src/app/tsconfig.json ./tsconfig.json
+
+CMD ["bun", "--preload", "apps/vps/src/instrument.ts", "run", "apps/vps/scripts/run-bluesky-sync-task.ts"]

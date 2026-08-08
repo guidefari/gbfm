@@ -7,6 +7,14 @@ export { DatabaseService, DatabaseServiceLayer } from '@/services/database.servi
 
 import { AudioServiceLayer } from '@/services/audio.service'
 import { ConfigServiceLayer } from '@/services/config.service'
+import { BlueskyAccountServiceLayer } from '@/services/bluesky-account.service'
+import { BlueskyArchiveServiceLayer } from '@/services/bluesky-archive.service'
+import { BlueskyClientLayer } from '@/services/bluesky-client.service'
+import { BlueskyImportServiceLayer } from '@/services/bluesky-importer.service'
+import { BlueskyRunsServiceLayer } from '@/services/bluesky-runs.service'
+import { BlueskySyncServiceLayer } from '@/services/bluesky-sync.service'
+import { LockServiceLayer } from '@/services/lock.service'
+import { CryptoServiceLayer } from '@/services/crypto.service'
 import { EmailServiceLayer } from '@/services/email.service'
 import { FavoriteServiceLayer } from '@/services/favorite.service'
 import { AppLoggerLive } from '@/services/logger.service'
@@ -36,13 +44,17 @@ const UploadAssetDepsLive = Layer.mergeAll(ConfigServiceLayer, UploadAssetServic
 
 const BaseServicesLayer = Layer.mergeAll(
   ConfigServiceLayer,
+  BlueskyClientLayer,
+  BlueskyImportServiceLayer,
+  LockServiceLayer,
+  CryptoServiceLayer.pipe(Layer.provide(ConfigServiceLayer)),
   DatabaseServiceLayer,
   EmailServiceLayer,
   FavoriteServiceLayer,
   SpotifyServiceLayer,
   MusicReminderServiceLayer,
   ReminderSignalServiceLayer,
-  MusicLinkScraperServiceLayer,
+  MusicLinkScraperServiceLayer.pipe(Layer.provide(SpotifyServiceLayer)),
   AudioServiceLayer.pipe(Layer.provide(MdxServiceLayer), Layer.provide(UploadAssetDepsLive)),
   PostServiceLayer.pipe(Layer.provide(MdxServiceLayer), Layer.provide(UploadAssetDepsLive)),
   ProfileServiceLayer,
@@ -59,10 +71,22 @@ const BaseServicesLayer = Layer.mergeAll(
   DevToolsLive
 )
 
+const MusicEntityLive = MusicEntityServiceLayer.pipe(Layer.provide(BaseServicesLayer))
+const BlueskyArchiveLive = BlueskyArchiveServiceLayer.pipe(
+  Layer.provide(Layer.mergeAll(BaseServicesLayer, MusicEntityLive))
+)
+const BlueskySyncLive = BlueskySyncServiceLayer.pipe(
+  Layer.provide(Layer.mergeAll(BaseServicesLayer, MusicEntityLive, BlueskyArchiveLive))
+)
+
 const ServicesLayer = Layer.mergeAll(
   BaseServicesLayer,
   QRCodeServiceLayer.pipe(Layer.provide(BaseServicesLayer)),
-  MusicEntityServiceLayer.pipe(Layer.provide(BaseServicesLayer))
+  MusicEntityLive,
+  BlueskyAccountServiceLayer.pipe(Layer.provide(BaseServicesLayer)),
+  BlueskyArchiveLive,
+  BlueskyRunsServiceLayer,
+  BlueskySyncLive
 )
 
-export const AppLayer = ServicesLayer.pipe(Layer.provide(AppLoggerLive))
+export const AppLayer = ServicesLayer.pipe(Layer.provideMerge(AppLoggerLive))

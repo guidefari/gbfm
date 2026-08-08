@@ -7,6 +7,8 @@ import { HttpRouter, HttpServer, HttpServerRequest, HttpServerResponse } from 'e
 import { HttpApiBuilder } from 'effect/unstable/httpapi'
 import { AdminHandlersLive } from '@/http/admin.handlers'
 import { AudioHandlersLive } from '@/http/audio.handlers'
+import { BlueskyHandlersLive } from '@/http/bluesky.handlers'
+import { BlueskyEventsRoute } from '@/http/bluesky-events.routes'
 import { EmailHandlersLive } from '@/http/email.handlers'
 import { FavoritesHandlersLive } from '@/http/favorites.handlers'
 import { FileManagerHandlersLive } from '@/http/file-manager.handlers'
@@ -84,6 +86,7 @@ export const createWebHandler = (options?: {
     Layer.provide(ReleaseHandlersLive),
     Layer.provide(PostHandlersLive),
     Layer.provide(AudioHandlersLive),
+    Layer.provide(BlueskyHandlersLive),
     Layer.provide(EmailHandlersLive),
     Layer.provide(
       Layer.mergeAll(FavoritesHandlersLive, MusicRemindersHandlersLive, NewsletterHandlersLive)
@@ -116,6 +119,7 @@ export const createWebHandler = (options?: {
     Layer.mergeAll(
       ApiLive,
       betterAuthRoute,
+      BlueskyEventsRoute,
       SearchCacheHeaderLive,
       SiteRoutesLive,
       DocsLive,
@@ -124,6 +128,9 @@ export const createWebHandler = (options?: {
       RequestLoggerLive,
       SentryDefectLive
     ).pipe(
+      // RequestLoggerLive is the single structured request event; disable
+      // Effect HttpMiddleware.logger to avoid a second response log line.
+      Layer.provide(HttpRouter.disableLogger),
       // HttpServerRequest.multipart (user group's updateProfile avatar
       // upload, see user.handlers.ts's uploadAvatar) needs a real
       // FileSystem.FileSystem + Path.Path to buffer parts to temp files.
@@ -143,7 +150,8 @@ export const createWebHandler = (options?: {
       // Effect.logError inside health handlers must reach the app's real
       // Pino + Sentry logger, not Effect's bare default console logger --
       // otherwise a DB outage's cause is logged nowhere on-call looks.
-      Layer.provide(AppLoggerLive)
-    )
+      Layer.provideMerge(AppLoggerLive)
+    ),
+    { disableLogger: true }
   )
 }
