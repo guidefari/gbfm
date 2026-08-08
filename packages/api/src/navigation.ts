@@ -24,21 +24,40 @@ export const NavigateInput = Schema.Struct({
 })
 export type NavigateInput = typeof NavigateInput.Type
 
+const NavigationCapabilitiesResponse = Schema.Struct({
+  canStepBack: Schema.Boolean,
+  canStepForward: Schema.Boolean,
+  hasUnread: Schema.Boolean
+})
+
 export const NavigationResultResponse = Schema.Struct({
   destination: Schema.Struct({ slug: Slug, postId: Schema.String }),
-  capabilities: Schema.Struct({
-    canStepBack: Schema.Boolean,
-    canStepForward: Schema.Boolean,
-    hasUnread: Schema.Boolean
-  }),
+  capabilities: NavigationCapabilitiesResponse,
   trailPosition: Schema.Struct({ index: Schema.Number, length: Schema.Number })
 })
 export type NavigationResultResponse = typeof NavigationResultResponse.Type
 
-export const NavigationGroup = HttpApiGroup.make('navigation').add(
-  HttpApiEndpoint.post('navigateMicroPosts', '/api/content/posts/micro/navigate', {
-    payload: NavigateInput,
-    success: NavigationResultResponse,
-    error: [HttpApiError.NotFound, HttpApiError.Conflict, HttpApiError.InternalServerError]
-  })
-)
+export const NavigationSessionResponse = Schema.Struct({
+  slug: Schema.NullOr(Slug),
+  capabilities: NavigationCapabilitiesResponse
+})
+export type NavigationSessionResponse = typeof NavigationSessionResponse.Type
+
+export const NavigationGroup = HttpApiGroup.make('navigation')
+  .add(
+    HttpApiEndpoint.post('navigateMicroPosts', '/api/content/posts/micro/navigate', {
+      payload: NavigateInput,
+      success: NavigationResultResponse,
+      error: [HttpApiError.NotFound, HttpApiError.Conflict, HttpApiError.InternalServerError]
+    })
+  )
+  .add(
+    HttpApiEndpoint.get(
+      'getMicroPostNavigationSession',
+      '/api/content/posts/micro/navigation-session',
+      {
+        success: NavigationSessionResponse,
+        error: [HttpApiError.InternalServerError]
+      }
+    )
+  )

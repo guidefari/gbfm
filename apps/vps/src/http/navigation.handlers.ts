@@ -21,28 +21,39 @@ const toNavigationCommand = (command: ApiNavigationCommand): NavigationCommand =
 }
 
 export const NavigationHandlersLive = HttpApiBuilder.group(Api, 'navigation', (handlers) =>
-  handlers.handle('navigateMicroPosts', ({ payload }) =>
-    Effect.gen(function* () {
-      const { resolve: resolveIdentity } = yield* IdentityResolver
-      const navigation = yield* NavigationSessionService
-      const identity = yield* resolveIdentity
-      const command = toNavigationCommand(payload.command)
-      if (command._tag === 'Open') {
-        const posts = yield* PostService
-        yield* posts.getMicroPostBySlug(command.slug).pipe(
-          Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
-          Effect.catchTag('DatabaseError', () => new HttpApiError.InternalServerError())
-        )
-      }
-      const result = yield* navigation
-        .resolve(identity, command, decodeSlug(payload.from), payload.intentToken)
-        .pipe(
-          Effect.catchTag('NoSuchMove', () => new HttpApiError.Conflict()),
-          Effect.catchTag('CorpusExhausted', () => new HttpApiError.Conflict()),
-          Effect.catchTag('DatabaseError', () => new HttpApiError.InternalServerError())
-        )
+  handlers
+    .handle('getMicroPostNavigationSession', () =>
+      Effect.gen(function* () {
+        const { resolve: resolveIdentity } = yield* IdentityResolver
+        const navigation = yield* NavigationSessionService
+        const identity = yield* resolveIdentity
+        return yield* navigation
+          .read(identity)
+          .pipe(Effect.catchTag('DatabaseError', () => new HttpApiError.InternalServerError()))
+      })
+    )
+    .handle('navigateMicroPosts', ({ payload }) =>
+      Effect.gen(function* () {
+        const { resolve: resolveIdentity } = yield* IdentityResolver
+        const navigation = yield* NavigationSessionService
+        const identity = yield* resolveIdentity
+        const command = toNavigationCommand(payload.command)
+        if (command._tag === 'Open') {
+          const posts = yield* PostService
+          yield* posts.getMicroPostBySlug(command.slug).pipe(
+            Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
+            Effect.catchTag('DatabaseError', () => new HttpApiError.InternalServerError())
+          )
+        }
+        const result = yield* navigation
+          .resolve(identity, command, decodeSlug(payload.from), payload.intentToken)
+          .pipe(
+            Effect.catchTag('NoSuchMove', () => new HttpApiError.Conflict()),
+            Effect.catchTag('CorpusExhausted', () => new HttpApiError.Conflict()),
+            Effect.catchTag('DatabaseError', () => new HttpApiError.InternalServerError())
+          )
 
-      return result
-    })
-  )
+        return result
+      })
+    )
 )

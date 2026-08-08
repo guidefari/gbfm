@@ -23,6 +23,11 @@ import { PostService } from '@/services/post.service'
 
 export type IntentToken = string
 
+export type NavigationSessionRead = {
+  readonly slug: Slug | null
+  readonly capabilities: NavigationResult['capabilities']
+}
+
 type TrailRow = {
   readonly slug: Slug
   readonly postId: string
@@ -51,6 +56,9 @@ export interface NavigationSessionService {
     from: Slug,
     intentToken: IntentToken
   ) => Effect.Effect<NavigationResult, NoSuchMove | CorpusExhausted | DatabaseError>
+  readonly read: (
+    identity: NavigationIdentity
+  ) => Effect.Effect<NavigationSessionRead, DatabaseError>
   readonly reset: (identity: NavigationIdentity) => Effect.Effect<void, DatabaseError>
 }
 
@@ -451,6 +459,37 @@ export const NavigationSessionServiceLayer = Layer.effect(
         return resultFor(locked.session, identity, entry, index, length)
       })
 
+    const read = (identity: NavigationIdentity) =>
+      Effect.gen(function* () {
+        const session = yield* Effect.tryPromise({
+          try: () => db.select().from(navigationSessions).where(identityWhere(identity)).limit(1),
+          catch: (error) => databaseError('read', error)
+        }).pipe(Effect.map((rows) => rows[0]))
+        if (!session) {
+          return {
+            slug: null,
+            capabilities: { canStepBack: false, canStepForward: false, hasUnread: false }
+          }
+        }
+        const entry = yield* entryAtPosition(session.id, session.cursor)
+        const length = yield* trailLength(session.id)
+        if (!entry || length === 0) {
+          return {
+            slug: null,
+            capabilities: { canStepBack: false, canStepForward: false, hasUnread: false }
+          }
+        }
+        const index = yield* entryIndex(session.id, entry.position)
+        return {
+          slug: entry.slug,
+          capabilities: {
+            canStepBack: index > 0,
+            canStepForward: true,
+            hasUnread: true
+          }
+        }
+      })
+
     return {
       resolve: (identity, command, from, intentToken) =>
         resolve(identity, command, from, intentToken, false).pipe(
@@ -458,6 +497,7 @@ export const NavigationSessionServiceLayer = Layer.effect(
             attributes: { command: command._tag, identityKind: identity._tag }
           })
         ),
+      read,
       reset: (identity) =>
         Effect.tryPromise({
           try: async () => {

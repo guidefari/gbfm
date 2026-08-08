@@ -1,4 +1,5 @@
 import { HealthLiveResponse, HealthReadyResponse } from '@gbfm/api/health'
+import { NavigationSessionResponse } from '@gbfm/api/navigation'
 import {
   AlbumListResponse,
   ArtistListResponse,
@@ -2806,6 +2807,77 @@ describe('top-level navigation excludes replies', () => {
 })
 
 describe('micro post navigation', () => {
+  it('reads an anonymous navigation session without creating or changing it', async () => {
+    const emptyRes = await webHandler.handler(
+      new Request('http://localhost/api/content/posts/micro/navigation-session')
+    )
+    expect(emptyRes.status).toBe(200)
+    await expect(decodeResponseBody(NavigationSessionResponse, emptyRes)).resolves.toEqual({
+      slug: null,
+      capabilities: { canStepBack: false, canStepForward: false, hasUnread: false }
+    })
+
+    const setCookie = emptyRes.headers.getSetCookie()[0]
+    if (!setCookie) throw new Error('Expected navigation device cookie')
+    const cookie = setCookie.split(';')[0]
+    if (!cookie) throw new Error('Expected navigation device cookie value')
+    const deviceToken = cookie.split('=')[1]
+    if (!deviceToken) throw new Error('Expected navigation device token')
+    expect(
+      await db
+        .select()
+        .from(navigationSessions)
+        .where(eq(navigationSessions.deviceToken, deviceToken))
+    ).toEqual([])
+
+    const slug = `navigation-read-${crypto.randomUUID()}`
+    const [post] = await db
+      .insert(postsTable)
+      .values({ title: null, slug, content: 'Navigation test', type: 'micro', draft: false })
+      .returning()
+    if (!post) throw new Error('Failed to seed navigation post')
+
+    try {
+      const openRes = await webHandler.handler(
+        new Request('http://localhost/api/content/posts/micro/navigate', {
+          method: 'POST',
+          headers: { cookie, 'content-type': 'application/json' },
+          body: JSON.stringify({
+            command: { _tag: 'Open', slug },
+            from: slug,
+            intentToken: crypto.randomUUID()
+          })
+        })
+      )
+      expect(openRes.status).toBe(200)
+      const [beforeRead] = await db
+        .select()
+        .from(navigationSessions)
+        .where(eq(navigationSessions.deviceToken, deviceToken))
+      if (!beforeRead) throw new Error('Expected navigation session')
+
+      const resumedRes = await webHandler.handler(
+        new Request('http://localhost/api/content/posts/micro/navigation-session', {
+          headers: { cookie }
+        })
+      )
+      expect(resumedRes.status).toBe(200)
+      await expect(
+        decodeResponseBody(NavigationSessionResponse, resumedRes)
+      ).resolves.toMatchObject({
+        slug
+      })
+      const [afterRead] = await db
+        .select()
+        .from(navigationSessions)
+        .where(eq(navigationSessions.deviceToken, deviceToken))
+      expect(afterRead?.cursor).toBe(beforeRead.cursor)
+      expect(afterRead?.updatedAt).toEqual(beforeRead.updatedAt)
+    } finally {
+      await db.delete(postsTable).where(eq(postsTable.id, post.id))
+    }
+  })
+
   it('creates an anonymous session and device cookie without authentication', async () => {
     const slug = `navigation-anonymous-${crypto.randomUUID()}`
     const [post] = await db
