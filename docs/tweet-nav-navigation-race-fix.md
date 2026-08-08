@@ -2,15 +2,16 @@
 
 ## Summary
 
-> **Status: revised after review.** The first draft attributed the
-> observed 404 to a navigation race. A review pass found a second,
-> likely-primary defect (an oversized `exclude` query string) and
-> corrected several technical claims that had been asserted without
-> verification. Read *Review finding* under Context before planning work.
-> **Recommended order: fix Defect A first** (deterministic, grows with
-> usage, best explains the reported symptom), then Defect B (the race).
+> **Status: ALL DEFECTS FIXED AND VERIFIED.** This doc is now a record
+> of what was found and shipped, not a plan of work. It preserves the
+> original draft plus its corrections, because the corrections are the
+> useful part: the first draft misdiagnosed the root cause and asserted
+> several technical claims that turned out to be wrong. See the status
+> callouts under Context for what was actually verified, and Risks for
+> the design change forced by `TweetNav` provably remounting.
 
-Two defects in tweet navigation:
+Three defects were found in tweet navigation (A and C were discovered
+while reviewing the fix for B):
 
 - **A.** The seen-slug exclusion list is sent as a comma-joined GET query
   param capped at 200 slugs, up to ~23 KB of request line, past common
@@ -20,13 +21,14 @@ Two defects in tweet navigation:
   firing hold-to-random, then acting again before the network round trip
   resolves, lets the stale call's `router.navigate` win. Last-*resolved*
   wins instead of last-*requested*.
+- **C.** The exclude list was read from a render-time closure that went
+  stale by one navigation, and churned its `useCallback` on every page
+  view.
 
-This spec fully designs the fix for **B** (give navigation intent a
-single owner with real cancellation, so only the most-recently-expressed
-intent can complete a `router.navigate`). **A** is diagnosed and measured
-here but not yet designed, it needs the environment limits answered
-first (see Open Questions) and may fold into the server-side seen-set
-work instead.
+All three shipped: **A** by moving `exclude` to a POST body, **B** by a
+module-scoped navigation-intent fiber that interrupts any superseded
+intent, **C** by reading the seen list at Effect-execution time via
+`readTweetBrowseState()`.
 
 This spec extends **Part B, Prev/Next/Random** of
 `docs/tweet-single-view-nav-search-plan.md`, which specified the
@@ -98,13 +100,30 @@ more likely explanation for the observed 404, which this spec's original
 framing missed. Both defects are real and both should be fixed, but the
 priority ordering below is now inverted from the original draft.
 
+> **ALL THREE DEFECTS NOW FIXED.** B and C landed via a module-scoped
+> navigation-intent fiber (`apps/www/src/lib/navigation-intent.ts`).
+> Verified in a real browser with a 4s delay injected on the random
+> endpoint:
+>
+> - **Race fixed**: hold-to-random, then tap prev mid-flight. The tap's
+>   destination held, and was still the current URL 6s later, well after
+>   the stale random resolved. Previously the random would have won.
+> - **No self-cancel regression**: an uncontested hold-to-random with the
+>   same 4s delay still lands. This is the failure mode that would have
+>   appeared if cancellation were driven by `TweetNav` unmount, since
+>   `TweetNav` provably remounts as part of navigating.
+> - **Tap unaffected**: quick tap prev/next still navigates normally.
+>
+> Note `Exit.hasInterrupts` is the correct API in effect@4.0.0-beta.99,
+> NOT `Exit.isInterrupted` as an earlier revision of this doc claimed.
+> Verified by executing both against the app's own module resolution.
+
 > **Defect A status: FIXED.** `getRandomMicroPost` moved from
 > `GET ?exclude=a,b,c` to `POST` with `{ exclude: string[] }` in the body
 > (`packages/api/src/post.ts`, `apps/vps/src/http/post.handlers.ts`,
 > `apps/www/src/lib/http.ts`). Verified end-to-end: the same 200-slug
 > payload that returned **HTTP 431** now returns **HTTP 200** at 23.6 KB,
 > ~2.9× over the prod API Gateway ceiling that was breaking it.
-> Defect B (the race) and Defect C (stale list) remain open.
 
 **Defect A, `exclude` query string exceeds HTTP header/URL limits.**
 `useRandomMicroPost` sends the seen-slug list as a comma-joined
@@ -557,8 +576,10 @@ last-*requested* wins, not last-*resolved* wins.
      models interruption as a *kind of* failure exit. A test (or any
      runtime branch) that checks `Exit.isFailure` alone will
      misclassify a normal supersede as an error. Always check
-     `Exit.isInterrupted` **first**. The original draft of this spec
-     did not flag this and would have led to a subtly wrong test.
+     `Exit.hasInterrupts` **first**. Note that is the real API name in
+     effect@4.0.0-beta.99; `Exit.isInterrupted` does not exist, despite
+     an earlier revision of this doc naming it. The original draft did
+     not flag either point and would have led to a subtly wrong test.
 
 #### Retry / Cancellation / Idempotency Flow
 
@@ -642,7 +663,7 @@ Per project convention (no unit tests for `route.tsx`/`page.tsx` files;
    **Green**: already confirmed true by probe (see Failure Flow),
    the test locks in the behavior.
    **Write it carefully**: interruption reports `isInterrupted: true`
-   *and* `isFailure: true`. Assert `Exit.isInterrupted(exit)`; do **not**
+   *and* `isFailure: true`. Assert `Exit.hasInterrupts(exit)`; do **not**
    branch on `Exit.isFailure` alone or the test will pass for the wrong
    reason and would also accept a genuine error as a valid supersede.
 5. **Red** (component-level, if `TweetNav` is tested directly): tap
@@ -653,12 +674,16 @@ Per project convention (no unit tests for `route.tsx`/`page.tsx` files;
    **Green**: wire `goToPrev`/`goToNext`/`onHoldComplete` through the
    shared `run` function.
 6. **Red** (component-level): unmounting `TweetNav` mid-flight (a
-   pending random fetch) does not throw and does not call
-   `router.navigate` after unmount (spy assertion after
-   `act(() => unmount())`), mirroring `HoldToRandomButton`'s own
-   unmount-cleanup test from the earlier hold-to-random spec.
-   **Green**: wire the `useEffect` cleanup that interrupts
-   `fiberRef.current` on unmount.
+   pending random fetch) does NOT cancel that fetch, and the navigation
+   still completes.
+
+   This inverts the original draft's test, which asserted the opposite.
+   Since `TweetNav` provably remounts on every slug change (see Risks),
+   cancelling on unmount would make every successful random navigation
+   cancel itself. Unmount is a normal part of navigating, not a cancel
+   signal.
+   **Green**: module-scoped fiber holder, no unmount-driven interrupt.
+   Cancellation comes only from a new intent superseding an old one.
 
 ## Risks and Open Questions
 
@@ -671,6 +696,38 @@ Per project convention (no unit tests for `route.tsx`/`page.tsx` files;
   shows up. Recommend inlining unless a reviewer wants the seam made
   explicit for testability in isolation from `TweetNav`'s other
   rendering concerns.
+
+- ~~**Risk: the fiber ref's lifetime may be shorter than the
+  intent's.**~~ **CONFIRMED, and it breaks the original design.**
+
+  Measured in the running app with a `MutationObserver` watching the
+  flanking-arrow nodes across a real prev/next navigation
+  (`/tweet/profecy` to `/tweet/crunchy`):
+
+  ```json
+  { "navigated": true, "arrowNodesRemoved": 4, "arrowNodesAdded": 4,
+    "verdict": "REMOUNTED (useRef resets)" }
+  ```
+
+  `TweetNav` is torn down and recreated on every slug change, so a
+  `useRef` living inside it resets exactly when a navigation lands. The
+  original design's ref comparison would therefore be a no-op across the
+  most important case, and only the unmount cleanup would do real work.
+
+  **Design correction:** the fiber holder must live OUTSIDE the
+  remounting component. Use a module-scoped holder in the intent module
+  (not a `useRef` inside `TweetNav`), so "the currently in-flight
+  navigation intent" survives the remount that navigation itself causes.
+  Precedent for module-scoped state that spans mounts:
+  `apps/www/src/store/tweetReplyComposer.ts`.
+
+  Consequence for the unmount cleanup: `TweetNav` unmounting is now a
+  NORMAL part of a successful navigation, not a signal to cancel. Do NOT
+  interrupt the in-flight fiber on `TweetNav` unmount, or every
+  successful random navigation would cancel itself. Cancellation must be
+  driven only by a NEW intent superseding an older one.
+
+  (original risk text follows)
 
 - **Risk (review finding): the fiber ref's lifetime may be shorter than
   the intent's.** `useNavigationIntent`'s `useRef` lives in `TweetNav`,
