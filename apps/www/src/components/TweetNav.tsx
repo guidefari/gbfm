@@ -20,12 +20,17 @@ type Props = {
 type Capabilities = NavigationResultResponse['capabilities']
 
 const iconButtonClassName =
-  'inline-flex h-8 w-8 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground'
+  'inline-flex h-8 w-8 cursor-pointer items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground'
 const disabledIconButtonClassName =
-  'inline-flex h-8 w-8 items-center justify-center rounded-sm text-muted-foreground/25'
+  'inline-flex h-8 w-8 cursor-not-allowed items-center justify-center rounded-sm text-muted-foreground/25'
 
-const flankClassName =
-  'fixed top-1/2 z-30 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground lg:flex'
+const flankBaseClassName =
+  'fixed top-1/2 z-30 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-sm text-muted-foreground transition-colors lg:flex'
+const flankClassName = cn(
+  flankBaseClassName,
+  'cursor-pointer hover:bg-muted/60 hover:text-foreground'
+)
+const disabledFlankClassName = cn(flankBaseClassName, 'cursor-not-allowed text-muted-foreground/20')
 
 function PrevLink({ enabled, onTap }: { enabled: boolean; onTap: () => void }) {
   if (!enabled) {
@@ -106,7 +111,7 @@ function FlankingArrows({
           <ChevronLeft className='h-6 w-6' />
         </button>
       ) : (
-        <span aria-hidden className={cn(flankClassName, leftPosition, 'text-muted-foreground/20')}>
+        <span aria-hidden className={cn(disabledFlankClassName, leftPosition)}>
           <ChevronLeft className='h-6 w-6' />
         </span>
       )}
@@ -120,7 +125,7 @@ function FlankingArrows({
           <ChevronRight className='h-6 w-6' />
         </HoldToRandomButton>
       ) : (
-        <span aria-hidden className={cn(flankClassName, rightPosition, 'text-muted-foreground/20')}>
+        <span aria-hidden className={cn(disabledFlankClassName, rightPosition)}>
           <ChevronRight className='h-6 w-6' />
         </span>
       )}
