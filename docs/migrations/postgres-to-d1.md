@@ -276,9 +276,38 @@ export const postTagsTable = sqliteTable(
 // audio_tags, show_tags follow the same shape.
 ```
 
-`artistNames` is excluded. It is a denormalized cache of `music_track_artists` /
-`music_album_artists`, which already exist. Do not create a third representation:
-either derive it at query time or keep it as display-only JSON. **Open question.**
+`artistNames` is excluded, and stays a denormalized column stored as JSON text.
+
+Earlier drafts of this spec called it "a third representation" of a relationship
+`music_track_artists` / `music_album_artists` already model, and left the choice
+open. Reading the call sites settles it: **it is not a cache, and deriving it
+would lose data.**
+
+- **Order is information the join table does not carry.**
+  `playlist-tracks.service.ts:481,665` builds slugs from
+  `t.artistNames.join(' ')`, and `TweetMusicEntityCard.tsx:186` renders
+  `artistNames.join(', ')`. `music_track_artists` has no ordering column, so a
+  derived array would come back in arbitrary order and silently change existing
+  slugs.
+- **It is a credit snapshot, not a projection.** It records the names as credited
+  on that release. An artist later renaming themselves should not retroactively
+  rewrite historical credits.
+- **Write consistency is already handled.** `scrape.service.ts:117-120` derives
+  `artistNames` and `artistIds` from one `findOrCreateArtistsByName` call and
+  writes both together. There is one writer, not a drift-prone many.
+
+So the two structures record different facts: the join table is the entity link,
+the column is the credit line. Twelve call sites consume the column as a plain
+array; deriving it would add a join to every read to remove a risk that does not
+exist.
+
+```ts
+artistNames: text({ mode: 'json' }).$type<string[]>()
+```
+
+This differs from the `tags` treatment above deliberately. Tags are normalized
+because they are queried (`unnest` + `ILIKE`, two GIN indexes) and unordered.
+`artistNames` is never queried as a set, only displayed in order.
 
 ### Type translation
 
@@ -300,12 +329,35 @@ either derive it at query time or keep it as display-only JSON. **Open question.
 ```sql
 CREATE VIRTUAL TABLE posts_fts USING fts5(
   title, description, content, tags,
-  content='posts', content_rowid='rowid'
+  content='posts', content_rowid='rowid',
+  tokenize='trigram'
 );
 ```
 
 Triggers keep it current on insert/update/delete. `shows` and `audio` get the
 same treatment.
+
+### Tokenizer: trigram, not the default
+
+The default FTS5 tokenizer matches token *prefixes*. Today's `ILIKE '%term%'`
+matches anywhere in the string. That difference is user-visible, and the UI
+decides it: `GlobalSearchDialog.tsx` is a command palette that queries from the
+first character (`query.trim().length > 0`), with no debounce and no minimum
+length.
+
+Under the default tokenizer, typing `goo` returns nothing until a whole word is
+completed, because `goo` only matches tokens beginning with "goo". Every query
+would look broken for its first few keystrokes. Trigram keeps the current
+substring semantics, so the M1 search fixture stays the pass criterion rather
+than something renegotiated mid-migration.
+
+Costs, both acceptable here: the trigram index is larger (the dataset is small),
+and trigram requires at least 3 characters to match. Queries of 1-2 characters
+fall back to `LIKE`, which is cheap at this size.
+
+Revisit only if relevance ranking becomes a product requirement. Trigram does not
+rank as well as the default tokenizer, which matters for large corpora and does
+not matter for a palette that returns a handful of rows per group.
 
 `search.service.ts` collapses from three near-identical `ILIKE`-or-`unnest`
 branches to three `MATCH` queries. The 60-line `matchCondition` at
@@ -653,8 +705,8 @@ No destructive step shares a deploy with a traffic switch.
 | Better Auth SQLite adapter differs on sessions or account linking | **High.** Locks users out. | Slice 9; real OAuth flows on staging before cutover. |
 | Effect + MDX + Better Auth exceed the Workers bundle limit | **High.** Invalidates the approach. | Measured first in M1, before any other work. If it fails, the fix is moving MDX compilation out of the request path (precompile at publish time) rather than abandoning the migration; MDX is the largest and most removable contributor. |
 | Writes landing on D1 after the flip are lost if the migration is rolled back | **High.** Data loss. | Short freeze window; early decision point; final delta export immediately before the flip. |
-| FTS5 tokenization changes user-visible results | Medium | M1 fixture; choose default vs trigram deliberately. |
-| `artistNames` drifts from the join tables | Medium | Pick one representation during M3; do not port the cache. |
+| FTS5 tokenization changes user-visible results | Medium | Trigram tokenizer preserves current substring semantics; M1 fixture is the pass criterion. |
+| `artistNames` drifts from the join tables | Low | One writer (`scrape.service.ts:117-120`) sets both from one call. Accepted as a credit snapshot, not a cache. |
 | D1 write serialization bottlenecks | Medium | Write rate measured M1; load test is an M5 gate. |
 | The `@gbfm/vps` to `@gbfm/api` rename breaks importers of `/schemas` | Medium | One mechanical commit inside M4, not spread across it. Typecheck is the net. |
 | Polled sync status feels worse than SSE | Low | Admin-initiated progress indicator. DO with hibernated WebSockets is the fallback. |
@@ -671,14 +723,13 @@ Resolved during drafting, recorded so they are not reopened:
   the table count.
 - ~~Is Hyperdrive worth a staging step?~~ No. Overkill at this size; the untouched
   ECS stack is the rollback target.
+- ~~`artistNames`: derived or stored?~~ Stored as JSON text. It carries credit
+  order, which the join table cannot express. See the tag section.
+- ~~FTS5 default tokenizer or trigram?~~ Trigram. The search UI queries from the
+  first keystroke, so prefix-only matching would look broken.
 
 Open, each blocking the milestone that needs it:
 
-- **`artistNames`: derived at query time, or display-only JSON?** Blocks the
-  `music-entity.schema.ts` rewrite (M3).
-- **FTS5 default tokenizer or trigram?** Trigram preserves today's infix
-  matching; the default gives better relevance but stops matching mid-word.
-  Decide against the M1 fixture.
 - **Does anything consume `x-ratelimit-*`?** Grep `apps/www` and mobile in M4.
 - **Does `@mdx-js/mdx` bundle acceptably for Workers?** Part of the M1 bundle
   measurement; it is the largest single unknown in that number. If it dominates,
