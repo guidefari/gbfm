@@ -15,8 +15,13 @@ export type TrailEntry = {
   readonly arrivedBy: 'Step' | 'Jump' | 'Open'
 }
 
+export type NavigationIdentity =
+  | { readonly _tag: 'User'; readonly userId: string }
+  | { readonly _tag: 'Anonymous'; readonly deviceToken: string }
+
 export type NavigationSession = {
   readonly id: string
+  readonly identity: NavigationIdentity
   readonly trail: readonly TrailEntry[]
   readonly cursor: number
   readonly seenSlugs: ReadonlySet<Slug>
@@ -95,7 +100,11 @@ const appendResolved = (
   command: NavigationCommand,
   resolved: Option.Option<ResolvedDestination>
 ): Result.Result<NavigationSession, NoSuchMove> => {
-  if (Option.isNone(resolved) || session.seenSlugs.has(resolved.value.slug)) {
+  if (
+    Option.isNone(resolved) ||
+    session.seenSlugs.has(resolved.value.slug) ||
+    session.trail.some((entry) => entry.slug === resolved.value.slug)
+  ) {
     return Result.fail(noSuchMove(command))
   }
 

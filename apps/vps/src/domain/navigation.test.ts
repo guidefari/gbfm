@@ -29,6 +29,7 @@ const session = (
   seenSlugs = new Set(trail.map((trailEntry) => trailEntry.slug))
 ): NavigationSession => ({
   id: 'session-id',
+  identity: { _tag: 'Anonymous', deviceToken: 'device-token' },
   trail,
   cursor,
   seenSlugs
@@ -140,7 +141,7 @@ describe('applyCommand', () => {
   })
 
   test('never appends a slug already in the trail', () => {
-    const original = session([entry('first')], 0)
+    const original = session([entry('first')], 0, new Set())
     const forward = applyCommand(
       original,
       { _tag: 'Step', direction: 'Forward' },
