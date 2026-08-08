@@ -55,10 +55,7 @@ interface ConfigService {
   }
   readonly buckets: {
     userContent: string
-    databaseBackups: string
-  }
-  readonly tasks: {
-    databaseBackup?: string
+    mixes: string
   }
   readonly app: {
     stage: string
@@ -123,7 +120,7 @@ const spotifyClient = SpotifyApiClient.withClientCredentials(
 ### Configuration & Scripts (4 files)
 
 - ✅ `drizzle.config.ts` & `drizzle.config.prod.ts` - Database migration configs
-- ✅ `scripts/run-backup-task.ts` - Backup task with synchronous access
+- Retired: `scripts/run-backup-task.ts` was removed when backup ownership moved to PlanetScale
 - ✅ `scripts/db.ts` - Database connection script
 
 ### Infrastructure (1 file)

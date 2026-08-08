@@ -14,21 +14,7 @@ declare module "sst" {
       "type": "sst.sst.Secret"
       "value": string
     }
-    "BackupTaskInvoker": {
-      "name": string
-      "type": "sst.aws.Function"
-      "url": string
-    }
     "BlueskySyncTask": {
-      "assignPublicIp": boolean
-      "cluster": string
-      "containers": any
-      "securityGroups": any
-      "subnets": any
-      "taskDefinition": string
-      "type": "sst.aws.Task"
-    }
-    "DatabaseBackupTask": {
       "assignPublicIp": boolean
       "cluster": string
       "containers": any

@@ -25,7 +25,7 @@ Bulk copy uses **Super Slurper**. Cutover is **forward-only, R2-authoritative, p
 |---|---|---|---|---|
 | `User_Content` | `gbfm-prod-usercontentbucket-cohrefob` | via `/user-content/` | `qr-pdfs/` 1d; abort incomplete MPU 1d | → R2 |
 | `Mixes` | `gbfm-prod-mixesbucket-zftkfrfx` | via `/mixes/` | none | → R2 |
-| `DatabaseBackups` | `gbfm-prod-databasebackupsbucket-xbxkwmwo` | no | 30d expiry | **deleted, not migrated** |
+| `DatabaseBackups` | `gbfm-prod-databasebackupsbucket-xbxkwmwo` | no | 30d expiry | **task deleted; bucket retained until empty, not migrated** |
 
 Public routing today is `sst.aws.Router` with regex rewrites stripping `/user-content` and `/mixes`, DNS via `sst.cloudflare.dns()`.
 
@@ -141,17 +141,9 @@ This preserves the dropdown, avoids an operation whose R2 semantics differ, and 
 
 ## Feature removal: database backups
 
-**Decision: remove the entire backup subsystem**, on the stated basis that the managed database provider supplies backups.
+**Decision: remove the entire backup subsystem.** On 2026-08-08, the operator explicitly moved backup ownership to PlanetScale rather than carrying the failed SST task into R2. The decision and remaining operator actions are recorded in [`evidence/planetscale-backup-decision-2026-08-08.md`](evidence/planetscale-backup-decision-2026-08-08.md).
 
-**Precondition, and the one open item in this spec.** The database host is an SST secret (`infra/secret.ts:4`), so the provider's backup guarantees cannot be verified from the repository. Before any deletion lands, confirm and record in `docs/migrations/evidence/`:
-
-1. the provider's automated backup cadence and retention window;
-2. that **point-in-time or snapshot restore has actually been exercised**, not merely advertised;
-3. who holds restore access.
-
-The current system produces daily independent dumps in a separate account, retained 30 days. Provider-managed backups are typically a strictly better operational story, but they fail differently: they are in the same account and same blast radius as the database. Deleting a working, independent backup path on an unverified assumption is the single highest-consequence action in this migration. `docs/backup-feature-audit.md` exists and should be updated to record the decision.
-
-Given the above, this deletion is sequenced **last**, after storage cutover is soaked. If the precondition fails, the `DatabaseBackups` bucket migrates to R2 as originally planned and the scripts move to the new seam; the rest of the spec is unaffected.
+PlanetScale now owns backup cadence, retention, restore access, and restore exercises. The repository does not claim those external checks have run. This explicit ownership decision supersedes the earlier plan to defer removal until after storage cutover.
 
 Surface to delete:
 
@@ -161,12 +153,12 @@ Surface to delete:
 | Infra: cron | `dbBackupCron` and `testFunction` (`BackupTaskInvoker`) in `infra/cron.ts` |
 | Infra: task | `dbBackupTask` in `infra/vps.ts` |
 | Infra: lambda | `apps/cron/invoke-backup-task.ts` |
-| Infra: bucket | `dbBackupBucket` in `infra/bucket.ts` |
+| Infra: bucket | Keep `dbBackupBucket` temporarily, unlinked, until its 30-day lifecycle empties it; then remove the declaration |
 | Config | `buckets.databaseBackups`, `tasks.databaseBackup` in `config.service.ts` |
 | Email | `packages/email/emails/backup-notification.tsx` + its sender export |
 | Docs | update `docs/backup-feature-audit.md` to record the decision |
 
-Do not delete the S3 backup bucket's **contents** in the same change that removes the code. Let existing objects age out under the 30-day lifecycle so a restore remains possible during the transition.
+Do not delete the S3 backup bucket's **contents** in the same change that removes the code. Its infrastructure declaration stays temporarily, without compute links, while the existing objects age out under the 30-day lifecycle.
 
 This removal also eliminates the `getObjectStream` gap — `GetObjectCommand` was used only by `restore-db.ts` and `verify-backup.ts`. With both gone, **no read-object operation needs to be added**.
 
@@ -473,7 +465,7 @@ Effect.annotateCurrentSpan('storage.provider', store.provider)
 | `workers/cdn-router/test/cdn-router.test.ts` | `vitest-pool-workers` R2 semantics |
 | `scripts/inventory-buckets.ts` | Read-only inventory |
 | `scripts/verify-r2-parity.ts` | Post-copy reconciliation |
-| `docs/migrations/evidence/` | Inventory + backup-precondition evidence |
+| `docs/migrations/evidence/` | Inventory + PlanetScale backup-ownership evidence |
 
 ### Change
 
@@ -484,7 +476,7 @@ Effect.annotateCurrentSpan('storage.provider', store.provider)
 | `apps/vps/src/runtime/services.ts` | Provide `ObjectStoreClientLayer` |
 | `packages/api/src/file-manager.ts` | Remove copy endpoint + its two schemas; keep `config` and `list` |
 | `apps/vps/src/http/file-manager.handlers.ts` | Remove the copy handler; keep the other two |
-| `infra/bucket.ts` | R2 buckets + Worker via Pulumi; router origin switch; remove `dbBackupBucket` |
+| `infra/bucket.ts` | R2 buckets + Worker via Pulumi; router origin switch; retain the unlinked backup bucket until lifecycle expiry |
 | `infra/cron.ts` | Remove `dbBackupCron`, `testFunction` |
 | `infra/vps.ts` | Remove `dbBackupTask` |
 | `packages/email/src/index.ts` | Remove backup-notification export |
@@ -534,13 +526,13 @@ All slices run under `bun precommit`.
 
 ## Execution Order
 
-1. [OPS-235](https://linear.app/guidefari/issue/OPS-235/inventory-user-content-and-mixes-buckets) — **Inventory** `User_Content` and `Mixes`. Confirm the <500 MB expectation (C5); flag exceptions.
+1. [OPS-235](https://linear.app/guidefari/issue/OPS-235/inventory-user-content-and-mixes-buckets) — **Inventory** `User_Content` and `Mixes`. Confirm the <500 MB expectation (C5); flag exceptions. **Completed.**
 2. [OPS-236](https://linear.app/guidefari/issue/OPS-236/consolidate-13-s3client-constructions-behind-objectstoreclient) — **Consolidate**, slices 1–3, `provider: 'aws'` still selected. Zero production behavior change; ships independently. *This is the highest-value, lowest-risk PR and should land first regardless of everything downstream.*
-3. [OPS-237](https://linear.app/guidefari/issue/OPS-237/delete-dead-cross-bucket-copy-path) — **Delete cross-bucket copy**, slices 4 and 4b. Independent of storage; ships separately. Small enough to fold into step 2 if convenient.
-4. [OPS-238](https://linear.app/guidefari/issue/OPS-238/cdn-router-worker-and-sst-wiring-for-r2) — **Worker + SST wiring**, slices 6–7, deployed to a test hostname.
-5. [OPS-239](https://linear.app/guidefari/issue/OPS-239/cut-mixes-bucket-over-to-r2) — **`Mixes` cutover.** Super Slurper copy → verify → R2 CORS → router origin → soak. No upload path, so lower risk.
-6. [OPS-240](https://linear.app/guidefari/issue/OPS-240/cut-user-content-bucket-over-to-r2) — **`User_Content` cutover.** Copy → verify → R2 CORS (C4) → presigning to R2 host (C3) → router origin → soak the upload path hard.
-7. [OPS-241](https://linear.app/guidefari/issue/OPS-241/remove-database-backup-subsystem-gated-on-provider-verification) — **Backup removal**, only after the provider precondition is verified and recorded.
+3. [OPS-241](https://linear.app/guidefari/issue/OPS-241/remove-database-backup-subsystem-gated-on-provider-verification) — **Remove repository backups.** Completed early after the operator moved ownership to PlanetScale; retain only the unlinked S3 bucket until lifecycle expiry.
+4. [OPS-237](https://linear.app/guidefari/issue/OPS-237/delete-dead-cross-bucket-copy-path) — **Delete cross-bucket copy**, slices 4 and 4b. Independent of storage; ships separately. Small enough to fold into step 2 if convenient.
+5. [OPS-238](https://linear.app/guidefari/issue/OPS-238/cdn-router-worker-and-sst-wiring-for-r2) — **Worker + SST wiring**, slices 6–7, deployed to a test hostname.
+6. [OPS-239](https://linear.app/guidefari/issue/OPS-239/cut-mixes-bucket-over-to-r2) — **`Mixes` cutover.** Super Slurper copy → verify → R2 CORS → router origin → soak. No upload path, so lower risk.
+7. [OPS-240](https://linear.app/guidefari/issue/OPS-240/cut-user-content-bucket-over-to-r2) — **`User_Content` cutover.** Copy → verify → R2 CORS (C4) → presigning to R2 host (C3) → router origin → soak the upload path hard.
 8. [OPS-242](https://linear.app/guidefari/issue/OPS-242/consolidate-legacy-cloudfront-assets-into-r2) — **Follow-up phase: legacy CloudFront consolidation.** Copy `d20tmfka7s58bt` contents into R2, repoint the 7 hardcoded references, verify no persisted rows or historical RSS items depend on the old host, then retire the distribution. Single source, as intended.
 
 S3 stays readable and unexpired through the rollback window.
@@ -551,7 +543,7 @@ S3 stays readable and unexpired through the rollback window.
 
 - **R1 (high).** Multipart ETag mismatch on R2 breaks `completeMultipartUpload` validation. Mitigated by the Slice 5 parity test before cutover.
 - **R2 (high).** Missing or incorrect R2 CORS silently breaks all browser uploads. The parent doc says CORS is not needed; it is. Treated as a cutover precondition.
-- **R3 (high).** Backup removal on an unverified provider guarantee. Mitigated by the precondition and by sequencing it last.
+- **R3 (high).** PlanetScale backup cadence, access, and restore exercises remain operator-owned and unverified by this repository. The ownership decision is explicit; the old S3 data remains for its 30-day expiry window.
 - **R4 (medium).** Presigning against the public CDN host instead of the R2 API host (C3).
 - **R5 (medium).** `checkExists` masking credential errors as `false` during cutover.
 - **R6 (medium).** Long-lived R2 keys replace ambient IAM. Scope per bucket.
@@ -560,6 +552,5 @@ S3 stays readable and unexpired through the rollback window.
 
 **Open questions**
 
-1. **Does the database provider actually deliver verified, restore-tested backups?** Blocks OPS-241 only. Everything else proceeds regardless.
-2. **Does R2's multipart ETag survive the equality check at `upload.handlers.ts:313-320`?** Empirical, answered by Slice 5 in OPS-240. If not, that handler needs size-and-count validation instead — a real code change this spec has scoped but not designed.
-3. **Which SST Cloudflare provider resources cover R2 buckets and Worker script bindings** at the pinned SST/Pulumi version? Resolved in OPS-238; affects how much Pulumi escape-hatch code `infra/bucket.ts` needs.
+1. **Does R2's multipart ETag survive the equality check at `upload.handlers.ts:313-320`?** Empirical, answered by Slice 5 in OPS-240. If not, that handler needs size-and-count validation instead — a real code change this spec has scoped but not designed.
+2. **Which SST Cloudflare provider resources cover R2 buckets and Worker script bindings** at the pinned SST/Pulumi version? Resolved in OPS-238; affects how much Pulumi escape-hatch code `infra/bucket.ts` needs.

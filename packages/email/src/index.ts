@@ -1,4 +1,3 @@
-export { BackupNotification } from '../emails/backup-notification'
 export { InviteEmail } from '../emails/invite'
 export { NewMixNotification } from '../emails/new-mix-notification'
 export { NewUserNotification } from '../emails/new-user-notification'
@@ -9,7 +8,6 @@ export { WelcomeEmail } from '../emails/welcome'
 export {
   type EmailTemplate,
   type SendEmailOptions,
-  sendBackupNotificationEmail,
   sendEmail,
   sendInviteEmail,
   sendNewUserNotificationEmail,

@@ -97,13 +97,9 @@ const ConfigSchema = Schema.Struct({
   }),
   buckets: Schema.Struct({
     userContent: Schema.String,
-    databaseBackups: Schema.String,
     mixes: Schema.String
   }),
   storage: StorageConfigSchema,
-  tasks: Schema.Struct({
-    databaseBackup: Schema.optional(Schema.String)
-  }),
   resources: Schema.Struct({
     available: Schema.Boolean
   }),
@@ -157,11 +153,6 @@ export function createConfig(): ConfigService {
   const spotifyClientSecret = secretString('SpotifyClientSecret', '')
 
   const userContentBucketName = resourceString('User_Content', 'name', 'user-content-dev')
-  const databaseBackupsBucketName = resourceString(
-    'DatabaseBackups',
-    'name',
-    'database-backups-dev'
-  )
   const mixesBucketName = resourceString('Mixes', 'name', 'mixes-dev')
 
   const storageAccessKeyId = secretString('StorageAccessKeyId', '')
@@ -175,8 +166,6 @@ export function createConfig(): ConfigService {
       storageSecretAccessKey.length === 0 ? undefined : Redacted.make(storageSecretAccessKey),
     signingEndpoint: secretString('StorageSigningEndpoint', '') || undefined
   })
-
-  const databaseBackupTask = resourceString('DatabaseBackupTask', 'taskDefinition', '') || undefined
 
   const nodeEnv = isProd ? 'production' : 'development'
   const dbStage = isProd ? 'prod' : undefined
@@ -221,13 +210,9 @@ export function createConfig(): ConfigService {
     },
     buckets: {
       userContent: userContentBucketName,
-      databaseBackups: databaseBackupsBucketName,
       mixes: mixesBucketName
     },
     storage,
-    tasks: {
-      databaseBackup: databaseBackupTask
-    },
     app: {
       stage: appStage,
       nodeEnv,

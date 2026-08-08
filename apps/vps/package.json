@@ -17,17 +17,10 @@
     "db:gen": "drizzle-kit generate",
     "db:migrate:prod": "bun sst shell --stage=prod bun run src/migrate.ts",
     "db:seed:music-lookups": "bun run scripts/seed-music-lookups.ts",
-    "db:deets:prod": "bun sst shell --stage=prod bun run ./scripts/db.ts",
-    "db:backup": "bun run scripts/backup-db.ts",
-    "db:backup:prod": "bun sst shell --stage=prod bun run scripts/backup-db.ts",
-    "db:backup:local": "bun run scripts/backup-db-local.ts",
-    "db:backup:docker": "./scripts/docker-backup.sh",
-    "db:restore": "bun run scripts/restore-db.ts",
-    "db:restore:docker": "./scripts/docker-restore.sh"
+    "db:deets:prod": "bun sst shell --stage=prod bun run ./scripts/db.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.1038.0",
-    "@aws-sdk/lib-storage": "3.1038.0",
     "@aws-sdk/s3-request-presigner": "3.1038.0",
     "@effect/cli": "0.75.2",
     "@effect/experimental": "0.60.0",

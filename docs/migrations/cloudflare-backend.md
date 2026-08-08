@@ -22,8 +22,7 @@ Exploration and decision record. No production infrastructure has been migrated 
 - transactional email through SES;
 - an in-process music-reminder loop;
 - hourly in-memory sitemap regeneration;
-- QR/PDF generation using bundled fonts and filesystem APIs;
-- a separate `pg_dump` container task scheduled daily.
+- QR/PDF generation using bundled fonts and filesystem APIs.
 
 AWS currently supplies:
 
@@ -33,8 +32,8 @@ AWS currently supplies:
 | API Gateway | `infra/vps.ts` | Worker custom domain/routes |
 | `User_Content` S3 bucket | `infra/bucket.ts` | R2 bucket + `cdn.goosebumps.fm/user-content/*` routing |
 | `Mixes` S3 bucket | `infra/bucket.ts` | R2 bucket + `cdn.goosebumps.fm/mixes/*` routing |
-| `DatabaseBackups` S3 bucket | `infra/bucket.ts` | Private R2 bucket with a 30-day lifecycle rule |
-| EventBridge/ECS backup task | `infra/cron.ts`, `infra/vps.ts` | Cron/Workflow invoking a backup Container while PostgreSQL remains; D1 Time Travel plus R2 export if D1 becomes the database |
+| Retired `DatabaseBackups` S3 bucket | `infra/bucket.ts` | Keep unlinked until its 30-day lifecycle empties it; do not migrate |
+| Database backups | PlanetScale | Operated directly in PlanetScale; no application cron/task |
 | SES | `infra/email.ts`, `packages/email/src/ses.ts` | Cloudflare Email Service REST/SMTP or Worker adapter, subject to a production beta evaluation |
 | SST secrets and links | `infra/secret.ts`, `ConfigService` | Wrangler bindings, vars, and secrets |
 | AWS OIDC deploy role | `.github/workflows/deploy.yml` | Scoped Cloudflare API token or Cloudflare Workers Builds |
@@ -96,7 +95,7 @@ Hyperdrive remains useful for routes moved into Workers. Before using it, audit 
 ### Phase 0: inventory and reversible spikes
 
 - Record production database size and per-table row/byte counts.
-- Record object count, byte count, storage class, largest object, metadata, incomplete multipart uploads, Glacier/Deep Archive objects, and objects larger than Super Slurper's limits for all three S3 buckets.
+- Record object count, byte count, storage class, largest object, metadata, incomplete multipart uploads, Glacier/Deep Archive objects, and objects larger than Super Slurper's limits for the two migrating S3 buckets.
 - Record request volume, p95/p99 duration, maximum upload size, reminder volume, and email volume/bounce behavior.
 - Build a non-production Cloudflare Container deployment and a minimal Worker-to-Container router.
 - Prove that the external PostgreSQL endpoint is reachable securely from a Container. Separately build one Worker + Hyperdrive read-only endpoint as evidence for a later Workers port.
@@ -113,26 +112,25 @@ Written against the traced code, it diverges from the plan below in four ways:
 - browser CORS on R2 **is** required from day one (the browser PUTs multipart chunks directly to the bucket);
 - cutover is forward-only per-bucket, not dual-write;
 - infrastructure stays in **SST** via its Pulumi extensibility, with Alchemy deferred until all infra is on Cloudflare;
-- only **two** buckets migrate. The database-backup subsystem is deleted rather than moved (the managed database provider supplies backups, subject to a verification precondition), and the dead cross-bucket copy path is deleted along with `S3Service.copyFile`.
+- only **two** buckets migrate. The database-backup subsystem was deleted after backup ownership moved directly to PlanetScale, and the dead cross-bucket copy path is deleted along with `S3Service.copyFile`.
 
 Keep the remaining bucket boundaries for the first move. The existing application-facing `S3Service` contract is already the correct seam.
 
-1. Create the R2 buckets and lifecycle rules (`qr-pdfs/` one day; database backups 30 days).
+1. Create the two R2 buckets and the `qr-pdfs/` one-day lifecycle rule.
 2. Centralize the current per-operation `new S3Client({})` construction behind the storage provider. Add the R2 endpoint, `region: "auto"`, and scoped credentials there; keep AWS and R2 selectable during migration.
-3. Include the backup, restore, and verification scripts, which currently construct S3 clients outside `S3Service`, in the R2 contract and credential migration.
-4. Bulk-copy with Super Slurper. Enable Sippy during the convergence window only if its on-demand behavior is required; it does not refresh already-copied objects and can resurrect an object deleted only from R2 while the S3 source still contains it.
-5. Compare object counts, sizes, metadata, and content hashes for critical samples. Do not use matching ETags as the integrity criterion; migration tools may change multipart boundaries and therefore ETags. Handle archived or migration-tool-incompatible objects separately.
-6. Put a Worker on `cdn.goosebumps.fm` with bindings to both public buckets. It must select by `/user-content/` or `/mixes/`, strip that prefix, and preserve GET/HEAD, range and conditional requests, object metadata/cache headers, ETags, and current 404 behavior. Never bind the private backup bucket to this public router.
-7. Choose one explicit cutover invariant:
+3. Bulk-copy with Super Slurper. Enable Sippy during the convergence window only if its on-demand behavior is required; it does not refresh already-copied objects and can resurrect an object deleted only from R2 while the S3 source still contains it.
+4. Compare object counts, sizes, metadata, and content hashes for critical samples. Do not use matching ETags as the integrity criterion; migration tools may change multipart boundaries and therefore ETags. Handle archived or migration-tool-incompatible objects separately.
+5. Put a Worker on `cdn.goosebumps.fm` with bindings to both public buckets. It must select by `/user-content/` or `/mixes/`, strip that prefix, and preserve GET/HEAD, range and conditional requests, object metadata/cache headers, ETags, and current 404 behavior. Never bind the retired backup bucket to this public router.
+6. Choose one explicit cutover invariant:
    - for true storage rollback, dual-write creates, replacements, and deletes to S3 and R2 for the whole rollback window and reconcile continuously; or
    - for a simpler forward-only storage cut, make R2 authoritative and allow compute rollback only if the old ECS service has also been configured to read and write R2.
-8. Disable Sippy before accepting R2-authoritative deletes or lifecycle expiry, then close AWS writes after the rollback decision is final.
+7. Disable Sippy before accepting R2-authoritative deletes or lifecycle expiry, then close AWS writes after the rollback decision is final.
 
-R2 implements the S3 operations currently used, but live contract tests remain required for cross-bucket copy and multipart retry/resume behavior. R2 requires multipart parts of at least 5 MiB and equal-size non-final parts; the current 8 MiB chunks fit. Inventory must also prove objects copied with a single `CopyObject` fit R2's size limit.
+R2 implements the remaining S3 operations, but live contract tests remain required for multipart retry/resume behavior. R2 requires multipart parts of at least 5 MiB and equal-size non-final parts; the current 8 MiB chunks fit. Inventory must also prove objects copied with a single `CopyObject` fit R2's size limit.
 
 The browser PUTs image bytes and each multipart chunk directly to the bucket via presigned URL (`apps/www/src/services/resumable-upload/service.ts`), which is why `infra/bucket.ts` already configures bucket CORS. R2 browser CORS is therefore required for the first storage cut on `User_Content`, configured with the exact browser origins and exposing `ETag`. Presigned writes must use the R2 S3 API hostname, not the public custom domain; public reads continue through `cdn.goosebumps.fm`.
 
-**Gate:** uploads, resume/abort/complete/retry multipart operations, admin listing/copy, all backup/restore scripts, imported cover art, QR expiry, and CDN range/conditional reads pass against R2; inventory reconciliation is clean.
+**Gate:** uploads, resume/abort/complete/retry multipart operations, admin listing, imported cover art, QR expiry, and CDN range/conditional reads pass against R2; inventory reconciliation is clean.
 
 ### Phase 2: move jobs and email
 

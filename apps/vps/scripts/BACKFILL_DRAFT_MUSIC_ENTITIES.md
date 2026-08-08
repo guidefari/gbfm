@@ -143,9 +143,8 @@ representative of the current code** — don't act on these numbers.
     started.
 - **Not yet run for real**: dry run needs to be re-executed once Odesli's
   limit clears, reviewed, then `--apply` run once confirmed. Currently
-  targeting the **local restored DB** (prod snapshot pulled via
-  `db:backup:prod` + `restore-db.ts --destination=local`), not prod
-  directly — per standing rule to never write to prod without a verified
+  targeting a **non-production database restored through PlanetScale**, not
+  prod directly — per standing rule to never write to prod without a verified
   dry run first.
 - One draft (`81759a6a-1b81-401d-8ff6-0bcea95d1bf1`) is a template/bio
   post with no music link at all — correctly skipped by the script, no

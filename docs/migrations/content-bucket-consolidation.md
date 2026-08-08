@@ -8,9 +8,8 @@ The current canonical buckets are:
 
 - `User_Content`
 - `Mixes`
-- `DatabaseBackups`
 
-`MDX_Bucket` was removed because it was no longer used by the app.
+`MDX_Bucket` was removed because it was no longer used by the app. `DatabaseBackups` was later retired when backup ownership moved to PlanetScale; its unlinked bucket remains only for lifecycle expiry.
 
 ## Why
 

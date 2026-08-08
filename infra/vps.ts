@@ -1,7 +1,7 @@
-import { contentBucket, dbBackupBucket, fileRouter, mixesBucket } from './bucket'
+import { contentBucket, fileRouter, mixesBucket } from './bucket'
 import { domain, urls } from './dns'
 import { email } from './email'
-import { allSecrets, secret } from './secret'
+import { allSecrets } from './secret'
 
 const isLocal = ['local', 'dev'].includes($app.stage)
 
@@ -49,7 +49,6 @@ export const service = new sst.aws.Service('gbfm_vps', {
     fileRouter,
     contentBucket,
     mixesBucket,
-    dbBackupBucket,
     ...allSecrets
   ],
   capacity: 'spot'
@@ -86,25 +85,6 @@ export const vps_gateway = new sst.aws.ApiGatewayV2('gbfm_vps_gateway', {
 if (!isLocal) {
   vps_gateway.routePrivate('$default', service.nodes.cloudmapService.arn)
 }
-
-export const dbBackupTask = new sst.aws.Task('DatabaseBackupTask', {
-  cluster,
-  image: {
-    context: './',
-    target: 'backup-task',
-    dockerfile: 'apps/vps/Dockerfile'
-  },
-  environment: {
-    SENTRY_RELEASE: process.env.SENTRY_RELEASE ?? '',
-    DATABASE_BACKUP_BUCKET: dbBackupBucket.name,
-    DatabaseHost: secret.DatabaseHost.value,
-    DatabaseUser: secret.DatabaseUser.value,
-    DatabasePassword: secret.DatabasePassword.value,
-    DatabasePort: secret.DatabasePort.value,
-    DatabaseName: secret.DatabaseName.value
-  },
-  link: [dbBackupBucket, ...allSecrets]
-})
 
 export const scheduledMaintenanceTask = new sst.aws.Task('BlueskySyncTask', {
   cluster,

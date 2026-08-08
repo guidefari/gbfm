@@ -1,7 +1,5 @@
-import { dbBackupBucket } from './bucket'
-// import { dbBackupCron } from './cron'
 import { email } from './email'
-import { allSecrets, secret } from './secret'
+import { allSecrets } from './secret'
 
 new sst.x.DevCommand('Mobile_Expo', {
   dev: {
@@ -160,86 +158,6 @@ new sst.x.DevCommand('Email_Preview', {
 //     command: 'bun scripts/migrate-labels.ts',
 //     directory: './apps/vps',
 //     autostart: false
-//   }
-// })
-
-// new sst.x.DevCommand('Backup_Database', {
-//   link: [...allSecrets, email, dbBackupBucket],
-//   dev: {
-//     command: 'bun scripts/backup-db.ts --source=local',
-//     directory: './apps/vps',
-//     autostart: false
-//   },
-//   environment: {
-//     DATABASE_BACKUP_BUCKET: dbBackupBucket.name,
-//     DatabaseHost: secret.DatabaseHost.value,
-//     DatabaseUser: secret.DatabaseUser.value,
-//     DatabasePassword: secret.DatabasePassword.value,
-//     DatabasePort: secret.DatabasePort.value,
-//     DatabaseName: secret.DatabaseName.value,
-//     LOCAL_DB_URL: process.env.LOCAL_DB_URL || ''
-//   }
-// })
-
-new sst.x.DevCommand('Backup_Database_Prod', {
-  link: [...allSecrets, email, dbBackupBucket],
-  dev: {
-    command: 'bun scripts/backup-db.ts --source=remote --destination=s3',
-    directory: './apps/vps',
-    autostart: false
-  },
-  environment: {
-    DATABASE_BACKUP_BUCKET: dbBackupBucket.name,
-    DatabaseHost: secret.DatabaseHost.value,
-    DatabaseUser: secret.DatabaseUser.value,
-    DatabasePassword: secret.DatabasePassword.value,
-    DatabasePort: secret.DatabasePort.value,
-    DatabaseName: secret.DatabaseName.value
-  }
-})
-
-// new sst.x.DevCommand('Backup_Database_Docker', {
-//   link: [...allSecrets, email, dbBackupBucket],
-//   dev: {
-//     command: './scripts/docker-backup-s3.sh',
-//     directory: './apps/vps',
-//     autostart: false
-//   }
-// })
-
-// new sst.x.DevCommand('Restore_Prod_Database', {
-//   link: [...allSecrets, email, dbBackupBucket],
-//   dev: {
-//     command: 'bun scripts/restore-db.ts --source=s3 --destination=planetscale',
-//     directory: './apps/vps',
-//     autostart: false
-//   },
-//   environment: {
-//     PLANETSCALE_DB_URL: process.env.PROD_DB_URL || ''
-//   }
-// })
-
-new sst.x.DevCommand('Verify_Backup', {
-  link: [...allSecrets, email, dbBackupBucket],
-  dev: {
-    command: 'bun scripts/verify-backup.ts',
-    directory: './apps/vps',
-    autostart: false
-  },
-  environment: {
-    DATABASE_BACKUP_BUCKET: dbBackupBucket.name
-  }
-})
-
-// new sst.x.DevCommand('Restore_Local_Database', {
-//   link: [...allSecrets, email, dbBackupBucket],
-//   dev: {
-//     command: 'bun scripts/restore-db.ts --source=s3 --destination=local',
-//     directory: './apps/vps',
-//     autostart: false
-//   },
-//   environment: {
-//     LOCAL_DB_URL: process.env.LOCAL_DB_URL || ''
 //   }
 // })
 

@@ -53,6 +53,8 @@ export const mixesBucket = isDevStage
       access: 'cloudfront'
     })
 
+// Retain the retired backup bucket until its 30-day lifecycle empties it. It is deliberately
+// not linked to compute; remove this declaration only after the bucket is confirmed empty.
 export const dbBackupBucket = isDevStage
   ? sst.aws.Bucket.get('DatabaseBackups', 'gbfm-prod-databasebackupsbucket-xbxkwmwo')
   : new sst.aws.Bucket('DatabaseBackups', {
