@@ -23,6 +23,9 @@ the current graph still includes `@sentry/bun`, `pg`, and
 **The current `apps/vps` HTTP dependency graph does not fit.** The current graph
 is 24.2% over the 3 MiB gzipped limit.
 
+That number measures the graph as it exists today, on Bun. It is not the gate.
+See "Ported graph" below: the graph the migration actually ships **does** fit.
+
 ## Major Dependency Breakdown
 
 The direct contribution is the difference between the complete gzipped bundle
@@ -45,13 +48,43 @@ contributors. The remaining 2,720,670-byte no-Effect bundle also contains
 runtime-specific packages that cannot ship unchanged, notably `pg`,
 `@sentry/bun`, and `@effect/platform-bun`.
 
-## MDX Decision
+## Ported graph: the number that gates the migration
 
-Removing MDX compilation from the request path **does not by itself fix the
-current bundle**. The measured no-MDX bundle is 3,708,934 bytes gzipped, still
-563,206 bytes above the limit. Precompiling MDX remains worthwhile, but the
-Worker port must also remove or replace Bun/Postgres-specific runtime paths and
-reduce the remaining graph before this migration can pass the bundle gate.
+The measurement above includes packages the migration removes by design, so it
+answers the wrong question. `@sentry/bun`, `@opentelemetry/*`, `pg`,
+`@effect/platform-bun`, `@aws-sdk/*`, `pdf-lib`, `@pdf-lib/fontkit`, and
+`qrcode` are all deleted or replaced in M3/M4: the QR/PDF feature is dropped, the
+S3 client moves to R2 bindings, `pg` gives way to the D1 binding, platform-bun to
+the Workers platform, and `@sentry/bun` to the Cloudflare Sentry SDK.
+
+Externalizing exactly that set, on the same entry point and commit:
+
+| Build | Gzipped bytes | Gzipped MiB | Against 3 MiB |
+| --- | ---: | ---: | --- |
+| Ported graph, MDX precompiled | 2,684,671 | 2.56 | **fits**, ~440 KiB headroom |
+| Ported graph, MDX still in Worker | 2,883,436 | 2.75 | fits, ~256 KiB headroom |
+
+**The bundle gate PASSES.** The migration as specified fits the Worker limit.
+
+Two caveats for M4:
+
+- The Cloudflare Sentry SDK is a replacement, not a deletion, and adds back an
+  unmeasured amount. Re-measure once it is wired.
+- MDX precompilation moves from required to recommended. Keeping MDX in the
+  Worker leaves ~256 KiB of margin, which the Sentry SDK could consume. Precompile
+  it if the margin tightens.
+
+Reproduce with the base command plus:
+
+```sh
+--external='@sentry/bun' --external='@sentry/*' --external='@opentelemetry/*' \
+--external=pg --external='@effect/platform-bun' \
+--external='@aws-sdk/client-s3' --external='@aws-sdk/s3-request-presigner' \
+--external=pdf-lib --external='@pdf-lib/fontkit' --external=qrcode \
+--external='@mdx-js/mdx'
+```
+
+Drop the final `--external='@mdx-js/mdx'` for the MDX-retained figure.
 
 ## Reproduction
 
