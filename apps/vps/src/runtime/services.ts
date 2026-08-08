@@ -1,6 +1,7 @@
 import { Layer } from 'effect'
 import { pool } from '@/db'
 import { Database, DatabaseLayer } from '@/db/layer'
+import { AuthLive } from '@/lib/auth'
 import { MdxServiceLayer } from '@/lib/mdx'
 import { OtlpLive } from '@/lib/otel'
 
@@ -100,6 +101,8 @@ const ServicesLayer = Layer.mergeAll(
   BlueskySyncLive
 ).pipe(Layer.provide(DatabaseLive))
 
-export const AppLayer = Layer.mergeAll(ServicesLayer, DatabaseLive).pipe(
-  Layer.provideMerge(AppLoggerLive)
-)
+export const AppLayer = Layer.mergeAll(
+  ServicesLayer,
+  DatabaseLive,
+  AuthLive.pipe(Layer.provide(DatabaseLive))
+).pipe(Layer.provideMerge(AppLoggerLive))

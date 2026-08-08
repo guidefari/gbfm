@@ -1,4 +1,4 @@
-import { db } from '@/db'
+import type { DatabaseClient } from '@/db/layer'
 import { musicEntityTypesTable, musicPlatformsTable } from '@/db/music-entity.schema'
 
 const entityTypes = [
@@ -56,7 +56,7 @@ const platforms = [
   { id: 'other', displayName: 'Other' }
 ]
 
-export async function seedMusicLookups() {
+export async function seedMusicLookups(db: DatabaseClient) {
   await db
     .insert(musicEntityTypesTable)
     .values(entityTypes)

@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm'
 import { Data, Effect } from 'effect'
-import type { db as DbType } from '@/db'
+import { databaseClient as DbType } from '@/db/layer'
 import {
   type MusicEntityType,
   type musicAlbumsTable,

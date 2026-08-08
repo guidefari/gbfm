@@ -1,6 +1,6 @@
 import { Effect } from 'effect'
 import { HttpServerRequest } from 'effect/unstable/http'
-import { auth } from '@/lib/auth'
+import { Auth } from '@/lib/auth'
 
 // For routes with no AuthMiddleware (public, but drafts/scoped content
 // should still open for an admin or the resource's own creator) -- reads
@@ -8,6 +8,7 @@ import { auth } from '@/lib/auth'
 // viewer" instead of rejecting the request the way AuthMiddleware does.
 export const getOptionalActor = Effect.gen(function* () {
   const request = yield* HttpServerRequest.HttpServerRequest
+  const auth = yield* Auth
   const session = yield* Effect.tryPromise({
     try: () => auth.api.getSession({ headers: new Headers(request.headers) }),
     catch: () => null

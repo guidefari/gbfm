@@ -1,5 +1,5 @@
 import { Context, Effect, Layer } from 'effect'
-import { pool } from '@/db'
+import { Database } from '@/db/layer'
 import { DatabaseError, LockUnavailable } from '@/errors'
 
 export interface LockService {
@@ -15,6 +15,7 @@ const databaseError = (operation: string) =>
   new DatabaseError({ message: 'Lock database operation failed', operation })
 
 const withLock = <A, E, R>(
+  pool: Database['Service']['$client'],
   key: string,
   effect: Effect.Effect<A, E, R>
 ): Effect.Effect<A, E | LockUnavailable | DatabaseError, R> =>
@@ -48,4 +49,10 @@ const withLock = <A, E, R>(
       })
   )
 
-export const LockServiceLayer = Layer.succeed(LockService, { withLock })
+export const LockServiceLayer = Layer.effect(
+  LockService,
+  Effect.gen(function* () {
+    const db = yield* Database
+    return { withLock: (key, effect) => withLock(db.$client, key, effect) }
+  })
+)

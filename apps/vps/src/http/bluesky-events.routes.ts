@@ -1,9 +1,9 @@
 import { and, eq } from 'drizzle-orm'
 import { Effect, Schedule, Stream } from 'effect'
 import { HttpRouter, HttpServerRequest, HttpServerResponse } from 'effect/unstable/http'
-import { db } from '@/db'
+import { Database } from '@/db/layer'
 import { blueskySyncRuns, externalAccounts } from '@/db/external-account.schema'
-import { auth } from '@/lib/auth'
+import { Auth } from '@/lib/auth'
 
 type SyncRunStatus = 'running' | 'succeeded' | 'failed'
 
@@ -52,11 +52,13 @@ export const BlueskyEventsRoute = HttpRouter.add(
         if (!accountId || !runId)
           return HttpServerResponse.text('Missing sync identifiers', { status: 400 })
         const request = yield* HttpServerRequest.HttpServerRequest
+        const auth = yield* Auth
         const session = yield* Effect.tryPromise({
           try: () => auth.api.getSession({ headers: new Headers(request.headers) }),
           catch: () => null
         })
         if (!session) return unauthorized
+        const db = yield* Database
 
         const load = Effect.tryPromise({
           try: async () => {

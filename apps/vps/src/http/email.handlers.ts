@@ -6,7 +6,7 @@ import { sendMixNotificationEmail } from '@gbfm/email/sender'
 import { and, eq } from 'drizzle-orm'
 import { Effect, Schema } from 'effect'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
-import { db } from '@/db'
+import { Database } from '@/db/layer'
 import { audioTable } from '@/db/audio.schema'
 import { user as usersTable } from '@/db/auth.schema'
 import {
@@ -83,12 +83,13 @@ function toEmailLogResponse(log: SelectEmailDeliveryLog) {
 }
 
 async function sendMixNotification(
+  db: Database['Service'],
   input: SendMixNotificationInput
 ): Promise<SendMixNotificationResponse> {
   const recipients =
     input.recipients && input.recipients.length > 0
       ? input.recipients
-      : await getActiveMixRecipients()
+      : await getActiveMixRecipients(db)
 
   if (recipients.length === 0) {
     return { success: true, sentTo: [], emailIds: [], message: 'No opted-in recipients' }
@@ -142,7 +143,7 @@ async function sendMixNotification(
 
     const username = user?.name || input.metadata?.username || recipient.split('@')[0] || 'listener'
 
-    if (user && !(await canReceiveEmail(user.id, EMAIL_NOTIFICATION_TYPES.MIX_RELEASE))) {
+    if (user && !(await canReceiveEmail(user.id, EMAIL_NOTIFICATION_TYPES.MIX_RELEASE, db))) {
       Effect.annotateCurrentSpan('totalRecipients', recipients.length).pipe(runAppFork)
       Effect.annotateCurrentSpan('mixSlug', input.mixSlug).pipe(runAppFork)
       Effect.annotateCurrentSpan('mixTitle', input.metadata?.mixTitle || mix.title).pipe(runAppFork)
@@ -156,23 +157,26 @@ async function sendMixNotification(
     }
 
     const mixTitle = input.metadata?.mixTitle || mix.title
-    const deliveryLog = await createEmailDeliveryLog({
-      userId: user?.id,
-      recipientEmail: recipient,
-      recipientName: username,
-      emailType: EMAIL_NOTIFICATION_TYPES.MIX_RELEASE,
-      templateName: 'mix-notification',
-      subject: `New mix: ${mixTitle}`,
-      status: EMAIL_DELIVERY_STATUSES.PENDING,
-      metadata: {
-        mixId: mix.id,
-        mixSlug: mix.slug,
-        mixTitle,
-        artistName: input.metadata?.artistName || 'Guide Fari',
-        coverImageUrl,
-        releaseDate
-      }
-    })
+    const deliveryLog = await createEmailDeliveryLog(
+      {
+        userId: user?.id,
+        recipientEmail: recipient,
+        recipientName: username,
+        emailType: EMAIL_NOTIFICATION_TYPES.MIX_RELEASE,
+        templateName: 'mix-notification',
+        subject: `New mix: ${mixTitle}`,
+        status: EMAIL_DELIVERY_STATUSES.PENDING,
+        metadata: {
+          mixId: mix.id,
+          mixSlug: mix.slug,
+          mixTitle,
+          artistName: input.metadata?.artistName || 'Guide Fari',
+          coverImageUrl,
+          releaseDate
+        }
+      },
+      db
+    )
 
     try {
       await sendMixNotificationEmail({
@@ -184,7 +188,7 @@ async function sendMixNotification(
         coverImageUrl,
         releaseDate
       })
-      await markEmailDeliveryLogAsSent(deliveryLog.id)
+      await markEmailDeliveryLogAsSent(deliveryLog.id, db)
       sentTo.push(recipient)
       emailIds.push(deliveryLog.id)
     } catch (error: unknown) {
@@ -196,7 +200,7 @@ async function sendMixNotification(
         emailLogId: deliveryLog.id,
         error: getErrorMessage(error)
       }).pipe(runAppFork)
-      await markEmailDeliveryLogAsFailed(deliveryLog.id, getErrorMessage(error))
+      await markEmailDeliveryLogAsFailed(deliveryLog.id, getErrorMessage(error), db)
       errors.push(recipient)
     }
   }
@@ -227,8 +231,9 @@ export const EmailHandlersLive = HttpApiBuilder.group(Api, 'email', (handlers) =
     .handle('sendMixNotification', ({ payload }) =>
       Effect.gen(function* () {
         yield* requireAdmin
+        const db = yield* Database
         return yield* Effect.tryPromise({
-          try: () => sendMixNotification(payload),
+          try: () => sendMixNotification(db, payload),
           catch: (error: unknown) =>
             error instanceof MixNotFoundError
               ? new HttpApiError.NotFound()
@@ -243,8 +248,9 @@ export const EmailHandlersLive = HttpApiBuilder.group(Api, 'email', (handlers) =
     .handle('getEmailLogs', ({ query }) =>
       Effect.gen(function* () {
         yield* requireAdmin
+        const db = yield* Database
         const result = yield* Effect.tryPromise({
-          try: () => getAdminEmailLogs(query),
+          try: () => getAdminEmailLogs(query, db),
           catch: (error: unknown) =>
             new DatabaseError({
               message: `Failed to fetch email logs: ${getErrorMessage(error)}`,

@@ -37,7 +37,7 @@ import { SiteRoutesLive } from '@/http/site-routes'
 import { SpotifyHandlersLive } from '@/http/spotify.handlers'
 import { UploadHandlersLive } from '@/http/upload.handlers'
 import { UserHandlersLive } from '@/http/user.handlers'
-import { auth } from '@/lib/auth'
+import { Auth } from '@/lib/auth'
 import { AuthMiddlewareLive } from '@/middleware/auth.impl'
 import { IdentityResolverLive } from '@/middleware/optional-auth.impl'
 import { prepareAuthRequest } from '@/routes/user/better-auth.routes'
@@ -53,6 +53,7 @@ const AppServicesLive = Layer.effectContext(appServicesContext)
 // its own path (not under /api) since its basePath appears in emailed links.
 const betterAuthRoute = HttpRouter.add('*', '/auth/*', (request) =>
   Effect.gen(function* () {
+    const auth = yield* Auth
     const webRequest = yield* HttpServerRequest.toWeb(request)
     const webResponse = yield* Effect.promise(() =>
       Promise.resolve(auth.handler(prepareAuthRequest(webRequest)))
@@ -104,11 +105,7 @@ export const createWebHandler = (options?: {
     Layer.provide(Layer.mergeAll(UserHandlersLive, UploadHandlersLive)),
     // These middleware services are also yielded directly by built handlers. Keep them in the
     // layer output so toWebHandler can prove no request-time context remains.
-    Layer.provideMerge(Layer.mergeAll(AuthMiddlewareLive, IdentityResolverLive)),
-    // provideMerge, not provide: services a handler pulls via plain `yield*`
-    // only clear toWebHandler's phantom-context requirement once they're
-    // also in this layer's output, which plain `provide` discards.
-    Layer.provideMerge(AppServicesLive)
+    Layer.provideMerge(Layer.mergeAll(AuthMiddlewareLive, IdentityResolverLive))
   )
 
   return HttpRouter.toWebHandler(
@@ -137,6 +134,7 @@ export const createWebHandler = (options?: {
       RequestLoggerLive,
       SentryDefectLive
     ).pipe(
+      Layer.provideMerge(AppServicesLive),
       // RequestLoggerLive is the single structured request event; disable
       // Effect HttpMiddleware.logger to avoid a second response log line.
       Layer.provide(HttpRouter.disableLogger),

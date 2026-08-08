@@ -6,12 +6,12 @@ import { eq } from 'drizzle-orm'
 import { Effect, Result } from 'effect'
 import { HttpServerResponse } from 'effect/unstable/http'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
-import { db } from '@/db'
 import { user as usersTable, verification } from '@/db/auth.schema'
+import { Database } from '@/db/layer'
 import { EMAIL_NOTIFICATION_TYPES } from '@/db/email.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
-import { auth } from '@/lib/auth'
+import { Auth } from '@/lib/auth'
 import {
   createEmailDeliveryLog,
   markEmailDeliveryLogAsFailed,
@@ -40,6 +40,7 @@ export const InviteHandlersLive = HttpApiBuilder.group(Api, 'invite', (handlers)
       Effect.gen(function* () {
         yield* requireAdmin
         const { user: currentUser } = yield* AuthSession
+        const db = yield* Database
 
         const [targetUser] = yield* dieOnDatabaseError(
           Effect.tryPromise({
@@ -84,16 +85,19 @@ export const InviteHandlersLive = HttpApiBuilder.group(Api, 'invite', (handlers)
         const deliveryLog = yield* dieOnDatabaseError(
           Effect.tryPromise({
             try: () =>
-              createEmailDeliveryLog({
-                userId: targetUser.id,
-                recipientEmail: targetUser.email,
-                recipientName: targetUser.name,
-                emailType: EMAIL_NOTIFICATION_TYPES.TRANSACTIONAL,
-                templateName: 'invite',
-                subject: "You've been invited to goosebumps.fm",
-                status: EMAIL_DELIVERY_STATUSES.PENDING,
-                metadata: { invitedBy: currentUser.id }
-              }),
+              createEmailDeliveryLog(
+                {
+                  userId: targetUser.id,
+                  recipientEmail: targetUser.email,
+                  recipientName: targetUser.name,
+                  emailType: EMAIL_NOTIFICATION_TYPES.TRANSACTIONAL,
+                  templateName: 'invite',
+                  subject: "You've been invited to goosebumps.fm",
+                  status: EMAIL_DELIVERY_STATUSES.PENDING,
+                  metadata: { invitedBy: currentUser.id }
+                },
+                db
+              ),
             catch: (error) =>
               new DatabaseError({
                 message: `Failed to create email delivery log: ${getErrorMessage(error)}`,
@@ -122,17 +126,19 @@ export const InviteHandlersLive = HttpApiBuilder.group(Api, 'invite', (handlers)
             emailLogId: deliveryLog.id,
             error: message
           })
-          yield* Effect.promise(() => markEmailDeliveryLogAsFailed(deliveryLog.id, message))
+          yield* Effect.promise(() => markEmailDeliveryLogAsFailed(deliveryLog.id, message, db))
           return yield* new HttpApiError.InternalServerError()
         }
 
-        yield* Effect.promise(() => markEmailDeliveryLogAsSent(deliveryLog.id))
+        yield* Effect.promise(() => markEmailDeliveryLogAsSent(deliveryLog.id, db))
 
         return { success: true, emailId: deliveryLog.id }
       })
     )
     .handle('confirmInvite', ({ payload }) =>
       Effect.gen(function* () {
+        const auth = yield* Auth
+        const db = yield* Database
         const { token, password } = payload
         const identifier = `reset-password:${token}`
 

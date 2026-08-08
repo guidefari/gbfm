@@ -16,11 +16,14 @@
 
 import { isNull, eq } from 'drizzle-orm'
 import { Effect } from 'effect'
-import { db } from '../src/db'
+import { pool } from '../src/db'
+import { Database, DatabaseLayer } from '../src/db/layer'
 import { postsTable } from '../src/db/post.schema'
 import { AppLayer } from '../src/runtime/services'
 import { MusicEntityService } from '../src/services/music-entity'
 import { MusicLinkScraperService } from '../src/services/music-link-scraper.service'
+
+const db = Effect.runSync(Database.pipe(Effect.provide(DatabaseLayer(pool))))
 
 const musicHosts = new Set([
   'open.spotify.com',

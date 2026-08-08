@@ -8,7 +8,7 @@ import * as Sentry from '@sentry/bun'
 import { and, eq, isNull } from 'drizzle-orm'
 import { Effect } from 'effect'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
-import { db } from '@/db'
+import { Database } from '@/db/layer'
 import { newsletterSubscribersTable } from '@/db/newsletter.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { dieOnDatabaseError as makeDieOnDatabaseError } from '@/http/handler-utils'
@@ -36,6 +36,7 @@ export const NewsletterHandlersLive = HttpApiBuilder.group(Api, 'newsletter', (h
   handlers
     .handle('subscribe', ({ payload }) =>
       Effect.gen(function* () {
+        const db = yield* Database
         const normalizedEmail = payload.email.trim().toLowerCase()
 
         const result = yield* dieOnDatabaseError(
@@ -78,6 +79,7 @@ export const NewsletterHandlersLive = HttpApiBuilder.group(Api, 'newsletter', (h
     )
     .handle('unsubscribe', ({ payload }) =>
       Effect.gen(function* () {
+        const db = yield* Database
         const result = yield* dieOnDatabaseError(
           Effect.tryPromise({
             try: () =>
@@ -106,7 +108,7 @@ export const NewsletterHandlersLive = HttpApiBuilder.group(Api, 'newsletter', (h
         const linkedUserId = result[0]?.userId
         if (linkedUserId) {
           yield* Effect.promise(() =>
-            globalUnsubscribe(linkedUserId).catch((err) =>
+            globalUnsubscribe(linkedUserId, db).catch((err) =>
               console.error('Failed to propagate newsletter unsubscribe to user preferences:', err)
             )
           )
@@ -119,6 +121,7 @@ export const NewsletterHandlersLive = HttpApiBuilder.group(Api, 'newsletter', (h
     )
     .handle('requestUnsubscribe', ({ payload }) =>
       Effect.gen(function* () {
+        const db = yield* Database
         const normalizedEmail = payload.email.trim().toLowerCase()
 
         const [row] = yield* dieOnDatabaseError(

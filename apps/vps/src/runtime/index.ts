@@ -23,6 +23,7 @@ import type { ShowService, ShowSubscriptionService } from '@/services/show.servi
 import type { SpotifyService } from '@/services/spotify.service'
 import type { UserService } from '@/services/user.service'
 import type { Database } from '@/db/layer'
+import type { Auth } from '@/lib/auth'
 import { AppLayer } from './services'
 
 export type AppServices =
@@ -32,6 +33,7 @@ export type AppServices =
   | BlueskySyncService
   | LockService
   | Database
+  | Auth
   | EmailService
   | FavoriteService
   | SpotifyService

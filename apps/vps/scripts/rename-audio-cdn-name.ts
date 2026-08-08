@@ -1,6 +1,10 @@
-import { db } from '../src/db'
 import { audioTable } from '../src/db/audio.schema'
 import { eq } from 'drizzle-orm'
+import { Effect } from 'effect'
+import { pool } from '../src/db'
+import { Database, DatabaseLayer } from '../src/db/layer'
+
+const db = Effect.runSync(Database.pipe(Effect.provide(DatabaseLayer(pool))))
 
 async function renameAudioCdnName() {
   // Fetch all audio rows

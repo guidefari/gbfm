@@ -1,6 +1,6 @@
 import { EMAIL_DELIVERY_STATUSES, type EmailDeliveryStatus } from '@gbfm/core/status'
 import { and, desc, eq, gte, ilike, lt, type SQL, sql } from 'drizzle-orm'
-import { db } from '@/db'
+import type { DatabaseClient } from '@/db/layer'
 import { emailDeliveryLogsTable, type InsertEmailDeliveryLog } from '@/db/email.schema'
 import { createPaginationMetadata } from '@/lib/pagination'
 
@@ -13,16 +13,23 @@ export type GetAdminEmailLogsParams = {
   dateTo?: string
 }
 
-export async function createEmailDeliveryLog(log: InsertEmailDeliveryLog) {
-  const [result] = await db.insert(emailDeliveryLogsTable).values(log).returning()
+export async function createEmailDeliveryLog(
+  log: InsertEmailDeliveryLog,
+  database: DatabaseClient
+) {
+  const [result] = await database.insert(emailDeliveryLogsTable).values(log).returning()
   if (!result) {
     throw new Error('Failed to create email delivery log')
   }
   return result
 }
 
-export async function updateEmailDeliveryLog(id: string, updates: Partial<InsertEmailDeliveryLog>) {
-  const [result] = await db
+export async function updateEmailDeliveryLog(
+  id: string,
+  updates: Partial<InsertEmailDeliveryLog>,
+  database: DatabaseClient
+) {
+  const [result] = await database
     .update(emailDeliveryLogsTable)
     .set({ ...updates, updatedAt: new Date() })
     .where(eq(emailDeliveryLogsTable.id, id))
@@ -30,8 +37,12 @@ export async function updateEmailDeliveryLog(id: string, updates: Partial<Insert
   return result
 }
 
-export async function getEmailDeliveryLogsByUserId(userId: string, limit = 50) {
-  return db
+export async function getEmailDeliveryLogsByUserId(
+  userId: string,
+  database: DatabaseClient,
+  limit: number = 50
+) {
+  return database
     .select()
     .from(emailDeliveryLogsTable)
     .where(eq(emailDeliveryLogsTable.userId, userId))
@@ -39,8 +50,12 @@ export async function getEmailDeliveryLogsByUserId(userId: string, limit = 50) {
     .limit(limit)
 }
 
-export async function getEmailDeliveryLogsByRecipientEmail(email: string, limit = 50) {
-  return db
+export async function getEmailDeliveryLogsByRecipientEmail(
+  email: string,
+  database: DatabaseClient,
+  limit: number = 50
+) {
+  return database
     .select()
     .from(emailDeliveryLogsTable)
     .where(eq(emailDeliveryLogsTable.recipientEmail, email))
@@ -48,74 +63,107 @@ export async function getEmailDeliveryLogsByRecipientEmail(email: string, limit 
     .limit(limit)
 }
 
-export async function markEmailDeliveryLogAsSent(id: string, sesMessageId?: string) {
-  return updateEmailDeliveryLog(id, {
-    status: EMAIL_DELIVERY_STATUSES.SENT,
-    sentAt: new Date(),
-    sesMessageId
-  })
+export async function markEmailDeliveryLogAsSent(
+  id: string,
+  database: DatabaseClient,
+  sesMessageId?: string
+) {
+  return updateEmailDeliveryLog(
+    id,
+    {
+      status: EMAIL_DELIVERY_STATUSES.SENT,
+      sentAt: new Date(),
+      sesMessageId
+    },
+    database
+  )
 }
 
-export async function markEmailDeliveryLogAsFailed(id: string, errorMessage: string) {
-  return updateEmailDeliveryLog(id, {
-    status: EMAIL_DELIVERY_STATUSES.FAILED,
-    errorMessage
-  })
+export async function markEmailDeliveryLogAsFailed(
+  id: string,
+  errorMessage: string,
+  database: DatabaseClient
+) {
+  return updateEmailDeliveryLog(
+    id,
+    {
+      status: EMAIL_DELIVERY_STATUSES.FAILED,
+      errorMessage
+    },
+    database
+  )
 }
 
-export async function markEmailDeliveryLogAsDelivered(sesMessageId: string) {
-  const [log] = await db
+export async function markEmailDeliveryLogAsDelivered(
+  sesMessageId: string,
+  database: DatabaseClient
+) {
+  const [log] = await database
     .select()
     .from(emailDeliveryLogsTable)
     .where(eq(emailDeliveryLogsTable.sesMessageId, sesMessageId))
     .limit(1)
 
   if (log) {
-    return updateEmailDeliveryLog(log.id, {
-      status: EMAIL_DELIVERY_STATUSES.DELIVERED,
-      deliveredAt: new Date()
-    })
+    return updateEmailDeliveryLog(
+      log.id,
+      {
+        status: EMAIL_DELIVERY_STATUSES.DELIVERED,
+        deliveredAt: new Date()
+      },
+      database
+    )
   }
 }
 
-export async function markEmailDeliveryLogAsBounced(sesMessageId: string) {
-  const [log] = await db
+export async function markEmailDeliveryLogAsBounced(
+  sesMessageId: string,
+  database: DatabaseClient
+) {
+  const [log] = await database
     .select()
     .from(emailDeliveryLogsTable)
     .where(eq(emailDeliveryLogsTable.sesMessageId, sesMessageId))
     .limit(1)
 
   if (log) {
-    return updateEmailDeliveryLog(log.id, {
-      status: EMAIL_DELIVERY_STATUSES.BOUNCED,
-      bouncedAt: new Date()
-    })
+    return updateEmailDeliveryLog(
+      log.id,
+      {
+        status: EMAIL_DELIVERY_STATUSES.BOUNCED,
+        bouncedAt: new Date()
+      },
+      database
+    )
   }
 }
 
-export async function markEmailDeliveryLogAsComplained(sesMessageId: string) {
-  const [log] = await db
+export async function markEmailDeliveryLogAsComplained(
+  sesMessageId: string,
+  database: DatabaseClient
+) {
+  const [log] = await database
     .select()
     .from(emailDeliveryLogsTable)
     .where(eq(emailDeliveryLogsTable.sesMessageId, sesMessageId))
     .limit(1)
 
   if (log) {
-    return updateEmailDeliveryLog(log.id, {
-      status: EMAIL_DELIVERY_STATUSES.COMPLAINED,
-      complainedAt: new Date()
-    })
+    return updateEmailDeliveryLog(
+      log.id,
+      {
+        status: EMAIL_DELIVERY_STATUSES.COMPLAINED,
+        complainedAt: new Date()
+      },
+      database
+    )
   }
 }
 
-export async function getAdminEmailLogs({
-  limit,
-  offset,
-  status,
-  recipientEmail,
-  dateFrom,
-  dateTo
-}: GetAdminEmailLogsParams) {
+export async function getAdminEmailLogs(
+  { limit, offset, status, recipientEmail, dateFrom, dateTo }: GetAdminEmailLogsParams,
+  database: DatabaseClient
+) {
   const filters: SQL[] = []
 
   if (status) {
@@ -138,7 +186,7 @@ export async function getAdminEmailLogs({
 
   const whereClause = filters.length > 0 ? and(...filters) : undefined
 
-  const data = await db
+  const data = await database
     .select()
     .from(emailDeliveryLogsTable)
     .where(whereClause)
@@ -146,7 +194,7 @@ export async function getAdminEmailLogs({
     .limit(limit)
     .offset(offset)
 
-  const countRows = await db
+  const countRows = await database
     .select({ total: sql<number>`count(*)`.mapWith(Number) })
     .from(emailDeliveryLogsTable)
     .where(whereClause)

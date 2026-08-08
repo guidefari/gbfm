@@ -3,7 +3,7 @@ import { ReadinessCheckFailedError } from '@gbfm/api/errors'
 import { sql } from 'drizzle-orm'
 import { Effect, Layer } from 'effect'
 import { HttpApiBuilder } from 'effect/unstable/httpapi'
-import { db } from '@/db'
+import { Database } from '@/db/layer'
 
 const READINESS_CACHE_MS = 5_000
 
@@ -12,14 +12,17 @@ const READINESS_CACHE_MS = 5_000
 // The cause is logged server-side only -- it must never reach the response
 // body (a public /health endpoint leaking internal DB error detail is a real
 // information-disclosure risk), but it also must not be silently discarded.
-export const checkDatabase = Effect.tryPromise({
-  try: () => db.execute(sql.raw('SELECT 1')),
-  catch: (cause) => cause
-}).pipe(
-  Effect.tapError((cause) => Effect.logError('[health] readiness check failed', cause)),
-  Effect.mapError(() => new ReadinessCheckFailedError({ dbConnected: false })),
-  Effect.asVoid
-)
+export const checkDatabase = Effect.gen(function* () {
+  const db = yield* Database
+  return yield* Effect.tryPromise({
+    try: () => db.execute(sql.raw('SELECT 1')),
+    catch: (cause) => cause
+  }).pipe(
+    Effect.tapError((cause) => Effect.logError('[health] readiness check failed', cause)),
+    Effect.mapError(() => new ReadinessCheckFailedError({ dbConnected: false })),
+    Effect.asVoid
+  )
+})
 
 type ReadinessResult = { readonly dbConnected: true } | { readonly dbConnected: false }
 
@@ -27,14 +30,14 @@ type ReadinessResult = { readonly dbConnected: true } | { readonly dbConnected: 
 // concurrent requests that arrive while a check is in flight share that one
 // fiber instead of each independently hitting the database and racing to
 // write a cache slot (the module-level `let` this replaced had that race).
-const readinessResult = (check: Effect.Effect<void, ReadinessCheckFailedError>) =>
+const readinessResult = <R>(check: Effect.Effect<void, ReadinessCheckFailedError, R>) =>
   check.pipe(
     Effect.as<ReadinessResult>({ dbConnected: true }),
     Effect.catch(() => Effect.succeed<ReadinessResult>({ dbConnected: false })),
     Effect.cachedWithTTL(`${READINESS_CACHE_MS} millis`)
   )
 
-const readiness = (cachedCheck: Effect.Effect<ReadinessResult>) =>
+const readiness = <R>(cachedCheck: Effect.Effect<ReadinessResult, never, R>) =>
   Effect.gen(function* () {
     const result = yield* cachedCheck
     if (!result.dbConnected) {
@@ -43,7 +46,7 @@ const readiness = (cachedCheck: Effect.Effect<ReadinessResult>) =>
     return result
   })
 
-export const makeHealthHandlers = (check: Effect.Effect<void, ReadinessCheckFailedError>) =>
+export const makeHealthHandlers = <R>(check: Effect.Effect<void, ReadinessCheckFailedError, R>) =>
   Layer.unwrap(
     Effect.gen(function* () {
       const cachedCheck = yield* readinessResult(check)

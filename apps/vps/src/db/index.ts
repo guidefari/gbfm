@@ -1,9 +1,7 @@
 import { config } from '@/services/config.service'
 import 'dotenv/config'
-import { drizzle } from 'drizzle-orm/node-postgres'
 import { Pool } from 'pg'
 import { instrumentDatabaseClient } from '@/lib/database-instrumentation'
-import * as schema from './exports'
 
 const stage = config.app.stage
 
@@ -37,4 +35,3 @@ const pool = instrumentDatabaseClient(new Pool(dbConfig))
 pool.on('connect', (client) => instrumentDatabaseClient(client))
 
 export { pool }
-export const db = drizzle(pool, { schema })

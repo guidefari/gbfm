@@ -1,8 +1,9 @@
-import { db } from '../src/db'
 import { sql } from 'drizzle-orm'
 import { user as betterAuthUser, account as betterAuthAccount } from '../src/db/auth.schema'
 import { Effect, Console, Data } from 'effect'
 import { BunRuntime } from '@effect/platform-bun'
+import { pool } from '../src/db'
+import { Database, DatabaseLayer } from '../src/db/layer'
 
 class FetchUsersError extends Data.TaggedError('FetchUsersError')<{
   readonly cause: unknown
@@ -13,6 +14,7 @@ class MigrationError extends Data.TaggedError('MigrationError')<{
 }> {}
 
 const migrateUsers = Effect.gen(function* () {
+  const db = yield* Database
   yield* Console.log('🔄 Starting user migration from old auth to Better Auth...')
 
   const result = yield* Effect.tryPromise({
@@ -87,4 +89,4 @@ const migrateUsers = Effect.gen(function* () {
   yield* Console.log(`   Total: ${existingUsers.length}`)
 })
 
-migrateUsers.pipe(BunRuntime.runMain)
+migrateUsers.pipe(Effect.provide(DatabaseLayer(pool)), BunRuntime.runMain)

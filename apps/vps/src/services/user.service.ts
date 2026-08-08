@@ -218,9 +218,9 @@ const searchUsersEffect = (db: DatabaseConnection, query: string) =>
     return users
   })
 
-const getUserEmailPreferencesEffect = (userId: string) =>
+const getUserEmailPreferencesEffect = (db: DatabaseConnection, userId: string) =>
   Effect.tryPromise({
-    try: () => getOrCreateEmailPreferencesByUserId(userId),
+    try: () => getOrCreateEmailPreferencesByUserId(userId, db),
     catch: (error) =>
       new DatabaseError({
         message: `Failed to get user email preferences: ${getErrorMessage(error)}`,
@@ -345,12 +345,13 @@ const listDjsEffect = (db: DatabaseConnection) =>
   })
 
 const updateUserEmailPreferencesEffect = (
+  db: DatabaseConnection,
   userId: string,
   preferences: Partial<InsertAuthorEmailPreferences>
 ) =>
   Effect.gen(function* () {
     const result = yield* Effect.tryPromise({
-      try: () => updateEmailPreferencesRepo(userId, preferences),
+      try: () => updateEmailPreferencesRepo(userId, preferences, db),
       catch: (error) =>
         new DatabaseError({
           message: `Failed to update user email preferences: ${getErrorMessage(error)}`,
@@ -398,11 +399,11 @@ export const UserServiceLayer = Layer.effect(
         ),
       listDjs: () => listDjsEffect(db).pipe(Effect.withSpan('user.listDjs')),
       getUserEmailPreferences: (userId) =>
-        getUserEmailPreferencesEffect(userId).pipe(
+        getUserEmailPreferencesEffect(db, userId).pipe(
           Effect.withSpan('user.getEmailPreferences', { attributes: { userId } })
         ),
       updateUserEmailPreferences: (userId, preferences) =>
-        updateUserEmailPreferencesEffect(userId, preferences).pipe(
+        updateUserEmailPreferencesEffect(db, userId, preferences).pipe(
           Effect.withSpan('user.updateEmailPreferences', { attributes: { userId } })
         )
     }

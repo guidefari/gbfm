@@ -1,7 +1,7 @@
 import { LINK_STATUS } from '@gbfm/core/status'
 import { and, eq } from 'drizzle-orm'
 import { Effect } from 'effect'
-import type { db as DbType } from '@/db'
+import { databaseClient as DbType } from '@/db/layer'
 import {
   type MusicEntityType,
   musicEntityLinksTable,

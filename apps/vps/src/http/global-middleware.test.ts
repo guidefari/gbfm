@@ -1,8 +1,10 @@
 import * as BunFileSystem from '@effect/platform-bun/BunFileSystem'
 import * as BunPath from '@effect/platform-bun/BunPath'
-import { Layer } from 'effect'
+import { Context, Layer } from 'effect'
 import { HttpRouter, HttpServer, HttpServerResponse } from 'effect/unstable/http'
 import { describe, expect, test } from 'vitest'
+import { Database } from '@/db/layer'
+import { DatabaseTestLayer, db } from '@/test/database'
 import { rateLimitClientKey, requestPath, RequestLoggerLive } from './global-middleware'
 
 describe('requestPath', () => {
@@ -48,13 +50,17 @@ describe('RequestLoggerLive', () => {
           Layer.mergeAll(BunFileSystem.layer, BunPath.layer).pipe(
             Layer.provideMerge(HttpServer.layerServices)
           )
-        )
+        ),
+        Layer.provide(DatabaseTestLayer)
       ),
       { disableLogger: true }
     )
 
   test('passes the response through for an absolute request url', async () => {
-    const res = await loggedHandler().handler(new Request('http://localhost/probe'))
+    const res = await loggedHandler().handler(
+      new Request('http://localhost/probe'),
+      Context.make(Database, db)
+    )
 
     expect(res.status).toBe(200)
     expect(await res.text()).toBe('ok')
@@ -64,7 +70,7 @@ describe('RequestLoggerLive', () => {
     const request = new Request('http://localhost/probe')
     Object.defineProperty(request, 'url', { value: '/probe' })
 
-    const res = await loggedHandler().handler(request)
+    const res = await loggedHandler().handler(request, Context.make(Database, db))
 
     expect(res.status).toBe(200)
     expect(await res.text()).toBe('ok')

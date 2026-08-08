@@ -1,6 +1,6 @@
 import { and, eq, exists, lte } from 'drizzle-orm'
 import { Effect } from 'effect'
-import { db } from '@/db'
+import { Database } from '@/db/layer'
 import { audioTable } from '@/db/audio.schema'
 import { user as usersTable } from '@/db/auth.schema'
 import { musicLabelsTable } from '@/db/music-entity.schema'
@@ -25,7 +25,7 @@ export const clearSitemapCache = () => {
 }
 
 // Database fetchers
-const fetchMixes = () =>
+const fetchMixes = (db: Database['Service']) =>
   Effect.tryPromise({
     try: () =>
       db
@@ -40,7 +40,7 @@ const fetchMixes = () =>
       })
   })
 
-const fetchShows = () =>
+const fetchShows = (db: Database['Service']) =>
   Effect.tryPromise({
     try: () =>
       db
@@ -55,7 +55,7 @@ const fetchShows = () =>
       })
   })
 
-const fetchReleases = () =>
+const fetchReleases = (db: Database['Service']) =>
   Effect.tryPromise({
     try: () =>
       db
@@ -88,7 +88,7 @@ const fetchReleases = () =>
       })
   })
 
-const fetchLabels = () =>
+const fetchLabels = (db: Database['Service']) =>
   Effect.tryPromise({
     try: () =>
       db
@@ -103,7 +103,7 @@ const fetchLabels = () =>
       })
   })
 
-const fetchProfiles = () =>
+const fetchProfiles = (db: Database['Service']) =>
   Effect.tryPromise({
     try: () =>
       db
@@ -121,7 +121,7 @@ const fetchProfiles = () =>
       })
   })
 
-const fetchPosts = () =>
+const fetchPosts = (db: Database['Service']) =>
   Effect.tryPromise({
     try: () =>
       db
@@ -142,13 +142,14 @@ const fetchPosts = () =>
 
 // Effect to fetch all sitemap data
 export const fetchSitemapData = Effect.gen(function* () {
+  const db = yield* Database
   const [mixes, shows, releases, labels, profiles, posts] = yield* Effect.all([
-    fetchMixes(),
-    fetchShows(),
-    fetchReleases(),
-    fetchLabels(),
-    fetchProfiles(),
-    fetchPosts()
+    fetchMixes(db),
+    fetchShows(db),
+    fetchReleases(db),
+    fetchLabels(db),
+    fetchProfiles(db),
+    fetchPosts(db)
   ])
   const sitemapData: SitemapData = { mixes, shows, releases, labels, profiles, posts }
   return sitemapData

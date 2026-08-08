@@ -9,7 +9,7 @@ import {
 import { and, desc, eq, gt, gte, inArray, lte, or, type SQL, sql } from 'drizzle-orm'
 import { Effect } from 'effect'
 import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
-import { db } from '@/db'
+import { Database } from '@/db/layer'
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { session, user } from '@/db/auth.schema'
 import { emailDeliveryLogsTable } from '@/db/email.schema'
@@ -66,6 +66,7 @@ function iso(value: Date | null | undefined) {
 }
 
 async function getContentBreakdown(
+  db: Database['Service'],
   table: ContentTable,
   draftColumn: DraftColumn,
   createdAtColumn: CreatedAtColumn,
@@ -93,7 +94,7 @@ async function getContentBreakdown(
   return { published, drafts, newLast7Days }
 }
 
-async function getMusicLabelBreakdown() {
+async function getMusicLabelBreakdown(db: Database['Service']) {
   const sevenDaysAgo = daysAgo(7)
   const now = new Date()
   const [published, drafts, newLast7Days] = await Promise.all([
@@ -111,7 +112,7 @@ async function getMusicLabelBreakdown() {
 // Hono handler's one try/catch around its Promise.all -- this endpoint is a
 // dashboard read, not a transactional write, so a partial-failure/retry
 // story per-query would be new behavior, not a faithful port.
-async function loadAdminOverview() {
+async function loadAdminOverview(db: Database['Service']) {
   const now = new Date()
   const sevenDaysAgo = daysAgo(7)
   const thirtyDaysAgo = daysAgo(30)
@@ -169,38 +170,43 @@ async function loadAdminOverview() {
     db.$count(favoritesTable),
     db.$count(showSubscriptionsTable),
     getContentBreakdown(
+      db,
       audioTable,
       audioTable.draft,
       audioTable.createdAt,
       eq(audioTable.type, 'mix')
     ),
     getContentBreakdown(
+      db,
       audioTable,
       audioTable.draft,
       audioTable.createdAt,
       eq(audioTable.type, 'track')
     ),
     getContentBreakdown(
+      db,
       audioTable,
       audioTable.draft,
       audioTable.createdAt,
       eq(audioTable.type, 'misc')
     ),
-    getContentBreakdown(showsTable, showsTable.draft, showsTable.createdAt),
+    getContentBreakdown(db, showsTable, showsTable.draft, showsTable.createdAt),
     getContentBreakdown(
+      db,
       postsTable,
       postsTable.draft,
       postsTable.createdAt,
       eq(postsTable.type, 'post')
     ),
     getContentBreakdown(
+      db,
       postsTable,
       postsTable.draft,
       postsTable.createdAt,
       eq(postsTable.type, 'micro')
     ),
-    getMusicLabelBreakdown(),
-    getContentBreakdown(releasesTable, releasesTable.draft, releasesTable.createdAt),
+    getMusicLabelBreakdown(db),
+    getContentBreakdown(db, releasesTable, releasesTable.draft, releasesTable.createdAt),
     db
       .select({ total: sql<number>`coalesce(sum(${audioTable.playCount}), 0)`.mapWith(Number) })
       .from(audioTable),
@@ -521,9 +527,10 @@ export const AdminHandlersLive = HttpApiBuilder.group(Api, 'admin', (handlers) =
     .handle('getAdminOverview', () =>
       Effect.gen(function* () {
         yield* requireAdmin
+        const db = yield* Database
         return yield* dieOnAdminDatabaseError(
           Effect.tryPromise({
-            try: () => loadAdminOverview(),
+            try: () => loadAdminOverview(db),
             catch: (error) =>
               new DatabaseError({
                 message: `Failed to fetch admin overview: ${getErrorMessage(error)}`,
@@ -560,6 +567,7 @@ export const AdminHandlersLive = HttpApiBuilder.group(Api, 'admin', (handlers) =
     .handle('getNewsletterSubscribers', () =>
       Effect.gen(function* () {
         yield* requireAdmin
+        const db = yield* Database
         const rows = yield* dieOnAdminDatabaseError(
           Effect.tryPromise({
             try: () =>

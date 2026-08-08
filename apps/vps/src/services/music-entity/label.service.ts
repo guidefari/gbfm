@@ -1,6 +1,6 @@
 import { and, desc, eq, lte } from 'drizzle-orm'
 import { Effect } from 'effect'
-import type { db as DbType } from '@/db'
+import { databaseClient as DbType } from '@/db/layer'
 import { user as usersTable } from '@/db/auth.schema'
 import {
   musicLabelCreatorsTable,

@@ -2,7 +2,8 @@
 
 import { and, eq, inArray, isNull } from 'drizzle-orm'
 import { Data, Effect } from 'effect'
-import { db } from '@/db'
+import { pool } from '@/db'
+import { Database, DatabaseLayer } from '@/db/layer'
 import { audioTable } from '@/db/audio.schema'
 import { DatabaseError } from '@/errors'
 
@@ -94,6 +95,7 @@ const validateMapping = Effect.gen(function* () {
 })
 
 const buildPlan = Effect.gen(function* () {
+  const db = yield* Database
   yield* validateMapping
 
   const rows = yield* query('backfill.read', () =>
@@ -209,6 +211,7 @@ const reportPlan = (plans: readonly Plan[]) =>
 
 const applyPlan = (plans: readonly Plan[]) =>
   Effect.gen(function* () {
+    const db = yield* Database
     const pending = plans.filter((p) => p.verdict === 'pending')
 
     const results = yield* Effect.forEach(
@@ -249,6 +252,7 @@ const applyPlan = (plans: readonly Plan[]) =>
   })
 
 const verify = Effect.gen(function* () {
+  const db = yield* Database
   const rows = yield* query('backfill.verify', () =>
     db
       .select({ slug: audioTable.slug, episodeNumber: audioTable.episodeNumber })
@@ -298,7 +302,7 @@ const program = Effect.gen(function* () {
   yield* verify
 })
 
-const exit = await Effect.runPromiseExit(program)
+const exit = await Effect.runPromiseExit(program.pipe(Effect.provide(DatabaseLayer(pool))))
 
 if (exit._tag === 'Failure') {
   console.error(exit.cause)

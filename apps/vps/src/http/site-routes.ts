@@ -1,7 +1,7 @@
 import { and, eq, exists, lte } from 'drizzle-orm'
 import { Effect, Layer } from 'effect'
 import { HttpRouter, HttpServerResponse } from 'effect/unstable/http'
-import { db } from '@/db'
+import { Database } from '@/db/layer'
 import { audioCreators, audioTable } from '@/db/audio.schema'
 import { rssFeedHtml } from '@/routes/rss/rss.template'
 import { user as usersTable } from '@/db/auth.schema'
@@ -90,6 +90,7 @@ const shareMix = HttpRouter.params.pipe(
     if (!slug) return missingParamResponse('mix slug')
 
     const program = Effect.gen(function* () {
+      const db = yield* Database
       const audio = yield* fetchDb(
         () =>
           db.query.audioTable.findFirst({
@@ -147,6 +148,7 @@ const shareTrack = HttpRouter.params.pipe(
     if (!slug) return missingParamResponse('track slug')
 
     const program = Effect.gen(function* () {
+      const db = yield* Database
       const audio = yield* fetchDb(
         () =>
           db.query.audioTable.findFirst({
@@ -204,6 +206,7 @@ const shareShow = HttpRouter.params.pipe(
     if (!slug) return missingParamResponse('show slug')
 
     const program = Effect.gen(function* () {
+      const db = yield* Database
       const [show] = yield* fetchDb(
         () =>
           db
@@ -253,6 +256,7 @@ const shareProfile = HttpRouter.params.pipe(
     if (!username) return missingParamResponse('username')
 
     const program = Effect.gen(function* () {
+      const db = yield* Database
       const [user] = yield* fetchDb(
         () =>
           db
@@ -302,6 +306,7 @@ const shareRelease = HttpRouter.params.pipe(
     if (!slug) return missingParamResponse('release slug')
 
     const program = Effect.gen(function* () {
+      const db = yield* Database
       const [release] = yield* fetchDb(
         () =>
           db
@@ -380,6 +385,7 @@ const shareLabel = HttpRouter.params.pipe(
     if (!slug) return missingParamResponse('label slug')
 
     const program = Effect.gen(function* () {
+      const db = yield* Database
       const [label] = yield* fetchDb(
         () =>
           db
@@ -435,6 +441,7 @@ const sharePost = HttpRouter.params.pipe(
     if (!slug) return missingParamResponse('post slug')
 
     const program = Effect.gen(function* () {
+      const db = yield* Database
       const [post] = yield* fetchDb(
         () =>
           db
@@ -553,6 +560,7 @@ const shareSlug = HttpRouter.params.pipe(
 )
 
 const rssXml = Effect.gen(function* () {
+  const db = yield* Database
   const mixes = yield* fetchDb(
     () =>
       db

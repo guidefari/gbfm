@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/bun'
 import { Effect, Metric } from 'effect'
-import { pool } from '@/db'
+import { Database } from '@/db/layer'
 
 const SLOW_REQUEST_THRESHOLD = 500
 
@@ -87,6 +87,8 @@ export const recordRequest = (duration: number, isError = false) =>
   })
 
 export const checkPerformanceHealth = Effect.gen(function* () {
+  const db = yield* Database
+  const pool = db.$client
   const heapUsedMB = process.memoryUsage().heapUsed / 1024 / 1024
   yield* Metric.update(heapUsed, heapUsedMB)
   yield* Metric.update(uptime, process.uptime())
@@ -123,7 +125,9 @@ export const recordDbQueryDuration = (duration: number) =>
     mirrorDistribution('db_query_duration_ms', duration, 'millisecond')
   )
 export const recordActiveConnections = () =>
-  Effect.andThen(
-    Metric.update(activeConnections, pool.totalCount),
-    mirrorGauge('active_db_connections', pool.totalCount)
-  )
+  Effect.gen(function* () {
+    const db = yield* Database
+    const pool = db.$client
+    yield* Metric.update(activeConnections, pool.totalCount)
+    yield* mirrorGauge('active_db_connections', pool.totalCount)
+  })

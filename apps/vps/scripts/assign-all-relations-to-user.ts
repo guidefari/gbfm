@@ -1,9 +1,13 @@
 import { eq, notInArray } from 'drizzle-orm'
-import { db } from '../src/db'
+import { Effect } from 'effect'
+import { pool } from '../src/db'
+import { Database, DatabaseLayer } from '../src/db/layer'
 import { audioCreators, audioTable } from '../src/db/audio.schema'
 import { user } from '../src/db/auth.schema'
 import { musicLabelCreatorsTable, musicLabelsTable } from '../src/db/music-entity.schema'
 import { postCreators, postsTable } from '../src/db/post.schema'
+
+const db = Effect.runSync(Database.pipe(Effect.provide(DatabaseLayer(pool))))
 
 async function assignAllRelationsToUser() {
   const targetEmail = 'guidefari@icloud.com'

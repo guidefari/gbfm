@@ -1,6 +1,6 @@
 import { desc, eq, sql } from 'drizzle-orm'
 import { Effect } from 'effect'
-import type { db as DbType } from '@/db'
+import { databaseClient as DbType } from '@/db/layer'
 import { musicAlbumArtistsTable, musicAlbumsTable } from '@/db/music-entity.schema'
 import { DatabaseError, getErrorMessage } from '@/errors'
 import { toSlug } from '@/services/to-slug'

@@ -1,7 +1,7 @@
 import { Context, Effect, Layer } from 'effect'
 import { Cookies, HttpEffect, HttpServerRequest, HttpServerResponse } from 'effect/unstable/http'
 import type { NavigationIdentity } from '@/domain/navigation'
-import { auth } from '@/lib/auth'
+import { Auth } from '@/lib/auth'
 
 export class IdentityResolver extends Context.Service<
   IdentityResolver,
@@ -26,46 +26,52 @@ const deviceTokenCookie: NonNullable<Cookies.Cookie['options']> = {
   secure: true
 }
 
-const getSession = (request: HttpServerRequest.HttpServerRequest) =>
-  Effect.tryPromise({
-    try: () => auth.api.getSession({ headers: new Headers(request.headers) }),
-    catch: () => null
-  }).pipe(
-    Effect.tapError(() =>
-      Effect.logWarning('[optional-auth] getSession failed', {
-        method: request.method,
-        path: request.url
-      })
-    ),
-    Effect.orElseSucceed(() => null)
-  )
-
-export const IdentityResolverLive = Layer.succeed(IdentityResolver, {
-  resolve: Effect.gen(function* () {
-    const request = yield* HttpServerRequest.HttpServerRequest
-    const session = yield* getSession(request)
-
-    if (session) {
-      return userIdentity(session.user.id)
-    }
-
-    const deviceToken = request.cookies[deviceTokenCookieName]
-    if (deviceToken) {
-      return anonymousIdentity(deviceToken)
-    }
-
-    const mintedDeviceToken = crypto.randomUUID()
-    yield* HttpEffect.appendPreResponseHandler((_request, response) =>
-      Effect.succeed(
-        HttpServerResponse.setCookieUnsafe(
-          response,
-          deviceTokenCookieName,
-          mintedDeviceToken,
-          deviceTokenCookie
-        )
+export const IdentityResolverLive = Layer.effect(
+  IdentityResolver,
+  Effect.gen(function* () {
+    const auth = yield* Auth
+    const getSession = (request: HttpServerRequest.HttpServerRequest) =>
+      Effect.tryPromise({
+        try: () => auth.api.getSession({ headers: new Headers(request.headers) }),
+        catch: () => null
+      }).pipe(
+        Effect.tapError(() =>
+          Effect.logWarning('[optional-auth] getSession failed', {
+            method: request.method,
+            path: request.url
+          })
+        ),
+        Effect.orElseSucceed(() => null)
       )
-    )
 
-    return anonymousIdentity(mintedDeviceToken)
+    return IdentityResolver.of({
+      resolve: Effect.gen(function* () {
+        const request = yield* HttpServerRequest.HttpServerRequest
+        const session = yield* getSession(request)
+
+        if (session) {
+          return userIdentity(session.user.id)
+        }
+
+        const deviceToken = request.cookies[deviceTokenCookieName]
+        if (deviceToken) {
+          return anonymousIdentity(deviceToken)
+        }
+
+        const mintedDeviceToken = crypto.randomUUID()
+        yield* HttpEffect.appendPreResponseHandler((_request, response) =>
+          Effect.succeed(
+            HttpServerResponse.setCookieUnsafe(
+              response,
+              deviceTokenCookieName,
+              mintedDeviceToken,
+              deviceTokenCookie
+            )
+          )
+        )
+
+        return anonymousIdentity(mintedDeviceToken)
+      })
+    })
   })
-})
+)
