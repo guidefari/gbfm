@@ -5,7 +5,6 @@ import {
   type NavigationCommand,
   type NavigationIdentity,
   type NavigationResult,
-  type NavigationSession,
   type ResolvedDestination,
   CorpusExhausted,
   Slug,
@@ -97,29 +96,15 @@ const noSuchMove = (command: NavigationCommand) =>
   })
 
 const resultFor = (
-  session: SessionRow,
-  identity: NavigationIdentity,
   destination: TrailRow,
   index: number,
   length: number,
   hasUnread = true,
   neighbours: NavigationResult['neighbours'] = {}
 ): NavigationResult => {
-  const navigationSession: NavigationSession = {
-    id: session.id,
-    identity,
-    trail: Array.from({ length }, () => ({
-      slug: destination.slug,
-      postId: destination.postId,
-      visitedAt: destination.visitedAt.getTime(),
-      arrivedBy: destination.arrivedBy
-    })),
-    cursor: index,
-    seenSlugs: new Set()
-  }
   return {
     destination: { slug: destination.slug, postId: destination.postId },
-    capabilities: capabilitiesOf(navigationSession, { hasUnread }),
+    capabilities: capabilitiesOf(index, length, { hasUnread }),
     trailPosition: { index, length },
     neighbours
   }
@@ -382,8 +367,6 @@ export const NavigationSessionServiceLayer = Layer.effect(
           const index = yield* entryIndex(phase.session.id, phase.replay.position)
           const neighbours = yield* neighboursFor(phase.session.id, phase.replay.position)
           return resultFor(
-            phase.session,
-            identity,
             phase.replay,
             index,
             phase.length,
@@ -509,15 +492,7 @@ export const NavigationSessionServiceLayer = Layer.effect(
         const length = yield* trailLength(locked.session.id)
         const index = yield* entryIndex(locked.session.id, entry.position)
         const neighbours = yield* neighboursFor(locked.session.id, entry.position)
-        return resultFor(
-          locked.session,
-          identity,
-          entry,
-          index,
-          length,
-          yield* hasUnread(locked.session.id),
-          neighbours
-        )
+        return resultFor(entry, index, length, yield* hasUnread(locked.session.id), neighbours)
       })
 
     const read = (identity: NavigationIdentity) =>
@@ -543,21 +518,9 @@ export const NavigationSessionServiceLayer = Layer.effect(
         const index = yield* entryIndex(session.id, entry.position)
         return {
           slug: entry.slug,
-          capabilities: capabilitiesOf(
-            {
-              id: session.id,
-              identity,
-              trail: Array.from({ length }, () => ({
-                slug: entry.slug,
-                postId: entry.postId,
-                visitedAt: entry.visitedAt.getTime(),
-                arrivedBy: entry.arrivedBy
-              })),
-              cursor: index,
-              seenSlugs: new Set()
-            },
-            { hasUnread: yield* hasUnread(session.id) }
-          )
+          capabilities: capabilitiesOf(index, length, {
+            hasUnread: yield* hasUnread(session.id)
+          })
         }
       })
 

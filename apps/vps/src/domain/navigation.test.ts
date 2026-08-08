@@ -228,7 +228,9 @@ describe('capabilitiesOf', () => {
   const original = session([entry('first'), entry('second')], 0)
 
   test('allows Step(Forward) while the trail has an entry ahead', () => {
-    expect(capabilitiesOf(original, { hasUnread: false })).toStrictEqual({
+    expect(
+      capabilitiesOf(original.cursor, original.trail.length, { hasUnread: false })
+    ).toStrictEqual({
       canStepBack: false,
       canStepForward: true,
       hasUnread: false
@@ -236,7 +238,7 @@ describe('capabilitiesOf', () => {
   })
 
   test('allows Step(Forward) at the end while unread tweets remain', () => {
-    expect(capabilitiesOf({ ...original, cursor: 1 }, { hasUnread: true })).toStrictEqual({
+    expect(capabilitiesOf(1, original.trail.length, { hasUnread: true })).toStrictEqual({
       canStepBack: true,
       canStepForward: true,
       hasUnread: true
@@ -244,7 +246,7 @@ describe('capabilitiesOf', () => {
   })
 
   test('disables Step(Forward only at the end with no unread tweets', () => {
-    expect(capabilitiesOf({ ...original, cursor: 1 }, { hasUnread: false })).toStrictEqual({
+    expect(capabilitiesOf(1, original.trail.length, { hasUnread: false })).toStrictEqual({
       canStepBack: true,
       canStepForward: false,
       hasUnread: false

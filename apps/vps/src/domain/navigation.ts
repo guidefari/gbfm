@@ -149,10 +149,11 @@ export const applyCommand = (
 }
 
 export const capabilitiesOf = (
-  session: NavigationSession,
+  cursor: number,
+  trailLength: number,
   corpus: CorpusFacts
 ): NavigationCapabilities => ({
-  canStepBack: session.cursor > 0,
-  canStepForward: session.cursor < session.trail.length - 1 || corpus.hasUnread,
+  canStepBack: cursor > 0,
+  canStepForward: cursor < trailLength - 1 || corpus.hasUnread,
   hasUnread: corpus.hasUnread
 })
