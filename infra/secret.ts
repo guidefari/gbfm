@@ -13,12 +13,12 @@ export const secret = {
   BETTER_AUTH_SECRET: new sst.Secret('BETTER_AUTH_SECRET'),
   BETTER_AUTH_URL: new sst.Secret('BETTER_AUTH_URL'),
   GBFM_ENCRYPTION_ROOT_KEY: new sst.Secret('GBFM_ENCRYPTION_ROOT_KEY'),
-  StorageProvider: new sst.Secret('StorageProvider', 'aws'),
-  StorageEndpoint: new sst.Secret('StorageEndpoint', ''),
-  StorageRegion: new sst.Secret('StorageRegion', 'auto'),
-  StorageAccessKeyId: new sst.Secret('StorageAccessKeyId', ''),
-  StorageSecretAccessKey: new sst.Secret('StorageSecretAccessKey', ''),
-  StorageSigningEndpoint: new sst.Secret('StorageSigningEndpoint', '')
+  StorageProvider: new sst.Secret('StorageProvider'),
+  StorageEndpoint: new sst.Secret('StorageEndpoint'),
+  StorageRegion: new sst.Secret('StorageRegion'),
+  StorageAccessKeyId: new sst.Secret('StorageAccessKeyId'),
+  StorageSecretAccessKey: new sst.Secret('StorageSecretAccessKey'),
+  StorageSigningEndpoint: new sst.Secret('StorageSigningEndpoint')
 }
 
 export const allSecrets = Object.values(secret)
