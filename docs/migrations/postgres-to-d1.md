@@ -52,7 +52,7 @@ Installed: `effect@4.0.0-beta.99`, `@effect/platform@0.96.2`,
 | `jsonb()` | 11 | `email`, `external-account`, `music-entity`, `release` |
 | GIN index | 2 | `audio.schema.ts:42`, `post.schema.ts:50` |
 | Partial index | 2 | `navigation.schema.ts:20,23` |
-| `db.transaction()` | 41 | services, widely |
+| `db.transaction()` | 24 | services, widely (18 batchable, 5 guarded, 1 serialized) |
 
 ### Process-local state
 
@@ -124,7 +124,7 @@ sleep/wake compute model with random routing, which is worse than ECS.
 ### Option 2: D1 accessed from a Container over the REST API
 
 Rejected. One HTTPS round trip per statement and no interactive transactions,
-against 41 transaction sites. Strictly worse than the Postgres it replaces, and
+against 24 transaction sites. Strictly worse than the Postgres it replaces, and
 the work is discarded at the eventual Workers port.
 
 ### Option 3: Workers on Hyperdrive first, D1 second
@@ -500,8 +500,10 @@ which the caller treats as a lost race and retries or acks, never as an error.
 
 ## Transaction classification
 
-D1 `batch()` is an ordered atomic array with no mid-batch reads. The 41
-`db.transaction()` sites split three ways:
+D1 `batch()` is an ordered atomic array with no mid-batch reads. The 24
+`db.transaction()` sites split three ways. The M1 audit classified every one;
+`docs/migrations/evidence/d1-transaction-classification.md` is the authority,
+with per-site guard designs:
 
 1. **Pure write sequences** — insert parent, insert children, bump counter.
    Translate directly to `batch()`. Expected majority.
@@ -649,7 +651,7 @@ behavior stays in ordinary fast tests.
 Each is independently deployable and revertible.
 
 **M1 — Audit and fixtures.** No production change. Measure bundle size first, it
-is the cheapest way to falsify the whole approach. Classify all 41 transaction
+is the cheapest way to falsify the whole approach. Classify all 24 transaction
 sites into a table with file, line, category. Capture current search results as
 the FTS5 fixture. Record database size and peak write rate.
 *Gate:* bundle fits; classification complete; fixture exists.
