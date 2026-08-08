@@ -76,10 +76,6 @@ jobs:
     permissions:
       actions: write
       contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        target: [release, backup-task]
 
     steps:
       - name: Checkout code
@@ -92,12 +88,12 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build apps/vps image (${{ matrix.target }})
+      - name: Build apps/vps release image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: apps/vps/Dockerfile
-          target: ${{ matrix.target }}
+          target: release
           push: false
           load: false
           cache-from: type=gha
