@@ -22,7 +22,6 @@ import { HttpApiError } from 'effect/unstable/httpapi'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { RuntimeClient } from '@/runtime'
 import { captureException } from '@/services/analytics'
-import { readTweetBrowseState } from '@/store/tweetSeen'
 import { getApiClient } from './api-client'
 import { useSession } from './auth-client'
 import { createFetcher, getRequestMethod, getRequestUrl, type ApiFailureInput } from './http-client'
@@ -433,47 +432,6 @@ export const navigateMicroPostsEffect = (
 export function useNavigateMicroPosts() {
   const navigate = useCallback(navigateMicroPostsEffect, [])
   return { navigateMicroPostsEffect: navigate }
-}
-
-export function useAdjacentMicroPosts(slug: string) {
-  const { data, error, isPending } = useQuery({
-    queryKey: ['post', 'micro', slug, 'adjacent'],
-    queryFn: async () => {
-      const client = await getApiClient()
-      return Effect.runPromise(
-        client.post
-          .getAdjacentMicroPosts({ params: { slug } })
-          .pipe(
-            Effect.tapError((error) =>
-              captureException(error, { endpoint: 'post.getAdjacentMicroPosts' })
-            )
-          )
-      )
-    },
-    enabled: Boolean(slug)
-  })
-  return { data, error, isPending }
-}
-
-export function useRandomMicroPost() {
-  const randomMicroPostEffect = useCallback(
-    (currentSlug: string) =>
-      Effect.gen(function* () {
-        const client = yield* Effect.promise(() => getApiClient())
-        return yield* client.post
-          .getRandomMicroPost({
-            payload: { exclude: [...readTweetBrowseState().seenSlugs, currentSlug] }
-          })
-          .pipe(
-            Effect.tapError((error) =>
-              captureException(error, { endpoint: 'post.getRandomMicroPost' })
-            )
-          )
-      }),
-    []
-  )
-
-  return { randomMicroPostEffect }
 }
 
 export function useEditorialPostBySlug(slug: string) {
