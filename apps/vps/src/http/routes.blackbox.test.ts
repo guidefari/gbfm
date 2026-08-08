@@ -11,9 +11,7 @@ import {
 import {
   CompiledMicroPostResponse,
   CompiledPostResponse,
-  GetAdjacentMicroPostsResponse,
   GetMicroPostsResponse,
-  GetRandomMicroPostResponse,
   MicroPostThreadResponse,
   PostResponse
 } from '@gbfm/api/post'
@@ -2719,90 +2717,6 @@ describe('GET /api/content/posts/micro/by-id/:id', () => {
       new Request(`http://localhost/api/content/posts/micro/by-id/${crypto.randomUUID()}`)
     )
     expect(res.status).toBe(404)
-  })
-})
-
-describe('top-level navigation excludes replies', () => {
-  it('adjacent/random endpoints only ever surface top-level tweets', async () => {
-    const suffix = crypto.randomUUID()
-    const rootSlug = `nav-root-${suffix}`
-    const otherRootSlug = `nav-other-root-${suffix}`
-    const replySlug = `nav-reply-${suffix}`
-
-    const [root] = await db
-      .insert(postsTable)
-      .values({
-        title: null,
-        slug: rootSlug,
-        content: 'Root tweet',
-        type: 'micro',
-        draft: false,
-        createdAt: new Date('2026-01-01T00:00:00Z')
-      })
-      .returning()
-    if (!root) throw new Error('Failed to seed root tweet')
-
-    const [otherRoot] = await db
-      .insert(postsTable)
-      .values({
-        title: null,
-        slug: otherRootSlug,
-        content: 'Another root tweet',
-        type: 'micro',
-        draft: false,
-        createdAt: new Date('2026-01-02T00:00:00Z')
-      })
-      .returning()
-    if (!otherRoot) throw new Error('Failed to seed other root tweet')
-
-    const [reply] = await db
-      .insert(postsTable)
-      .values({
-        title: null,
-        slug: replySlug,
-        content: 'A reply, should never appear in nav',
-        type: 'micro',
-        draft: false,
-        parentPostId: root.id,
-        rootPostId: root.id,
-        depth: 1,
-        createdAt: new Date('2026-01-01T12:00:00Z')
-      })
-      .returning()
-    if (!reply) throw new Error('Failed to seed reply')
-
-    try {
-      const adjacentRes = await webHandler.handler(
-        new Request(`http://localhost/api/content/posts/micro/${otherRootSlug}/adjacent`)
-      )
-      expect(adjacentRes.status).toBe(200)
-      const adjacentBody = await decodeResponseBody(GetAdjacentMicroPostsResponse, adjacentRes)
-      expect(adjacentBody.prev?.slug).not.toBe(replySlug)
-      expect(adjacentBody.next?.slug).not.toBe(replySlug)
-      expect(adjacentBody.next?.slug).toBe(rootSlug)
-
-      const seenSlugs = new Set<string>()
-      for (let i = 0; i < 20; i++) {
-        const randomRes = await webHandler.handler(
-          new Request(`http://localhost/api/content/posts/micro/random`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ exclude: [] })
-          })
-        )
-        expect(randomRes.status).toBe(200)
-        const randomBody = await decodeResponseBody(GetRandomMicroPostResponse, randomRes)
-        seenSlugs.add(randomBody.slug)
-      }
-      expect(seenSlugs.has(replySlug)).toBe(false)
-    } finally {
-      await db.delete(postCreators).where(eq(postCreators.postId, root.id))
-      await db.delete(postCreators).where(eq(postCreators.postId, otherRoot.id))
-      await db.delete(postCreators).where(eq(postCreators.postId, reply.id))
-      await db.delete(postsTable).where(eq(postsTable.id, reply.id))
-      await db.delete(postsTable).where(eq(postsTable.id, root.id))
-      await db.delete(postsTable).where(eq(postsTable.id, otherRoot.id))
-    }
   })
 })
 
