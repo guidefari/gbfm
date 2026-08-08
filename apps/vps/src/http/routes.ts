@@ -24,6 +24,7 @@ import { InviteHandlersLive } from '@/http/invite.handlers'
 import { InternalHandlersLive } from '@/http/internal.handlers'
 import { MusicHandlersLive } from '@/http/music.handlers'
 import { MusicRemindersHandlersLive } from '@/http/music-reminders.handlers'
+import { NavigationHandlersLive } from '@/http/navigation.handlers'
 import { NewsletterHandlersLive } from '@/http/newsletter.handlers'
 import { PostHandlersLive } from '@/http/post.handlers'
 import { ProfileHandlersLive } from '@/http/profile.handlers'
@@ -38,6 +39,7 @@ import { UploadHandlersLive } from '@/http/upload.handlers'
 import { UserHandlersLive } from '@/http/user.handlers'
 import { auth } from '@/lib/auth'
 import { AuthMiddlewareLive } from '@/middleware/auth.impl'
+import { IdentityResolverLive } from '@/middleware/optional-auth.impl'
 import { prepareAuthRequest } from '@/routes/user/better-auth.routes'
 import { appServicesContext } from '@/runtime'
 import { AppLoggerLive } from '@/services/logger.service'
@@ -89,13 +91,18 @@ export const createWebHandler = (options?: {
     Layer.provide(BlueskyHandlersLive),
     Layer.provide(EmailHandlersLive),
     Layer.provide(
-      Layer.mergeAll(FavoritesHandlersLive, MusicRemindersHandlersLive, NewsletterHandlersLive)
+      Layer.mergeAll(
+        FavoritesHandlersLive,
+        MusicRemindersHandlersLive,
+        NavigationHandlersLive,
+        NewsletterHandlersLive
+      )
     ),
     Layer.provide(FileManagerHandlersLive),
     Layer.provide(SpotifyHandlersLive),
     Layer.provide(ShowsHandlersLive),
     Layer.provide(Layer.mergeAll(UserHandlersLive, UploadHandlersLive)),
-    Layer.provide(AuthMiddlewareLive),
+    Layer.provide(Layer.mergeAll(AuthMiddlewareLive, IdentityResolverLive)),
     // provideMerge, not provide: services a handler pulls via plain `yield*`
     // only clear toWebHandler's phantom-context requirement once they're
     // also in this layer's output, which plain `provide` discards.

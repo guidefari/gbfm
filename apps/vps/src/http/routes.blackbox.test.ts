@@ -23,6 +23,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { db } from '@/db'
 import { audioTable } from '@/db/audio.schema'
 import { session, user } from '@/db/auth.schema'
+import { navigationSessions } from '@/db/navigation.schema'
 import {
   musicAlbumsTable,
   musicArtistsTable,
@@ -2801,5 +2802,109 @@ describe('top-level navigation excludes replies', () => {
       await db.delete(postsTable).where(eq(postsTable.id, root.id))
       await db.delete(postsTable).where(eq(postsTable.id, otherRoot.id))
     }
+  })
+})
+
+describe('micro post navigation', () => {
+  it('creates an anonymous session and device cookie without authentication', async () => {
+    const slug = `navigation-anonymous-${crypto.randomUUID()}`
+    const [post] = await db
+      .insert(postsTable)
+      .values({ title: null, slug, content: 'Navigation test', type: 'micro', draft: false })
+      .returning()
+    if (!post) throw new Error('Failed to seed navigation post')
+
+    try {
+      const res = await webHandler.handler(
+        new Request('http://localhost/api/content/posts/micro/navigate', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            command: { _tag: 'Open', slug },
+            from: slug,
+            intentToken: crypto.randomUUID()
+          })
+        })
+      )
+
+      expect(res.status).toBe(200)
+      expect(res.headers.getSetCookie()).toContainEqual(
+        expect.stringContaining('gbfm-navigation-device=')
+      )
+    } finally {
+      await db.delete(postsTable).where(eq(postsTable.id, post.id))
+    }
+  })
+
+  it('uses the authenticated user identity instead of a device cookie', async () => {
+    const suffix = crypto.randomUUID()
+    const userId = `navigation-user-${suffix}`
+    const token = `navigation-token-${suffix}`
+    const slug = `navigation-user-post-${suffix}`
+    await db
+      .insert(user)
+      .values({ id: userId, name: 'Navigation user', email: `${userId}@example.com` })
+    await db.insert(session).values({
+      id: crypto.randomUUID(),
+      token,
+      userId,
+      expiresAt: new Date(Date.now() + 60_000)
+    })
+    const [post] = await db
+      .insert(postsTable)
+      .values({ title: null, slug, content: 'Navigation test', type: 'micro', draft: false })
+      .returning()
+    if (!post) throw new Error('Failed to seed navigation post')
+
+    try {
+      const res = await webHandler.handler(
+        new Request('http://localhost/api/content/posts/micro/navigate', {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${token}`,
+            cookie: 'gbfm-navigation-device=ignored-device-token',
+            'content-type': 'application/json'
+          },
+          body: JSON.stringify({
+            command: { _tag: 'Open', slug },
+            from: slug,
+            intentToken: crypto.randomUUID()
+          })
+        })
+      )
+
+      expect(res.status).toBe(200)
+      const sessions = await db
+        .select()
+        .from(navigationSessions)
+        .where(eq(navigationSessions.userId, userId))
+      expect(sessions).toHaveLength(1)
+      expect(sessions[0]?.deviceToken).toBeNull()
+      const deviceSessions = await db
+        .select()
+        .from(navigationSessions)
+        .where(eq(navigationSessions.deviceToken, 'ignored-device-token'))
+      expect(deviceSessions).toEqual([])
+    } finally {
+      await db.delete(postsTable).where(eq(postsTable.id, post.id))
+      await db.delete(user).where(eq(user.id, userId))
+    }
+  })
+
+  it('rejects an unknown command tag at the schema boundary', async () => {
+    const res = await webHandler.handler(
+      new Request('http://localhost/api/content/posts/micro/navigate', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          command: { _tag: 'Unknown' },
+          from: 'navigation-unknown-command',
+          intentToken: crypto.randomUUID()
+        })
+      })
+    )
+
+    expect(res.status).toBeGreaterThanOrEqual(400)
+    expect(res.status).toBeLessThan(500)
   })
 })
