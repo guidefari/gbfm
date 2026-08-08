@@ -11,11 +11,11 @@
     "gen": "cd vps && sst shell drizzle-kit generate",
     "release": "semantic-release",
     "typecheck": "tsgo --noEmit && bun --filter='*' typecheck",
-    "test": "cd packages/core && bun run test && cd ../theme && bun run test && cd ../player && bun run test && cd ../../apps/mobile && bun run test && cd ../vps && bun run test",
-    "lint": "oxlint apps/*/src packages infra '*.{js,ts,tsx,jsx}' --no-error-on-unmatched-pattern",
-    "lint:fix": "oxlint apps/*/src packages infra '*.{js,ts,tsx,jsx}' --fix --no-error-on-unmatched-pattern",
-    "format": "oxfmt apps/*/src packages infra '*.{js,ts,tsx,jsx,json,css}' --write --no-error-on-unmatched-pattern",
-    "format:check": "oxfmt apps/*/src packages infra '*.{js,ts,tsx,jsx,json,css}' --check --no-error-on-unmatched-pattern",
+    "test": "cd packages/core && bun run test && cd ../theme && bun run test && cd ../player && bun run test && cd ../../apps/mobile && bun run test && cd ../vps && bun run test && cd ../../workers/cdn-router && bun run test",
+    "lint": "oxlint apps/*/src packages infra workers '*.{js,ts,tsx,jsx}' --no-error-on-unmatched-pattern",
+    "lint:fix": "oxlint apps/*/src packages infra workers '*.{js,ts,tsx,jsx}' --fix --no-error-on-unmatched-pattern",
+    "format": "oxfmt apps/*/src packages infra workers '*.{js,ts,tsx,jsx,json,css}' --write --no-error-on-unmatched-pattern",
+    "format:check": "oxfmt apps/*/src packages infra workers '*.{js,ts,tsx,jsx,json,css}' --check --no-error-on-unmatched-pattern",
     "check": "bun run format && bun run lint:fix",
     "oxc:ci": "bun run format:check && bun run lint",
     "precommit": "bun run check && bun run typecheck",
@@ -55,7 +55,8 @@
   },
   "workspaces": [
     "packages/*",
-    "apps/*"
+    "apps/*",
+    "workers/*"
   ],
   "trustedDependencies": [
     "aws-sdk",

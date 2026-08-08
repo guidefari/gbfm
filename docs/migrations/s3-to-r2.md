@@ -304,27 +304,24 @@ The only interface change is removing `copyFile`. Every operation the upload pat
 
 ### Infrastructure: R2 in SST
 
-R2 buckets are declared through SST's Pulumi extensibility, matching the existing escape-hatch precedent at `infra/bucket.ts:32`:
+The pinned SST version natively supports both resources through `sst.cloudflare.Bucket` and `sst.cloudflare.Worker`. A narrow Pulumi transform gives the two R2 bindings their stable Worker-facing names:
 
 ```ts
-// infra/bucket.ts
-const userContentR2 = new cloudflare.R2Bucket('UserContentR2', {
-  accountId: cloudflareAccountId,
-  name: 'gbfm-user-content'
-})
+const userContentR2Bucket = new sst.cloudflare.Bucket('UserContentR2', { /* name */ })
+const mixesR2Bucket = new sst.cloudflare.Bucket('MixesR2', { /* name */ })
 
-const cdnWorker = new cloudflare.WorkerScript('CdnRouter', {
-  accountId: cloudflareAccountId,
-  name: 'gbfm-cdn-router',
-  content: /* bundled worker */,
-  r2BucketBindings: [
-    { name: 'USER_CONTENT', bucketName: userContentR2.name },
-    { name: 'MIXES', bucketName: mixesR2.name }
-  ]
+const cdnRouterWorker = new sst.cloudflare.Worker('CdnRouterWorker', {
+  handler: 'workers/cdn-router/src/index.ts',
+  domain: `r2-cdn.${domain}`,
+  transform: {
+    worker: (args) => {
+      // Append USER_CONTENT and MIXES R2 bindings only.
+    }
+  }
 })
 ```
 
-SST keeps ownership of the `cdn.goosebumps.fm` DNS record — no state drift, no second tool. The `fileRouter` origin switches from S3 bucket routes to the Worker within the same stack.
+This resolves the earlier native-versus-escape-hatch question without introducing another infrastructure tool or Wrangler deployment config. OPS-238 deploys to `r2-cdn.<stage-domain>` first; the existing `cdn.goosebumps.fm` router stays on S3 until each bucket cutover.
 
 ### Worker: CDN router
 
@@ -475,7 +472,7 @@ Effect.annotateCurrentSpan('storage.provider', store.provider)
 | `apps/vps/src/runtime/services.ts` | Provide `ObjectStoreClientLayer` |
 | `packages/api/src/file-manager.ts` | Remove copy endpoint + its two schemas; keep `config` and `list` |
 | `apps/vps/src/http/file-manager.handlers.ts` | Remove the copy handler; keep the other two |
-| `infra/bucket.ts` | R2 buckets + Worker via Pulumi; router origin switch; retain the unlinked backup bucket until lifecycle expiry |
+| `infra/bucket.ts` | Native SST R2 buckets + Worker with explicit R2 bindings; test hostname first; retain the unlinked backup bucket until lifecycle expiry |
 | `infra/cron.ts` | Remove `dbBackupCron`, `testFunction` |
 | `infra/vps.ts` | Remove `dbBackupTask` |
 | `packages/email/src/index.ts` | Remove backup-notification export |
@@ -515,9 +512,9 @@ Vertical slices: one failing test, minimal code, repeat.
 
 No cross-bucket copy test: `copyFile` is deleted, so R2's copy semantics and size ceiling never need proving.
 
-**Slice 6 — Worker routing, pure.** Red: `matchRoute('/user-content/a/b.jpg')` → `{ bucket: USER_CONTENT, key: 'a/b.jpg' }`. Then `/mixes/x.mp3`; `/other` → `null`; `/user-content/` edge; a key containing `/mixes/` deeper does not mis-route.
+**Slice 6 — Worker routing, pure. Completed in OPS-238.** `matchRoute('/user-content/a/b.jpg')` → `{ bucket: USER_CONTENT, key: 'a/b.jpg' }`; `/mixes/x.mp3` routes to `MIXES`; unmatched and empty object paths return `null`; deeper `/mixes/` segments do not mis-route.
 
-**Slice 7 — Worker HTTP semantics** (`@cloudflare/vitest-pool-workers`, seeded R2). Red: `Range: bytes=0-99` → 206, correct `Content-Range`, 100 bytes. Then: HEAD headers without body; `If-None-Match` current ETag → 304; missing key → 404; stored content-type echoed; `Env` exposes exactly two bindings (I4).
+**Slice 7 — Worker HTTP semantics. Completed in OPS-238.** `@cloudflare/vitest-pool-workers` tests cover ranges, HEAD, ETag and date conditionals, missing keys, stored HTTP/custom metadata, and the exact two public R2 bindings. A live smoke test at `r2-cdn.dev.goosebumps.fm` is recorded in [`evidence/r2-router-smoke-2026-08-08.md`](evidence/r2-router-smoke-2026-08-08.md).
 
 **Slice 8 — parity verification.** Red: report a mismatch on seeded divergence. Green: count/size/metadata comparison. **Not** ETag equality as the criterion — Super Slurper may change multipart boundaries. Compare content hashes on a sample.
 
@@ -529,7 +526,7 @@ All slices run under `bun precommit`.
 2. [OPS-236](https://linear.app/guidefari/issue/OPS-236/consolidate-13-s3client-constructions-behind-objectstoreclient) — **Consolidate**, slices 1–3, `provider: 'aws'` still selected. Zero production behavior change; ships independently. *This is the highest-value, lowest-risk PR and should land first regardless of everything downstream.*
 3. [OPS-241](https://linear.app/guidefari/issue/OPS-241/remove-database-backup-subsystem-gated-on-provider-verification) — **Remove repository backups.** Completed early after the operator moved ownership to PlanetScale; retain only the unlinked S3 bucket until lifecycle expiry.
 4. [OPS-237](https://linear.app/guidefari/issue/OPS-237/delete-dead-cross-bucket-copy-path) — **Delete cross-bucket copy**, slices 4 and 4b. **Completed.**
-5. [OPS-238](https://linear.app/guidefari/issue/OPS-238/cdn-router-worker-and-sst-wiring-for-r2) — **Worker + SST wiring**, slices 6–7, deployed to a test hostname.
+5. [OPS-238](https://linear.app/guidefari/issue/OPS-238/cdn-router-worker-and-sst-wiring-for-r2) — **Worker + SST wiring**, slices 6–7, deployed to a test hostname. **Completed.**
 6. [OPS-239](https://linear.app/guidefari/issue/OPS-239/cut-mixes-bucket-over-to-r2) — **`Mixes` cutover.** Super Slurper copy → verify → R2 CORS → router origin → soak. No upload path, so lower risk.
 7. [OPS-240](https://linear.app/guidefari/issue/OPS-240/cut-user-content-bucket-over-to-r2) — **`User_Content` cutover.** Copy → verify → R2 CORS (C4) → presigning to R2 host (C3) → router origin → soak the upload path hard.
 8. [OPS-242](https://linear.app/guidefari/issue/OPS-242/consolidate-legacy-cloudfront-assets-into-r2) — **Follow-up phase: legacy CloudFront consolidation.** Copy `d20tmfka7s58bt` contents into R2, repoint the 7 hardcoded references, verify no persisted rows or historical RSS items depend on the old host, then retire the distribution. Single source, as intended.
@@ -552,4 +549,4 @@ S3 stays readable and unexpired through the rollback window.
 **Open questions**
 
 1. **Does R2's multipart ETag survive the equality check at `upload.handlers.ts:313-320`?** Empirical, answered by Slice 5 in OPS-240. If not, that handler needs size-and-count validation instead — a real code change this spec has scoped but not designed.
-2. **Which SST Cloudflare provider resources cover R2 buckets and Worker script bindings** at the pinned SST/Pulumi version? Resolved in OPS-238; affects how much Pulumi escape-hatch code `infra/bucket.ts` needs.
+2. **Which SST Cloudflare provider resources cover R2 buckets and Worker script bindings? Resolved.** The pinned SST version provides native Bucket and Worker components; only binding-name customization uses a Pulumi transform.

@@ -23,6 +23,7 @@ declare module "sst" {
       "taskDefinition": string
       "type": "sst.aws.Task"
     }
+    "CdnRouterWorker": import("@cloudflare/workers-types").Service
     "DatabaseBackups": {
       "name": string
       "type": "sst.aws.Bucket"
@@ -60,6 +61,7 @@ declare module "sst" {
       "name": string
       "type": "sst.aws.Bucket"
     }
+    "MixesR2": import("@cloudflare/workers-types").R2Bucket
     "OTEL_EXPORTER_OTLP_ENDPOINT": {
       "type": "sst.sst.Secret"
       "value": string
@@ -113,6 +115,7 @@ declare module "sst" {
       "type": "sst.sst.Linkable"
       "vps": string
     }
+    "UserContentR2": import("@cloudflare/workers-types").R2Bucket
     "User_Content": {
       "name": string
       "type": "sst.aws.Bucket"

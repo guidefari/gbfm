@@ -53,6 +53,48 @@ export const mixesBucket = isDevStage
       access: 'cloudfront'
     })
 
+const r2BucketNamePrefix = $app.stage === 'prod' ? 'gbfm' : `gbfm-${$app.stage}`
+
+export const userContentR2Bucket = new sst.cloudflare.Bucket('UserContentR2', {
+  transform: {
+    bucket: {
+      name: `${r2BucketNamePrefix}-user-content`
+    }
+  }
+})
+
+export const mixesR2Bucket = new sst.cloudflare.Bucket('MixesR2', {
+  transform: {
+    bucket: {
+      name: `${r2BucketNamePrefix}-mixes`
+    }
+  }
+})
+
+export const cdnRouterWorker = new sst.cloudflare.Worker('CdnRouterWorker', {
+  handler: 'workers/cdn-router/src/index.ts',
+  domain: `r2-cdn.${domain}`,
+  transform: {
+    worker: (args) => {
+      args.bindings = $resolve([args.bindings, userContentR2Bucket.name, mixesR2Bucket.name]).apply(
+        ([bindings, userContentBucketName, mixesBucketName]) => [
+          ...(bindings ?? []),
+          {
+            type: 'r2_bucket',
+            name: 'USER_CONTENT',
+            bucketName: userContentBucketName
+          },
+          {
+            type: 'r2_bucket',
+            name: 'MIXES',
+            bucketName: mixesBucketName
+          }
+        ]
+      )
+    }
+  }
+})
+
 // Retain the retired backup bucket until its 30-day lifecycle empties it. It is deliberately
 // not linked to compute; remove this declaration only after the bucket is confirmed empty.
 export const dbBackupBucket = isDevStage
@@ -93,5 +135,8 @@ fileRouter.routeBucket('/mixes', mixesBucket, {
 })
 
 export const outputs = {
-  fileRouter: fileRouter.url
+  fileRouter: fileRouter.url,
+  cdnRouterTestUrl: cdnRouterWorker.url,
+  userContentR2Bucket: userContentR2Bucket.name,
+  mixesR2Bucket: mixesR2Bucket.name
 }
