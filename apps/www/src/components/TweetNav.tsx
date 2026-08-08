@@ -5,7 +5,7 @@ import { useRouter } from '@tanstack/react-router'
 import { Effect } from 'effect'
 import * as Atom from 'effect/unstable/reactivity/Atom'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { HoldToRandomButton } from '@/components/HoldToRandomButton'
 import { jump, stepBack, stepForward } from '@/lib/navigation-commands'
 import { useNavigateMicroPosts } from '@/lib/http'
@@ -14,6 +14,7 @@ import { cn } from '@/lib/utils'
 
 type Props = {
   slug: string
+  initialCapabilities: Capabilities
 }
 
 type Capabilities = NavigationResultResponse['capabilities']
@@ -127,12 +128,16 @@ function FlankingArrows({
   )
 }
 
-export function TweetNav({ slug }: Props) {
+export function TweetNav({ slug, initialCapabilities }: Props) {
   const router = useRouter()
   const { navigateMicroPostsEffect } = useNavigateMicroPosts()
-  const capabilitiesAtom = useMemo(() => Atom.make<Capabilities | null>(null), [])
+  const capabilitiesAtom = useMemo(() => Atom.make<Capabilities>(initialCapabilities), [])
   const capabilities = useAtomValue(capabilitiesAtom)
   const setCapabilities = useAtomSet(capabilitiesAtom)
+
+  useEffect(() => {
+    setCapabilities(initialCapabilities)
+  }, [initialCapabilities, setCapabilities])
 
   const navigate = (
     command: (intentToken: string) => Effect.Effect<NavigationResultResponse, unknown>
@@ -159,9 +164,7 @@ export function TweetNav({ slug }: Props) {
   useHotkey('ArrowLeft', goToPrev)
   useHotkey('ArrowRight', goToNext)
 
-  const canStepBack = capabilities?.canStepBack ?? false
-  const canStepForward = capabilities?.canStepForward ?? false
-  const hasUnread = capabilities?.hasUnread ?? false
+  const { canStepBack, canStepForward, hasUnread } = capabilities
 
   return (
     <>

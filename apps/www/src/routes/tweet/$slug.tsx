@@ -1,6 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Effect } from 'effect'
-import { useEffect } from 'react'
 import { MDXRendrr } from '@/components/MDXRendrr'
 import { RouteError } from '@/components/RouteError'
 import { TweetActionsMenu } from '@/components/TweetActionsMenu'
@@ -15,10 +14,10 @@ import { TweetReplyList } from '@/components/TweetReplyList'
 import { TweetTagLinks } from '@/components/TweetTagLinks'
 import { useSession } from '@/lib/auth-client'
 import { getApiClient } from '@/lib/api-client'
-import { useMicroPostReplies } from '@/lib/http'
+import { navigateMicroPostsEffect, useMicroPostReplies } from '@/lib/http'
+import { open } from '@/lib/navigation-commands'
 import { generateMicroPostSEO, generateSEOMeta } from '@/lib/seo'
 import { captureException } from '@/services/analytics'
-import { useRecordTweetViewed } from '@/store/tweetSeen'
 
 export const Route = createFileRoute('/tweet/$slug')({
   component: TweetPostPage,
@@ -38,7 +37,15 @@ export const Route = createFileRoute('/tweet/$slug')({
           )
         )
     )
+    const navigation = await Effect.runPromise(
+      open(navigateMicroPostsEffect, {
+        from: params.slug,
+        slug: params.slug,
+        intentToken: crypto.randomUUID()
+      })
+    )
     return {
+      navigation,
       post: {
         ...post,
         bannerImageUrl: null,
@@ -66,21 +73,15 @@ export const Route = createFileRoute('/tweet/$slug')({
 
 function TweetPostPage() {
   const { slug } = Route.useParams()
-  const { post } = Route.useLoaderData()
+  const { navigation, post } = Route.useLoaderData()
   const { data: session } = useSession()
   const user = session?.user
-  const recordViewed = useRecordTweetViewed()
   const { data: repliesData } = useMicroPostReplies(slug)
   const replyCount = repliesData?.data.length ?? 0
 
   const scrollToReplies = () => {
     document.getElementById('replies')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
-
-  useEffect(() => {
-    recordViewed({ postId: post.id, slug })
-    // oxlint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug])
 
   if (!post) return null
 
@@ -95,7 +96,7 @@ function TweetPostPage() {
   return (
     <div className='max-w-3xl px-4 py-8 mx-auto'>
       <div className='mb-6 lg:mb-0'>
-        <TweetNav slug={slug} />
+        <TweetNav slug={slug} initialCapabilities={navigation.capabilities} />
       </div>
       {post.parentPostId && <TweetParentPreview parentPostId={post.parentPostId} />}
       <article className='space-y-4 rounded-lg border border-border/60 bg-card/60 p-4 shadow-sm sm:p-5'>

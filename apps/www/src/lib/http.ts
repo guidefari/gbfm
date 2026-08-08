@@ -414,27 +414,25 @@ export function useGlobalSearch(q: string, limit = 10) {
   return { data, error, isPending }
 }
 
-export function useNavigateMicroPosts() {
-  const navigateMicroPostsEffect = useCallback(
-    (
-      payload: Parameters<
-        Awaited<ReturnType<typeof getApiClient>>['navigation']['navigateMicroPosts']
-      >[0]['payload']
-    ) =>
-      Effect.promise(() => getApiClient()).pipe(
-        Effect.flatMap((client) => client.navigation.navigateMicroPosts({ payload })),
-        Effect.retry({
-          times: 1,
-          while: (error) => error instanceof HttpApiError.InternalServerError
-        }),
-        Effect.tapError((error) =>
-          Effect.sync(() => captureException(error, { endpoint: 'navigation.navigateMicroPosts' }))
-        )
-      ),
-    []
+export const navigateMicroPostsEffect = (
+  payload: Parameters<
+    Awaited<ReturnType<typeof getApiClient>>['navigation']['navigateMicroPosts']
+  >[0]['payload']
+) =>
+  Effect.promise(() => getApiClient()).pipe(
+    Effect.flatMap((client) => client.navigation.navigateMicroPosts({ payload })),
+    Effect.retry({
+      times: 1,
+      while: (error) => error instanceof HttpApiError.InternalServerError
+    }),
+    Effect.tapError((error) =>
+      Effect.sync(() => captureException(error, { endpoint: 'navigation.navigateMicroPosts' }))
+    )
   )
 
-  return { navigateMicroPostsEffect }
+export function useNavigateMicroPosts() {
+  const navigate = useCallback(navigateMicroPostsEffect, [])
+  return { navigateMicroPostsEffect: navigate }
 }
 
 export function useAdjacentMicroPosts(slug: string) {
