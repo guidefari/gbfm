@@ -77,6 +77,13 @@ jobs:
       - name: Remove system-wide Pulumi
         run: sudo rm -f /usr/local/bin/pulumi*
 
+      # An interrupted local update serialized this absolute checkout path into Pulumi state.
+      # Keep the bridge until one successful CI deployment rewrites those asset paths.
+      - name: Bridge interrupted local SST asset paths
+        run: |
+          sudo mkdir -p /Users/guidefari/source/oss
+          sudo ln -s "$GITHUB_WORKSPACE" /Users/guidefari/source/oss/gbfm
+
       - name: Deploy
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
