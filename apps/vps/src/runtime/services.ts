@@ -71,7 +71,7 @@ const BaseServicesLayer = Layer.mergeAll(
   ProfileServiceLayer,
   ResolveServiceLayer,
   ReleaseServiceLayer,
-  S3ServiceLayer.pipe(Layer.provide(ObjectStoreClientLive)),
+  S3ServiceLayer.pipe(Layer.provide(Layer.mergeAll(ObjectStoreClientLive, ConfigServiceLayer))),
   SearchServiceLayer,
   SentryServiceLayer.pipe(Layer.provide(SentryClientLive)),
   OtlpLive.pipe(Layer.provide(SentryClientLive), Layer.provide(ConfigServiceLayer)),

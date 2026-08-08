@@ -13,7 +13,7 @@ The work is not "swap an endpoint." Tracing the code surfaced four things the pa
 3. **The multipart complete handler ETag-matches client parts against `listMultipartParts`** (`apps/vps/src/http/upload.handlers.ts:313-320`). R2 computes multipart ETags differently from S3. This is a live correctness risk in the request path, not just an inventory-reconciliation concern.
 4. **Four backup/restore scripts construct their own `S3Client`** and use `GetObjectCommand`, which is **not on the `S3Service` interface at all**.
 
-This migration also **deletes two things** rather than porting them: the dead cross-bucket copy path, and the entire database-backup subsystem. Both are covered below, and the second carries a precondition. The file picker that browses existing uploads stays.
+This migration also **deleted two things** rather than porting them: the dead cross-bucket copy path and the entire database-backup subsystem. Both are covered below. The file picker that browses existing uploads stays.
 
 Bulk copy uses **Super Slurper**. Cutover is **forward-only, R2-authoritative, per-bucket**; dual-write is rejected with reasoning.
 
@@ -29,9 +29,9 @@ Bulk copy uses **Super Slurper**. Cutover is **forward-only, R2-authoritative, p
 
 Public routing today is `sst.aws.Router` with regex rewrites stripping `/user-content` and `/mixes`, DNS via `sst.cloudflare.dns()`.
 
-### The 13 client construction sites
+### The 13 client construction sites before OPS-236
 
-`apps/vps/src/services/s3.service.ts` — every operation opens with `const s3 = new S3Client({})`:
+Before consolidation, every operation in `apps/vps/src/services/s3.service.ts` opened with `const s3 = new S3Client({})`:
 
 `uploadFile`(128), `presignPutObject`(177), `deleteFile`(205), `checkExists`(238), `listObjects`(262), `copyFile`(322), `createMultipartUpload`(362), `getObjectMetadata`(396), `presignUploadPart`(444), `completeMultipartUpload`(478), `abortMultipartUpload`(513), `listMultipartParts`(541), `listBuckets`(592).
 
@@ -96,8 +96,7 @@ Cloudflare Containers. D1 or any database migration. SES/email. Reminders, sitem
 - **C2.** R2 multipart ETags differ from S3. The complete-handler ETag equality check must be verified against real R2 before cutover.
 - **C3.** Presigned URLs must be signed against the R2 S3 API hostname (`<account>.r2.cloudflarestorage.com`), never the public custom domain.
 - **C4.** R2 bucket CORS must allow `PUT` from the same origins as `contentBucket` today, exposing `ETag`.
-- **C5.** R2's single-request `CopyObject` ceiling is expected to be comfortable — files are believed to be well under 500 MB. Inventory confirms rather than discovers this; treat a >500 MB object as an exception needing multipart copy, not as the expected case.
-- **C6.** Credentials become explicit and long-lived (R2 access key pairs) where S3 used ambient IAM. Delivered as **SST secrets**, held as `Redacted`, unwrapped only at client construction.
+- **C5.** Credentials become explicit and long-lived (R2 access key pairs) where S3 used ambient IAM. Delivered as **SST secrets**, held as `Redacted`, unwrapped only at client construction.
 
 ## Feature removal: cross-bucket copy
 
@@ -110,9 +109,9 @@ The picker is user-facing and load-bearing — it lets an editor choose an alrea
 
 It needs exactly two endpoints, `config` and `list`, both of which are kept.
 
-Cross-bucket copy is a different thing that happens to live in the same handler group. It is **dead code**: `copyFileManagerObject` has no frontend caller anywhere in `apps/www` or `packages/ui`. The only path to `S3Service.copyFile` is that one unreferenced endpoint (`file-manager.handlers.ts:94`).
+Cross-bucket copy was a different thing that happened to live in the same handler group. It was **dead code**: `copyFileManagerObject` had no frontend caller anywhere in `apps/www` or `packages/ui`. The only path to `S3Service.copyFile` was that one unreferenced endpoint.
 
-Surface to delete:
+Surface deleted in OPS-237:
 
 | Layer | Path |
 |---|---|
@@ -120,7 +119,7 @@ Surface to delete:
 | Handler | `.handle('copyFileManagerObject', ...)` (`file-manager.handlers.ts:84-110`) |
 | Service | `S3Service.copyFile` + `copyFileEffect` (`s3.service.ts:62-66,319-352,625`) |
 
-Deleting an operation with no caller ahead of a storage migration is strictly better than carrying it: R2's `CopyObject` size ceiling (C5) and cross-bucket copy semantics stop being things this migration has to prove. It can return if a real need appears.
+Deleting an operation with no caller ahead of a storage migration is strictly better than carrying it: R2's `CopyObject` size ceiling and cross-bucket copy semantics stop being things this migration has to prove. It can return if a real need appears.
 
 `getFileManagerConfig` and `listFileManagerObjects` are untouched, as are `S3AudioFilePicker`, `S3MediaFilePicker`, and `packages/ui/src/components/s3-media-file-picker.tsx`.
 
@@ -130,7 +129,7 @@ Deleting an operation with no caller ahead of a storage migration is strictly be
 
 It already degrades gracefully: `file-manager.handlers.ts:30-37` catches `S3Error` and returns `[]`, falling back to the configured buckets. The dropdown keeps working because `buckets.userContent` and `buckets.mixes` come from config, not from the listing.
 
-**Recommendation: on the R2 provider, return the configured bucket names directly rather than issuing a bucket-listing call.**
+**Implemented in OPS-237:** on the R2 provider, return the configured bucket names directly rather than issuing a bucket-listing call.
 
 ```ts
 // r2 provider implementation
@@ -168,7 +167,7 @@ This removal also eliminates the `getObjectStream` gap — `GetObjectCommand` wa
 
 Add `endpoint`/`region` to each of the 13 `new S3Client({})` calls.
 
-Smallest diff. But it multiplies existing duplication by 13, leaves credentials ambient (violating C6), and provides no seam for contract tests — every test would need live credentials. **Rejected**: it does not create the seam, and consolidation is an explicit goal.
+Smallest diff. But it multiplies existing duplication by 13, leaves credentials ambient (violating C5), and provides no seam for contract tests — every test would need live credentials. **Rejected**: it does not create the seam, and consolidation is an explicit goal.
 
 ### Option 2: Provider-selectable client factory behind an Effect Layer (recommended)
 
@@ -500,9 +499,9 @@ Vertical slices: one failing test, minimal code, repeat.
 
 **Slice 3 — `S3Service` threads the client.** Red: `S3Service` over a stub-endpoint `ObjectStoreClient` sends `uploadFile` to that endpoint. Green: thread `store`. Repeat per operation. Lock the consolidation in with a source assertion that `new S3Client(` appears exactly once in `apps/vps/src`.
 
-**Slice 4 — copy path is gone, picker still works.** Red: `POST /api/file-manager/copy` returns 404, and no `copyFile`/`CopyObjectInput` reference remains in `apps/`, `packages/`, `infra/`. Green: delete. Then, guarding against over-deletion: `GET /api/file-manager/config` and `/list` still return their current shapes, and the picker renders a bucket dropdown from `availableBuckets`.
+**Slice 4 — copy path is gone, picker still works. Completed in OPS-237.** `POST /api/file-manager/copy` returns 404, and no `copyFile`/`CopyObjectInput` reference remains in `apps/`, `packages/`, `infra/`. `GET /api/file-manager/config`, `/list`, and the picker remain.
 
-**Slice 4b — `listBuckets` on R2.** Red: with `provider: 'r2'`, `listBuckets` returns the configured bucket names without issuing a bucket-listing call. Green: provider-specific implementation. Then: `availableBuckets` in the config response is non-empty on R2.
+**Slice 4b — `listBuckets` on R2. Completed in OPS-237.** With `provider: 'r2'`, `listBuckets` returns the configured bucket names without issuing a bucket-listing call. `availableBuckets` remains non-empty, and R2 does not expose `FILE_MANAGER_BUCKETS` extras.
 
 **Slice 5 — contract tests against real R2** (live credentials; documented as not running in ordinary CI):
 - put → head → get → delete round trip
@@ -526,10 +525,10 @@ All slices run under `bun precommit`.
 
 ## Execution Order
 
-1. [OPS-235](https://linear.app/guidefari/issue/OPS-235/inventory-user-content-and-mixes-buckets) — **Inventory** `User_Content` and `Mixes`. Confirm the <500 MB expectation (C5); flag exceptions. **Completed.**
+1. [OPS-235](https://linear.app/guidefari/issue/OPS-235/inventory-user-content-and-mixes-buckets) — **Inventory** `User_Content` and `Mixes`; flag migration-tool exceptions. **Completed.**
 2. [OPS-236](https://linear.app/guidefari/issue/OPS-236/consolidate-13-s3client-constructions-behind-objectstoreclient) — **Consolidate**, slices 1–3, `provider: 'aws'` still selected. Zero production behavior change; ships independently. *This is the highest-value, lowest-risk PR and should land first regardless of everything downstream.*
 3. [OPS-241](https://linear.app/guidefari/issue/OPS-241/remove-database-backup-subsystem-gated-on-provider-verification) — **Remove repository backups.** Completed early after the operator moved ownership to PlanetScale; retain only the unlinked S3 bucket until lifecycle expiry.
-4. [OPS-237](https://linear.app/guidefari/issue/OPS-237/delete-dead-cross-bucket-copy-path) — **Delete cross-bucket copy**, slices 4 and 4b. Independent of storage; ships separately. Small enough to fold into step 2 if convenient.
+4. [OPS-237](https://linear.app/guidefari/issue/OPS-237/delete-dead-cross-bucket-copy-path) — **Delete cross-bucket copy**, slices 4 and 4b. **Completed.**
 5. [OPS-238](https://linear.app/guidefari/issue/OPS-238/cdn-router-worker-and-sst-wiring-for-r2) — **Worker + SST wiring**, slices 6–7, deployed to a test hostname.
 6. [OPS-239](https://linear.app/guidefari/issue/OPS-239/cut-mixes-bucket-over-to-r2) — **`Mixes` cutover.** Super Slurper copy → verify → R2 CORS → router origin → soak. No upload path, so lower risk.
 7. [OPS-240](https://linear.app/guidefari/issue/OPS-240/cut-user-content-bucket-over-to-r2) — **`User_Content` cutover.** Copy → verify → R2 CORS (C4) → presigning to R2 host (C3) → router origin → soak the upload path hard.

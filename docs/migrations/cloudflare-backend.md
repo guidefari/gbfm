@@ -18,7 +18,7 @@ Exploration and decision record. No production infrastructure has been migrated 
 
 - the Effect HttpApi and Better Auth routes served by Bun;
 - PostgreSQL access through Drizzle and `pg`;
-- S3 object operations, including multipart upload and cross-bucket copy;
+- S3 object operations, including multipart upload;
 - transactional email through SES;
 - an in-process music-reminder loop;
 - hourly in-memory sitemap regeneration;
@@ -112,7 +112,7 @@ Written against the traced code, it diverges from the plan below in four ways:
 - browser CORS on R2 **is** required from day one (the browser PUTs multipart chunks directly to the bucket);
 - cutover is forward-only per-bucket, not dual-write;
 - infrastructure stays in **SST** via its Pulumi extensibility, with Alchemy deferred until all infra is on Cloudflare;
-- only **two** buckets migrate. The database-backup subsystem was deleted after backup ownership moved directly to PlanetScale, and the dead cross-bucket copy path is deleted along with `S3Service.copyFile`.
+- only **two** buckets migrate. The database-backup subsystem was deleted after backup ownership moved directly to PlanetScale, and the dead cross-bucket copy path was deleted along with `S3Service.copyFile`.
 
 Keep the remaining bucket boundaries for the first move. The existing application-facing `S3Service` contract is already the correct seam.
 
@@ -126,7 +126,7 @@ Keep the remaining bucket boundaries for the first move. The existing applicatio
    - for a simpler forward-only storage cut, make R2 authoritative and allow compute rollback only if the old ECS service has also been configured to read and write R2.
 7. Disable Sippy before accepting R2-authoritative deletes or lifecycle expiry, then close AWS writes after the rollback decision is final.
 
-R2 implements the remaining S3 operations, but live contract tests remain required for multipart retry/resume behavior. R2 requires multipart parts of at least 5 MiB and equal-size non-final parts; the current 8 MiB chunks fit. Inventory must also prove objects copied with a single `CopyObject` fit R2's size limit.
+R2 implements the remaining S3 operations, but live contract tests remain required for multipart retry/resume behavior. R2 requires multipart parts of at least 5 MiB and equal-size non-final parts; the current 8 MiB chunks fit.
 
 The browser PUTs image bytes and each multipart chunk directly to the bucket via presigned URL (`apps/www/src/services/resumable-upload/service.ts`), which is why `infra/bucket.ts` already configures bucket CORS. R2 browser CORS is therefore required for the first storage cut on `User_Content`, configured with the exact browser origins and exposing `ETag`. Presigned writes must use the R2 S3 API hostname, not the public custom domain; public reads continue through `cdn.goosebumps.fm`.
 
@@ -218,7 +218,7 @@ Use one thread per independently reviewable task. These prompts intentionally se
 
 ### R2 implementation
 
-> Implement only Phase 1 from `docs/migrations/cloudflare-backend.md`. Preserve the `S3Service` interface, all object keys, and `cdn.goosebumps.fm` public URLs. Add a selectable R2 configuration and targeted contract tests for every S3 operation currently used, including multipart resume/abort/complete/retry, cross-bucket copy, and the backup/restore scripts. Implement the two-bucket CDN path router without exposing backups. Do not change compute, database, email, or delete AWS resources. Run `bun precommit` and the narrowest storage tests available; document any test requiring live R2 credentials.
+> Implement only Phase 1 from `docs/migrations/cloudflare-backend.md`. Preserve the remaining `S3Service` interface, all object keys, and `cdn.goosebumps.fm` public URLs. Add targeted contract tests for every remaining S3 operation, including multipart resume/abort/complete/retry. Implement the two-bucket CDN path router. Do not change compute, database, email, or delete AWS resources. Run `bun precommit` and the narrowest storage tests available; document any test requiring live R2 credentials.
 
 ### Cloudflare Container spike
 

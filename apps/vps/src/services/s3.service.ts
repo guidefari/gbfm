@@ -1,7 +1,6 @@
 import {
   AbortMultipartUploadCommand,
   CompleteMultipartUploadCommand,
-  CopyObjectCommand,
   CreateMultipartUploadCommand,
   DeleteObjectCommand,
   HeadObjectCommand,
@@ -15,6 +14,7 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { Context, Effect, Layer } from 'effect'
 import { getErrorMessage, S3Error } from '@/errors'
+import { ConfigService } from '@/services/config.service'
 import {
   ObjectStoreClient,
   type ObjectStoreClient as ObjectStoreClientType
@@ -61,12 +61,6 @@ export interface S3Service {
     prefix: string,
     bucketName: string
   ) => Effect.Effect<Array<{ key: string; lastModified: Date; size: number }>, S3Error>
-
-  readonly copyFile: (
-    key: string,
-    sourceBucket: string,
-    destinationBucket: string
-  ) => Effect.Effect<void, S3Error>
 
   readonly listBuckets: () => Effect.Effect<string[], S3Error>
 
@@ -326,47 +320,6 @@ const listObjectsEffect = (store: ObjectStoreClientType, prefix: string, bucketN
     })
   )
 
-const copyFileEffect = (
-  store: ObjectStoreClientType,
-  key: string,
-  sourceBucket: string,
-  destinationBucket: string
-) =>
-  Effect.tryPromise({
-    try: async () => {
-      const s3 = store.client
-      await s3.send(
-        new CopyObjectCommand({
-          Bucket: destinationBucket,
-          CopySource: `${sourceBucket}/${key}`,
-          Key: key
-        })
-      )
-    },
-    catch: (error) =>
-      error instanceof Error
-        ? new S3Error({
-            message: `Failed to copy file in S3: ${error.message}`,
-            operation: 'copy',
-            key
-          })
-        : new S3Error({
-            message: `Failed to copy file in S3: Unknown error: ${String(error)}`,
-            operation: 'copy',
-            key
-          })
-  }).pipe(
-    Effect.withSpan('aws.s3.copyObject', {
-      attributes: {
-        'storage.provider': store.provider,
-        'aws.service': 's3',
-        's3.source_bucket': sourceBucket,
-        's3.destination_bucket': destinationBucket,
-        's3.key_prefix': getKeyPrefix(key)
-      }
-    })
-  )
-
 const createMultipartUploadEffect = (
   store: ObjectStoreClientType,
   key: string,
@@ -621,8 +574,13 @@ const listMultipartPartsEffect = (
     })
   )
 
-const listBucketsEffect = (store: ObjectStoreClientType) =>
-  Effect.tryPromise({
+const listBucketsEffect = (
+  store: ObjectStoreClientType,
+  configuredBuckets: ReadonlyArray<string>
+) => {
+  if (store.provider === 'r2') return Effect.succeed([...configuredBuckets])
+
+  return Effect.tryPromise({
     try: async () => {
       const s3 = store.client
       const response = await s3.send(new ListBucketsCommand({}))
@@ -650,11 +608,15 @@ const listBucketsEffect = (store: ObjectStoreClientType) =>
       }
     })
   )
+}
 
 export const S3ServiceLayer = Layer.effect(
   S3Service,
   Effect.gen(function* () {
     const store = yield* ObjectStoreClient
+    const config = yield* ConfigService
+    const configuredBuckets = [config.buckets.userContent, config.buckets.mixes]
+
     return {
       uploadFile: (key, body, contentType, bucketName) =>
         uploadFileEffect(store, key, body, contentType, bucketName),
@@ -663,9 +625,7 @@ export const S3ServiceLayer = Layer.effect(
       deleteFile: (key, bucketName) => deleteFileEffect(store, key, bucketName),
       checkExists: (key, bucketName) => checkExistsEffect(store, key, bucketName),
       listObjects: (prefix, bucketName) => listObjectsEffect(store, prefix, bucketName),
-      copyFile: (key, sourceBucket, destinationBucket) =>
-        copyFileEffect(store, key, sourceBucket, destinationBucket),
-      listBuckets: () => listBucketsEffect(store),
+      listBuckets: () => listBucketsEffect(store, configuredBuckets),
       createMultipartUpload: (key, contentType, expectedSize, bucketName) =>
         createMultipartUploadEffect(store, key, contentType, expectedSize, bucketName),
       getObjectMetadata: (key, bucketName) => getObjectMetadataEffect(store, key, bucketName),

@@ -21,10 +21,13 @@ export const FileManagerHandlersLive = HttpApiBuilder.group(Api, 'fileManager', 
         const config = yield* ConfigService
         const s3Service = yield* S3Service
         const configuredBuckets = [config.buckets.userContent, config.buckets.mixes]
-        const additionalBuckets = (process.env.FILE_MANAGER_BUCKETS ?? '')
-          .split(',')
-          .map((value) => value.trim())
-          .filter(Boolean)
+        const additionalBuckets =
+          config.storage.provider === 'aws'
+            ? (process.env.FILE_MANAGER_BUCKETS ?? '')
+                .split(',')
+                .map((value) => value.trim())
+                .filter(Boolean)
+            : []
 
         const discoveredBuckets = yield* s3Service.listBuckets().pipe(
           Effect.catchTag('S3Error', (error) =>
@@ -79,34 +82,6 @@ export const FileManagerHandlersLive = HttpApiBuilder.group(Api, 'fileManager', 
             size: obj.size
           }))
         }
-      })
-    )
-    .handle('copyFileManagerObject', ({ payload }) =>
-      Effect.gen(function* () {
-        yield* requireAdmin
-
-        if (payload.sourceBucket === payload.destinationBucket) {
-          return yield* new HttpApiError.BadRequest()
-        }
-
-        const s3Service = yield* S3Service
-        yield* s3Service
-          .copyFile(payload.key, payload.sourceBucket, payload.destinationBucket)
-          .pipe(
-            Effect.catchTag('S3Error', (error) =>
-              Effect.gen(function* () {
-                yield* Effect.logError('[FileManager] Copy object error', {
-                  key: payload.key,
-                  sourceBucket: payload.sourceBucket,
-                  destinationBucket: payload.destinationBucket,
-                  error: error.message
-                })
-                return yield* new HttpApiError.InternalServerError()
-              })
-            )
-          )
-
-        return { key: payload.key }
       })
     )
 )

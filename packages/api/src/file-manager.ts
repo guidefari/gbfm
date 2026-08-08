@@ -27,17 +27,6 @@ const ListObjectsQuery = {
   prefix: Schema.optional(Schema.String)
 }
 
-export const CopyObjectInput = Schema.Struct({
-  key: Schema.NonEmptyString,
-  sourceBucket: Schema.NonEmptyString,
-  destinationBucket: Schema.NonEmptyString
-})
-export type CopyObjectInput = typeof CopyObjectInput.Type
-
-export const CopyObjectResponse = Schema.Struct({
-  key: Schema.String
-})
-
 export const FileManagerGroup = HttpApiGroup.make('fileManager')
   .add(
     HttpApiEndpoint.get('getFileManagerConfig', '/api/file-manager/config', {
@@ -49,13 +38,6 @@ export const FileManagerGroup = HttpApiGroup.make('fileManager')
     HttpApiEndpoint.get('listFileManagerObjects', '/api/file-manager/list', {
       query: ListObjectsQuery,
       success: ListObjectsResponse,
-      error: [HttpApiError.Forbidden, HttpApiError.BadRequest, HttpApiError.InternalServerError]
-    }).middleware(AuthMiddleware)
-  )
-  .add(
-    HttpApiEndpoint.post('copyFileManagerObject', '/api/file-manager/copy', {
-      payload: CopyObjectInput,
-      success: CopyObjectResponse,
       error: [HttpApiError.Forbidden, HttpApiError.BadRequest, HttpApiError.InternalServerError]
     }).middleware(AuthMiddleware)
   )
