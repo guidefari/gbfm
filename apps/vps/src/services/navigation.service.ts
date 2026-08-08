@@ -102,7 +102,8 @@ const resultFor = (
   destination: TrailRow,
   index: number,
   length: number,
-  hasUnread = true
+  hasUnread = true,
+  neighbours: NavigationResult['neighbours'] = {}
 ): NavigationResult => {
   const navigationSession: NavigationSession = {
     id: session.id,
@@ -119,7 +120,8 @@ const resultFor = (
   return {
     destination: { slug: destination.slug, postId: destination.postId },
     capabilities: capabilitiesOf(navigationSession, { hasUnread }),
-    trailPosition: { index, length }
+    trailPosition: { index, length },
+    neighbours
   }
 }
 
@@ -293,6 +295,17 @@ export const NavigationSessionServiceLayer = Layer.effect(
         return { session, length, replay: undefined } satisfies Phase
       })
 
+    const neighboursFor = (sessionId: string, position: number) =>
+      Effect.all({
+        back: liveEntry(sessionId, position, 'Back'),
+        forward: liveEntry(sessionId, position, 'Forward')
+      }).pipe(
+        Effect.map(({ back, forward }) => ({
+          ...(back ? { back: back.slug } : {}),
+          ...(forward ? { forward: forward.slug } : {})
+        }))
+      )
+
     const findUnread = (pick: 'NextByDate' | 'Random', from: Slug, seen: ReadonlySet<Slug>) =>
       Effect.gen(function* () {
         if (pick === 'Random') {
@@ -337,7 +350,16 @@ export const NavigationSessionServiceLayer = Layer.effect(
         yield* Effect.annotateCurrentSpan('cursor', phase.session?.cursor ?? -1)
         if (phase.replay && phase.session) {
           const index = yield* entryIndex(phase.session.id, phase.replay.position)
-          return resultFor(phase.session, identity, phase.replay, index, phase.length)
+          const neighbours = yield* neighboursFor(phase.session.id, phase.replay.position)
+          return resultFor(
+            phase.session,
+            identity,
+            phase.replay,
+            index,
+            phase.length,
+            true,
+            neighbours
+          )
         }
         if (command._tag === 'Step' && command.direction === 'Back') {
           return yield* noSuchMove(command)
@@ -456,7 +478,8 @@ export const NavigationSessionServiceLayer = Layer.effect(
         if (!entry) return yield* noSuchMove(command)
         const length = yield* trailLength(locked.session.id)
         const index = yield* entryIndex(locked.session.id, entry.position)
-        return resultFor(locked.session, identity, entry, index, length)
+        const neighbours = yield* neighboursFor(locked.session.id, entry.position)
+        return resultFor(locked.session, identity, entry, index, length, true, neighbours)
       })
 
     const read = (identity: NavigationIdentity) =>

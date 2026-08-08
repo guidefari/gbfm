@@ -37,6 +37,7 @@ export type NavigationResult = {
   readonly destination: { readonly slug: Slug; readonly postId: string }
   readonly capabilities: NavigationCapabilities
   readonly trailPosition: { readonly index: number; readonly length: number }
+  readonly neighbours: { readonly back?: Slug; readonly forward?: Slug }
 }
 
 export type ResolvedDestination = {

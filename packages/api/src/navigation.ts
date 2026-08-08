@@ -33,7 +33,8 @@ const NavigationCapabilitiesResponse = Schema.Struct({
 export const NavigationResultResponse = Schema.Struct({
   destination: Schema.Struct({ slug: Slug, postId: Schema.String }),
   capabilities: NavigationCapabilitiesResponse,
-  trailPosition: Schema.Struct({ index: Schema.Number, length: Schema.Number })
+  trailPosition: Schema.Struct({ index: Schema.Number, length: Schema.Number }),
+  neighbours: Schema.Struct({ back: Schema.optional(Slug), forward: Schema.optional(Slug) })
 })
 export type NavigationResultResponse = typeof NavigationResultResponse.Type
 
