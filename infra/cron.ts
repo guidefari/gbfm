@@ -1,4 +1,4 @@
-import { blueskySyncTask, dbBackupTask } from './vps'
+import { dbBackupTask, scheduledMaintenanceTask } from './vps'
 
 /**
  * Daily Database Backup Cron Job
@@ -15,7 +15,7 @@ export const dbBackupCron = new sst.aws.CronV2('DatabaseBackupCron', {
 })
 
 export const blueskySyncCron = new sst.aws.CronV2('BlueskySyncCron', {
-  task: blueskySyncTask,
+  task: scheduledMaintenanceTask,
   schedule: 'rate(1 hour)',
   retries: 0
 })

@@ -106,7 +106,7 @@ export const dbBackupTask = new sst.aws.Task('DatabaseBackupTask', {
   link: [dbBackupBucket, ...allSecrets]
 })
 
-export const blueskySyncTask = new sst.aws.Task('BlueskySyncTask', {
+export const scheduledMaintenanceTask = new sst.aws.Task('BlueskySyncTask', {
   cluster,
   image: {
     context: './',
