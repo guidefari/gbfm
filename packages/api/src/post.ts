@@ -153,14 +153,9 @@ export const GetRandomMicroPostResponse = Schema.Struct({
   slug: Schema.String
 })
 
-// Comma-joined string, not Schema.Array -- no existing endpoint in this
-// package puts Schema.Array in a `query` field, so there's no proven
-// pattern for how Effect HttpApi encodes/decodes an array-valued query
-// param. Encoding as a single comma-joined string and splitting
-// server-side avoids being the first to find out.
-const GetRandomMicroPostQuery = {
-  exclude: Schema.optional(Schema.String)
-}
+const GetRandomMicroPostInput = Schema.Struct({
+  exclude: Schema.optional(Schema.Array(Schema.String))
+})
 
 const SearchMicroPostsQuery = {
   ...PaginationQuery,
@@ -286,8 +281,8 @@ export const PostGroup = HttpApiGroup.make('post')
     })
   )
   .add(
-    HttpApiEndpoint.get('getRandomMicroPost', '/api/content/posts/micro/random', {
-      query: GetRandomMicroPostQuery,
+    HttpApiEndpoint.post('getRandomMicroPost', '/api/content/posts/micro/random', {
+      payload: GetRandomMicroPostInput,
       success: GetRandomMicroPostResponse,
       error: [HttpApiError.NotFound, HttpApiError.InternalServerError]
     })

@@ -443,7 +443,7 @@ export function useRandomMicroPost() {
       const client = await getApiClient()
       const { slug } = await Effect.runPromise(
         client.post
-          .getRandomMicroPost({ query: { exclude: [...seen, currentSlug].join(',') } })
+          .getRandomMicroPost({ payload: { exclude: [...seen, currentSlug] } })
           .pipe(
             Effect.tapError((error) =>
               captureException(error, { endpoint: 'post.getRandomMicroPost' })

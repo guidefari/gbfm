@@ -167,10 +167,10 @@ export const PostHandlersLive = HttpApiBuilder.group(Api, 'post', (handlers) =>
         }
       })
     )
-    .handle('getRandomMicroPost', ({ query }) =>
+    .handle('getRandomMicroPost', ({ payload }) =>
       Effect.gen(function* () {
         const svc = yield* PostService
-        const excludeSlugs = query.exclude ? query.exclude.split(',').filter(Boolean) : []
+        const excludeSlugs = [...(payload.exclude ?? [])]
         const result = yield* dieOnDatabaseError(
           svc
             .getRandomMicroPost(excludeSlugs)
