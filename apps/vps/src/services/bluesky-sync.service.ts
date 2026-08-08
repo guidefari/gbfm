@@ -1,5 +1,5 @@
-import { and, eq } from 'drizzle-orm'
-import { Context, Effect, Layer, Redacted } from 'effect'
+import { and, eq, isNull, lte, or } from 'drizzle-orm'
+import { Context, Effect, Layer, Option, Redacted, Schema } from 'effect'
 import {
   blueskySyncRuns,
   blueskySyncStates,
@@ -20,9 +20,36 @@ import { BlueskyClient } from './bluesky-client.service'
 import { BlueskyImportService } from './bluesky-importer.service'
 import { CryptoService } from './crypto.service'
 import { LockService } from './lock.service'
-import { z } from 'zod'
 
-const cachedSession = z.object({ accessJwt: z.string().min(1), refreshJwt: z.string().min(1) })
+const CachedSession = Schema.Struct({
+  accessJwt: Schema.NonEmptyString,
+  refreshJwt: Schema.NonEmptyString
+})
+
+const decodeCachedSession = Schema.decodeUnknownOption(CachedSession)
+
+export const MAX_CONSECUTIVE_FAILURES = 5
+const MAX_BACKOFF_MS = 60 * 60 * 1000
+
+export const nextScheduleAfterFailure = (
+  consecutiveFailures: number,
+  now: Date
+): {
+  readonly consecutiveFailures: number
+  readonly scheduled: boolean
+  readonly nextEligibleAt: Date | null
+} => {
+  const failures = consecutiveFailures + 1
+  if (failures >= MAX_CONSECUTIVE_FAILURES) {
+    return { consecutiveFailures: failures, scheduled: false, nextEligibleAt: null }
+  }
+  const delay = Math.min(MAX_BACKOFF_MS, 2 ** failures * 60_000)
+  return {
+    consecutiveFailures: failures,
+    scheduled: true,
+    nextEligibleAt: new Date(now.getTime() + delay)
+  }
+}
 
 const sessionPayload = (session: {
   readonly accessJwt: Redacted.Redacted<string>
@@ -69,6 +96,13 @@ export interface BlueskySyncService {
     | IdentityResolutionError
     | CryptoError
   >
+  readonly syncScheduled: () => Effect.Effect<ScheduledSyncReport, DatabaseError>
+}
+
+export type ScheduledSyncReport = {
+  readonly attempted: number
+  readonly succeeded: number
+  readonly failed: number
 }
 
 export const BlueskySyncService = Context.Service<BlueskySyncService>('BlueskySyncService')
@@ -159,23 +193,22 @@ const sync = (
         })
       }
       const sessionPlaintext = yield* crypto.decrypt(credentials.session)
-      const session = yield* Effect.try({
-        try: () => cachedSession.safeParse(JSON.parse(Redacted.value(sessionPlaintext))),
-        catch: () =>
-          new CryptoError({ message: 'Bluesky session is invalid', operation: 'decrypt' })
+      const invalidSession = new CryptoError({
+        message: 'Bluesky session is invalid',
+        operation: 'decrypt'
       })
-      if (!session.success) {
-        return yield* new CryptoError({
-          message: 'Bluesky session is invalid',
-          operation: 'decrypt'
-        })
-      }
+      const decoded = yield* Effect.try({
+        try: () => decodeCachedSession(JSON.parse(Redacted.value(sessionPlaintext))),
+        catch: () => invalidSession
+      })
+      if (Option.isNone(decoded)) return yield* invalidSession
+      const session = decoded.value
 
       const appPassword = credentials.appPassword
       const authenticated = yield* client
         .refreshSession({
           serviceEndpoint: account.serviceEndpoint ?? '',
-          refreshJwt: Redacted.make(session.data.refreshJwt),
+          refreshJwt: Redacted.make(session.refreshJwt),
           expectedDid: account.providerAccountId
         })
         .pipe(
@@ -356,6 +389,92 @@ const sync = (
     )
   )
 
+const dueScheduledAccounts = Effect.tryPromise({
+  try: () =>
+    db
+      .select({ accountId: externalAccounts.id, userId: externalAccounts.userId })
+      .from(externalAccounts)
+      .innerJoin(blueskySyncStates, eq(blueskySyncStates.externalAccountId, externalAccounts.id))
+      .where(
+        and(
+          eq(externalAccounts.provider, 'bluesky'),
+          eq(externalAccounts.status, 'active'),
+          eq(blueskySyncStates.scheduled, true),
+          or(
+            isNull(blueskySyncStates.nextEligibleAt),
+            lte(blueskySyncStates.nextEligibleAt, new Date())
+          )
+        )
+      ),
+  catch: () => databaseError('enumerate-scheduled-accounts')
+})
+
+const recordScheduledFailure = (accountId: string): Effect.Effect<void, DatabaseError> =>
+  Effect.tryPromise({
+    try: async () => {
+      const [state] = await db
+        .select({ consecutiveFailures: blueskySyncStates.consecutiveFailures })
+        .from(blueskySyncStates)
+        .where(eq(blueskySyncStates.externalAccountId, accountId))
+        .limit(1)
+      const next = nextScheduleAfterFailure(state?.consecutiveFailures ?? 0, new Date())
+      await db
+        .update(blueskySyncStates)
+        .set({ ...next, updatedAt: new Date() })
+        .where(eq(blueskySyncStates.externalAccountId, accountId))
+    },
+    catch: () => databaseError('record-scheduled-failure')
+  })
+
+const syncScheduled = (
+  self: Pick<BlueskySyncService, 'sync'>
+): Effect.Effect<ScheduledSyncReport, DatabaseError> =>
+  Effect.gen(function* () {
+    const accounts = yield* dueScheduledAccounts
+
+    const outcomes = yield* Effect.forEach(
+      accounts,
+      (account) =>
+        Effect.gen(function* () {
+          const summary = yield* self.sync(account)
+          yield* Effect.logInfo('Bluesky scheduled sync completed', {
+            accountId: account.accountId,
+            runId: summary.runId,
+            created: summary.created,
+            conflicted: summary.conflicted
+          })
+          return true
+        }).pipe(
+          Effect.catch((error) =>
+            Effect.gen(function* () {
+              yield* recordScheduledFailure(account.accountId).pipe(
+                Effect.tapError((failure) =>
+                  Effect.logError('Unable to record Bluesky scheduled sync failure', {
+                    accountId: account.accountId,
+                    error: failure
+                  })
+                ),
+                Effect.catch(() => Effect.void)
+              )
+              yield* Effect.logError('Bluesky scheduled sync failed', {
+                accountId: account.accountId,
+                error
+              })
+              return false
+            })
+          )
+        ),
+      { concurrency: 1 }
+    )
+
+    const succeeded = outcomes.filter((ok) => ok).length
+    return {
+      attempted: accounts.length,
+      succeeded,
+      failed: accounts.length - succeeded
+    }
+  })
+
 export const BlueskySyncServiceLayer = Layer.effect(
   BlueskySyncService,
   Effect.gen(function* () {
@@ -364,10 +483,12 @@ export const BlueskySyncServiceLayer = Layer.effect(
     const archive = yield* BlueskyArchiveService
     const crypto = yield* CryptoService
     const locks = yield* LockService
-    return {
+    const service: BlueskySyncService = {
       start: (input: Parameters<BlueskySyncService['start']>[0]) => start(locks, input),
       sync: (input: Parameters<BlueskySyncService['sync']>[0]) =>
-        sync(client, importer, archive, crypto, locks, input)
+        sync(client, importer, archive, crypto, locks, input),
+      syncScheduled: () => syncScheduled(service)
     }
+    return service
   })
 )

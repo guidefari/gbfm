@@ -1,5 +1,4 @@
-import { Context, Effect, Layer } from 'effect'
-import { z } from 'zod'
+import { Context, Effect, Layer, Option, Schema } from 'effect'
 
 const musicHosts = new Set([
   'open.spotify.com',
@@ -13,21 +12,29 @@ const musicHosts = new Set([
   'audiomack.com'
 ])
 
-const stringRecord = z.record(z.string(), z.unknown())
-const feedEntrySchema = z.object({
-  post: z.object({
-    uri: z.string().min(1),
-    cid: z.string().min(1),
-    author: z.object({ did: z.string().min(1), handle: z.string().optional() }),
-    record: z.object({
-      text: z.string(),
-      createdAt: z.string().datetime({ offset: true }),
-      facets: z.array(z.unknown()).optional(),
-      embed: z.unknown().optional()
+const FeedEntry = Schema.Struct({
+  post: Schema.Struct({
+    uri: Schema.NonEmptyString,
+    cid: Schema.NonEmptyString,
+    author: Schema.Struct({
+      did: Schema.NonEmptyString,
+      handle: Schema.optional(Schema.String)
+    }),
+    record: Schema.Struct({
+      text: Schema.String,
+      createdAt: Schema.NonEmptyString,
+      facets: Schema.optional(Schema.Array(Schema.Unknown)),
+      embed: Schema.optional(Schema.Unknown)
     })
   }),
-  reason: z.unknown().optional()
+  reason: Schema.optional(Schema.Unknown)
 })
+
+type FeedEntryRecord = Schema.Schema.Type<typeof FeedEntry>['post']['record']
+
+const decodeFeedEntry = Schema.decodeUnknownOption(FeedEntry)
+
+const isIsoTimestamp = (value: string): boolean => !Number.isNaN(Date.parse(value))
 
 export type ImportedRecord = {
   readonly atUri: string
@@ -110,7 +117,7 @@ const replaceFacetLinks = (
     .toString('utf8')
 }
 
-const extractSignals = (record: z.infer<typeof feedEntrySchema>['post']['record']) => {
+const extractSignals = (record: FeedEntryRecord) => {
   const urls: Array<string> = []
   const tags: Array<string> = []
   const replacements: Array<{ start: number; end: number; uri: string }> = []
@@ -157,13 +164,16 @@ export const normalizeBlueskyRecord = (
 ): NormalizedBlueskyRecord => {
   if (isRecord(input) && input.reason !== undefined) return { kind: 'skip', reason: 'repost' }
 
-  const parsed = feedEntrySchema.safeParse(input)
-  if (!parsed.success) return { kind: 'skip', reason: 'malformed' }
-  if (parsed.data.post.author.did !== expectedAuthorDid) {
+  const parsed = decodeFeedEntry(input)
+  if (Option.isNone(parsed)) return { kind: 'skip', reason: 'malformed' }
+  if (!isIsoTimestamp(parsed.value.post.record.createdAt)) {
+    return { kind: 'skip', reason: 'malformed' }
+  }
+  if (parsed.value.post.author.did !== expectedAuthorDid) {
     return { kind: 'skip', reason: 'different-author' }
   }
 
-  const { post } = parsed.data
+  const { post } = parsed.value
   const signals = extractSignals(post.record)
   const candidateUrls = signals.urls.filter((url) => isLinkHost(url))
   const qualifies =
