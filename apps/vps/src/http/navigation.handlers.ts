@@ -5,6 +5,7 @@ import { HttpApiBuilder, HttpApiError } from 'effect/unstable/httpapi'
 import { type NavigationCommand, Slug } from '@/domain/navigation'
 import { IdentityResolver } from '@/middleware/optional-auth.impl'
 import { NavigationSessionService } from '@/services/navigation.service'
+import { PostService } from '@/services/post.service'
 
 const decodeSlug = Schema.decodeUnknownSync(Slug)
 
@@ -25,13 +26,16 @@ export const NavigationHandlersLive = HttpApiBuilder.group(Api, 'navigation', (h
       const { resolve: resolveIdentity } = yield* IdentityResolver
       const navigation = yield* NavigationSessionService
       const identity = yield* resolveIdentity
-      const result = yield* navigation
-        .resolve(
-          identity,
-          toNavigationCommand(payload.command),
-          decodeSlug(payload.from),
-          payload.intentToken
+      const command = toNavigationCommand(payload.command)
+      if (command._tag === 'Open') {
+        const posts = yield* PostService
+        yield* posts.getMicroPostBySlug(command.slug).pipe(
+          Effect.catchTag('NotFoundError', () => new HttpApiError.NotFound()),
+          Effect.catchTag('DatabaseError', () => new HttpApiError.InternalServerError())
         )
+      }
+      const result = yield* navigation
+        .resolve(identity, command, decodeSlug(payload.from), payload.intentToken)
         .pipe(
           Effect.catchTag('NoSuchMove', () => new HttpApiError.Conflict()),
           Effect.catchTag('CorpusExhausted', () => new HttpApiError.Conflict()),
