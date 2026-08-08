@@ -131,7 +131,10 @@ function FlankingArrows({
 export function TweetNav({ slug, initialCapabilities }: Props) {
   const router = useRouter()
   const { navigateMicroPostsEffect } = useNavigateMicroPosts()
-  const capabilitiesAtom = useMemo(() => Atom.make<Capabilities>(initialCapabilities), [])
+  const capabilitiesAtom = useMemo(
+    () => Atom.make<Capabilities>(initialCapabilities),
+    [initialCapabilities]
+  )
   const capabilities = useAtomValue(capabilitiesAtom)
   const setCapabilities = useAtomSet(capabilitiesAtom)
 
