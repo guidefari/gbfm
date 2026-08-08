@@ -106,7 +106,14 @@ Hyperdrive remains useful for routes moved into Workers. Before using it, audit 
 
 ### Phase 1: move S3 to R2
 
-Keep the three bucket boundaries for the first move. The existing application-facing `S3Service` contract is already the correct seam.
+Implementation spec: [`s3-to-r2.md`](s3-to-r2.md), which supersedes this section. Written against the traced code, it diverges from the plan below in four ways:
+
+- browser CORS on R2 **is** required from day one (the browser PUTs multipart chunks directly to the bucket);
+- cutover is forward-only per-bucket, not dual-write;
+- infrastructure stays in **SST** via its Pulumi extensibility, with Alchemy deferred until all infra is on Cloudflare;
+- only **two** buckets migrate. The database-backup subsystem is deleted rather than moved (the managed database provider supplies backups, subject to a verification precondition), and the admin file manager is deleted along with `listBuckets` and `copyFile`.
+
+Keep the remaining bucket boundaries for the first move. The existing application-facing `S3Service` contract is already the correct seam.
 
 1. Create the R2 buckets and lifecycle rules (`qr-pdfs/` one day; database backups 30 days).
 2. Centralize the current per-operation `new S3Client({})` construction behind the storage provider. Add the R2 endpoint, `region: "auto"`, and scoped credentials there; keep AWS and R2 selectable during migration.
@@ -121,7 +128,7 @@ Keep the three bucket boundaries for the first move. The existing application-fa
 
 R2 implements the S3 operations currently used, but live contract tests remain required for cross-bucket copy and multipart retry/resume behavior. R2 requires multipart parts of at least 5 MiB and equal-size non-final parts; the current 8 MiB chunks fit. Inventory must also prove objects copied with a single `CopyObject` fit R2's size limit.
 
-The current browser sends each multipart chunk through the API, so R2 browser CORS is not required for the first storage cut. A later direct-to-R2 upload flow should configure exact browser origins and expose `ETag`. Its presigned writes must use the R2 S3 API hostname, not the public custom domain; public reads can continue through `cdn.goosebumps.fm`.
+The browser PUTs image bytes and each multipart chunk directly to the bucket via presigned URL (`apps/www/src/services/resumable-upload/service.ts`), which is why `infra/bucket.ts` already configures bucket CORS. R2 browser CORS is therefore required for the first storage cut on `User_Content`, configured with the exact browser origins and exposing `ETag`. Presigned writes must use the R2 S3 API hostname, not the public custom domain; public reads continue through `cdn.goosebumps.fm`.
 
 **Gate:** uploads, resume/abort/complete/retry multipart operations, admin listing/copy, all backup/restore scripts, imported cover art, QR expiry, and CDN range/conditional reads pass against R2; inventory reconciliation is clean.
 
