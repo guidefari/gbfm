@@ -160,7 +160,7 @@ accumulate. Reproduced locally against the dev server:
 
 Dev only fails at the 200 cap because Node's ceiling is double API
 Gateway's; prod fails much earlier. This is deterministic and grows with
-usage, whereas the race (Defect B) requires precise timing to hit , 
+usage, whereas the race (Defect B) requires precise timing to hit,
 which is why the priority ordering is inverted from the original draft.
 
 **Defect B, the navigation race** (the original subject of this spec).
@@ -264,13 +264,13 @@ the list's growth harder to reason about.
   cancellation should be `Fiber.interrupt`, matching how
   `HoldToRandomButton` already cancels its own tick loop.
 - Should not require `TweetNav` or `HoldToRandomButton` callers to change
-  their public props/shape unless the chosen design genuinely needs it , 
+  their public props/shape unless the chosen design genuinely needs it,
   minimize churn to call sites outside the affected modules.
 - Must keep `useRandomMicroPost`'s existing seen-slug exclusion behavior
   (`docs/tweet-browse-history-plan.md`'s documented contract: "Random
   navigation... eventually uses the same `/tweet/$slug` recording path as
   every other view" and "should not independently persist a seen slug")
- , this spec does not touch that contract, only the race around when
+ this spec does not touch that contract, only the race around when
   `router.navigate` is allowed to fire.
 
 ## Alternatives Considered
@@ -525,7 +525,7 @@ hold-complete (via HoldToRandomButton.onHoldComplete)
 
 Every trigger funnels through the same `run` function, so a second tap,
 a second hold, or an arrow key firing while a random fetch is still
-in-flight always interrupts that fetch's fiber before it can navigate , 
+in-flight always interrupts that fetch's fiber before it can navigate,
 last-*requested* wins, not last-*resolved* wins.
 
 #### Failure Flow
@@ -606,7 +606,7 @@ last-*requested* wins, not last-*resolved* wins.
   Verified safe: `readTweetBrowseState` is a real export
   (`tweetSeen.ts:43`) already used this way by
   `apps/www/src/routes/tweet/-landing.ts:10`, and it cannot lag the atom
- , `useRecordTweetViewed` calls `write(next)` synchronously inside the
+ `useRecordTweetViewed` calls `write(next)` synchronously inside the
   same atom update, so `localStorage` and the atom are always in step.
 - **No change** `apps/www/src/store/tweetSeen.ts`,
   `apps/www/src/routes/tweet/$slug.tsx`'s `useRecordTweetViewed` call:
@@ -626,7 +626,7 @@ Per project convention (no unit tests for `route.tsx`/`page.tsx` files;
    **Green**: implement `useNavigationIntent`'s interrupt-before-fork
    behavior.
 2. **Red**: `randomMicroPostEffect(slug)` returns an `Effect` (not a
-   Promise, not `void`) and does not call `router.navigate` itself , 
+   Promise, not `void`) and does not call `router.navigate` itself,
    assert via a spy that no navigation function is invoked when the
    Effect is run in isolation without the `Effect.flatMap(... navigate)`
    wrapper `TweetNav` adds.
@@ -639,7 +639,7 @@ Per project convention (no unit tests for `route.tsx`/`page.tsx` files;
    as the final step of the Effect is correctly skipped on interruption.
 4. **Red**: an interrupted intent does not call `captureException` (only
    a genuine `Effect.tapError`-caught failure should).
-   **Green**: already confirmed true by probe (see Failure Flow) , 
+   **Green**: already confirmed true by probe (see Failure Flow),
    the test locks in the behavior.
    **Write it carefully**: interruption reports `isInterrupted: true`
    *and* `isFailure: true`. Assert `Exit.isInterrupted(exit)`; do **not**
