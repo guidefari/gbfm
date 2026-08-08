@@ -1,3 +1,43 @@
+# [2.84.0](https://github.com/guidefari/gbfm/compare/v2.83.0...v2.84.0) (2026-08-08)
+
+
+### Bug Fixes
+
+* **ci:** stop building retired backup image ([7d3275e](https://github.com/guidefari/gbfm/commit/7d3275e1e6006e0e86f53064e60fcd4d2aea4c9d))
+* **http:** provide identity resolver to router ([afc0873](https://github.com/guidefari/gbfm/commit/afc0873cb9cefb57efc14aca5c799546f20d42c9))
+* **observability:** batch named local traces ([a9d7632](https://github.com/guidefari/gbfm/commit/a9d76321e0d3ebf549e01204aeb91e07df8b605f))
+* **tweet-nav:** resume navigation session ([f7c1fcf](https://github.com/guidefari/gbfm/commit/f7c1fcf7858704da9c3871677f64f384c05b2d24))
+* **vps:** compute navigation read capabilities ([fa81735](https://github.com/guidefari/gbfm/commit/fa81735ea461c5bde58058b9433cf4a1fa8447c8))
+* **vps:** isolate scheduled maintenance failures ([66b3c1c](https://github.com/guidefari/gbfm/commit/66b3c1c838ce8c486475de2b61dcd82f95c8790a))
+* **vps:** map missing navigation opens to not found ([885c0fa](https://github.com/guidefari/gbfm/commit/885c0fa42ede20db2819c29be3f1b614ffa6f094))
+* **vps:** preserve navigation session identity ([726711d](https://github.com/guidefari/gbfm/commit/726711d7afd69f2a42341a37eb3dccb20bca14bd))
+* **vps:** reopen evicted navigation entries ([cbe7bf5](https://github.com/guidefari/gbfm/commit/cbe7bf556288d22a26181165c3c8c952be6f5fae))
+* **vps:** scope device token cookie to origin ([fa9f5c4](https://github.com/guidefari/gbfm/commit/fa9f5c4b3b157252d3560b1b2603fd526645a915))
+* **www:** drop hover styles on disabled tweet arrows ([34616a7](https://github.com/guidefari/gbfm/commit/34616a786fb9383d9ee9db65e2d19812c3afa849))
+* **www:** update navigation capabilities atom ([e1257d4](https://github.com/guidefari/gbfm/commit/e1257d4c2ce26b63463840474ebba44ab5e0e49f))
+
+
+### Features
+
+* **api:** add micro post navigation contract ([f582541](https://github.com/guidefari/gbfm/commit/f5825416c900b06c34b7d7a8754744d31c8c2ae9))
+* **db:** add navigation session migration ([95a775c](https://github.com/guidefari/gbfm/commit/95a775c64b0375af91b3e648a7e1c60d21c4b00a))
+* **db:** add navigation session schema ([76f2e67](https://github.com/guidefari/gbfm/commit/76f2e67c29d39b614d24ecee7ed05b7b2cb727cb))
+* **migration:** verify R2 object parity ([3293885](https://github.com/guidefari/gbfm/commit/32938852e3960d99fbe65db562127d57510f013d))
+* **observability:** trace navigation requests ([31048cd](https://github.com/guidefari/gbfm/commit/31048cd4d436445ebb48dd28945c16586f9480c1))
+* **storage:** add provider configuration ([67028ca](https://github.com/guidefari/gbfm/commit/67028ca797a07e08915ed923a4ddc80f842db386))
+* **storage:** construct object store clients ([0627a38](https://github.com/guidefari/gbfm/commit/0627a383cd53bf378d0b49a195d26f9c37212fc9))
+* **storage:** deploy R2 CDN router ([ed169f7](https://github.com/guidefari/gbfm/commit/ed169f749f06ebee4c5f20f396e3196b8a1784ab))
+* **tweet-nav:** preload navigation neighbours ([d006d80](https://github.com/guidefari/gbfm/commit/d006d8061a2a23ddaf9688ce0b3c81dccaa9dfd5))
+* **vps:** add navigation domain transitions ([2890f09](https://github.com/guidefari/gbfm/commit/2890f096f83ac0b4981eb07934c24f4adcc9b0da))
+* **vps:** add optional navigation identity resolver ([995f834](https://github.com/guidefari/gbfm/commit/995f834479df99b4a453ad4fa482d24c797719af))
+* **vps:** persist navigation session transitions ([b6467f8](https://github.com/guidefari/gbfm/commit/b6467f841e04f20d0077a3538085a80cc9a69679))
+* **vps:** scaffold navigation session service ([1f35db3](https://github.com/guidefari/gbfm/commit/1f35db309b075ad5d1560eb639f7b13de8e9caec))
+* **vps:** serve micro post navigation ([ca9c663](https://github.com/guidefari/gbfm/commit/ca9c6637f1a6b386f2067bea31acc34a6cfc87d4))
+* **vps:** sweep expired anonymous navigation sessions ([2325960](https://github.com/guidefari/gbfm/commit/2325960c259fbbcdd5012bd9d4d343c52a11e32b))
+* **www:** add navigation command client ([ac1e83e](https://github.com/guidefari/gbfm/commit/ac1e83ec6c9d0cf7834e1454250103ffa8d0abb2))
+* **www:** navigate tweets with commands ([0768457](https://github.com/guidefari/gbfm/commit/07684574306b15001bbc89c0f47b4f939ab551f9))
+* **www:** open tweets through navigation session ([a170110](https://github.com/guidefari/gbfm/commit/a1701105c9a849cbf1bb846e294cca65a429fe65))
+
 # [2.83.0](https://github.com/guidefari/gbfm/compare/v2.82.0...v2.83.0) (2026-08-08)
 
 
