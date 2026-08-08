@@ -156,6 +156,17 @@ The browser PUTs image bytes and each multipart chunk directly to the bucket via
 
 ### Phase 4: optional D1 migration
 
+Implementation spec: [`postgres-to-d1.md`](postgres-to-d1.md), which supersedes this section **and revises the Container-first compute decision above**.
+
+Written against the traced code, it diverges from this document in four ways:
+
+- there is **no Cloudflare Container step**. The QR/PDF feature is being dropped, uploads already go browser-to-bucket, and the reminder loop moves to Cron Triggers, which removes the three constraints that made a Worker port look non-mechanical. `@effect/platform-bun` turns out to be two imports, both serving the deleted feature;
+- infrastructure for the new resources moves to **Alchemy V2** (`Alchemy.Stack` with `Effect.gen`), not Wrangler-plus-SST;
+- **no Hyperdrive.** The Worker is built directly against D1 and the two stacks run in parallel until a DNS flip. The untouched ECS stack is the rollback target, which is cheaper and better than intermediate infrastructure at this size;
+- `apps/vps` becomes **`apps/api`** on `api.goosebumps.fm`. The old hostname keeps resolving to the same Worker until its traffic reaches zero.
+
+The plan below is retained for its gate structure.
+
 - Translate Drizzle schemas from `pg-core` to SQLite only after the Phase 0 audit accepts D1.
 - Decide whether one D1 database fits the 10 GB and write-throughput model. Do not invent sharding unless the domain has a natural boundary.
 - Transform and import data, verify row counts and content checksums, then run all query paths against D1.
@@ -252,4 +263,14 @@ Phase 0 must resolve these before implementation choices become commitments:
 - Cloudflare account plan limits, Container quotas, request-body entitlement, and Email Service quota fit observed production traffic;
 - one-minute reminder precision and bounded Worker/Queue execution are acceptable for the product;
 - hard-coded CloudFront URLs and their underlying distributions can be migrated without breaking historical RSS consumers or persisted content;
-- D1's 10 GB cap and serialized-write model fit the workload; this is explicitly not established yet.
+- D1's 10 GB cap and serialized-write model fit the workload. The owner has stated the database is comfortably small; [`postgres-to-d1.md`](postgres-to-d1.md) records the two confirming measurements rather than gating on them.
+
+Superseded by [`postgres-to-d1.md`](postgres-to-d1.md), which drops the Container path entirely:
+
+- ~~the external PostgreSQL host is publicly reachable from Containers~~ — no Container in the plan.
+- ~~request-body entitlement fits observed traffic~~ — uploads go browser-to-bucket via presigned URL.
+
+Newly load-bearing, and unproven until that spec's Milestone 1:
+
+- the Effect packages, `@mdx-js/mdx`, `better-auth`, and `drizzle-orm` bundle within the Workers size limit;
+- the 41 `db.transaction()` sites can be classified into batchable writes, guarded read-then-writes, and genuinely serialized operations without a miscategorization.
