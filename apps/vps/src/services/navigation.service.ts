@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, lt, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, gt, isNull, lt, notExists, sql } from 'drizzle-orm'
 import { Context, Effect, Layer, Schema } from 'effect'
 import {
   capabilitiesOf,
@@ -235,6 +235,36 @@ export const NavigationSessionServiceLayer = Layer.effect(
         catch: (error) => databaseError('read', error)
       })
 
+    const hasUnread = (sessionId: string) =>
+      Effect.tryPromise({
+        try: async () => {
+          const rows = await db
+            .select({ slug: postsTable.slug })
+            .from(postsTable)
+            .where(
+              and(
+                eq(postsTable.type, 'micro'),
+                eq(postsTable.draft, false),
+                isNull(postsTable.parentPostId),
+                notExists(
+                  db
+                    .select()
+                    .from(navigationSeenPosts)
+                    .where(
+                      and(
+                        eq(navigationSeenPosts.sessionId, sessionId),
+                        eq(navigationSeenPosts.slug, postsTable.slug)
+                      )
+                    )
+                )
+              )
+            )
+            .limit(1)
+          return rows.length > 0
+        },
+        catch: (error) => databaseError('read', error)
+      })
+
     const trailLength = (sessionId: string) =>
       Effect.tryPromise({
         try: async () => {
@@ -357,7 +387,7 @@ export const NavigationSessionServiceLayer = Layer.effect(
             phase.replay,
             index,
             phase.length,
-            true,
+            yield* hasUnread(phase.session.id),
             neighbours
           )
         }
@@ -479,7 +509,15 @@ export const NavigationSessionServiceLayer = Layer.effect(
         const length = yield* trailLength(locked.session.id)
         const index = yield* entryIndex(locked.session.id, entry.position)
         const neighbours = yield* neighboursFor(locked.session.id, entry.position)
-        return resultFor(locked.session, identity, entry, index, length, true, neighbours)
+        return resultFor(
+          locked.session,
+          identity,
+          entry,
+          index,
+          length,
+          yield* hasUnread(locked.session.id),
+          neighbours
+        )
       })
 
     const read = (identity: NavigationIdentity) =>
@@ -505,11 +543,21 @@ export const NavigationSessionServiceLayer = Layer.effect(
         const index = yield* entryIndex(session.id, entry.position)
         return {
           slug: entry.slug,
-          capabilities: {
-            canStepBack: index > 0,
-            canStepForward: true,
-            hasUnread: true
-          }
+          capabilities: capabilitiesOf(
+            {
+              id: session.id,
+              identity,
+              trail: Array.from({ length }, () => ({
+                slug: entry.slug,
+                postId: entry.postId,
+                visitedAt: entry.visitedAt.getTime(),
+                arrivedBy: entry.arrivedBy
+              })),
+              cursor: index,
+              seenSlugs: new Set()
+            },
+            { hasUnread: yield* hasUnread(session.id) }
+          )
         }
       })
 

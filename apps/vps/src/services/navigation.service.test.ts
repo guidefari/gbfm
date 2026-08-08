@@ -32,6 +32,12 @@ const navigationLayer = NavigationSessionServiceLayer.pipe(
   Layer.provide(postLayer)
 )
 
+const read = (identity: { readonly _tag: 'Anonymous'; readonly deviceToken: string }) =>
+  Effect.gen(function* () {
+    const navigation = yield* NavigationSessionService
+    return yield* navigation.read(identity)
+  }).pipe(Effect.provide(navigationLayer))
+
 const resolve = (
   identity: { readonly _tag: 'Anonymous'; readonly deviceToken: string },
   command:
@@ -159,6 +165,39 @@ describe('NavigationSessionService', () => {
 
     expect(result.destination.slug).toBe(first.slug)
     expect(result.trailPosition).toEqual({ index: 0, length: 2 })
+  })
+
+  test('reports no unread posts or forward move after the corpus is exhausted', async () => {
+    const only = await createPost('read-exhausted-only', new Date('2026-03-15T00:00:00.000Z'))
+    const reader = identity()
+
+    await open(reader, only)
+
+    await expect(Effect.runPromise(read(reader))).resolves.toEqual({
+      slug: only.slug,
+      capabilities: { canStepBack: false, canStepForward: false, hasUnread: false }
+    })
+  })
+
+  test('reports Step(Back) as available from the middle of a trail', async () => {
+    const first = await createPost('read-middle-first', new Date('2026-03-18T00:00:00.000Z'))
+    const middle = await createPost('read-middle-middle', new Date('2026-03-19T00:00:00.000Z'))
+    const last = await createPost('read-middle-last', new Date('2026-03-20T00:00:00.000Z'))
+    const reader = identity()
+
+    await open(reader, first)
+    await open(reader, middle)
+    await open(reader, last)
+    const session = await sessionFor(reader.deviceToken)
+    await db
+      .update(navigationSessions)
+      .set({ cursor: 1 })
+      .where(eq(navigationSessions.id, session.id))
+
+    await expect(Effect.runPromise(read(reader))).resolves.toMatchObject({
+      slug: middle.slug,
+      capabilities: { canStepBack: true }
+    })
   })
 
   test('does not recycle seen posts when the corpus is exhausted', async () => {
