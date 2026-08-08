@@ -11,7 +11,7 @@ The work is not "swap an endpoint." Tracing the code surfaced four things the pa
 3. **The multipart complete handler ETag-matches client parts against `listMultipartParts`** (`apps/vps/src/http/upload.handlers.ts:313-320`). R2 computes multipart ETags differently from S3. This is a live correctness risk in the request path, not just an inventory-reconciliation concern.
 4. **Four backup/restore scripts construct their own `S3Client`** and use `GetObjectCommand`, which is **not on the `S3Service` interface at all**.
 
-This migration also **deletes two features** rather than porting them: the admin file-manager bucket browser, and the entire database-backup subsystem. Both are covered below, and the second carries a precondition.
+This migration also **deletes two things** rather than porting them: the dead cross-bucket copy path, and the entire database-backup subsystem. Both are covered below, and the second carries a precondition. The file picker that browses existing uploads stays.
 
 Bulk copy uses **Super Slurper**. Cutover is **forward-only, R2-authoritative, per-bucket**; dual-write is rejected with reasoning.
 
@@ -70,9 +70,9 @@ All four are backup-related, so the backup deletion removes them wholesale rathe
 1. Consolidate 13 client constructions into one configured, injectable seam.
 2. `S3Service` operations run against R2, selectable by config, interface unchanged.
 3. `cdn.goosebumps.fm/user-content/*` and `/mixes/*` serve from R2 with byte-identical semantics.
-4. Delete the admin file-manager feature end to end.
+4. Delete the dead cross-bucket copy path.
 5. Delete the database-backup subsystem end to end.
-6. Contract tests covering every remaining operation, including multipart resume/abort/complete/retry and cross-bucket copy.
+6. Contract tests covering every remaining operation, including multipart resume/abort/complete/retry.
 
 ## Non-Goals
 
@@ -82,7 +82,7 @@ Cloudflare Containers. D1 or any database migration. SES/email. Reminders, sitem
 
 - **I1.** Object keys are byte-identical across the move.
 - **I2.** `https://cdn.goosebumps.fm/user-content/<key>` and `/mixes/<key>` resolve to the same bytes, before and after.
-- **I3.** The `S3Service` TypeScript interface does not change **except** for the removal of `listBuckets` and the backup-only operations. Upload, QR, and music-entity callers are untouched.
+- **I3.** The `S3Service` TypeScript interface does not change **except** for the removal of `copyFile`. Upload, QR, music-entity, and file-picker callers are untouched.
 - **I4.** No public route can reach a non-public bucket.
 - **I5.** No credential enters an error, log, span attribute, or test snapshot.
 - **I6.** Multipart part size stays 8 MiB (`CHUNK_SIZE`, `upload.handlers.ts:13`), satisfying R2's ≥5 MiB equal-non-final-part rule.
@@ -90,40 +90,52 @@ Cloudflare Containers. D1 or any database migration. SES/email. Reminders, sitem
 
 ## Design Constraints
 
-- **C1.** ~~R2 `ListBuckets`~~ — **resolved by deletion.** See "Feature removal: admin file manager."
+- **C1.** R2 has no `ListBuckets` equivalent matching how `listBuckets` is used today. Resolved by returning configured bucket names on the R2 provider. See "Feature removal: cross-bucket copy."
 - **C2.** R2 multipart ETags differ from S3. The complete-handler ETag equality check must be verified against real R2 before cutover.
 - **C3.** Presigned URLs must be signed against the R2 S3 API hostname (`<account>.r2.cloudflarestorage.com`), never the public custom domain.
 - **C4.** R2 bucket CORS must allow `PUT` from the same origins as `contentBucket` today, exposing `ETag`.
 - **C5.** R2's single-request `CopyObject` ceiling is expected to be comfortable — files are believed to be well under 500 MB. Inventory confirms rather than discovers this; treat a >500 MB object as an exception needing multipart copy, not as the expected case.
 - **C6.** Credentials become explicit and long-lived (R2 access key pairs) where S3 used ambient IAM. Delivered as **SST secrets**, held as `Redacted`, unwrapped only at client construction.
 
-## Feature removal: admin file manager
+## Feature removal: cross-bucket copy
 
-**Decision: remove entirely, including the frontend.** This deletes constraint C1 rather than solving it — R2's bucket-listing semantics stop mattering when nothing lists buckets.
+**Decision: delete the cross-bucket transfer path only. The file picker stays.**
 
-**Important scope correction.** This is not purely admin tooling. The endpoints back `S3MediaFilePicker`, which is reachable from two user-facing places:
+The picker is user-facing and load-bearing — it lets an editor choose an already-uploaded object instead of re-uploading:
 
 - `apps/www/src/routes/mix-upload.lazy.tsx:706` — audio picker in the mix upload flow
 - `apps/www/src/components/content/ImageUploadField.tsx:4` — image picker in content editing
 
-The picker lets an editor choose an **already-uploaded** object instead of uploading a new one. Removing it means those flows become upload-only.
+It needs exactly two endpoints, `config` and `list`, both of which are kept.
 
-That is a real product change, not a refactor. It is almost certainly what you want given "I don't need this feature anymore" — but confirm the reuse-an-existing-file affordance is genuinely unwanted before the delete lands, because nothing else in the codebase replaces it.
+Cross-bucket copy is a different thing that happens to live in the same handler group. It is **dead code**: `copyFileManagerObject` has no frontend caller anywhere in `apps/www` or `packages/ui`. The only path to `S3Service.copyFile` is that one unreferenced endpoint (`file-manager.handlers.ts:94`).
 
 Surface to delete:
 
 | Layer | Path |
 |---|---|
-| API contract | `packages/api/src/file-manager.ts` (whole file); remove `.add(FileManagerGroup)` from `api.ts:41` and its import at `api.ts:7` |
-| Handlers | `apps/vps/src/http/file-manager.handlers.ts` (whole file); unregister from the HttpApi builder |
-| Service | `S3Service.listBuckets` + `listBucketsEffect` (`s3.service.ts:589-616`) |
-| Frontend container | `apps/www/src/components/mix-uploader/S3AudioFilePicker.tsx` |
-| Frontend presentational | `S3MediaFilePickerUI` in `packages/ui` |
-| Call site | `mix-upload.lazy.tsx` — remove picker, keep direct upload |
-| Call site | `ImageUploadField.tsx` — remove picker, keep direct upload |
-| Env | `FILE_MANAGER_BUCKETS` handling |
+| API contract | `CopyObjectInput`, `CopyObjectResponse`, and the `copyFileManagerObject` endpoint (`packages/api/src/file-manager.ts:30-39,55-61`) |
+| Handler | `.handle('copyFileManagerObject', ...)` (`file-manager.handlers.ts:84-110`) |
+| Service | `S3Service.copyFile` + `copyFileEffect` (`s3.service.ts:62-66,319-352,625`) |
 
-`copyFile` is used **only** by the file manager (`file-manager.handlers.ts:94`). With the feature gone, cross-bucket copy has no production caller. **Recommendation: delete `copyFile` too**, and drop the cross-bucket copy contract test with it. Keeping an untested, uncalled operation through a storage migration is strictly worse than removing it; it can return if a real need appears.
+Deleting an operation with no caller ahead of a storage migration is strictly better than carrying it: R2's `CopyObject` size ceiling (C5) and cross-bucket copy semantics stop being things this migration has to prove. It can return if a real need appears.
+
+`getFileManagerConfig` and `listFileManagerObjects` are untouched, as are `S3AudioFilePicker`, `S3MediaFilePicker`, and `packages/ui/src/components/s3-media-file-picker.tsx`.
+
+### `listBuckets` and C1
+
+`listBuckets` cannot be deleted with copy — it populates `availableBuckets`, which feeds the picker's bucket dropdown (`s3-media-file-picker.tsx:20`) and its final fallback for `effectiveBucket` (`S3AudioFilePicker.tsx:36`). So C1 still needs an answer.
+
+It already degrades gracefully: `file-manager.handlers.ts:30-37` catches `S3Error` and returns `[]`, falling back to the configured buckets. The dropdown keeps working because `buckets.userContent` and `buckets.mixes` come from config, not from the listing.
+
+**Recommendation: on the R2 provider, return the configured bucket names directly rather than issuing a bucket-listing call.**
+
+```ts
+// r2 provider implementation
+listBuckets: () => Effect.succeed([config.buckets.userContent, config.buckets.mixes])
+```
+
+This preserves the dropdown, avoids an operation whose R2 semantics differ, and is honest about what the picker can actually browse. The observable change is that `FILE_MANAGER_BUCKETS` extras and any unconfigured bucket stop appearing — acceptable, since browsing a bucket the app does not own was never a supported flow.
 
 ## Feature removal: database backups
 
@@ -295,7 +307,7 @@ export const S3ServiceLayer = Layer.effect(
 
 Each `*Effect` gains a leading `store` parameter and drops its `new S3Client({})`.
 
-Interface changes are **removals only**: `listBuckets` and `copyFile` go with the file manager. Every operation the upload path uses keeps its exact signature.
+The only interface change is removing `copyFile`. Every operation the upload path and file picker use keeps its exact signature. `listBuckets` stays, with a provider-specific implementation (C1).
 
 ### Infrastructure: R2 in SST
 
@@ -465,21 +477,22 @@ Effect.annotateCurrentSpan('storage.provider', store.provider)
 
 | File | Change |
 |---|---|
-| `apps/vps/src/services/s3.service.ts` | Remove 13 `new S3Client({})`; thread `store`; `Layer.succeed`→`Layer.effect`; delete `listBuckets`, `copyFile` |
+| `apps/vps/src/services/s3.service.ts` | Remove 13 `new S3Client({})`; thread `store`; `Layer.succeed`→`Layer.effect`; delete `copyFile`; provider-aware `listBuckets` |
 | `apps/vps/src/services/config.service.ts` | Add refined `storage` struct; remove `buckets.databaseBackups`, `tasks.databaseBackup` |
-| `apps/vps/src/runtime/services.ts` | Provide `ObjectStoreClientLayer`; unregister file-manager handlers |
-| `packages/api/src/api.ts` | Remove `FileManagerGroup` import + `.add(...)` |
+| `apps/vps/src/runtime/services.ts` | Provide `ObjectStoreClientLayer` |
+| `packages/api/src/file-manager.ts` | Remove copy endpoint + its two schemas; keep `config` and `list` |
+| `apps/vps/src/http/file-manager.handlers.ts` | Remove the copy handler; keep the other two |
 | `infra/bucket.ts` | R2 buckets + Worker via Pulumi; router origin switch; remove `dbBackupBucket` |
 | `infra/cron.ts` | Remove `dbBackupCron`, `testFunction` |
 | `infra/vps.ts` | Remove `dbBackupTask` |
-| `apps/www/src/routes/mix-upload.lazy.tsx` | Remove picker; keep direct upload |
-| `apps/www/src/components/content/ImageUploadField.tsx` | Remove picker; keep direct upload |
 | `packages/email/src/index.ts` | Remove backup-notification export |
 | `docs/backup-feature-audit.md` | Record removal decision + provider evidence |
 
 ### Delete
 
-`packages/api/src/file-manager.ts` · `apps/vps/src/http/file-manager.handlers.ts` · `apps/www/src/components/mix-uploader/S3AudioFilePicker.tsx` · `S3MediaFilePickerUI` in `packages/ui` · `apps/vps/scripts/{backup-db,restore-db,verify-backup,run-backup-task,backup-utils}.ts` · `apps/vps/scripts/docker-restore.sh` · `apps/cron/invoke-backup-task.ts` · `packages/email/emails/backup-notification.tsx`
+`apps/vps/scripts/{backup-db,restore-db,verify-backup,run-backup-task,backup-utils}.ts` · `apps/vps/scripts/docker-restore.sh` · `apps/cron/invoke-backup-task.ts` · `packages/email/emails/backup-notification.tsx`
+
+No frontend files are deleted. The file picker and its `packages/ui` presentational component are untouched.
 
 AWS S3 buckets, their contents, and the AWS SDK dependency all stay — teardown is Phase 5.
 
@@ -493,7 +506,9 @@ Vertical slices: one failing test, minimal code, repeat.
 
 **Slice 3 — `S3Service` threads the client.** Red: `S3Service` over a stub-endpoint `ObjectStoreClient` sends `uploadFile` to that endpoint. Green: thread `store`. Repeat per operation. Lock the consolidation in with a source assertion that `new S3Client(` appears exactly once in `apps/vps/src`.
 
-**Slice 4 — feature removal is complete.** Red: assert no route matches `/api/file-manager/*`, and `grep` finds no `listBuckets`/`copyFile`/`FileManager` reference in `apps/`, `packages/`, `infra/`. Green: delete. Frontend build passing is part of green.
+**Slice 4 — copy path is gone, picker still works.** Red: `POST /api/file-manager/copy` returns 404, and no `copyFile`/`CopyObjectInput` reference remains in `apps/`, `packages/`, `infra/`. Green: delete. Then, guarding against over-deletion: `GET /api/file-manager/config` and `/list` still return their current shapes, and the picker renders a bucket dropdown from `availableBuckets`.
+
+**Slice 4b — `listBuckets` on R2.** Red: with `provider: 'r2'`, `listBuckets` returns the configured bucket names without issuing a bucket-listing call. Green: provider-specific implementation. Then: `availableBuckets` in the config response is non-empty on R2.
 
 **Slice 5 — contract tests against real R2** (live credentials; documented as not running in ordinary CI):
 - put → head → get → delete round trip
@@ -505,7 +520,7 @@ Vertical slices: one failing test, minimal code, repeat.
 - **ETag parity (C2)**: the ETag the browser-equivalent PUT receives equals the one `listMultipartParts` reports. *Highest-value test in the plan* — it guards `upload.handlers.ts:313-320`.
 - `checkExists` with bad credentials returns `false` (pins the wart)
 
-No cross-bucket copy test: `copyFile` is deleted.
+No cross-bucket copy test: `copyFile` is deleted, so R2's copy semantics and size ceiling never need proving.
 
 **Slice 6 — Worker routing, pure.** Red: `matchRoute('/user-content/a/b.jpg')` → `{ bucket: USER_CONTENT, key: 'a/b.jpg' }`. Then `/mixes/x.mp3`; `/other` → `null`; `/user-content/` edge; a key containing `/mixes/` deeper does not mis-route.
 
@@ -519,7 +534,7 @@ All slices run under `bun precommit`.
 
 1. **Inventory** `User_Content` and `Mixes`. Confirm the <500 MB expectation (C5); flag exceptions.
 2. **Consolidate** — slices 1–3, `provider: 'aws'` still selected. Zero production behavior change; ships independently. *This is the highest-value, lowest-risk PR and should land first regardless of everything downstream.*
-3. **Delete the file manager** — slice 4. Independent of storage; ships separately.
+3. **Delete cross-bucket copy** — slices 4 and 4b. Independent of storage; ships separately. Small enough to fold into step 2 if convenient.
 4. **Worker + SST wiring** — slices 6–7, deployed to a test hostname.
 5. **`Mixes` cutover.** Super Slurper copy → verify → R2 CORS → router origin → soak. No upload path, so lower risk.
 6. **`User_Content` cutover.** Copy → verify → R2 CORS (C4) → presigning to R2 host (C3) → router origin → soak the upload path hard.
@@ -538,12 +553,11 @@ S3 stays readable and unexpired through the rollback window.
 - **R4 (medium).** Presigning against the public CDN host instead of the R2 API host (C3).
 - **R5 (medium).** `checkExists` masking credential errors as `false` during cutover.
 - **R6 (medium).** Long-lived R2 keys replace ambient IAM. Scope per bucket.
-- **R7 (low).** Removing the file picker changes two user-facing flows to upload-only.
+- **R7 (low).** Over-deleting alongside the copy path would break the mix-upload and content-editing pickers. Guarded by Slice 4's positive assertions on `config` and `list`.
 - **R8 (low).** `audioTable.url` is `varchar(255)`; unchanged host means unchanged lengths, but the CloudFront follow-up must re-check this ceiling.
 
 **Open questions**
 
 1. **Does the database provider actually deliver verified, restore-tested backups?** Blocks step 7 only. Everything else proceeds regardless.
-2. **Is losing the reuse-an-existing-file picker acceptable in the mix-upload and content-editing flows?** Blocks step 3.
-3. **Does R2's multipart ETag survive the equality check at `upload.handlers.ts:313-320`?** Empirical, answered by Slice 5. If not, that handler needs size-and-count validation instead — a real code change this spec has scoped but not designed.
-4. **Which SST Cloudflare provider resources cover R2 buckets and Worker script bindings** at the pinned SST/Pulumi version? Affects how much Pulumi escape-hatch code `infra/bucket.ts` needs.
+2. **Does R2's multipart ETag survive the equality check at `upload.handlers.ts:313-320`?** Empirical, answered by Slice 5. If not, that handler needs size-and-count validation instead — a real code change this spec has scoped but not designed.
+3. **Which SST Cloudflare provider resources cover R2 buckets and Worker script bindings** at the pinned SST/Pulumi version? Affects how much Pulumi escape-hatch code `infra/bucket.ts` needs.

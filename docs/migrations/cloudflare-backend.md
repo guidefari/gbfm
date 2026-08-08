@@ -111,7 +111,7 @@ Implementation spec: [`s3-to-r2.md`](s3-to-r2.md), which supersedes this section
 - browser CORS on R2 **is** required from day one (the browser PUTs multipart chunks directly to the bucket);
 - cutover is forward-only per-bucket, not dual-write;
 - infrastructure stays in **SST** via its Pulumi extensibility, with Alchemy deferred until all infra is on Cloudflare;
-- only **two** buckets migrate. The database-backup subsystem is deleted rather than moved (the managed database provider supplies backups, subject to a verification precondition), and the admin file manager is deleted along with `listBuckets` and `copyFile`.
+- only **two** buckets migrate. The database-backup subsystem is deleted rather than moved (the managed database provider supplies backups, subject to a verification precondition), and the dead cross-bucket copy path is deleted along with `S3Service.copyFile`.
 
 Keep the remaining bucket boundaries for the first move. The existing application-facing `S3Service` contract is already the correct seam.
 
