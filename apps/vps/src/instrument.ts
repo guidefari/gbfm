@@ -34,6 +34,12 @@ const environment =
 
 const enabled = shouldEnableSentry(dsn, environment)
 
+// Sentry creates the global OpenTelemetry provider before the Effect runtime
+// builds its Resource layer. Set the standard resource variables first so
+// every exporter (Sentry, Tempo, and Jaeger) receives a named service.
+process.env.OTEL_SERVICE_NAME ||= 'goosebumps-fm-api'
+process.env.OTEL_RESOURCE_ATTRIBUTES ||= `service.namespace=application,deployment.environment=${encodeURIComponent(environment)}`
+
 if (enabled) {
   Sentry.init({
     dsn,

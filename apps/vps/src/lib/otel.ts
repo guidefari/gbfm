@@ -1,7 +1,8 @@
 import { OtelTracer, Resource } from '@effect/opentelemetry'
 import { trace } from '@opentelemetry/api'
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http'
-import { SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
+import { resourceFromAttributes } from '@opentelemetry/resources'
+import { BatchSpanProcessor } from '@opentelemetry/sdk-trace-base'
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
 import * as Sentry from '@sentry/bun'
 import { Effect, Layer } from 'effect'
@@ -25,34 +26,41 @@ function parseOtelHeaders(headers: string | undefined) {
     }, {})
 }
 
-const MOTEL_TRACES_URL = 'http://127.0.0.1:27686/v1/traces'
+const SERVICE_NAME = 'goosebumps-fm-api'
+const LOCAL_TEMPO_TRACES_URL = 'http://127.0.0.1:14318/v1/traces'
+
+const tracesUrl = (endpoint: string) => {
+  const normalized = endpoint.replace(/\/$/, '')
+  return normalized.endsWith('/v1/traces') ? normalized : `${normalized}/v1/traces`
+}
 
 export const OtlpLive = Effect.gen(function* () {
   const config = yield* ConfigService
   const sentry = yield* SentryClientService
-  const otlpEndpoint = (config.otel.endpoint || '').replace(/\/$/, '')
+  const otlpEndpoint = config.otel.endpoint || ''
   const otelHeaders = parseOtelHeaders(config.otel.headers)
+  const isLocal = ['dev', 'local'].includes(config.app.stage)
+  const exporterTargets = [
+    ...(otlpEndpoint ? [{ url: tracesUrl(otlpEndpoint), headers: otelHeaders }] : []),
+    ...(isLocal ? [{ url: LOCAL_TEMPO_TRACES_URL }] : [])
+  ].filter(
+    (target, index, targets) =>
+      targets.findIndex((candidate) => candidate.url === target.url) === index
+  )
 
-  const makeAdditionalSpanProcessors = () => [
-    ...(otlpEndpoint
-      ? [
-          new SimpleSpanProcessor(
-            new OTLPTraceExporter({
-              url: otlpEndpoint.endsWith('/v1/traces') ? otlpEndpoint : `${otlpEndpoint}/v1/traces`,
-              ...(otelHeaders ? { headers: otelHeaders } : {})
-            })
-          )
-        ]
-      : []),
-    // Dual export in dev: Jaeger (above) for the trace-waterfall UI, motel
-    // (github.com/kitlangton/motel) for terminal/agent-queryable local
-    // telemetry. Span export failures are caught by OTel's own SDK and never
-    // throw into the request path, so this is safe to leave unconditional
-    // within the dev/local gate even when the motel server isn't running.
-    ...(['dev', 'local'].includes(config.app.stage)
-      ? [new SimpleSpanProcessor(new OTLPTraceExporter({ url: MOTEL_TRACES_URL }))]
-      : [])
-  ]
+  const makeAdditionalSpanProcessors = () =>
+    exporterTargets.map(
+      ({ url, headers }) =>
+        new BatchSpanProcessor(
+          new OTLPTraceExporter({
+            url,
+            ...(headers ? { headers } : {})
+          }),
+          // Keep local traces close to real time without making every span end
+          // perform its own export. Production keeps the SDK batch defaults.
+          isLocal ? { scheduledDelayMillis: 250 } : undefined
+        )
+    )
 
   const sentryClient = sentry.client
   const globalProviderLive = sentryClient
@@ -67,6 +75,12 @@ export const OtlpLive = Effect.gen(function* () {
         Effect.acquireRelease(
           Effect.sync(() => {
             const provider = new NodeTracerProvider({
+              resource: resourceFromAttributes({
+                'service.name': SERVICE_NAME,
+                'service.namespace': 'application',
+                'service.version': process.env.npm_package_version || '1.0.0',
+                'deployment.environment': config.app.nodeEnv
+              }),
               spanProcessors: makeAdditionalSpanProcessors()
             })
             provider.register()
@@ -82,7 +96,7 @@ export const OtlpLive = Effect.gen(function* () {
       )
 
   const resourceLive = Resource.layer({
-    serviceName: 'goosebumps-fm-api',
+    serviceName: SERVICE_NAME,
     serviceVersion: process.env.npm_package_version || '1.0.0',
     attributes: {
       'service.namespace': 'application',

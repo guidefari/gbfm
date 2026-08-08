@@ -78,19 +78,17 @@ The application uses OpenTelemetry for distributed tracing with the following im
 
 ```typescript
 // Environment variables
-NODE_ENV=production                    // Controls exporter type
-OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318  // Collector endpoint
-OTEL_SAMPLING_RATE=0.1               // Production sampling (10%)
+NODE_ENV=production                    // Controls environment metadata
+OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318  // Configured destination (Jaeger locally)
+OTEL_SERVICE_NAME=goosebumps-fm-api    // Set by the VPS preload when absent
 ```
 
 #### Features:
 
-- **Automatic Exporter Selection**:
-  - Development: Console output via `SimpleSpanProcessor`
-  - Production: OTLP HTTP export via `BatchSpanProcessor`
-- **Configurable Sampling**: 100% in dev, 10% in production (configurable)
-- **Resource Attributes**: Service name, version, environment
-- **OTLP Protocol Support**: HTTP (port 4318) and gRPC (port 4317)
+- **Batched OTLP export**: the configured OTLP destination uses `BatchSpanProcessor`
+- **Local dual export**: `dev` and `local` also mirror traces to the shared Tempo endpoint at `http://127.0.0.1:14318`, while the configured endpoint can remain Jaeger at `http://127.0.0.1:4318`
+- **Resource Attributes**: all providers receive the `goosebumps-fm-api` service name, version, namespace, and environment
+- **OTLP Protocol Support**: the application exports OTLP/HTTP protobuf traces
 
 ### Tracing Coverage
 
@@ -208,29 +206,27 @@ Run `Otel_Stack` from the SST development console.
 
 ### Accessing Services
 
-| Service    | URL                   | Purpose                 |
-| ---------- | --------------------- | ----------------------- |
-| Grafana    | http://localhost:3000 | Visualization dashboard |
-| Prometheus | http://localhost:9090 | Metrics query interface |
-| Tempo      | http://localhost:3200 | Trace query interface   |
-| Loki       | http://localhost:3100 | Log query interface     |
+| Service | URL                           | Purpose             |
+| ------- | ----------------------------- | ------------------- |
+| Grafana | https://grafana.localhost     | Tempo trace UI      |
+| Jaeger  | https://jaeger.localhost      | Jaeger trace UI     |
+| Tempo   | https://tempo.localhost/api/* | Raw trace API       |
+| Loki    | http://localhost:3100         | Log query interface |
 
 ### Application Configuration
-
-#### Development (Console Output)
-
-```bash
-# Default behavior - spans logged to console
-bun dev
-```
 
 #### Development (Visual Tracing)
 
 ```bash
-# Set OTLP endpoint for visual tracing
-export OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+cd ~/.config/caddy
+just obs-up
+
+# Jaeger is the configured destination; local development also mirrors to Tempo.
+export OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4318
 bun dev
 ```
+
+Browse the same local request in Jaeger at `https://jaeger.localhost` and in Tempo through Grafana at `https://grafana.localhost`. Local traces should appear under the `goosebumps-fm-api` service.
 
 #### Production
 
